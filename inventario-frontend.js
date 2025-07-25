@@ -1,4 +1,4 @@
-const API = 'http://localhost:3001/api/inventario';
+const API = 'https://backend-appmitylus-production.up.railway.app/api/inventario';
 
 let centros = [];
 let table;
