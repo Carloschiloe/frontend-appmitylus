@@ -1,0 +1,224 @@
+// ===== mapa.js (popups funcionando al click en polígono) =====
+let map;
+let puntosIngresoGroup;
+let centrosGroup;
+let currentPoly = null;
+let centroPolys = {};
+let windowCentrosDebug = [];
+
+const LOG = true;
+const log = (...a) => LOG && console.log('[MAP]', ...a);
+
+const parseNum = v => {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+// Capas base
+const baseLayersDefs = {
+  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 20, attribution: '© OpenStreetMap'
+  }),
+  esri: L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 20, attribution: 'Imagery © Esri' }
+  ),
+  esriLabels: L.layerGroup([
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Imagery © Esri' }
+    ),
+    L.tileLayer(
+      'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Labels © Esri' }
+    )
+  ]),
+  terrain: L.tileLayer(
+    'https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg',
+    { maxZoom: 18, attribution: 'Map tiles © Stamen | Data © OSM' }
+  ),
+  dark: L.tileLayer(
+    'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png',
+    { maxZoom: 19, attribution: '© Carto © OSM' }
+  )
+};
+
+let currentBaseKey = 'osm';
+
+export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
+  if (map) return map;
+
+  const el = document.getElementById('map');
+  if (!el) {
+    console.error('[MAP] #map no encontrado');
+    return null;
+  }
+  if (el.clientHeight < 50) el.style.minHeight = '400px';
+
+  map = L.map(el, {
+    zoomControl: true,
+    center: defaultLatLng,
+    zoom: 10,
+    layers: [baseLayersDefs.osm]
+  });
+  window.__mapLeaflet = map;
+
+  puntosIngresoGroup = L.layerGroup().addTo(map);
+  centrosGroup       = L.layerGroup().addTo(map);
+
+  const baseMaps = {
+    'OSM': baseLayersDefs.osm,
+    'Satélite (Esri)': baseLayersDefs.esri,
+    'Satélite + Etiquetas': baseLayersDefs.esriLabels,
+    'Terreno': baseLayersDefs.terrain,
+    'Noche (Dark)': baseLayersDefs.dark
+  };
+  L.control.layers(baseMaps, {}, { position: 'topright', collapsed: false }).addTo(map);
+
+  // Recalcular tamaño al mostrar tab
+  document.querySelectorAll('a[href="#tab-mapa"]').forEach(a =>
+    a.addEventListener('click', () => {
+      setTimeout(() => map.invalidateSize(), 120);
+      setTimeout(() => map.invalidateSize(), 400);
+    })
+  );
+  if (location.hash === '#tab-mapa') {
+    setTimeout(() => map.invalidateSize(), 150);
+    setTimeout(() => map.invalidateSize(), 450);
+  }
+
+  log('Mapa creado');
+  return map;
+}
+
+export function setBaseLayer(key) {
+  if (!map || !baseLayersDefs[key] || currentBaseKey === key) return;
+  map.removeLayer(baseLayersDefs[currentBaseKey]);
+  map.addLayer(baseLayersDefs[key]);
+  currentBaseKey = key;
+  log('Base layer ->', key);
+}
+
+/* ---------- Puntos manuales ---------- */
+export function clearMapPoints() {
+  if (!puntosIngresoGroup) return;
+  puntosIngresoGroup.clearLayers();
+  currentPoly = null;
+}
+export function addPointMarker(lat, lng) {
+  if (!puntosIngresoGroup) return;
+  L.marker([lat, lng]).addTo(puntosIngresoGroup);
+}
+export function redrawPolygon(currentPoints = []) {
+  if (currentPoly) {
+    puntosIngresoGroup.removeLayer(currentPoly);
+    currentPoly = null;
+  }
+  if (currentPoints.length >= 3) {
+    currentPoly = L.polygon(currentPoints.map(p => [p.lat, p.lng]), { color: 'crimson' })
+      .addTo(puntosIngresoGroup);
+  }
+}
+
+/* ---------- Centros ---------- */
+export function drawCentrosInMap(centros = [], defaultLatLng = [-42.48, -73.77], onPolyClick = null) {
+  if (!map) crearMapa(defaultLatLng);
+  if (!centrosGroup) return;
+
+  windowCentrosDebug = centros.slice();
+  centrosGroup.clearLayers();
+  centroPolys = {};
+
+  let dib = 0;
+  centros.forEach((c, idx) => {
+    const coords = (c.coords || [])
+      .map(p => [parseNum(p.lat), parseNum(p.lng)])
+      .filter(([la, ln]) => la !== null && ln !== null);
+    if (coords.length < 3) return;
+
+    const hect       = +c.hectareas || 0;
+    const cantLineas = Array.isArray(c.lines) ? c.lines.length : 0;
+    const totalBoyas = Array.isArray(c.lines) ? c.lines.reduce((a,l)=>a+(+l.buoys||0),0) : 0;
+
+    const popupHTML = `
+      <div style="min-width:150px;font-size:12.5px;line-height:1.25">
+        <div style="font-weight:600;margin-bottom:4px;">${c.name}</div>
+        <div><b>Código:</b> ${c.code}</div>
+        <div><b>Hectáreas:</b> ${hect.toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        <div><b>Líneas:</b> ${cantLineas}</div>
+        <div><b>Boyas:</b> ${totalBoyas}</div>
+      </div>
+    `.trim();
+
+    const poly = L.polygon(coords, {
+      color: '#1976d2',
+      weight: 3,
+      fillOpacity: .28
+    }).addTo(centrosGroup);
+
+    poly._popupHTML = popupHTML;
+    poly.bindPopup(popupHTML);
+
+    // Abrir/cerrar popup con el propio click del polígono
+    poly.on('click', (ev) => {
+      // Detener propagación para que el mapa no lo cierre
+      if (ev && ev.originalEvent) {
+        ev.originalEvent.stopPropagation?.();
+        L.DomEvent.stopPropagation(ev);
+      }
+      if (poly.isPopupOpen && poly.isPopupOpen()) {
+        poly.closePopup();
+      } else {
+        const pop = poly.getPopup();
+        if (pop && pop.getContent() !== poly._popupHTML) pop.setContent(poly._popupHTML);
+        poly.openPopup(ev.latlng || poly.getBounds().getCenter());
+      }
+      if (onPolyClick) onPolyClick(idx);
+    });
+
+    centroPolys[idx] = poly;
+    dib++;
+  });
+
+  centrarMapaEnPoligonos(centros, defaultLatLng);
+
+  // Evitar segmento gris
+  setTimeout(()=> map.invalidateSize(), 60);
+  setTimeout(()=> map.invalidateSize(), 300);
+
+  log('Redibujados centros =', dib);
+}
+
+export function centrarMapaEnPoligonos(centros = [], defaultLatLng = [-42.48, -73.77]) {
+  if (!map) return;
+  const all = [];
+  centros.forEach(c => (c.coords || []).forEach(p => {
+    const la = parseNum(p.lat), ln = parseNum(p.lng);
+    if (la !== null && ln !== null) all.push([la, ln]);
+  }));
+  if (all.length) map.fitBounds(all, { padding: [20, 20] });
+  else map.setView(defaultLatLng, 10);
+}
+
+export function focusCentroInMap(idx) {
+  const poly = centroPolys[idx];
+  if (!poly) return;
+  map.fitBounds(poly.getBounds(), { maxZoom: 16 });
+  if (!poly.isPopupOpen || !poly.isPopupOpen()) {
+    poly.openPopup(poly.getBounds().getCenter());
+  }
+  poly.setStyle({ color: '#ff9800', weight: 5 });
+  setTimeout(()=>poly.setStyle({ color:'#1976d2', weight:3 }), 1000);
+}
+
+export function renderSidebarCentros(centros = [], activeIdx = null) {
+  return centros.map((c, idx) =>
+    `<li class="collection-item${activeIdx === idx ? ' active':''}" data-idx="${idx}">
+       <b>${c.name}</b>
+       <div style="font-size:0.93em;color:#888;">${c.code}</div>
+     </li>`
+  ).join('');
+}
+
+
+
