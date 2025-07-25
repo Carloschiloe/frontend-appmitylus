@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventario Líneas & Boyas</title>
+
+  <!-- Materialize -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+
+  <!-- DataTables -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
+
+  <style>
+    .fixed-action-btn{position:fixed;right:16px;bottom:16px;}
+    .btn-count{width:100%;height:70px;font-size:1.05rem;}
+    .tabs .tab a{color:#00796b;}
+    .tabs .tab a.active{color:#004d40;}
+    .tabs .indicator{background:#004d40;}
+    table.dataTable td{white-space:nowrap;}
+
+    /* === KPIs agrupados === */
+    #kpiGroups{
+      display:flex;
+      flex-wrap:wrap;
+      gap:14px;
+      margin-bottom:14px;
+    }
+    /* Tarjetas grandes */
+    .kpi-card{
+      flex:1 1 260px;
+      min-width:240px;
+      background:#e0f2f1;
+      border-radius:8px;
+      padding:12px 14px;
+    }
+    .kpi-card .title{
+      font-size:.95rem;
+      font-weight:600;
+      color:#004d40;
+      margin-bottom:4px;
+    }
+    .kpi-card .big{
+      font-size:1.9rem;
+      font-weight:700;
+      line-height:1.1;
+      margin-bottom:6px;
+    }
+    .kpi-card .subs span{
+      display:block;
+      font-size:.85rem;
+      color:#00695c;
+      margin:2px 0;
+      cursor:pointer;
+    }
+    .kpi-card .subs span.active{
+      text-decoration:underline;
+      font-weight:600;
+    }
+    /* Tarjetas pequeñas (filtros) */
+    .kpi-mini{
+      flex:1 1 140px;
+      min-width:140px;
+      background:#e0f2f1;
+      border-radius:8px;
+      padding:10px 8px;
+      text-align:center;
+      cursor:pointer;
+      transition:background .15s;
+    }
+    .kpi-mini:hover{ background:#b2dfdb; }
+    .kpi-mini .valor{
+      font-size:1.4rem;
+      font-weight:600;
+      display:block;
+      line-height:1.2;
+    }
+    .kpi-mini.active{ background:#80cbc4; }
+
+    /* Select pequeño */
+    #fEstadoLineaDiv{ margin:6px 0 12px; max-width:230px; }
+  </style>
+</head>
+<body class="grey lighten-4">
+  <nav class="teal darken-2">
+    <div class="nav-wrapper">
+      <a href="./index.html" class="btn-flat left" style="margin-left:8px"><i class="material-icons">arrow_back</i></a>
+      <span class="brand-logo center">Líneas & Boyas</span>
+    </div>
+  </nav>
+
+  <div class="container" style="margin-top:16px;">
+
+    <!-- Tabs internas -->
+    <ul id="tabsLB" class="tabs">
+      <li class="tab col s4"><a class="active" href="#tab-conteo">Conteo</a></li>
+      <li class="tab col s4"><a href="#tab-ultimos">Últimos / Resumen</a></li>
+      <li class="tab col s4"><a href="#tab-historial">Historial</a></li>
+    </ul>
+
+    <!-- ============ TAB CONTEO ============ -->
+    <div id="tab-conteo" style="padding-top:20px;">
+      <!-- Selectores centro/línea -->
+      <div class="row">
+        <div class="input-field col s12 m6">
+          <select id="selCentro"></select>
+          <label>Centro</label>
+        </div>
+        <div class="input-field col s12 m6">
+          <select id="selLinea"></select>
+          <label>Línea</label>
+        </div>
+      </div>
+
+      <!-- Resumen último inventario -->
+      <div id="resumenInventario" class="card-panel grey lighten-3" style="display:none;"></div>
+
+      <!-- FAB para abrir conteo rápido -->
+      <div class="fixed-action-btn">
+        <a id="btnAbrirConteo" class="btn-floating btn-large red tooltipped" data-tooltip="Conteo rápido">
+          <i class="material-icons">add</i>
+        </a>
+      </div>
+    </div>
+
+    <!-- ============ TAB ÚLTIMOS / RESUMEN ============ -->
+    <div id="tab-ultimos" style="padding-top:20px;">
+
+      <!-- KPIs agrupados -->
+      <div id="kpiGroups"></div>
+
+      <!-- Filtro estado línea (opcional) -->
+      <div id="fEstadoLineaDiv" class="input-field">
+        <select id="fEstadoLinea">
+          <option value="all" selected>Estado (todas)</option>
+          <option value="buena">Buenas</option>
+          <option value="regular">Regulares</option>
+          <option value="mala">Malas</option>
+          <option value="sinInv">Sin inventario</option>
+        </select>
+        <label>Filtrar por estado de línea</label>
+      </div>
+
+      <!-- Tabla últimos por línea -->
+      <table id="tablaUltimos" class="striped display nowrap" style="width:100%">
+        <thead>
+          <tr>
+            <th>Centro</th>
+            <th>Línea</th>
+            <th>Fecha</th>
+            <th>Tot</th>
+            <th>NB Buenas</th>
+            <th>NB Malas</th>
+            <th>NA Buenas</th>
+            <th>NA Malas</th>
+            <th>Sueltas</th>
+            <th>Colchas</th>
+            <th>Estado Línea</th>
+            <th>Obs</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- ============ TAB HISTORIAL COMPLETO ============ -->
+    <div id="tab-historial" style="padding-top:20px;">
+      <table id="tablaInventariosLB" class="striped display nowrap" style="width:100%">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Centro</th>
+            <th>Línea</th>
+            <th>Tot</th>
+            <th>NB Buenas</th>
+            <th>NB Malas</th>
+            <th>NA Buenas</th>
+            <th>NA Malas</th>
+            <th>Sueltas</th>
+            <th>Colchas</th>
+            <th>Estado Línea</th>
+            <th>Obs</th>
+            <th>Lat</th>
+            <th>Lng</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ========= MODAL CONTEO RÁPIDO ========= -->
+  <div id="conteoLineaModal" class="modal modal-fixed-footer">
+    <div class="modal-content">
+      <h5 id="conteoTitulo" class="center-align" style="margin-bottom:6px;">Conteo</h5>
+
+      <div class="center-align" style="margin-bottom:10px;">
+        <span id="conteoDisplay" style="font-size:2.2rem;">#0</span><br>
+        <a id="btnUndoEvento" class="btn-flat grey-text text-darken-2">← Deshacer último</a>
+      </div>
+
+      <div class="center-align" id="statsLine" style="margin-bottom:12px; font-size:0.95rem; color:#555;">
+        Tot: 0 | NB:0/0 NA:0/0 | S:0 | Col:0
+      </div>
+
+      <div class="row" style="gap:8px 0;">
+        <div class="col s6 m3"><button class="btn btn-large black  btn-count" data-action="negra_buena">⚫ + Buena</button></div>
+        <div class="col s6 m3"><button class="btn btn-large black  btn-count" data-action="negra_mala">⚫ + Mala</button></div>
+        <div class="col s6 m3"><button class="btn btn-large deep-orange darken-3 btn-count" data-action="naranja_buena">🟧 + Buena</button></div>
+        <div class="col s6 m3"><button class="btn btn-large deep-orange btn-count" data-action="naranja_mala">🟧 + Mala</button></div>
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <div class="col s6 m3"><button class="btn btn-large orange btn-count" data-action="suelta">+ Suelta</button></div>
+        <div class="col s6 m3"><button class="btn btn-large purple btn-count" data-action="colcha">+ Colcha</button></div>
+      </div>
+
+      <ul class="collapsible" style="margin-top:16px;">
+        <li>
+          <div class="collapsible-header"><i class="material-icons">more_horiz</i>Más opciones (Obs / Estado / GPS)</div>
+          <div class="collapsible-body">
+            <div class="input-field">
+              <textarea id="conteoObs" class="materialize-textarea" rows="2"></textarea>
+              <label for="conteoObs">Observaciones</label>
+            </div>
+            <div class="input-field">
+              <select id="conteoEstadoLinea">
+                <option value="buena" selected>Buena</option>
+                <option value="regular">Regular</option>
+                <option value="mala">Mala</option>
+              </select>
+              <label>Estado de la línea</label>
+            </div>
+            <div style="margin-top:8px;">
+              <button id="btnConteoGPS" type="button" class="btn-small grey lighten-1">Tomar GPS</button>
+              <div id="conteoGpsRow" style="display:none;margin-top:8px;">
+                <div class="input-field inline">
+                  <input id="conteoLat" type="text" disabled>
+                  <label class="active" for="conteoLat">Lat</label>
+                </div>
+                <div class="input-field inline" style="margin-left:12px;">
+                  <input id="conteoLng" type="text" disabled>
+                  <label class="active" for="conteoLng">Lng</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="modal-footer">
+      <button class="modal-close btn-flat">Cancelar</button>
+      <button id="btnGuardarConteo" class="btn">Guardar</button>
+    </div>
+  </div>
+
+  <!-- ========= LIBRERÍAS ========= -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+  <!-- Tus módulos -->
+  <script type="module" src="../../js/inventarios/lineas_boyas/app_lineas.js"></script>
+  <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
+</body>
+</html>
+
+
+
+
