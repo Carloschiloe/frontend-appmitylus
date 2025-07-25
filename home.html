@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inicio · Choritos</title>
+
+  <!-- Materialize -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+
+  <style>
+    body{background:#f5f5f5;}
+    .logo-title{
+      font-size:1.6rem;font-weight:600;margin:0;color:#004d40;
+    }
+    .card-link{
+      display:block;color:inherit;text-decoration:none;
+    }
+    .card-link .material-icons{
+      font-size:2.6rem;display:block;margin-bottom:6px;color:#00695c;
+    }
+    .footer-mini{
+      text-align:center;font-size:.8rem;color:#777;margin-top:28px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="teal darken-2">
+    <div class="nav-wrapper center-align">
+      <span class="logo-title">Choritos · Panel</span>
+    </div>
+  </nav>
+
+  <div class="container" style="margin-top:28px;max-width:980px;">
+    <div class="row">
+
+      <!-- Configuración de Centros -->
+      <div class="col s12 m6 l4">
+        <a href="./index.html" class="card hoverable card-link">
+          <div class="card-content center-align">
+            <i class="material-icons">room</i>
+            <span class="card-title" style="font-size:1.2rem;">Configurar Centros</span>
+            <p>Crear / editar centros, líneas y mapa.</p>
+          </div>
+        </a>
+      </div>
+
+      <!-- Inventarios -->
+      <div class="col s12 m6 l4">
+        <a href="./html/Inventarios/index.html" class="card hoverable card-link">
+          <div class="card-content center-align">
+            <i class="material-icons">inventory_2</i>
+            <span class="card-title" style="font-size:1.2rem;">Inventarios</span>
+            <p>Líneas & boyas, exportaciones y más.</p>
+          </div>
+        </a>
+      </div>
+
+      <!-- (Opcional) Calendario -->
+      <div class="col s12 m6 l4">
+        <a href="./index.html#tab-calendario" class="card hoverable card-link">
+          <div class="card-content center-align">
+            <i class="material-icons">event_note</i>
+            <span class="card-title" style="font-size:1.2rem;">Calendario</span>
+            <p>Tareas y planificación.</p>
+          </div>
+        </a>
+      </div>
+
+      <!-- (Opcional) Stock futuro -->
+      <div class="col s12 m6 l4">
+        <a href="./html/stock/index.html" class="card hoverable card-link">
+          <div class="card-content center-align">
+            <i class="material-icons">shopping_cart</i>
+            <span class="card-title" style="font-size:1.2rem;">Stock (próx.)</span>
+            <p>Control de insumos generales.</p>
+          </div>
+        </a>
+      </div>
+
+    </div>
+
+    <div class="footer-mini">
+      v0.1 · Lunes listos para producción (modo offline/online)
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+</html>
