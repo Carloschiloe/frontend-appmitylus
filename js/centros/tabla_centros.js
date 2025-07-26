@@ -28,9 +28,8 @@ export function initTablaCentros() {
 export async function loadCentros() {
   Estado.centros = await getCentrosAll();
 
-  // FILTRO PARA EVITAR CENTROS NULOS O VACÍOS
   const rows = Estado.centros
-    .filter(c => !!c && !!c.name)  // <<--- aquí está el filtro extra para evitar errores
+    .filter(c => !!c && !!c.name)
     .map((c, i) => {
       const totalBoyas = Array.isArray(c.lines)
         ? c.lines.reduce((a, l) => a + (+l.buoys || 0), 0) : 0;
@@ -61,7 +60,9 @@ export async function loadCentros() {
 
   if (Estado.lineAcordionOpen !== null && Estado.centros[Estado.lineAcordionOpen]) {
     acordeonCont.innerHTML = renderAcordeonLineas(Estado.lineAcordionOpen, Estado.centros, Estado.editingLine);
-    M.FormSelect.init(acordeonCont.querySelectorAll('select'));
+    // ---- ROBUSTEZ: verifica selects existen antes de inicializar ----
+    const selects = acordeonCont.querySelectorAll('select');
+    if (selects && selects.length) M.FormSelect.init(selects);
 
     const inputBuscar = document.getElementById('inputBuscarLineas');
     if (inputBuscar) inputBuscar.addEventListener('input', () => filtrarLineas());
@@ -177,11 +178,16 @@ export async function loadCentros() {
       const idx = +this.dataset.idx;
       const c = Estado.centros[idx];
       if (c && Array.isArray(c.coords)) {
-        document.getElementById('coordenadasList').innerHTML =
-          c.coords.map((p, i) =>
-            `<div>${i + 1}. Lat: <b>${Number(p.lat).toFixed(6)}</b> – Lng: <b>${Number(p.lng).toFixed(6)}</b></div>`
-          ).join('');
-        M.Modal.getInstance(document.getElementById('coordsModal')).open();
+        const modal = document.getElementById('coordsModal');
+        if (modal) {
+          document.getElementById('coordenadasList').innerHTML =
+            c.coords.map((p, i) =>
+              `<div>${i + 1}. Lat: <b>${Number(p.lat).toFixed(6)}</b> – Lng: <b>${Number(p.lng).toFixed(6)}</b></div>`
+            ).join('');
+          // Solo abre si existe y está inicializado
+          const modalInstance = M.Modal.getInstance(modal);
+          if (modalInstance) modalInstance.open();
+        }
       }
     })
     .off('click', '.btn-toggle-lineas')
@@ -196,24 +202,25 @@ export async function loadCentros() {
       Estado.currentCentroIdx = idx;
 
       const centroModalElem = document.getElementById('centroModal');
-      const centroModal     = M.Modal.getInstance(centroModalElem);
+      if (centroModalElem) {
+        const centroModal = M.Modal.getInstance(centroModalElem);
+        const els = {
+          formTitle: document.getElementById('formTitle'),
+          inputCentroId: document.getElementById('inputCentroId'),
+          inputName: document.getElementById('inputName'),
+          inputCode: document.getElementById('inputCode'),
+          inputHectareas: document.getElementById('inputHectareas'),
+          inputLat: document.getElementById('inputLat'),
+          inputLng: document.getElementById('inputLng'),
+          pointsBody: document.getElementById('pointsBody')
+        };
 
-      const els = {
-        formTitle: document.getElementById('formTitle'),
-        inputCentroId: document.getElementById('inputCentroId'),
-        inputName: document.getElementById('inputName'),
-        inputCode: document.getElementById('inputCode'),
-        inputHectareas: document.getElementById('inputHectareas'),
-        inputLat: document.getElementById('inputLat'),
-        inputLng: document.getElementById('inputLng'),
-        pointsBody: document.getElementById('pointsBody')
-      };
-
-      Estado.currentPoints = [];
-      els.inputCentroId.value = idx;
-      openEditForm(els, Estado.map, Estado.currentPoints, (v) => Estado.currentCentroIdx = v);
-      renderPointsTable(els.pointsBody, Estado.currentPoints);
-      centroModal.open();
+        Estado.currentPoints = [];
+        els.inputCentroId.value = idx;
+        openEditForm(els, Estado.map, Estado.currentPoints, (v) => Estado.currentCentroIdx = v);
+        renderPointsTable(els.pointsBody, Estado.currentPoints);
+        if (centroModal) centroModal.open();
+      }
     })
     .off('click', '.eliminar-centro')
     .on('click', '.eliminar-centro', async function () {
