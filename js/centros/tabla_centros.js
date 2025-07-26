@@ -28,26 +28,29 @@ export function initTablaCentros() {
 export async function loadCentros() {
   Estado.centros = await getCentrosAll();
 
-  const rows = Estado.centros.map((c, i) => {
-    const totalBoyas = Array.isArray(c.lines)
-      ? c.lines.reduce((a, l) => a + (+l.buoys || 0), 0) : 0;
-    const cantLineas = Array.isArray(c.lines) ? c.lines.length : 0;
-    const hect       = parseFloat(c.hectareas) || 0;
-    const btnText    = (Estado.lineAcordionOpen === i) ? 'OCULTAR LÍNEAS' : 'VER LÍNEAS';
-    const btnClass   = (Estado.lineAcordionOpen === i) ? 'grey' : 'blue';
+  // FILTRO PARA EVITAR CENTROS NULOS O VACÍOS
+  const rows = Estado.centros
+    .filter(c => !!c && !!c.name)  // <<--- aquí está el filtro extra para evitar errores
+    .map((c, i) => {
+      const totalBoyas = Array.isArray(c.lines)
+        ? c.lines.reduce((a, l) => a + (+l.buoys || 0), 0) : 0;
+      const cantLineas = Array.isArray(c.lines) ? c.lines.length : 0;
+      const hect       = parseFloat(c.hectareas) || 0;
+      const btnText    = (Estado.lineAcordionOpen === i) ? 'OCULTAR LÍNEAS' : 'VER LÍNEAS';
+      const btnClass   = (Estado.lineAcordionOpen === i) ? 'grey' : 'blue';
 
-    return [
-      c.name,
-      c.code || '-',
-      hect.toFixed(2),
-      totalBoyas,
-      cantLineas,
-      `<button class="btn-small teal btn-coords" data-idx="${i}">VER COORDENADAS</button>`,
-      `<button class="btn-small ${btnClass} btn-toggle-lineas" data-idx="${i}">${btnText}</button>
-       <button class="btn-small orange editar-centro" data-idx="${i}">EDITAR</button>
-       <button class="btn-small red eliminar-centro" data-idx="${i}">&times;</button>`
-    ];
-  });
+      return [
+        c.name,
+        c.code || '-',
+        hect.toFixed(2),
+        totalBoyas,
+        cantLineas,
+        `<button class="btn-small teal btn-coords" data-idx="${i}">VER COORDENADAS</button>`,
+        `<button class="btn-small ${btnClass} btn-toggle-lineas" data-idx="${i}">${btnText}</button>
+         <button class="btn-small orange editar-centro" data-idx="${i}">EDITAR</button>
+         <button class="btn-small red eliminar-centro" data-idx="${i}">&times;</button>`
+      ];
+    });
 
   Estado.table.clear().rows.add(rows).draw();
 
