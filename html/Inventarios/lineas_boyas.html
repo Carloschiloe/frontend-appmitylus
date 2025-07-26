@@ -15,44 +15,19 @@
 
   <style>
     .fixed-action-btn{position:fixed;right:16px;bottom:16px;}
-    .btn-count {
-      width: 100%;
-      height: 70px;
-      font-size: 1.05rem;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 6px;
-      font-weight: bold;
-      user-select: none;
-    }
+    .btn-count{width:100%;height:70px;font-size:1.05rem; position:relative;}
     .btn-count::after {
       content: attr(data-label);
-      font-weight: 600;
-      font-size: 0.9rem;
-      margin-top: 4px;
-      user-select: none;
+      display: block;
+      position: absolute;
+      bottom: 8px;
+      left: 0; right: 0;
+      text-align: center;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 0 4px rgba(0,0,0,0.7);
+      font-size: 1.1rem;
     }
-
-    /* Text color for dark buttons */
-    .btn-count.black::after,
-    .btn-count.deep-orange::after {
-      color: #fff;
-    }
-
-    /* Style for Suelta and Colcha buttons */
-    .btn-count.suelta,
-    .btn-count.colcha {
-      background-color: #f0f0f0 !important;
-      color: #000 !important;
-    }
-    .btn-count.suelta::after,
-    .btn-count.colcha::after {
-      color: #000 !important;
-    }
-
     .tabs .tab a{color:#00796b;}
     .tabs .tab a.active{color:#004d40;}
     .tabs .indicator{background:#004d40;}
@@ -260,10 +235,10 @@
 
       <div class="row" style="margin-top:8px;">
         <div class="col s6 m3">
-          <button class="btn btn-large suelta btn-count" data-action="suelta" data-label="Suelta">+ Suelta</button>
+          <button class="btn btn-large btn-flat btn-count suelta" data-action="suelta" data-label="Suelta">+</button>
         </div>
         <div class="col s6 m3">
-          <button class="btn btn-large colcha btn-count" data-action="colcha" data-label="Colcha">+ Colcha</button>
+          <button class="btn btn-large btn-flat btn-count colcha" data-action="colcha" data-label="Colcha">+</button>
         </div>
       </div>
 
