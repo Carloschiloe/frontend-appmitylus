@@ -41,7 +41,7 @@ export async function apiDeleteCentro(id) {
 
 // === LÍNEAS ===
 export async function apiAddLinea(centroId, data) {
-  const resp = await fetch(`${API_URL}/centros/${centroId}/lineas`, {
+  const resp = await fetch(`${API_URL}/centros/${centroId}/lines`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -50,7 +50,7 @@ export async function apiAddLinea(centroId, data) {
 }
 
 export async function apiUpdateLinea(centroId, lineaId, data) {
-  const resp = await fetch(`${API_URL}/centros/${centroId}/lineas/${lineaId}`, {
+  const resp = await fetch(`${API_URL}/centros/${centroId}/lines/${lineaId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -59,7 +59,7 @@ export async function apiUpdateLinea(centroId, lineaId, data) {
 }
 
 export async function apiDeleteLinea(centroId, lineaId) {
-  const resp = await fetch(`${API_URL}/centros/${centroId}/lineas/${lineaId}`, {
+  const resp = await fetch(`${API_URL}/centros/${centroId}/lines/${lineaId}`, {
     method: 'DELETE'
   });
   return checkResponse(resp);
@@ -67,7 +67,7 @@ export async function apiDeleteLinea(centroId, lineaId) {
 
 // === INVENTARIO LÍNEA ===
 export async function apiAddInventarioLinea(centroId, lineaId, data) {
-  const resp = await fetch(`${API_URL}/centros/${centroId}/lineas/${lineaId}/inventarios`, {
+  const resp = await fetch(`${API_URL}/centros/${centroId}/lines/${lineaId}/inventarios`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
