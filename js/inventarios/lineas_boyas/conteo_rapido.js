@@ -117,13 +117,10 @@ async function guardar() {
     sueltas: conteo.counters.sueltas,
     colchas: conteo.counters.colchas,
     observaciones: getValue('#conteoObs').trim(),
-    gps: (getValue('#conteoLat') && getValue('#conteoLng'))
-      ? { lat: +getValue('#conteoLat'), lng: +getValue('#conteoLng') }
-      : null,
+    // No enviar GPS
     eventos: conteo.eventos
   };
 
-  // Llama a la API (usa los _id reales)
   try {
     const centroId = centro._id;
     const lineaId  = linea._id;
