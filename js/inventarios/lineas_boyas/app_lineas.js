@@ -16,11 +16,11 @@ const fechaSolo = iso => {
   return d.toLocaleDateString('es-CL', { day:'2-digit', month:'2-digit', year:'numeric' });
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   M.AutoInit();
 
   // Tab Conteo
-  cargarSelects();
+  await cargarSelects();
   initConteoRapido();
   initBotonConteo();
 
@@ -28,8 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initTablaHistorial();
   initTablaUltimos();
 
-  refreshHistorial();
-  refreshUltimosYResumen();
+  await refreshHistorial();
+  await refreshUltimosYResumen();
 
   // Hash tab
   const instTabs = M.Tabs.getInstance(document.getElementById('tabsLB'));
@@ -94,16 +94,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Recalcular al guardar inventario
-  window.addEventListener('inventario-guardado', () => {
-    refreshHistorial();
-    refreshUltimosYResumen();
+  window.addEventListener('inventario-guardado', async () => {
+    await refreshHistorial();
+    await refreshUltimosYResumen();
     mostrarResumen();
   });
 });
 
 /* -------------------- SELECTS Y RESUMEN (CONTEO) -------------------- */
-function cargarSelects() {
-  Estado.centros = getCentros();
+async function cargarSelects() {
+  Estado.centros = await getCentrosAll();
   Estado.centros.forEach(c => { if (!Array.isArray(c.lines)) c.lines = []; });
 
   const selCentro = document.getElementById('selCentro');
@@ -205,9 +205,9 @@ function initTablaHistorial() {
   });
 }
 
-function refreshHistorial() {
+async function refreshHistorial() {
   if (!dtHist) return;
-  const centros = getCentros();
+  const centros = await getCentrosAll();
   const selC = +document.getElementById('selCentro').value;
   const selL = +document.getElementById('selLinea').value;
 
@@ -272,8 +272,8 @@ function initTablaUltimos() {
   });
 }
 
-function refreshUltimosYResumen() {
-  const centros = getCentros();
+async function refreshUltimosYResumen() {
+  const centros = await getCentrosAll();
   ultimosData = [];
 
   const resumen = {
@@ -466,6 +466,3 @@ function marcarActivos(){
     c.classList.toggle('active', c.dataset.kpi === F.kpi);
   });
 }
-
-
-
