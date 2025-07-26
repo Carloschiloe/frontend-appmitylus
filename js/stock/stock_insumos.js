@@ -127,16 +127,6 @@ function editarMovimiento(idx) {
   M.Modal.getInstance(document.getElementById('modalInsumoMov')).open();
 }
 
-// Reset modal form
-function resetModalForm() {
-  idxEditando = null;
-  const form = document.getElementById('formInsumoMov');
-  if (!form) return;
-  form.reset();
-  M.updateTextFields();
-  M.FormSelect.init(form.querySelectorAll('select'));
-}
-
 // Filtros y búsqueda (igual que antes, pero sobre movimientosCache)
 function filtrarTablaManual() {
   const { texto, insumo, desde, hasta } = getFiltrosSidebar();
@@ -266,6 +256,7 @@ function showModal() {
   M.Modal.getInstance(document.getElementById('modalInsumoMov')).open();
 }
 
+// SOLO UNA declaración de resetModalForm
 function resetModalForm() {
   idxEditando = null;
   const form = document.getElementById('formInsumoMov');
