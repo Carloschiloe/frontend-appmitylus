@@ -1,9 +1,9 @@
-import { getCentros } from '../core/centros_repo.js';
+import { getCentrosAll } from '../core/centros_repo.js';
 import { clearMapPoints, redrawPolygon, addPointMarker } from '../mapas/control_mapa.js';
 import { parseOneDMS } from '../core/utilidades.js';
 
 // NUEVO
-export function openNewForm(els, map, currentPoints, setIdxCb) {
+export async function openNewForm(els, map, currentPoints, setIdxCb) {
   els.formTitle.textContent = 'Nuevo centro';
   els.inputCentroId.value   = '';
   els.inputName.value       = '';
@@ -18,8 +18,8 @@ export function openNewForm(els, map, currentPoints, setIdxCb) {
   setIdxCb(null);
 }
 
-export function openEditForm(els, map, currentPoints, setIdxCb) {
-  const centros = getCentros();
+export async function openEditForm(els, map, currentPoints, setIdxCb) {
+  const centros = await getCentrosAll();
   const idx = +els.inputCentroId.value;
   const centro = centros[idx];
   if (!centro) return;
