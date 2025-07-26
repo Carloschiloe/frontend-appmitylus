@@ -1,4 +1,4 @@
-import { getCentros, saveCentros } from '../core/almacenamiento.js';
+import { getCentros, saveCentro } from '../core/almacenamiento.js';
 
 export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null) {
   const centros = getCentros();
