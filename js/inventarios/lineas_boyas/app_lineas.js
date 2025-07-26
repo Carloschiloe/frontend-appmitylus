@@ -1,5 +1,5 @@
 import { Estado } from '../../core/estado.js';
-import { getCentros } from '../../core/centros_repo.js';
+import { getCentrosAll } from '../../core/centros_repo.js';
 import { initConteoRapido, abrirConteoLinea } from './conteo_rapido.js';
 
 let dtHist = null;
