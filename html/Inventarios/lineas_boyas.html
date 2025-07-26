@@ -15,7 +15,44 @@
 
   <style>
     .fixed-action-btn{position:fixed;right:16px;bottom:16px;}
-    .btn-count{width:100%;height:70px;font-size:1.05rem;}
+    .btn-count {
+      width: 100%;
+      height: 70px;
+      font-size: 1.05rem;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      font-weight: bold;
+      user-select: none;
+    }
+    .btn-count::after {
+      content: attr(data-label);
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-top: 4px;
+      user-select: none;
+    }
+
+    /* Text color for dark buttons */
+    .btn-count.black::after,
+    .btn-count.deep-orange::after {
+      color: #fff;
+    }
+
+    /* Style for Suelta and Colcha buttons */
+    .btn-count.suelta,
+    .btn-count.colcha {
+      background-color: #f0f0f0 !important;
+      color: #000 !important;
+    }
+    .btn-count.suelta::after,
+    .btn-count.colcha::after {
+      color: #000 !important;
+    }
+
     .tabs .tab a{color:#00796b;}
     .tabs .tab a.active{color:#004d40;}
     .tabs .indicator{background:#004d40;}
@@ -207,30 +244,26 @@
       </div>
 
       <div class="row" style="gap:8px 0;">
-        <div class="col s6 m3 center-align">
-          <button class="btn btn-large black btn-count" data-action="negra_buena">⚫ +</button>
-          <div style="color:white; font-weight:bold; margin-top:6px;">BUENA</div>
+        <div class="col s6 m3">
+          <button class="btn btn-large black btn-count" data-action="negra_buena" data-label="Buena">⚫ +</button>
         </div>
-        <div class="col s6 m3 center-align">
-          <button class="btn btn-large black btn-count" data-action="negra_mala">⚫ +</button>
-          <div style="color:white; font-weight:bold; margin-top:6px;">MALA</div>
+        <div class="col s6 m3">
+          <button class="btn btn-large black btn-count" data-action="negra_mala" data-label="Mala">⚫ +</button>
         </div>
-        <div class="col s6 m3 center-align">
-          <button class="btn btn-large deep-orange darken-3 btn-count" data-action="naranja_buena">🟧 +</button>
-          <div style="color:white; font-weight:bold; margin-top:6px;">BUENA</div>
+        <div class="col s6 m3">
+          <button class="btn btn-large deep-orange darken-3 btn-count" data-action="naranja_buena" data-label="Buena">🟧 +</button>
         </div>
-        <div class="col s6 m3 center-align">
-          <button class="btn btn-large deep-orange btn-count" data-action="naranja_mala">🟧 +</button>
-          <div style="color:white; font-weight:bold; margin-top:6px;">MALA</div>
+        <div class="col s6 m3">
+          <button class="btn btn-large deep-orange btn-count" data-action="naranja_mala" data-label="Mala">🟧 +</button>
         </div>
       </div>
 
       <div class="row" style="margin-top:8px;">
         <div class="col s6 m3">
-          <button class="btn btn-large grey lighten-3 black-text btn-count" data-action="suelta">+ Suelta</button>
+          <button class="btn btn-large suelta btn-count" data-action="suelta" data-label="Suelta">+ Suelta</button>
         </div>
         <div class="col s6 m3">
-          <button class="btn btn-large grey lighten-3 black-text btn-count" data-action="colcha">+ Colcha</button>
+          <button class="btn btn-large colcha btn-count" data-action="colcha" data-label="Colcha">+ Colcha</button>
         </div>
       </div>
 
@@ -290,4 +323,3 @@
   <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
 </body>
 </html>
-
