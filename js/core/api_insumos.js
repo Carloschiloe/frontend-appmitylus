@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3001/api/insumos'; // Cambia al URL de tu backend
+const API_URL = 'https://backend-appmitylus-production.up.railway.app/api/insumos'; // Cambiado a Railway
 
 export async function apiGetMovimientos() {
   const resp = await fetch(API_URL);
