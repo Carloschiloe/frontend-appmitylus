@@ -34,65 +34,99 @@
     table.dataTable td{white-space:nowrap;}
 
     /* === KPIs agrupados === */
-    #kpiGroups{
-      display:flex;
-      flex-wrap:wrap;
-      gap:14px;
-      margin-bottom:14px;
+    #kpiGroups {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 10px;
+      margin-bottom: 10px;
+      overflow-x: auto;
+      padding-bottom: 8px;
     }
     /* Tarjetas grandes */
-    .kpi-card{
-      flex:1 1 260px;
-      min-width:240px;
-      background:#e0f2f1;
-      border-radius:8px;
-      padding:12px 14px;
+    .kpi-card {
+      flex: 0 0 30%;
+      min-width: 120px;
+      background: #e0f2f1;
+      border-radius: 8px;
+      padding: 12px 14px;
     }
-    .kpi-card .title{
-      font-size:.95rem;
-      font-weight:600;
-      color:#004d40;
-      margin-bottom:4px;
+    .kpi-card .title {
+      font-size: .95rem;
+      font-weight: 600;
+      color: #004d40;
+      margin-bottom: 4px;
     }
-    .kpi-card .big{
-      font-size:1.9rem;
-      font-weight:700;
-      line-height:1.1;
-      margin-bottom:6px;
+    .kpi-card .big {
+      font-size: 1.9rem;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 6px;
     }
-    .kpi-card .subs span{
-      display:block;
-      font-size:.85rem;
-      color:#00695c;
-      margin:2px 0;
-      cursor:pointer;
+    .kpi-card .subs span {
+      display: block;
+      font-size: .85rem;
+      color: #00695c;
+      margin: 2px 0;
+      cursor: pointer;
     }
-    .kpi-card .subs span.active{
-      text-decoration:underline;
-      font-weight:600;
+    .kpi-card .subs span.active {
+      text-decoration: underline;
+      font-weight: 600;
+    }
+
+    /* Contenedor botones pequeños */
+    #kpiSmallGroup {
+      display: flex;
+      justify-content: space-around;
+      gap: 8px;
+      margin-top: 6px;
+      margin-bottom: 14px;
+      overflow-x: auto;
     }
     /* Tarjetas pequeñas (filtros) */
-    .kpi-mini{
-      flex:1 1 140px;
-      min-width:140px;
-      background:#e0f2f1;
-      border-radius:8px;
-      padding:10px 8px;
-      text-align:center;
-      cursor:pointer;
-      transition:background .15s;
+    .kpi-mini {
+      flex: 0 0 28%;
+      min-width: 90px;
+      background: #e0f2f1;
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.15s;
     }
-    .kpi-mini:hover{ background:#b2dfdb; }
-    .kpi-mini .valor{
-      font-size:1.4rem;
-      font-weight:600;
-      display:block;
-      line-height:1.2;
+    .kpi-mini:hover { background: #b2dfdb; }
+    .kpi-mini .valor {
+      font-size: 1.4rem;
+      font-weight: 600;
+      display: block;
+      line-height: 1.2;
     }
-    .kpi-mini.active{ background:#80cbc4; }
+    .kpi-mini.active { background: #80cbc4; }
 
     /* Select pequeño */
     #fEstadoLineaDiv{ margin:6px 0 12px; max-width:230px; }
+
+    /* Para pantallas más anchas, volver a flex-wrap: wrap */
+    @media (min-width: 600px) {
+      #kpiGroups {
+        flex-wrap: wrap;
+        overflow-x: visible;
+      }
+      .kpi-card {
+        flex: 1 1 260px;
+        min-width: 240px;
+      }
+      #kpiSmallGroup {
+        justify-content: flex-start;
+        margin-top: 0;
+        margin-bottom: 14px;
+      }
+      .kpi-mini {
+        flex: 1 1 140px;
+        min-width: 140px;
+        margin-top: 0;
+      }
+    }
   </style>
 </head>
 <body class="grey lighten-4">
@@ -139,9 +173,15 @@
 
     <!-- ============ TAB ÚLTIMOS / RESUMEN ============ -->
     <div id="tab-ultimos" style="padding-top:20px;">
-
       <!-- KPIs agrupados -->
-      <div id="kpiGroups"></div>
+      <div id="kpiGroups">
+        <!-- Aquí van las 3 tarjetas grandes -->
+      </div>
+
+      <!-- Contenedor para botones pequeños -->
+      <div id="kpiSmallGroup">
+        <!-- Aquí van los botones: Boyas sueltas, Colchas, Sin inventario -->
+      </div>
 
       <!-- Filtro estado línea (opcional) -->
       <div id="fEstadoLineaDiv" class="input-field">
@@ -259,7 +299,6 @@
               <label>Estado de la línea</label>
             </div>
             <div style="margin-top:8px;">
-              <!-- Ocultar botón GPS porque no se usa en conteo -->
               <button id="btnConteoGPS" type="button" class="btn-small grey lighten-1" style="display:none;">Tomar GPS</button>
               <div id="conteoGpsRow" style="display:none;margin-top:8px;">
                 <div class="input-field inline">
