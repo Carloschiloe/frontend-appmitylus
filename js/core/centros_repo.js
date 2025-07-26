@@ -2,7 +2,7 @@ import {
   apiGetCentros, apiCreateCentro, apiUpdateCentro, apiDeleteCentro,
   apiAddLinea, apiUpdateLinea, apiDeleteLinea, apiAddInventarioLinea
 } from './api.js';
-import { getCentros, saveCentros } from './almacenamiento.js';
+import { getCentros, saveCentro } from './almacenamiento.js';
 
 // pon en false para trabajar offline
 const USE_API = true;
