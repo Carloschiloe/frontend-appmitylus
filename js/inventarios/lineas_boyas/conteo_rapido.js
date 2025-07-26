@@ -101,7 +101,7 @@ async function guardar() {
   const centro = Estado.centros?.[centroIdx];
   const linea  = centro?.lines?.[lineaIdx];
   if (!centro || !linea) {
-    M.toast({ html: 'No se pudo guardar: centro o línea no encontrados', classes: 'red' });
+    M.toast({ html: 'No se pudo guardar', classes: 'red' }); 
     return;
   }
 
@@ -123,6 +123,7 @@ async function guardar() {
     eventos: conteo.eventos
   };
 
+  // Llama a la API (usa los _id reales)
   try {
     const centroId = centro._id;
     const lineaId  = linea._id;
@@ -131,13 +132,17 @@ async function guardar() {
     window.dispatchEvent(new CustomEvent('inventario-guardado')); // para refrescar tablas externas
     M.Modal.getInstance(document.getElementById('conteoLineaModal'))?.close();
   } catch (e) {
-    if (e instanceof Response) {
-      const text = await e.text();
-      console.error('Error al guardar:', text);
-      M.toast({ html: `Error al guardar: ${text}`, classes: 'red' });
-    } else {
-      console.error('Error al guardar:', e);
-      M.toast({ html: `Error al guardar: ${e.message || e}`, classes: 'red' });
+    try {
+      if (e instanceof Response) {
+        const text = await e.text();
+        console.error('Error al guardar:', text);
+        M.toast({ html: `Error al guardar: ${text}`, classes: 'red' });
+      } else {
+        throw e;
+      }
+    } catch (e2) {
+      console.error('Error al guardar:', e2);
+      M.toast({ html: `Error al guardar: ${e2.message || e2}`, classes: 'red' });
     }
   }
 }
