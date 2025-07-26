@@ -1,5 +1,4 @@
 import { Estado } from '../../core/estado.js';
-// Este es el import correcto, ajusta el path si es necesario:
 import { addInventarioLinea } from '../../core/centros_repo.js';
 
 const initCounters = () => ({
@@ -42,15 +41,20 @@ export function initConteoRapido() {
   const modal = document.getElementById('conteoLineaModal');
   if (!modal) return;
 
-  // Botones sumar
+  // Botones sumar con data-action
   modal.querySelectorAll('.btn-count[data-action]').forEach(btn => {
     btn.onclick = () => add(btn.dataset.action);
   });
 
-  // Deshacer / Guardar / GPS
-  document.getElementById('btnUndoEvento').onclick = undo;
-  document.getElementById('btnGuardarConteo').onclick = guardar;
-  document.getElementById('btnConteoGPS')?.addEventListener('click', tomarGPS);
+  // Botón Deshacer último evento
+  const undoBtn = document.getElementById('btnUndoEvento');
+  if (undoBtn) undoBtn.onclick = undo;
+
+  // Botón Guardar conteo
+  const guardarBtn = document.getElementById('btnGuardarConteo');
+  if (guardarBtn) guardarBtn.onclick = guardar;
+
+  // No asignamos evento para botón GPS porque no se usa
 }
 
 /* ------------ lógica ------------ */
@@ -117,7 +121,7 @@ async function guardar() {
     sueltas: conteo.counters.sueltas,
     colchas: conteo.counters.colchas,
     observaciones: getValue('#conteoObs').trim(),
-    // No enviar GPS
+    // NO enviamos GPS
     eventos: conteo.eventos
   };
 
@@ -126,7 +130,7 @@ async function guardar() {
     const lineaId  = linea._id;
     await addInventarioLinea(centroId, lineaId, registro);
     M.toast({ html: 'Inventario guardado', classes: 'green' });
-    window.dispatchEvent(new CustomEvent('inventario-guardado')); // para refrescar tablas externas
+    window.dispatchEvent(new CustomEvent('inventario-guardado'));
     M.Modal.getInstance(document.getElementById('conteoLineaModal'))?.close();
   } catch (e) {
     try {
@@ -142,22 +146,6 @@ async function guardar() {
       M.toast({ html: `Error al guardar: ${e2.message || e2}`, classes: 'red' });
     }
   }
-}
-
-function tomarGPS() {
-  if (!navigator.geolocation) {
-    M.toast({ html: 'GPS no disponible', classes: 'red' });
-    return;
-  }
-  navigator.geolocation.getCurrentPosition((pos) => {
-    const { latitude, longitude } = pos.coords;
-    setValue('#conteoLat', latitude.toFixed(6));
-    setValue('#conteoLng', longitude.toFixed(6));
-    mostrar('#conteoGpsRow');
-    M.updateTextFields?.();
-  }, () => {
-    M.toast({ html: 'No se pudo obtener GPS', classes: 'red' });
-  }, { enableHighAccuracy: true, timeout: 8000 });
 }
 
 function pushEvento(tipo, color=null) {
