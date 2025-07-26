@@ -209,6 +209,11 @@ function getFiltrosSidebar() {
   };
 }
 
+// Renderiza los filtros de la sidebar
+function renderFiltrosSidebar() {
+  M.FormSelect.init(document.querySelectorAll('select'));
+}
+
 // Render resumen stock por insumo y formato
 function renderResumenStock() {
   const stockMap = {};
@@ -327,3 +332,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Exportar funciones para uso global (para botones inline)
 window.eliminarMovimiento = eliminarMovimiento;
 window.editarMovimiento = editarMovimiento;
+
+// Exporta la función para otros módulos
+export { renderFiltrosSidebar };
