@@ -2,9 +2,6 @@
 import { Estado } from '../../core/estado.js';
 import { getCentrosAll } from '../../core/centros_repo.js';
 import { initConteoRapido, abrirConteoLinea } from './conteo_rapido.js';
-import $ from 'jquery';
-import 'datatables.net';
-import 'datatables.net-buttons';
 
 let dtHist = null;
 let dtUltimos = null;
@@ -29,7 +26,7 @@ console.log('✅ app_lineas.js cargado');
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🟢 DOMContentLoaded iniciado');
 
-  // Inicializar sólo los componentes de Materialize que necesitamos
+  // Inicializa sólo los componentes Materialize que necesitas
   M.Tabs.init(document.querySelectorAll('#tabsLB'));
   M.Tooltip.init(document.querySelectorAll('.tooltipped'));
   M.Modal.init(document.querySelectorAll('.modal'));
@@ -38,12 +35,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (selEstado) M.FormSelect.init(selEstado);
   console.log('✅ Materialize inicializado');
 
-  // Cargar centros + líneas
+  // Cargo centros + líneas
   Estado.centros = await getCentrosAll();
   Estado.centros.forEach(c => { if (!Array.isArray(c.lines)) c.lines = []; });
   console.log('📦 Centros cargados:', Estado.centros.map(c => c.name));
 
-  // Inicializar selects con datalist
+  // Inicializo selects con datalist
   initDatalistSelects();
 
   // Conteo rápido
@@ -140,7 +137,7 @@ function initDatalistSelects() {
 
     // Resetear y poblar líneas
     listL.innerHTML = '';
-    inputL.value   = '';
+    inputL.value    = '';
     inputL.disabled = true;
     if (idx >= 0) {
       Estado.centros[idx].lines.forEach(l => {
@@ -152,7 +149,7 @@ function initDatalistSelects() {
       console.log('📝 datalist líneas poblado con', Estado.centros[idx].lines.length);
     }
 
-    // Reposicionar la etiqueta flotante
+    // Reposicionar etiqueta flotante
     M.updateTextFields();
     mostrarResumen();
   });
@@ -160,19 +157,22 @@ function initDatalistSelects() {
   // Al escribir/seleccionar línea
   inputL.addEventListener('input', () => {
     const numero = inputL.value;
-    const cIdx = window.selectedCentroIdx;
-    const idx = (cIdx != null)
+    const cIdx   = window.selectedCentroIdx;
+    const idx    = (cIdx != null)
       ? (Estado.centros[cIdx].lines || []).findIndex(l => l.number === numero)
       : -1;
     window.selectedLineaIdx = idx >= 0 ? idx : null;
     console.log('🎯 Línea seleccionada:', numero, 'idx=', idx);
 
-    // Reposicionar la etiqueta flotante
+    // Reposicionar etiqueta flotante
     M.updateTextFields();
     mostrarResumen();
   });
 }
 
+// Resto de tus funciones de tablas, filtros y KPIs queda igual...
+// initTablaHistorial(), refreshHistorial(), initTablaUltimos(),
+// refreshUltimosYResumen(), aplicarFiltrosUltimos(), renderKPIs(), marcarActivos()
 /**
  * Muestra resumen del último inventario
  */
