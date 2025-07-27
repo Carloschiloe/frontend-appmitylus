@@ -19,24 +19,30 @@ const fechaSolo = iso => {
 document.addEventListener('DOMContentLoaded', async () => {
   M.AutoInit();
 
-  // Tab Conteo
-  await cargarSelects();
+  // Cargar centros y líneas en memoria
+  Estado.centros = await getCentrosAll();
+  Estado.centros.forEach(c => { if (!Array.isArray(c.lines)) c.lines = []; });
+
+  // Inicializar selección modal
+  initModalSelects();
+
+  // Inicializar conteo rápido y botón conteo
   initConteoRapido();
   initBotonConteo();
 
-  // Tablas
+  // Inicializar tablas
   initTablaHistorial();
   initTablaUltimos();
 
   await refreshHistorial();
   await refreshUltimosYResumen();
 
-  // Hash tab
+  // Tabs con hash
   const instTabs = M.Tabs.getInstance(document.getElementById('tabsLB'));
   if (window.location.hash === '#tab-historial') instTabs?.select('tab-historial');
   if (window.location.hash === '#tab-ultimos')   instTabs?.select('tab-ultimos');
 
-  // Ajuste columnas al cambiar
+  // Ajustar columnas al cambiar tab
   document.querySelectorAll('#tabsLB a').forEach(a=>{
     a.addEventListener('click', e=>{
       const href = e.currentTarget.getAttribute('href');
@@ -47,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Filtro select estado línea
+  // Filtro estado línea
   const selEstado = document.getElementById('fEstadoLinea');
   selEstado?.addEventListener('change', ()=>{
     F.estadoLinea = selEstado.value;
@@ -56,15 +62,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     aplicarFiltrosUltimos();
   });
 
-  // Evento global para KPIs (delegado)
+  // Evento para KPIs agrupados
   document.getElementById('kpiGroups').addEventListener('click', (e)=>{
     const filter = e.target.dataset.kpi;
     if(!filter) return;
 
-    // Toggle
     F.kpi = (F.kpi === filter) ? null : filter;
 
-    // Si filtro es de líneas buenas/malas/regulares, ponemos estadoLinea = all, porque se filtra por KPI
     if (['linea_buena','linea_regular','linea_mala'].includes(filter)) {
       F.estadoLinea = 'all';
       const s = document.getElementById('fEstadoLinea');
@@ -73,7 +77,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       M.FormSelect.init(s);
     }
 
-    // si KPI = sinInv, set estadoLinea = sinInv
     if(filter === 'sinInv'){
       F.estadoLinea = 'sinInv';
       const s = document.getElementById('fEstadoLinea');
@@ -81,7 +84,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       M.FormSelect.getInstance(s)?.destroy();
       M.FormSelect.init(s);
     } else if (F.estadoLinea === 'sinInv') {
-      // saliendo de sinInv
       F.estadoLinea = 'all';
       const s = document.getElementById('fEstadoLinea');
       s.value = 'all';
@@ -93,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     aplicarFiltrosUltimos();
   });
 
-  // Recalcular al guardar inventario
+  // Actualizar datos al guardar inventario
   window.addEventListener('inventario-guardado', async () => {
     await refreshHistorial();
     await refreshUltimosYResumen();
@@ -101,43 +103,97 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-/* -------------------- SELECTS Y RESUMEN (CONTEO) -------------------- */
-async function cargarSelects() {
-  Estado.centros = await getCentrosAll();
-  Estado.centros.forEach(c => { if (!Array.isArray(c.lines)) c.lines = []; });
+/* ---------- SELECCIÓN CENTRO Y LÍNEA CON MODALES ---------- */
+function initModalSelects() {
+  const btnSelCentro = document.getElementById('btnSelCentro');
+  const btnSelLinea = document.getElementById('btnSelLinea');
+  const selCentroText = document.getElementById('selCentroText');
+  const selLineaText = document.getElementById('selLineaText');
+  const listaCentros = document.getElementById('listaCentros');
+  const listaLineas = document.getElementById('listaLineas');
 
-  const selCentro = document.getElementById('selCentro');
-  const selLinea  = document.getElementById('selLinea');
+  // Modal instances
+  const modalCentro = M.Modal.init(document.getElementById('modalCentros'));
+  const modalLinea = M.Modal.init(document.getElementById('modalLineas'));
 
-  selCentro.innerHTML = Estado.centros
-    .map((c, i) => `<option value="${i}">${c.name || '(sin nombre)'}</option>`)
-    .join('');
-  M.FormSelect.init(selCentro);
+  // Variables para almacenar selección actual
+  let selectedCentroIdx = null;
+  let selectedLineaIdx = null;
 
-  selCentro.onchange = () => {
-    const idx = +selCentro.value;
-    const lines = Estado.centros[idx]?.lines || [];
-    selLinea.innerHTML = lines
-      .map((l, j) => `<option value="${j}">Línea ${l.number || j + 1}</option>`)
-      .join('');
-    M.FormSelect.init(selLinea);
-    mostrarResumen();
-    refreshHistorial();
-    refreshUltimosYResumen();
+  // Llenar lista centros
+  function renderCentros() {
+    listaCentros.innerHTML = Estado.centros.map((c, i) =>
+      `<li class="collection-item ${i === selectedCentroIdx ? 'teal lighten-4' : ''}" data-idx="${i}">${c.name || '(sin nombre)'}</li>`
+    ).join('');
+  }
+
+  // Llenar lista líneas según centro seleccionado
+  function renderLineas() {
+    if (selectedCentroIdx === null) {
+      listaLineas.innerHTML = '<li class="collection-item">Selecciona un centro primero</li>';
+      return;
+    }
+    const lines = Estado.centros[selectedCentroIdx]?.lines || [];
+    listaLineas.innerHTML = lines.length > 0
+      ? lines.map((l, i) =>
+          `<li class="collection-item ${i === selectedLineaIdx ? 'teal lighten-4' : ''}" data-idx="${i}">Línea ${l.number || (i+1)}</li>`
+        ).join('')
+      : '<li class="collection-item">No hay líneas disponibles</li>';
+  }
+
+  // Botón abrir modal centros
+  btnSelCentro.onclick = () => {
+    renderCentros();
+    modalCentro.open();
   };
 
-  selLinea.onchange = () => {
-    mostrarResumen();
-    refreshHistorial();
-    refreshUltimosYResumen();
+  // Selección centro
+  listaCentros.onclick = e => {
+    const li = e.target.closest('li.collection-item');
+    if (!li) return;
+    selectedCentroIdx = +li.dataset.idx;
+    selectedLineaIdx = null; // reset línea al cambiar centro
+    selCentroText.textContent = Estado.centros[selectedCentroIdx].name || '(sin nombre)';
+    selLineaText.textContent = 'Selecciona una línea';
+    modalCentro.close();
   };
 
-  if (Estado.centros.length) selCentro.dispatchEvent(new Event('change'));
+  // Botón abrir modal líneas
+  btnSelLinea.onclick = () => {
+    if (selectedCentroIdx === null) {
+      M.toast({html: 'Primero selecciona un centro', classes:'red'});
+      return;
+    }
+    renderLineas();
+    modalLinea.open();
+  };
+
+  // Selección línea
+  listaLineas.onclick = e => {
+    const li = e.target.closest('li.collection-item');
+    if (!li) return;
+    selectedLineaIdx = +li.dataset.idx;
+    selLineaText.textContent = Estado.centros[selectedCentroIdx].lines[selectedLineaIdx]?.number || `(Línea ${selectedLineaIdx+1})`;
+    modalLinea.close();
+  };
+
+  // Para obtener los índices seleccionados en otras funciones (como abrir conteo)
+  window.getSelectedIndices = () => ({
+    centroIdx: selectedCentroIdx,
+    lineaIdx: selectedLineaIdx
+  });
 }
 
+/* Mostrar resumen para selección actual */
 function mostrarResumen() {
-  const c = Estado.centros[+document.getElementById('selCentro').value];
-  const l = c?.lines?.[+document.getElementById('selLinea').value];
+  const { centroIdx, lineaIdx } = window.getSelectedIndices ? window.getSelectedIndices() : {};
+  if (centroIdx === null || lineaIdx === null) {
+    document.getElementById('resumenInventario').style.display = 'none';
+    return;
+  }
+
+  const c = Estado.centros[centroIdx];
+  const l = c?.lines?.[lineaIdx];
   const cont = document.getElementById('resumenInventario');
   if (!l) { cont.style.display='none'; return; }
 
@@ -159,12 +215,11 @@ function mostrarResumen() {
   `;
 }
 
-/* -------------------- BOTÓN CONTEO -------------------- */
+/* Botón abrir conteo */
 function initBotonConteo() {
   document.getElementById('btnAbrirConteo').onclick = () => {
-    const centroIdx = +document.getElementById('selCentro').value;
-    const lineaIdx  = +document.getElementById('selLinea').value;
-    if (isNaN(centroIdx) || isNaN(lineaIdx)) {
+    const { centroIdx, lineaIdx } = window.getSelectedIndices ? window.getSelectedIndices() : {};
+    if (centroIdx === null || lineaIdx === null) {
       M.toast({ html: 'Selecciona centro y línea', classes:'red' });
       return;
     }
@@ -208,14 +263,13 @@ function initTablaHistorial() {
 async function refreshHistorial() {
   if (!dtHist) return;
   const centros = await getCentrosAll();
-  const selC = +document.getElementById('selCentro').value;
-  const selL = +document.getElementById('selLinea').value;
+  const { centroIdx, lineaIdx } = window.getSelectedIndices ? window.getSelectedIndices() : {};
 
   const rows = [];
   centros.forEach((c,iC)=>{
     (c.lines||[]).forEach((l,iL)=>{
-      if (!isNaN(selC) && iC!==selC) return;
-      if (!isNaN(selL) && iL!==selL) return;
+      if (centroIdx !== null && iC!==centroIdx) return;
+      if (lineaIdx !== null && iL!==lineaIdx) return;
 
       (l.inventarios||[]).forEach(reg=>{
         rows.push([
@@ -457,11 +511,9 @@ function renderKPIs(r){
 
 /* Marca activos según F.kpi */
 function marcarActivos(){
-  // sub-spans
   document.querySelectorAll('#kpiGroups .subs span').forEach(s=>{
     s.classList.toggle('active', s.dataset.kpi === F.kpi);
   });
-  // minis
   document.querySelectorAll('#kpiGroups .kpi-mini').forEach(c=>{
     c.classList.toggle('active', c.dataset.kpi === F.kpi);
   });
