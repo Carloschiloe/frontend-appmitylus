@@ -5,16 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Inventario Líneas &amp; Boyas</title>
 
-  <!-- Materialize -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <!-- Materialize CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+  />
+  <link
+    href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    rel="stylesheet"
+  />
 
-  <!-- DataTables -->
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
+  <!-- DataTables CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"
+  />
 
   <!-- Estilos propios -->
-  <link rel="stylesheet" href="../../css/lineas_boyas.css">
+  <link rel="stylesheet" href="../../css/lineas_boyas.css" />
 </head>
 <body class="grey lighten-4">
   <nav class="teal darken-2">
@@ -38,17 +50,35 @@
     <div id="tab-conteo" style="padding-top:20px;">
       <div class="row">
         <div class="input-field col s12 m6">
-          <input id="inputCentro" type="text" readonly placeholder="Selecciona un centro" />
+          <input
+            id="inputCentro"
+            type="text"
+            readonly
+            placeholder="Selecciona un centro"
+          />
           <label for="inputCentro" class="active">Centro</label>
         </div>
         <div class="input-field col s12 m6">
-          <input id="inputLinea" type="text" readonly placeholder="Selecciona una línea" />
+          <input
+            id="inputLinea"
+            type="text"
+            readonly
+            placeholder="Selecciona una línea"
+          />
           <label for="inputLinea" class="active">Línea</label>
         </div>
       </div>
-      <div id="resumenInventario" class="card-panel grey lighten-3" style="display:none;"></div>
+      <div
+        id="resumenInventario"
+        class="card-panel grey lighten-3"
+        style="display:none;"
+      ></div>
       <div class="fixed-action-btn">
-        <a id="btnAbrirConteo" class="btn-floating btn-large red tooltipped" data-tooltip="Conteo rápido">
+        <a
+          id="btnAbrirConteo"
+          class="btn-floating btn-large red tooltipped"
+          data-tooltip="Conteo rápido"
+        >
           <i class="material-icons">add</i>
         </a>
       </div>
@@ -68,7 +98,11 @@
         </select>
         <label>Filtrar por estado de línea</label>
       </div>
-      <table id="tablaUltimos" class="striped display nowrap" style="width:100%">
+      <table
+        id="tablaUltimos"
+        class="striped display nowrap"
+        style="width:100%"
+      >
         <thead>
           <tr>
             <th>Centro</th><th>Línea</th><th>Fecha</th><th>Tot</th>
@@ -82,7 +116,11 @@
 
     <!-- ============ TAB HISTORIAL COMPLETO ============ -->
     <div id="tab-historial" style="padding-top:20px;">
-      <table id="tablaInventariosLB" class="striped display nowrap" style="width:100%">
+      <table
+        id="tablaInventariosLB"
+        class="striped display nowrap"
+        style="width:100%"
+      >
         <thead>
           <tr>
             <th>Fecha</th><th>Centro</th><th>Línea</th><th>Tot</th>
@@ -115,19 +153,41 @@
     </div>
   </div>
 
-  <!-- LIBRERÍAS JS -->
+  <!-- LIBRERÍAS JS (orden corregido) -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"
+  ></script>
+
+  <script
+    src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"
+  ></script>
+  <script
+    src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"
+  ></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"
+  ></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"
+  ></script>
+  <script
+    src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"
+  ></script>
+  <script
+    src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"
+  ></script>
 
   <!-- Módulos propios -->
-  <script type="module" src="../../js/inventarios/lineas_boyas/app_lineas.js"></script>
-  <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
+  <script
+    type="module"
+    src="../../js/inventarios/lineas_boyas/app_lineas.js"
+  ></script>
+  <script
+    type="module"
+    src="../../js/inventarios/lineas_boyas/conteo_rapido.js"
+  ></script>
 </body>
 </html>
+
