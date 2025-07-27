@@ -2,6 +2,9 @@
 import { Estado } from '../../core/estado.js';
 import { getCentrosAll } from '../../core/centros_repo.js';
 import { initConteoRapido, abrirConteoLinea } from './conteo_rapido.js';
+import $ from 'jquery';
+import 'datatables.net';
+import 'datatables.net-buttons';
 
 let dtHist = null;
 let dtUltimos = null;
@@ -26,7 +29,7 @@ console.log('✅ app_lineas.js cargado');
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🟢 DOMContentLoaded iniciado');
 
-  // Inicializa solo los componentes Materialize que necesitamos
+  // Inicializar sólo los componentes de Materialize que necesitamos
   M.Tabs.init(document.querySelectorAll('#tabsLB'));
   M.Tooltip.init(document.querySelectorAll('.tooltipped'));
   M.Modal.init(document.querySelectorAll('.modal'));
@@ -35,12 +38,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (selEstado) M.FormSelect.init(selEstado);
   console.log('✅ Materialize inicializado');
 
-  // Cargo centros + líneas
+  // Cargar centros + líneas
   Estado.centros = await getCentrosAll();
   Estado.centros.forEach(c => { if (!Array.isArray(c.lines)) c.lines = []; });
-  console.log('📦 Centros cargados:', Estado.centros.map(c=>c.name));
+  console.log('📦 Centros cargados:', Estado.centros.map(c => c.name));
 
-  // Inicializo selects con datalist
+  // Inicializar selects con datalist
   initDatalistSelects();
 
   // Conteo rápido
@@ -137,7 +140,7 @@ function initDatalistSelects() {
 
     // Resetear y poblar líneas
     listL.innerHTML = '';
-    inputL.value = '';
+    inputL.value   = '';
     inputL.disabled = true;
     if (idx >= 0) {
       Estado.centros[idx].lines.forEach(l => {
@@ -148,6 +151,9 @@ function initDatalistSelects() {
       inputL.disabled = false;
       console.log('📝 datalist líneas poblado con', Estado.centros[idx].lines.length);
     }
+
+    // Reposicionar la etiqueta flotante
+    M.updateTextFields();
     mostrarResumen();
   });
 
@@ -155,12 +161,14 @@ function initDatalistSelects() {
   inputL.addEventListener('input', () => {
     const numero = inputL.value;
     const cIdx = window.selectedCentroIdx;
-    let idx = null;
-    if (cIdx != null) {
-      idx = (Estado.centros[cIdx].lines || []).findIndex(l => l.number === numero);
-    }
+    const idx = (cIdx != null)
+      ? (Estado.centros[cIdx].lines || []).findIndex(l => l.number === numero)
+      : -1;
     window.selectedLineaIdx = idx >= 0 ? idx : null;
     console.log('🎯 Línea seleccionada:', numero, 'idx=', idx);
+
+    // Reposicionar la etiqueta flotante
+    M.updateTextFields();
     mostrarResumen();
   });
 }
@@ -301,7 +309,7 @@ async function refreshUltimosYResumen() {
       R.lineasTotal++;
       const invs = l.inventarios||[];
       if (!invs.length) {
-        ultimosData.push({ centro:c.name, linea:l.number, sinInv:true });
+        ultimosData.push({ centro:c.name, línea:l.number, sinInv:true });
         R.sinInv++;
         return;
       }
@@ -322,10 +330,11 @@ async function refreshUltimosYResumen() {
       if (est==='mala')     R.lineas_malas++;
 
       ultimosData.push({
-        centro:c.name, linea:l.number,
+        centro:c.name, línea:l.number,
         fecha:u.fecha, tot, nb_b, nb_m, na_b, na_m,
         sueltas:u.sueltas, colchas:u.colchas,
-        estadoLinea:u.estadoLinea, obs:u.observaciones, sinInv:false
+        estadoLinea:u.estadoLinea, obs:u.observaciones,
+        sinInv:false
       });
     });
   });
@@ -343,12 +352,12 @@ function aplicarFiltrosUltimos() {
         return false;
       if (F.kpi && !r.sinInv) {
         switch(F.kpi) {
-          case 'buenas':    return r.nb_b + r.na_b > 0;
-          case 'malas':     return r.nb_m + r.na_m > 0;
-          case 'negra':     return r.nb_b + r.nb_m > 0;
-          case 'naranja':   return r.na_b + r.na_m > 0;
-          case 'sueltas':   return r.sueltas > 0;
-          case 'colchas':   return r.colchas > 0;
+          case 'buenas':  return r.nb_b + r.na_b > 0;
+          case 'malas':   return r.nb_m + r.na_m > 0;
+          case 'negra':   return r.nb_b + r.nb_m > 0;
+          case 'naranja': return r.na_b + r.na_m > 0;
+          case 'sueltas': return r.sueltas > 0;
+          case 'colchas': return r.colchas > 0;
           case 'linea_buena':    return (r.estadoLinea||'').toLowerCase()==='buena';
           case 'linea_regular': return (r.estadoLinea||'').toLowerCase()==='regular';
           case 'linea_mala':    return (r.estadoLinea||'').toLowerCase()==='mala';
@@ -359,7 +368,7 @@ function aplicarFiltrosUltimos() {
     })
     .map(r => [
       r.centro,
-      r.linea,
+      r.línea,
       r.sinInv ? 'Sin inventario' : fechaSolo(r.fecha),
       r.sinInv ? '-' : r.tot,
       r.sinInv ? '-' : r.nb_b,
@@ -405,15 +414,9 @@ function renderKPIs(r) {
         <span data-kpi="naranja">Naranjas: ${r.naranjas}</span>
       </div>
     </div>
-    <div class="kpi-mini" data-kpi="sueltas">
-      <span class="valor">${r.sueltas}</span><span>Boyas sueltas</span>
-    </div>
-    <div class="kpi-mini" data-kpi="colchas">
-      <span class="valor">${r.colchas}</span><span>Colchas</span>
-    </div>
-    <div class="kpi-mini" data-kpi="sinInv">
-      <span class="valor">${r.sinInv}</span><span>Sin inventario</span>
-    </div>
+    <div class="kpi-mini" data-kpi="sueltas"><span class="valor">${r.sueltas}</span><span>Boyas sueltas</span></div>
+    <div class="kpi-mini" data-kpi="colchas"><span class="valor">${r.colchas}</span><span>Colchas</span></div>
+    <div class="kpi-mini" data-kpi="sinInv"><span class="valor">${r.sinInv}</span><span>Sin inventario</span></div>
   `;
   marcarActivos();
 }
