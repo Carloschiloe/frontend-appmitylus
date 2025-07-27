@@ -46,7 +46,7 @@
       <li class="tab col s4"><a href="#tab-historial">Historial</a></li>
     </ul>
 
-    <!-- ============ TAB CONTEO ============ -->
+    <!-- TAB CONTEO -->
     <div id="tab-conteo" style="padding-top:20px;">
       <div class="row">
         <div class="input-field col s12 m6">
@@ -84,7 +84,7 @@
       </div>
     </div>
 
-    <!-- ============ TAB ÚLTIMOS / RESUMEN ============ -->
+    <!-- TAB ÚLTIMOS / RESUMEN -->
     <div id="tab-ultimos" style="padding-top:20px;">
       <div id="kpiGroups"></div>
       <div id="kpiSmallGroup"></div>
@@ -114,7 +114,7 @@
       </table>
     </div>
 
-    <!-- ============ TAB HISTORIAL COMPLETO ============ -->
+    <!-- TAB HISTORIAL -->
     <div id="tab-historial" style="padding-top:20px;">
       <table
         id="tablaInventariosLB"
@@ -153,12 +153,14 @@
     </div>
   </div>
 
-  <!-- LIBRERÍAS JS (orden corregido) -->
+  <!-- LIBRERÍAS JS CORREGIDAS -->
+  <!-- 1) jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- 2) Materialize (antes de DataTables) -->
   <script
     src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"
   ></script>
-
+  <!-- 3) DataTables y plugins -->
   <script
     src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"
   ></script>
@@ -179,7 +181,7 @@
     src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"
   ></script>
 
-  <!-- Módulos propios -->
+  <!-- 4) Módulos propios -->
   <script
     type="module"
     src="../../js/inventarios/lineas_boyas/app_lineas.js"
@@ -190,4 +192,5 @@
   ></script>
 </body>
 </html>
+
 
