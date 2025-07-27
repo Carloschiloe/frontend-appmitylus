@@ -47,30 +47,42 @@
     </ul>
 
     <!-- TAB Conteo -->
-    <div id="tab-conteo" style="padding-top:20px;">
-      <div class="row">
-        <div class="input-field col s12 m6">
-          <input
-            list="centrosList"
-            id="inputCentro"
-            placeholder="Selecciona un centro"
-            autocomplete="off"
-          />
-          <label for="inputCentro">Centro</label>
-          <datalist id="centrosList"></datalist>
-        </div>
-        <div class="input-field col s12 m6">
-          <input
-            list="lineasList"
-            id="inputLinea"
-            placeholder="Selecciona una línea"
-            autocomplete="off"
-            disabled
-          />
-          <label for="inputLinea">Línea</label>
-          <datalist id="lineasList"></datalist>
-        </div>
-      </div>
+<div id="tab-conteo" style="padding-top:20px;">
+  <div class="row">
+    <div class="input-field col s12 m6">
+      <input
+        list="centrosList"
+        id="inputCentro"
+        autocomplete="off"
+      />
+      <label for="inputCentro">Selecciona un centro</label>
+      <datalist id="centrosList"></datalist>
+    </div>
+    <div class="input-field col s12 m6">
+      <input
+        list="lineasList"
+        id="inputLinea"
+        autocomplete="off"
+        disabled
+      />
+      <label for="inputLinea">Selecciona una línea</label>
+      <datalist id="lineasList"></datalist>
+    </div>
+  </div>
+
+  <div id="resumenInventario" class="card-panel grey lighten-3" style="display:none"></div>
+
+  <div class="fixed-action-btn">
+    <a
+      id="btnAbrirConteo"
+      class="btn-floating btn-large red tooltipped"
+      data-tooltip="Conteo rápido"
+    >
+      <i class="material-icons">add</i>
+    </a>
+  </div>
+</div>
+
 
       <div
         id="resumenInventario"
