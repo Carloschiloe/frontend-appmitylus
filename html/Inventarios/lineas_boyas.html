@@ -148,15 +148,15 @@
 
     <!-- ============ TAB CONTEO ============ -->
     <div id="tab-conteo" style="padding-top:20px;">
-      <!-- Selectores centro/línea -->
+      <!-- Selectores modal centro/línea -->
       <div class="row">
         <div class="input-field col s12 m6">
-          <select id="selCentro"></select>
-          <label>Centro</label>
+          <input id="inputCentro" type="text" readonly placeholder="Selecciona un centro" />
+          <label for="inputCentro" class="active">Centro</label>
         </div>
         <div class="input-field col s12 m6">
-          <select id="selLinea"></select>
-          <label>Línea</label>
+          <input id="inputLinea" type="text" readonly placeholder="Selecciona una línea" />
+          <label for="inputLinea" class="active">Línea</label>
         </div>
       </div>
 
@@ -234,8 +234,6 @@
             <th>Colchas</th>
             <th>Estado Línea</th>
             <th>Obs</th>
-            <th>Lat</th>
-            <th>Lng</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -244,81 +242,24 @@
 
   </div>
 
-  <!-- ========= MODAL CONTEO RÁPIDO ========= -->
-  <div id="conteoLineaModal" class="modal modal-fixed-footer">
+  <!-- ======= MODALES SELECTORES ======= -->
+  <div id="modalCentros" class="modal">
     <div class="modal-content">
-      <h5 id="conteoTitulo" class="center-align" style="margin-bottom:6px;">Conteo</h5>
-
-      <div class="center-align" style="margin-bottom:10px;">
-        <span id="conteoDisplay" style="font-size:2.2rem;">#0</span><br>
-        <a id="btnUndoEvento" class="btn-flat grey-text text-darken-2">← Deshacer último</a>
-      </div>
-
-      <div class="center-align" id="statsLine" style="margin-bottom:12px; font-size:0.95rem; color:#555;">
-        Tot: 0 | NB:0/0 NA:0/0 | S:0 | Col:0
-      </div>
-
-      <div class="row" style="gap:8px 0;">
-        <div class="col s6 m3">
-          <button class="btn btn-large black btn-count" data-action="negra_buena" data-label="Buena">⚫ +</button>
-        </div>
-        <div class="col s6 m3">
-          <button class="btn btn-large black btn-count" data-action="negra_mala" data-label="Mala">⚫ +</button>
-        </div>
-        <div class="col s6 m3">
-          <button class="btn btn-large deep-orange darken-3 btn-count" data-action="naranja_buena" data-label="Buena">🟧 +</button>
-        </div>
-        <div class="col s6 m3">
-          <button class="btn btn-large deep-orange btn-count" data-action="naranja_mala" data-label="Mala">🟧 +</button>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:8px;">
-        <div class="col s6 m3">
-          <button class="btn btn-large btn-flat btn-count suelta" data-action="suelta" data-label="Suelta">+</button>
-        </div>
-        <div class="col s6 m3">
-          <button class="btn btn-large btn-flat btn-count colcha" data-action="colcha" data-label="Colcha">+</button>
-        </div>
-      </div>
-
-      <ul class="collapsible" style="margin-top:16px;">
-        <li>
-          <div class="collapsible-header"><i class="material-icons">more_horiz</i>Más opciones (Obs / Estado de línea)</div>
-          <div class="collapsible-body">
-            <div class="input-field">
-              <textarea id="conteoObs" class="materialize-textarea" rows="2"></textarea>
-              <label for="conteoObs">Observaciones</label>
-            </div>
-            <div class="input-field">
-              <select id="conteoEstadoLinea">
-                <option value="buena" selected>Buena</option>
-                <option value="regular">Regular</option>
-                <option value="mala">Mala</option>
-              </select>
-              <label>Estado de la línea</label>
-            </div>
-            <div style="margin-top:8px;">
-              <button id="btnConteoGPS" type="button" class="btn-small grey lighten-1" style="display:none;">Tomar GPS</button>
-              <div id="conteoGpsRow" style="display:none;margin-top:8px;">
-                <div class="input-field inline">
-                  <input id="conteoLat" type="text" disabled>
-                  <label class="active" for="conteoLat">Lat</label>
-                </div>
-                <div class="input-field inline" style="margin-left:12px;">
-                  <input id="conteoLng" type="text" disabled>
-                  <label class="active" for="conteoLng">Lng</label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </li>
-      </ul>
+      <h5>Selecciona un Centro</h5>
+      <ul id="listaCentros" class="collection"></ul>
     </div>
-
     <div class="modal-footer">
-      <button class="modal-close btn-flat">Cancelar</button>
-      <button id="btnGuardarConteo" class="btn">Guardar</button>
+      <a href="#!" class="modal-close btn-flat">Cancelar</a>
+    </div>
+  </div>
+
+  <div id="modalLineas" class="modal">
+    <div class="modal-content">
+      <h5>Selecciona una Línea</h5>
+      <ul id="listaLineas" class="collection"></ul>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" class="modal-close btn-flat">Cancelar</a>
     </div>
   </div>
 
@@ -336,5 +277,70 @@
   <!-- Tus módulos -->
   <script type="module" src="../../js/inventarios/lineas_boyas/app_lineas.js"></script>
   <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Inicializar modales
+      const modalCentros = M.Modal.init(document.getElementById('modalCentros'), {dismissible: true});
+      const modalLineas = M.Modal.init(document.getElementById('modalLineas'), {dismissible: true});
+
+      // Abrir modal centro al tocar inputCentro
+      document.getElementById('inputCentro').addEventListener('click', () => {
+        modalCentros.open();
+      });
+
+      // Abrir modal línea al tocar inputLinea
+      document.getElementById('inputLinea').addEventListener('click', () => {
+        if (!window.selectedCentro) {
+          M.toast({html: 'Primero selecciona un centro', classes: 'red'});
+          return;
+        }
+        modalLineas.open();
+      });
+
+      // Función para cargar lista de centros en modal
+      window.loadCentrosModal = function(centros) {
+        const lista = document.getElementById('listaCentros');
+        lista.innerHTML = '';
+        centros.forEach(c => {
+          const li = document.createElement('li');
+          li.className = 'collection-item';
+          li.textContent = c.name;
+          li.style.cursor = 'pointer';
+          li.onclick = () => {
+            window.selectedCentro = c;
+            document.getElementById('inputCentro').value = c.name;
+            M.updateTextFields();
+            modalCentros.close();
+
+            // Limpiar línea al cambiar centro
+            window.selectedLinea = null;
+            document.getElementById('inputLinea').value = '';
+          };
+          lista.appendChild(li);
+        });
+      };
+
+      // Función para cargar lista de líneas en modal
+      window.loadLineasModal = function(lineas) {
+        const lista = document.getElementById('listaLineas');
+        lista.innerHTML = '';
+        lineas.forEach(l => {
+          const li = document.createElement('li');
+          li.className = 'collection-item';
+          li.textContent = l.number;
+          li.style.cursor = 'pointer';
+          li.onclick = () => {
+            window.selectedLinea = l;
+            document.getElementById('inputLinea').value = l.number;
+            M.updateTextFields();
+            modalLineas.close();
+          };
+          lista.appendChild(li);
+        });
+      };
+    });
+  </script>
+
 </body>
 </html>
