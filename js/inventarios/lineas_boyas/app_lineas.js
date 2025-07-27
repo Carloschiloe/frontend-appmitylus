@@ -2,6 +2,9 @@
 import { Estado } from '../../core/estado.js';
 import { getCentrosAll } from '../../core/centros_repo.js';
 import { initConteoRapido, abrirConteoLinea } from './conteo_rapido.js';
+import $ from 'jquery';
+import 'datatables.net';
+import 'datatables.net-buttons';
 
 let dtHist = null;
 let dtUltimos = null;
@@ -15,9 +18,9 @@ const fechaSolo = iso => {
   if (!iso) return '-';
   const d = new Date(iso);
   return d.toLocaleDateString('es-CL', {
-    day:   '2-digit',
+    day: '2-digit',
     month: '2-digit',
-    year:  'numeric'
+    year: 'numeric'
   });
 };
 
@@ -26,32 +29,28 @@ console.log('✅ app_lineas.js cargado');
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🟢 DOMContentLoaded iniciado');
 
-  // Inicializa sólo los componentes Materialize que necesitas
-  M.Tabs.init(document.querySelectorAll('#tabsLB'));
-  M.Tooltip.init(document.querySelectorAll('.tooltipped'));
-  M.Modal.init(document.querySelectorAll('.modal'));
-  M.Collapsible.init(document.querySelectorAll('.collapsible'));
-  const selEstado = document.getElementById('fEstadoLinea');
-  if (selEstado) M.FormSelect.init(selEstado);
-  console.log('✅ Materialize inicializado');
+  // Inicializa todos los componentes de Materialize
+  M.AutoInit();
 
   // Cargo centros + líneas
   Estado.centros = await getCentrosAll();
-  Estado.centros.forEach(c => { if (!Array.isArray(c.lines)) c.lines = []; });
+  Estado.centros.forEach(c => {
+    if (!Array.isArray(c.lines)) c.lines = [];
+  });
   console.log('📦 Centros cargados:', Estado.centros.map(c => c.name));
 
   // Inicializo selects con datalist
   initDatalistSelects();
 
-  // Inicializo conteo rápido y su botón
+  // Conteo rápido y su botón
   initConteoRapido();
   initBotonConteo();
 
-  // Inicializo tablas
+  // Tablas
   initTablaHistorial();
   initTablaUltimos();
 
-  // Datos iniciales
+  // Carga inicial de datos
   await refreshHistorial();
   await refreshUltimosYResumen();
   mostrarResumen();
@@ -66,7 +65,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     a.addEventListener('click', e => {
       const href = e.currentTarget.getAttribute('href');
       setTimeout(() => {
-        console.log('🔄 Tab cambiado a', href);
         if (href === '#tab-historial') dtHist?.columns.adjust().draw(false);
         if (href === '#tab-ultimos')   dtUltimos?.columns.adjust().draw(false);
       }, 200);
@@ -76,7 +74,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Filtro estado de línea
   document.getElementById('fEstadoLinea')
     .addEventListener('change', e => {
-      console.log('🎚 Filtro estadoLinea:', e.target.value);
       F.estadoLinea = e.target.value;
       F.kpi = null;
       marcarActivos();
@@ -88,7 +85,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     .addEventListener('click', e => {
       const filtro = e.target.dataset.kpi;
       if (!filtro) return;
-      console.log('📊 KPI clickeado:', filtro);
       F.kpi = (F.kpi === filtro ? null : filtro);
       if (['linea_buena','linea_regular','linea_mala','sinInv'].includes(filtro)) {
         const sel = document.getElementById('fEstadoLinea');
@@ -109,7 +105,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     mostrarResumen();
   });
 });
-
 
 /**
  * Inicializa <input list> + <datalist> para Centro y Línea
@@ -171,7 +166,6 @@ function initDatalistSelects() {
   });
 }
 
-
 /**
  * Muestra resumen del último inventario
  */
@@ -179,8 +173,7 @@ function mostrarResumen() {
   const c = window.selectedCentroIdx;
   const l = window.selectedLineaIdx;
   console.log('🔎 mostrarResumen con centro', c, 'línea', l);
-  const cont = document.getElementById('resumenInventorio') || document.getElementById('resumenInventario');
-  if (!cont) return;
+  const cont = document.getElementById('resumenInventario');
   if (c == null || l == null) {
     cont.style.display = 'none';
     return;
@@ -203,7 +196,6 @@ function mostrarResumen() {
   `;
 }
 
-
 /**
  * Configura botón Conteo Rápido
  */
@@ -218,13 +210,11 @@ function initBotonConteo() {
       M.toast({ html: 'Selecciona centro y línea', classes: 'red' });
       return;
     }
-    // restaurada apertura de modal de conteo rápido
     abrirConteoLinea(c, l);
   });
 }
 
-
-// — Tablas Historial / Últimos —
+// —————————————— Tablas y filtros ——————————————
 
 function initTablaHistorial() {
   dtHist = $('#tablaInventariosLB').DataTable({
@@ -331,7 +321,6 @@ async function refreshUltimosYResumen() {
       if (est==='buena')    R.lineas_buenas++;
       if (est==='regular')  R.lineas_regulares++;
       if (est==='mala')     R.lineas_malas++;
-
       ultimosData.push({
         centro:c.name, linea:l.number,
         fecha:u.fecha, tot, nb_b, nb_m, na_b, na_m,
@@ -355,12 +344,12 @@ function aplicarFiltrosUltimos() {
         return false;
       if (F.kpi && !r.sinInv) {
         switch(F.kpi) {
-          case 'buenas':  return r.nb_b + r.na_b > 0;
-          case 'malas':   return r.nb_m + r.na_m > 0;
-          case 'negra':   return r.nb_b + r.nb_m > 0;
-          case 'naranja': return r.na_b + r.na_m > 0;
-          case 'suletas': return r.sueltas > 0;
-          case 'colchas': return r.colchas > 0;
+          case 'buenas':    return r.nb_b + r.na_b > 0;
+          case 'malas':     return r.nb_m + r.na_m > 0;
+          case 'negra':     return r.nb_b + r.nb_m > 0;
+          case 'naranja':   return r.na_b + r.na_m > 0;
+          case 'sueltas':   return r.sueltas > 0;
+          case 'colchas':   return r.colchas > 0;
           case 'linea_buena':    return (r.estadoLinea||'').toLowerCase()==='buena';
           case 'linea_regular': return (r.estadoLinea||'').toLowerCase()==='regular';
           case 'linea_mala':    return (r.estadoLinea||'').toLowerCase()==='mala';
@@ -417,9 +406,15 @@ function renderKPIs(r) {
         <span data-kpi="naranja">Naranjas: ${r.naranjas}</span>
       </div>
     </div>
-    <div class="kpi-mini" data-kpi="sueltas"><span class="valor">${r.sueltas}</span><span>Boyas sueltas</span></div>
-    <div class="kpi-mini" data-kpi="colchas"><span class="valor">${r.colchas}</span><span>Colchas</span></div>
-    <div class="kpi-mini" data-kpi="sinInv"><span class="valor">${r.sinInv}</span><span>Sin inventario</span></div>
+    <div class="kpi-mini" data-kpi="sueltas">
+      <span class="valor">${r.sueltas}</span><span>Boyas sueltas</span>
+    </div>
+    <div class="kpi-mini" data-kpi="colchas">
+      <span class="valor">${r.colchas}</span><span>Colchas</span>
+    </div>
+    <div class="kpi-mini" data-kpi="sinInv">
+      <span class="valor">${r.sinInv}</span><span>Sin inventario</span>
+    </div>
   `;
   marcarActivos();
 }
