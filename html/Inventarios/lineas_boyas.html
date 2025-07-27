@@ -25,7 +25,7 @@
     href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"
   />
 
-  <!-- Choices.js CSS (opcional, para estilo) -->
+  <!-- Choices.js CSS -->
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"
@@ -56,11 +56,11 @@
     <div id="tab-conteo" style="padding-top:20px;">
       <div class="row">
         <div class="input-field col s12 m6">
-          <select id="inputCentro" placeholder="Selecciona un centro"></select>
+          <select id="inputCentro"></select>
           <label>Centro</label>
         </div>
         <div class="input-field col s12 m6">
-          <select id="inputLinea" disabled placeholder="Selecciona una línea"></select>
+          <select id="inputLinea" disabled></select>
           <label>Línea</label>
         </div>
       </div>
@@ -119,27 +119,7 @@
     </div>
   </div>
 
-  <!-- Modales de selección (Materialize) -->
-  <div id="modalCentros" class="modal">
-    <div class="modal-content">
-      <h5>Selecciona un Centro</h5>
-      <ul id="listaCentros" class="collection"></ul>
-    </div>
-    <div class="modal-footer">
-      <a href="#!" class="modal-close btn-flat">Cancelar</a>
-    </div>
-  </div>
-  <div id="modalLineas" class="modal">
-    <div class="modal-content">
-      <h5>Selecciona una Línea</h5>
-      <ul id="listaLineas" class="collection"></ul>
-    </div>
-    <div class="modal-footer">
-      <a href="#!" class="modal-close btn-flat">Cancelar</a>
-    </div>
-  </div>
-
-  <!-- Modal Conteo Rápido (igual al que ya tienes) -->
+  <!-- Modal Conteo Rápido -->
   <div id="conteoLineaModal" class="modal">
     <div class="modal-content">
       <h5 id="conteoTitulo">Conteo rápido</h5>
@@ -147,8 +127,41 @@
       <div id="statsLine" style="margin-bottom:1rem">
         Tot: 0 | NB:0/0 NA:0/0 | S:0 | Col:0
       </div>
-      <!-- Collapsible y campos… (igual al tuyo) -->
-      <!-- … -->
+      <ul class="collapsible">
+        <li>
+          <div class="collapsible-header">Negras</div>
+          <div class="collapsible-body">
+            <button class="btn-count btn" data-action="negra_buena">Negra Buena +</button>
+            <button class="btn-count btn" data-action="negra_mala">Negra Mala +</button>
+          </div>
+        </li>
+        <li>
+          <div class="collapsible-header">Naranjas</div>
+          <div class="collapsible-body">
+            <button class="btn-count btn" data-action="naranja_buena">Naranja Buena +</button>
+            <button class="btn-count btn" data-action="naranja_mala">Naranja Mala +</button>
+          </div>
+        </li>
+        <li>
+          <div class="collapsible-header">Otros</div>
+          <div class="collapsible-body">
+            <button class="btn-count btn" data-action="suelta">Sueltas +</button>
+            <button class="btn-count btn" data-action="colcha">Colchas +</button>
+          </div>
+        </li>
+      </ul>
+      <div class="input-field" style="margin-top:1rem">
+        <select id="conteoEstadoLinea">
+          <option value="buena" selected>Buena</option>
+          <option value="regular">Regular</option>
+          <option value="mala">Mala</option>
+        </select>
+        <label>Estado Línea</label>
+      </div>
+      <div class="input-field">
+        <textarea id="conteoObs" class="materialize-textarea"></textarea>
+        <label for="conteoObs">Observaciones</label>
+      </div>
     </div>
     <div class="modal-footer">
       <a id="btnUndoEvento" href="#!" class="btn-flat">Deshacer</a>
@@ -162,13 +175,11 @@
 
   <!-- 2) Materialize JS -->
   <script>
-    // Desactivar AMD/UMD
-    const _d = window.define; const _a = _d && _d.amd;
+    const _d = window.define, _a = _d && _d.amd;
     if (_d && _a) delete window.define;
     const s2 = document.createElement('script');
     s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js';
     s2.onload = () => {
-      console.log('Materialize cargado');
       document.addEventListener('DOMContentLoaded', ()=> M.AutoInit());
       if (_d) window.define = _d;
       if (_a) window.define.amd = _a;
@@ -188,7 +199,7 @@
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
 
-  <!-- 5) Tus módulos (Módulo ES) -->
+  <!-- 5) Tus módulos ES -->
   <script type="module" src="../../js/inventarios/lineas_boyas/app_lineas.js"></script>
   <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
 </body>
