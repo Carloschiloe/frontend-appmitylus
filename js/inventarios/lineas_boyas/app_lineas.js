@@ -111,14 +111,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * Inicializa <input list> + <datalist> para Centro y Línea
+ * Inicializa <input list> + <datalist> para Centro y Línea,
+ * y limpia placeholder + flota la etiqueta al seleccionar.
  */
 function initDatalistSelects() {
   console.log('🚀 initDatalistSelects');
-  const inputC = document.getElementById('inputCentro');
-  const listC  = document.getElementById('centrosList');
-  const inputL = document.getElementById('inputLinea');
-  const listL  = document.getElementById('lineasList');
+  const inputC  = document.getElementById('inputCentro');
+  const listC   = document.getElementById('centrosList');
+  const inputL  = document.getElementById('inputLinea');
+  const listL   = document.getElementById('lineasList');
+  const labelC  = document.querySelector('label[for="inputCentro"]');
+  const labelL  = document.querySelector('label[for="inputLinea"]');
 
   // Poblar centros
   Estado.centros.forEach(c => {
@@ -131,14 +134,26 @@ function initDatalistSelects() {
   // Al escribir/seleccionar centro
   inputC.addEventListener('input', () => {
     const nombre = inputC.value;
-    const idx = Estado.centros.findIndex(c => c.name === nombre);
+    const idx    = Estado.centros.findIndex(c => c.name === nombre);
     window.selectedCentroIdx = idx >= 0 ? idx : null;
     console.log('🎯 Centro seleccionado:', nombre, 'idx=', idx);
 
+    // Limpia y flota etiqueta
+    if (idx >= 0) {
+      inputC.placeholder = '';
+      labelC.classList.add('active');
+    } else {
+      inputC.placeholder = 'Selecciona un centro';
+      labelC.classList.remove('active');
+    }
+
     // Resetear y poblar líneas
-    listL.innerHTML = '';
-    inputL.value    = '';
-    inputL.disabled = true;
+    listL.innerHTML    = '';
+    inputL.value       = '';
+    inputL.disabled    = true;
+    labelL.classList.remove('active');
+    inputL.placeholder = 'Selecciona una línea';
+
     if (idx >= 0) {
       Estado.centros[idx].lines.forEach(l => {
         const o = document.createElement('option');
@@ -149,7 +164,6 @@ function initDatalistSelects() {
       console.log('📝 datalist líneas poblado con', Estado.centros[idx].lines.length);
     }
 
-    // Reposicionar etiqueta flotante
     M.updateTextFields();
     mostrarResumen();
   });
@@ -158,21 +172,26 @@ function initDatalistSelects() {
   inputL.addEventListener('input', () => {
     const numero = inputL.value;
     const cIdx   = window.selectedCentroIdx;
-    const idx    = (cIdx != null)
-      ? (Estado.centros[cIdx].lines || []).findIndex(l => l.number === numero)
-      : -1;
+    let idx = -1;
+    if (cIdx != null) {
+      idx = (Estado.centros[cIdx].lines || []).findIndex(l => l.number === numero);
+    }
     window.selectedLineaIdx = idx >= 0 ? idx : null;
     console.log('🎯 Línea seleccionada:', numero, 'idx=', idx);
 
-    // Reposicionar etiqueta flotante
+    if (idx >= 0) {
+      inputL.placeholder = '';
+      labelL.classList.add('active');
+    } else {
+      inputL.placeholder = 'Selecciona una línea';
+      labelL.classList.remove('active');
+    }
+
     M.updateTextFields();
     mostrarResumen();
   });
 }
 
-// Resto de tus funciones de tablas, filtros y KPIs queda igual...
-// initTablaHistorial(), refreshHistorial(), initTablaUltimos(),
-// refreshUltimosYResumen(), aplicarFiltrosUltimos(), renderKPIs(), marcarActivos()
 /**
  * Muestra resumen del último inventario
  */
