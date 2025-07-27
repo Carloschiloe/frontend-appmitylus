@@ -2,15 +2,19 @@
 import { Estado } from '../../core/estado.js';
 import { getCentrosAll } from '../../core/centros_repo.js';
 import { initConteoRapido, abrirConteoLinea } from './conteo_rapido.js';
+import $ from 'jquery';
+import 'datatables.net';
+import 'datatables.net-buttons';
 
+// referencias a las tablas y datos
 let dtHist = null;
 let dtUltimos = null;
 let ultimosData = [];
 
-// Filtros actuales
+// filtros actuales
 const F = { estadoLinea: 'all', kpi: null };
 
-// Formatea ISO a DD-MM-YYYY
+// helper para formatear fecha ISO → DD-MM-YYYY
 const fechaSolo = iso => {
   if (!iso) return '-';
   const d = new Date(iso);
@@ -22,40 +26,40 @@ const fechaSolo = iso => {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Inicializo sólo los componentes de Materialize que necesito
+  // solo los componentes Materialize que necesitamos
   M.Tabs.init(document.querySelectorAll('#tabsLB'));
   M.Tooltip.init(document.querySelectorAll('.tooltipped'));
   M.Modal.init(document.querySelectorAll('.modal'));
   M.Collapsible.init(document.querySelectorAll('.collapsible'));
-  const selEstadoLinea = document.getElementById('conteoEstadoLinea');
-  if (selEstadoLinea) M.FormSelect.init(selEstadoLinea);
+  const selEstado = document.getElementById('fEstadoLinea');
+  if (selEstado) M.FormSelect.init(selEstado);
 
-  // Cargo y normalizo datos
+  // cargo centros + líneas
   Estado.centros = await getCentrosAll();
   Estado.centros.forEach(c => { if (!Array.isArray(c.lines)) c.lines = []; });
 
-  // Inicializo selects de Centro/Línea con Choices.js
-  initChoicesSelects();
+  // inicializo inputs con datalist
+  initDatalistSelects();
 
-  // Inicializo conteo rápido y botón
+  // conteo rápido
   initConteoRapido();
   initBotonConteo();
 
-  // Inicializo tablas
+  // tablas
   initTablaHistorial();
   initTablaUltimos();
 
-  // Cargo datos iniciales
+  // datos iniciales
   await refreshHistorial();
   await refreshUltimosYResumen();
   mostrarResumen();
 
-  // Tabs con hash
+  // hash en tabs
   const tabsInst = M.Tabs.getInstance(document.getElementById('tabsLB'));
   if (window.location.hash === '#tab-historial') tabsInst.select('tab-historial');
   if (window.location.hash === '#tab-ultimos')   tabsInst.select('tab-ultimos');
 
-  // Ajusto columnas al cambiar tab
+  // ajustar columnitas al cambiar tab
   document.querySelectorAll('#tabsLB a').forEach(a => {
     a.addEventListener('click', e => {
       const href = e.currentTarget.getAttribute('href');
@@ -66,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Filtro estado de línea
+  // filtro estado línea
   document.getElementById('fEstadoLinea')
     .addEventListener('change', e => {
       F.estadoLinea = e.target.value;
@@ -75,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       aplicarFiltrosUltimos();
     });
 
-  // Filtro por KPI
+  // filtro KPI
   document.getElementById('kpiGroups')
     .addEventListener('click', e => {
       const filtro = e.target.dataset.kpi;
@@ -83,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       F.kpi = (F.kpi === filtro ? null : filtro);
       if (['linea_buena','linea_regular','linea_mala','sinInv'].includes(filtro)) {
         const sel = document.getElementById('fEstadoLinea');
-        F.estadoLinea = (filtro === 'sinInv') ? 'sinInv' : 'all';
+        F.estadoLinea = filtro === 'sinInv' ? 'sinInv' : 'all';
         sel.value = F.estadoLinea;
         M.FormSelect.getInstance(sel)?.destroy();
         M.FormSelect.init(sel);
@@ -92,7 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       aplicarFiltrosUltimos();
     });
 
-  // Al guardar inventario refresco todo
+  // al guardar inventario refrescar todo
   window.addEventListener('inventario-guardado', async () => {
     await refreshHistorial();
     await refreshUltimosYResumen();
@@ -101,58 +105,51 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * Inicializa los selects de Centro y Línea usando Choices.js
+ * Inicializa <input list> + <datalist> para Centro y Línea
  */
-function initChoicesSelects() {
-  const selectCentro = document.getElementById('inputCentro');
-  const selectLinea  = document.getElementById('inputLinea');
+function initDatalistSelects() {
+  const inputC = document.getElementById('inputCentro');
+  const listC  = document.getElementById('centrosList');
+  const inputL = document.getElementById('inputLinea');
+  const listL  = document.getElementById('lineasList');
 
-  // Poblar Centro
-  Estado.centros.forEach((c,i) => {
+  // poblar centros
+  Estado.centros.forEach(c => {
     const opt = document.createElement('option');
-    opt.value = i;
-    opt.text  = c.name;
-    selectCentro.appendChild(opt);
+    opt.value = c.name;
+    listC.appendChild(opt);
   });
 
-  // Instancia Choices
-  const chC = new Choices(selectCentro, {
-    placeholder: true,
-    placeholderValue: 'Selecciona un centro',
-    searchPlaceholderValue: 'Buscar centro…',
-    itemSelectText: '',
-    shouldSort: false
-  });
-  const chL = new Choices(selectLinea, {
-    placeholder: true,
-    placeholderValue: 'Selecciona una línea',
-    searchPlaceholderValue: 'Buscar línea…',
-    itemSelectText: '',
-    shouldSort: false
-  });
+  // elegir centro
+  inputC.addEventListener('input', () => {
+    const idx = Estado.centros.findIndex(c => c.name === inputC.value);
+    window.selectedCentroIdx = idx >= 0 ? idx : null;
 
-  // Al cambiar Centro
-  selectCentro.addEventListener('change', e => {
-    const idx = parseInt(e.detail.value, 10);
-    window.selectedCentroIdx = idx;
-    const lines = Estado.centros[idx].lines || [];
-
-    chL.clearChoices();
-    chL.setChoices(
-      lines.map((l,i) => ({
-        value: i,
-        label: l.number || `Línea ${i+1}`
-      })),
-      'value','label', true
-    );
-
-    selectLinea.removeAttribute('disabled');
-    chL.showDropdown(true);
+    // poblar líneas
+    listL.innerHTML = '';
+    inputL.value = '';
+    inputL.disabled = true;
+    if (idx >= 0) {
+      Estado.centros[idx].lines.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l.number;
+        listL.appendChild(opt);
+      });
+      inputL.disabled = false;
+    }
+    mostrarResumen();
   });
 
-  // Al cambiar Línea
-  selectLinea.addEventListener('change', e => {
-    window.selectedLineaIdx = parseInt(e.detail.value, 10);
+  // elegir línea
+  inputL.addEventListener('input', () => {
+    const cIdx = window.selectedCentroIdx;
+    if (cIdx == null) {
+      window.selectedLineaIdx = null;
+    } else {
+      const lines = Estado.centros[cIdx].lines;
+      const idx = lines.findIndex(l => l.number === inputL.value);
+      window.selectedLineaIdx = idx >= 0 ? idx : null;
+    }
     mostrarResumen();
   });
 }
@@ -187,7 +184,7 @@ function mostrarResumen() {
 }
 
 /**
- * Configura el botón de Conteo Rápido
+ * Configura botón Conteo Rápido
  */
 function initBotonConteo() {
   document.getElementById('btnAbrirConteo')
@@ -202,24 +199,24 @@ function initBotonConteo() {
     });
 }
 
-// —————————————— Tablas y filtros ——————————————
+// — Tablas Historial / Últimos —
 
 function initTablaHistorial() {
   dtHist = $('#tablaInventariosLB').DataTable({
     data: [], autoWidth:false, scrollX:true, scrollCollapse:true,
-    columns: [
-      { title:'Fecha' },{ title:'Centro' },{ title:'Línea' },{ title:'Tot' },
-      { title:'NB Buenas' },{ title:'NB Malas' },{ title:'NA Buenas' },{ title:'NA Malas' },
-      { title:'Sueltas' },{ title:'Colchas' },{ title:'Estado Línea' },{ title:'Obs' },
-      { title:'Lat' },{ title:'Lng' }
+    columns:[
+      {title:'Fecha'},{title:'Centro'},{title:'Línea'},{title:'Tot'},
+      {title:'NB Buenas'},{title:'NB Malas'},{title:'NA Buenas'},{title:'NA Malas'},
+      {title:'Sueltas'},{title:'Colchas'},{title:'Estado Línea'},{title:'Obs'},
+      {title:'Lat'},{title:'Lng'}
     ],
     dom:'Bfrtip',
     buttons:[
-      { extend:'excelHtml5', title:'Historial_Lineas_Boyas' },
-      { extend:'pdfHtml5', orientation:'landscape', pageSize:'A4' },
+      {extend:'excelHtml5', title:'Historial_Lineas_Boyas'},
+      {extend:'pdfHtml5', orientation:'landscape', pageSize:'A4'},
       'copy','print'
     ],
-    language:{ url:'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' }
+    language:{url:'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'}
   });
 }
 
@@ -231,8 +228,8 @@ async function refreshHistorial() {
   const rows = [];
   centros.forEach((c,iC) => {
     (c.lines||[]).forEach((l,iL) => {
-      if (cIdx != null && iC !== cIdx) return;
-      if (lIdx != null && iL !== lIdx) return;
+      if (cIdx!=null && iC!==cIdx) return;
+      if (lIdx!=null && iL!==lIdx) return;
       (l.inventarios||[]).forEach(reg => {
         rows.push([
           fechaSolo(reg.fecha),
@@ -247,8 +244,8 @@ async function refreshHistorial() {
           reg.colchas,
           reg.estadoLinea,
           reg.observaciones,
-          reg.gps?.lat || '',
-          reg.gps?.lng || ''
+          reg.gps?.lat||'',
+          reg.gps?.lng||''
         ]);
       });
     });
@@ -259,18 +256,18 @@ async function refreshHistorial() {
 function initTablaUltimos() {
   dtUltimos = $('#tablaUltimos').DataTable({
     data: [], autoWidth:false, scrollX:true, scrollCollapse:true,
-    columns: [
-      { title:'Centro' },{ title:'Línea' },{ title:'Fecha' },{ title:'Tot' },
-      { title:'NB Buenas' },{ title:'NB Malas' },{ title:'NA Buenas' },{ title:'NA Malas' },
-      { title:'Sueltas' },{ title:'Colchas' },{ title:'Estado Línea' },{ title:'Obs' }
+    columns:[
+      {title:'Centro'},{title:'Línea'},{title:'Fecha'},{title:'Tot'},
+      {title:'NB Buenas'},{title:'NB Malas'},{title:'NA Buenas'},{title:'NA Malas'},
+      {title:'Sueltas'},{title:'Colchas'},{title:'Estado Línea'},{title:'Obs'}
     ],
     dom:'Bfrtip',
     buttons:[
-      { extend:'excelHtml5', title:'Últimos_Lineas_Boyas' },
-      { extend:'pdfHtml5', orientation:'landscape', pageSize:'A4' },
+      {extend:'excelHtml5', title:'Últimos_Lineas_Boyas'},
+      {extend:'pdfHtml5', orientation:'landscape', pageSize:'A4'},
       'copy','print'
     ],
-    language:{ url:'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' }
+    language:{url:'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'}
   });
 }
 
@@ -303,19 +300,15 @@ async function refreshUltimosYResumen() {
       R.sueltas    += u.sueltas;
       R.colchas    += u.colchas;
       const est = (u.estadoLinea||'').toLowerCase();
-      if (est==='buena')   R.lineas_buenas++;
-      if (est==='regular') R.lineas_regulares++;
-      if (est==='mala')    R.lineas_malas++;
+      if (est==='buena')    R.lineas_buenas++;
+      if (est==='regular')  R.lineas_regulares++;
+      if (est==='mala')     R.lineas_malas++;
 
       ultimosData.push({
-        centro:c.name,
-        linea:l.number,
-        fecha:u.fecha,
-        tot, nb_b, nb_m, na_b, na_m,
-        sueltas:u.sueltas,
-        colchas:u.colchas,
-        estadoLinea:u.estadoLinea,
-        obs:u.observaciones,
+        centro:c.name, linea:l.number,
+        fecha:u.fecha, tot, nb_b, nb_m, na_b, na_m,
+        sueltas:u.sueltas, colchas:u.colchas,
+        estadoLinea:u.estadoLinea, obs:u.observaciones,
         sinInv:false
       });
     });
@@ -349,7 +342,7 @@ function aplicarFiltrosUltimos() {
     })
     .map(r => [
       r.centro,
-      r.línea,
+      r.linea,
       r.sinInv ? 'Sin inventario' : fechaSolo(r.fecha),
       r.sinInv ? '-' : r.tot,
       r.sinInv ? '-' : r.nb_b,
@@ -394,15 +387,9 @@ function renderKPIs(r) {
         <span data-kpi="naranja">Naranjas: ${r.naranjas}</span>
       </div>
     </div>
-    <div class="kpi-mini" data-kpi="sueltas">
-      <span class="valor">${r.sueltas}</span><span>Boyas sueltas</span>
-    </div>
-    <div class="kpi-mini" data-kpi="colchas">
-      <span class="valor">${r.colchas}</span><span>Colchas</span>
-    </div>
-    <div class="kpi-mini" data-kpi="sinInv">
-      <span class="valor">${r.sinInv}</span><span>Sin inventario</span>
-    </div>
+    <div class="kpi-mini" data-kpi="sueltas"><span class="valor">${r.sueltas}</span><span>Boyas sueltas</span></div>
+    <div class="kpi-mini" data-kpi="colchas"><span class="valor">${r.colchas}</span><span>Colchas</span></div>
+    <div class="kpi-mini" data-kpi="sinInv"><span class="valor">${r.sinInv}</span><span>Sin inventario</span></div>
   `;
   marcarActivos();
 }
