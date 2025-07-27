@@ -9,34 +9,37 @@ let ultimosData = [];
 // Filtros actuales
 const F = { estadoLinea: 'all', kpi: null };
 
-// Formatea fecha como DD-MM-YYYY
+// Helper para formatear fecha a DD-MM-YYYY
 const fechaSolo = iso => {
   if (!iso) return '-';
   const d = new Date(iso);
   return d.toLocaleDateString('es-CL', {
-    day: '2-digit', month: '2-digit', year: 'numeric'
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
   });
 };
 
+// Inicialización principal
 document.addEventListener('DOMContentLoaded', async () => {
   M.AutoInit();
 
-  // Cargo centros
+  // Cargar centros y líneas
   Estado.centros = await getCentrosAll();
   Estado.centros.forEach(c => { if (!Array.isArray(c.lines)) c.lines = []; });
 
-  // Inicializa selects con Choices (global)
+  // Inicializar selecciones con Choices.js
   initChoicesSelects();
 
-  // Conteo rápido
+  // Inicializar conteo rápido
   initConteoRapido();
   initBotonConteo();
 
-  // Tablas
+  // Inicializar tablas
   initTablaHistorial();
   initTablaUltimos();
 
-  // Datos iniciales
+  // Cargar datos y mostrar
   await refreshHistorial();
   await refreshUltimosYResumen();
   mostrarResumen();
@@ -46,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (window.location.hash === '#tab-historial') tabs?.select('tab-historial');
   if (window.location.hash === '#tab-ultimos')   tabs?.select('tab-ultimos');
 
-  // Ajuste columnas al cambiar tab
+  // Ajustar columnas al cambiar tab
   document.querySelectorAll('#tabsLB a').forEach(a => {
     a.addEventListener('click', e => {
       const href = e.currentTarget.getAttribute('href');
@@ -66,22 +69,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     aplicarFiltrosUltimos();
   });
 
-  // KPIs agrupados
+  // Evento KPIs agrupados
   document.getElementById('kpiGroups')?.addEventListener('click', e => {
     const filter = e.target.dataset.kpi;
     if (!filter) return;
     F.kpi = (F.kpi === filter ? null : filter);
+    // Sincronizar select de estado si es KPI de línea o sinInventario
     const s = document.getElementById('fEstadoLinea');
     if (['linea_buena','linea_regular','linea_mala','sinInv'].includes(filter)) {
-      F.estadoLinea = (filter === 'sinInv' ? 'sinInv' : 'all');
+      F.estadoLinea = filter === 'sinInv' ? 'sinInv' : 'all';
       s.value = F.estadoLinea;
       M.FormSelect.getInstance(s)?.destroy();
       M.FormSelect.init(s);
     }
-    marcarActivos(); aplicarFiltrosUltimos();
+    marcarActivos();
+    aplicarFiltrosUltimos();
   });
 
-  // Refresca tras guardar inventario
+  // Refrescar tras guardar inventario
   window.addEventListener('inventario-guardado', async () => {
     await refreshHistorial();
     await refreshUltimosYResumen();
@@ -90,20 +95,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * Inicializa los selects de Centro y Línea usando el global Choices
+ * Inicializa los selects de Centro y Línea usando Choices.js inyectado globalmente
  */
 function initChoicesSelects() {
   const selectCentro = document.getElementById('inputCentro');
   const selectLinea  = document.getElementById('inputLinea');
 
-  // Poblar opciones centro
-  Estado.centros.forEach((c,i) => {
+  // Poblar opciones Centro
+  Estado.centros.forEach((c, i) => {
     const opt = document.createElement('option');
-    opt.value = i; opt.textContent = c.name;
+    opt.value = i;
+    opt.textContent = c.name;
     selectCentro.appendChild(opt);
   });
 
-  // Instancia Choices (global)
+  // Instancia Choices.js a través del global
   const choicesCentro = new window.Choices(selectCentro, {
     placeholder: true,
     placeholderValue: 'Selecciona un centro',
@@ -119,56 +125,63 @@ function initChoicesSelects() {
     shouldSort: false
   });
 
-  // On change centro: cargar líneas
+  // Al cambiar Centro, cargar Líneas
   selectCentro.addEventListener('change', e => {
-    const idx = parseInt(e.detail.value, 10);
+    const idx   = parseInt(e.detail.value, 10);
     window.selectedCentroIdx = idx;
     const lines = Estado.centros[idx].lines || [];
     choicesLinea.clearChoices();
     choicesLinea.setChoices(
-      lines.map((l,i) => ({ value:i, label:l.number })),
-      'value','label', true
+      lines.map((l, i) => ({ value: i, label: l.number })),
+      'value', 'label', true
     );
     selectLinea.removeAttribute('disabled');
     choicesLinea.showDropdown(true);
   });
 
-  // On change línea
+  // Guardar selección Línea
   selectLinea.addEventListener('change', e => {
-    window.selectedLineaIdx = parseInt(e.detail.value,10);
+    window.selectedLineaIdx = parseInt(e.detail.value, 10);
   });
 }
 
-// --- resto de funciones (mostrarResumen, initBotonConteo, tablas, filtros, KPIs) ---
-
+/** Mostrar resumen del último inventario */
 function mostrarResumen() {
   const cIdx = window.selectedCentroIdx;
   const lIdx = window.selectedLineaIdx;
   const cont = document.getElementById('resumenInventario');
-  if (cIdx==null || lIdx==null) { cont.style.display='none'; return; }
+  if (cIdx == null || lIdx == null) { cont.style.display = 'none'; return; }
   const invs = Estado.centros[cIdx].lines[lIdx].inventarios || [];
   if (!invs.length) {
-    cont.style.display='block'; cont.innerHTML='<em>Sin inventarios aún</em>'; return;
+    cont.style.display = 'block';
+    cont.innerHTML = '<em>Sin inventarios aún</em>';
+    return;
   }
-  const u = invs[invs.length-1];
-  cont.style.display='block';
-  cont.innerHTML = `<b>Último:</b> ${fechaSolo(u.fecha)}<br>
-    Tot: ${u.boyas.total} | NB ${u.boyas.negras.buenas}/${u.boyas.negras.malas} |
+  const u = invs[invs.length - 1];
+  cont.style.display = 'block';
+  cont.innerHTML = `
+    <b>Último:</b> ${fechaSolo(u.fecha)}<br>
+    Tot: ${u.boyas.total} |
+    NB ${u.boyas.negras.buenas}/${u.boyas.negras.malas} |
     NA ${u.boyas.naranjas.buenas}/${u.boyas.naranjas.malas} |
     S:${u.sueltas} | Col:${u.colchas}<br>
-    Estado: ${u.estadoLinea} | Obs: ${u.observaciones||'-'}`;
+    Estado: ${u.estadoLinea} | Obs: ${u.observaciones || '-'}
+  `;
 }
 
+/** Inicializa botón de Conteo Rápido */
 function initBotonConteo() {
   document.getElementById('btnAbrirConteo')
     .addEventListener('click', () => {
-      const c=window.selectedCentroIdx, l=window.selectedLineaIdx;
-      if (c==null||l==null) {
-        M.toast({ html:'Selecciona centro y línea', classes:'red' }); return;
+      const c = window.selectedCentroIdx;
+      const l = window.selectedLineaIdx;
+      if (c == null || l == null) {
+        M.toast({ html: 'Selecciona centro y línea', classes: 'red' });
+        return;
       }
-      abrirConteoLinea(c,l);
+      abrirConteoLinea(c, l);
     });
 }
 
-// (deja intactas initTablaHistorial, refreshHistorial, initTablaUltimos, refreshUltimosYResumen,
-//  aplicarFiltrosUltimos, renderKPIs, marcarActivos)
+// ... (mantén intactas initTablaHistorial, refreshHistorial, initTablaUltimos, refreshUltimosYResumen,
+//     aplicarFiltrosUltimos, renderKPIs, marcarActivos)
