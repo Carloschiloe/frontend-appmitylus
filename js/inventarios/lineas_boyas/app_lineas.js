@@ -1,6 +1,7 @@
 import { Estado } from '../../core/estado.js';
 import { getCentrosAll } from '../../core/centros_repo.js';
 import { initConteoRapido, abrirConteoLinea } from './conteo_rapido.js';
+import Choices from 'choices.js';
 
 let dtHist = null;
 let dtUltimos = null;
@@ -27,8 +28,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   Estado.centros = await getCentrosAll();
   Estado.centros.forEach(c => { if (!Array.isArray(c.lines)) c.lines = []; });
 
-  // Inicializar selección modal
-  initModalSelects();
+  // Inicializar selects con Choices.js
+  initChoicesSelects();
 
   // Inicializar conteo rápido y botón conteo
   initConteoRapido();
@@ -96,82 +97,65 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-/* ---------- SELECCIÓN CENTRO Y LÍNEA CON MODALES ---------- */
-function initModalSelects() {
-  const inputCentro  = document.getElementById('inputCentro');
-  const inputLinea   = document.getElementById('inputLinea');
-  const listaCentros = document.getElementById('listaCentros');
-  const listaLineas  = document.getElementById('listaLineas');
+/**
+ * Inicializa los selects de Centro y Línea usando Choices.js
+ */
+function initChoicesSelects() {
+  const selectCentro = document.getElementById('inputCentro');
+  const selectLinea = document.getElementById('inputLinea');
 
-  const modalCentro = M.Modal.init(document.getElementById('modalCentros'), {dismissible: true});
-  const modalLinea  = M.Modal.init(document.getElementById('modalLineas'),  {dismissible: true});
-
-  let selectedCentroIdx = null;
-  let selectedLineaIdx  = null;
-
-  function renderCentros() {
-    listaCentros.innerHTML = Estado.centros
-      .map((c, i) => `<li class="collection-item" data-idx="${i}">${c.name || '(sin nombre)'}</li>`)
-      .join('');
-  }
-
-  function renderLineas() {
-    if (selectedCentroIdx === null) {
-      listaLineas.innerHTML = '<li class="collection-item">Selecciona un centro primero</li>';
-      return;
-    }
-    const lines = Estado.centros[selectedCentroIdx].lines || [];
-    listaLineas.innerHTML = lines.length
-      ? lines.map((l, i) => `<li class="collection-item" data-idx="${i}">Línea ${l.number || i+1}</li>`).join('')
-      : '<li class="collection-item">No hay líneas disponibles</li>';
-  }
-
-  // Abre modal al click en el input correspondiente
-  inputCentro.addEventListener('click', () => {
-    renderCentros();
-    modalCentro.open();
+  // Poblar opciones de centro
+  Estado.centros.forEach((c, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.text = c.name;
+    selectCentro.appendChild(opt);
   });
-  inputLinea.addEventListener('click', () => {
-    if (selectedCentroIdx === null) {
-      M.toast({html: 'Primero selecciona un centro', classes: 'red'});
-      return;
-    }
-    renderLineas();
-    modalLinea.open();
+  
+  // Inicializar Choices para Centro
+  const choicesCentro = new Choices(selectCentro, {
+    placeholder: true,
+    placeholderValue: 'Selecciona un centro',
+    searchPlaceholderValue: 'Buscar centro…',
+    itemSelectText: '',
+    shouldSort: false
   });
 
-  // Selección de centro
-  listaCentros.addEventListener('click', e => {
-    const li = e.target.closest('li');
-    if (!li) return;
-    selectedCentroIdx = +li.dataset.idx;
-    selectedLineaIdx  = null;
-    inputCentro.value = Estado.centros[selectedCentroIdx].name;
-    inputLinea.value  = '';
-    M.updateTextFields();
-    modalCentro.close();
+  // Inicializar Choices para Línea (vacío al inicio)
+  const choicesLinea = new Choices(selectLinea, {
+    placeholder: true,
+    placeholderValue: 'Selecciona una línea',
+    searchPlaceholderValue: 'Buscar línea…',
+    itemSelectText: '',
+    shouldSort: false
   });
 
-  // Selección de línea
-  listaLineas.addEventListener('click', e => {
-    const li = e.target.closest('li');
-    if (!li) return;
-    selectedLineaIdx = +li.dataset.idx;
-    inputLinea.value = Estado.centros[selectedCentroIdx].lines[selectedLineaIdx].number;
-    M.updateTextFields();
-    modalLinea.close();
+  // Al cambiar Centro, cargar Líneas
+  selectCentro.addEventListener('change', event => {
+    const idx = parseInt(event.detail.value, 10);
+    window.selectedCentroIdx = idx;
+    const lines = Estado.centros[idx].lines || [];
+
+    // Limpiar y cargar opciones de Línea
+    choicesLinea.clearChoices();
+    choicesLinea.setChoices(
+      lines.map((l, i) => ({ value: i, label: l.number })),
+      'value', 'label', true
+    );
+    selectLinea.removeAttribute('disabled');
+    choicesLinea.showDropdown(true);
   });
 
-  // Para que otras funciones recuperen la selección
-  window.getSelectedIndices = () => ({
-    centroIdx: selectedCentroIdx,
-    lineaIdx:  selectedLineaIdx
+  // Guardar selección de Línea
+  selectLinea.addEventListener('change', event => {
+    window.selectedLineaIdx = parseInt(event.detail.value, 10);
   });
 }
 
-/* Mostrar resumen del último inventario */
+/** Mostrar resumen del último inventario */
 function mostrarResumen() {
-  const { centroIdx, lineaIdx } = window.getSelectedIndices();
+  const centroIdx = window.selectedCentroIdx;
+  const lineaIdx = window.selectedLineaIdx;
   const cont = document.getElementById('resumenInventario');
   if (centroIdx == null || lineaIdx == null) {
     cont.style.display = 'none';
@@ -196,11 +180,12 @@ function mostrarResumen() {
   `;
 }
 
-/* Botón abrir conteo rápido */
+/** Botón abrir conteo rápido */
 function initBotonConteo() {
   const btn = document.getElementById('btnAbrirConteo');
   btn.addEventListener('click', () => {
-    const { centroIdx, lineaIdx } = window.getSelectedIndices();
+    const centroIdx = window.selectedCentroIdx;
+    const lineaIdx = window.selectedLineaIdx;
     if (centroIdx == null || lineaIdx == null) {
       M.toast({ html: 'Selecciona centro y línea', classes: 'red' });
       return;
@@ -232,7 +217,8 @@ function initTablaHistorial() {
 async function refreshHistorial() {
   if (!dtHist) return;
   const centros = await getCentrosAll();
-  const { centroIdx, lineaIdx } = window.getSelectedIndices();
+  const centroIdx = window.selectedCentroIdx;
+  const lineaIdx = window.selectedLineaIdx;
   const rows = [];
   centros.forEach((c,iC) => {
     (c.lines||[]).forEach((l,iL) => {
@@ -248,8 +234,7 @@ async function refreshHistorial() {
           reg.boyas?.naranjas?.buenas??0,
           reg.boyas?.naranjas?.malas ??0,
           reg.sueltas ?? 0, reg.colchas ?? 0,
-          reg.estadoLinea || '-', reg.observaciones || '-',
-          reg.gps?.lat ?? '', reg.gps?.lng ?? ''
+          reg.estadoLinea || '-', reg.observaciones || '-'
         ]);
       });
     });
@@ -289,135 +274,71 @@ async function refreshUltimosYResumen() {
       const invs = l.inventarios||[];
       if (!invs.length) {
         ultimosData.push({
-          centro:c.name||'-', linea:l.number||(iL+1),
-          fecha:null, tot:null,
-          nb_b:0, nb_m:0, na_b:0, na_m:0,
-          sueltas:0, colchas:0, estadoLinea:null, obs:'-', sinInv:true
+          centro:c.name||'-', linea:l.number||(iL+1), sinInv:true,
+          fecha:null, tot:null, nb_b:0, nb_m:0, na_b:0, na_m:0, sueltas:0, colchas:0, estadoLinea:null, obs:'-'
         });
         resumen.sinInv++;
         return;
       }
       const u = invs[invs.length-1];
-      const nb_b = u.boyas?.negras?.buenas   ??0;
-      const nb_m = u.boyas?.negras?.malas    ??0;
-      const na_b = u.boyas?.naranjas?.buenas??0;
-      const na_m = u.boyas?.naranjas?.malas ??0;
-      const tot  = u.boyas?.total ??0;
-      ultimosData.push({
-        centro:c.name||'-', linea:l.number||(iL+1),
-        fecha:u.fecha, tot,
-        nb_b, nb_m, na_b, na_m,
-        sueltas:u.sueltas??0, colchas:u.colchas??0,
-        estadoLinea:u.estadoLinea||'-', obs:u.observaciones||'-', sinInv:false
-      });
+      const { total:tot, negras:{buenas:nb_b, malas:nb_m}, naranjas:{buenas:na_b, malas:na_m} } = u.boyas||{};
+      ultimosData.push({ centro:c.name, linea:l.number, fecha:u.fecha, tot, nb_b, nb_m, na_b, na_m, sueltas:u.sueltas, colchas:u.colchas, estadoLinea:u.estadoLinea, obs:u.observaciones, sinInv:false });
       resumen.totalBoyas += tot;
       resumen.buenas     += nb_b + na_b;
       resumen.malas      += nb_m + na_m;
       resumen.negras     += nb_b + nb_m;
       resumen.naranjas   += na_b + na_m;
-      resumen.sueltas    += u.sueltas ??0;
-      resumen.colchas    += u.colchas ??0;
+      resumen.sueltas    += u.sueltas;
+      resumen.colchas    += u.colchas;
       const est = (u.estadoLinea||'').toLowerCase();
       if (est==='buena')   resumen.lineas_buenas++;
       else if (est==='regular') resumen.lineas_regulares++;
       else if (est==='mala')    resumen.lineas_malas++;
     });
   });
-  aplicarFiltrosUltimos();
-  renderKPIs(resumen);
+  aplicarFiltrosUltimos(); renderKPIs(resumen);
 }
 
 function aplicarFiltrosUltimos(){
   if (!dtUltimos) return;
   const arr = ultimosData.filter(r => {
     if (F.estadoLinea==='sinInv') return r.sinInv;
-    if (F.estadoLinea!=='all' && !r.sinInv) {
-      if ((r.estadoLinea||'').toLowerCase() !== F.estadoLinea) return false;
-    }
+    if (F.estadoLinea!=='all' && !r.sinInv && (r.estadoLinea||'').toLowerCase() !== F.estadoLinea) return false;
     if (F.kpi && !r.sinInv) {
-      switch(F.kpi){
-        case 'buenas':    if ((r.nb_b+r.na_b)<=0) return false; break;
-        case 'malas':     if ((r.nb_m+r.na_m)<=0) return false; break;
-        case 'negra':     if ((r.nb_b+r.nb_m)<=0) return false; break;
-        case 'naranja':   if ((r.na_b+r.na_m)<=0) return false; break;
-        case 'sueltas':   if ((r.sueltas||0)<=0) return false; break;
-        case 'colchas':   if ((r.colchas||0)<=0) return false; break;
+      switch(F.kpi) {
+        case 'buenas': if ((r.nb_b+r.na_b)<=0) return false; break;
+        case 'malas': if ((r.nb_m+r.na_m)<=0) return false; break;
+        case 'negra': if ((r.nb_b+r.nb_m)<=0) return false; break;
+        case 'naranja': if ((r.na_b+r.na_m)<=0) return false; break;
+        case 'sueltas': if (!r.sueltas) return false; break;
+        case 'colchas': if (!r.colchas) return false; break;
         case 'linea_buena':    return (r.estadoLinea||'').toLowerCase()==='buena';
         case 'linea_regular': return (r.estadoLinea||'').toLowerCase()==='regular';
         case 'linea_mala':    return (r.estadoLinea||'').toLowerCase()==='mala';
-        case 'sinInv':       return r.sinInv;
+        case 'sinInv':        return r.sinInv;
       }
     }
     return true;
   });
-  const rows = arr.map(r => [
-    r.centro, r.linea,
-    r.sinInv? 'Sin inventario': fechaSolo(r.fecha),
-    r.sinInv? '-': r.tot,
-    r.sinInv? '-': r.nb_b,
-    r.sinInv? '-': r.nb_m,
-    r.sinInv? '-': r.na_b,
-    r.sinInv? '-': r.na_m,
-    r.sinInv? '-': r.sueltas,
-    r.sinInv? '-': r.colchas,
-    r.sinInv? '-': r.estadoLinea,
-    r.sinInv? '-': r.obs
-  ]);
+  const rows = arr.map(r=>[ r.centro, r.linea, r.sinInv?'Sin inventario':fechaSolo(r.fecha), r.sinInv?'-':r.tot, r.sinInv?'-':r.nb_b, r.sinInv?'-':r.nb_m, r.sinInv?'-':r.na_b, r.sinInv?'-':r.na_m, r.sinInv?'-':r.sueltas, r.sinInv?'-':r.colchas, r.sinInv?'-':r.estadoLinea, r.sinInv?'-':r.obs]);
   dtUltimos.clear().rows.add(rows).draw(false);
   dtUltimos.columns.adjust().draw(false);
 }
 
 function renderKPIs(r) {
-  const wrap = document.getElementById('kpiGroups');
-  if (!wrap) return;
+  const wrap = document.getElementById('kpiGroups'); if (!wrap) return;
   wrap.innerHTML = `
-    <div class="kpi-card">
-      <div class="title">Total boyas</div>
-      <div class="big">${r.totalBoyas}</div>
-      <div class="subs">
-        <span data-kpi="buenas">Buenas: ${r.buenas}</span>
-        <span data-kpi="malas">Malas: ${r.malas}</span>
-      </div>
-    </div>
-    <div class="kpi-card">
-      <div class="title">Total líneas</div>
-      <div class="big">${r.lineasTotal}</div>
-      <div class="subs">
-        <span data-kpi="linea_buena">Buenas: ${r.lineas_buenas}</span>
-        <span data-kpi="linea_regular">Regulares: ${r.lineas_regulares}</span>
-        <span data-kpi="linea_mala">Malas: ${r.lineas_malas}</span>
-      </div>
-    </div>
-    <div class="kpi-card">
-      <div class="title">Boyas por color</div>
-      <div class="big">${r.negras + r.naranjas}</div>
-      <div class="subs">
-        <span data-kpi="negra">Negras: ${r.negras}</span>
-        <span data-kpi="naranja">Naranjas: ${r.naranjas}</span>
-      </div>
-    </div>
-    <div class="kpi-mini" data-kpi="sueltas">
-      <span class="valor">${r.sueltas}</span>
-      <span>Boyas sueltas</span>
-    </div>
-    <div class="kpi-mini" data-kpi="colchas">
-      <span class="valor">${r.colchas}</span>
-      <span>Colchas</span>
-    </div>
-    <div class="kpi-mini" data-kpi="sinInv">
-      <span class="valor">${r.sinInv}</span>
-      <span>Sin inventario</span>
-    </div>
+    <div class="kpi-card"> <div class="title">Total boyas</div> <div class="big">${r.totalBoyas}</div> <div class="subs"><span data-kpi="buenas">Buenas: ${r.buenas}</span><span data-kpi="malas">Malas: ${r.malas}</span></div> </div>
+    <div class="kpi-card"> <div class="title">Total líneas</div> <div class="big">${r.lineasTotal}</div> <div class="subs"><span data-kpi="linea_buena">Buenas: ${r.lineas_buenas}</span><span data-kpi="linea_regular">Regulares: ${r.lineas_regulares}</span><span data-kpi="linea_mala">Malas: ${r.lineas_malas}</span></div> </div>
+    <div class="kpi-card"> <div class="title">Boyas por color</div> <div class="big">${r.negras + r.naranjas}</div> <div class="subs"><span data-kpi="negra">Negras: ${r.negras}</span><span data-kpi="naranja">Naranjas: ${r.naranjas}</span></div> </div>
+    <div class="kpi-mini" data-kpi="sueltas"> <span class="valor">${r.sueltas}</span> <span>Boyas sueltas</span> </div>
+    <div class="kpi-mini" data-kpi="colchas"> <span class="valor">${r.colchas}</span> <span>Colchas</span> </div>
+    <div class="kpi-mini" data-kpi="sinInv"> <span class="valor">${r.sinInv}</span> <span>Sin inventario</span> </div>
   `;
   marcarActivos();
 }
 
 function marcarActivos() {
-  document.querySelectorAll('#kpiGroups .subs span').forEach(s => {
-    s.classList.toggle('active', s.dataset.kpi === F.kpi);
-  });
-  document.querySelectorAll('#kpiGroups .kpi-mini').forEach(c => {
-    c.classList.toggle('active', c.dataset.kpi === F.kpi);
-  });
+  document.querySelectorAll('#kpiGroups .subs span').forEach(s => s.classList.toggle('active', s.dataset.kpi === F.kpi));
+  document.querySelectorAll('#kpiGroups .kpi-mini').forEach(c => c.classList.toggle('active', c.dataset.kpi === F.kpi));
 }
-
