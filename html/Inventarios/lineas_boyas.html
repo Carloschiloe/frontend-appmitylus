@@ -1,187 +1,195 @@
-import { Estado } from '../../core/estado.js';
-import { getCentrosAll } from '../../core/centros_repo.js';
-import { initConteoRapido, abrirConteoLinea } from './conteo_rapido.js';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventario Líneas &amp; Boyas</title>
 
-let dtHist = null;
-let dtUltimos = null;
-let ultimosData = [];
+  <!-- Materialize CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+  />
+  <link
+    href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    rel="stylesheet"
+  />
 
-// Filtros actuales
-const F = { estadoLinea: 'all', kpi: null };
+  <!-- DataTables CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"
+  />
 
-// Helper para formatear fecha a DD-MM-YYYY
-const fechaSolo = iso => {
-  if (!iso) return '-';
-  const d = new Date(iso);
-  return d.toLocaleDateString('es-CL', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-};
+  <!-- Choices.js CSS (opcional, para estilo) -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"
+  />
 
-// Inicialización principal
-document.addEventListener('DOMContentLoaded', async () => {
-  M.AutoInit();
+  <!-- Tus estilos -->
+  <link rel="stylesheet" href="../../css/lineas_boyas.css"/>
+</head>
+<body class="grey lighten-4">
+  <nav class="teal darken-2">
+    <div class="nav-wrapper">
+      <a href="./index.html" class="btn-flat left" style="margin-left:8px">
+        <i class="material-icons">arrow_back</i>
+      </a>
+      <span class="brand-logo center">Líneas &amp; Boyas</span>
+    </div>
+  </nav>
 
-  // Cargar centros y líneas
-  Estado.centros = await getCentrosAll();
-  Estado.centros.forEach(c => { if (!Array.isArray(c.lines)) c.lines = []; });
+  <div class="container" style="margin-top:16px;">
+    <!-- Tabs internas -->
+    <ul id="tabsLB" class="tabs">
+      <li class="tab col s4"><a class="active" href="#tab-conteo">Conteo</a></li>
+      <li class="tab col s4"><a href="#tab-ultimos">Últimos / Resumen</a></li>
+      <li class="tab col s4"><a href="#tab-historial">Historial</a></li>
+    </ul>
 
-  // Inicializar selecciones con Choices.js
-  initChoicesSelects();
+    <!-- TAB Conteo -->
+    <div id="tab-conteo" style="padding-top:20px;">
+      <div class="row">
+        <div class="input-field col s12 m6">
+          <select id="inputCentro" placeholder="Selecciona un centro"></select>
+          <label>Centro</label>
+        </div>
+        <div class="input-field col s12 m6">
+          <select id="inputLinea" disabled placeholder="Selecciona una línea"></select>
+          <label>Línea</label>
+        </div>
+      </div>
 
-  // Inicializar conteo rápido
-  initConteoRapido();
-  initBotonConteo();
+      <div id="resumenInventario" class="card-panel grey lighten-3" style="display:none"></div>
 
-  // Inicializar tablas
-  initTablaHistorial();
-  initTablaUltimos();
+      <div class="fixed-action-btn">
+        <a
+          id="btnAbrirConteo"
+          class="btn-floating btn-large red tooltipped"
+          data-tooltip="Conteo rápido"
+        >
+          <i class="material-icons">add</i>
+        </a>
+      </div>
+    </div>
 
-  // Cargar datos y mostrar
-  await refreshHistorial();
-  await refreshUltimosYResumen();
-  mostrarResumen();
+    <!-- TAB Últimos / Resumen -->
+    <div id="tab-ultimos" style="padding-top:20px;">
+      <div id="kpiGroups"></div>
+      <div id="kpiSmallGroup"></div>
+      <div id="fEstadoLineaDiv" class="input-field">
+        <select id="fEstadoLinea">
+          <option value="all" selected>Estado (todas)</option>
+          <option value="buena">Buenas</option>
+          <option value="regular">Regulares</option>
+          <option value="mala">Malas</option>
+          <option value="sinInv">Sin inventario</option>
+        </select>
+        <label>Filtrar por estado de línea</label>
+      </div>
+      <table id="tablaUltimos" class="striped display nowrap" style="width:100%">
+        <thead>
+          <tr>
+            <th>Centro</th><th>Línea</th><th>Fecha</th><th>Tot</th>
+            <th>NB Buenas</th><th>NB Malas</th><th>NA Buenas</th><th>NA Malas</th>
+            <th>Sueltas</th><th>Colchas</th><th>Estado Línea</th><th>Obs</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
-  // Tabs con hash
-  const tabs = M.Tabs.getInstance(document.getElementById('tabsLB'));
-  if (window.location.hash === '#tab-historial') tabs?.select('tab-historial');
-  if (window.location.hash === '#tab-ultimos')   tabs?.select('tab-ultimos');
+    <!-- TAB Historial -->
+    <div id="tab-historial" style="padding-top:20px;">
+      <table id="tablaInventariosLB" class="striped display nowrap" style="width:100%">
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Centro</th><th>Línea</th><th>Tot</th>
+            <th>NB Buenas</th><th>NB Malas</th><th>NA Buenas</th><th>NA Malas</th>
+            <th>Sueltas</th><th>Colchas</th><th>Estado Línea</th><th>Obs</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
 
-  // Ajustar columnas al cambiar tab
-  document.querySelectorAll('#tabsLB a').forEach(a => {
-    a.addEventListener('click', e => {
-      const href = e.currentTarget.getAttribute('href');
-      setTimeout(() => {
-        if (href === '#tab-historial') dtHist?.columns.adjust().draw(false);
-        if (href === '#tab-ultimos')   dtUltimos?.columns.adjust().draw(false);
-      }, 200);
-    });
-  });
+  <!-- Modales de selección (Materialize) -->
+  <div id="modalCentros" class="modal">
+    <div class="modal-content">
+      <h5>Selecciona un Centro</h5>
+      <ul id="listaCentros" class="collection"></ul>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" class="modal-close btn-flat">Cancelar</a>
+    </div>
+  </div>
+  <div id="modalLineas" class="modal">
+    <div class="modal-content">
+      <h5>Selecciona una Línea</h5>
+      <ul id="listaLineas" class="collection"></ul>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" class="modal-close btn-flat">Cancelar</a>
+    </div>
+  </div>
 
-  // Filtro estado línea
-  const selEstado = document.getElementById('fEstadoLinea');
-  selEstado?.addEventListener('change', () => {
-    F.estadoLinea = selEstado.value;
-    F.kpi = null;
-    marcarActivos();
-    aplicarFiltrosUltimos();
-  });
+  <!-- Modal Conteo Rápido (igual al que ya tienes) -->
+  <div id="conteoLineaModal" class="modal">
+    <div class="modal-content">
+      <h5 id="conteoTitulo">Conteo rápido</h5>
+      <div id="conteoDisplay" style="font-size:2rem; margin:1rem 0">#0</div>
+      <div id="statsLine" style="margin-bottom:1rem">
+        Tot: 0 | NB:0/0 NA:0/0 | S:0 | Col:0
+      </div>
+      <!-- Collapsible y campos… (igual al tuyo) -->
+      <!-- … -->
+    </div>
+    <div class="modal-footer">
+      <a id="btnUndoEvento" href="#!" class="btn-flat">Deshacer</a>
+      <a id="btnGuardarConteo" href="#!" class="btn">Guardar</a>
+      <a href="#!" class="modal-close btn-flat">Cancelar</a>
+    </div>
+  </div>
 
-  // Evento KPIs agrupados
-  document.getElementById('kpiGroups')?.addEventListener('click', e => {
-    const filter = e.target.dataset.kpi;
-    if (!filter) return;
-    F.kpi = (F.kpi === filter ? null : filter);
-    // Sincronizar select de estado si es KPI de línea o sinInventario
-    const s = document.getElementById('fEstadoLinea');
-    if (['linea_buena','linea_regular','linea_mala','sinInv'].includes(filter)) {
-      F.estadoLinea = filter === 'sinInv' ? 'sinInv' : 'all';
-      s.value = F.estadoLinea;
-      M.FormSelect.getInstance(s)?.destroy();
-      M.FormSelect.init(s);
-    }
-    marcarActivos();
-    aplicarFiltrosUltimos();
-  });
+  <!-- 1) jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-  // Refrescar tras guardar inventario
-  window.addEventListener('inventario-guardado', async () => {
-    await refreshHistorial();
-    await refreshUltimosYResumen();
-    mostrarResumen();
-  });
-});
+  <!-- 2) Materialize JS -->
+  <script>
+    // Desactivar AMD/UMD
+    const _d = window.define; const _a = _d && _d.amd;
+    if (_d && _a) delete window.define;
+    const s2 = document.createElement('script');
+    s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js';
+    s2.onload = () => {
+      console.log('Materialize cargado');
+      document.addEventListener('DOMContentLoaded', ()=> M.AutoInit());
+      if (_d) window.define = _d;
+      if (_a) window.define.amd = _a;
+    };
+    document.head.appendChild(s2);
+  </script>
 
-/**
- * Inicializa los selects de Centro y Línea usando Choices.js inyectado globalmente
- */
-function initChoicesSelects() {
-  const selectCentro = document.getElementById('inputCentro');
-  const selectLinea  = document.getElementById('inputLinea');
+  <!-- 3) Choices.js -->
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
-  // Poblar opciones Centro
-  Estado.centros.forEach((c, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = c.name;
-    selectCentro.appendChild(opt);
-  });
+  <!-- 4) DataTables & plugins -->
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
 
-  // Instancia Choices.js a través del global
-  const choicesCentro = new window.Choices(selectCentro, {
-    placeholder: true,
-    placeholderValue: 'Selecciona un centro',
-    searchPlaceholderValue: 'Buscar centro…',
-    itemSelectText: '',
-    shouldSort: false
-  });
-  const choicesLinea = new window.Choices(selectLinea, {
-    placeholder: true,
-    placeholderValue: 'Selecciona una línea',
-    searchPlaceholderValue: 'Buscar línea…',
-    itemSelectText: '',
-    shouldSort: false
-  });
-
-  // Al cambiar Centro, cargar Líneas
-  selectCentro.addEventListener('change', e => {
-    const idx   = parseInt(e.detail.value, 10);
-    window.selectedCentroIdx = idx;
-    const lines = Estado.centros[idx].lines || [];
-    choicesLinea.clearChoices();
-    choicesLinea.setChoices(
-      lines.map((l, i) => ({ value: i, label: l.number })),
-      'value', 'label', true
-    );
-    selectLinea.removeAttribute('disabled');
-    choicesLinea.showDropdown(true);
-  });
-
-  // Guardar selección Línea
-  selectLinea.addEventListener('change', e => {
-    window.selectedLineaIdx = parseInt(e.detail.value, 10);
-  });
-}
-
-/** Mostrar resumen del último inventario */
-function mostrarResumen() {
-  const cIdx = window.selectedCentroIdx;
-  const lIdx = window.selectedLineaIdx;
-  const cont = document.getElementById('resumenInventario');
-  if (cIdx == null || lIdx == null) { cont.style.display = 'none'; return; }
-  const invs = Estado.centros[cIdx].lines[lIdx].inventarios || [];
-  if (!invs.length) {
-    cont.style.display = 'block';
-    cont.innerHTML = '<em>Sin inventarios aún</em>';
-    return;
-  }
-  const u = invs[invs.length - 1];
-  cont.style.display = 'block';
-  cont.innerHTML = `
-    <b>Último:</b> ${fechaSolo(u.fecha)}<br>
-    Tot: ${u.boyas.total} |
-    NB ${u.boyas.negras.buenas}/${u.boyas.negras.malas} |
-    NA ${u.boyas.naranjas.buenas}/${u.boyas.naranjas.malas} |
-    S:${u.sueltas} | Col:${u.colchas}<br>
-    Estado: ${u.estadoLinea} | Obs: ${u.observaciones || '-'}
-  `;
-}
-
-/** Inicializa botón de Conteo Rápido */
-function initBotonConteo() {
-  document.getElementById('btnAbrirConteo')
-    .addEventListener('click', () => {
-      const c = window.selectedCentroIdx;
-      const l = window.selectedLineaIdx;
-      if (c == null || l == null) {
-        M.toast({ html: 'Selecciona centro y línea', classes: 'red' });
-        return;
-      }
-      abrirConteoLinea(c, l);
-    });
-}
-
-// ... (mantén intactas initTablaHistorial, refreshHistorial, initTablaUltimos, refreshUltimosYResumen,
-//     aplicarFiltrosUltimos, renderKPIs, marcarActivos)
+  <!-- 5) Tus módulos (Módulo ES) -->
+  <script type="module" src="../../js/inventarios/lineas_boyas/app_lineas.js"></script>
+  <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
+</body>
+</html>
