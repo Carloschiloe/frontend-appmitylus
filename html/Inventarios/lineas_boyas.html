@@ -98,25 +98,12 @@
         </select>
         <label>Filtrar por estado de línea</label>
       </div>
-      <table
-        id="tablaUltimos"
-        class="striped display nowrap"
-        style="width:100%"
-      >
+      <table id="tablaUltimos" class="striped display nowrap" style="width:100%">
         <thead>
           <tr>
-            <th>Centro</th>
-            <th>Línea</th>
-            <th>Fecha</th>
-            <th>Tot</th>
-            <th>NB Buenas</th>
-            <th>NB Malas</th>
-            <th>NA Buenas</th>
-            <th>NA Malas</th>
-            <th>Sueltas</th>
-            <th>Colchas</th>
-            <th>Estado Línea</th>
-            <th>Obs</th>
+            <th>Centro</th><th>Línea</th><th>Fecha</th><th>Tot</th>
+            <th>NB Buenas</th><th>NB Malas</th><th>NA Buenas</th><th>NA Malas</th>
+            <th>Sueltas</th><th>Colchas</th><th>Estado Línea</th><th>Obs</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -125,25 +112,12 @@
 
     <!-- ============ TAB HISTORIAL COMPLETO ============ -->
     <div id="tab-historial" style="padding-top:20px;">
-      <table
-        id="tablaInventariosLB"
-        class="striped display nowrap"
-        style="width:100%"
-      >
+      <table id="tablaInventariosLB" class="striped display nowrap" style="width:100%">
         <thead>
           <tr>
-            <th>Fecha</th>
-            <th>Centro</th>
-            <th>Línea</th>
-            <th>Tot</th>
-            <th>NB Buenas</th>
-            <th>NB Malas</th>
-            <th>NA Buenas</th>
-            <th>NA Malas</th>
-            <th>Sueltas</th>
-            <th>Colchas</th>
-            <th>Estado Línea</th>
-            <th>Obs</th>
+            <th>Fecha</th><th>Centro</th><th>Línea</th><th>Tot</th>
+            <th>NB Buenas</th><th>NB Malas</th><th>NA Buenas</th><th>NA Malas</th>
+            <th>Sueltas</th><th>Colchas</th><th>Estado Línea</th><th>Obs</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -174,13 +148,30 @@
   <!-- 1) jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-  <!-- 2) Materialize como ES module (sin UMD/AMD) -->
-  <script type="module">
-    import M from 'https://cdn.jsdelivr.net/npm/materialize-css@1.0.0/dist/js/materialize.esm.js';
-    window.M = M;
+  <!-- 2) Stub AMD para Materialize -->
+  <script>
+    // Guardamos cualquier define existente y creamos nuestro stub
+    window.__origDefine = window.define;
+    window.define = function(deps, factory) {
+      window.M = factory(window.jQuery);
+    };
+    window.define.amd = true;
   </script>
 
-  <!-- 3) DataTables y plugins -->
+  <!-- 3) Materialize JS (UMD) -->
+  <script src="https://cdn.jsdelivr.net/npm/materialize-css@1.0.0/dist/js/materialize.min.js"></script>
+
+  <!-- 4) Restauramos define original -->
+  <script>
+    if (window.__origDefine) {
+      window.define = window.__origDefine;
+    } else {
+      delete window.define;
+    }
+    delete window.__origDefine;
+  </script>
+
+  <!-- 5) DataTables y plugins -->
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -189,7 +180,7 @@
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
 
-  <!-- 4) Módulos propios -->
+  <!-- 6) Módulos propios -->
   <script type="module" src="../../js/inventarios/lineas_boyas/app_lineas.js"></script>
   <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
 </body>
