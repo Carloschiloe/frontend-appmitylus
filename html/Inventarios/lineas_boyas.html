@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario Líneas & Boyas</title>
+  <title>Inventario Líneas &amp; Boyas</title>
 
   <!-- Materialize -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
@@ -13,132 +13,20 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
 
-  <style>
-    .fixed-action-btn{position:fixed;right:16px;bottom:16px;}
-    .btn-count{width:100%;height:70px;font-size:1.05rem; position:relative;}
-    .btn-count::after {
-      content: attr(data-label);
-      display: block;
-      position: absolute;
-      bottom: 8px;
-      left: 0; right: 0;
-      text-align: center;
-      font-weight: 700;
-      color: white;
-      text-shadow: 0 0 4px rgba(0,0,0,0.7);
-      font-size: 1.1rem;
-    }
-    .tabs .tab a{color:#00796b;}
-    .tabs .tab a.active{color:#004d40;}
-    .tabs .indicator{background:#004d40;}
-    table.dataTable td{white-space:nowrap;}
-
-    /* === KPIs agrupados === */
-    #kpiGroups {
-      display: flex;
-      flex-wrap: nowrap;
-      gap: 10px;
-      margin-bottom: 10px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-    }
-    /* Tarjetas grandes */
-    .kpi-card {
-      flex: 0 0 30%;
-      min-width: 120px;
-      background: #e0f2f1;
-      border-radius: 8px;
-      padding: 12px 14px;
-    }
-    .kpi-card .title {
-      font-size: .95rem;
-      font-weight: 600;
-      color: #004d40;
-      margin-bottom: 4px;
-    }
-    .kpi-card .big {
-      font-size: 1.9rem;
-      font-weight: 700;
-      line-height: 1.1;
-      margin-bottom: 6px;
-    }
-    .kpi-card .subs span {
-      display: block;
-      font-size: .85rem;
-      color: #00695c;
-      margin: 2px 0;
-      cursor: pointer;
-    }
-    .kpi-card .subs span.active {
-      text-decoration: underline;
-      font-weight: 600;
-    }
-
-    /* Contenedor botones pequeños */
-    #kpiSmallGroup {
-      display: flex;
-      justify-content: space-around;
-      gap: 8px;
-      margin-top: 6px;
-      margin-bottom: 14px;
-      overflow-x: auto;
-    }
-    /* Tarjetas pequeñas (filtros) */
-    .kpi-mini {
-      flex: 0 0 28%;
-      min-width: 90px;
-      background: #e0f2f1;
-      border-radius: 8px;
-      padding: 10px 8px;
-      text-align: center;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .kpi-mini:hover { background: #b2dfdb; }
-    .kpi-mini .valor {
-      font-size: 1.4rem;
-      font-weight: 600;
-      display: block;
-      line-height: 1.2;
-    }
-    .kpi-mini.active { background: #80cbc4; }
-
-    /* Select pequeño */
-    #fEstadoLineaDiv{ margin:6px 0 12px; max-width:230px; }
-
-    /* Para pantallas más anchas, volver a flex-wrap: wrap */
-    @media (min-width: 600px) {
-      #kpiGroups {
-        flex-wrap: wrap;
-        overflow-x: visible;
-      }
-      .kpi-card {
-        flex: 1 1 260px;
-        min-width: 240px;
-      }
-      #kpiSmallGroup {
-        justify-content: flex-start;
-        margin-top: 0;
-        margin-bottom: 14px;
-      }
-      .kpi-mini {
-        flex: 1 1 140px;
-        min-width: 140px;
-        margin-top: 0;
-      }
-    }
-  </style>
+  <!-- Estilos propios -->
+  <link rel="stylesheet" href="css/lineas_boyas.css" />
 </head>
 <body class="grey lighten-4">
   <nav class="teal darken-2">
     <div class="nav-wrapper">
-      <a href="./index.html" class="btn-flat left" style="margin-left:8px"><i class="material-icons">arrow_back</i></a>
-      <span class="brand-logo center">Líneas & Boyas</span>
+      <a href="./index.html" class="btn-flat left" style="margin-left:8px">
+        <i class="material-icons">arrow_back</i>
+      </a>
+      <span class="brand-logo center">Líneas &amp; Boyas</span>
     </div>
   </nav>
 
   <div class="container" style="margin-top:16px;">
-
     <!-- Tabs internas -->
     <ul id="tabsLB" class="tabs">
       <li class="tab col s4"><a class="active" href="#tab-conteo">Conteo</a></li>
@@ -148,7 +36,6 @@
 
     <!-- ============ TAB CONTEO ============ -->
     <div id="tab-conteo" style="padding-top:20px;">
-      <!-- Selectores modal centro/línea -->
       <div class="row">
         <div class="input-field col s12 m6">
           <input id="inputCentro" type="text" readonly placeholder="Selecciona un centro" />
@@ -159,11 +46,7 @@
           <label for="inputLinea" class="active">Línea</label>
         </div>
       </div>
-
-      <!-- Resumen último inventario -->
       <div id="resumenInventario" class="card-panel grey lighten-3" style="display:none;"></div>
-
-      <!-- FAB para abrir conteo rápido -->
       <div class="fixed-action-btn">
         <a id="btnAbrirConteo" class="btn-floating btn-large red tooltipped" data-tooltip="Conteo rápido">
           <i class="material-icons">add</i>
@@ -173,17 +56,8 @@
 
     <!-- ============ TAB ÚLTIMOS / RESUMEN ============ -->
     <div id="tab-ultimos" style="padding-top:20px;">
-      <!-- KPIs agrupados -->
-      <div id="kpiGroups">
-        <!-- Aquí van las 3 tarjetas grandes -->
-      </div>
-
-      <!-- Contenedor para botones pequeños -->
-      <div id="kpiSmallGroup">
-        <!-- Aquí van los botones: Boyas sueltas, Colchas, Sin inventario -->
-      </div>
-
-      <!-- Filtro estado línea (opcional) -->
+      <div id="kpiGroups"></div>
+      <div id="kpiSmallGroup"></div>
       <div id="fEstadoLineaDiv" class="input-field">
         <select id="fEstadoLinea">
           <option value="all" selected>Estado (todas)</option>
@@ -194,23 +68,12 @@
         </select>
         <label>Filtrar por estado de línea</label>
       </div>
-
-      <!-- Tabla últimos por línea -->
       <table id="tablaUltimos" class="striped display nowrap" style="width:100%">
         <thead>
           <tr>
-            <th>Centro</th>
-            <th>Línea</th>
-            <th>Fecha</th>
-            <th>Tot</th>
-            <th>NB Buenas</th>
-            <th>NB Malas</th>
-            <th>NA Buenas</th>
-            <th>NA Malas</th>
-            <th>Sueltas</th>
-            <th>Colchas</th>
-            <th>Estado Línea</th>
-            <th>Obs</th>
+            <th>Centro</th><th>Línea</th><th>Fecha</th><th>Tot</th>
+            <th>NB Buenas</th><th>NB Malas</th><th>NA Buenas</th><th>NA Malas</th>
+            <th>Sueltas</th><th>Colchas</th><th>Estado Línea</th><th>Obs</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -222,27 +85,17 @@
       <table id="tablaInventariosLB" class="striped display nowrap" style="width:100%">
         <thead>
           <tr>
-            <th>Fecha</th>
-            <th>Centro</th>
-            <th>Línea</th>
-            <th>Tot</th>
-            <th>NB Buenas</th>
-            <th>NB Malas</th>
-            <th>NA Buenas</th>
-            <th>NA Malas</th>
-            <th>Sueltas</th>
-            <th>Colchas</th>
-            <th>Estado Línea</th>
-            <th>Obs</th>
+            <th>Fecha</th><th>Centro</th><th>Línea</th><th>Tot</th>
+            <th>NB Buenas</th><th>NB Malas</th><th>NA Buenas</th><th>NA Malas</th>
+            <th>Sueltas</th><th>Colchas</th><th>Estado Línea</th><th>Obs</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
-
   </div>
 
-  <!-- ======= MODALES SELECTORES ======= -->
+  <!-- MODALES SELECTORES -->
   <div id="modalCentros" class="modal">
     <div class="modal-content">
       <h5>Selecciona un Centro</h5>
@@ -252,7 +105,6 @@
       <a href="#!" class="modal-close btn-flat">Cancelar</a>
     </div>
   </div>
-
   <div id="modalLineas" class="modal">
     <div class="modal-content">
       <h5>Selecciona una Línea</h5>
@@ -263,7 +115,7 @@
     </div>
   </div>
 
-  <!-- ========= LIBRERÍAS ========= -->
+  <!-- LIBRERÍAS JS -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
@@ -274,73 +126,8 @@
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
-  <!-- Tus módulos -->
+  <!-- Módulos propios -->
   <script type="module" src="../../js/inventarios/lineas_boyas/app_lineas.js"></script>
   <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // Inicializar modales
-      const modalCentros = M.Modal.init(document.getElementById('modalCentros'), {dismissible: true});
-      const modalLineas = M.Modal.init(document.getElementById('modalLineas'), {dismissible: true});
-
-      // Abrir modal centro al tocar inputCentro
-      document.getElementById('inputCentro').addEventListener('click', () => {
-        modalCentros.open();
-      });
-
-      // Abrir modal línea al tocar inputLinea
-      document.getElementById('inputLinea').addEventListener('click', () => {
-        if (!window.selectedCentro) {
-          M.toast({html: 'Primero selecciona un centro', classes: 'red'});
-          return;
-        }
-        modalLineas.open();
-      });
-
-      // Función para cargar lista de centros en modal
-      window.loadCentrosModal = function(centros) {
-        const lista = document.getElementById('listaCentros');
-        lista.innerHTML = '';
-        centros.forEach(c => {
-          const li = document.createElement('li');
-          li.className = 'collection-item';
-          li.textContent = c.name;
-          li.style.cursor = 'pointer';
-          li.onclick = () => {
-            window.selectedCentro = c;
-            document.getElementById('inputCentro').value = c.name;
-            M.updateTextFields();
-            modalCentros.close();
-
-            // Limpiar línea al cambiar centro
-            window.selectedLinea = null;
-            document.getElementById('inputLinea').value = '';
-          };
-          lista.appendChild(li);
-        });
-      };
-
-      // Función para cargar lista de líneas en modal
-      window.loadLineasModal = function(lineas) {
-        const lista = document.getElementById('listaLineas');
-        lista.innerHTML = '';
-        lineas.forEach(l => {
-          const li = document.createElement('li');
-          li.className = 'collection-item';
-          li.textContent = l.number;
-          li.style.cursor = 'pointer';
-          li.onclick = () => {
-            window.selectedLinea = l;
-            document.getElementById('inputLinea').value = l.number;
-            M.updateTextFields();
-            modalLineas.close();
-          };
-          lista.appendChild(li);
-        });
-      };
-    });
-  </script>
-
 </body>
 </html>
