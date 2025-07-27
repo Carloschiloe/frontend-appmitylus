@@ -117,7 +117,7 @@
     </div>
   </div>
 
-  <!-- Modales -->
+  <!-- Modales de selección -->
   <div id="modalCentros" class="modal">
     <div class="modal-content">
       <h5>Selecciona un Centro</h5>
@@ -137,28 +137,77 @@
     </div>
   </div>
 
+  <!-- 👉 Aquí agregamos el modal de Conteo Rápido -->
+  <div id="conteoLineaModal" class="modal">
+    <div class="modal-content">
+      <h5 id="conteoTitulo">Conteo rápido</h5>
+      <div id="conteoDisplay" style="font-size:2rem; margin:1rem 0">#0</div>
+      <div id="statsLine" style="margin-bottom:1rem">Tot: 0 | NB:0/0 NA:0/0 | S:0 | Col:0</div>
+
+      <!-- Collapsible para botones de conteo -->
+      <ul class="collapsible">
+        <li>
+          <div class="collapsible-header">Negras</div>
+          <div class="collapsible-body">
+            <button class="btn-count btn" data-action="negra_buena">Negra Buena +</button>
+            <button class="btn-count btn" data-action="negra_mala">Negra Mala +</button>
+          </div>
+        </li>
+        <li>
+          <div class="collapsible-header">Naranjas</div>
+          <div class="collapsible-body">
+            <button class="btn-count btn" data-action="naranja_buena">Naranja Buena +</button>
+            <button class="btn-count btn" data-action="naranja_mala">Naranja Mala +</button>
+          </div>
+        </li>
+        <li>
+          <div class="collapsible-header">Otros</div>
+          <div class="collapsible-body">
+            <button class="btn-count btn" data-action="suelta">Sueltas +</button>
+            <button class="btn-count btn" data-action="colcha">Colchas +</button>
+          </div>
+        </li>
+      </ul>
+
+      <!-- Estado de línea -->
+      <div class="input-field" style="margin-top:1rem">
+        <select id="conteoEstadoLinea">
+          <option value="buena" selected>Buena</option>
+          <option value="regular">Regular</option>
+          <option value="mala">Mala</option>
+        </select>
+        <label>Estado Línea</label>
+      </div>
+
+      <!-- Observaciones -->
+      <div class="input-field">
+        <textarea id="conteoObs" class="materialize-textarea"></textarea>
+        <label for="conteoObs">Observaciones</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <a id="btnUndoEvento" href="#!" class="btn-flat">Deshacer</a>
+      <a id="btnGuardarConteo" href="#!" class="btn">Guardar</a>
+      <a href="#!" class="modal-close btn-flat">Cancelar</a>
+    </div>
+  </div>
+  <!-- Fin modal Conteo Rápido -->
+
   <!-- 1) jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
   <!-- 2) Cargamos Materialize evitando AMD/UMD -->
   <script>
     (function(){
-      // 2.1) Snapshot de define/amd
       const _define = window.define;
       const _amd = window.define && window.define.amd;
+      if (_define && _amd) window.define = undefined;
 
-      // 2.2) Desactiva AMD
-      if (_define && _amd) {
-        window.define = undefined;
-      }
-      // 2.3) Inserta Materialize en modo global
       const s = document.createElement('script');
       s.src = 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js';
       s.onload = () => {
         console.log('✅ Materialize cargado');
         document.addEventListener('DOMContentLoaded', ()=> M.AutoInit());
-
-        // 2.4) Restaurar define/amd
         if (_define) {
           window.define = _define;
           if (_amd) window.define.amd = _amd;
