@@ -15,6 +15,12 @@
     rel="stylesheet"
   />
 
+  <!-- Choices.js CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"
+  />
+
   <!-- DataTables CSS -->
   <link
     rel="stylesheet"
@@ -40,32 +46,28 @@
   </nav>
 
   <div class="container" style="margin-top:16px;">
-    <!-- === Tus tabs y contenido EXACTAMENTE igual === -->
+    <!-- Tabs internas -->
     <ul id="tabsLB" class="tabs">
       <li class="tab col s4"><a class="active" href="#tab-conteo">Conteo</a></li>
       <li class="tab col s4"><a href="#tab-ultimos">Últimos / Resumen</a></li>
       <li class="tab col s4"><a href="#tab-historial">Historial</a></li>
     </ul>
 
+    <!-- TAB CONTEO -->
     <div id="tab-conteo" style="padding-top:20px;">
       <div class="row">
+        <!-- Replace inputs with selects for Choices.js -->
         <div class="input-field col s12 m6">
-          <input
-            id="inputCentro"
-            type="text"
-            readonly
-            placeholder="Selecciona un centro"
-          />
-          <label for="inputCentro" class="active">Centro</label>
+          <select id="inputCentro">
+            <option value="" disabled selected>Selecciona un centro</option>
+          </select>
+          <label>Centro</label>
         </div>
         <div class="input-field col s12 m6">
-          <input
-            id="inputLinea"
-            type="text"
-            readonly
-            placeholder="Selecciona una línea"
-          />
-          <label for="inputLinea" class="active">Línea</label>
+          <select id="inputLinea" disabled>
+            <option value="" disabled selected>Selecciona una línea</option>
+          </select>
+          <label>Línea</label>
         </div>
       </div>
       <div
@@ -84,6 +86,7 @@
       </div>
     </div>
 
+    <!-- TAB ÚLTIMOS / RESUMEN -->
     <div id="tab-ultimos" style="padding-top:20px;">
       <div id="kpiGroups"></div>
       <div id="kpiSmallGroup"></div>
@@ -106,6 +109,7 @@
       </table>
     </div>
 
+    <!-- TAB HISTORIAL -->
     <div id="tab-historial" style="padding-top:20px;">
       <table
         id="tablaInventariosLB"
@@ -117,34 +121,13 @@
     </div>
   </div>
 
-  <!-- Modales de selección -->
-  <div id="modalCentros" class="modal">
-    <div class="modal-content">
-      <h5>Selecciona un Centro</h5>
-      <ul id="listaCentros" class="collection"></ul>
-    </div>
-    <div class="modal-footer">
-      <a href="#!" class="modal-close btn-flat">Cancelar</a>
-    </div>
-  </div>
-  <div id="modalLineas" class="modal">
-    <div class="modal-content">
-      <h5>Selecciona una Línea</h5>
-      <ul id="listaLineas" class="collection"></ul>
-    </div>
-    <div class="modal-footer">
-      <a href="#!" class="modal-close btn-flat">Cancelar</a>
-    </div>
-  </div>
-
-  <!-- 👉 Aquí agregamos el modal de Conteo Rápido -->
+  <!-- Modal Conteo Rápido (sin cambios) -->
   <div id="conteoLineaModal" class="modal">
     <div class="modal-content">
       <h5 id="conteoTitulo">Conteo rápido</h5>
       <div id="conteoDisplay" style="font-size:2rem; margin:1rem 0">#0</div>
       <div id="statsLine" style="margin-bottom:1rem">Tot: 0 | NB:0/0 NA:0/0 | S:0 | Col:0</div>
 
-      <!-- Collapsible para botones de conteo -->
       <ul class="collapsible">
         <li>
           <div class="collapsible-header">Negras</div>
@@ -169,7 +152,6 @@
         </li>
       </ul>
 
-      <!-- Estado de línea -->
       <div class="input-field" style="margin-top:1rem">
         <select id="conteoEstadoLinea">
           <option value="buena" selected>Buena</option>
@@ -179,7 +161,6 @@
         <label>Estado Línea</label>
       </div>
 
-      <!-- Observaciones -->
       <div class="input-field">
         <textarea id="conteoObs" class="materialize-textarea"></textarea>
         <label for="conteoObs">Observaciones</label>
@@ -191,35 +172,17 @@
       <a href="#!" class="modal-close btn-flat">Cancelar</a>
     </div>
   </div>
-  <!-- Fin modal Conteo Rápido -->
 
   <!-- 1) jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-  <!-- 2) Cargamos Materialize evitando AMD/UMD -->
-  <script>
-    (function(){
-      const _define = window.define;
-      const _amd = window.define && window.define.amd;
-      if (_define && _amd) window.define = undefined;
+  <!-- 2) Materialize JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js';
-      s.onload = () => {
-        console.log('✅ Materialize cargado');
-        document.addEventListener('DOMContentLoaded', ()=> M.AutoInit());
-        if (_define) {
-          window.define = _define;
-          if (_amd) window.define.amd = _amd;
-        } else {
-          delete window.define;
-        }
-      };
-      document.head.appendChild(s);
-    })();
-  </script>
+  <!-- 3) Choices.js JS -->
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
-  <!-- 3) DataTables & plugins -->
+  <!-- 4) DataTables & plugins -->
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -228,7 +191,7 @@
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
 
-  <!-- 4) Tus módulos JS -->
+  <!-- 5) Tus módulos JS -->
   <script type="module" src="../../js/inventarios/lineas_boyas/app_lineas.js"></script>
   <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
 </body>
