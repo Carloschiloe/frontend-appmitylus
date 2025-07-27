@@ -1,198 +1,174 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Inventario Líneas &amp; Boyas</title>
+import { Estado } from '../../core/estado.js';
+import { getCentrosAll } from '../../core/centros_repo.js';
+import { initConteoRapido, abrirConteoLinea } from './conteo_rapido.js';
 
-  <!-- Materialize CSS -->
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
-  />
-  <link
-    href="https://fonts.googleapis.com/icon?family=Material+Icons"
-    rel="stylesheet"
-  />
+let dtHist = null;
+let dtUltimos = null;
+let ultimosData = [];
 
-  <!-- Choices.js CSS -->
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"
-  />
+// Filtros actuales
+const F = { estadoLinea: 'all', kpi: null };
 
-  <!-- DataTables CSS -->
-  <link
-    rel="stylesheet"
-    href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"
-  />
+// Formatea fecha como DD-MM-YYYY
+const fechaSolo = iso => {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-CL', {
+    day: '2-digit', month: '2-digit', year: 'numeric'
+  });
+};
 
-  <!-- Tus estilos -->
-  <link rel="stylesheet" href="../../css/lineas_boyas.css"/>
-</head>
+document.addEventListener('DOMContentLoaded', async () => {
+  M.AutoInit();
 
-<body class="grey lighten-4">
-  <nav class="teal darken-2">
-    <div class="nav-wrapper">
-      <a href="./index.html" class="btn-flat left" style="margin-left:8px">
-        <i class="material-icons">arrow_back</i>
-      </a>
-      <span class="brand-logo center">Líneas &amp; Boyas</span>
-    </div>
-  </nav>
+  // Cargo centros
+  Estado.centros = await getCentrosAll();
+  Estado.centros.forEach(c => { if (!Array.isArray(c.lines)) c.lines = []; });
 
-  <div class="container" style="margin-top:16px;">
-    <!-- Tabs internas -->
-    <ul id="tabsLB" class="tabs">
-      <li class="tab col s4"><a class="active" href="#tab-conteo">Conteo</a></li>
-      <li class="tab col s4"><a href="#tab-ultimos">Últimos / Resumen</a></li>
-      <li class="tab col s4"><a href="#tab-historial">Historial</a></li>
-    </ul>
+  // Inicializa selects con Choices (global)
+  initChoicesSelects();
 
-    <!-- TAB CONTEO -->
-    <div id="tab-conteo" style="padding-top:20px;">
-      <div class="row">
-        <!-- Replace inputs with selects for Choices.js -->
-        <div class="input-field col s12 m6">
-          <select id="inputCentro">
-            <option value="" disabled selected>Selecciona un centro</option>
-          </select>
-          <label>Centro</label>
-        </div>
-        <div class="input-field col s12 m6">
-          <select id="inputLinea" disabled>
-            <option value="" disabled selected>Selecciona una línea</option>
-          </select>
-          <label>Línea</label>
-        </div>
-      </div>
-      <div
-        id="resumenInventario"
-        class="card-panel grey lighten-3"
-        style="display:none"
-      ></div>
-      <div class="fixed-action-btn">
-        <a
-          id="btnAbrirConteo"
-          class="btn-floating btn-large red tooltipped"
-          data-tooltip="Conteo rápido"
-        >
-          <i class="material-icons">add</i>
-        </a>
-      </div>
-    </div>
+  // Conteo rápido
+  initConteoRapido();
+  initBotonConteo();
 
-    <!-- TAB ÚLTIMOS / RESUMEN -->
-    <div id="tab-ultimos" style="padding-top:20px;">
-      <div id="kpiGroups"></div>
-      <div id="kpiSmallGroup"></div>
-      <div id="fEstadoLineaDiv" class="input-field">
-        <select id="fEstadoLinea">
-          <option value="all" selected>Estado (todas)</option>
-          <option value="buena">Buenas</option>
-          <option value="regular">Regulares</option>
-          <option value="mala">Malas</option>
-          <option value="sinInv">Sin inventario</option>
-        </select>
-        <label>Filtrar por estado de línea</label>
-      </div>
-      <table
-        id="tablaUltimos"
-        class="striped display nowrap"
-        style="width:100%"
-      >
-        <!-- tu thead aquí -->
-      </table>
-    </div>
+  // Tablas
+  initTablaHistorial();
+  initTablaUltimos();
 
-    <!-- TAB HISTORIAL -->
-    <div id="tab-historial" style="padding-top:20px;">
-      <table
-        id="tablaInventariosLB"
-        class="striped display nowrap"
-        style="width:100%"
-      >
-        <!-- tu thead aquí -->
-      </table>
-    </div>
-  </div>
+  // Datos iniciales
+  await refreshHistorial();
+  await refreshUltimosYResumen();
+  mostrarResumen();
 
-  <!-- Modal Conteo Rápido (sin cambios) -->
-  <div id="conteoLineaModal" class="modal">
-    <div class="modal-content">
-      <h5 id="conteoTitulo">Conteo rápido</h5>
-      <div id="conteoDisplay" style="font-size:2rem; margin:1rem 0">#0</div>
-      <div id="statsLine" style="margin-bottom:1rem">Tot: 0 | NB:0/0 NA:0/0 | S:0 | Col:0</div>
+  // Tabs con hash
+  const tabs = M.Tabs.getInstance(document.getElementById('tabsLB'));
+  if (window.location.hash === '#tab-historial') tabs?.select('tab-historial');
+  if (window.location.hash === '#tab-ultimos')   tabs?.select('tab-ultimos');
 
-      <ul class="collapsible">
-        <li>
-          <div class="collapsible-header">Negras</div>
-          <div class="collapsible-body">
-            <button class="btn-count btn" data-action="negra_buena">Negra Buena +</button>
-            <button class="btn-count btn" data-action="negra_mala">Negra Mala +</button>
-          </div>
-        </li>
-        <li>
-          <div class="collapsible-header">Naranjas</div>
-          <div class="collapsible-body">
-            <button class="btn-count btn" data-action="naranja_buena">Naranja Buena +</button>
-            <button class="btn-count btn" data-action="naranja_mala">Naranja Mala +</button>
-          </div>
-        </li>
-        <li>
-          <div class="collapsible-header">Otros</div>
-          <div class="collapsible-body">
-            <button class="btn-count btn" data-action="suelta">Sueltas +</button>
-            <button class="btn-count btn" data-action="colcha">Colchas +</button>
-          </div>
-        </li>
-      </ul>
+  // Ajuste columnas al cambiar tab
+  document.querySelectorAll('#tabsLB a').forEach(a => {
+    a.addEventListener('click', e => {
+      const href = e.currentTarget.getAttribute('href');
+      setTimeout(() => {
+        if (href === '#tab-historial') dtHist?.columns.adjust().draw(false);
+        if (href === '#tab-ultimos')   dtUltimos?.columns.adjust().draw(false);
+      }, 200);
+    });
+  });
 
-      <div class="input-field" style="margin-top:1rem">
-        <select id="conteoEstadoLinea">
-          <option value="buena" selected>Buena</option>
-          <option value="regular">Regular</option>
-          <option value="mala">Mala</option>
-        </select>
-        <label>Estado Línea</label>
-      </div>
+  // Filtro estado línea
+  const selEstado = document.getElementById('fEstadoLinea');
+  selEstado?.addEventListener('change', () => {
+    F.estadoLinea = selEstado.value;
+    F.kpi = null;
+    marcarActivos();
+    aplicarFiltrosUltimos();
+  });
 
-      <div class="input-field">
-        <textarea id="conteoObs" class="materialize-textarea"></textarea>
-        <label for="conteoObs">Observaciones</label>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <a id="btnUndoEvento" href="#!" class="btn-flat">Deshacer</a>
-      <a id="btnGuardarConteo" href="#!" class="btn">Guardar</a>
-      <a href="#!" class="modal-close btn-flat">Cancelar</a>
-    </div>
-  </div>
+  // KPIs agrupados
+  document.getElementById('kpiGroups')?.addEventListener('click', e => {
+    const filter = e.target.dataset.kpi;
+    if (!filter) return;
+    F.kpi = (F.kpi === filter ? null : filter);
+    const s = document.getElementById('fEstadoLinea');
+    if (['linea_buena','linea_regular','linea_mala','sinInv'].includes(filter)) {
+      F.estadoLinea = (filter === 'sinInv' ? 'sinInv' : 'all');
+      s.value = F.estadoLinea;
+      M.FormSelect.getInstance(s)?.destroy();
+      M.FormSelect.init(s);
+    }
+    marcarActivos(); aplicarFiltrosUltimos();
+  });
 
-  <!-- 1) jQuery -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  // Refresca tras guardar inventario
+  window.addEventListener('inventario-guardado', async () => {
+    await refreshHistorial();
+    await refreshUltimosYResumen();
+    mostrarResumen();
+  });
+});
 
-  <!-- 2) Materialize JS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+/**
+ * Inicializa los selects de Centro y Línea usando el global Choices
+ */
+function initChoicesSelects() {
+  const selectCentro = document.getElementById('inputCentro');
+  const selectLinea  = document.getElementById('inputLinea');
 
-  <!-- 3) Choices.js JS -->
-  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+  // Poblar opciones centro
+  Estado.centros.forEach((c,i) => {
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = c.name;
+    selectCentro.appendChild(opt);
+  });
 
-  <!-- 4) DataTables & plugins -->
-  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+  // Instancia Choices (global)
+  const choicesCentro = new window.Choices(selectCentro, {
+    placeholder: true,
+    placeholderValue: 'Selecciona un centro',
+    searchPlaceholderValue: 'Buscar centro…',
+    itemSelectText: '',
+    shouldSort: false
+  });
+  const choicesLinea = new window.Choices(selectLinea, {
+    placeholder: true,
+    placeholderValue: 'Selecciona una línea',
+    searchPlaceholderValue: 'Buscar línea…',
+    itemSelectText: '',
+    shouldSort: false
+  });
 
-  <!-- 5) Tus módulos JS -->
-  <script type="module" src="../../js/inventarios/lineas_boyas/app_lineas.js"></script>
-  <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
-</body>
-</html>
+  // On change centro: cargar líneas
+  selectCentro.addEventListener('change', e => {
+    const idx = parseInt(e.detail.value, 10);
+    window.selectedCentroIdx = idx;
+    const lines = Estado.centros[idx].lines || [];
+    choicesLinea.clearChoices();
+    choicesLinea.setChoices(
+      lines.map((l,i) => ({ value:i, label:l.number })),
+      'value','label', true
+    );
+    selectLinea.removeAttribute('disabled');
+    choicesLinea.showDropdown(true);
+  });
+
+  // On change línea
+  selectLinea.addEventListener('change', e => {
+    window.selectedLineaIdx = parseInt(e.detail.value,10);
+  });
+}
+
+// --- resto de funciones (mostrarResumen, initBotonConteo, tablas, filtros, KPIs) ---
+
+function mostrarResumen() {
+  const cIdx = window.selectedCentroIdx;
+  const lIdx = window.selectedLineaIdx;
+  const cont = document.getElementById('resumenInventario');
+  if (cIdx==null || lIdx==null) { cont.style.display='none'; return; }
+  const invs = Estado.centros[cIdx].lines[lIdx].inventarios || [];
+  if (!invs.length) {
+    cont.style.display='block'; cont.innerHTML='<em>Sin inventarios aún</em>'; return;
+  }
+  const u = invs[invs.length-1];
+  cont.style.display='block';
+  cont.innerHTML = `<b>Último:</b> ${fechaSolo(u.fecha)}<br>
+    Tot: ${u.boyas.total} | NB ${u.boyas.negras.buenas}/${u.boyas.negras.malas} |
+    NA ${u.boyas.naranjas.buenas}/${u.boyas.naranjas.malas} |
+    S:${u.sueltas} | Col:${u.colchas}<br>
+    Estado: ${u.estadoLinea} | Obs: ${u.observaciones||'-'}`;
+}
+
+function initBotonConteo() {
+  document.getElementById('btnAbrirConteo')
+    .addEventListener('click', () => {
+      const c=window.selectedCentroIdx, l=window.selectedLineaIdx;
+      if (c==null||l==null) {
+        M.toast({ html:'Selecciona centro y línea', classes:'red' }); return;
+      }
+      abrirConteoLinea(c,l);
+    });
+}
+
+// (deja intactas initTablaHistorial, refreshHistorial, initTablaUltimos, refreshUltimosYResumen,
+//  aplicarFiltrosUltimos, renderKPIs, marcarActivos)
