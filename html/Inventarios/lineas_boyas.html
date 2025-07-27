@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inventario Líneas &amp; Boyas</title>
 
-  <!-- Materialize CSS -->
+  <!-- Materialize CSS (sin tocar) -->
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
@@ -15,7 +15,7 @@
     rel="stylesheet"
   />
 
-  <!-- DataTables CSS -->
+  <!-- DataTables CSS (sin tocar) -->
   <link
     rel="stylesheet"
     href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
@@ -26,7 +26,7 @@
   />
 
   <!-- Tus estilos -->
-  <link rel="stylesheet" href="../../css/lineas_boyas.css" />
+  <link rel="stylesheet" href="../../css/lineas_boyas.css"/>
 </head>
 <body class="grey lighten-4">
   <nav class="teal darken-2">
@@ -39,6 +39,7 @@
   </nav>
 
   <div class="container" style="margin-top:16px;">
+    <!-- === Tus tabs y contenido EXACTAMENTE igual === -->
     <ul id="tabsLB" class="tabs">
       <li class="tab col s4"><a class="active" href="#tab-conteo">Conteo</a></li>
       <li class="tab col s4"><a href="#tab-ultimos">Últimos / Resumen</a></li>
@@ -48,15 +49,15 @@
     <div id="tab-conteo" style="padding-top:20px;">
       <div class="row">
         <div class="input-field col s12 m6">
-          <input id="inputCentro" type="text" readonly placeholder="Selecciona un centro" />
+          <input id="inputCentro" type="text" readonly placeholder="Selecciona un centro"/>
           <label for="inputCentro" class="active">Centro</label>
         </div>
         <div class="input-field col s12 m6">
-          <input id="inputLinea" type="text" readonly placeholder="Selecciona una línea" />
+          <input id="inputLinea" type="text" readonly placeholder="Selecciona una línea"/>
           <label for="inputLinea" class="active">Línea</label>
         </div>
       </div>
-      <div id="resumenInventario" class="card-panel grey lighten-3" style="display:none;"></div>
+      <div id="resumenInventario" class="card-panel grey lighten-3" style="display:none"></div>
       <div class="fixed-action-btn">
         <a id="btnAbrirConteo" class="btn-floating btn-large red tooltipped" data-tooltip="Conteo rápido">
           <i class="material-icons">add</i>
@@ -78,18 +79,17 @@
         <label>Filtrar por estado de línea</label>
       </div>
       <table id="tablaUltimos" class="striped display nowrap" style="width:100%">
-        <!-- tu thead igual -->
+        <!-- tu thead aquí -->
       </table>
     </div>
 
     <div id="tab-historial" style="padding-top:20px;">
       <table id="tablaInventariosLB" class="striped display nowrap" style="width:100%">
-        <!-- tu thead igual -->
+        <!-- tu thead aquí -->
       </table>
     </div>
   </div>
 
-  <!-- Modales -->
   <div id="modalCentros" class="modal">
     <div class="modal-content">
       <h5>Selecciona un Centro</h5>
@@ -109,24 +109,29 @@
     </div>
   </div>
 
-  <!-- Scripts en este orden -->
+  <!-- 1) jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- 2) Materialize vía fetch+eval para evitar UMD/AMD -->
   <script>
-    if (!window.jQuery) console.error('jQuery falló');
-    else console.log('jQuery OK');
+    // Borramos cualquier define/Amd que quede dando vueltas
+    delete window.define;
+    delete window.exports;
+
+    fetch('https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js')
+      .then(r => r.text())
+      .then(src => {
+        // Ejecutamos directamente el código de Materialize
+        eval(src);
+        // Y lo inicializamos
+        document.addEventListener('DOMContentLoaded', () => {
+          M.AutoInit();
+        });
+      })
+      .catch(console.error);
   </script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <script>
-    if (!window.M) console.error('Materialize falló');
-    else {
-      console.log('Materialize OK');
-      document.addEventListener('DOMContentLoaded', () => {
-        M.AutoInit();
-      });
-    }
-  </script>
-
+  <!-- 3) DataTables & plugins -->
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -135,14 +140,8 @@
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
 
-  <!-- Tus módulos -->
+  <!-- 4) Tus módulos -->
   <script type="module" src="../../js/inventarios/lineas_boyas/app_lineas.js"></script>
   <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
 </body>
 </html>
-
-
-
-
-
-
