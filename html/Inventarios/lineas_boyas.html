@@ -46,7 +46,7 @@
       <li class="tab col s4"><a href="#tab-historial">Historial</a></li>
     </ul>
 
-    <!-- TAB CONTEO -->
+    <!-- ============ TAB CONTEO ============ -->
     <div id="tab-conteo" style="padding-top:20px;">
       <div class="row">
         <div class="input-field col s12 m6">
@@ -84,7 +84,7 @@
       </div>
     </div>
 
-    <!-- TAB ÚLTIMOS / RESUMEN -->
+    <!-- ============ TAB ÚLTIMOS / RESUMEN ============ -->
     <div id="tab-ultimos" style="padding-top:20px;">
       <div id="kpiGroups"></div>
       <div id="kpiSmallGroup"></div>
@@ -98,26 +98,52 @@
         </select>
         <label>Filtrar por estado de línea</label>
       </div>
-      <table id="tablaUltimos" class="striped display nowrap" style="width:100%">
+      <table
+        id="tablaUltimos"
+        class="striped display nowrap"
+        style="width:100%"
+      >
         <thead>
           <tr>
-            <th>Centro</th><th>Línea</th><th>Fecha</th><th>Tot</th>
-            <th>NB Buenas</th><th>NB Malas</th><th>NA Buenas</th><th>NA Malas</th>
-            <th>Sueltas</th><th>Colchas</th><th>Estado Línea</th><th>Obs</th>
+            <th>Centro</th>
+            <th>Línea</th>
+            <th>Fecha</th>
+            <th>Tot</th>
+            <th>NB Buenas</th>
+            <th>NB Malas</th>
+            <th>NA Buenas</th>
+            <th>NA Malas</th>
+            <th>Sueltas</th>
+            <th>Colchas</th>
+            <th>Estado Línea</th>
+            <th>Obs</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
 
-    <!-- TAB HISTORIAL -->
+    <!-- ============ TAB HISTORIAL COMPLETO ============ -->
     <div id="tab-historial" style="padding-top:20px;">
-      <table id="tablaInventariosLB" class="striped display nowrap" style="width:100%">
+      <table
+        id="tablaInventariosLB"
+        class="striped display nowrap"
+        style="width:100%"
+      >
         <thead>
           <tr>
-            <th>Fecha</th><th>Centro</th><th>Línea</th><th>Tot</th>
-            <th>NB Buenas</th><th>NB Malas</th><th>NA Buenas</th><th>NA Malas</th>
-            <th>Sueltas</th><th>Colchas</th><th>Estado Línea</th><th>Obs</th>
+            <th>Fecha</th>
+            <th>Centro</th>
+            <th>Línea</th>
+            <th>Tot</th>
+            <th>NB Buenas</th>
+            <th>NB Malas</th>
+            <th>NA Buenas</th>
+            <th>NA Malas</th>
+            <th>Sueltas</th>
+            <th>Colchas</th>
+            <th>Estado Línea</th>
+            <th>Obs</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -147,16 +173,14 @@
 
   <!-- 1) jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- 2) Desactivar AMD para Materialize -->
-  <script>
-    if (window.define && window.define.amd) {
-      window.define.amd = false;
-    }
-  </script>
-  <!-- 3) Materialize JS -->
-  <script src="https://cdn.jsdelivr.net/npm/materialize-css@1.0.0/dist/js/materialize.min.js"></script>
 
-  <!-- 4) DataTables JS -->
+  <!-- 2) Materialize como ES module (sin UMD/AMD) -->
+  <script type="module">
+    import M from 'https://cdn.jsdelivr.net/npm/materialize-css@1.0.0/dist/js/materialize.esm.js';
+    window.M = M;
+  </script>
+
+  <!-- 3) DataTables y plugins -->
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -165,7 +189,7 @@
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
 
-  <!-- 5) Módulos propios -->
+  <!-- 4) Módulos propios -->
   <script type="module" src="../../js/inventarios/lineas_boyas/app_lineas.js"></script>
   <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
 </body>
