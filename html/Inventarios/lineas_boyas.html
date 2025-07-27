@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- 0) Deshabilitamos AMD para que ni Materialize ni DataTables lo detecten -->
+  <script>window.define = undefined;</script>
+
   <title>Inventario Líneas &amp; Boyas</title>
 
-  <!-- Materialize CSS (sin tocar) -->
+  <!-- Materialize CSS -->
   <link
     rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/materialize-css@1.0.0/dist/css/materialize.min.css"
+    href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
   />
   <link
     href="https://fonts.googleapis.com/icon?family=Material+Icons"
     rel="stylesheet"
   />
 
-  <!-- DataTables CSS (sin tocar) -->
+  <!-- DataTables CSS -->
   <link
     rel="stylesheet"
     href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
@@ -39,13 +43,14 @@
   </nav>
 
   <div class="container" style="margin-top:16px;">
-    <!-- Tus tabs y contenido EXACTAMENTE igual -->
+    <!-- Tabs internas -->
     <ul id="tabsLB" class="tabs">
       <li class="tab col s4"><a class="active" href="#tab-conteo">Conteo</a></li>
       <li class="tab col s4"><a href="#tab-ultimos">Últimos / Resumen</a></li>
       <li class="tab col s4"><a href="#tab-historial">Historial</a></li>
     </ul>
 
+    <!-- ============ TAB CONTEO ============ -->
     <div id="tab-conteo" style="padding-top:20px;">
       <div class="row">
         <div class="input-field col s12 m6">
@@ -65,6 +70,7 @@
       </div>
     </div>
 
+    <!-- ============ TAB ÚLTIMOS / RESUMEN ============ -->
     <div id="tab-ultimos" style="padding-top:20px;">
       <div id="kpiGroups"></div>
       <div id="kpiSmallGroup"></div>
@@ -90,6 +96,7 @@
       </table>
     </div>
 
+    <!-- ============ TAB HISTORIAL COMPLETO ============ -->
     <div id="tab-historial" style="padding-top:20px;">
       <table id="tablaInventariosLB" class="striped display nowrap" style="width:100%">
         <thead>
@@ -104,23 +111,39 @@
     </div>
   </div>
 
-  <!-- Modales (sin tocar) -->
-  <div id="modalCentros" class="modal">…</div>
-  <div id="modalLineas" class="modal">…</div>
+  <!-- MODALES SELECTORES -->
+  <div id="modalCentros" class="modal">
+    <div class="modal-content">
+      <h5>Selecciona un Centro</h5>
+      <ul id="listaCentros" class="collection"></ul>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" class="modal-close btn-flat">Cancelar</a>
+    </div>
+  </div>
+  <div id="modalLineas" class="modal">
+    <div class="modal-content">
+      <h5>Selecciona una Línea</h5>
+      <ul id="listaLineas" class="collection"></ul>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" class="modal-close btn-flat">Cancelar</a>
+    </div>
+  </div>
 
   <!-- 1) jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-  <!-- 2) Materialize JS (antes que DataTables) -->
-  <script src="https://cdn.jsdelivr.net/npm/materialize-css@1.0.0/dist/js/materialize.min.js"></script>
+  <!-- 2) Materialize JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script>
-    // Ahí mismo, inicializamos Materialize.
     document.addEventListener('DOMContentLoaded', function(){
+      // Inicializamos tabs, modals, selects, tooltips...
       M.AutoInit();
     });
   </script>
 
-  <!-- 3) DataTables y plugins -->
+  <!-- 3) DataTables y Plugins -->
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -134,6 +157,7 @@
   <script type="module" src="../../js/inventarios/lineas_boyas/conteo_rapido.js"></script>
 </body>
 </html>
+
 
 
 
