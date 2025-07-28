@@ -24,14 +24,49 @@ export function initTablaCentros() {
   Estado.table = $t.DataTable({
     colReorder: true,
     dom: 'Bfrtip',
-    buttons: ['copy', 'csv', 'excel', 'pdf'],
+    buttons: [
+      {
+        extend: 'copyHtml5',
+        exportOptions: { columns: ':visible', footer: true }
+      },
+      {
+        extend: 'csvHtml5',
+        exportOptions: { columns: ':visible', footer: true }
+      },
+      {
+        extend: 'excelHtml5',
+        exportOptions: { columns: ':visible', footer: true }
+      },
+      {
+        extend: 'pdfHtml5',
+        exportOptions: { columns: ':visible', footer: true }
+      }
+    ],
     searching: false,
     language: {
       url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+    },
+    footerCallback: function () {
+      // Calcula totales de todas las filas
+      let sumH = 0, sumB = 0, sumL = 0;
+      Estado.centros.forEach(c => {
+        sumH += parseFloat(c.hectareas) || 0;
+        sumB += Array.isArray(c.lines)
+          ? c.lines.reduce((s, l) => s + (+l.buoys || 0), 0)
+          : 0;
+        sumL += Array.isArray(c.lines) ? c.lines.length : 0;
+      });
+      // Actualiza el footer
+      const h = document.getElementById('totalHect');
+      const b = document.getElementById('totalBoyas');
+      const l = document.getElementById('totalLineas');
+      if (h && b && l) {
+        h.textContent = sumH.toFixed(2);
+        b.textContent = sumB;
+        l.textContent = sumL;
+      }
     }
   });
-  // Cada vez que se redibuja la tabla, recalcular totales
-  Estado.table.on('draw', calcularTotales);
 }
 
 export async function loadCentros() {
@@ -62,7 +97,7 @@ export async function loadCentros() {
 
   Estado.table.clear().rows.add(rows).draw();
 
-  // Limpiar y renderizar acordeón de líneas
+  // Limpia y renderiza acordeón de líneas
   const acordeonCont = document.getElementById('acordeonLineas');
   document.querySelectorAll('.acordeon-lineas-row').forEach(r => r.remove());
   if (acordeonCont) acordeonCont.innerHTML = '';
@@ -220,25 +255,6 @@ export async function loadCentros() {
     });
 }
 
-function calcularTotales() {
-  let sumH = 0, sumB = 0, sumL = 0;
-  Estado.centros.forEach(c => {
-    sumH += parseFloat(c.hectareas) || 0;
-    sumB += Array.isArray(c.lines)
-      ? c.lines.reduce((s, l) => s + (+l.buoys || 0), 0)
-      : 0;
-    sumL += Array.isArray(c.lines) ? c.lines.length : 0;
-  });
-  const h = document.getElementById('totalHect');
-  const b = document.getElementById('totalBoyas');
-  const l = document.getElementById('totalLineas');
-  if (h && b && l) {
-    h.textContent = sumH.toFixed(2);
-    b.textContent = sumB;
-    l.textContent = sumL;
-  }
-}
-
 export function filtrarLineas() {
   const cont = document.getElementById('acordeonLineas');
   if (!cont) return;
@@ -256,4 +272,3 @@ export function filtrarLineas() {
     fila.style.display = okTxt && okEst ? '' : 'none';
   });
 }
-
