@@ -3,18 +3,14 @@
 import { Estado } from '../core/estado.js';
 import {
   getCentrosAll,
-  createCentro,
-  updateCentro,
-  deleteCentro,
-  addLinea,
-  updateLinea,
-  deleteLinea
+  addLinea, updateLinea, deleteLinea,
+  createCentro, updateCentro, deleteCentro
 } from '../core/centros_repo.js';
 import { renderAcordeonLineas } from './lineas.js';
 import { abrirModalTareas } from '../tareas/tareas.js';
 import { renderMapaAlways } from '../mapas/control_mapa.js';
 import { tabMapaActiva } from '../core/utilidades_app.js';
-import { actualizarSelectsFiltro, refrescarEventos } from '../calendario/calendario.js';
+import { actualizarSelectosFiltro, refrescarEventos } from '../calendario/calendario.js';
 import { openEditForm, renderPointsTable } from './centros_form.js';
 
 export function initTablaCentros() {
@@ -23,9 +19,11 @@ export function initTablaCentros() {
     console.error('No se encontró #centrosTable');
     return;
   }
-  // Eliminados dom y buttons para quitar exportación
+  // Restauramos dom y botones de export
   Estado.table = $centrosTable.DataTable({
     colReorder: true,
+    dom: 'Bfrtip',
+    buttons: ['copy', 'csv', 'excel', 'pdf'],
     searching: false,
     language: {
       url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
@@ -45,25 +43,23 @@ export async function loadCentros() {
       const cantLineas = Array.isArray(c.lines) ? c.lines.length : 0;
       const hect = parseFloat(c.hectareas) || 0;
 
-      // Celda Coordenadas: icono + texto
+      // Icono ojo para Coordenadas
       const coordsCell = `
-        <span class="btn-flat btn-coords" data-idx="${i}">
-          <i class="material-icons" style="vertical-align:middle;">visibility</i>
-          <span style="vertical-align:middle;">Coordenadas</span>
-        </span>`;
+        <i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer;">
+          visibility
+        </i>`;
 
-      // Celda Acciones: ver líneas, editar, eliminar
+      // Tres iconos en una línea para Acciones
       const accionesCell = `
-        <span class="btn-flat btn-toggle-lineas" data-idx="${i}">
-          <i class="material-icons" style="vertical-align:middle;">visibility</i>
-          <span style="vertical-align:middle;">Líneas</span>
-        </span>
-        <span class="btn-flat editar-centro" data-idx="${i}">
-          <i class="material-icons">edit</i>
-        </span>
-        <span class="btn-flat eliminar-centro" data-idx="${i}">
-          <i class="material-icons">delete</i>
-        </span>`;
+        <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer;">
+          visibility
+        </i>
+        <i class="material-icons editar-centro" data-idx="${i}" style="cursor:pointer;">
+          edit
+        </i>
+        <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer;">
+          delete
+        </i>`;
 
       return [
         c.name,
@@ -78,38 +74,30 @@ export async function loadCentros() {
 
   Estado.table.clear().rows.add(rows).draw();
 
-  // Limpia acordeón de líneas
+  // Resto de la lógica de acordeón y eventos (sin cambios)...
+
   const acordeonCont = document.getElementById('acordeonLineas');
   document.querySelectorAll('.acordeon-lineas-row').forEach(r => r.remove());
   if (acordeonCont) acordeonCont.innerHTML = '';
 
-  // Si hay una línea abierta, renderiza acordeón
-  if (
-    Estado.lineAcordionOpen !== null &&
-    Estado.centros[Estado.lineAcordionOpen]
-  ) {
+  if (Estado.lineAcordionOpen !== null && Estado.centros[Estado.lineAcordionOpen]) {
     acordeonCont.innerHTML = renderAcordeonLineas(
       Estado.lineAcordionOpen,
       Estado.centros,
       Estado.editingLine
     );
 
-    // Inicializa selects dentro del acordeón
     const selects = acordeonCont.querySelectorAll('select');
     if (selects.length) M.FormSelect.init(selects);
 
-    // Filtrado de líneas
     const inputBuscar = document.getElementById('inputBuscarLineas');
-    if (inputBuscar)
-      inputBuscar.addEventListener('input', () => filtrarLineas());
+    if (inputBuscar) inputBuscar.addEventListener('input', () => filtrarLineas());
 
     const filtroEstados = document.getElementById('filtroEstados');
     if (filtroEstados) {
       filtroEstados.querySelectorAll('button').forEach(btn => {
         btn.onclick = () => {
-          filtroEstados
-            .querySelectorAll('button')
-            .forEach(b => b.classList.remove('active'));
+          filtroEstados.querySelectorAll('button').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           Estado.estadoFiltro = btn.dataset.estado || 'todos';
           filtrarLineas();
@@ -118,7 +106,6 @@ export async function loadCentros() {
     }
     filtrarLineas();
 
-    // Delegados de botones dentro del acordeón
     const tbody = acordeonCont.querySelector('table.striped tbody');
     if (tbody) {
       // Borrar línea
@@ -140,15 +127,12 @@ export async function loadCentros() {
       // Editar línea
       tbody.querySelectorAll('.btn-edit-line').forEach(btn => {
         btn.onclick = () => {
-          Estado.editingLine = {
-            idx: Estado.lineAcordionOpen,
-            lineIdx: +btn.dataset.lineIdx
-          };
+          Estado.editingLine = { idx: Estado.lineAcordionOpen, lineIdx: +btn.dataset.lineIdx };
           loadCentros();
         };
       });
 
-      // Cancelar edición línea
+      // Cancelar edición
       tbody.querySelectorAll('.btn-cancel-edit-line').forEach(btn => {
         btn.onclick = () => {
           Estado.editingLine = { idx: null, lineIdx: null };
@@ -156,33 +140,22 @@ export async function loadCentros() {
         };
       });
 
-      // Guardar edición línea
+      // Guardar edición
       tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
         btn.onclick = async () => {
           const tr = btn.closest('tr');
           const num = tr.querySelector('.edit-line-num').value.trim();
           const boy = parseInt(tr.querySelector('.edit-line-buoys').value, 10);
-          const long = parseFloat(
-            tr.querySelector('.edit-line-long').value
-          );
+          const long = parseFloat(tr.querySelector('.edit-line-long').value);
           const cab = tr.querySelector('.edit-line-cable').value.trim();
           const st = tr.querySelector('.edit-line-state').value;
           if (!num || isNaN(boy) || isNaN(long) || !cab || !st) {
-            M.toast({
-              html: 'Completa todos los campos',
-              classes: 'red'
-            });
+            M.toast({ html: 'Completa todos los campos', classes: 'red' });
             return;
           }
           const centro = Estado.centros[Estado.lineAcordionOpen];
           const linea = centro.lines[+btn.dataset.lineIdx];
-          await updateLinea(centro._id, linea._id, {
-            number: num,
-            buoys: boy,
-            longitud: long,
-            cable: cab,
-            state: st
-          });
+          await updateLinea(centro._id, linea._id, { number: num, buoys: boy, longitud: long, cable: cab, state: st });
           Estado.editingLine = { idx: null, lineIdx: null };
           await loadCentros();
         };
@@ -203,7 +176,7 @@ export async function loadCentros() {
 
   if (tabMapaActiva()) renderMapaAlways();
 
-  // Delegados sobre la tabla de Centros
+  // Delegados en la tabla de Centros
   const $centrosTable = window.$('#centrosTable');
 
   // Mostrar coordenadas
@@ -216,31 +189,23 @@ export async function loadCentros() {
         const modal = document.getElementById('coordsModal');
         if (modal) {
           document.getElementById('coordenadasList').innerHTML =
-            c.coords
-              .map(
-                (p, i) =>
-                  `<div>${i + 1}. Lat: <b>${p.lat.toFixed(
-                    6
-                  )}</b> – Lng: <b>${p.lng.toFixed(6)}</b></div>`
-              )
-              .join('');
+            c.coords.map((p, i) =>
+              `<div>${i + 1}. Lat: <b>${p.lat.toFixed(6)}</b> – Lng: <b>${p.lng.toFixed(6)}</b></div>`
+            ).join('');
           M.Modal.getInstance(modal).open();
         }
       }
-    });
+    })
 
-  // Toggle de líneas
-  $centrosTable
+    // Toggle líneas
     .off('click', '.btn-toggle-lineas')
     .on('click', '.btn-toggle-lineas', function () {
       const idx = +this.dataset.idx;
-      Estado.lineAcordionOpen =
-        Estado.lineAcordionOpen === idx ? null : idx;
+      Estado.lineAcordionOpen = Estado.lineAcordionOpen === idx ? null : idx;
       loadCentros();
-    });
+    })
 
-  // Editar centro
-  $centrosTable
+    // Editar centro
     .off('click', '.editar-centro')
     .on('click', '.editar-centro', function () {
       const idx = +this.dataset.idx;
@@ -258,27 +223,19 @@ export async function loadCentros() {
           inputLng: document.getElementById('inputLng'),
           pointsBody: document.getElementById('pointsBody')
         };
-        openEditForm(
-          els,
-          Estado.map,
-          (Estado.currentPoints = []),
-          v => (Estado.currentCentroIdx = v)
-        );
+        openEditForm(els, Estado.map, (Estado.currentPoints = []), v => (Estado.currentCentroIdx = v));
         renderPointsTable(els.pointsBody, Estado.currentPoints);
         centroModal.open();
       }
-    });
+    })
 
-  // Eliminar centro
-  $centrosTable
+    // Eliminar centro
     .off('click', '.eliminar-centro')
     .on('click', '.eliminar-centro', async function () {
       const idx = +this.dataset.idx;
       const c = Estado.centros[idx];
       if (!c) return;
-      if (
-        confirm(`¿Eliminar el centro "${c.name}"?`)
-      ) {
+      if (confirm(`¿Eliminar el centro "${c.name}"?`)) {
         await deleteCentro(c._id);
         await loadCentros();
         if (tabMapaActiva()) renderMapaAlways(true);
@@ -290,36 +247,23 @@ export async function loadCentros() {
 export function filtrarLineas() {
   const acordeonCont = document.getElementById('acordeonLineas');
   if (!acordeonCont) return;
-  const inputBuscarLineas = document.getElementById(
-    'inputBuscarLineas'
-  );
+  const inputBuscarLineas = document.getElementById('inputBuscarLineas');
   if (!inputBuscarLineas) return;
   const filtroTexto = inputBuscarLineas.value.toLowerCase();
-  acordeonCont
-    .querySelectorAll('table.striped tbody tr')
-    .forEach(fila => {
-      const numLinea = (
-        fila.cells[0]?.textContent || ''
-      ).toLowerCase();
-      const estadoLinea = (
-        fila.cells[4]?.textContent || ''
-      ).toLowerCase();
-      const tareasTxt = (
-        fila.cells[5]?.textContent || ''
-      ).toLowerCase();
+  const filas = acordeonCont.querySelectorAll('table.striped tbody tr');
 
-      const txtOK =
-        numLinea.includes(filtroTexto) ||
-        estadoLinea.includes(filtroTexto);
-      let estOK = Estado.estadoFiltro === 'todos';
-      if (Estado.estadoFiltro === 'pendiente')
-        estOK = tareasTxt.includes('pendiente');
-      if (Estado.estadoFiltro === 'en curso')
-        estOK = tareasTxt.includes('en curso');
-      if (Estado.estadoFiltro === 'completada')
-        estOK = tareasTxt.includes('completada');
+  filas.forEach(fila => {
+    const numLinea = (fila.cells[0]?.textContent || '').toLowerCase();
+    const estadoLinea = (fila.cells[4]?.textContent || '').toLowerCase();
+    const tareasTxt = (fila.cells[5]?.textContent || '').toLowerCase();
 
-      fila.style.display =
-        txtOK && estOK ? '' : 'none';
-    });
+    const txtOK = numLinea.includes(filtroTexto) || estadoLinea.includes(filtroTexto);
+    let estOK = Estado.estadoFiltro === 'todos';
+    if (Estado.estadoFiltro === 'pendiente')   estOK = tareasTxt.includes('pendiente');
+    if (Estado.estadoFiltro === 'en curso')    estOK = tareasTxt.includes('en curso');
+    if (Estado.estadoFiltro === 'completada')  estOK = tareasTxt.includes('completada');
+
+    fila.style.display = (txtOK && estOK) ? '' : 'none';
+  });
 }
+
