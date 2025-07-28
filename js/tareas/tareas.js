@@ -1,11 +1,11 @@
-import { getCentros, saveCentro } from '../core/almacenamiento.js';
+// js/tareas/tareas.js
+import { getCentros, saveCentros } from '../core/almacenamiento.js';
 
 export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null) {
   const centros = getCentros();
   let centroIdx = centros.findIndex(c => c.code === centro.code);
-  if (centroIdx === -1) centroIdx = centros.length ? 0 : -1;
   if (centroIdx === -1) {
-    console.error('No hay centros disponibles');
+    console.error('Centro no encontrado');
     return;
   }
 
@@ -44,8 +44,8 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
           <div>
             <strong>${tarea.titulo || '(Sin título)'}</strong><br>
             Fecha: ${tarea.fecha || '-'}<br>
-            Estado: 
-            <select data-idx="${i}" class="estado-tarea-select">
+            Estado:
+            <select data-idx="${i}" class="estado-tarea-select browser-default" style="width:auto;display:inline-block;">
               <option value="Pendiente"   ${tarea.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
               <option value="En curso"    ${tarea.estado === 'En curso' ? 'selected' : ''}>En curso</option>
               <option value="Completada"  ${tarea.estado === 'Completada' ? 'selected' : ''}>Completada</option>
@@ -86,7 +86,8 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
       };
     });
 
-    M.FormSelect.init(tareasList.querySelectorAll('select'));
+    // Opcional: Si usas Materialize para select
+    // M.FormSelect.init(tareasList.querySelectorAll('select'));
   }
 
   renderTareas();
@@ -97,7 +98,7 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
   tareaEstado.selectedIndex = 0;
   if (tareaDescripcion) tareaDescripcion.value = '';
   M.updateTextFields();
-  M.FormSelect.init(modal.querySelectorAll('select'));
+  if (tareaEstado) M.FormSelect.init([tareaEstado]);
 
   formNuevaTarea.onsubmit = function(e) {
     e.preventDefault();
@@ -125,7 +126,7 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
     tareaEstado.selectedIndex = 0;
     if (tareaDescripcion) tareaDescripcion.value = '';
     M.updateTextFields();
-    M.FormSelect.init(modal.querySelectorAll('select'));
+    if (tareaEstado) M.FormSelect.init([tareaEstado]);
   };
 
   if (modalInstance) {
