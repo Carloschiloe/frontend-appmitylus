@@ -30,6 +30,7 @@ export function initTablaCentros() {
       url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
     }
   });
+  // Cada vez que se redibuja la tabla, recalcular totales
   Estado.table.on('draw', calcularTotales);
 }
 
@@ -42,20 +43,11 @@ export async function loadCentros() {
     const cantLineas = Array.isArray(c.lines) ? c.lines.length : 0;
     const hect = parseFloat(c.hectareas) || 0;
 
-    const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">
-                          visibility
-                        </i>`;
-
+    const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>`;
     const accionesCell = `
-      <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer">
-        visibility
-      </i>
-      <i class="material-icons editar-centro" data-idx="${i}" style="cursor:pointer">
-        edit
-      </i>
-      <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer">
-        delete
-      </i>`;
+      <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer">visibility</i>
+      <i class="material-icons editar-centro" data-idx="${i}" style="cursor:pointer">edit</i>
+      <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer">delete</i>`;
 
     return [
       c.name,
@@ -70,23 +62,23 @@ export async function loadCentros() {
 
   Estado.table.clear().rows.add(rows).draw();
 
-  // limpia acordeón de líneas
-  const cont = document.getElementById('acordeonLineas');
+  // Limpiar y renderizar acordeón de líneas
+  const acordeonCont = document.getElementById('acordeonLineas');
   document.querySelectorAll('.acordeon-lineas-row').forEach(r => r.remove());
-  if (cont) cont.innerHTML = '';
+  if (acordeonCont) acordeonCont.innerHTML = '';
 
   if (Estado.lineAcordionOpen !== null && Estado.centros[Estado.lineAcordionOpen]) {
-    cont.innerHTML = renderAcordeonLineas(
+    acordeonCont.innerHTML = renderAcordeonLineas(
       Estado.lineAcordionOpen,
       Estado.centros,
       Estado.editingLine
     );
 
-    // inicializa selects en acordeón
-    const selects = cont.querySelectorAll('select');
+    // Inicializar selects dentro del acordeón
+    const selects = acordeonCont.querySelectorAll('select');
     if (selects.length) M.FormSelect.init(selects);
 
-    // filtrado de líneas
+    // Filtrado de líneas
     const inputBuscar = document.getElementById('inputBuscarLineas');
     if (inputBuscar) inputBuscar.addEventListener('input', () => filtrarLineas());
 
@@ -103,10 +95,9 @@ export async function loadCentros() {
     }
     filtrarLineas();
 
-    // delegados dentro del acordeón
-    const tbody = cont.querySelector('table.striped tbody');
+    // Delegados dentro del acordeón
+    const tbody = acordeonCont.querySelector('table.striped tbody');
     if (tbody) {
-      // eliminar línea
       tbody.querySelectorAll('.btn-del-line').forEach(btn => {
         btn.onclick = async () => {
           const idx = +btn.dataset.lineIdx;
@@ -121,21 +112,21 @@ export async function loadCentros() {
           }
         };
       });
-      // editar línea
+
       tbody.querySelectorAll('.btn-edit-line').forEach(btn => {
         btn.onclick = () => {
           Estado.editingLine = { idx: Estado.lineAcordionOpen, lineIdx: +btn.dataset.lineIdx };
           loadCentros();
         };
       });
-      // cancelar edición línea
+
       tbody.querySelectorAll('.btn-cancel-edit-line').forEach(btn => {
         btn.onclick = () => {
           Estado.editingLine = { idx: null, lineIdx: null };
           loadCentros();
         };
       });
-      // guardar edición línea
+
       tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
         btn.onclick = async () => {
           const tr = btn.closest('tr');
@@ -155,7 +146,7 @@ export async function loadCentros() {
           await loadCentros();
         };
       });
-      // ver tareas línea
+
       tbody.querySelectorAll('.btn-ver-tareas').forEach(btn => {
         btn.onclick = () => {
           abrirModalTareas(
@@ -173,15 +164,15 @@ export async function loadCentros() {
 
   if (tabMapaActiva()) renderMapaAlways();
 
-  // delegados en tabla de Centros
+  // Delegados en la tabla de Centros
   const $t = window.$('#centrosTable');
   $t
     .off('click', '.btn-coords')
     .on('click', '.btn-coords', function () {
       const idx = +this.dataset.idx;
       const c = Estado.centros[idx];
-      if (c && Array.isArray(c.coords)) {
-        const modal = document.getElementById('coordsModal');
+      const modal = document.getElementById('modalCoordenadas');
+      if (c && modal) {
         document.getElementById('coordenadasList').innerHTML =
           c.coords.map((p, i) =>
             `<div>${i + 1}. Lat: <b>${p.lat.toFixed(6)}</b> – Lng: <b>${p.lng.toFixed(6)}</b></div>`
@@ -199,8 +190,8 @@ export async function loadCentros() {
     .on('click', '.editar-centro', function () {
       const idx = +this.dataset.idx;
       Estado.currentCentroIdx = idx;
-      const elem = document.getElementById('centroModal');
-      const modal = M.Modal.getInstance(elem);
+      const modalElem = document.getElementById('centroModal');
+      const modal = M.Modal.getInstance(modalElem);
       const els = {
         formTitle: document.getElementById('formTitle'),
         inputCentroId: document.getElementById('inputCentroId'),
@@ -229,7 +220,6 @@ export async function loadCentros() {
     });
 }
 
-// recalcula totales
 function calcularTotales() {
   let sumH = 0, sumB = 0, sumL = 0;
   Estado.centros.forEach(c => {
@@ -239,9 +229,14 @@ function calcularTotales() {
       : 0;
     sumL += Array.isArray(c.lines) ? c.lines.length : 0;
   });
-  document.getElementById('totalHect').textContent = sumH.toFixed(2);
-  document.getElementById('totalBoyas').textContent = sumB;
-  document.getElementById('totalLineas').textContent = sumL;
+  const h = document.getElementById('totalHect');
+  const b = document.getElementById('totalBoyas');
+  const l = document.getElementById('totalLineas');
+  if (h && b && l) {
+    h.textContent = sumH.toFixed(2);
+    b.textContent = sumB;
+    l.textContent = sumL;
+  }
 }
 
 export function filtrarLineas() {
@@ -252,11 +247,12 @@ export function filtrarLineas() {
     const num = (fila.cells[0]?.textContent || '').toLowerCase();
     const est = (fila.cells[4]?.textContent || '').toLowerCase();
     const tar = (fila.cells[5]?.textContent || '').toLowerCase();
-    let okTxt = num.includes(txt) || est.includes(txt);
-    let okEst = Estado.estadoFiltro === 'todos'
-      || (Estado.estadoFiltro === 'pendiente' && tar.includes('pendiente'))
-      || (Estado.estadoFiltro === 'en curso'  && tar.includes('en curso'))
-      || (Estado.estadoFiltro === 'completada'&& tar.includes('completada'));
+    const okTxt = num.includes(txt) || est.includes(txt);
+    const okEst =
+      Estado.estadoFiltro === 'todos' ||
+      (Estado.estadoFiltro === 'pendiente' && tar.includes('pendiente')) ||
+      (Estado.estadoFiltro === 'en curso' && tar.includes('en curso')) ||
+      (Estado.estadoFiltro === 'completada' && tar.includes('completada'));
     fila.style.display = okTxt && okEst ? '' : 'none';
   });
 }
