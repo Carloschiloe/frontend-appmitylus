@@ -8,11 +8,8 @@ import {
 } from './mapas/control_mapa.js';
 import { initTablaCentros, loadCentros as loadTablaCentros } from './centros/tabla_centros.js';
 import { renderFiltrosSidebar } from './stock/stock_insumos.js';
-import {
-  actualizarSelectsFiltro,
-  refrescarEventos,
-  asegurarCalendarioVisible
-} from './calendario/calendario.js';
+// ====== NO IMPORTAR NADA DE CALENDARIO ACA ======
+// import { actualizarSelectsFiltro, refrescarEventos, asegurarCalendarioVisible } from './calendario/calendario.js';
 import { openNewForm, renderPointsTable } from './centros/centros_form.js';
 import {
   getCentrosAll,
@@ -30,10 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         Estado.map.invalidateSize();
         renderMapaAlways();
       }
-      if (tabElem.id === 'tab-calendario') {
-        asegurarCalendarioVisible();
-        setTimeout(() => window.calendarioInstance?.updateSize?.(), 150);
-      }
+      // No debe haber referencias a calendario aquí
       if (tabElem.id === 'tab-insumos') renderFiltrosSidebar();
     }
   });
@@ -41,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Materialize base
   M.FormSelect.init(document.querySelectorAll('select'));
   M.Modal.init(document.querySelectorAll('.modal'));
-  actualizarSelectsFiltro();
+  // actualizarSelectsFiltro(); // <-- NO DEBE IR AQUÍ
 
   // Init componentes
   initTablaCentros();
@@ -158,10 +152,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }
         await cargarCentros(); // recargar tabla y estado
+        // refrescarEventos(); // <-- Esto tampoco si es sólo parte de calendario
         if (tabMapaActiva()) renderMapaAlways(true);
         centroModal.close();
-        actualizarSelectsFiltro();
-        refrescarEventos();
       } catch (error) {
         M.toast({ html: error.message || 'Error al guardar centro', classes: 'red' });
       } finally {
