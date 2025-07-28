@@ -9,7 +9,7 @@ import {
   deleteCentro
 } from '../core/centros_repo.js';
 import { renderAcordeonLineas } from './lineas.js';
-import { abrirModalTareas } from '../tareas/tareas.js';
+// import { abrirModalTareas } from '../tareas/tareas.js'; // ELIMINADO
 import { renderMapaAlways } from '../mapas/control_mapa.js';
 import { tabMapaActiva } from '../core/utilidades_app.js';
 import { actualizarSelectsFiltro, refrescarEventos } from '../calendario/calendario.js';
@@ -117,7 +117,7 @@ export function initTablaCentros() {
         }
       });
 
-      // Renderiza el HTML de las líneas de ese centro
+      // Renderiza el HTML de las líneas de ese centro (SIN TAREAS)
       const lineasHtml = renderAcordeonLineas(idx, Estado.centros, Estado.editingLine);
 
       // Abre el child row justo debajo de la fila del centro
@@ -147,7 +147,7 @@ export function initTablaCentros() {
           });
         }
 
-        // Delegados dentro del acordeón (eliminar, editar, tareas)
+        // Delegados dentro del acordeón (eliminar, editar)
         const tbody = acordeonCont.querySelector('table.striped tbody');
         if (tbody) {
           tbody.querySelectorAll('.btn-del-line').forEach(btn => {
@@ -196,19 +196,6 @@ export function initTablaCentros() {
               await updateLinea(centro._id, linea._id, { number: num, buoys: boy, longitud: long, cable: cab, state: st });
               Estado.editingLine = { idx: null, lineIdx: null };
               await loadCentros();
-            };
-          });
-
-          tbody.querySelectorAll('.btn-ver-tareas').forEach(btn => {
-            btn.onclick = () => {
-              abrirModalTareas(
-                Estado.centros[idx],
-                +btn.dataset.lineIdx,
-                async () => {
-                  await loadCentros();
-                  refrescarEventos();
-                }
-              );
             };
           });
         }
@@ -302,13 +289,14 @@ export function filtrarLineas(contenedor) {
   cont.querySelectorAll('table.striped tbody tr').forEach(fila => {
     const num = (fila.cells[0]?.textContent || '').toLowerCase();
     const est = (fila.cells[4]?.textContent || '').toLowerCase();
-    const tar = (fila.cells[5]?.textContent || '').toLowerCase();
+    // OJO: Ajusta esto si necesitas más criterios de filtrado pero SIN tareas
     const okTxt = num.includes(txt) || est.includes(txt);
+    // Solo filtra por estado de la línea
     const okEst =
       Estado.estadoFiltro === 'todos' ||
-      (Estado.estadoFiltro === 'pendiente' && tar.includes('pendiente')) ||
-      (Estado.estadoFiltro === 'en curso' && tar.includes('en curso')) ||
-      (Estado.estadoFiltro === 'completada' && tar.includes('completada'));
+      (Estado.estadoFiltro === 'pendiente' && est === 'pendiente') ||
+      (Estado.estadoFiltro === 'en curso' && est === 'en curso') ||
+      (Estado.estadoFiltro === 'completada' && est === 'completada');
     fila.style.display = okTxt && okEst ? '' : 'none';
   });
 }
