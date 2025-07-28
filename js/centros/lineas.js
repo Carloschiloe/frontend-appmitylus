@@ -8,14 +8,8 @@ export function renderAcordeonLineas(idx, centros, editingLine) {
         <div style="margin:0 auto; padding:16px 24px 24px 24px; width:100%; max-width:100%; min-width:0; box-sizing:border-box;">
           <h6 style="margin-bottom:18px;">Líneas de <b>${centro.name}</b></h6>
           
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div style="margin-bottom: 16px;">
             <input id="inputBuscarLineas" type="text" placeholder="Buscar líneas por número" style="width:60%; padding:4px 8px; font-size:1rem;">
-            <div id="filtroEstados" style="display: flex; gap: 8px;">
-              <button class="btn-small active" data-estado="todos">Todos</button>
-              <button class="btn-small red" data-estado="pendiente">Pendientes</button>
-              <button class="btn-small amber darken-2" data-estado="en curso">En curso</button>
-              <button class="btn-small green" data-estado="completada">Completadas</button>
-            </div>
           </div>
 
           <table class="striped" style="width:100%;" id="tabla-lineas-centro-${idx}">
@@ -26,7 +20,6 @@ export function renderAcordeonLineas(idx, centros, editingLine) {
                 <th>Long. Línea</th>
                 <th>Cabo Madre (mm)</th>
                 <th>Estado</th>
-                <th>Tareas</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -47,7 +40,6 @@ export function renderAcordeonLineas(idx, centros, editingLine) {
                           <option value="Malo" ${ln.state === 'Malo' ? 'selected' : ''}>Malo</option>
                         </select>
                       </td>
-                      <td><!-- No editas tareas desde aquí --></td>
                       <td>
                         <button class="btn-small green btn-guardar-edit-line" data-centro-idx="${idx}" data-line-idx="${i}" title="Guardar"><i class="material-icons">check</i></button>
                         <button class="btn-small grey btn-cancel-edit-line" title="Cancelar"><i class="material-icons">close</i></button>
@@ -56,12 +48,6 @@ export function renderAcordeonLineas(idx, centros, editingLine) {
                   `;
                 } else {
                   // Fila normal
-                  let btnTareasClass = 'teal';
-                  if (ln.tareas && ln.tareas.length) {
-                    if (ln.tareas.some(t => t.estado === 'Pendiente')) btnTareasClass = 'red';
-                    else if (ln.tareas.some(t => t.estado === 'En curso')) btnTareasClass = 'amber darken-2';
-                    else if (ln.tareas.every(t => t.estado === 'Completada')) btnTareasClass = 'green';
-                  }
                   return `
                     <tr>
                       <td>${ln.number}</td>
@@ -69,18 +55,6 @@ export function renderAcordeonLineas(idx, centros, editingLine) {
                       <td>${ln.longitud || ''}</td>
                       <td>${ln.cable}</td>
                       <td>${ln.state}</td>
-                      <td>
-                        <button class="btn-small ${btnTareasClass} btn-ver-tareas" data-centro-idx="${idx}" data-line-idx="${i}">VER TAREAS</button>
-                        <div style="font-size: 0.9em; color: #888;">
-                          ${
-                            ln.tareas && ln.tareas.length
-                              ? ln.tareas.map(t =>
-                                  `${t.titulo ? t.titulo : '(Sin título)'}${t.estado ? ' [' + t.estado + ']' : ''} (${t.fecha || ''})`
-                                ).join('<br>')
-                              : 'Sin tareas'
-                          }
-                        </div>
-                      </td>
                       <td>
                         <button class="btn-small blue btn-edit-line" data-centro-idx="${idx}" data-line-idx="${i}" title="Editar"><i class="material-icons" style="font-size:17px;">edit</i></button>
                         <button class="btn-small red btn-del-line" data-centro-idx="${idx}" data-line-idx="${i}" title="Eliminar">&times;</button>
