@@ -1,97 +1,56 @@
 // js/calendario/calendario.js
 import { getCentros } from '../core/almacenamiento.js';
 
-let calendar;
-
-async function cargarEventosTareas(filtroCentro = '', filtroEstado = '') {
+window.asegurarCalendarioVisible = async function() {
   const centros = await getCentros();
-  let eventos = [];
 
-  centros.forEach((centro) => {
-    (centro.lines || []).forEach((linea) => {
-      (linea.tareas || []).forEach((tarea) => {
-        // Filtros
-        if (filtroCentro && filtroCentro !== centro._id) return;
-        if (filtroEstado && filtroEstado !== 'todos' && tarea.estado !== filtroEstado) return;
-
+  // Junta todas las mantenciones en un array de eventos
+  const eventos = [];
+  centros.forEach((c, centroIdx) => {
+    (c.lines || []).forEach((l, lineaIdx) => {
+      (l.mantenciones || []).forEach((m, mantIdx) => {
         eventos.push({
-          title: `${centro.name} - Línea ${linea.number}: ${tarea.titulo}`,
-          start: tarea.fecha,
+          title: `${c.name} - Línea ${l.number}: ${m.tipo}`,
+          start: m.fecha,
+          end: m.fecha,
           extendedProps: {
-            estado: tarea.estado,
-            descripcion: tarea.descripcion,
-            centro: centro.name,
-            linea: linea.number
+            centro: c.name,
+            linea: l.number,
+            tipo: m.tipo,
+            estado: m.estado,
+            descripcion: m.descripcion,
           },
-          color:
-            tarea.estado === 'Pendiente'
-              ? '#e53935'
-              : tarea.estado === 'En curso'
-              ? '#fbc02d'
-              : '#43a047'
         });
       });
     });
   });
 
-  return eventos;
-}
+  // Renderizar calendario
+  let calendarioDiv = document.getElementById('calendarioTareas');
+  calendarioDiv.innerHTML = '<div id="calendarMant"></div>';
+  const calendarEl = document.getElementById('calendarMant');
 
-window.asegurarCalendarioVisible = async function () {
-  const filtroCentro = document.getElementById('filtroCentro');
-  const filtroEstado = document.getElementById('filtroEstado');
-  const calendarioDiv = document.getElementById('calendarioTareas');
-
-  // Llenar select de centros
-  const centros = await getCentros();
-  if (filtroCentro && filtroCentro.children.length <= 1) {
-    filtroCentro.innerHTML = `<option value="">Todos los centros</option>` +
-      centros.map(c => `<option value="${c._id}">${c.name}</option>`).join('');
-    M.FormSelect.init(filtroCentro);
-  }
-
-  // Inicializa calendario
-  if (!calendar) {
-    calendar = new FullCalendar.Calendar(calendarioDiv, {
-      initialView: 'dayGridMonth',
-      locale: 'es',
-      height: 600,
-      headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'dayGridMonth,listWeek'
-      },
-      eventClick: function (info) {
-        const tarea = info.event.extendedProps;
-        const modal = document.getElementById('modalDetalleTarea');
-        document.getElementById('detalleTitulo').textContent = info.event.title;
-        document.getElementById('detalleContenido').innerHTML = `
-          <b>Centro:</b> ${tarea.centro}<br>
-          <b>Línea:</b> ${tarea.linea}<br>
-          <b>Estado:</b> ${tarea.estado}<br>
-          <b>Fecha:</b> ${info.event.startStr}<br>
-          <b>Descripción:</b> ${tarea.descripcion || '—'}
-        `;
+  const calendar = new window.FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    locale: 'es',
+    height: 600,
+    events: eventos,
+    eventClick: function(info) {
+      const { centro, linea, tipo, estado, descripcion } = info.event.extendedProps;
+      const modal = document.getElementById('modalDetalleTarea');
+      if (modal) {
+        document.getElementById('detalleTitulo').textContent = tipo + ' – ' + centro;
+        document.getElementById('detalleContenido').innerHTML =
+          `<b>Línea:</b> ${linea}<br>
+           <b>Estado:</b> ${estado}<br>
+           <b>Descripción:</b> ${descripcion || ''}`;
         let instancia = M.Modal.getInstance(modal);
         if (!instancia) instancia = M.Modal.init(modal);
         instancia.open();
       }
-    });
-    calendar.render();
-  }
+    }
+  });
 
-  async function refrescar() {
-    const eventos = await cargarEventosTareas(filtroCentro.value, filtroEstado.value);
-    calendar.removeAllEvents();
-    calendar.addEventSource(eventos);
-  }
-
-  // Filtros
-  filtroCentro.onchange = refrescar;
-  filtroEstado.onchange = refrescar;
-  document.getElementById('btnRefrescarCalendario').onclick = refrescar;
-
-  // Primer render
-  refrescar();
+  calendar.render();
 };
 
