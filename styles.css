@@ -272,3 +272,66 @@ body:has(#mapShell:fullscreen) { overflow: hidden; }
   font-size: .85rem;
   cursor: default;
 }
+
+/* =========================================================
+   CHORITOS – BLOQUE DE LÍNEAS EXPANDIDO (CHILD ROW)
+   ========================================================= */
+tr.shown + tr td.child-row-lineas {
+  background: #f7faf9;
+  padding: 22px 20px 17px 32px;
+  border-top: none !important;
+  border-bottom: 1.5px solid #b2dfdb;
+  box-shadow: 0 1px 10px 0 rgba(0,150,136,.08);
+  font-size: 0.97rem;
+  position: relative;
+}
+
+.child-row-lineas {
+  border-radius: 0 0 14px 14px;
+  min-width: 60vw;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.child-row-lineas h6,
+.child-row-lineas h5 {
+  margin-top: 0;
+  font-size: 1.07em;
+  color: #009688;
+  font-weight: 600;
+}
+
+.child-row-lineas table.striped th,
+.child-row-lineas table.striped td {
+  background: transparent !important;
+  font-size: .94em;
+  border-bottom: 1px solid #e0f2f1;
+  padding: .37rem .52rem;
+}
+
+.child-row-lineas .btn,
+.child-row-lineas .btn-small,
+.child-row-lineas .material-icons {
+  vertical-align: middle;
+}
+
+/* Extra: efecto al hover de la fila padre para indicar expandido */
+tr.shown {
+  background: #e0f2f1 !important;
+  transition: background .18s;
+}
+
+/* Si quieres el child row full ancho de tabla (opcional) */
+.child-row-lineas {
+  width: 100%;
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .child-row-lineas {
+    min-width: unset;
+    padding-left: 8px !important;
+    padding-right: 6px !important;
+  }
+}
+
