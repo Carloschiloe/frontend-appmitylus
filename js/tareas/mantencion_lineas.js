@@ -2,138 +2,177 @@
 import { getCentros, updateCentro } from '../core/almacenamiento.js';
 
 let centros = [];
-let tareasData = []; // [{centroId, lineaIdx, tarea}, ...]
+let mantenciones = []; // solo para frontend, no persistente aún
 
 async function cargarCentros() {
   centros = await getCentros();
 }
 
-function renderSelectorCentroLinea() {
-  const centrosSelect = document.createElement('select');
-  centrosSelect.id = 'selectCentroMant';
-  centrosSelect.innerHTML = `<option value="">Selecciona un centro</option>` +
+function renderSelectorCentroLinea(onCentroChange, onLineaChange) {
+  const selectorDiv = document.createElement('div');
+  selectorDiv.className = 'row';
+
+  // Centro
+  const colCentro = document.createElement('div');
+  colCentro.className = 'input-field col s6';
+  const selectCentro = document.createElement('select');
+  selectCentro.id = 'selectorCentro';
+  selectCentro.innerHTML = `<option value="" disabled selected>Selecciona Centro</option>` +
     centros.map((c, i) => `<option value="${i}">${c.name}</option>`).join('');
-  centrosSelect.className = "browser-default";
+  colCentro.appendChild(selectCentro);
+  const lblCentro = document.createElement('label');
+  lblCentro.textContent = 'Centro';
+  lblCentro.htmlFor = 'selectorCentro';
+  colCentro.appendChild(lblCentro);
 
-  const lineaSelect = document.createElement('select');
-  lineaSelect.id = 'selectLineaMant';
-  lineaSelect.className = "browser-default";
-  lineaSelect.innerHTML = `<option value="">Selecciona línea</option>`;
-  lineaSelect.disabled = true;
+  // Línea
+  const colLinea = document.createElement('div');
+  colLinea.className = 'input-field col s6';
+  const selectLinea = document.createElement('select');
+  selectLinea.id = 'selectorLinea';
+  selectLinea.innerHTML = `<option value="" disabled selected>Selecciona Línea</option>`;
+  colLinea.appendChild(selectLinea);
+  const lblLinea = document.createElement('label');
+  lblLinea.textContent = 'Línea de Cultivo';
+  lblLinea.htmlFor = 'selectorLinea';
+  colLinea.appendChild(lblLinea);
 
-  centrosSelect.onchange = () => {
-    const idx = centrosSelect.value;
-    if (idx === "") {
-      lineaSelect.disabled = true;
-      lineaSelect.innerHTML = `<option value="">Selecciona línea</option>`;
-      return;
-    }
-    lineaSelect.disabled = false;
-    const lines = centros[idx].lines || [];
-    lineaSelect.innerHTML = `<option value="">Selecciona línea</option>` +
-      lines.map((l, li) => `<option value="${li}">Línea ${l.number}</option>`).join('');
+  selectorDiv.appendChild(colCentro);
+  selectorDiv.appendChild(colLinea);
+
+  // Materialize
+  setTimeout(() => {
+    M.FormSelect.init([selectCentro, selectLinea]);
+  }, 20);
+
+  // Eventos
+  selectCentro.onchange = function () {
+    const centroIdx = +selectCentro.value;
+    const lineas = centros[centroIdx]?.lines ?? [];
+    selectLinea.innerHTML = `<option value="" disabled selected>Selecciona Línea</option>` +
+      lineas.map((l, j) => `<option value="${j}">${l.number}</option>`).join('');
+    setTimeout(() => M.FormSelect.init([selectLinea]), 10);
+    if (onCentroChange) onCentroChange(centroIdx);
+  };
+  selectLinea.onchange = function () {
+    if (onLineaChange) onLineaChange(selectCentro.value, selectLinea.value);
   };
 
-  return { centrosSelect, lineaSelect };
+  return selectorDiv;
 }
 
-function renderFormularioMantencion() {
-  const div = document.createElement('div');
-  div.className = 'card-panel';
+function renderFormularioMantencion(onNuevaMantencion) {
+  const form = document.createElement('form');
+  form.id = 'formNuevaMantencion';
+  form.className = 'card-panel';
+  form.style.marginBottom = '1rem';
 
-  const { centrosSelect, lineaSelect } = renderSelectorCentroLinea();
+  // Selectores centro/linea
+  let centroIdx = null, lineaIdx = null;
+  const selectorDiv = renderSelectorCentroLinea(
+    idx => { centroIdx = idx; lineaIdx = null; },
+    (cidx, lidx) => { centroIdx = +cidx; lineaIdx = +lidx; }
+  );
 
-  div.innerHTML = `
-    <h6>Asignar Nueva Mantención</h6>
-    <form id="formNuevaMantencion">
-      <div class="row">
-        <div class="input-field col s6" id="selectCentroCont"></div>
-        <div class="input-field col s6" id="selectLineaCont"></div>
-      </div>
-      <div class="row">
-        <div class="input-field col s6">
-          <input id="tituloMant" type="text" required>
-          <label for="tituloMant">Tarea / Mantención</label>
-        </div>
-        <div class="input-field col s6">
-          <input id="fechaMant" type="date" required>
-          <label for="fechaMant" class="active">Fecha Programada</label>
-        </div>
-      </div>
-      <div class="row">
-        <div class="input-field col s6">
-          <select id="estadoMant" class="browser-default" required>
-            <option value="Pendiente" selected>Pendiente</option>
-            <option value="En curso">En curso</option>
-            <option value="Completada">Completada</option>
-          </select>
-          <label for="estadoMant">Estado</label>
-        </div>
-        <div class="input-field col s6">
-          <input id="descMant" type="text">
-          <label for="descMant">Descripción</label>
-        </div>
-      </div>
-      <div class="center-btn">
-        <button type="submit" class="btn green">
-          <i class="material-icons left">add</i>Agregar
-        </button>
-      </div>
-    </form>
+  // Tipo mantención
+  const rowTipo = document.createElement('div');
+  rowTipo.className = 'row';
+  rowTipo.innerHTML = `
+    <div class="input-field col s6">
+      <select id="tipoMantencion" required>
+        <option value="" disabled selected>Selecciona tipo</option>
+        <option>Reflote</option>
+        <option>Tensado de línea</option>
+        <option>Extracción de boyas</option>
+        <option>Mantención general</option>
+        <option>Otra</option>
+      </select>
+      <label for="tipoMantencion">Tipo de mantención</label>
+    </div>
+    <div class="input-field col s6">
+      <input id="fechaMantencion" type="date" required>
+      <label for="fechaMantencion" class="active">Fecha programada</label>
+    </div>
   `;
 
-  // Insertar selects en el formulario
-  div.querySelector('#selectCentroCont').appendChild(centrosSelect);
-  div.querySelector('#selectLineaCont').appendChild(lineaSelect);
+  // Descripción
+  const rowDesc = document.createElement('div');
+  rowDesc.className = 'row';
+  rowDesc.innerHTML = `
+    <div class="input-field col s12">
+      <input id="descMantencion" type="text">
+      <label for="descMantencion">Descripción (opcional)</label>
+    </div>
+  `;
 
-  // Handler para enviar el formulario
-  div.querySelector('#formNuevaMantencion').onsubmit = async (e) => {
+  // Botón guardar
+  const divBtn = document.createElement('div');
+  divBtn.className = 'center-btn';
+  divBtn.innerHTML = `
+    <button type="submit" class="btn green">
+      <i class="material-icons left">save</i>Agregar Mantención
+    </button>
+  `;
+
+  form.appendChild(selectorDiv);
+  form.appendChild(rowTipo);
+  form.appendChild(rowDesc);
+  form.appendChild(divBtn);
+
+  setTimeout(() => {
+    M.FormSelect.init(form.querySelectorAll('select'));
+    M.updateTextFields();
+  }, 40);
+
+  form.onsubmit = async function (e) {
     e.preventDefault();
-    const centroIdx = centrosSelect.value;
-    const lineaIdx = lineaSelect.value;
-    const titulo = div.querySelector('#tituloMant').value.trim();
-    const fecha = div.querySelector('#fechaMant').value;
-    const estado = div.querySelector('#estadoMant').value;
-    const descripcion = div.querySelector('#descMant').value.trim();
-
-    if (centroIdx === "" || lineaIdx === "") {
-      M.toast({ html: "Debes seleccionar un centro y una línea", classes: 'red' });
+    // Validaciones
+    if (centroIdx === null || lineaIdx === null) {
+      M.toast({ html: 'Debes seleccionar centro y línea', classes: 'red' });
       return;
     }
-    if (!titulo || !fecha || !estado) {
-      M.toast({ html: "Completa todos los campos", classes: 'red' });
+    const tipo = form.querySelector('#tipoMantencion').value;
+    const fecha = form.querySelector('#fechaMantencion').value;
+    const desc = form.querySelector('#descMantencion').value.trim();
+    if (!tipo || !fecha) {
+      M.toast({ html: 'Selecciona tipo y fecha', classes: 'red' });
       return;
     }
-    // Agregar mantención
-    let centro = centros[centroIdx];
-    let linea = centro.lines[lineaIdx];
-    if (!linea.tareas) linea.tareas = [];
-    linea.tareas.push({ titulo, fecha, estado, descripcion });
-
+    // Agregar a la línea correspondiente
+    const centro = centros[centroIdx];
+    const linea = centro.lines[lineaIdx];
+    if (!linea.mantenciones) linea.mantenciones = [];
+    linea.mantenciones.push({
+      tipo,
+      fecha,
+      descripcion: desc,
+      estado: 'Pendiente',
+      creada: new Date().toISOString()
+    });
+    // Actualizar en backend
     await updateCentro(centro._id, centro);
-    await cargarCentros();
-    M.toast({ html: "Mantención agregada", classes: 'green' });
-    renderTablaMantenciones();
-    e.target.reset();
-    lineaSelect.disabled = true;
-    lineaSelect.innerHTML = `<option value="">Selecciona línea</option>`;
+    M.toast({ html: 'Mantención agregada', classes: 'green' });
+
+    if (typeof onNuevaMantencion === 'function') onNuevaMantencion();
+
+    form.reset();
+    setTimeout(() => M.updateTextFields(), 30);
+    setTimeout(() => M.FormSelect.init(form.querySelectorAll('select')), 30);
   };
 
-  return div;
+  return form;
 }
 
 function renderTablaMantenciones() {
   const tablaDiv = document.getElementById('tablaMantenciones');
   if (!tablaDiv) return;
-
-  // Listado plano de todas las tareas de todas las líneas
   let html = `
-    <table class="striped highlight">
+    <table class="striped highlight mantencion-table">
       <thead>
         <tr>
           <th>Centro</th>
           <th>N° Línea</th>
-          <th>Tarea</th>
+          <th>Tipo</th>
           <th>Fecha</th>
           <th>Estado</th>
           <th>Descripción</th>
@@ -141,18 +180,18 @@ function renderTablaMantenciones() {
       </thead>
       <tbody>
   `;
-  centros.forEach((centro) => {
-    (centro.lines || []).forEach((linea) => {
-      (linea.tareas || []).forEach((tarea) => {
+  centros.forEach(c => {
+    (c.lines || []).forEach(l => {
+      (l.mantenciones || []).forEach(m => {
         html += `
-          <tr>
-            <td>${centro.name}</td>
-            <td>${linea.number}</td>
-            <td>${tarea.titulo}</td>
-            <td>${tarea.fecha}</td>
-            <td>${tarea.estado}</td>
-            <td>${tarea.descripcion || ''}</td>
-          </tr>
+        <tr>
+          <td>${c.name}</td>
+          <td>${l.number}</td>
+          <td>${m.tipo}</td>
+          <td>${m.fecha}</td>
+          <td>${m.estado}</td>
+          <td>${m.descripcion || ''}</td>
+        </tr>
         `;
       });
     });
@@ -161,15 +200,16 @@ function renderTablaMantenciones() {
   tablaDiv.innerHTML = html;
 }
 
-// ------- Inicialización principal -------
-window.inicializarTareasMantenciones = async function() {
+window.inicializarTareasMantenciones = async function () {
   await cargarCentros();
-
-  // Render form solo una vez (si lo necesitas siempre visible)
+  // Quita form duplicado si refrescas
+  const oldForm = document.getElementById('formNuevaMantencion');
+  if (oldForm) oldForm.remove();
   const formCont = document.getElementById('tab-mantenciones');
-  if (formCont && !formCont.querySelector('#formNuevaMantencion')) {
-    const form = renderFormularioMantencion();
+  if (formCont) {
+    const form = renderFormularioMantencion(() => renderTablaMantenciones());
     formCont.prepend(form);
   }
   renderTablaMantenciones();
 };
+
