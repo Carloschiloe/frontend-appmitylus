@@ -20,13 +20,13 @@ export function renderAcordeonLineas(idx, centros, editingLine) {
                 <th>Long. Línea</th>
                 <th>Cabo Madre (mm)</th>
                 <th>Estado</th>
-                <th>Acciones</th>
+                <th style="text-align:center">Acciones</th>
               </tr>
             </thead>
             <tbody>
               ${(centro.lines || []).map((ln, i) => {
+                // Si está editando esta línea
                 if (editingLine.idx === idx && editingLine.lineIdx === i) {
-                  // Fila modo edición
                   return `
                     <tr>
                       <td><input type="text" value="${ln.number}" class="edit-line-num" style="width:80px"></td>
@@ -40,9 +40,9 @@ export function renderAcordeonLineas(idx, centros, editingLine) {
                           <option value="Malo" ${ln.state === 'Malo' ? 'selected' : ''}>Malo</option>
                         </select>
                       </td>
-                      <td>
-                        <button class="btn-small green btn-guardar-edit-line" data-centro-idx="${idx}" data-line-idx="${i}" title="Guardar"><i class="material-icons">check</i></button>
-                        <button class="btn-small grey btn-cancel-edit-line" title="Cancelar"><i class="material-icons">close</i></button>
+                      <td style="text-align:center;">
+                        <i class="material-icons btn-guardar-edit-line" data-centro-idx="${idx}" data-line-idx="${i}" title="Guardar" style="cursor:pointer;color:green;">check</i>
+                        <i class="material-icons btn-cancel-edit-line" title="Cancelar" style="cursor:pointer;color:gray;">close</i>
                       </td>
                     </tr>
                   `;
@@ -55,9 +55,9 @@ export function renderAcordeonLineas(idx, centros, editingLine) {
                       <td>${ln.longitud || ''}</td>
                       <td>${ln.cable}</td>
                       <td>${ln.state}</td>
-                      <td>
-                        <button class="btn-small blue btn-edit-line" data-centro-idx="${idx}" data-line-idx="${i}" title="Editar"><i class="material-icons" style="font-size:17px;">edit</i></button>
-                        <button class="btn-small red btn-del-line" data-centro-idx="${idx}" data-line-idx="${i}" title="Eliminar">&times;</button>
+                      <td style="text-align:center;">
+                        <i class="material-icons btn-edit-line" data-centro-idx="${idx}" data-line-idx="${i}" title="Editar" style="cursor:pointer;color:#1976d2;">edit</i>
+                        <i class="material-icons btn-del-line" data-centro-idx="${idx}" data-line-idx="${i}" title="Eliminar" style="cursor:pointer;color:#e53935;">delete</i>
                       </td>
                     </tr>
                   `;
@@ -98,3 +98,4 @@ export function renderAcordeonLineas(idx, centros, editingLine) {
     </tr>
   `;
 }
+
