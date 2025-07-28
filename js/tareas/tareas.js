@@ -1,23 +1,22 @@
 // js/tareas/tareas.js
 import { getCentros, saveCentros } from '../core/almacenamiento.js';
 
+// Abre el modal para ver/asignar tareas a una línea de un centro
 export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null) {
   const centros = getCentros();
   let centroIdx = centros.findIndex(c => c.code === centro.code);
   if (centroIdx === -1) {
-    console.error('Centro no encontrado');
+    M.toast({ html: 'Centro no encontrado', classes: 'red' });
     return;
   }
-
   const linea = centros[centroIdx]?.lines?.[lineIdx];
   if (!linea) {
-    console.error('Línea no encontrada');
+    M.toast({ html: 'Línea no encontrada', classes: 'red' });
     return;
   }
-
   const modal = document.getElementById('modalTareasLinea');
   if (!modal) {
-    console.error('No existe modalTareasLinea en el DOM');
+    M.toast({ html: 'No existe modalTareasLinea', classes: 'red' });
     return;
   }
 
@@ -29,7 +28,7 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
   const tareaDescripcion = modal.querySelector('#tareaDescExtra');
   const modalNumLinea = modal.querySelector('#modalNumLinea');
 
-  modalNumLinea.textContent = linea.number || '—';
+  if (modalNumLinea) modalNumLinea.textContent = linea.number || '—';
 
   function renderTareas() {
     if (!linea.tareas || linea.tareas.length === 0) {
@@ -50,7 +49,7 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
               <option value="En curso"    ${tarea.estado === 'En curso' ? 'selected' : ''}>En curso</option>
               <option value="Completada"  ${tarea.estado === 'Completada' ? 'selected' : ''}>Completada</option>
             </select>
-            <a href="#!" data-idx="${i}" class="secondary-content btn-borrar-tarea">
+            <a href="#!" data-idx="${i}" class="secondary-content btn-borrar-tarea" title="Eliminar">
               <i class="material-icons red-text">delete</i>
             </a>
             <br>
@@ -61,19 +60,20 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
         </li>`;
     });
     html += '</ul>';
-
     tareasList.innerHTML = html;
 
+    // Cambio de estado de tarea (select)
     tareasList.querySelectorAll('.estado-tarea-select').forEach(sel => {
       sel.onchange = function() {
         const idx = +this.dataset.idx;
         linea.tareas[idx].estado = this.value;
         saveCentros(centros);
         renderTareas();
-        if (onChange) onChange();
+        if (typeof onChange === 'function') onChange();
       };
     });
 
+    // Borrar tarea
     tareasList.querySelectorAll('.btn-borrar-tarea').forEach(btn => {
       btn.onclick = function() {
         const idx = +this.dataset.idx;
@@ -81,28 +81,25 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
           linea.tareas.splice(idx, 1);
           saveCentros(centros);
           renderTareas();
-          if (onChange) onChange();
+          if (typeof onChange === 'function') onChange();
         }
       };
     });
-
-    // Opcional: Si usas Materialize para select
-    // M.FormSelect.init(tareasList.querySelectorAll('select'));
   }
 
   renderTareas();
 
-  // Limpiar formulario antes de mostrar modal
-  tareaTitulo.value = '';
-  tareaFecha.value = '';
-  tareaEstado.selectedIndex = 0;
+  // Limpiar formulario antes de mostrar el modal (para nueva tarea)
+  if (tareaTitulo) tareaTitulo.value = '';
+  if (tareaFecha) tareaFecha.value = '';
+  if (tareaEstado) tareaEstado.selectedIndex = 0;
   if (tareaDescripcion) tareaDescripcion.value = '';
   M.updateTextFields();
   if (tareaEstado) M.FormSelect.init([tareaEstado]);
 
+  // Maneja submit del formulario para agregar una nueva tarea
   formNuevaTarea.onsubmit = function(e) {
     e.preventDefault();
-
     const titulo = tareaTitulo.value.trim();
     const fecha = tareaFecha.value;
     const estado = tareaEstado.value;
@@ -118,17 +115,18 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
     linea.tareas.push(nuevaTarea);
     saveCentros(centros);
     renderTareas();
-    if (onChange) onChange();
+    if (typeof onChange === 'function') onChange();
 
-    // Limpiar formulario tras agregar tarea
-    tareaTitulo.value = '';
-    tareaFecha.value = '';
-    tareaEstado.selectedIndex = 0;
+    // Limpiar el form después de agregar
+    if (tareaTitulo) tareaTitulo.value = '';
+    if (tareaFecha) tareaFecha.value = '';
+    if (tareaEstado) tareaEstado.selectedIndex = 0;
     if (tareaDescripcion) tareaDescripcion.value = '';
     M.updateTextFields();
     if (tareaEstado) M.FormSelect.init([tareaEstado]);
   };
 
+  // Abrir modal
   if (modalInstance) {
     modalInstance.open();
   } else {
@@ -137,3 +135,72 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
     instancia.open();
   }
 }
+
+// Muestra la tabla con todas las líneas y botón para ver/asignar mantenciones/tareas
+export function inicializarTareasMantenciones() {
+  const centros = getCentros();
+  const tablaDiv = document.getElementById('tablaMantenciones');
+  if (!tablaDiv) return;
+
+  // Armar tabla de líneas de cultivo
+  let html = `
+    <table class="striped highlight">
+      <thead>
+        <tr>
+          <th>Centro</th>
+          <th>N° Línea</th>
+          <th>Boyas</th>
+          <th>Longitud</th>
+          <th>Estado Línea</th>
+          <th>Tareas / Mantenciones</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  centros.forEach((centro, centroIdx) => {
+    (centro.lines || []).forEach((linea, lineIdx) => {
+      const totalTareas = linea.tareas ? linea.tareas.length : 0;
+      // Estado general de las tareas (si hay al menos una pendiente, mostrar rojo; todas completadas, verde)
+      let colorEstado = '';
+      if (totalTareas) {
+        if (linea.tareas.some(t => t.estado === 'Pendiente')) colorEstado = 'red-text';
+        else if (linea.tareas.every(t => t.estado === 'Completada')) colorEstado = 'green-text';
+        else colorEstado = 'amber-text';
+      }
+      html += `
+        <tr>
+          <td>${centro.name}</td>
+          <td>${linea.number}</td>
+          <td>${linea.buoys ?? ''}</td>
+          <td>${linea.longitud ?? ''}</td>
+          <td>${linea.state ?? ''}</td>
+          <td>
+            <a href="#!" class="btn btn-small teal ver-tareas-linea" 
+                data-centro-idx="${centroIdx}" data-line-idx="${lineIdx}">
+              <i class="material-icons left">assignment</i> Ver tareas
+            </a>
+            <span class="${colorEstado}" style="margin-left:8px;">
+              ${totalTareas} tareas
+            </span>
+          </td>
+        </tr>
+      `;
+    });
+  });
+
+  html += '</tbody></table>';
+
+  tablaDiv.innerHTML = html;
+
+  // Handler: abrir modal de tareas al hacer click
+  tablaDiv.querySelectorAll('.ver-tareas-linea').forEach(btn => {
+    btn.onclick = () => {
+      const centroIdx = +btn.dataset.centroIdx;
+      const lineIdx = +btn.dataset.lineIdx;
+      abrirModalTareas(centros[centroIdx], lineIdx, () => inicializarTareasMantenciones());
+    };
+  });
+}
+
+// Deja esto disponible en el global para auto-inicialización en el HTML
+window.inicializarTareasMantenciones = inicializarTareasMantenciones;
