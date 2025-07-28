@@ -9,7 +9,6 @@ import {
 import { renderAcordeonLineas } from './lineas.js';
 import { renderMapaAlways } from '../mapas/control_mapa.js';
 import { tabMapaActiva } from '../core/utilidades_app.js';
-import { actualizarSelectsFiltro, refrescarEventos } from '../calendario/calendario.js';
 import { openEditForm, renderPointsTable } from './centros_form.js';
 
 export function initTablaCentros() {
