@@ -6,7 +6,7 @@
   <title>Mantención de Líneas – Choritos</title>
   <!-- Materialize & Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
-  <link rel="stylesheet" href="../../css/styles.css"/>
+  <link rel="stylesheet" href="../../css/mantencion.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar/main.min.css"/>
 </head>
@@ -27,7 +27,7 @@
     <div id="tab-mantenciones" class="col s12" style="margin-top:1.6rem;">
       <div class="row">
         <div class="col s12 right-align">
-          <a id="btnNuevaMantencion" class="btn teal">
+          <a id="btnNuevaMantencion" class="btn teal modal-trigger" href="#modalTareasLinea">
             <i class="material-icons left">add</i>Nueva Mantención
           </a>
         </div>
@@ -63,23 +63,29 @@
     </div>
   </div>
 
-  <!-- MODAL PARA VER/AGREGAR/EDITAR TAREAS -->
+  <!-- MODAL PARA CREAR/EDITAR TAREA (MANTENCIÓN) -->
   <div id="modalTareasLinea" class="modal">
     <div class="modal-content">
-      <h5>Tareas de la línea <span id="modalNumLinea"></span></h5>
-      <div id="tareasList"></div>
+      <h5 id="formMantencionTitulo">Nueva Mantención de Línea</h5>
       <form id="formTareaLinea">
         <div class="row">
           <div class="input-field col s6">
-            <input id="tareaDesc" type="text" required>
-            <label for="tareaDesc">Título</label>
+            <select id="selectCentroLinea" required>
+              <option value="" disabled selected>Selecciona línea de cultivo</option>
+              <!-- Opciones pobladas por JS -->
+            </select>
+            <label for="selectCentroLinea">Línea de Cultivo</label>
           </div>
           <div class="input-field col s6">
             <input id="tareaFecha" type="date" required>
-            <label for="tareaFecha" class="active">Fecha</label>
+            <label for="tareaFecha" class="active">Fecha programada</label>
           </div>
         </div>
         <div class="row">
+          <div class="input-field col s6">
+            <input id="tareaDesc" type="text" required>
+            <label for="tareaDesc">Tipo de mantención (ej: Reflote, Tensado, Extracción de boyas...)</label>
+          </div>
           <div class="input-field col s6">
             <select id="tareaEstado" required>
               <option value="Pendiente" selected>Pendiente</option>
@@ -88,14 +94,16 @@
             </select>
             <label for="tareaEstado">Estado</label>
           </div>
-          <div class="input-field col s6">
+        </div>
+        <div class="row">
+          <div class="input-field col s12">
             <input id="tareaDescExtra" type="text">
-            <label for="tareaDescExtra">Descripción</label>
+            <label for="tareaDescExtra">Descripción/Observaciones</label>
           </div>
         </div>
         <div class="center-btn">
           <button type="submit" class="btn green">
-            <i class="material-icons left">save</i>Agregar Tarea
+            <i class="material-icons left">save</i>Guardar Mantención
           </button>
         </div>
       </form>
@@ -120,31 +128,28 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  <!-- Tu JS para lógica de mantenciones -->
   <script type="module" src="../../js/tareas/tareas.js"></script>
   <script type="module" src="../../js/calendario/calendario.js"></script>
   <script>
-    // Inicializar pestañas y selects
+    // Inicializar pestañas, selects y modal
     document.addEventListener('DOMContentLoaded', function() {
       var tabs = document.querySelectorAll('.tabs');
       M.Tabs.init(tabs);
       var selects = document.querySelectorAll('select');
       M.FormSelect.init(selects);
 
-      // Escuchar cambio de pestañas para inicializar contenido
-      document.querySelectorAll('.tabs').forEach(tabEl => {
-        tabEl.addEventListener('click', (ev) => {
-          const hash = ev.target.getAttribute('href');
-          if (hash === '#tab-mantenciones') {
-            if (window.inicializarTareasMantenciones) window.inicializarTareasMantenciones();
-          }
-          if (hash === '#tab-calendario') {
-            if (window.asegurarCalendarioVisible) window.asegurarCalendarioVisible();
-          }
-        });
-      });
-
-      // Mostrar mantenciones al cargar
+      // Mostrar mantenciones al cargar (usa tu función de tareas)
       if (window.inicializarTareasMantenciones) window.inicializarTareasMantenciones();
+
+      // Al hacer click en "Nueva Mantención", limpiar el form y abrir el modal
+      document.getElementById('btnNuevaMantencion').addEventListener('click', () => {
+        document.getElementById('formMantencionTitulo').textContent = 'Nueva Mantención de Línea';
+        document.getElementById('formTareaLinea').reset();
+        M.updateTextFields();
+        var selects = document.querySelectorAll('select');
+        M.FormSelect.init(selects);
+      });
     });
   </script>
 </body>
