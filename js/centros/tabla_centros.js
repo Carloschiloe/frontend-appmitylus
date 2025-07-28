@@ -21,25 +21,30 @@ export function initTablaCentros() {
     console.error('No se encontró #centrosTable');
     return;
   }
+
   Estado.table = $t.DataTable({
     colReorder: true,
     dom: 'Bfrtip',
     buttons: [
       {
         extend: 'copyHtml5',
-        exportOptions: { columns: ':visible', footer: true }
+        footer: true,
+        exportOptions: { columns: ':visible', modifier: { page: 'all' } }
       },
       {
         extend: 'csvHtml5',
-        exportOptions: { columns: ':visible', footer: true }
+        footer: true,
+        exportOptions: { columns: ':visible', modifier: { page: 'all' } }
       },
       {
         extend: 'excelHtml5',
-        exportOptions: { columns: ':visible', footer: true }
+        footer: true,
+        exportOptions: { columns: ':visible', modifier: { page: 'all' } }
       },
       {
         extend: 'pdfHtml5',
-        exportOptions: { columns: ':visible', footer: true }
+        footer: true,
+        exportOptions: { columns: ':visible', modifier: { page: 'all' } }
       }
     ],
     searching: false,
@@ -47,7 +52,6 @@ export function initTablaCentros() {
       url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
     },
     footerCallback: function () {
-      // Calcula totales de todas las filas
       let sumH = 0, sumB = 0, sumL = 0;
       Estado.centros.forEach(c => {
         sumH += parseFloat(c.hectareas) || 0;
@@ -56,7 +60,6 @@ export function initTablaCentros() {
           : 0;
         sumL += Array.isArray(c.lines) ? c.lines.length : 0;
       });
-      // Actualiza el footer
       const h = document.getElementById('totalHect');
       const b = document.getElementById('totalBoyas');
       const l = document.getElementById('totalLineas');
@@ -67,10 +70,14 @@ export function initTablaCentros() {
       }
     }
   });
+
+  // Inicializa totales inmediatamente
+  Estado.table.footerCallback();
 }
 
 export async function loadCentros() {
   Estado.centros = await getCentrosAll();
+
   const rows = Estado.centros.map((c, i) => {
     const totalBoyas = Array.isArray(c.lines)
       ? c.lines.reduce((sum, l) => sum + (+l.buoys || 0), 0)
@@ -109,11 +116,9 @@ export async function loadCentros() {
       Estado.editingLine
     );
 
-    // Inicializar selects dentro del acordeón
     const selects = acordeonCont.querySelectorAll('select');
     if (selects.length) M.FormSelect.init(selects);
 
-    // Filtrado de líneas
     const inputBuscar = document.getElementById('inputBuscarLineas');
     if (inputBuscar) inputBuscar.addEventListener('input', () => filtrarLineas());
 
@@ -130,9 +135,9 @@ export async function loadCentros() {
     }
     filtrarLineas();
 
-    // Delegados dentro del acordeón
     const tbody = acordeonCont.querySelector('table.striped tbody');
     if (tbody) {
+      // Eliminar línea
       tbody.querySelectorAll('.btn-del-line').forEach(btn => {
         btn.onclick = async () => {
           const idx = +btn.dataset.lineIdx;
@@ -148,6 +153,7 @@ export async function loadCentros() {
         };
       });
 
+      // Editar línea
       tbody.querySelectorAll('.btn-edit-line').forEach(btn => {
         btn.onclick = () => {
           Estado.editingLine = { idx: Estado.lineAcordionOpen, lineIdx: +btn.dataset.lineIdx };
@@ -155,6 +161,7 @@ export async function loadCentros() {
         };
       });
 
+      // Cancelar edición
       tbody.querySelectorAll('.btn-cancel-edit-line').forEach(btn => {
         btn.onclick = () => {
           Estado.editingLine = { idx: null, lineIdx: null };
@@ -162,6 +169,7 @@ export async function loadCentros() {
         };
       });
 
+      // Guardar edición
       tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
         btn.onclick = async () => {
           const tr = btn.closest('tr');
@@ -182,6 +190,7 @@ export async function loadCentros() {
         };
       });
 
+      // Ver tareas
       tbody.querySelectorAll('.btn-ver-tareas').forEach(btn => {
         btn.onclick = () => {
           abrirModalTareas(
@@ -199,7 +208,7 @@ export async function loadCentros() {
 
   if (tabMapaActiva()) renderMapaAlways();
 
-  // Delegados en la tabla de Centros
+  // Delegados en tabla general
   const $t = window.$('#centrosTable');
   $t
     .off('click', '.btn-coords')
