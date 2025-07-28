@@ -75,6 +75,184 @@ export function initTablaCentros() {
 
   // Forzar un primer draw para invocar footerCallback
   Estado.table.draw();
+
+  // Delegados en tabla general
+  const $t2 = window.$('#centrosTable');
+
+  // Coordenadas
+  $t2
+    .off('click', '.btn-coords')
+    .on('click', '.btn-coords', function () {
+      const idx = +this.dataset.idx;
+      const c = Estado.centros[idx];
+      const modal = document.getElementById('modalCoordenadas');
+      if (c && modal) {
+        document.getElementById('coordenadasList').innerHTML =
+          c.coords.map((p, i) =>
+            `<div>${i + 1}. Lat: <b>${p.lat.toFixed(6)}</b> – Lng: <b>${p.lng.toFixed(6)}</b></div>`
+          ).join('');
+        M.Modal.getInstance(modal).open();
+      }
+    });
+
+  // Mostrar/ocultar líneas del centro (child row)
+  $t2
+    .off('click', '.btn-toggle-lineas')
+    .on('click', '.btn-toggle-lineas', function () {
+      const idx = +this.dataset.idx;
+      const tr = $(this).closest('tr');
+      const row = Estado.table.row(tr);
+
+      if (row.child.isShown()) {
+        row.child.hide();
+        tr.removeClass('shown');
+        return;
+      }
+
+      // Cierra otros child rows abiertos (solo uno a la vez)
+      Estado.table.rows().every(function () {
+        if (this.child.isShown()) {
+          $(this.node()).removeClass('shown');
+          this.child.hide();
+        }
+      });
+
+      // Renderiza el HTML de las líneas de ese centro
+      const lineasHtml = renderAcordeonLineas(idx, Estado.centros, Estado.editingLine);
+
+      // Abre el child row justo debajo de la fila del centro
+      row.child(`<div class="child-row-lineas">${lineasHtml}</div>`).show();
+      tr.addClass('shown');
+
+      // Inicializa selects/materialize dentro del acordeón
+      const acordeonCont = tr.next().find('.child-row-lineas')[0];
+      if (acordeonCont) {
+        // Materialize selects
+        const selects = acordeonCont.querySelectorAll('select');
+        if (selects.length) M.FormSelect.init(selects);
+
+        // Filtro de líneas por texto/estado (solo si lo tienes implementado)
+        const inputBuscar = acordeonCont.querySelector('#inputBuscarLineas');
+        if (inputBuscar) inputBuscar.addEventListener('input', () => filtrarLineas(acordeonCont));
+
+        const filtroEstados = acordeonCont.querySelector('#filtroEstados');
+        if (filtroEstados) {
+          filtroEstados.querySelectorAll('button').forEach(btn => {
+            btn.onclick = () => {
+              filtroEstados.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+              Estado.estadoFiltro = btn.dataset.estado || 'todos';
+              filtrarLineas(acordeonCont);
+            };
+          });
+        }
+
+        // Delegados dentro del acordeón (eliminar, editar, tareas)
+        const tbody = acordeonCont.querySelector('table.striped tbody');
+        if (tbody) {
+          tbody.querySelectorAll('.btn-del-line').forEach(btn => {
+            btn.onclick = async () => {
+              const lineIdx = +btn.dataset.lineIdx;
+              const centro = Estado.centros[idx];
+              const linea = centro.lines[lineIdx];
+              if (!linea) return;
+              if (confirm(`¿Eliminar la línea ${linea.number}?`)) {
+                await deleteLinea(centro._id, linea._id);
+                await loadCentros();
+                if (tabMapaActiva()) renderMapaAlways(true);
+                refrescarEventos();
+              }
+            };
+          });
+
+          tbody.querySelectorAll('.btn-edit-line').forEach(btn => {
+            btn.onclick = () => {
+              Estado.editingLine = { idx: idx, lineIdx: +btn.dataset.lineIdx };
+              loadCentros();
+            };
+          });
+
+          tbody.querySelectorAll('.btn-cancel-edit-line').forEach(btn => {
+            btn.onclick = () => {
+              Estado.editingLine = { idx: null, lineIdx: null };
+              loadCentros();
+            };
+          });
+
+          tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
+            btn.onclick = async () => {
+              const tr = btn.closest('tr');
+              const num = tr.querySelector('.edit-line-num').value.trim();
+              const boy = parseInt(tr.querySelector('.edit-line-buoys').value, 10);
+              const long = parseFloat(tr.querySelector('.edit-line-long').value);
+              const cab = tr.querySelector('.edit-line-cable').value.trim();
+              const st = tr.querySelector('.edit-line-state').value;
+              if (!num || isNaN(boy) || isNaN(long) || !cab || !st) {
+                M.toast({ html: 'Completa todos los campos', classes: 'red' });
+                return;
+              }
+              const centro = Estado.centros[idx];
+              const linea = centro.lines[+btn.dataset.lineIdx];
+              await updateLinea(centro._id, linea._id, { number: num, buoys: boy, longitud: long, cable: cab, state: st });
+              Estado.editingLine = { idx: null, lineIdx: null };
+              await loadCentros();
+            };
+          });
+
+          tbody.querySelectorAll('.btn-ver-tareas').forEach(btn => {
+            btn.onclick = () => {
+              abrirModalTareas(
+                Estado.centros[idx],
+                +btn.dataset.lineIdx,
+                async () => {
+                  await loadCentros();
+                  refrescarEventos();
+                }
+              );
+            };
+          });
+        }
+        filtrarLineas(acordeonCont); // Aplica filtrado inicial si corresponde
+      }
+    });
+
+  // Editar centro
+  $t2
+    .off('click', '.editar-centro')
+    .on('click', '.editar-centro', function () {
+      const idx = +this.dataset.idx;
+      Estado.currentCentroIdx = idx;
+      const modalElem = document.getElementById('centroModal');
+      const modal = M.Modal.getInstance(modalElem);
+      const els = {
+        formTitle: document.getElementById('formTitle'),
+        inputCentroId: document.getElementById('inputCentroId'),
+        inputName: document.getElementById('inputName'),
+        inputCode: document.getElementById('inputCode'),
+        inputHectareas: document.getElementById('inputHectareas'),
+        inputLat: document.getElementById('inputLat'),
+        inputLng: document.getElementById('inputLng'),
+        pointsBody: document.getElementById('pointsBody')
+      };
+      openEditForm(els, Estado.map, (Estado.currentPoints = []), v => (Estado.currentCentroIdx = v));
+      renderPointsTable(els.pointsBody, Estado.currentPoints);
+      modal.open();
+    });
+
+  // Eliminar centro
+  $t2
+    .off('click', '.eliminar-centro')
+    .on('click', '.eliminar-centro', async function () {
+      const idx = +this.dataset.idx;
+      const c = Estado.centros[idx];
+      if (!c) return;
+      if (confirm(`¿Eliminar el centro "${c.name}"?`)) {
+        await deleteCentro(c._id);
+        await loadCentros();
+        if (tabMapaActiva()) renderMapaAlways(true);
+        refrescarEventos();
+      }
+    });
 }
 
 export async function loadCentros() {
@@ -106,168 +284,21 @@ export async function loadCentros() {
 
   Estado.table.clear().rows.add(rows).draw();
 
-  // Limpia y renderiza acordeón de líneas
-  const acordeonCont = document.getElementById('acordeonLineas');
-  document.querySelectorAll('.acordeon-lineas-row').forEach(r => r.remove());
-  if (acordeonCont) acordeonCont.innerHTML = '';
-
+  // El child row lo maneja DataTables automáticamente
+  // Ya NO se usa el acordeonLineas fuera de la tabla
+  // Si quieres forzar un centro abierto tras recarga, lo puedes hacer así:
   if (Estado.lineAcordionOpen !== null && Estado.centros[Estado.lineAcordionOpen]) {
-    acordeonCont.innerHTML = renderAcordeonLineas(
-      Estado.lineAcordionOpen,
-      Estado.centros,
-      Estado.editingLine
-    );
-
-    // Inicializa selects dentro del acordeón
-    const selects = acordeonCont.querySelectorAll('select');
-    if (selects.length) M.FormSelect.init(selects);
-
-    // Filtrado de líneas
-    const inputBuscar = document.getElementById('inputBuscarLineas');
-    if (inputBuscar) inputBuscar.addEventListener('input', () => filtrarLineas());
-
-    const filtroEstados = document.getElementById('filtroEstados');
-    if (filtroEstados) {
-      filtroEstados.querySelectorAll('button').forEach(btn => {
-        btn.onclick = () => {
-          filtroEstados.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          Estado.estadoFiltro = btn.dataset.estado || 'todos';
-          filtrarLineas();
-        };
-      });
-    }
-    filtrarLineas();
-
-    // Delegados dentro del acordeón
-    const tbody = acordeonCont.querySelector('table.striped tbody');
-    if (tbody) {
-      tbody.querySelectorAll('.btn-del-line').forEach(btn => {
-        btn.onclick = async () => {
-          const idx = +btn.dataset.lineIdx;
-          const centro = Estado.centros[Estado.lineAcordionOpen];
-          const linea = centro.lines[idx];
-          if (!linea) return;
-          if (confirm(`¿Eliminar la línea ${linea.number}?`)) {
-            await deleteLinea(centro._id, linea._id);
-            await loadCentros();
-            if (tabMapaActiva()) renderMapaAlways(true);
-            refrescarEventos();
-          }
-        };
-      });
-
-      tbody.querySelectorAll('.btn-edit-line').forEach(btn => {
-        btn.onclick = () => {
-          Estado.editingLine = { idx: Estado.lineAcordionOpen, lineIdx: +btn.dataset.lineIdx };
-          loadCentros();
-        };
-      });
-
-      tbody.querySelectorAll('.btn-cancel-edit-line').forEach(btn => {
-        btn.onclick = () => {
-          Estado.editingLine = { idx: null, lineIdx: null };
-          loadCentros();
-        };
-      });
-
-      tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
-        btn.onclick = async () => {
-          const tr = btn.closest('tr');
-          const num = tr.querySelector('.edit-line-num').value.trim();
-          const boy = parseInt(tr.querySelector('.edit-line-buoys').value, 10);
-          const long = parseFloat(tr.querySelector('.edit-line-long').value);
-          const cab = tr.querySelector('.edit-line-cable').value.trim();
-          const st = tr.querySelector('.edit-line-state').value;
-          if (!num || isNaN(boy) || isNaN(long) || !cab || !st) {
-            M.toast({ html: 'Completa todos los campos', classes: 'red' });
-            return;
-          }
-          const centro = Estado.centros[Estado.lineAcordionOpen];
-          const linea = centro.lines[+btn.dataset.lineIdx];
-          await updateLinea(centro._id, linea._id, { number: num, buoys: boy, longitud: long, cable: cab, state: st });
-          Estado.editingLine = { idx: null, lineIdx: null };
-          await loadCentros();
-        };
-      });
-
-      tbody.querySelectorAll('.btn-ver-tareas').forEach(btn => {
-        btn.onclick = () => {
-          abrirModalTareas(
-            Estado.centros[Estado.lineAcordionOpen],
-            +btn.dataset.lineIdx,
-            async () => {
-              await loadCentros();
-              refrescarEventos();
-            }
-          );
-        };
-      });
-    }
+    const tr = $('#centrosTable tbody tr').eq(Estado.lineAcordionOpen);
+    tr.find('.btn-toggle-lineas').trigger('click');
   }
 
   if (tabMapaActiva()) renderMapaAlways();
-
-  // Delegados en tabla general
-  const $t2 = window.$('#centrosTable');
-  $t2
-    .off('click', '.btn-coords')
-    .on('click', '.btn-coords', function () {
-      const idx = +this.dataset.idx;
-      const c = Estado.centros[idx];
-      const modal = document.getElementById('modalCoordenadas');
-      if (c && modal) {
-        document.getElementById('coordenadasList').innerHTML =
-          c.coords.map((p, i) =>
-            `<div>${i + 1}. Lat: <b>${p.lat.toFixed(6)}</b> – Lng: <b>${p.lng.toFixed(6)}</b></div>`
-          ).join('');
-        M.Modal.getInstance(modal).open();
-      }
-    })
-    .off('click', '.btn-toggle-lineas')
-    .on('click', '.btn-toggle-lineas', function () {
-      const idx = +this.dataset.idx;
-      Estado.lineAcordionOpen = Estado.lineAcordionOpen === idx ? null : idx;
-      loadCentros();
-    })
-    .off('click', '.editar-centro')
-    .on('click', '.editar-centro', function () {
-      const idx = +this.dataset.idx;
-      Estado.currentCentroIdx = idx;
-      const modalElem = document.getElementById('centroModal');
-      const modal = M.Modal.getInstance(modalElem);
-      const els = {
-        formTitle: document.getElementById('formTitle'),
-        inputCentroId: document.getElementById('inputCentroId'),
-        inputName: document.getElementById('inputName'),
-        inputCode: document.getElementById('inputCode'),
-        inputHectareas: document.getElementById('inputHectareas'),
-        inputLat: document.getElementById('inputLat'),
-        inputLng: document.getElementById('inputLng'),
-        pointsBody: document.getElementById('pointsBody')
-      };
-      openEditForm(els, Estado.map, (Estado.currentPoints = []), v => (Estado.currentCentroIdx = v));
-      renderPointsTable(els.pointsBody, Estado.currentPoints);
-      modal.open();
-    })
-    .off('click', '.eliminar-centro')
-    .on('click', '.eliminar-centro', async function () {
-      const idx = +this.dataset.idx;
-      const c = Estado.centros[idx];
-      if (!c) return;
-      if (confirm(`¿Eliminar el centro "${c.name}"?`)) {
-        await deleteCentro(c._id);
-        await loadCentros();
-        if (tabMapaActiva()) renderMapaAlways(true);
-        refrescarEventos();
-      }
-    });
 }
 
-export function filtrarLineas() {
-  const cont = document.getElementById('acordeonLineas');
-  if (!cont) return;
-  const txt = (document.getElementById('inputBuscarLineas')?.value || '').toLowerCase();
+// Filtra líneas SOLO en el bloque actual (no global)
+export function filtrarLineas(contenedor) {
+  const cont = contenedor || document;
+  const txt = (cont.querySelector('#inputBuscarLineas')?.value || '').toLowerCase();
   cont.querySelectorAll('table.striped tbody tr').forEach(fila => {
     const num = (fila.cells[0]?.textContent || '').toLowerCase();
     const est = (fila.cells[4]?.textContent || '').toLowerCase();
