@@ -4,7 +4,6 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mantención de Líneas – Choritos</title>
-  <!-- Materialize & Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
   <link rel="stylesheet" href="../../css/mantencion.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
@@ -18,138 +17,70 @@
     </div>
   </nav>
   <div class="container" style="margin-top:1.2rem;">
-    <ul id="tabs-mantencion" class="tabs">
-      <li class="tab col s6"><a class="active" href="#tab-mantenciones">Mantenciones</a></li>
-      <li class="tab col s6"><a href="#tab-calendario">Calendario</a></li>
-    </ul>
 
-    <!-- TAB MANTENCIONES -->
-    <div id="tab-mantenciones" class="col s12" style="margin-top:1.6rem;">
+    <h5>Asignar Mantención a Línea de Cultivo</h5>
+    <form id="formMantencionLinea">
       <div class="row">
-        <div class="col s12 right-align">
-          <a id="btnNuevaMantencion" class="btn teal modal-trigger" href="#modalTareasLinea">
-            <i class="material-icons left">add</i>Nueva Mantención
-          </a>
-        </div>
-      </div>
-      <h5>Mantenciones Programadas</h5>
-      <div id="tablaMantenciones"></div>
-    </div>
-
-    <!-- TAB CALENDARIO -->
-    <div id="tab-calendario" class="col s12" style="margin-top:1.6rem;">
-      <h5>Calendario Operativo</h5>
-      <div class="row" id="calendarioFiltros" style="margin-bottom:1rem;">
         <div class="input-field col s5">
-          <select id="filtroCentro"></select>
-          <label for="filtroCentro">Centro</label>
-        </div>
-        <div class="input-field col s4">
-          <select id="filtroEstado">
-            <option value="todos" selected>Todos los estados</option>
-            <option value="Pendiente">Pendientes</option>
-            <option value="En curso">En curso</option>
-            <option value="Completada">Completadas</option>
+          <select id="selectCentro" required>
+            <option value="" disabled selected>Seleccione centro</option>
           </select>
-          <label for="filtroEstado">Estado</label>
+          <label for="selectCentro">Centro</label>
         </div>
-        <div class="input-field col s3" style="margin-top:0.6rem;">
-          <button id="btnRefrescarCalendario" class="btn teal" style="width:100%;">
-            <i class="material-icons left" style="margin-right:2px;">refresh</i>Actualizar
+        <div class="input-field col s5">
+          <select id="selectLinea" required disabled>
+            <option value="" disabled selected>Seleccione línea</option>
+          </select>
+          <label for="selectLinea">Línea</label>
+        </div>
+        <div class="input-field col s2">
+          <button type="submit" class="btn green" style="width:100%;margin-top:10px;">
+            <i class="material-icons left">add</i>Asignar
           </button>
         </div>
       </div>
-      <div id="calendarioTareas"></div>
-    </div>
-  </div>
+      <div class="row">
+        <div class="input-field col s6">
+          <input id="mantencionTitulo" type="text" required>
+          <label for="mantencionTitulo">Título mantención</label>
+        </div>
+        <div class="input-field col s3">
+          <input id="mantencionFecha" type="date" required>
+          <label for="mantencionFecha" class="active">Fecha</label>
+        </div>
+        <div class="input-field col s3">
+          <select id="mantencionEstado" required>
+            <option value="Pendiente" selected>Pendiente</option>
+            <option value="En curso">En curso</option>
+            <option value="Completada">Completada</option>
+          </select>
+          <label for="mantencionEstado">Estado</label>
+        </div>
+      </div>
+      <div class="row">
+        <div class="input-field col s12">
+          <input id="mantencionDesc" type="text">
+          <label for="mantencionDesc">Descripción</label>
+        </div>
+      </div>
+    </form>
 
-  <!-- MODAL PARA CREAR/EDITAR TAREA (MANTENCIÓN) -->
-  <div id="modalTareasLinea" class="modal">
-    <div class="modal-content">
-      <h5 id="formMantencionTitulo">Nueva Mantención de Línea</h5>
-      <form id="formTareaLinea">
-        <div class="row">
-          <div class="input-field col s6">
-            <select id="selectCentroLinea" required>
-              <option value="" disabled selected>Selecciona línea de cultivo</option>
-              <!-- Opciones pobladas por JS -->
-            </select>
-            <label for="selectCentroLinea">Línea de Cultivo</label>
-          </div>
-          <div class="input-field col s6">
-            <input id="tareaFecha" type="date" required>
-            <label for="tareaFecha" class="active">Fecha programada</label>
-          </div>
-        </div>
-        <div class="row">
-          <div class="input-field col s6">
-            <input id="tareaDesc" type="text" required>
-            <label for="tareaDesc">Tipo de mantención (ej: Reflote, Tensado, Extracción de boyas...)</label>
-          </div>
-          <div class="input-field col s6">
-            <select id="tareaEstado" required>
-              <option value="Pendiente" selected>Pendiente</option>
-              <option value="En curso">En curso</option>
-              <option value="Completada">Completada</option>
-            </select>
-            <label for="tareaEstado">Estado</label>
-          </div>
-        </div>
-        <div class="row">
-          <div class="input-field col s12">
-            <input id="tareaDescExtra" type="text">
-            <label for="tareaDescExtra">Descripción/Observaciones</label>
-          </div>
-        </div>
-        <div class="center-btn">
-          <button type="submit" class="btn green">
-            <i class="material-icons left">save</i>Guardar Mantención
-          </button>
-        </div>
-      </form>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-close btn grey lighten-1">Cerrar</button>
-    </div>
-  </div>
+    <h5>Tareas/Mantenciones asignadas a la línea</h5>
+    <div id="tablaTareasLinea"></div>
 
-  <!-- MODAL DETALLE TAREA -->
-  <div id="modalDetalleTarea" class="modal">
-    <div class="modal-content">
-      <h5 id="detalleTitulo"></h5>
-      <div id="detalleContenido"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-close btn grey lighten-1">Cerrar</button>
-    </div>
+    <h5 style="margin-top:2rem;">Calendario Operativo</h5>
+    <div id="calendarioTareas"></div>
   </div>
 
   <!-- JS -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-  <!-- Tu JS para lógica de mantenciones -->
-  <script type="module" src="../../js/tareas/tareas.js"></script>
-  <script type="module" src="../../js/calendario/calendario.js"></script>
+  <script type="module" src="../../js/tareas/mantencion_lineas.js"></script>
   <script>
-    // Inicializar pestañas, selects y modal
     document.addEventListener('DOMContentLoaded', function() {
-      var tabs = document.querySelectorAll('.tabs');
-      M.Tabs.init(tabs);
       var selects = document.querySelectorAll('select');
       M.FormSelect.init(selects);
-
-      // Mostrar mantenciones al cargar (usa tu función de tareas)
-      if (window.inicializarTareasMantenciones) window.inicializarTareasMantenciones();
-
-      // Al hacer click en "Nueva Mantención", limpiar el form y abrir el modal
-      document.getElementById('btnNuevaMantencion').addEventListener('click', () => {
-        document.getElementById('formMantencionTitulo').textContent = 'Nueva Mantención de Línea';
-        document.getElementById('formTareaLinea').reset();
-        M.updateTextFields();
-        var selects = document.querySelectorAll('select');
-        M.FormSelect.init(selects);
-      });
     });
   </script>
 </body>
