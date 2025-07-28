@@ -8,59 +8,144 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
   <link rel="stylesheet" href="../../css/styles.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar/main.min.css"/>
 </head>
 <body>
-
-  <!-- NAV -->
   <nav class="teal">
     <div class="nav-wrapper">
       <a href="#" class="brand-logo center">Mantención de Líneas</a>
       <a href="../../home.html" class="btn-flat left"><i class="material-icons">arrow_back</i></a>
     </div>
   </nav>
-
-  <!-- CONTENIDO -->
   <div class="container" style="margin-top:1.2rem;">
     <ul id="tabs-mantencion" class="tabs">
-      <li class="tab col s4"><a class="active" href="#tab-mantenciones">Mantenciones</a></li>
-      <li class="tab col s4"><a href="#tab-historial">Historial</a></li>
-      <!-- Puedes agregar más pestañas a futuro (ejemplo: Reportes, KPIs, etc.) -->
+      <li class="tab col s6"><a class="active" href="#tab-mantenciones">Mantenciones</a></li>
+      <li class="tab col s6"><a href="#tab-calendario">Calendario</a></li>
     </ul>
 
     <!-- TAB MANTENCIONES -->
     <div id="tab-mantenciones" class="col s12" style="margin-top:1.6rem;">
-      <h5>Mantenciones Programadas</h5>
       <div class="row">
-        <!-- Aquí puedes poner filtros: Centro, Línea, Estado, Fecha, etc. -->
+        <div class="col s12 right-align">
+          <a id="btnNuevaMantencion" class="btn teal">
+            <i class="material-icons left">add</i>Nueva Mantención
+          </a>
+        </div>
       </div>
-      <div id="tablaMantenciones">
-        <!-- Aquí va la tabla/listado de mantenciones programadas -->
-      </div>
-      <div class="center-btn" style="margin-top:1.5rem;">
-        <a id="btnNuevaMantencion" class="btn teal"><i class="material-icons left">add</i>Nueva Mantención</a>
-      </div>
-      <!-- Modal para crear/editar mantenciones (puedes agregarlo aquí o al final del body) -->
+      <h5>Mantenciones Programadas</h5>
+      <div id="tablaMantenciones"></div>
     </div>
 
-    <!-- TAB HISTORIAL -->
-    <div id="tab-historial" class="col s12" style="margin-top:1.6rem;">
-      <h5>Historial de Mantenciones</h5>
-      <div id="historialMantenciones">
-        <!-- Aquí va el historial de mantenciones completadas/antiguas -->
+    <!-- TAB CALENDARIO -->
+    <div id="tab-calendario" class="col s12" style="margin-top:1.6rem;">
+      <h5>Calendario Operativo</h5>
+      <div class="row" id="calendarioFiltros" style="margin-bottom:1rem;">
+        <div class="input-field col s5">
+          <select id="filtroCentro"></select>
+          <label for="filtroCentro">Centro</label>
+        </div>
+        <div class="input-field col s4">
+          <select id="filtroEstado">
+            <option value="todos" selected>Todos los estados</option>
+            <option value="Pendiente">Pendientes</option>
+            <option value="En curso">En curso</option>
+            <option value="Completada">Completadas</option>
+          </select>
+          <label for="filtroEstado">Estado</label>
+        </div>
+        <div class="input-field col s3" style="margin-top:0.6rem;">
+          <button id="btnRefrescarCalendario" class="btn teal" style="width:100%;">
+            <i class="material-icons left" style="margin-right:2px;">refresh</i>Actualizar
+          </button>
+        </div>
       </div>
+      <div id="calendarioTareas"></div>
+    </div>
+  </div>
+
+  <!-- MODAL PARA VER/AGREGAR/EDITAR TAREAS -->
+  <div id="modalTareasLinea" class="modal">
+    <div class="modal-content">
+      <h5>Tareas de la línea <span id="modalNumLinea"></span></h5>
+      <div id="tareasList"></div>
+      <form id="formTareaLinea">
+        <div class="row">
+          <div class="input-field col s6">
+            <input id="tareaDesc" type="text" required>
+            <label for="tareaDesc">Título</label>
+          </div>
+          <div class="input-field col s6">
+            <input id="tareaFecha" type="date" required>
+            <label for="tareaFecha" class="active">Fecha</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s6">
+            <select id="tareaEstado" required>
+              <option value="Pendiente" selected>Pendiente</option>
+              <option value="En curso">En curso</option>
+              <option value="Completada">Completada</option>
+            </select>
+            <label for="tareaEstado">Estado</label>
+          </div>
+          <div class="input-field col s6">
+            <input id="tareaDescExtra" type="text">
+            <label for="tareaDescExtra">Descripción</label>
+          </div>
+        </div>
+        <div class="center-btn">
+          <button type="submit" class="btn green">
+            <i class="material-icons left">save</i>Agregar Tarea
+          </button>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-close btn grey lighten-1">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- MODAL DETALLE TAREA -->
+  <div id="modalDetalleTarea" class="modal">
+    <div class="modal-content">
+      <h5 id="detalleTitulo"></h5>
+      <div id="detalleContenido"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-close btn grey lighten-1">Cerrar</button>
     </div>
   </div>
 
   <!-- JS -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  <script type="module" src="../../js/tareas/tareas.js"></script>
+  <script type="module" src="../../js/calendario/calendario.js"></script>
   <script>
-    // Inicializar pestañas Materialize
+    // Inicializar pestañas y selects
     document.addEventListener('DOMContentLoaded', function() {
       var tabs = document.querySelectorAll('.tabs');
       M.Tabs.init(tabs);
+      var selects = document.querySelectorAll('select');
+      M.FormSelect.init(selects);
+
+      // Escuchar cambio de pestañas para inicializar contenido
+      document.querySelectorAll('.tabs').forEach(tabEl => {
+        tabEl.addEventListener('click', (ev) => {
+          const hash = ev.target.getAttribute('href');
+          if (hash === '#tab-mantenciones') {
+            if (window.inicializarTareasMantenciones) window.inicializarTareasMantenciones();
+          }
+          if (hash === '#tab-calendario') {
+            if (window.asegurarCalendarioVisible) window.asegurarCalendarioVisible();
+          }
+        });
+      });
+
+      // Mostrar mantenciones al cargar
+      if (window.inicializarTareasMantenciones) window.inicializarTareasMantenciones();
     });
-    // Aquí puedes importar tu JS de mantenciones más adelante
   </script>
 </body>
 </html>
