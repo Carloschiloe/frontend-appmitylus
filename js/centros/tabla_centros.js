@@ -1,5 +1,3 @@
-// js/centros/tabla_centros.js
-
 import { Estado } from '../core/estado.js';
 import {
   getCentrosAll,
@@ -13,95 +11,6 @@ import { renderMapaAlways } from '../mapas/control_mapa.js';
 import { tabMapaActiva } from '../core/utilidades_app.js';
 import { actualizarSelectsFiltro, refrescarEventos } from '../calendario/calendario.js';
 import { openEditForm, renderPointsTable } from './centros_form.js';
-
-// ---------- FUNCIÓN PARA ADJUNTAR EVENTOS EN CHILD ROW ----------
-function attachLineasListeners(idx, acordeonCont) {
-  const tbody = acordeonCont.querySelector('table.striped tbody');
-  if (!tbody) return;
-
-  // Eliminar línea
-  tbody.querySelectorAll('.btn-del-line').forEach(btn => {
-    btn.onclick = async () => {
-      const lineIdx = +btn.dataset.lineIdx;
-      const centro = Estado.centros[idx];
-      const linea = centro.lines[lineIdx];
-      if (!linea) return;
-      if (confirm(`¿Eliminar la línea ${linea.number}?`)) {
-        await deleteLinea(centro._id, linea._id);
-        await loadCentros();
-        if (tabMapaActiva()) renderMapaAlways(true);
-        refrescarEventos();
-      }
-    };
-  });
-
-  // Editar línea
-  tbody.querySelectorAll('.btn-edit-line').forEach(btn => {
-    btn.onclick = () => {
-      Estado.editingLine = { idx: idx, lineIdx: +btn.dataset.lineIdx };
-      // Refresca solo el child row del centro actual
-      const tr = $('#centrosTable tbody tr').eq(idx);
-      const row = Estado.table.row(tr);
-      if (row.child.isShown()) {
-        const lineasHtml = renderAcordeonLineas(idx, Estado.centros, Estado.editingLine);
-        row.child(`<div class="child-row-lineas">${lineasHtml}</div>`).show();
-        tr.addClass('shown');
-        // Vuelve a adjuntar los listeners
-        const acordeonContNew = tr.next().find('.child-row-lineas')[0];
-        attachLineasListeners(idx, acordeonContNew);
-      }
-    };
-  });
-
-  // Cancelar edición
-  tbody.querySelectorAll('.btn-cancel-edit-line').forEach(btn => {
-    btn.onclick = () => {
-      Estado.editingLine = { idx: null, lineIdx: null };
-      // Refresca solo el child row del centro actual
-      const tr = $('#centrosTable tbody tr').eq(idx);
-      const row = Estado.table.row(tr);
-      if (row.child.isShown()) {
-        const lineasHtml = renderAcordeonLineas(idx, Estado.centros, Estado.editingLine);
-        row.child(`<div class="child-row-lineas">${lineasHtml}</div>`).show();
-        tr.addClass('shown');
-        // Vuelve a adjuntar los listeners
-        const acordeonContNew = tr.next().find('.child-row-lineas')[0];
-        attachLineasListeners(idx, acordeonContNew);
-      }
-    };
-  });
-
-  // Guardar edición
-  tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
-    btn.onclick = async () => {
-      const trLinea = btn.closest('tr');
-      const num = trLinea.querySelector('.edit-line-num').value.trim();
-      const boy = parseInt(trLinea.querySelector('.edit-line-buoys').value, 10);
-      const long = parseFloat(trLinea.querySelector('.edit-line-long').value);
-      const cab = trLinea.querySelector('.edit-line-cable').value.trim();
-      const st = trLinea.querySelector('.edit-line-state').value;
-      if (!num || isNaN(boy) || isNaN(long) || !cab || !st) {
-        M.toast({ html: 'Completa todos los campos', classes: 'red' });
-        return;
-      }
-      const centro = Estado.centros[idx];
-      const linea = centro.lines[+btn.dataset.lineIdx];
-      await updateLinea(centro._id, linea._id, { number: num, buoys: boy, longitud: long, cable: cab, state: st });
-      Estado.editingLine = { idx: null, lineIdx: null };
-      // Refresca solo el child row del centro actual
-      const tr = $('#centrosTable tbody tr').eq(idx);
-      const row = Estado.table.row(tr);
-      if (row.child.isShown()) {
-        const lineasHtml = renderAcordeonLineas(idx, Estado.centros, Estado.editingLine);
-        row.child(`<div class="child-row-lineas">${lineasHtml}</div>`).show();
-        tr.addClass('shown');
-        // Vuelve a adjuntar los listeners
-        const acordeonContNew = tr.next().find('.child-row-lineas')[0];
-        attachLineasListeners(idx, acordeonContNew);
-      }
-    };
-  });
-}
 
 export function initTablaCentros() {
   const $t = window.$('#centrosTable');
@@ -205,7 +114,7 @@ export function initTablaCentros() {
         }
       });
 
-      // Renderiza el HTML de las líneas de ese centro
+      // Renderiza el HTML de las líneas de ese centro (SIN TAREAS)
       const lineasHtml = renderAcordeonLineas(idx, Estado.centros, Estado.editingLine);
 
       // Abre el child row justo debajo de la fila del centro
@@ -219,14 +128,12 @@ export function initTablaCentros() {
         const selects = acordeonCont.querySelectorAll('select');
         if (selects.length) M.FormSelect.init(selects);
 
-        // Filtro de líneas por texto (solo por número de línea)
+        // Filtro de líneas por texto (buscar por número de línea)
         const inputBuscar = acordeonCont.querySelector('#inputBuscarLineas');
         if (inputBuscar) inputBuscar.addEventListener('input', () => filtrarLineas(acordeonCont));
 
-        // Adjunta los listeners correctos
+        // Delegados dentro del acordeón (eliminar, editar, guardar, cancelar)
         attachLineasListeners(idx, acordeonCont);
-
-        filtrarLineas(acordeonCont); // Aplica filtrado inicial si corresponde
       }
     });
 
@@ -267,6 +174,96 @@ export function initTablaCentros() {
         refrescarEventos();
       }
     });
+}
+
+function attachLineasListeners(idx, acordeonCont) {
+  // Eliminar línea
+  const tbody = acordeonCont.querySelector('table.striped tbody');
+  if (tbody) {
+    tbody.querySelectorAll('.btn-del-line').forEach(btn => {
+      btn.onclick = async () => {
+        const lineIdx = +btn.dataset.lineIdx;
+        const centro = Estado.centros[idx];
+        const linea = centro.lines[lineIdx];
+        if (!linea) return;
+        if (confirm(`¿Eliminar la línea ${linea.number}?`)) {
+          await deleteLinea(centro._id, linea._id);
+          await loadCentros();
+          if (tabMapaActiva()) renderMapaAlways(true);
+          refrescarEventos();
+        }
+      };
+    });
+
+    // Editar línea
+    tbody.querySelectorAll('.btn-edit-line').forEach(btn => {
+      btn.onclick = () => {
+        Estado.editingLine = { idx: idx, lineIdx: +btn.dataset.lineIdx };
+        loadCentros();
+      };
+    });
+
+    // Cancelar edición de línea
+    tbody.querySelectorAll('.btn-cancel-edit-line').forEach(btn => {
+      btn.onclick = () => {
+        Estado.editingLine = { idx: null, lineIdx: null };
+        loadCentros();
+      };
+    });
+
+    // Guardar edición de línea
+    tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
+      btn.onclick = async () => {
+        const tr = btn.closest('tr');
+        const num = tr.querySelector('.edit-line-num').value.trim();
+        const boy = parseInt(tr.querySelector('.edit-line-buoys').value, 10);
+        const long = parseFloat(tr.querySelector('.edit-line-long').value);
+        const cab = tr.querySelector('.edit-line-cable').value.trim();
+        const st = tr.querySelector('.edit-line-state').value;
+        if (!num || isNaN(boy) || isNaN(long) || !cab || !st) {
+          M.toast({ html: 'Completa todos los campos', classes: 'red' });
+          return;
+        }
+        const centro = Estado.centros[idx];
+        const linea = centro.lines[+btn.dataset.lineIdx];
+        await updateLinea(centro._id, linea._id, { number: num, buoys: boy, longitud: long, cable: cab, state: st });
+        Estado.editingLine = { idx: null, lineIdx: null };
+        await loadCentros();
+      };
+    });
+  }
+
+  // Agregar línea nueva
+  const formAdd = acordeonCont.querySelector('.form-inline-lineas');
+  if (formAdd) {
+    formAdd.onsubmit = async (e) => {
+      e.preventDefault();
+      const num = formAdd.querySelector('.line-num').value.trim();
+      const boy = parseInt(formAdd.querySelector('.line-buoys').value, 10);
+      const long = parseFloat(formAdd.querySelector('.line-long').value);
+      const cab = formAdd.querySelector('.line-cable').value.trim();
+      const st = formAdd.querySelector('.line-state').value;
+      if (!num || isNaN(boy) || isNaN(long) || !cab || !st) {
+        M.toast({ html: 'Completa todos los campos', classes: 'red' });
+        return;
+      }
+      const centro = Estado.centros[idx];
+      await addLinea(centro._id, { number: num, buoys: boy, longitud: long, cable: cab, state: st });
+      formAdd.reset();
+      // Recarga solo el child row de ese centro
+      const tr = $('#centrosTable tbody tr').eq(idx);
+      const row = Estado.table.row(tr);
+      if (row.child.isShown()) {
+        const lineasHtml = renderAcordeonLineas(idx, Estado.centros, Estado.editingLine);
+        row.child(`<div class="child-row-lineas">${lineasHtml}</div>`).show();
+        tr.addClass('shown');
+        const acordeonContNew = tr.next().find('.child-row-lineas')[0];
+        attachLineasListeners(idx, acordeonContNew);
+      }
+      if (tabMapaActiva()) renderMapaAlways(true);
+      refrescarEventos();
+    };
+  }
 }
 
 export async function loadCentros() {
