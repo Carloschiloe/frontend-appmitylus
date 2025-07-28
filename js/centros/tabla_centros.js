@@ -22,7 +22,6 @@ export function initTablaCentros() {
     return;
   }
 
-  // Inicializa DataTable con exportación de footer
   Estado.table = $t.DataTable({
     colReorder: true,
     dom: 'Bfrtip',
@@ -53,7 +52,7 @@ export function initTablaCentros() {
       url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
     },
     footerCallback: function () {
-      // Calcula los totales sumando todos los centros
+      // Recalcula totales de todos los centros
       let sumH = 0, sumB = 0, sumL = 0;
       Estado.centros.forEach(c => {
         sumH += parseFloat(c.hectareas) || 0;
@@ -62,7 +61,7 @@ export function initTablaCentros() {
           : 0;
         sumL += Array.isArray(c.lines) ? c.lines.length : 0;
       });
-      // Actualiza los IDs en el <tfoot>
+      // Actualiza <tfoot>
       const h = document.getElementById('totalHect');
       const b = document.getElementById('totalBoyas');
       const l = document.getElementById('totalLineas');
@@ -73,6 +72,9 @@ export function initTablaCentros() {
       }
     }
   });
+
+  // Forzar un primer draw para invocar footerCallback
+  Estado.table.draw();
 }
 
 export async function loadCentros() {
@@ -116,7 +118,7 @@ export async function loadCentros() {
       Estado.editingLine
     );
 
-    // Inicializar selects
+    // Inicializa selects dentro del acordeón
     const selects = acordeonCont.querySelectorAll('select');
     if (selects.length) M.FormSelect.init(selects);
 
@@ -207,8 +209,8 @@ export async function loadCentros() {
   if (tabMapaActiva()) renderMapaAlways();
 
   // Delegados en tabla general
-  const $t = window.$('#centrosTable');
-  $t
+  const $t2 = window.$('#centrosTable');
+  $t2
     .off('click', '.btn-coords')
     .on('click', '.btn-coords', function () {
       const idx = +this.dataset.idx;
@@ -279,4 +281,3 @@ export function filtrarLineas() {
     fila.style.display = okTxt && okEst ? '' : 'none';
   });
 }
-
