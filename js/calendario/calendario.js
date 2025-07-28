@@ -156,3 +156,6 @@ export {
   actualizarSelectsFiltro,
   refrescarEventos
 };
+
+window.asegurarCalendarioVisible = asegurarCalendarioVisible;
+
