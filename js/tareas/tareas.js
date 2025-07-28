@@ -1,15 +1,17 @@
 // js/tareas/tareas.js
-import { getCentros, saveCentros } from '../core/almacenamiento.js';
+
+import { getCentros, updateCentro } from '../core/almacenamiento.js';
 
 // Abre el modal para ver/asignar tareas a una línea de un centro
-export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null) {
-  const centros = getCentros();
+export async function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null) {
+  const centros = await getCentros();
   let centroIdx = centros.findIndex(c => c.code === centro.code);
   if (centroIdx === -1) {
     M.toast({ html: 'Centro no encontrado', classes: 'red' });
     return;
   }
-  const linea = centros[centroIdx]?.lines?.[lineIdx];
+  const centroObj = centros[centroIdx];
+  const linea = centroObj?.lines?.[lineIdx];
   if (!linea) {
     M.toast({ html: 'Línea no encontrada', classes: 'red' });
     return;
@@ -64,10 +66,10 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
 
     // Cambio de estado de tarea (select)
     tareasList.querySelectorAll('.estado-tarea-select').forEach(sel => {
-      sel.onchange = function() {
+      sel.onchange = async function() {
         const idx = +this.dataset.idx;
         linea.tareas[idx].estado = this.value;
-        saveCentros(centros);
+        await updateCentro(centroObj._id, centroObj);
         renderTareas();
         if (typeof onChange === 'function') onChange();
       };
@@ -75,11 +77,11 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
 
     // Borrar tarea
     tareasList.querySelectorAll('.btn-borrar-tarea').forEach(btn => {
-      btn.onclick = function() {
+      btn.onclick = async function() {
         const idx = +this.dataset.idx;
         if (confirm('¿Eliminar esta tarea?')) {
           linea.tareas.splice(idx, 1);
-          saveCentros(centros);
+          await updateCentro(centroObj._id, centroObj);
           renderTareas();
           if (typeof onChange === 'function') onChange();
         }
@@ -98,7 +100,7 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
   if (tareaEstado) M.FormSelect.init([tareaEstado]);
 
   // Maneja submit del formulario para agregar una nueva tarea
-  formNuevaTarea.onsubmit = function(e) {
+  formNuevaTarea.onsubmit = async function(e) {
     e.preventDefault();
     const titulo = tareaTitulo.value.trim();
     const fecha = tareaFecha.value;
@@ -113,7 +115,7 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
     if (!linea.tareas) linea.tareas = [];
     const nuevaTarea = { titulo, fecha, estado, descripcion };
     linea.tareas.push(nuevaTarea);
-    saveCentros(centros);
+    await updateCentro(centroObj._id, centroObj);
     renderTareas();
     if (typeof onChange === 'function') onChange();
 
@@ -137,8 +139,8 @@ export function abrirModalTareas(centro, lineIdx, onChange, modalInstance = null
 }
 
 // Muestra la tabla con todas las líneas y botón para ver/asignar mantenciones/tareas
-export function inicializarTareasMantenciones() {
-  const centros = getCentros();
+export async function inicializarTareasMantenciones() {
+  const centros = await getCentros();
   const tablaDiv = document.getElementById('tablaMantenciones');
   if (!tablaDiv) return;
 
