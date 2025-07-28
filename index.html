@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
@@ -10,14 +10,13 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar/main.min.css"/>
   <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
 
-  <!-- ---------- NAV ---------- -->
+  <!-- NAV -->
   <nav class="teal">
     <div class="nav-wrapper">
       <a href="#" class="brand-logo center">Configuración de Centros</a>
@@ -25,7 +24,7 @@
     </div>
   </nav>
 
-  <!-- ---------- CONTENIDO ---------- -->
+  <!-- CONTENIDO -->
   <div class="container" style="margin-top:1rem;">
 
     <!-- Pestañas -->
@@ -71,23 +70,17 @@
     <!-- -------- TAB MAPA -------- -->
     <div id="tab-mapa" class="col s12" style="padding:1rem;">
       <h5>Mapa de Centros</h5>
-
-      <!-- Botón Fullscreen -->
       <div id="mapFsBtnContainer">
         <button id="btnFullscreenMapa" class="btn-small teal waves-effect">
           <i class="material-icons left" style="line-height:inherit;">fullscreen</i>
           Pantalla completa
         </button>
       </div>
-
       <div id="mapaSection">
-        <!-- Sidebar -->
         <div id="sidebarCentros">
           <h6 style="font-weight:600;margin-bottom:10px;margin-top:-5px;">Centros de Cultivo</h6>
           <ul id="listaCentros" class="collection"></ul>
         </div>
-
-        <!-- Shell + Mapa -->
         <div id="mapShell">
           <div id="map"></div>
         </div>
@@ -97,7 +90,6 @@
     <!-- -------- TAB CALENDARIO -------- -->
     <div id="tab-calendario" class="col s12" style="padding:1rem;">
       <h5>Calendario de Tareas</h5>
-
       <div id="calendarioFiltros" class="row" style="margin-bottom:1rem;">
         <div class="input-field col s5">
           <select id="filtroCentro"></select>
@@ -121,7 +113,6 @@
 
       <div id="calendarioTareas"></div>
 
-      <!-- Modal detalle tarea -->
       <div id="modalDetalleTarea" class="modal">
         <div class="modal-content">
           <h5 id="detalleTitulo"></h5>
@@ -135,7 +126,7 @@
 
     <!-- -------- TAB INSUMOS -------- -->
     <div id="tab-insumos" class="col s12" style="padding:1rem;">
-      <h5>inventario de Insumos</h5>
+      <h5>Inventario de Insumos</h5>
       <div id="resumenStock"></div>
       <div id="contenedorInsumos"></div>
     </div>
@@ -258,12 +249,7 @@
   <!-- ---------- JS THIRD-PARTY ---------- -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
   <script src="https://cdn.datatables.net/colreorder/1.5.6/js/colReorder.dataTables.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.js"></script>
@@ -272,3 +258,4 @@
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
+
