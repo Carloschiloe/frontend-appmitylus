@@ -22,6 +22,7 @@ export function initTablaCentros() {
     return;
   }
 
+  // Inicializa DataTable con exportación de footer
   Estado.table = $t.DataTable({
     colReorder: true,
     dom: 'Bfrtip',
@@ -52,6 +53,7 @@ export function initTablaCentros() {
       url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
     },
     footerCallback: function () {
+      // Calcula los totales sumando todos los centros
       let sumH = 0, sumB = 0, sumL = 0;
       Estado.centros.forEach(c => {
         sumH += parseFloat(c.hectareas) || 0;
@@ -60,6 +62,7 @@ export function initTablaCentros() {
           : 0;
         sumL += Array.isArray(c.lines) ? c.lines.length : 0;
       });
+      // Actualiza los IDs en el <tfoot>
       const h = document.getElementById('totalHect');
       const b = document.getElementById('totalBoyas');
       const l = document.getElementById('totalLineas');
@@ -70,9 +73,6 @@ export function initTablaCentros() {
       }
     }
   });
-
-  // Inicializa totales inmediatamente
-  Estado.table.footerCallback();
 }
 
 export async function loadCentros() {
@@ -116,9 +116,11 @@ export async function loadCentros() {
       Estado.editingLine
     );
 
+    // Inicializar selects
     const selects = acordeonCont.querySelectorAll('select');
     if (selects.length) M.FormSelect.init(selects);
 
+    // Filtrado de líneas
     const inputBuscar = document.getElementById('inputBuscarLineas');
     if (inputBuscar) inputBuscar.addEventListener('input', () => filtrarLineas());
 
@@ -135,9 +137,9 @@ export async function loadCentros() {
     }
     filtrarLineas();
 
+    // Delegados dentro del acordeón
     const tbody = acordeonCont.querySelector('table.striped tbody');
     if (tbody) {
-      // Eliminar línea
       tbody.querySelectorAll('.btn-del-line').forEach(btn => {
         btn.onclick = async () => {
           const idx = +btn.dataset.lineIdx;
@@ -153,7 +155,6 @@ export async function loadCentros() {
         };
       });
 
-      // Editar línea
       tbody.querySelectorAll('.btn-edit-line').forEach(btn => {
         btn.onclick = () => {
           Estado.editingLine = { idx: Estado.lineAcordionOpen, lineIdx: +btn.dataset.lineIdx };
@@ -161,7 +162,6 @@ export async function loadCentros() {
         };
       });
 
-      // Cancelar edición
       tbody.querySelectorAll('.btn-cancel-edit-line').forEach(btn => {
         btn.onclick = () => {
           Estado.editingLine = { idx: null, lineIdx: null };
@@ -169,7 +169,6 @@ export async function loadCentros() {
         };
       });
 
-      // Guardar edición
       tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
         btn.onclick = async () => {
           const tr = btn.closest('tr');
@@ -190,7 +189,6 @@ export async function loadCentros() {
         };
       });
 
-      // Ver tareas
       tbody.querySelectorAll('.btn-ver-tareas').forEach(btn => {
         btn.onclick = () => {
           abrirModalTareas(
@@ -281,3 +279,4 @@ export function filtrarLineas() {
     fila.style.display = okTxt && okEst ? '' : 'none';
   });
 }
+
