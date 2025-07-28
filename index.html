@@ -11,9 +11,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"/>
-  <!-- DataTables Buttons CSS -->
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar/main.min.css"/>
   <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
@@ -31,10 +29,9 @@
 
     <!-- Pestañas -->
     <ul id="tabs" class="tabs">
-      <li class="tab col s3"><a class="active" href="#tab-centros">Centros</a></li>
-      <li class="tab col s3"><a href="#tab-mapa">Mapa</a></li>
-      <li class="tab col s3"><a href="#tab-calendario">Calendario</a></li>
-      <li class="tab col s3"><a href="#tab-insumos">Insumos</a></li>
+      <li class="tab col s4"><a class="active" href="#tab-centros">Centros</a></li>
+      <li class="tab col s4"><a href="#tab-mapa">Mapa</a></li>
+      <li class="tab col s4"><a href="#tab-insumos">Insumos</a></li>
     </ul>
 
     <!-- -------- TAB CENTROS -------- -->
@@ -97,43 +94,6 @@
         </div>
       </div>
     </div><!-- 👈 Cierre correcto del tab-mapa -->
-
-    <!-- -------- TAB CALENDARIO -------- -->
-    <div id="tab-calendario" class="col s12" style="padding:1rem;">
-      <h5>Calendario de Tareas</h5>
-      <div id="calendarioFiltros" class="row" style="margin-bottom:1rem;">
-        <div class="input-field col s5">
-          <select id="filtroCentro"></select>
-          <label for="filtroCentro">Centro</label>
-        </div>
-        <div class="input-field col s4">
-          <select id="filtroEstado">
-            <option value="todos" selected>Todos los estados</option>
-            <option value="Pendiente">Pendientes</option>
-            <option value="En curso">En curso</option>
-            <option value="Completada">Completadas</option>
-          </select>
-          <label for="filtroEstado">Estado</label>
-        </div>
-        <div class="input-field col s3" style="margin-top:0.6rem;">
-          <button id="btnRefrescarCalendario" class="btn teal" style="width:100%;">
-            <i class="material-icons left" style="margin-right:2px;">refresh</i>Actualizar
-          </button>
-        </div>
-      </div>
-
-      <div id="calendarioTareas"></div>
-
-      <div id="modalDetalleTarea" class="modal">
-        <div class="modal-content">
-          <h5 id="detalleTitulo"></h5>
-          <div id="detalleContenido"></div>
-        </div>
-        <div class="modal-footer">
-          <button class="modal-close btn grey lighten-1">Cerrar</button>
-        </div>
-      </div>
-    </div>
 
     <!-- -------- TAB INSUMOS -------- -->
     <div id="tab-insumos" class="col s12" style="padding:1rem;">
@@ -218,19 +178,6 @@
       </div>
     </div>
 
-    <div id="modalTareasLinea" class="modal">
-      <div class="modal-content">
-        <h5>Tareas de la línea <span id="modalNumLinea"></span></h5>
-        <div id="tareasList"></div>
-        <form id="formTareaLinea">
-          <div class="row">…</div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="modal-close btn grey lighten-1">Cerrar</button>
-      </div>
-    </div>
-
   </div><!-- /container -->
 
   <!-- ---------- JS THIRD-PARTY ---------- -->
@@ -245,9 +192,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
   <!-- ---------- MÓDULOS ---------- -->
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
+
 
