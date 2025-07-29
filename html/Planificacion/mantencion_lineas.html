@@ -8,6 +8,17 @@
   <link rel="stylesheet" href="../../css/mantencion.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar/main.min.css"/>
+  <style>
+    .estado-chip {
+      display:inline-flex; align-items:center; border-radius:16px; padding:2px 10px; font-weight:bold;
+      color:white; font-size:0.95rem; margin-right:2px;
+    }
+    .estado-pendiente { background:#FFD600; color:#333; }
+    .estado-curso     { background:#29B6F6; }
+    .estado-completa  { background:#43A047; }
+    /* Íconos tabla */
+    .icono-estado { font-size: 1.3em; vertical-align: middle; margin-right: 4px; }
+  </style>
 </head>
 <body>
   <nav class="teal">
@@ -18,8 +29,9 @@
   </nav>
   <div class="container" style="margin-top:1.2rem;">
     <ul id="tabs-mantencion" class="tabs">
-      <li class="tab col s6"><a href="#tab-tareas" class="active">Tareas</a></li>
-      <li class="tab col s6"><a href="#tab-calendario">Calendario</a></li>
+      <li class="tab col s4"><a href="#tab-tareas" class="active">Tareas</a></li>
+      <li class="tab col s4"><a href="#tab-calendario">Calendario</a></li>
+      <li class="tab col s4"><a href="#tab-historial">Historial</a></li>
     </ul>
 
     <!-- TAB TAREAS -->
@@ -78,7 +90,69 @@
     <!-- TAB CALENDARIO -->
     <div id="tab-calendario" class="col s12" style="margin-top:1.6rem;">
       <h5>Calendario Operativo</h5>
+      <div id="filtrosCalendario" class="row">
+        <div class="input-field col s4">
+          <select id="filtroCentroCalendario"><option value="">Todos los centros</option></select>
+          <label for="filtroCentroCalendario">Centro</label>
+        </div>
+        <div class="input-field col s4">
+          <select id="filtroEstadoCalendario">
+            <option value="">Todos los estados</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="En curso">En curso</option>
+            <option value="Completada">Completada</option>
+          </select>
+          <label for="filtroEstadoCalendario">Estado</label>
+        </div>
+        <div class="input-field col s4">
+          <button class="btn" id="btnVistaLista"><i class="material-icons left">view_list</i>Ver como lista</button>
+          <button class="btn-flat" id="btnVistaCalendario" style="display:none;"><i class="material-icons left">event</i>Ver calendario</button>
+        </div>
+      </div>
       <div id="calendarioTareas"></div>
+      <div id="listaTareasCalendario" style="display:none"></div>
+    </div>
+
+    <!-- TAB HISTORIAL -->
+    <div id="tab-historial" class="col s12" style="margin-top:1.6rem;">
+      <h5>Historial de Mantenciones</h5>
+      <div class="row">
+        <div class="input-field col s3">
+          <select id="filtroHistCentro"><option value="">Todos los centros</option></select>
+          <label for="filtroHistCentro">Centro</label>
+        </div>
+        <div class="input-field col s3">
+          <select id="filtroHistLinea"><option value="">Todas las líneas</option></select>
+          <label for="filtroHistLinea">Línea</label>
+        </div>
+        <div class="input-field col s3">
+          <select id="filtroHistEstado">
+            <option value="">Todos los estados</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="En curso">En curso</option>
+            <option value="Completada">Completada</option>
+          </select>
+          <label for="filtroHistEstado">Estado</label>
+        </div>
+        <div class="input-field col s3">
+          <input type="date" id="filtroHistDesde"/>
+          <label for="filtroHistDesde" class="active">Desde</label>
+          <input type="date" id="filtroHistHasta"/>
+          <label for="filtroHistHasta" class="active">Hasta</label>
+        </div>
+      </div>
+      <div id="tablaHistorial"></div>
+    </div>
+  </div>
+
+  <!-- MODAL DETALLE DE MANTENCIÓN (compartido) -->
+  <div id="modalDetalleTarea" class="modal">
+    <div class="modal-content">
+      <h6 id="detalleTitulo"></h6>
+      <div id="detalleContenido"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-close btn-flat">Cerrar</button>
     </div>
   </div>
 
@@ -88,31 +162,35 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
   <script type="module" src="../../js/tareas/mantencion_lineas.js"></script>
   <script type="module" src="../../js/calendario/calendario.js"></script>
+  <script type="module" src="../../js/tareas/historial_mantenciones.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Inicializa tabs y selects Materialize
       var tabs = document.querySelectorAll('.tabs');
       M.Tabs.init(tabs);
       var selects = document.querySelectorAll('select');
       M.FormSelect.init(selects);
 
       // --- Solo muestra el calendario al cambiar a la pestaña Calendario ---
-      const calendarioDiv = document.getElementById('calendarioTareas');
       const tabLinks = document.querySelectorAll('.tabs a');
-
       tabLinks.forEach(tab => {
         tab.addEventListener('click', function(ev) {
           setTimeout(() => {
             if (this.getAttribute('href') === '#tab-calendario' && window.inicializarCalendarioMantenciones) {
               window.inicializarCalendarioMantenciones();
             }
-          }, 100); // pequeño delay para que la pestaña sea visible
+            if (this.getAttribute('href') === '#tab-historial' && window.cargarHistorialMantenciones) {
+              window.cargarHistorialMantenciones();
+            }
+          }, 100);
         });
       });
 
-      // Si entras por defecto a calendario, lo inicializa igual
+      // Si entras por defecto a calendario o historial
       if (location.hash === '#tab-calendario' && window.inicializarCalendarioMantenciones) {
         window.inicializarCalendarioMantenciones();
+      }
+      if (location.hash === '#tab-historial' && window.cargarHistorialMantenciones) {
+        window.cargarHistorialMantenciones();
       }
     });
   </script>
