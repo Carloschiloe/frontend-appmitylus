@@ -1,3 +1,4 @@
+// js/tareas/mantencion_lineas.js
 import { getCentros, updateCentro } from '../core/almacenamiento.js';
 
 let centrosData = [];
@@ -130,6 +131,3 @@ function mostrarTareasDeLinea(centroIdx, lineaIdx) {
   html += '</ul>';
   cont.innerHTML = html;
 }
-
-
-
