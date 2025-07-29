@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abastecimiento de MMPP · Choritos</title>
+  <!-- Materialize CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <!-- CSS personalizado -->
+  <link rel="stylesheet" href="../../css/abastecimiento.css"/>
+</head>
+<body>
+  <div class="container" style="max-width:1040px;">
+    <!-- Header -->
+    <div class="header-abast">
+      <i class="material-icons">local_shipping</i>
+      Abastecimiento de MMPP
+    </div>
+    <div class="header-abast-sub">
+      Gestión de compras, visitas, muestreo y reportes para abastecimiento de choritos en planta.
+    </div>
+
+    <!-- Mini dashboard -->
+    <div class="mini-dashboard">
+      <div class="mini-card">
+        <div class="mini-card-title">Meta Semanal</div>
+        <div class="mini-card-value" id="meta-semanal">--</div>
+        <div class="mini-card-footer">toneladas</div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-card-title">Avance</div>
+        <div class="mini-card-value" id="avance-semanal">--</div>
+        <div class="mini-card-footer">toneladas</div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-card-title">% Cumplimiento</div>
+        <div class="mini-card-value" id="cumplimiento-semanal">--%</div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-card-title">Alertas</div>
+        <div class="mini-card-value" id="alertas-cantidad">0</div>
+        <div class="mini-card-footer" id="alertas-mensaje"></div>
+      </div>
+    </div>
+
+    <!-- Botones de acción rápida -->
+    <div class="quick-actions">
+      <a href="#" class="btn waves-effect teal darken-2">
+        <i class="material-icons left">event</i>
+        Programar Abastecimiento
+      </a>
+      <a href="#" class="btn waves-effect teal lighten-1">
+        <i class="material-icons left">add_location</i>
+        Registrar Visita / Muestreo
+      </a>
+      <a href="#" class="btn waves-effect teal">
+        <i class="material-icons left">assignment</i>
+        Ver Reportes
+      </a>
+    </div>
+
+    <!-- Programa de abastecimiento -->
+    <div class="section-title">
+      <i class="material-icons tiny" style="vertical-align:middle;">event</i>
+      Programa Semanal / Mensual
+    </div>
+    <div class="card">
+      <div class="card-content" id="programa-abastecimiento">
+        <span class="section-placeholder">Aquí se mostrará el calendario/programa de abastecimiento...</span>
+      </div>
+    </div>
+
+    <!-- Visitas y compras recientes -->
+    <div class="section-title">
+      <i class="material-icons tiny" style="vertical-align:middle;">history</i>
+      Visitas y Compras Recientes
+    </div>
+    <div class="card">
+      <div class="card-content" id="tabla-visitas">
+        <span class="section-placeholder">Aquí aparecerán las visitas, muestreos y compras recientes...</span>
+      </div>
+    </div>
+
+    <!-- Reportes recientes -->
+    <div class="section-title">
+      <i class="material-icons tiny" style="vertical-align:middle;">assignment</i>
+      Reportes Recientes
+    </div>
+    <div class="card">
+      <div class="card-content" id="tabla-reportes">
+        <span class="section-placeholder">Aquí podrás ver y descargar los últimos reportes enviados a planta o gerencia...</span>
+      </div>
+    </div>
+
+    <div class="footer-mini">
+      v0.1 · Gestión de Abastecimiento Choritos · <a href="../home.html">Volver al Home</a>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+</html>
