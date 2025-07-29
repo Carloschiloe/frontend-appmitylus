@@ -16,7 +16,6 @@
     .estado-pendiente { background:#FFD600; color:#333; }
     .estado-curso     { background:#29B6F6; }
     .estado-completa  { background:#43A047; }
-    /* Íconos tabla */
     .icono-estado { font-size: 1.3em; vertical-align: middle; margin-right: 4px; }
   </style>
 </head>
@@ -116,32 +115,7 @@
     <!-- TAB HISTORIAL -->
     <div id="tab-historial" class="col s12" style="margin-top:1.6rem;">
       <h5>Historial de Mantenciones</h5>
-      <div class="row">
-        <div class="input-field col s3">
-          <select id="filtroHistCentro"><option value="">Todos los centros</option></select>
-          <label for="filtroHistCentro">Centro</label>
-        </div>
-        <div class="input-field col s3">
-          <select id="filtroHistLinea"><option value="">Todas las líneas</option></select>
-          <label for="filtroHistLinea">Línea</label>
-        </div>
-        <div class="input-field col s3">
-          <select id="filtroHistEstado">
-            <option value="">Todos los estados</option>
-            <option value="Pendiente">Pendiente</option>
-            <option value="En curso">En curso</option>
-            <option value="Completada">Completada</option>
-          </select>
-          <label for="filtroHistEstado">Estado</label>
-        </div>
-        <div class="input-field col s3">
-          <input type="date" id="filtroHistDesde"/>
-          <label for="filtroHistDesde" class="active">Desde</label>
-          <input type="date" id="filtroHistHasta"/>
-          <label for="filtroHistHasta" class="active">Hasta</label>
-        </div>
-      </div>
-      <div id="tablaHistorial"></div>
+      <div id="historialMantenciones"></div>
     </div>
   </div>
 
@@ -170,7 +144,7 @@
       var selects = document.querySelectorAll('select');
       M.FormSelect.init(selects);
 
-      // --- Solo muestra el calendario al cambiar a la pestaña Calendario ---
+      // Mostrar calendario/historial al cambiar pestaña
       const tabLinks = document.querySelectorAll('.tabs a');
       tabLinks.forEach(tab => {
         tab.addEventListener('click', function(ev) {
@@ -185,7 +159,6 @@
         });
       });
 
-      // Si entras por defecto a calendario o historial
       if (location.hash === '#tab-calendario' && window.inicializarCalendarioMantenciones) {
         window.inicializarCalendarioMantenciones();
       }
