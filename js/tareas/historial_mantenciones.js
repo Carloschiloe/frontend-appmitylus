@@ -14,10 +14,15 @@ async function cargarHistorial() {
   cont.innerHTML = '<div class="progress"><div class="indeterminate"></div></div>';
 
   const centros = await getCentros();
+  console.log('🔎 Centros recibidos:', centros);
+
   todasMantenciones = [];
   centros.forEach((centro, centroIdx) => {
+    console.log(`🌍 Centro[${centroIdx}]:`, centro);
     (centro.lines || []).forEach((linea, lineaIdx) => {
+      console.log(`➡️ Línea[${lineaIdx}] (${linea.number}) mantenciones:`, linea.mantenciones);
       (linea.mantenciones || []).forEach((m, mantIdx) => {
+        console.log(`   📝 Mantención[${mantIdx}]:`, m);
         todasMantenciones.push({
           centroId: centro._id,
           lineaId: linea._id,
@@ -34,6 +39,8 @@ async function cargarHistorial() {
 
   // Ordena por fecha descendente
   todasMantenciones.sort((a, b) => b.fecha.localeCompare(a.fecha));
+  console.log('🟢 todasMantenciones construidas:', todasMantenciones);
+
   renderTablaHistorial();
   renderFiltros();
 }
@@ -88,6 +95,8 @@ function renderTablaHistorial() {
     (!filtroLinea || m.linea == filtroLinea) &&
     (!filtroEstado || m.estado === filtroEstado)
   );
+
+  console.log('📋 Filtrado historial:', { filtroCentro, filtroLinea, filtroEstado, dataFiltrada });
 
   if (!dataFiltrada.length) {
     cont.innerHTML = '<p style="color:#888;">No hay mantenciones con esos filtros</p>';
