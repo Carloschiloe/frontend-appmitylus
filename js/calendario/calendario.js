@@ -1,155 +1,206 @@
+// js/calendario/calendario.js
 import { getCentros } from '../core/almacenamiento.js';
 
-let _eventosCalendario = [];
-let _centros = [];
-let _vistaLista = false; // Estado: calendario o lista
-
 window.inicializarCalendarioMantenciones = async function() {
-  // Contenedores
-  let calendarioDiv = document.getElementById('calendarioTareas');
-  calendarioDiv.innerHTML = '<div id="calendarMant"></div><div id="listaTareas" style="display:none;"></div>';
+  // Asegúrate que estamos en la pestaña correcta y que el contenedor existe
+  const tabCalendario = document.getElementById('tab-calendario');
+  if (!tabCalendario) return;
 
-  // Carga los datos
-  _centros = await getCentros();
-  _eventosCalendario = [];
-  _centros.forEach((c) => {
-    (c.lines || []).forEach((l) => {
-      (l.mantenciones || []).forEach((m) => {
-        _eventosCalendario.push({
-          centro: c.name,
-          linea: l.number,
-          tipo: m.tipo || m.titulo || 'Mantención',
-          fecha: m.fecha,
-          estado: m.estado,
-          descripcion: m.descripcion,
-        });
-      });
-    });
-  });
+  // Renderiza los controles de filtros y vista
+  tabCalendario.innerHTML = `
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+      <div>
+        <label style="font-size:0.95rem">Centro:</label>
+        <select id="filtroCentro">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.95rem">Estado:</label>
+        <select id="filtroEstado">
+          <option value="">Todos</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="En curso">En curso</option>
+          <option value="Completada">Completada</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.95rem;visibility:hidden;">.</label>
+        <button id="btnVistaCalendario" class="btn-flat teal-text text-darken-2 active" style="font-weight:bold">Calendario</button>
+        <button id="btnVistaLista" class="btn-flat teal-text text-darken-2">Lista</button>
+      </div>
+    </div>
+    <div id="zonaVistaCalendario">
+      <div id="calendarMant"></div>
+    </div>
+    <div id="zonaVistaLista" style="display:none;">
+      <table class="striped" style="width:100%;" id="tablaListaTareas">
+        <thead>
+          <tr>
+            <th>Centro</th><th>Línea</th><th>Título</th><th>Fecha</th><th>Estado</th><th>Descripción</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <!-- Modal detalle -->
+    <div id="modalDetalleTarea" class="modal">
+      <div class="modal-content">
+        <h5 id="detalleTitulo"></h5>
+        <div id="detalleContenido"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-close btn-flat">Cerrar</button>
+      </div>
+    </div>
+  `;
 
-  // Rellena combos
-  cargarFiltroCentros();
-
-  // Inicializa filtros
+  // Inicializa Materialize para selects y modal
   M.FormSelect.init(document.querySelectorAll('select'));
-  document.getElementById('filtroCentro').onchange = renderVistaActual;
-  document.getElementById('filtroEstado').onchange = renderVistaActual;
+  M.Modal.init(document.querySelectorAll('.modal'));
 
-  // Toggle lista/calendario
-  document.getElementById('btnToggleVista').onclick = () => {
-    _vistaLista = !_vistaLista;
-    renderVistaActual();
-    document.getElementById('btnToggleVista').textContent = _vistaLista ? 'Ver como Calendario' : 'Ver como Lista';
-  };
-
-  // Renderiza primera vez (calendario)
-  _vistaLista = false;
-  renderVistaActual();
-};
-
-function cargarFiltroCentros() {
+  // Referencias a controles
   const filtroCentro = document.getElementById('filtroCentro');
-  filtroCentro.innerHTML = '<option value="">Todos los centros</option>';
-  _centros.forEach(c => {
+  const filtroEstado = document.getElementById('filtroEstado');
+  const btnVistaCalendario = document.getElementById('btnVistaCalendario');
+  const btnVistaLista = document.getElementById('btnVistaLista');
+  const zonaVistaCalendario = document.getElementById('zonaVistaCalendario');
+  const zonaVistaLista = document.getElementById('zonaVistaLista');
+
+  // Carga los centros y mantenciones
+  const centros = await getCentros();
+  console.log('📦 Centros obtenidos en calendario:', centros);
+
+  // Llena filtro de centros
+  filtroCentro.innerHTML = '<option value="">Todos</option>';
+  centros.forEach((c) => {
     filtroCentro.innerHTML += `<option value="${c.name}">${c.name}</option>`;
   });
   M.FormSelect.init(filtroCentro);
-}
 
-function filtrarEventos() {
-  const centroSel = document.getElementById('filtroCentro').value;
-  const estadoSel = document.getElementById('filtroEstado').value;
-  return _eventosCalendario.filter(ev =>
-    (!centroSel || ev.centro === centroSel) &&
-    (!estadoSel || ev.estado === estadoSel)
-  );
-}
-
-function renderVistaActual() {
-  if (_vistaLista) renderLista();
-  else renderCalendario();
-}
-
-// --- Render lista de tareas ---
-function renderLista() {
-  document.getElementById('calendarMant').style.display = 'none';
-  const listaDiv = document.getElementById('listaTareas');
-  listaDiv.style.display = 'block';
-  const eventos = filtrarEventos();
-  if (!eventos.length) {
-    listaDiv.innerHTML = '<p style="color:#888;">Sin tareas/mantenciones encontradas</p>';
-    return;
+  // Genera lista de eventos para el calendario y la tabla
+  function filtrarEventos() {
+    const centroSel = filtroCentro.value;
+    const estadoSel = filtroEstado.value;
+    let eventos = [];
+    centros.forEach((c) => {
+      (c.lines || []).forEach((l) => {
+        // Compatibilidad: usa mantenciones (o tareas)
+        const tareas = l.mantenciones || l.tareas || [];
+        tareas.forEach((m) => {
+          // Filtros
+          if (centroSel && c.name !== centroSel) return;
+          if (estadoSel && m.estado !== estadoSel) return;
+          eventos.push({
+            title: `${c.name} - Línea ${l.number}: ${m.titulo || m.tipo || 'Mantención'}`,
+            start: m.fecha,
+            end: m.fecha,
+            centro: c.name,
+            linea: l.number,
+            tipo: m.titulo || m.tipo || 'Mantención',
+            estado: m.estado,
+            descripcion: m.descripcion,
+          });
+        });
+      });
+    });
+    return eventos;
   }
-  let html = `<table class="striped highlight"><thead>
-    <tr>
-      <th>Centro</th><th>Línea</th><th>Título</th><th>Fecha</th><th>Estado</th><th>Acción</th>
-    </tr></thead><tbody>`;
-  eventos.forEach((ev, idx) => {
-    html += `<tr>
-      <td>${ev.centro}</td>
-      <td>${ev.linea}</td>
-      <td>${ev.tipo}</td>
-      <td>${ev.fecha}</td>
-      <td>${ev.estado}</td>
-      <td>
-        <a href="#!" class="btn-detalle-tarea" data-idx="${idx}">
-          <i class="material-icons tiny blue-text">visibility</i>
-        </a>
-      </td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  listaDiv.innerHTML = html;
 
-  // Handler para ver detalle
-  listaDiv.querySelectorAll('.btn-detalle-tarea').forEach(btn => {
-    btn.onclick = function() {
-      mostrarDetalleTarea(eventos[+this.dataset.idx]);
-    };
-  });
-  M.updateTextFields();
-}
-
-// --- Render calendario ---
-function renderCalendario() {
-  document.getElementById('calendarMant').style.display = '';
-  document.getElementById('listaTareas').style.display = 'none';
-
-  const calendarEl = document.getElementById('calendarMant');
-  calendarEl.innerHTML = ''; // Limpia
-
-  const eventos = filtrarEventos().map(ev => ({
-    title: `${ev.centro} - Línea ${ev.linea}: ${ev.tipo}`,
-    start: ev.fecha,
-    end: ev.fecha,
-    extendedProps: { ...ev }
-  }));
-
-  // FullCalendar necesita reinicializar (borra anterior)
-  if (calendarEl._calendar) {
-    calendarEl._calendar.destroy();
-  }
-  const calendar = new window.FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    locale: 'es',
-    height: 600,
-    events: eventos,
-    eventClick: function(info) {
-      mostrarDetalleTarea(info.event.extendedProps);
+  // ------ Calendario ------
+  let calendarInstance = null;
+  function renderCalendario() {
+    // Si ya hay un calendarInstance, destrúyelo antes de renderizar de nuevo (para evitar solapamientos)
+    if (calendarInstance) {
+      calendarInstance.destroy();
+      calendarInstance = null;
     }
-  });
-  calendar.render();
-  calendarEl._calendar = calendar;
-}
+    const eventos = filtrarEventos();
+    calendarInstance = new window.FullCalendar.Calendar(document.getElementById('calendarMant'), {
+      initialView: 'dayGridMonth',
+      locale: 'es',
+      height: 600,
+      events: eventos,
+      eventClick: function(info) {
+        // Muestra modal con detalle
+        const { centro, linea, tipo, estado, descripcion } = info.event.extendedProps || info.event;
+        document.getElementById('detalleTitulo').textContent = tipo + ' – ' + centro;
+        document.getElementById('detalleContenido').innerHTML =
+          `<b>Línea:</b> ${linea}<br>
+           <b>Estado:</b> ${estado}<br>
+           <b>Descripción:</b> ${descripcion || ''}`;
+        let instancia = M.Modal.getInstance(document.getElementById('modalDetalleTarea'));
+        if (!instancia) instancia = M.Modal.init(document.getElementById('modalDetalleTarea'));
+        instancia.open();
+      }
+    });
+    calendarInstance.render();
+  }
 
-function mostrarDetalleTarea(ev) {
-  document.getElementById('detalleTitulo').textContent = ev.tipo + ' – ' + ev.centro;
-  document.getElementById('detalleContenido').innerHTML =
-    `<b>Línea:</b> ${ev.linea}<br>
-     <b>Fecha:</b> ${ev.fecha}<br>
-     <b>Estado:</b> ${ev.estado}<br>
-     <b>Descripción:</b> ${ev.descripcion || ''}`;
-  let instancia = M.Modal.getInstance(document.getElementById('modalDetalleTarea'));
-  if (!instancia) instancia = M.Modal.init(document.getElementById('modalDetalleTarea'));
-  instancia.open();
-}
+  // ------ Lista ------
+  function renderLista() {
+    const eventos = filtrarEventos();
+    const tbody = document.querySelector('#tablaListaTareas tbody');
+    tbody.innerHTML = '';
+    if (!eventos.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:#888;">No hay mantenciones asignadas</td></tr>';
+      return;
+    }
+    eventos.forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${e.centro}</td>
+        <td>${e.linea}</td>
+        <td>${e.tipo}</td>
+        <td>${e.start}</td>
+        <td>${e.estado}</td>
+        <td>${e.descripcion || ''}</td>
+      `;
+      // Al hacer click en la fila, muestra detalle
+      tr.style.cursor = 'pointer';
+      tr.onclick = () => {
+        document.getElementById('detalleTitulo').textContent = e.tipo + ' – ' + e.centro;
+        document.getElementById('detalleContenido').innerHTML =
+          `<b>Línea:</b> ${e.linea}<br>
+           <b>Estado:</b> ${e.estado}<br>
+           <b>Descripción:</b> ${e.descripcion || ''}`;
+        let instancia = M.Modal.getInstance(document.getElementById('modalDetalleTarea'));
+        if (!instancia) instancia = M.Modal.init(document.getElementById('modalDetalleTarea'));
+        instancia.open();
+      };
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ------ Cambios de filtro y vista ------
+  function actualizarVista() {
+    if (zonaVistaCalendario.style.display !== 'none') renderCalendario();
+    else renderLista();
+  }
+  filtroCentro.onchange = actualizarVista;
+  filtroEstado.onchange = actualizarVista;
+
+  btnVistaCalendario.onclick = (e) => {
+    e.preventDefault();
+    zonaVistaCalendario.style.display = '';
+    zonaVistaLista.style.display = 'none';
+    btnVistaCalendario.classList.add('active');
+    btnVistaLista.classList.remove('active');
+    renderCalendario();
+  };
+  btnVistaLista.onclick = (e) => {
+    e.preventDefault();
+    zonaVistaCalendario.style.display = 'none';
+    zonaVistaLista.style.display = '';
+    btnVistaCalendario.classList.remove('active');
+    btnVistaLista.classList.add('active');
+    renderLista();
+  };
+
+  // Vista por defecto: calendario
+  zonaVistaCalendario.style.display = '';
+  zonaVistaLista.style.display = 'none';
+  btnVistaCalendario.classList.add('active');
+  btnVistaLista.classList.remove('active');
+  renderCalendario();
+};
