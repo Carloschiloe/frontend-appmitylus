@@ -17,59 +17,69 @@
     </div>
   </nav>
   <div class="container" style="margin-top:1.2rem;">
+    <ul id="tabs-mantencion" class="tabs">
+      <li class="tab col s6"><a href="#tab-tareas" class="active">Tareas</a></li>
+      <li class="tab col s6"><a href="#tab-calendario">Calendario</a></li>
+    </ul>
 
-    <h5>Asignar Mantención a Línea de Cultivo</h5>
-    <form id="formMantencionLinea">
-      <div class="row">
-        <div class="input-field col s5">
-          <select id="selectCentro" required>
-            <option value="" disabled selected>Seleccione centro</option>
-          </select>
-          <label for="selectCentro">Centro</label>
+    <!-- TAB TAREAS -->
+    <div id="tab-tareas" class="col s12" style="margin-top:1.6rem;">
+      <h5>Asignar Mantención a Línea de Cultivo</h5>
+      <form id="formMantencionLinea">
+        <div class="row">
+          <div class="input-field col s5">
+            <select id="selectCentro" required>
+              <option value="" disabled selected>Seleccione centro</option>
+            </select>
+            <label for="selectCentro">Centro</label>
+          </div>
+          <div class="input-field col s5">
+            <select id="selectLinea" required disabled>
+              <option value="" disabled selected>Seleccione línea</option>
+            </select>
+            <label for="selectLinea">Línea</label>
+          </div>
+          <div class="input-field col s2">
+            <button type="submit" class="btn green" style="width:100%;margin-top:10px;">
+              <i class="material-icons left">add</i>Asignar
+            </button>
+          </div>
         </div>
-        <div class="input-field col s5">
-          <select id="selectLinea" required disabled>
-            <option value="" disabled selected>Seleccione línea</option>
-          </select>
-          <label for="selectLinea">Línea</label>
+        <div class="row">
+          <div class="input-field col s6">
+            <input id="mantencionTitulo" type="text" required>
+            <label for="mantencionTitulo">Título mantención</label>
+          </div>
+          <div class="input-field col s3">
+            <input id="mantencionFecha" type="date" required>
+            <label for="mantencionFecha" class="active">Fecha</label>
+          </div>
+          <div class="input-field col s3">
+            <select id="mantencionEstado" required>
+              <option value="Pendiente" selected>Pendiente</option>
+              <option value="En curso">En curso</option>
+              <option value="Completada">Completada</option>
+            </select>
+            <label for="mantencionEstado">Estado</label>
+          </div>
         </div>
-        <div class="input-field col s2">
-          <button type="submit" class="btn green" style="width:100%;margin-top:10px;">
-            <i class="material-icons left">add</i>Asignar
-          </button>
+        <div class="row">
+          <div class="input-field col s12">
+            <input id="mantencionDesc" type="text">
+            <label for="mantencionDesc">Descripción</label>
+          </div>
         </div>
-      </div>
-      <div class="row">
-        <div class="input-field col s6">
-          <input id="mantencionTitulo" type="text" required>
-          <label for="mantencionTitulo">Título mantención</label>
-        </div>
-        <div class="input-field col s3">
-          <input id="mantencionFecha" type="date" required>
-          <label for="mantencionFecha" class="active">Fecha</label>
-        </div>
-        <div class="input-field col s3">
-          <select id="mantencionEstado" required>
-            <option value="Pendiente" selected>Pendiente</option>
-            <option value="En curso">En curso</option>
-            <option value="Completada">Completada</option>
-          </select>
-          <label for="mantencionEstado">Estado</label>
-        </div>
-      </div>
-      <div class="row">
-        <div class="input-field col s12">
-          <input id="mantencionDesc" type="text">
-          <label for="mantencionDesc">Descripción</label>
-        </div>
-      </div>
-    </form>
+      </form>
 
-    <h5>Tareas/Mantenciones asignadas a la línea</h5>
-    <div id="tablaTareasLinea"></div>
+      <h5>Tareas/Mantenciones asignadas a la línea</h5>
+      <div id="tablaTareasLinea"></div>
+    </div>
 
-    <h5 style="margin-top:2rem;">Calendario Operativo</h5>
-    <div id="calendarioTareas"></div>
+    <!-- TAB CALENDARIO -->
+    <div id="tab-calendario" class="col s12" style="margin-top:1.6rem;">
+      <h5>Calendario Operativo</h5>
+      <div id="calendarioTareas"></div>
+    </div>
   </div>
 
   <!-- JS -->
@@ -78,6 +88,33 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
   <script type="module" src="../../js/tareas/mantencion_lineas.js"></script>
   <script type="module" src="../../js/calendario/calendario.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Inicializa tabs y selects Materialize
+      var tabs = document.querySelectorAll('.tabs');
+      M.Tabs.init(tabs);
+      var selects = document.querySelectorAll('select');
+      M.FormSelect.init(selects);
+
+      // --- Solo muestra el calendario al cambiar a la pestaña Calendario ---
+      const calendarioDiv = document.getElementById('calendarioTareas');
+      const tabLinks = document.querySelectorAll('.tabs a');
+
+      tabLinks.forEach(tab => {
+        tab.addEventListener('click', function(ev) {
+          setTimeout(() => {
+            if (this.getAttribute('href') === '#tab-calendario' && window.inicializarCalendarioMantenciones) {
+              window.inicializarCalendarioMantenciones();
+            }
+          }, 100); // pequeño delay para que la pestaña sea visible
+        });
+      });
+
+      // Si entras por defecto a calendario, lo inicializa igual
+      if (location.hash === '#tab-calendario' && window.inicializarCalendarioMantenciones) {
+        window.inicializarCalendarioMantenciones();
+      }
+    });
+  </script>
 </body>
 </html>
-
