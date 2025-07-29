@@ -1,22 +1,31 @@
 // js/calendario/calendario.js
 import { getCentros } from '../core/almacenamiento.js';
 
-window.asegurarCalendarioVisible = async function() {
+// Permite recargar siempre que se entra a la pestaña (ajusta si quieres evitar duplicados)
+window.inicializarCalendarioMantenciones = async function() {
+  // Limpia el contenedor
+  let calendarioDiv = document.getElementById('calendarioTareas');
+  calendarioDiv.innerHTML = '<div id="calendarMant"></div>';
+  const calendarEl = document.getElementById('calendarMant');
+
+  // Carga los datos
   const centros = await getCentros();
 
-  // Junta todas las mantenciones en un array de eventos
+  // Junta todas las mantenciones/tareas en un array de eventos
   const eventos = [];
-  centros.forEach((c, centroIdx) => {
-    (c.lines || []).forEach((l, lineaIdx) => {
-      (l.mantenciones || []).forEach((m, mantIdx) => {
+  centros.forEach((c) => {
+    (c.lines || []).forEach((l) => {
+      // Compatibilidad: si tus mantenciones están en l.mantenciones o l.tareas
+      const tareas = l.mantenciones || l.tareas || [];
+      tareas.forEach((m) => {
         eventos.push({
-          title: `${c.name} - Línea ${l.number}: ${m.tipo}`,
+          title: `${c.name} - Línea ${l.number}: ${m.titulo || m.tipo || 'Mantención'}`,
           start: m.fecha,
           end: m.fecha,
           extendedProps: {
             centro: c.name,
             linea: l.number,
-            tipo: m.tipo,
+            tipo: m.titulo || m.tipo || 'Mantención',
             estado: m.estado,
             descripcion: m.descripcion,
           },
@@ -25,11 +34,7 @@ window.asegurarCalendarioVisible = async function() {
     });
   });
 
-  // Renderizar calendario
-  let calendarioDiv = document.getElementById('calendarioTareas');
-  calendarioDiv.innerHTML = '<div id="calendarMant"></div>';
-  const calendarEl = document.getElementById('calendarMant');
-
+  // Renderiza FullCalendar
   const calendar = new window.FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
     locale: 'es',
@@ -53,4 +58,3 @@ window.asegurarCalendarioVisible = async function() {
 
   calendar.render();
 };
-
