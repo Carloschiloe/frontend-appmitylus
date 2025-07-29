@@ -1,4 +1,3 @@
-// js/calendario/calendario.js
 import { getCentros } from '../core/almacenamiento.js';
 
 // Permite recargar siempre que se entra a la pestaña (ajusta si quieres evitar duplicados)
@@ -10,15 +9,18 @@ window.inicializarCalendarioMantenciones = async function() {
 
   // Carga los datos
   const centros = await getCentros();
+  console.log('📦 Centros obtenidos en calendario:', centros);
 
   // Junta todas las mantenciones/tareas en un array de eventos
   const eventos = [];
-  centros.forEach((c) => {
-    (c.lines || []).forEach((l) => {
+  centros.forEach((c, centroIdx) => {
+    (c.lines || []).forEach((l, lineaIdx) => {
       // Compatibilidad: si tus mantenciones están en l.mantenciones o l.tareas
       const tareas = l.mantenciones || l.tareas || [];
-      tareas.forEach((m) => {
-        eventos.push({
+      console.log(`➡️ Centro[${centroIdx}] ${c.name}, Línea[${lineaIdx}] ${l.number} tiene tareas/mantenciones:`, tareas);
+
+      tareas.forEach((m, mantIdx) => {
+        const evento = {
           title: `${c.name} - Línea ${l.number}: ${m.titulo || m.tipo || 'Mantención'}`,
           start: m.fecha,
           end: m.fecha,
@@ -29,10 +31,14 @@ window.inicializarCalendarioMantenciones = async function() {
             estado: m.estado,
             descripcion: m.descripcion,
           },
-        });
+        };
+        console.log(`   🗓️ Evento agregado [${mantIdx}]:`, evento);
+        eventos.push(evento);
       });
     });
   });
+
+  console.log('🟢 Eventos a mostrar en calendario:', eventos);
 
   // Renderiza FullCalendar
   const calendar = new window.FullCalendar.Calendar(calendarEl, {
@@ -41,6 +47,8 @@ window.inicializarCalendarioMantenciones = async function() {
     height: 600,
     events: eventos,
     eventClick: function(info) {
+      console.log('📅 Click en evento:', info.event);
+
       const { centro, linea, tipo, estado, descripcion } = info.event.extendedProps;
       const modal = document.getElementById('modalDetalleTarea');
       if (modal) {
@@ -57,4 +65,5 @@ window.inicializarCalendarioMantenciones = async function() {
   });
 
   calendar.render();
+  console.log('✅ FullCalendar renderizado');
 };
