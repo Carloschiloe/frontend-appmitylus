@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const descripcion = document.getElementById('mantencionDesc').value.trim();
 
     // LOG - debug
-    console.log('🔹 Form Data:', { centroIdx, lineaIdx, titulo, fecha, estado, descripcion });
+    console.log('🔹 [MANTENCION] Form Data:', { centroIdx, lineaIdx, titulo, fecha, estado, descripcion });
 
     if (!centroIdx || !lineaIdx || !titulo || !fecha || !estado) {
       M.toast({ html: 'Completa todos los campos', classes: 'red' });
@@ -31,14 +31,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const centro = centrosData[centroIdx];
+    if (!centro) {
+      console.error('❌ No se encontró el centro seleccionado:', centroIdx, centrosData);
+      return M.toast({ html: 'Centro no encontrado', classes: 'red' });
+    }
     const linea = centro?.lines?.[lineaIdx];
     if (!linea) {
-      console.log('❌ Línea no encontrada', { centro, lineaIdx });
+      console.error('❌ Línea no encontrada', { centro, lineaIdx, lines: centro.lines });
       return M.toast({ html: 'Línea no encontrada', classes: 'red' });
     }
 
-    // Usa "mantenciones" para este flujo (¡NO tareas!)
-    if (!linea.mantenciones) linea.mantenciones = [];
+    // Asegúrate que la línea tiene array mantenciones (NO tareas)
+    if (!Array.isArray(linea.mantenciones)) linea.mantenciones = [];
+    // Agrega la nueva mantención
     linea.mantenciones.push({
       tipo: titulo,
       fecha,
@@ -46,18 +51,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       descripcion
     });
 
-    // LOG
-    console.log('🟢 Centro a guardar:', centro);
+    // MOSTRAR EL OBJETO QUE VAS A ENVIAR AL BACKEND
+    console.log('🟢 [MANTENCION] Centro antes de enviar al backend:', JSON.stringify(centro, null, 2));
+    console.log('🟢 [MANTENCION] Enviando updateCentro ID:', centro._id);
 
     // Guarda el centro actualizado en el backend
-    const res = await updateCentro(centro._id, centro);
-    console.log('🟡 Respuesta updateCentro:', res);
+    try {
+      const res = await updateCentro(centro._id, centro);
+      console.log('🟡 [MANTENCION] Respuesta del backend:', res);
 
-    if (res && res._id) {
-      await cargarCentrosEnSelect(centro._id, linea.number);
-      M.toast({ html: 'Mantención asignada', classes: 'green' });
-    } else {
-      M.toast({ html: 'Error al guardar la mantención', classes: 'red' });
+      if (res && res._id) {
+        await cargarCentrosEnSelect(centro._id, linea.number);
+        M.toast({ html: 'Mantención asignada', classes: 'green' });
+      } else {
+        M.toast({ html: 'Error al guardar la mantención', classes: 'red' });
+      }
+    } catch (err) {
+      console.error('❗ [MANTENCION] Error en updateCentro:', err);
+      M.toast({ html: 'Error inesperado en backend', classes: 'red' });
     }
 
     // Limpiar formulario después de guardar
@@ -73,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function cargarCentrosEnSelect(selectedCentroId = null, selectedLineaNum = null) {
   centrosData = await getCentros();
-  console.log('📦 Centros obtenidos:', centrosData);
+  console.log('📦 [MANTENCION] Centros obtenidos:', JSON.stringify(centrosData, null, 2));
   const selectCentro = document.getElementById('selectCentro');
   selectCentro.innerHTML = '<option value="" disabled selected>Seleccione centro</option>';
   centrosData.forEach((centro, idx) => {
@@ -113,7 +124,7 @@ function mostrarTareasDeLinea(centroIdx, lineaIdx) {
   const cont = document.getElementById('tablaTareasLinea');
   cont.innerHTML = '';
   const linea = centrosData[centroIdx]?.lines?.[lineaIdx];
-  console.log('👁️ Línea a mostrar:', linea);
+  console.log('👁️ [MANTENCION] Línea a mostrar:', linea);
   if (!linea || !linea.mantenciones || !linea.mantenciones.length) {
     cont.innerHTML = '<p style="color:#888;">Sin tareas/mantenciones asignadas a esta línea</p>';
     return;
