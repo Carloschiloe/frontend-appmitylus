@@ -1,101 +1,90 @@
-export function renderAcordeonLineas(idx, centros, editingLine) {
-  const centro = centros[idx];
-  if (!centro) return '';
+// js/centros/lineas.js
 
-  return `
-    <tr class="acordeon-lineas-row">
-      <td colspan="100" style="background:#fafafa; padding:0;">
-        <div style="margin:0 auto; padding:16px 24px 24px 24px; width:100%; max-width:100%; min-width:0; box-sizing:border-box;">
-          <h6 style="margin-bottom:18px;">Líneas de <b>${centro.name}</b></h6>
-          
-          <div style="margin-bottom: 16px;">
-            <input id="inputBuscarLineas" type="text" placeholder="Buscar líneas por número" style="width:60%; padding:4px 8px; font-size:1rem;">
-          </div>
+export function renderAcordeonLineas(idxCentro, centros, editingLine) {
+  const centro = centros[idxCentro];
+  if (!centro || !Array.isArray(centro.lines)) return '<div>No hay líneas registradas.</div>';
 
-          <table class="striped" style="width:100%;" id="tabla-lineas-centro-${idx}">
-            <thead>
-              <tr>
-                <th>N° Línea</th>
-                <th>Boyas</th>
-                <th>Long. Línea</th>
-                <th>Cabo Madre (mm)</th>
-                <th>Estado</th>
-                <th style="text-align:center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${(centro.lines || []).map((ln, i) => {
-                // Si está editando esta línea
-                if (editingLine.idx === idx && editingLine.lineIdx === i) {
-                  return `
-                    <tr>
-                      <td><input type="text" value="${ln.number}" class="edit-line-num" style="width:80px"></td>
-                      <td><input type="number" min="0" value="${ln.buoys}" class="edit-line-buoys" style="width:60px"></td>
-                      <td><input type="number" min="0" value="${ln.longitud || ''}" class="edit-line-long" style="width:70px"></td>
-                      <td><input type="text" value="${ln.cable}" class="edit-line-cable" style="width:90px"></td>
-                      <td>
-                        <select class="edit-line-state" style="width:90px">
-                          <option value="Bueno" ${ln.state === 'Bueno' ? 'selected' : ''}>Bueno</option>
-                          <option value="Regular" ${ln.state === 'Regular' ? 'selected' : ''}>Regular</option>
-                          <option value="Malo" ${ln.state === 'Malo' ? 'selected' : ''}>Malo</option>
-                        </select>
-                      </td>
-                      <td style="text-align:center;">
-                        <i class="material-icons btn-guardar-edit-line" data-centro-idx="${idx}" data-line-idx="${i}" title="Guardar" style="cursor:pointer;color:green;">check</i>
-                        <i class="material-icons btn-cancel-edit-line" title="Cancelar" style="cursor:pointer;color:gray;">close</i>
-                      </td>
-                    </tr>
-                  `;
-                } else {
-                  // Fila normal
-                  return `
-                    <tr>
-                      <td>${ln.number}</td>
-                      <td>${ln.buoys}</td>
-                      <td>${ln.longitud || ''}</td>
-                      <td>${ln.cable}</td>
-                      <td>${ln.state}</td>
-                      <td style="text-align:center;">
-                        <i class="material-icons btn-edit-line" data-centro-idx="${idx}" data-line-idx="${i}" title="Editar" style="cursor:pointer;color:#1976d2;">edit</i>
-                        <i class="material-icons btn-del-line" data-centro-idx="${idx}" data-line-idx="${i}" title="Eliminar" style="cursor:pointer;color:#e53935;">delete</i>
-                      </td>
-                    </tr>
-                  `;
-                }
-              }).join('')}
-            </tbody>
-          </table>
-
-          <form class="form-inline-lineas" data-centro-idx="${idx}" style="margin-top:20px;">
-            <div class="row" style="margin-bottom:0;">
-              <div class="input-field col s2" style="margin-bottom:0;">
-                <input type="text" placeholder="N° Línea" class="line-num">
-              </div>
-              <div class="input-field col s2" style="margin-bottom:0;">
-                <input type="number" min="0" placeholder="Boyas" class="line-buoys">
-              </div>
-              <div class="input-field col s2" style="margin-bottom:0;">
-                <input type="number" min="0" placeholder="Long. Línea" class="line-long">
-              </div>
-              <div class="input-field col s2" style="margin-bottom:0;">
-                <input type="text" placeholder="Cabo Madre (mm)" class="line-cable">
-              </div>
-              <div class="input-field col s2" style="margin-bottom:0;">
-                <select class="line-state">
-                  <option value="" disabled selected>Estado</option>
-                  <option value="Bueno">Bueno</option>
-                  <option value="Regular">Regular</option>
-                  <option value="Malo">Malo</option>
-                </select>
-              </div>
-              <div class="input-field col s2 center" style="margin-bottom:0;">
-                <button class="btn waves-effect green btn-add-line" type="submit"><i class="material-icons left">add</i>Agregar</button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </td>
-    </tr>
+  // Cabecera tabla acordeón
+  let html = `
+    <div style="margin-bottom:8px;">
+      <b>Líneas de cultivo (${centro.lines.length})</b>
+      <button class="btn-small green right btn-add-linea" style="margin-left:8px;">Agregar Línea</button>
+    </div>
+    <table class="striped">
+      <thead>
+        <tr>
+          <th>N° Línea</th>
+          <th>Longitud (m)</th>
+          <th>Cable</th>
+          <th>Estado</th>
+          <th>Toneladas</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
   `;
+
+  centro.lines.forEach((l, i) => {
+    // Si está en edición, muestra inputs
+    if (editingLine && editingLine.idx === idxCentro && editingLine.lineIdx === i) {
+      html += `
+        <tr>
+          <td><input type="text" class="edit-line-num" value="${l.number || ''}" style="width:65px;"/></td>
+          <td><input type="number" class="edit-line-long" value="${l.longitud || ''}" style="width:85px;"/></td>
+          <td><input type="text" class="edit-line-cable" value="${l.cable || ''}" style="width:85px;"/></td>
+          <td>
+            <select class="edit-line-state">
+              <option value="activa" ${l.state === 'activa' ? 'selected' : ''}>Activa</option>
+              <option value="inactiva" ${l.state === 'inactiva' ? 'selected' : ''}>Inactiva</option>
+            </select>
+          </td>
+          <td><input type="number" class="edit-line-tons" value="${l.tons || ''}" style="width:80px;"/></td>
+          <td>
+            <button class="btn-small green btn-guardar-edit-line" data-line-idx="${i}">Guardar</button>
+            <button class="btn-small grey btn-cancel-edit-line" data-line-idx="${i}">Cancelar</button>
+          </td>
+        </tr>
+      `;
+    } else {
+      html += `
+        <tr>
+          <td>${l.number || '-'}</td>
+          <td>${l.longitud || '-'}</td>
+          <td>${l.cable || '-'}</td>
+          <td>${l.state || '-'}</td>
+          <td>${l.tons !== undefined ? l.tons : '-'}</td>
+          <td>
+            <button class="btn-small orange btn-edit-line" data-line-idx="${i}">Editar</button>
+            <button class="btn-small red btn-del-line" data-line-idx="${i}">&times;</button>
+          </td>
+        </tr>
+      `;
+    }
+  });
+
+  html += `
+      </tbody>
+    </table>
+    <form class="form-inline-lineas" style="margin-top:14px;">
+      <div class="row" style="margin-bottom:0;">
+        <div class="input-field col s2"><input type="text"   class="line-num"    placeholder="N° Línea" required></div>
+        <div class="input-field col s2"><input type="number" class="line-long"   placeholder="Longitud" required></div>
+        <div class="input-field col s2"><input type="text"   class="line-cable"  placeholder="Cable" required></div>
+        <div class="input-field col s2">
+          <select class="line-state" required>
+            <option value="" disabled selected>Estado</option>
+            <option value="activa">Activa</option>
+            <option value="inactiva">Inactiva</option>
+          </select>
+        </div>
+        <div class="input-field col s2"><input type="number" class="line-tons"   placeholder="Toneladas" required></div>
+        <div class="input-field col s2" style="margin-top:10px;">
+          <button class="btn green" type="submit">Agregar</button>
+        </div>
+      </div>
+    </form>
+  `;
+
+  return html;
 }
 
