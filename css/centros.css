@@ -48,7 +48,7 @@
   width: 100% !important;
   min-width: 0;
   overflow-x: visible !important;
-  padding: 16px 14px 12px 22px !important;
+  padding: 14px 10px 10px 18px !important;
   background: #f7faf9;
   border-top: none !important;
   border-bottom: 1.5px solid #b2dfdb;
@@ -71,7 +71,7 @@
 /* Compacta filas tabla de líneas */
 .child-table-lineas th, .child-table-lineas td {
   font-size: .95em;
-  padding: .18rem .10rem;
+  padding: .13rem .07rem;
   background: transparent !important;
   white-space: nowrap;
 }
@@ -79,45 +79,38 @@
 /* Inputs y selects ultra compactos en la tabla de líneas */
 .child-table-lineas input,
 .child-table-lineas select {
-  width: 62px !important;
-  min-width: 35px;
-  max-width: 80px;
-  font-size: 0.93em;
-  padding: 2px 4px;
+  width: 95%;
+  min-width: 20px;
+  max-width: 90px;
+  font-size: 0.92em;
+  padding: 1px 2px;
   box-sizing: border-box;
   margin: 0;
 }
 
-.child-table-lineas td:nth-child(3),
-.child-table-lineas th:nth-child(3) { /* Observaciones */
-  min-width: 110px;
-  max-width: 210px;
-  width: 130px;
-  white-space: normal !important;
-  overflow: hidden;
-}
-
+/* Columnas ultra compactas para líneas */
 .child-table-lineas th:nth-child(1),
-.child-table-lineas td:nth-child(1) { width: 48px; max-width: 60px; min-width: 32px; }
+.child-table-lineas td:nth-child(1) { width: 36px; max-width: 42px; min-width: 20px; }
 .child-table-lineas th:nth-child(2),
-.child-table-lineas td:nth-child(2) { width: 60px; max-width: 65px; min-width: 35px; }
+.child-table-lineas td:nth-child(2) { width: 37px; max-width: 43px; min-width: 22px; }
+.child-table-lineas th:nth-child(3),
+.child-table-lineas td:nth-child(3) { min-width: 70px; max-width: 120px; width: 85px; white-space: normal !important; overflow: hidden; }
 .child-table-lineas th:nth-child(4),
-.child-table-lineas td:nth-child(4) { width: 65px; max-width: 80px; min-width: 35px; }
+.child-table-lineas td:nth-child(4) { width: 51px; max-width: 55px; min-width: 26px; }
 .child-table-lineas th:nth-child(5),
-.child-table-lineas td:nth-child(5) { width: 55px; max-width: 65px; min-width: 30px; }
+.child-table-lineas td:nth-child(5) { width: 37px; max-width: 44px; min-width: 20px; }
 .child-table-lineas th:nth-child(6),
-.child-table-lineas td:nth-child(6) { width: 55px; max-width: 65px; min-width: 30px; }
+.child-table-lineas td:nth-child(6) { width: 37px; max-width: 44px; min-width: 20px; }
 .child-table-lineas th:nth-child(7),
-.child-table-lineas td:nth-child(7) { width: 55px; max-width: 65px; min-width: 30px; }
+.child-table-lineas td:nth-child(7) { width: 37px; max-width: 44px; min-width: 20px; }
 .child-table-lineas th:nth-child(8),
-.child-table-lineas td:nth-child(8) { width: 50px; max-width: 65px; min-width: 25px; }
-
+.child-table-lineas td:nth-child(8) { width: 37px; max-width: 44px; min-width: 20px; }
 /* Acciones */
 .child-table-lineas th:nth-child(9),
 .child-table-lineas td:nth-child(9) {
-  width: 56px;
-  min-width: 35px;
-  max-width: 72px;
+  width: 32px;
+  min-width: 18px;
+  max-width: 39px;
   text-align: center;
   white-space: nowrap;
 }
