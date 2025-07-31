@@ -1,369 +1,65 @@
-/* =========================================================
-   inventario Centros – CSS Optimizado (Jul 2025) (Refined)
-   ========================================================= */
+/* ========== GLOBAL: ACCIONES, ÍCONOS Y TABLAS ========== */
 
-/* ---------- Variables ---------- */
-:root {
-  --color-teal: #009688;
-  --color-teal-soft: #26a69a;
-  --color-bg-card: #ffffff;
-  --color-shadow-soft: 0 2px 8px rgba(0,0,0,.07);
-  --color-shadow-strong: 0 6px 22px rgba(30,90,80,.13);
-  --color-text-light: #f5f5f5;
-  --color-text-muted: #888;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --transition-fast: .18s;
-  --transition-normal: .28s;
-  --map-shadow: 0 2px 10px rgba(80,100,120,.10);
-  --map-bg-skeleton: #d8d8d8;
-  --focus-ring: 0 0 0 3px rgba(0,150,136,.35);
-}
-
-/* =========================================================
-   TABLAS
-   ========================================================= */
-#linesTable th, #linesTable td,
-#centrosTable th, #centrosTable td {
-  font-size: .85rem;
-  padding: .4rem .6rem;
-}
-
-/* Botón centrado genérico */
-.center-btn {
-  text-align: center;
-  margin-top: 1.5rem;
-}
-
-/* =========================================================
-   MAPA
-   ========================================================= */
-#mapaSection {
-  display: flex;
-  gap: 24px;
-  min-height: 70vh;
-  height: 70vh;
-  align-items: stretch;
-}
-
-#sidebarCentros {
-  flex: 0 0 280px;
-  background: var(--color-bg-card);
-  border-radius: var(--radius-md);
-  box-shadow: var(--color-shadow-soft);
-  padding: 18px 8px 8px;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  margin: 0;
-}
-#sidebarCentros ul { margin: 0; }
-#sidebarCentros li {
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-  padding: 4px 6px;
-  border-radius: 6px;
-}
-#sidebarCentros li.active,
-#sidebarCentros li:hover {
-  background: #e0f2f1 !important;
-  color: #004d40;
-}
-#sidebarCentros li.active b { color: #003d33; }
-
-#mapShell {
-  flex: 1 1 auto;
-  position: relative;
-  border-radius: var(--radius-md);
-  box-shadow: var(--map-shadow);
-  background: #e6e6e6;
-  overflow: hidden;
-  display: flex;
-  min-width: 420px;
-  min-height: 380px;
-  isolation: isolate;
-}
-#map {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  min-height: 380px;
-  position: relative;
-  overflow: visible !important;
-  transition: filter .25s;
-}
-#map:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-#map.leaflet-container { background: var(--map-bg-skeleton); }
-.leaflet-container img.leaflet-tile { max-width: none !important; }
-
-@media (max-width: 900px) {
-  #mapaSection {
-    flex-direction: column;
-    height: auto;
-    min-height: 60vh;
-  }
-  #sidebarCentros {
-    flex: 0 0 auto;
-    height: auto;
-    max-width: 100%;
-    order: 2;
-  }
-  #mapShell {
-    width: 100%;
-    min-width: 240px;
-    height: 50vh;
-    min-height: 320px;
-    order: 1;
-  }
-  #map { min-height: 50vh; }
-}
-
-/* =========================================================
-   TARJETAS inventario
-   ========================================================= */
-.card.stock-card {
-  background: linear-gradient(120deg,#79d1a3 0%,#59c09b 100%);
-  color: #fff;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 2px 12px rgba(30,90,80,.08);
-  min-height: 92px;
-  padding: 1rem 1.2rem .7rem !important;
-  margin-bottom: 14px;
-  transition: transform .13s, box-shadow .17s;
-  position: relative;
-}
-.card.stock-card:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: var(--color-shadow-strong);
-}
-.card.stock-card .card-title {
-  font-size: 1.11rem;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  margin-bottom: .3rem;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.card.stock-card .material-icons { font-size: 2rem; opacity: .88; margin-right: 3px; }
-.card.stock-card ul {
-  list-style: none;
-  margin: 7px 0 0 6px;
-  padding: 0 0 0 5px;
-  font-size: 1.01rem;
-}
-.card.stock-card li { margin-bottom: 1px; line-height: 1.36; }
-.card.stock-card b { font-size: 1.03em; font-weight: 600; margin-right: 3px; }
-.card.stock-card .stock-label {
-  font-size: .93rem;
-  opacity: .87;
-  margin-top: 2px;
-  display: inline-block;
-  font-weight: 400;
-  letter-spacing: .01em;
-}
-@media (max-width: 700px) {
-  .card.stock-card {
-    min-height: 62px;
-    padding: .7rem .6rem .5rem .9rem !important;
-  }
-  .card.stock-card .card-title { font-size: 1.04rem; }
-}
-
-/* =========================================================
-   OTROS
-   ========================================================= */
-.remove-line .material-icons { vertical-align: middle; }
-
-/* =========================================================
-   HOTFIX Leaflet (mínimo necesario)
-   ========================================================= */
-#map { position: relative; }
-#map .leaflet-pane,
-#map .leaflet-tile-pane,
-#map .leaflet-map-pane {
-  position: absolute !important;
-  left: 0; top: 0;
-  margin: 0; padding: 0;
-}
-#map .leaflet-tile-container,
-#map .leaflet-tile {
-  position: absolute !important;
-  left: 0; top: 0;
-}
-#map .leaflet-map-pane,
-#map .leaflet-tile-pane,
-#map .leaflet-tile-container { will-change: transform; }
-
-/* =========================================================
-   CONTROLES / POPUPS MAPA
-   ========================================================= */
-.leaflet-control-layers {
-  background: rgba(30,30,30,.55);
-  color: var(--color-text-light);
-  backdrop-filter: blur(4px);
-  border-radius: 10px;
-  padding: 6px 10px 8px;
-  font-size: 13px;
-  line-height: 1.25;
-  border: 1px solid rgba(255,255,255,.15);
-  transition: background var(--transition-fast);
-}
-.leaflet-control-layers:hover { background: rgba(30,30,30,.7); }
-.leaflet-control-layers-expanded { box-shadow: 0 4px 14px rgba(0,0,0,.25); }
-.leaflet-control-layers label,
-.leaflet-control-layers span {
-  color: var(--color-text-light) !important;
-  font-weight: 500;
-}
-.leaflet-control-layers-separator {
-  border-top: 1px solid rgba(255,255,255,.25);
-  margin: 4px 0;
-}
-.leaflet-control-layers input {
-  accent-color: var(--color-teal-soft);
-  cursor: pointer;
-}
-
-/* =========================================================
-   FULLSCREEN
-   ========================================================= */
-:fullscreen #mapShell,
-#mapShell:fullscreen {
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: 100vw;
-  max-height: 100vh;
-  border-radius: 0;
-  box-shadow: none;
-}
-:fullscreen #map,
-#map:fullscreen {
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 100% !important;
-}
-body:has(#mapShell:fullscreen) { overflow: hidden; }
-.fullscreen-active #btnFullscreenMapa i::before { content:'fullscreen_exit'; }
-
-/* =========================================================
-   REDUCED MOTION
-   ========================================================= */
-@media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; }
-}
-#map path.leaflet-interactive { cursor: pointer; }
-
-/* =========================================================
-   FULLCALENDAR (solo visible en su tab)
-   ========================================================= */
-#calendarioTareas { min-height: 620px; }
-#tab-calendario[style*="display: none"] #calendarioTareas { display: none !important; }
-
-/* =========================================================
-   RESUMEN MINI
-   ========================================================= */
-#resumenMini .chip {
-  margin: 4px 6px 4px 0;
-  font-size: .85rem;
-  cursor: default;
-}
-
-/* =========================================================
-   CHORITOS – BLOQUE DE LÍNEAS EXPANDIDO (CHILD ROW)
-   ========================================================= */
-tr.shown + tr td.child-row-lineas {
-  background: #f7faf9;
-  padding: 22px 20px 17px 32px;
-  border-top: none !important;
-  border-bottom: 1.5px solid #b2dfdb;
-  box-shadow: 0 1px 10px 0 rgba(0,150,136,.08);
-  font-size: 0.97rem;
-  position: relative;
-}
-
-.child-row-lineas {
-  border-radius: 0 0 14px 14px;
-  min-width: 60vw;
-  margin-top: 0;
-  margin-bottom: 0;
-}
-
-.child-row-lineas h6,
-.child-row-lineas h5 {
-  margin-top: 0;
-  font-size: 1.07em;
-  color: #009688;
-  font-weight: 600;
-}
-
-.child-row-lineas table.striped th,
-.child-row-lineas table.striped td {
-  background: transparent !important;
-  font-size: .94em;
-  border-bottom: 1px solid #e0f2f1;
-  padding: .37rem .52rem;
-}
-
-.child-row-lineas .btn,
-.child-row-lineas .btn-small,
-.child-row-lineas .material-icons {
+/* Íconos de acciones alineados y siempre en una línea */
+td .material-icons,
+th .material-icons {
+  display: inline-block !important;
   vertical-align: middle;
-}
-
-/* Extra: efecto al hover de la fila padre para indicar expandido */
-tr.shown {
-  background: #e0f2f1 !important;
-  transition: background .18s;
-}
-
-/* Si quieres el child row full ancho de tabla (opcional) */
-.child-row-lineas {
-  width: 100%;
-  display: block;
-}
-
-@media (max-width: 900px) {
-  .child-row-lineas {
-    min-width: unset;
-    padding-left: 8px !important;
-    padding-right: 6px !important;
-  }
-}
-
-/* ======== Íconos alineados en acciones ======== */
-#centrosTable td:last-child,
-#centrosTable td .material-icons,
-.child-row-lineas td:last-child,
-.child-row-lineas td .material-icons {
-  white-space: nowrap;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-#centrosTable td .material-icons,
-.child-row-lineas td .material-icons {
-  font-size: 1.35em;
-  margin-right: 8px;
-  margin-left: 0;
-  color: #333;
+  font-size: 1.15em;
+  margin-right: 7px;
+  color: #555;
+  cursor: pointer;
   transition: color .18s;
-  cursor: pointer;
-  vertical-align: middle;
 }
-
-#centrosTable td .material-icons:last-child,
-.child-row-lineas td .material-icons:last-child {
+td .material-icons:last-child,
+th .material-icons:last-child {
   margin-right: 0;
 }
+td:last-child, th:last-child {
+  white-space: nowrap !important;
+}
 
-/* Hover para distinguir acción */
-#centrosTable td .material-icons:hover,
-.child-row-lineas td .material-icons:hover {
+/* Hover para destacar acción */
+td .material-icons:hover,
+th .material-icons:hover {
   color: #009688;
-  filter: brightness(1.15);
+  filter: brightness(1.18);
+}
+
+/* Botones genéricos (si los usas) */
+.btn, .btn-small, .waves-effect {
+  vertical-align: middle;
+  text-transform: none;
+  border-radius: 8px;
+  font-size: .97em;
+}
+
+/* Tablas responsivas: previene scroll innecesario */
+table.dataTable,
+.dataTable-wrapper,
+.card table {
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: auto;
+}
+
+/* Para que los botones/íconos en la tabla no queden con salto de línea en pantallas pequeñas */
+@media (max-width: 700px) {
+  td .material-icons,
+  th .material-icons {
+    font-size: 1.05em;
+    margin-right: 4px;
+  }
+}
+
+/* Opcional: color y fondo para child row expanded */
+tr.shown + tr td.child-row-lineas {
+  background: #f9fcfb;
+  box-shadow: 0 1px 8px 0 rgba(0,150,136,.06);
+}
+
+/* Extra: Corrige overflow en tablas anidadas */
+.card table,
+.child-row-lineas table {
+  background: transparent !important;
 }
