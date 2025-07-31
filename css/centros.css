@@ -11,7 +11,7 @@
 
 #centrosTable th, #centrosTable td {
   font-size: .97rem;
-  padding: .41rem .64rem;
+  padding: .35rem .32rem;
   white-space: nowrap;
   vertical-align: middle;
 }
@@ -26,8 +26,8 @@
 .child-row-lineas td .material-icons {
   display: inline-block !important;
   vertical-align: middle;
-  font-size: 1.28em;
-  margin-right: 10px;
+  font-size: 1.19em;
+  margin-right: 7px;
   margin-left: 0;
   color: #555;
   cursor: pointer;
@@ -47,80 +47,89 @@
 .child-row-lineas {
   width: 100% !important;
   min-width: 0;
-  overflow-x: auto;
-  padding: 22px 20px 17px 32px !important;
+  overflow-x: visible !important;
+  padding: 16px 14px 12px 22px !important;
   background: #f7faf9;
   border-top: none !important;
   border-bottom: 1.5px solid #b2dfdb;
   box-shadow: 0 1px 10px 0 rgba(0,150,136,.08);
-  font-size: 0.99rem;
+  font-size: 0.98rem;
   position: relative;
   border-radius: 0 0 14px 14px;
 }
 
-.child-row-lineas table.striped {
-  min-width: 900px; /* Ancho mínimo para que quepan todas las columnas */
+/* --- TABLA DE LÍNEAS MÁS COMPACTA Y CLASE PROPIA --- */
+.child-row-lineas table.striped,
+.child-table-lineas {
   width: 100%;
+  min-width: 0;
   background: transparent !important;
+  border-collapse: collapse;
+  font-size: 0.96em;
 }
 
-.child-row-lineas th, .child-row-lineas td {
-  font-size: .97em;
-  padding: .38rem .45rem;
+/* Compacta filas tabla de líneas */
+.child-table-lineas th, .child-table-lineas td {
+  font-size: .95em;
+  padding: .18rem .10rem;
   background: transparent !important;
   white-space: nowrap;
 }
 
-/* Anchos para columnas acorde a contenido */
-.child-row-lineas th:nth-child(1),
-.child-row-lineas td:nth-child(1) {
-  width: 8%;
-  min-width: 50px;
-}
-.child-row-lineas th:nth-child(2),
-.child-row-lineas td:nth-child(2) {
-  width: 10%;
-  min-width: 60px;
-}
-.child-row-lineas th:nth-child(3),
-.child-row-lineas td:nth-child(3) {
-  width: 15%;
-  min-width: 120px;
-}
-.child-row-lineas th:nth-child(4),
-.child-row-lineas td:nth-child(4) {
-  width: 10%;
-  min-width: 70px;
-}
-.child-row-lineas th:nth-child(5),
-.child-row-lineas td:nth-child(5),
-.child-row-lineas th:nth-child(6),
-.child-row-lineas td:nth-child(6),
-.child-row-lineas th:nth-child(7),
-.child-row-lineas td:nth-child(7),
-.child-row-lineas th:nth-child(8),
-.child-row-lineas td:nth-child(8) {
-  width: 8%;
-  min-width: 50px;
+/* Inputs y selects ultra compactos en la tabla de líneas */
+.child-table-lineas input,
+.child-table-lineas select {
+  width: 62px !important;
+  min-width: 35px;
+  max-width: 80px;
+  font-size: 0.93em;
+  padding: 2px 4px;
+  box-sizing: border-box;
+  margin: 0;
 }
 
-/* Columna Acciones */
-.child-row-lineas th:nth-child(9),
-.child-row-lineas td:nth-child(9) {
-  width: 15%;
-  min-width: 120px;
-  white-space: nowrap;
+.child-table-lineas td:nth-child(3),
+.child-table-lineas th:nth-child(3) { /* Observaciones */
+  min-width: 110px;
+  max-width: 210px;
+  width: 130px;
+  white-space: normal !important;
+  overflow: hidden;
+}
+
+.child-table-lineas th:nth-child(1),
+.child-table-lineas td:nth-child(1) { width: 48px; max-width: 60px; min-width: 32px; }
+.child-table-lineas th:nth-child(2),
+.child-table-lineas td:nth-child(2) { width: 60px; max-width: 65px; min-width: 35px; }
+.child-table-lineas th:nth-child(4),
+.child-table-lineas td:nth-child(4) { width: 65px; max-width: 80px; min-width: 35px; }
+.child-table-lineas th:nth-child(5),
+.child-table-lineas td:nth-child(5) { width: 55px; max-width: 65px; min-width: 30px; }
+.child-table-lineas th:nth-child(6),
+.child-table-lineas td:nth-child(6) { width: 55px; max-width: 65px; min-width: 30px; }
+.child-table-lineas th:nth-child(7),
+.child-table-lineas td:nth-child(7) { width: 55px; max-width: 65px; min-width: 30px; }
+.child-table-lineas th:nth-child(8),
+.child-table-lineas td:nth-child(8) { width: 50px; max-width: 65px; min-width: 25px; }
+
+/* Acciones */
+.child-table-lineas th:nth-child(9),
+.child-table-lineas td:nth-child(9) {
+  width: 56px;
+  min-width: 35px;
+  max-width: 72px;
   text-align: center;
+  white-space: nowrap;
 }
 
-/* Inputs y selects no corten contenido */
+/* Inputs y selects del form abajo no corten contenido */
 .child-row-lineas input,
 .child-row-lineas select {
   max-width: 100%;
   box-sizing: border-box;
 }
 
-/* Responsive: scroll horizontal para tablas y child-row */
+/* Responsive: scroll horizontal sólo en móviles */
 @media (max-width: 900px) {
   #centrosTable, #centrosTable_wrapper,
   .child-row-lineas, .child-row-lineas table.striped {
@@ -129,7 +138,8 @@
     overflow-x: auto !important;
     display: block;
   }
-  .child-row-lineas th, .child-row-lineas td {
+  .child-row-lineas th, .child-row-lineas td,
+  .child-table-lineas th, .child-table-lineas td {
     font-size: 1em;
     padding-left: 6px;
     padding-right: 6px;
@@ -141,6 +151,7 @@
 }
 
 /* ----------- MAPA DE CENTROS ----------- */
+/* (El resto igual que tu original) */
 #mapaSection {
   display: flex;
   gap: 24px;
