@@ -238,6 +238,7 @@ function attachLineasListeners(idx, acordeonCont) {
         const tr = $('#centrosTable tbody tr').eq(idx);
         tr.find('.btn-toggle-lineas').trigger('click');
         tr.find('.btn-toggle-lineas').trigger('click');
+        await loadCentros();
       };
     });
   }
@@ -268,6 +269,7 @@ function attachLineasListeners(idx, acordeonCont) {
       const tr = $('#centrosTable tbody tr').eq(idx);
       tr.find('.btn-toggle-lineas').trigger('click');
       tr.find('.btn-toggle-lineas').trigger('click');
+      await loadCentros();
     };
   }
 }
