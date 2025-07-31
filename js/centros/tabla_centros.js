@@ -134,7 +134,7 @@ export function initTablaCentros() {
         formTitle: document.getElementById('formTitle'),
         inputCentroId: document.getElementById('inputCentroId'),
         inputName: document.getElementById('inputName'),
-        inputEmpresa: document.getElementById('inputEmpresa'),
+        inputProveedor: document.getElementById('inputProveedor'),
         inputCode: document.getElementById('inputCode'),
         inputHectareas: document.getElementById('inputHectareas'),
         inputLat: document.getElementById('inputLat'),
@@ -257,7 +257,7 @@ export async function loadCentros() {
     const tonsDisponibles = Array.isArray(c.lines)
       ? c.lines.reduce((sum, l) => sum + (+l.tons || 0), 0)
       : 0;
-    const empresa = c.empresa || c.proveedor || '-';
+    const proveedor = c.proveedor || '-';
 
     const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>`;
     const accionesCell = `
@@ -267,7 +267,7 @@ export async function loadCentros() {
 
     return [
       c.name,
-      empresa,
+      proveedor,
       c.code || '-',
       hect.toFixed(2),
       cantLineas,
