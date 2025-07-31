@@ -1,5 +1,3 @@
-// js/centros/lineas.js
-
 export function renderAcordeonLineas(idxCentro, centros, editingLine) {
   const centro = centros[idxCentro];
   if (!centro || !Array.isArray(centro.lines)) return '<div>No hay líneas registradas.</div>';
@@ -8,7 +6,7 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
     <div style="margin-bottom:8px;">
       <b>Líneas de cultivo (${centro.lines.length})</b>
     </div>
-    <table class="striped">
+    <table class="striped child-table-lineas">
       <thead>
         <tr>
           <th>N° Línea</th>
@@ -29,19 +27,19 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
     if (editingLine && editingLine.idx === idxCentro && editingLine.lineIdx === i) {
       html += `
         <tr>
-          <td><input type="text" class="edit-line-num" value="${l.number || ''}" style="width:65px;"/></td>
-          <td><input type="number" class="edit-line-long" value="${l.longitud || ''}" style="width:85px;"/></td>
-          <td><input type="text" class="edit-line-observaciones" value="${l.observaciones || ''}" style="width:100px;"/></td>
+          <td><input type="text" class="edit-line-num" value="${l.number || ''}" /></td>
+          <td><input type="number" class="edit-line-long" value="${l.longitud || ''}" /></td>
+          <td><input type="text" class="edit-line-observaciones" value="${l.observaciones || ''}" /></td>
           <td>
             <select class="edit-line-state">
               <option value="activa" ${l.state === 'activa' ? 'selected' : ''}>Activa</option>
               <option value="inactiva" ${l.state === 'inactiva' ? 'selected' : ''}>Inactiva</option>
             </select>
           </td>
-          <td><input type="number" class="edit-line-tons" value="${l.tons ?? ''}" style="width:80px;"/></td>
-          <td><input type="number" step="any" class="edit-line-unKg" value="${l.unKg ?? ''}" style="width:80px;"/></td>
-          <td><input type="number" step="any" class="edit-line-porcRechazo" value="${l.porcRechazo ?? ''}" style="width:80px;"/></td>
-          <td><input type="number" step="any" class="edit-line-rendimiento" value="${l.rendimiento ?? ''}" style="width:80px;"/></td>
+          <td><input type="number" class="edit-line-tons" value="${l.tons ?? ''}" /></td>
+          <td><input type="number" step="any" class="edit-line-unKg" value="${l.unKg ?? ''}" /></td>
+          <td><input type="number" step="any" class="edit-line-porcRechazo" value="${l.porcRechazo ?? ''}" /></td>
+          <td><input type="number" step="any" class="edit-line-rendimiento" value="${l.rendimiento ?? ''}" /></td>
           <td>
             <i class="material-icons btn-guardar-edit-line" data-line-idx="${i}" style="cursor:pointer;color:green;margin-right:6px;">check</i>
             <i class="material-icons btn-cancel-edit-line" data-line-idx="${i}" style="cursor:pointer;color:#666;">close</i>
