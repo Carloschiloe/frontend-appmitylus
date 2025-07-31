@@ -68,10 +68,7 @@ export function initTablaCentros() {
 
   Estado.table.draw();
 
-  // Eventos delegados (igual que antes)...
   const $t2 = window.$('#centrosTable');
-
-  // Ver coordenadas (mantiene el botón)
   $t2
     .off('click', '.btn-coords')
     .on('click', '.btn-coords', function () {
@@ -166,7 +163,89 @@ export function initTablaCentros() {
 
 // LISTENERS DE LÍNEAS DENTRO DEL ACORDEÓN
 function attachLineasListeners(idx, acordeonCont) {
-  // ... Igual a como lo tienes, sin referencia a boyas ...
+  // Eliminar línea
+  const tbody = acordeonCont.querySelector('table.striped tbody');
+  if (tbody) {
+    tbody.querySelectorAll('.btn-del-line').forEach(btn => {
+      btn.onclick = async () => {
+        const lineIdx = +btn.dataset.lineIdx;
+        const centro = Estado.centros[idx];
+        const linea = centro.lines[lineIdx];
+        if (!linea) return;
+        if (confirm(`¿Eliminar la línea ${linea.number}?`)) {
+          await deleteLinea(centro._id, linea._id);
+          await loadCentros();
+          if (tabMapaActiva()) renderMapaAlways(true);
+        }
+      };
+    });
+
+    // Editar línea
+    tbody.querySelectorAll('.btn-edit-line').forEach(btn => {
+      btn.onclick = () => {
+        Estado.editingLine = { idx: idx, lineIdx: +btn.dataset.lineIdx };
+        const tr = $('#centrosTable tbody tr').eq(idx);
+        tr.find('.btn-toggle-lineas').trigger('click');
+        tr.find('.btn-toggle-lineas').trigger('click');
+      };
+    });
+
+    // Cancelar edición de línea
+    tbody.querySelectorAll('.btn-cancel-edit-line').forEach(btn => {
+      btn.onclick = () => {
+        Estado.editingLine = { idx: null, lineIdx: null };
+        const tr = $('#centrosTable tbody tr').eq(idx);
+        tr.find('.btn-toggle-lineas').trigger('click');
+        tr.find('.btn-toggle-lineas').trigger('click');
+      };
+    });
+
+    // Guardar edición de línea
+    tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
+      btn.onclick = async () => {
+        const trFila = btn.closest('tr');
+        const num = trFila.querySelector('.edit-line-num').value.trim();
+        const long = parseFloat(trFila.querySelector('.edit-line-long').value);
+        const cab = trFila.querySelector('.edit-line-cable').value.trim();
+        const st = trFila.querySelector('.edit-line-state').value;
+        const tons = parseFloat(trFila.querySelector('.edit-line-tons').value);
+        if (!num || isNaN(long) || !cab || !st || isNaN(tons)) {
+          M.toast({ html: 'Completa todos los campos', classes: 'red' });
+          return;
+        }
+        const centro = Estado.centros[idx];
+        const linea = centro.lines[+btn.dataset.lineIdx];
+        await updateLinea(centro._id, linea._id, { number: num, longitud: long, cable: cab, state: st, tons: tons });
+        Estado.editingLine = { idx: null, lineIdx: null };
+        const tr = $('#centrosTable tbody tr').eq(idx);
+        tr.find('.btn-toggle-lineas').trigger('click');
+        tr.find('.btn-toggle-lineas').trigger('click');
+      };
+    });
+  }
+
+  // Agregar línea nueva
+  const formAdd = acordeonCont.querySelector('.form-inline-lineas');
+  if (formAdd) {
+    formAdd.onsubmit = async (e) => {
+      e.preventDefault();
+      const num = formAdd.querySelector('.line-num').value.trim();
+      const long = parseFloat(formAdd.querySelector('.line-long').value);
+      const cab = formAdd.querySelector('.line-cable').value.trim();
+      const st = formAdd.querySelector('.line-state').value;
+      const tons = parseFloat(formAdd.querySelector('.line-tons').value);
+      if (!num || isNaN(long) || !cab || !st || isNaN(tons)) {
+        M.toast({ html: 'Completa todos los campos', classes: 'red' });
+        return;
+      }
+      const centro = Estado.centros[idx];
+      await addLinea(centro._id, { number: num, longitud: long, cable: cab, state: st, tons: tons });
+      formAdd.reset();
+      const tr = $('#centrosTable tbody tr').eq(idx);
+      tr.find('.btn-toggle-lineas').trigger('click');
+      tr.find('.btn-toggle-lineas').trigger('click');
+    };
+  }
 }
 
 export async function loadCentros() {
@@ -180,7 +259,12 @@ export async function loadCentros() {
       : 0;
     const empresa = c.empresa || c.proveedor || '-';
 
-    // OJO: SOLO NÚMERO en toneladas, SIN botón ni ícono
+    const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>`;
+    const accionesCell = `
+      <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer">visibility</i>
+      <i class="material-icons editar-centro" data-idx="${i}" style="cursor:pointer">edit</i>
+      <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer">delete</i>`;
+
     return [
       c.name,
       empresa,
@@ -188,10 +272,8 @@ export async function loadCentros() {
       hect.toFixed(2),
       cantLineas,
       tonsDisponibles.toLocaleString('es-CL', { minimumFractionDigits: 0 }),
-      `<button class="btn-small teal btn-coords" data-idx="${i}">Ver</button>`,
-      `<button class="btn-small blue btn-toggle-lineas" data-idx="${i}">Ver Líneas</button>
-       <button class="btn-small orange editar-centro" data-idx="${i}">Editar</button>
-       <button class="btn-small red eliminar-centro" data-idx="${i}">&times;</button>`
+      coordsCell,
+      accionesCell
     ];
   });
 
