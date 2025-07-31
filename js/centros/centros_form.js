@@ -2,12 +2,12 @@ import { getCentrosAll } from '../core/centros_repo.js';
 import { clearMapPoints, redrawPolygon, addPointMarker } from '../mapas/control_mapa.js';
 import { parseOneDMS } from '../core/utilidades.js';
 
-// NUEVO: Ahora maneja campo empresa/proveedor también
+// NUEVO: Solo maneja campo proveedor
 export async function openNewForm(els, map, currentPoints, setIdxCb) {
   els.formTitle.textContent = 'Nuevo centro';
   els.inputCentroId.value   = '';
   els.inputName.value       = '';
-  els.inputEmpresa.value    = '';  // <--- NUEVO CAMPO
+  els.inputProveedor.value  = '';  // SOLO proveedor
   els.inputCode.value       = '';
   els.inputHectareas.value  = '';
   els.inputLat.value        = '';
@@ -21,13 +21,14 @@ export async function openNewForm(els, map, currentPoints, setIdxCb) {
 
 export async function openEditForm(els, map, currentPoints, setIdxCb) {
   const centros = await getCentrosAll();
-  const idx = +els.inputCentroId.value;
+  // El idx se obtiene del Estado (o pásalo explícito si prefieres)
+  const idx = +els.inputCentroId.value || 0;
   const centro = centros[idx];
   if (!centro) return;
 
   els.formTitle.textContent = `Editar centro: ${centro.name}`;
   els.inputName.value       = centro.name || '';
-  els.inputEmpresa.value    = centro.empresa || centro.proveedor || '';  // <--- NUEVO CAMPO
+  els.inputProveedor.value  = centro.proveedor || '';  // SOLO proveedor
   els.inputCode.value       = centro.code || '';
   els.inputHectareas.value  = centro.hectareas || '';
 
