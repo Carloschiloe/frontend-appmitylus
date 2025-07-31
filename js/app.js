@@ -111,16 +111,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         M.toast({ html: 'Nombre obligatorio', classes: 'red' });
         return;
       }
-      if (Estado.currentPoints.length < 3) {
-        M.toast({ html: 'Debe ingresar al menos 3 puntos para formar un polígono válido', classes: 'red' });
-        return;
-      }
+      // *** YA NO SE VALIDA LA CANTIDAD DE PUNTOS ***
 
       const centroData = {
         name: nombre,
         code,
         hectareas,
-        coords: Estado.currentPoints,
+        coords: Estado.currentPoints,  // <-- puede ir vacío
         lines: Estado.currentCentroIdx !== null && Estado.centros[Estado.currentCentroIdx]
           ? Estado.centros[Estado.currentCentroIdx].lines || []
           : []
