@@ -297,4 +297,3 @@ export function filtrarLineas(contenedor) {
     fila.style.display = okTxt ? '' : 'none';
   });
 }
-
