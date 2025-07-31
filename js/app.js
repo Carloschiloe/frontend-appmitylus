@@ -26,8 +26,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         Estado.map.invalidateSize();
         renderMapaAlways();
       }
-      // NO HACER NADA CON INSUMOS NI STOCK
-      // if (tabElem.id === 'tab-insumos') renderFiltrosSidebar();
     }
   });
 
@@ -37,7 +35,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Init componentes
   initTablaCentros();
   initMapa();
-  // NO MÁS renderFiltrosSidebar();
 
   // Cargar datos desde API
   await cargarCentros();
@@ -53,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     formTitle: document.getElementById('formTitle'),
     inputCentroId: document.getElementById('inputCentroId'),
     inputName: document.getElementById('inputName'),
+    inputProveedor: document.getElementById('inputProveedor'), // 👈 SOLO proveedor
     inputCode: document.getElementById('inputCode'),
     inputHectareas: document.getElementById('inputHectareas'),
     inputLat: document.getElementById('inputLat'),
@@ -104,6 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
 
       const nombre = els.inputName.value.trim();
+      const proveedor = els.inputProveedor.value.trim(); // 👈
       const code = els.inputCode.value.trim();
       const hectareas = els.inputHectareas.value.trim();
 
@@ -111,13 +110,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         M.toast({ html: 'Nombre obligatorio', classes: 'red' });
         return;
       }
-      // *** YA NO SE VALIDA LA CANTIDAD DE PUNTOS ***
+
+      // Si quieres el proveedor como obligatorio:
+      // if (!proveedor) {
+      //   M.toast({ html: 'Proveedor obligatorio', classes: 'red' });
+      //   return;
+      // }
 
       const centroData = {
         name: nombre,
+        proveedor,   // 👈 Enviando al backend
         code,
         hectareas,
-        coords: Estado.currentPoints,  // <-- puede ir vacío
+        coords: Estado.currentPoints,
         lines: Estado.currentCentroIdx !== null && Estado.centros[Estado.currentCentroIdx]
           ? Estado.centros[Estado.currentCentroIdx].lines || []
           : []
