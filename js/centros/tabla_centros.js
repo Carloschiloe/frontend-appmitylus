@@ -209,8 +209,11 @@ function attachLineasListeners(idx, acordeonCont) {
         const obsInput  = trFila.querySelector('.edit-line-observaciones');
         const stateInput= trFila.querySelector('.edit-line-state');
         const tonsInput = trFila.querySelector('.edit-line-tons');
+        const unkgInput = trFila.querySelector('.edit-line-unkg');
+        const rechazoInput = trFila.querySelector('.edit-line-rechazo');
+        const rendimientoInput = trFila.querySelector('.edit-line-rendimiento');
 
-        if (!numInput || !longInput || !obsInput || !stateInput || !tonsInput) {
+        if (!numInput || !longInput || !obsInput || !stateInput || !tonsInput || !unkgInput || !rechazoInput || !rendimientoInput) {
           M.toast({ html: 'Error interno: faltan campos', classes: 'red' });
           return;
         }
@@ -220,6 +223,9 @@ function attachLineasListeners(idx, acordeonCont) {
         const obs  = obsInput.value.trim();
         const st   = stateInput.value;
         const tons = tonsInput.value.trim() === '' ? 0 : parseFloat(tonsInput.value);
+        const unkg = unkgInput.value.trim() === '' ? null : parseFloat(unkgInput.value);
+        const rechazo = rechazoInput.value.trim() === '' ? null : parseFloat(rechazoInput.value);
+        const rendimiento = rendimientoInput.value.trim() === '' ? null : parseFloat(rendimientoInput.value);
 
         if (!num || isNaN(long) || !st) {
           M.toast({ html: 'Completa todos los campos obligatorios', classes: 'red' });
@@ -229,6 +235,19 @@ function attachLineasListeners(idx, acordeonCont) {
           M.toast({ html: 'Toneladas debe ser un número válido', classes: 'red' });
           return;
         }
+        if (unkgInput.value.trim() !== '' && isNaN(unkg)) {
+          M.toast({ html: 'Un/kg debe ser un número válido', classes: 'red' });
+          return;
+        }
+        if (rechazoInput.value.trim() !== '' && isNaN(rechazo)) {
+          M.toast({ html: '% Rechazo debe ser un número válido', classes: 'red' });
+          return;
+        }
+        if (rendimientoInput.value.trim() !== '' && isNaN(rendimiento)) {
+          M.toast({ html: 'Rendimiento debe ser un número válido', classes: 'red' });
+          return;
+        }
+
         const centro = Estado.centros[idx];
         const linea = centro.lines[+btn.dataset.lineIdx];
         await updateLinea(centro._id, linea._id, {
@@ -236,7 +255,10 @@ function attachLineasListeners(idx, acordeonCont) {
           longitud: long,
           observaciones: obs,
           state: st,
-          tons: tons
+          tons: tons,
+          unkg: unkg,
+          rechazo: rechazo,
+          rendimiento: rendimiento
         });
         Estado.editingLine = { idx: null, lineIdx: null };
         const tr = $('#centrosTable tbody tr').eq(idx);
@@ -258,6 +280,12 @@ function attachLineasListeners(idx, acordeonCont) {
       const st = formAdd.querySelector('.line-state').value;
       const tonsStr = formAdd.querySelector('.line-tons').value.trim();
       const tons = tonsStr === '' ? 0 : parseFloat(tonsStr);
+      const unkgStr = formAdd.querySelector('.line-unkg').value.trim();
+      const unkg = unkgStr === '' ? null : parseFloat(unkgStr);
+      const rechazoStr = formAdd.querySelector('.line-rechazo').value.trim();
+      const rechazo = rechazoStr === '' ? null : parseFloat(rechazoStr);
+      const rendimientoStr = formAdd.querySelector('.line-rendimiento').value.trim();
+      const rendimiento = rendimientoStr === '' ? null : parseFloat(rendimientoStr);
 
       if (!num || isNaN(long) || !st) {
         M.toast({ html: 'Completa todos los campos obligatorios', classes: 'red' });
@@ -267,13 +295,29 @@ function attachLineasListeners(idx, acordeonCont) {
         M.toast({ html: 'Toneladas debe ser un número válido', classes: 'red' });
         return;
       }
+      if (unkgStr !== '' && isNaN(unkg)) {
+        M.toast({ html: 'Un/kg debe ser un número válido', classes: 'red' });
+        return;
+      }
+      if (rechazoStr !== '' && isNaN(rechazo)) {
+        M.toast({ html: '% Rechazo debe ser un número válido', classes: 'red' });
+        return;
+      }
+      if (rendimientoStr !== '' && isNaN(rendimiento)) {
+        M.toast({ html: 'Rendimiento debe ser un número válido', classes: 'red' });
+        return;
+      }
+
       const centro = Estado.centros[idx];
       await addLinea(centro._id, {
         number: num,
         longitud: long,
         observaciones: obs,
         state: st,
-        tons: tons
+        tons: tons,
+        unkg: unkg,
+        rechazo: rechazo,
+        rendimiento: rendimiento
       });
       formAdd.reset();
       const tr = $('#centrosTable tbody tr').eq(idx);
