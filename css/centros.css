@@ -62,10 +62,10 @@
 .child-row-lineas table.striped,
 .child-table-lineas {
   width: 100%;
-  min-width: 0;
   background: transparent !important;
   border-collapse: collapse;
   font-size: 0.96em;
+  /* min-width: 900px; <-- ¡NO! Elimínalo si lo tienes por si acaso */
 }
 
 /* Compacta filas tabla de líneas */
