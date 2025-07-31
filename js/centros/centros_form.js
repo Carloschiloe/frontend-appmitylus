@@ -2,11 +2,12 @@ import { getCentrosAll } from '../core/centros_repo.js';
 import { clearMapPoints, redrawPolygon, addPointMarker } from '../mapas/control_mapa.js';
 import { parseOneDMS } from '../core/utilidades.js';
 
-// NUEVO
+// NUEVO: Ahora maneja campo empresa/proveedor también
 export async function openNewForm(els, map, currentPoints, setIdxCb) {
   els.formTitle.textContent = 'Nuevo centro';
   els.inputCentroId.value   = '';
   els.inputName.value       = '';
+  els.inputEmpresa.value    = '';  // <--- NUEVO CAMPO
   els.inputCode.value       = '';
   els.inputHectareas.value  = '';
   els.inputLat.value        = '';
@@ -26,6 +27,7 @@ export async function openEditForm(els, map, currentPoints, setIdxCb) {
 
   els.formTitle.textContent = `Editar centro: ${centro.name}`;
   els.inputName.value       = centro.name || '';
+  els.inputEmpresa.value    = centro.empresa || centro.proveedor || '';  // <--- NUEVO CAMPO
   els.inputCode.value       = centro.code || '';
   els.inputHectareas.value  = centro.hectareas || '';
 
