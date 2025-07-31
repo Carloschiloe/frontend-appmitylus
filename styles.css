@@ -335,3 +335,35 @@ tr.shown {
   }
 }
 
+/* ======== Íconos alineados en acciones ======== */
+#centrosTable td:last-child,
+#centrosTable td .material-icons,
+.child-row-lineas td:last-child,
+.child-row-lineas td .material-icons {
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+#centrosTable td .material-icons,
+.child-row-lineas td .material-icons {
+  font-size: 1.35em;
+  margin-right: 8px;
+  margin-left: 0;
+  color: #333;
+  transition: color .18s;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+#centrosTable td .material-icons:last-child,
+.child-row-lineas td .material-icons:last-child {
+  margin-right: 0;
+}
+
+/* Hover para distinguir acción */
+#centrosTable td .material-icons:hover,
+.child-row-lineas td .material-icons:hover {
+  color: #009688;
+  filter: brightness(1.15);
+}
