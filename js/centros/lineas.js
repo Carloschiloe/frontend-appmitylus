@@ -4,7 +4,6 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
   const centro = centros[idxCentro];
   if (!centro || !Array.isArray(centro.lines)) return '<div>No hay líneas registradas.</div>';
 
-  // Cabecera tabla acordeón
   let html = `
     <div style="margin-bottom:8px;">
       <b>Líneas de cultivo (${centro.lines.length})</b>
@@ -16,10 +15,10 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
           <th>Longitud (m)</th>
           <th>Observaciones</th>
           <th>Estado</th>
-          <th>Toneladas</th>
+          <th>Tons</th>
           <th>Un/kg</th>
           <th>% Rechazo</th>
-          <th>Rendimiento</th>
+          <th>Rdmto</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -84,10 +83,10 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
             <option value="inactiva">Inactiva</option>
           </select>
         </div>
-        <div class="input-field col s1"><input type="number" class="line-tons"   placeholder="Toneladas"></div>
+        <div class="input-field col s1"><input type="number" class="line-tons"   placeholder="Tons"></div>
         <div class="input-field col s1"><input type="number" step="any" class="line-unKg" placeholder="Un/kg"></div>
         <div class="input-field col s1"><input type="number" step="any" class="line-porcRechazo" placeholder="% Rechazo"></div>
-        <div class="input-field col s1"><input type="number" step="any" class="line-rendimiento" placeholder="Rendimiento"></div>
+        <div class="input-field col s1"><input type="number" step="any" class="line-rendimiento" placeholder="Rdmto"></div>
         <div class="input-field col s1" style="margin-top:10px;">
           <button class="btn green" type="submit">Agregar</button>
         </div>
@@ -97,4 +96,3 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
 
   return html;
 }
-
