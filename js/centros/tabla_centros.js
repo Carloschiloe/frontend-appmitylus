@@ -219,10 +219,14 @@ function attachLineasListeners(idx, acordeonCont) {
         const long = parseFloat(longInput.value);
         const obs  = obsInput.value.trim();
         const st   = stateInput.value;
-        const tons = parseFloat(tonsInput.value);
+        const tons = tonsInput.value.trim() === '' ? 0 : parseFloat(tonsInput.value);
 
-        if (!num || isNaN(long) || !st || isNaN(tons)) {
-          M.toast({ html: 'Completa todos los campos', classes: 'red' });
+        if (!num || isNaN(long) || !st) {
+          M.toast({ html: 'Completa todos los campos obligatorios', classes: 'red' });
+          return;
+        }
+        if (tonsInput.value.trim() !== '' && isNaN(tons)) {
+          M.toast({ html: 'Toneladas debe ser un número válido', classes: 'red' });
           return;
         }
         const centro = Estado.centros[idx];
@@ -252,9 +256,15 @@ function attachLineasListeners(idx, acordeonCont) {
       const long = parseFloat(formAdd.querySelector('.line-long').value);
       const obs = formAdd.querySelector('.line-observaciones').value.trim();
       const st = formAdd.querySelector('.line-state').value;
-      const tons = parseFloat(formAdd.querySelector('.line-tons').value);
-      if (!num || isNaN(long) || !st || isNaN(tons)) {
-        M.toast({ html: 'Completa todos los campos', classes: 'red' });
+      const tonsStr = formAdd.querySelector('.line-tons').value.trim();
+      const tons = tonsStr === '' ? 0 : parseFloat(tonsStr);
+
+      if (!num || isNaN(long) || !st) {
+        M.toast({ html: 'Completa todos los campos obligatorios', classes: 'red' });
+        return;
+      }
+      if (tonsStr !== '' && isNaN(tons)) {
+        M.toast({ html: 'Toneladas debe ser un número válido', classes: 'red' });
         return;
       }
       const centro = Estado.centros[idx];
