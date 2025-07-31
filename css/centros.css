@@ -57,11 +57,13 @@
   position: relative;
   border-radius: 0 0 14px 14px;
 }
+
 .child-row-lineas table.striped {
-  min-width: 900px; /* ajusta para que quepan las columnas adicionales */
+  min-width: 900px; /* Ancho mínimo para que quepan todas las columnas */
   width: 100%;
   background: transparent !important;
 }
+
 .child-row-lineas th, .child-row-lineas td {
   font-size: .97em;
   padding: .38rem .45rem;
@@ -69,31 +71,27 @@
   white-space: nowrap;
 }
 
-/* Anchos y diseño para columnas de líneas */
+/* Anchos para columnas acorde a contenido */
 .child-row-lineas th:nth-child(1),
 .child-row-lineas td:nth-child(1) {
   width: 8%;
   min-width: 50px;
 }
-
 .child-row-lineas th:nth-child(2),
 .child-row-lineas td:nth-child(2) {
   width: 10%;
   min-width: 60px;
 }
-
 .child-row-lineas th:nth-child(3),
 .child-row-lineas td:nth-child(3) {
   width: 15%;
   min-width: 120px;
 }
-
 .child-row-lineas th:nth-child(4),
 .child-row-lineas td:nth-child(4) {
   width: 10%;
   min-width: 70px;
 }
-
 .child-row-lineas th:nth-child(5),
 .child-row-lineas td:nth-child(5),
 .child-row-lineas th:nth-child(6),
@@ -106,7 +104,7 @@
   min-width: 50px;
 }
 
-/* Columna acciones */
+/* Columna Acciones */
 .child-row-lineas th:nth-child(9),
 .child-row-lineas td:nth-child(9) {
   width: 15%;
@@ -115,14 +113,14 @@
   text-align: center;
 }
 
-/* Para que inputs y selects no se corten en las celdas */
+/* Inputs y selects no corten contenido */
 .child-row-lineas input,
 .child-row-lineas select {
   max-width: 100%;
   box-sizing: border-box;
 }
 
-/* Responsive: tabla y child-row a 100% */
+/* Responsive: scroll horizontal para tablas y child-row */
 @media (max-width: 900px) {
   #centrosTable, #centrosTable_wrapper,
   .child-row-lineas, .child-row-lineas table.striped {
