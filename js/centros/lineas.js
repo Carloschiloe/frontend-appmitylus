@@ -1,5 +1,10 @@
 // js/centros/lineas.js
 
+import { updateLinea, addLinea } from '../core/centros_repo.js';
+import { Estado } from '../core/estado.js';
+import { renderMapaAlways } from '../mapas/control_mapa.js';
+import { tabMapaActiva } from '../core/utilidades_app.js';
+
 export function renderAcordeonLineas(idxCentro, centros, editingLine) {
   const centro = centros[idxCentro];
   if (!centro || !Array.isArray(centro.lines)) return '<div>No hay líneas registradas.</div>';
@@ -86,3 +91,5 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
 
   return html;
 }
+
+// Si tienes el attachLineasListeners en otro archivo, déjame saber y te lo adapto a observaciones
