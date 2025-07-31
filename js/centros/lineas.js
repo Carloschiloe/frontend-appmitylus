@@ -14,7 +14,7 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
         <tr>
           <th>N° Línea</th>
           <th>Longitud (m)</th>
-          <th>Cable</th>
+          <th>Observaciones</th>
           <th>Estado</th>
           <th>Toneladas</th>
           <th>Acciones</th>
@@ -30,7 +30,7 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
         <tr>
           <td><input type="text" class="edit-line-num" value="${l.number || ''}" style="width:65px;"/></td>
           <td><input type="number" class="edit-line-long" value="${l.longitud || ''}" style="width:85px;"/></td>
-          <td><input type="text" class="edit-line-cable" value="${l.cable || ''}" style="width:85px;"/></td>
+          <td><input type="text" class="edit-line-observaciones" value="${l.observaciones || ''}" style="width:100px;"/></td>
           <td>
             <select class="edit-line-state">
               <option value="activa" ${l.state === 'activa' ? 'selected' : ''}>Activa</option>
@@ -49,7 +49,7 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
         <tr>
           <td>${l.number || '-'}</td>
           <td>${l.longitud || '-'}</td>
-          <td>${l.cable || '-'}</td>
+          <td>${l.observaciones || '-'}</td>
           <td>${l.state || '-'}</td>
           <td>${l.tons !== undefined ? l.tons : '-'}</td>
           <td>
@@ -68,7 +68,7 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
       <div class="row" style="margin-bottom:0;">
         <div class="input-field col s2"><input type="text"   class="line-num"    placeholder="N° Línea" required></div>
         <div class="input-field col s2"><input type="number" class="line-long"   placeholder="Longitud" required></div>
-        <div class="input-field col s2"><input type="text"   class="line-cable"  placeholder="Cable" required></div>
+        <div class="input-field col s2"><input type="text"   class="line-observaciones"  placeholder="Observaciones"></div>
         <div class="input-field col s2">
           <select class="line-state" required>
             <option value="" disabled selected>Estado</option>
