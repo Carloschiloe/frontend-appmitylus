@@ -11,7 +11,7 @@
 
 #centrosTable th, #centrosTable td {
   font-size: .97rem;
-  padding: .35rem .32rem;
+  padding: .32rem .25rem;
   white-space: nowrap;
   vertical-align: middle;
 }
@@ -48,7 +48,7 @@
   width: 100% !important;
   min-width: 0;
   overflow-x: visible !important;
-  padding: 14px 10px 10px 18px !important;
+  padding: 12px 7px 7px 14px !important;
   background: #f7faf9;
   border-top: none !important;
   border-bottom: 1.5px solid #b2dfdb;
@@ -58,61 +58,69 @@
   border-radius: 0 0 14px 14px;
 }
 
-/* --- TABLA DE LÍNEAS MÁS COMPACTA Y CLASE PROPIA --- */
+/* --- TABLA DE LÍNEAS: ULTRA COMPACTA --- */
+.child-row-lineas table,
 .child-row-lineas table.striped,
 .child-table-lineas {
-  width: 100%;
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
   background: transparent !important;
-  border-collapse: collapse;
-  font-size: 0.96em;
-  /* min-width: 900px; <-- ¡NO! Elimínalo si lo tienes por si acaso */
+  border-collapse: collapse !important;
+  table-layout: auto !important;
 }
 
-/* Compacta filas tabla de líneas */
-.child-table-lineas th, .child-table-lineas td {
-  font-size: .95em;
-  padding: .13rem .07rem;
+.child-table-lineas th,
+.child-table-lineas td {
+  padding: .11rem .05rem !important;
+  font-size: .93em !important;
   background: transparent !important;
-  white-space: nowrap;
+  white-space: nowrap !important;
+  max-width: 120px !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
 }
 
-/* Inputs y selects ultra compactos en la tabla de líneas */
-.child-table-lineas input,
-.child-table-lineas select {
-  width: 95%;
-  min-width: 20px;
-  max-width: 90px;
-  font-size: 0.92em;
-  padding: 1px 2px;
-  box-sizing: border-box;
-  margin: 0;
-}
-
-/* Columnas ultra compactas para líneas */
+/* Columnas individuales ajustadas */
 .child-table-lineas th:nth-child(1),
-.child-table-lineas td:nth-child(1) { width: 36px; max-width: 42px; min-width: 20px; }
+.child-table-lineas td:nth-child(1) { width: 38px; max-width: 45px; min-width: 18px; }
 .child-table-lineas th:nth-child(2),
-.child-table-lineas td:nth-child(2) { width: 37px; max-width: 43px; min-width: 22px; }
+.child-table-lineas td:nth-child(2) { width: 42px; max-width: 50px; min-width: 20px; }
 .child-table-lineas th:nth-child(3),
-.child-table-lineas td:nth-child(3) { min-width: 70px; max-width: 120px; width: 85px; white-space: normal !important; overflow: hidden; }
+.child-table-lineas td:nth-child(3) {
+  min-width: 65px; max-width: 120px; width: 80px;
+  white-space: normal !important; overflow: hidden;
+}
 .child-table-lineas th:nth-child(4),
-.child-table-lineas td:nth-child(4) { width: 51px; max-width: 55px; min-width: 26px; }
+.child-table-lineas td:nth-child(4) { width: 52px; max-width: 58px; min-width: 22px; }
 .child-table-lineas th:nth-child(5),
-.child-table-lineas td:nth-child(5) { width: 37px; max-width: 44px; min-width: 20px; }
+.child-table-lineas td:nth-child(5) { width: 39px; max-width: 44px; min-width: 18px; }
 .child-table-lineas th:nth-child(6),
-.child-table-lineas td:nth-child(6) { width: 37px; max-width: 44px; min-width: 20px; }
+.child-table-lineas td:nth-child(6) { width: 39px; max-width: 44px; min-width: 18px; }
 .child-table-lineas th:nth-child(7),
-.child-table-lineas td:nth-child(7) { width: 37px; max-width: 44px; min-width: 20px; }
+.child-table-lineas td:nth-child(7) { width: 39px; max-width: 44px; min-width: 18px; }
 .child-table-lineas th:nth-child(8),
-.child-table-lineas td:nth-child(8) { width: 37px; max-width: 44px; min-width: 20px; }
+.child-table-lineas td:nth-child(8) { width: 39px; max-width: 44px; min-width: 18px; }
 /* Acciones */
 .child-table-lineas th:nth-child(9),
 .child-table-lineas td:nth-child(9) {
-  width: 32px;
-  min-width: 18px;
-  max-width: 39px;
+  width: 34px;
+  min-width: 16px;
+  max-width: 38px;
   text-align: center;
   white-space: nowrap;
+}
+
+/* Inputs y selects ultra compactos en tabla de líneas */
+.child-table-lineas input,
+.child-table-lineas select {
+  width: 94%;
+  min-width: 16px;
+  max-width: 84px;
+  font-size: 0.91em;
+  padding: 1px 2px;
+  box-sizing: border-box;
+  margin: 0;
 }
 
 /* Inputs y selects del form abajo no corten contenido */
@@ -122,7 +130,7 @@
   box-sizing: border-box;
 }
 
-/* Responsive: scroll horizontal sólo en móviles */
+/* Responsive: scroll horizontal solo en móviles */
 @media (max-width: 900px) {
   #centrosTable, #centrosTable_wrapper,
   .child-row-lineas, .child-row-lineas table.striped {
@@ -133,9 +141,9 @@
   }
   .child-row-lineas th, .child-row-lineas td,
   .child-table-lineas th, .child-table-lineas td {
-    font-size: 1em;
-    padding-left: 6px;
-    padding-right: 6px;
+    font-size: 1em !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
   }
   .child-row-lineas {
     padding-left: 10px !important;
@@ -144,7 +152,7 @@
 }
 
 /* ----------- MAPA DE CENTROS ----------- */
-/* (El resto igual que tu original) */
+/* (Resto igual a tu original, no requiere cambios para compactar tablas) */
 #mapaSection {
   display: flex;
   gap: 24px;
@@ -250,23 +258,3 @@
 body:has(#mapShell:fullscreen) { overflow: hidden; }
 
 #map path.leaflet-interactive { cursor: pointer; }
-
-.child-row-lineas table,
-.child-row-lineas table.striped,
-.child-table-lineas {
-  min-width: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  background: yellow !important; /* Color para que veas que el CSS pega */
-  border-collapse: collapse !important;
-  table-layout: auto !important;
-}
-.child-table-lineas th, .child-table-lineas td {
-  padding: 2px 2px !important;
-  font-size: .93em !important;
-  background: transparent !important;
-  white-space: nowrap !important;
-  max-width: 140px !important;
-  min-width: 0 !important;
-  overflow: hidden !important;
-}
