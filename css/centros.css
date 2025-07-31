@@ -250,3 +250,23 @@
 body:has(#mapShell:fullscreen) { overflow: hidden; }
 
 #map path.leaflet-interactive { cursor: pointer; }
+
+.child-row-lineas table,
+.child-row-lineas table.striped,
+.child-table-lineas {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  background: yellow !important; /* Color para que veas que el CSS pega */
+  border-collapse: collapse !important;
+  table-layout: auto !important;
+}
+.child-table-lineas th, .child-table-lineas td {
+  padding: 2px 2px !important;
+  font-size: .93em !important;
+  background: transparent !important;
+  white-space: nowrap !important;
+  max-width: 140px !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
