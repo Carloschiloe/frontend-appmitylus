@@ -10,7 +10,7 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
       <thead>
         <tr>
           <th>N° Línea</th>
-          <th>Longitud (m)</th>
+          <th>Long (m)</th>
           <th>Observaciones</th>
           <th>Estado</th>
           <th>Tons</th>
