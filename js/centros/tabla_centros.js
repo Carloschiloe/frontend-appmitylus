@@ -204,18 +204,36 @@ function attachLineasListeners(idx, acordeonCont) {
     tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
       btn.onclick = async () => {
         const trFila = btn.closest('tr');
-        const num = trFila.querySelector('.edit-line-num').value.trim();
-        const long = parseFloat(trFila.querySelector('.edit-line-long').value);
-        const cab = trFila.querySelector('.edit-line-cable').value.trim();
-        const st = trFila.querySelector('.edit-line-state').value;
-        const tons = parseFloat(trFila.querySelector('.edit-line-tons').value);
-        if (!num || isNaN(long) || !cab || !st || isNaN(tons)) {
+        const numInput  = trFila.querySelector('.edit-line-num');
+        const longInput = trFila.querySelector('.edit-line-long');
+        const obsInput  = trFila.querySelector('.edit-line-observaciones');
+        const stateInput= trFila.querySelector('.edit-line-state');
+        const tonsInput = trFila.querySelector('.edit-line-tons');
+
+        if (!numInput || !longInput || !obsInput || !stateInput || !tonsInput) {
+          M.toast({ html: 'Error interno: faltan campos', classes: 'red' });
+          return;
+        }
+
+        const num  = numInput.value.trim();
+        const long = parseFloat(longInput.value);
+        const obs  = obsInput.value.trim();
+        const st   = stateInput.value;
+        const tons = parseFloat(tonsInput.value);
+
+        if (!num || isNaN(long) || !st || isNaN(tons)) {
           M.toast({ html: 'Completa todos los campos', classes: 'red' });
           return;
         }
         const centro = Estado.centros[idx];
         const linea = centro.lines[+btn.dataset.lineIdx];
-        await updateLinea(centro._id, linea._id, { number: num, longitud: long, cable: cab, state: st, tons: tons });
+        await updateLinea(centro._id, linea._id, {
+          number: num,
+          longitud: long,
+          observaciones: obs,
+          state: st,
+          tons: tons
+        });
         Estado.editingLine = { idx: null, lineIdx: null };
         const tr = $('#centrosTable tbody tr').eq(idx);
         tr.find('.btn-toggle-lineas').trigger('click');
@@ -231,15 +249,21 @@ function attachLineasListeners(idx, acordeonCont) {
       e.preventDefault();
       const num = formAdd.querySelector('.line-num').value.trim();
       const long = parseFloat(formAdd.querySelector('.line-long').value);
-      const cab = formAdd.querySelector('.line-cable').value.trim();
+      const obs = formAdd.querySelector('.line-observaciones').value.trim();
       const st = formAdd.querySelector('.line-state').value;
       const tons = parseFloat(formAdd.querySelector('.line-tons').value);
-      if (!num || isNaN(long) || !cab || !st || isNaN(tons)) {
+      if (!num || isNaN(long) || !st || isNaN(tons)) {
         M.toast({ html: 'Completa todos los campos', classes: 'red' });
         return;
       }
       const centro = Estado.centros[idx];
-      await addLinea(centro._id, { number: num, longitud: long, cable: cab, state: st, tons: tons });
+      await addLinea(centro._id, {
+        number: num,
+        longitud: long,
+        observaciones: obs,
+        state: st,
+        tons: tons
+      });
       formAdd.reset();
       const tr = $('#centrosTable tbody tr').eq(idx);
       tr.find('.btn-toggle-lineas').trigger('click');
