@@ -1,10 +1,5 @@
 // js/centros/lineas.js
 
-import { updateLinea, addLinea } from '../core/centros_repo.js';
-import { Estado } from '../core/estado.js';
-import { renderMapaAlways } from '../mapas/control_mapa.js';
-import { tabMapaActiva } from '../core/utilidades_app.js';
-
 export function renderAcordeonLineas(idxCentro, centros, editingLine) {
   const centro = centros[idxCentro];
   if (!centro || !Array.isArray(centro.lines)) return '<div>No hay líneas registradas.</div>';
@@ -22,6 +17,9 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
           <th>Observaciones</th>
           <th>Estado</th>
           <th>Toneladas</th>
+          <th>Un/kg</th>
+          <th>% Rechazo</th>
+          <th>Rendimiento</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -29,7 +27,6 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
   `;
 
   centro.lines.forEach((l, i) => {
-    // Si está en edición, muestra inputs
     if (editingLine && editingLine.idx === idxCentro && editingLine.lineIdx === i) {
       html += `
         <tr>
@@ -42,7 +39,10 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
               <option value="inactiva" ${l.state === 'inactiva' ? 'selected' : ''}>Inactiva</option>
             </select>
           </td>
-          <td><input type="number" class="edit-line-tons" value="${l.tons || ''}" style="width:80px;"/></td>
+          <td><input type="number" class="edit-line-tons" value="${l.tons ?? ''}" style="width:80px;"/></td>
+          <td><input type="number" step="any" class="edit-line-unKg" value="${l.unKg ?? ''}" style="width:80px;"/></td>
+          <td><input type="number" step="any" class="edit-line-porcRechazo" value="${l.porcRechazo ?? ''}" style="width:80px;"/></td>
+          <td><input type="number" step="any" class="edit-line-rendimiento" value="${l.rendimiento ?? ''}" style="width:80px;"/></td>
           <td>
             <i class="material-icons btn-guardar-edit-line" data-line-idx="${i}" style="cursor:pointer;color:green;margin-right:6px;">check</i>
             <i class="material-icons btn-cancel-edit-line" data-line-idx="${i}" style="cursor:pointer;color:#666;">close</i>
@@ -57,6 +57,9 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
           <td>${l.observaciones || '-'}</td>
           <td>${l.state || '-'}</td>
           <td>${l.tons !== undefined ? l.tons : '-'}</td>
+          <td>${l.unKg !== undefined ? l.unKg : '-'}</td>
+          <td>${l.porcRechazo !== undefined ? l.porcRechazo : '-'}</td>
+          <td>${l.rendimiento !== undefined ? l.rendimiento : '-'}</td>
           <td>
             <i class="material-icons btn-edit-line" data-line-idx="${i}" style="cursor:pointer;color:#ef6c00;margin-right:10px;">edit</i>
             <i class="material-icons btn-del-line" data-line-idx="${i}" style="cursor:pointer;color:#e53935;">delete</i>
@@ -81,8 +84,11 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
             <option value="inactiva">Inactiva</option>
           </select>
         </div>
-        <div class="input-field col s2"><input type="number" class="line-tons"   placeholder="Toneladas" required></div>
-        <div class="input-field col s2" style="margin-top:10px;">
+        <div class="input-field col s1"><input type="number" class="line-tons"   placeholder="Toneladas"></div>
+        <div class="input-field col s1"><input type="number" step="any" class="line-unKg" placeholder="Un/kg"></div>
+        <div class="input-field col s1"><input type="number" step="any" class="line-porcRechazo" placeholder="% Rechazo"></div>
+        <div class="input-field col s1"><input type="number" step="any" class="line-rendimiento" placeholder="Rendimiento"></div>
+        <div class="input-field col s1" style="margin-top:10px;">
           <button class="btn green" type="submit">Agregar</button>
         </div>
       </div>
@@ -92,4 +98,3 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
   return html;
 }
 
-// Si tienes el attachLineasListeners en otro archivo, déjame saber y te lo adapto a observaciones
