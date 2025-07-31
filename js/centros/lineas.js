@@ -8,7 +8,6 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
   let html = `
     <div style="margin-bottom:8px;">
       <b>Líneas de cultivo (${centro.lines.length})</b>
-      <button class="btn-small green right btn-add-linea" style="margin-left:8px;">Agregar Línea</button>
     </div>
     <table class="striped">
       <thead>
@@ -40,8 +39,8 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
           </td>
           <td><input type="number" class="edit-line-tons" value="${l.tons || ''}" style="width:80px;"/></td>
           <td>
-            <button class="btn-small green btn-guardar-edit-line" data-line-idx="${i}">Guardar</button>
-            <button class="btn-small grey btn-cancel-edit-line" data-line-idx="${i}">Cancelar</button>
+            <i class="material-icons btn-guardar-edit-line" data-line-idx="${i}" style="cursor:pointer;color:green;margin-right:6px;">check</i>
+            <i class="material-icons btn-cancel-edit-line" data-line-idx="${i}" style="cursor:pointer;color:#666;">close</i>
           </td>
         </tr>
       `;
@@ -54,8 +53,8 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
           <td>${l.state || '-'}</td>
           <td>${l.tons !== undefined ? l.tons : '-'}</td>
           <td>
-            <button class="btn-small orange btn-edit-line" data-line-idx="${i}">Editar</button>
-            <button class="btn-small red btn-del-line" data-line-idx="${i}">&times;</button>
+            <i class="material-icons btn-edit-line" data-line-idx="${i}" style="cursor:pointer;color:#ef6c00;margin-right:10px;">edit</i>
+            <i class="material-icons btn-del-line" data-line-idx="${i}" style="cursor:pointer;color:#e53935;">delete</i>
           </td>
         </tr>
       `;
@@ -87,4 +86,3 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
 
   return html;
 }
-
