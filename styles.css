@@ -110,3 +110,16 @@ tr.shown + tr,
   filter: none !important;
   will-change: auto !important;
 }
+/* --- Mejora visual: alto mínimo a la fila de edición mientras el dropdown está abierto --- */
+tr.editando-select,
+tr.editando-select td,
+tr.editando-select th {
+  min-height: 60px !important;
+  height: 60px !important;
+}
+
+/* El select NO se recorta visualmente */
+.child-row-lineas .select-wrapper {
+  z-index: 99000 !important;
+  position: relative !important;
+}
