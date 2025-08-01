@@ -63,3 +63,39 @@ tr.shown + tr td.child-row-lineas {
 .child-row-lineas table {
   background: transparent !important;
 }
+
+/* --- FIX dropdown select Materialize sobre DataTables/tables --- */
+
+/* El menú desplegable del select SIEMPRE sobre todo */
+body .dropdown-content.select-dropdown {
+  z-index: 99999 !important;
+  position: fixed !important;
+  background: #fff !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.20) !important;
+  min-width: 120px !important;
+  max-width: 180px !important;
+  overflow-y: auto !important;
+}
+
+/* Elimina clipping de overflow en tablas o celdas */
+.child-row-lineas,
+.child-row-lineas table,
+.child-row-lineas tr,
+.child-row-lineas td,
+.child-row-lineas th,
+.child-table-lineas,
+.child-table-lineas tr,
+.child-table-lineas td,
+.child-table-lineas th {
+  overflow: visible !important;
+  position: static !important;
+  z-index: auto !important;
+}
+
+/* Evita que .shown de DataTables baje el stacking de la fila */
+tr.shown,
+tr.shown + tr,
+.child-row-lineas {
+  z-index: auto !important;
+  position: static !important;
+}
