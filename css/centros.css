@@ -216,3 +216,31 @@
 #map:fullscreen { /* ... */ }
 body:has(#mapShell:fullscreen) { overflow: hidden; }
 #map path.leaflet-interactive { cursor: pointer; }
+
+/* --- Fix Z-INDEX para dropdown del select Estado dentro de tabla --- */
+.dropdown-content.select-dropdown {
+  z-index: 99999 !important;
+  position: absolute !important;   /* Forzamos posición absoluta */
+  background: #fff !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18) !important;
+}
+
+.child-table-lineas td,
+.child-row-lineas {
+  position: relative !important;   /* Esto ayuda a aislar el stacking context */
+  z-index: 2 !important;
+}
+
+/* Si tienes overlay de DataTables, sube el z-index también */
+div.dataTables_wrapper {
+  z-index: 1 !important;
+}
+
+.child-row-lineas {
+  z-index: 3 !important;
+}
+
+body .dropdown-content {
+  z-index: 99999 !important;
+}
+
