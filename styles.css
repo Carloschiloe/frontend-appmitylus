@@ -73,15 +73,18 @@ body .dropdown-content.select-dropdown {
   background: #fff !important;
   box-shadow: 0 8px 32px rgba(0,0,0,0.20) !important;
   min-width: 120px !important;
-  max-width: 200px !important;
+  max-width: 220px !important;
   overflow-y: auto !important;
-  left: 0 !important; /* forzado por JS, pero aseguramos */
+  margin-top: 0 !important;
+  left: 0 !important; /* asegúrate de que JS pueda reposicionarlo */
   right: auto !important;
   top: 0 !important;
   will-change: unset !important;
+  border-radius: 6px !important;
+  font-size: 1em !important;
 }
 
-/* Elimina clipping de overflow en tablas o celdas */
+/* No permitir clipping de overflow ni stacking bajo */
 .child-row-lineas,
 .child-row-lineas table,
 .child-row-lineas tr,
@@ -94,28 +97,22 @@ body .dropdown-content.select-dropdown {
   overflow: visible !important;
   position: static !important;
   z-index: auto !important;
+  background: transparent !important;
 }
 
-/* Evita que .shown de DataTables baje el stacking de la fila */
+/* Nunca se corte ni quede detrás */
 tr.shown,
 tr.shown + tr,
-.child-row-lineas {
+.child-row-lineas,
+.child-row-lineas *,
+.child-table-lineas,
+.child-table-lineas * {
   z-index: auto !important;
   position: static !important;
-}
-
-/* Si aún así sigue "detrás", fuerza stacking context neutral */
-.child-row-lineas, .child-row-lineas * {
-  transform: none !important;
+  overflow: visible !important;
   filter: none !important;
+  transform: none !important;
   will-change: auto !important;
-}
-/* --- Mejora visual: alto mínimo a la fila de edición mientras el dropdown está abierto --- */
-tr.editando-select,
-tr.editando-select td,
-tr.editando-select th {
-  min-height: 60px !important;
-  height: 60px !important;
 }
 
 /* El select NO se recorta visualmente */
@@ -123,3 +120,21 @@ tr.editando-select th {
   z-index: 99000 !important;
   position: relative !important;
 }
+
+/* Alto mínimo a la fila de edición si el dropdown está abierto (opcional) */
+tr.editando-select,
+tr.editando-select td,
+tr.editando-select th {
+  min-height: 60px !important;
+  height: 60px !important;
+}
+
+/* Para evitar problemas en pantallas pequeñas con el dropdown */
+@media (max-width: 900px) {
+  body .dropdown-content.select-dropdown {
+    min-width: 100px !important;
+    max-width: 96vw !important;
+    font-size: .99em !important;
+  }
+}
+
