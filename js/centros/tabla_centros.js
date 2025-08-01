@@ -200,64 +200,55 @@ function attachLineasListeners(idx, acordeonCont) {
       };
     });
 
-    // Guardar edición de línea
+    // Guardar edición de línea (CORREGIDO)
     tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
       btn.onclick = async () => {
         const trFila = btn.closest('tr');
+        // Busca los inputs, si no existen NO falla, toma el valor viejo
         const numInput  = trFila.querySelector('.edit-line-num');
         const longInput = trFila.querySelector('.edit-line-long');
         const obsInput  = trFila.querySelector('.edit-line-observaciones');
         const stateInput= trFila.querySelector('.edit-line-state');
         const tonsInput = trFila.querySelector('.edit-line-tons');
-        const unkgInput = trFila.querySelector('.edit-line-unkg');
-        const rechazoInput = trFila.querySelector('.edit-line-rechazo');
+        const unkgInput = trFila.querySelector('.edit-line-unKg');
+        const rechazoInput = trFila.querySelector('.edit-line-porcRechazo');
         const rendimientoInput = trFila.querySelector('.edit-line-rendimiento');
 
-        if (!numInput || !longInput || !obsInput || !stateInput || !tonsInput || !unkgInput || !rechazoInput || !rendimientoInput) {
-          M.toast({ html: 'Error interno: faltan campos', classes: 'red' });
-          return;
-        }
-
-        const num  = numInput.value.trim();
-        const long = parseFloat(longInput.value);
-        const obs  = obsInput.value.trim();
-        const st   = stateInput.value;
-        const tons = tonsInput.value.trim() === '' ? 0 : parseFloat(tonsInput.value);
-        const unkg = unkgInput.value.trim() === '' ? null : parseFloat(unkgInput.value);
-        const rechazo = rechazoInput.value.trim() === '' ? null : parseFloat(rechazoInput.value);
-        const rendimiento = rendimientoInput.value.trim() === '' ? null : parseFloat(rendimientoInput.value);
-
-        if (!num || isNaN(long) || !st) {
-          M.toast({ html: 'Completa todos los campos obligatorios', classes: 'red' });
-          return;
-        }
-        if (tonsInput.value.trim() !== '' && isNaN(tons)) {
-          M.toast({ html: 'Toneladas debe ser un número válido', classes: 'red' });
-          return;
-        }
-        if (unkgInput.value.trim() !== '' && isNaN(unkg)) {
-          M.toast({ html: 'Un/kg debe ser un número válido', classes: 'red' });
-          return;
-        }
-        if (rechazoInput.value.trim() !== '' && isNaN(rechazo)) {
-          M.toast({ html: '% Rechazo debe ser un número válido', classes: 'red' });
-          return;
-        }
-        if (rendimientoInput.value.trim() !== '' && isNaN(rendimiento)) {
-          M.toast({ html: 'Rendimiento debe ser un número válido', classes: 'red' });
-          return;
-        }
-
+        // Busca la línea original
         const centro = Estado.centros[idx];
         const linea = centro.lines[+btn.dataset.lineIdx];
+
+        // Toma el valor editado o el anterior si está vacío
+        const num  = numInput?.value.trim() !== '' ? numInput.value.trim() : (linea.number ?? '');
+        const long = longInput?.value.trim() !== '' ? parseFloat(longInput.value) : (linea.longitud ?? null);
+        const obs  = obsInput?.value.trim() !== '' ? obsInput.value.trim() : (linea.observaciones ?? '');
+        const st   = stateInput?.value !== undefined ? stateInput.value : (linea.state ?? '');
+        const tons = tonsInput?.value.trim() !== '' ? parseFloat(tonsInput.value) : (linea.tons ?? null);
+        const unkg = unkgInput?.value.trim() !== '' ? parseFloat(unkgInput.value) : (linea.unKg ?? null);
+        const rechazo = rechazoInput?.value.trim() !== '' ? parseFloat(rechazoInput.value) : (linea.porcRechazo ?? null);
+        const rendimiento = rendimientoInput?.value.trim() !== '' ? parseFloat(rendimientoInput.value) : (linea.rendimiento ?? null);
+
+        // Validar lo mínimo que sí quieres obligatorio: N° línea, Longitud y Estado (ajusta si quieres)
+        if (!num || long === null || !st) {
+          M.toast({ html: 'Completa todos los campos obligatorios (N° Línea, Longitud y Estado)', classes: 'red' });
+          return;
+        }
+        if ((tonsInput?.value.trim() && isNaN(tons)) ||
+            (unkgInput?.value.trim() && isNaN(unkg)) ||
+            (rechazoInput?.value.trim() && isNaN(rechazo)) ||
+            (rendimientoInput?.value.trim() && isNaN(rendimiento))) {
+          M.toast({ html: 'Revisa los campos numéricos', classes: 'red' });
+          return;
+        }
+
         await updateLinea(centro._id, linea._id, {
           number: num,
           longitud: long,
           observaciones: obs,
           state: st,
           tons: tons,
-          unkg: unkg,
-          rechazo: rechazo,
+          unKg: unkg,
+          porcRechazo: rechazo,
           rendimiento: rendimiento
         });
         Estado.editingLine = { idx: null, lineIdx: null };
@@ -282,7 +273,7 @@ function attachLineasListeners(idx, acordeonCont) {
       const tons = tonsStr === '' ? 0 : parseFloat(tonsStr);
       const unkgStr = formAdd.querySelector('.line-unkg').value.trim();
       const unkg = unkgStr === '' ? null : parseFloat(unkgStr);
-      const rechazoStr = formAdd.querySelector('.line-rechazo').value.trim();
+      const rechazoStr = formAdd.querySelector('.line-porcRechazo').value.trim();
       const rechazo = rechazoStr === '' ? null : parseFloat(rechazoStr);
       const rendimientoStr = formAdd.querySelector('.line-rendimiento').value.trim();
       const rendimiento = rendimientoStr === '' ? null : parseFloat(rendimientoStr);
@@ -315,8 +306,8 @@ function attachLineasListeners(idx, acordeonCont) {
         observaciones: obs,
         state: st,
         tons: tons,
-        unkg: unkg,
-        rechazo: rechazo,
+        unKg: unkg,
+        porcRechazo: rechazo,
         rendimiento: rendimiento
       });
       formAdd.reset();
