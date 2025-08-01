@@ -180,3 +180,15 @@ async function cargarCentros() {
     M.toast({ html: 'Error cargando centros', classes: 'red' });
   }
 }
+
+// --- Parche para que el dropdown de Materialize SIEMPRE quede sobre la tabla (fix select sobre DataTables) ---
+$(document).on('mousedown focusin', '.select-wrapper input.select-dropdown', function () {
+  const $tr = $(this).closest('tr');
+  $tr.addClass('editando-select');
+});
+$(document).on('blur', '.select-wrapper input.select-dropdown', function () {
+  setTimeout(() => {
+    $('.editando-select').removeClass('editando-select');
+  }, 200);
+});
+
