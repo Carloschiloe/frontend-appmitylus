@@ -1,3 +1,8 @@
+// Helper para mostrar siempre vacío si null o undefined
+function mostrarValor(val) {
+  return (val === null || val === undefined) ? '' : val;
+}
+
 export function renderAcordeonLineas(idxCentro, centros, editingLine) {
   const centro = centros[idxCentro];
   if (!centro || !Array.isArray(centro.lines)) return '<div>No hay líneas registradas.</div>';
@@ -49,14 +54,14 @@ export function renderAcordeonLineas(idxCentro, centros, editingLine) {
     } else {
       html += `
         <tr>
-          <td>${l.number || '-'}</td>
-          <td>${l.longitud || '-'}</td>
-          <td>${l.observaciones || '-'}</td>
-          <td>${l.state || '-'}</td>
-          <td>${l.tons !== undefined ? l.tons : '-'}</td>
-          <td>${l.unKg !== undefined ? l.unKg : '-'}</td>
-          <td>${l.porcRechazo !== undefined ? l.porcRechazo : '-'}</td>
-          <td>${l.rendimiento !== undefined ? l.rendimiento : '-'}</td>
+          <td>${mostrarValor(l.number) || '-'}</td>
+          <td>${mostrarValor(l.longitud) || '-'}</td>
+          <td>${mostrarValor(l.observaciones) || '-'}</td>
+          <td>${mostrarValor(l.state) || '-'}</td>
+          <td>${mostrarValor(l.tons)}</td>
+          <td>${mostrarValor(l.unKg)}</td>
+          <td>${mostrarValor(l.porcRechazo)}</td>
+          <td>${mostrarValor(l.rendimiento)}</td>
           <td>
             <i class="material-icons btn-edit-line" data-line-idx="${i}" style="cursor:pointer;color:#ef6c00;margin-right:10px;">edit</i>
             <i class="material-icons btn-del-line" data-line-idx="${i}" style="cursor:pointer;color:#e53935;">delete</i>
