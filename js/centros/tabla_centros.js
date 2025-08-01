@@ -204,7 +204,7 @@ function attachLineasListeners(idx, acordeonCont) {
     tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
       btn.onclick = async () => {
         const trFila = btn.closest('tr');
-        // Busca los inputs, si no existen NO falla, toma el valor viejo
+        // Inputs
         const numInput  = trFila.querySelector('.edit-line-num');
         const longInput = trFila.querySelector('.edit-line-long');
         const obsInput  = trFila.querySelector('.edit-line-observaciones');
@@ -214,42 +214,58 @@ function attachLineasListeners(idx, acordeonCont) {
         const rechazoInput = trFila.querySelector('.edit-line-porcRechazo');
         const rendimientoInput = trFila.querySelector('.edit-line-rendimiento');
 
-        // Busca la línea original
+        // Línea original
         const centro = Estado.centros[idx];
         const linea = centro.lines[+btn.dataset.lineIdx];
 
-        // Toma el valor editado o el anterior si está vacío
-        const num  = numInput?.value.trim() !== '' ? numInput.value.trim() : (linea.number ?? '');
-        const long = longInput?.value.trim() !== '' ? parseFloat(longInput.value) : (linea.longitud ?? null);
-        const obs  = obsInput?.value.trim() !== '' ? obsInput.value.trim() : (linea.observaciones ?? '');
-        const st   = stateInput?.value !== undefined ? stateInput.value : (linea.state ?? '');
-        const tons = tonsInput?.value.trim() !== '' ? parseFloat(tonsInput.value) : (linea.tons ?? null);
-        const unkg = unkgInput?.value.trim() !== '' ? parseFloat(unkgInput.value) : (linea.unKg ?? null);
-        const rechazo = rechazoInput?.value.trim() !== '' ? parseFloat(rechazoInput.value) : (linea.porcRechazo ?? null);
-        const rendimiento = rendimientoInput?.value.trim() !== '' ? parseFloat(rendimientoInput.value) : (linea.rendimiento ?? null);
+        // VALORES: si input vacío, queda null
+        const num  = numInput?.value.trim() || '';
+        const long = longInput?.value.trim() ? parseFloat(longInput.value) : null;
+        const obs  = obsInput?.value.trim() || '';
+        const st   = stateInput?.value || '';
+        const tons = tonsInput?.value.trim() ? parseFloat(tonsInput.value) : null;
+        const unkg = unkgInput?.value.trim() ? parseFloat(unkgInput.value) : null;
+        const rechazo = rechazoInput?.value.trim() ? parseFloat(rechazoInput.value) : null;
+        const rendimiento = rendimientoInput?.value.trim() ? parseFloat(rendimientoInput.value) : null;
 
-        // Validar lo mínimo que sí quieres obligatorio: N° línea, Longitud y Estado (ajusta si quieres)
+        // DEBUG: muestra TODO lo que se manda al backend
+        console.log({
+          number: num,
+          longitud: long,
+          observaciones: obs,
+          state: st,
+          tons,
+          unKg: unkg,
+          porcRechazo: rechazo,
+          rendimiento,
+        });
+
+        // VALIDACIÓN: Solo obligatorios (N° línea, Longitud y Estado)
         if (!num || long === null || !st) {
-          M.toast({ html: 'Completa todos los campos obligatorios (N° Línea, Longitud y Estado)', classes: 'red' });
+          M.toast({ html: 'Completa N° Línea, Longitud y Estado', classes: 'red' });
           return;
         }
-        if ((tonsInput?.value.trim() && isNaN(tons)) ||
-            (unkgInput?.value.trim() && isNaN(unkg)) ||
-            (rechazoInput?.value.trim() && isNaN(rechazo)) ||
-            (rendimientoInput?.value.trim() && isNaN(rendimiento))) {
+        // Valida solo si pusiste valor y no es número
+        if (
+          (tonsInput?.value.trim() && isNaN(tons)) ||
+          (unkgInput?.value.trim() && isNaN(unkg)) ||
+          (rechazoInput?.value.trim() && isNaN(rechazo)) ||
+          (rendimientoInput?.value.trim() && isNaN(rendimiento))
+        ) {
           M.toast({ html: 'Revisa los campos numéricos', classes: 'red' });
           return;
         }
 
+        // GUARDA línea
         await updateLinea(centro._id, linea._id, {
           number: num,
           longitud: long,
           observaciones: obs,
           state: st,
-          tons: tons,
+          tons,
           unKg: unkg,
           porcRechazo: rechazo,
-          rendimiento: rendimiento
+          rendimiento,
         });
         Estado.editingLine = { idx: null, lineIdx: null };
         const tr = $('#centrosTable tbody tr').eq(idx);
@@ -368,3 +384,4 @@ export function filtrarLineas(contenedor) {
     fila.style.display = okTxt ? '' : 'none';
   });
 }
+
