@@ -18,6 +18,33 @@ import {
 import { tabMapaActiva } from './core/utilidades_app.js';
 import { parseOneDMS } from './core/utilidades.js';
 
+function openEditForm(els, map, puntosGuardados, setCurrentIdx, centro) {
+  // Actualizar índice actual
+  setCurrentIdx(centro ? Estado.centros.findIndex(c => c._id === centro._id) : null);
+
+  els.formTitle.textContent = centro ? 'Editar Centro de Cultivo' : 'Agregar Centro de Cultivo';
+
+  // Llenar inputs con datos del centro
+  els.inputCentroId.value = centro?._id || '';
+  els.inputName.value = centro?.name || '';
+  els.inputProveedor.value = centro?.proveedor || '';
+  els.inputCode.value = centro?.code || '';
+  els.inputHectareas.value = centro?.hectareas || '';
+
+  // Cargar las coordenadas en estado global y mostrar en tabla y mapa
+  Estado.currentPoints = (centro?.coords || []).map(p => ({ lat: p.lat, lng: p.lng }));
+
+  // Mostrar coordenadas en tabla
+  renderPointsTable(els.pointsBody, Estado.currentPoints);
+
+  // Limpiar puntos en mapa y dibujar
+  clearMapPoints();
+  Estado.currentPoints.forEach(p => addPointMarker(p.lat, p.lng));
+  redrawPolygon(Estado.currentPoints);
+
+  M.updateTextFields(); // Para que los labels queden arriba si los inputs ya tienen valor
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Tabs Materialize
   M.Tabs.init(document.querySelector('#tabs'), {
@@ -111,12 +138,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      // Si quieres el proveedor como obligatorio:
-      // if (!proveedor) {
-      //   M.toast({ html: 'Proveedor obligatorio', classes: 'red' });
-      //   return;
-      // }
-
       const centroData = {
         name: nombre,
         proveedor,   // 👈 Enviando al backend
@@ -191,4 +212,3 @@ $(document).on('blur', '.select-wrapper input.select-dropdown', function () {
     $('.editando-select').removeClass('editando-select');
   }, 200);
 });
-
