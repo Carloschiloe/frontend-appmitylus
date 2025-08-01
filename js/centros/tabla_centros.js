@@ -144,7 +144,8 @@ export function initTablaCentros() {
         inputLng: document.getElementById('inputLng'),
         pointsBody: document.getElementById('pointsBody')
       };
-      openEditForm(els, Estado.map, Estado.currentPoints, v => (Estado.currentCentroIdx = v), centro);
+      els.inputCentroId.value = idx;  // asignar índice al campo oculto para openEditForm
+      openEditForm(els, Estado.map, Estado.currentPoints, v => (Estado.currentCentroIdx = v));
       modal.open();
     });
 
