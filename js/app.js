@@ -18,36 +18,8 @@ import {
 import { tabMapaActiva } from './core/utilidades_app.js';
 import { parseOneDMS } from './core/utilidades.js';
 
-function openEditForm(els, map, puntosGuardados, setCurrentIdx, centro) {
-  // Buscar el índice del centro en Estado.centros para sincronizar todo
-  const idx = centro ? Estado.centros.findIndex(c => c._id === centro._id) : null;
-  setCurrentIdx(idx);
-
-  els.formTitle.textContent = centro ? 'Editar Centro de Cultivo' : 'Agregar Centro de Cultivo';
-
-  // Asignar índice (entero) y no _id para mantener flujo correcto
-  els.inputCentroId.value = idx !== null ? idx : '';
-
-  els.inputName.value = centro?.name || '';
-  els.inputProveedor.value = centro?.proveedor || '';
-  els.inputCode.value = centro?.code || '';
-  els.inputHectareas.value = centro?.hectareas || '';
-
-  Estado.currentPoints = (centro?.coords || []).map(p => ({ lat: +p.lat, lng: +p.lng }));
-
-  renderPointsTable(els.pointsBody, Estado.currentPoints);
-
-  clearMapPoints();
-  Estado.currentPoints.forEach(p => addPointMarker(p.lat, p.lng));
-  redrawPolygon(Estado.currentPoints);
-
-  M.updateTextFields();
-
-  setTimeout(() => { els.inputName.focus(); }, 100);
-  if (Estado.currentPoints.length) map.fitBounds(Estado.currentPoints.map(p => [p.lat, p.lng]));
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
+  // Tabs Materialize
   M.Tabs.init(document.querySelector('#tabs'), {
     onShow: (tabElem) => {
       if (tabElem.id === 'tab-mapa' && Estado.map) {
@@ -60,13 +32,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   M.FormSelect.init(document.querySelectorAll('select'));
   M.Modal.init(document.querySelectorAll('.modal'));
 
+  // Init componentes
   initTablaCentros();
   initMapa();
 
+  // Cargar datos desde API
   await cargarCentros();
 
   if (tabMapaActiva()) renderMapaAlways(true);
 
+  // ---------- Modal nuevo/editar centro ----------
   const btnNuevoCentro = document.getElementById('btnOpenCentroModal');
   const centroModalElem = document.getElementById('centroModal');
   const centroModal = M.Modal.getInstance(centroModalElem);
@@ -75,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     formTitle: document.getElementById('formTitle'),
     inputCentroId: document.getElementById('inputCentroId'),
     inputName: document.getElementById('inputName'),
-    inputProveedor: document.getElementById('inputProveedor'),
+    inputProveedor: document.getElementById('inputProveedor'), // 👈 SOLO proveedor
     inputCode: document.getElementById('inputCode'),
     inputHectareas: document.getElementById('inputHectareas'),
     inputLat: document.getElementById('inputLat'),
@@ -87,13 +62,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   btnNuevoCentro?.addEventListener('click', () => {
-    Estado.currentCentroIdx = null;
+    Estado.currentCentroIdx = null; // Indicar nuevo centro
     Estado.currentPoints = [];
     openNewForm(els, Estado.map, Estado.currentPoints, (v) => (Estado.currentCentroIdx = v));
     renderPointsTable(els.pointsBody, Estado.currentPoints);
     centroModal.open();
   });
 
+  const $t2 = window.$('#centrosTable');
+
+  // Editar centro (corregido para enviar índice)
+  $t2
+    .off('click', '.editar-centro')
+    .on('click', '.editar-centro', function () {
+      const idx = +this.dataset.idx;
+      Estado.currentCentroIdx = idx;
+      const modalElem = document.getElementById('centroModal');
+      const modal = M.Modal.getInstance(modalElem);
+      const els = {
+        formTitle: document.getElementById('formTitle'),
+        inputCentroId: document.getElementById('inputCentroId'),
+        inputName: document.getElementById('inputName'),
+        inputProveedor: document.getElementById('inputProveedor'),
+        inputCode: document.getElementById('inputCode'),
+        inputHectareas: document.getElementById('inputHectareas'),
+        inputLat: document.getElementById('inputLat'),
+        inputLng: document.getElementById('inputLng'),
+        pointsBody: document.getElementById('pointsBody')
+      };
+      openEditForm(els, Estado.map, Estado.currentPoints, v => (Estado.currentCentroIdx = v), idx);
+      modal.open();
+    });
+
+  // ---------- Puntos ----------
   if (els.btnAddPoint) {
     els.btnAddPoint.onclick = () => {
       const lat = parseOneDMS(els.inputLat.value.trim());
@@ -119,13 +120,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
 
+  // ---------- Guardar centro (crear o actualizar) ----------
   const formCentro = document.getElementById('formCentro');
   if (formCentro) {
     formCentro.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const nombre = els.inputName.value.trim();
-      const proveedor = els.inputProveedor.value.trim();
+      const proveedor = els.inputProveedor.value.trim(); // 👈
       const code = els.inputCode.value.trim();
       const hectareas = els.inputHectareas.value.trim();
 
@@ -136,7 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const centroData = {
         name: nombre,
-        proveedor,
+        proveedor,   // 👈 Enviando al backend
         code,
         hectareas,
         coords: Estado.currentPoints,
@@ -148,6 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       els.btnSaveCentro.disabled = true;
       try {
         if (Estado.currentCentroIdx === null) {
+          // Crear nuevo centro
           const creado = await createCentro(centroData);
           if (creado && creado._id) {
             Estado.centros.push(creado);
@@ -156,6 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             throw new Error('Error al crear centro');
           }
         } else {
+          // Actualizar centro existente
           const id = Estado.centros[Estado.currentCentroIdx]._id;
           const actualizado = await updateCentro(id, centroData);
           if (actualizado && actualizado._id) {
@@ -165,7 +169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             throw new Error('Error al actualizar centro');
           }
         }
-        await cargarCentros();
+        await cargarCentros(); // recargar tabla y estado
         if (tabMapaActiva()) renderMapaAlways(true);
         centroModal.close();
       } catch (error) {
@@ -176,6 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Cerrar modales (botón X)
   document.querySelectorAll('.modal .modal-close').forEach((btn) => {
     btn.onclick = () => {
       const modalElem = btn.closest('.modal');
