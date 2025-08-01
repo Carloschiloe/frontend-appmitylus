@@ -16,34 +16,13 @@ const parseNum = v => {
 
 // Capas base
 const baseLayersDefs = {
-  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 20, attribution: '© OpenStreetMap'
-  }),
   esri: L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     { maxZoom: 20, attribution: 'Imagery © Esri' }
-  ),
-  esriLabels: L.layerGroup([
-    L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom: 20, attribution: 'Imagery © Esri' }
-    ),
-    L.tileLayer(
-      'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom: 20, attribution: 'Labels © Esri' }
-    )
-  ]),
-  terrain: L.tileLayer(
-    'https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg',
-    { maxZoom: 18, attribution: 'Map tiles © Stamen | Data © OSM' }
-  ),
-  dark: L.tileLayer(
-    'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png',
-    { maxZoom: 19, attribution: '© Carto © OSM' }
   )
 };
 
-let currentBaseKey = 'osm';
+let currentBaseKey = 'esri';
 
 export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
   if (map) return map;
@@ -59,21 +38,14 @@ export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
     zoomControl: true,
     center: defaultLatLng,
     zoom: 10,
-    layers: [baseLayersDefs.osm]
+    layers: [baseLayersDefs.esri] // Solo capa satélite Esri
   });
   window.__mapLeaflet = map;
 
   puntosIngresoGroup = L.layerGroup().addTo(map);
   centrosGroup       = L.layerGroup().addTo(map);
 
-  const baseMaps = {
-    'OSM': baseLayersDefs.osm,
-    'Satélite (Esri)': baseLayersDefs.esri,
-    'Satélite + Etiquetas': baseLayersDefs.esriLabels,
-    'Terreno': baseLayersDefs.terrain,
-    'Noche (Dark)': baseLayersDefs.dark
-  };
-  L.control.layers(baseMaps, {}, { position: 'topright', collapsed: false }).addTo(map);
+  // No agregamos control de capas para ocultar selector de capas
 
   // Recalcular tamaño al mostrar tab
   document.querySelectorAll('a[href="#tab-mapa"]').forEach(a =>
@@ -159,9 +131,7 @@ export function drawCentrosInMap(centros = [], defaultLatLng = [-42.48, -73.77],
     poly._popupHTML = popupHTML;
     poly.bindPopup(popupHTML);
 
-    // Abrir/cerrar popup con el propio click del polígono
     poly.on('click', (ev) => {
-      // Detener propagación para que el mapa no lo cierre
       if (ev && ev.originalEvent) {
         ev.originalEvent.stopPropagation?.();
         L.DomEvent.stopPropagation(ev);
@@ -182,9 +152,8 @@ export function drawCentrosInMap(centros = [], defaultLatLng = [-42.48, -73.77],
 
   centrarMapaEnPoligonos(centros, defaultLatLng);
 
-  // Evitar segmento gris
-  setTimeout(()=> map.invalidateSize(), 60);
-  setTimeout(()=> map.invalidateSize(), 300);
+  setTimeout(() => map.invalidateSize(), 60);
+  setTimeout(() => map.invalidateSize(), 300);
 
   log('Redibujados centros =', dib);
 }
@@ -208,17 +177,14 @@ export function focusCentroInMap(idx) {
     poly.openPopup(poly.getBounds().getCenter());
   }
   poly.setStyle({ color: '#ff9800', weight: 5 });
-  setTimeout(()=>poly.setStyle({ color:'#1976d2', weight:3 }), 1000);
+  setTimeout(() => poly.setStyle({ color: '#1976d2', weight: 3 }), 1000);
 }
 
 export function renderSidebarCentros(centros = [], activeIdx = null) {
   return centros.map((c, idx) =>
-    `<li class="collection-item${activeIdx === idx ? ' active':''}" data-idx="${idx}">
+    `<li class="collection-item${activeIdx === idx ? ' active' : ''}" data-idx="${idx}">
        <b>${c.name}</b>
        <div style="font-size:0.93em;color:#888;">${c.code}</div>
      </li>`
   ).join('');
 }
-
-
-
