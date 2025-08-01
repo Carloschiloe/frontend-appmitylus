@@ -69,6 +69,8 @@ export function initTablaCentros() {
   Estado.table.draw();
 
   const $t2 = window.$('#centrosTable');
+
+  // Mostrar coordenadas en modal
   $t2
     .off('click', '.btn-coords')
     .on('click', '.btn-coords', function () {
@@ -122,12 +124,13 @@ export function initTablaCentros() {
       }
     });
 
-  // Editar centro
+  // Editar centro (corregido para cargar todas las coordenadas)
   $t2
     .off('click', '.editar-centro')
     .on('click', '.editar-centro', function () {
       const idx = +this.dataset.idx;
       Estado.currentCentroIdx = idx;
+      const centro = Estado.centros[idx];
       const modalElem = document.getElementById('centroModal');
       const modal = M.Modal.getInstance(modalElem);
       const els = {
@@ -141,8 +144,7 @@ export function initTablaCentros() {
         inputLng: document.getElementById('inputLng'),
         pointsBody: document.getElementById('pointsBody')
       };
-      openEditForm(els, Estado.map, (Estado.currentPoints = []), v => (Estado.currentCentroIdx = v));
-      renderPointsTable(els.pointsBody, Estado.currentPoints);
+      openEditForm(els, Estado.map, Estado.currentPoints, v => (Estado.currentCentroIdx = v), centro);
       modal.open();
     });
 
@@ -287,7 +289,7 @@ function attachLineasListeners(idx, acordeonCont) {
       const st = formAdd.querySelector('.line-state').value;
       const tonsStr = formAdd.querySelector('.line-tons').value.trim();
       const tons = tonsStr === '' ? 0 : parseFloat(tonsStr);
-      const unkgStr = formAdd.querySelector('.line-unkg').value.trim();
+      const unkgStr = formAdd.querySelector('.line-unKg').value.trim();
       const unkg = unkgStr === '' ? null : parseFloat(unkgStr);
       const rechazoStr = formAdd.querySelector('.line-porcRechazo').value.trim();
       const rechazo = rechazoStr === '' ? null : parseFloat(rechazoStr);
@@ -384,4 +386,3 @@ export function filtrarLineas(contenedor) {
     fila.style.display = okTxt ? '' : 'none';
   });
 }
-
