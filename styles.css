@@ -138,3 +138,58 @@ tr.editando-select th {
   }
 }
 
+/* --- FIX REAL dropdown select Materialize sobre tablas ultra compactas --- */
+
+/* El menú desplegable del select SIEMPRE sobre todo, forzado a estar visible */
+body .dropdown-content.select-dropdown {
+  z-index: 10099 !important;
+  position: fixed !important;
+  background: #fff !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.24) !important;
+  min-width: 110px !important;
+  max-width: 170px !important;
+  overflow-y: auto !important;
+  left: 0 !important;
+  right: auto !important;
+  top: 0 !important;
+  will-change: unset !important;
+  display: block !important;
+}
+
+/* NUNCA permitir overflow:hidden ni visible en tablas que contengan selects */
+.child-row-lineas,
+.child-row-lineas table,
+.child-row-lineas tr,
+.child-row-lineas td,
+.child-row-lineas th,
+.child-table-lineas,
+.child-table-lineas tr,
+.child-table-lineas td,
+.child-table-lineas th {
+  overflow: visible !important;
+  position: static !important;
+  z-index: auto !important;
+}
+
+/* Fuerza stacking context neutral en la child-row (por si algún padre tiene transform) */
+.child-row-lineas,
+.child-row-lineas * {
+  transform: none !important;
+  filter: none !important;
+  will-change: auto !important;
+}
+
+/* Wrapper de select debe tener stacking y relative */
+.child-row-lineas .select-wrapper {
+  z-index: 10100 !important;
+  position: relative !important;
+}
+
+/* Bonus: mientras el menú está abierto, dale alto mínimo a la fila */
+tr.editando-select,
+tr.editando-select td,
+tr.editando-select th {
+  min-height: 55px !important;
+  height: 55px !important;
+}
+
