@@ -1,6 +1,4 @@
-import { getCentrosAll } from '../core/centros_repo.js';
 import { clearMapPoints, redrawPolygon, addPointMarker } from '../mapas/control_mapa.js';
-import { parseOneDMS } from '../core/utilidades.js';
 
 // NUEVO: Solo maneja campo proveedor
 export async function openNewForm(els, map, currentPoints, setIdxCb) {
@@ -19,14 +17,25 @@ export async function openNewForm(els, map, currentPoints, setIdxCb) {
   setIdxCb(null);
 }
 
-export async function openEditForm(els, map, currentPoints, setIdxCb) {
-  const centros = await getCentrosAll();
-  // El idx se obtiene del Estado (o pásalo explícito si prefieres)
-  const idx = +els.inputCentroId.value || 0;
+/**
+ * openEditForm ahora recibe explícitamente el índice del centro
+ * para evitar depender del valor del campo oculto inputCentroId.
+ */
+export async function openEditForm(els, map, currentPoints, setIdxCb, idx) {
+  if (typeof idx !== 'number') {
+    console.error('Falta índice centro en openEditForm');
+    return;
+  }
+
+  const centros = await import('../core/centros_repo.js').then(m => m.getCentrosAll());
   const centro = centros[idx];
-  if (!centro) return;
+  if (!centro) {
+    console.error('Centro no encontrado en openEditForm:', idx);
+    return;
+  }
 
   els.formTitle.textContent = `Editar centro: ${centro.name}`;
+  els.inputCentroId.value   = idx; // Actualiza campo oculto
   els.inputName.value       = centro.name || '';
   els.inputProveedor.value  = centro.proveedor || '';  // SOLO proveedor
   els.inputCode.value       = centro.code || '';
@@ -36,6 +45,7 @@ export async function openEditForm(els, map, currentPoints, setIdxCb) {
   if (Array.isArray(centro.coords)) {
     centro.coords.forEach(p => currentPoints.push({ lat: +p.lat, lng: +p.lng }));
   }
+
   clearMapPoints();
   currentPoints.forEach(p => addPointMarker(p.lat, p.lng));
   redrawPolygon(currentPoints);
