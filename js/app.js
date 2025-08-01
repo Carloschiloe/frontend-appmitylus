@@ -9,7 +9,7 @@ import {
 import { initTablaCentros, loadCentros as loadTablaCentros } from './centros/tabla_centros.js';
 // NO IMPORTAR NADA DE STOCK NI INSUMOS
 // import { renderFiltrosSidebar } from './stock/stock_insumos.js';
-import { openNewForm, renderPointsTable } from './centros/centros_form.js';
+import { openNewForm, openEditForm, renderPointsTable } from './centros/centros_form.js'; // <--- Aquí la corrección
 import {
   getCentrosAll,
   createCentro,
