@@ -89,32 +89,22 @@
         </button>
       </div>
 
-      <div id="mapaSection" role="region" aria-label="Mapa y listado de centros" style="display:flex; gap: 20px; height: 70vh;">
-
-        <aside id="sidebarCentros" aria-label="Listado y filtro de centros" style="width: 280px; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 16px; display: flex; flex-direction: column; overflow-y: auto;">
-          <h6 style="font-weight: 600; margin-bottom: 10px; margin-top: 0;">Filtrar por Proveedor</h6>
-          <input type="text" id="filtroProveedor" placeholder="Nombre proveedor..." aria-label="Filtro por proveedor" style="margin-bottom: 1rem;" />
-
-          <table id="tablaCentrosSidebar" class="highlight responsive-table" aria-label="Tabla con listado de centros" style="flex-grow: 1; overflow-y: auto; max-height: 60vh;">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Proveedor</th>
-                <th>Código</th>
-              </tr>
-            </thead>
-            <tbody id="listaCentrosSidebar" role="list"></tbody>
-          </table>
-
-          <div style="margin-top: 8px; font-size: 0.9em; color: #666; text-align: center;">
-            Mostrando máximo 10 centros. Usa el filtro para buscar.
+      <div id="mapaSection" role="region" aria-label="Mapa y listado de centros" style="display:flex; gap: 12px; height: 70vh;">
+        <!-- Sidebar Minimalista -->
+        <aside id="sidebarCentros" aria-label="Listado y filtro de centros">
+          <div style="display:flex;align-items:center;margin-bottom:6px;">
+            <input id="filtroSidebar" type="text" placeholder="Buscar centro o proveedor..." aria-label="Buscar centro o proveedor" />
           </div>
+          <ul id="listaCentrosSidebar"></ul>
+          <div id="sidebarInfo" style="font-size: 0.84em; color: #aaa; text-align:center; margin-top: 5px;">
+            Máx 10 centros
+          </div>
+          <button id="toggleSidebar" title="Colapsar sidebar">&#x25C0;</button>
         </aside>
 
         <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros" style="flex-grow: 1; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
           <div id="map" style="width: 100%; height: 100%; min-height: 400px; background: #d8d8d8;"></div>
         </section>
-
       </div>
     </section>
 
