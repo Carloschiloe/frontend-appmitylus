@@ -188,6 +188,13 @@
 }
 
 /* ----------- SIDEBAR MINIMALISTA COLAPSABLE ----------- */
+#mapaSection {
+  display: flex;
+  gap: 10px;
+  height: 70vh;
+  margin-top: 1rem;
+  position: relative; /* Necesario para el botón fuera del sidebar */
+}
 #sidebarCentros {
   min-width: 168px;
   width: 185px;
@@ -212,7 +219,7 @@
   border: none !important;
   box-shadow: none !important;
 }
-#sidebarCentros.minimized *:not(#toggleSidebar) {
+#sidebarCentros.minimized * {
   opacity: 0 !important;
   pointer-events: none !important;
   height: 0 !important;
@@ -220,35 +227,32 @@
   margin: 0 !important;
   padding: 0 !important;
 }
-/* --- Botón SIEMPRE visible, incluso minimizado --- */
-#sidebarCentros #toggleSidebar {
+/* --- BOTÓN FUERA DEL SIDEBAR Y SIEMPRE VISIBLE --- */
+#toggleSidebar {
   position: absolute;
-  top: 11px;
-  right: -18px;
-  width: 25px;
-  height: 25px;
-  border-radius: 100px;
+  top: 16px;
+  left: 190px; /* justo a la derecha del sidebar abierto */
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   border: 1px solid #bbb;
   background: #fff;
   color: #00796b;
-  font-size: 1.18em;
+  font-size: 1.22em;
   cursor: pointer;
   display: flex !important;
   align-items: center;
   justify-content: center;
-  z-index: 1002;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.11);
-  transition: right 0.33s, transform 0.32s;
+  z-index: 1003;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.13);
+  transition: left 0.32s, transform 0.32s;
 }
-#sidebarCentros.minimized #toggleSidebar {
-  display: flex !important;
-  right: -13px;
-  background: #fff;
-  border-color: #bbb;
+#sidebarCentros.minimized + #toggleSidebar {
+  left: 12px;  /* pegado al borde izquierdo cuando el sidebar está colapsado */
   transform: rotate(180deg);
-  z-index: 1002;
 }
 
+/* input y lista del sidebar */
 #filtroSidebar {
   width: 100%;
   font-size: 0.97em;
@@ -307,7 +311,6 @@
   background: #e0f2f1;
   color: #009688;
 }
-
 #sidebarInfo {
   font-size: 0.82em;
   color: #aaa;
@@ -317,12 +320,6 @@
 }
 
 /* ----------- MAPA DE CENTROS ----------- */
-#mapaSection {
-  display: flex;
-  gap: 10px;
-  height: 70vh;
-  margin-top: 1rem;
-}
 #mapShell {
   flex-grow: 1;
   border: 1px solid #ddd;
@@ -423,13 +420,18 @@ body .dropdown-content {
     box-shadow: 0 10px 44px rgba(0,0,0,0.14);
   }
   #sidebarCentros.minimized {
-    width: 22px !important;
-    max-width: 22px !important;
-    min-width: 22px !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    min-width: 0 !important;
+  }
+  #toggleSidebar {
+    left: 10px !important;
+    top: 14px !important;
   }
   #mapaSection {
     flex-direction: column;
     height: auto;
     gap: 6px;
+    position: relative;
   }
 }
