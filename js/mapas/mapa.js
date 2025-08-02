@@ -1,4 +1,4 @@
-// mapa.js - gestión completa del mapa y sidebar de centros
+// mapa.js - gestión completa del mapa y sidebar de centros (sidebar minimalista, filtro extendido)
 
 let map;
 let puntosIngresoGroup;
@@ -15,7 +15,6 @@ const parseNum = v => {
   return Number.isFinite(n) ? n : null;
 };
 
-// Capas base
 const baseLayersDefs = {
   esri: L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -27,73 +26,100 @@ let currentBaseKey = 'esri';
 
 // Datos globales para sidebar y filtro
 let centrosDataGlobal = [];
-let filtroProveedor = '';
+let filtroSidebar = '';
+let selectedCentroIdx = null;
 
-/* ======================== */
-/*   NUEVO: FILTRO EXTENDIDO   */
-/* ======================== */
-
-// Inicializar filtro en sidebar (llamar tras cargar la página)
+/* =========================
+   SIDEBAR ULTRA MINIMALISTA
+   ========================= */
+// Inicializar filtro minimalista y toggle
 export function initSidebarFiltro() {
-  const filtroInput = document.getElementById('filtroProveedor');
+  const filtroInput = document.getElementById('filtroSidebar');
   const listaSidebar = document.getElementById('listaCentrosSidebar');
+  const sidebar = document.getElementById('sidebarCentros');
+  const toggleBtn = document.getElementById('toggleSidebar');
 
-  if (!filtroInput || !listaSidebar) {
-    log('No se encontró filtro o lista sidebar');
+  if (!filtroInput || !listaSidebar || !sidebar || !toggleBtn) {
+    log('No se encontró filtro o sidebar');
     return;
   }
 
+  // Filtro (nombre o proveedor)
   filtroInput.addEventListener('input', () => {
-    filtroProveedor = filtroInput.value.trim().toLowerCase();
-    actualizarListaSidebar();
+    filtroSidebar = filtroInput.value.trim().toLowerCase();
+    renderListaSidebar();
   });
+
+  // Toggle para colapsar
+  toggleBtn.onclick = () => {
+    sidebar.classList.toggle('minimized');
+    if (sidebar.classList.contains('minimized')) {
+      toggleBtn.title = "Expandir sidebar";
+      toggleBtn.innerHTML = "&#x25B6;"; // flecha a la derecha
+    } else {
+      toggleBtn.title = "Colapsar sidebar";
+      toggleBtn.innerHTML = "&#x25C0;"; // flecha a la izquierda
+    }
+  };
+
+  // Refresco inicial
+  renderListaSidebar();
 }
 
-// Actualiza listado en sidebar con filtro por proveedor y nombre (máximo 10)
-function actualizarListaSidebar() {
+// Render lista minimalista en UL (máx 10)
+function renderListaSidebar() {
   const listaSidebar = document.getElementById('listaCentrosSidebar');
   if (!listaSidebar) return;
 
-  // FILTRO AMBOS CAMPOS: nombre y proveedor
   let filtrados = centrosDataGlobal;
-  if (filtroProveedor.length > 0) {
+  if (filtroSidebar.length > 0) {
     filtrados = centrosDataGlobal.filter(c =>
-      (c.proveedor || '').toLowerCase().includes(filtroProveedor) ||
-      (c.name || '').toLowerCase().includes(filtroProveedor)
+      (c.proveedor || '').toLowerCase().includes(filtroSidebar) ||
+      (c.name || '').toLowerCase().includes(filtroSidebar)
     );
   }
   filtrados = filtrados.slice(0, 10);
 
   if (filtrados.length === 0) {
-    listaSidebar.innerHTML = `<tr><td colspan="3" style="color:#888;">Sin coincidencias</td></tr>`;
+    listaSidebar.innerHTML = `<li style="color:#888;">Sin coincidencias</li>`;
     return;
   }
 
-  listaSidebar.innerHTML = filtrados.map(c => {
-    // Busca el idx real (por si hay filtro)
+  listaSidebar.innerHTML = filtrados.map((c, i) => {
+    // idx real para centrar en el mapa
     const idx = centrosDataGlobal.indexOf(c);
     return `
-      <tr data-idx="${idx}" tabindex="0" role="row" aria-label="Centro ${c.name}, proveedor ${c.proveedor}, código ${c.code}">
-        <td>${c.name}</td>
-        <td>${c.proveedor || ''}</td>
-        <td>${c.code || ''}</td>
-      </tr>
+      <li data-idx="${idx}" class="${selectedCentroIdx === idx ? 'selected' : ''}" tabindex="0">
+        <b>${c.name}</b>
+        <span class="proveedor">${c.proveedor ? c.proveedor : ''}</span>
+      </li>
     `;
   }).join('');
 
-  // Eventos click y keyboard para filas
-  Array.from(listaSidebar.querySelectorAll('tr')).forEach(tr => {
-    tr.onclick = () => {
-      const idx = +tr.getAttribute('data-idx');
+  // Click y teclado para centrar mapa
+  Array.from(listaSidebar.querySelectorAll('li')).forEach(li => {
+    li.onclick = () => {
+      const idx = +li.getAttribute('data-idx');
+      selectedCentroIdx = idx;
       focusCentroInMap(idx);
+      renderListaSidebar();
     };
-    tr.onkeydown = e => {
-      if (e.key === 'Enter') {
-        const idx = +tr.getAttribute('data-idx');
+    li.onkeydown = e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const idx = +li.getAttribute('data-idx');
+        selectedCentroIdx = idx;
         focusCentroInMap(idx);
+        renderListaSidebar();
       }
     };
   });
+}
+
+// Cargar centros y refrescar mapa + sidebar
+export function cargarYRenderizarCentros(centros) {
+  centrosDataGlobal = centros;
+  drawCentrosInMap(centros);
+  renderListaSidebar();
 }
 
 // Crear mapa Leaflet
@@ -111,12 +137,12 @@ export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
     zoomControl: true,
     center: defaultLatLng,
     zoom: 10,
-    layers: [baseLayersDefs.esri] // Solo capa satélite Esri
+    layers: [baseLayersDefs.esri]
   });
   window.__mapLeaflet = map;
 
   puntosIngresoGroup = L.layerGroup().addTo(map);
-  centrosGroup       = L.layerGroup().addTo(map);
+  centrosGroup = L.layerGroup().addTo(map);
 
   // Recalcular tamaño al mostrar tab mapa
   document.querySelectorAll('a[href="#tab-mapa"]').forEach(a =>
@@ -250,11 +276,4 @@ export function focusCentroInMap(idx) {
   }
   poly.setStyle({ color: '#ff9800', weight: 5 });
   setTimeout(() => poly.setStyle({ color: '#1976d2', weight: 3 }), 1000);
-}
-
-// Función para cargar centros y actualizar mapa + sidebar
-export function cargarYRenderizarCentros(centros) {
-  centrosDataGlobal = centros;
-  drawCentrosInMap(centros);
-  actualizarListaSidebar();
 }
