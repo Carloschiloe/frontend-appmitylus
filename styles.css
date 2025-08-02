@@ -39,7 +39,7 @@ table.dataTable,
 .dataTable-wrapper,
 .card table {
   width: 100% !important;
-  max-width: 100vw !important;
+  max-width: 100% !important;   /* <<<--- Corregido, antes estaba 100vw */
   overflow-x: auto;
 }
 
@@ -192,4 +192,3 @@ tr.editando-select th {
   min-height: 55px !important;
   height: 55px !important;
 }
-
