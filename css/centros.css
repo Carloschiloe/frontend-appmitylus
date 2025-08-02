@@ -5,7 +5,7 @@
 /* ----------- TABLA CENTROS ----------- */
 #centrosTable, #centrosTable_wrapper {
   width: 100% !important;
-  max-width: 100vw !important;
+  max-width: 100%;  /* ¡Nunca 100vw! */
   overflow-x: auto;
   box-shadow: 0 1px 6px rgba(0,0,0,0.1);
   border-radius: 8px;
@@ -194,8 +194,8 @@
   height: 70vh;
   margin-top: 1rem;
   position: relative;
-  overflow-x: hidden;     /* Elimina scroll lateral */
-  max-width: 100%;
+  overflow-x: hidden;   /* ANTI SCROLL LATERAL */
+  max-width: 100%;      /* ¡Nunca 100vw! */
   box-sizing: border-box;
 }
 
@@ -233,11 +233,11 @@
   padding: 0 !important;
 }
 
-/* --- BOTÓN: dentro del #mapaSection y alineado con el sidebar --- */
+/* --- BOTÓN DE COLAPSAR --- */
 #toggleSidebar {
   position: absolute;
-  top: 28px;            /* Ajusta para no tapar controles del mapa */
-  left: 195px;          /* Pegado al sidebar */
+  top: 20px; /* Queda alineado con el input y NUNCA sobre el control del mapa */
+  left: calc(185px + 10px); /* Pegado al sidebar */
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -256,7 +256,7 @@
 }
 #sidebarCentros.minimized + #toggleSidebar {
   left: 8px !important;
-  top: 28px !important;
+  top: 20px !important;
   transform: rotate(180deg);
 }
 
@@ -340,7 +340,7 @@
 #map {
   width: 100%;
   height: 100%;
-  min-width: 0;
+  min-width: 0;   /* <--- Esto es CLAVE */
   min-height: 400px;
   box-sizing: border-box;
 }
