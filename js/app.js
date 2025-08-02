@@ -9,7 +9,7 @@ import {
 import { initTablaCentros, loadCentros as loadTablaCentros } from './centros/tabla_centros.js';
 // NO IMPORTAR NADA DE STOCK NI INSUMOS
 // import { renderFiltrosSidebar } from './stock/stock_insumos.js';
-import { openNewForm, openEditForm, renderPointsTable } from './centros/centros_form.js'; // <--- Aquí la corrección
+import { openNewForm, openEditForm, renderPointsTable } from './centros/centros_form.js';
 import {
   getCentrosAll,
   createCentro,
@@ -17,6 +17,9 @@ import {
 } from './core/centros_repo.js';
 import { tabMapaActiva } from './core/utilidades_app.js';
 import { parseOneDMS } from './core/utilidades.js';
+
+// === AGREGADO: Importa la función de render del mapa + sidebar ===
+import { cargarYRenderizarCentros } from './mapas/mapa.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Tabs Materialize
@@ -50,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     formTitle: document.getElementById('formTitle'),
     inputCentroId: document.getElementById('inputCentroId'),
     inputName: document.getElementById('inputName'),
-    inputProveedor: document.getElementById('inputProveedor'), // 👈 SOLO proveedor
+    inputProveedor: document.getElementById('inputProveedor'),
     inputCode: document.getElementById('inputCode'),
     inputHectareas: document.getElementById('inputHectareas'),
     inputLat: document.getElementById('inputLat'),
@@ -62,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   btnNuevoCentro?.addEventListener('click', () => {
-    Estado.currentCentroIdx = null; // Indicar nuevo centro
+    Estado.currentCentroIdx = null;
     Estado.currentPoints = [];
     openNewForm(els, Estado.map, Estado.currentPoints, (v) => (Estado.currentCentroIdx = v));
     renderPointsTable(els.pointsBody, Estado.currentPoints);
@@ -71,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const $t2 = window.$('#centrosTable');
 
-  // Editar centro (corregido para enviar índice)
+  // Editar centro
   $t2
     .off('click', '.editar-centro')
     .on('click', '.editar-centro', function () {
@@ -127,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
 
       const nombre = els.inputName.value.trim();
-      const proveedor = els.inputProveedor.value.trim(); // 👈
+      const proveedor = els.inputProveedor.value.trim();
       const code = els.inputCode.value.trim();
       const hectareas = els.inputHectareas.value.trim();
 
@@ -138,7 +141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const centroData = {
         name: nombre,
-        proveedor,   // 👈 Enviando al backend
+        proveedor,
         code,
         hectareas,
         coords: Estado.currentPoints,
@@ -194,6 +197,10 @@ async function cargarCentros() {
   try {
     Estado.centros = await getCentrosAll();
     loadTablaCentros(Estado.centros);
+
+    // --- AGREGADO: actualiza el mapa y sidebar
+    cargarYRenderizarCentros(Estado.centros);
+
   } catch (e) {
     console.error('Error cargando centros:', e);
     M.toast({ html: 'Error cargando centros', classes: 'red' });
