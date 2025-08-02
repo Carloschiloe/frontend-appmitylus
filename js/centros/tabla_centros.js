@@ -49,43 +49,54 @@ export function initTablaCentros() {
       url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
     },
     footerCallback: function () {
-      // Totales para cada columna de la tabla (según tu HTML)
-      let sumH = 0, sumL = 0, sumTons = 0, sumUnKg = 0, sumTonsCol = 0, sumRechazo = 0, sumRdmto = 0;
+      let sumH = 0, sumL = 0, sumTons = 0;
+      let sumUnKg = 0, sumRechazo = 0, sumRdmto = 0;
+      let countUnKg = 0, countRechazo = 0, countRdmto = 0;
+
       Estado.centros.forEach(c => {
-        // Suma hectáreas y líneas
         sumH += parseFloat(c.hectareas) || 0;
         sumL += Array.isArray(c.lines) ? c.lines.length : 0;
 
-        // Calcula por líneas (para columnas agregadas)
-        let unKg = 0, tons = 0, porcRechazo = 0, rdmto = 0, linesWithData = 0;
         if (Array.isArray(c.lines)) {
           c.lines.forEach(l => {
-            tons += +l.tons || 0;
-            unKg += +l.unKg || 0;
-            porcRechazo += +l.porcRechazo || 0;
-            rdmto += +l.rendimiento || 0;
-            linesWithData++;
+            sumTons += +l.tons || 0;
+
+            // Un/Kg promedio
+            if (l.unKg !== undefined && l.unKg !== null && l.unKg !== '') {
+              sumUnKg += parseFloat(l.unKg) || 0;
+              countUnKg++;
+            }
+            // % Rechazo promedio
+            if (l.porcRechazo !== undefined && l.porcRechazo !== null && l.porcRechazo !== '') {
+              sumRechazo += parseFloat(l.porcRechazo) || 0;
+              countRechazo++;
+            }
+            // Rdmto promedio
+            if (l.rendimiento !== undefined && l.rendimiento !== null && l.rendimiento !== '') {
+              sumRdmto += parseFloat(l.rendimiento) || 0;
+              countRdmto++;
+            }
           });
         }
-        sumTons += tons;
-        sumUnKg += unKg;
-        sumRechazo += porcRechazo;
-        sumRdmto += rdmto;
       });
-      // Renderiza totales
+
+      const avgUnKg = countUnKg ? (sumUnKg / countUnKg) : 0;
+      const avgRechazo = countRechazo ? (sumRechazo / countRechazo) : 0;
+      const avgRdmto = countRdmto ? (sumRdmto / countRdmto) : 0;
+
       const h = document.getElementById('totalHect');
       const l = document.getElementById('totalLineas');
-      const unKg = document.getElementById('totalUnKg');
       const tons = document.getElementById('totalTons');
+      const unKg = document.getElementById('totalUnKg');
       const rechazo = document.getElementById('totalRechazo');
       const rdmto = document.getElementById('totalRdmto');
       if (h && l && unKg && tons && rechazo && rdmto) {
         h.textContent = sumH.toFixed(2);
         l.textContent = sumL;
-        unKg.textContent = sumUnKg;
         tons.textContent = sumTons;
-        rechazo.textContent = sumRechazo;
-        rdmto.textContent = sumRdmto;
+        unKg.textContent = avgUnKg.toFixed(2);
+        rechazo.textContent = avgRechazo.toFixed(1) + '%';
+        rdmto.textContent = avgRdmto.toFixed(1) + '%';
       }
     }
   });
@@ -148,7 +159,7 @@ export function initTablaCentros() {
       }
     });
 
-  // Editar centro (corregido para cargar todas las coordenadas)
+  // Editar centro
   $t2
     .off('click', '.editar-centro')
     .on('click', '.editar-centro', function () {
@@ -168,7 +179,7 @@ export function initTablaCentros() {
         inputLng: document.getElementById('inputLng'),
         pointsBody: document.getElementById('pointsBody')
       };
-      els.inputCentroId.value = idx;  // asignar índice al campo oculto para openEditForm
+      els.inputCentroId.value = idx;
       openEditForm(els, Estado.map, Estado.currentPoints, v => (Estado.currentCentroIdx = v));
       modal.open();
     });
@@ -260,7 +271,6 @@ function attachLineasListeners(idx, acordeonCont) {
           M.toast({ html: 'Completa N° Línea, Longitud y Estado', classes: 'red' });
           return;
         }
-        // Valida solo si pusiste valor y no es número
         if (
           (tonsInput?.value.trim() && isNaN(tons)) ||
           (unkgInput?.value.trim() && isNaN(unkg)) ||
@@ -357,36 +367,53 @@ export async function loadCentros() {
     const cantLineas = Array.isArray(c.lines) ? c.lines.length : 0;
     const hect = parseFloat(c.hectareas) || 0;
 
-    // Totales calculados desde líneas:
-    let totalUnKg = 0, totalTons = 0, totalRechazo = 0, totalRdmto = 0;
+    // SUMA de toneladas (todas las líneas)
+    const tonsDisponibles = Array.isArray(c.lines)
+      ? c.lines.reduce((sum, l) => sum + (+l.tons || 0), 0)
+      : 0;
+
+    // PROMEDIO Un/Kg, % Rechazo y Rdmto (solo si hay líneas)
+    let sumUnKg = 0, countUnKg = 0;
+    let sumRechazo = 0, countRechazo = 0;
+    let sumRdmto = 0, countRdmto = 0;
     if (Array.isArray(c.lines)) {
       c.lines.forEach(l => {
-        totalTons += +l.tons || 0;
-        totalUnKg += +l.unKg || 0;
-        totalRechazo += +l.porcRechazo || 0;
-        totalRdmto += +l.rendimiento || 0;
+        if (l.unKg !== undefined && l.unKg !== null && l.unKg !== '') {
+          sumUnKg += parseFloat(l.unKg) || 0;
+          countUnKg++;
+        }
+        if (l.porcRechazo !== undefined && l.porcRechazo !== null && l.porcRechazo !== '') {
+          sumRechazo += parseFloat(l.porcRechazo) || 0;
+          countRechazo++;
+        }
+        if (l.rendimiento !== undefined && l.rendimiento !== null && l.rendimiento !== '') {
+          sumRdmto += parseFloat(l.rendimiento) || 0;
+          countRdmto++;
+        }
       });
     }
+    const avgUnKg = countUnKg ? (sumUnKg / countUnKg) : 0;
+    const avgRechazo = countRechazo ? (sumRechazo / countRechazo) : 0;
+    const avgRdmto = countRdmto ? (sumRdmto / countRdmto) : 0;
+
     const proveedor = c.proveedor || '-';
 
-    // Campos renderizados
     const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>`;
     const accionesCell = `
       <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer">visibility</i>
       <i class="material-icons editar-centro" data-idx="${i}" style="cursor:pointer">edit</i>
       <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer">delete</i>`;
 
-    // El orden debe coincidir con tu <thead>
     return [
       c.name,
       proveedor,
       c.code || '-',
       hect.toFixed(2),
       cantLineas,
-      totalTons,
-      totalUnKg,
-      totalRechazo + '%',
-      totalRdmto + '%',
+      tonsDisponibles.toLocaleString('es-CL', { minimumFractionDigits: 0 }),
+      avgUnKg.toFixed(2),
+      avgRechazo.toFixed(1) + '%',
+      avgRdmto.toFixed(1) + '%',
       coordsCell,
       accionesCell
     ];
