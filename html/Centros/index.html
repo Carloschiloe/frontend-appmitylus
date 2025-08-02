@@ -4,8 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Configuración de Centros – Choritos</title>
-
-  <!-- ---------- CSS THIRD-PARTY ---------- -->
+  <!-- CSS de terceros -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
@@ -16,7 +15,6 @@
   <link rel="stylesheet" href="../../css/centros.css" />
 </head>
 <body>
-
   <!-- NAV -->
   <nav class="teal">
     <div class="nav-wrapper">
@@ -27,7 +25,6 @@
 
   <!-- CONTENIDO -->
   <div class="container" style="margin-top: 1rem;">
-
     <!-- Pestañas -->
     <ul id="tabs" class="tabs">
       <li class="tab col s6"><a class="active" href="#tab-centros">Centros</a></li>
@@ -43,9 +40,7 @@
               <i class="material-icons">add</i>
             </a>
           </div>
-
           <h5>Centros Registrados</h5>
-
           <!-- Tabla DataTable -->
           <table id="centrosTable" class="striped display responsive-table" style="width:100%" aria-describedby="tablaCentrosDescripcion" role="grid" aria-live="polite">
             <caption id="tablaCentrosDescripcion" class="sr-only">Tabla con centros registrados</caption>
@@ -72,7 +67,6 @@
               </tr>
             </tfoot>
           </table>
-
           <div id="acordeonLineas"></div>
         </div>
       </div>
@@ -81,40 +75,36 @@
     <!-- TAB MAPA -->
     <section id="tab-mapa" class="col s12" style="padding: 1rem;">
       <h5>Mapa de Centros</h5>
-
       <div id="mapFsBtnContainer" style="margin-bottom: 1rem;">
         <button id="btnFullscreenMapa" class="btn-small teal waves-effect" aria-label="Pantalla completa">
           <i class="material-icons left" style="line-height: inherit;">fullscreen</i>
           Pantalla completa
         </button>
       </div>
-
-      <div id="mapaSection" role="region" aria-label="Mapa y listado de centros" style="display:flex; gap: 12px; height: 70vh;">
+      <div id="mapaSection" role="region" aria-label="Mapa y listado de centros" style="display:flex; gap: 12px; height: 70vh; position:relative;">
         <!-- Sidebar Minimalista -->
         <aside id="sidebarCentros" aria-label="Listado y filtro de centros">
-          <input id="filtroSidebar" type="text" placeholder="Buscar centro o proveedor..." aria-label="Buscar centro o proveedor" style="margin-bottom: 6px; font-size: 0.99em; padding: 5px 7px; border-radius: 6px; border: 1px solid #bbb;"/>
+          <input id="filtroSidebar" type="text" placeholder="Buscar centro o proveedor..." aria-label="Buscar centro o proveedor" />
           <ul id="listaCentrosSidebar"></ul>
-          <div id="sidebarInfo" style="font-size: 0.84em; color: #aaa; text-align:center; margin-top: 4px;">
+          <div id="sidebarInfo">
             Máx 10 centros
           </div>
-          <button id="toggleSidebar" title="Colapsar sidebar" style="margin: 0 auto; margin-top:8px; font-size: 1.17em;">&#x25C0;</button>
         </aside>
-
-        <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros" style="flex-grow: 1; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
+        <!-- Botón de colapsar SIEMPRE fuera del aside y al principio -->
+        <button id="toggleSidebar" title="Colapsar sidebar">&#x25C0;</button>
+        <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
           <div id="map" style="width: 100%; height: 100%; min-height: 400px; background: #d8d8d8;"></div>
         </section>
       </div>
     </section>
 
     <!-- MODALES -->
-
     <!-- Modal Agregar/Editar Centro -->
     <div id="centroModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="formTitle" tabindex="-1">
       <div class="modal-content">
         <h5 id="formTitle">Agregar Centro de Cultivo</h5>
         <form id="formCentro" novalidate>
           <input type="hidden" id="inputCentroId" />
-
           <div class="row">
             <div class="input-field col s6">
               <input id="inputName" type="text" required aria-required="true" />
@@ -125,7 +115,6 @@
               <label for="inputProveedor">Proveedor</label>
             </div>
           </div>
-
           <div class="row">
             <div class="input-field col s6">
               <input id="inputCode" type="text" required aria-required="true" />
@@ -136,7 +125,6 @@
               <label for="inputHectareas">Hectáreas</label>
             </div>
           </div>
-
           <div class="row">
             <div class="input-field col s6">
               <input id="inputLat" type="text" placeholder="S 42°33´58.6800" aria-describedby="latHelp" />
@@ -149,7 +137,6 @@
               <span id="lngHelp" class="helper-text" data-error="Formato inválido">Ejemplo: W 73°41´52.0600</span>
             </div>
           </div>
-
           <div class="center-btn" style="margin-bottom: 1rem;">
             <button id="btnAddPoint" class="btn waves-effect" type="button">
               <i class="material-icons left">add_location</i>Agregar Punto
@@ -158,7 +145,6 @@
               <i class="material-icons left">clear</i>Limpiar Puntos
             </button>
           </div>
-
           <h6>Puntos Ingresados</h6>
           <table class="striped" aria-label="Lista de puntos ingresados">
             <thead>
@@ -166,7 +152,6 @@
             </thead>
             <tbody id="pointsBody"></tbody>
           </table>
-
           <div class="center-btn" style="margin-top: 1rem;">
             <button id="btnSaveCentro" type="submit" class="btn-large green waves-light" aria-label="Guardar centro">
               <i class="material-icons left">save</i>Guardar Centro
@@ -178,7 +163,6 @@
         <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
       </div>
     </div>
-
     <!-- Modal Coordenadas -->
     <div id="modalCoordenadas" class="modal" role="dialog" aria-modal="true" aria-labelledby="coordenadasTitle" tabindex="-1">
       <div class="modal-content">
@@ -192,10 +176,9 @@
         <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
       </div>
     </div>
-
   </div><!-- /container -->
 
-  <!-- ---------- JS THIRD-PARTY ---------- -->
+  <!-- JS de terceros -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/colreorder/1.5.6/js/colReorder.dataTables.min.js"></script>
@@ -207,9 +190,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.js"></script>
-
-  <!-- ---------- MÓDULOS ---------- -->
+  <!-- MÓDULOS -->
   <script type="module" src="../../js/app.js"></script>
-
 </body>
 </html>
