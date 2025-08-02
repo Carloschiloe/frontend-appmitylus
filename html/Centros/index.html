@@ -91,19 +91,9 @@
 
       <div id="mapaSection" role="region" aria-label="Mapa y listado de centros" style="display:flex; gap: 12px; height: 70vh;">
         <!-- Sidebar Minimalista -->
-        <aside id="sidebarCentros" aria-label="Listado y filtro de centros" style="width: 220px; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 10px 8px 6px 8px; display: flex; flex-direction: column; overflow-y: auto; transition: width 0.25s;">
-          <input id="filtroProveedor" type="text" placeholder="Buscar centro o proveedor..." aria-label="Buscar centro o proveedor" style="margin-bottom: 6px; font-size: 0.99em; padding: 5px 7px; border-radius: 6px; border: 1px solid #bbb;"/>
-
-          <table id="tablaCentrosSidebar" class="highlight responsive-table" aria-label="Tabla con listado de centros" style="font-size: 0.97em;">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Proveedor</th>
-                <th>Código</th>
-              </tr>
-            </thead>
-            <tbody id="listaCentrosSidebar"></tbody>
-          </table>
+        <aside id="sidebarCentros" aria-label="Listado y filtro de centros">
+          <input id="filtroSidebar" type="text" placeholder="Buscar centro o proveedor..." aria-label="Buscar centro o proveedor" style="margin-bottom: 6px; font-size: 0.99em; padding: 5px 7px; border-radius: 6px; border: 1px solid #bbb;"/>
+          <ul id="listaCentrosSidebar"></ul>
           <div id="sidebarInfo" style="font-size: 0.84em; color: #aaa; text-align:center; margin-top: 4px;">
             Máx 10 centros
           </div>
