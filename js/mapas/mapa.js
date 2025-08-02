@@ -53,18 +53,21 @@ export function initSidebarFiltro() {
   // Toggle para colapsar/expandir sidebar
   toggleBtn.onclick = () => {
     sidebar.classList.toggle('minimized');
-    // Ajustar el mapa al expandir/collapse (timeout para animación)
+
+    // Actualizar clase en body para ayudar a CSS y layout
+    if (sidebar.classList.contains('minimized')) {
+      document.body.classList.add('sidebar-minimized');
+      toggleBtn.title = "Expandir sidebar";
+      toggleBtn.innerHTML = "&#x25B6;"; // Flecha derecha
+    } else {
+      document.body.classList.remove('sidebar-minimized');
+      toggleBtn.title = "Colapsar sidebar";
+      toggleBtn.innerHTML = "&#x25C0;"; // Flecha izquierda
+    }
+
     setTimeout(() => {
       if (map) map.invalidateSize();
     }, 350);
-
-    if (sidebar.classList.contains('minimized')) {
-      toggleBtn.title = "Expandir sidebar";
-      toggleBtn.innerHTML = "&#x25B6;";
-    } else {
-      toggleBtn.title = "Colapsar sidebar";
-      toggleBtn.innerHTML = "&#x25C0;";
-    }
   };
 
   // Refresco inicial
