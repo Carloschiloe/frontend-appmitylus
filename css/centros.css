@@ -241,7 +241,7 @@
 #toggleSidebar {
   position: absolute;
   top: 50%;
-  left: -7px;           /* <--- AJUSTA este valor, menos negativo, sale más hacia adentro */
+  left: -9px;           /* <--- AJUSTA este valor, menos negativo, sale más hacia adentro */
   transform: translateY(-50%);
   width: 32px;
   height: 32px;
