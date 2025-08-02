@@ -49,19 +49,31 @@ export function initTablaCentros() {
       url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
     },
     footerCallback: function () {
-      let sumH = 0, sumL = 0, sumTon = 0;
+      let sumH = 0, sumL = 0, sumTon = 0, sumUnKg = 0, sumTons = 0, sumRechazo = 0, sumRdmto = 0;
       Estado.centros.forEach(c => {
         sumH += parseFloat(c.hectareas) || 0;
         sumL += Array.isArray(c.lines) ? c.lines.length : 0;
         sumTon += Array.isArray(c.lines) ? c.lines.reduce((s, l) => s + (+l.tons || 0), 0) : 0;
+        sumUnKg += parseFloat(c.un_kg) || 0;
+        sumTons += parseFloat(c.tons) || 0;
+        sumRechazo += parseFloat(c.porcentaje_rechazo) || 0;
+        sumRdmto += parseFloat(c.rdmto) || 0;
       });
       const h = document.getElementById('totalHect');
       const l = document.getElementById('totalLineas');
       const t = document.getElementById('totalTon');
-      if (h && l && t) {
+      const unKg = document.getElementById('totalUnKg');
+      const tons = document.getElementById('totalTons');
+      const rechazo = document.getElementById('totalRechazo');
+      const rdmto = document.getElementById('totalRdmto');
+      if (h && l && t && unKg && tons && rechazo && rdmto) {
         h.textContent = sumH.toFixed(2);
         l.textContent = sumL;
         t.textContent = sumTon.toLocaleString('es-CL', { minimumFractionDigits: 0 });
+        unKg.textContent = sumUnKg;
+        tons.textContent = sumTons;
+        rechazo.textContent = sumRechazo;
+        rdmto.textContent = sumRdmto;
       }
     }
   });
@@ -349,6 +361,12 @@ export async function loadCentros() {
       : 0;
     const proveedor = c.proveedor || '-';
 
+    // NUEVOS CAMPOS
+    const unKg = (c.un_kg ?? 0);
+    const tons = (c.tons ?? 0);
+    const porcentajeRechazo = (c.porcentaje_rechazo ?? 0);
+    const rdmto = (c.rdmto ?? 0);
+
     const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>`;
     const accionesCell = `
       <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer">visibility</i>
@@ -362,6 +380,10 @@ export async function loadCentros() {
       hect.toFixed(2),
       cantLineas,
       tonsDisponibles.toLocaleString('es-CL', { minimumFractionDigits: 0 }),
+      unKg,
+      tons,
+      porcentajeRechazo + '%',
+      rdmto + '%',
       coordsCell,
       accionesCell
     ];
