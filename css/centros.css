@@ -220,6 +220,7 @@
   margin: 0 !important;
   padding: 0 !important;
 }
+/* --- Botón SIEMPRE visible, incluso minimizado --- */
 #sidebarCentros #toggleSidebar {
   position: absolute;
   top: 11px;
@@ -232,18 +233,20 @@
   color: #00796b;
   font-size: 1.18em;
   cursor: pointer;
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  z-index: 20;
+  z-index: 1002;
   box-shadow: 0 1px 6px rgba(0,0,0,0.11);
   transition: right 0.33s, transform 0.32s;
 }
 #sidebarCentros.minimized #toggleSidebar {
+  display: flex !important;
   right: -13px;
   background: #fff;
   border-color: #bbb;
   transform: rotate(180deg);
+  z-index: 1002;
 }
 
 #filtroSidebar {
