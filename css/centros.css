@@ -82,6 +82,18 @@
   table-layout: auto !important;
 }
 
+/* ------ CORRECCIÓN: Encabezados de tabla de líneas ------ */
+.child-table-lineas th {
+  color: #004d40 !important;
+  background: #e0f2f1 !important;
+  font-weight: 700 !important;
+  padding: 0.18rem 0.13rem !important;
+  border-bottom: 1px solid #b2dfdb !important;
+  text-align: center;
+  white-space: nowrap !important;
+}
+
+/* ------ General para celdas ------ */
 .child-table-lineas th,
 .child-table-lineas td {
   padding: 0.15rem 0.1rem !important;
