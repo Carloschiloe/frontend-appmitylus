@@ -1,9 +1,9 @@
-//control_mapa.js
+// control_mapa.js
 import { Estado } from '../core/estado.js';
 import { hashCentros, tabMapaActiva, actualizarTextoFullscreen } from '../core/utilidades_app.js';
 import {
   crearMapa, clearMapPoints, redrawPolygon, addPointMarker,
-  drawCentrosInMap, focusCentroInMap, renderSidebarCentros
+  drawCentrosInMap, focusCentroInMap, initSidebarFiltro
 } from './mapa.js';
 
 export function initMapa() {
@@ -32,6 +32,11 @@ export function initMapa() {
   document.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'f' && tabMapaActiva()) fsBtn?.click();
   });
+
+  // Inicializa sidebar filtro y clicks
+  setTimeout(() => {
+    initSidebarFiltro();
+  }, 500); // Espera DOM listo por si acaso
 }
 
 export function renderMapaAlways(force = false) {
@@ -43,27 +48,9 @@ export function renderMapaAlways(force = false) {
   }
   Estado.centrosHashRender = h;
 
-  drawCentrosInMap(Estado.centros, Estado.defaultLatLng, (idx) => {
-    Estado.activeCentroMapa = idx;
-    showSidebarCentros();
-  });
-
-  showSidebarCentros();
+  drawCentrosInMap(Estado.centros, Estado.defaultLatLng);
+  // El sidebar se actualiza solo desde cargarYRenderizarCentros o el filtro, no aquí.
   Estado.map.invalidateSize();
-}
-
-export function showSidebarCentros() {
-  const lista = document.getElementById('listaCentros');
-  if (!lista) return;
-  lista.innerHTML = renderSidebarCentros(Estado.centros, Estado.activeCentroMapa);
-  lista.querySelectorAll('li').forEach(li => {
-    li.onclick = () => {
-      const idx = +li.dataset.idx;
-      Estado.activeCentroMapa = idx;
-      focusCentroInMap(idx);
-      showSidebarCentros();
-    };
-  });
 }
 
 // Reexportar helpers de puntos para usarlos en el formulario
