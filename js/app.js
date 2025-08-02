@@ -18,8 +18,8 @@ import {
 import { tabMapaActiva } from './core/utilidades_app.js';
 import { parseOneDMS } from './core/utilidades.js';
 
-// === AGREGADO: Importa la función de render del mapa + sidebar ===
-import { cargarYRenderizarCentros } from './mapas/mapa.js';
+// === Sidebar minimalista y filtro mapa ===
+import { cargarYRenderizarCentros, initSidebarFiltro } from './mapas/mapa.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Tabs Materialize
@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (tabElem.id === 'tab-mapa' && Estado.map) {
         Estado.map.invalidateSize();
         renderMapaAlways();
+        initSidebarFiltro(); // Inicializa filtro y eventos cada vez que cambias a pestaña mapa
       }
     }
   });
@@ -39,8 +40,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTablaCentros();
   initMapa();
 
-  // Cargar datos desde API
+  // Cargar datos desde API (y sidebar/filtro)
   await cargarCentros();
+  initSidebarFiltro(); // Para cuando la pestaña mapa está activa desde el inicio
 
   if (tabMapaActiva()) renderMapaAlways(true);
 
@@ -198,7 +200,7 @@ async function cargarCentros() {
     Estado.centros = await getCentrosAll();
     loadTablaCentros(Estado.centros);
 
-    // --- AGREGADO: actualiza el mapa y sidebar
+    // --- actualiza el mapa y sidebar minimalista ---
     cargarYRenderizarCentros(Estado.centros);
 
   } catch (e) {
@@ -207,7 +209,7 @@ async function cargarCentros() {
   }
 }
 
-// --- Parche para que el dropdown de Materialize SIEMPRE quede sobre la tabla (fix select sobre DataTables) ---
+// --- Fix select de Materialize sobre DataTables ---
 $(document).on('mousedown focusin', '.select-wrapper input.select-dropdown', function () {
   const $tr = $(this).closest('tr');
   $tr.addClass('editando-select');
