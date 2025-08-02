@@ -1,19 +1,6 @@
-html, body {
-  overflow-x: hidden !important;
-  box-sizing: border-box;
-}
-
-body {
-  box-sizing: border-box;
-}
-
-/* ----------- CONTENEDOR PRINCIPAL ----------- */
-.container {
-  max-width: 100vw !important;
-  box-sizing: border-box;
-  overflow-x: hidden !important;
-  padding-right: 0 !important;
-}
+/* ==========================
+   CENTROS – ESTILO EXCLUSIVO MEJORADO + SIDEBAR MINIMALISTA COLAPSABLE
+   ========================== */
 
 /* ----------- TABLA CENTROS ----------- */
 #centrosTable, #centrosTable_wrapper {
@@ -207,12 +194,11 @@ body {
   height: 70vh;
   margin-top: 1rem;
   position: relative;
-  overflow: hidden;
-  max-width: 100vw;
+  overflow-x: hidden;     /* Elimina scroll lateral */
+  max-width: 100%;
   box-sizing: border-box;
 }
 
-/* Sidebar normal */
 #sidebarCentros {
   min-width: 168px;
   width: 185px;
@@ -230,7 +216,6 @@ body {
   z-index: 12;
   box-sizing: border-box;
 }
-
 #sidebarCentros.minimized {
   min-width: 0 !important;
   width: 0 !important;
@@ -248,30 +233,30 @@ body {
   padding: 0 !important;
 }
 
-/* --- BOTÓN FIJO AL BORDE IZQUIERDO Y SIEMPRE VISIBLE --- */
+/* --- BOTÓN: dentro del #mapaSection y alineado con el sidebar --- */
 #toggleSidebar {
-  position: fixed;         /* FIJO */
-  top: 130px;              /* Ajusta según el alto de tu header/navbar */
-  left: 18px;              /* Pegado al borde izquierdo */
-  width: 32px;
-  height: 32px;
+  position: absolute;
+  top: 28px;            /* Ajusta para no tapar controles del mapa */
+  left: 195px;          /* Pegado al sidebar */
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: 1px solid #bbb;
   background: #fff;
   color: #00796b;
-  font-size: 1.3em;
+  font-size: 1.4em;
   cursor: pointer;
   display: flex !important;
   align-items: center;
   justify-content: center;
-  z-index: 5003;
+  z-index: 1003;
   box-shadow: 0 1px 6px rgba(0,0,0,0.13);
   transition: left 0.32s, top 0.32s, transform 0.32s;
   padding: 0;
 }
-#sidebarCentros.minimized + #toggleSidebar,
-body.sidebar-minimized #toggleSidebar {
-  left: 18px !important;
+#sidebarCentros.minimized + #toggleSidebar {
+  left: 8px !important;
+  top: 28px !important;
   transform: rotate(180deg);
 }
 
@@ -349,14 +334,15 @@ body.sidebar-minimized #toggleSidebar {
   border-radius: 6px;
   overflow: hidden;
   height: 100%;
-  min-width: 0;
+  min-width: 0;   /* Para evitar desbordes y scroll lateral */
   box-sizing: border-box;
 }
 #map {
   width: 100%;
   height: 100%;
-  min-height: 400px;
   min-width: 0;
+  min-height: 400px;
+  box-sizing: border-box;
 }
 #map.leaflet-container {
   background: #d8d8d8;
@@ -418,9 +404,41 @@ body .dropdown-content {
     overflow-x: auto !important;
     display: block;
   }
+  .child-row-lineas th, .child-row-lineas td,
+  .child-table-lineas th, .child-table-lineas td {
+    font-size: 1.04em !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+  .child-row-lineas {
+    padding-left: 14px !important;
+    padding-right: 8px !important;
+  }
+  .dropdown-content.select-dropdown {
+    min-width: 95vw !important;
+    left: 2.5vw !important;
+    right: 2.5vw !important;
+    border-radius: 0 !important;
+  }
+  #sidebarCentros {
+    width: 97vw !important;
+    max-width: 98vw !important;
+    min-width: 80px !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 20;
+    border-radius: 0 0 14px 0 !important;
+    box-shadow: 0 10px 44px rgba(0,0,0,0.14);
+  }
+  #sidebarCentros.minimized {
+    width: 0 !important;
+    max-width: 0 !important;
+    min-width: 0 !important;
+  }
   #toggleSidebar {
     left: 10px !important;
-    top: 70px !important;
+    top: 20px !important;
   }
   #mapaSection {
     flex-direction: column;
