@@ -70,7 +70,6 @@
   border-radius: 0 0 16px 16px;
 }
 
-/* --- TABLA DE LÍNEAS: ULTRA COMPACTA --- */
 .child-row-lineas table,
 .child-row-lineas table.striped,
 .child-table-lineas {
@@ -82,7 +81,6 @@
   table-layout: auto !important;
 }
 
-/* ------ CORRECCIÓN: Encabezados de tabla de líneas ------ */
 .child-table-lineas th {
   color: #004d40 !important;
   background: #e0f2f1 !important;
@@ -93,7 +91,6 @@
   white-space: nowrap !important;
 }
 
-/* ------ General para celdas ------ */
 .child-table-lineas th,
 .child-table-lineas td {
   padding: 0.15rem 0.1rem !important;
@@ -107,7 +104,6 @@
   text-align: center;
 }
 
-/* Columnas individuales ajustadas para legibilidad */
 .child-table-lineas th:nth-child(1),
 .child-table-lineas td:nth-child(1) { width: 40px; max-width: 50px; min-width: 18px; }
 .child-table-lineas th:nth-child(2),
@@ -136,7 +132,6 @@
 .child-table-lineas td:nth-child(8) {
   width: 42px; max-width: 46px; min-width: 20px;
 }
-/* Acciones */
 .child-table-lineas th:nth-child(9),
 .child-table-lineas td:nth-child(9) {
   width: 36px;
@@ -146,7 +141,6 @@
   white-space: nowrap;
 }
 
-/* Inputs y selects ultra compactos en tabla de líneas */
 .child-table-lineas input,
 .child-table-lineas select {
   width: 92%;
@@ -167,7 +161,6 @@
   outline: none;
 }
 
-/* Select wrapper Materialize */
 .child-table-lineas .select-wrapper,
 .child-row-lineas .select-wrapper {
   min-width: 90px !important;
@@ -182,7 +175,6 @@
   max-width: 125px !important;
 }
 
-/* El menú dropdown del select nunca debe cortarse */
 .dropdown-content.select-dropdown {
   min-width: 115px !important;
   max-width: 210px !important;
@@ -197,14 +189,12 @@
   border-radius: 6px;
 }
 
-/* Para que toda la tabla permita sobresalir elementos */
 .child-table-lineas,
 .child-table-lineas tr,
 .child-table-lineas td {
   overflow: visible !important;
 }
 
-/* Inputs y selects del form abajo no corten contenido */
 .child-row-lineas input,
 .child-row-lineas select {
   max-width: 100%;
@@ -212,7 +202,203 @@
   border-radius: 4px;
 }
 
-/* Responsive: scroll horizontal solo en móviles */
+/* ----------- NUEVO SIDEBAR MINIMALISTA ----------- */
+#sidebarCentros {
+  width: 165px;
+  min-width: 80px;
+  max-width: 200px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 7px;
+  background-color: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  padding: 12px 6px 6px 8px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: width 0.23s cubic-bezier(0.38,0.13,0.46,0.87);
+  z-index: 12;
+}
+
+#sidebarCentros.minimized {
+  width: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+}
+#sidebarCentros.minimized #filtroSidebar,
+#sidebarCentros.minimized #sidebarInfo,
+#sidebarCentros.minimized #listaCentrosSidebar {
+  display: none !important;
+}
+#sidebarCentros #toggleSidebar {
+  position: absolute;
+  top: 10px;
+  right: -17px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  color: #00796b;
+  font-size: 1.09em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: transform 0.2s;
+}
+#sidebarCentros.minimized #toggleSidebar {
+  right: -13px;
+  transform: rotate(180deg);
+}
+
+#filtroSidebar {
+  width: 100%;
+  font-size: 0.96em;
+  padding: 4px 10px;
+  border-radius: 14px;
+  border:1px solid #ddd;
+  background: #fafafa;
+  margin-bottom: 9px;
+  transition: border-color 0.18s;
+}
+#filtroSidebar:focus {
+  border-color: #009688;
+  outline: none;
+  background: #fff;
+}
+
+#listaCentrosSidebar {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 6px 0;
+  font-size: 0.96em;
+  flex-grow: 1;
+  overflow-y: auto;
+  max-height: 59vh;
+}
+#listaCentrosSidebar li {
+  padding: 7px 3px 3px 4px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.15s, color 0.12s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.99em;
+  margin-bottom: 1px;
+}
+#listaCentrosSidebar li b {
+  font-weight: 600;
+  color: #263238;
+}
+#listaCentrosSidebar li .proveedor {
+  display: block;
+  font-size: 0.85em;
+  color: #889;
+  margin-left: 2px;
+  margin-top: 2px;
+  line-height: 1.13;
+  font-weight: 400;
+  letter-spacing: .01em;
+}
+#listaCentrosSidebar li:hover {
+  background: #f3f3f3;
+  color: #00796b;
+}
+#listaCentrosSidebar li.selected {
+  background: #e0f2f1;
+  color: #009688;
+}
+
+#sidebarInfo {
+  font-size: 0.83em;
+  color: #aaa;
+  text-align:center;
+  margin-top: 5px;
+  margin-bottom: 2px;
+}
+
+/* ----------- MAPA DE CENTROS ----------- */
+#mapaSection {
+  display: flex;
+  gap: 10px;
+  height: 70vh;
+  margin-top: 1rem;
+}
+
+#mapShell {
+  flex-grow: 1;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  height: 100%;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+}
+#map.leaflet-container {
+  background: #d8d8d8;
+}
+#map:focus-visible {
+  outline: 2px solid #26a69a;
+  outline-offset: 2px;
+}
+
+:fullscreen #mapShell,
+#mapShell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+}
+:fullscreen #map,
+#map:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+body:has(#mapShell:fullscreen) {
+  overflow: hidden;
+}
+#map path.leaflet-interactive {
+  cursor: pointer;
+}
+
+/* --- Fix Z-INDEX para dropdown del select Estado dentro de tabla --- */
+.dropdown-content.select-dropdown {
+  z-index: 99999 !important;
+  position: absolute !important;
+  background: #fff !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18) !important;
+}
+
+.child-table-lineas td,
+.child-row-lineas {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+div.dataTables_wrapper {
+  z-index: 1 !important;
+}
+.child-row-lineas {
+  z-index: 3 !important;
+}
+body .dropdown-content {
+  z-index: 99999 !important;
+}
+
 @media (max-width: 900px) {
   #centrosTable, #centrosTable_wrapper,
   .child-row-lineas, .child-row-lineas table.striped {
@@ -237,104 +423,24 @@
     right: 2.5vw !important;
     border-radius: 0 !important;
   }
-}
-
-/* ----------- MAPA DE CENTROS ----------- */
-#mapaSection {
-  display: flex;
-  gap: 20px;
-  height: 70vh;
-  margin-top: 1rem;
-}
-
-#sidebarCentros {
-  width: 280px;
-  overflow-y: auto;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 16px 12px;
-  background-color: #fff;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-#listaCentros.collection {
-  margin: 0;
-  padding: 0;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-#mapShell {
-  flex-grow: 1;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  overflow: hidden;
-  height: 100%;
-}
-
-#map {
-  width: 100%;
-  height: 100%;
-  min-height: 400px;
-}
-
-#map.leaflet-container {
-  background: #d8d8d8;
-}
-
-#map:focus-visible {
-  outline: 2px solid #26a69a;
-  outline-offset: 2px;
-}
-
-/* Pantalla completa (fullscreen) para el mapa */
-:fullscreen #mapShell,
-#mapShell:fullscreen {
-  width: 100vw;
-  height: 100vh;
-  border-radius: 0;
-  margin: 0;
-  padding: 0;
-}
-
-:fullscreen #map,
-#map:fullscreen {
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  padding: 0;
-}
-
-body:has(#mapShell:fullscreen) {
-  overflow: hidden;
-}
-
-#map path.leaflet-interactive {
-  cursor: pointer;
-}
-
-/* --- Fix Z-INDEX para dropdown del select Estado dentro de tabla --- */
-.dropdown-content.select-dropdown {
-  z-index: 99999 !important;
-  position: absolute !important;
-  background: #fff !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.18) !important;
-}
-
-.child-table-lineas td,
-.child-row-lineas {
-  position: relative !important;
-  z-index: 2 !important;
-}
-
-div.dataTables_wrapper {
-  z-index: 1 !important;
-}
-
-.child-row-lineas {
-  z-index: 3 !important;
-}
-
-body .dropdown-content {
-  z-index: 99999 !important;
+  #sidebarCentros {
+    width: 97vw !important;
+    max-width: 98vw !important;
+    min-width: 80px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 20;
+    border-radius: 0 0 14px 0 !important;
+    box-shadow: 0 10px 44px rgba(0,0,0,0.14);
+  }
+  #sidebarCentros.minimized {
+    width: 22px !important;
+    max-width: 22px !important;
+  }
+  #mapaSection {
+    flex-direction: column;
+    height: auto;
+    gap: 6px;
+  }
 }
