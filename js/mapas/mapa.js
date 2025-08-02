@@ -38,9 +38,10 @@ export function initSidebarFiltro() {
   const listaSidebar = document.getElementById('listaCentrosSidebar');
   const sidebar = document.getElementById('sidebarCentros');
   const toggleBtn = document.getElementById('toggleSidebar');
+  const icon = document.getElementById('toggleSidebarIcon');
 
-  if (!filtroInput || !listaSidebar || !sidebar || !toggleBtn) {
-    log('No se encontró filtro o sidebar');
+  if (!filtroInput || !listaSidebar || !sidebar || !toggleBtn || !icon) {
+    log('No se encontró filtro, sidebar o icono');
     return;
   }
 
@@ -50,7 +51,7 @@ export function initSidebarFiltro() {
     renderListaSidebar();
   });
 
-  // Toggle para colapsar/expandir sidebar
+  // Toggle para colapsar/expandir sidebar con Material Icons
   toggleBtn.onclick = () => {
     sidebar.classList.toggle('minimized');
 
@@ -58,11 +59,11 @@ export function initSidebarFiltro() {
     if (sidebar.classList.contains('minimized')) {
       document.body.classList.add('sidebar-minimized');
       toggleBtn.title = "Expandir sidebar";
-      toggleBtn.innerHTML = "&#x25B6;"; // Flecha derecha
+      icon.textContent = "chevron_right";
     } else {
       document.body.classList.remove('sidebar-minimized');
       toggleBtn.title = "Colapsar sidebar";
-      toggleBtn.innerHTML = "&#x25C0;"; // Flecha izquierda
+      icon.textContent = "chevron_left";
     }
 
     setTimeout(() => {
