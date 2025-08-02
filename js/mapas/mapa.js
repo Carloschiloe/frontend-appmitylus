@@ -29,6 +29,73 @@ let currentBaseKey = 'esri';
 let centrosDataGlobal = [];
 let filtroProveedor = '';
 
+/* ======================== */
+/*   NUEVO: FILTRO EXTENDIDO   */
+/* ======================== */
+
+// Inicializar filtro en sidebar (llamar tras cargar la página)
+export function initSidebarFiltro() {
+  const filtroInput = document.getElementById('filtroProveedor');
+  const listaSidebar = document.getElementById('listaCentrosSidebar');
+
+  if (!filtroInput || !listaSidebar) {
+    log('No se encontró filtro o lista sidebar');
+    return;
+  }
+
+  filtroInput.addEventListener('input', () => {
+    filtroProveedor = filtroInput.value.trim().toLowerCase();
+    actualizarListaSidebar();
+  });
+}
+
+// Actualiza listado en sidebar con filtro por proveedor y nombre (máximo 10)
+function actualizarListaSidebar() {
+  const listaSidebar = document.getElementById('listaCentrosSidebar');
+  if (!listaSidebar) return;
+
+  // FILTRO AMBOS CAMPOS: nombre y proveedor
+  let filtrados = centrosDataGlobal;
+  if (filtroProveedor.length > 0) {
+    filtrados = centrosDataGlobal.filter(c =>
+      (c.proveedor || '').toLowerCase().includes(filtroProveedor) ||
+      (c.name || '').toLowerCase().includes(filtroProveedor)
+    );
+  }
+  filtrados = filtrados.slice(0, 10);
+
+  if (filtrados.length === 0) {
+    listaSidebar.innerHTML = `<tr><td colspan="3" style="color:#888;">Sin coincidencias</td></tr>`;
+    return;
+  }
+
+  listaSidebar.innerHTML = filtrados.map(c => {
+    // Busca el idx real (por si hay filtro)
+    const idx = centrosDataGlobal.indexOf(c);
+    return `
+      <tr data-idx="${idx}" tabindex="0" role="row" aria-label="Centro ${c.name}, proveedor ${c.proveedor}, código ${c.code}">
+        <td>${c.name}</td>
+        <td>${c.proveedor || ''}</td>
+        <td>${c.code || ''}</td>
+      </tr>
+    `;
+  }).join('');
+
+  // Eventos click y keyboard para filas
+  Array.from(listaSidebar.querySelectorAll('tr')).forEach(tr => {
+    tr.onclick = () => {
+      const idx = +tr.getAttribute('data-idx');
+      focusCentroInMap(idx);
+    };
+    tr.onkeydown = e => {
+      if (e.key === 'Enter') {
+        const idx = +tr.getAttribute('data-idx');
+        focusCentroInMap(idx);
+      }
+    };
+  });
+}
+
 // Crear mapa Leaflet
 export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
   if (map) return map;
@@ -183,60 +250,6 @@ export function focusCentroInMap(idx) {
   }
   poly.setStyle({ color: '#ff9800', weight: 5 });
   setTimeout(() => poly.setStyle({ color: '#1976d2', weight: 3 }), 1000);
-}
-
-/* ---------- Sidebar con filtro y tabla ---------- */
-
-// Inicializar filtro en sidebar (llamar tras cargar la página)
-export function initSidebarFiltro() {
-  const filtroInput = document.getElementById('filtroProveedor');
-  const listaSidebar = document.getElementById('listaCentrosSidebar');
-
-  if (!filtroInput || !listaSidebar) {
-    log('No se encontró filtro o lista sidebar');
-    return;
-  }
-
-  filtroInput.addEventListener('input', () => {
-    filtroProveedor = filtroInput.value.trim().toLowerCase();
-    actualizarListaSidebar();
-  });
-}
-
-// Actualiza listado en sidebar con filtro y máximo 10
-function actualizarListaSidebar() {
-  const listaSidebar = document.getElementById('listaCentrosSidebar');
-  if (!listaSidebar) return;
-
-  let filtrados = centrosDataGlobal;
-  if (filtroProveedor.length > 0) {
-    filtrados = centrosDataGlobal.filter(c =>
-      (c.proveedor || '').toLowerCase().includes(filtroProveedor)
-    );
-  }
-  filtrados = filtrados.slice(0, 10);
-
-  listaSidebar.innerHTML = filtrados.map((c, idx) => `
-    <tr data-idx="${idx}" tabindex="0" role="row" aria-label="Centro ${c.name}, proveedor ${c.proveedor}, código ${c.code}">
-      <td>${c.name}</td>
-      <td>${c.proveedor || ''}</td>
-      <td>${c.code || ''}</td>
-    </tr>
-  `).join('');
-
-  // Eventos click y keyboard para filas
-  Array.from(listaSidebar.querySelectorAll('tr')).forEach(tr => {
-    tr.onclick = () => {
-      const idx = +tr.getAttribute('data-idx');
-      focusCentroInMap(idx);
-    };
-    tr.onkeydown = e => {
-      if (e.key === 'Enter') {
-        const idx = +tr.getAttribute('data-idx');
-        focusCentroInMap(idx);
-      }
-    };
-  });
 }
 
 // Función para cargar centros y actualizar mapa + sidebar
