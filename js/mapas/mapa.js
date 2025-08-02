@@ -215,17 +215,36 @@ export function drawCentrosInMap(centros = [], defaultLatLng = [-42.48, -73.77],
       .filter(([la, ln]) => la !== null && ln !== null);
     if (coords.length < 3) return;
 
-    const hect       = +c.hectareas || 0;
+    const hect = +c.hectareas || 0;
     const cantLineas = Array.isArray(c.lines) ? c.lines.length : 0;
-    const totalBoyas = Array.isArray(c.lines) ? c.lines.reduce((a,l)=>a+(+l.buoys||0),0) : 0;
+
+    // ---- Calcular promedios y suma, igual que en tu tabla ----
+    let sumaUnKg = 0, sumaRechazo = 0, sumaRdmto = 0, sumaTons = 0, linesConDatos = 0;
+    if (Array.isArray(c.lines) && c.lines.length > 0) {
+      c.lines.forEach(l => {
+        if (l.unKg != null && !isNaN(l.unKg)) sumaUnKg += Number(l.unKg);
+        if (l.porcRechazo != null && !isNaN(l.porcRechazo)) sumaRechazo += Number(l.porcRechazo);
+        if (l.rendimiento != null && !isNaN(l.rendimiento)) sumaRdmto += Number(l.rendimiento);
+        if (l.tons != null && !isNaN(l.tons)) sumaTons += Number(l.tons);
+      });
+      linesConDatos = c.lines.length;
+    }
+
+    // Evitar división por cero
+    const promUnKg = linesConDatos ? (sumaUnKg / linesConDatos) : 0;
+    const promRechazo = linesConDatos ? (sumaRechazo / linesConDatos) : 0;
+    const promRdmto = linesConDatos ? (sumaRdmto / linesConDatos) : 0;
 
     const popupHTML = `
-      <div style="min-width:150px;font-size:12.5px;line-height:1.25">
-        <div style="font-weight:600;margin-bottom:4px;">${c.name}</div>
-        <div><b>Código:</b> ${c.code}</div>
-        <div><b>Hectáreas:</b> ${hect.toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      <div style="min-width:170px;font-size:13px;line-height:1.28">
+        <div style="font-weight:600;margin-bottom:5px;">${c.name}</div>
+        <div><b>Código:</b> ${c.code || '-'}</div>
+        <div><b>Hectáreas:</b> ${hect.toLocaleString('es-CL', {minimumFractionDigits:2,maximumFractionDigits:2})}</div>
         <div><b>Líneas:</b> ${cantLineas}</div>
-        <div><b>Boyas:</b> ${totalBoyas}</div>
+        <div><b>Tons:</b> ${sumaTons.toLocaleString('es-CL', {minimumFractionDigits:0})}</div>
+        <div><b>Un/Kg:</b> ${promUnKg.toLocaleString('es-CL', {maximumFractionDigits:2})}</div>
+        <div><b>% Rechazo:</b> ${promRechazo.toLocaleString('es-CL', {maximumFractionDigits:2})}%</div>
+        <div><b>Rdmto:</b> ${promRdmto.toLocaleString('es-CL', {maximumFractionDigits:2})}%</div>
       </div>
     `.trim();
 
@@ -286,3 +305,4 @@ export function focusCentroInMap(idx) {
   poly.setStyle({ color: '#ff9800', weight: 5 });
   setTimeout(() => poly.setStyle({ color: '#1976d2', weight: 3 }), 1000);
 }
+
