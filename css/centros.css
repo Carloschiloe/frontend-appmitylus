@@ -240,8 +240,9 @@
 /* --- BOTÓN DE COLAPSAR --- */
 #toggleSidebar {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 50%;
+  left: -18px;     /* Lo dejamos “fuera” del mapa, sólo el botón visible */
+  transform: translateY(-50%);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -258,10 +259,11 @@
   transition: left 0.32s, top 0.32s, transform 0.32s;
   padding: 0;
 }
+
 #sidebarCentros.minimized + #toggleSidebar {
-  left: 10px !important;
-  top: 10px !important;
-  transform: rotate(180deg);
+  left: -18px !important;  /* Mantén el botón siempre pegado al borde */
+  top: 50% !important;
+  transform: translateY(-50%) rotate(180deg);
 }
 
 /* input y lista del sidebar */
