@@ -9,7 +9,7 @@ import {
 import { renderAcordeonLineas } from './lineas.js';
 import { renderMapaAlways } from '../mapas/control_mapa.js';
 import { tabMapaActiva } from '../core/utilidades_app.js';
-import { openEditForm, renderPointsTable } from './centros_form.js';
+import { openEditForm } from './centros_form.js';
 
 // INICIALIZA LA TABLA
 export function initTablaCentros() {
@@ -49,27 +49,39 @@ export function initTablaCentros() {
       url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
     },
     footerCallback: function () {
-      let sumH = 0, sumL = 0, sumTon = 0, sumUnKg = 0, sumTons = 0, sumRechazo = 0, sumRdmto = 0;
+      // Totales para cada columna de la tabla (según tu HTML)
+      let sumH = 0, sumL = 0, sumTons = 0, sumUnKg = 0, sumTonsCol = 0, sumRechazo = 0, sumRdmto = 0;
       Estado.centros.forEach(c => {
+        // Suma hectáreas y líneas
         sumH += parseFloat(c.hectareas) || 0;
         sumL += Array.isArray(c.lines) ? c.lines.length : 0;
-        sumTon += Array.isArray(c.lines) ? c.lines.reduce((s, l) => s + (+l.tons || 0), 0) : 0;
-        sumUnKg += parseFloat(c.un_kg) || 0;
-        sumTons += parseFloat(c.tons) || 0;
-        sumRechazo += parseFloat(c.porcentaje_rechazo) || 0;
-        sumRdmto += parseFloat(c.rdmto) || 0;
+
+        // Calcula por líneas (para columnas agregadas)
+        let unKg = 0, tons = 0, porcRechazo = 0, rdmto = 0, linesWithData = 0;
+        if (Array.isArray(c.lines)) {
+          c.lines.forEach(l => {
+            tons += +l.tons || 0;
+            unKg += +l.unKg || 0;
+            porcRechazo += +l.porcRechazo || 0;
+            rdmto += +l.rendimiento || 0;
+            linesWithData++;
+          });
+        }
+        sumTons += tons;
+        sumUnKg += unKg;
+        sumRechazo += porcRechazo;
+        sumRdmto += rdmto;
       });
+      // Renderiza totales
       const h = document.getElementById('totalHect');
       const l = document.getElementById('totalLineas');
-      const t = document.getElementById('totalTon');
       const unKg = document.getElementById('totalUnKg');
       const tons = document.getElementById('totalTons');
       const rechazo = document.getElementById('totalRechazo');
       const rdmto = document.getElementById('totalRdmto');
-      if (h && l && t && unKg && tons && rechazo && rdmto) {
+      if (h && l && unKg && tons && rechazo && rdmto) {
         h.textContent = sumH.toFixed(2);
         l.textContent = sumL;
-        t.textContent = sumTon.toLocaleString('es-CL', { minimumFractionDigits: 0 });
         unKg.textContent = sumUnKg;
         tons.textContent = sumTons;
         rechazo.textContent = sumRechazo;
@@ -243,18 +255,6 @@ function attachLineasListeners(idx, acordeonCont) {
         const rechazo = rechazoInput?.value.trim() ? parseFloat(rechazoInput.value) : null;
         const rendimiento = rendimientoInput?.value.trim() ? parseFloat(rendimientoInput.value) : null;
 
-        // DEBUG: muestra TODO lo que se manda al backend
-        console.log({
-          number: num,
-          longitud: long,
-          observaciones: obs,
-          state: st,
-          tons,
-          unKg: unkg,
-          porcRechazo: rechazo,
-          rendimiento,
-        });
-
         // VALIDACIÓN: Solo obligatorios (N° línea, Longitud y Estado)
         if (!num || long === null || !st) {
           M.toast({ html: 'Completa N° Línea, Longitud y Estado', classes: 'red' });
@@ -356,34 +356,37 @@ export async function loadCentros() {
   const rows = Estado.centros.map((c, i) => {
     const cantLineas = Array.isArray(c.lines) ? c.lines.length : 0;
     const hect = parseFloat(c.hectareas) || 0;
-    const tonsDisponibles = Array.isArray(c.lines)
-      ? c.lines.reduce((sum, l) => sum + (+l.tons || 0), 0)
-      : 0;
+
+    // Totales calculados desde líneas:
+    let totalUnKg = 0, totalTons = 0, totalRechazo = 0, totalRdmto = 0;
+    if (Array.isArray(c.lines)) {
+      c.lines.forEach(l => {
+        totalTons += +l.tons || 0;
+        totalUnKg += +l.unKg || 0;
+        totalRechazo += +l.porcRechazo || 0;
+        totalRdmto += +l.rendimiento || 0;
+      });
+    }
     const proveedor = c.proveedor || '-';
 
-    // NUEVOS CAMPOS
-    const unKg = (c.un_kg ?? 0);
-    const tons = (c.tons ?? 0);
-    const porcentajeRechazo = (c.porcentaje_rechazo ?? 0);
-    const rdmto = (c.rdmto ?? 0);
-
+    // Campos renderizados
     const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>`;
     const accionesCell = `
       <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer">visibility</i>
       <i class="material-icons editar-centro" data-idx="${i}" style="cursor:pointer">edit</i>
       <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer">delete</i>`;
 
+    // El orden debe coincidir con tu <thead>
     return [
       c.name,
       proveedor,
       c.code || '-',
       hect.toFixed(2),
       cantLineas,
-      tonsDisponibles.toLocaleString('es-CL', { minimumFractionDigits: 0 }),
-      unKg,
-      tons,
-      porcentajeRechazo + '%',
-      rdmto + '%',
+      totalTons,
+      totalUnKg,
+      totalRechazo + '%',
+      totalRdmto + '%',
       coordsCell,
       accionesCell
     ];
