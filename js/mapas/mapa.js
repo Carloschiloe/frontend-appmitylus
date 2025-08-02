@@ -1,4 +1,4 @@
-// mapa.js - gestión completa del mapa y sidebar de centros (sidebar minimalista, filtro extendido)
+// mapa.js - gestión completa del mapa y sidebar de centros (sidebar minimalista, filtro extendido + colapsable)
 
 let map;
 let puntosIngresoGroup;
@@ -50,15 +50,20 @@ export function initSidebarFiltro() {
     renderListaSidebar();
   });
 
-  // Toggle para colapsar
+  // Toggle para colapsar/expandir sidebar
   toggleBtn.onclick = () => {
     sidebar.classList.toggle('minimized');
+    // Ajustar el mapa al expandir/collapse (timeout para animación)
+    setTimeout(() => {
+      if (map) map.invalidateSize();
+    }, 350);
+
     if (sidebar.classList.contains('minimized')) {
       toggleBtn.title = "Expandir sidebar";
-      toggleBtn.innerHTML = "&#x25B6;"; // flecha a la derecha
+      toggleBtn.innerHTML = "&#x25B6;";
     } else {
       toggleBtn.title = "Colapsar sidebar";
-      toggleBtn.innerHTML = "&#x25C0;"; // flecha a la izquierda
+      toggleBtn.innerHTML = "&#x25C0;";
     }
   };
 
