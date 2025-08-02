@@ -241,7 +241,7 @@
 #toggleSidebar {
   position: absolute;
   top: 50%;
-  left: -18px;     /* Lo dejamos “fuera” del mapa, sólo el botón visible */
+  left: -7px;           /* <--- AJUSTA este valor, menos negativo, sale más hacia adentro */
   transform: translateY(-50%);
   width: 32px;
   height: 32px;
@@ -254,17 +254,17 @@
   display: flex !important;
   align-items: center;
   justify-content: center;
-  z-index: 1003;
+  z-index: 1010;        /* ¡¡Más z-index!! */
   box-shadow: 0 1px 6px rgba(0,0,0,0.13);
   transition: left 0.32s, top 0.32s, transform 0.32s;
   padding: 0;
 }
-
 #sidebarCentros.minimized + #toggleSidebar {
-  left: -18px !important;  /* Mantén el botón siempre pegado al borde */
+  left: -7px !important;
   top: 50% !important;
   transform: translateY(-50%) rotate(180deg);
 }
+
 
 /* input y lista del sidebar */
 #filtroSidebar {
