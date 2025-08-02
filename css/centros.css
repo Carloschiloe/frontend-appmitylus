@@ -1,5 +1,5 @@
 /* ==========================
-   CENTROS – ESTILO EXCLUSIVO MEJORADO
+   CENTROS – ESTILO EXCLUSIVO MEJORADO + SIDEBAR MINIMALISTA COLAPSABLE
    ========================== */
 
 /* ----------- TABLA CENTROS ----------- */
@@ -11,7 +11,6 @@
   border-radius: 8px;
   background-color: #fff;
 }
-
 #centrosTable th, #centrosTable td {
   font-size: 0.95rem;
   padding: 0.4rem 0.5rem;
@@ -19,19 +18,16 @@
   vertical-align: middle;
   border-bottom: 1px solid #e0e0e0;
 }
-
 #centrosTable th {
   background-color: #004d40;
   color: white;
   font-weight: 600;
 }
-
 #centrosTable td:last-child,
 .child-row-lineas td:last-child {
   white-space: nowrap !important;
   text-align: left;
 }
-
 #centrosTable td .material-icons,
 .child-row-lineas td .material-icons {
   display: inline-block !important;
@@ -69,7 +65,6 @@
   position: relative;
   border-radius: 0 0 16px 16px;
 }
-
 .child-row-lineas table,
 .child-row-lineas table.striped,
 .child-table-lineas {
@@ -80,7 +75,6 @@
   border-collapse: collapse !important;
   table-layout: auto !important;
 }
-
 .child-table-lineas th {
   color: #004d40 !important;
   background: #e0f2f1 !important;
@@ -90,7 +84,6 @@
   text-align: center;
   white-space: nowrap !important;
 }
-
 .child-table-lineas th,
 .child-table-lineas td {
   padding: 0.15rem 0.1rem !important;
@@ -103,7 +96,6 @@
   border-bottom: 1px solid #eee;
   text-align: center;
 }
-
 .child-table-lineas th:nth-child(1),
 .child-table-lineas td:nth-child(1) { width: 40px; max-width: 50px; min-width: 18px; }
 .child-table-lineas th:nth-child(2),
@@ -140,7 +132,6 @@
   text-align: center;
   white-space: nowrap;
 }
-
 .child-table-lineas input,
 .child-table-lineas select {
   width: 92%;
@@ -154,13 +145,11 @@
   border: 1px solid #bdbdbd;
   transition: border-color 0.2s ease-in-out;
 }
-
 .child-table-lineas input:focus,
 .child-table-lineas select:focus {
   border-color: #009688;
   outline: none;
 }
-
 .child-table-lineas .select-wrapper,
 .child-row-lineas .select-wrapper {
   min-width: 90px !important;
@@ -169,12 +158,10 @@
   overflow: visible !important;
   z-index: 5 !important;
 }
-
 .child-table-lineas .select-wrapper input.select-dropdown {
   min-width: 85px !important;
   max-width: 125px !important;
 }
-
 .dropdown-content.select-dropdown {
   min-width: 115px !important;
   max-width: 210px !important;
@@ -188,13 +175,11 @@
   background: #fff !important;
   border-radius: 6px;
 }
-
 .child-table-lineas,
 .child-table-lineas tr,
 .child-table-lineas td {
   overflow: visible !important;
 }
-
 .child-row-lineas input,
 .child-row-lineas select {
   max-width: 100%;
@@ -202,63 +187,68 @@
   border-radius: 4px;
 }
 
-/* ----------- NUEVO SIDEBAR MINIMALISTA ----------- */
+/* ----------- SIDEBAR MINIMALISTA COLAPSABLE ----------- */
 #sidebarCentros {
-  width: 165px;
-  min-width: 80px;
-  max-width: 200px;
+  min-width: 168px;
+  width: 185px;
+  max-width: 210px;
   overflow-y: auto;
   border: 1px solid #eee;
   border-radius: 7px;
   background-color: #fff;
   box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-  padding: 12px 6px 6px 8px;
+  padding: 12px 8px 8px 10px;
   display: flex;
   flex-direction: column;
   position: relative;
-  transition: width 0.23s cubic-bezier(0.38,0.13,0.46,0.87);
+  transition: width 0.32s cubic-bezier(.61,-0.01,.65,1.13), min-width 0.32s;
   z-index: 12;
 }
-
 #sidebarCentros.minimized {
-  width: 24px !important;
-  min-width: 24px !important;
-  max-width: 24px !important;
-  padding-left: 2px !important;
-  padding-right: 2px !important;
+  min-width: 0 !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
 }
-#sidebarCentros.minimized #filtroSidebar,
-#sidebarCentros.minimized #sidebarInfo,
-#sidebarCentros.minimized #listaCentrosSidebar {
-  display: none !important;
+#sidebarCentros.minimized *:not(#toggleSidebar) {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  font-size: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 #sidebarCentros #toggleSidebar {
   position: absolute;
-  top: 10px;
-  right: -17px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1px solid #e0e0e0;
+  top: 11px;
+  right: -18px;
+  width: 25px;
+  height: 25px;
+  border-radius: 100px;
+  border: 1px solid #bbb;
   background: #fff;
   color: #00796b;
-  font-size: 1.09em;
+  font-size: 1.18em;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 99;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  transition: transform 0.2s;
+  z-index: 20;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.11);
+  transition: right 0.33s, transform 0.32s;
 }
 #sidebarCentros.minimized #toggleSidebar {
   right: -13px;
+  background: #fff;
+  border-color: #bbb;
   transform: rotate(180deg);
 }
 
 #filtroSidebar {
   width: 100%;
-  font-size: 0.96em;
+  font-size: 0.97em;
   padding: 4px 10px;
   border-radius: 14px;
   border:1px solid #ddd;
@@ -271,12 +261,11 @@
   outline: none;
   background: #fff;
 }
-
 #listaCentrosSidebar {
   list-style: none;
   padding: 0;
   margin: 0 0 6px 0;
-  font-size: 0.96em;
+  font-size: 0.97em;
   flex-grow: 1;
   overflow-y: auto;
   max-height: 59vh;
@@ -290,7 +279,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.99em;
+  font-size: 1em;
   margin-bottom: 1px;
 }
 #listaCentrosSidebar li b {
@@ -299,7 +288,7 @@
 }
 #listaCentrosSidebar li .proveedor {
   display: block;
-  font-size: 0.85em;
+  font-size: 0.87em;
   color: #889;
   margin-left: 2px;
   margin-top: 2px;
@@ -317,7 +306,7 @@
 }
 
 #sidebarInfo {
-  font-size: 0.83em;
+  font-size: 0.82em;
   color: #aaa;
   text-align:center;
   margin-top: 5px;
@@ -331,7 +320,6 @@
   height: 70vh;
   margin-top: 1rem;
 }
-
 #mapShell {
   flex-grow: 1;
   border: 1px solid #ddd;
@@ -339,7 +327,6 @@
   overflow: hidden;
   height: 100%;
 }
-
 #map {
   width: 100%;
   height: 100%;
@@ -352,7 +339,6 @@
   outline: 2px solid #26a69a;
   outline-offset: 2px;
 }
-
 :fullscreen #mapShell,
 #mapShell:fullscreen {
   width: 100vw;
@@ -382,13 +368,11 @@ body:has(#mapShell:fullscreen) {
   background: #fff !important;
   box-shadow: 0 8px 24px rgba(0,0,0,0.18) !important;
 }
-
 .child-table-lineas td,
 .child-row-lineas {
   position: relative !important;
   z-index: 2 !important;
 }
-
 div.dataTables_wrapper {
   z-index: 1 !important;
 }
@@ -399,6 +383,7 @@ body .dropdown-content {
   z-index: 99999 !important;
 }
 
+/* ----------- RESPONSIVE ----------- */
 @media (max-width: 900px) {
   #centrosTable, #centrosTable_wrapper,
   .child-row-lineas, .child-row-lineas table.striped {
@@ -409,7 +394,7 @@ body .dropdown-content {
   }
   .child-row-lineas th, .child-row-lineas td,
   .child-table-lineas th, .child-table-lineas td {
-    font-size: 1.02em !important;
+    font-size: 1.04em !important;
     padding-left: 8px !important;
     padding-right: 8px !important;
   }
@@ -426,7 +411,7 @@ body .dropdown-content {
   #sidebarCentros {
     width: 97vw !important;
     max-width: 98vw !important;
-    min-width: 80px;
+    min-width: 80px !important;
     position: absolute;
     top: 0;
     left: 0;
@@ -437,6 +422,7 @@ body .dropdown-content {
   #sidebarCentros.minimized {
     width: 22px !important;
     max-width: 22px !important;
+    min-width: 22px !important;
   }
   #mapaSection {
     flex-direction: column;
