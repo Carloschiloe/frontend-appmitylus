@@ -201,21 +201,74 @@
 }
 
 /* ----------- MAPA DE CENTROS ----------- */
-/* (El resto igual, sin cambios) */
-#mapaSection { /* ... */ }
-#sidebarCentros { /* ... */ }
-#mapShell { /* ... */ }
-#map { /* ... */ }
-#map:focus-visible { /* ... */ }
-#map.leaflet-container { background: #d8d8d8; }
-.leaflet-container img.leaflet-tile { max-width: none !important; }
-@media (max-width: 900px) { /* ... */ }
+/* === NUEVO === */
+#mapaSection {
+  display: flex;
+  gap: 20px;
+  height: 70vh;
+  margin-top: 1rem;
+}
+#sidebarCentros {
+  width: 320px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 15px 12px;
+  background-color: #fff;
+  box-shadow: 0 0 7px rgba(0,0,0,0.1);
+}
+#listaCentros.collection {
+  margin: 0;
+  padding: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+#mapShell {
+  flex-grow: 1;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  height: 100%;
+}
+#map {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+}
+#map.leaflet-container {
+  background: #d8d8d8;
+}
+/* Si quieres que el mapa tenga un foco al recibir eventos de teclado */
+#map:focus-visible {
+  outline: 2px solid #26a69a;
+  outline-offset: 2px;
+}
+
+/* Pantalla completa (fullscreen) para el mapa */
 :fullscreen #mapShell,
-#mapShell:fullscreen { /* ... */ }
+#mapShell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+}
 :fullscreen #map,
-#map:fullscreen { /* ... */ }
-body:has(#mapShell:fullscreen) { overflow: hidden; }
-#map path.leaflet-interactive { cursor: pointer; }
+#map:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Evitar scroll en body cuando el mapa está en fullscreen */
+body:has(#mapShell:fullscreen) {
+  overflow: hidden;
+}
+
+#map path.leaflet-interactive {
+  cursor: pointer;
+}
 
 /* --- Fix Z-INDEX para dropdown del select Estado dentro de tabla --- */
 .dropdown-content.select-dropdown {
@@ -243,4 +296,3 @@ div.dataTables_wrapper {
 body .dropdown-content {
   z-index: 99999 !important;
 }
-
