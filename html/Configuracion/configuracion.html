@@ -32,23 +32,40 @@
         <li class="tab col s3"><a href="#tab-transporte">EMPRESAS DE TRANSPORTE</a></li>
       </ul>
 
-      <!-- ========== PESTAÑA: CRITERIOS DE CLASIFICACIÓN ========== -->
-      <div id="tab-criterios" class="config-section">
-        <h5 class="section-title">Criterios de Clasificación por Cliente</h5>
-        <div class="table-controls">
-          <input type="text" class="table-filter" id="criteriosFilter" placeholder="Buscar..." />
-          <div class="table-actions">
-            <button id="btnExportCriteriosExcel" class="btn-exportar" title="Exportar Excel"><i class="material-icons">grid_on</i></button>
-            <button id="btnExportCriteriosPDF" class="btn-exportar" title="Exportar PDF"><i class="material-icons">picture_as_pdf</i></button>
-            <button id="btnExportCriteriosCSV" class="btn-exportar" title="Exportar CSV"><i class="material-icons">table_chart</i></button>
-            <button id="btnAddCriterio" class="btn-nuevo" title="Agregar"><i class="material-icons">add</i></button>
-          </div>
-        </div>
-        <div class="table-responsive">
-          <table id="criteriosTable" class="conf-table"></table>
-        </div>
-        <div id="modalCriterio" class="modal-float" style="display:none;"></div>
-      </div>
+          <!-- SECCIÓN CRITERIOS DE CLASIFICACIÓN -->
+<div id="tab-criterios" class="config-section">
+  <h5 class="section-title">Criterios de Clasificación por Cliente</h5>
+  <div class="row" style="margin-bottom: .7rem;">
+    <div class="input-field col s12 m4">
+      <input id="criteriosFilter" type="text" placeholder="Buscar..." />
+    </div>
+    <div class="col s12 m8 right-align">
+      <button id="btnExportCriteriosExcel" class="btn-flat tooltipped" data-tooltip="Exportar a Excel"><i class="material-icons">grid_on</i></button>
+      <button id="btnExportCriteriosPDF" class="btn-flat tooltipped" data-tooltip="Exportar a PDF"><i class="material-icons">picture_as_pdf</i></button>
+      <button id="btnExportCriteriosCSV" class="btn-flat tooltipped" data-tooltip="Exportar CSV"><i class="material-icons">table_chart</i></button>
+      <button id="btnAddCriterio" class="btn-flat tooltipped teal-text" data-tooltip="Agregar Criterio"><i class="material-icons">add</i></button>
+    </div>
+  </div>
+  <div style="position:relative;">
+    <table class="highlight responsive-table" id="criteriosTable">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Un/Kg min</th>
+          <th>Un/Kg max</th>
+          <th>% Rechazo min</th>
+          <th>% Rechazo max</th>
+          <th>% Rdmto min</th>
+          <th>% Rdmto max</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <!-- Modal para agregar/editar -->
+    <div id="modalCriterio" class="modal-criterio"></div>
+  </div>
+</div>
 
       <!-- ========== PESTAÑA: PROVEEDORES MMPP ========== -->
       <div id="tab-proveedores" class="config-section" style="display:none;">
@@ -138,3 +155,4 @@
   </script>
 </body>
 </html>
+
