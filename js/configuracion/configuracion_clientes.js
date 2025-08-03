@@ -4,8 +4,7 @@ export function renderClientes() {
   const cont = document.getElementById('clientes-content');
   if (!cont) return;
   cont.innerHTML = `
-    <h5 class="section-title">Clientes</h5>
-    <form id="form-cliente" class="row">
+      <form id="form-cliente" class="row">
       <div class="input-field col s12 m3"><input id="nombreCliente" type="text" /><label for="nombreCliente">Nombre</label></div>
       <div class="input-field col s12 m2"><input id="rutCliente" type="text" /><label for="rutCliente">RUT</label></div>
       <div class="input-field col s12 m3"><input id="direccionCliente" type="text" /><label for="direccionCliente">Dirección</label></div>
@@ -68,3 +67,4 @@ export function renderClientes() {
     e.target.reset();
   };
 }
+
