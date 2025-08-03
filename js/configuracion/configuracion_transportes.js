@@ -1,142 +1,214 @@
-// /js/configuracion/configuracion_transportes.js
+// configuración_empresas.js – Empresas de Transporte y Camiones (acordeón)
+// Para usar: importa en tu index.js principal de configuración
 
+let empresasTransporte = []; // [{nombre, rut, direccion, comuna, telefono, email, obs, camiones:[...]}]
+let selectedEmpresaIdx = null;
+
+// --- Render principal ---
 export function renderEmpresasTransporte() {
-  const cont = document.getElementById('transportes-content');
+  const cont = document.getElementById('tab-empresas');
   if (!cont) return;
+
   cont.innerHTML = `
-    <h5 class="section-title">Empresas de Transporte</h5>
-    <form id="form-transporte" class="row">
-      <div class="input-field col s12 m3"><input id="nombreTransporte" type="text" /><label for="nombreTransporte">Nombre</label></div>
-      <div class="input-field col s12 m2"><input id="rutTransporte" type="text" /><label for="rutTransporte">RUT</label></div>
-      <div class="input-field col s12 m3"><input id="direccionTransporte" type="text" /><label for="direccionTransporte">Dirección</label></div>
-      <div class="input-field col s12 m2"><input id="comunaTransporte" type="text" /><label for="comunaTransporte">Comuna</label></div>
-      <div class="input-field col s12 m2"><input id="telefonoTransporte" type="text" /><label for="telefonoTransporte">Teléfono</label></div>
-      <div class="input-field col s12 m3"><input id="emailTransporte" type="email" /><label for="emailTransporte">Email</label></div>
-      <div class="input-field col s12 m3"><input id="obsTransporte" type="text" /><label for="obsTransporte">Obs.</label></div>
-      <div class="col s12 m1 center-align" style="margin-top:24px;">
-        <button type="submit" class="btn blue"><i class="material-icons">add</i></button>
+    <h5 class="conf-title">Empresas de Transporte</h5>
+    <form id="formEmpresa" class="conf-form">
+      <input type="hidden" id="empresaIdx" />
+      <div class="conf-row">
+        <input type="text" id="empresaNombre" placeholder="Nombre" />
+        <input type="text" id="empresaRut" placeholder="RUT" />
+        <input type="text" id="empresaDireccion" placeholder="Dirección" />
+        <input type="text" id="empresaComuna" placeholder="Comuna" />
+        <input type="text" id="empresaTelefono" placeholder="Teléfono" />
+      </div>
+      <div class="conf-row">
+        <input type="email" id="empresaEmail" placeholder="Email" />
+        <input type="text" id="empresaObs" placeholder="Obs." />
+        <button type="submit" class="conf-btn-add"><i class="material-icons">add</i></button>
       </div>
     </form>
-    <div class="responsive-table">
-      <table class="highlight" id="transportes-table">
+    <div class="conf-table-wrap">
+      <table class="conf-table">
         <thead>
           <tr>
             <th>Nombre</th><th>RUT</th><th>Dirección</th><th>Comuna</th><th>Teléfono</th><th>Email</th><th>Obs.</th><th>Camiones</th><th>Acciones</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody id="empresasBody"></tbody>
       </table>
     </div>
   `;
-  let transportes = JSON.parse(localStorage.getItem('transportes') || '[]');
+  renderEmpresasBody();
+  attachEmpresaFormListeners();
+}
 
-  function renderTable() {
-    const tbody = cont.querySelector('#transportes-table tbody');
-    tbody.innerHTML = transportes.map((t, idx) => `
-      <tr>
-        <td>${t.nombre}</td><td>${t.rut}</td><td>${t.direccion}</td><td>${t.comuna}</td>
-        <td>${t.telefono}</td><td>${t.email}</td><td>${t.obs}</td>
-        <td>
-          <button class="btn-flat btn-small blue-text btn-camiones" data-idx="${idx}" title="Gestionar camiones"><i class="material-icons">local_shipping</i></button>
-        </td>
-        <td>
-          <button class="btn-flat btn-small red-text btn-del" data-idx="${idx}" title="Eliminar"><i class="material-icons">delete</i></button>
-        </td>
-      </tr>
-    `).join('');
-    cont.querySelectorAll('.btn-del').forEach(btn => {
-      btn.onclick = () => {
-        transportes.splice(+btn.dataset.idx, 1);
-        localStorage.setItem('transportes', JSON.stringify(transportes));
-        renderTable();
-      };
-    });
-    cont.querySelectorAll('.btn-camiones').forEach(btn => {
-      btn.onclick = () => {
-        const idx = +btn.dataset.idx;
-        abrirCamionesModal(idx);
-      };
-    });
-  }
-  renderTable();
+// --- Renderiza el tbody de empresas, con acordeón de camiones ---
+function renderEmpresasBody() {
+  const body = document.getElementById('empresasBody');
+  if (!body) return;
 
-  cont.querySelector('#form-transporte').onsubmit = e => {
+  body.innerHTML = empresasTransporte.map((e, idx) => `
+    <tr>
+      <td>${e.nombre || ''}</td>
+      <td>${e.rut || ''}</td>
+      <td>${e.direccion || ''}</td>
+      <td>${e.comuna || ''}</td>
+      <td>${e.telefono || ''}</td>
+      <td>${e.email || ''}</td>
+      <td>${e.obs || ''}</td>
+      <td>
+        <button class="conf-btn-mini btn-camiones" data-idx="${idx}">
+          <i class="material-icons">local_shipping</i>
+          (${(e.camiones || []).length})
+        </button>
+      </td>
+      <td>
+        <button class="conf-btn-mini btn-edit-empresa" data-idx="${idx}"><i class="material-icons">edit</i></button>
+        <button class="conf-btn-mini btn-del-empresa" data-idx="${idx}"><i class="material-icons">delete</i></button>
+      </td>
+    </tr>
+    <tr class="camiones-row" style="display:none;">
+      <td colspan="9">
+        <div id="camionesWrap-${idx}"></div>
+      </td>
+    </tr>
+  `).join('');
+
+  attachEmpresaActions();
+}
+
+// --- Listeners del formulario de empresa ---
+function attachEmpresaFormListeners() {
+  const form = document.getElementById('formEmpresa');
+  form.onsubmit = (e) => {
     e.preventDefault();
-    const nombre = cont.querySelector('#nombreTransporte').value.trim();
-    const rut = cont.querySelector('#rutTransporte').value.trim();
-    const direccion = cont.querySelector('#direccionTransporte').value.trim();
-    const comuna = cont.querySelector('#comunaTransporte').value.trim();
-    const telefono = cont.querySelector('#telefonoTransporte').value.trim();
-    const email = cont.querySelector('#emailTransporte').value.trim();
-    const obs = cont.querySelector('#obsTransporte').value.trim();
-    transportes.push({ nombre, rut, direccion, comuna, telefono, email, obs, camiones: [] });
-    localStorage.setItem('transportes', JSON.stringify(transportes));
-    renderTable();
-    e.target.reset();
+    const idx = document.getElementById('empresaIdx').value;
+    const empresa = {
+      nombre: document.getElementById('empresaNombre').value,
+      rut: document.getElementById('empresaRut').value,
+      direccion: document.getElementById('empresaDireccion').value,
+      comuna: document.getElementById('empresaComuna').value,
+      telefono: document.getElementById('empresaTelefono').value,
+      email: document.getElementById('empresaEmail').value,
+      obs: document.getElementById('empresaObs').value,
+      camiones: idx ? empresasTransporte[idx].camiones || [] : [],
+    };
+    if (idx) {
+      empresasTransporte[idx] = empresa;
+    } else {
+      empresasTransporte.push(empresa);
+    }
+    form.reset();
+    document.getElementById('empresaIdx').value = '';
+    renderEmpresasBody();
   };
+}
 
-  // Acordeón de camiones (modal básico)
-  function abrirCamionesModal(idx) {
-    const t = transportes[idx];
-    if (!t) return;
-    const camiones = t.camiones || [];
-    // Modal simple (puedes mejorarlo con Materialize Modal)
-    let html = `
-      <div style="padding:1.2rem;">
-        <h6>Camiones de ${t.nombre}</h6>
-        <form id="form-camion">
-          <input type="text" id="marcaCamion" placeholder="Marca" style="margin:2px;"/>
-          <input type="text" id="modeloCamion" placeholder="Modelo" style="margin:2px;"/>
-          <input type="text" id="patenteCamion" placeholder="Patente" style="margin:2px;"/>
-          <input type="number" id="anioCamion" placeholder="Año" style="margin:2px;"/>
-          <input type="text" id="colorCamion" placeholder="Color" style="margin:2px;"/>
-          <input type="number" id="capacidadCamion" placeholder="Capacidad" style="margin:2px;"/>
-          <button type="submit" class="btn btn-small blue" style="margin-top:8px;">Agregar</button>
-        </form>
-        <ul style="margin-top:12px;">
-          ${camiones.map((c, i) => `<li>${c.marca} ${c.modelo} - ${c.patente} (${c.anio}) <button data-i="${i}" class="btn-del-camion btn-flat red-text"><i class="material-icons">delete</i></button></li>`).join('')}
-        </ul>
-        <div style="margin-top:10px;text-align:right;">
-          <button class="btn-flat cerrar-camiones">Cerrar</button>
-        </div>
-      </div>
-    `;
-    let modalDiv = document.createElement('div');
-    modalDiv.className = 'modal';
-    modalDiv.innerHTML = html;
-    document.body.appendChild(modalDiv);
-    let modal = M.Modal.init(modalDiv, { dismissible: false });
-    modal.open();
+// --- Acciones editar/eliminar/acordeón camiones ---
+function attachEmpresaActions() {
+  // Editar
+  document.querySelectorAll('.btn-edit-empresa').forEach(btn => {
+    btn.onclick = () => {
+      const idx = btn.dataset.idx;
+      const empresa = empresasTransporte[idx];
+      document.getElementById('empresaIdx').value = idx;
+      document.getElementById('empresaNombre').value = empresa.nombre;
+      document.getElementById('empresaRut').value = empresa.rut;
+      document.getElementById('empresaDireccion').value = empresa.direccion;
+      document.getElementById('empresaComuna').value = empresa.comuna;
+      document.getElementById('empresaTelefono').value = empresa.telefono;
+      document.getElementById('empresaEmail').value = empresa.email;
+      document.getElementById('empresaObs').value = empresa.obs;
+    };
+  });
+  // Eliminar
+  document.querySelectorAll('.btn-del-empresa').forEach(btn => {
+    btn.onclick = () => {
+      const idx = btn.dataset.idx;
+      if (confirm('¿Eliminar empresa?')) {
+        empresasTransporte.splice(idx, 1);
+        renderEmpresasBody();
+      }
+    };
+  });
+  // Mostrar/ocultar camiones (acordeón)
+  document.querySelectorAll('.btn-camiones').forEach(btn => {
+    btn.onclick = () => {
+      const idx = btn.dataset.idx;
+      const tr = btn.closest('tr').nextElementSibling;
+      const wrap = document.getElementById(`camionesWrap-${idx}`);
+      if (!wrap) return;
+      if (tr.style.display === 'table-row') {
+        tr.style.display = 'none';
+        wrap.innerHTML = '';
+      } else {
+        tr.style.display = 'table-row';
+        renderCamionesAcordeon(idx, wrap);
+      }
+    };
+  });
+}
 
-    // Listeners del modal
-    modalDiv.querySelector('.cerrar-camiones').onclick = () => {
-      modal.close();
-      setTimeout(() => modalDiv.remove(), 200);
+// --- Renderiza acordeón de camiones por empresa ---
+function renderCamionesAcordeon(empresaIdx, cont) {
+  const empresa = empresasTransporte[empresaIdx];
+  if (!empresa) return;
+  const camiones = empresa.camiones || [];
+  cont.innerHTML = `
+    <div class="camiones-list">
+      <h6>Camiones</h6>
+      <form id="formCamion-${empresaIdx}" class="camion-form">
+        <input type="text" placeholder="Marca" class="camion-marca" />
+        <input type="text" placeholder="Modelo" class="camion-modelo" />
+        <input type="text" placeholder="Patente" class="camion-patente" />
+        <input type="number" placeholder="Año" class="camion-anio" />
+        <input type="text" placeholder="Color" class="camion-color" />
+        <input type="text" placeholder="Capacidad" class="camion-capacidad" />
+        <button type="submit" class="conf-btn-add"><i class="material-icons">add</i></button>
+      </form>
+      <table class="conf-table-camiones">
+        <thead>
+          <tr><th>Marca</th><th>Modelo</th><th>Patente</th><th>Año</th><th>Color</th><th>Capacidad</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          ${camiones.map((c, i) => `
+            <tr>
+              <td>${c.marca || ''}</td>
+              <td>${c.modelo || ''}</td>
+              <td>${c.patente || ''}</td>
+              <td>${c.anio || ''}</td>
+              <td>${c.color || ''}</td>
+              <td>${c.capacidad || ''}</td>
+              <td>
+                <button class="conf-btn-mini btn-del-camion" data-cidx="${i}"><i class="material-icons">delete</i></button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  // Form add camion
+  document.getElementById(`formCamion-${empresaIdx}`).onsubmit = e => {
+    e.preventDefault();
+    const f = e.target;
+    const camion = {
+      marca: f.querySelector('.camion-marca').value,
+      modelo: f.querySelector('.camion-modelo').value,
+      patente: f.querySelector('.camion-patente').value,
+      anio: f.querySelector('.camion-anio').value,
+      color: f.querySelector('.camion-color').value,
+      capacidad: f.querySelector('.camion-capacidad').value
     };
-    modalDiv.querySelector('#form-camion').onsubmit = e => {
-      e.preventDefault();
-      const marca = modalDiv.querySelector('#marcaCamion').value.trim();
-      const modelo = modalDiv.querySelector('#modeloCamion').value.trim();
-      const patente = modalDiv.querySelector('#patenteCamion').value.trim();
-      const anio = +modalDiv.querySelector('#anioCamion').value;
-      const color = modalDiv.querySelector('#colorCamion').value.trim();
-      const capacidad = +modalDiv.querySelector('#capacidadCamion').value;
-      camiones.push({ marca, modelo, patente, anio, color, capacidad });
-      t.camiones = camiones;
-      localStorage.setItem('transportes', JSON.stringify(transportes));
-      modal.close();
-      setTimeout(() => modalDiv.remove(), 200);
-      renderTable();
+    empresasTransporte[empresaIdx].camiones = empresasTransporte[empresaIdx].camiones || [];
+    empresasTransporte[empresaIdx].camiones.push(camion);
+    renderCamionesAcordeon(empresaIdx, cont);
+  };
+  // Delete camion
+  cont.querySelectorAll('.btn-del-camion').forEach(btn => {
+    btn.onclick = () => {
+      const cidx = btn.dataset.cidx;
+      empresasTransporte[empresaIdx].camiones.splice(cidx, 1);
+      renderCamionesAcordeon(empresaIdx, cont);
     };
-    modalDiv.querySelectorAll('.btn-del-camion').forEach(btn => {
-      btn.onclick = () => {
-        camiones.splice(+btn.dataset.i, 1);
-        t.camiones = camiones;
-        localStorage.setItem('transportes', JSON.stringify(transportes));
-        modal.close();
-        setTimeout(() => modalDiv.remove(), 200);
-        renderTable();
-      };
-    });
-  }
+  });
 }
