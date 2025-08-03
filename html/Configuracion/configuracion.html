@@ -23,7 +23,7 @@
   </nav>
 
   <div class="container" style="margin-top:2.2rem; margin-bottom:1.8rem;">
-    <div class="config-card z-depth-1">
+    <div class="config-main-card z-depth-1">
       <!-- MENÚ DE PESTAÑAS -->
       <ul class="tabs config-tabs">
         <li class="tab col s3"><a href="#tab-criterios" class="active">CRITERIOS DE CLASIFICACIÓN</a></li>
@@ -32,93 +32,29 @@
         <li class="tab col s3"><a href="#tab-transporte">EMPRESAS DE TRANSPORTE</a></li>
       </ul>
 
-          <!-- SECCIÓN CRITERIOS DE CLASIFICACIÓN -->
-<div id="tab-criterios" class="config-section">
-  <h5 class="section-title">Criterios de Clasificación por Cliente</h5>
-  <div class="row" style="margin-bottom: .7rem;">
-    <div class="input-field col s12 m4">
-      <input id="criteriosFilter" type="text" placeholder="Buscar..." />
-    </div>
-    <div class="col s12 m8 right-align">
-      <button id="btnExportCriteriosExcel" class="btn-flat tooltipped" data-tooltip="Exportar a Excel"><i class="material-icons">grid_on</i></button>
-      <button id="btnExportCriteriosPDF" class="btn-flat tooltipped" data-tooltip="Exportar a PDF"><i class="material-icons">picture_as_pdf</i></button>
-      <button id="btnExportCriteriosCSV" class="btn-flat tooltipped" data-tooltip="Exportar CSV"><i class="material-icons">table_chart</i></button>
-      <button id="btnAddCriterio" class="btn-flat tooltipped teal-text" data-tooltip="Agregar Criterio"><i class="material-icons">add</i></button>
-    </div>
-  </div>
-  <div style="position:relative;">
-    <table class="highlight responsive-table" id="criteriosTable">
-      <thead>
-        <tr>
-          <th>Cliente</th>
-          <th>Un/Kg min</th>
-          <th>Un/Kg max</th>
-          <th>% Rechazo min</th>
-          <th>% Rechazo max</th>
-          <th>% Rdmto min</th>
-          <th>% Rdmto max</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <!-- Modal para agregar/editar -->
-    <div id="modalCriterio" class="modal-criterio"></div>
-  </div>
-</div>
+      <!-- ========== PESTAÑA: CRITERIOS ========== -->
+      <div id="tab-criterios" class="config-section">
+        <h2>Criterios de Clasificación por Cliente</h2>
+        <!-- Aquí el JS pintará el formulario de búsqueda, botones y tabla -->
+        <div id="criterios-clasificacion-content"></div>
+      </div>
 
       <!-- ========== PESTAÑA: PROVEEDORES MMPP ========== -->
       <div id="tab-proveedores" class="config-section" style="display:none;">
-        <h5 class="section-title">Proveedores de Materia Prima</h5>
-        <div class="table-controls">
-          <input type="text" class="table-filter" id="proveedoresFilter" placeholder="Buscar..." />
-          <div class="table-actions">
-            <button id="btnExportProveedoresExcel" class="btn-exportar" title="Exportar Excel"><i class="material-icons">grid_on</i></button>
-            <button id="btnExportProveedoresPDF" class="btn-exportar" title="Exportar PDF"><i class="material-icons">picture_as_pdf</i></button>
-            <button id="btnExportProveedoresCSV" class="btn-exportar" title="Exportar CSV"><i class="material-icons">table_chart</i></button>
-            <button id="btnAddProveedor" class="btn-nuevo" title="Agregar"><i class="material-icons">add</i></button>
-          </div>
-        </div>
-        <div class="table-responsive">
-          <table id="proveedoresTable" class="conf-table"></table>
-        </div>
-        <div id="modalProveedor" class="modal-float" style="display:none;"></div>
+        <h2>Proveedores de Materia Prima</h2>
+        <div id="proveedores-mmpp-content"></div>
       </div>
 
       <!-- ========== PESTAÑA: CLIENTES ========== -->
       <div id="tab-clientes" class="config-section" style="display:none;">
-        <h5 class="section-title">Clientes</h5>
-        <div class="table-controls">
-          <input type="text" class="table-filter" id="clientesFilter" placeholder="Buscar..." />
-          <div class="table-actions">
-            <button id="btnExportClientesExcel" class="btn-exportar" title="Exportar Excel"><i class="material-icons">grid_on</i></button>
-            <button id="btnExportClientesPDF" class="btn-exportar" title="Exportar PDF"><i class="material-icons">picture_as_pdf</i></button>
-            <button id="btnExportClientesCSV" class="btn-exportar" title="Exportar CSV"><i class="material-icons">table_chart</i></button>
-            <button id="btnAddCliente" class="btn-nuevo" title="Agregar"><i class="material-icons">add</i></button>
-          </div>
-        </div>
-        <div class="table-responsive">
-          <table id="clientesTable" class="conf-table"></table>
-        </div>
-        <div id="modalCliente" class="modal-float" style="display:none;"></div>
+        <h2>Clientes</h2>
+        <div id="clientes-content"></div>
       </div>
 
       <!-- ========== PESTAÑA: EMPRESAS DE TRANSPORTE ========== -->
       <div id="tab-transporte" class="config-section" style="display:none;">
-        <h5 class="section-title">Empresas de Transporte</h5>
-        <div class="table-controls">
-          <input type="text" class="table-filter" id="transporteFilter" placeholder="Buscar..." />
-          <div class="table-actions">
-            <button id="btnExportTransporteExcel" class="btn-exportar" title="Exportar Excel"><i class="material-icons">grid_on</i></button>
-            <button id="btnExportTransportePDF" class="btn-exportar" title="Exportar PDF"><i class="material-icons">picture_as_pdf</i></button>
-            <button id="btnExportTransporteCSV" class="btn-exportar" title="Exportar CSV"><i class="material-icons">table_chart</i></button>
-            <button id="btnAddTransporte" class="btn-nuevo" title="Agregar"><i class="material-icons">add</i></button>
-          </div>
-        </div>
-        <div class="table-responsive">
-          <table id="transporteTable" class="conf-table"></table>
-        </div>
-        <div id="modalTransporte" class="modal-float" style="display:none;"></div>
+        <h2>Empresas de Transporte</h2>
+        <div id="transporte-content"></div>
       </div>
     </div>
   </div>
@@ -132,7 +68,6 @@
       var tabs = document.querySelectorAll('.tabs');
       M.Tabs.init(tabs);
 
-      // Mostrar la sección correspondiente al tab activo
       function showTab(tabId) {
         document.querySelectorAll('.config-section').forEach(sec => sec.style.display = 'none');
         document.getElementById(tabId).style.display = '';
@@ -155,4 +90,3 @@
   </script>
 </body>
 </html>
-
