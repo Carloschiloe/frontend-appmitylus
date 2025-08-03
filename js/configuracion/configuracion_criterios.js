@@ -5,26 +5,22 @@ export function renderCriteriosClasificacion() {
   const cont = document.getElementById('criterios-clasificacion-content');
   if (!cont) return;
 
-  // Renderiza controles, filtro, exportación y tabla
+  // Renderiza controles y tabla, con clases y estructura igual a "Centros"
   cont.innerHTML = `
-    <div class="config-table-wrapper">
-      <div class="filter-group">
-        <input id="criteriosFilter" class="config-filter" placeholder="Buscar...">
-        <button class="btn-export" id="btnExportCriteriosExcel" title="Exportar a Excel">
-          <i class="material-icons">grid_on</i>
-        </button>
-        <button class="btn-export pdf" id="btnExportCriteriosPDF" title="Exportar PDF">
-          <i class="material-icons">picture_as_pdf</i>
-        </button>
-        <button class="btn-export csv" id="btnExportCriteriosCSV" title="Exportar CSV">
-          <i class="material-icons">table_chart</i>
-        </button>
-        <button class="btn teal" id="btnAddCriterio" style="margin-left:auto;">
-          <i class="material-icons left">add</i> Agregar
-        </button>
+    <div class="row" style="margin-bottom: .7rem;">
+      <div class="input-field col s12 m4">
+        <input id="criteriosFilter" type="text" placeholder="Buscar..." />
       </div>
-      <div style="width:100%;overflow-x:auto;">
-      <table class="config-table" id="criteriosTable">
+      <div class="col s12 m8 right-align">
+        <button id="btnExportCriteriosExcel" class="btn-flat tooltipped" data-tooltip="Exportar a Excel"><i class="material-icons">grid_on</i></button>
+        <button id="btnExportCriteriosPDF" class="btn-flat tooltipped" data-tooltip="Exportar a PDF"><i class="material-icons">picture_as_pdf</i></button>
+        <button id="btnExportCriteriosCSV" class="btn-flat tooltipped" data-tooltip="Exportar CSV"><i class="material-icons">table_chart</i></button>
+        <a id="btnAddCriterio" class="btn-floating btn-small teal" title="Agregar Criterio"><i class="material-icons">add</i></a>
+      </div>
+    </div>
+    <div style="position:relative;">
+      <table id="criteriosTable" class="striped display responsive-table" style="width:100%" aria-describedby="tablaCriteriosDescripcion" role="grid" aria-live="polite">
+        <caption id="tablaCriteriosDescripcion" class="sr-only">Tabla con criterios de clasificación</caption>
         <thead>
           <tr>
             <th>Cliente</th>
@@ -34,14 +30,14 @@ export function renderCriteriosClasificacion() {
             <th>% Rechazo max</th>
             <th>% Rdmto min</th>
             <th>% Rdmto max</th>
-            <th class="actions-cell">Acciones</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
-      </div>
+      <!-- Modal para agregar/editar -->
+      <div id="modalCriterio" class="modal"></div>
     </div>
-    <div id="modalCriterio" class="config-modal-bg"></div>
   `;
 
   // Evento buscar (filtro global)
@@ -88,15 +84,15 @@ export function renderCriteriosClasificacion() {
         <td>${c.rechazoMax}</td>
         <td>${c.rdmtoMin}</td>
         <td>${c.rdmtoMax}</td>
-        <td class="actions-cell">
-          <i class="material-icons" title="Editar" data-idx="${idx}" style="color:#1976d2;cursor:pointer;">edit</i>
-          <i class="material-icons" title="Eliminar" data-idx="${idx}" style="color:#e53935;cursor:pointer;">delete</i>
+        <td>
+          <button class="btn-flat btn-small blue-text btn-edit" data-idx="${idx}" title="Editar"><i class="material-icons">edit</i></button>
+          <button class="btn-flat btn-small red-text btn-del" data-idx="${idx}" title="Eliminar"><i class="material-icons">delete</i></button>
         </td>
       </tr>
     `).join("") || `<tr><td colspan="8" class="center-align">Sin resultados</td></tr>`;
 
     // Acciones
-    tbody.querySelectorAll('.material-icons[title="Eliminar"]').forEach(btn => {
+    tbody.querySelectorAll('.btn-del').forEach(btn => {
       btn.onclick = () => {
         const i = +btn.dataset.idx;
         if (confirm("¿Seguro de eliminar este criterio?")) {
@@ -106,7 +102,7 @@ export function renderCriteriosClasificacion() {
         }
       }
     });
-    tbody.querySelectorAll('.material-icons[title="Editar"]').forEach(btn => {
+    tbody.querySelectorAll('.btn-edit').forEach(btn => {
       btn.onclick = () => {
         editIdx = +btn.dataset.idx;
         openModal(criterios[editIdx]);
@@ -118,58 +114,54 @@ export function renderCriteriosClasificacion() {
   function openModal(data = null) {
     const modal = document.getElementById('modalCriterio');
     modal.innerHTML = `
-      <div class="config-modal">
-        <button class="close-modal" title="Cerrar">&times;</button>
-        <div class="modal-title">${data ? "Editar" : "Agregar"} Criterio</div>
+      <div class="modal-content" style="padding:1.5rem;">
+        <h5 style="margin-bottom: 1rem;">${data ? "Editar" : "Agregar"} Criterio</h5>
         <form id="formCriterio">
-          <div class="input-group">
-            <label for="m-cliente">Cliente</label>
-            <input id="m-cliente" type="text" value="${data?.cliente || ""}" required />
+          <div class="row">
+            <div class="input-field col s12 m4">
+              <input id="m-cliente" type="text" value="${data?.cliente || ""}" required />
+              <label for="m-cliente" class="${data ? "active" : ""}">Cliente</label>
+            </div>
+            <div class="input-field col s6 m2">
+              <input id="m-unKgMin" type="number" min="0" value="${data?.unKgMin ?? ""}" required />
+              <label for="m-unKgMin" class="${data ? "active" : ""}">Un/Kg mín.</label>
+            </div>
+            <div class="input-field col s6 m2">
+              <input id="m-unKgMax" type="number" min="0" value="${data?.unKgMax ?? ""}" required />
+              <label for="m-unKgMax" class="${data ? "active" : ""}">Un/Kg máx.</label>
+            </div>
+            <div class="input-field col s6 m2">
+              <input id="m-rechazoMin" type="number" min="0" max="100" value="${data?.rechazoMin ?? ""}" required />
+              <label for="m-rechazoMin" class="${data ? "active" : ""}">% Rechazo mín.</label>
+            </div>
+            <div class="input-field col s6 m2">
+              <input id="m-rechazoMax" type="number" min="0" max="100" value="${data?.rechazoMax ?? ""}" required />
+              <label for="m-rechazoMax" class="${data ? "active" : ""}">% Rechazo máx.</label>
+            </div>
+            <div class="input-field col s6 m2">
+              <input id="m-rdmtoMin" type="number" min="0" max="100" value="${data?.rdmtoMin ?? ""}" required />
+              <label for="m-rdmtoMin" class="${data ? "active" : ""}">% Rdmto mín.</label>
+            </div>
+            <div class="input-field col s6 m2">
+              <input id="m-rdmtoMax" type="number" min="0" max="100" value="${data?.rdmtoMax ?? ""}" required />
+              <label for="m-rdmtoMax" class="${data ? "active" : ""}">% Rdmto máx.</label>
+            </div>
           </div>
-          <div class="input-group">
-            <label for="m-unKgMin">Un/Kg mín.</label>
-            <input id="m-unKgMin" type="number" min="0" value="${data?.unKgMin ?? ""}" required />
-          </div>
-          <div class="input-group">
-            <label for="m-unKgMax">Un/Kg máx.</label>
-            <input id="m-unKgMax" type="number" min="0" value="${data?.unKgMax ?? ""}" required />
-          </div>
-          <div class="input-group">
-            <label for="m-rechazoMin">% Rechazo mín.</label>
-            <input id="m-rechazoMin" type="number" min="0" max="100" value="${data?.rechazoMin ?? ""}" required />
-          </div>
-          <div class="input-group">
-            <label for="m-rechazoMax">% Rechazo máx.</label>
-            <input id="m-rechazoMax" type="number" min="0" max="100" value="${data?.rechazoMax ?? ""}" required />
-          </div>
-          <div class="input-group">
-            <label for="m-rdmtoMin">% Rdmto mín.</label>
-            <input id="m-rdmtoMin" type="number" min="0" max="100" value="${data?.rdmtoMin ?? ""}" required />
-          </div>
-          <div class="input-group">
-            <label for="m-rdmtoMax">% Rdmto máx.</label>
-            <input id="m-rdmtoMax" type="number" min="0" max="100" value="${data?.rdmtoMax ?? ""}" required />
-          </div>
-          <div class="modal-actions">
-            <button type="submit" class="btn teal">${data ? "Actualizar" : "Agregar"}</button>
-            <button type="button" class="btn-flat close-modal">Cancelar</button>
+          <div class="center-align" style="margin-top: 1.1rem;">
+            <button type="submit" class="btn teal" style="margin-right:8px;"><i class="material-icons left">save</i>${data ? "Actualizar" : "Agregar"}</button>
+            <button type="button" class="btn-flat grey lighten-2 modal-close" id="btnCancelarCriterio">Cancelar</button>
           </div>
         </form>
       </div>
+      <div class="modal-bg"></div>
     `;
-    modal.classList.add('active');
+    modal.style.display = 'block';
+    setTimeout(() => modal.classList.add("show"), 25);
 
-    // Eventos cerrar
-    modal.querySelectorAll('.close-modal').forEach(btn => {
-      btn.onclick = closeModal;
-    });
-    modal.onclick = e => { if (e.target === modal) closeModal(); }
-    document.onkeydown = ev => { if (ev.key === "Escape") closeModal(); };
-
-    // Submit
-    document.getElementById("formCriterio").onsubmit = e => {
+    // Evento submit
+    document.getElementById("formCriterio").onsubmit = (e) => {
       e.preventDefault();
-      // Validación
+      // Validación mínima
       const cliente = document.getElementById("m-cliente").value.trim();
       const unKgMin = +document.getElementById("m-unKgMin").value;
       const unKgMax = +document.getElementById("m-unKgMax").value;
@@ -195,12 +187,16 @@ export function renderCriteriosClasificacion() {
       closeModal();
       renderTable(document.getElementById('criteriosFilter').value);
     };
+
+    document.getElementById("btnCancelarCriterio").onclick = closeModal;
+    modal.onclick = (e) => { if (e.target === modal) closeModal(); }
+    document.onkeydown = (ev) => { if (ev.key === "Escape") closeModal(); };
   }
 
   function closeModal() {
     const modal = document.getElementById('modalCriterio');
-    modal.classList.remove('active');
-    setTimeout(() => { modal.innerHTML = ""; }, 220);
+    modal.classList.remove("show");
+    setTimeout(() => { modal.style.display = "none"; modal.innerHTML = ""; }, 210);
     editIdx = null;
     document.onkeydown = null;
   }
