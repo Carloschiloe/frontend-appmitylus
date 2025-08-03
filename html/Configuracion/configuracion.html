@@ -69,9 +69,77 @@
       </div>
     </section>
 
-    <!-- Aquí puedes copiar la estructura base para las demás pestañas igual que arriba -->
-    <!-- ... -->
+    <!-- ========== PESTAÑA: PROVEEDORES MMPP ========== -->
+    <section id="tab-proveedores" class="col s12" style="display:none; margin-top:1.2rem;">
+      <div class="right-align" style="margin-bottom: 16px;">
+        <a id="btnAddProveedor" class="btn-floating btn-large teal" title="Agregar Proveedor" aria-label="Agregar Proveedor">
+          <i class="material-icons">add</i>
+        </a>
+      </div>
+      <h5>Proveedores de Materia Prima</h5>
+      <!-- Aquí va la tabla de proveedores -->
+      <table id="proveedoresTable" class="striped display responsive-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>RUT</th>
+            <th>Contacto</th>
+            <th>Email</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="modalProveedor" class="modal"></div>
+    </section>
 
+    <!-- ========== PESTAÑA: CLIENTES ========== -->
+    <section id="tab-clientes" class="col s12" style="display:none; margin-top:1.2rem;">
+      <div class="right-align" style="margin-bottom: 16px;">
+        <a id="btnAddCliente" class="btn-floating btn-large teal" title="Agregar Cliente" aria-label="Agregar Cliente">
+          <i class="material-icons">add</i>
+        </a>
+      </div>
+      <h5>Clientes</h5>
+      <!-- Aquí va la tabla de clientes -->
+      <table id="clientesTable" class="striped display responsive-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>RUT</th>
+            <th>Contacto</th>
+            <th>Email</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="modalCliente" class="modal"></div>
+    </section>
+
+    <!-- ========== PESTAÑA: TRANSPORTE ========== -->
+    <section id="tab-transporte" class="col s12" style="display:none; margin-top:1.2rem;">
+      <div class="right-align" style="margin-bottom: 16px;">
+        <a id="btnAddTransporte" class="btn-floating btn-large teal" title="Agregar Empresa Transporte" aria-label="Agregar Empresa Transporte">
+          <i class="material-icons">add</i>
+        </a>
+      </div>
+      <h5>Empresas de Transporte</h5>
+      <!-- Aquí va la tabla de empresas de transporte -->
+      <table id="transporteTable" class="striped display responsive-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>RUT</th>
+            <th>Contacto</th>
+            <th>Email</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="modalTransporte" class="modal"></div>
+    </section>
   </div><!-- /container -->
 
   <!-- SCRIPTS -->
@@ -84,10 +152,6 @@
       M.Tabs.init(tabs);
 
       // Mostrar la sección correspondiente
-      function showTab(tabId) {
-        document.querySelectorAll('.col.s12').forEach(sec => sec.style.display = 'none');
-        document.getElementById(tabId).style.display = '';
-      }
       document.querySelectorAll('.tabs a').forEach(tab => {
         tab.addEventListener('click', function (e) {
           e.preventDefault();
@@ -102,8 +166,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
