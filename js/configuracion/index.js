@@ -9,27 +9,23 @@ const tabMap = {
   'tab-criterios': renderCriteriosClasificacion,
   'tab-proveedores': renderProveedoresMMPP,
   'tab-clientes': renderClientes,
-  'tab-transporte': renderEmpresasTransporte, // <--- ESTE NOMBRE COINCIDE CON TU HTML
+  'tab-transporte': renderEmpresasTransporte,
 };
 
 // Función para mostrar la pestaña y renderizar contenido
 function loadTab(tabId) {
-  // Oculta todas las secciones
   document.querySelectorAll('.config-section').forEach(sec => sec.style.display = 'none');
-  // Muestra la sección seleccionada
   const sec = document.getElementById(tabId);
   if (sec) sec.style.display = '';
-  // Llama la función de renderizado si corresponde
   if (tabMap[tabId]) tabMap[tabId]();
 }
 
-// Al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
   // Inicializa tabs de Materialize
   const tabsElem = document.querySelector('.tabs');
   if (tabsElem) M.Tabs.init(tabsElem);
 
-  // Configura eventos de los tabs
+  // Eventos de los tabs
   document.querySelectorAll('.tab a').forEach(tabA => {
     tabA.addEventListener('click', e => {
       e.preventDefault();
@@ -38,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Muestra la pestaña según el hash de la URL o por defecto
+  // Carga el tab inicial
   if (window.location.hash && document.getElementById(window.location.hash.replace('#', ''))) {
     loadTab(window.location.hash.replace('#', ''));
   } else {
