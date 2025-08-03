@@ -8,7 +8,6 @@ export function renderEmpresasTransporte() {
   if (!cont) return;
 
   cont.innerHTML = `
-    <h5 class="conf-title">Empresas de Transporte</h5>
     <form id="formEmpresa" class="conf-form">
       <input type="hidden" id="empresaIdx" />
       <div class="conf-row">
@@ -211,3 +210,4 @@ function renderCamionesAcordeon(empresaIdx, cont) {
     };
   });
 }
+
