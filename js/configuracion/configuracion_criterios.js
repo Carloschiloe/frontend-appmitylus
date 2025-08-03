@@ -1,19 +1,51 @@
-// /js/configuracion/configuracion_criterios.js
-
 let criterios = JSON.parse(localStorage.getItem('criteriosClasif') || '[]');
 let editIdx = null;
 
 export function renderCriteriosClasificacion() {
-  const tableId = "criteriosTable";
-  const filterId = "criteriosFilter";
-  const modalId = "modalCriterio";
-  const btnAddId = "btnAddCriterio";
+  const cont = document.getElementById('criterios-clasificacion-content');
+  if (!cont) return;
 
-  // Pinta tabla y controles
-  renderTableAndControls();
+  // Renderiza controles, filtro, exportación y tabla
+  cont.innerHTML = `
+    <div class="config-table-wrapper">
+      <div class="filter-group">
+        <input id="criteriosFilter" class="config-filter" placeholder="Buscar...">
+        <button class="btn-export" id="btnExportCriteriosExcel" title="Exportar a Excel">
+          <i class="material-icons">grid_on</i>
+        </button>
+        <button class="btn-export pdf" id="btnExportCriteriosPDF" title="Exportar PDF">
+          <i class="material-icons">picture_as_pdf</i>
+        </button>
+        <button class="btn-export csv" id="btnExportCriteriosCSV" title="Exportar CSV">
+          <i class="material-icons">table_chart</i>
+        </button>
+        <button class="btn teal" id="btnAddCriterio" style="margin-left:auto;">
+          <i class="material-icons left">add</i> Agregar
+        </button>
+      </div>
+      <div style="width:100%;overflow-x:auto;">
+      <table class="config-table" id="criteriosTable">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Un/Kg min</th>
+            <th>Un/Kg max</th>
+            <th>% Rechazo min</th>
+            <th>% Rechazo max</th>
+            <th>% Rdmto min</th>
+            <th>% Rdmto max</th>
+            <th class="actions-cell">Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      </div>
+    </div>
+    <div id="modalCriterio" class="config-modal-bg"></div>
+  `;
 
   // Evento buscar (filtro global)
-  document.getElementById(filterId).oninput = (e) => {
+  document.getElementById('criteriosFilter').oninput = (e) => {
     renderTable(e.target.value);
   };
 
@@ -22,21 +54,18 @@ export function renderCriteriosClasificacion() {
   document.getElementById("btnExportCriteriosPDF").onclick = exportPDF;
   document.getElementById("btnExportCriteriosCSV").onclick = exportCSV;
 
-  // Modal agregar
-  document.getElementById(btnAddId).onclick = () => openModal();
+  // Botón agregar
+  document.getElementById("btnAddCriterio").onclick = () => openModal();
 
-  // Primera renderización
+  // Primera renderización de tabla
   renderTable();
 
-  // ---------------------------- FUNCIONES -------------------------------
-
-  function renderTableAndControls() {
-    // Nada que hacer aquí, ya está todo en el HTML principal
-    // El tbody se renderiza abajo
-  }
+  // -----------------------------------
+  // FUNCIONES
+  // -----------------------------------
 
   function renderTable(filtro = "") {
-    const tbody = document.querySelector(`#${tableId} tbody`);
+    const tbody = cont.querySelector("#criteriosTable tbody");
     let filtrados = criterios;
     if (filtro && filtro.length > 0) {
       const f = filtro.toLowerCase();
@@ -59,25 +88,25 @@ export function renderCriteriosClasificacion() {
         <td>${c.rechazoMax}</td>
         <td>${c.rdmtoMin}</td>
         <td>${c.rdmtoMax}</td>
-        <td>
-          <button class="btn-flat btn-small blue-text btn-edit" data-idx="${idx}" title="Editar"><i class="material-icons">edit</i></button>
-          <button class="btn-flat btn-small red-text btn-del" data-idx="${idx}" title="Eliminar"><i class="material-icons">delete</i></button>
+        <td class="actions-cell">
+          <i class="material-icons" title="Editar" data-idx="${idx}" style="color:#1976d2;cursor:pointer;">edit</i>
+          <i class="material-icons" title="Eliminar" data-idx="${idx}" style="color:#e53935;cursor:pointer;">delete</i>
         </td>
       </tr>
     `).join("") || `<tr><td colspan="8" class="center-align">Sin resultados</td></tr>`;
 
-    // Listeners eliminar/editar
-    tbody.querySelectorAll('.btn-del').forEach(btn => {
+    // Acciones
+    tbody.querySelectorAll('.material-icons[title="Eliminar"]').forEach(btn => {
       btn.onclick = () => {
         const i = +btn.dataset.idx;
         if (confirm("¿Seguro de eliminar este criterio?")) {
           criterios.splice(i, 1);
           guardar();
-          renderTable(document.getElementById(filterId).value);
+          renderTable(document.getElementById('criteriosFilter').value);
         }
       }
     });
-    tbody.querySelectorAll('.btn-edit').forEach(btn => {
+    tbody.querySelectorAll('.material-icons[title="Editar"]').forEach(btn => {
       btn.onclick = () => {
         editIdx = +btn.dataset.idx;
         openModal(criterios[editIdx]);
@@ -85,57 +114,62 @@ export function renderCriteriosClasificacion() {
     });
   }
 
+  // MODAL FLOTANTE
   function openModal(data = null) {
-    const modal = document.getElementById(modalId);
+    const modal = document.getElementById('modalCriterio');
     modal.innerHTML = `
-      <div class="modal-content" style="padding:1.5rem;">
-        <h5 style="margin-bottom: 1rem;">${data ? "Editar" : "Agregar"} Criterio</h5>
+      <div class="config-modal">
+        <button class="close-modal" title="Cerrar">&times;</button>
+        <div class="modal-title">${data ? "Editar" : "Agregar"} Criterio</div>
         <form id="formCriterio">
-          <div class="row">
-            <div class="input-field col s12 m4">
-              <input id="m-cliente" type="text" value="${data?.cliente || ""}" required />
-              <label for="m-cliente" class="${data ? "active" : ""}">Cliente</label>
-            </div>
-            <div class="input-field col s6 m2">
-              <input id="m-unKgMin" type="number" min="0" value="${data?.unKgMin ?? ""}" required />
-              <label for="m-unKgMin" class="${data ? "active" : ""}">Un/Kg mín.</label>
-            </div>
-            <div class="input-field col s6 m2">
-              <input id="m-unKgMax" type="number" min="0" value="${data?.unKgMax ?? ""}" required />
-              <label for="m-unKgMax" class="${data ? "active" : ""}">Un/Kg máx.</label>
-            </div>
-            <div class="input-field col s6 m2">
-              <input id="m-rechazoMin" type="number" min="0" max="100" value="${data?.rechazoMin ?? ""}" required />
-              <label for="m-rechazoMin" class="${data ? "active" : ""}">% Rechazo mín.</label>
-            </div>
-            <div class="input-field col s6 m2">
-              <input id="m-rechazoMax" type="number" min="0" max="100" value="${data?.rechazoMax ?? ""}" required />
-              <label for="m-rechazoMax" class="${data ? "active" : ""}">% Rechazo máx.</label>
-            </div>
-            <div class="input-field col s6 m2">
-              <input id="m-rdmtoMin" type="number" min="0" max="100" value="${data?.rdmtoMin ?? ""}" required />
-              <label for="m-rdmtoMin" class="${data ? "active" : ""}">% Rdmto mín.</label>
-            </div>
-            <div class="input-field col s6 m2">
-              <input id="m-rdmtoMax" type="number" min="0" max="100" value="${data?.rdmtoMax ?? ""}" required />
-              <label for="m-rdmtoMax" class="${data ? "active" : ""}">% Rdmto máx.</label>
-            </div>
+          <div class="input-group">
+            <label for="m-cliente">Cliente</label>
+            <input id="m-cliente" type="text" value="${data?.cliente || ""}" required />
           </div>
-          <div class="center-align" style="margin-top: 1.1rem;">
-            <button type="submit" class="btn teal" style="margin-right:8px;"><i class="material-icons left">save</i>${data ? "Actualizar" : "Agregar"}</button>
-            <button type="button" class="btn-flat grey lighten-2 modal-close" id="btnCancelarCriterio">Cancelar</button>
+          <div class="input-group">
+            <label for="m-unKgMin">Un/Kg mín.</label>
+            <input id="m-unKgMin" type="number" min="0" value="${data?.unKgMin ?? ""}" required />
+          </div>
+          <div class="input-group">
+            <label for="m-unKgMax">Un/Kg máx.</label>
+            <input id="m-unKgMax" type="number" min="0" value="${data?.unKgMax ?? ""}" required />
+          </div>
+          <div class="input-group">
+            <label for="m-rechazoMin">% Rechazo mín.</label>
+            <input id="m-rechazoMin" type="number" min="0" max="100" value="${data?.rechazoMin ?? ""}" required />
+          </div>
+          <div class="input-group">
+            <label for="m-rechazoMax">% Rechazo máx.</label>
+            <input id="m-rechazoMax" type="number" min="0" max="100" value="${data?.rechazoMax ?? ""}" required />
+          </div>
+          <div class="input-group">
+            <label for="m-rdmtoMin">% Rdmto mín.</label>
+            <input id="m-rdmtoMin" type="number" min="0" max="100" value="${data?.rdmtoMin ?? ""}" required />
+          </div>
+          <div class="input-group">
+            <label for="m-rdmtoMax">% Rdmto máx.</label>
+            <input id="m-rdmtoMax" type="number" min="0" max="100" value="${data?.rdmtoMax ?? ""}" required />
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn teal">${data ? "Actualizar" : "Agregar"}</button>
+            <button type="button" class="btn-flat close-modal">Cancelar</button>
           </div>
         </form>
       </div>
-      <div class="modal-bg"></div>
     `;
-    modal.style.display = 'block';
-    setTimeout(() => modal.classList.add("show"), 25);
+    modal.classList.add('active');
 
-    // Evento submit
-    document.getElementById("formCriterio").onsubmit = (e) => {
+    // Eventos cerrar
+    modal.querySelectorAll('.close-modal').forEach(btn => {
+      btn.onclick = closeModal;
+    });
+    modal.onclick = e => { if (e.target === modal) closeModal(); }
+    document.onkeydown = ev => { if (ev.key === "Escape") closeModal(); };
+
+    // Submit
+    document.getElementById("formCriterio").onsubmit = e => {
       e.preventDefault();
-      // Validación mínima
+      // Validación
       const cliente = document.getElementById("m-cliente").value.trim();
       const unKgMin = +document.getElementById("m-unKgMin").value;
       const unKgMax = +document.getElementById("m-unKgMax").value;
@@ -159,18 +193,14 @@ export function renderCriteriosClasificacion() {
       }
       guardar();
       closeModal();
-      renderTable(document.getElementById(filterId).value);
+      renderTable(document.getElementById('criteriosFilter').value);
     };
-
-    document.getElementById("btnCancelarCriterio").onclick = closeModal;
-    modal.onclick = (e) => { if (e.target === modal) closeModal(); }
-    document.onkeydown = (ev) => { if (ev.key === "Escape") closeModal(); };
   }
 
   function closeModal() {
-    const modal = document.getElementById(modalId);
-    modal.classList.remove("show");
-    setTimeout(() => { modal.style.display = "none"; modal.innerHTML = ""; }, 210);
+    const modal = document.getElementById('modalCriterio');
+    modal.classList.remove('active');
+    setTimeout(() => { modal.innerHTML = ""; }, 220);
     editIdx = null;
     document.onkeydown = null;
   }
@@ -191,11 +221,9 @@ export function renderCriteriosClasificacion() {
     const url = URL.createObjectURL(blob);
     descargarArchivo(url, "criterios_clasificacion.csv");
   }
-
-  // Exportación Excel (XLSX) - solo con CSV, para evitar dependencias
-  function exportExcel() { exportCSV(); } // Puedes cambiar por XLSX real si quieres
-
-  // Exportación PDF (simple, solo tabla)
+  // Exportación Excel (XLSX): puede usar la misma función que CSV por simplicidad
+  function exportExcel() { exportCSV(); }
+  // Exportación PDF (simple)
   function exportPDF() {
     let win = window.open('', '', 'width=900,height=650');
     win.document.write('<html><head><title>Exportar PDF</title></head><body>');
@@ -210,7 +238,6 @@ export function renderCriteriosClasificacion() {
     win.print();
     win.close();
   }
-
   function descargarArchivo(url, nombre) {
     const a = document.createElement('a');
     a.href = url;
