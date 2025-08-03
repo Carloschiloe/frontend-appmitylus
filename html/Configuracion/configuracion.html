@@ -7,16 +7,10 @@
   <!-- ICONOS & FRAMEWORKS -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="../../css/centros.css" />
-  <style>
-    /* Para que el modal se vea flotante centrado igual que Centros */
-    #modalCriterio .modal-content { padding: 2.1rem 1.5rem; }
-    #modalCriterio .modal { max-width: 530px; }
-    #modalCriterio .input-field label { left: 0.75rem; }
-  </style>
 </head>
 <body>
   <!-- NAV -->
@@ -28,7 +22,7 @@
   </nav>
 
   <div class="container" style="margin-top:2.2rem; margin-bottom:1.8rem;">
-    <!-- Pestañas -->
+    <!-- Tabs -->
     <ul id="tabs" class="tabs">
       <li class="tab col s3"><a class="active" href="#tab-criterios">CRITERIOS DE CLASIFICACIÓN</a></li>
       <li class="tab col s3"><a href="#tab-proveedores">PROVEEDORES MMPP</a></li>
@@ -36,15 +30,28 @@
       <li class="tab col s3"><a href="#tab-transporte">EMPRESAS DE TRANSPORTE</a></li>
     </ul>
 
-    <!-- ========== PESTAÑA: CRITERIOS ========== -->
-    <section id="tab-criterios" class="col s12" style="margin-top:1.2rem;">
-      <h5>Criterios de Clasificación por Cliente</h5>
+    <!-- CRITERIOS TAB -->
+    <section id="tab-criterios" class="col s12 config-section" style="margin-top:1.2rem;">
+      <h5 style="font-size:2.1rem;margin-top:1.2rem;margin-bottom:1.8rem;">Criterios de Clasificación por Cliente</h5>
       <div id="criterios-clasificacion-content"></div>
     </section>
-    <!-- ...las otras pestañas van igual pero déjalas vacías por ahora... -->
+
+    <!-- Las otras pestañas son idénticas, solo cambia el id y el contenedor interno -->
+    <section id="tab-proveedores" class="col s12 config-section" style="display:none; margin-top:1.2rem;">
+      <h5 style="font-size:2.1rem;margin-top:1.2rem;margin-bottom:1.8rem;">Proveedores de Materia Prima</h5>
+      <div id="proveedores-mmpp-content"></div>
+    </section>
+    <section id="tab-clientes" class="col s12 config-section" style="display:none; margin-top:1.2rem;">
+      <h5 style="font-size:2.1rem;margin-top:1.2rem;margin-bottom:1.8rem;">Clientes</h5>
+      <div id="clientes-content"></div>
+    </section>
+    <section id="tab-transporte" class="col s12 config-section" style="display:none; margin-top:1.2rem;">
+      <h5 style="font-size:2.1rem;margin-top:1.2rem;margin-bottom:1.8rem;">Empresas de Transporte</h5>
+      <div id="transporte-content"></div>
+    </section>
   </div><!-- /container -->
 
-  <!-- SCRIPTS -->
+  <!-- SCRIPTS (igual que en Centros) -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
@@ -53,16 +60,22 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <!-- El módulo que te doy abajo -->
-  <script type="module" src="../../js/configuracion/configuracion_criterios.js"></script>
+  <script type="module" src="../../js/configuracion/index.js"></script>
   <script>
-    // Solo tabs Materialize
     document.addEventListener('DOMContentLoaded', function () {
       var tabs = document.querySelectorAll('.tabs');
       M.Tabs.init(tabs);
+
+      document.querySelectorAll('.tabs a').forEach(tab => {
+        tab.addEventListener('click', function (e) {
+          e.preventDefault();
+          let id = this.getAttribute('href').replace('#', '');
+          document.querySelectorAll('.config-section').forEach(sec => sec.style.display = 'none');
+          document.getElementById(id).style.display = '';
+        });
+      });
       document.getElementById('tab-criterios').style.display = '';
     });
   </script>
 </body>
 </html>
-
