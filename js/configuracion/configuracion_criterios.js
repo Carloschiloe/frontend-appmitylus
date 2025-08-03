@@ -5,60 +5,57 @@ export function renderCriteriosClasificacion() {
   const cont = document.getElementById('criterios-clasificacion-content');
   if (!cont) return;
 
-  // Renderiza controles y tabla, con clases y estructura igual a "Centros"
   cont.innerHTML = `
-    <div class="row" style="margin-bottom: .7rem;">
-      <div class="input-field col s12 m4">
-        <input id="criteriosFilter" type="text" placeholder="Buscar..." />
+    <div class="row">
+      <div class="col s12">
+        <div class="right-align" style="margin-bottom: 16px;">
+          <a id="btnAddCriterio" class="btn-floating btn-large teal" title="Agregar Criterio" aria-label="Agregar Criterio">
+            <i class="material-icons">add</i>
+          </a>
+        </div>
+        <h5>Criterios de Clasificación por Cliente</h5>
+        <div class="row" style="margin-bottom: .7rem;">
+          <div class="input-field col s12 m4">
+            <input id="criteriosFilter" type="text" placeholder="Buscar..." />
+          </div>
+          <div class="col s12 m8 right-align">
+            <button id="btnExportCriteriosExcel" class="btn-flat tooltipped" data-tooltip="Exportar a Excel"><i class="material-icons">grid_on</i></button>
+            <button id="btnExportCriteriosPDF" class="btn-flat tooltipped" data-tooltip="Exportar a PDF"><i class="material-icons">picture_as_pdf</i></button>
+            <button id="btnExportCriteriosCSV" class="btn-flat tooltipped" data-tooltip="Exportar CSV"><i class="material-icons">table_chart</i></button>
+          </div>
+        </div>
+        <div style="position:relative;">
+          <table id="criteriosTable" class="striped display responsive-table" style="width:100%">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Un/Kg min</th>
+                <th>Un/Kg max</th>
+                <th>% Rechazo min</th>
+                <th>% Rechazo max</th>
+                <th>% Rdmto min</th>
+                <th>% Rdmto max</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div id="modalCriterio" class="modal"></div>
+        </div>
       </div>
-      <div class="col s12 m8 right-align">
-        <button id="btnExportCriteriosExcel" class="btn-flat tooltipped" data-tooltip="Exportar a Excel"><i class="material-icons">grid_on</i></button>
-        <button id="btnExportCriteriosPDF" class="btn-flat tooltipped" data-tooltip="Exportar a PDF"><i class="material-icons">picture_as_pdf</i></button>
-        <button id="btnExportCriteriosCSV" class="btn-flat tooltipped" data-tooltip="Exportar CSV"><i class="material-icons">table_chart</i></button>
-        <a id="btnAddCriterio" class="btn-floating btn-small teal" title="Agregar Criterio"><i class="material-icons">add</i></a>
-      </div>
-    </div>
-    <div style="position:relative;">
-      <table id="criteriosTable" class="striped display responsive-table" style="width:100%" aria-describedby="tablaCriteriosDescripcion" role="grid" aria-live="polite">
-        <caption id="tablaCriteriosDescripcion" class="sr-only">Tabla con criterios de clasificación</caption>
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>Un/Kg min</th>
-            <th>Un/Kg max</th>
-            <th>% Rechazo min</th>
-            <th>% Rechazo max</th>
-            <th>% Rdmto min</th>
-            <th>% Rdmto max</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <!-- Modal para agregar/editar -->
-      <div id="modalCriterio" class="modal"></div>
     </div>
   `;
 
-  // Evento buscar (filtro global)
-  document.getElementById('criteriosFilter').oninput = (e) => {
-    renderTable(e.target.value);
-  };
-
-  // Exportar (Excel, PDF, CSV)
+  // Filtros y eventos
+  document.getElementById('criteriosFilter').oninput = (e) => renderTable(e.target.value);
   document.getElementById("btnExportCriteriosExcel").onclick = exportExcel;
   document.getElementById("btnExportCriteriosPDF").onclick = exportPDF;
   document.getElementById("btnExportCriteriosCSV").onclick = exportCSV;
-
-  // Botón agregar
   document.getElementById("btnAddCriterio").onclick = () => openModal();
 
-  // Primera renderización de tabla
   renderTable();
 
-  // -----------------------------------
-  // FUNCIONES
-  // -----------------------------------
+  // ================== FUNCIONES ==================
 
   function renderTable(filtro = "") {
     const tbody = cont.querySelector("#criteriosTable tbody");
@@ -110,7 +107,7 @@ export function renderCriteriosClasificacion() {
     });
   }
 
-  // MODAL FLOTANTE
+  // MODAL flotante central tipo Materialize
   function openModal(data = null) {
     const modal = document.getElementById('modalCriterio');
     modal.innerHTML = `
@@ -155,13 +152,12 @@ export function renderCriteriosClasificacion() {
       </div>
       <div class="modal-bg"></div>
     `;
+    // Flotante centrado
     modal.style.display = 'block';
     setTimeout(() => modal.classList.add("show"), 25);
 
-    // Evento submit
     document.getElementById("formCriterio").onsubmit = (e) => {
       e.preventDefault();
-      // Validación mínima
       const cliente = document.getElementById("m-cliente").value.trim();
       const unKgMin = +document.getElementById("m-unKgMin").value;
       const unKgMax = +document.getElementById("m-unKgMax").value;
@@ -169,7 +165,6 @@ export function renderCriteriosClasificacion() {
       const rechazoMax = +document.getElementById("m-rechazoMax").value;
       const rdmtoMin = +document.getElementById("m-rdmtoMin").value;
       const rdmtoMax = +document.getElementById("m-rdmtoMax").value;
-
       if (!cliente) return M.toast({ html: 'Cliente requerido' });
       if (isNaN(unKgMin) || isNaN(unKgMax) || isNaN(rechazoMin) || isNaN(rechazoMax) || isNaN(rdmtoMin) || isNaN(rdmtoMax))
         return M.toast({ html: 'Campos numéricos inválidos' });
@@ -177,7 +172,6 @@ export function renderCriteriosClasificacion() {
         return M.toast({ html: 'Máximos no pueden ser menores al mínimo' });
 
       const obj = { cliente, unKgMin, unKgMax, rechazoMin, rechazoMax, rdmtoMin, rdmtoMax };
-
       if (data && editIdx !== null) {
         criterios[editIdx] = obj;
       } else {
@@ -187,7 +181,6 @@ export function renderCriteriosClasificacion() {
       closeModal();
       renderTable(document.getElementById('criteriosFilter').value);
     };
-
     document.getElementById("btnCancelarCriterio").onclick = closeModal;
     modal.onclick = (e) => { if (e.target === modal) closeModal(); }
     document.onkeydown = (ev) => { if (ev.key === "Escape") closeModal(); };
@@ -205,7 +198,7 @@ export function renderCriteriosClasificacion() {
     localStorage.setItem('criteriosClasif', JSON.stringify(criterios));
   }
 
-  // Exportación CSV
+  // Exportaciones
   function exportCSV() {
     if (!criterios.length) return;
     const head = ["Cliente","Un/Kg min","Un/Kg max","% Rechazo min","% Rechazo max","% Rdmto min","% Rdmto max"];
@@ -217,9 +210,7 @@ export function renderCriteriosClasificacion() {
     const url = URL.createObjectURL(blob);
     descargarArchivo(url, "criterios_clasificacion.csv");
   }
-  // Exportación Excel (XLSX): puede usar la misma función que CSV por simplicidad
   function exportExcel() { exportCSV(); }
-  // Exportación PDF (simple)
   function exportPDF() {
     let win = window.open('', '', 'width=900,height=650');
     win.document.write('<html><head><title>Exportar PDF</title></head><body>');
