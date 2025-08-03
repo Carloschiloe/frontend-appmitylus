@@ -1,21 +1,25 @@
-// /js/configuracion/configuracion_criterios.js
 let criterios = JSON.parse(localStorage.getItem('criteriosClasif') || '[]');
 let editIdx = null;
 
 export function renderCriteriosClasificacion() {
-  const cont = document.getElementById('criterios-clasificacion-content');
+  const cont = document.getElementById('tab-criterios');
   if (!cont) return;
 
   cont.innerHTML = `
-    <div class="row" style="margin-bottom: .7rem;">
-      <div class="input-field col s12 m4">
+    <div class="right-align" style="margin-bottom: 16px;">
+      <a id="btnAddCriterio" class="btn-floating btn-large teal" title="Agregar Criterio" aria-label="Agregar Criterio">
+        <i class="material-icons">add</i>
+      </a>
+    </div>
+    <h5>Criterios de Clasificación por Cliente</h5>
+    <div class="row">
+      <div class="col s12 m4">
         <input id="criteriosFilter" type="text" placeholder="Buscar..." />
       </div>
       <div class="col s12 m8 right-align">
         <button id="btnExportCriteriosExcel" class="btn-flat tooltipped" data-tooltip="Exportar a Excel"><i class="material-icons">grid_on</i></button>
         <button id="btnExportCriteriosPDF" class="btn-flat tooltipped" data-tooltip="Exportar a PDF"><i class="material-icons">picture_as_pdf</i></button>
         <button id="btnExportCriteriosCSV" class="btn-flat tooltipped" data-tooltip="Exportar CSV"><i class="material-icons">table_chart</i></button>
-        <a id="btnAddCriterio" class="btn-floating btn-small teal" title="Agregar Criterio"><i class="material-icons">add</i></a>
       </div>
     </div>
     <div style="position:relative;">
@@ -35,27 +39,14 @@ export function renderCriteriosClasificacion() {
         </thead>
         <tbody></tbody>
       </table>
+      <div id="modalCriterio" class="modal"></div>
     </div>
-    <div id="modalCriterio" class="modal"></div>
   `;
 
-  // Inicializa tooltips
-  const tooltipElems = document.querySelectorAll('.tooltipped');
-  M.Tooltip.init(tooltipElems);
-
-  // Inicializa modal Materialize (imprescindible)
-  const modalEl = document.getElementById('modalCriterio');
-  M.Modal.init(modalEl, {dismissible:true});
-
-  // Buscar
   document.getElementById('criteriosFilter').oninput = (e) => renderTable(e.target.value);
-
-  // Exportar
   document.getElementById("btnExportCriteriosExcel").onclick = exportExcel;
   document.getElementById("btnExportCriteriosPDF").onclick = exportPDF;
   document.getElementById("btnExportCriteriosCSV").onclick = exportCSV;
-
-  // Botón agregar (abre modal vacío)
   document.getElementById("btnAddCriterio").onclick = () => openModal();
 
   renderTable();
@@ -151,10 +142,10 @@ export function renderCriteriosClasificacion() {
           </div>
         </form>
       </div>
+      <div class="modal-bg"></div>
     `;
-    M.Modal.init(modal, {dismissible:true});
-    const inst = M.Modal.getInstance(modal);
-    inst.open();
+    modal.style.display = 'block';
+    setTimeout(() => modal.classList.add("show"), 25);
 
     document.getElementById("formCriterio").onsubmit = (e) => {
       e.preventDefault();
@@ -180,18 +171,27 @@ export function renderCriteriosClasificacion() {
         criterios.push(obj);
       }
       guardar();
-      inst.close();
-      setTimeout(() => renderTable(document.getElementById('criteriosFilter').value), 200);
+      closeModal();
+      renderTable(document.getElementById('criteriosFilter').value);
     };
 
-    document.getElementById("btnCancelarCriterio").onclick = () => inst.close();
+    document.getElementById("btnCancelarCriterio").onclick = closeModal;
+    modal.onclick = (e) => { if (e.target === modal) closeModal(); }
+    document.onkeydown = (ev) => { if (ev.key === "Escape") closeModal(); };
+  }
+
+  function closeModal() {
+    const modal = document.getElementById('modalCriterio');
+    modal.classList.remove("show");
+    setTimeout(() => { modal.style.display = "none"; modal.innerHTML = ""; }, 210);
+    editIdx = null;
+    document.onkeydown = null;
   }
 
   function guardar() {
     localStorage.setItem('criteriosClasif', JSON.stringify(criterios));
   }
 
-  // Exportaciones
   function exportCSV() {
     if (!criterios.length) return;
     const head = ["Cliente","Un/Kg min","Un/Kg max","% Rechazo min","% Rechazo max","% Rdmto min","% Rdmto max"];
