@@ -5,90 +5,105 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Configuración | AppMitylus</title>
   <!-- ICONOS & FRAMEWORKS -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-  <!-- ESTILO GLOBAL + CENTROS + EXCLUSIVO CONFIGURACIÓN -->
-  <link rel="stylesheet" href="/styles.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+  <!-- SOLO ESTILOS BASE -->
+  <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="../../css/centros.css" />
-  </head>
+</head>
 <body>
-  <!-- NAVBAR -->
-  <nav class="teal" style="box-shadow:0 2px 16px 0 rgba(0,0,0,0.06)">
+  <!-- NAV -->
+  <nav class="teal">
     <div class="nav-wrapper">
-      <a href="/index.html" class="btn-flat left" title="Volver">
-        <i class="material-icons">arrow_back</i>
-      </a>
-      <span class="brand-logo center" style="font-size:2.5rem;">Configuración</span>
+      <a href="/index.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
+      <a href="#" class="brand-logo center">Configuración</a>
     </div>
   </nav>
 
   <div class="container" style="margin-top:2.2rem; margin-bottom:1.8rem;">
-    <div class="config-main-card z-depth-1">
-      <!-- MENÚ DE PESTAÑAS -->
-      <ul class="tabs config-tabs">
-        <li class="tab col s3"><a href="#tab-criterios" class="active">CRITERIOS DE CLASIFICACIÓN</a></li>
-        <li class="tab col s3"><a href="#tab-proveedores">PROVEEDORES MMPP</a></li>
-        <li class="tab col s3"><a href="#tab-clientes">CLIENTES</a></li>
-        <li class="tab col s3"><a href="#tab-transporte">EMPRESAS DE TRANSPORTE</a></li>
-      </ul>
+    <!-- Pestañas -->
+    <ul id="tabs" class="tabs">
+      <li class="tab col s3"><a class="active" href="#tab-criterios">CRITERIOS DE CLASIFICACIÓN</a></li>
+      <li class="tab col s3"><a href="#tab-proveedores">PROVEEDORES MMPP</a></li>
+      <li class="tab col s3"><a href="#tab-clientes">CLIENTES</a></li>
+      <li class="tab col s3"><a href="#tab-transporte">EMPRESAS DE TRANSPORTE</a></li>
+    </ul>
 
-      <!-- ========== PESTAÑA: CRITERIOS ========== -->
-      <div id="tab-criterios" class="config-section">
-        <h2 style="font-size:2rem; color:#1769aa; font-weight:700; margin-bottom:1.7rem;">Criterios de Clasificación por Cliente</h2>
-        <div id="criterios-clasificacion-content"></div>
+    <!-- ========== PESTAÑA: CRITERIOS ========== -->
+    <section id="tab-criterios" class="col s12" style="margin-top:1.2rem;">
+      <div class="right-align" style="margin-bottom: 16px;">
+        <a id="btnAddCriterio" class="btn-floating btn-large teal" title="Agregar Criterio" aria-label="Agregar Criterio">
+          <i class="material-icons">add</i>
+        </a>
       </div>
-
-      <!-- ========== PESTAÑA: PROVEEDORES MMPP ========== -->
-      <div id="tab-proveedores" class="config-section" style="display:none;">
-        <h2 style="font-size:2rem; color:#1769aa; font-weight:700; margin-bottom:1.7rem;">Proveedores de Materia Prima</h2>
-        <div id="proveedores-mmpp-content"></div>
+      <h5>Criterios de Clasificación por Cliente</h5>
+      <div class="row">
+        <div class="col s12 m4">
+          <input id="criteriosFilter" type="text" placeholder="Buscar..." />
+        </div>
+        <div class="col s12 m8 right-align">
+          <button id="btnExportCriteriosExcel" class="btn-flat tooltipped" data-tooltip="Exportar a Excel"><i class="material-icons">grid_on</i></button>
+          <button id="btnExportCriteriosPDF" class="btn-flat tooltipped" data-tooltip="Exportar a PDF"><i class="material-icons">picture_as_pdf</i></button>
+          <button id="btnExportCriteriosCSV" class="btn-flat tooltipped" data-tooltip="Exportar CSV"><i class="material-icons">table_chart</i></button>
+        </div>
       </div>
-
-      <!-- ========== PESTAÑA: CLIENTES ========== -->
-      <div id="tab-clientes" class="config-section" style="display:none;">
-        <h2 style="font-size:2rem; color:#1769aa; font-weight:700; margin-bottom:1.7rem;">Clientes</h2>
-        <div id="clientes-content"></div>
+      <div style="position:relative;">
+        <table id="criteriosTable" class="striped display responsive-table" style="width:100%" aria-describedby="tablaCriteriosDescripcion" role="grid" aria-live="polite">
+          <caption id="tablaCriteriosDescripcion" class="sr-only">Tabla con criterios de clasificación</caption>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Un/Kg min</th>
+              <th>Un/Kg max</th>
+              <th>% Rechazo min</th>
+              <th>% Rechazo max</th>
+              <th>% Rdmto min</th>
+              <th>% Rdmto max</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <!-- Modal para agregar/editar -->
+        <div id="modalCriterio" class="modal"></div>
       </div>
+    </section>
 
-      <!-- ========== PESTAÑA: EMPRESAS DE TRANSPORTE ========== -->
-      <div id="tab-transporte" class="config-section" style="display:none;">
-        <h2 style="font-size:2rem; color:#1769aa; font-weight:700; margin-bottom:1.7rem;">Empresas de Transporte</h2>
-        <div id="transporte-content"></div>
-      </div>
-    </div>
-  </div>
+    <!-- Aquí puedes copiar la estructura base para las demás pestañas igual que arriba -->
+    <!-- ... -->
 
-  <!-- JS: TABS Y LÓGICA DE PESTAÑAS -->
+  </div><!-- /container -->
+
+  <!-- SCRIPTS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script type="module" src="../../js/configuracion/index.js"></script>
   <script>
-    // Materialize Tabs y manejo de secciones
+    // Tabs y manejo de secciones
     document.addEventListener('DOMContentLoaded', function () {
       var tabs = document.querySelectorAll('.tabs');
       M.Tabs.init(tabs);
 
+      // Mostrar la sección correspondiente
       function showTab(tabId) {
-        document.querySelectorAll('.config-section').forEach(sec => sec.style.display = 'none');
+        document.querySelectorAll('.col.s12').forEach(sec => sec.style.display = 'none');
         document.getElementById(tabId).style.display = '';
       }
       document.querySelectorAll('.tabs a').forEach(tab => {
         tab.addEventListener('click', function (e) {
           e.preventDefault();
           let id = this.getAttribute('href').replace('#', '');
-          showTab(id);
+          document.querySelectorAll('section.col.s12').forEach(sec => sec.style.display = 'none');
+          document.getElementById(id).style.display = '';
         });
       });
-
-      if (window.location.hash) {
-        const tabId = window.location.hash.replace('#', '');
-        if (document.getElementById(tabId)) showTab(tabId);
-      } else {
-        showTab('tab-criterios');
-      }
+      // Por defecto mostrar criterios
+      document.getElementById('tab-criterios').style.display = '';
     });
   </script>
 </body>
 </html>
+
+
 
 
 
