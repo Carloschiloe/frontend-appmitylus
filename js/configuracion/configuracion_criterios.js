@@ -6,7 +6,6 @@ export function renderCriteriosClasificacion() {
 
   // Limpia el contenedor
   cont.innerHTML = `
-    <h5 class="section-title">Criterios de Clasificación por Cliente</h5>
     <form id="form-criterios" class="row criteria-form">
       <div class="input-field col s12 m2">
         <input id="clienteCriterio" type="text" />
@@ -108,3 +107,4 @@ export function renderCriteriosClasificacion() {
     e.target.reset();
   };
 }
+
