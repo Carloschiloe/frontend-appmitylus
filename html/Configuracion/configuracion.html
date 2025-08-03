@@ -7,7 +7,7 @@
   <!-- ICONOS & FRAMEWORKS -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-  <!-- SOLO ESTILOS BASE -->
+  <!-- ESTILOS BASE -->
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="../../css/centros.css" />
 </head>
@@ -21,148 +21,24 @@
   </nav>
 
   <div class="container" style="margin-top:2.2rem; margin-bottom:1.8rem;">
-    <!-- Pestañas -->
-    <ul id="tabs" class="tabs">
+    <!-- Tabs Materialize -->
+    <ul class="tabs">
       <li class="tab col s3"><a class="active" href="#tab-criterios">CRITERIOS DE CLASIFICACIÓN</a></li>
       <li class="tab col s3"><a href="#tab-proveedores">PROVEEDORES MMPP</a></li>
       <li class="tab col s3"><a href="#tab-clientes">CLIENTES</a></li>
       <li class="tab col s3"><a href="#tab-transporte">EMPRESAS DE TRANSPORTE</a></li>
     </ul>
 
-    <!-- ========== PESTAÑA: CRITERIOS ========== -->
-    <section id="tab-criterios" class="col s12" style="margin-top:1.2rem;">
-      <div class="right-align" style="margin-bottom: 16px;">
-        <a id="btnAddCriterio" class="btn-floating btn-large teal" title="Agregar Criterio" aria-label="Agregar Criterio">
-          <i class="material-icons">add</i>
-        </a>
-      </div>
-      <h5>Criterios de Clasificación por Cliente</h5>
-      <div class="row">
-        <div class="col s12 m4">
-          <input id="criteriosFilter" type="text" placeholder="Buscar..." />
-        </div>
-        <div class="col s12 m8 right-align">
-          <button id="btnExportCriteriosExcel" class="btn-flat tooltipped" data-tooltip="Exportar a Excel"><i class="material-icons">grid_on</i></button>
-          <button id="btnExportCriteriosPDF" class="btn-flat tooltipped" data-tooltip="Exportar a PDF"><i class="material-icons">picture_as_pdf</i></button>
-          <button id="btnExportCriteriosCSV" class="btn-flat tooltipped" data-tooltip="Exportar CSV"><i class="material-icons">table_chart</i></button>
-        </div>
-      </div>
-      <div style="position:relative;">
-        <table id="criteriosTable" class="striped display responsive-table" style="width:100%" aria-describedby="tablaCriteriosDescripcion" role="grid" aria-live="polite">
-          <caption id="tablaCriteriosDescripcion" class="sr-only">Tabla con criterios de clasificación</caption>
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th>Un/Kg min</th>
-              <th>Un/Kg max</th>
-              <th>% Rechazo min</th>
-              <th>% Rechazo max</th>
-              <th>% Rdmto min</th>
-              <th>% Rdmto max</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <!-- Modal para agregar/editar -->
-        <div id="modalCriterio" class="modal"></div>
-      </div>
-    </section>
-
-    <!-- ========== PESTAÑA: PROVEEDORES MMPP ========== -->
-    <section id="tab-proveedores" class="col s12" style="display:none; margin-top:1.2rem;">
-      <div class="right-align" style="margin-bottom: 16px;">
-        <a id="btnAddProveedor" class="btn-floating btn-large teal" title="Agregar Proveedor" aria-label="Agregar Proveedor">
-          <i class="material-icons">add</i>
-        </a>
-      </div>
-      <h5>Proveedores de Materia Prima</h5>
-      <!-- Aquí va la tabla de proveedores -->
-      <table id="proveedoresTable" class="striped display responsive-table" style="width:100%">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>RUT</th>
-            <th>Contacto</th>
-            <th>Email</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <div id="modalProveedor" class="modal"></div>
-    </section>
-
-    <!-- ========== PESTAÑA: CLIENTES ========== -->
-    <section id="tab-clientes" class="col s12" style="display:none; margin-top:1.2rem;">
-      <div class="right-align" style="margin-bottom: 16px;">
-        <a id="btnAddCliente" class="btn-floating btn-large teal" title="Agregar Cliente" aria-label="Agregar Cliente">
-          <i class="material-icons">add</i>
-        </a>
-      </div>
-      <h5>Clientes</h5>
-      <!-- Aquí va la tabla de clientes -->
-      <table id="clientesTable" class="striped display responsive-table" style="width:100%">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>RUT</th>
-            <th>Contacto</th>
-            <th>Email</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <div id="modalCliente" class="modal"></div>
-    </section>
-
-    <!-- ========== PESTAÑA: TRANSPORTE ========== -->
-    <section id="tab-transporte" class="col s12" style="display:none; margin-top:1.2rem;">
-      <div class="right-align" style="margin-bottom: 16px;">
-        <a id="btnAddTransporte" class="btn-floating btn-large teal" title="Agregar Empresa Transporte" aria-label="Agregar Empresa Transporte">
-          <i class="material-icons">add</i>
-        </a>
-      </div>
-      <h5>Empresas de Transporte</h5>
-      <!-- Aquí va la tabla de empresas de transporte -->
-      <table id="transporteTable" class="striped display responsive-table" style="width:100%">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>RUT</th>
-            <th>Contacto</th>
-            <th>Email</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <div id="modalTransporte" class="modal"></div>
-    </section>
-  </div><!-- /container -->
+    <!-- El contenido se pinta aquí por JS (igual que Centros) -->
+    <section id="tab-criterios" class="config-section"></section>
+    <section id="tab-proveedores" class="config-section" style="display:none"></section>
+    <section id="tab-clientes" class="config-section" style="display:none"></section>
+    <section id="tab-transporte" class="config-section" style="display:none"></section>
+  </div>
 
   <!-- SCRIPTS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <!-- Tu JS principal de Configuración -->
   <script type="module" src="../../js/configuracion/index.js"></script>
-  <script>
-    // Tabs y manejo de secciones
-    document.addEventListener('DOMContentLoaded', function () {
-      var tabs = document.querySelectorAll('.tabs');
-      M.Tabs.init(tabs);
-
-      // Mostrar la sección correspondiente
-      document.querySelectorAll('.tabs a').forEach(tab => {
-        tab.addEventListener('click', function (e) {
-          e.preventDefault();
-          let id = this.getAttribute('href').replace('#', '');
-          document.querySelectorAll('section.col.s12').forEach(sec => sec.style.display = 'none');
-          document.getElementById(id).style.display = '';
-        });
-      });
-      // Por defecto mostrar criterios
-      document.getElementById('tab-criterios').style.display = '';
-    });
-  </script>
 </body>
 </html>
