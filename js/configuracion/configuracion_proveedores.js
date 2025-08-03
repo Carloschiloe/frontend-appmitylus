@@ -4,7 +4,6 @@ export function renderProveedoresMMPP() {
   const cont = document.getElementById('proveedores-mmpp-content');
   if (!cont) return;
   cont.innerHTML = `
-    <h5 class="section-title">Proveedores MMPP</h5>
     <form id="form-proveedor" class="row">
       <div class="input-field col s12 m3"><input id="nombreProveedor" type="text" /><label for="nombreProveedor">Nombre</label></div>
       <div class="input-field col s12 m2"><input id="rutProveedor" type="text" /><label for="rutProveedor">RUT</label></div>
@@ -66,3 +65,4 @@ export function renderProveedoresMMPP() {
     e.target.reset();
   };
 }
+
