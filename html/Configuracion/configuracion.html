@@ -7,7 +7,7 @@
   <!-- ICONOS & FRAMEWORKS -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-  <!-- ESTILOS BASE -->
+  <!-- SOLO ESTILOS BASE -->
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="../../css/centros.css" />
 </head>
@@ -21,24 +21,23 @@
   </nav>
 
   <div class="container" style="margin-top:2.2rem; margin-bottom:1.8rem;">
-    <!-- Tabs Materialize -->
-    <ul class="tabs">
+    <!-- Pestañas -->
+    <ul id="tabs" class="tabs">
       <li class="tab col s3"><a class="active" href="#tab-criterios">CRITERIOS DE CLASIFICACIÓN</a></li>
       <li class="tab col s3"><a href="#tab-proveedores">PROVEEDORES MMPP</a></li>
       <li class="tab col s3"><a href="#tab-clientes">CLIENTES</a></li>
       <li class="tab col s3"><a href="#tab-transporte">EMPRESAS DE TRANSPORTE</a></li>
     </ul>
 
-    <!-- El contenido se pinta aquí por JS (igual que Centros) -->
-    <section id="tab-criterios" class="config-section"></section>
-    <section id="tab-proveedores" class="config-section" style="display:none"></section>
-    <section id="tab-clientes" class="config-section" style="display:none"></section>
-    <section id="tab-transporte" class="config-section" style="display:none"></section>
+    <!-- ========== SECCIONES (ID = pestaña) ========== -->
+    <section id="tab-criterios" class="col s12 config-section" style="display:block"></section>
+    <section id="tab-proveedores" class="col s12 config-section" style="display:none"></section>
+    <section id="tab-clientes" class="col s12 config-section" style="display:none"></section>
+    <section id="tab-transporte" class="col s12 config-section" style="display:none"></section>
   </div>
 
   <!-- SCRIPTS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <!-- Tu JS principal de Configuración -->
   <script type="module" src="../../js/configuracion/index.js"></script>
 </body>
 </html>
