@@ -1,12 +1,10 @@
-// configuración_empresas.js – Empresas de Transporte y Camiones (acordeón)
-// Para usar: importa en tu index.js principal de configuración
+// configuracion_transportes.js – Empresas de Transporte y Camiones (acordeón)
 
 let empresasTransporte = []; // [{nombre, rut, direccion, comuna, telefono, email, obs, camiones:[...]}]
-let selectedEmpresaIdx = null;
 
 // --- Render principal ---
 export function renderEmpresasTransporte() {
-  const cont = document.getElementById('tab-empresas');
+  const cont = document.getElementById('tab-transporte'); // <---- este ID ahora coincide con tu HTML
   if (!cont) return;
 
   cont.innerHTML = `
@@ -30,7 +28,8 @@ export function renderEmpresasTransporte() {
       <table class="conf-table">
         <thead>
           <tr>
-            <th>Nombre</th><th>RUT</th><th>Dirección</th><th>Comuna</th><th>Teléfono</th><th>Email</th><th>Obs.</th><th>Camiones</th><th>Acciones</th>
+            <th>Nombre</th><th>RUT</th><th>Dirección</th><th>Comuna</th><th>Teléfono</th>
+            <th>Email</th><th>Obs.</th><th>Camiones</th><th>Acciones</th>
           </tr>
         </thead>
         <tbody id="empresasBody"></tbody>
