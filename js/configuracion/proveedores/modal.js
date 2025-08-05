@@ -1,4 +1,3 @@
-// /js/configuracion/proveedores/modal.js
 import { getProveedorById, getCentrosByProveedor, saveProveedor } from './service.js';
 
 export async function abrirModalProveedor(proveedorId) {
@@ -8,7 +7,6 @@ export async function abrirModalProveedor(proveedorId) {
     comuna: '', categoria: '', centros: [], observaciones: '', toneladas: []
   };
 
-  // Modal único por sesión (lo crea si no existe)
   let modal = document.getElementById('modalProveedor');
   if (!modal) {
     modal = document.createElement('div');
@@ -18,7 +16,6 @@ export async function abrirModalProveedor(proveedorId) {
     M.Modal.init(modal);
   }
 
-  // Render contenido
   modal.innerHTML = `
     <div class="modal-content">
       <h5>${proveedorId ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h5>
@@ -39,7 +36,6 @@ export async function abrirModalProveedor(proveedorId) {
             `).join('')}
           </ul>
         </div>
-        <!-- Puedes agregar sección de toneladas aquí si lo deseas -->
         <div class="right-align" style="margin-top:1.2em">
           <button class="btn-flat teal white-text" type="submit">${proveedorId ? 'Actualizar' : 'Crear'}</button>
           <button class="btn-flat modal-close" type="button">Cancelar</button>
@@ -50,10 +46,8 @@ export async function abrirModalProveedor(proveedorId) {
   M.updateTextFields();
   M.Modal.getInstance(modal).open();
 
-  // Guardar proveedor
   modal.querySelector('#formProveedor').onsubmit = async function(e) {
     e.preventDefault();
-    // Construir objeto proveedor
     const p = {
       ...proveedor,
       rut: modal.querySelector('#inputRut').value.trim(),
@@ -64,17 +58,15 @@ export async function abrirModalProveedor(proveedorId) {
       comuna: modal.querySelector('#inputComuna').value.trim(),
       categoria: modal.querySelector('#inputCategoria').value.trim(),
       observaciones: modal.querySelector('#inputObservaciones').value.trim(),
-      // Puedes agregar otros campos aquí
     };
     await saveProveedor(p);
     M.Modal.getInstance(modal).close();
-    // Refresca tabla principal después de guardar
-    import('./tabla.js').then(mod => mod.initTablaProveedores());
+    // Import absoluto para refrescar tabla
+    import('/js/configuracion/proveedores/tabla.js').then(mod => mod.initTablaProveedores());
   };
 }
 
-// Puedes extender esto con historial, toneladas, etc.
 export function abrirHistorialProveedor(proveedorId) {
-  // Muestra un modal simple (o tabla) con toneladas históricas si las agregas
   M.toast({ html: 'Historial de toneladas: función por implementar', displayLength: 3500 });
 }
+
