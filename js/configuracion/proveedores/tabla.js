@@ -13,11 +13,18 @@ export async function initTablaProveedores() {
     }
     console.log('[Proveedores] Renderizando tabla de proveedores…');
 
+    // Destruye DataTable anterior SOLO si existe
+    if (dataTable) {
+      dataTable.destroy();
+      dataTable = null;
+    }
+
+    // Redibuja el contenido HTML de la tabla desde cero
     cont.innerHTML = `
       <div class="row">
         <div class="col s12 right-align">
-          <button id="btnImportarProveedores" class="btn-flat teal white-text"><i class="material-icons left">upload</i>Importar Excel</button>
-          <button id="btnNuevoProveedor" class="btn-flat teal white-text"><i class="material-icons left">add</i>Nuevo proveedor</button>
+          <button id="btnImportarProveedores" class="btn-flat teal white-text"><i class="material-icons left">upload</i>IMPORTAR EXCEL</button>
+          <button id="btnNuevoProveedor" class="btn-flat teal white-text"><i class="material-icons left">add</i>NUEVO PROVEEDOR</button>
         </div>
       </div>
       <table id="tablaProveedores" class="striped highlight display" style="width:100%">
@@ -38,6 +45,7 @@ export async function initTablaProveedores() {
       </table>
     `;
 
+    // Log antes de obtener proveedores
     console.log('[Proveedores] Llamando a getProveedores()…');
     const proveedores = await getProveedores();
     console.log('[Proveedores] Lista recibida:', proveedores);
@@ -70,13 +78,7 @@ export async function initTablaProveedores() {
       </tr>
     `).join('');
 
-    // Inicia DataTable (reinicia si ya existe)
-    console.log('[Proveedores] Inicializando DataTable...');
-    if (dataTable) {
-      dataTable.destroy();
-      $('#tablaProveedores').empty();
-      console.log('[Proveedores] DataTable destruido (refrescando)');
-    }
+    // Inicializa DataTable sobre la tabla recién dibujada
     dataTable = $('#tablaProveedores').DataTable({
       dom: 'Bfrtip',
       buttons: ['excel', 'csv', 'pdf'],
@@ -91,6 +93,7 @@ export async function initTablaProveedores() {
     });
     console.log('[Proveedores] DataTable inicializado OK');
 
+    // BOTONES: Nuevo/Importar
     document.getElementById('btnNuevoProveedor').onclick = () => {
       console.log('[Proveedores] Click: Nuevo Proveedor');
       abrirModalProveedor(null);
@@ -100,6 +103,7 @@ export async function initTablaProveedores() {
       importarProveedores();
     };
 
+    // Delegación de eventos en tabla (edición, ver centros, historial)
     tbody.querySelectorAll('.btn-editar-proveedor').forEach(btn => {
       btn.onclick = e => {
         console.log('[Proveedores] Click: Editar', btn.dataset.id);
@@ -109,7 +113,6 @@ export async function initTablaProveedores() {
     tbody.querySelectorAll('.btn-centros-tooltip').forEach(btn => {
       btn.onclick = e => {
         console.log('[Proveedores] Click: Ver Centros', btn.dataset.id);
-        // CAMBIO: import absoluto
         import('/js/configuracion/proveedores/service.js').then(mod => {
           const centros = mod.getCentrosByProveedor(btn.dataset.id) || [];
           if (!centros.length) {
@@ -124,7 +127,6 @@ export async function initTablaProveedores() {
     tbody.querySelectorAll('.btn-historial-proveedor').forEach(btn => {
       btn.onclick = e => {
         console.log('[Proveedores] Click: Historial', btn.dataset.id);
-        // CAMBIO: import absoluto
         import('/js/configuracion/proveedores/modal.js').then(mod => {
           mod.abrirHistorialProveedor(btn.dataset.id);
         });
