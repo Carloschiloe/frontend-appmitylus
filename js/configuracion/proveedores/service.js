@@ -1,5 +1,8 @@
-import { Estado } from '../../core/estado.js'; // Ajusta el path si es necesario
+// Archivo: /js/configuracion/proveedores/service.js
 
+import { Estado } from '../../core/estado.js'; // Ajusta si tu path es distinto
+
+// Proveedores simulados (reemplaza esto con fetch al backend en el futuro)
 let proveedores = window.PROVEEDORES_MOCK || [
   {
     _id: "1",
@@ -15,20 +18,25 @@ let proveedores = window.PROVEEDORES_MOCK || [
   }
 ];
 
+// Listar todos los proveedores
 export async function getProveedores() {
   return proveedores;
 }
 
+// Buscar por ID
 export async function getProveedorById(id) {
   return proveedores.find(p => p._id == id);
 }
 
+// Buscar centros asociados
 export function getCentrosByProveedor(proveedorId) {
+  // Si usas Estado.centros, asegúrate que esté inicializado
   return (Estado.centros || []).filter(c =>
     (typeof c.proveedor === 'object' ? c.proveedor._id : c.proveedor) == proveedorId
   );
 }
 
+// Guardar o actualizar un proveedor individual
 export async function saveProveedor(proveedor) {
   if (!proveedor._id) {
     proveedor._id = Date.now().toString() + Math.random().toString(16).slice(2,8);
@@ -39,11 +47,16 @@ export async function saveProveedor(proveedor) {
   }
 }
 
+// Guardado masivo (importación desde Excel)
 export async function saveProveedoresMasivo(lista) {
+  // Evita duplicados por RUT (agrega sólo nuevos o reemplaza existentes)
   lista.forEach(p => {
-    if (!proveedores.some(e => e.rut === p.rut)) {
+    const idx = proveedores.findIndex(e => e.rut === p.rut);
+    if (idx === -1) {
       p._id = Date.now().toString() + Math.random().toString(16).slice(2,8);
       proveedores.push(p);
+    } else {
+      proveedores[idx] = { ...proveedores[idx], ...p };
     }
   });
 }
