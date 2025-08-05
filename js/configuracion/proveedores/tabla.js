@@ -38,7 +38,6 @@ export async function initTablaProveedores() {
       </table>
     `;
 
-    // Log antes de obtener proveedores
     console.log('[Proveedores] Llamando a getProveedores()…');
     const proveedores = await getProveedores();
     console.log('[Proveedores] Lista recibida:', proveedores);
@@ -71,7 +70,7 @@ export async function initTablaProveedores() {
       </tr>
     `).join('');
 
-    // Log antes de inicializar DataTable
+    // Inicia DataTable (reinicia si ya existe)
     console.log('[Proveedores] Inicializando DataTable...');
     if (dataTable) {
       dataTable.destroy();
@@ -92,7 +91,6 @@ export async function initTablaProveedores() {
     });
     console.log('[Proveedores] DataTable inicializado OK');
 
-    // Botones
     document.getElementById('btnNuevoProveedor').onclick = () => {
       console.log('[Proveedores] Click: Nuevo Proveedor');
       abrirModalProveedor(null);
@@ -102,7 +100,6 @@ export async function initTablaProveedores() {
       importarProveedores();
     };
 
-    // Delegación eventos tabla
     tbody.querySelectorAll('.btn-editar-proveedor').forEach(btn => {
       btn.onclick = e => {
         console.log('[Proveedores] Click: Editar', btn.dataset.id);
@@ -112,13 +109,25 @@ export async function initTablaProveedores() {
     tbody.querySelectorAll('.btn-centros-tooltip').forEach(btn => {
       btn.onclick = e => {
         console.log('[Proveedores] Click: Ver Centros', btn.dataset.id);
-        mostrarCentrosAsociados(btn.dataset.id);
+        // CAMBIO: import absoluto
+        import('/js/configuracion/proveedores/service.js').then(mod => {
+          const centros = mod.getCentrosByProveedor(btn.dataset.id) || [];
+          if (!centros.length) {
+            M.toast({ html: 'Sin centros asociados', displayLength: 3500 });
+            return;
+          }
+          const html = centros.map(c => `<li>${c.name} <small>(${c.code || ''})</small></li>`).join('');
+          M.toast({ html: `<b>Centros asociados:</b><ul>${html}</ul>`, displayLength: 5500 });
+        });
       };
     });
     tbody.querySelectorAll('.btn-historial-proveedor').forEach(btn => {
       btn.onclick = e => {
         console.log('[Proveedores] Click: Historial', btn.dataset.id);
-        mostrarHistorialProveedor(btn.dataset.id);
+        // CAMBIO: import absoluto
+        import('/js/configuracion/proveedores/modal.js').then(mod => {
+          mod.abrirHistorialProveedor(btn.dataset.id);
+        });
       };
     });
     console.log('[Proveedores] Eventos asignados');
@@ -126,24 +135,4 @@ export async function initTablaProveedores() {
     console.error('[Proveedores] ERROR en initTablaProveedores:', err);
     M.toast({ html: 'Error en la vista de proveedores', classes: 'red' });
   }
-}
-
-// Función para mostrar centros asociados (toast o modal)
-function mostrarCentrosAsociados(proveedorId) {
-  import('./service.js').then(mod => {
-    const centros = mod.getCentrosByProveedor(proveedorId) || [];
-    if (!centros.length) {
-      M.toast({ html: 'Sin centros asociados', displayLength: 3500 });
-      return;
-    }
-    const html = centros.map(c => `<li>${c.name} <small>(${c.code || ''})</small></li>`).join('');
-    M.toast({ html: `<b>Centros asociados:</b><ul>${html}</ul>`, displayLength: 5500 });
-  });
-}
-
-// Ejemplo: Historial (puedes mejorarlo con un modal real)
-function mostrarHistorialProveedor(proveedorId) {
-  import('./modal.js').then(mod => {
-    mod.abrirHistorialProveedor(proveedorId);
-  });
 }
