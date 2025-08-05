@@ -1,6 +1,6 @@
 import { renderCriteriosClasificacion } from './configuracion_criterios.js';
 // Importa la tabla de proveedores directamente desde la carpeta correcta
-import { initTablaProveedores } from './proveedores/tabla.js';
+import { initTablaProveedores } from './Proveedores/tabla.js';
 // Cuando tengas listos los otros módulos, los agregas igual:
 /// import { renderClientes } from './configuracion_clientes.js';
 /// import { renderEmpresasTransporte } from './configuracion_transportes.js';
@@ -35,4 +35,5 @@ document.addEventListener('DOMContentLoaded', () => {
   // Mostrar por defecto la primera pestaña
   loadTab('tab-criterios');
 });
+
 
