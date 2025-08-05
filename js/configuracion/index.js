@@ -1,8 +1,14 @@
 import { renderCriteriosClasificacion } from './configuracion_criterios.js';
-// Agrega los otros renders cuando los tengas listos:
+// Importa la tabla de proveedores directamente desde la carpeta correcta
+import { initTablaProveedores } from './proveedores/tabla.js';
+// Cuando tengas listos los otros módulos, los agregas igual:
+/// import { renderClientes } from './configuracion_clientes.js';
+/// import { renderEmpresasTransporte } from './configuracion_transportes.js';
+
+// Tabla de funciones por tab
 const tabMap = {
   'tab-criterios': renderCriteriosClasificacion,
-  // 'tab-proveedores': renderProveedoresMMPP,
+  'tab-proveedores': initTablaProveedores,
   // 'tab-clientes': renderClientes,
   // 'tab-transporte': renderEmpresasTransporte,
 };
@@ -29,3 +35,4 @@ document.addEventListener('DOMContentLoaded', () => {
   // Mostrar por defecto la primera pestaña
   loadTab('tab-criterios');
 });
+
