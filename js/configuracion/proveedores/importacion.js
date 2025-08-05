@@ -1,4 +1,3 @@
-// /js/configuracion/proveedores/importacion.js
 import { saveProveedoresMasivo } from './service.js';
 
 export function importarProveedores() {
@@ -14,10 +13,10 @@ export function importarProveedores() {
       const workbook = window.XLSX.read(data, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = window.XLSX.utils.sheet_to_json(sheet, { defval: '' });
-      // Validación y preview rápida (puedes mejorar esto)
       if (confirm(`¿Importar ${rows.length} proveedores?`)) {
         await saveProveedoresMasivo(rows);
-        import('./tabla.js').then(mod => mod.initTablaProveedores());
+        // Import absoluto para refrescar tabla
+        import('/js/configuracion/proveedores/tabla.js').then(mod => mod.initTablaProveedores());
         M.toast({ html: 'Proveedores importados', classes: 'green' });
       }
     };
