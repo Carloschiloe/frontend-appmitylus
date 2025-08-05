@@ -1,10 +1,21 @@
-// /js/configuracion/proveedores/service.js
 import { Estado } from '../../core/estado.js'; // Ajusta el path si es necesario
 
-let proveedores = window.PROVEEDORES_MOCK || []; // Simula la base, cambia a fetch si usas backend
+let proveedores = window.PROVEEDORES_MOCK || [
+  {
+    _id: "1",
+    rut: "12.345.678-9",
+    razon_social: "Proveedor de Prueba S.A.",
+    contacto: "Juan Pérez",
+    telefono: "+56911112222",
+    correo: "proveedor@correo.com",
+    comuna: "Castro",
+    categoria: "Productor",
+    centros: [{ name: "Centro 1", code: "CT1" }],
+    observaciones: "Sin observaciones."
+  }
+];
 
 export async function getProveedores() {
-  // Si lo quieres dinámico, reemplaza por fetch a tu backend
   return proveedores;
 }
 
@@ -13,7 +24,6 @@ export async function getProveedorById(id) {
 }
 
 export function getCentrosByProveedor(proveedorId) {
-  // Matchea centros por ID de proveedor
   return (Estado.centros || []).filter(c =>
     (typeof c.proveedor === 'object' ? c.proveedor._id : c.proveedor) == proveedorId
   );
@@ -27,7 +37,6 @@ export async function saveProveedor(proveedor) {
     const idx = proveedores.findIndex(p => p._id == proveedor._id);
     if (idx !== -1) proveedores[idx] = proveedor;
   }
-  // Agrega POST/PUT a backend si lo tienes
 }
 
 export async function saveProveedoresMasivo(lista) {
@@ -37,5 +46,4 @@ export async function saveProveedoresMasivo(lista) {
       proveedores.push(p);
     }
   });
-  // Agrega carga masiva al backend si lo tienes
 }
