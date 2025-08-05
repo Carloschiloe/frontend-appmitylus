@@ -34,11 +34,11 @@ export async function openEditForm(els, map, currentPoints, setIdxCb, idx) {
     return;
   }
 
-  els.formTitle.textContent = `Editar centro: ${centro.name}`;
+  els.formTitle.textContent = `Editar centro: ${centro.name || centro.codigo_centro}`;
   els.inputCentroId.value   = idx; // Actualiza campo oculto
   els.inputName.value       = centro.name || '';
   els.inputProveedor.value  = centro.proveedor || '';  // SOLO proveedor
-  els.inputCode.value       = centro.code || '';
+  els.inputCode.value       = centro.codigo_centro || centro.code || '';
   els.inputHectareas.value  = centro.hectareas || '';
 
   currentPoints.length = 0;
