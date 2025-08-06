@@ -1,0 +1,101 @@
+//js/centros/tabla_centros.js
+import { Estado } from '../core/estado.js';
+import { getCentrosAll } from '../core/centros_repo.js';
+import { calcularTotalesTabla } from './helpers_centros.js';
+import { registerTablaCentrosEventos } from './eventos_centros.js';
+
+// Inicializa la tabla y la configura
+export function initTablaCentros() {
+  const $t = window.$('#centrosTable');
+  if (!$t.length) {
+    console.error('No se encontró #centrosTable');
+    return;
+  }
+
+  Estado.table = $t.DataTable({
+    colReorder: true,
+    dom: 'Bfrtip',
+    buttons: [
+      { extend: 'copyHtml5', footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
+      { extend: 'csvHtml5', footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
+      { extend: 'excelHtml5', footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
+      { extend: 'pdfHtml5', footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } }
+    ],
+    searching: false,
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
+    footerCallback: calcularTotalesTabla
+  });
+
+  Estado.table.draw();
+  // Delegamos la gestión de eventos (clicks, edición, etc.) al archivo de eventos
+  registerTablaCentrosEventos();
+}
+
+// Recarga todos los centros y refresca la tabla
+export async function loadCentros() {
+  Estado.centros = await getCentrosAll();
+
+  const rows = Estado.centros.map((c, i) => {
+    const cantLineas = Array.isArray(c.lines) ? c.lines.length : 0;
+    const hect = parseFloat(c.hectareas) || 0;
+
+    // SUMA de toneladas (todas las líneas)
+    const tonsDisponibles = Array.isArray(c.lines)
+      ? c.lines.reduce((sum, l) => sum + (+l.tons || 0), 0)
+      : 0;
+
+    // PROMEDIO Un/Kg, % Rechazo y Rdmto (solo si hay líneas)
+    let sumUnKg = 0, countUnKg = 0;
+    let sumRechazo = 0, countRechazo = 0;
+    let sumRdmto = 0, countRdmto = 0;
+    if (Array.isArray(c.lines)) {
+      c.lines.forEach(l => {
+        if (l.unKg !== undefined && l.unKg !== null && l.unKg !== '') {
+          sumUnKg += parseFloat(l.unKg) || 0;
+          countUnKg++;
+        }
+        if (l.porcRechazo !== undefined && l.porcRechazo !== null && l.porcRechazo !== '') {
+          sumRechazo += parseFloat(l.porcRechazo) || 0;
+          countRechazo++;
+        }
+        if (l.rendimiento !== undefined && l.rendimiento !== null && l.rendimiento !== '') {
+          sumRdmto += parseFloat(l.rendimiento) || 0;
+          countRdmto++;
+        }
+      });
+    }
+    const avgUnKg = countUnKg ? (sumUnKg / countUnKg) : 0;
+    const avgRechazo = countRechazo ? (sumRechazo / countRechazo) : 0;
+    const avgRdmto = countRdmto ? (sumRdmto / countRdmto) : 0;
+
+    const proveedor = c.proveedor || '-';
+
+    const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>`;
+    const accionesCell = `
+      <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer">visibility</i>
+      <i class="material-icons editar-centro" data-idx="${i}" style="cursor:pointer">edit</i>
+      <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer">delete</i>`;
+
+    return [
+      c.name,
+      proveedor,
+      c.code || '-',
+      hect.toFixed(2),
+      cantLineas,
+      tonsDisponibles.toLocaleString('es-CL', { minimumFractionDigits: 0 }),
+      avgUnKg.toFixed(2),
+      avgRechazo.toFixed(1) + '%',
+      avgRdmto.toFixed(1) + '%',
+      coordsCell,
+      accionesCell
+    ];
+  });
+
+  Estado.table.clear().rows.add(rows).draw();
+
+  // Si había un acordeón abierto, lo vuelve a abrir
+  if (Estado.lineAcordionOpen !== null && Estado.centros[Estado.lineAcordionOpen]) {
+    const tr = $('#centrosTable tbody tr').eq(Estado.lineAcordionOpen);
+    tr.find('.btn-toggle-lineas').trigger('click');
+  }
+}
