@@ -10,7 +10,7 @@ import {
   apiDeleteLinea,
   apiAddInventarioLinea
 } from './api.js';
-import { getCentros, saveCentros } from './almacenamiento.js';  // corregido saveCentro → saveCentros
+import { getCentros, saveCentro } from './almacenamiento.js';  // <-- saveCentro, no saveCentros
 
 // pon en false para trabajar offline
 const USE_API = true;
@@ -22,8 +22,6 @@ export async function getCentrosAll() {
 
 /**
  * Obtiene un único centro por su ID
- * @param {string} id
- * @returns {Promise<object|null>}
  */
 export async function getCentroById(id) {
   const all = await getCentrosAll();
@@ -77,7 +75,7 @@ export async function addInventarioLinea(centroId, lineaId, data) {
 
 /* ===== IMPLEMENTACIÓN LOCALSTORAGE (offline) ===== */
 function persist(list) {
-  saveCentros(list);
+  saveCentro(list);
   return list;
 }
 
@@ -134,7 +132,7 @@ async function localAddInventarioLinea(centroId, lineaId, data) {
   return persist(list);
 }
 
-// ===== BUSCAR CENTRO POR CODE (para importador inteligente) =====
+// ===== BUSCAR CENTRO POR CODE =====
 export async function getCentroByCode(code) {
   if (!code) return null;
   const all = await getCentrosAll();
