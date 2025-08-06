@@ -201,8 +201,19 @@ tr.editando-select th {
   padding: 0.26em 0.48em !important; /* Más compacto horizontal y vertical */
 }
 
-#centrosTable th, #centrosTable td {
-  white-space: nowrap;               /* No permite saltos de línea */
+/* SOLO Proveedor (primera columna): salto de línea y máximo ancho */
+#centrosTable td:first-child, 
+#centrosTable th:first-child {
+  white-space: normal !important;   /* Permite salto de línea */
+  word-break: break-word !important;
+  max-width: 220px !important;      /* Ajusta este valor según prefieras */
+  min-width: 100px !important;
+}
+
+/* El resto de columnas: no salto de línea */
+#centrosTable th:not(:first-child), 
+#centrosTable td:not(:first-child) {
+  white-space: nowrap !important;
 }
 
 /* Opcional: que los iconos no agreguen ancho extra */
@@ -223,5 +234,3 @@ tr.editando-select th {
 .dataTables_scrollBody {
   scrollbar-width: thin;
 }
-
-
