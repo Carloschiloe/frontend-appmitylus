@@ -76,24 +76,25 @@ export async function loadCentros() {
     const proveedor = toTitleCase(c.proveedor) || '-';
     const comuna = toTitleCase(c.comuna) || '-';
 
-    const coordsCell = <i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>;
-    const accionesCell = 
+    const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>`;
+    const accionesCell = `
       <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer">visibility</i>
       <i class="material-icons editar-centro" data-idx="${i}" style="cursor:pointer">edit</i>
-      <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer">delete</i>;
+      <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer">delete</i>
+    `;
 
     return [
-      proveedor,        // 1
-      comuna,           // 2
-      c.code || '-',    // 3
-      hect.toFixed(2),  // 4
-      cantLineas,       // 5
-      tonsDisponibles.toLocaleString('es-CL', { minimumFractionDigits: 0 }), // 6
-      avgUnKg.toFixed(2),           // 7
-      avgRechazo.toFixed(1) + '%',  // 8
-      avgRdmto.toFixed(1) + '%',    // 9
-      coordsCell,                   // 10
-      accionesCell                  // 11
+      proveedor,
+      comuna,
+      c.code || '-',
+      hect.toFixed(2),
+      cantLineas,
+      tonsDisponibles.toLocaleString('es-CL', { minimumFractionDigits: 0 }),
+      avgUnKg.toFixed(2),
+      avgRechazo.toFixed(1) + '%',
+      avgRdmto.toFixed(1) + '%',
+      coordsCell,
+      accionesCell
     ];
   });
 
@@ -104,3 +105,4 @@ export async function loadCentros() {
     tr.find('.btn-toggle-lineas').trigger('click');
   }
 }
+
