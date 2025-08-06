@@ -58,8 +58,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const els = {
     formTitle: document.getElementById('formTitle'),
     inputCentroId: document.getElementById('inputCentroId'),
-    inputName: document.getElementById('inputName'),
     inputProveedor: document.getElementById('inputProveedor'),
+    inputComuna: document.getElementById('inputComuna'),
     inputCode: document.getElementById('inputCode'),
     inputHectareas: document.getElementById('inputHectareas'),
     inputLat: document.getElementById('inputLat'),
@@ -91,8 +91,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const els = {
         formTitle: document.getElementById('formTitle'),
         inputCentroId: document.getElementById('inputCentroId'),
-        inputName: document.getElementById('inputName'),
         inputProveedor: document.getElementById('inputProveedor'),
+        inputComuna: document.getElementById('inputComuna'),
         inputCode: document.getElementById('inputCode'),
         inputHectareas: document.getElementById('inputHectareas'),
         inputLat: document.getElementById('inputLat'),
@@ -135,19 +135,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     formCentro.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const nombre = els.inputName.value.trim();
       const proveedor = els.inputProveedor.value.trim();
+      const comuna = els.inputComuna.value.trim();
       const code = els.inputCode.value.trim();
       const hectareas = els.inputHectareas.value.trim();
 
-      if (!nombre) {
-        M.toast({ html: 'Nombre obligatorio', classes: 'red' });
+      if (!proveedor || !comuna) {
+        M.toast({ html: 'Proveedor y comuna son obligatorios', classes: 'red' });
         return;
       }
 
       const centroData = {
-        name: nombre,
         proveedor,
+        comuna,
         code,
         hectareas,
         coords: Estado.currentPoints,
@@ -220,4 +220,3 @@ $(document).on('blur', '.select-wrapper input.select-dropdown', function () {
     $('.editando-select').removeClass('editando-select');
   }, 200);
 });
-
