@@ -5,47 +5,13 @@ import { getCentrosAll, getCentroById, updateCentro } from '../core/centros_repo
 import { calcularTotalesTabla } from './helpers_centros.js';
 import { registerTablaCentrosEventos } from './eventos_centros.js';
 
-// Campos a mostrar en el detalle (orden y etiqueta)
-const detalleFields = [
-  'proveedor',    // Proveedor
-  'comuna',       // Comuna
-  'code',         // Codigo Centro
-  'hectareas',    // Hectareas
-  'coords',       // Coordenadas
-  'region',       // Región
-  'rutTitular',   // Rut Titular
-  'nroPert',      // Nro. Pert
-  'numeroResSSP', // Número ResSSP
-  'fechaResSSP',  // Fecha ResSSP
-  'numeroResSSFFAA', // Número ResSSFFAA
-  'fechaResSSFFAA',  // Fecha ResSSFFAA
-  'ubicacion',    // Ubicación
-  'especies',     // Especies
-  'grupoEspecie', // Grupo Especie
-  'detalle'       // Detalle extra
-];
-const fieldLabels = {
-  proveedor:        'Proveedor',
-  comuna:           'Comuna',
-  code:             'Código Centro',
-  hectareas:        'Hectáreas',
-  coords:           'Coordenadas',
-  region:           'Región',
-  rutTitular:       'Rut Titular',
-  nroPert:          'Nro. Pert',
-  numeroResSSP:     'Número ResSSP',
-  fechaResSSP:      'Fecha ResSSP',
-  numeroResSSFFAA:  'Número ResSSFFAA',
-  fechaResSSFFAA:   'Fecha ResSSFFAA',
-  ubicacion:        'Ubicación',
-  especies:         'Especies',
-  grupoEspecie:     'Grupo Especie',
-  detalle:          'Detalle'
-};
-
-// Helper para capitalizar tipo título
-function toTitleCase(str) {
-  return (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+// Helper para capitalizar y formatear etiquetas legibles
+function formatLabel(key) {
+  // convierte camelCase o snake_case a palabras capitalizadas
+  return key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/[_\s]+/g, ' ')
+    .replace(/^./, str => str.toUpperCase());
 }
 
 // Adjunta los eventos para detalle editable
@@ -54,38 +20,43 @@ function attachDetalleEvents() {
     const id = $(this).data('id');
     const centro = await getCentroById(id);
 
-    // Construye el formulario con solo los campos extra
+    // Campos que ya aparecen en la tabla y que no mostraremos aquí
+    const exclude = ['_id', 'proveedor', 'comuna', 'code', 'hectareas', 'lines'];
+
+    // Generar formulario dinámico con todo lo demás
     let html = `<form id="formDetallesCentro">` +
                `<input type="hidden" name="_id" value="${centro._id}"/>`;
 
-    detalleFields.forEach(key => {
-      const val = centro[key];
-      if (val == null) return;  // no existe o null
-      const label = fieldLabels[key] || key;
+    Object.entries(centro).forEach(([key, val]) => {
+      if (exclude.includes(key) || val == null) return;
+      const label = formatLabel(key);
       let content;
 
-      if (key === 'coords' && Array.isArray(val)) {
-        // coords: array de objetos {lat,lng}
-        content = val.map(o => `${o.lat}, ${o.lng}`).join('\n');
+      if (Array.isArray(val)) {
+        // coords es array de objetos u otros arrays
+        content = val.map(item => (
+          typeof item === 'object' ? JSON.stringify(item) : item
+        )).join('\n');
         html += `
           <div class="input-field">
-            <textarea name="coords" class="materialize-textarea">${content}</textarea>
+            <textarea name="${key}" class="materialize-textarea">${content}</textarea>
             <label class="active">${label}</label>
           </div>`;
-      } else if (typeof val === 'object' && !Array.isArray(val)) {
-        // objeto genérico (detalle u otro)
+
+      } else if (typeof val === 'object') {
+        // objeto simple
         content = JSON.stringify(val, null, 2);
         html += `
           <div class="input-field">
             <textarea name="${key}" class="materialize-textarea" readonly>${content}</textarea>
             <label class="active">${label}</label>
           </div>`;
+
       } else {
-        // valor simple o array de strings
-        content = Array.isArray(val) ? val.join('\n') : val;
+        // valor primitivo
         html += `
           <div class="input-field">
-            <input name="${key}" type="text" value="${content}">
+            <input name="${key}" type="text" value="${val}">
             <label class="active">${label}</label>
           </div>`;
       }
@@ -104,11 +75,9 @@ function attachDetalleEvents() {
   $('#btnGuardarDetalle').off('click').on('click', async () => {
     const datos = {};
     $('#formDetallesCentro').serializeArray().forEach(({ name, value }) => {
-      if (name === 'coords') {
-        datos.coords = value.split('\n').map(line => {
-          const [lat, lng] = line.split(',').map(x => x.trim());
-          return { lat, lng };
-        });
+      // si es textarea con saltos, reconstruir array
+      if ($('#formDetallesCentro [name="' + name + '"]')[0].tagName === 'TEXTAREA') {
+        datos[name] = value.split('\n').map(s => s.trim()).filter(Boolean);
       } else {
         datos[name] = value;
       }
@@ -141,7 +110,7 @@ export function initTablaCentros() {
       { extend: 'copyHtml5', footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
       { extend: 'csvHtml5',  footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
       { extend: 'excelHtml5',footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
-      { extend: 'pdfHtml5',  footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
+      { extend: 'pdfHtml5',  footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } }
     ],
     searching: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
@@ -169,7 +138,7 @@ export async function loadCentros() {
       c.lines.forEach(l => {
         if (l.unKg != null && l.unKg !== '') { sumUnKg += +l.unKg; countUnKg++; }
         if (l.porcRechazo != null && l.porcRechazo !== '') { sumRechazo += +l.porcRechazo; countRechazo++; }
-        if (l.rendimiento   != null && l.rendimiento   !== '') { sumRdmto   += +l.rendimiento;   countRdmto++; }
+        if (l.rendimiento   != null && l.rendimiento   !== '') { sumRdmto += +l.rendimiento;   countRdmto++; }
       });
     }
     const avgUnKg    = countUnKg    ? sumUnKg    / countUnKg    : 0;
