@@ -22,10 +22,15 @@ function attachDetalleEvents() {
     Object.entries(centro).forEach(([key, val]) => {
       if (key === '_id' || val == null) return;
       const label = key.charAt(0).toUpperCase() + key.slice(1);
+
       if (Array.isArray(val)) {
+        // Formatear correctamente coords (array de objetos) o cualquier otro array
+        const content = key === 'coords'
+          ? val.map(o => `${o.lat}, ${o.lng}`).join('\n')
+          : val.join('\n');
         html += `
           <div class="input-field">
-            <textarea name="${key}" class="materialize-textarea">${val.join('\n')}</textarea>
+            <textarea name="${key}" class="materialize-textarea">${content}</textarea>
             <label class="active">${label}</label>
           </div>`;
       } else {
@@ -52,7 +57,10 @@ function attachDetalleEvents() {
     const datos = {};
     $('#formDetallesCentro').serializeArray().forEach(({ name, value }) => {
       datos[name] = name === 'coords'
-        ? value.split('\n').map(s => s.trim()).filter(Boolean)
+        ? value.split('\n').map(s => s.trim()).filter(Boolean).map(line => {
+            const [lat, lng] = line.split(',').map(x => x.trim());
+            return { lat, lng };
+          })
         : value;
     });
 
@@ -139,8 +147,8 @@ export async function loadCentros() {
     const coordsCell = `<i class="material-icons btn-detalle" data-id="${c._id}" style="cursor:pointer">visibility</i>`;
     const accionesCell = `
       <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer">visibility</i>
-      <i class="material-icons editar-centro"      data-idx="${i}" style="cursor:pointer">edit</i>
-      <i class="material-icons eliminar-centro"    data-idx="${i}" style="cursor:pointer">delete</i>`;
+      <i class="material-icons editar-centro"    data-idx="${i}" style="cursor:pointer">edit</i>
+      <i class="material-icons eliminar-centro"  data-idx="${i}" style="cursor:pointer">delete</i>`;
 
     return [
       proveedor,
