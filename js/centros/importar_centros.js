@@ -1,8 +1,44 @@
 // js/centros/importar_centros.js
-
 import { createCentro } from '../core/centros_repo.js';
 
-// 1. Renderiza un input para cargar archivos
+// Mapea los nombres de columnas de tu Excel a los campos que muestra la tabla
+const MAPEO_CAMPOS = {
+  'Nombre Centro': 'name',
+  'Proveedor': 'proveedor',
+  'Codigo Centro': 'code',
+  'Hectareas': 'hectareas',
+  // Si tu Excel tiene nombres distintos, cámbialos acá.
+};
+
+// --------- PARSING DE COORDENADAS ---------
+
+// Convierte "S 42°17´51.6600, W 73°8´15.2900;..." => [{lat, lng}, ...]
+function parsearCoordenadasDMS(str) {
+  if (!str) return [];
+  return str.split(';').filter(Boolean).map(p => {
+    const [latDMS, lngDMS] = p.split(',').map(x => x.trim());
+    return {
+      lat: dmsToDecimal(latDMS),
+      lng: dmsToDecimal(lngDMS)
+    };
+  });
+}
+
+// Convierte "S 42°17´51.6600" o "W 73°8´15.2900" a decimal
+function dmsToDecimal(dms) {
+  if (!dms) return null;
+  // Ejemplo: "S 42°17´51.6600"
+  const regex = /([NSWE])\s*(\d+)°(\d+)´([\d\.]+)/i;
+  const match = dms.match(regex);
+  if (!match) return null;
+  const [, dir, deg, min, sec] = match;
+  let dec = parseInt(deg) + parseInt(min) / 60 + parseFloat(sec.replace(',', '.')) / 3600;
+  if (dir === 'S' || dir === 'W') dec *= -1;
+  return dec;
+}
+
+// --------- IMPORTADOR UI ---------
+
 export function renderImportadorCentros(containerId = 'importarCentrosContainer') {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -34,9 +70,26 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
     btnImportar.disabled = true;
     document.getElementById('resultadoImportacion').textContent = 'Importando...';
     let importados = 0, errores = 0;
-    for (const centro of centrosData) {
+    for (const fila of centrosData) {
+      // Mapear campos conocidos, guardar coordenadas y extras en 'detalles'
+      const centro = {};
+      const detalles = {};
+      for (const k in fila) {
+        if (MAPEO_CAMPOS[k]) {
+          centro[MAPEO_CAMPOS[k]] = fila[k];
+        } else if (k.toLowerCase().includes('coordenada')) {
+          centro.coords = parsearCoordenadasDMS(fila[k]);
+        } else {
+          detalles[k] = fila[k];
+        }
+      }
+      centro.detalles = detalles;
+      // Si no hay coords pero hay detalles['Coordenadas'], intenta procesar igual
+      if ((!centro.coords || !centro.coords.length) && detalles['Coordenadas']) {
+        centro.coords = parsearCoordenadasDMS(detalles['Coordenadas']);
+      }
       try {
-        await addCentro(centro);
+        await createCentro(centro);
         importados++;
       } catch (err) {
         errores++;
@@ -49,7 +102,6 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
   });
 }
 
-// 2. Lee archivo Excel/CSV y lo convierte a objetos JS
 async function parseFileToJson(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -57,7 +109,6 @@ async function parseFileToJson(file) {
       const data = e.target.result;
       let workbook;
       try {
-        // SheetJS debe estar cargado en tu html como <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
         workbook = window.XLSX.read(data, { type: 'binary' });
       } catch (err) {
         alert('Error leyendo archivo. Asegúrate de que sea Excel/CSV válido.');
@@ -73,7 +124,6 @@ async function parseFileToJson(file) {
   });
 }
 
-// 3. Renderiza preview de los datos antes de importar
 function renderPreview(rows) {
   const previewDiv = document.getElementById('previewCentros');
   if (!rows || !rows.length) {
@@ -90,4 +140,3 @@ function renderPreview(rows) {
   html += '</tbody></table>';
   previewDiv.innerHTML = html;
 }
-
