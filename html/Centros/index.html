@@ -36,7 +36,6 @@
     <section id="tab-centros" class="col s12">
       <div class="row">
         <div class="col s12">
-
           <!-- Tabla de Centros -->
           <h5>Centros Registrados</h5>
           <table id="centrosTable" class="striped display responsive-table" style="width:100%" aria-describedby="tablaCentrosDescripcion" role="grid" aria-live="polite">
@@ -167,7 +166,17 @@
         <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
       </div>
     </div>
-    <!-- Modal Coordenadas -->
+    <!-- Modal Detalles y Coordenadas del Centro (NUEVO MODAL) -->
+    <div id="modalDetallesCentro" class="modal" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle" tabindex="-1">
+      <div class="modal-content">
+        <h5 id="detallesCentroTitle">Detalles del Centro</h5>
+        <div id="detallesCentroBody"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
+      </div>
+    </div>
+    <!-- Modal Coordenadas (puedes borrar si solo usas el nuevo modal) -->
     <div id="modalCoordenadas" class="modal" role="dialog" aria-modal="true" aria-labelledby="coordenadasTitle" tabindex="-1">
       <div class="modal-content">
         <h5 id="coordenadasTitle">Coordenadas del Centro</h5>
@@ -181,7 +190,7 @@
       </div>
     </div>
 
-    <!-- MODAL IMPORTADOR DE CENTROS (ajústalo si tu importador es distinto) -->
+    <!-- MODAL IMPORTADOR DE CENTROS -->
     <div id="modalImportarCentros" class="modal" tabindex="-1">
       <div class="modal-content">
         <h5>Importar centros desde Excel o CSV</h5>
@@ -223,7 +232,7 @@
   <!-- MÓDULOS -->
   <script type="module" src="../../js/app.js"></script>
 
-  <!-- Inicialización botones flotantes -->
+  <!-- Inicialización botones flotantes y MODAL DETALLES -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Tooltips Materialize
@@ -237,9 +246,7 @@
           if (modal) M.Modal.getInstance(modal).open();
         });
 
-      // Abrir modal agregar centro (usa la lógica que ya tienes)
-      // OJO: este botón se sobrepone a la función normal del app.js, así que solo funciona si no hay otra lógica duplicada.
-      // Si tienes lógica distinta para abrir, quítala de aquí y usa la que ya tienes.
+      // Abrir modal agregar centro
       document.getElementById('btnOpenCentroModal')
         ?.addEventListener('click', () => {
           const modal = document.getElementById('centroModal');
