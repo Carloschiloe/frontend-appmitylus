@@ -21,9 +21,10 @@ export function registerTablaCentrosEventos() {
   const $t2 = window.$('#centrosTable');
 
   // Mostrar detalles y coordenadas en modal
-  $t2
-    .off('click', '.btn-coords')
-    .on('click', '.btn-coords', function () {
+  // Mostrar detalles y coordenadas en modal
+$t2
+  .off('click', '.btn-detalle')
+  .on('click', '.btn-detalle', function () {
       const idx = +this.dataset.idx;
       const c = Estado.centros[idx];
       const modal = document.getElementById('modalDetallesCentro');
@@ -326,3 +327,4 @@ export function filtrarLineas(contenedor) {
     fila.style.display = okTxt ? '' : 'none';
   });
 }
+
