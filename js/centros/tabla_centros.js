@@ -1,4 +1,4 @@
-//js/centros/tabla_centros.js
+// js/centros/tabla_centros.js
 import { Estado } from '../core/estado.js';
 import { getCentrosAll } from '../core/centros_repo.js';
 import { calcularTotalesTabla } from './helpers_centros.js';
@@ -69,6 +69,7 @@ export async function loadCentros() {
     const avgRdmto = countRdmto ? (sumRdmto / countRdmto) : 0;
 
     const proveedor = c.proveedor || '-';
+    const comuna = c.comuna || '-'; // asegúrate de tener este campo
 
     const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>`;
     const accionesCell = `
@@ -76,9 +77,10 @@ export async function loadCentros() {
       <i class="material-icons editar-centro" data-idx="${i}" style="cursor:pointer">edit</i>
       <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer">delete</i>`;
 
+    // Cambia el orden aquí:
     return [
-      c.name,
       proveedor,
+      comuna,
       c.code || '-',
       hect.toFixed(2),
       cantLineas,
