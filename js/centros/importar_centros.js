@@ -1,18 +1,16 @@
-// js/centros/importar_centros.js
 import { createCentro } from '../core/centros_repo.js';
 
-// Mapea los nombres de columnas de tu Excel a los campos que muestra la tabla
+// Mapea los nombres de columnas de tu Excel a los campos de la base de datos
 const MAPEO_CAMPOS = {
-  'Nombre Centro': 'name',
   'Proveedor': 'proveedor',
+  'Comuna': 'comuna',
   'Codigo Centro': 'code',
   'Hectareas': 'hectareas',
-  // Si tu Excel tiene nombres distintos, cámbialos acá.
+  // 'Coordenadas' se procesa especial abajo
 };
 
 // --------- PARSING DE COORDENADAS ---------
 
-// Convierte "S 42°17´51.6600, W 73°8´15.2900;..." => [{lat, lng}, ...]
 function parsearCoordenadasDMS(str) {
   if (!str) return [];
   return str.split(';').filter(Boolean).map(p => {
@@ -24,10 +22,8 @@ function parsearCoordenadasDMS(str) {
   });
 }
 
-// Convierte "S 42°17´51.6600" o "W 73°8´15.2900" a decimal
 function dmsToDecimal(dms) {
   if (!dms) return null;
-  // Ejemplo: "S 42°17´51.6600"
   const regex = /([NSWE])\s*(\d+)°(\d+)´([\d\.]+)/i;
   const match = dms.match(regex);
   if (!match) return null;
@@ -52,7 +48,6 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
     </div>
   `;
 
-  // Inicializa lógica
   const fileInput = document.getElementById('fileInputCentros');
   const btnImportar = document.getElementById('btnImportarCentros');
   let centrosData = [];
@@ -71,7 +66,7 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
     document.getElementById('resultadoImportacion').textContent = 'Importando...';
     let importados = 0, errores = 0;
     for (const fila of centrosData) {
-      // Mapear campos conocidos, guardar coordenadas y extras en 'detalles'
+      // Mapear los campos principales
       const centro = {};
       const detalles = {};
       for (const k in fila) {
@@ -130,7 +125,6 @@ function renderPreview(rows) {
     previewDiv.innerHTML = '<em>No hay datos para mostrar.</em>';
     return;
   }
-  // Solo mostramos las primeras 5 filas
   const keys = Object.keys(rows[0]);
   let html = '<table class="striped"><thead><tr>' +
     keys.map(k => `<th>${k}</th>`).join('') + '</tr></thead><tbody>';
