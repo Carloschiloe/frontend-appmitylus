@@ -206,7 +206,7 @@ tr.editando-select th {
 #centrosTable th:first-child {
   white-space: normal !important;   /* Permite salto de línea */
   word-break: break-word !important;
-  max-width: 220px !important;      /* Ajusta este valor según prefieras */
+  max-width: 280px !important;      /* Ajusta este valor según prefieras */
   min-width: 100px !important;
 }
 
@@ -234,3 +234,4 @@ tr.editando-select th {
 .dataTables_scrollBody {
   scrollbar-width: thin;
 }
+
