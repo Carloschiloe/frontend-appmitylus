@@ -7,7 +7,7 @@ import {
   addPointMarker
 } from './mapas/control_mapa.js';
 import { initTablaCentros, loadCentros as loadTablaCentros } from './centros/tabla_centros.js';
-import { openNewForm, openEditForm, renderPointsTable } from './centros/centros_form.js';
+import { openNewForm, openEditForm, renderPointsTable } from './centros/form_centros.js';
 import {
   getCentrosAll,
   createCentro,
@@ -220,3 +220,4 @@ $(document).on('blur', '.select-wrapper input.select-dropdown', function () {
     $('.editando-select').removeClass('editando-select');
   }, 200);
 });
+
