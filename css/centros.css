@@ -284,7 +284,6 @@
   transform: translateY(-50%) rotate(180deg);
 }
 
-
 /* input y lista del sidebar */
 #filtroSidebar {
   width: 100%;
@@ -510,33 +509,33 @@ body .dropdown-content {
     height: 41vh !important;
     border-radius: 7px;
   }
-  #sidebarCentros {
-    max-height: 190px;
-    padding-bottom: 5px;
+  /* Fin de tus estilos responsive, sin reglas de modal aquí */
+}
 
-     /* ============================= */
+/* ============================= */
 /* Modal Detalles Centro Compacto */
 /* ============================= */
 #modalDetallesCentro.modal {
-  max-width: 600px !important;    /* ancho máximo */
-  width: 85% !important;          /* ancho responsivo */
-  max-height: 75vh !important;     /* altura máxima = 75% viewport */
-  top: 10vh !important;            /* separarlo un poco del tope */
+  max-width: 600px !important;    /* nunca más ancho de 600px */
+  width: 90% !important;          /* ocupa hasta el 90% de la ventana */
+  max-height: 80vh !important;    /* hasta 80% de la altura de viewport */
+  top: 10vh !important;           /* baja un poco desde el tope */
+  overflow: hidden;               /* evita scroll extra fuera del contenido */
 }
 
 #modalDetallesCentro .modal-content {
-  padding: 0.8rem 1rem !important; /* menos padding vertical */
+  padding: 1rem 1.5rem !important;  /* menos relleno vertical */
+  max-height: 65vh;                 /* limitar alto del contenido */
+  overflow-y: auto;                 /* scroll sólo dentro del body */
 }
 
 #modalDetallesCentro .modal-footer {
-  padding: 0.5rem 1rem !important; /* menos padding horizontal/vertical */
-  display: flex;
-  justify-content: space-between;  /* separa botones */
+  padding: .5rem 1rem !important;   /* footer más compacto */
 }
 
 #modalDetallesCentro .modal-footer .btn,
 #modalDetallesCentro .modal-footer .modal-close {
-  margin: 0;                       /* quita márgenes extras */
-  font-size: 0.9rem;               /* texto un poco más pequeño */
+  margin: 0;
+  font-size: .9rem;
+  line-height: 1.2;
 }
-
