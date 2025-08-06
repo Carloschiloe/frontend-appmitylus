@@ -192,3 +192,36 @@ tr.editando-select th {
   min-height: 55px !important;
   height: 55px !important;
 }
+
+/* 🟢 Ajuste compacto solo para la tabla de centros */
+#centrosTable,
+#centrosTable th,
+#centrosTable td {
+  font-size: 0.92em !important;      /* Más pequeño pero legible */
+  padding: 0.26em 0.48em !important; /* Más compacto horizontal y vertical */
+}
+
+#centrosTable th, #centrosTable td {
+  white-space: nowrap;               /* No permite saltos de línea */
+}
+
+/* Opcional: que los iconos no agreguen ancho extra */
+#centrosTable td .material-icons {
+  font-size: 1.1em;
+  margin-right: 4px;
+  margin-left: 0;
+}
+
+/* Opcional: achicar el tamaño de fuente de botones de exportar */
+.dataTables_wrapper .dt-buttons .btn,
+.dataTables_wrapper .dt-buttons button {
+  font-size: 0.92em !important;
+  padding: 0.22em 0.8em !important;
+}
+
+/* Haz el scroll horizontal más suave (opcional) */
+.dataTables_scrollBody {
+  scrollbar-width: thin;
+}
+
+
