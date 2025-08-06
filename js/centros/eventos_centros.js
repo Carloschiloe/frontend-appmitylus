@@ -11,22 +11,63 @@ import { loadCentros } from './tabla_centros.js';
 import { tabMapaActiva } from '../core/utilidades_app.js';
 import { renderMapaAlways } from '../mapas/control_mapa.js';
 
+// Helper: Capitaliza tipo título
+function toTitleCase(str) {
+  return (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
 // Registra todos los eventos de la tabla de centros
 export function registerTablaCentrosEventos() {
   const $t2 = window.$('#centrosTable');
 
-  // Mostrar coordenadas en modal
+  // Mostrar detalles y coordenadas en modal
   $t2
     .off('click', '.btn-coords')
     .on('click', '.btn-coords', function () {
       const idx = +this.dataset.idx;
       const c = Estado.centros[idx];
-      const modal = document.getElementById('modalCoordenadas');
-      if (c && modal) {
-        document.getElementById('coordenadasList').innerHTML =
-          (c.coords || []).map((p, i) =>
-            `<div>${i + 1}. Lat: <b>${p.lat.toFixed(6)}</b> – Lng: <b>${p.lng.toFixed(6)}</b></div>`
-          ).join('');
+      const modal = document.getElementById('modalDetallesCentro');
+      const body = document.getElementById('detallesCentroBody');
+      if (c && modal && body) {
+        // --- DATOS PRINCIPALES ---
+        let html = `<table class="striped">
+          <tbody>
+            <tr><th>Proveedor</th><td>${toTitleCase(c.proveedor || '')}</td></tr>
+            <tr><th>Comuna</th><td>${toTitleCase(c.comuna || '')}</td></tr>
+            <tr><th>Código</th><td>${c.code || ''}</td></tr>
+            <tr><th>Hectáreas</th><td>${c.hectareas || ''}</td></tr>
+          </tbody>
+        </table>`;
+
+        // --- DETALLES OCULTOS/EXTRAS ---
+        if (c.detalles && typeof c.detalles === 'object' && Object.keys(c.detalles).length) {
+          html += `<h6 style="margin-top:1.5em;">Detalles Extras</h6>
+            <table class="striped"><tbody>`;
+          for (const [k, v] of Object.entries(c.detalles)) {
+            html += `<tr><th>${k}</th><td>${v}</td></tr>`;
+          }
+          html += `</tbody></table>`;
+        }
+
+        // --- COORDENADAS ---
+        if (c.coords && c.coords.length > 0) {
+          html += `<h6 style="margin-top:1.5em;">Coordenadas</h6>
+            <table class="striped">
+              <thead><tr><th>#</th><th>Latitud</th><th>Longitud</th></tr></thead>
+              <tbody>`;
+          c.coords.forEach((p, i) => {
+            html += `<tr>
+              <td>${i + 1}</td>
+              <td>${p.lat?.toFixed(6) ?? ''}</td>
+              <td>${p.lng?.toFixed(6) ?? ''}</td>
+            </tr>`;
+          });
+          html += `</tbody></table>`;
+        } else {
+          html += `<div class="grey-text" style="margin-top:1em;">Sin coordenadas registradas</div>`;
+        }
+
+        body.innerHTML = html;
         M.Modal.getInstance(modal).open();
       }
     });
@@ -102,7 +143,6 @@ export function registerTablaCentrosEventos() {
       const idx = +this.dataset.idx;
       const c = Estado.centros[idx];
       if (!c) return;
-      // AHORA referencia por proveedor (o comuna si no hay)
       const nombreRef = c.proveedor || c.comuna || 'este centro';
       if (confirm(`¿Eliminar el centro "${nombreRef}"?`)) {
         await deleteCentro(c._id);
@@ -275,7 +315,7 @@ function attachLineasListeners(idx, acordeonCont) {
   }
 }
 
-// --- Filtro para líneas (puedes moverlo a helpers si quieres compartirlo) ---
+// --- Filtro para líneas ---
 export function filtrarLineas(contenedor) {
   const cont = contenedor || document;
   const txt = (cont.querySelector('#inputBuscarLineas')?.value || '').toLowerCase();
