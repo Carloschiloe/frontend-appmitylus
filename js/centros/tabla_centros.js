@@ -1,3 +1,4 @@
+//js/centros/tabla_centros.js
 import { Estado } from '../core/estado.js';
 import {
   getCentrosAll,
@@ -439,3 +440,4 @@ export function filtrarLineas(contenedor) {
     fila.style.display = okTxt ? '' : 'none';
   });
 }
+
