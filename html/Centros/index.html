@@ -37,9 +37,7 @@
       <div class="row">
         <div class="col s12">
 
-          <!-- IMPORTADOR DE CENTROS -->
-          <div id="importarCentrosContainer"></div>
-
+          <!-- Botón de agregar centro -->
           <div class="right-align" style="margin-bottom: 16px;">
             <a id="btnOpenCentroModal" class="btn-floating btn-large teal" title="Agregar Centro" aria-label="Agregar Centro">
               <i class="material-icons">add</i>
@@ -188,7 +186,29 @@
         <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
       </div>
     </div>
+
+    <!-- MODAL IMPORTAR CENTROS -->
+    <div id="modalImportarCentros" class="modal" role="dialog" aria-modal="true" tabindex="-1">
+      <div class="modal-content">
+        <h5>Importar centros desde Excel o CSV</h5>
+        <input type="file" id="fileInputCentros" accept=".xlsx,.xls,.csv" />
+        <button id="btnImportarCentros" class="btn teal" style="margin-left:1rem;" disabled>Importar</button>
+        <div id="previewCentros" style="margin-top:1rem;max-height:180px;overflow:auto;font-size:.95em;"></div>
+        <div id="resultadoImportacion" style="margin-top:1rem;font-weight:bold;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
+      </div>
+    </div>
+
   </div><!-- /container -->
+
+  <!-- BOTÓN FLOTANTE IMPORTAR -->
+  <div class="fixed-action-btn" style="bottom: 28px; right: 28px;">
+    <a id="btnOpenImportarCentros" class="btn-floating btn-large pink tooltipped" data-position="left" data-tooltip="Importar centros">
+      <i class="material-icons">file_upload</i>
+    </a>
+  </div>
 
   <!-- JS de terceros -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
@@ -206,5 +226,21 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <!-- MÓDULOS -->
   <script type="module" src="../../js/app.js"></script>
+  <script>
+    // Inicializar modal y botón flotante de importar
+    document.addEventListener('DOMContentLoaded', function () {
+      M.Modal.init(document.querySelectorAll('.modal'));
+      const btn = document.getElementById('btnOpenImportarCentros');
+      const modal = document.getElementById('modalImportarCentros');
+      if(btn && modal){
+        btn.addEventListener('click', () => {
+          M.Modal.getInstance(modal).open();
+        });
+      }
+      if(window.M && window.M.Tooltip){
+        M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+      }
+    });
+  </script>
 </body>
 </html>
