@@ -1,6 +1,6 @@
 // js/centros/importar_centros.js
 
-import { addCentro } from '../core/centros_repo.js';
+import { createCentro } from '../core/centros_repo.js';
 
 // 1. Renderiza un input para cargar archivos
 export function renderImportadorCentros(containerId = 'importarCentrosContainer') {
@@ -90,3 +90,4 @@ function renderPreview(rows) {
   html += '</tbody></table>';
   previewDiv.innerHTML = html;
 }
+
