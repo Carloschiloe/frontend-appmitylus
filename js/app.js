@@ -7,8 +7,6 @@ import {
   addPointMarker
 } from './mapas/control_mapa.js';
 import { initTablaCentros, loadCentros as loadTablaCentros } from './centros/tabla_centros.js';
-// NO IMPORTAR NADA DE STOCK NI INSUMOS
-// import { renderFiltrosSidebar } from './stock/stock_insumos.js';
 import { openNewForm, openEditForm, renderPointsTable } from './centros/centros_form.js';
 import {
   getCentrosAll,
@@ -18,17 +16,23 @@ import {
 import { tabMapaActiva } from './core/utilidades_app.js';
 import { parseOneDMS } from './core/utilidades.js';
 
-// === Sidebar minimalista y filtro mapa ===
+// Sidebar y filtro mapa
 import { cargarYRenderizarCentros, initSidebarFiltro } from './mapas/mapa.js';
 
+// *** IMPORTADOR DE CENTROS ***
+import { renderImportadorCentros } from './centros/importar_centros.js';
+
 document.addEventListener('DOMContentLoaded', async () => {
+  // Inicializa el importador de centros (arriba de la tabla)
+  renderImportadorCentros('importarCentrosContainer');
+
   // Tabs Materialize
   M.Tabs.init(document.querySelector('#tabs'), {
     onShow: (tabElem) => {
       if (tabElem.id === 'tab-mapa' && Estado.map) {
         Estado.map.invalidateSize();
         renderMapaAlways();
-        initSidebarFiltro(); // Inicializa filtro y eventos cada vez que cambias a pestaña mapa
+        initSidebarFiltro();
       }
     }
   });
@@ -42,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Cargar datos desde API (y sidebar/filtro)
   await cargarCentros();
-  initSidebarFiltro(); // Para cuando la pestaña mapa está activa desde el inicio
+  initSidebarFiltro();
 
   if (tabMapaActiva()) renderMapaAlways(true);
 
@@ -174,7 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             throw new Error('Error al actualizar centro');
           }
         }
-        await cargarCentros(); // recargar tabla y estado
+        await cargarCentros();
         if (tabMapaActiva()) renderMapaAlways(true);
         centroModal.close();
       } catch (error) {
@@ -199,10 +203,7 @@ async function cargarCentros() {
   try {
     Estado.centros = await getCentrosAll();
     loadTablaCentros(Estado.centros);
-
-    // --- actualiza el mapa y sidebar minimalista ---
     cargarYRenderizarCentros(Estado.centros);
-
   } catch (e) {
     console.error('Error cargando centros:', e);
     M.toast({ html: 'Error cargando centros', classes: 'red' });
