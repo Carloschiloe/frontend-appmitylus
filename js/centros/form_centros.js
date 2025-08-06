@@ -5,8 +5,8 @@ import { clearMapPoints, redrawPolygon, addPointMarker } from '../mapas/control_
 export async function openNewForm(els, map, currentPoints, setIdxCb) {
   els.formTitle.textContent = 'Nuevo centro';
   els.inputCentroId.value   = '';
-  els.inputName.value       = '';
   els.inputProveedor.value  = '';
+  els.inputComuna.value     = '';
   els.inputCode.value       = '';
   els.inputHectareas.value  = '';
   els.inputLat.value        = '';
@@ -32,10 +32,10 @@ export async function openEditForm(els, map, currentPoints, setIdxCb, idx) {
     return;
   }
 
-  els.formTitle.textContent = `Editar centro: ${centro.name || centro.codigo_centro}`;
+  els.formTitle.textContent = `Editar centro: ${centro.proveedor || centro.codigo_centro || centro.comuna}`;
   els.inputCentroId.value   = idx;
-  els.inputName.value       = centro.name || '';
   els.inputProveedor.value  = centro.proveedor || '';
+  els.inputComuna.value     = centro.comuna || '';
   els.inputCode.value       = centro.codigo_centro || centro.code || '';
   els.inputHectareas.value  = centro.hectareas || '';
 
@@ -49,7 +49,7 @@ export async function openEditForm(els, map, currentPoints, setIdxCb, idx) {
   redrawPolygon(currentPoints);
   renderPointsTable(els.pointsBody, currentPoints);
 
-  setTimeout(() => { els.inputName.focus(); }, 100);
+  setTimeout(() => { els.inputProveedor.focus(); }, 100);
   if (currentPoints.length) map.fitBounds(currentPoints.map(p => [p.lat, p.lng]));
 }
 
