@@ -4,6 +4,11 @@ import { getCentrosAll } from '../core/centros_repo.js';
 import { calcularTotalesTabla } from './helpers_centros.js';
 import { registerTablaCentrosEventos } from './eventos_centros.js';
 
+// Helper para capitalizar tipo título
+function toTitleCase(str) {
+  return (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
 // Inicializa la tabla y la configura
 export function initTablaCentros() {
   const $t = window.$('#centrosTable');
@@ -67,8 +72,9 @@ export async function loadCentros() {
     const avgRechazo = countRechazo ? (sumRechazo / countRechazo) : 0;
     const avgRdmto = countRdmto ? (sumRdmto / countRdmto) : 0;
 
-    const proveedor = c.proveedor || '-';
-    const comuna = c.comuna || '-';
+    // Aquí se capitaliza SIEMPRE
+    const proveedor = toTitleCase(c.proveedor) || '-';
+    const comuna = toTitleCase(c.comuna) || '-';
 
     const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>`;
     const accionesCell = `
