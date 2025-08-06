@@ -1,3 +1,5 @@
+//js/core/centros_repo.js
+
 import {
   apiGetCentros, apiCreateCentro, apiUpdateCentro, apiDeleteCentro,
   apiAddLinea, apiUpdateLinea, apiDeleteLinea, apiAddInventarioLinea
@@ -73,4 +75,11 @@ async function localAddInventarioLinea(centroId,lineaId,data){
   const l = c?.lines?.find(l=>l._id===lineaId); if(!l) throw new Error('Línea no encontrada');
   l.inventarios ||= []; l.inventarios.push({ ...data, _id: crypto.randomUUID() });
   return persist(list);
+}
+
+// ===== BUSCAR CENTRO POR CODE (para importador inteligente) =====
+export async function getCentroByCode(code) {
+  if (!code) return null;
+  const all = await getCentrosAll();
+  return all.find(c => c.code && c.code.toString() === code.toString()) || null;
 }
