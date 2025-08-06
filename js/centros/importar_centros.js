@@ -1,5 +1,10 @@
 import { createCentro, updateCentro, getCentroByCode } from '../core/centros_repo.js';
 
+// ===== Helper para capitalizar =====
+function toTitleCase(str) {
+  return (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
 // Mapea los nombres de columnas de tu Excel a los campos de la base de datos
 const MAPEO_CAMPOS = {
   'Proveedor': 'proveedor',
@@ -82,6 +87,10 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
         centro.coords = parsearCoordenadasDMS(detalles['Coordenadas']);
       }
 
+      // --- Capitalizar proveedor y comuna
+      if (centro.proveedor) centro.proveedor = toTitleCase(centro.proveedor);
+      if (centro.comuna) centro.comuna = toTitleCase(centro.comuna);
+
       // === Lógica ACTUALIZAR o CREAR ===
       try {
         const existente = await getCentroByCode(centro.code);
@@ -105,6 +114,7 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
 }
 
 // ========== Helpers Excel ==========
+
 async function parseFileToJson(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
