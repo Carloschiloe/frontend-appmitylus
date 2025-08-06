@@ -1,4 +1,4 @@
-import { createCentro } from '../core/centros_repo.js';
+import { createCentro, updateCentro, getCentroByCode } from '../core/centros_repo.js';
 
 // Mapea los nombres de columnas de tu Excel a los campos de la base de datos
 const MAPEO_CAMPOS = {
@@ -10,7 +10,6 @@ const MAPEO_CAMPOS = {
 };
 
 // --------- PARSING DE COORDENADAS ---------
-
 function parsearCoordenadasDMS(str) {
   if (!str) return [];
   return str.split(';').filter(Boolean).map(p => {
@@ -34,7 +33,6 @@ function dmsToDecimal(dms) {
 }
 
 // --------- IMPORTADOR UI ---------
-
 export function renderImportadorCentros(containerId = 'importarCentrosContainer') {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -64,9 +62,10 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
     if (!centrosData.length) return;
     btnImportar.disabled = true;
     document.getElementById('resultadoImportacion').textContent = 'Importando...';
-    let importados = 0, errores = 0;
+    let importados = 0, actualizados = 0, errores = 0;
+
     for (const fila of centrosData) {
-      // Mapear los campos principales
+      // Mapear campos principales
       const centro = {};
       const detalles = {};
       for (const k in fila) {
@@ -79,24 +78,33 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
         }
       }
       centro.detalles = detalles;
-      // Si no hay coords pero hay detalles['Coordenadas'], intenta procesar igual
       if ((!centro.coords || !centro.coords.length) && detalles['Coordenadas']) {
         centro.coords = parsearCoordenadasDMS(detalles['Coordenadas']);
       }
+
+      // === Lógica ACTUALIZAR o CREAR ===
       try {
-        await createCentro(centro);
-        importados++;
+        const existente = await getCentroByCode(centro.code);
+        if (existente) {
+          await updateCentro(existente._id, { ...existente, ...centro });
+          actualizados++;
+        } else {
+          await createCentro(centro);
+          importados++;
+        }
       } catch (err) {
         errores++;
         console.error('Error importando centro:', centro, err);
       }
     }
+
     document.getElementById('resultadoImportacion').textContent =
-      `¡Importación completa! Importados: ${importados}, Errores: ${errores}`;
+      `¡Importación completa! Creados: ${importados}, Actualizados: ${actualizados}, Errores: ${errores}`;
     btnImportar.disabled = false;
   });
 }
 
+// ========== Helpers Excel ==========
 async function parseFileToJson(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
