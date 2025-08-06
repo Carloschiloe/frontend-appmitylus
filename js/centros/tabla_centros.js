@@ -47,7 +47,10 @@ function attachDetalleEvents() {
     $('#formDetalleCentro textarea').each(function() {
       M.textareaAutoResize($(this));
     });
-    M.Modal.getInstance($('#modalDetalleCentro')).open();
+    // Abrir modal (asegúrate de haber inicializado primero)
+    const modalElem = document.getElementById('modalDetalleCentro');
+    const modalInst = M.Modal.getInstance(modalElem);
+    modalInst.open();
   });
 
   // Click en "Guardar" dentro del modal
@@ -62,7 +65,8 @@ function attachDetalleEvents() {
       const id = datos._id;
       await updateCentro(id, datos);
       M.toast({ html: 'Guardado exitoso' });
-      M.Modal.getInstance($('#modalDetalleCentro')).close();
+      const modalInst = M.Modal.getInstance(document.getElementById('modalDetalleCentro'));
+      modalInst.close();
       // Refresca toda la tabla
       await loadCentros();
     } catch (err) {
@@ -87,7 +91,7 @@ export function initTablaCentros() {
       { extend: 'copyHtml5', footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
       { extend: 'csvHtml5', footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
       { extend: 'excelHtml5', footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
-      { extend: 'pdfHtml5', footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
+      { extend: 'pdfHtml5', footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } }
     ],
     searching: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
@@ -96,6 +100,11 @@ export function initTablaCentros() {
 
   Estado.table.draw();
   registerTablaCentrosEventos();
+
+  // Inicializa modals de Materialize antes de usar getInstance()
+  const modalElems = document.querySelectorAll('.modal');
+  M.Modal.init(modalElems);
+
   attachDetalleEvents();
 }
 
@@ -136,11 +145,10 @@ export async function loadCentros() {
     const avgRechazo = countRechazo ? (sumRechazo / countRechazo) : 0;
     const avgRdmto = countRdmto ? (sumRdmto / countRdmto) : 0;
 
-    // Aquí se capitaliza siempre
+    // Capitalizar siempre
     const proveedor = toTitleCase(c.proveedor) || '-';
     const comuna    = toTitleCase(c.comuna)   || '-';
 
-    // Cambia btn-coords a btn-detalle y data-id con _id
     const coordsCell = `<i class="material-icons btn-detalle" data-id="${c._id}" style="cursor:pointer">visibility</i>`;
     const accionesCell = `
       <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer">visibility</i>
