@@ -6,7 +6,7 @@ import {
   deleteCentro
 } from '../core/centros_repo.js';
 import { renderAcordeonLineas } from './lineas.js';
-import { openEditForm } from './form_centros.js'; // (puede ser openEditForm o openEditCentroForm)
+import { openEditForm } from './form_centros.js';
 import { loadCentros } from './tabla_centros.js';
 import { tabMapaActiva } from '../core/utilidades_app.js';
 import { renderMapaAlways } from '../mapas/control_mapa.js';
@@ -102,7 +102,9 @@ export function registerTablaCentrosEventos() {
       const idx = +this.dataset.idx;
       const c = Estado.centros[idx];
       if (!c) return;
-      if (confirm(`¿Eliminar el centro "${c.name}"?`)) {
+      // AHORA referencia por proveedor (o comuna si no hay)
+      const nombreRef = c.proveedor || c.comuna || 'este centro';
+      if (confirm(`¿Eliminar el centro "${nombreRef}"?`)) {
         await deleteCentro(c._id);
         await loadCentros();
         if (tabMapaActiva()) renderMapaAlways(true);
