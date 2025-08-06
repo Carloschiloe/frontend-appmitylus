@@ -166,16 +166,21 @@
         <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
       </div>
     </div>
-    <!-- Modal Detalles y Coordenadas del Centro (NUEVO MODAL) -->
-    <div id="modalDetallesCentro" class="modal" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle" tabindex="-1">
-      <div class="modal-content">
-        <h5 id="detallesCentroTitle">Detalles del Centro</h5>
-        <div id="detallesCentroBody"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
-      </div>
-    </div>
+    <!-- Modal Detalles y Coordenadas del Centro -->
+<div id="modalDetallesCentro" class="modal" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle" tabindex="-1">
+  <div class="modal-content">
+    <h5 id="detallesCentroTitle">Detalles del Centro</h5>
+    <!-- FORMULARIO para editar inline -->
+    <form id="formDetallesCentro">
+      <div id="detallesCentroBody"></div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <!-- Guardar cambios -->
+    <button id="btnGuardarDetalle" type="button" class="btn waves-effect">Guardar</button>
+    <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
+  </div>
+</div>
     
     <!-- MODAL IMPORTADOR DE CENTROS -->
     <div id="modalImportarCentros" class="modal" tabindex="-1">
@@ -243,5 +248,6 @@
   </script>
 </body>
 </html>
+
 
 
