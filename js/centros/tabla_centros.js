@@ -27,7 +27,6 @@ export function initTablaCentros() {
   });
 
   Estado.table.draw();
-  // Delegamos la gestión de eventos (clicks, edición, etc.) al archivo de eventos
   registerTablaCentrosEventos();
 }
 
@@ -69,7 +68,7 @@ export async function loadCentros() {
     const avgRdmto = countRdmto ? (sumRdmto / countRdmto) : 0;
 
     const proveedor = c.proveedor || '-';
-    const comuna = c.comuna || '-'; // asegúrate de tener este campo
+    const comuna = c.comuna || '-';
 
     const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>`;
     const accionesCell = `
@@ -77,25 +76,23 @@ export async function loadCentros() {
       <i class="material-icons editar-centro" data-idx="${i}" style="cursor:pointer">edit</i>
       <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer">delete</i>`;
 
-    // Cambia el orden aquí:
     return [
-      proveedor,
-      comuna,
-      c.code || '-',
-      hect.toFixed(2),
-      cantLineas,
-      tonsDisponibles.toLocaleString('es-CL', { minimumFractionDigits: 0 }),
-      avgUnKg.toFixed(2),
-      avgRechazo.toFixed(1) + '%',
-      avgRdmto.toFixed(1) + '%',
-      coordsCell,
-      accionesCell
+      proveedor,        // 1
+      comuna,           // 2
+      c.code || '-',    // 3
+      hect.toFixed(2),  // 4
+      cantLineas,       // 5
+      tonsDisponibles.toLocaleString('es-CL', { minimumFractionDigits: 0 }), // 6
+      avgUnKg.toFixed(2),           // 7
+      avgRechazo.toFixed(1) + '%',  // 8
+      avgRdmto.toFixed(1) + '%',    // 9
+      coordsCell,                   // 10
+      accionesCell                  // 11
     ];
   });
 
   Estado.table.clear().rows.add(rows).draw();
 
-  // Si había un acordeón abierto, lo vuelve a abrir
   if (Estado.lineAcordionOpen !== null && Estado.centros[Estado.lineAcordionOpen]) {
     const tr = $('#centrosTable tbody tr').eq(Estado.lineAcordionOpen);
     tr.find('.btn-toggle-lineas').trigger('click');
