@@ -513,3 +513,30 @@ body .dropdown-content {
   #sidebarCentros {
     max-height: 190px;
     padding-bottom: 5px;
+
+     /* ============================= */
+/* Modal Detalles Centro Compacto */
+/* ============================= */
+#modalDetallesCentro.modal {
+  max-width: 600px !important;    /* ancho máximo */
+  width: 85% !important;          /* ancho responsivo */
+  max-height: 75vh !important;     /* altura máxima = 75% viewport */
+  top: 10vh !important;            /* separarlo un poco del tope */
+}
+
+#modalDetallesCentro .modal-content {
+  padding: 0.8rem 1rem !important; /* menos padding vertical */
+}
+
+#modalDetallesCentro .modal-footer {
+  padding: 0.5rem 1rem !important; /* menos padding horizontal/vertical */
+  display: flex;
+  justify-content: space-between;  /* separa botones */
+}
+
+#modalDetallesCentro .modal-footer .btn,
+#modalDetallesCentro .modal-footer .modal-close {
+  margin: 0;                       /* quita márgenes extras */
+  font-size: 0.9rem;               /* texto un poco más pequeño */
+}
+
