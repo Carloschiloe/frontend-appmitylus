@@ -20,7 +20,7 @@ const parseNum = v => {
 };
 
 // Proveedores de mapas (tiles) con Mapbox satélite por defecto
-const MAPBOX_TOKEN = 'pk.eyJ1IjoiY2FybG9zY2hpbG9lIiwiYSI6ImNtZTB3OTZmODA5Mm0ya24zaTQ1bGd3aW4ifQ.XElNIT02jDuetHpo4r_-3g'; // <<-- Pega aquí tu token público de Mapbox
+const MAPBOX_TOKEN = 'pk.eyJ1IjoiY2FybG9zY2hpbG9lIiwiYSI6ImNtZTB3OTZmODA5Mm0ya24zaTQ1bGd3aW4ifQ.XElNIT02jDuetHpo4r_-3g';
 
 const baseLayersDefs = {
   mapboxSat: L.tileLayer(
@@ -167,10 +167,11 @@ export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZO
   }
   if (el.clientHeight < 50) el.style.minHeight = '400px';
 
+  // Siempre centrado en Chiloé
   map = L.map(el, {
     zoomControl: true,
-    center: defaultLatLng,
-    zoom: defaultZoom,
+    center: CHILOE_COORDS,
+    zoom: CHILOE_ZOOM,
     layers: [baseLayersDefs[currentBaseKey]]
   });
   window.__mapLeaflet = map;
@@ -225,7 +226,7 @@ export function redrawPolygon(currentPoints = []) {
 
 /* ---------- Centros ---------- */
 export function drawCentrosInMap(centros = [], defaultLatLng = CHILOE_COORDS, onPolyClick = null) {
-  if (!map) crearMapa(defaultLatLng, CHILOE_ZOOM);
+  if (!map) crearMapa(CHILOE_COORDS, CHILOE_ZOOM);
   if (!centrosGroup) return;
 
   windowCentrosDebug = centros.slice();
@@ -313,7 +314,8 @@ export function centrarMapaEnPoligonos(centros = [], defaultLatLng = CHILOE_COOR
     const la = parseNum(p.lat), ln = parseNum(p.lng);
     if (la !== null && ln !== null) all.push([la, ln]);
   }));
-  if (all.length) map.fitBounds(all, { padding: [20, 20] });
+  // Si hay centros, ajusta bounds. Si NO hay, centra SIEMPRE en Chiloé
+  if (all.length) map.fitBounds(all, { padding: [20, 20], maxZoom: CHILOE_ZOOM });
   else map.setView(defaultLatLng, CHILOE_ZOOM);
 }
 
@@ -330,4 +332,3 @@ export function focusCentroInMap(idx) {
 
 // **NO EXPORTES OTRAS FUNCIONES EN UN BLOQUE FINAL**
 // Ya están exportadas arriba con 'export function ...'
-
