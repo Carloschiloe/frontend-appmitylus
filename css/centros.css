@@ -312,3 +312,52 @@ body:has(#mapShell:fullscreen) {
     border-radius: 7px;
   }
 }
+
+.sidebar-centros {
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  width: 260px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,.14);
+  border-radius: 10px;
+  z-index: 800;
+  padding: 12px 12px 8px 12px;
+  transition: left .3s, width .3s;
+}
+.sidebar-centros.minimized {
+  left: -230px;
+  width: 30px;
+}
+.toggle-btn {
+  background: none;
+  border: none;
+  float: right;
+  cursor: pointer;
+  margin-bottom: 7px;
+  outline: none;
+  padding: 0;
+}
+.sidebar-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 250px;
+  overflow-y: auto;
+}
+.sidebar-list li {
+  cursor: pointer;
+  padding: 7px 0 7px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 15px;
+}
+.sidebar-list li.selected {
+  background: #e0f2f1;
+  font-weight: bold;
+}
+@media (max-width: 700px) {
+  .sidebar-centros { top:12px; left:12px; width: 92vw; }
+  .sidebar-centros.minimized { left:-90vw; width: 35px;}
+}
+
+
