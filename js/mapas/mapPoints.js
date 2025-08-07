@@ -16,7 +16,7 @@ export function clearMapPoints(puntosIngresoGroup) {
 
 export function addPointMarker(lat, lng, puntosIngresoGroup) {
   if (!puntosIngresoGroup) return;
-  L.marker([lat, lng]).addTo(puntosIngresoGroup);
+  L.marker([parseNum(lat), parseNum(lng)]).addTo(puntosIngresoGroup);
 }
 
 export function redrawPolygon(currentPoints = [], puntosIngresoGroup, currentPolyRef) {
@@ -26,7 +26,7 @@ export function redrawPolygon(currentPoints = [], puntosIngresoGroup, currentPol
   }
   if (currentPoints.length >= 3) {
     currentPolyRef.poly = L.polygon(
-      currentPoints.map(p => [p.lat, p.lng]),
+      currentPoints.map(p => [parseNum(p.lat), parseNum(p.lng)]),
       { color: 'crimson' }
     ).addTo(puntosIngresoGroup);
   }
