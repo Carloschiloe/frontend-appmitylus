@@ -15,18 +15,32 @@ const parseNum = v => {
   return Number.isFinite(n) ? n : null;
 };
 
-// USAR SOLO OSM
+// Proveedores de mapas (tiles)
 const baseLayersDefs = {
   osm: L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
       maxZoom: 19,
-      attribution: 'Map data © <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+      attribution: '© OpenStreetMap contributors'
+    }
+  ),
+  esri: L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {
+      maxZoom: 19,
+      attribution: '© Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    }
+  ),
+  carto: L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>'
     }
   )
 };
+let currentBaseKey = 'esri'; // Cambia a 'esri' si quieres testear satélite por defecto
 
-let currentBaseKey = 'esri';
 
 // Datos globales para sidebar y filtro
 let centrosDataGlobal = [];
@@ -304,4 +318,5 @@ export function focusCentroInMap(idx) {
 
 // **NO EXPORTES OTRAS FUNCIONES EN UN BLOQUE FINAL**
 // Ya están exportadas arriba con 'export function ...'
+
 
