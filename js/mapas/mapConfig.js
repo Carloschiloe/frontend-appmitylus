@@ -7,7 +7,7 @@ export let map = null;
 export let puntosIngresoGroup = null;
 export let centrosGroup      = null;
 
-// Coordenadas de Chiloé (puedes ajustar si quieres otra vista inicial)
+// Coordenadas de Chiloé (ajusta si quieres otra vista inicial)
 export const defaultLatLng = [-42.50, -73.80];
 
 /**
@@ -25,14 +25,18 @@ export const baseLayersDefs = {
 /**
  * Inicializa el mapa (si aún no existe), los layer-groups, y
  * arranca en la capa satelital de Esri, centrado en Chiloé.
- * @param {[number,number]} defaultLatLng — vista inicial (Chiloé)
+ * Si ya existe, destruye el mapa anterior para evitar el error de Leaflet.
+ * @param {[number,number]} defaultLatLngParam — vista inicial (Chiloé)
  * @returns {L.Map|null}
  */
 export function crearMapa(defaultLatLngParam = defaultLatLng) {
   console.log('[mapConfig] crearMapa → centrar en', defaultLatLngParam);
 
-  // Usa la variable global `map` para evitar múltiples instancias
-  if (map) return map;
+  // Destruye el mapa anterior si existe para evitar el error "container is already initialized"
+  if (map) {
+    map.remove();
+    map = null;
+  }
 
   const el = document.getElementById('map');
   if (!el) {
