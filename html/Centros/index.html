@@ -4,22 +4,43 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Configuración de Centros – Choritos</title>
+
   <!-- CSS de terceros -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+  />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"
+  />
+
+  <!-- Tus estilos -->
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="../../css/centros.css" />
 </head>
+
 <body>
   <!-- NAV -->
   <nav class="teal">
     <div class="nav-wrapper">
-      <a href="/index.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
+      <a href="/index.html" class="btn-flat left" title="Volver">
+        <i class="material-icons">arrow_back</i>
+      </a>
       <a href="#" class="brand-logo center">Configuración de Centros</a>
     </div>
   </nav>
@@ -36,10 +57,18 @@
     <section id="tab-centros" class="col s12">
       <div class="row">
         <div class="col s12">
-          <!-- Tabla de Centros -->
           <h5>Centros Registrados</h5>
-          <table id="centrosTable" class="striped display responsive-table" style="width:100%" aria-describedby="tablaCentrosDescripcion" role="grid" aria-live="polite">
-            <caption id="tablaCentrosDescripcion" class="sr-only">Tabla con centros registrados</caption>
+          <table
+            id="centrosTable"
+            class="striped display responsive-table"
+            style="width:100%"
+            aria-describedby="tablaCentrosDescripcion"
+            role="grid"
+            aria-live="polite"
+          >
+            <caption id="tablaCentrosDescripcion" class="sr-only">
+              Tabla con centros registrados
+            </caption>
             <thead>
               <tr>
                 <th style="min-width:130px;">Proveedor</th>
@@ -76,34 +105,47 @@
     <!-- TAB MAPA -->
     <section id="tab-mapa" class="col s12" style="padding: 1rem;">
       <h5>Mapa de Centros</h5>
+
+      <!-- Botón Fullscreen -->
       <div id="mapFsBtnContainer" style="margin-bottom: 1rem;">
-        <button id="btnFullscreenMapa" class="btn-small teal waves-effect" aria-label="Pantalla completa">
+        <button
+          id="btnFullscreenMapa"
+          class="btn-small teal waves-effect"
+          aria-label="Pantalla completa"
+        >
           <i class="material-icons left" style="line-height: inherit;">fullscreen</i>
           Pantalla completa
         </button>
       </div>
-      <div id="mapaSection" role="region" aria-label="Mapa y listado de centros">
-        <!-- Sidebar Minimalista -->
-        <aside id="sidebarCentros" aria-label="Listado y filtro de centros">
-          <input id="filtroSidebar" type="text" placeholder="Buscar proveedor o comuna..." aria-label="Buscar proveedor o comuna" />
-          <ul id="listaCentrosSidebar"></ul>
-          <div id="sidebarInfo">
-            Máx 10 centros
-          </div>
-        </aside>
-        <!-- Botón de colapsar con ícono -->
-        <button id="toggleSidebar" title="Colapsar sidebar" aria-label="Colapsar sidebar">
-          <i class="material-icons" id="toggleSidebarIcon">chevron_left</i>
-        </button>
-        <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
-          <div id="map" style="width: 100%; height: 100%; min-height: 400px; background: #d8d8d8;"></div>
-        </section>
-      </div>
+
+      <!-- Contenedor del mapa con filtro flotante -->
+      <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
+        <!-- Filtro encima del mapa -->
+        <div id="mapFilter" class="filter-overlay">
+          <input
+            id="filtroSidebar"
+            type="text"
+            placeholder="🔍 Buscar comuna o proveedor…"
+            aria-label="Buscar comuna o proveedor"
+          />
+        </div>
+        <div
+          id="map"
+          style="width: 100%; height: 100%; min-height: 400px; background: #d8d8d8;"
+        ></div>
+      </section>
     </section>
 
-    <!-- MODALES -->
+    <!-- MODALES (sin cambios) -->
     <!-- Modal Agregar/Editar Centro -->
-    <div id="centroModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="formTitle" tabindex="-1">
+    <div
+      id="centroModal"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="formTitle"
+      tabindex="-1"
+    >
       <div class="modal-content">
         <h5 id="formTitle">Agregar Centro de Cultivo</h5>
         <form id="formCentro" novalidate>
@@ -124,20 +166,41 @@
               <label for="inputCode">Código</label>
             </div>
             <div class="input-field col s6">
-              <input id="inputHectareas" type="number" step="0.01" min="0" required aria-required="true" />
+              <input
+                id="inputHectareas"
+                type="number"
+                step="0.01"
+                min="0"
+                required
+                aria-required="true"
+              />
               <label for="inputHectareas">Hectáreas</label>
             </div>
           </div>
           <div class="row">
             <div class="input-field col s6">
-              <input id="inputLat" type="text" placeholder="S 42°33´58.6800" aria-describedby="latHelp" />
+              <input
+                id="inputLat"
+                type="text"
+                placeholder="S 42°33´58.6800"
+                aria-describedby="latHelp"
+              />
               <label for="inputLat">Latitud (DMS)</label>
-              <span id="latHelp" class="helper-text" data-error="Formato inválido">Ejemplo: S 42°33´58.6800</span>
+              <span id="latHelp" class="helper-text" data-error="Formato inválido"
+                >Ejemplo: S 42°33´58.6800</span
+              >
             </div>
             <div class="input-field col s6">
-              <input id="inputLng" type="text" placeholder="W 73°41´52.0600" aria-describedby="lngHelp" />
+              <input
+                id="inputLng"
+                type="text"
+                placeholder="W 73°41´52.0600"
+                aria-describedby="lngHelp"
+              />
               <label for="inputLng">Longitud (DMS)</label>
-              <span id="lngHelp" class="helper-text" data-error="Formato inválido">Ejemplo: W 73°41´52.0600</span>
+              <span id="lngHelp" class="helper-text" data-error="Formato inválido"
+                >Ejemplo: W 73°41´52.0600</span
+              >
             </div>
           </div>
           <div class="center-btn" style="margin-bottom: 1rem;">
@@ -156,28 +219,53 @@
             <tbody id="pointsBody"></tbody>
           </table>
           <div class="center-btn" style="margin-top: 1rem;">
-            <button id="btnSaveCentro" type="submit" class="btn-large green waves-light" aria-label="Guardar centro">
+            <button
+              id="btnSaveCentro"
+              type="submit"
+              class="btn-large green waves-light"
+              aria-label="Guardar centro"
+            >
               <i class="material-icons left">save</i>Guardar Centro
             </button>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
+        <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">
+          Cerrar
+        </button>
       </div>
     </div>
-    <!-- Modal Detalles y Coordenadas del Centro (NUEVO MODAL) -->
-    <div id="modalDetallesCentro" class="modal" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle" tabindex="-1">
+
+    <!-- Modal Detalles y Coordenadas del Centro -->
+    <div
+      id="modalDetallesCentro"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="detallesCentroTitle"
+      tabindex="-1"
+    >
       <div class="modal-content">
         <h5 id="detallesCentroTitle">Detalles del Centro</h5>
         <div id="detallesCentroBody"></div>
       </div>
       <div class="modal-footer">
-        <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
+        <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">
+          Cerrar
+        </button>
       </div>
     </div>
-    <!-- Modal Coordenadas (puedes borrar si solo usas el nuevo modal) -->
-    <div id="modalCoordenadas" class="modal" role="dialog" aria-modal="true" aria-labelledby="coordenadasTitle" tabindex="-1">
+
+    <!-- Modal Coordenadas -->
+    <div
+      id="modalCoordenadas"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="coordenadasTitle"
+      tabindex="-1"
+    >
       <div class="modal-content">
         <h5 id="coordenadasTitle">Coordenadas del Centro</h5>
         <div id="coordenadasList"></div>
@@ -186,11 +274,13 @@
         </button>
       </div>
       <div class="modal-footer">
-        <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
+        <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">
+          Cerrar
+        </button>
       </div>
     </div>
 
-    <!-- MODAL IMPORTADOR DE CENTROS -->
+    <!-- Modal Importar Centros -->
     <div id="modalImportarCentros" class="modal" tabindex="-1">
       <div class="modal-content">
         <h5>Importar centros desde Excel o CSV</h5>
@@ -200,23 +290,36 @@
         <button class="modal-close btn grey lighten-1">Cerrar</button>
       </div>
     </div>
-
-  </div><!-- /container -->
+  </div>
+  <!-- /container -->
 
   <!-- BOTONES FLOTANTES -->
-  <div style="position: fixed; bottom: 34px; right: 30px; z-index: 1030; display: flex; flex-direction: column; gap: 16px;">
-    <a id="btnOpenCentroModal" class="btn-floating btn-large teal tooltipped"
-       data-tooltip="Agregar Centro" aria-label="Agregar Centro">
+  <div
+    style="position: fixed; bottom: 34px; right: 30px; z-index: 1030; display: flex; flex-direction: column; gap: 16px;"
+  >
+    <a
+      id="btnOpenCentroModal"
+      class="btn-floating btn-large teal tooltipped"
+      data-tooltip="Agregar Centro"
+      aria-label="Agregar Centro"
+    >
       <i class="material-icons">add</i>
     </a>
-    <a id="btnOpenImportarModal" class="btn-floating btn-large orange darken-2 tooltipped"
-       data-tooltip="Importar desde Excel/CSV" aria-label="Importar Centros">
+    <a
+      id="btnOpenImportarModal"
+      class="btn-floating btn-large orange darken-2 tooltipped"
+      data-tooltip="Importar desde Excel/CSV"
+      aria-label="Importar Centros"
+    >
       <i class="material-icons">file_upload</i>
     </a>
   </div>
 
   <!-- JS de terceros -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
+  <script
+    src="https://code.jquery.com/jquery-3.6.0.min.js"
+    crossorigin="anonymous"
+  ></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/colreorder/1.5.6/js/colReorder.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
@@ -227,31 +330,28 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.js"></script>
-  <!-- SheetJS para importar Excel/CSV -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <!-- MÓDULOS -->
+
+  <!-- Tu bundle de JS -->
   <script type="module" src="../../js/app.js"></script>
 
-  <!-- Inicialización botones flotantes y MODAL DETALLES -->
+  <!-- Inicialización -->
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       // Tooltips Materialize
-      const elems = document.querySelectorAll('.tooltipped');
-      M.Tooltip.init(elems);
+      M.Tooltip.init(document.querySelectorAll('.tooltipped'));
 
-      // Abrir modal importar
-      document.getElementById('btnOpenImportarModal')
-        ?.addEventListener('click', () => {
-          const modal = document.getElementById('modalImportarCentros');
-          if (modal) M.Modal.getInstance(modal).open();
-        });
-
-      // Abrir modal agregar centro
-      document.getElementById('btnOpenCentroModal')
-        ?.addEventListener('click', () => {
-          const modal = document.getElementById('centroModal');
-          if (modal) M.Modal.getInstance(modal).open();
-        });
+      // Modales
+      document
+        .getElementById('btnOpenImportarModal')
+        ?.addEventListener('click', () =>
+          M.Modal.getInstance(document.getElementById('modalImportarCentros')).open()
+        );
+      document
+        .getElementById('btnOpenCentroModal')
+        ?.addEventListener('click', () =>
+          M.Modal.getInstance(document.getElementById('centroModal')).open()
+        );
     });
   </script>
 </body>
