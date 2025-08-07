@@ -12,13 +12,17 @@ export function initMapa() {
     console.error('[control_mapa] crearMapa falló');
     return;
   }
-  // Fullscreen, click para cerrar popups, etc.
-  Estado.map.on('click', () => Estado.map.closePopup());
+
+  // Cerrar popup al click fuera de polígonos
+  Estado.map.on('click', () => {
+    Estado.map.closePopup();
+  });
+
+  // Inicializa el filtro lateral (sidebar)
   initSidebarFiltro();
 }
 
 export function renderMapaAlways(force = false) {
-  // Redibuja siempre el mapa de centros
   if (Estado.map && Estado.centros) {
     drawCentrosInMap(Estado.centros);
   }
