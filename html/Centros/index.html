@@ -7,33 +7,16 @@
 
   <!-- CSS de terceros -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
-  />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"
-  />
-
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
+  <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"/>
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
   <!-- Tus estilos -->
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="../../css/centros.css" />
 </head>
-
 <body>
   <!-- NAV -->
   <nav class="teal">
@@ -58,17 +41,8 @@
       <div class="row">
         <div class="col s12">
           <h5>Centros Registrados</h5>
-          <table
-            id="centrosTable"
-            class="striped display responsive-table"
-            style="width:100%"
-            aria-describedby="tablaCentrosDescripcion"
-            role="grid"
-            aria-live="polite"
-          >
-            <caption id="tablaCentrosDescripcion" class="sr-only">
-              Tabla con centros registrados
-            </caption>
+          <table id="centrosTable" class="striped display responsive-table" style="width:100%" aria-describedby="tablaCentrosDescripcion" role="grid" aria-live="polite">
+            <caption id="tablaCentrosDescripcion" class="sr-only">Tabla con centros registrados</caption>
             <thead>
               <tr>
                 <th style="min-width:130px;">Proveedor</th>
@@ -103,49 +77,32 @@
     </section>
 
     <!-- TAB MAPA -->
-    <section id="tab-mapa" class="col s12" style="padding: 1rem;">
+    <section id="tab-mapa" class="col s12" style="padding: 1rem; position:relative;">
       <h5>Mapa de Centros</h5>
-
       <!-- Botón Fullscreen -->
       <div id="mapFsBtnContainer" style="margin-bottom: 1rem;">
-        <button
-          id="btnFullscreenMapa"
-          class="btn-small teal waves-effect"
-          aria-label="Pantalla completa"
-        >
+        <button id="btnFullscreenMapa" class="btn-small teal waves-effect" aria-label="Pantalla completa">
           <i class="material-icons left" style="line-height: inherit;">fullscreen</i>
           Pantalla completa
         </button>
       </div>
-
-      <!-- Contenedor del mapa con filtro flotante -->
-      <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
-        <!-- Filtro encima del mapa -->
-        <div id="mapFilter" class="filter-overlay">
-          <input
-            id="filtroSidebar"
-            type="text"
-            placeholder="🔍 Buscar comuna o proveedor…"
-            aria-label="Buscar comuna o proveedor"
-          />
-        </div>
-        <div
-          id="map"
-          style="width: 100%; height: 100%; min-height: 400px; background: #d8d8d8;"
-        ></div>
+      <!-- CONTENEDOR MAPA + SIDEBAR -->
+      <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros" style="position:relative;">
+        <!-- SIDEBAR de filtro de centros -->
+        <aside id="sidebarCentros" class="sidebar-centros">
+          <button id="toggleSidebar" class="toggle-btn" aria-label="Colapsar/Expandir Sidebar">
+            <span id="toggleSidebarIcon" class="material-icons">chevron_left</span>
+          </button>
+          <input id="filtroSidebar" type="text" placeholder="🔍 Buscar comuna o proveedor…" aria-label="Buscar comuna o proveedor" autocomplete="off" />
+          <ul id="listaCentrosSidebar" class="sidebar-list"></ul>
+        </aside>
+        <div id="map" style="width: 100%; height: 100%; min-height: 400px; background: #d8d8d8;"></div>
       </section>
     </section>
 
     <!-- MODALES (sin cambios) -->
     <!-- Modal Agregar/Editar Centro -->
-    <div
-      id="centroModal"
-      class="modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="formTitle"
-      tabindex="-1"
-    >
+    <div id="centroModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="formTitle" tabindex="-1">
       <div class="modal-content">
         <h5 id="formTitle">Agregar Centro de Cultivo</h5>
         <form id="formCentro" novalidate>
@@ -166,41 +123,20 @@
               <label for="inputCode">Código</label>
             </div>
             <div class="input-field col s6">
-              <input
-                id="inputHectareas"
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                aria-required="true"
-              />
+              <input id="inputHectareas" type="number" step="0.01" min="0" required aria-required="true"/>
               <label for="inputHectareas">Hectáreas</label>
             </div>
           </div>
           <div class="row">
             <div class="input-field col s6">
-              <input
-                id="inputLat"
-                type="text"
-                placeholder="S 42°33´58.6800"
-                aria-describedby="latHelp"
-              />
+              <input id="inputLat" type="text" placeholder="S 42°33´58.6800" aria-describedby="latHelp"/>
               <label for="inputLat">Latitud (DMS)</label>
-              <span id="latHelp" class="helper-text" data-error="Formato inválido"
-                >Ejemplo: S 42°33´58.6800</span
-              >
+              <span id="latHelp" class="helper-text" data-error="Formato inválido">Ejemplo: S 42°33´58.6800</span>
             </div>
             <div class="input-field col s6">
-              <input
-                id="inputLng"
-                type="text"
-                placeholder="W 73°41´52.0600"
-                aria-describedby="lngHelp"
-              />
+              <input id="inputLng" type="text" placeholder="W 73°41´52.0600" aria-describedby="lngHelp"/>
               <label for="inputLng">Longitud (DMS)</label>
-              <span id="lngHelp" class="helper-text" data-error="Formato inválido"
-                >Ejemplo: W 73°41´52.0600</span
-              >
+              <span id="lngHelp" class="helper-text" data-error="Formato inválido">Ejemplo: W 73°41´52.0600</span>
             </div>
           </div>
           <div class="center-btn" style="margin-bottom: 1rem;">
@@ -219,12 +155,7 @@
             <tbody id="pointsBody"></tbody>
           </table>
           <div class="center-btn" style="margin-top: 1rem;">
-            <button
-              id="btnSaveCentro"
-              type="submit"
-              class="btn-large green waves-light"
-              aria-label="Guardar centro"
-            >
+            <button id="btnSaveCentro" type="submit" class="btn-large green waves-light" aria-label="Guardar centro">
               <i class="material-icons left">save</i>Guardar Centro
             </button>
           </div>
@@ -238,14 +169,7 @@
     </div>
 
     <!-- Modal Detalles y Coordenadas del Centro -->
-    <div
-      id="modalDetallesCentro"
-      class="modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="detallesCentroTitle"
-      tabindex="-1"
-    >
+    <div id="modalDetallesCentro" class="modal" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle" tabindex="-1">
       <div class="modal-content">
         <h5 id="detallesCentroTitle">Detalles del Centro</h5>
         <div id="detallesCentroBody"></div>
@@ -258,14 +182,7 @@
     </div>
 
     <!-- Modal Coordenadas -->
-    <div
-      id="modalCoordenadas"
-      class="modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="coordenadasTitle"
-      tabindex="-1"
-    >
+    <div id="modalCoordenadas" class="modal" role="dialog" aria-modal="true" aria-labelledby="coordenadasTitle" tabindex="-1">
       <div class="modal-content">
         <h5 id="coordenadasTitle">Coordenadas del Centro</h5>
         <div id="coordenadasList"></div>
@@ -294,32 +211,17 @@
   <!-- /container -->
 
   <!-- BOTONES FLOTANTES -->
-  <div
-    style="position: fixed; bottom: 34px; right: 30px; z-index: 1030; display: flex; flex-direction: column; gap: 16px;"
-  >
-    <a
-      id="btnOpenCentroModal"
-      class="btn-floating btn-large teal tooltipped"
-      data-tooltip="Agregar Centro"
-      aria-label="Agregar Centro"
-    >
+  <div style="position: fixed; bottom: 34px; right: 30px; z-index: 1030; display: flex; flex-direction: column; gap: 16px;">
+    <a id="btnOpenCentroModal" class="btn-floating btn-large teal tooltipped" data-tooltip="Agregar Centro" aria-label="Agregar Centro">
       <i class="material-icons">add</i>
     </a>
-    <a
-      id="btnOpenImportarModal"
-      class="btn-floating btn-large orange darken-2 tooltipped"
-      data-tooltip="Importar desde Excel/CSV"
-      aria-label="Importar Centros"
-    >
+    <a id="btnOpenImportarModal" class="btn-floating btn-large orange darken-2 tooltipped" data-tooltip="Importar desde Excel/CSV" aria-label="Importar Centros">
       <i class="material-icons">file_upload</i>
     </a>
   </div>
 
   <!-- JS de terceros -->
-  <script
-    src="https://code.jquery.com/jquery-3.6.0.min.js"
-    crossorigin="anonymous"
-  ></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/colreorder/1.5.6/js/colReorder.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
