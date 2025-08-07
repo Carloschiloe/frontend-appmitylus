@@ -1,7 +1,7 @@
 // js/mapas/mapDraw.js
 
-import L from 'leaflet';
-import { parseNum, addPointMarker, clearMapPoints, redrawPolygon } from './mapPoints.js';
+// NO import L from 'leaflet';  <-- quitado
+import { parseNum } from './mapPoints.js';
 import { defaultLatLng, baseLayersDefs } from './mapConfig.js';
 
 let map;
@@ -11,7 +11,7 @@ let currentPolyRef = { poly: null };
 let centroPolys = {};
 
 /**
- * Inicializa el mapa con SATÉLITE ESRI y centro en Chiloé.
+ * Inicializa el mapa con capa ESRI satélite y centrado en Chiloé.
  */
 export function crearMapa() {
   if (map) return map;
@@ -23,22 +23,23 @@ export function crearMapa() {
   }
   if (el.clientHeight < 50) el.style.minHeight = '400px';
 
+  // Usa el global L que carga tu <script> de Leaflet
   map = L.map(el, {
-    center: defaultLatLng,    // [-42.62, -73.77]
+    center: defaultLatLng,            // [-42.62, -73.77]
     zoom: 10,
-    layers: [ baseLayersDefs.esri ]  // ESRI Satellite
+    layers: [ baseLayersDefs.esri ]   // ESRI Satellite
   });
   window.map = map;
 
   puntosIngresoGroup = L.layerGroup().addTo(map);
-  centrosGroup = L.layerGroup().addTo(map);
+  centrosGroup      = L.layerGroup().addTo(map);
 
   console.log('[mapDraw] Mapa creado con ESRI satélite en', defaultLatLng);
   return map;
 }
 
 /**
- * Dibuja los polígonos de los centros y ajusta el viewport.
+ * Dibuja todos los polígonos de los centros y ajusta los bounds.
  */
 export function drawCentrosInMap(centros = [], onPolyClick = null) {
   if (!map) crearMapa();
@@ -46,22 +47,24 @@ export function drawCentrosInMap(centros = [], onPolyClick = null) {
 
   centrosGroup.clearLayers();
   centroPolys = {};
+  let dibujados = 0;
 
-  let dib = 0;
   centros.forEach((c, idx) => {
+    // parsea y filtra coordenadas válidas
     const coords = (c.coords || [])
       .map(p => [ parseNum(p.lat), parseNum(p.lng) ])
-      .filter(([la, ln]) => la !== null && ln !== null);
+      .filter(([lat, lng]) => lat !== null && lng !== null);
+
     if (coords.length < 3) return;
 
-    // Calcula suma y promedios (igual que tu tabla)
-    let sumaUnKg = 0, sumaRechazo = 0, sumaRdmto = 0, sumaTons = 0;
+    // calcula sumas y promedios como en tu tabla
     const lines = Array.isArray(c.lines) ? c.lines : [];
+    let sumaUnKg = 0, sumaRechazo = 0, sumaRdmto = 0, sumaTons = 0;
     lines.forEach(l => {
-      if (!isNaN(+l.unKg))    sumaUnKg     += +l.unKg;
+      if (!isNaN(+l.unKg))        sumaUnKg     += +l.unKg;
       if (!isNaN(+l.porcRechazo)) sumaRechazo += +l.porcRechazo;
       if (!isNaN(+l.rendimiento)) sumaRdmto   += +l.rendimiento;
-      if (!isNaN(+l.tons))     sumaTons     += +l.tons;
+      if (!isNaN(+l.tons))        sumaTons     += +l.tons;
     });
     const n = lines.length || 1;
     const promUnKg    = sumaUnKg    / n;
@@ -81,6 +84,7 @@ export function drawCentrosInMap(centros = [], onPolyClick = null) {
       </div>
     `.trim();
 
+    // crea y añade el polígono
     const poly = L.polygon(coords, {
       color: '#1976d2',
       weight: 3,
@@ -96,16 +100,16 @@ export function drawCentrosInMap(centros = [], onPolyClick = null) {
     });
 
     centroPolys[idx] = poly;
-    dib++;
+    dibujados++;
   });
 
-  // Ajusta bounds de todo
-  const allCoords = [];
+  // Ajusta la vista para que quepa todo
+  const all = [];
   centros.forEach(c => (c.coords||[]).forEach(p => {
     const lat = parseNum(p.lat), lng = parseNum(p.lng);
-    if (lat !== null && lng !== null) allCoords.push([lat, lng]);
+    if (lat !== null && lng !== null) all.push([lat, lng]);
   }));
-  if (allCoords.length) map.fitBounds(allCoords, { padding: [20,20] });
+  if (all.length) map.fitBounds(all, { padding: [20,20] });
 
-  console.log(`[mapDraw] Polígonos dibujados: ${dib}`);
+  console.log(`[mapDraw] Polígonos dibujados: ${dibujados}`);
 }
