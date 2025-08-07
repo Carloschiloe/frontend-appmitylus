@@ -1,27 +1,26 @@
 // js/mapas/control_mapa.js
 
 import { Estado } from '../core/estado.js';
-import { crearMapa, setBaseLayer } from './mapConfig.js';
-import { drawCentrosInMap, focusCentroInMap } from './mapDraw.js';
-import { initMapFilter, setFilterData } from './mapFilter.js';
-import { clearMapPoints, addPointMarker, redrawPolygon } from './mapPoints.js';
+import { hashCentros, tabMapaActiva, actualizarTextoFullscreen } from '../core/utilidades_app.js';
 
-/**
- * Inicializa el mapa con controles, filtros y listeners generales.
- */
+// Módulos separados
+import { crearMapa } from './mapConfig.js';
+import { clearMapPoints, redrawPolygon, addPointMarker } from './mapPoints.js';
+import { drawCentrosInMap, centrarMapaEnPoligonos, focusCentroInMap } from './mapDraw.js';
+import { initSidebarFiltro } from './mapFilter.js';
+
 export function initMapa() {
-  // 1. Crear mapa y guardar en Estado
+  // Inicializa Leaflet con la capa y centro por defecto
   Estado.map = crearMapa(Estado.defaultLatLng);
 
-  // 2. Cerrar popup al clicar fuera de un polígono
-  Estado.map.on('click', e => {
-    // si click no fue en un path (polígono), cerramos popup
-    if (!(e.originalEvent.target instanceof SVGPathElement)) {
-      Estado.map.closePopup();
-    }
+  if (!Estado.map) return;
+
+  // Cerrar popup al click fuera de un polígono
+  Estado.map.on('click', (e) => {
+    Estado.map.closePopup();
   });
 
-  // 3. Fullscreen
+  // FULLSCREEN
   const fsBtn = document.getElementById('btnFullscreenMapa');
   const shell = document.getElementById('mapShell');
   if (fsBtn && shell) {
@@ -30,48 +29,40 @@ export function initMapa() {
       else document.exitFullscreen?.();
     });
     document.addEventListener('fullscreenchange', () =>
-      fsBtn.textContent = document.fullscreenElement ? 'Salir Fullscreen' : 'Pantalla completa'
+      actualizarTextoFullscreen(fsBtn, shell)
     );
+    actualizarTextoFullscreen(fsBtn, shell);
   }
 
-  // 4. Inicializar filtro flotante
-  initMapFilter();
-
-  // 5. (Opcional) Atajo de teclado para fullscreen con "f"
-  document.addEventListener('keydown', e => {
-    if (e.key.toLowerCase() === 'f' && Estado.tabs?.active === 'mapa') {
+  // Atajo de teclado "f" para fullscreen
+  document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'f' && tabMapaActiva()) {
       fsBtn?.click();
     }
   });
+
+  // Inicializa filtro / sidebar
+  setTimeout(() => initSidebarFiltro(), 300);
 }
 
 /**
- * Redibuja siempre el mapa con los datos actuales de `Estado.centros`.
- * Úsalo tras cargar o modificar el array `Estado.centros`.
- * @param {boolean} force — si true, ignora hash y forzar redraw
+ * Redibuja los centros sobre el mapa.
+ * Sólo vuelve a dibujar si cambian los datos o si forzamos.
  */
 export function renderMapaAlways(force = false) {
   if (!Estado.map) return;
-  // Calcula un hash simple de tu array de centros (puede venir de utilidades_app)
-  const h = JSON.stringify(Estado.centros.map(c => c._id + (c.coords?.length||0)));
+  const h = hashCentros(Estado.centros);
   if (!force && h === Estado.centrosHashRender) {
+    // mismo hash, sólo invalidamos tamaño
     Estado.map.invalidateSize();
     return;
   }
   Estado.centrosHashRender = h;
 
-  // 1. Dibuja polígonos y popups
-  drawCentrosInMap(
-    Estado.centros,
-    Estado.defaultLatLng,
-    idx => { Estado.currentCentroIdx = idx; }
-  );
-  // 2. Sincroniza datos del filtro
-  setFilterData(Estado.centros);
-
-  // 3. Ajusta tamaño del mapa
+  // Dibuja polígonos y marcadores
+  drawCentrosInMap(Estado.centros, Estado.defaultLatLng);
   Estado.map.invalidateSize();
 }
 
-// Reexportar helpers de puntos para usar en el formulario de centros
-export { clearMapPoints, addPointMarker, redrawPolygon, focusCentroInMap, setBaseLayer };
+// Reexportamos utilidades de puntos para el formulario
+export { clearMapPoints, redrawPolygon, addPointMarker };
