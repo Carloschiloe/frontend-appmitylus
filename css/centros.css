@@ -583,3 +583,61 @@ body .dropdown-content {
   min-height: 400px;
 }
 
+/* 1) Haz que todo el contenedor vertical ocupe el 100% */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* 2) Tu sección de contenido y pestañas deben estirarse */
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 3) El tab-mapa debe crecer para rellenar */
+#tab-mapa {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 4) Contenedor del mapa (botón + sidebar) */
+#mapaSection {
+  flex: 1;
+  position: relative;
+  display: flex;
+  overflow: hidden;
+}
+
+/* 5) El sidebar flota sobre el mapa, y el mapa ocupa todo el espacio restante */
+#sidebarCentros {
+  position: absolute;
+  top: 0.5rem;      /* ajusta según tu diseño */
+  left: 0.5rem;
+  z-index: 1000;
+  width: 260px;     /* ancho fijo o lo que prefieras */
+  max-height: 80%;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Mapa ocupa 100% del contenedor padre */
+#mapShell {
+  flex: 1;
+  position: relative;
+}
+
+/* El div real de Leaflet */
+#map {
+  position: absolute !important;
+  top: 0; bottom: 0; left: 0; right: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
