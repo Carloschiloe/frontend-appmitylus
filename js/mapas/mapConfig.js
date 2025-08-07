@@ -6,16 +6,9 @@ export let centrosGroup      = null;
 export const defaultLatLng = [-42.50, -73.80];
 
 /**
- * Definición de capas base: primero ESRI, luego OSM como backup.
+ * SOLO OpenStreetMap (OSM), 100% confiable.
  */
 export const baseLayersDefs = {
-  esri: L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    {
-      maxZoom: 20,
-      attribution: 'Imagery © Esri, Maxar, Earthstar Geographics'
-    }
-  ),
   osm: L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
@@ -26,14 +19,13 @@ export const baseLayersDefs = {
 };
 
 /**
- * Inicializa el mapa, con fallback automático de ESRI a OSM.
+ * Inicializa el mapa solo con OSM.
  * @param {[number,number]} defaultLatLngParam — vista inicial (Chiloé)
  * @returns {L.Map|null}
  */
 export function crearMapa(defaultLatLngParam = defaultLatLng) {
-  console.log('[mapConfig] crearMapa → centrar en', defaultLatLngParam);
+  console.log('[mapConfig] crearMapa → solo OpenStreetMap', defaultLatLngParam);
 
-  // Elimina mapa anterior si existe
   if (map) {
     map.remove();
     map = null;
@@ -46,21 +38,11 @@ export function crearMapa(defaultLatLngParam = defaultLatLng) {
   }
   if (el.clientHeight < 50) el.style.minHeight = '400px';
 
-  // Crea el mapa con la capa ESRI satélite por defecto
+  // Mapa SOLO con OSM
   map = L.map(el, {
     center: defaultLatLngParam,
     zoom: 10,
-    layers: [baseLayersDefs.esri]
-  });
-
-  // Si la capa ESRI da error de tiles, cambia a OSM automáticamente
-  baseLayersDefs.esri.on('tileerror', function () {
-    if (map.hasLayer(baseLayersDefs.esri)) {
-      map.removeLayer(baseLayersDefs.esri);
-      baseLayersDefs.osm.addTo(map);
-      console.warn('[mapConfig] ESRI falló, cambiando a OpenStreetMap (OSM)');
-      // Puedes mostrar un toast o alerta visual aquí si quieres avisar al usuario
-    }
+    layers: [baseLayersDefs.osm]
   });
 
   puntosIngresoGroup = L.layerGroup().addTo(map);
@@ -68,6 +50,6 @@ export function crearMapa(defaultLatLngParam = defaultLatLng) {
 
   window.map = map; // Debug en consola
 
-  console.log('[mapConfig] Mapa creado');
+  console.log('[mapConfig] Mapa creado con OSM');
   return map;
 }
