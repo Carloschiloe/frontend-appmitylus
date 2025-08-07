@@ -7,15 +7,20 @@ export let map = null;
 export let puntosIngresoGroup = null;
 export let centrosGroup      = null;
 
+// Coordenadas de Chiloé (puedes ajustar si quieres otra vista inicial)
+export const defaultLatLng = [-42.50, -73.80];
+
 /**
- * Capa base única: Esri World Imagery (satélite).
- * Ruta oficial de teselas de Esri.
+ * Definición de capas base
+ * Exporta como objeto para compatibilidad con otros módulos.
  */
 const esriUrl = 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-export const baseLayer = L.tileLayer(esriUrl, {
-  maxZoom: 20,
-  attribution: 'Imagery © Esri'
-});
+export const baseLayersDefs = {
+  esri: L.tileLayer(esriUrl, {
+    maxZoom: 20,
+    attribution: 'Imagery © Esri'
+  })
+};
 
 /**
  * Inicializa el mapa (si aún no existe), los layer-groups, y
@@ -23,50 +28,33 @@ export const baseLayer = L.tileLayer(esriUrl, {
  * @param {[number,number]} defaultLatLng — vista inicial (Chiloé)
  * @returns {L.Map|null}
  */
-export function crearMapa(defaultLatLng = [-42.50, -73.80]) {
-  console.log('[mapConfig] crearMapa → centrar en', defaultLatLng);
+export function crearMapa(defaultLatLngParam = defaultLatLng) {
+  console.log('[mapConfig] crearMapa → centrar en', defaultLatLngParam);
 
-  if (map) {
-    console.log('[mapConfig] mapa ya inicializado');
-    return map;
-  }
+  // Usa la variable global `map` para evitar múltiples instancias
+  if (map) return map;
 
   const el = document.getElementById('map');
   if (!el) {
-    console.error('[mapConfig] ¡#map no encontrado!');
+    console.error('[mapConfig] No se encontró el elemento #map');
     return null;
   }
-  // Asegura un mínimo de altura
-  if (el.clientHeight < 50) {
-    el.style.minHeight = '400px';
-  }
+  // Asegura un alto mínimo para que el mapa sea visible
+  if (el.clientHeight < 50) el.style.minHeight = '400px';
 
-  // Crea el mapa con la capa satelital
+  // Crea el mapa con la capa ESRI satelital
   map = L.map(el, {
-    center: defaultLatLng,
+    center: defaultLatLngParam,
     zoom: 10,
-    layers: [ baseLayer ],
-    zoomControl: true
+    layers: [baseLayersDefs.esri]
   });
-  console.log('[mapConfig] Leaflet map creado en satélite:', map);
 
-  // Grupos para puntos y polígonos
+  // Grupos para puntos de ingreso y centros
   puntosIngresoGroup = L.layerGroup().addTo(map);
   centrosGroup      = L.layerGroup().addTo(map);
 
-  // Al hacer click en la pestaña Mapa, forzar redraw
-  document.querySelectorAll('a[href="#tab-mapa"]').forEach(a =>
-    a.addEventListener('click', () => {
-      console.log('[mapConfig] pestaña #tab-mapa activa → invalidateSize');
-      setTimeout(() => map.invalidateSize(), 120);
-      setTimeout(() => map.invalidateSize(), 400);
-    })
-  );
+  window.map = map; // Para debugging en consola
 
+  console.log('[mapConfig] Mapa creado');
   return map;
-}
-
-// Para que puedas probar desde la consola:
-if (typeof window !== 'undefined') {
-  window.crearMapa = crearMapa;
 }
