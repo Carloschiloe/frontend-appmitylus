@@ -539,3 +539,47 @@ body .dropdown-content {
   font-size: .9rem;
   line-height: 1.2;
 }
+
+/* ============================= */
+/* Mapa – Filtro flotante y full */
+/* ============================= */
+
+/* Oculta el sidebar original y su toggle */
+#sidebarCentros,
+#toggleSidebar {
+  display: none !important;
+}
+
+/* Contenedor relativo para posicionar el overlay */
+#mapShell {
+  position: relative;
+  width: 100%;
+  /* Ajusta la altura según tu header/tab: */
+  height: calc(100vh - 200px);
+}
+
+/* Estilos del filtro flotante */
+.filter-overlay {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  width: 260px;
+}
+.filter-overlay input {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Asegura que el mapa llene todo el contenedor */
+#map {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 400px;
+}
+
