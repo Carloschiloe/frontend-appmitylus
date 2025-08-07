@@ -1,4 +1,4 @@
-// js/mapas/mapa.js - gestión completa del mapa y sidebar de centros (ahora con Mapbox Satélite)
+// js/mapas/mapa.js - gestión completa del mapa y sidebar de centros, centrado en Chiloé
 
 let map;
 let puntosIngresoGroup;
@@ -6,6 +6,10 @@ let centrosGroup;
 let currentPoly = null;
 let centroPolys = {};
 let windowCentrosDebug = [];
+
+// Coordenadas centro Chiloé
+const CHILOE_COORDS = [-42.65, -73.99]; // Centro de la isla de Chiloé
+const CHILOE_ZOOM = 10;
 
 const LOG = true;
 const log = (...a) => LOG && console.log('[MAP]', ...a);
@@ -15,18 +19,15 @@ const parseNum = v => {
   return Number.isFinite(n) ? n : null;
 };
 
-// ====== AGREGA TU TOKEN MAPBOX AQUI ======
-const MAPBOX_TOKEN = 'pk.eyJ1IjoiY2FybG9zY2hpbG9lIiwiYSI6ImNtZTB3OTZmODA5Mm0ya24zaTQ1bGd3aW4ifQ.XElNIT02jDuetHpo4r_-3g'; // <-- PÉGALO AQUÍ
+// Proveedores de mapas (tiles) con Mapbox satélite por defecto
+const MAPBOX_TOKEN = 'pk.eyJ1IjoiY2FybG9zY2hpbG9lIiwiYSI6ImNtZTB3OTZmODA5Mm0ya24zaTQ1bGd3aW4ifQ.XElNIT02jDuetHpo4r_-3g'; // <<-- Pega aquí tu token público de Mapbox
 
-// Proveedores de mapas (tiles)
 const baseLayersDefs = {
   mapboxSat: L.tileLayer(
     `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`,
     {
-      tileSize: 512,
-      zoomOffset: -1,
       maxZoom: 19,
-      attribution: 'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>'
+      attribution: '© Mapbox, © OpenStreetMap, © Maxar'
     }
   ),
   osm: L.tileLayer(
@@ -51,9 +52,7 @@ const baseLayersDefs = {
     }
   )
 };
-// ----> Pon aquí el nombre de la base por defecto que quieres
-let currentBaseKey = 'mapboxSat';
-
+let currentBaseKey = 'mapboxSat'; // Satélite por defecto
 
 // Datos globales para sidebar y filtro
 let centrosDataGlobal = [];
@@ -157,8 +156,8 @@ export function cargarYRenderizarCentros(centros) {
   renderListaSidebar();
 }
 
-// Crear mapa Leaflet
-export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
+// Crear mapa Leaflet, centrado en Chiloé
+export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZOOM) {
   if (map) return map;
 
   const el = document.getElementById('map');
@@ -171,7 +170,7 @@ export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
   map = L.map(el, {
     zoomControl: true,
     center: defaultLatLng,
-    zoom: 10,
+    zoom: defaultZoom,
     layers: [baseLayersDefs[currentBaseKey]]
   });
   window.__mapLeaflet = map;
@@ -225,8 +224,8 @@ export function redrawPolygon(currentPoints = []) {
 }
 
 /* ---------- Centros ---------- */
-export function drawCentrosInMap(centros = [], defaultLatLng = [-42.48, -73.77], onPolyClick = null) {
-  if (!map) crearMapa(defaultLatLng);
+export function drawCentrosInMap(centros = [], defaultLatLng = CHILOE_COORDS, onPolyClick = null) {
+  if (!map) crearMapa(defaultLatLng, CHILOE_ZOOM);
   if (!centrosGroup) return;
 
   windowCentrosDebug = centros.slice();
@@ -299,7 +298,7 @@ export function drawCentrosInMap(centros = [], defaultLatLng = [-42.48, -73.77],
     dib++;
   });
 
-  centrarMapaEnPoligonos(centros, defaultLatLng);
+  centrarMapaEnPoligonos(centros, CHILOE_COORDS);
 
   setTimeout(() => map.invalidateSize(), 60);
   setTimeout(() => map.invalidateSize(), 300);
@@ -307,7 +306,7 @@ export function drawCentrosInMap(centros = [], defaultLatLng = [-42.48, -73.77],
   log('Redibujados centros =', dib);
 }
 
-export function centrarMapaEnPoligonos(centros = [], defaultLatLng = [-42.48, -73.77]) {
+export function centrarMapaEnPoligonos(centros = [], defaultLatLng = CHILOE_COORDS) {
   if (!map) return;
   const all = [];
   centros.forEach(c => (c.coords || []).forEach(p => {
@@ -315,7 +314,7 @@ export function centrarMapaEnPoligonos(centros = [], defaultLatLng = [-42.48, -7
     if (la !== null && ln !== null) all.push([la, ln]);
   }));
   if (all.length) map.fitBounds(all, { padding: [20, 20] });
-  else map.setView(defaultLatLng, 10);
+  else map.setView(defaultLatLng, CHILOE_ZOOM);
 }
 
 export function focusCentroInMap(idx) {
@@ -331,3 +330,4 @@ export function focusCentroInMap(idx) {
 
 // **NO EXPORTES OTRAS FUNCIONES EN UN BLOQUE FINAL**
 // Ya están exportadas arriba con 'export function ...'
+
