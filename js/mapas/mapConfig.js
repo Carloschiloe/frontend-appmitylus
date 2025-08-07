@@ -1,11 +1,11 @@
 // js/mapas/mapConfig.js
-import L from 'leaflet';
 
 export let map = null;
 export let puntosIngresoGroup = null;
 export let centrosGroup = null;
 export let currentBaseKey = 'esri';
 
+// Usa el global L que viene del <script src="…leaflet.js">
 export const baseLayersDefs = {
   esri: L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -13,11 +13,6 @@ export const baseLayersDefs = {
   )
 };
 
-/**
- * Crea e inicializa el mapa en el elemento #map.
- * @param {[number,number]} defaultLatLng Coords iniciales [lat, lng].
- * @returns {L.Map|null}
- */
 export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
   if (map) return map;
   const el = document.getElementById('map');
@@ -34,7 +29,6 @@ export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
     layers: [ baseLayersDefs.esri ]
   });
 
-  // Grupos de capas
   puntosIngresoGroup = L.layerGroup().addTo(map);
   centrosGroup      = L.layerGroup().addTo(map);
 
@@ -42,10 +36,6 @@ export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
   return map;
 }
 
-/**
- * Cambia la capa base actual.
- * @param {string} key Clave de baseLayersDefs.
- */
 export function setBaseLayer(key) {
   if (!map || !baseLayersDefs[key] || currentBaseKey === key) return;
   map.removeLayer(baseLayersDefs[currentBaseKey]);
