@@ -1,68 +1,90 @@
 // js/mapas/control_mapa.js
 
 import { Estado } from '../core/estado.js';
-import { hashCentros, tabMapaActiva, actualizarTextoFullscreen } from '../core/utilidades_app.js';
+import { tabMapaActiva, hashCentros, actualizarTextoFullscreen } from '../core/utilidades_app.js';
 
-// Módulos separados
-import { crearMapa } from './mapConfig.js';
-import { clearMapPoints, redrawPolygon, addPointMarker } from './mapPoints.js';
-import { drawCentrosInMap, centrarMapaEnPoligonos, focusCentroInMap } from './mapDraw.js';
-import { initSidebarFiltro } from './mapFilter.js';
+// Configuración y render inicial del mapa
+import { crearMapa }           from './mapConfig.js';
 
+// Dibujo de polígonos y centrado
+import { drawCentrosInMap,
+         centrarMapaEnPoligonos,
+         focusCentroInMap }    from './mapDraw.js';
+
+// Filtro / sidebar flotante
+import { initSidebarFiltro }   from './mapFilter.js';
+
+// Puntos y polígono de edición en el formulario
+import { clearMapPoints,
+         addPointMarker,
+         redrawPolygon }       from './mapPoints.js';
+
+/**
+ * Inicializa el mapa en la pestaña (botón fullscreen, atajo de teclado, click fuera cierra popup).
+ */
 export function initMapa() {
-  // Inicializa Leaflet con la capa y centro por defecto
+  // 1) Crear mapa si no existe
   Estado.map = crearMapa(Estado.defaultLatLng);
 
-  if (!Estado.map) return;
-
-  // Cerrar popup al click fuera de un polígono
+  // 2) Cerrar popup al hacer click fuera de un polígono
   Estado.map.on('click', (e) => {
-    Estado.map.closePopup();
+    if (!(e.originalEvent.target instanceof SVGPathElement)) {
+      Estado.map.closePopup();
+    }
   });
 
-  // FULLSCREEN
+  // 3) Fullscreen (botón y texto dinámico)
   const fsBtn = document.getElementById('btnFullscreenMapa');
   const shell = document.getElementById('mapShell');
   if (fsBtn && shell) {
     fsBtn.addEventListener('click', () => {
-      if (!document.fullscreenElement) shell.requestFullscreen?.();
-      else document.exitFullscreen?.();
+      if (!document.fullscreenElement) shell.requestFullscreen();
+      else document.exitFullscreen();
     });
     document.addEventListener('fullscreenchange', () =>
       actualizarTextoFullscreen(fsBtn, shell)
     );
+    // Estado inicial del texto/icono
     actualizarTextoFullscreen(fsBtn, shell);
   }
 
-  // Atajo de teclado "f" para fullscreen
+  // 4) Atajo de teclado "f" para fullscreen (si la pestaña mapa está activa)
   document.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'f' && tabMapaActiva()) {
       fsBtn?.click();
     }
   });
-
-  // Inicializa filtro / sidebar
-  setTimeout(() => initSidebarFiltro(), 300);
 }
 
 /**
- * Redibuja los centros sobre el mapa.
- * Sólo vuelve a dibujar si cambian los datos o si forzamos.
+ * Siempre dibuja los centros en el mapa y ajusta tamaño.
+ * @param {boolean} force - forzar dibujo aunque no hayan cambiado los datos.
  */
 export function renderMapaAlways(force = false) {
   if (!Estado.map) return;
+
+  // Evitar redibujos innecesarios usando hash
   const h = hashCentros(Estado.centros);
   if (!force && h === Estado.centrosHashRender) {
-    // mismo hash, sólo invalidamos tamaño
     Estado.map.invalidateSize();
     return;
   }
   Estado.centrosHashRender = h;
 
-  // Dibuja polígonos y marcadores
+  // Volver a dibujar polígonos
   drawCentrosInMap(Estado.centros, Estado.defaultLatLng);
+
+  // Forzar Leaflet a recalcular tamaño del contenedor
   Estado.map.invalidateSize();
 }
 
-// Reexportamos utilidades de puntos para el formulario
-export { clearMapPoints, redrawPolygon, addPointMarker };
+/** Reexportamos los helpers para usarlos desde app.js o form_centros.js */
+export {
+  clearMapPoints,
+  addPointMarker,
+  redrawPolygon,
+  drawCentrosInMap,
+  centrarMapaEnPoligonos,
+  focusCentroInMap,
+  initSidebarFiltro
+};
