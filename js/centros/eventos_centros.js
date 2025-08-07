@@ -20,7 +20,7 @@ function toTitleCase(str) {
 export function registerTablaCentrosEventos() {
   const $t2 = window.$('#centrosTable');
 
-  // Mostrar detalles y coordenadas en modal
+  // --- Mostrar detalles y coordenadas en modal ---
   $t2
     .off('click', '.btn-coords')
     .on('click', '.btn-coords', function () {
@@ -29,7 +29,7 @@ export function registerTablaCentrosEventos() {
       const modal = document.getElementById('modalDetallesCentro');
       const body = document.getElementById('detallesCentroBody');
       if (c && modal && body) {
-        // --- DATOS PRINCIPALES ---
+        // DATOS PRINCIPALES
         let html = `<table class="striped">
           <tbody>
             <tr><th>Proveedor</th><td>${toTitleCase(c.proveedor || '')}</td></tr>
@@ -39,7 +39,7 @@ export function registerTablaCentrosEventos() {
           </tbody>
         </table>`;
 
-        // --- DETALLES OCULTOS/EXTRAS ---
+        // DETALLES EXTRAS
         if (c.detalles && typeof c.detalles === 'object' && Object.keys(c.detalles).length) {
           html += `<h6 style="margin-top:1.5em;">Detalles Extras</h6>
             <table class="striped"><tbody>`;
@@ -49,8 +49,8 @@ export function registerTablaCentrosEventos() {
           html += `</tbody></table>`;
         }
 
-        // --- COORDENADAS ---
-        if (c.coords && c.coords.length > 0) {
+        // COORDENADAS
+        if (Array.isArray(c.coords) && c.coords.length) {
           html += `<h6 style="margin-top:1.5em;">Coordenadas</h6>
             <table class="striped">
               <thead><tr><th>#</th><th>Latitud</th><th>Longitud</th></tr></thead>
@@ -72,7 +72,7 @@ export function registerTablaCentrosEventos() {
       }
     });
 
-  // Abrir/colapsar líneas (acordeón)
+  // --- Abrir/colapsar líneas (acordeón) ---
   $t2
     .off('click', '.btn-toggle-lineas')
     .on('click', '.btn-toggle-lineas', function () {
@@ -95,7 +95,6 @@ export function registerTablaCentrosEventos() {
       });
 
       const lineasHtml = renderAcordeonLineas(idx, Estado.centros, Estado.editingLine);
-
       row.child(`<div class="child-row-lineas">${lineasHtml}</div>`).show();
       tr.addClass('shown');
       Estado.lineAcordionOpen = idx;
@@ -112,37 +111,48 @@ export function registerTablaCentrosEventos() {
       }
     });
 
-  // Editar centro
+  // --- Editar centro ---
   $t2
     .off('click', '.editar-centro')
     .on('click', '.editar-centro', function () {
       const idx = +this.dataset.idx;
       Estado.currentCentroIdx = idx;
+
       const modalElem = document.getElementById('centroModal');
-      const modal = M.Modal.getInstance(modalElem);
+      const modal     = M.Modal.getInstance(modalElem);
+
       const els = {
-        formTitle:    document.getElementById('formTitle'),
-        inputCentroId:document.getElementById('inputCentroId'),
-        inputComuna:  document.getElementById('inputComuna'),
-        inputProveedor:document.getElementById('inputProveedor'),
-        inputCode: document.getElementById('inputCode'),
+        formTitle:      document.getElementById('formTitle'),
+        inputCentroId:  document.getElementById('inputCentroId'),
+        inputProveedor: document.getElementById('inputProveedor'),
+        inputComuna:    document.getElementById('inputComuna'),
+        inputCode:      document.getElementById('inputCode'),
         inputHectareas: document.getElementById('inputHectareas'),
-        inputLat: document.getElementById('inputLat'),
-        inputLng: document.getElementById('inputLng'),
-        pointsBody: document.getElementById('pointsBody')
+        inputLat:       document.getElementById('inputLat'),
+        inputLng:       document.getElementById('inputLng'),
+        pointsBody:     document.getElementById('pointsBody')
       };
-      els.inputCentroId.value = idx;
-      openEditForm(els, Estado.map, Estado.currentPoints, v => (Estado.currentCentroIdx = v), idx);
+
+      // Prepara y abre el formulario con datos existentes
+      openEditForm(
+        els,
+        Estado.map,
+        Estado.currentPoints,
+        v => (Estado.currentCentroIdx = v),
+        idx
+      );
+
       modal.open();
     });
 
-  // Eliminar centro
+  // --- Eliminar centro ---
   $t2
     .off('click', '.eliminar-centro')
     .on('click', '.eliminar-centro', async function () {
       const idx = +this.dataset.idx;
       const c = Estado.centros[idx];
       if (!c) return;
+
       const nombreRef = c.proveedor || c.comuna || 'este centro';
       if (confirm(`¿Eliminar el centro "${nombreRef}"?`)) {
         await deleteCentro(c._id);
@@ -154,162 +164,149 @@ export function registerTablaCentrosEventos() {
 
 // ============ LISTENERS DE LÍNEAS DENTRO DEL ACORDEÓN ============ //
 function attachLineasListeners(idx, acordeonCont) {
-  // Eliminar línea
   const tbody = acordeonCont.querySelector('table.striped tbody');
-  if (tbody) {
-    tbody.querySelectorAll('.btn-del-line').forEach(btn => {
-      btn.onclick = async () => {
-        const lineIdx = +btn.dataset.lineIdx;
-        const centro = Estado.centros[idx];
-        const linea = centro.lines[lineIdx];
-        if (!linea) return;
-        if (confirm(`¿Eliminar la línea ${linea.number}?`)) {
-          await deleteLinea(centro._id, linea._id);
-          await loadCentros();
-          if (tabMapaActiva()) renderMapaAlways(true);
-        }
-      };
-    });
+  if (!tbody) return;
 
-    // Editar línea
-    tbody.querySelectorAll('.btn-edit-line').forEach(btn => {
-      btn.onclick = () => {
-        Estado.editingLine = { idx: idx, lineIdx: +btn.dataset.lineIdx };
-        const tr = $('#centrosTable tbody tr').eq(idx);
-        tr.find('.btn-toggle-lineas').trigger('click');
-        tr.find('.btn-toggle-lineas').trigger('click');
-      };
-    });
-
-    // Cancelar edición de línea
-    tbody.querySelectorAll('.btn-cancel-edit-line').forEach(btn => {
-      btn.onclick = () => {
-        Estado.editingLine = { idx: null, lineIdx: null };
-        const tr = $('#centrosTable tbody tr').eq(idx);
-        tr.find('.btn-toggle-lineas').trigger('click');
-        tr.find('.btn-toggle-lineas').trigger('click');
-      };
-    });
-
-    // Guardar edición de línea
-    tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
-      btn.onclick = async () => {
-        const trFila = btn.closest('tr');
-        // Inputs
-        const numInput  = trFila.querySelector('.edit-line-num');
-        const longInput = trFila.querySelector('.edit-line-long');
-        const obsInput  = trFila.querySelector('.edit-line-observaciones');
-        const stateInput= trFila.querySelector('.edit-line-state');
-        const tonsInput = trFila.querySelector('.edit-line-tons');
-        const unkgInput = trFila.querySelector('.edit-line-unKg');
-        const rechazoInput = trFila.querySelector('.edit-line-porcRechazo');
-        const rendimientoInput = trFila.querySelector('.edit-line-rendimiento');
-
-        // Línea original
-        const centro = Estado.centros[idx];
-        const linea = centro.lines[+btn.dataset.lineIdx];
-
-        // VALORES: si input vacío, queda null
-        const num  = numInput?.value.trim() || '';
-        const long = longInput?.value.trim() ? parseFloat(longInput.value) : null;
-        const obs  = obsInput?.value.trim() || '';
-        const st   = stateInput?.value || '';
-        const tons = tonsInput?.value.trim() ? parseFloat(tonsInput.value) : null;
-        const unkg = unkgInput?.value.trim() ? parseFloat(unkgInput.value) : null;
-        const rechazo = rechazoInput?.value.trim() ? parseFloat(rechazoInput.value) : null;
-        const rendimiento = rendimientoInput?.value.trim() ? parseFloat(rendimientoInput.value) : null;
-
-        // VALIDACIÓN: Solo obligatorios (N° línea, Longitud y Estado)
-        if (!num || long === null || !st) {
-          M.toast({ html: 'Completa N° Línea, Longitud y Estado', classes: 'red' });
-          return;
-        }
-        if (
-          (tonsInput?.value.trim() && isNaN(tons)) ||
-          (unkgInput?.value.trim() && isNaN(unkg)) ||
-          (rechazoInput?.value.trim() && isNaN(rechazo)) ||
-          (rendimientoInput?.value.trim() && isNaN(rendimiento))
-        ) {
-          M.toast({ html: 'Revisa los campos numéricos', classes: 'red' });
-          return;
-        }
-
-        // GUARDA línea
-        await updateLinea(centro._id, linea._id, {
-          number: num,
-          longitud: long,
-          observaciones: obs,
-          state: st,
-          tons,
-          unKg: unkg,
-          porcRechazo: rechazo,
-          rendimiento,
-        });
-        Estado.editingLine = { idx: null, lineIdx: null };
-        const tr = $('#centrosTable tbody tr').eq(idx);
-        tr.find('.btn-toggle-lineas').trigger('click');
-        tr.find('.btn-toggle-lineas').trigger('click');
+  // Eliminar línea
+  tbody.querySelectorAll('.btn-del-line').forEach(btn => {
+    btn.onclick = async () => {
+      const lineIdx = +btn.dataset.lineIdx;
+      const centro = Estado.centros[idx];
+      const linea = centro.lines[lineIdx];
+      if (!linea) return;
+      if (confirm(`¿Eliminar la línea ${linea.number}?`)) {
+        await deleteLinea(centro._id, linea._id);
         await loadCentros();
-      };
-    });
-  }
+        if (tabMapaActiva()) renderMapaAlways(true);
+      }
+    };
+  });
+
+  // Editar línea
+  tbody.querySelectorAll('.btn-edit-line').forEach(btn => {
+    btn.onclick = () => {
+      Estado.editingLine = { idx, lineIdx: +btn.dataset.lineIdx };
+      const tr = $('#centrosTable tbody tr').eq(idx);
+      tr.find('.btn-toggle-lineas').click().click();
+    };
+  });
+
+  // Cancelar edición de línea
+  tbody.querySelectorAll('.btn-cancel-edit-line').forEach(btn => {
+    btn.onclick = () => {
+      Estado.editingLine = { idx: null, lineIdx: null };
+      const tr = $('#centrosTable tbody tr').eq(idx);
+      tr.find('.btn-toggle-lineas').click().click();
+    };
+  });
+
+  // Guardar edición de línea
+  tbody.querySelectorAll('.btn-guardar-edit-line').forEach(btn => {
+    btn.onclick = async () => {
+      const trFila       = btn.closest('tr');
+      const numInput     = trFila.querySelector('.edit-line-num');
+      const longInput    = trFila.querySelector('.edit-line-long');
+      const obsInput     = trFila.querySelector('.edit-line-observaciones');
+      const stateInput   = trFila.querySelector('.edit-line-state');
+      const tonsInput    = trFila.querySelector('.edit-line-tons');
+      const unkgInput    = trFila.querySelector('.edit-line-unKg');
+      const rechazoInput = trFila.querySelector('.edit-line-porcRechazo');
+      const rdmtInput    = trFila.querySelector('.edit-line-rendimiento');
+
+      const centro = Estado.centros[idx];
+      const linea  = centro.lines[+btn.dataset.lineIdx];
+
+      const num        = numInput?.value.trim() || '';
+      const longitud   = longInput?.value.trim() ? parseFloat(longInput.value) : null;
+      const observ     = obsInput?.value.trim() || '';
+      const state      = stateInput?.value || '';
+      const tons       = tonsInput?.value.trim() ? parseFloat(tonsInput.value) : null;
+      const unKg       = unkgInput?.value.trim() ? parseFloat(unkgInput.value) : null;
+      const porcRech   = rechazoInput?.value.trim() ? parseFloat(rechazoInput.value) : null;
+      const rendimiento= rdmtInput?.value.trim() ? parseFloat(rdmtInput.value) : null;
+
+      // Validaciones
+      if (!num || longitud === null || !state) {
+        M.toast({ html: 'Completa N° Línea, Longitud y Estado', classes: 'red' });
+        return;
+      }
+      if (
+        (tonsInput?.value && isNaN(tons)) ||
+        (unkgInput?.value && isNaN(unKg)) ||
+        (rechazoInput?.value && isNaN(porcRech)) ||
+        (rdmtInput?.value && isNaN(rendimiento))
+      ) {
+        M.toast({ html: 'Revisa los campos numéricos', classes: 'red' });
+        return;
+      }
+
+      await updateLinea(centro._id, linea._id, {
+        number:        num,
+        longitud,
+        observaciones: observ,
+        state,
+        tons,
+        unKg,
+        porcRechazo:  porcRech,
+        rendimiento
+      });
+
+      Estado.editingLine = { idx: null, lineIdx: null };
+      const tr = $('#centrosTable tbody tr').eq(idx);
+      tr.find('.btn-toggle-lineas').click().click();
+      await loadCentros();
+    };
+  });
 
   // Agregar línea nueva
   const formAdd = acordeonCont.querySelector('.form-inline-lineas');
   if (formAdd) {
     formAdd.onsubmit = async (e) => {
       e.preventDefault();
-      const num = formAdd.querySelector('.line-num').value.trim();
-      const long = parseFloat(formAdd.querySelector('.line-long').value);
-      const obs = formAdd.querySelector('.line-observaciones').value.trim();
-      const st = formAdd.querySelector('.line-state').value;
-      const tonsStr = formAdd.querySelector('.line-tons').value.trim();
-      const tons = tonsStr === '' ? 0 : parseFloat(tonsStr);
-      const unkgStr = formAdd.querySelector('.line-unKg').value.trim();
-      const unkg = unkgStr === '' ? null : parseFloat(unkgStr);
-      const rechazoStr = formAdd.querySelector('.line-porcRechazo').value.trim();
-      const rechazo = rechazoStr === '' ? null : parseFloat(rechazoStr);
-      const rendimientoStr = formAdd.querySelector('.line-rendimiento').value.trim();
-      const rendimiento = rendimientoStr === '' ? null : parseFloat(rendimientoStr);
+      const numStr       = formAdd.querySelector('.line-num').value.trim();
+      const longVal      = parseFloat(formAdd.querySelector('.line-long').value);
+      const obsStr       = formAdd.querySelector('.line-observaciones').value.trim();
+      const stateStr     = formAdd.querySelector('.line-state').value;
+      const tonsStr2     = formAdd.querySelector('.line-tons').value.trim();
+      const unkgStr2     = formAdd.querySelector('.line-unKg').value.trim();
+      const rechazoStr2  = formAdd.querySelector('.line-porcRechazo').value.trim();
+      const rdmtStr2     = formAdd.querySelector('.line-rendimiento').value.trim();
 
-      if (!num || isNaN(long) || !st) {
+      if (!numStr || isNaN(longVal) || !stateStr) {
         M.toast({ html: 'Completa todos los campos obligatorios', classes: 'red' });
         return;
       }
-      if (tonsStr !== '' && isNaN(tons)) {
-        M.toast({ html: 'Toneladas debe ser un número válido', classes: 'red' });
-        return;
-      }
-      if (unkgStr !== '' && isNaN(unkg)) {
-        M.toast({ html: 'Un/kg debe ser un número válido', classes: 'red' });
-        return;
-      }
-      if (rechazoStr !== '' && isNaN(rechazo)) {
-        M.toast({ html: '% Rechazo debe ser un número válido', classes: 'red' });
-        return;
-      }
-      if (rendimientoStr !== '' && isNaN(rendimiento)) {
-        M.toast({ html: 'Rendimiento debe ser un número válido', classes: 'red' });
+
+      const tons2       = tonsStr2 === '' ? 0 : parseFloat(tonsStr2);
+      const unkg2       = unkgStr2 === '' ? null : parseFloat(unkgStr2);
+      const rechazo2    = rechazoStr2 === '' ? null : parseFloat(rechazoStr2);
+      const rdmt2       = rdmtStr2 === '' ? null : parseFloat(rdmtStr2);
+
+      if ((tonsStr2 && isNaN(tons2)) ||
+          (unkgStr2 && isNaN(unkg2)) ||
+          (rechazoStr2 && isNaN(rechazo2)) ||
+          (rdmtStr2 && isNaN(rdmt2))) {
+        M.toast({ html: 'Verifica valores numéricos de líneas', classes: 'red' });
         return;
       }
 
       const centro = Estado.centros[idx];
       await import('../core/centros_repo.js').then(m =>
-        m.addLinea(centro._id, {
-          number: num,
-          longitud: long,
-          observaciones: obs,
-          state: st,
-          tons: tons,
-          unKg: unkg,
-          porcRechazo: rechazo,
-          rendimiento: rendimiento
+        m.addLinea(centro._1d, {
+          number:        numStr,
+          longitud:      longVal,
+          observaciones: obsStr,
+          state:         stateStr,
+          tons:          tons2,
+          unKg:          unkg2,
+          porcRechazo:   rechazo2,
+          rendimiento:   rdmt2
         })
       );
+
       formAdd.reset();
       const tr = $('#centrosTable tbody tr').eq(idx);
-      tr.find('.btn-toggle-lineas').trigger('click');
-      tr.find('.btn-toggle-lineas').trigger('click');
+      tr.find('.btn-toggle-lineas').click().click();
       await loadCentros();
     };
   }
@@ -318,12 +315,10 @@ function attachLineasListeners(idx, acordeonCont) {
 // --- Filtro para líneas ---
 export function filtrarLineas(contenedor) {
   const cont = contenedor || document;
-  const txt = (cont.querySelector('#inputBuscarLineas')?.value || '').toLowerCase();
+  const txt  = (cont.querySelector('#inputBuscarLineas')?.value || '').toLowerCase();
   cont.querySelectorAll('table.striped tbody tr').forEach(fila => {
     const num = (fila.cells[0]?.textContent || '').toLowerCase();
     const est = (fila.cells[4]?.textContent || '').toLowerCase();
-    const okTxt = num.includes(txt) || est.includes(txt);
-    fila.style.display = okTxt ? '' : 'none';
+    fila.style.display = num.includes(txt) || est.includes(txt) ? '' : 'none';
   });
 }
-
