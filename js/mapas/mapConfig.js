@@ -1,32 +1,31 @@
 // js/mapas/mapConfig.js
 // -------------------------------------
-// Configuración del mapa y capas base
+// Configuración del mapa y capa satelital
 // -------------------------------------
 
 export let map = null;
 export let puntosIngresoGroup = null;
-export let centrosGroup = null;
-export let currentBaseKey = 'osm';
-
-// Definimos dos capas base: OpenStreetMap y Esri World Imagery
-export const baseLayersDefs = {
-  osm: L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { maxZoom: 19, attribution: '© OpenStreetMap contributors' }
-  ),
-  esri: L.tileLayer(
-    'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { maxZoom: 20, attribution: 'Imagery © Esri' }
-  )
-};
+export let centrosGroup      = null;
 
 /**
- * Inicializa (si no existe) el mapa y los layer-groups.
- * @param {[number,number]} defaultLatLng — vista inicial
+ * Capa base única: Esri World Imagery (satélite).
+ * Ruta oficial de teselas de Esri.
+ */
+const esriUrl = 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+export const baseLayer = L.tileLayer(esriUrl, {
+  maxZoom: 20,
+  attribution: 'Imagery © Esri'
+});
+
+/**
+ * Inicializa el mapa (si aún no existe), los layer-groups, y
+ * arranca en la capa satelital de Esri, centrado en Chiloé.
+ * @param {[number,number]} defaultLatLng — vista inicial (Chiloé)
  * @returns {L.Map|null}
  */
-export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
-  console.log('[mapConfig] crearMapa →', defaultLatLng);
+export function crearMapa(defaultLatLng = [-42.50, -73.80]) {
+  console.log('[mapConfig] crearMapa → centrar en', defaultLatLng);
+
   if (map) {
     console.log('[mapConfig] mapa ya inicializado');
     return map;
@@ -37,26 +36,25 @@ export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
     console.error('[mapConfig] ¡#map no encontrado!');
     return null;
   }
+  // Asegura un mínimo de altura
   if (el.clientHeight < 50) {
     el.style.minHeight = '400px';
-    console.log('[mapConfig] ajustado minHeight a 400px');
   }
 
-  // Arrancamos con OSM por defecto
+  // Crea el mapa con la capa satelital
   map = L.map(el, {
     center: defaultLatLng,
     zoom: 10,
-    zoomControl: true,
-    layers: [ baseLayersDefs.osm ]
+    layers: [ baseLayer ],
+    zoomControl: true
   });
-  console.log('[mapConfig] Leaflet map creado:', map);
+  console.log('[mapConfig] Leaflet map creado en satélite:', map);
 
-  // Creamos los grupos de capas
+  // Grupos para puntos y polígonos
   puntosIngresoGroup = L.layerGroup().addTo(map);
   centrosGroup      = L.layerGroup().addTo(map);
-  console.log('[mapConfig] puntosIngresoGroup y centrosGroup creados');
 
-  // Listener para invalidar size al mostrar la pestaña Mapa
+  // Al hacer click en la pestaña Mapa, forzar redraw
   document.querySelectorAll('a[href="#tab-mapa"]').forEach(a =>
     a.addEventListener('click', () => {
       console.log('[mapConfig] pestaña #tab-mapa activa → invalidateSize');
@@ -68,30 +66,7 @@ export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
   return map;
 }
 
-/**
- * Cambia la capa base activa ("osm" o "esri").
- * @param {string} key
- */
-export function setBaseLayer(key) {
-  console.log('[mapConfig] setBaseLayer →', key);
-  if (!map || !baseLayersDefs[key] || currentBaseKey === key) {
-    console.log('[mapConfig] nada que hacer para baseLayer:', key);
-    return;
-  }
-  map.removeLayer(baseLayersDefs[currentBaseKey]);
-  map.addLayer(baseLayersDefs[key]);
-  currentBaseKey = key;
-  console.log('[mapConfig] baseLayer cambiado a:', key);
-}
-
-// --------------------------------------------------
-// Exponer funciones en window para poder invocarlas
-// desde la consola sin usar `import`.
-// --------------------------------------------------
+// Para que puedas probar desde la consola:
 if (typeof window !== 'undefined') {
-  window.MapConfig = window.MapConfig || {};
-  window.MapConfig.crearMapa = crearMapa;
-  window.MapConfig.setBaseLayer = setBaseLayer;
-  // atajo directo
-  window.setBaseLayer = setBaseLayer;
+  window.crearMapa = crearMapa;
 }
