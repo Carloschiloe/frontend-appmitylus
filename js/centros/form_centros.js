@@ -1,16 +1,20 @@
 // js/centros/form_centros.js
-import { clearMapPoints, redrawPolygon, addPointMarker } from '../mapas/control_mapa.js';
+import {
+  clearMapPoints,
+  redrawPolygon,
+  addPointMarker
+} from '../mapas/control_mapa.js';
 
 // Maneja la apertura del form para NUEVO centro
 export async function openNewForm(els, map, currentPoints, setIdxCb) {
-  els.formTitle.textContent = 'Nuevo centro';
-  els.inputCentroId.value   = '';
-  els.inputProveedor.value  = '';
-  els.inputComuna.value     = '';
-  els.inputCode.value       = '';
-  els.inputHectareas.value  = '';
-  els.inputLat.value        = '';
-  els.inputLng.value        = '';
+  els.formTitle.textContent  = 'Nuevo centro';
+  els.inputCentroId.value    = '';
+  els.inputProveedor.value   = '';
+  els.inputComuna.value      = '';
+  els.inputCode.value        = '';
+  els.inputHectareas.value   = '';
+  els.inputLat.value         = '';
+  els.inputLng.value         = '';
 
   currentPoints.length = 0;
   clearMapPoints();
@@ -25,7 +29,8 @@ export async function openEditForm(els, map, currentPoints, setIdxCb, idx) {
     return;
   }
 
-  const centros = await import('../core/centros_repo.js').then(m => m.getCentrosAll());
+  const centros = await import('../core/centros_repo.js')
+    .then(m => m.getCentrosAll());
   const centro = centros[idx];
   if (!centro) {
     console.error('Centro no encontrado en openEditForm:', idx);
@@ -35,13 +40,15 @@ export async function openEditForm(els, map, currentPoints, setIdxCb, idx) {
   els.formTitle.textContent = `Editar centro: ${centro.proveedor || centro.codigo_centro || centro.comuna}`;
   els.inputCentroId.value   = idx;
   els.inputProveedor.value  = centro.proveedor || '';
-  els.inputComuna.value     = centro.comuna || '';
+  els.inputComuna.value     = centro.comuna   || '';
   els.inputCode.value       = centro.codigo_centro || centro.code || '';
   els.inputHectareas.value  = centro.hectareas || '';
 
   currentPoints.length = 0;
   if (Array.isArray(centro.coords)) {
-    centro.coords.forEach(p => currentPoints.push({ lat: +p.lat, lng: +p.lng }));
+    centro.coords.forEach(p =>
+      currentPoints.push({ lat: +p.lat, lng: +p.lng })
+    );
   }
 
   clearMapPoints();
@@ -49,8 +56,13 @@ export async function openEditForm(els, map, currentPoints, setIdxCb, idx) {
   redrawPolygon(currentPoints);
   renderPointsTable(els.pointsBody, currentPoints);
 
+  // Focus al proveedor
   setTimeout(() => { els.inputProveedor.focus(); }, 100);
-  if (currentPoints.length) map.fitBounds(currentPoints.map(p => [p.lat, p.lng]));
+
+  // Ajusta el mapa si hay puntos
+  if (currentPoints.length) {
+    map.fitBounds(currentPoints.map(p => [p.lat, p.lng]));
+  }
 }
 
 // Renderiza la tabla de puntos de coordenadas
@@ -60,7 +72,13 @@ export function renderPointsTable(pointsBody, currentPoints) {
       <td>${i + 1}</td>
       <td>${p.lat.toFixed(6)}</td>
       <td>${p.lng.toFixed(6)}</td>
-      <td><button class="btn-small red btn-del-point" data-idx="${i}">&times;</button></td>
+      <td>
+        <button
+          class="btn-small red btn-del-point"
+          data-idx="${i}"
+          aria-label="Eliminar punto ${i + 1}"
+        >&times;</button>
+      </td>
     </tr>
   `).join('');
 }
