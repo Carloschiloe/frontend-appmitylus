@@ -360,4 +360,25 @@ body:has(#mapShell:fullscreen) {
   .sidebar-centros.minimized { left:-90vw; width: 35px;}
 }
 
+/* --- ARREGLA CORTE DE TABLA Y PAGINACIÓN --- */
+.dataTables_wrapper {
+  overflow-x: auto !important;
+  min-height: 480px !important;
+  padding-bottom: 50px !important;
+}
+
+#centrosTable_paginate {
+  position: relative !important;
+  z-index: 12;
+  background: white !important;
+  margin-bottom: 18px !important;
+  padding-bottom: 16px !important;
+}
+
+@media (max-width: 1200px) {
+  .dataTables_wrapper {
+    min-height: 540px !important;
+  }
+}
+
 
