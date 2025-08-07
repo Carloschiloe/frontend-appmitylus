@@ -26,7 +26,7 @@ const baseLayersDefs = {
   )
 };
 
-let currentBaseKey = 'osm';
+let currentBaseKey = 'esri';
 
 // Datos globales para sidebar y filtro
 let centrosDataGlobal = [];
@@ -304,3 +304,4 @@ export function focusCentroInMap(idx) {
 
 // **NO EXPORTES OTRAS FUNCIONES EN UN BLOQUE FINAL**
 // Ya están exportadas arriba con 'export function ...'
+
