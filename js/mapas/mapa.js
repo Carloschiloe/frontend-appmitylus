@@ -1,4 +1,4 @@
-// mapa.js - gestión completa del mapa y sidebar de centros (sidebar minimalista, filtro extendido + colapsable)
+// js/mapas/mapa.js - gestión completa del mapa y sidebar de centros (OpenStreetMap only)
 
 let map;
 let puntosIngresoGroup;
@@ -15,14 +15,18 @@ const parseNum = v => {
   return Number.isFinite(n) ? n : null;
 };
 
+// USAR SOLO OSM
 const baseLayersDefs = {
-  esri: L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { maxZoom: 20, attribution: 'Imagery © Esri' }
+  osm: L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+      maxZoom: 19,
+      attribution: 'Map data © <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+    }
   )
 };
 
-let currentBaseKey = 'esri';
+let currentBaseKey = 'osm';
 
 // Datos globales para sidebar y filtro
 let centrosDataGlobal = [];
@@ -32,7 +36,6 @@ let selectedCentroIdx = null;
 /* =========================
    SIDEBAR ULTRA MINIMALISTA
    ========================= */
-// Inicializar filtro minimalista y toggle
 export function initSidebarFiltro() {
   const filtroInput = document.getElementById('filtroSidebar');
   const listaSidebar = document.getElementById('listaCentrosSidebar');
@@ -55,7 +58,6 @@ export function initSidebarFiltro() {
   toggleBtn.onclick = () => {
     sidebar.classList.toggle('minimized');
 
-    // Actualizar clase en body para ayudar a CSS y layout
     if (sidebar.classList.contains('minimized')) {
       document.body.classList.add('sidebar-minimized');
       toggleBtn.title = "Expandir sidebar";
@@ -71,7 +73,6 @@ export function initSidebarFiltro() {
     }, 350);
   };
 
-  // Refresco inicial
   renderListaSidebar();
 }
 
@@ -95,7 +96,6 @@ function renderListaSidebar() {
   }
 
   listaSidebar.innerHTML = filtrados.map((c, i) => {
-    // idx real para centrar en el mapa
     const idx = centrosDataGlobal.indexOf(c);
     return `
       <li data-idx="${idx}" class="${selectedCentroIdx === idx ? 'selected' : ''}" tabindex="0">
@@ -105,7 +105,6 @@ function renderListaSidebar() {
     `;
   }).join('');
 
-  // Click y teclado para centrar mapa
   Array.from(listaSidebar.querySelectorAll('li')).forEach(li => {
     li.onclick = () => {
       const idx = +li.getAttribute('data-idx');
@@ -146,14 +145,13 @@ export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
     zoomControl: true,
     center: defaultLatLng,
     zoom: 10,
-    layers: [baseLayersDefs.esri]
+    layers: [baseLayersDefs.osm]
   });
   window.__mapLeaflet = map;
 
   puntosIngresoGroup = L.layerGroup().addTo(map);
   centrosGroup = L.layerGroup().addTo(map);
 
-  // Recalcular tamaño al mostrar tab mapa
   document.querySelectorAll('a[href="#tab-mapa"]').forEach(a =>
     a.addEventListener('click', () => {
       setTimeout(() => map.invalidateSize(), 120);
@@ -169,7 +167,7 @@ export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
   return map;
 }
 
-// Cambiar capa base
+// Cambiar capa base (solo OSM)
 export function setBaseLayer(key) {
   if (!map || !baseLayersDefs[key] || currentBaseKey === key) return;
   map.removeLayer(baseLayersDefs[currentBaseKey]);
@@ -218,7 +216,6 @@ export function drawCentrosInMap(centros = [], defaultLatLng = [-42.48, -73.77],
     const hect = +c.hectareas || 0;
     const cantLineas = Array.isArray(c.lines) ? c.lines.length : 0;
 
-    // ---- Calcular promedios y suma, igual que en tu tabla ----
     let sumaUnKg = 0, sumaRechazo = 0, sumaRdmto = 0, sumaTons = 0, linesConDatos = 0;
     if (Array.isArray(c.lines) && c.lines.length > 0) {
       c.lines.forEach(l => {
@@ -230,7 +227,6 @@ export function drawCentrosInMap(centros = [], defaultLatLng = [-42.48, -73.77],
       linesConDatos = c.lines.length;
     }
 
-    // Evitar división por cero
     const promUnKg = linesConDatos ? (sumaUnKg / linesConDatos) : 0;
     const promRechazo = linesConDatos ? (sumaRechazo / linesConDatos) : 0;
     const promRdmto = linesConDatos ? (sumaRdmto / linesConDatos) : 0;
@@ -306,3 +302,16 @@ export function focusCentroInMap(idx) {
   setTimeout(() => poly.setStyle({ color: '#1976d2', weight: 3 }), 1000);
 }
 
+// Export para control_mapa.js
+export {
+  initSidebarFiltro,
+  cargarYRenderizarCentros,
+  crearMapa,
+  setBaseLayer,
+  clearMapPoints,
+  addPointMarker,
+  redrawPolygon,
+  drawCentrosInMap,
+  centrarMapaEnPoligonos,
+  focusCentroInMap
+};
