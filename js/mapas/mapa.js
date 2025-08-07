@@ -310,8 +310,8 @@ export {
   setBaseLayer,
   clearMapPoints,
   addPointMarker,
-  redrawPolygon,
-  drawCentrosInMap
+  redrawPolygon
 };
+
 
 
