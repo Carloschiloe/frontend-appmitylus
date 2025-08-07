@@ -38,7 +38,11 @@ export function initSidebarFiltro() {
       icon.textContent = 'chevron_left';
     }
     // Redibuja el mapa tras la animación
-    setTimeout(() => Estado.map.invalidateSize(), 350);
+    setTimeout(() => {
+      if (Estado.map && Estado.map.invalidateSize) {
+        Estado.map.invalidateSize();
+      }
+    }, 350);
   };
 
   // Primer render
