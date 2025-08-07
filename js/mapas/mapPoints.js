@@ -1,35 +1,33 @@
 // js/mapas/mapPoints.js
-// Manejo de puntos y polígonos de formulario
 
-import { puntosIngresoGroup } from './mapConfig.js';
+/**
+ * Convierte un string a número, o devuelve null si no es válido.
+ */
+export const parseNum = v => {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : null;
+};
 
-let currentPoly = null;
-
-export function clearMapPoints() {
-  console.log('[mapPoints] clearMapPoints()');
+// --- Puntos manuales ---
+export function clearMapPoints(puntosIngresoGroup) {
   if (!puntosIngresoGroup) return;
   puntosIngresoGroup.clearLayers();
-  currentPoly = null;
 }
 
-export function addPointMarker(lat, lng) {
-  console.log('[mapPoints] addPointMarker →', lat, lng);
+export function addPointMarker(lat, lng, puntosIngresoGroup) {
   if (!puntosIngresoGroup) return;
   L.marker([lat, lng]).addTo(puntosIngresoGroup);
 }
 
-export function redrawPolygon(currentPoints = []) {
-  console.log('[mapPoints] redrawPolygon → puntos =', currentPoints.length);
-  if (!puntosIngresoGroup) return;
-  if (currentPoly) {
-    puntosIngresoGroup.removeLayer(currentPoly);
-    currentPoly = null;
+export function redrawPolygon(currentPoints = [], puntosIngresoGroup, currentPolyRef) {
+  if (currentPolyRef.poly) {
+    puntosIngresoGroup.removeLayer(currentPolyRef.poly);
+    currentPolyRef.poly = null;
   }
   if (currentPoints.length >= 3) {
-    currentPoly = L.polygon(
+    currentPolyRef.poly = L.polygon(
       currentPoints.map(p => [p.lat, p.lng]),
       { color: 'crimson' }
     ).addTo(puntosIngresoGroup);
-    console.log('[mapPoints] polígono dibujado con', currentPoints.length, 'puntos');
   }
 }
