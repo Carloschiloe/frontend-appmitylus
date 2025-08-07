@@ -1,17 +1,38 @@
-/* ==========================
+/* ==============================
    CENTROS – ESTILO EXCLUSIVO MEJORADO
-   ========================== */
+   ============================== */
 
-/* ----------- TABLA CENTROS ----------- */
-#centrosTable,
+/* ---- CONTAINER FLEX: arreglar corte de contenido ---- */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow: visible !important; /* CRUCIAL: NO esconder paginación ni flotantes */
+}
+
+/* ---- TABLA PRINCIPAL ---- */
 #centrosTable_wrapper {
   width: 100% !important;
-  max-width: 100%;
-  overflow-x: auto;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+  max-width: 100vw;
+  overflow-x: auto !important;
+  background: #fff;
   border-radius: 8px;
-  background-color: #fff;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+  padding-bottom: 26px !important; /* deja espacio a la paginación y scroll horizontal */
 }
+
+#centrosTable {
+  width: 100% !important;
+  background: #fff;
+  border-radius: 8px;
+  margin: 0 !important;
+}
+
 #centrosTable th,
 #centrosTable td {
   font-size: 0.95rem;
@@ -58,6 +79,17 @@
 .child-row-lineas td .material-icons:hover {
   color: #009688;
   transform: scale(1.1);
+}
+
+/* ---- PAGINACIÓN SIEMPRE VISIBLE ---- */
+.dataTables_paginate,
+#centrosTable_paginate {
+  position: static !important;
+  background: transparent !important;
+  padding: 8px 0 0 0 !important;
+  margin-bottom: 0 !important;
+  z-index: 100 !important;
+  text-align: right !important;
 }
 
 /* ----------- CHILD-ROW: LÍNEAS ----------- */
@@ -113,7 +145,7 @@
   outline: none;
 }
 
-/* ----------- MODAL DETALLES CENTRO ----------- */
+/* ---- MODAL DETALLES CENTRO ---- */
 #modalDetallesCentro.modal {
   width: 90% !important;
   max-width: 600px !important;
@@ -158,46 +190,15 @@
   border-radius: 4px;
 }
 
-/* Ocultar sidebar original */
+/* Ocultar sidebar original si lo necesitas */
 #sidebarCentros,
 #toggleSidebar {
   display: none !important;
 }
 
 /* ============================= */
-/* ESTRUCTURA FLEX PARA CONTENIDO */
+/* MAPA Y SHELL MAPA */
 /* ============================= */
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
-.container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-#tabs {
-  flex: none;
-}
-#tab-centros,
-#tab-mapa {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* ============================= */
-/* CONTENEDOR MAPA Y ESTILOS MAPA */
-/* ============================= */
-#mapaSection {
-  flex: 1;
-  position: relative;
-  display: flex;
-  overflow: hidden;
-}
 #mapShell {
   flex: 1;
   position: relative;
@@ -241,78 +242,36 @@ body:has(#mapShell:fullscreen) {
 
 /* ----------- RESPONSIVE ----------- */
 @media (max-width: 900px) {
-  /* tabla y child-row */
-  #centrosTable,
   #centrosTable_wrapper,
-  .child-row-lineas,
-  .child-row-lineas table.striped {
-    min-width: 320px !important;
+  #centrosTable {
+    min-width: 360px !important;
     width: 100vw !important;
     overflow-x: auto !important;
-    display: block;
+    display: block !important;
   }
-  .child-row-lineas th,
-  .child-row-lineas td,
-  .child-table-lineas th,
-  .child-table-lineas td {
-    font-size: 1.04em !important;
-    padding: 0.3rem !important;
-  }
-
-  /* overlay del select */
-  .dropdown-content.select-dropdown {
-    min-width: 95vw !important;
-    left: 2.5vw !important;
-    right: 2.5vw !important;
-    border-radius: 0 !important;
-  }
-
-  /* layout mapa vertical */
-  #mapaSection {
-    flex-direction: column;
-    height: 76vh;
-    min-height: 330px;
-    overflow-x: hidden;
-  }
-  #sidebarCentros {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 97vw !important;
-    max-width: 98vw !important;
-    height: auto;
-    max-height: 270px;
-    border-radius: 0 0 16px 0 !important;
-    box-shadow: 0 10px 44px rgba(0,0,0,0.14);
-    z-index: 22;
-    background: #fff;
-    padding-top: 16px;
-  }
-  #toggleSidebar {
-    position: absolute;
-    left: 14px !important;
-    top: 13px !important;
-    z-index: 23;
-    box-shadow: 0 2px 7px rgba(0,0,0,0.12);
+  .dataTables_paginate,
+  #centrosTable_paginate {
+    text-align: center !important;
   }
   #mapShell {
-    min-height: 240px;
-    height: 56vh;
+    min-height: 220px !important;
+    height: 54vh;
   }
   #map {
-    min-height: 220px;
-    height: 54vh;
+    min-height: 220px !important;
+    height: 52vh !important;
   }
 }
 @media (max-width: 600px) {
   #mapShell,
   #map {
-    min-height: 160px;
+    min-height: 160px !important;
     height: 41vh !important;
     border-radius: 7px;
   }
 }
 
+/* ----------- SIDEBAR ----------- */
 .sidebar-centros {
   position: absolute;
   top: 28px;
@@ -359,26 +318,3 @@ body:has(#mapShell:fullscreen) {
   .sidebar-centros { top:12px; left:12px; width: 92vw; }
   .sidebar-centros.minimized { left:-90vw; width: 35px;}
 }
-
-/* --- ARREGLA CORTE DE TABLA Y PAGINACIÓN --- */
-.dataTables_wrapper {
-  overflow-x: auto !important;
-  min-height: 480px !important;
-  padding-bottom: 50px !important;
-}
-
-#centrosTable_paginate {
-  position: relative !important;
-  z-index: 12;
-  background: white !important;
-  margin-bottom: 18px !important;
-  padding-bottom: 16px !important;
-}
-
-@media (max-width: 1200px) {
-  .dataTables_wrapper {
-    min-height: 540px !important;
-  }
-}
-
-
