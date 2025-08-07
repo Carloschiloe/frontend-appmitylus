@@ -1,4 +1,4 @@
-// mapa.js - gestión completa del mapa y sidebar de centros (sidebar minimalista, filtro extendido + colapsable)
+// js/mapa.js — gestión completa del mapa y filtro flotante
 
 let map;
 let puntosIngresoGroup;
@@ -24,114 +24,88 @@ const baseLayersDefs = {
 
 let currentBaseKey = 'esri';
 
-// Datos globales para sidebar y filtro
+// Datos globales para filtro
 let centrosDataGlobal = [];
 let filtroSidebar = '';
 let selectedCentroIdx = null;
 
 /* =========================
-   SIDEBAR ULTRA MINIMALISTA
+   FILTRO FLOTANTE
    ========================= */
-// Inicializar filtro minimalista y toggle
 export function initSidebarFiltro() {
   const filtroInput = document.getElementById('filtroSidebar');
-  const listaSidebar = document.getElementById('listaCentrosSidebar');
-  const sidebar = document.getElementById('sidebarCentros');
-  const toggleBtn = document.getElementById('toggleSidebar');
-  const icon = document.getElementById('toggleSidebarIcon');
-
-  if (!filtroInput || !listaSidebar || !sidebar || !toggleBtn || !icon) {
-    log('No se encontró filtro, sidebar o icono');
+  if (!filtroInput) {
+    log('No se encontró #filtroSidebar');
     return;
   }
-
-  // Filtro (nombre o proveedor)
+  // Escucha cambios
   filtroInput.addEventListener('input', () => {
     filtroSidebar = filtroInput.value.trim().toLowerCase();
     renderListaSidebar();
   });
-
-  // Toggle para colapsar/expandir sidebar con Material Icons
-  toggleBtn.onclick = () => {
-    sidebar.classList.toggle('minimized');
-
-    // Actualizar clase en body para ayudar a CSS y layout
-    if (sidebar.classList.contains('minimized')) {
-      document.body.classList.add('sidebar-minimized');
-      toggleBtn.title = "Expandir sidebar";
-      icon.textContent = "chevron_right";
-    } else {
-      document.body.classList.remove('sidebar-minimized');
-      toggleBtn.title = "Colapsar sidebar";
-      icon.textContent = "chevron_left";
-    }
-
-    setTimeout(() => {
-      if (map) map.invalidateSize();
-    }, 350);
-  };
-
-  // Refresco inicial
+  // Render inicial
   renderListaSidebar();
 }
 
-// Render lista minimalista en UL (máx 10)
 function renderListaSidebar() {
-  const listaSidebar = document.getElementById('listaCentrosSidebar');
-  if (!listaSidebar) return;
+  const overlay = document.getElementById('mapFilter');
+  if (!overlay) return;
 
+  // Crear o limpiar lista
+  let ul = overlay.querySelector('ul.filter-list');
+  if (!ul) {
+    ul = document.createElement('ul');
+    ul.className = 'filter-list';
+    overlay.appendChild(ul);
+  }
+
+  // Filtrar por proveedor o comuna
   let filtrados = centrosDataGlobal;
-  if (filtroSidebar.length > 0) {
+  if (filtroSidebar) {
     filtrados = centrosDataGlobal.filter(c =>
       (c.proveedor || '').toLowerCase().includes(filtroSidebar) ||
-      (c.name || '').toLowerCase().includes(filtroSidebar)
+      (c.comuna    || '').toLowerCase().includes(filtroSidebar)
     );
   }
   filtrados = filtrados.slice(0, 10);
 
   if (filtrados.length === 0) {
-    listaSidebar.innerHTML = `<li style="color:#888;">Sin coincidencias</li>`;
+    ul.innerHTML = `<li style="color:#888;">Sin coincidencias</li>`;
     return;
   }
 
-  listaSidebar.innerHTML = filtrados.map((c, i) => {
-    // idx real para centrar en el mapa
+  // Generar items
+  ul.innerHTML = filtrados.map(c => {
     const idx = centrosDataGlobal.indexOf(c);
     return `
-      <li data-idx="${idx}" class="${selectedCentroIdx === idx ? 'selected' : ''}" tabindex="0">
-        <b>${c.name}</b>
-        <span class="proveedor">${c.proveedor ? c.proveedor : ''}</span>
+      <li data-idx="${idx}">
+        <b>${c.comuna || '-'}</b><br/>
+        <small>${c.proveedor || ''}</small>
       </li>
     `;
   }).join('');
 
-  // Click y teclado para centrar mapa
-  Array.from(listaSidebar.querySelectorAll('li')).forEach(li => {
+  // Asignar click para centrar
+  ul.querySelectorAll('li[data-idx]').forEach(li => {
     li.onclick = () => {
-      const idx = +li.getAttribute('data-idx');
-      selectedCentroIdx = idx;
+      const idx = +li.dataset.idx;
       focusCentroInMap(idx);
-      renderListaSidebar();
-    };
-    li.onkeydown = e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        const idx = +li.getAttribute('data-idx');
-        selectedCentroIdx = idx;
-        focusCentroInMap(idx);
-        renderListaSidebar();
-      }
     };
   });
 }
 
-// Cargar centros y refrescar mapa + sidebar
+/* =========================
+   CARGA Y RENDERIZACIÓN
+   ========================= */
 export function cargarYRenderizarCentros(centros) {
   centrosDataGlobal = centros;
   drawCentrosInMap(centros);
-  renderListaSidebar();
+  initSidebarFiltro();
 }
 
-// Crear mapa Leaflet
+/* =========================
+   CREACIÓN Y CONFIG MAPA
+   ========================= */
 export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
   if (map) return map;
 
@@ -148,28 +122,13 @@ export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
     zoom: 10,
     layers: [baseLayersDefs.esri]
   });
-  window.__mapLeaflet = map;
-
   puntosIngresoGroup = L.layerGroup().addTo(map);
-  centrosGroup = L.layerGroup().addTo(map);
-
-  // Recalcular tamaño al mostrar tab mapa
-  document.querySelectorAll('a[href="#tab-mapa"]').forEach(a =>
-    a.addEventListener('click', () => {
-      setTimeout(() => map.invalidateSize(), 120);
-      setTimeout(() => map.invalidateSize(), 400);
-    })
-  );
-  if (location.hash === '#tab-mapa') {
-    setTimeout(() => map.invalidateSize(), 150);
-    setTimeout(() => map.invalidateSize(), 450);
-  }
+  centrosGroup      = L.layerGroup().addTo(map);
 
   log('Mapa creado');
   return map;
 }
 
-// Cambiar capa base
 export function setBaseLayer(key) {
   if (!map || !baseLayersDefs[key] || currentBaseKey === key) return;
   map.removeLayer(baseLayersDefs[currentBaseKey]);
@@ -194,115 +153,113 @@ export function redrawPolygon(currentPoints = []) {
     currentPoly = null;
   }
   if (currentPoints.length >= 3) {
-    currentPoly = L.polygon(currentPoints.map(p => [p.lat, p.lng]), { color: 'crimson' })
-      .addTo(puntosIngresoGroup);
+    currentPoly = L.polygon(
+      currentPoints.map(p => [p.lat, p.lng]),
+      { color: 'crimson' }
+    ).addTo(puntosIngresoGroup);
   }
 }
 
-/* ---------- Centros ---------- */
-export function drawCentrosInMap(centros = [], defaultLatLng = [-42.48, -73.77], onPolyClick = null) {
+/* =========================
+   DIBUJAR CENTROS EN MAPA
+   ========================= */
+export function drawCentrosInMap(
+  centros = [],
+  defaultLatLng = [-42.48, -73.77],
+  onPolyClick = null
+) {
   if (!map) crearMapa(defaultLatLng);
-  if (!centrosGroup) return;
-
-  windowCentrosDebug = centros.slice();
   centrosGroup.clearLayers();
   centroPolys = {};
 
-  let dib = 0;
   centros.forEach((c, idx) => {
+    // Convertir coords
     const coords = (c.coords || [])
       .map(p => [parseNum(p.lat), parseNum(p.lng)])
       .filter(([la, ln]) => la !== null && ln !== null);
     if (coords.length < 3) return;
 
-    const hect = +c.hectareas || 0;
-    const cantLineas = Array.isArray(c.lines) ? c.lines.length : 0;
-
-    // ---- Calcular promedios y suma, igual que en tu tabla ----
-    let sumaUnKg = 0, sumaRechazo = 0, sumaRdmto = 0, sumaTons = 0, linesConDatos = 0;
-    if (Array.isArray(c.lines) && c.lines.length > 0) {
+    // Estadísticas
+    let sumaUnKg = 0, sumaRechazo = 0, sumaRdmto = 0, sumaTons = 0;
+    let linesConDatos = 0;
+    if (Array.isArray(c.lines)) {
       c.lines.forEach(l => {
-        if (l.unKg != null && !isNaN(l.unKg)) sumaUnKg += Number(l.unKg);
-        if (l.porcRechazo != null && !isNaN(l.porcRechazo)) sumaRechazo += Number(l.porcRechazo);
-        if (l.rendimiento != null && !isNaN(l.rendimiento)) sumaRdmto += Number(l.rendimiento);
-        if (l.tons != null && !isNaN(l.tons)) sumaTons += Number(l.tons);
+        if (!isNaN(l.unKg)) {
+          sumaUnKg += Number(l.unKg);
+          linesConDatos++;
+        }
+        if (!isNaN(l.porcRechazo)) sumaRechazo += Number(l.porcRechazo);
+        if (!isNaN(l.rendimiento)) sumaRdmto += Number(l.rendimiento);
+        if (!isNaN(l.tons)) sumaTons += Number(l.tons);
       });
-      linesConDatos = c.lines.length;
     }
+    const promUnKg    = linesConDatos ? sumaUnKg / linesConDatos : 0;
+    const promRechazo = linesConDatos ? sumaRechazo / linesConDatos : 0;
+    const promRdmto   = linesConDatos ? sumaRdmto / linesConDatos : 0;
 
-    // Evitar división por cero
-    const promUnKg = linesConDatos ? (sumaUnKg / linesConDatos) : 0;
-    const promRechazo = linesConDatos ? (sumaRechazo / linesConDatos) : 0;
-    const promRdmto = linesConDatos ? (sumaRdmto / linesConDatos) : 0;
-
+    // Popup HTML
     const popupHTML = `
       <div style="min-width:170px;font-size:13px;line-height:1.28">
-        <div style="font-weight:600;margin-bottom:5px;">${c.name}</div>
+        <div style="font-weight:600;margin-bottom:5px;">
+          ${c.comuna || '-'}
+        </div>
         <div><b>Código:</b> ${c.code || '-'}</div>
-        <div><b>Hectáreas:</b> ${hect.toLocaleString('es-CL', {minimumFractionDigits:2,maximumFractionDigits:2})}</div>
-        <div><b>Líneas:</b> ${cantLineas}</div>
-        <div><b>Tons:</b> ${sumaTons.toLocaleString('es-CL', {minimumFractionDigits:0})}</div>
-        <div><b>Un/Kg:</b> ${promUnKg.toLocaleString('es-CL', {maximumFractionDigits:2})}</div>
-        <div><b>% Rechazo:</b> ${promRechazo.toLocaleString('es-CL', {maximumFractionDigits:2})}%</div>
-        <div><b>Rdmto:</b> ${promRdmto.toLocaleString('es-CL', {maximumFractionDigits:2})}%</div>
+        <div><b>Hectáreas:</b> ${(+c.hectareas || 0).toLocaleString('es-CL', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })}</div>
+        <div><b>Líneas:</b> ${c.lines.length}</div>
+        <div><b>Tons:</b> ${sumaTons.toLocaleString('es-CL')}</div>
+        <div><b>Un/Kg:</b> ${promUnKg.toLocaleString('es-CL', {
+          maximumFractionDigits: 2
+        })}</div>
+        <div><b>% Rechazo:</b> ${promRechazo.toLocaleString('es-CL', {
+          maximumFractionDigits: 2
+        })}%</div>
+        <div><b>Rdmto:</b> ${promRdmto.toLocaleString('es-CL', {
+          maximumFractionDigits: 2
+        })}%</div>
       </div>
     `.trim();
 
+    // Dibujar polígono
     const poly = L.polygon(coords, {
       color: '#1976d2',
       weight: 3,
-      fillOpacity: .28
+      fillOpacity: 0.28
     }).addTo(centrosGroup);
 
-    poly._popupHTML = popupHTML;
     poly.bindPopup(popupHTML);
-
-    poly.on('click', (ev) => {
-      if (ev && ev.originalEvent) {
-        ev.originalEvent.stopPropagation?.();
-        L.DomEvent.stopPropagation(ev);
-      }
-      if (poly.isPopupOpen && poly.isPopupOpen()) {
-        poly.closePopup();
-      } else {
-        const pop = poly.getPopup();
-        if (pop && pop.getContent() !== poly._popupHTML) pop.setContent(poly._popupHTML);
-        poly.openPopup(ev.latlng || poly.getBounds().getCenter());
-      }
+    poly.on('click', ev => {
+      L.DomEvent.stopPropagation(ev);
+      poly.openPopup(ev.latlng);
       if (onPolyClick) onPolyClick(idx);
     });
 
     centroPolys[idx] = poly;
-    dib++;
   });
 
-  centrarMapaEnPoligonos(centros, defaultLatLng);
-
-  setTimeout(() => map.invalidateSize(), 60);
-  setTimeout(() => map.invalidateSize(), 300);
-
-  log('Redibujados centros =', dib);
-}
-
-export function centrarMapaEnPoligonos(centros = [], defaultLatLng = [-42.48, -73.77]) {
-  if (!map) return;
-  const all = [];
-  centros.forEach(c => (c.coords || []).forEach(p => {
-    const la = parseNum(p.lat), ln = parseNum(p.lng);
-    if (la !== null && ln !== null) all.push([la, ln]);
-  }));
-  if (all.length) map.fitBounds(all, { padding: [20, 20] });
+  // Centrar vista en todos
+  const allCoords = [];
+  centros.forEach(c =>
+    (c.coords || []).forEach(p => {
+      const la = parseNum(p.lat), ln = parseNum(p.lng);
+      if (la !== null && ln !== null) allCoords.push([la, ln]);
+    })
+  );
+  if (allCoords.length) map.fitBounds(allCoords, { padding: [20, 20] });
   else map.setView(defaultLatLng, 10);
+
+  // Refrescar filtro después de dibujar
+  renderListaSidebar();
 }
 
+/* =========================
+   CENTRAR UN CENTRO
+   ========================= */
 export function focusCentroInMap(idx) {
   const poly = centroPolys[idx];
   if (!poly) return;
   map.fitBounds(poly.getBounds(), { maxZoom: 16 });
-  if (!poly.isPopupOpen || !poly.isPopupOpen()) {
-    poly.openPopup(poly.getBounds().getCenter());
-  }
-  poly.setStyle({ color: '#ff9800', weight: 5 });
-  setTimeout(() => poly.setStyle({ color: '#1976d2', weight: 3 }), 1000);
+  poly.openPopup(poly.getBounds().getCenter());
 }
-
