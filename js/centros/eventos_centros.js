@@ -121,10 +121,10 @@ export function registerTablaCentrosEventos() {
       const modalElem = document.getElementById('centroModal');
       const modal = M.Modal.getInstance(modalElem);
       const els = {
-        formTitle: document.getElementById('formTitle'),
-        inputCentroId: document.getElementById('inputCentroId'),
-        inputName: document.getElementById('inputName'),
-        inputProveedor: document.getElementById('inputProveedor'),
+        formTitle:    document.getElementById('formTitle'),
+        inputCentroId:document.getElementById('inputCentroId'),
+        inputComuna:  document.getElementById('inputComuna'),
+        inputProveedor:document.getElementById('inputProveedor'),
         inputCode: document.getElementById('inputCode'),
         inputHectareas: document.getElementById('inputHectareas'),
         inputLat: document.getElementById('inputLat'),
@@ -326,3 +326,4 @@ export function filtrarLineas(contenedor) {
     fila.style.display = okTxt ? '' : 'none';
   });
 }
+
