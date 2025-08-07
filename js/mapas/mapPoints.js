@@ -1,14 +1,10 @@
 // js/mapas/mapPoints.js
 
-/**
- * Convierte un string a número, o devuelve null si no es válido.
- */
 export const parseNum = v => {
   const n = parseFloat(v);
   return Number.isFinite(n) ? n : null;
 };
 
-// --- Puntos manuales ---
 export function clearMapPoints(puntosIngresoGroup) {
   if (!puntosIngresoGroup) return;
   puntosIngresoGroup.clearLayers();
