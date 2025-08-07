@@ -1,120 +1,123 @@
 // js/mapas/mapDraw.js
-// Dibuja polígonos de centros, popups y centrado
 
-import { crearMapa, centrosGroup } from './mapConfig.js';
-import { setFilterData }            from './mapFilter.js';
-import { parseOneDMS }              from '../core/utilidades.js';
+import { Estado } from '../core/estado.js';
+import { parseNum } from './mapPoints.js';
 
-const parseNum = v => {
-  const n = parseFloat(v);
-  return Number.isFinite(n) ? n : null;
-};
+// Guarda los polígonos por índice para focus
+let centroPolys = {};
 
-function parseCoord(v) {
-  if (typeof v === 'string' && /[NSnsEWew]/.test(v)) {
-    const d = parseOneDMS(v);
-    console.log('[mapDraw] parseCoord DMS →', v, '=>', d);
-    return d;
-  }
-  const n = parseNum(v);
-  console.log('[mapDraw] parseCoord decimal →', v, '=>', n);
-  return n;
-}
-
-export const centroPolys = {};
-
-export function drawCentrosInMap(
-  centros = [],
-  defaultLatLng = [-42.48, -73.77],
-  onPolyClick = null
-) {
+/**
+ * Dibuja todos los centros en el mapa, limpia el grupo previo y ajusta los bounds.
+ * @param {Array} centros – array de objetos centro con coords, lines, etc.
+ * @param {[number,number]} defaultLatLng – centro de fallback si no hay coords válidas.
+ * @param {Function|null} onPolyClick – callback opcional al hacer click en un polígono.
+ */
+export function drawCentrosInMap(centros = [], defaultLatLng = [-42.48, -73.77], onPolyClick = null) {
   console.log('[mapDraw] drawCentrosInMap →', centros.length, 'centros');
-  const map = crearMapa(defaultLatLng);
-  setFilterData(centros);
+  if (!Estado.map) {
+    console.error('[mapDraw] Mapa no inicializado');
+    return;
+  }
+  const group = window.__centrosGroup;
+  if (!group) {
+    console.error('[mapDraw] window.__centrosGroup no existe');
+    return;
+  }
 
-  centrosGroup.clearLayers();
-  Object.keys(centroPolys).forEach(k => delete centroPolys[k]);
+  // Limpiar antes de dibujar
+  group.clearLayers();
+  centroPolys = {};
 
+  let dibujados = 0;
   centros.forEach((c, idx) => {
-    console.log(`[mapDraw] procesando centro[${idx}] →`, c);
-    const coords = (c.coords||[])
-      .map(p => [parseCoord(p.lat), parseCoord(p.lng)])
-      .filter(([la,ln]) => la!==null && ln!==null);
-    console.log(`[mapDraw] centro[${idx}] coords válidas =`, coords.length);
+    // Convertir coords y filtrar inválidas
+    const coords = (c.coords || [])
+      .map(p => [ parseNum(p.lat), parseNum(p.lng) ])
+      .filter(([la, ln]) => la !== null && ln !== null);
     if (coords.length < 3) return;
 
-    let sumaUnKg=0, sumaRech=0, sumaRdm=0, sumaTons=0, count=0;
-    (c.lines||[]).forEach(l => {
-      if (!isNaN(l.unKg)) { sumaUnKg+=Number(l.unKg); count++; }
-      if (!isNaN(l.porcRechazo)) sumaRech+=Number(l.porcRechazo);
-      if (!isNaN(l.rendimiento))  sumaRdm+=Number(l.rendimiento);
-      if (!isNaN(l.tons))         sumaTons+=Number(l.tons);
-    });
-    const promUnKg = count? sumaUnKg/count : 0;
-    const promRech = count? sumaRech/count : 0;
-    const promRdm  = count? sumaRdm/count : 0;
+    // Calcular totales / promedios (igual que en tabla)
+    const hect = +c.hectareas || 0;
+    const cantLines = Array.isArray(c.lines) ? c.lines.length : 0;
+    let sumaUnKg = 0, sumaRech = 0, sumaRend = 0, sumaTons = 0;
+    if (Array.isArray(c.lines)) {
+      c.lines.forEach(l => {
+        if (l.unKg   != null) sumaUnKg   += Number(l.unKg);
+        if (l.porcRechazo != null) sumaRech += Number(l.porcRechazo);
+        if (l.rendimiento != null) sumaRend += Number(l.rendimiento);
+        if (l.tons    != null) sumaTons   += Number(l.tons);
+      });
+    }
+    const promUnKg   = cantLines ? sumaUnKg   / cantLines : 0;
+    const promRech   = cantLines ? sumaRech   / cantLines : 0;
+    const promRend   = cantLines ? sumaRend   / cantLines : 0;
 
+    // HTML del popup
     const popupHTML = `
-      <div style="min-width:170px;font-size:13px;line-height:1.28">
-        <div style="font-weight:600;margin-bottom:5px;">${c.comuna||'-'}</div>
-        <div><b>Código:</b> ${c.code||'-'}</div>
-        <div><b>Hectáreas:</b> ${( +c.hectareas||0 ).toLocaleString('es-CL',{ minimumFractionDigits:2,maximumFractionDigits:2 })}</div>
-        <div><b>Líneas:</b> ${(c.lines||[]).length}</div>
-        <div><b>Tons:</b> ${sumaTons.toLocaleString('es-CL')}</div>
-        <div><b>Un/Kg:</b> ${promUnKg.toLocaleString('es-CL',{maximumFractionDigits:2})}</div>
-        <div><b>% Rechazo:</b> ${promRech.toLocaleString('es-CL',{maximumFractionDigits:2})}%</div>
-        <div><b>Rdmto:</b> ${promRdm.toLocaleString('es-CL',{maximumFractionDigits:2})}%</div>
+      <div style="min-width:170px;font-size:13px;line-height:1.3">
+        <strong>${c.proveedor || '-'}</strong><br/>
+        <em>${c.comuna || ''}</em><br/>
+        <b>Cód:</b> ${c.code || '-'}<br/>
+        <b>Hect:</b> ${hect.toFixed(2)}<br/>
+        <b>Líneas:</b> ${cantLines}<br/>
+        <b>Tons:</b> ${sumaTons.toLocaleString('es-CL')}<br/>
+        <b>Un/Kg:</b> ${promUnKg.toFixed(2)}<br/>
+        <b>% Rechazo:</b> ${promRech.toFixed(1)}%<br/>
+        <b>Rend:</b> ${promRend.toFixed(1)}%
       </div>
     `.trim();
 
-    const poly = L.polygon(coords, { color:'#1976d2', weight:3, fillOpacity:.28 })
-      .addTo(centrosGroup);
-    console.log(`[mapDraw] polígono creado para centro[${idx}]`);
+    // Crear polígono
+    const poly = L.polygon(coords, {
+      color: '#1976d2',
+      weight: 3,
+      fillOpacity: 0.3
+    }).addTo(group);
 
+    poly._popupHTML = popupHTML;
     poly.bindPopup(popupHTML);
+
     poly.on('click', ev => {
       L.DomEvent.stopPropagation(ev);
-      if (poly.isPopupOpen()) {
-        poly.closePopup();
-        console.log(`[mapDraw] popup cerrado [${idx}]`);
-      } else {
-        poly.openPopup(ev.latlng);
-        console.log(`[mapDraw] popup abierto [${idx}]`);
-      }
+      if (poly.isPopupOpen()) poly.closePopup();
+      else poly.openPopup(ev.latlng || poly.getBounds().getCenter());
       if (onPolyClick) onPolyClick(idx);
     });
 
     centroPolys[idx] = poly;
+    dibujados++;
   });
 
-  // Centrar vista
-  const all = [];
-  centros.forEach(c => (c.coords||[]).forEach(p => {
-    const la=parseCoord(p.lat), ln=parseCoord(p.lng);
-    if (la!==null&&ln!==null) all.push([la,ln]);
-  }));
-  if (all.length) {
-    map.fitBounds(all, { padding:[20,20] });
-    console.log('[mapDraw] map.fitBounds con', all.length, 'coords');
+  console.log(`[mapDraw] polígonos dibujados: ${dibujados}`);
+
+  // Ajustar vista a todos los coords
+  const allCoords = [];
+  centros.forEach(c =>
+    (c.coords || []).forEach(p => {
+      const la = parseNum(p.lat), ln = parseNum(p.lng);
+      if (la !== null && ln !== null) allCoords.push([la, ln]);
+    })
+  );
+  if (allCoords.length) {
+    Estado.map.fitBounds(allCoords, { padding: [20, 20] });
   } else {
-    map.setView(defaultLatLng,10);
-    console.log('[mapDraw] fallback map.setView a', defaultLatLng);
+    Estado.map.setView(defaultLatLng, 10);
   }
+
+  // Refrescar tamaño del mapa
+  setTimeout(() => Estado.map.invalidateSize(), 100);
+  setTimeout(() => Estado.map.invalidateSize(), 300);
 }
 
+/**
+ * Centra y resalta un centro en particular.
+ * @param {number} idx – índice del centro.
+ */
 export function focusCentroInMap(idx) {
-  console.log('[mapDraw] focusCentroInMap →', idx);
   const poly = centroPolys[idx];
-  if (!poly) {
-    console.warn('[mapDraw] no existe poly para idx', idx);
-    return;
-  }
-  const map = crearMapa();
-  map.fitBounds(poly.getBounds(), { maxZoom:16 });
-  poly.openPopup(poly.getBounds().getCenter());
-  poly.setStyle({ color:'#ff9800', weight:5 });
-  setTimeout(() => {
-    poly.setStyle({ color:'#1976d2', weight:3 });
-    console.log('[mapDraw] estilo restaurado para idx', idx);
-  }, 1000);
+  if (!poly) return;
+  Estado.map.fitBounds(poly.getBounds(), { maxZoom: 16 });
+  if (!poly.isPopupOpen()) poly.openPopup(poly.getBounds().getCenter());
+  poly.setStyle({ color: '#ff9800', weight: 5 });
+  setTimeout(() => poly.setStyle({ color: '#1976d2', weight: 3 }), 800);
 }
