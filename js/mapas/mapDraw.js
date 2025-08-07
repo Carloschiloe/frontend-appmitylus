@@ -1,6 +1,5 @@
 // js/mapas/mapDraw.js
 
-// NO import L from 'leaflet';  <-- quitado
 import { parseNum } from './mapPoints.js';
 import { defaultLatLng, baseLayersDefs } from './mapConfig.js';
 
@@ -25,9 +24,9 @@ export function crearMapa() {
 
   // Usa el global L que carga tu <script> de Leaflet
   map = L.map(el, {
-    center: defaultLatLng,            // [-42.62, -73.77]
+    center: defaultLatLng,
     zoom: 10,
-    layers: [ baseLayersDefs.esri ]   // ESRI Satellite
+    layers: [baseLayersDefs.esri] // ¡Ahora sí existe!
   });
   window.map = map;
 
@@ -112,4 +111,16 @@ export function drawCentrosInMap(centros = [], onPolyClick = null) {
   if (all.length) map.fitBounds(all, { padding: [20,20] });
 
   console.log(`[mapDraw] Polígonos dibujados: ${dibujados}`);
+}
+
+/**
+ * Centra el mapa y abre el popup del centro correspondiente.
+ */
+export function focusCentroInMap(idx) {
+  if (!map || !centroPolys[idx]) return;
+  const poly = centroPolys[idx];
+  map.fitBounds(poly.getBounds(), { padding: [40,40] });
+  setTimeout(() => {
+    poly.openPopup();
+  }, 300);
 }
