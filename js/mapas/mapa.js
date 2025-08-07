@@ -311,7 +311,7 @@ export {
   clearMapPoints,
   addPointMarker,
   redrawPolygon,
-  drawCentrosInMap,
-  centrarMapaEnPoligonos
+  drawCentrosInMap
 };
+
 
