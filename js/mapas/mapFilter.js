@@ -6,10 +6,6 @@ import { focusCentroInMap } from './mapDraw.js';
 let filtroSidebar = '';
 let selectedCentroIdx = null;
 
-/**
- * Inicializa el filtro y la lista flotante sobre el mapa.
- * Busca en proveedor o comuna y centra el mapa al hacer clic.
- */
 export function initSidebarFiltro() {
   console.log('[mapFilter] initSidebarFiltro');
   const filtroInput    = document.getElementById('filtroSidebar');
@@ -23,13 +19,11 @@ export function initSidebarFiltro() {
     return;
   }
 
-  // Al escribir en el input, actualiza la lista
   filtroInput.addEventListener('input', () => {
     filtroSidebar = filtroInput.value.trim().toLowerCase();
     renderListaSidebar();
   });
 
-  // Toggle para colapsar/expandir sidebar
   toggleBtn.onclick = () => {
     sidebar.classList.toggle('minimized');
     if (sidebar.classList.contains('minimized')) {
@@ -37,21 +31,16 @@ export function initSidebarFiltro() {
     } else {
       icon.textContent = 'chevron_left';
     }
-    // Redibuja el mapa tras la animación
     setTimeout(() => {
-      if (Estado.map && Estado.map.invalidateSize) {
-        Estado.map.invalidateSize();
+      if (window.map && window.map.invalidateSize) {
+        window.map.invalidateSize();
       }
     }, 350);
   };
 
-  // Primer render
   renderListaSidebar();
 }
 
-/**
- * Construye y muestra el listado de hasta 10 centros filtrados.
- */
 function renderListaSidebar() {
   const listaSidebar = document.getElementById('listaCentrosSidebar');
   if (!listaSidebar) return;
@@ -82,7 +71,6 @@ function renderListaSidebar() {
     `.trim();
   }).join('');
 
-  // Click y Enter para centrar el centro en el mapa
   Array.from(listaSidebar.querySelectorAll('li')).forEach(li => {
     li.onclick = () => {
       selectedCentroIdx = +li.dataset.idx;
