@@ -302,16 +302,5 @@ export function focusCentroInMap(idx) {
   setTimeout(() => poly.setStyle({ color: '#1976d2', weight: 3 }), 1000);
 }
 
-// Export para control_mapa.js
-export {
-  initSidebarFiltro,
-  cargarYRenderizarCentros,
-  crearMapa,
-  setBaseLayer,
-  clearMapPoints,
-  addPointMarker,
-  redrawPolygon
-};
-
-
-
+// **NO EXPORTES OTRAS FUNCIONES EN UN BLOQUE FINAL**
+// Ya están exportadas arriba con 'export function ...'
