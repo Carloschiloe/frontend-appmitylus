@@ -1,28 +1,25 @@
 // js/mapas/mapPoints.js
 
-export const parseNum = v => {
-  const n = parseFloat(v);
-  return Number.isFinite(n) ? n : null;
-};
+import { puntosIngresoGroup } from './mapConfig.js';
 
-export function clearMapPoints(puntosIngresoGroup) {
+export function clearMapPoints() {
   if (!puntosIngresoGroup) return;
   puntosIngresoGroup.clearLayers();
 }
 
-export function addPointMarker(lat, lng, puntosIngresoGroup) {
+export function addPointMarker(lat, lng) {
   if (!puntosIngresoGroup) return;
-  L.marker([parseNum(lat), parseNum(lng)]).addTo(puntosIngresoGroup);
+  L.marker([lat, lng]).addTo(puntosIngresoGroup);
 }
 
-export function redrawPolygon(currentPoints = [], puntosIngresoGroup, currentPolyRef) {
-  if (currentPolyRef.poly) {
+export function redrawPolygon(currentPoints = [], currentPolyRef) {
+  if (currentPolyRef?.poly) {
     puntosIngresoGroup.removeLayer(currentPolyRef.poly);
     currentPolyRef.poly = null;
   }
   if (currentPoints.length >= 3) {
     currentPolyRef.poly = L.polygon(
-      currentPoints.map(p => [parseNum(p.lat), parseNum(p.lng)]),
+      currentPoints.map(p => [p.lat, p.lng]),
       { color: 'crimson' }
     ).addTo(puntosIngresoGroup);
   }
