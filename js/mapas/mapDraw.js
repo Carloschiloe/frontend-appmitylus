@@ -1,40 +1,17 @@
 // js/mapas/mapDraw.js
 
 import { parseNum } from './mapPoints.js';
-import { defaultLatLng, baseLayersDefs } from './mapConfig.js';
+import { map, centrosGroup, defaultLatLng, baseLayersDefs, crearMapa } from './mapConfig.js';
 
-let map;
-let puntosIngresoGroup;
-let centrosGroup;
 let currentPolyRef = { poly: null };
 let centroPolys = {};
 
 /**
  * Inicializa el mapa con capa ESRI satélite y centrado en Chiloé.
+ * Solo llama a la función de mapConfig.js
  */
-export function crearMapa() {
-  if (map) return map;
-
-  const el = document.getElementById('map');
-  if (!el) {
-    console.error('[mapDraw] #map no encontrado');
-    return null;
-  }
-  if (el.clientHeight < 50) el.style.minHeight = '400px';
-
-  // Usa el global L que carga tu <script> de Leaflet
-  map = L.map(el, {
-    center: defaultLatLng,
-    zoom: 10,
-    layers: [baseLayersDefs.esri] // ¡Ahora sí existe!
-  });
-  window.map = map;
-
-  puntosIngresoGroup = L.layerGroup().addTo(map);
-  centrosGroup      = L.layerGroup().addTo(map);
-
-  console.log('[mapDraw] Mapa creado con ESRI satélite en', defaultLatLng);
-  return map;
+export function inicializarMapa() {
+  return crearMapa();
 }
 
 /**
@@ -108,7 +85,7 @@ export function drawCentrosInMap(centros = [], onPolyClick = null) {
     const lat = parseNum(p.lat), lng = parseNum(p.lng);
     if (lat !== null && lng !== null) all.push([lat, lng]);
   }));
-  if (all.length) map.fitBounds(all, { padding: [20,20] });
+  if (all.length && map) map.fitBounds(all, { padding: [20,20] });
 
   console.log(`[mapDraw] Polígonos dibujados: ${dibujados}`);
 }
