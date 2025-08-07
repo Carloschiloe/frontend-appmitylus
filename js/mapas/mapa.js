@@ -1,4 +1,4 @@
-// js/mapas/mapa.js - gestión completa del mapa y sidebar de centros (OpenStreetMap only)
+// js/mapas/mapa.js - gestión completa del mapa y sidebar de centros (ahora con Mapbox Satélite)
 
 let map;
 let puntosIngresoGroup;
@@ -15,8 +15,20 @@ const parseNum = v => {
   return Number.isFinite(n) ? n : null;
 };
 
+// ====== AGREGA TU TOKEN MAPBOX AQUI ======
+const MAPBOX_TOKEN = 'pk.eyJ1IjoiY2FybG9zY2hpbG9lIiwiYSI6ImNtZTB3OTZmODA5Mm0ya24zaTQ1bGd3aW4ifQ.XElNIT02jDuetHpo4r_-3g'; // <-- PÉGALO AQUÍ
+
 // Proveedores de mapas (tiles)
 const baseLayersDefs = {
+  mapboxSat: L.tileLayer(
+    `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`,
+    {
+      tileSize: 512,
+      zoomOffset: -1,
+      maxZoom: 19,
+      attribution: 'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>'
+    }
+  ),
   osm: L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
@@ -39,7 +51,8 @@ const baseLayersDefs = {
     }
   )
 };
-let currentBaseKey = 'esri'; // Cambia a 'esri' si quieres testear satélite por defecto
+// ----> Pon aquí el nombre de la base por defecto que quieres
+let currentBaseKey = 'mapboxSat';
 
 
 // Datos globales para sidebar y filtro
@@ -159,7 +172,7 @@ export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
     zoomControl: true,
     center: defaultLatLng,
     zoom: 10,
-    layers: [baseLayersDefs.osm]
+    layers: [baseLayersDefs[currentBaseKey]]
   });
   window.__mapLeaflet = map;
 
@@ -181,7 +194,7 @@ export function crearMapa(defaultLatLng = [-42.48, -73.77]) {
   return map;
 }
 
-// Cambiar capa base (solo OSM)
+// Cambiar capa base
 export function setBaseLayer(key) {
   if (!map || !baseLayersDefs[key] || currentBaseKey === key) return;
   map.removeLayer(baseLayersDefs[currentBaseKey]);
@@ -318,5 +331,3 @@ export function focusCentroInMap(idx) {
 
 // **NO EXPORTES OTRAS FUNCIONES EN UN BLOQUE FINAL**
 // Ya están exportadas arriba con 'export function ...'
-
-
