@@ -28,7 +28,6 @@
     <ul id="tabs" class="tabs">
       <li class="tab col s4"><a class="active" href="#tab-contactos">Contactos</a></li>
       <!-- <li class="tab col s4"><a href="#tab-visitas">Visitas</a></li> -->
-      <!-- Más pestañas a futuro -->
     </ul>
 
     <!-- PESTAÑA: Contactos -->
@@ -36,54 +35,41 @@
       <h5>Contactar Proveedor</h5>
       <!-- Buscador de proveedor -->
       <div class="input-field" style="position:relative;">
-        <input type="text" id="buscarProveedor" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
-        <label for="buscarProveedor">Proveedor</label>
-        <div id="proveedorSugerencias"></div>
+        <input type="text" id="buscadorProveedor" list="datalistProveedores" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
+        <label for="buscadorProveedor">Proveedor</label>
+        <datalist id="datalistProveedores"></datalist>
       </div>
 
-      <!-- Lista de centros del proveedor seleccionado -->
-      <div id="centrosProveedor"></div>
+      <!-- Select de centros del proveedor -->
+      <div class="input-field">
+        <select id="selectCentro" disabled>
+          <option value="" disabled selected>Selecciona un centro</option>
+        </select>
+        <label for="selectCentro">Centro</label>
+      </div>
 
-      <!-- Formulario de contacto (relleno al seleccionar un centro) -->
-      <form id="formContactoProveedor" style="display:none; margin-top:2rem;">
+      <!-- Campos ocultos para IDs y datos seleccionados -->
+      <input type="hidden" id="proveedorId">
+      <input type="hidden" id="proveedorNombre">
+      <input type="hidden" id="centroId">
+      <input type="hidden" id="centroCodigo">
+      <input type="hidden" id="centroComuna">
+      <input type="hidden" id="centroHectareas">
+
+      <!-- Formulario de contacto -->
+      <form id="formContacto" autocomplete="off">
         <div class="row">
           <div class="input-field col s6">
-            <input id="inputProveedor" type="text" readonly>
-            <label for="inputProveedor">Proveedor</label>
+            <select id="resultadoContacto" required>
+              <option value="">Resultado</option>
+              <option value="Disponible">Disponible</option>
+              <option value="No disponible">No disponible</option>
+            </select>
+            <label for="resultadoContacto">Resultado</label>
           </div>
           <div class="input-field col s6">
-            <input id="inputContacto" type="text" required>
-            <label for="inputContacto">Persona Contactada</label>
-          </div>
-        </div>
-        <div class="row">
-          <div class="input-field col s4">
-            <input id="inputCentro" type="text" readonly>
-            <label for="inputCentro">Centro</label>
-          </div>
-          <div class="input-field col s4">
-            <input id="inputComuna" type="text" readonly>
-            <label for="inputComuna">Comuna</label>
-          </div>
-          <div class="input-field col s4">
-            <input id="inputCodigoCentro" type="text" readonly>
-            <label for="inputCodigoCentro">Código Centro</label>
-          </div>
-        </div>
-        <div class="row">
-          <div class="input-field col s6">
-            <input id="inputTelefono" type="text">
-            <label for="inputTelefono">Teléfono</label>
-          </div>
-          <div class="input-field col s6">
-            <input id="inputFechaContacto" type="date" class="datepicker" required>
-            <label for="inputFechaContacto">Fecha Contacto</label>
-          </div>
-        </div>
-        <div class="row">
-          <div class="input-field col s12">
-            <textarea id="inputObservaciones" class="materialize-textarea"></textarea>
-            <label for="inputObservaciones">Observaciones</label>
+            <input id="notasContacto" type="text" placeholder="Notas">
+            <label for="notasContacto">Notas</label>
           </div>
         </div>
         <button class="btn waves-effect teal" type="submit">
@@ -92,11 +78,22 @@
         </button>
       </form>
 
-      <!-- Lista de contactos realizados -->
-      <div id="tablaContactos" style="margin-top:2.5rem;"></div>
+      <!-- Tabla de contactos realizados -->
+      <table id="tablaContactos" class="highlight" style="margin-top:2.5rem;">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Proveedor</th>
+            <th>Código</th>
+            <th>Comuna</th>
+            <th>Hectáreas</th>
+            <th>Resultado</th>
+            <th>Notas</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </section>
-
-    <!-- Aquí puedes agregar más pestañas/sections para nuevas funcionalidades -->
   </div>
 
   <!-- SCRIPTS -->
@@ -104,15 +101,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <!-- Tu JS -->
   <script type="module" src="../../js/abastecimiento/index.js"></script>
-  <!-- Inicializa pestañas de Materialize -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       var elems = document.querySelectorAll('.tabs');
       M.Tabs.init(elems, {});
-      var datepickers = document.querySelectorAll('.datepicker');
-      M.Datepicker.init(datepickers, { format: 'yyyy-mm-dd', autoClose: true });
+      var selects = document.querySelectorAll('select');
+      M.FormSelect.init(selects);
     });
   </script>
 </body>
 </html>
-
