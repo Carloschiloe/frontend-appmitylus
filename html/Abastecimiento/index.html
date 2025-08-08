@@ -30,24 +30,43 @@
     </ul>
 
     <!-- TAB: Contactos -->
-    <div id="tab-contactos" class="col s12">
-      <div id="contactosTabBody"></div>
-    </div>
-    <!-- TAB: Agenda (placeholder por ahora) -->
-    <div id="tab-agenda" class="col s12" style="min-height:300px;">
-      <div class="section">
-        <h5>Agenda</h5>
-        <p>Muy pronto podrás gestionar tu agenda de visitas y llamados desde aquí.</p>
-      </div>
-    </div>
-    <!-- TAB: Gestión (placeholder por ahora) -->
-    <div id="tab-gestion" class="col s12" style="min-height:300px;">
-      <div class="section">
-        <h5>Gestión</h5>
-        <p>En este espacio tendrás métricas y análisis de tus contactos.</p>
-      </div>
-    </div>
+    <section id="tab-contactos" class="col s12" style="display: none;">
+  <h5>Contactar Proveedor</h5>
+  <!-- Buscador de proveedor -->
+  <div class="input-field">
+    <input type="text" id="buscarProveedor" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
+    <label for="buscarProveedor">Proveedor</label>
+    <div id="proveedorSugerencias" class="autocomplete-suggestions"></div>
   </div>
+
+  <!-- Lista de centros del proveedor seleccionado -->
+  <div id="centrosProveedor" style="margin-top: 1rem;"></div>
+
+  <!-- Formulario de contacto (se rellena al seleccionar un centro) -->
+  <form id="formContacto" style="margin-top: 2rem; display: none;">
+    <h6>Registrar contacto</h6>
+    <div class="row">
+      <div class="input-field col s4">
+        <input type="text" id="contactoCodigoCentro" readonly>
+        <label for="contactoCodigoCentro">Código Centro</label>
+      </div>
+      <div class="input-field col s4">
+        <input type="text" id="contactoComunaCentro" readonly>
+        <label for="contactoComunaCentro">Comuna</label>
+      </div>
+      <div class="input-field col s4">
+        <input type="number" id="contactoHectareasCentro" readonly>
+        <label for="contactoHectareasCentro">Hectáreas</label>
+      </div>
+    </div>
+    <div class="input-field">
+      <textarea id="contactoComentario" class="materialize-textarea"></textarea>
+      <label for="contactoComentario">Comentario</label>
+    </div>
+    <button class="btn teal" type="submit">Registrar contacto</button>
+  </form>
+</section>
+
 
   <!-- Materialize JS y tus scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
@@ -69,3 +88,4 @@
   </script>
 </body>
 </html>
+
