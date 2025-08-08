@@ -207,3 +207,8 @@ $(document).on('blur', '.select-wrapper input.select-dropdown', function () {
     $('.editando-select').removeClass('editando-select');
   }, 200);
 });
+
+// para obtener proveedores
+const contactosRouter = require('./routes/contactos');
+app.use('/api/contactos', contactosRouter);
+
