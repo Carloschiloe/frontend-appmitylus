@@ -74,3 +74,25 @@ export async function apiAddInventarioLinea(centroId, lineaId, data) {
   });
   return checkResponse(resp);
 }
+
+// === PROVEEDORES ===
+export async function apiGetProveedores() {
+  const resp = await fetch(`${API_URL}/proveedores`);
+  return checkResponse(resp);
+}
+
+// === CONTACTOS (Abastecimiento) ===
+export async function apiGetContactos() {
+  const resp = await fetch(`${API_URL}/contactos`);
+  return checkResponse(resp);
+}
+export async function apiCreateContacto(data) {
+  const resp = await fetch(`${API_URL}/contactos`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  return checkResponse(resp);
+}
+
+
