@@ -14,16 +14,6 @@ let contactosGuardados = []; // Siempre desde MongoDB
 function $(sel) { return document.querySelector(sel); }
 function $all(sel) { return document.querySelectorAll(sel); }
 
-// ==== CARGA INICIAL ====
-document.addEventListener('DOMContentLoaded', async () => {
-  await cargarProveedores();
-  await cargarCentros();
-  await cargarContactosGuardados();
-  setupBuscadorProveedores();
-  setupFormulario();
-  renderTablaContactos();
-});
-
 // ==== CARGAR DATOS DE API ====
 async function cargarProveedores() {
   try {
@@ -228,3 +218,12 @@ function renderTablaContactos() {
   });
 }
 
+// ==== EXPORTA PARA EL INDEX.JS ====
+export async function initContactosTab() {
+  await cargarProveedores();
+  await cargarCentros();
+  await cargarContactosGuardados();
+  setupBuscadorProveedores();
+  setupFormulario();
+  renderTablaContactos();
+}
