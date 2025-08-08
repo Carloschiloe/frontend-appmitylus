@@ -3,89 +3,115 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Abastecimiento de MMPP - Gestión de Proveedores</title>
-  <!-- Materialize CSS + Iconos + Tu CSS -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
-  <link rel="stylesheet" href="/css/abastecimiento.css" />
+  <title>Abastecimiento de MMPP – Choritos</title>
+
+  <!-- Materialize & Google Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+  <!-- Tu CSS personalizado (ajusta la ruta si es necesario) -->
+  <link rel="stylesheet" href="../../css/abastecimiento.css" />
 </head>
 <body>
   <!-- NAV -->
-  <nav class="teal darken-2">
+  <nav class="teal">
     <div class="nav-wrapper">
       <a href="/index.html" class="btn-flat left" title="Volver">
         <i class="material-icons">arrow_back</i>
       </a>
-      <a href="#" class="brand-logo center">Abastecimiento de Materias Primas</a>
+      <a href="#" class="brand-logo center">Abastecimiento de MMPP</a>
     </div>
   </nav>
 
-  <div class="container" style="margin-top:1.3rem;">
+  <!-- CONTENIDO -->
+  <div class="container" style="margin-top: 1rem;">
     <!-- Pestañas -->
-    <ul id="tabs-abastecimiento" class="tabs">
+    <ul id="tabs" class="tabs">
       <li class="tab col s4"><a class="active" href="#tab-contactos">Contactos</a></li>
-      <!-- Futuras pestañas -->
-      <li class="tab col s4"><a href="#tab-agenda">Agenda</a></li>
-      <li class="tab col s4"><a href="#tab-gestion">Gestión</a></li>
+      <!-- <li class="tab col s4"><a href="#tab-visitas">Visitas</a></li> -->
+      <!-- Más pestañas a futuro -->
     </ul>
 
-    <!-- TAB: Contactos -->
-    <section id="tab-contactos" class="col s12" style="display: none;">
-  <h5>Contactar Proveedor</h5>
-  <!-- Buscador de proveedor -->
-  <div class="input-field">
-    <input type="text" id="buscarProveedor" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
-    <label for="buscarProveedor">Proveedor</label>
-    <div id="proveedorSugerencias" class="autocomplete-suggestions"></div>
+    <!-- PESTAÑA: Contactos -->
+    <section id="tab-contactos" class="col s12">
+      <h5>Contactar Proveedor</h5>
+      <!-- Buscador de proveedor -->
+      <div class="input-field" style="position:relative;">
+        <input type="text" id="buscarProveedor" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
+        <label for="buscarProveedor">Proveedor</label>
+        <div id="proveedorSugerencias"></div>
+      </div>
+
+      <!-- Lista de centros del proveedor seleccionado -->
+      <div id="centrosProveedor"></div>
+
+      <!-- Formulario de contacto (relleno al seleccionar un centro) -->
+      <form id="formContactoProveedor" style="display:none; margin-top:2rem;">
+        <div class="row">
+          <div class="input-field col s6">
+            <input id="inputProveedor" type="text" readonly>
+            <label for="inputProveedor">Proveedor</label>
+          </div>
+          <div class="input-field col s6">
+            <input id="inputContacto" type="text" required>
+            <label for="inputContacto">Persona Contactada</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s4">
+            <input id="inputCentro" type="text" readonly>
+            <label for="inputCentro">Centro</label>
+          </div>
+          <div class="input-field col s4">
+            <input id="inputComuna" type="text" readonly>
+            <label for="inputComuna">Comuna</label>
+          </div>
+          <div class="input-field col s4">
+            <input id="inputCodigoCentro" type="text" readonly>
+            <label for="inputCodigoCentro">Código Centro</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s6">
+            <input id="inputTelefono" type="text">
+            <label for="inputTelefono">Teléfono</label>
+          </div>
+          <div class="input-field col s6">
+            <input id="inputFechaContacto" type="date" class="datepicker" required>
+            <label for="inputFechaContacto">Fecha Contacto</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12">
+            <textarea id="inputObservaciones" class="materialize-textarea"></textarea>
+            <label for="inputObservaciones">Observaciones</label>
+          </div>
+        </div>
+        <button class="btn waves-effect teal" type="submit">
+          <i class="material-icons left">send</i>
+          Guardar Contacto
+        </button>
+      </form>
+
+      <!-- Lista de contactos realizados -->
+      <div id="tablaContactos" style="margin-top:2.5rem;"></div>
+    </section>
+
+    <!-- Aquí puedes agregar más pestañas/sections para nuevas funcionalidades -->
   </div>
 
-  <!-- Lista de centros del proveedor seleccionado -->
-  <div id="centrosProveedor" style="margin-top: 1rem;"></div>
-
-  <!-- Formulario de contacto (se rellena al seleccionar un centro) -->
-  <form id="formContacto" style="margin-top: 2rem; display: none;">
-    <h6>Registrar contacto</h6>
-    <div class="row">
-      <div class="input-field col s4">
-        <input type="text" id="contactoCodigoCentro" readonly>
-        <label for="contactoCodigoCentro">Código Centro</label>
-      </div>
-      <div class="input-field col s4">
-        <input type="text" id="contactoComunaCentro" readonly>
-        <label for="contactoComunaCentro">Comuna</label>
-      </div>
-      <div class="input-field col s4">
-        <input type="number" id="contactoHectareasCentro" readonly>
-        <label for="contactoHectareasCentro">Hectáreas</label>
-      </div>
-    </div>
-    <div class="input-field">
-      <textarea id="contactoComentario" class="materialize-textarea"></textarea>
-      <label for="contactoComentario">Comentario</label>
-    </div>
-    <button class="btn teal" type="submit">Registrar contacto</button>
-  </form>
-</section>
-
-
-  <!-- Materialize JS y tus scripts -->
+  <!-- SCRIPTS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <!-- Modular: Contactos -->
-  <script type="module">
-    import { initContactosTab } from '/js/abastecimiento/contactos/contactos.js';
-
-    document.addEventListener('DOMContentLoaded', function () {
-      // Inicia pestañas Materialize
-      const elTabs = document.querySelectorAll('.tabs');
-      M.Tabs.init(elTabs);
-
-      // Carga la vista de contactos al cargar la página
-      initContactosTab();
-
-      // También la puedes recargar si vuelves a la pestaña:
-      document.querySelector('a[href="#tab-contactos"]').addEventListener('click', initContactosTab);
+  <!-- Tu JS -->
+  <script type="module" src="../../js/abastecimiento/contactos.js"></script>
+  <!-- Inicializa pestañas de Materialize -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('.tabs');
+      M.Tabs.init(elems, {});
+      var datepickers = document.querySelectorAll('.datepicker');
+      M.Datepicker.init(datepickers, { format: 'yyyy-mm-dd', autoClose: true });
     });
   </script>
 </body>
 </html>
-
