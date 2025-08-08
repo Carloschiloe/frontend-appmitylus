@@ -2,9 +2,8 @@
 
 // ==== CONFIG: Endpoints absolutos para el backend Railway ====
 const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
-// const API_PROVEEDORES = `${API_URL}/proveedores`;   // <--- ELIMINADO, YA NO SE USA
-const API_CENTROS     = `${API_URL}/centros`;         // GET: lista de centros (incluye proveedor)
-const API_CONTACTOS   = `${API_URL}/contactos`;       // GET y POST: contactos de abastecimiento
+const API_CENTROS   = `${API_URL}/centros`;    // GET: lista de centros (incluye proveedor)
+const API_CONTACTOS = `${API_URL}/contactos`;  // GET y POST: contactos de abastecimiento
 
 // ==== STATE GLOBAL ====
 let listaProveedores = [];
@@ -24,14 +23,20 @@ async function cargarCentros() {
     const res = await fetch(API_CENTROS);
     if (!res.ok) throw new Error('No se pudo cargar centros');
     listaCentros = await res.json();
-    // EXTRAER proveedores únicos (por nombre, puedes ajustar por id si tienes)
-    listaProveedores = [
-      ...new Map(
-        listaCentros
-          .filter(c => c.proveedor) // solo los que tengan proveedor
-          .map(c => [c.proveedor.toLowerCase().trim(), { nombre: c.proveedor }])
-      ).values()
-    ];
+    // EXTRAER proveedores únicos (por nombre "normalizado" minúsculas, sin espacios extras)
+    const proveedoresUnicos = {};
+    listaCentros.forEach(c => {
+      const nombreOriginal = (c.proveedor || '').trim();
+      const nombreNormalizado = nombreOriginal.toLowerCase().replace(/\s+/g, ' ');
+      if (nombreOriginal && !proveedoresUnicos[nombreNormalizado]) {
+        proveedoresUnicos[nombreNormalizado] = {
+          nombreOriginal,      // "CULTIVOS MARINOS CHANGUE LTDA."
+          nombreNormalizado,   // "cultivos marinos changue ltda."
+        };
+      }
+    });
+    listaProveedores = Object.values(proveedoresUnicos);
+
     console.log('[cargarCentros] Proveedores únicos:', listaProveedores);
     console.log('[cargarCentros] Centros:', listaCentros);
   } catch (e) {
@@ -60,28 +65,29 @@ function setupBuscadorProveedores() {
 
   // Autocompleta proveedores por nombre
   input.addEventListener('input', () => {
-    const val = input.value.toLowerCase().trim();
+    const val = input.value.toLowerCase().replace(/\s+/g, ' ').trim();
     datalist.innerHTML = '';
     if (!val) return;
 
     const filtrados = listaProveedores.filter(p =>
-      (p.nombre || '').toLowerCase().includes(val)
+      p.nombreNormalizado.includes(val)
     );
     filtrados.slice(0, 15).forEach(prov => {
       const opt = document.createElement('option');
-      opt.value = prov.nombre;
+      opt.value = prov.nombreOriginal;
       datalist.appendChild(opt);
     });
   });
 
   // Al seleccionar un proveedor, mostrar sus centros
   input.addEventListener('change', () => {
-    const val = input.value.toLowerCase().trim();
-    const prov = listaProveedores.find(p => (p.nombre || '').toLowerCase() === val);
+    const val = input.value.toLowerCase().replace(/\s+/g, ' ').trim();
+    const prov = listaProveedores.find(p => p.nombreNormalizado === val);
+
     if (prov) {
       mostrarCentrosDeProveedor(prov);
-      $('#proveedorId').value = prov.nombre; // puedes usar un ID si lo tienes
-      $('#proveedorNombre').value = prov.nombre;
+      $('#proveedorId').value = prov.nombreOriginal;
+      $('#proveedorNombre').value = prov.nombreOriginal;
     } else {
       // Limpiar selects y campos si no coincide
       $('#proveedorId').value = '';
@@ -98,19 +104,16 @@ function mostrarCentrosDeProveedor(prov) {
   const select = $('#selectCentro');
   if (!select) return;
 
-  // Agrega aquí el console.log:
-  console.log('[DEBUG] Objeto prov recibido:', prov);
+  // Normaliza ambos para comparación
+  const buscado = (prov.nombreOriginal || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
-  const buscado = (prov.proveedor || prov.nombre || '').trim().toLowerCase();
-
-const centros = listaCentros.filter(c => {
-  const centroProv = (c.proveedor || '').trim().toLowerCase();
-  // Permitir coincidencias parciales
-  const match = centroProv.includes(buscado) || buscado.includes(centroProv);
-  console.log('[DEBUG] centro.proveedor:', centroProv, 'vs', buscado, 'MATCH:', match);
-  return match;
-});
-
+  // Muestra TODOS los centros que coinciden con ese proveedor
+  const centros = listaCentros.filter(c => {
+    const centroProv = (c.proveedor || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const match = centroProv === buscado;
+    console.log('[DEBUG] centro.proveedor:', centroProv, 'vs', buscado, 'MATCH:', match);
+    return match;
+  });
 
   select.innerHTML = '<option value="" disabled selected>Selecciona un centro</option>';
   centros.forEach(centro => {
@@ -124,8 +127,6 @@ const centros = listaCentros.filter(c => {
   select.disabled = centros.length === 0;
   limpiarCamposCentro();
 }
-
-
 
 // ==== LLENAR AUTOMÁTICAMENTE DATOS DEL CENTRO ====
 $('#selectCentro')?.addEventListener('change', function () {
@@ -234,6 +235,5 @@ export async function initContactosTab() {
   setupFormulario();
   renderTablaContactos();
 }
-
 
 
