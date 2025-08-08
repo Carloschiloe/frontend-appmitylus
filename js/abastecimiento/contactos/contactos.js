@@ -103,11 +103,14 @@ function mostrarCentrosDeProveedor(prov) {
 
   const buscado = (prov.proveedor || prov.nombre || '').trim().toLowerCase();
 
-  const centros = listaCentros.filter(c => {
-    const centroProv = (c.proveedor || '').trim().toLowerCase();
-    console.log('[DEBUG] centro.proveedor:', centroProv, 'vs', buscado);
-    return centroProv === buscado;
-  });
+const centros = listaCentros.filter(c => {
+  const centroProv = (c.proveedor || '').trim().toLowerCase();
+  // Permitir coincidencias parciales
+  const match = centroProv.includes(buscado) || buscado.includes(centroProv);
+  console.log('[DEBUG] centro.proveedor:', centroProv, 'vs', buscado, 'MATCH:', match);
+  return match;
+});
+
 
   select.innerHTML = '<option value="" disabled selected>Selecciona un centro</option>';
   centros.forEach(centro => {
@@ -231,5 +234,6 @@ export async function initContactosTab() {
   setupFormulario();
   renderTablaContactos();
 }
+
 
 
