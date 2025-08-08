@@ -1,9 +1,12 @@
 // js/abastecimiento/contactos/contactos.js
 
-// ==== CONFIG: Ajusta estos endpoints a tu backend REST =====
-const API_PROVEEDORES = '/api/proveedores';   // GET: lista de proveedores
-const API_CENTROS     = '/api/centros';       // GET: lista de centros (incluye proveedor)
-const API_CONTACTOS   = '/api/contactos';     // GET y POST: contactos de abastecimiento
+// Importa funciones centralizadas del API
+import { 
+  apiGetProveedores, 
+  apiGetCentros, 
+  apiGetContactos, 
+  apiCreateContacto 
+} from '../../core/api.js';
 
 // ==== STATE GLOBAL ====
 let listaProveedores = [];
@@ -14,12 +17,10 @@ let contactosGuardados = []; // Siempre desde MongoDB
 function $(sel) { return document.querySelector(sel); }
 function $all(sel) { return document.querySelectorAll(sel); }
 
-// ==== CARGAR DATOS DE API ====
+// ==== CARGAR DATOS DE API USANDO api.js ====
 async function cargarProveedores() {
   try {
-    const res = await fetch(API_PROVEEDORES);
-    if (!res.ok) throw new Error('No se pudo cargar proveedores');
-    listaProveedores = await res.json();
+    listaProveedores = await apiGetProveedores();
   } catch (e) {
     alert('Error al cargar proveedores');
     listaProveedores = [];
@@ -28,9 +29,7 @@ async function cargarProveedores() {
 
 async function cargarCentros() {
   try {
-    const res = await fetch(API_CENTROS);
-    if (!res.ok) throw new Error('No se pudo cargar centros');
-    listaCentros = await res.json();
+    listaCentros = await apiGetCentros();
   } catch (e) {
     alert('Error al cargar centros');
     listaCentros = [];
@@ -39,9 +38,7 @@ async function cargarCentros() {
 
 async function cargarContactosGuardados() {
   try {
-    const res = await fetch(API_CONTACTOS);
-    if (!res.ok) throw new Error('No se pudo cargar contactos');
-    contactosGuardados = await res.json();
+    contactosGuardados = await apiGetContactos();
   } catch (e) {
     contactosGuardados = [];
   }
@@ -53,7 +50,6 @@ function setupBuscadorProveedores() {
   const datalist = $('#datalistProveedores');
   if (!input || !datalist) return;
 
-  // Autocompleta proveedores por nombre o apellido
   input.addEventListener('input', () => {
     const val = input.value.toLowerCase().trim();
     datalist.innerHTML = '';
@@ -71,10 +67,8 @@ function setupBuscadorProveedores() {
     });
   });
 
-  // Al seleccionar un proveedor, mostrar sus centros
   input.addEventListener('change', () => {
     const val = input.value.toLowerCase().trim();
-    // Busca el proveedor seleccionado por nombre completo (idealmente con _id)
     const prov = listaProveedores.find(p =>
       ((p.nombre + (p.apellido ? ' ' + p.apellido : '')).toLowerCase() === val)
     );
@@ -83,7 +77,6 @@ function setupBuscadorProveedores() {
       $('#proveedorId').value = prov._id || prov.id;
       $('#proveedorNombre').value = prov.nombre;
     } else {
-      // Limpiar selects y campos si no coincide
       $('#proveedorId').value = '';
       $('#proveedorNombre').value = '';
       limpiarCamposCentro();
@@ -98,11 +91,8 @@ function mostrarCentrosDeProveedor(prov) {
   const select = $('#selectCentro');
   if (!select) return;
 
-  // Filtrar centros asociados por proveedor
   const centros = listaCentros.filter(c => {
-    // Si tienes relación por proveedorId
     if (c.proveedorId && prov._id) return c.proveedorId === prov._id;
-    // Si solo tienes nombre:
     return (c.proveedor || '').toLowerCase() === (prov.nombre || '').toLowerCase();
   });
 
@@ -137,14 +127,13 @@ function limpiarCamposCentro() {
   $('#centroHectareas').value = '';
 }
 
-// ==== GUARDAR CONTACTO EN BACKEND ====
+// ==== GUARDAR CONTACTO EN BACKEND USANDO api.js ====
 function setupFormulario() {
   const form = $('#formContacto');
   if (!form) return;
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
 
-    // Obtener datos
     const proveedorId = $('#proveedorId').value;
     const proveedorNombre = $('#proveedorNombre').value;
     const centroId = $('#centroId').value;
@@ -155,7 +144,6 @@ function setupFormulario() {
     const notas = $('#notasContacto').value;
     const fecha = new Date().toISOString();
 
-    // Validar
     if (!proveedorId || !proveedorNombre || !resultado) {
       alert('Debes seleccionar proveedor, resultado y centro.');
       return;
@@ -174,12 +162,7 @@ function setupFormulario() {
     };
 
     try {
-      const res = await fetch(API_CONTACTOS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(nuevo)
-      });
-      if (!res.ok) throw new Error('No se pudo guardar el contacto');
+      await apiCreateContacto(nuevo);
       await cargarContactosGuardados();
       renderTablaContactos();
       form.reset();
