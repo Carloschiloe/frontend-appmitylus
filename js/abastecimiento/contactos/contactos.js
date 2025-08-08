@@ -1,9 +1,10 @@
 // js/abastecimiento/contactos/contactos.js
 
-import { apiGetCentros } from '../../core/api.js';
-
-// ENDPOINTS (ajusta si tienes helpers para proveedores/contactos)
+// ==== CONFIG: Endpoints absolutos para el backend Railway ====
 const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
+const API_PROVEEDORES = `${API_URL}/proveedores`;   // GET: lista de proveedores
+const API_CENTROS     = `${API_URL}/centros`;       // GET: lista de centros (incluye proveedor)
+const API_CONTACTOS   = `${API_URL}/contactos`;     // GET y POST: contactos de abastecimiento
 
 // ==== STATE GLOBAL ====
 let listaProveedores = [];
@@ -15,10 +16,9 @@ function $(sel) { return document.querySelector(sel); }
 function $all(sel) { return document.querySelectorAll(sel); }
 
 // ==== CARGAR DATOS DE API ====
-// Usa fetch directo para proveedores y contactos (o pon helpers después)
 async function cargarProveedores() {
   try {
-    const res = await fetch(`${API_URL}/proveedores`);
+    const res = await fetch(API_PROVEEDORES);
     if (!res.ok) throw new Error('No se pudo cargar proveedores');
     listaProveedores = await res.json();
   } catch (e) {
@@ -29,8 +29,7 @@ async function cargarProveedores() {
 
 async function cargarCentros() {
   try {
-    // Si tienes helper: listaCentros = await apiGetCentros();
-    const res = await fetch(`${API_URL}/centros`);
+    const res = await fetch(API_CENTROS);
     if (!res.ok) throw new Error('No se pudo cargar centros');
     listaCentros = await res.json();
   } catch (e) {
@@ -41,7 +40,7 @@ async function cargarCentros() {
 
 async function cargarContactosGuardados() {
   try {
-    const res = await fetch(`${API_URL}/contactos`);
+    const res = await fetch(API_CONTACTOS);
     if (!res.ok) throw new Error('No se pudo cargar contactos');
     contactosGuardados = await res.json();
   } catch (e) {
@@ -49,16 +48,18 @@ async function cargarContactosGuardados() {
   }
 }
 
-// ==== BUSCADOR DE PROVEEDORES ====
+// ==== BUSCADOR DE PROVEEDORES (tipo autocompletado) ====
 function setupBuscadorProveedores() {
   const input = $('#buscadorProveedor');
   const datalist = $('#datalistProveedores');
   if (!input || !datalist) return;
 
+  // Autocompleta proveedores por nombre o apellido
   input.addEventListener('input', () => {
     const val = input.value.toLowerCase().trim();
     datalist.innerHTML = '';
     if (!val) return;
+
     const filtrados = listaProveedores.filter(p =>
       (p.nombre || '').toLowerCase().includes(val) ||
       (p.apellido || '').toLowerCase().includes(val)
@@ -71,8 +72,10 @@ function setupBuscadorProveedores() {
     });
   });
 
+  // Al seleccionar un proveedor, mostrar sus centros
   input.addEventListener('change', () => {
     const val = input.value.toLowerCase().trim();
+    // Busca el proveedor seleccionado por nombre completo (idealmente con _id)
     const prov = listaProveedores.find(p =>
       ((p.nombre + (p.apellido ? ' ' + p.apellido : '')).toLowerCase() === val)
     );
@@ -81,6 +84,7 @@ function setupBuscadorProveedores() {
       $('#proveedorId').value = prov._id || prov.id;
       $('#proveedorNombre').value = prov.nombre;
     } else {
+      // Limpiar selects y campos si no coincide
       $('#proveedorId').value = '';
       $('#proveedorNombre').value = '';
       limpiarCamposCentro();
@@ -94,10 +98,15 @@ function setupBuscadorProveedores() {
 function mostrarCentrosDeProveedor(prov) {
   const select = $('#selectCentro');
   if (!select) return;
+
+  // Filtrar centros asociados por proveedor
   const centros = listaCentros.filter(c => {
+    // Si tienes relación por proveedorId
     if (c.proveedorId && prov._id) return c.proveedorId === prov._id;
+    // Si solo tienes nombre:
     return (c.proveedor || '').toLowerCase() === (prov.nombre || '').toLowerCase();
   });
+
   select.innerHTML = '<option value="" disabled selected>Selecciona un centro</option>';
   centros.forEach(centro => {
     const opt = document.createElement('option');
@@ -106,6 +115,7 @@ function mostrarCentrosDeProveedor(prov) {
     opt.dataset.centroInfo = JSON.stringify(centro);
     select.appendChild(opt);
   });
+
   select.disabled = centros.length === 0;
   limpiarCamposCentro();
 }
@@ -134,6 +144,8 @@ function setupFormulario() {
   if (!form) return;
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
+
+    // Obtener datos
     const proveedorId = $('#proveedorId').value;
     const proveedorNombre = $('#proveedorNombre').value;
     const centroId = $('#centroId').value;
@@ -144,6 +156,7 @@ function setupFormulario() {
     const notas = $('#notasContacto').value;
     const fecha = new Date().toISOString();
 
+    // Validar
     if (!proveedorId || !proveedorNombre || !resultado) {
       alert('Debes seleccionar proveedor, resultado y centro.');
       return;
@@ -162,7 +175,7 @@ function setupFormulario() {
     };
 
     try {
-      const res = await fetch(`${API_URL}/contactos`, {
+      const res = await fetch(API_CONTACTOS, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nuevo)
@@ -185,10 +198,12 @@ function renderTablaContactos() {
   const tbody = $('#tablaContactos tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
+
   if (!contactosGuardados.length) {
     tbody.innerHTML = `<tr><td colspan="8" style="color:#888">No hay contactos registrados aún.</td></tr>`;
     return;
   }
+
   contactosGuardados.forEach(contacto => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -204,7 +219,7 @@ function renderTablaContactos() {
   });
 }
 
-// ==== EXPORTA PARA EL INDEX.JS (se llama SOLO una vez) ====
+// ==== EXPORTA PARA EL INDEX.JS ====
 export async function initContactosTab() {
   await cargarProveedores();
   await cargarCentros();
