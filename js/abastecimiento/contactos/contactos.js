@@ -1,12 +1,9 @@
 // js/abastecimiento/contactos/contactos.js
 
-// Importa funciones centralizadas del API
-import { 
-  apiGetProveedores, 
-  apiGetCentros, 
-  apiGetContactos, 
-  apiCreateContacto 
-} from '../../core/api.js';
+const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
+const API_PROVEEDORES = `${API_URL}/proveedores`;
+const API_CENTROS     = `${API_URL}/centros`;
+const API_CONTACTOS   = `${API_URL}/contactos`;
 
 // ==== STATE GLOBAL ====
 let listaProveedores = [];
@@ -17,10 +14,12 @@ let contactosGuardados = []; // Siempre desde MongoDB
 function $(sel) { return document.querySelector(sel); }
 function $all(sel) { return document.querySelectorAll(sel); }
 
-// ==== CARGAR DATOS DE API USANDO api.js ====
+// ==== CARGAR DATOS DE API ====
 async function cargarProveedores() {
   try {
-    listaProveedores = await apiGetProveedores();
+    const res = await fetch(API_PROVEEDORES);
+    if (!res.ok) throw new Error('No se pudo cargar proveedores');
+    listaProveedores = await res.json();
   } catch (e) {
     alert('Error al cargar proveedores');
     listaProveedores = [];
@@ -29,7 +28,9 @@ async function cargarProveedores() {
 
 async function cargarCentros() {
   try {
-    listaCentros = await apiGetCentros();
+    const res = await fetch(API_CENTROS);
+    if (!res.ok) throw new Error('No se pudo cargar centros');
+    listaCentros = await res.json();
   } catch (e) {
     alert('Error al cargar centros');
     listaCentros = [];
@@ -38,7 +39,9 @@ async function cargarCentros() {
 
 async function cargarContactosGuardados() {
   try {
-    contactosGuardados = await apiGetContactos();
+    const res = await fetch(API_CONTACTOS);
+    if (!res.ok) throw new Error('No se pudo cargar contactos');
+    contactosGuardados = await res.json();
   } catch (e) {
     contactosGuardados = [];
   }
@@ -50,6 +53,7 @@ function setupBuscadorProveedores() {
   const datalist = $('#datalistProveedores');
   if (!input || !datalist) return;
 
+  // Autocompleta proveedores por nombre o apellido
   input.addEventListener('input', () => {
     const val = input.value.toLowerCase().trim();
     datalist.innerHTML = '';
@@ -67,6 +71,7 @@ function setupBuscadorProveedores() {
     });
   });
 
+  // Al seleccionar un proveedor, mostrar sus centros
   input.addEventListener('change', () => {
     const val = input.value.toLowerCase().trim();
     const prov = listaProveedores.find(p =>
@@ -91,8 +96,11 @@ function mostrarCentrosDeProveedor(prov) {
   const select = $('#selectCentro');
   if (!select) return;
 
+  // Filtrar centros asociados por proveedor
   const centros = listaCentros.filter(c => {
+    // Si tienes relación por proveedorId
     if (c.proveedorId && prov._id) return c.proveedorId === prov._id;
+    // Si solo tienes nombre:
     return (c.proveedor || '').toLowerCase() === (prov.nombre || '').toLowerCase();
   });
 
@@ -127,13 +135,14 @@ function limpiarCamposCentro() {
   $('#centroHectareas').value = '';
 }
 
-// ==== GUARDAR CONTACTO EN BACKEND USANDO api.js ====
+// ==== GUARDAR CONTACTO EN BACKEND ====
 function setupFormulario() {
   const form = $('#formContacto');
   if (!form) return;
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
 
+    // Obtener datos
     const proveedorId = $('#proveedorId').value;
     const proveedorNombre = $('#proveedorNombre').value;
     const centroId = $('#centroId').value;
@@ -144,6 +153,7 @@ function setupFormulario() {
     const notas = $('#notasContacto').value;
     const fecha = new Date().toISOString();
 
+    // Validar
     if (!proveedorId || !proveedorNombre || !resultado) {
       alert('Debes seleccionar proveedor, resultado y centro.');
       return;
@@ -162,7 +172,12 @@ function setupFormulario() {
     };
 
     try {
-      await apiCreateContacto(nuevo);
+      const res = await fetch(API_CONTACTOS, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nuevo)
+      });
+      if (!res.ok) throw new Error('No se pudo guardar el contacto');
       await cargarContactosGuardados();
       renderTablaContactos();
       form.reset();
