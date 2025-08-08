@@ -98,10 +98,12 @@ function mostrarCentrosDeProveedor(prov) {
   const select = $('#selectCentro');
   if (!select) return;
 
-  // Filtrar centros asociados por proveedor
-  const centros = listaCentros.filter(c =>
-    (c.proveedor || '').toLowerCase() === (prov.nombre || '').toLowerCase()
-  );
+  // Filtrar centros asociados por proveedor (usando solo el nombre)
+  const centros = listaCentros.filter(c => {
+    // DEBUG: para ver qué valores compara
+    console.log('[DEBUG] Comparando centro.proveedor:', c.proveedor, 'vs', prov.nombre);
+    return (c.proveedor || '').trim().toLowerCase() === (prov.nombre || '').trim().toLowerCase();
+  });
 
   select.innerHTML = '<option value="" disabled selected>Selecciona un centro</option>';
   centros.forEach(centro => {
@@ -115,6 +117,7 @@ function mostrarCentrosDeProveedor(prov) {
   select.disabled = centros.length === 0;
   limpiarCamposCentro();
 }
+
 
 // ==== LLENAR AUTOMÁTICAMENTE DATOS DEL CENTRO ====
 $('#selectCentro')?.addEventListener('change', function () {
@@ -223,3 +226,4 @@ export async function initContactosTab() {
   setupFormulario();
   renderTablaContactos();
 }
+
