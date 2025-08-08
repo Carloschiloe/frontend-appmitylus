@@ -26,6 +26,7 @@ import { tabMapaActiva } from './core/utilidades_app.js';
 import { parseOneDMS } from './core/utilidades.js';
 import { renderImportadorCentros } from './centros/importar_centros.js';
 
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Inicializar importador de centros
   renderImportadorCentros('importarCentrosContainer');
@@ -207,8 +208,4 @@ $(document).on('blur', '.select-wrapper input.select-dropdown', function () {
     $('.editando-select').removeClass('editando-select');
   }, 200);
 });
-
-// para obtener proveedores
-const contactosRouter = require('./routes/contactos');
-app.use('/api/contactos', contactosRouter);
 
