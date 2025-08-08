@@ -2,208 +2,56 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Abastecimiento de MMPP · Choritos</title>
-  <!-- Materialize CSS -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Abastecimiento MMPP - Gestión de Proveedores</title>
+  <!-- CSS externos y tus estilos -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
-  <!-- CSS personalizado -->
-  <link rel="stylesheet" href="../../css/abastecimiento.css"/>
+  <link rel="stylesheet" href="../../css/abastecimiento.css" />
 </head>
 <body>
-  <!-- HEADER NAVBAR CONSISTENTE -->
+  <!-- NAV -->
   <nav class="teal">
     <div class="nav-wrapper">
-      <a href="../../index.html" class="brand-logo" style="display: flex; align-items: center; height: 100%; padding-left: 14px;">
-        <i class="material-icons left">arrow_back</i>
-        <span style="font-size:1.4rem;vertical-align:middle;">Abastecimiento de MMPP</span>
+      <a href="/index.html" class="btn-flat left" title="Volver">
+        <i class="material-icons">arrow_back</i>
       </a>
+      <a href="#" class="brand-logo center">Abastecimiento MMPP</a>
     </div>
   </nav>
-  <div class="header-abast-sub">
-    Gestión de compras, visitas, muestreo y reportes para abastecimiento de choritos en planta.
+
+  <div class="container" style="margin-top: 1rem;">
+    <!-- Pestañas -->
+    <ul id="tabs" class="tabs">
+      <li class="tab col s4"><a class="active" href="#tab-contactos">Contactos</a></li>
+      <li class="tab col s4"><a href="#tab-visitas">Visitas</a></li>
+      <li class="tab col s4"><a href="#tab-gestion">Gestión</a></li>
+    </ul>
+
+    <!-- PESTAÑA CONTACTOS -->
+    <section id="tab-contactos" class="col s12">
+      <!-- Aquí irá la tabla de proveedores contactados -->
+      <div id="contactosContenido">
+        <!-- (Dejamos esto para el siguiente paso) -->
+      </div>
+    </section>
+
+    <!-- PESTAÑA VISITAS (para el futuro, deja un placeholder) -->
+    <section id="tab-visitas" class="col s12" style="display:none;">
+      <div class="center grey-text" style="margin-top:2rem;">Próximamente gestión de visitas...</div>
+    </section>
+
+    <!-- PESTAÑA GESTIÓN (para el futuro, placeholder) -->
+    <section id="tab-gestion" class="col s12" style="display:none;">
+      <div class="center grey-text" style="margin-top:2rem;">Próximamente gestión de operaciones...</div>
+    </section>
   </div>
 
-  <div class="container" style="max-width:1040px;">
-
-    <!-- Mini dashboard -->
-    <div class="mini-dashboard">
-      <div class="mini-card">
-        <div class="mini-card-title">Meta Semanal</div>
-        <div class="mini-card-value" id="meta-semanal">--</div>
-        <div class="mini-card-footer">toneladas</div>
-      </div>
-      <div class="mini-card">
-        <div class="mini-card-title">Avance</div>
-        <div class="mini-card-value" id="avance-semanal">--</div>
-        <div class="mini-card-footer">toneladas</div>
-      </div>
-      <div class="mini-card">
-        <div class="mini-card-title">% Cumplimiento</div>
-        <div class="mini-card-value" id="cumplimiento-semanal">--%</div>
-      </div>
-      <div class="mini-card">
-        <div class="mini-card-title">Alertas</div>
-        <div class="mini-card-value" id="alertas-cantidad">0</div>
-        <div class="mini-card-footer" id="alertas-mensaje"></div>
-      </div>
-    </div>
-
-    <!-- Botones de acción rápida -->
-    <div class="quick-actions">
-      <a href="#" class="btn waves-effect teal darken-2">
-        <i class="material-icons left">event</i>
-        Programar Abastecimiento
-      </a>
-      <a href="#form-registro-visita" class="btn waves-effect teal lighten-1">
-        <i class="material-icons left">add_location</i>
-        Registrar Visita / Muestreo
-      </a>
-      <a href="#" class="btn waves-effect teal">
-        <i class="material-icons left">assignment</i>
-        Ver Reportes
-      </a>
-    </div>
-
-    <!-- FORMULARIO DE REGISTRO DE VISITA / MUESTREO -->
-    <div class="section-title" style="margin-top: 32px;">
-      <i class="material-icons tiny" style="vertical-align:middle;">playlist_add_check</i>
-      Registrar Visita / Muestreo
-    </div>
-    <div class="card">
-      <div class="card-content">
-        <form id="form-registro-visita" enctype="multipart/form-data" autocomplete="off">
-          <div class="row">
-            <div class="input-field col s12 m6">
-              <input type="text" id="proveedor" name="proveedor" required>
-              <label for="proveedor">Proveedor / Productor</label>
-            </div>
-            <div class="input-field col s12 m6">
-              <input type="date" id="fecha" name="fecha" required>
-              <label for="fecha" class="active">Fecha</label>
-            </div>
-          </div>
-          <div class="row">
-            <div class="input-field col s12 m6">
-              <select id="tipo_visita" name="tipo_visita" required>
-                <option value="" disabled selected>Seleccione</option>
-                <option value="visita">Visita</option>
-                <option value="muestreo">Muestreo</option>
-                <option value="compra">Compra</option>
-              </select>
-              <label for="tipo_visita">Tipo de visita</label>
-            </div>
-            <div class="input-field col s12 m6">
-              <input type="text" id="calidad" name="calidad">
-              <label for="calidad">Calidad observada</label>
-            </div>
-          </div>
-          <div class="row">
-            <div class="input-field col s12 m4">
-              <input type="number" id="unidades_kilo" name="unidades_kilo" min="0">
-              <label for="unidades_kilo">Unidades por kilo</label>
-            </div>
-            <div class="input-field col s12 m4">
-              <input type="number" id="rechazo" name="rechazo" min="0" max="100" step="0.01">
-              <label for="rechazo">% Rechazo</label>
-            </div>
-            <div class="input-field col s12 m4">
-              <input type="number" id="toneladas" name="toneladas" min="0" step="0.01">
-              <label for="toneladas">Toneladas involucradas</label>
-            </div>
-          </div>
-          <div class="row">
-            <div class="input-field col s12">
-              <textarea id="observaciones" name="observaciones" class="materialize-textarea"></textarea>
-              <label for="observaciones">Observaciones</label>
-            </div>
-          </div>
-          <div class="row">
-            <div class="file-field input-field col s12">
-              <div class="btn teal">
-                <span><i class="material-icons left">attach_file</i>Adjuntar foto(s)</span>
-                <input type="file" id="fotos" name="fotos" accept="image/*" multiple>
-              </div>
-              <div class="file-path-wrapper">
-                <input class="file-path validate" type="text" placeholder="Subir una o más fotos">
-              </div>
-            </div>
-          </div>
-          <div class="row" style="margin-bottom: 0;">
-            <div class="col s12 m6">
-              <button type="submit" class="btn teal darken-2 waves-effect waves-light">
-                <i class="material-icons left">check_circle</i>
-                Guardar registro
-              </button>
-            </div>
-            <div class="col s12 m6 right-align">
-              <button type="reset" class="btn-flat waves-effect">
-                <i class="material-icons left">clear</i>
-                Limpiar
-              </button>
-            </div>
-          </div>
-        </form>
-        <div id="msg-registro-visita" style="margin-top:12px;color:#388e3c;font-weight:500;display:none;">
-          Registro guardado correctamente.
-        </div>
-      </div>
-    </div>
-
-    <!-- Programa de abastecimiento -->
-    <div class="section-title">
-      <i class="material-icons tiny" style="vertical-align:middle;">event</i>
-      Programa Semanal / Mensual
-    </div>
-    <div class="card">
-      <div class="card-content" id="programa-abastecimiento">
-        <span class="section-placeholder">Aquí se mostrará el calendario/programa de abastecimiento...</span>
-      </div>
-    </div>
-
-    <!-- Visitas y compras recientes -->
-    <div class="section-title">
-      <i class="material-icons tiny" style="vertical-align:middle;">history</i>
-      Visitas y Compras Recientes
-    </div>
-    <div class="card">
-      <div class="card-content" id="tabla-visitas">
-        <span class="section-placeholder">Aquí aparecerán las visitas, muestreos y compras recientes...</span>
-      </div>
-    </div>
-
-    <!-- Reportes recientes -->
-    <div class="section-title">
-      <i class="material-icons tiny" style="vertical-align:middle;">assignment</i>
-      Reportes Recientes
-    </div>
-    <div class="card">
-      <div class="card-content" id="tabla-reportes">
-        <span class="section-placeholder">Aquí podrás ver y descargar los últimos reportes enviados a planta o gerencia...</span>
-      </div>
-    </div>
-
-    <div class="footer-mini">
-      v0.1 · Gestión de Abastecimiento Choritos · <a href="../../home.html">Volver al Home</a>
-    </div>
-  </div>
+  <!-- JS de terceros -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var selects = document.querySelectorAll('select');
-      M.FormSelect.init(selects);
 
-      var form = document.getElementById('form-registro-visita');
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        document.getElementById('msg-registro-visita').style.display = 'block';
-        setTimeout(() => {
-          document.getElementById('msg-registro-visita').style.display = 'none';
-          form.reset();
-          M.updateTextFields();
-        }, 2200);
-      });
-    });
-  </script>
+  <!-- Tu JS principal para esta vista -->
+  <script type="module" src="../../js/abastecimiento/index.js"></script>
 </body>
 </html>
