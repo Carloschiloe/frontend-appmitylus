@@ -8,7 +8,6 @@
   <!-- Materialize & Google Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-  <!-- Tu CSS personalizado (ajusta la ruta si es necesario) -->
   <link rel="stylesheet" href="../../css/abastecimiento.css" />
 </head>
 <body>
@@ -27,12 +26,12 @@
     <!-- Pestañas -->
     <ul id="tabs" class="tabs">
       <li class="tab col s4"><a class="active" href="#tab-contactos">Contactos</a></li>
-      <!-- <li class="tab col s4"><a href="#tab-visitas">Visitas</a></li> -->
     </ul>
 
     <!-- PESTAÑA: Contactos -->
     <section id="tab-contactos" class="col s12">
       <h5>Contactar Proveedor</h5>
+
       <!-- Buscador de proveedor -->
       <div class="input-field" style="position:relative;">
         <input type="text" id="buscadorProveedor" list="datalistProveedores" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
@@ -43,12 +42,12 @@
       <!-- Select de centros del proveedor -->
       <div class="input-field">
         <select id="selectCentro" disabled>
-          <option value="" disabled selected>Selecciona un centro</option>
+          <option value="" disabled selected>Selecciona un centro (opcional)</option>
         </select>
         <label for="selectCentro">Centro</label>
       </div>
 
-      <!-- Campos ocultos para IDs y datos seleccionados -->
+      <!-- Campos ocultos -->
       <input type="hidden" id="proveedorId">
       <input type="hidden" id="proveedorNombre">
       <input type="hidden" id="centroId">
@@ -59,19 +58,40 @@
       <!-- Formulario de contacto -->
       <form id="formContacto" autocomplete="off">
         <div class="row">
-          <div class="input-field col s6">
-            <select id="resultadoContacto" required>
-              <option value="">Resultado</option>
-              <option value="Disponible">Disponible</option>
-              <option value="No disponible">No disponible</option>
+          <div class="input-field col s4">
+            <select id="tieneMMPP" required>
+              <option value="">¿Tiene MMPP disponible?</option>
+              <option value="Sí">Sí</option>
+              <option value="No">No</option>
             </select>
-            <label for="resultadoContacto">Resultado</label>
+            <label for="tieneMMPP">Disponibilidad</label>
+          </div>
+          <div class="input-field col s4">
+            <input id="fechaDisponibilidad" type="date">
+            <label for="fechaDisponibilidad" class="active">Fecha de disponibilidad</label>
+          </div>
+          <div class="input-field col s4">
+            <select id="dispuestoVender">
+              <option value="">¿Dispuesto a vender?</option>
+              <option value="Sí">Sí</option>
+              <option value="No">No</option>
+              <option value="Por confirmar">Por confirmar</option>
+            </select>
+            <label for="dispuestoVender">Disposición</label>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="input-field col s6">
+            <input id="vendeActualmenteA" type="text" placeholder="Ej: Camanchaca, Orizon...">
+            <label for="vendeActualmenteA">Vende actualmente a</label>
           </div>
           <div class="input-field col s6">
-            <input id="notasContacto" type="text" placeholder="Notas">
+            <input id="notasContacto" type="text" placeholder="Notas u observaciones">
             <label for="notasContacto">Notas</label>
           </div>
         </div>
+
         <button class="btn waves-effect teal" type="submit">
           <i class="material-icons left">send</i>
           Guardar Contacto
@@ -84,10 +104,11 @@
           <tr>
             <th>Fecha</th>
             <th>Proveedor</th>
-            <th>Código</th>
-            <th>Comuna</th>
-            <th>Hectáreas</th>
-            <th>Resultado</th>
+            <th>Centro</th>
+            <th>Disponibilidad</th>
+            <th>Fecha Disp.</th>
+            <th>Disposición</th>
+            <th>Vende a</th>
             <th>Notas</th>
           </tr>
         </thead>
@@ -99,14 +120,11 @@
   <!-- SCRIPTS -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <!-- Tu JS -->
   <script type="module" src="../../js/abastecimiento/index.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      var elems = document.querySelectorAll('.tabs');
-      M.Tabs.init(elems, {});
-      var selects = document.querySelectorAll('select');
-      M.FormSelect.init(selects);
+      M.Tabs.init(document.querySelectorAll('.tabs'), {});
+      M.FormSelect.init(document.querySelectorAll('select'));
     });
   </script>
 </body>
