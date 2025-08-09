@@ -22,6 +22,29 @@ const slug = (s) =>
     .replace(/^-+|-+$/g, '')
     .replace(/-+/g, '-');
 
+// Helpers tolerantes a IDs antiguos/nuevos
+function setVal(ids, value='') {
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el) { el.value = value ?? ''; return el; }
+  }
+  // Si no existe, lo creo oculto para no fallar
+  const id = ids[0];
+  const hidden = document.createElement('input');
+  hidden.type = 'hidden';
+  hidden.id = id;
+  hidden.value = value ?? '';
+  document.body.appendChild(hidden);
+  return hidden;
+}
+function getVal(ids) {
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el) return el.value;
+  }
+  return '';
+}
+
 // ==== CARGA DESDE API ====
 async function cargarCentros() {
   try {
@@ -87,16 +110,16 @@ function setupBuscadorProveedores() {
     // Encuentra proveedor por nombre normalizado
     const prov = listaProveedores.find(p => p.nombreNormalizado === valNorm);
     if (prov) {
-      // Set ocultos
-      $('#proveedorKey').value = prov.proveedorKey;     // ← clave estable
-      $('#proveedorNombre').value = prov.nombreOriginal;
+      // Set ocultos (acepta proveedorKey o proveedorId)
+      setVal(['proveedorKey','proveedorId'], prov.proveedorKey);
+      setVal(['proveedorNombre'], prov.nombreOriginal);
 
       // Carga centros del proveedor
       mostrarCentrosDeProveedor(prov.proveedorKey);
     } else {
       // Limpia si no coincide
-      $('#proveedorKey').value = '';
-      $('#proveedorNombre').value = '';
+      setVal(['proveedorKey','proveedorId'], '');
+      setVal(['proveedorNombre'], '');
       resetSelectCentros();
     }
   });
@@ -129,17 +152,16 @@ function mostrarCentrosDeProveedor(proveedorKey) {
   M.FormSelect.init(select);
 
   // Limpia ocultos de centro
-  $('#centroId').value = '';
-  $('#centroCode').value = '';
+  setVal(['centroId'], '');
+  setVal(['centroCode','centroCodigo'], '');
 
   // on change: set ocultos
   select.onchange = () => {
     const opt = select.options[select.selectedIndex];
-    $('#centroId').value   = opt.value || '';
-    $('#centroCode').value = opt.dataset.code || '';
-    // si quieres, también puedes mantener comuna/hectáreas ocultos
-    $('#centroComuna').value    = opt.dataset.comuna || '';
-    $('#centroHectareas').value = opt.dataset.hect || '';
+    setVal(['centroId'], opt.value || '');
+    setVal(['centroCode','centroCodigo'], opt.dataset.code || '');
+    setVal(['centroComuna'], opt.dataset.comuna || '');
+    setVal(['centroHectareas'], opt.dataset.hect || '');
   };
 }
 
@@ -152,10 +174,10 @@ function resetSelectCentros(){
   if (inst) inst.destroy();
   M.FormSelect.init(select);
 
-  $('#centroId').value = '';
-  $('#centroCode').value = '';
-  $('#centroComuna').value = '';
-  $('#centroHectareas').value = '';
+  setVal(['centroId'], '');
+  setVal(['centroCode','centroCodigo'], '');
+  setVal(['centroComuna'], '');
+  setVal(['centroHectareas'], '');
 }
 
 // ==== FORMULARIO: GUARDAR CONTACTO ====
@@ -166,8 +188,8 @@ function setupFormulario() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const proveedorKey    = $('#proveedorKey').value.trim();
-    const proveedorNombre = $('#proveedorNombre').value.trim();
+    const proveedorKey    = getVal(['proveedorKey','proveedorId']).trim(); // soporta ambos
+    const proveedorNombre = getVal(['proveedorNombre']).trim();
 
     if (!proveedorKey || !proveedorNombre) {
       M.toast?.({ html: 'Selecciona un proveedor válido', displayLength: 2500 });
@@ -183,10 +205,10 @@ function setupFormulario() {
     const notas               = $('#notasContacto').value.trim();
 
     // Centro (opcional)
-    const centroId    = $('#centroId').value || null;
-    const _centroCode = $('#centroCode').value || null; // oculto en HTML
+    const centroId    = getVal(['centroId']) || null;
+    const _centroCode = getVal(['centroCode','centroCodigo']) || null;
 
-    // Tu backend espera `resultado` obligatorio. Lo derivamos de tieneMMPP.
+    // Tu backend pide "resultado" obligatorio (compat)
     const resultado =
       tieneMMPP === 'Sí' ? 'Disponible' :
       tieneMMPP === 'No' ? 'No disponible' : '';
@@ -196,18 +218,17 @@ function setupFormulario() {
       return;
     }
 
-    // Payload al backend
+    // Payload al backend (usa centroCodigo con “g”)
     const payload = {
       proveedorKey,
       proveedorNombre,
-      resultado,                 // requerido por backend
+      resultado,
       tieneMMPP,
       fechaDisponibilidad,
       dispuestoVender,
       vendeActualmenteA,
       notas,
       centroId,
-      // Backend usa "centroCodigo" (con g):
       centroCodigo: _centroCode || null
     };
 
@@ -217,7 +238,7 @@ function setupFormulario() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error(`POST /contactos -> ${res.status}`);
+      if (!res.ok) throw new Error(`POST /contactos -> ${res.status} ${await res.text()}`);
       // recarga tabla
       await cargarContactosGuardados();
       renderTablaContactos();
@@ -231,7 +252,7 @@ function setupFormulario() {
         if (inst) inst.destroy();
         M.FormSelect.init(sel);
       });
-      // Mantener proveedor y centros seleccionados (no limpiar arriba)
+      // Mantener selección de proveedor/centro si no cambias el proveedor
     } catch (err) {
       console.error('guardarContacto error:', err);
       M.toast?.({ html: 'Error al guardar contacto', displayLength: 2500 });
@@ -253,7 +274,7 @@ function renderTablaContactos() {
   tbody.innerHTML = '';
 
   contactosGuardados
-    .slice() // copia
+    .slice()
     .sort((a, b) => new Date(b.createdAt || b.fecha || 0) - new Date(a.createdAt || a.fecha || 0))
     .forEach(c => {
       const f = new Date(c.createdAt || c.fecha || Date.now());
