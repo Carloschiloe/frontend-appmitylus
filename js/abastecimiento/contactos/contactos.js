@@ -10,6 +10,7 @@ let listaProveedores = [];
 let listaCentros = [];
 let contactosGuardados = [];
 let dt = null;
+let editId = null; // ← si no es null, estamos editando ese _id
 
 // ==== UTILS ====
 const $  = (sel) => document.querySelector(sel);
@@ -102,25 +103,35 @@ function setupBuscadorProveedores() {
 }
 
 // ==== CENTROS ====
-function mostrarCentrosDeProveedor(proveedorKey) {
+function mostrarCentrosDeProveedor(proveedorKey, preselectCentroId = null) {
   const select = $('#selectCentro'); if (!select) return;
   const centros = listaCentros.filter(c => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor||'')) === proveedorKey);
 
-  let html = `<option value="" selected>Sin centro (solo contacto al proveedor)</option>`;
-  html += centros.map(c => `<option value="${c._id || c.id}" data-code="${c.code || ''}" data-comuna="${c.comuna || ''}" data-hect="${c.hectareas ?? ''}">
-    ${c.code || ''} – ${c.comuna || 's/comuna'} (${c.hectareas ?? '-'} ha)</option>`).join('');
+  let html = `<option value="" ${!preselectCentroId ? 'selected' : ''}>Sin centro (solo contacto al proveedor)</option>`;
+  html += centros.map(c => {
+    const id = (c._id || c.id);
+    const sel = preselectCentroId && String(preselectCentroId) === String(id) ? 'selected' : '';
+    return `<option ${sel} value="${id}" data-code="${c.code || ''}" data-comuna="${c.comuna || ''}" data-hect="${c.hectareas ?? ''}">
+      ${c.code || ''} – ${c.comuna || 's/comuna'} (${c.hectareas ?? '-'} ha)
+    </option>`;
+  }).join('');
   select.innerHTML = html; select.disabled = false;
 
   const inst = M.FormSelect.getInstance(select); if (inst) inst.destroy(); M.FormSelect.init(select);
 
-  setVal(['centroId'], ''); setVal(['centroCode','centroCodigo'], '');
+  // set ocultos según selección actual
+  const opt = select.options[select.selectedIndex];
+  setVal(['centroId'], opt?.value || '');
+  setVal(['centroCode','centroCodigo'], opt?.dataset?.code || '');
+  setVal(['centroComuna'], opt?.dataset?.comuna || '');
+  setVal(['centroHectareas'], opt?.dataset?.hect || '');
 
   select.onchange = () => {
-    const opt = select.options[select.selectedIndex];
-    setVal(['centroId'], opt.value || '');
-    setVal(['centroCode','centroCodigo'], opt.dataset.code || '');
-    setVal(['centroComuna'], opt.dataset.comuna || '');
-    setVal(['centroHectareas'], opt.dataset.hect || '');
+    const opt2 = select.options[select.selectedIndex];
+    setVal(['centroId'], opt2.value || '');
+    setVal(['centroCode','centroCodigo'], opt2.dataset.code || '');
+    setVal(['centroComuna'], opt2.dataset.comuna || '');
+    setVal(['centroHectareas'], opt2.dataset.hect || '');
   };
 }
 function resetSelectCentros(){
@@ -152,7 +163,6 @@ function setupFormulario() {
     const notas               = $('#notasContacto').value.trim();
     const tonsDisponiblesAprox = $('#tonsDisponiblesAprox')?.value ?? '';
 
-    // NUEVO: datos persona contacto
     const contactoNombre   = $('#contactoNombre')?.value?.trim() || '';
     const contactoTelefono = $('#contactoTelefono')?.value?.trim() || '';
     const contactoEmail    = $('#contactoEmail')?.value?.trim() || '';
@@ -173,14 +183,24 @@ function setupFormulario() {
     };
 
     try {
-      const res = await fetch(API_CONTACTOS, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error(`POST /contactos -> ${res.status} ${await res.text()}`);
+      if (editId) {
+        // UPDATE
+        const res = await fetch(`${API_CONTACTOS}/${editId}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`PUT /contactos/${editId} -> ${res.status} ${await res.text()}`);
+      } else {
+        // CREATE
+        const res = await fetch(API_CONTACTOS, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`POST /contactos -> ${res.status} ${await res.text()}`);
+      }
 
       await cargarContactosGuardados();
       renderTablaContactos();
-      M.toast?.({ html: 'Contacto guardado', displayLength: 2000 });
+
+      M.toast?.({ html: editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
 
       // cerrar + limpiar modal
       const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
@@ -189,6 +209,7 @@ function setupFormulario() {
         const inst = M.FormSelect.getInstance(sel); if (inst) inst.destroy();
         M.FormSelect.init(sel);
       });
+      editId = null;
       modalInst?.close();
     } catch (err) {
       console.error('guardarContacto error:', err);
@@ -197,7 +218,7 @@ function setupFormulario() {
   });
 }
 
-// ==== TABLA (DataTables) + Detalle ====
+// ==== TABLA (DataTables) + Botones ====
 function initTablaContactos(){
   const jq = window.jQuery || window.$; if (!jq || dt) return;
 
@@ -210,16 +231,36 @@ function initTablaContactos(){
     order: [[0,'desc']],
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
     columnDefs: [
-      { targets: -1, orderable: false, searchable: false } // botón detalle
+      { targets: -1, orderable: false, searchable: false } // Detalle
     ]
   });
 
-  // click en botón "ver detalle"
-  jq('#tablaContactos tbody').on('click', 'button.btn-ver', function(){
-    const id = this.dataset.id;
-    const c = contactosGuardados.find(x => String(x._id) === String(id));
-    if (c) abrirDetalleContacto(c);
-  });
+  // Eventos delegados
+  jq('#tablaContactos tbody')
+    .on('click', 'button.btn-ver', function(){
+      const id = this.dataset.id;
+      const c = contactosGuardados.find(x => String(x._id) === String(id));
+      if (c) abrirDetalleContacto(c);
+    })
+    .on('click', 'button.btn-edit', async function(){
+      const id = this.dataset.id;
+      const c = contactosGuardados.find(x => String(x._id) === String(id));
+      if (c) abrirEdicion(c);
+    })
+    .on('click', 'button.btn-del', async function(){
+      const id = this.dataset.id;
+      if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
+      try {
+        const res = await fetch(`${API_CONTACTOS}/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(`DELETE /contactos/${id} -> ${res.status} ${await res.text()}`);
+        await cargarContactosGuardados();
+        renderTablaContactos();
+        M.toast?.({ html: 'Contacto eliminado', displayLength: 1800 });
+      } catch (e) {
+        console.error(e);
+        M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 });
+      }
+    });
 }
 
 function renderTablaContactos() {
@@ -237,8 +278,12 @@ function renderTablaContactos() {
         const mi = String(f.getMinutes()).padStart(2,'0');
         const when = `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
 
-        const btn = `<button class="btn-small btn-ver waves-effect" data-id="${c._id}">
+        const btnDetalle = `<button class="btn-small btn-ver waves-effect" data-id="${c._id}">
           <i class="material-icons">visibility</i></button>`;
+        const btnEditar  = `<button class="btn-small blue lighten-1 btn-edit waves-effect" data-id="${c._id}" style="margin-left:6px">
+          <i class="material-icons">edit</i></button>`;
+        const btnEliminar= `<button class="btn-small red lighten-1 btn-del waves-effect" data-id="${c._id}" style="margin-left:6px">
+          <i class="material-icons">delete</i></button>`;
 
         return [
           when,
@@ -250,7 +295,7 @@ function renderTablaContactos() {
           (c.tonsDisponiblesAprox ?? '') + '',
           c.vendeActualmenteA || '',
           c.notas || '',
-          btn
+          btnDetalle + btnEditar + btnEliminar
         ];
       });
     dt.rows.add(rows).draw();
@@ -284,12 +329,15 @@ function renderTablaContactos() {
         <td>${(c.tonsDisponiblesAprox ?? '') + ''}</td>
         <td>${c.vendeActualmenteA || ''}</td>
         <td>${c.notas || ''}</td>
-        <td><button class="btn-small btn-ver waves-effect" data-id="${c._id}"><i class="material-icons">visibility</i></button></td>
+        <td>
+          <button class="btn-small btn-ver waves-effect" data-id="${c._id}"><i class="material-icons">visibility</i></button>
+          <button class="btn-small blue lighten-1 btn-edit waves-effect" data-id="${c._id}" style="margin-left:6px"><i class="material-icons">edit</i></button>
+          <button class="btn-small red lighten-1 btn-del waves-effect" data-id="${c._id}" style="margin-left:6px"><i class="material-icons">delete</i></button>
+        </td>
       `;
       tbody.appendChild(tr);
     });
 
-  // bind básico al fallback
   tbody.querySelectorAll('button.btn-ver').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.id;
@@ -297,13 +345,34 @@ function renderTablaContactos() {
       if (c) abrirDetalleContacto(c);
     });
   });
+  tbody.querySelectorAll('button.btn-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const c = contactosGuardados.find(x => String(x._id) === String(id));
+      if (c) abrirEdicion(c);
+    });
+  });
+  tbody.querySelectorAll('button.btn-del').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
+      try {
+        const res = await fetch(`${API_CONTACTOS}/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(`DELETE /contactos/${id} -> ${res.status} ${await res.text()}`);
+        await cargarContactosGuardados();
+        renderTablaContactos();
+        M.toast?.({ html: 'Contacto eliminado', displayLength: 1800 });
+      } catch (e) {
+        console.error(e);
+        M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 });
+      }
+    });
+  });
 }
 
 // ==== DETALLE (modal) ====
 function abrirDetalleContacto(c) {
-  const body = $('#detalleContactoBody');
-  if (!body) return;
-
+  const body = $('#detalleContactoBody'); if (!body) return;
   const fechaFmt = (() => {
     const f = new Date(c.createdAt || c.fecha || Date.now());
     const dd = String(f.getDate()).padStart(2,'0');
@@ -333,6 +402,39 @@ function abrirDetalleContacto(c) {
   inst.open();
 }
 
+// ==== EDICIÓN ====
+function abrirEdicion(c) {
+  editId = c._id;
+
+  // proveedor
+  $('#buscadorProveedor').value = c.proveedorNombre || '';
+  setVal(['proveedorNombre'], c.proveedorNombre || '');
+  const key = c.proveedorKey || slug(c.proveedorNombre || '');
+  setVal(['proveedorKey','proveedorId'], key);
+
+  // cargar centros del proveedor y preseleccionar
+  mostrarCentrosDeProveedor(key, c.centroId || null);
+
+  // selects y campos
+  $('#tieneMMPP').value = c.tieneMMPP || '';
+  $('#dispuestoVender').value = c.dispuestoVender || '';
+  M.FormSelect.init($$('#formContacto select')); // reinit
+
+  $('#fechaDisponibilidad').value = c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '';
+  $('#tonsDisponiblesAprox').value = c.tonsDisponiblesAprox ?? '';
+  $('#vendeActualmenteA').value = c.vendeActualmenteA || '';
+  $('#notasContacto').value = c.notas || '';
+
+  $('#contactoNombre').value = c.contactoNombre || '';
+  $('#contactoTelefono').value = c.contactoTelefono || '';
+  $('#contactoEmail').value = c.contactoEmail || '';
+
+  M.updateTextFields();
+
+  const modalInst = M.Modal.getInstance(document.getElementById('modalContacto')) || M.Modal.init(document.getElementById('modalContacto'));
+  modalInst.open();
+}
+
 // ==== INIT ====
 export async function initContactosTab() {
   await cargarCentros();
@@ -341,4 +443,19 @@ export async function initContactosTab() {
   setupFormulario();
   initTablaContactos();
   renderTablaContactos();
+
+  // Abrir modal en modo NUEVO
+  $('#btnOpenContactoModal')?.addEventListener('click', () => {
+    editId = null;
+    // limpiar todo por si venimos de editar
+    const form = $('#formContacto');
+    form?.reset();
+    $$('#formContacto select').forEach(sel => {
+      const inst = M.FormSelect.getInstance(sel); if (inst) inst.destroy();
+      M.FormSelect.init(sel);
+    });
+    setVal(['proveedorKey','proveedorId'],'');
+    setVal(['proveedorNombre'],'');
+    resetSelectCentros();
+  });
 }
