@@ -102,57 +102,69 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
   });
 
   btnImportar.addEventListener('click', async () => {
-    if (!centrosData.length) return;
+  if (!centrosData.length) return;
 
-    let importados = 0, actualizados = 0, errores = 0;
+  let importados = 0, actualizados = 0, errores = 0;
+  btnImportar.disabled = true;
+  resultadoDiv.textContent = 'Importando...';
 
-    // Deshabilita UI y muestra estado
-    btnImportar.disabled = true;
-    resultadoDiv.textContent = 'Importando...';
+  // Helper: procesa en paralelo con N "workers"
+  async function runBatches(arr, concurrency, worker, onProgress) {
+    let done = 0;
+    const queue = arr.map((x, idx) => ({ x, idx }));
+    async function runner() {
+      while (queue.length) {
+        const { x, idx } = queue.shift();
+        await worker(x, idx);
+        done++;
+        if (onProgress && done % 25 === 0) onProgress(done, arr.length);
+        // ceder tiempo al navegador
+        if (done % 50 === 0) await new Promise(r => setTimeout(r, 0));
+      }
+    }
+    await Promise.all(Array.from({ length: concurrency }, runner));
+  }
 
-    try {
-      for (let i = 0; i < centrosData.length; i++) {
-        const fila = centrosData[i];
+  // Normalizador por fila (idéntico a tu lógica actual)
+  const parseFila = (fila) => {
+    const centro = {};
+    const detalles = {};
+    for (const k in fila) {
+      if (MAPEO_CAMPOS[k]) {
+        centro[MAPEO_CAMPOS[k]] = fila[k];
+      } else if (k.toLowerCase().includes('coordenada')) {
+        centro.coords = parsearCoordenadasDMS(fila[k]);
+      } else {
+        detalles[k] = fila[k];
+      }
+    }
+    centro.detalles = detalles;
+    if ((!centro.coords || !centro.coords.length) && detalles['Coordenadas']) {
+      centro.coords = parsearCoordenadasDMS(detalles['Coordenadas']);
+    }
+    if (centro.proveedor) {
+      centro.proveedor = toTitleCase(centro.proveedor);
+      centro.proveedorKey = makeProveedorKey(centro.proveedor);
+    } else {
+      centro.proveedorKey = '';
+    }
+    if (centro.comuna) centro.comuna = toTitleCase(centro.comuna);
+    if (centro.hectareas != null && centro.hectareas !== '') {
+      const n = Number(String(centro.hectareas).replace(',', '.'));
+      if (!Number.isNaN(n)) centro.hectareas = n;
+    }
+    return centro;
+  };
 
-        // ------ Mapeo a objeto centro + detalles ------
-        const centro = {};
-        const detalles = {};
-        for (const k in fila) {
-          if (MAPEO_CAMPOS[k]) {
-            centro[MAPEO_CAMPOS[k]] = fila[k];
-          } else if (k.toLowerCase().includes('coordenada')) {
-            centro.coords = parsearCoordenadasDMS(fila[k]);
-          } else {
-            detalles[k] = fila[k];
-          }
-        }
-        centro.detalles = detalles;
-
-        // Si coords no quedó por "coordenada*", intenta con encabezado "Coordenadas"
-        if ((!centro.coords || !centro.coords.length) && detalles['Coordenadas']) {
-          centro.coords = parsearCoordenadasDMS(detalles['Coordenadas']);
-        }
-
-        // Normalizaciones de presentación
-        if (centro.proveedor) {
-          centro.proveedor = toTitleCase(centro.proveedor);
-          centro.proveedorKey = makeProveedorKey(centro.proveedor);
-        } else {
-          centro.proveedorKey = '';
-        }
-        if (centro.comuna) centro.comuna = toTitleCase(centro.comuna);
-
-        // Hectáreas -> número
-        if (centro.hectareas != null && centro.hectareas !== '') {
-          const n = Number(String(centro.hectareas).replace(',', '.'));
-          if (!Number.isNaN(n)) centro.hectareas = n;
-        }
-
-        // ------ Guardar (crear/actualizar por "code") ------
+  try {
+    await runBatches(
+      centrosData,
+      8, // <= puedes subir a 12 si tu backend aguanta
+      async (fila/*, idx*/) => {
+        const centro = parseFila(fila);
         try {
           const existente = await getCentroByCode(centro.code);
           if (existente) {
-            // IMPORTANTE: actualizamos sólo con los datos importados
             await updateCentro(existente._id, centro);
             actualizados++;
           } else {
@@ -163,31 +175,25 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
           console.error('Error importando centro:', centro, err);
           errores++;
         }
-
-        // Feedback de progreso cada 25 filas para que no "se pegue" el modal
-        if ((i + 1) % 25 === 0) {
-          resultadoDiv.textContent = `Importando... (${i + 1}/${centrosData.length})`;
-          // Cede tiempo a la UI
-          // eslint-disable-next-line no-await-in-loop
-          await new Promise(r => setTimeout(r, 0));
-        }
+      },
+      (done, total) => {
+        resultadoDiv.textContent = `Importando... (${done}/${total})`;
       }
+    );
 
-      const msg = `¡Importación completa! Creados: ${importados}, Actualizados: ${actualizados}, Errores: ${errores}`;
-      resultadoDiv.textContent = msg;
-      if (window.M?.toast) window.M.toast({ html: msg, displayLength: 4000 });
-    } finally {
-      // Pase lo que pase, reactivar botón y cerrar modal si existe
-      btnImportar.disabled = false;
-
-      const modalEl = document.querySelector('#modalImportarCentros');
-      if (modalEl && window.M?.Modal) {
-        const instance = window.M.Modal.getInstance(modalEl) || window.M.Modal.init(modalEl);
-        setTimeout(() => instance.close(), 900); // deja ver el resumen antes de cerrar
-      }
+    const msg = `¡Importación completa! Creados: ${importados}, Actualizados: ${actualizados}, Errores: ${errores}`;
+    resultadoDiv.textContent = msg;
+    if (window.M?.toast) M.toast({ html: msg, displayLength: 4000 });
+  } finally {
+    btnImportar.disabled = false;
+    const modalEl = document.querySelector('#modalImportarCentros');
+    if (modalEl && window.M?.Modal) {
+      const instance = window.M.Modal.getInstance(modalEl);
+      setTimeout(() => instance?.close(), 900);
     }
-  });
-}
+  }
+});
+
 
 /* =========================
    Excel/CSV → JSON
@@ -232,4 +238,5 @@ function renderPreview(rows) {
   html += '</tbody></table>';
   previewDiv.innerHTML = html;
 }
+
 
