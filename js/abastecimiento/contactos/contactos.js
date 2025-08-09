@@ -99,27 +99,49 @@ function setupBuscadorProveedores() {
   });
 }
 
+// Helper para normalizar a una clave estable (sin tildes, minúsculas, -)
+function slug(s) {
+  return (s || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita tildes
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')                     // no alfanumérico -> "-"
+    .replace(/^-+|-+$/g, '')                         // trim guiones
+    .replace(/-+/g, '-');                            // colapsa guiones
+}
+
 // ==== MOSTRAR CENTROS DEL PROVEEDOR SELECCIONADO ====
 function mostrarCentrosDeProveedor(prov) {
   const select = $('#selectCentro');
   if (!select) return;
 
-  // Normaliza ambos para comparación
-  const buscado = (prov.nombreOriginal || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  // El nombre que viene del autocompletado (o de cualquier otra parte)
+  const nombreElegido =
+    prov?.nombreOriginal ??
+    prov?.nombre ??
+    prov?.proveedor ??
+    '';
 
-  // Muestra TODOS los centros que coinciden con ese proveedor
+  // Clave normalizada del proveedor buscado
+  const buscadoKey = slug(nombreElegido);
+
+  // Filtra centros: usa proveedorKey si existe; si no, normaliza proveedor
   const centros = listaCentros.filter(c => {
-    const centroProv = (c.proveedor || '').toLowerCase().replace(/\s+/g, ' ').trim();
-    const match = centroProv === buscado;
-    console.log('[DEBUG] centro.proveedor:', centroProv, 'vs', buscado, 'MATCH:', match);
+    const keyCentro = c.proveedorKey ? c.proveedorKey : slug(c.proveedor || '');
+    const match = keyCentro === buscadoKey;
+
+    // logs de diagnóstico
+    console.log('[DEBUG] centro key:', keyCentro, '| buscado:', buscadoKey, '| MATCH:', match, '| nombreCentro:', c.proveedor);
+
     return match;
   });
 
+  // Rellena el <select>
   select.innerHTML = '<option value="" disabled selected>Selecciona un centro</option>';
   centros.forEach(centro => {
     const opt = document.createElement('option');
     opt.value = centro._id || centro.id;
     opt.textContent = `${centro.code} – ${centro.comuna || ''} (${centro.hectareas || '-'} ha)`;
+    // Si no lo usas luego, puedes quitar este dataset
     opt.dataset.centroInfo = JSON.stringify(centro);
     select.appendChild(opt);
   });
@@ -127,6 +149,7 @@ function mostrarCentrosDeProveedor(prov) {
   select.disabled = centros.length === 0;
   limpiarCamposCentro();
 }
+
 
 // ==== LLENAR AUTOMÁTICAMENTE DATOS DEL CENTRO ====
 $('#selectCentro')?.addEventListener('change', function () {
@@ -235,5 +258,6 @@ export async function initContactosTab() {
   setupFormulario();
   renderTablaContactos();
 }
+
 
 
