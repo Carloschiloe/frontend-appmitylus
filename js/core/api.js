@@ -74,3 +74,15 @@ export async function apiAddInventarioLinea(centroId, lineaId, data) {
   });
   return checkResponse(resp);
 }
+
+// === BULK CENTROS ===
+export async function apiBulkUpsertCentros(arr) {
+  const resp = await fetch(`${API_URL}/centros/bulk-upsert`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(arr)
+  });
+  return checkResponse(resp);
+}
+
+
