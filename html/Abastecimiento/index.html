@@ -55,6 +55,7 @@
             <th>Tons aprox</th>
             <th>Vende a</th>
             <th>Notas</th>
+            <th>Detalle</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -82,7 +83,7 @@
         <label for="selectCentro">Centro</label>
       </div>
 
-      <!-- Campos ocultos (compatibilidad: mantenemos los tuyos y añadimos los nuevos) -->
+      <!-- Campos ocultos (compat: mantenemos los tuyos y añadimos los nuevos) -->
       <input type="hidden" id="proveedorId">
       <input type="hidden" id="proveedorNombre">
       <input type="hidden" id="proveedorKey">
@@ -133,6 +134,22 @@
           </div>
         </div>
 
+        <!-- NUEVO: Persona de contacto -->
+        <div class="row">
+          <div class="input-field col s4">
+            <input id="contactoNombre" type="text" placeholder="Nombre y apellido">
+            <label for="contactoNombre">Nombre del contacto</label>
+          </div>
+          <div class="input-field col s4">
+            <input id="contactoTelefono" type="tel" placeholder="+56 9 1234 5678">
+            <label for="contactoTelefono">Teléfono</label>
+          </div>
+          <div class="input-field col s4">
+            <input id="contactoEmail" type="email" placeholder="correo@dominio.cl">
+            <label for="contactoEmail">Email</label>
+          </div>
+        </div>
+
         <div class="right-align">
           <button type="button" class="modal-close btn-flat">Cancelar</button>
           <button class="btn teal" type="submit">
@@ -140,6 +157,17 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Detalle de contacto ===== -->
+  <div id="modalDetalleContacto" class="modal">
+    <div class="modal-content">
+      <h5>Detalle del contacto</h5>
+      <div id="detalleContactoBody"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-close btn teal">Cerrar</button>
     </div>
   </div>
 
@@ -163,7 +191,7 @@
       M.Tabs.init(document.querySelectorAll('.tabs'), {});
       M.FormSelect.init(document.querySelectorAll('select'));
 
-      // Modal
+      // Modal principal (registrar)
       const modalEl = document.getElementById('modalContacto');
       const modal = M.Modal.init(modalEl, {
         onCloseEnd: () => {
@@ -177,6 +205,10 @@
         }
       });
       document.getElementById('btnOpenContactoModal')?.addEventListener('click', () => modal.open());
+
+      // Modal detalle: solo inicialización básica (se abre desde JS al hacer click en "Ver")
+      const modalDetalle = document.getElementById('modalDetalleContacto');
+      if (modalDetalle) M.Modal.init(modalDetalle);
     });
   </script>
 </body>
