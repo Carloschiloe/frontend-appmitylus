@@ -137,7 +137,7 @@ function mostrarCentrosDeProveedor(proveedorKey) {
     const opt = select.options[select.selectedIndex];
     $('#centroId').value   = opt.value || '';
     $('#centroCode').value = opt.dataset.code || '';
-    // (Si quieres, podrías llenar comuna/hectáreas ocultos si los sigues usando)
+    // si quieres, también puedes mantener comuna/hectáreas ocultos
     $('#centroComuna').value    = opt.dataset.comuna || '';
     $('#centroHectareas').value = opt.dataset.hect || '';
   };
@@ -183,20 +183,32 @@ function setupFormulario() {
     const notas               = $('#notasContacto').value.trim();
 
     // Centro (opcional)
-    const centroId   = $('#centroId').value || null;
-    const centroCode = $('#centroCode').value || null;
+    const centroId    = $('#centroId').value || null;
+    const _centroCode = $('#centroCode').value || null; // oculto en HTML
+
+    // Tu backend espera `resultado` obligatorio. Lo derivamos de tieneMMPP.
+    const resultado =
+      tieneMMPP === 'Sí' ? 'Disponible' :
+      tieneMMPP === 'No' ? 'No disponible' : '';
+
+    if (!resultado) {
+      M.toast?.({ html: 'Selecciona disponibilidad (Sí/No)', displayLength: 2500 });
+      return;
+    }
 
     // Payload al backend
     const payload = {
       proveedorKey,
       proveedorNombre,
+      resultado,                 // requerido por backend
       tieneMMPP,
       fechaDisponibilidad,
       dispuestoVender,
       vendeActualmenteA,
       notas,
       centroId,
-      centroCode
+      // Backend usa "centroCodigo" (con g):
+      centroCodigo: _centroCode || null
     };
 
     try {
@@ -220,7 +232,6 @@ function setupFormulario() {
         M.FormSelect.init(sel);
       });
       // Mantener proveedor y centros seleccionados (no limpiar arriba)
-      // Solo limpia campos de centro si cambias a otro proveedor
     } catch (err) {
       console.error('guardarContacto error:', err);
       M.toast?.({ html: 'Error al guardar contacto', displayLength: 2500 });
@@ -257,9 +268,9 @@ function renderTablaContactos() {
       tr.innerHTML = `
         <td>${fechaFmt}</td>
         <td>${c.proveedorNombre || ''}</td>
-        <td>${c.centroCode || ''}</td>
+        <td>${c.centroCodigo || ''}</td>
         <td>${c.tieneMMPP || ''}</td>
-        <td>${c.fechaDisponibilidad ? c.fechaDisponibilidad : ''}</td>
+        <td>${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : ''}</td>
         <td>${c.dispuestoVender || ''}</td>
         <td>${c.vendeActualmenteA || ''}</td>
         <td>${c.notas || ''}</td>
