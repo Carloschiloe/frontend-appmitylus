@@ -1,5 +1,5 @@
 // js/centros/importar_centros.js
-import { createCentro, updateCentro, getCentroByCode } from '../core/centros_repo.js';
+import { bulkUpsertCentros } from '../core/centros_repo.js';
 
 /* ========= Helpers ========= */
 function toTitleCase(str) {
@@ -47,6 +47,10 @@ function parsearCoordenadasDMS(str) {
     .filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
 }
 
+// util para dividir en lotes
+const chunk = (arr, size) =>
+  Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, (i + 1) * size));
+
 /* ========= UI ========= */
 export function renderImportadorCentros(containerId = 'importarCentrosContainer') {
   const container = document.getElementById(containerId);
@@ -79,29 +83,14 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
       : '';
   });
 
-  // ===== Importar en batches (concurrencia 8) =====
+  // ===== Importar en BULK por lotes =====
   btnImportar.addEventListener('click', async () => {
     if (!centrosData.length) return;
 
-    let importados = 0, actualizados = 0, errores = 0;
     btnImportar.disabled = true;
-    resultadoDiv.textContent = 'Importando...';
+    resultadoDiv.textContent = 'Preparando datos...';
 
-    async function runBatches(arr, concurrency, worker, onProgress) {
-      let done = 0;
-      const queue = arr.map((x, idx) => ({ x, idx }));
-      async function runner() {
-        while (queue.length) {
-          const { x, idx } = queue.shift();
-          await worker(x, idx);
-          done++;
-          if (onProgress && done % 25 === 0) onProgress(done, arr.length);
-          if (done % 50 === 0) await new Promise(r => setTimeout(r, 0));
-        }
-      }
-      await Promise.all(Array.from({ length: concurrency }, runner));
-    }
-
+    // 1) Normaliza TODAS las filas a tu esquema
     const parseFila = (fila) => {
       const centro = {};
       const detalles = {};
@@ -115,6 +104,7 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
         }
       }
       centro.detalles = detalles;
+
       if ((!centro.coords || !centro.coords.length) && detalles['Coordenadas']) {
         centro.coords = parsearCoordenadasDMS(detalles['Coordenadas']);
       }
@@ -132,34 +122,37 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
       return centro;
     };
 
-    try {
-      await runBatches(
-        centrosData,
-        8,
-        async (fila) => {
-          const centro = parseFila(fila);
-          try {
-            const existente = await getCentroByCode(centro.code);
-            if (existente) {
-              await updateCentro(existente._id, centro);
-              actualizados++;
-            } else {
-              await createCentro(centro);
-              importados++;
-            }
-          } catch (err) {
-            console.error('Error importando centro:', centro, err);
-            errores++;
-          }
-        },
-        (done, total) => {
-          resultadoDiv.textContent = `Importando... (${done}/${total})`;
-        }
-      );
+    const docs = centrosData.map(parseFila).filter(d => d && d.code);
+    if (!docs.length) {
+      resultadoDiv.textContent = 'No hay filas válidas con "Codigo Centro" (code).';
+      btnImportar.disabled = false;
+      return;
+    }
 
-      const msg = `¡Importación completa! Creados: ${importados}, Actualizados: ${actualizados}, Errores: ${errores}`;
+    // 2) Divide en lotes (300–500 recomendado)
+    const lotes = chunk(docs, 300);
+    let totalUpserted = 0, totalModified = 0, totalMatched = 0, lotesError = 0;
+
+    try {
+      for (let i = 0; i < lotes.length; i++) {
+        resultadoDiv.textContent = `Importando... lote ${i + 1}/${lotes.length}`;
+        try {
+          const r = await bulkUpsertCentros(lotes[i]);
+          totalMatched  += r?.matched  ?? 0;
+          totalModified += r?.modified ?? 0;
+          totalUpserted += r?.upserted ?? 0;
+        } catch (e) {
+          console.error('Error en lote', i + 1, e);
+          lotesError++;
+        }
+        // Cede tiempo al navegador (evita UI congelada)
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(r => setTimeout(r, 0));
+      }
+
+      const msg = `¡Importación completa! Upserted: ${totalUpserted}, Modificados: ${totalModified}, Coincidencias: ${totalMatched}, Lotes con error: ${lotesError}`;
       resultadoDiv.textContent = msg;
-      if (window.M?.toast) window.M.toast({ html: msg, displayLength: 4000 });
+      if (window.M?.toast) window.M.toast({ html: msg, displayLength: 5000 });
     } finally {
       btnImportar.disabled = false;
       const modalEl = document.querySelector('#modalImportarCentros');
