@@ -239,22 +239,25 @@
 
   <!-- Inicialización -->
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      // Tooltips Materialize
-      M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+  document.addEventListener('DOMContentLoaded', function () {
+    // Inicializa todos los modales
+    M.Modal.init(document.querySelectorAll('.modal'));
 
-      // Modales
-      document
-        .getElementById('btnOpenImportarModal')
-        ?.addEventListener('click', () =>
-          M.Modal.getInstance(document.getElementById('modalImportarCentros')).open()
-        );
-      document
-        .getElementById('btnOpenCentroModal')
-        ?.addEventListener('click', () =>
-          M.Modal.getInstance(document.getElementById('centroModal')).open()
-        );
-    });
-  </script>
+    // Tooltips Materialize
+    M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+
+    // Abrir modales
+    document.getElementById('btnOpenImportarModal')
+      ?.addEventListener('click', () =>
+        M.Modal.getInstance(document.getElementById('modalImportarCentros')).open()
+      );
+    document.getElementById('btnOpenCentroModal')
+      ?.addEventListener('click', () =>
+        M.Modal.getInstance(document.getElementById('centroModal')).open()
+      );
+  });
+</script>
+
 </body>
 </html>
+
