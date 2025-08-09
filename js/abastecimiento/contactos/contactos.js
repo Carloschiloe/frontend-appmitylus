@@ -9,6 +9,7 @@ const API_CONTACTOS = `${API_URL}/contactos`;  // GET y POST: contactos
 let listaProveedores = []; // [{ nombreOriginal, nombreNormalizado, proveedorKey }]
 let listaCentros = [];     // [{ proveedor, proveedorKey, code, comuna, ... }]
 let contactosGuardados = [];
+let dt = null;             // DataTable instancia
 
 // ==== UTILIDADES ====
 const $  = (sel) => document.querySelector(sel);
@@ -28,7 +29,6 @@ function setVal(ids, value='') {
     const el = document.getElementById(id);
     if (el) { el.value = value ?? ''; return el; }
   }
-  // Si no existe, lo creo oculto para no fallar
   const id = ids[0];
   const hidden = document.createElement('input');
   hidden.type = 'hidden';
@@ -53,7 +53,7 @@ async function cargarCentros() {
     listaCentros = await res.json();
 
     // Proveedores únicos a partir de centros (usando proveedorKey si existe)
-    const mapa = new Map(); // key: proveedorKey | slug(nombre) -> {nombreOriginal, nombreNormalizado, proveedorKey}
+    const mapa = new Map();
     for (const c of listaCentros) {
       const nombreOriginal = (c.proveedor || '').trim();
       if (!nombreOriginal) continue;
@@ -107,17 +107,12 @@ function setupBuscadorProveedores() {
   // Al confirmar un proveedor (cambio de valor)
   input.addEventListener('change', () => {
     const valNorm = input.value.toLowerCase().replace(/\s+/g, ' ').trim();
-    // Encuentra proveedor por nombre normalizado
     const prov = listaProveedores.find(p => p.nombreNormalizado === valNorm);
     if (prov) {
-      // Set ocultos (acepta proveedorKey o proveedorId)
       setVal(['proveedorKey','proveedorId'], prov.proveedorKey);
       setVal(['proveedorNombre'], prov.nombreOriginal);
-
-      // Carga centros del proveedor
       mostrarCentrosDeProveedor(prov.proveedorKey);
     } else {
-      // Limpia si no coincide
       setVal(['proveedorKey','proveedorId'], '');
       setVal(['proveedorNombre'], '');
       resetSelectCentros();
@@ -130,13 +125,11 @@ function mostrarCentrosDeProveedor(proveedorKey) {
   const select = $('#selectCentro');
   if (!select) return;
 
-  // Filtra por proveedorKey; si un centro no tiene key, compara por slug del nombre
   const centros = listaCentros.filter(c => {
     const keyCentro = c.proveedorKey && c.proveedorKey.length ? c.proveedorKey : slug(c.proveedor || '');
     return keyCentro === proveedorKey;
   });
 
-  // Render opciones (primera opción: sin centro)
   let html = `<option value="" selected>Sin centro (solo contacto al proveedor)</option>`;
   html += centros
     .map(c => `<option value="${c._id || c.id}" data-code="${c.code || ''}" data-comuna="${c.comuna || ''}" data-hect="${c.hectareas ?? ''}">
@@ -146,16 +139,13 @@ function mostrarCentrosDeProveedor(proveedorKey) {
   select.innerHTML = html;
   select.disabled = false;
 
-  // Re-init Materialize select
   const inst = M.FormSelect.getInstance(select);
   if (inst) inst.destroy();
   M.FormSelect.init(select);
 
-  // Limpia ocultos de centro
   setVal(['centroId'], '');
   setVal(['centroCode','centroCodigo'], '');
 
-  // on change: set ocultos
   select.onchange = () => {
     const opt = select.options[select.selectedIndex];
     setVal(['centroId'], opt.value || '');
@@ -188,7 +178,7 @@ function setupFormulario() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const proveedorKey    = getVal(['proveedorKey','proveedorId']).trim(); // soporta ambos
+    const proveedorKey    = getVal(['proveedorKey','proveedorId']).trim();
     const proveedorNombre = getVal(['proveedorNombre']).trim();
 
     if (!proveedorKey || !proveedorNombre) {
@@ -197,18 +187,19 @@ function setupFormulario() {
       return;
     }
 
-    // Campos nuevos
+    // Campos
     const tieneMMPP           = $('#tieneMMPP').value;              // Sí / No
-    const fechaDisponibilidad = $('#fechaDisponibilidad').value || null; // YYYY-MM-DD
+    const fechaDisponibilidad = $('#fechaDisponibilidad').value || null;
     const dispuestoVender     = $('#dispuestoVender').value;       // Sí / No / Por confirmar
     const vendeActualmenteA   = $('#vendeActualmenteA').value.trim();
     const notas               = $('#notasContacto').value.trim();
+    const tonsDisponiblesAprox = $('#tonsDisponiblesAprox') ? $('#tonsDisponiblesAprox').value : '';
 
     // Centro (opcional)
     const centroId    = getVal(['centroId']) || null;
     const _centroCode = getVal(['centroCode','centroCodigo']) || null;
 
-    // Tu backend pide "resultado" obligatorio (compat)
+    // Backend pide "resultado"
     const resultado =
       tieneMMPP === 'Sí' ? 'Disponible' :
       tieneMMPP === 'No' ? 'No disponible' : '';
@@ -218,7 +209,7 @@ function setupFormulario() {
       return;
     }
 
-    // Payload al backend (usa centroCodigo con “g”)
+    // Payload
     const payload = {
       proveedorKey,
       proveedorNombre,
@@ -229,7 +220,8 @@ function setupFormulario() {
       vendeActualmenteA,
       notas,
       centroId,
-      centroCodigo: _centroCode || null
+      centroCodigo: _centroCode || null,
+      tonsDisponiblesAprox: (tonsDisponiblesAprox !== '' ? Number(tonsDisponiblesAprox) : null)
     };
 
     try {
@@ -239,20 +231,20 @@ function setupFormulario() {
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error(`POST /contactos -> ${res.status} ${await res.text()}`);
-      // recarga tabla
+
       await cargarContactosGuardados();
       renderTablaContactos();
 
-      // feedback & reset parcial
       M.toast?.({ html: 'Contacto guardado', displayLength: 2000 });
-      form.reset();
-      // Re-init selects de Materialize tras reset
+
+      // Cerrar y resetear modal
+      const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
+      document.getElementById('formContacto')?.reset();
       $$('#formContacto select').forEach(sel => {
-        const inst = M.FormSelect.getInstance(sel);
-        if (inst) inst.destroy();
+        const inst = M.FormSelect.getInstance(sel); if (inst) inst.destroy();
         M.FormSelect.init(sel);
       });
-      // Mantener selección de proveedor/centro si no cambias el proveedor
+      modalInst?.close();
     } catch (err) {
       console.error('guardarContacto error:', err);
       M.toast?.({ html: 'Error al guardar contacto', displayLength: 2500 });
@@ -260,18 +252,69 @@ function setupFormulario() {
   });
 }
 
-// ==== TABLA ====
-function renderTablaContactos() {
-  const tbody = $('#tablaContactos tbody');
-  if (!tbody) return;
+// ==== TABLA (DataTables) ====
+function initTablaContactos(){
+  // Evitar conflicto con nuestro helper $
+  const jq = window.jQuery || window.$;
+  if (!jq) return;
 
-  if (!contactosGuardados.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="color:#888">No hay contactos registrados aún.</td></tr>`;
+  if (dt) return; // ya inicializada
+
+  dt = jq('#tablaContactos').DataTable({
+    dom: 'Bfrtip',
+    buttons: [
+      { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
+      { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
+    ],
+    order: [[0,'desc']],
+    language: {
+      url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'
+    }
+  });
+}
+
+function renderTablaContactos() {
+  const jq = window.jQuery || window.$;
+  // Si hay DataTables, renderizamos ahí
+  if (dt && jq) {
+    dt.clear();
+    const rows = contactosGuardados
+      .slice()
+      .sort((a, b) => new Date(b.createdAt || b.fecha || 0) - new Date(a.createdAt || a.fecha || 0))
+      .map(c => {
+        const f = new Date(c.createdAt || c.fecha || Date.now());
+        const dd = String(f.getDate()).padStart(2,'0');
+        const mm = String(f.getMonth()+1).padStart(2,'0');
+        const yyyy = f.getFullYear();
+        const hh = String(f.getHours()).padStart(2,'0');
+        const mi = String(f.getMinutes()).padStart(2,'0');
+        const when = `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+
+        return [
+          when,
+          c.proveedorNombre || '',
+          c.centroCodigo || '',
+          c.tieneMMPP || '',
+          c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '',
+          c.dispuestoVender || '',
+          (c.tonsDisponiblesAprox ?? '') + '',
+          c.vendeActualmenteA || '',
+          c.notas || ''
+        ];
+      });
+    dt.rows.add(rows).draw();
     return;
   }
 
-  // Limpia primero
+  // Fallback sin DataTables (por si no cargó)
+  const tbody = $('#tablaContactos tbody');
+  if (!tbody) return;
+
   tbody.innerHTML = '';
+  if (!contactosGuardados.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="color:#888">No hay contactos registrados aún.</td></tr>`;
+    return;
+  }
 
   contactosGuardados
     .slice()
@@ -293,6 +336,7 @@ function renderTablaContactos() {
         <td>${c.tieneMMPP || ''}</td>
         <td>${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : ''}</td>
         <td>${c.dispuestoVender || ''}</td>
+        <td>${(c.tonsDisponiblesAprox ?? '') + ''}</td>
         <td>${c.vendeActualmenteA || ''}</td>
         <td>${c.notas || ''}</td>
       `;
@@ -306,5 +350,6 @@ export async function initContactosTab() {
   await cargarContactosGuardados();
   setupBuscadorProveedores();
   setupFormulario();
+  initTablaContactos();   // inicializa DataTables (si está disponible)
   renderTablaContactos();
 }
