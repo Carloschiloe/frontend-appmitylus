@@ -119,7 +119,6 @@ function mostrarCentrosDeProveedor(proveedorKey, preselectCentroId = null) {
 
   const inst = M.FormSelect.getInstance(select); if (inst) inst.destroy(); M.FormSelect.init(select);
 
-  // set ocultos según selección actual
   const opt = select.options[select.selectedIndex];
   setVal(['centroId'], opt?.value || '');
   setVal(['centroCode','centroCodigo'], opt?.dataset?.code || '');
@@ -184,13 +183,11 @@ function setupFormulario() {
 
     try {
       if (editId) {
-        // UPDATE
         const res = await fetch(`${API_CONTACTOS}/${editId}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error(`PUT /contactos/${editId} -> ${res.status} ${await res.text()}`);
       } else {
-        // CREATE
         const res = await fetch(API_CONTACTOS, {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
         });
@@ -218,7 +215,7 @@ function setupFormulario() {
   });
 }
 
-// ==== TABLA (DataTables) + Botones ====
+// ==== TABLA (DataTables) + Acciones con íconos ====
 function initTablaContactos(){
   const jq = window.jQuery || window.$; if (!jq || dt) return;
 
@@ -229,25 +226,27 @@ function initTablaContactos(){
       { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
     ],
     order: [[0,'desc']],
+    pageLength: 25,
+    autoWidth: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
     columnDefs: [
-      { targets: -1, orderable: false, searchable: false } // Detalle
+      { targets: -1, orderable: false, searchable: false } // Acciones
     ]
   });
 
-  // Eventos delegados
+  // Eventos delegados (ver/editar/eliminar)
   jq('#tablaContactos tbody')
-    .on('click', 'button.btn-ver', function(){
+    .on('click', 'a.icon-action.ver', function(){
       const id = this.dataset.id;
       const c = contactosGuardados.find(x => String(x._id) === String(id));
       if (c) abrirDetalleContacto(c);
     })
-    .on('click', 'button.btn-edit', async function(){
+    .on('click', 'a.icon-action.editar', function(){
       const id = this.dataset.id;
       const c = contactosGuardados.find(x => String(x._id) === String(id));
       if (c) abrirEdicion(c);
     })
-    .on('click', 'button.btn-del', async function(){
+    .on('click', 'a.icon-action.eliminar', async function(){
       const id = this.dataset.id;
       if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
       try {
@@ -278,12 +277,17 @@ function renderTablaContactos() {
         const mi = String(f.getMinutes()).padStart(2,'0');
         const when = `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
 
-        const btnDetalle = `<button class="btn-small btn-ver waves-effect" data-id="${c._id}">
-          <i class="material-icons">visibility</i></button>`;
-        const btnEditar  = `<button class="btn-small blue lighten-1 btn-edit waves-effect" data-id="${c._id}" style="margin-left:6px">
-          <i class="material-icons">edit</i></button>`;
-        const btnEliminar= `<button class="btn-small red lighten-1 btn-del waves-effect" data-id="${c._id}" style="margin-left:6px">
-          <i class="material-icons">delete</i></button>`;
+        const acciones = `
+          <a href="#!" class="icon-action ver" title="Ver" data-id="${c._id}">
+            <i class="material-icons">visibility</i>
+          </a>
+          <a href="#!" class="icon-action editar" title="Editar" data-id="${c._id}">
+            <i class="material-icons">edit</i>
+          </a>
+          <a href="#!" class="icon-action eliminar" title="Eliminar" data-id="${c._id}">
+            <i class="material-icons">delete</i>
+          </a>
+        `;
 
         return [
           when,
@@ -295,7 +299,7 @@ function renderTablaContactos() {
           (c.tonsDisponiblesAprox ?? '') + '',
           c.vendeActualmenteA || '',
           c.notas || '',
-          btnDetalle + btnEditar + btnEliminar
+          acciones
         ];
       });
     dt.rows.add(rows).draw();
@@ -318,6 +322,19 @@ function renderTablaContactos() {
       const hh = String(f.getHours()).padStart(2,'0');
       const mi = String(f.getMinutes()).padStart(2,'0');
       const fechaFmt = `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+
+      const acciones = `
+        <a href="#!" class="icon-action ver" title="Ver" data-id="${c._id}">
+          <i class="material-icons">visibility</i>
+        </a>
+        <a href="#!" class="icon-action editar" title="Editar" data-id="${c._id}">
+          <i class="material-icons">edit</i>
+        </a>
+        <a href="#!" class="icon-action eliminar" title="Eliminar" data-id="${c._id}">
+          <i class="material-icons">delete</i>
+        </a>
+      `;
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${fechaFmt}</td>
@@ -329,32 +346,29 @@ function renderTablaContactos() {
         <td>${(c.tonsDisponiblesAprox ?? '') + ''}</td>
         <td>${c.vendeActualmenteA || ''}</td>
         <td>${c.notas || ''}</td>
-        <td>
-          <button class="btn-small btn-ver waves-effect" data-id="${c._id}"><i class="material-icons">visibility</i></button>
-          <button class="btn-small blue lighten-1 btn-edit waves-effect" data-id="${c._id}" style="margin-left:6px"><i class="material-icons">edit</i></button>
-          <button class="btn-small red lighten-1 btn-del waves-effect" data-id="${c._id}" style="margin-left:6px"><i class="material-icons">delete</i></button>
-        </td>
+        <td>${acciones}</td>
       `;
       tbody.appendChild(tr);
     });
 
-  tbody.querySelectorAll('button.btn-ver').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.id;
+  // Listeners fallback
+  tbody.querySelectorAll('a.icon-action.ver').forEach(a => {
+    a.addEventListener('click', () => {
+      const id = a.dataset.id;
       const c = contactosGuardados.find(x => String(x._id) === String(id));
       if (c) abrirDetalleContacto(c);
     });
   });
-  tbody.querySelectorAll('button.btn-edit').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.id;
+  tbody.querySelectorAll('a.icon-action.editar').forEach(a => {
+    a.addEventListener('click', () => {
+      const id = a.dataset.id;
       const c = contactosGuardados.find(x => String(x._id) === String(id));
       if (c) abrirEdicion(c);
     });
   });
-  tbody.querySelectorAll('button.btn-del').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
+  tbody.querySelectorAll('a.icon-action.eliminar').forEach(a => {
+    a.addEventListener('click', async () => {
+      const id = a.dataset.id;
       if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
       try {
         const res = await fetch(`${API_CONTACTOS}/${id}`, { method: 'DELETE' });
@@ -406,19 +420,16 @@ function abrirDetalleContacto(c) {
 function abrirEdicion(c) {
   editId = c._id;
 
-  // proveedor
   $('#buscadorProveedor').value = c.proveedorNombre || '';
   setVal(['proveedorNombre'], c.proveedorNombre || '');
   const key = c.proveedorKey || slug(c.proveedorNombre || '');
   setVal(['proveedorKey','proveedorId'], key);
 
-  // cargar centros del proveedor y preseleccionar
   mostrarCentrosDeProveedor(key, c.centroId || null);
 
-  // selects y campos
   $('#tieneMMPP').value = c.tieneMMPP || '';
   $('#dispuestoVender').value = c.dispuestoVender || '';
-  M.FormSelect.init($$('#formContacto select')); // reinit
+  M.FormSelect.init($$('#formContacto select'));
 
   $('#fechaDisponibilidad').value = c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '';
   $('#tonsDisponiblesAprox').value = c.tonsDisponiblesAprox ?? '';
@@ -447,7 +458,6 @@ export async function initContactosTab() {
   // Abrir modal en modo NUEVO
   $('#btnOpenContactoModal')?.addEventListener('click', () => {
     editId = null;
-    // limpiar todo por si venimos de editar
     const form = $('#formContacto');
     form?.reset();
     $$('#formContacto select').forEach(sel => {
