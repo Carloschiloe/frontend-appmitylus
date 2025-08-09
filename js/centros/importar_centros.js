@@ -1,8 +1,27 @@
 import { createCentro, updateCentro, getCentroByCode } from '../core/centros_repo.js';
 
-// ===== Helper para capitalizar =====
+// ===== Helpers =====
 function toTitleCase(str) {
   return (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/**
+ * Crea una clave determinista para el proveedor.
+ * - Minúsculas
+ * - Quita tildes/diacríticos
+ * - Colapsa espacios/puntuación a "-"
+ * - Sin espacios/ni signos raros
+ * => "SOCIEDAD COMERCIAL ACUINEV LTDA." -> "sociedad-comercial-acuinev-ltda"
+ */
+function makeProveedorKey(name) {
+  if (!name) return '';
+  const s = String(name)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // quita tildes
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')                       // no letras/números -> "-"
+    .replace(/^-+|-+$/g, '')                           // trim guiones
+    .replace(/-+/g, '-');                               // colapsa
+  return s;
 }
 
 // Mapea los nombres de columnas de tu Excel a los campos de la base de datos
@@ -87,11 +106,18 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
         centro.coords = parsearCoordenadasDMS(detalles['Coordenadas']);
       }
 
-      // --- Capitalizar proveedor y comuna
-      if (centro.proveedor) centro.proveedor = toTitleCase(centro.proveedor);
+      // --- Normalizar proveedor y comuna (presentación)
+      if (centro.proveedor) {
+        // Guarda el nombre como lo quieres mostrar
+        centro.proveedor = toTitleCase(centro.proveedor);
+        // **Clave determinista para unir/buscar**
+        centro.proveedorKey = makeProveedorKey(centro.proveedor);
+      } else {
+        centro.proveedorKey = '';
+      }
       if (centro.comuna) centro.comuna = toTitleCase(centro.comuna);
 
-      // === Lógica ACTUALIZAR o CREAR ===
+      // === Lógica ACTUALIZAR o CREAR (por code único) ===
       try {
         const existente = await getCentroByCode(centro.code);
         if (existente) {
@@ -114,7 +140,6 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
 }
 
 // ========== Helpers Excel ==========
-
 async function parseFileToJson(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
