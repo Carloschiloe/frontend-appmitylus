@@ -2,47 +2,50 @@
 
 // ==== CONFIG: Endpoints absolutos para el backend Railway ====
 const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
-const API_CENTROS   = `${API_URL}/centros`;    // GET: lista de centros (incluye proveedor)
-const API_CONTACTOS = `${API_URL}/contactos`;  // GET y POST: contactos de abastecimiento
+const API_CENTROS   = `${API_URL}/centros`;    // GET: lista de centros
+const API_CONTACTOS = `${API_URL}/contactos`;  // GET y POST: contactos
 
 // ==== STATE GLOBAL ====
-let listaProveedores = [];
-let listaCentros = [];
-let contactosGuardados = []; // Siempre desde MongoDB
+let listaProveedores = []; // [{ nombreOriginal, nombreNormalizado, proveedorKey }]
+let listaCentros = [];     // [{ proveedor, proveedorKey, code, comuna, ... }]
+let contactosGuardados = [];
 
 // ==== UTILIDADES ====
-function $(sel) { return document.querySelector(sel); }
-function $all(sel) { return document.querySelectorAll(sel); }
+const $  = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
 
-// ==== CARGAR DATOS DE API ====
+const slug = (s) =>
+  (s || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-');
 
-// ——— AHORA SOLO CARGA CENTROS Y SACA PROVEEDORES DESDE ALLÍ ———
-
+// ==== CARGA DESDE API ====
 async function cargarCentros() {
   try {
     const res = await fetch(API_CENTROS);
     if (!res.ok) throw new Error('No se pudo cargar centros');
     listaCentros = await res.json();
-    // EXTRAER proveedores únicos (por nombre "normalizado" minúsculas, sin espacios extras)
-    const proveedoresUnicos = {};
-    listaCentros.forEach(c => {
-      const nombreOriginal = (c.proveedor || '').trim();
-      const nombreNormalizado = nombreOriginal.toLowerCase().replace(/\s+/g, ' ');
-      if (nombreOriginal && !proveedoresUnicos[nombreNormalizado]) {
-        proveedoresUnicos[nombreNormalizado] = {
-          nombreOriginal,      // "CULTIVOS MARINOS CHANGUE LTDA."
-          nombreNormalizado,   // "cultivos marinos changue ltda."
-        };
-      }
-    });
-    listaProveedores = Object.values(proveedoresUnicos);
 
-    console.log('[cargarCentros] Proveedores únicos:', listaProveedores);
-    console.log('[cargarCentros] Centros:', listaCentros);
+    // Proveedores únicos a partir de centros (usando proveedorKey si existe)
+    const mapa = new Map(); // key: proveedorKey | slug(nombre) -> {nombreOriginal, nombreNormalizado, proveedorKey}
+    for (const c of listaCentros) {
+      const nombreOriginal = (c.proveedor || '').trim();
+      if (!nombreOriginal) continue;
+      const nombreNormalizado = nombreOriginal.toLowerCase().replace(/\s+/g, ' ');
+      const key = c.proveedorKey && c.proveedorKey.length ? c.proveedorKey : slug(nombreOriginal);
+      if (!mapa.has(key)) {
+        mapa.set(key, { nombreOriginal, nombreNormalizado, proveedorKey: key });
+      }
+    }
+    listaProveedores = Array.from(mapa.values());
   } catch (e) {
-    alert('Error al cargar centros');
+    console.error('[cargarCentros] error:', e);
     listaCentros = [];
     listaProveedores = [];
+    M.toast?.({ html: 'Error al cargar centros', displayLength: 2500 });
   }
 }
 
@@ -51,19 +54,18 @@ async function cargarContactosGuardados() {
     const res = await fetch(API_CONTACTOS);
     if (!res.ok) throw new Error('No se pudo cargar contactos');
     contactosGuardados = await res.json();
-    console.log('[cargarContactosGuardados] Contactos:', contactosGuardados);
   } catch (e) {
+    console.error('[cargarContactosGuardados] error:', e);
     contactosGuardados = [];
   }
 }
 
-// ==== BUSCADOR DE PROVEEDORES (tipo autocompletado) ====
+// ==== BUSCADOR DE PROVEEDORES (datalist) ====
 function setupBuscadorProveedores() {
   const input = $('#buscadorProveedor');
   const datalist = $('#datalistProveedores');
   if (!input || !datalist) return;
 
-  // Autocompleta proveedores por nombre
   input.addEventListener('input', () => {
     const val = input.value.toLowerCase().replace(/\s+/g, ' ').trim();
     datalist.innerHTML = '';
@@ -72,192 +74,205 @@ function setupBuscadorProveedores() {
     const filtrados = listaProveedores.filter(p =>
       p.nombreNormalizado.includes(val)
     );
-    filtrados.slice(0, 15).forEach(prov => {
+    filtrados.slice(0, 20).forEach(prov => {
       const opt = document.createElement('option');
       opt.value = prov.nombreOriginal;
       datalist.appendChild(opt);
     });
   });
 
-  // Al seleccionar un proveedor, mostrar sus centros
+  // Al confirmar un proveedor (cambio de valor)
   input.addEventListener('change', () => {
-    const val = input.value.toLowerCase().replace(/\s+/g, ' ').trim();
-    const prov = listaProveedores.find(p => p.nombreNormalizado === val);
-
+    const valNorm = input.value.toLowerCase().replace(/\s+/g, ' ').trim();
+    // Encuentra proveedor por nombre normalizado
+    const prov = listaProveedores.find(p => p.nombreNormalizado === valNorm);
     if (prov) {
-      mostrarCentrosDeProveedor(prov);
-      $('#proveedorId').value = prov.nombreOriginal;
+      // Set ocultos
+      $('#proveedorKey').value = prov.proveedorKey;     // ← clave estable
       $('#proveedorNombre').value = prov.nombreOriginal;
+
+      // Carga centros del proveedor
+      mostrarCentrosDeProveedor(prov.proveedorKey);
     } else {
-      // Limpiar selects y campos si no coincide
-      $('#proveedorId').value = '';
+      // Limpia si no coincide
+      $('#proveedorKey').value = '';
       $('#proveedorNombre').value = '';
-      limpiarCamposCentro();
-      $('#selectCentro').innerHTML = '<option value="" disabled selected>Selecciona un centro</option>';
-      $('#selectCentro').disabled = true;
+      resetSelectCentros();
     }
   });
 }
 
-// Helper para normalizar a una clave estable (sin tildes, minúsculas, -)
-function slug(s) {
-  return (s || '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita tildes
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')                     // no alfanumérico -> "-"
-    .replace(/^-+|-+$/g, '')                         // trim guiones
-    .replace(/-+/g, '-');                            // colapsa guiones
-}
-
-// ==== MOSTRAR CENTROS DEL PROVEEDOR SELECCIONADO ====
-function mostrarCentrosDeProveedor(prov) {
+// ==== CENTROS DEL PROVEEDOR ====
+function mostrarCentrosDeProveedor(proveedorKey) {
   const select = $('#selectCentro');
   if (!select) return;
 
-  // El nombre que viene del autocompletado (o de cualquier otra parte)
-  const nombreElegido =
-    prov?.nombreOriginal ??
-    prov?.nombre ??
-    prov?.proveedor ??
-    '';
-
-  // Clave normalizada del proveedor buscado
-  const buscadoKey = slug(nombreElegido);
-
-  // Filtra centros: usa proveedorKey si existe; si no, normaliza proveedor
+  // Filtra por proveedorKey; si un centro no tiene key, compara por slug del nombre
   const centros = listaCentros.filter(c => {
-    const keyCentro = c.proveedorKey ? c.proveedorKey : slug(c.proveedor || '');
-    const match = keyCentro === buscadoKey;
-
-    // logs de diagnóstico
-    console.log('[DEBUG] centro key:', keyCentro, '| buscado:', buscadoKey, '| MATCH:', match, '| nombreCentro:', c.proveedor);
-
-    return match;
+    const keyCentro = c.proveedorKey && c.proveedorKey.length ? c.proveedorKey : slug(c.proveedor || '');
+    return keyCentro === proveedorKey;
   });
 
-  // Rellena el <select>
-  select.innerHTML = '<option value="" disabled selected>Selecciona un centro</option>';
-  centros.forEach(centro => {
-    const opt = document.createElement('option');
-    opt.value = centro._id || centro.id;
-    opt.textContent = `${centro.code} – ${centro.comuna || ''} (${centro.hectareas || '-'} ha)`;
-    // Si no lo usas luego, puedes quitar este dataset
-    opt.dataset.centroInfo = JSON.stringify(centro);
-    select.appendChild(opt);
-  });
+  // Render opciones (primera opción: sin centro)
+  let html = `<option value="" selected>Sin centro (solo contacto al proveedor)</option>`;
+  html += centros
+    .map(c => `<option value="${c._id || c.id}" data-code="${c.code || ''}" data-comuna="${c.comuna || ''}" data-hect="${c.hectareas ?? ''}">
+                 ${c.code || ''} – ${c.comuna || 's/comuna'} (${c.hectareas ?? '-'} ha)
+               </option>`)
+    .join('');
+  select.innerHTML = html;
+  select.disabled = false;
 
-  select.disabled = centros.length === 0;
-  limpiarCamposCentro();
+  // Re-init Materialize select
+  const inst = M.FormSelect.getInstance(select);
+  if (inst) inst.destroy();
+  M.FormSelect.init(select);
+
+  // Limpia ocultos de centro
+  $('#centroId').value = '';
+  $('#centroCode').value = '';
+
+  // on change: set ocultos
+  select.onchange = () => {
+    const opt = select.options[select.selectedIndex];
+    $('#centroId').value   = opt.value || '';
+    $('#centroCode').value = opt.dataset.code || '';
+    // (Si quieres, podrías llenar comuna/hectáreas ocultos si los sigues usando)
+    $('#centroComuna').value    = opt.dataset.comuna || '';
+    $('#centroHectareas').value = opt.dataset.hect || '';
+  };
 }
 
+function resetSelectCentros(){
+  const select = $('#selectCentro');
+  if (!select) return;
+  select.innerHTML = `<option value="" selected>Sin centro (solo contacto al proveedor)</option>`;
+  select.disabled = true;
+  const inst = M.FormSelect.getInstance(select);
+  if (inst) inst.destroy();
+  M.FormSelect.init(select);
 
-// ==== LLENAR AUTOMÁTICAMENTE DATOS DEL CENTRO ====
-$('#selectCentro')?.addEventListener('change', function () {
-  const centroId = this.value;
-  const centro = listaCentros.find(c => (c._id || c.id) == centroId);
-  if (!centro) return;
-  $('#centroId').value = centro._id || centro.id;
-  $('#centroCodigo').value = centro.code || '';
-  $('#centroComuna').value = centro.comuna || '';
-  $('#centroHectareas').value = centro.hectareas || '';
-});
-
-function limpiarCamposCentro() {
   $('#centroId').value = '';
-  $('#centroCodigo').value = '';
+  $('#centroCode').value = '';
   $('#centroComuna').value = '';
   $('#centroHectareas').value = '';
 }
 
-// ==== GUARDAR CONTACTO EN BACKEND ====
+// ==== FORMULARIO: GUARDAR CONTACTO ====
 function setupFormulario() {
   const form = $('#formContacto');
   if (!form) return;
-  form.addEventListener('submit', async function (e) {
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Obtener datos
-    const proveedorId = $('#proveedorId').value;
-    const proveedorNombre = $('#proveedorNombre').value;
-    const centroId = $('#centroId').value;
-    const centroCodigo = $('#centroCodigo').value;
-    const centroComuna = $('#centroComuna').value;
-    const centroHectareas = $('#centroHectareas').value;
-    const resultado = $('#resultadoContacto').value;
-    const notas = $('#notasContacto').value;
-    const fecha = new Date().toISOString();
+    const proveedorKey    = $('#proveedorKey').value.trim();
+    const proveedorNombre = $('#proveedorNombre').value.trim();
 
-    // Validar
-    if (!proveedorId || !proveedorNombre || !resultado) {
-      alert('Debes seleccionar proveedor, resultado y centro.');
+    if (!proveedorKey || !proveedorNombre) {
+      M.toast?.({ html: 'Selecciona un proveedor válido', displayLength: 2500 });
+      $('#buscadorProveedor').focus();
       return;
     }
 
-    const nuevo = {
-      proveedorId,
+    // Campos nuevos
+    const tieneMMPP           = $('#tieneMMPP').value;              // Sí / No
+    const fechaDisponibilidad = $('#fechaDisponibilidad').value || null; // YYYY-MM-DD
+    const dispuestoVender     = $('#dispuestoVender').value;       // Sí / No / Por confirmar
+    const vendeActualmenteA   = $('#vendeActualmenteA').value.trim();
+    const notas               = $('#notasContacto').value.trim();
+
+    // Centro (opcional)
+    const centroId   = $('#centroId').value || null;
+    const centroCode = $('#centroCode').value || null;
+
+    // Payload al backend
+    const payload = {
+      proveedorKey,
       proveedorNombre,
-      centroId,
-      centroCodigo,
-      centroComuna,
-      centroHectareas,
-      resultado,
+      tieneMMPP,
+      fechaDisponibilidad,
+      dispuestoVender,
+      vendeActualmenteA,
       notas,
-      fecha
+      centroId,
+      centroCode
     };
 
     try {
       const res = await fetch(API_CONTACTOS, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(nuevo)
+        body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error('No se pudo guardar el contacto');
+      if (!res.ok) throw new Error(`POST /contactos -> ${res.status}`);
+      // recarga tabla
       await cargarContactosGuardados();
       renderTablaContactos();
+
+      // feedback & reset parcial
+      M.toast?.({ html: 'Contacto guardado', displayLength: 2000 });
       form.reset();
-      limpiarCamposCentro();
-      $('#selectCentro').innerHTML = '<option value="" disabled selected>Selecciona un centro</option>';
-      $('#selectCentro').disabled = true;
+      // Re-init selects de Materialize tras reset
+      $$('#formContacto select').forEach(sel => {
+        const inst = M.FormSelect.getInstance(sel);
+        if (inst) inst.destroy();
+        M.FormSelect.init(sel);
+      });
+      // Mantener proveedor y centros seleccionados (no limpiar arriba)
+      // Solo limpia campos de centro si cambias a otro proveedor
     } catch (err) {
-      alert('Error al guardar contacto. Intenta de nuevo.');
+      console.error('guardarContacto error:', err);
+      M.toast?.({ html: 'Error al guardar contacto', displayLength: 2500 });
     }
   });
 }
 
-// ==== TABLA DE CONTACTOS GUARDADOS ====
+// ==== TABLA ====
 function renderTablaContactos() {
   const tbody = $('#tablaContactos tbody');
   if (!tbody) return;
-  tbody.innerHTML = '';
 
   if (!contactosGuardados.length) {
     tbody.innerHTML = `<tr><td colspan="8" style="color:#888">No hay contactos registrados aún.</td></tr>`;
     return;
   }
 
-  contactosGuardados.forEach(contacto => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${contacto.fecha ? contacto.fecha.slice(0,10) : ''}</td>
-      <td>${contacto.proveedorNombre || ''}</td>
-      <td>${contacto.centroCodigo || '-'}</td>
-      <td>${contacto.centroComuna || '-'}</td>
-      <td>${contacto.centroHectareas || '-'}</td>
-      <td>${contacto.resultado || ''}</td>
-      <td>${contacto.notas || '-'}</td>
-    `;
-    tbody.appendChild(tr);
-  });
+  // Limpia primero
+  tbody.innerHTML = '';
+
+  contactosGuardados
+    .slice() // copia
+    .sort((a, b) => new Date(b.createdAt || b.fecha || 0) - new Date(a.createdAt || a.fecha || 0))
+    .forEach(c => {
+      const f = new Date(c.createdAt || c.fecha || Date.now());
+      const dd = String(f.getDate()).padStart(2, '0');
+      const mm = String(f.getMonth() + 1).padStart(2, '0');
+      const yyyy = f.getFullYear();
+      const hh = String(f.getHours()).padStart(2, '0');
+      const mi = String(f.getMinutes()).padStart(2, '0');
+      const fechaFmt = `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${fechaFmt}</td>
+        <td>${c.proveedorNombre || ''}</td>
+        <td>${c.centroCode || ''}</td>
+        <td>${c.tieneMMPP || ''}</td>
+        <td>${c.fechaDisponibilidad ? c.fechaDisponibilidad : ''}</td>
+        <td>${c.dispuestoVender || ''}</td>
+        <td>${c.vendeActualmenteA || ''}</td>
+        <td>${c.notas || ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
 }
 
-// ==== EXPORTA PARA EL INDEX.JS ====
+// ==== EXPORTADO ====
 export async function initContactosTab() {
-  await cargarCentros(); // Esto carga también listaProveedores
+  await cargarCentros();
   await cargarContactosGuardados();
   setupBuscadorProveedores();
   setupFormulario();
   renderTablaContactos();
 }
-
-
-
