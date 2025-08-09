@@ -3,13 +3,14 @@
 import {
   apiGetCentros, apiCreateCentro, apiUpdateCentro, apiDeleteCentro,
   apiAddLinea, apiUpdateLinea, apiDeleteLinea, apiAddInventarioLinea,
-  // ⬇⬇⬇ agrega esta export en api.js
   apiBulkUpsertCentros
 } from './api.js';
 
-import { getCentros, saveCentros } from './almacenamiento.js'; // <-- corregido
+// Nota: en tu almacenamiento.js no existe saveCentros y además hace HTTP.
+// Dejamos sólo getCentros para un posible modo offline.
+import { getCentros } from './almacenamiento.js';
 
-// pon en false para trabajar offline
+// Usa la API siempre (modo online). Si algún día quieres offline, cambia a false.
 const USE_API = true;
 
 /* --------- Lectura --------- */
@@ -46,34 +47,37 @@ export async function addInventarioLinea(centroId, lineaId, data) {
 
 /* --------- BULK UPSERT (nuevo) --------- */
 export async function bulkUpsertCentros(arr) {
-  if (USE_API) {
-    // /api/centros/bulk-upsert (backend ya creado)
-    return apiBulkUpsertCentros(arr);
-  }
+  if (USE_API) return apiBulkUpsertCentros(arr);
   return localBulkUpsertCentros(arr);
 }
 
-/* ===== IMPLEMENTACIÓN LOCALSTORAGE (offline) ===== */
-function persist(list){ saveCentros(list); return list; }
+/* ===== BUSCAR CENTRO POR CODE (para importador o UI) ===== */
+export async function getCentroByCode(code) {
+  if (!code) return null;
+  const all = await getCentrosAll();
+  return all.find(c => c.code && c.code.toString() === String(code)) || null;
+}
+
+/* ====== Stubs modo offline (no usados con USE_API=true) ====== */
+function persist(list){ return list; } // no-op
 
 async function localCreateCentro(data){
-  const list = getCentros();
+  const list = await getCentros(); // viene de servidor en tu impl; aquí solo stub
   list.push({ ...data, _id: crypto.randomUUID() });
   return persist(list);
 }
 async function localUpdateCentro(id,data){
-  const list = getCentros();
+  const list = await getCentros();
   const i = list.findIndex(c=>c._id===id);
   if(i>-1) list[i] = { ...list[i], ...data };
   return persist(list);
 }
 async function localDeleteCentro(id){
-  const list = getCentros().filter(c=>c._id!==id);
+  const list = (await getCentros()).filter(c=>c._id!==id);
   return persist(list);
 }
-
 async function localAddLinea(centroId, data){
-  const list = getCentros();
+  const list = await getCentros();
   const c = list.find(c=>c._id===centroId);
   if(!c) throw new Error('Centro no encontrado');
   c.lines ||= [];
@@ -81,7 +85,7 @@ async function localAddLinea(centroId, data){
   return persist(list);
 }
 async function localUpdateLinea(centroId, lineaId, data){
-  const list = getCentros();
+  const list = await getCentros();
   const c = list.find(c=>c._id===centroId);
   const l = c?.lines?.find(l=>l._id===lineaId);
   if(!l) throw new Error('Línea no encontrada');
@@ -89,13 +93,13 @@ async function localUpdateLinea(centroId, lineaId, data){
   return persist(list);
 }
 async function localDeleteLinea(centroId, lineaId){
-  const list = getCentros();
+  const list = await getCentros();
   const c = list.find(c=>c._id===centroId);
   c.lines = c.lines.filter(l=>l._id!==lineaId);
   return persist(list);
 }
 async function localAddInventarioLinea(centroId,lineaId,data){
-  const list = getCentros();
+  const list = await getCentros();
   const c = list.find(c=>c._id===centroId);
   const l = c?.lines?.find(l=>l._id===lineaId);
   if(!l) throw new Error('Línea no encontrada');
@@ -103,17 +107,8 @@ async function localAddInventarioLinea(centroId,lineaId,data){
   l.inventarios.push({ ...data, _id: crypto.randomUUID() });
   return persist(list);
 }
-
-// ===== BUSCAR CENTRO POR CODE (para importador inteligente o UI) =====
-export async function getCentroByCode(code) {
-  if (!code) return null;
-  const all = await getCentrosAll();
-  return all.find(c => c.code && c.code.toString() === code.toString()) || null;
-}
-
-/* ===== Bulk offline (simula upsert por code) ===== */
 async function localBulkUpsertCentros(arr){
-  const list = getCentros();
+  const list = await getCentros();
   const indexByCode = new Map(list.map(c => [String(c.code), c]));
   let matched=0, modified=0, upserted=0;
 
@@ -122,7 +117,6 @@ async function localBulkUpsertCentros(arr){
     const existente = indexByCode.get(code);
     if (existente) {
       matched++;
-      // compara cambios simples
       const before = JSON.stringify(existente);
       Object.assign(existente, doc);
       const after = JSON.stringify(existente);
@@ -134,6 +128,5 @@ async function localBulkUpsertCentros(arr){
       upserted++;
     }
   }
-  persist(list);
   return { ok:true, matched, modified, upserted };
 }
