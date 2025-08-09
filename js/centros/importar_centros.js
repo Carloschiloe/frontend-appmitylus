@@ -1,65 +1,79 @@
+// js/centros/importar_centros.js
+// Reemplazo completo
+
 import { createCentro, updateCentro, getCentroByCode } from '../core/centros_repo.js';
 
-// ===== Helpers =====
+/* =========================
+   Helpers de formato
+   ========================= */
 function toTitleCase(str) {
   return (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }
 
 /**
- * Crea una clave determinista para el proveedor.
- * - Minúsculas
- * - Quita tildes/diacríticos
- * - Colapsa espacios/puntuación a "-"
- * - Sin espacios/ni signos raros
- * => "SOCIEDAD COMERCIAL ACUINEV LTDA." -> "sociedad-comercial-acuinev-ltda"
+ * Clave determinista para el proveedor:
+ * - minúsculas, sin tildes, espacios/puntuación -> "-"
  */
 function makeProveedorKey(name) {
   if (!name) return '';
-  const s = String(name)
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // quita tildes
+  return String(name)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')                       // no letras/números -> "-"
-    .replace(/^-+|-+$/g, '')                           // trim guiones
-    .replace(/-+/g, '-');                               // colapsa
-  return s;
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-');
 }
 
-// Mapea los nombres de columnas de tu Excel a los campos de la base de datos
+/* =========================
+   Mapeo columnas Excel -> modelo
+   (ajusta si cambian los encabezados)
+   ========================= */
 const MAPEO_CAMPOS = {
   'Proveedor': 'proveedor',
   'Comuna': 'comuna',
   'Codigo Centro': 'code',
   'Hectareas': 'hectareas',
-  // 'Coordenadas' se procesa especial abajo
+  // Coordenadas se procesa aparte
 };
 
-// --------- PARSING DE COORDENADAS ---------
-function parsearCoordenadasDMS(str) {
-  if (!str) return [];
-  return str.split(';').filter(Boolean).map(p => {
-    const [latDMS, lngDMS] = p.split(',').map(x => x.trim());
-    return {
-      lat: dmsToDecimal(latDMS),
-      lng: dmsToDecimal(lngDMS)
-    };
-  });
-}
-
+/* =========================
+   Coordenadas DMS → decimal
+   Admite: S 42°12´30.5, W 73°45´10.2
+   ========================= */
 function dmsToDecimal(dms) {
   if (!dms) return null;
-  const regex = /([NSWE])\s*(\d+)°(\d+)´([\d\.]+)/i;
-  const match = dms.match(regex);
-  if (!match) return null;
-  const [, dir, deg, min, sec] = match;
-  let dec = parseInt(deg) + parseInt(min) / 60 + parseFloat(sec.replace(',', '.')) / 3600;
-  if (dir === 'S' || dir === 'W') dec *= -1;
+  // Soporta ´ o ' como minutos
+  const regex = /([NSWE])\s*(\d+)[°º]\s*(\d+)[´'\u2032]?\s*([\d.,]+)/i;
+  const m = dms.match(regex);
+  if (!m) return null;
+  const [, dir, deg, min, secRaw] = m;
+  const sec = parseFloat(String(secRaw).replace(',', '.'));
+  let dec = parseInt(deg, 10) + parseInt(min, 10) / 60 + sec / 3600;
+  if (dir.toUpperCase() === 'S' || dir.toUpperCase() === 'W') dec *= -1;
   return dec;
 }
 
-// --------- IMPORTADOR UI ---------
+function parsearCoordenadasDMS(str) {
+  if (!str) return [];
+  return String(str)
+    .split(';')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(par => {
+      // Ej: "S 42°12´30.5, W 73°45´10.2"
+      const [latDMS, lngDMS] = par.split(',').map(x => x.trim());
+      return { lat: dmsToDecimal(latDMS), lng: dmsToDecimal(lngDMS) };
+    })
+    .filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+}
+
+/* =========================
+   Render del importador
+   ========================= */
 export function renderImportadorCentros(containerId = 'importarCentrosContainer') {
   const container = document.getElementById(containerId);
   if (!container) return;
+
   container.innerHTML = `
     <div class="card-panel" style="margin-bottom:1rem;">
       <h6>Importar centros desde Excel o CSV</h6>
@@ -72,96 +86,137 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
 
   const fileInput = document.getElementById('fileInputCentros');
   const btnImportar = document.getElementById('btnImportarCentros');
+  const resultadoDiv = document.getElementById('resultadoImportacion');
+
   let centrosData = [];
 
   fileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
     centrosData = await parseFileToJson(file);
     btnImportar.disabled = !centrosData.length;
     renderPreview(centrosData);
+    resultadoDiv.textContent = centrosData.length
+      ? `Archivo cargado. Registros detectados: ${centrosData.length}`
+      : '';
   });
 
   btnImportar.addEventListener('click', async () => {
     if (!centrosData.length) return;
-    btnImportar.disabled = true;
-    document.getElementById('resultadoImportacion').textContent = 'Importando...';
+
     let importados = 0, actualizados = 0, errores = 0;
 
-    for (const fila of centrosData) {
-      // Mapear campos principales
-      const centro = {};
-      const detalles = {};
-      for (const k in fila) {
-        if (MAPEO_CAMPOS[k]) {
-          centro[MAPEO_CAMPOS[k]] = fila[k];
-        } else if (k.toLowerCase().includes('coordenada')) {
-          centro.coords = parsearCoordenadasDMS(fila[k]);
+    // Deshabilita UI y muestra estado
+    btnImportar.disabled = true;
+    resultadoDiv.textContent = 'Importando...';
+
+    try {
+      for (let i = 0; i < centrosData.length; i++) {
+        const fila = centrosData[i];
+
+        // ------ Mapeo a objeto centro + detalles ------
+        const centro = {};
+        const detalles = {};
+        for (const k in fila) {
+          if (MAPEO_CAMPOS[k]) {
+            centro[MAPEO_CAMPOS[k]] = fila[k];
+          } else if (k.toLowerCase().includes('coordenada')) {
+            centro.coords = parsearCoordenadasDMS(fila[k]);
+          } else {
+            detalles[k] = fila[k];
+          }
+        }
+        centro.detalles = detalles;
+
+        // Si coords no quedó por "coordenada*", intenta con encabezado "Coordenadas"
+        if ((!centro.coords || !centro.coords.length) && detalles['Coordenadas']) {
+          centro.coords = parsearCoordenadasDMS(detalles['Coordenadas']);
+        }
+
+        // Normalizaciones de presentación
+        if (centro.proveedor) {
+          centro.proveedor = toTitleCase(centro.proveedor);
+          centro.proveedorKey = makeProveedorKey(centro.proveedor);
         } else {
-          detalles[k] = fila[k];
+          centro.proveedorKey = '';
+        }
+        if (centro.comuna) centro.comuna = toTitleCase(centro.comuna);
+
+        // Hectáreas -> número
+        if (centro.hectareas != null && centro.hectareas !== '') {
+          const n = Number(String(centro.hectareas).replace(',', '.'));
+          if (!Number.isNaN(n)) centro.hectareas = n;
+        }
+
+        // ------ Guardar (crear/actualizar por "code") ------
+        try {
+          const existente = await getCentroByCode(centro.code);
+          if (existente) {
+            // IMPORTANTE: actualizamos sólo con los datos importados
+            await updateCentro(existente._id, centro);
+            actualizados++;
+          } else {
+            await createCentro(centro);
+            importados++;
+          }
+        } catch (err) {
+          console.error('Error importando centro:', centro, err);
+          errores++;
+        }
+
+        // Feedback de progreso cada 25 filas para que no "se pegue" el modal
+        if ((i + 1) % 25 === 0) {
+          resultadoDiv.textContent = `Importando... (${i + 1}/${centrosData.length})`;
+          // Cede tiempo a la UI
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(r => setTimeout(r, 0));
         }
       }
-      centro.detalles = detalles;
-      if ((!centro.coords || !centro.coords.length) && detalles['Coordenadas']) {
-        centro.coords = parsearCoordenadasDMS(detalles['Coordenadas']);
-      }
 
-      // --- Normalizar proveedor y comuna (presentación)
-      if (centro.proveedor) {
-        // Guarda el nombre como lo quieres mostrar
-        centro.proveedor = toTitleCase(centro.proveedor);
-        // **Clave determinista para unir/buscar**
-        centro.proveedorKey = makeProveedorKey(centro.proveedor);
-      } else {
-        centro.proveedorKey = '';
-      }
-      if (centro.comuna) centro.comuna = toTitleCase(centro.comuna);
+      const msg = `¡Importación completa! Creados: ${importados}, Actualizados: ${actualizados}, Errores: ${errores}`;
+      resultadoDiv.textContent = msg;
+      if (window.M?.toast) window.M.toast({ html: msg, displayLength: 4000 });
+    } finally {
+      // Pase lo que pase, reactivar botón y cerrar modal si existe
+      btnImportar.disabled = false;
 
-      // === Lógica ACTUALIZAR o CREAR (por code único) ===
-      try {
-        const existente = await getCentroByCode(centro.code);
-        if (existente) {
-          await updateCentro(existente._id, { ...existente, ...centro });
-          actualizados++;
-        } else {
-          await createCentro(centro);
-          importados++;
-        }
-      } catch (err) {
-        errores++;
-        console.error('Error importando centro:', centro, err);
+      const modalEl = document.querySelector('#modalImportarCentros');
+      if (modalEl && window.M?.Modal) {
+        const instance = window.M.Modal.getInstance(modalEl) || window.M.Modal.init(modalEl);
+        setTimeout(() => instance.close(), 900); // deja ver el resumen antes de cerrar
       }
     }
-
-    document.getElementById('resultadoImportacion').textContent =
-      `¡Importación completa! Creados: ${importados}, Actualizados: ${actualizados}, Errores: ${errores}`;
-    btnImportar.disabled = false;
   });
 }
 
-// ========== Helpers Excel ==========
+/* =========================
+   Excel/CSV → JSON
+   Requiere window.XLSX cargado
+   ========================= */
 async function parseFileToJson(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
-    reader.onload = async (e) => {
-      const data = e.target.result;
-      let workbook;
+    reader.onload = (e) => {
       try {
-        workbook = window.XLSX.read(data, { type: 'binary' });
+        const data = e.target.result;
+        const wb = window.XLSX.read(data, { type: 'binary' });
+        const first = wb.SheetNames[0];
+        const sheet = wb.Sheets[first];
+        const rows = window.XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        resolve(rows);
       } catch (err) {
+        console.error('Error leyendo archivo:', err);
         alert('Error leyendo archivo. Asegúrate de que sea Excel/CSV válido.');
         resolve([]);
-        return;
       }
-      const firstSheet = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[firstSheet];
-      let rows = window.XLSX.utils.sheet_to_json(sheet, { defval: '' });
-      resolve(rows);
     };
     reader.readAsBinaryString(file);
   });
 }
 
+/* =========================
+   Vista previa de primeras filas
+   ========================= */
 function renderPreview(rows) {
   const previewDiv = document.getElementById('previewCentros');
   if (!rows || !rows.length) {
@@ -177,3 +232,4 @@ function renderPreview(rows) {
   html += '</tbody></table>';
   previewDiv.innerHTML = html;
 }
+
