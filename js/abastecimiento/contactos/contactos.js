@@ -1,8 +1,14 @@
-// ==== CONFIG ====
-const API_URL        = 'https://backend-appmitylus-production.up.railway.app/api';
-const API_CENTROS    = `${API_URL}/centros`;
-const API_CONTACTOS  = `${API_URL}/contactos`;
-const API_VISITAS    = `${API_URL}/visitas`;      // <-- NUEVO: endpoint de visitas
+// contactos.js — versión integrada con api.js
+
+import {
+  apiGetCentros,
+  apiGetContactos,
+  apiCreateContacto,
+  apiUpdateContacto,
+  apiDeleteContacto,
+  apiGetVisitasByContacto,
+  apiCreateVisita,
+} from '../../api.js';
 
 // ==== STATE ====
 let listaProveedores = [];
@@ -11,14 +17,11 @@ let contactosGuardados = [];
 let dt = null;
 let editId = null; // ← si no es null, estamos editando ese _id
 
-// caches simples
-const cacheVisitasByContactoId = Object.create(null);
-
 // ==== UTILS ====
 const $  = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
-const slug = (s) => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-  .toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').replace(/-+/g,'-');
+const slug = (s) => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+  .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').replace(/-+/g,'-');
 
 function setVal(ids, value='') {
   for (const id of ids) {
@@ -39,12 +42,10 @@ function getVal(ids) {
   return '';
 }
 
-// ==== API LOAD ====
+// ==== API LOAD (via api.js) ====
 async function cargarCentros() {
   try {
-    const res = await fetch(API_CENTROS);
-    if (!res.ok) throw new Error('No se pudo cargar centros');
-    listaCentros = await res.json();
+    listaCentros = await apiGetCentros();
 
     // construir índice de proveedores desde centros
     const mapa = new Map();
@@ -64,26 +65,10 @@ async function cargarCentros() {
 }
 async function cargarContactosGuardados() {
   try {
-    const res = await fetch(API_CONTACTOS);
-    if (!res.ok) throw new Error('No se pudo cargar contactos');
-    contactosGuardados = await res.json();
+    contactosGuardados = await apiGetContactos();
   } catch (e) {
     console.error('[cargarContactosGuardados] error:', e);
     contactosGuardados = [];
-  }
-}
-async function cargarVisitasPorContacto(contactoId) {
-  if (!contactoId) return [];
-  if (cacheVisitasByContactoId[contactoId]) return cacheVisitasByContactoId[contactoId];
-  try {
-    const res = await fetch(`${API_VISITAS}?contactoId=${encodeURIComponent(contactoId)}`);
-    if (!res.ok) throw new Error('No se pudo cargar visitas');
-    const visitas = await res.json();
-    cacheVisitasByContactoId[contactoId] = visitas || [];
-    return visitas || [];
-  } catch (e) {
-    console.error('[cargarVisitasPorContacto] error:', e);
-    return [];
   }
 }
 
@@ -120,7 +105,7 @@ function setupBuscadorProveedores() {
   });
 }
 
-// ==== CENTROS ====
+// ==== CENTROS (UI del select) ====
 function mostrarCentrosDeProveedor(proveedorKey, preselectCentroId = null) {
   const select = $('#selectCentro'); if (!select) return;
   const centros = listaCentros.filter(c => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor||'')) === proveedorKey);
@@ -201,15 +186,9 @@ function setupFormulario() {
 
     try {
       if (editId) {
-        const res = await fetch(`${API_CONTACTOS}/${editId}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error(`PUT /contactos/${editId} -> ${res.status} ${await res.text()}`);
+        await apiUpdateContacto(editId, payload);
       } else {
-        const res = await fetch(API_CONTACTOS, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error(`POST /contactos -> ${res.status} ${await res.text()}`);
+        await apiCreateContacto(payload);
       }
 
       await cargarContactosGuardados();
@@ -252,7 +231,7 @@ function initTablaContactos(){
     ]
   });
 
-  // Eventos delegados (ver/editar/eliminar/visita)
+  // Eventos delegados (ver/visita/editar/eliminar)
   jq('#tablaContactos tbody')
     .on('click', 'a.icon-action.ver', function(){
       const id = this.dataset.id;
@@ -273,8 +252,7 @@ function initTablaContactos(){
       const id = this.dataset.id;
       if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
       try {
-        const res = await fetch(`${API_CONTACTOS}/${id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error(`DELETE /contactos/${id} -> ${res.status} ${await res.text()}`);
+        await apiDeleteContacto(id);
         await cargarContactosGuardados();
         renderTablaContactos();
         M.toast?.({ html: 'Contacto eliminado', displayLength: 1800 });
@@ -300,7 +278,7 @@ function renderTablaContactos() {
       const when = `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
 
       const acciones = `
-        <a href="#!" class="icon-action ver" title="Ver" data-id="${c._id}">
+        <a href="#!" class="icon-action ver" title="Ver detalle" data-id="${c._id}">
           <i class="material-icons">visibility</i>
         </a>
         <a href="#!" class="icon-action visita" title="Registrar visita" data-id="${c._id}">
@@ -372,8 +350,7 @@ function renderTablaContactos() {
       const id = a.dataset.id;
       if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
       try {
-        const res = await fetch(`${API_CONTACTOS}/${id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error(`DELETE /contactos/${id} -> ${res.status} ${await res.text()}`);
+        await apiDeleteContacto(id);
         await cargarContactosGuardados();
         renderTablaContactos();
         M.toast?.({ html: 'Contacto eliminado', displayLength: 1800 });
@@ -430,8 +407,8 @@ async function abrirDetalleContacto(c) {
     ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${x}</span>`).join('')
     : '<span class="text-soft">Sin centros asociados</span>';
 
-  // visitas
-  const visitas = await cargarVisitasPorContacto(c._id);
+  // visitas (seguro: devuelve [] si backend no existe)
+  const visitas = await apiGetVisitasByContacto(c._id);
 
   body.innerHTML = `
     <div class="mb-4">
@@ -474,15 +451,12 @@ async function abrirDetalleContacto(c) {
 
 // ==== VISITA (modal + submit) ====
 function abrirModalVisita(contacto) {
-  // set hidden + cargar centros del proveedor para el select
+  // set hidden + cargar centros del proveedor para el select del modal visita
   setVal(['visita_proveedorId'], contacto._id);
   const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
-  mostrarCentrosDeProveedor(proveedorKey); // reutilizamos el mismo selector (opcional: usa el del modal visita si lo separas)
 
-  // si tienes un select distinto en el modal de visitas, inicialízalo acá:
   const selectVisita = $('#visita_centroId');
   if (selectVisita) {
-    // poblar con centros del proveedor
     const centros = listaCentros.filter(c => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor||'')) === proveedorKey);
     let options = `<option value="">Centro visitado (opcional)</option>`;
     options += centros.map(c => `<option value="${c._id || c.id}">${c.code || c.codigo || ''} – ${(c.comuna||'s/comuna')}</option>`).join('');
@@ -502,7 +476,7 @@ function setupFormularioVisita() {
     e.preventDefault();
     const contactoId = $('#visita_proveedorId').value;
     const payload = {
-      contactoId,                                     // vínculo directo al contacto
+      contactoId,
       fecha: $('#visita_fecha').value,
       centroId: $('#visita_centroId').value || null,
       contacto: $('#visita_contacto').value || null,
@@ -513,13 +487,7 @@ function setupFormularioVisita() {
     };
 
     try {
-      const res = await fetch(API_VISITAS, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error(`POST /visitas -> ${res.status} ${await res.text()}`);
-
-      // refrescar cache de visitas del contacto y feedback
-      cacheVisitasByContactoId[contactoId] = null;
+      await apiCreateVisita(payload);
       M.toast?.({ html: 'Visita guardada', classes: 'teal', displayLength: 1800 });
 
       const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita'));
@@ -529,9 +497,11 @@ function setupFormularioVisita() {
         const inst = M.FormSelect.getInstance(sel); if (inst) inst.destroy();
         M.FormSelect.init(sel);
       });
-    } catch (e) {
-      console.error('guardarVisita error:', e);
-      M.toast?.({ html: 'Error al guardar la visita', displayLength: 2200 });
+    } catch (e2) {
+      console.warn('apiCreateVisita aún no disponible:', e2?.message || e2);
+      M.toast?.({ html: 'Visitas aún no disponible (backend)', displayLength: 2200 });
+      const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita'));
+      modalVisita?.close();
     }
   });
 }
@@ -572,7 +542,7 @@ export async function initContactosTab() {
   await cargarContactosGuardados();
   setupBuscadorProveedores();
   setupFormulario();
-  setupFormularioVisita();        // <-- init del form de visitas
+  setupFormularioVisita();
   initTablaContactos();
   renderTablaContactos();
 
