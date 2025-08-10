@@ -251,32 +251,60 @@
   <script type="module" src="../../js/abastecimiento/index.js"></script>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      M.Tabs.init(document.querySelectorAll('.tabs'), {});
-      M.FormSelect.init(document.querySelectorAll('select'));
+  document.addEventListener('DOMContentLoaded', function () {
+    M.Tabs.init(document.querySelectorAll('.tabs'), {});
 
-      // Modal principal (registrar contacto)
-      const modalEl = document.getElementById('modalContacto');
-      const modal = M.Modal.init(modalEl, {
-        onCloseEnd: () => {
-          const form = document.getElementById('formContacto');
-          form?.reset();
-          document.querySelectorAll('#formContacto select').forEach(sel => {
-            const inst = M.FormSelect.getInstance(sel); if (inst) inst.destroy();
-            M.FormSelect.init(sel);
-          });
-        }
+    // helper: inicializa selects DENTRO de un modal usando ese modal como container
+    function initSelectsIn(modalSelector) {
+      const container = document.querySelector(modalSelector);
+      if (!container) return;
+      container.querySelectorAll('select').forEach(sel => {
+        const prev = M.FormSelect.getInstance(sel);
+        if (prev) prev.destroy();
+        const inst = M.FormSelect.init(sel, {
+          dropdownOptions: {
+            container,            // << clave
+            constrainWidth: false,
+            coverTrigger: false,
+            alignment: 'left'
+          }
+        });
+        // refuerzo por si Materialize ignora el container
+        if (inst && inst.dropdown) inst.dropdown.options.container = container;
       });
-      document.getElementById('btnOpenContactoModal')?.addEventListener('click', () => modal.open());
+    }
 
-      // Modal detalle
-      const modalDetalle = document.getElementById('modalDetalleContacto');
-      if (modalDetalle) M.Modal.init(modalDetalle);
-
-      // Modal visita
-      const modalVisita = document.getElementById('modalVisita');
-      if (modalVisita) M.Modal.init(modalVisita);
+    // ===== Modal: Registrar contacto =====
+    const modalEl = document.getElementById('modalContacto');
+    const modalContacto = M.Modal.init(modalEl, {
+      onOpenStart: () => initSelectsIn('#modalContacto'),
+      onOpenEnd:   () => initSelectsIn('#modalContacto'),
+      onCloseEnd:  () => {
+        const form = document.getElementById('formContacto');
+        form?.reset();
+        initSelectsIn('#modalContacto');
+      }
     });
-  </script>
+    document.getElementById('btnOpenContactoModal')
+      ?.addEventListener('click', () => {
+        initSelectsIn('#modalContacto'); // por si modificaste opciones antes de abrir
+        modalContacto.open();
+      });
+
+    // ===== Modal: Detalle =====
+    const modalDetalle = document.getElementById('modalDetalleContacto');
+    if (modalDetalle) M.Modal.init(modalDetalle);
+
+    // ===== Modal: Visita =====
+    const modalVisitaEl = document.getElementById('modalVisita');
+    const modalVisita = M.Modal.init(modalVisitaEl, {
+      onOpenStart: () => initSelectsIn('#modalVisita'),
+      onOpenEnd:   () => initSelectsIn('#modalVisita')
+    });
+    // si lo abres desde JS después de llenar el <select>, vuelve a llamar initSelectsIn('#modalVisita') justo antes de open()
+  });
+</script>
+
 </body>
 </html>
+
