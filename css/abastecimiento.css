@@ -1,153 +1,78 @@
-/* ==============================
-   ABASTECIMIENTO – ESTILO (match Centros)
-   ============================== */
+/* =========================================
+   ABASTECIMIENTO – Overrides sobre global
+   ========================================= */
 
-/* ---- LAYOUT ---- */
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
-.container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  overflow: visible !important;
+/* Tabla de Contactos con cabezal teal */
+#tablaContactos.dataTable thead th{
+  background: var(--primary) !important;
+  color:#fff !important;
 }
 
-/* ---- TABLA CONTACTOS (DataTables) ---- */
-#tablaContactos_wrapper {
-  width: 100% !important;
-  max-width: 100vw;
-  overflow-x: auto !important;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.1);
-  padding-bottom: 22px !important;
-}
-
-#tablaContactos {
-  width: 100% !important;
-  background: #fff;
-  border-radius: 8px;
-  margin: 0 !important;
-  border-collapse: collapse;
-}
-
+/* Ajuste de densidad en esta vista */
 #tablaContactos th,
-#tablaContactos td {
+#tablaContactos td{
   font-size: 0.92rem;
   padding: 0.38rem 0.5rem;
-  white-space: nowrap;
-  vertical-align: middle;
   border-bottom: 1px solid #e0e0e0;
 }
 
-#tablaContactos th {
-  background-color: #004d40; /* teal oscuro, como Centros */
-  color: #fff;
-  font-weight: 600;
-}
-
-#tablaContactos td:last-child {
-  white-space: nowrap !important;
-  text-align: left;
-}
-
-/* ---- ÍCONOS DE ACCIONES (ver/editar/eliminar) ---- */
-#tablaContactos td .material-icons,
-.icon-action .material-icons {
-  display: inline-block !important;
-  vertical-align: middle;
+/* Acciones: misma interacción que en global pero tamaño propio */
+#tablaContactos td .material-icons{
   font-size: 1.22em;
   margin-right: 8px;
-  color: #555;
-  cursor: pointer;
-  transition: color .2s ease-in-out, transform .2s ease-in-out;
 }
-#tablaContactos td .material-icons:hover,
-.icon-action .material-icons:hover {
-  color: #009688;
+#tablaContactos td .material-icons:hover{
+  color: var(--primary-acc);
   transform: scale(1.08);
 }
 
-/* ---- Paginación y controles DataTables ---- */
-.dataTables_wrapper .dataTables_paginate {
-  position: static !important;
-  padding-top: 6px !important;
-  text-align: right !important;
-}
-.dataTables_wrapper .dt-buttons {
-  margin: 6px 0 8px 0;
-}
-.dataTables_wrapper .dataTables_filter input {
-  height: 30px;
-  font-size: 0.9rem;
-  padding: 0 8px;
-}
+/* Botón “Registrar contacto” alineado con la toolbar */
+#btnOpenContactoModal{ margin:.25rem 0 .5rem 0; }
 
-/* ---- Botón “Registrar contacto” alineado ---- */
-#btnOpenContactoModal {
-  margin: .25rem 0 .5rem 0;
-}
-
-/* ==============================
-   MODALES: contacto + detalle
-   ============================== */
+/* Modales de Contacto/Detalle ligeramente más chicos que el global */
 #modalContacto.modal,
-#modalDetalleContacto.modal {
-  width: 92% !important;
+#modalDetalleContacto.modal{
   max-width: 760px !important;
   max-height: 86vh !important;
   top: 7vh !important;
-  overflow: hidden;
 }
 #modalContacto .modal-content,
-#modalDetalleContacto .modal-content {
-  padding: 1rem 1.25rem !important;
+#modalDetalleContacto .modal-content{
   max-height: 72vh !important;
-  overflow-y: auto;
 }
 #modalContacto .modal-footer,
-#modalDetalleContacto .modal-footer {
+#modalDetalleContacto .modal-footer{
   padding: .5rem .75rem !important;
 }
 
-/* Inputs del modal un poco más compactos */
+/* Inputs un poco más compactos dentro del modal */
 #modalContacto .input-field input,
 #modalContacto .input-field select,
-#modalContacto .input-field textarea {
+#modalContacto .input-field textarea{
   margin-bottom: .6rem;
 }
 #modalContacto .input-field label,
-#modalDetalleContacto .input-field label {
+#modalDetalleContacto .input-field label{
   font-size: .9rem;
 }
 
-/* ==============================
-   RESPONSIVE
-   ============================== */
-@media (max-width: 992px) {
-  #tablaContactos_wrapper, #tablaContactos {
-    min-width: 360px !important;
-    width: 100vw !important;
-    overflow-x: auto !important;
-    display: block !important;
+/* Responsive propios de esta vista */
+@media (max-width: 992px){
+  #tablaContactos,
+  #tablaContactos_wrapper{
+    min-width:360px !important; width:100vw !important;
+    display:block !important;
   }
-  .dataTables_wrapper .dataTables_paginate {
-    text-align: center !important;
-  }
+  .dataTables_paginate{ justify-content:center; }
 }
-
-@media (max-width: 600px) {
+@media (max-width: 600px){
   #modalContacto.modal,
-  #modalDetalleContacto.modal {
-    width: 96% !important;
-    top: 4vh !important;
+  #modalDetalleContacto.modal{
+    width:96% !important;
+    top:4vh !important;
   }
-  #tablaContactos th,
-  #tablaContactos td {
-    font-size: 0.88rem;
-    padding: 0.34rem 0.45rem;
+  #tablaContactos th, #tablaContactos td{
+    font-size:.88rem;
+    padding:.34rem .45rem;
   }
 }
