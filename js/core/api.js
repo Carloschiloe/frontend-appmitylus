@@ -1,3 +1,4 @@
+// api.js
 const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
 
 // Utilidad común
@@ -87,7 +88,7 @@ export async function apiBulkUpsertCentros(arr) {
 }
 
 /* ======================================================
-   CONTACTOS (centralizamos aquí lo que usa la pestaña)
+   CONTACTOS
    ====================================================== */
 export async function apiGetContactos() {
   const resp = await fetch(`${API_URL}/contactos`);
@@ -103,15 +104,21 @@ export async function apiCreateContacto(data) {
   return checkResponse(resp);
 }
 
+// ← con fallback: PATCH → si 404/405/501 → PUT
 export async function apiUpdateContacto(id, data) {
-  const resp = await fetch(`${API_URL}/contactos/${id}`, {
-    method: 'PATCH',                   // ← antes era PUT
+  const url = `${API_URL}/contactos/${id}`;
+  const opts = (m) => ({
+    method: m,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
+
+  let resp = await fetch(url, opts('PATCH'));
+  if (resp.status === 404 || resp.status === 405 || resp.status === 501) {
+    resp = await fetch(url, opts('PUT'));
+  }
   return checkResponse(resp);
 }
-
 
 export async function apiDeleteContacto(id) {
   const resp = await fetch(`${API_URL}/contactos/${id}`, { method: 'DELETE' });
@@ -119,10 +126,7 @@ export async function apiDeleteContacto(id) {
 }
 
 /* ======================================================
-   VISITAS (nuevo módulo)
-   - GET por contactoId (si el endpoint no existe, devolvemos [])
-   - POST crear visita
-   (PUT/DELETE los agregamos cuando los necesites)
+   VISITAS
    ====================================================== */
 
 // Tolerante: si 404, devuelve []
@@ -131,10 +135,9 @@ export async function apiGetVisitasByContacto(contactoId) {
   const url = `${API_URL}/visitas?contactoId=${encodeURIComponent(contactoId)}`;
   try {
     const resp = await fetch(url);
-    if (resp.status === 404) return []; // backend aún no implementado
+    if (resp.status === 404) return [];
     return checkResponse(resp);
-  } catch (e) {
-    // evita romper la UI si hay CORS/404/500
+  } catch {
     return [];
   }
 }
@@ -147,8 +150,5 @@ export async function apiCreateVisita(data) {
   });
   return checkResponse(resp);
 }
-
-// (Opcionales para futuro)
 // export async function apiUpdateVisita(id, data) { ... }
 // export async function apiDeleteVisita(id) { ... }
-
