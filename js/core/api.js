@@ -105,12 +105,13 @@ export async function apiCreateContacto(data) {
 
 export async function apiUpdateContacto(id, data) {
   const resp = await fetch(`${API_URL}/contactos/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',                   // ← antes era PUT
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
   return checkResponse(resp);
 }
+
 
 export async function apiDeleteContacto(id) {
   const resp = await fetch(`${API_URL}/contactos/${id}`, { method: 'DELETE' });
@@ -150,3 +151,4 @@ export async function apiCreateVisita(data) {
 // (Opcionales para futuro)
 // export async function apiUpdateVisita(id, data) { ... }
 // export async function apiDeleteVisita(id) { ... }
+
