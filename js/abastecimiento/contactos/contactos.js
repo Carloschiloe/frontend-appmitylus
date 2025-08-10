@@ -1,4 +1,4 @@
-// contactos.js — versión integrada con api.js
+// contactos.js — versión integrada con api.js (ruta absoluta /js/core/api.js)
 
 import {
   apiGetCentros,
@@ -8,7 +8,7 @@ import {
   apiDeleteContacto,
   apiGetVisitasByContacto,
   apiCreateVisita,
-} from '../../api.js';
+} from '/js/core/api.js';
 
 // ==== STATE ====
 let listaProveedores = [];
@@ -232,7 +232,8 @@ function initTablaContactos(){
   });
 
   // Eventos delegados (ver/visita/editar/eliminar)
-  jq('#tablaContactos tbody')
+  const $jq = jq; // alias
+  $jq('#tablaContactos tbody')
     .on('click', 'a.icon-action.ver', function(){
       const id = this.dataset.id;
       const c = contactosGuardados.find(x => String(x._id) === String(id));
