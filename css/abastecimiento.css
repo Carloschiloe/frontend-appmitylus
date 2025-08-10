@@ -76,3 +76,8 @@
     padding:.34rem .45rem;
   }
 }
+/* Evita recortes y asegura capas de dropdowns dentro de modales */
+#modalContacto, #modalVisita { overflow: visible !important; }
+#modalContacto .modal-content, #modalVisita .modal-content { overflow: visible !important; }
+#modalContacto .dropdown-content, #modalVisita .dropdown-content { z-index: 1005 !important; }
+
