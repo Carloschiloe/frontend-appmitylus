@@ -1,237 +1,236 @@
-/* ========== GLOBAL: ACCIONES, ÍCONOS Y TABLAS ========== */
+/* =========================================================
+   GLOBAL.css – Base del proyecto MMPP
+   - Variables, reset suave y container
+   - Tablas (DataTables), íconos y toolbar
+   - Modales (Materialize) compactos y autoajustables
+   - Fixes de dropdown/select sobre tablas y child-rows
+   - Helpers y responsive
+   Paleta inspirada en tus vistas (teal/verde petróleo)
+   ========================================================= */
 
-/* Íconos de acciones alineados y siempre en una línea */
-td .material-icons,
-th .material-icons {
-  display: inline-block !important;
-  vertical-align: middle;
-  font-size: 1.15em;
-  margin-right: 7px;
-  color: #555;
-  cursor: pointer;
-  transition: color .18s;
-}
-td .material-icons:last-child,
-th .material-icons:last-child {
-  margin-right: 0;
-}
-td:last-child, th:last-child {
-  white-space: nowrap !important;
-}
+/* ---------- 1) Variables ---------- */
+:root{
+  /* Colores base */
+  --bg: #f7f8fa;
+  --bg-soft:#fff;
+  --txt:#1f2937;
+  --txt-soft:#6b7280;
+  --primary:#004d40;       /* teal oscuro (Centros) */
+  --primary-acc:#009688;   /* teal acento (hover) */
+  --border:#e5e7eb;
 
-/* Hover para destacar acción */
-td .material-icons:hover,
-th .material-icons:hover {
-  color: #009688;
-  filter: brightness(1.18);
-}
+  /* Dimensiones y radios */
+  --r-xs:8px; --r-sm:10px; --r-md:12px; --r-lg:16px;
+  --shadow:0 1px 6px rgba(0,0,0,.1);
 
-/* Botones genéricos */
-.btn, .btn-small, .waves-effect {
-  vertical-align: middle;
-  text-transform: none;
-  border-radius: 8px;
-  font-size: .97em;
+  /* Tipografía */
+  --fz-12:.75rem; --fz-13:.8125rem; --fz-14:.875rem; --fz-15:.9375rem; --fz-16:1rem;
 }
 
-/* Tablas responsivas: previene scroll innecesario */
-table.dataTable,
-.dataTable-wrapper,
-.card table {
-  width: 100% !important;
-  max-width: 100% !important;   /* <<<--- Corregido, antes estaba 100vw */
-  overflow-x: auto;
+/* ---------- 2) Reset suave + container ---------- */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; padding:0;
+  background:var(--bg);
+  color:var(--txt);
+  font: 400 var(--fz-16)/1.45 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+img,svg{max-width:100%; height:auto; display:block;}
+a{color:var(--primary-acc); text-decoration:none}
+a:hover{filter:brightness(.95)}
+
+.container{
+  display:flex; flex-direction:column; min-height:100vh;
+  overflow:visible !important; /* evita cortar paginación/flotantes */
 }
 
-/* Para que los botones/íconos en la tabla no queden con salto de línea en pantallas pequeñas */
-@media (max-width: 700px) {
-  td .material-icons,
-  th .material-icons {
-    font-size: 1.05em;
-    margin-right: 4px;
-  }
+/* ---------- 3) Cards y wrappers ---------- */
+.card{
+  background:var(--bg-soft); border:1px solid var(--border);
+  border-radius:var(--r-lg); box-shadow:var(--shadow);
+  padding:1rem;
+}
+.table-wrap{
+  width:100%; max-width:100vw; overflow:auto;
+  background:#fff; border:1px solid var(--border);
+  border-radius:var(--r-lg); box-shadow:var(--shadow);
 }
 
-/* Opcional: color y fondo para child row expanded */
-tr.shown + tr td.child-row-lineas {
-  background: #f9fcfb;
-  box-shadow: 0 1px 8px 0 rgba(0,150,136,.06);
+/* ---------- 4) Botones base ---------- */
+.btn, .btn-small, .waves-effect, .dt-button{
+  display:inline-flex; align-items:center; gap:.5rem;
+  text-transform:none; border-radius:var(--r-sm);
+  font-size:var(--fz-14); font-weight:600;
+  background:var(--primary); color:#fff; border:1px solid transparent;
+  padding:.5rem .85rem; box-shadow:var(--shadow); cursor:pointer;
+}
+.btn:hover, .dt-button:hover{background: #013e34}
+
+/* ---------- 5) Tablas (genérico + DataTables) ---------- */
+table{border-collapse:separate; border-spacing:0; width:100%}
+table.dataTable, .dataTable-wrapper, .card table{
+  width:100% !important; max-width:100% !important; overflow-x:auto;
 }
 
-/* Extra: Corrige overflow en tablas anidadas */
-.card table,
-.child-row-lineas table {
-  background: transparent !important;
+.dataTables_wrapper{padding:.25rem}
+.dataTables_wrapper .dt-buttons{
+  display:flex; flex-wrap:wrap; gap:.4rem; margin:.5rem 0;
+}
+.dataTables_filter{
+  margin:.5rem 0; display:flex; justify-content:flex-end;
+}
+.dataTables_filter label{display:flex; align-items:center; gap:.5rem}
+.dataTables_filter input{
+  height:32px; padding:0 .6rem; font-size:var(--fz-14); max-width:260px;
+}
+.dataTables_length{margin:.5rem 0}
+.dataTables_info{color:var(--txt-soft); font-size:var(--fz-13)}
+
+.dataTables_paginate{
+  position:static !important; background:transparent !important;
+  padding:8px 0 0 0 !important; margin-bottom:0 !important; z-index:100 !important;
+  display:flex; gap:.25rem; align-items:center; justify-content:flex-end;
+}
+.dataTables_paginate .paginate_button{
+  padding:.35rem .6rem; border:1px solid var(--border);
+  border-radius:10px; background:#fff; cursor:pointer; font-size:var(--fz-14);
+}
+.dataTables_paginate .paginate_button.current{
+  background:var(--primary); color:#fff; border-color:transparent;
+}
+.dataTables_paginate .paginate_button.disabled{
+  opacity:.45; cursor:not-allowed;
 }
 
-/* --- FIX dropdown select Materialize sobre DataTables/tables --- */
+/* Cabezal y celdas estándar */
+table.display, table.dataTable{
+  background:#fff; border-radius:var(--r-lg);
+}
+table.display thead th, table.dataTable thead th{
+  position:sticky; top:0; z-index:2;
+  background: #f0f5f4; /* suave, neutro */
+  color:#0f1e1d; font-weight:700; border-bottom:1px solid var(--border);
+}
+table.display th, table.display td,
+table.dataTable th, table.dataTable td{
+  font-size: var(--fz-15);
+  padding:.42rem .55rem;
+  white-space:nowrap; vertical-align:middle; border-bottom:1px solid #e0e0e0;
+}
+table.display tbody tr:hover{background:#fafafa}
 
-/* El menú desplegable del select SIEMPRE sobre todo */
-body .dropdown-content.select-dropdown {
-  z-index: 99999 !important;
-  position: fixed !important;
-  background: #fff !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.20) !important;
-  min-width: 120px !important;
-  max-width: 220px !important;
-  overflow-y: auto !important;
-  margin-top: 0 !important;
-  left: 0 !important; /* asegúrate de que JS pueda reposicionarlo */
-  right: auto !important;
-  top: 0 !important;
-  will-change: unset !important;
-  border-radius: 6px !important;
-  font-size: 1em !important;
+/* Última columna: acciones sin quiebre de línea */
+td:last-child, th:last-child{white-space:nowrap !important}
+
+/* ---------- 6) Íconos de acciones (Material Icons) ---------- */
+td .material-icons, th .material-icons{
+  display:inline-block !important; vertical-align:middle;
+  font-size:1.15em; margin-right:7px; color:#555; cursor:pointer;
+  transition: color .18s, transform .15s;
+}
+td .material-icons:last-child, th .material-icons:last-child{margin-right:0}
+td .material-icons:hover, th .material-icons:hover{
+  color:var(--primary-acc); filter:brightness(1.08); transform:translateY(-1px);
 }
 
-/* No permitir clipping de overflow ni stacking bajo */
-.child-row-lineas,
-.child-row-lineas table,
-.child-row-lineas tr,
-.child-row-lineas td,
-.child-row-lineas th,
-.child-table-lineas,
-.child-table-lineas tr,
-.child-table-lineas td,
-.child-table-lineas th {
-  overflow: visible !important;
-  position: static !important;
-  z-index: auto !important;
-  background: transparent !important;
+/* ---------- 7) Modales (Materialize) ---------- */
+.modal{
+  background:#fff; border-radius:var(--r-lg); box-shadow:var(--shadow);
+  width:92% !important; max-width:760px !important; max-height:86vh !important;
+  top:7vh !important; overflow:hidden;
 }
-
-/* Nunca se corte ni quede detrás */
-tr.shown,
-tr.shown + tr,
-.child-row-lineas,
-.child-row-lineas *,
-.child-table-lineas,
-.child-table-lineas * {
-  z-index: auto !important;
-  position: static !important;
-  overflow: visible !important;
-  filter: none !important;
-  transform: none !important;
-  will-change: auto !important;
+.modal .modal-content{
+  padding:1rem 1.25rem !important; max-height:72vh !important; overflow:auto;
 }
-
-/* El select NO se recorta visualmente */
-.child-row-lineas .select-wrapper {
-  z-index: 99000 !important;
-  position: relative !important;
+.modal .modal-footer{
+  padding:.5rem .75rem !important; background:#fafafa; border-top:1px solid var(--border);
+  border-bottom-left-radius:var(--r-lg); border-bottom-right-radius:var(--r-lg);
 }
+/* tamaños adicionales opcionales */
+.modal.modal--sm{max-width:560px !important}
+.modal.modal--md{max-width:760px !important}
+.modal.modal--lg{max-width:1100px !important}
 
-/* Alto mínimo a la fila de edición si el dropdown está abierto (opcional) */
-tr.editando-select,
-tr.editando-select td,
-tr.editando-select th {
-  min-height: 60px !important;
-  height: 60px !important;
-}
-
-/* Para evitar problemas en pantallas pequeñas con el dropdown */
-@media (max-width: 900px) {
-  body .dropdown-content.select-dropdown {
-    min-width: 100px !important;
-    max-width: 96vw !important;
-    font-size: .99em !important;
-  }
-}
-
-/* --- FIX REAL dropdown select Materialize sobre tablas ultra compactas --- */
-
-/* El menú desplegable del select SIEMPRE sobre todo, forzado a estar visible */
-body .dropdown-content.select-dropdown {
-  z-index: 10099 !important;
-  position: fixed !important;
-  background: #fff !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.24) !important;
-  min-width: 110px !important;
-  max-width: 170px !important;
-  overflow-y: auto !important;
-  left: 0 !important;
-  right: auto !important;
-  top: 0 !important;
-  will-change: unset !important;
-  display: block !important;
-}
-
-/* NUNCA permitir overflow:hidden ni visible en tablas que contengan selects */
-.child-row-lineas,
-.child-row-lineas table,
-.child-row-lineas tr,
-.child-row-lineas td,
-.child-row-lineas th,
-.child-table-lineas,
-.child-table-lineas tr,
-.child-table-lineas td,
-.child-table-lineas th {
-  overflow: visible !important;
-  position: static !important;
-  z-index: auto !important;
-}
-
-/* Fuerza stacking context neutral en la child-row (por si algún padre tiene transform) */
-.child-row-lineas,
-.child-row-lineas * {
-  transform: none !important;
-  filter: none !important;
-  will-change: auto !important;
-}
-
-/* Wrapper de select debe tener stacking y relative */
-.child-row-lineas .select-wrapper {
+/* ---------- 8) Fixes de dropdown/select sobre tablas y child-rows ---------- */
+/* Menú del select de Materialize siempre arriba, con posicionamiento fijo
+   (evita clipping bajo overflow/transform de DataTables o filas hijas) */
+body .dropdown-content.select-dropdown{
   z-index: 10100 !important;
-  position: relative !important;
+  position: fixed !important;
+  background:#fff !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.22) !important;
+  min-width: 110px !important; max-width: 96vw !important;
+  overflow-y:auto !important; border-radius:6px !important;
+  top:0 !important; left:0 !important; right:auto !important;
+  will-change: unset !important; display:block !important;
+  font-size:1em !important;
 }
 
-/* Bonus: mientras el menú está abierto, dale alto mínimo a la fila */
-tr.editando-select,
-tr.editando-select td,
-tr.editando-select th {
-  min-height: 55px !important;
-  height: 55px !important;
+/* Nunca permitir clipping en estructuras de filas hijas genéricas */
+.child-row, .child-row * ,
+.child-row-lineas, .child-row-lineas * ,
+.child-table-lineas, .child-table-lineas * {
+  position:static !important; overflow:visible !important;
+  z-index:auto !important; transform:none !important; filter:none !important; will-change:auto !important;
 }
 
-/* 🟢 Ajuste compacto solo para la tabla de centros */
-#centrosTable,
-#centrosTable th,
-#centrosTable td {
-  font-size: 0.92em !important;      /* Más pequeño pero legible */
-  padding: 0.26em 0.48em !important; /* Más compacto horizontal y vertical */
+/* Wrapper de select dentro de filas hijas con stacking correcto */
+.child-row .select-wrapper,
+.child-row-lineas .select-wrapper,
+.child-table-lineas .select-wrapper{
+  position:relative !important; z-index:10100 !important;
 }
 
-/* SOLO Proveedor (primera columna): salto de línea y máximo ancho */
-#centrosTable td:first-child, 
-#centrosTable th:first-child {
-  white-space: normal !important;   /* Permite salto de línea */
-  word-break: break-word !important;
-  max-width: 420px !important;      /* Ajusta este valor según prefieras */
-  min-width: 100px !important;
+/* Alto mínimo cuando un select abre sobre filas compactas */
+tr.editando-select, tr.editando-select td, tr.editando-select th{
+  min-height:55px !important; height:55px !important;
 }
 
-/* El resto de columnas: no salto de línea */
-#centrosTable th:not(:first-child), 
-#centrosTable td:not(:first-child) {
-  white-space: nowrap !important;
+/* ---------- 9) Formularios base ---------- */
+input, select, textarea{
+  width:100%; border:1px solid var(--border); border-radius:var(--r-xs);
+  padding:.55rem .7rem; font-size:var(--fz-14); background:#fff; color:var(--txt);
+}
+input:focus, select:focus, textarea:focus{
+  outline:2px solid rgba(0,150,136,.18); border-color:var(--primary-acc);
 }
 
-/* Opcional: que los iconos no agreguen ancho extra */
-#centrosTable td .material-icons {
-  font-size: 1.1em;
-  margin-right: 4px;
-  margin-left: 0;
+/* ---------- 10) Leaflet mínimos (si usas mapas) ---------- */
+.leaflet-container{
+  border-radius:var(--r-lg);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
 }
 
-/* Opcional: achicar el tamaño de fuente de botones de exportar */
-.dataTables_wrapper .dt-buttons .btn,
-.dataTables_wrapper .dt-buttons button {
-  font-size: 0.92em !important;
-  padding: 0.22em 0.8em !important;
+/* ---------- 11) Utilidades ---------- */
+.hidden{display:none !important}
+.text-soft{color:var(--txt-soft)}
+.text-right{text-align:right}
+.nowrap{white-space:nowrap}
+.mt-2{margin-top:.5rem} .mt-4{margin-top:1rem}
+.mb-2{margin-bottom:.5rem} .mb-4{margin-bottom:1rem}
+.p-0{padding:0} .p-4{padding:1rem} .p-5{padding:1.25rem}
+
+/* ---------- 12) Responsive ---------- */
+@media (max-width: 992px){
+  .dataTables_filter{justify-content:flex-start}
+  .dataTables_filter input{max-width:100%}
+}
+@media (max-width: 900px){
+  /* Tablas fluidas (evita desbordes en móviles) */
+  table.dataTable, .dataTable-wrapper{display:block !important}
+  .dataTables_paginate{justify-content:center}
+}
+@media (max-width:600px){
+  .modal{width:96% !important; top:4vh !important}
+  table.display th, table.display td,
+  table.dataTable th, table.dataTable td{
+    font-size: var(--fz-14);
+    padding:.38rem .5rem;
+  }
 }
 
-/* Haz el scroll horizontal más suave (opcional) */
-.dataTables_scrollBody {
-  scrollbar-width: thin;
-}
-
+/* ---------- 13) Estilos “compact” opcionales de tabla ---------- */
+.table--compact th, .table--compact td{padding:.35rem .5rem; font-size:var(--fz-13)}
