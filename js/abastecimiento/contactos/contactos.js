@@ -23,6 +23,24 @@ const $$ = (sel) => document.querySelectorAll(sel);
 const slug = (s) => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
   .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').replace(/-+/g,'-');
 
+// Re-init de selects en un ámbito (modal) para que el dropdown se posicione dentro del modal
+function reinitSelects(scopeSelector) {
+  const container = document.querySelector(scopeSelector) || document.body;
+  const opts = {
+    dropdownOptions: {
+      container,          // clave: acoplar el dropdown al modal
+      constrainWidth: false,
+      coverTrigger: false,
+      alignment: 'left'
+    }
+  };
+  document.querySelectorAll(`${scopeSelector} select`).forEach(sel => {
+    const inst = M.FormSelect.getInstance(sel);
+    if (inst) inst.destroy();
+    M.FormSelect.init(sel, opts);
+  });
+}
+
 function setVal(ids, value='') {
   for (const id of ids) {
     const el = document.getElementById(id);
@@ -120,7 +138,8 @@ function mostrarCentrosDeProveedor(proveedorKey, preselectCentroId = null) {
   }).join('');
   select.innerHTML = html; select.disabled = false;
 
-  const inst = M.FormSelect.getInstance(select); if (inst) inst.destroy(); M.FormSelect.init(select);
+  // Reinit dentro del modal de contacto
+  reinitSelects('#modalContacto');
 
   const opt = select.options[select.selectedIndex];
   setVal(['centroId'], opt?.value || '');
@@ -140,7 +159,7 @@ function resetSelectCentros(){
   const select = $('#selectCentro'); if (!select) return;
   select.innerHTML = `<option value="" selected>Sin centro (solo contacto al proveedor)</option>`;
   select.disabled = true;
-  const inst = M.FormSelect.getInstance(select); if (inst) inst.destroy(); M.FormSelect.init(select);
+  reinitSelects('#modalContacto');
   setVal(['centroId'],''); setVal(['centroCode','centroCodigo'],''); setVal(['centroComuna'],''); setVal(['centroHectareas'],'');
 }
 
@@ -199,10 +218,7 @@ function setupFormulario() {
       // cerrar + limpiar modal
       const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
       form.reset();
-      $$('#formContacto select').forEach(sel => {
-        const inst = M.FormSelect.getInstance(sel); if (inst) inst.destroy();
-        M.FormSelect.init(sel);
-      });
+      reinitSelects('#modalContacto');
       editId = null;
       modalInst?.close();
     } catch (err) {
@@ -462,11 +478,17 @@ function abrirModalVisita(contacto) {
     let options = `<option value="">Centro visitado (opcional)</option>`;
     options += centros.map(c => `<option value="${c._id || c.id}">${c.code || c.codigo || ''} – ${(c.comuna||'s/comuna')}</option>`).join('');
     selectVisita.innerHTML = options;
-    const inst = M.FormSelect.getInstance(selectVisita); if (inst) inst.destroy(); M.FormSelect.init(selectVisita);
   }
 
-  // abrir modal
-  const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'));
+  // init modal (una sola vez) y reinit selects DENTRO del modal
+  const el = document.getElementById('modalVisita');
+  const modalVisita = M.Modal.getInstance(el) || M.Modal.init(el, {
+    onOpenStart: () => reinitSelects('#modalVisita'),
+    onOpenEnd:   () => reinitSelects('#modalVisita')
+  });
+
+  // por si cambió el contenido antes de abrir
+  reinitSelects('#modalVisita');
   modalVisita.open();
 }
 
@@ -494,10 +516,7 @@ function setupFormularioVisita() {
       const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita'));
       modalVisita?.close();
       form.reset();
-      $$('#formVisita select').forEach(sel => {
-        const inst = M.FormSelect.getInstance(sel); if (inst) inst.destroy();
-        M.FormSelect.init(sel);
-      });
+      reinitSelects('#modalVisita');
     } catch (e2) {
       console.warn('apiCreateVisita aún no disponible:', e2?.message || e2);
       M.toast?.({ html: 'Visitas aún no disponible (backend)', displayLength: 2200 });
@@ -520,7 +539,7 @@ function abrirEdicion(c) {
 
   $('#tieneMMPP').value = c.tieneMMPP || '';
   $('#dispuestoVender').value = c.dispuestoVender || '';
-  M.FormSelect.init($$('#formContacto select'));
+  reinitSelects('#modalContacto');
 
   $('#fechaDisponibilidad').value = c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '';
   $('#tonsDisponiblesAprox').value = c.tonsDisponiblesAprox ?? '';
@@ -534,6 +553,7 @@ function abrirEdicion(c) {
   M.updateTextFields();
 
   const modalInst = M.Modal.getInstance(document.getElementById('modalContacto')) || M.Modal.init(document.getElementById('modalContacto'));
+  reinitSelects('#modalContacto');
   modalInst.open();
 }
 
@@ -552,12 +572,11 @@ export async function initContactosTab() {
     editId = null;
     const form = $('#formContacto');
     form?.reset();
-    $$('#formContacto select').forEach(sel => {
-      const inst = M.FormSelect.getInstance(sel); if (inst) inst.destroy();
-      M.FormSelect.init(sel);
-    });
+    reinitSelects('#modalContacto');
     setVal(['proveedorKey','proveedorId'],'');
     setVal(['proveedorNombre'],'');
     resetSelectCentros();
   });
 }
+
+
