@@ -8,13 +8,40 @@
   <!-- Materialize & Google Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-  <!-- Si ya tienes global.css, usa ese path. Por ahora mantengo styles.css -->
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="../../css/abastecimiento.css" />
 
   <!-- DataTables + Buttons -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+
+  <!-- Fix visual para selects nativos dentro de modales -->
+  <style>
+    /* dropdowns/scroll en modales */
+    #modalContacto, #modalVisita { overflow: visible !important; }
+    #modalContacto .modal-content, #modalVisita .modal-content { overflow: visible !important; }
+
+    /* select nativo con look Materialize dentro de modales */
+    .modal .browser-default {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid #9e9e9e;
+      padding: 8px 0 6px;
+      font-size: 16px;
+    }
+    .modal .browser-default:focus {
+      outline: none;
+      border-bottom: 2px solid #26a69a;
+    }
+    .modal .input-field label.active {
+      transform: none !important;
+      font-size: 0.9rem;
+      color: #9e9e9e;
+      margin-bottom: 2px;
+      display: block;
+    }
+  </style>
 </head>
 <body>
   <!-- NAV -->
@@ -56,7 +83,6 @@
             <th>Disposición</th>
             <th>Tons aprox</th>
             <th>Vende a</th>
-            <!-- <th>Notas</th>  -- QUITADA para que no ensanche -->
             <th>Acciones</th>
           </tr>
         </thead>
@@ -77,12 +103,12 @@
         <datalist id="datalistProveedores"></datalist>
       </div>
 
-      <!-- Select de centros del proveedor -->
+      <!-- Select de centros del proveedor (nativo) -->
       <div class="input-field">
-        <select id="selectCentro" disabled>
+        <label for="selectCentro" class="active">Centro</label>
+        <select id="selectCentro" class="browser-default" disabled>
           <option value="" disabled selected>Selecciona un centro (opcional)</option>
         </select>
-        <label for="selectCentro">Centro</label>
       </div>
 
       <!-- Campos ocultos -->
@@ -99,25 +125,25 @@
       <form id="formContacto" autocomplete="off">
         <div class="row">
           <div class="input-field col s4">
-            <select id="tieneMMPP" required>
+            <label for="tieneMMPP" class="active">Disponibilidad</label>
+            <select id="tieneMMPP" class="browser-default" required>
               <option value="">¿Tiene MMPP disponible?</option>
               <option value="Sí">Sí</option>
               <option value="No">No</option>
             </select>
-            <label for="tieneMMPP">Disponibilidad</label>
           </div>
           <div class="input-field col s4">
             <input id="fechaDisponibilidad" type="date">
             <label for="fechaDisponibilidad" class="active">Fecha de disponibilidad</label>
           </div>
           <div class="input-field col s4">
-            <select id="dispuestoVender">
+            <label for="dispuestoVender" class="active">Disposición</label>
+            <select id="dispuestoVender" class="browser-default">
               <option value="">¿Dispuesto a vender?</option>
               <option value="Sí">Sí</option>
               <option value="No">No</option>
               <option value="Por confirmar">Por confirmar</option>
             </select>
-            <label for="dispuestoVender">Disposición</label>
           </div>
         </div>
 
@@ -166,7 +192,6 @@
   <div id="modalDetalleContacto" class="modal">
     <div class="modal-content">
       <h5>Detalle del contacto</h5>
-      <!-- Aquí pintamos: comunas (chips), disponibilidad, tons, vende a, NOTAS y mini timeline -->
       <div id="detalleContactoBody"></div>
     </div>
     <div class="modal-footer">
@@ -176,70 +201,67 @@
 
   <!-- ===== MODAL: Registrar visita ===== -->
   <div id="modalVisita" class="modal">
-  <div class="modal-content">
-    <h5>Registrar visita</h5>
-    <form id="formVisita" autocomplete="off">
-      <input type="hidden" id="visita_proveedorId">
+    <div class="modal-content">
+      <h5>Registrar visita</h5>
+      <form id="formVisita" autocomplete="off">
+        <input type="hidden" id="visita_proveedorId">
 
-      <div class="row">
-        <div class="input-field col s4">
-          <input type="date" id="visita_fecha" required>
-          <label for="visita_fecha" class="active">Fecha</label>
+        <div class="row">
+          <div class="input-field col s4">
+            <input type="date" id="visita_fecha" required>
+            <label for="visita_fecha" class="active">Fecha</label>
+          </div>
+
+          <div class="input-field col s4">
+            <label for="visita_centroId" class="active">Centro</label>
+            <select id="visita_centroId" class="browser-default">
+              <option value="">Centro visitado (opcional)</option>
+            </select>
+          </div>
+
+          <div class="input-field col s4">
+            <input id="visita_contacto" type="text" placeholder="Persona contactada">
+            <label for="visita_contacto">Contacto</label>
+          </div>
         </div>
 
-        <div class="input-field col s4">
-          <label for="visita_centroId" class="active">Centro</label>
-          <select id="visita_centroId" class="browser-default">
-            <option value="">Centro visitado (opcional)</option>
-          </select>
+        <div class="row">
+          <div class="input-field col s4">
+            <label for="visita_enAgua" class="active">Actividad</label>
+            <select id="visita_enAgua" class="browser-default">
+              <option value="">¿Entraron al agua?</option>
+              <option>Sí</option>
+              <option>No</option>
+            </select>
+          </div>
+          <div class="input-field col s4">
+            <input id="visita_tonsComprometidas" type="number" step="0.01" min="0" placeholder="Ej: 120">
+            <label for="visita_tonsComprometidas" class="active">Tons comprometidas (opcional)</label>
+          </div>
+          <div class="input-field col s4">
+            <label for="visita_estado" class="active">Estado</label>
+            <select id="visita_estado" class="browser-default">
+              <option value="Planificada">Planificada</option>
+              <option value="Realizada" selected>Realizada</option>
+              <option value="Seguimiento">Seguimiento</option>
+            </select>
+          </div>
         </div>
 
-        <div class="input-field col s4">
-          <input id="visita_contacto" type="text" placeholder="Persona contactada">
-          <label for="visita_contacto">Contacto</label>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="input-field col s4">
-          <label for="visita_enAgua" class="active">Actividad</label>
-          <select id="visita_enAgua" class="browser-default">
-            <option value="">¿Entraron al agua?</option>
-            <option>Sí</option>
-            <option>No</option>
-          </select>
+        <div class="input-field">
+          <textarea id="visita_observaciones" class="materialize-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
+          <label for="visita_observaciones">Observaciones</label>
         </div>
 
-        <div class="input-field col s4">
-          <input id="visita_tonsComprometidas" type="number" step="0.01" min="0" placeholder="Ej: 120">
-          <label for="visita_tonsComprometidas" class="active">Tons comprometidas (opcional)</label>
+        <div class="right-align">
+          <button type="button" class="modal-close btn-flat">Cancelar</button>
+          <button class="btn teal" type="submit">
+            <i class="material-icons left">save</i>Guardar visita
+          </button>
         </div>
-
-        <div class="input-field col s4">
-          <label for="visita_estado" class="active">Estado</label>
-          <select id="visita_estado" class="browser-default">
-            <option value="Planificada">Planificada</option>
-            <option value="Realizada" selected>Realizada</option>
-            <option value="Seguimiento">Seguimiento</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="input-field">
-        <textarea id="visita_observaciones" class="materialize-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
-        <label for="visita_observaciones">Observaciones</label>
-      </div>
-
-      <div class="right-align">
-        <button type="button" class="modal-close btn-flat">Cancelar</button>
-        <button class="btn teal" type="submit">
-          <i class="material-icons left">save</i>Guardar visita
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
-</div>
-
 
   <!-- SCRIPTS -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -256,88 +278,26 @@
 
   <script type="module" src="../../js/abastecimiento/index.js"></script>
 
+  <!-- Init: sin M.FormSelect.init -->
   <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    M.Tabs.init(document.querySelectorAll('.tabs'), {});
+    document.addEventListener('DOMContentLoaded', function() {
+      M.Tabs.init(document.querySelectorAll('.tabs'), {});
 
-    // Reinit selects DENTRO de un modal, y anclar dropdown al BODY (más estable)
-    function initSelectsIn(modalSelector) {
-      const container = document.body; // << anclar al body
-      const scope = document.querySelector(modalSelector);
-      if (!scope) return;
-
-      scope.querySelectorAll('select').forEach(sel => {
-        const prev = M.FormSelect.getInstance(sel);
-        if (prev) prev.destroy();
-        const inst = M.FormSelect.init(sel, {
-          dropdownOptions: {
-            container,            // << ancla al body
-            constrainWidth: false,
-            coverTrigger: false,
-            alignment: 'left',
-            closeOnClick: false   // evita que se cierre antes de reposicionar
-          }
-        });
-        // refuerzo: por si Materialize pierde el container
-        if (inst && inst.dropdown) inst.dropdown.options.container = container;
+      // Modal principal (registrar contacto)
+      const modalContacto = M.Modal.init(document.getElementById('modalContacto'), {
+        onCloseEnd: () => document.getElementById('formContacto')?.reset()
       });
-    }
+      document.getElementById('btnOpenContactoModal')
+        ?.addEventListener('click', () => modalContacto.open());
 
-    // Reposicionar al abrir cada dropdown (bugfix Materialize en modales)
-    function fixSelectPosition(modalSelector) {
-      const scope = document.querySelector(modalSelector);
-      if (!scope) return;
-
-      scope.querySelectorAll('.select-wrapper input.select-dropdown').forEach(inp => {
-        inp.addEventListener('click', () => {
-          const sel = inp.parentElement.querySelector('select');
-          const inst = M.FormSelect.getInstance(sel);
-          if (!inst || !inst.dropdown) return;
-
-          // dar un tick para que abra y luego recolocar
-          setTimeout(() => {
-            inst.dropdown.recalculateDimensions();
-            inst.dropdown.placeDropdown();
-          }, 0);
-        });
-      });
-    }
-
-    // ===== Modal: Registrar contacto =====
-    const modalContactoEl = document.getElementById('modalContacto');
-    const modalContacto = M.Modal.init(modalContactoEl, {
-      onOpenStart: () => { initSelectsIn('#modalContacto'); },
-      onOpenEnd:   () => { initSelectsIn('#modalContacto'); fixSelectPosition('#modalContacto'); },
-      onCloseEnd:  () => {
-        const form = document.getElementById('formContacto');
-        form?.reset();
-        initSelectsIn('#modalContacto');
+      // Modal detalle
+      if (document.getElementById('modalDetalleContacto')) {
+        M.Modal.init(document.getElementById('modalDetalleContacto'));
       }
+
+      // Modal visita
+      M.Modal.init(document.getElementById('modalVisita'));
     });
-    document.getElementById('btnOpenContactoModal')
-      ?.addEventListener('click', () => {
-        initSelectsIn('#modalContacto');
-        modalContacto.open();
-      });
-
-    // ===== Modal: Detalle =====
-    const modalDetalle = document.getElementById('modalDetalleContacto');
-    if (modalDetalle) M.Modal.init(modalDetalle);
-
-    // ===== Modal: Visita =====
-    const modalVisitaEl = document.getElementById('modalVisita');
-    const modalVisita = M.Modal.init(modalVisitaEl, {
-      onOpenStart: () => { initSelectsIn('#modalVisita'); },
-      onOpenEnd:   () => { initSelectsIn('#modalVisita'); fixSelectPosition('#modalVisita'); }
-    });
-    // Si llenas opciones del select por JS justo antes de abrir:
-    //   initSelectsIn('#modalVisita'); modalVisita.open();
-  });
-</script>
-
-
+  </script>
 </body>
 </html>
-
-
-
