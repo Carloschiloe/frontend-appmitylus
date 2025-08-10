@@ -1,4 +1,5 @@
-// contactos.js — versión integrada con api.js (ruta absoluta /js/core/api.js)
+// contactos.js — versión con trazas fuertes para debug
+// (ruta absoluta a api.js: /js/core/api.js)
 
 import {
   apiGetCentros,
@@ -9,6 +10,34 @@ import {
   apiGetVisitasByContacto,
   apiCreateVisita,
 } from '/js/core/api.js';
+
+// ========== DEBUG HOOK (loggea cada fetch a /api/contactos) ==========
+(() => {
+  if (window.__fetchLogged__) return;
+  window.__fetchLogged__ = true;
+  const _fetch = window.fetch;
+  window.fetch = async (...args) => {
+    const [input, init] = args;
+    const url = typeof input === 'string' ? input : input?.url;
+    const method = init?.method || 'GET';
+    if (url?.includes('/api/contactos')) {
+      try {
+        let previewBody = init?.body;
+        if (previewBody && typeof previewBody === 'string' && previewBody.length > 300) {
+          previewBody = previewBody.slice(0, 300) + '…';
+        }
+        console.log('%c[fetch→contactos]', 'color:#0a7', method, url, init?.headers || {}, previewBody || null);
+      } catch (_) {}
+    }
+    const resp = await _fetch(...args);
+    if (url?.includes('/api/contactos')) {
+      console.log('%c[fetch←contactos]', 'color:#a50', resp.status, resp.statusText, url);
+    }
+    return resp;
+  };
+})();
+
+console.log('%c[contactos.js] v-debug – cargado', 'color:#09c');
 
 // ==== STATE ====
 let listaProveedores = [];
@@ -45,7 +74,10 @@ function getVal(ids) {
 // ==== API LOAD ====
 async function cargarCentros() {
   try {
+    console.log('[cargarCentros] → apiGetCentros()');
     listaCentros = await apiGetCentros();
+    console.log('[cargarCentros] ←', listaCentros?.length, 'centros');
+
     const mapa = new Map();
     for (const c of listaCentros) {
       const nombreOriginal = (c.proveedor || '').trim();
@@ -55,6 +87,7 @@ async function cargarCentros() {
       if (!mapa.has(key)) mapa.set(key, { nombreOriginal, nombreNormalizado, proveedorKey: key });
     }
     listaProveedores = Array.from(mapa.values());
+    console.log('[cargarCentros] proveedores indexados:', listaProveedores.length);
   } catch (e) {
     console.error('[cargarCentros] error:', e);
     listaCentros = []; listaProveedores = [];
@@ -63,7 +96,9 @@ async function cargarCentros() {
 }
 async function cargarContactosGuardados() {
   try {
+    console.log('[cargarContactosGuardados] → apiGetContactos()');
     contactosGuardados = await apiGetContactos();
+    console.log('[cargarContactosGuardados] ←', contactosGuardados?.length, 'contactos');
   } catch (e) {
     console.error('[cargarContactosGuardados] error:', e);
     contactosGuardados = [];
@@ -92,10 +127,12 @@ function setupBuscadorProveedores() {
     const valNorm = input.value.toLowerCase().replace(/\s+/g, ' ').trim();
     const prov = listaProveedores.find(p => p.nombreNormalizado === valNorm);
     if (prov) {
+      console.log('[buscadorProveedor] seleccionado:', prov);
       setVal(['proveedorKey','proveedorId'], prov.proveedorKey);
       setVal(['proveedorNombre'], prov.nombreOriginal);
       mostrarCentrosDeProveedor(prov.proveedorKey);
     } else {
+      console.log('[buscadorProveedor] proveedor no encontrado para', valNorm);
       setVal(['proveedorKey','proveedorId'], '');
       setVal(['proveedorNombre'], '');
       resetSelectCentros();
@@ -107,6 +144,8 @@ function setupBuscadorProveedores() {
 function mostrarCentrosDeProveedor(proveedorKey, preselectCentroId = null) {
   const select = $('#selectCentro'); if (!select) return;
   const centros = listaCentros.filter(c => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor||'')) === proveedorKey);
+
+  console.log('[mostrarCentrosDeProveedor]', proveedorKey, '→', centros.length, 'centros');
 
   let html = `<option value="" ${!preselectCentroId ? 'selected' : ''}>Sin centro (solo contacto al proveedor)</option>`;
   html += centros.map(c => {
@@ -179,11 +218,17 @@ function setupFormulario() {
       contactoNombre, contactoTelefono, contactoEmail
     };
 
+    console.log('%c[guardarContacto] editId=%s', 'color:#09c', editId, payload);
+
     try {
       if (editId) {
+        console.log('[guardarContacto] → apiUpdateContacto(PATCH esperado)', editId);
         await apiUpdateContacto(editId, payload);
+        console.log('[guardarContacto] ← OK update');
       } else {
+        console.log('[guardarContacto] → apiCreateContacto(POST)');
         await apiCreateContacto(payload);
+        console.log('[guardarContacto] ← OK create');
       }
 
       await cargarContactosGuardados();
@@ -196,7 +241,7 @@ function setupFormulario() {
       editId = null;
       modalInst?.close();
     } catch (err) {
-      console.error('guardarContacto error:', err);
+      console.error('%c[guardarContacto] ERROR:', 'color:#c00', err?.message || err);
       M.toast?.({ html: 'Error al guardar contacto', displayLength: 2500 });
     }
   });
@@ -255,6 +300,8 @@ function initTablaContactos(){
 
 function renderTablaContactos() {
   const jq = window.jQuery || window.$;
+  console.log('[renderTablaContactos] entradas:', contactosGuardados?.length || 0);
+
   const filas = contactosGuardados.slice().sort((a,b)=>new Date(b.createdAt||b.fecha||0)-new Date(a.createdAt||a.fecha||0))
     .map(c => {
       const f = new Date(c.createdAt || c.fecha || Date.now());
@@ -483,6 +530,7 @@ function setupFormularioVisita() {
 // ==== EDICIÓN ====
 function abrirEdicion(c) {
   editId = c._id;
+  console.log('[abrirEdicion] editId=', editId, c);
 
   $('#buscadorProveedor').value = c.proveedorNombre || '';
   setVal(['proveedorNombre'], c.proveedorNombre || '');
@@ -521,6 +569,7 @@ export async function initContactosTab() {
 
   $('#btnOpenContactoModal')?.addEventListener('click', () => {
     editId = null;
+    console.log('[nuevoContacto] editId reset →', editId);
     const form = $('#formContacto');
     form?.reset();
     setVal(['proveedorKey','proveedorId'],'');
