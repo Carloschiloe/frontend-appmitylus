@@ -15,31 +15,13 @@ let listaProveedores = [];
 let listaCentros = [];
 let contactosGuardados = [];
 let dt = null;
-let editId = null; // ← si no es null, estamos editando ese _id
+let editId = null;
 
 // ==== UTILS ====
 const $  = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 const slug = (s) => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
   .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').replace(/-+/g,'-');
-
-// Re-init de selects en un ámbito (modal) para que el dropdown se posicione dentro del modal
-function reinitSelects(scopeSelector) {
-  const container = document.querySelector(scopeSelector) || document.body;
-  const opts = {
-    dropdownOptions: {
-      container,          // clave: acoplar el dropdown al modal
-      constrainWidth: false,
-      coverTrigger: false,
-      alignment: 'left'
-    }
-  };
-  document.querySelectorAll(`${scopeSelector} select`).forEach(sel => {
-    const inst = M.FormSelect.getInstance(sel);
-    if (inst) inst.destroy();
-    M.FormSelect.init(sel, opts);
-  });
-}
 
 function setVal(ids, value='') {
   for (const id of ids) {
@@ -60,12 +42,10 @@ function getVal(ids) {
   return '';
 }
 
-// ==== API LOAD (via api.js) ====
+// ==== API LOAD ====
 async function cargarCentros() {
   try {
     listaCentros = await apiGetCentros();
-
-    // construir índice de proveedores desde centros
     const mapa = new Map();
     for (const c of listaCentros) {
       const nombreOriginal = (c.proveedor || '').trim();
@@ -138,9 +118,6 @@ function mostrarCentrosDeProveedor(proveedorKey, preselectCentroId = null) {
   }).join('');
   select.innerHTML = html; select.disabled = false;
 
-  // Reinit dentro del modal de contacto
-  reinitSelects('#modalContacto');
-
   const opt = select.options[select.selectedIndex];
   setVal(['centroId'], opt?.value || '');
   setVal(['centroCode','centroCodigo'], opt?.dataset?.code || '');
@@ -159,7 +136,6 @@ function resetSelectCentros(){
   const select = $('#selectCentro'); if (!select) return;
   select.innerHTML = `<option value="" selected>Sin centro (solo contacto al proveedor)</option>`;
   select.disabled = true;
-  reinitSelects('#modalContacto');
   setVal(['centroId'],''); setVal(['centroCode','centroCodigo'],''); setVal(['centroComuna'],''); setVal(['centroHectareas'],'');
 }
 
@@ -215,10 +191,8 @@ function setupFormulario() {
 
       M.toast?.({ html: editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
 
-      // cerrar + limpiar modal
       const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
       form.reset();
-      reinitSelects('#modalContacto');
       editId = null;
       modalInst?.close();
     } catch (err) {
@@ -243,12 +217,11 @@ function initTablaContactos(){
     autoWidth: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
     columnDefs: [
-      { targets: -1, orderable: false, searchable: false } // Acciones
+      { targets: -1, orderable: false, searchable: false }
     ]
   });
 
-  // Eventos delegados (ver/visita/editar/eliminar)
-  const $jq = jq; // alias
+  const $jq = jq;
   $jq('#tablaContactos tbody')
     .on('click', 'a.icon-action.ver', function(){
       const id = this.dataset.id;
@@ -282,8 +255,6 @@ function initTablaContactos(){
 
 function renderTablaContactos() {
   const jq = window.jQuery || window.$;
-
-  // filas para DataTables (sin columna "Notas")
   const filas = contactosGuardados.slice().sort((a,b)=>new Date(b.createdAt||b.fecha||0)-new Date(a.createdAt||a.fecha||0))
     .map(c => {
       const f = new Date(c.createdAt || c.fecha || Date.now());
@@ -316,18 +287,14 @@ function renderTablaContactos() {
         c.tieneMMPP || '',
         c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '',
         c.dispuestoVender || '',
-        (c.onsDisponiblesAprox ?? c.tonsDisponiblesAprox ?? '') + '', // tolera typo antiguo
+        (c.onsDisponiblesAprox ?? c.tonsDisponiblesAprox ?? '') + '',
         c.vendeActualmenteA || '',
-        acciones // <-- última columna
+        acciones
       ];
     });
 
-  if (dt && jq) {
-    dt.clear(); dt.rows.add(filas).draw();
-    return;
-  }
+  if (dt && jq) { dt.clear(); dt.rows.add(filas).draw(); return; }
 
-  // Fallback sin DataTables (9 columnas)
   const tbody = $('#tablaContactos tbody'); if (!tbody) return;
   tbody.innerHTML = '';
   if (!contactosGuardados.length) {
@@ -340,7 +307,6 @@ function renderTablaContactos() {
     tbody.appendChild(tr);
   });
 
-  // Listeners fallback
   tbody.querySelectorAll('a.icon-action.ver').forEach(a => {
     a.addEventListener('click', () => {
       const id = a.dataset.id;
@@ -424,7 +390,6 @@ async function abrirDetalleContacto(c) {
     ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${x}</span>`).join('')
     : '<span class="text-soft">Sin centros asociados</span>';
 
-  // visitas (seguro: devuelve [] si backend no existe)
   const visitas = await apiGetVisitasByContacto(c._id);
 
   body.innerHTML = `
@@ -459,7 +424,6 @@ async function abrirDetalleContacto(c) {
     </div>
   `;
 
-  // acciones dentro del modal
   $('#btnNuevaVisita')?.addEventListener('click', () => abrirModalVisita(c));
 
   const inst = M.Modal.getInstance(document.getElementById('modalDetalleContacto')) || M.Modal.init(document.getElementById('modalDetalleContacto'));
@@ -468,7 +432,6 @@ async function abrirDetalleContacto(c) {
 
 // ==== VISITA (modal + submit) ====
 function abrirModalVisita(contacto) {
-  // set hidden + cargar centros del proveedor para el select del modal visita
   setVal(['visita_proveedorId'], contacto._id);
   const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
 
@@ -480,15 +443,7 @@ function abrirModalVisita(contacto) {
     selectVisita.innerHTML = options;
   }
 
-  // init modal (una sola vez) y reinit selects DENTRO del modal
-  const el = document.getElementById('modalVisita');
-  const modalVisita = M.Modal.getInstance(el) || M.Modal.init(el, {
-    onOpenStart: () => reinitSelects('#modalVisita'),
-    onOpenEnd:   () => reinitSelects('#modalVisita')
-  });
-
-  // por si cambió el contenido antes de abrir
-  reinitSelects('#modalVisita');
+  const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'));
   modalVisita.open();
 }
 
@@ -516,7 +471,6 @@ function setupFormularioVisita() {
       const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita'));
       modalVisita?.close();
       form.reset();
-      reinitSelects('#modalVisita');
     } catch (e2) {
       console.warn('apiCreateVisita aún no disponible:', e2?.message || e2);
       M.toast?.({ html: 'Visitas aún no disponible (backend)', displayLength: 2200 });
@@ -539,7 +493,6 @@ function abrirEdicion(c) {
 
   $('#tieneMMPP').value = c.tieneMMPP || '';
   $('#dispuestoVender').value = c.dispuestoVender || '';
-  reinitSelects('#modalContacto');
 
   $('#fechaDisponibilidad').value = c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '';
   $('#tonsDisponiblesAprox').value = c.tonsDisponiblesAprox ?? '';
@@ -553,7 +506,6 @@ function abrirEdicion(c) {
   M.updateTextFields();
 
   const modalInst = M.Modal.getInstance(document.getElementById('modalContacto')) || M.Modal.init(document.getElementById('modalContacto'));
-  reinitSelects('#modalContacto');
   modalInst.open();
 }
 
@@ -567,16 +519,12 @@ export async function initContactosTab() {
   initTablaContactos();
   renderTablaContactos();
 
-  // Abrir modal en modo NUEVO
   $('#btnOpenContactoModal')?.addEventListener('click', () => {
     editId = null;
     const form = $('#formContacto');
     form?.reset();
-    reinitSelects('#modalContacto');
     setVal(['proveedorKey','proveedorId'],'');
     setVal(['proveedorNombre'],'');
     resetSelectCentros();
   });
 }
-
-
