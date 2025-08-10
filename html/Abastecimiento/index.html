@@ -254,31 +254,54 @@
   document.addEventListener('DOMContentLoaded', function () {
     M.Tabs.init(document.querySelectorAll('.tabs'), {});
 
-    // helper: inicializa selects DENTRO de un modal usando ese modal como container
+    // Reinit selects DENTRO de un modal, y anclar dropdown al BODY (más estable)
     function initSelectsIn(modalSelector) {
-      const container = document.querySelector(modalSelector);
-      if (!container) return;
-      container.querySelectorAll('select').forEach(sel => {
+      const container = document.body; // << anclar al body
+      const scope = document.querySelector(modalSelector);
+      if (!scope) return;
+
+      scope.querySelectorAll('select').forEach(sel => {
         const prev = M.FormSelect.getInstance(sel);
         if (prev) prev.destroy();
         const inst = M.FormSelect.init(sel, {
           dropdownOptions: {
-            container,            // << clave
+            container,            // << ancla al body
             constrainWidth: false,
             coverTrigger: false,
-            alignment: 'left'
+            alignment: 'left',
+            closeOnClick: false   // evita que se cierre antes de reposicionar
           }
         });
-        // refuerzo por si Materialize ignora el container
+        // refuerzo: por si Materialize pierde el container
         if (inst && inst.dropdown) inst.dropdown.options.container = container;
       });
     }
 
+    // Reposicionar al abrir cada dropdown (bugfix Materialize en modales)
+    function fixSelectPosition(modalSelector) {
+      const scope = document.querySelector(modalSelector);
+      if (!scope) return;
+
+      scope.querySelectorAll('.select-wrapper input.select-dropdown').forEach(inp => {
+        inp.addEventListener('click', () => {
+          const sel = inp.parentElement.querySelector('select');
+          const inst = M.FormSelect.getInstance(sel);
+          if (!inst || !inst.dropdown) return;
+
+          // dar un tick para que abra y luego recolocar
+          setTimeout(() => {
+            inst.dropdown.recalculateDimensions();
+            inst.dropdown.placeDropdown();
+          }, 0);
+        });
+      });
+    }
+
     // ===== Modal: Registrar contacto =====
-    const modalEl = document.getElementById('modalContacto');
-    const modalContacto = M.Modal.init(modalEl, {
-      onOpenStart: () => initSelectsIn('#modalContacto'),
-      onOpenEnd:   () => initSelectsIn('#modalContacto'),
+    const modalContactoEl = document.getElementById('modalContacto');
+    const modalContacto = M.Modal.init(modalContactoEl, {
+      onOpenStart: () => { initSelectsIn('#modalContacto'); },
+      onOpenEnd:   () => { initSelectsIn('#modalContacto'); fixSelectPosition('#modalContacto'); },
       onCloseEnd:  () => {
         const form = document.getElementById('formContacto');
         form?.reset();
@@ -287,7 +310,7 @@
     });
     document.getElementById('btnOpenContactoModal')
       ?.addEventListener('click', () => {
-        initSelectsIn('#modalContacto'); // por si modificaste opciones antes de abrir
+        initSelectsIn('#modalContacto');
         modalContacto.open();
       });
 
@@ -298,13 +321,16 @@
     // ===== Modal: Visita =====
     const modalVisitaEl = document.getElementById('modalVisita');
     const modalVisita = M.Modal.init(modalVisitaEl, {
-      onOpenStart: () => initSelectsIn('#modalVisita'),
-      onOpenEnd:   () => initSelectsIn('#modalVisita')
+      onOpenStart: () => { initSelectsIn('#modalVisita'); },
+      onOpenEnd:   () => { initSelectsIn('#modalVisita'); fixSelectPosition('#modalVisita'); }
     });
-    // si lo abres desde JS después de llenar el <select>, vuelve a llamar initSelectsIn('#modalVisita') justo antes de open()
+    // Si llenas opciones del select por JS justo antes de abrir:
+    //   initSelectsIn('#modalVisita'); modalVisita.open();
   });
 </script>
 
+
 </body>
 </html>
+
 
