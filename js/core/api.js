@@ -1,6 +1,6 @@
 const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
 
-// === CENTROS ===
+// Utilidad común
 async function checkResponse(resp) {
   if (!resp.ok) {
     const text = await resp.text();
@@ -9,6 +9,9 @@ async function checkResponse(resp) {
   return resp.json();
 }
 
+/* ======================================================
+   CENTROS
+   ====================================================== */
 export async function apiGetCentros() {
   const resp = await fetch(`${API_URL}/centros`);
   return checkResponse(resp);
@@ -33,13 +36,11 @@ export async function apiUpdateCentro(id, data) {
 }
 
 export async function apiDeleteCentro(id) {
-  const resp = await fetch(`${API_URL}/centros/${id}`, {
-    method: 'DELETE'
-  });
+  const resp = await fetch(`${API_URL}/centros/${id}`, { method: 'DELETE' });
   return checkResponse(resp);
 }
 
-// === LÍNEAS ===
+/* LÍNEAS */
 export async function apiAddLinea(centroId, data) {
   const resp = await fetch(`${API_URL}/centros/${centroId}/lines`, {
     method: 'POST',
@@ -65,7 +66,7 @@ export async function apiDeleteLinea(centroId, lineaId) {
   return checkResponse(resp);
 }
 
-// === INVENTARIO LÍNEA ===
+/* INVENTARIO LÍNEA */
 export async function apiAddInventarioLinea(centroId, lineaId, data) {
   const resp = await fetch(`${API_URL}/centros/${centroId}/lines/${lineaId}/inventarios`, {
     method: 'POST',
@@ -75,7 +76,7 @@ export async function apiAddInventarioLinea(centroId, lineaId, data) {
   return checkResponse(resp);
 }
 
-// === BULK CENTROS ===
+/* BULK CENTROS */
 export async function apiBulkUpsertCentros(arr) {
   const resp = await fetch(`${API_URL}/centros/bulk-upsert`, {
     method: 'PUT',
@@ -85,4 +86,67 @@ export async function apiBulkUpsertCentros(arr) {
   return checkResponse(resp);
 }
 
+/* ======================================================
+   CONTACTOS (centralizamos aquí lo que usa la pestaña)
+   ====================================================== */
+export async function apiGetContactos() {
+  const resp = await fetch(`${API_URL}/contactos`);
+  return checkResponse(resp);
+}
 
+export async function apiCreateContacto(data) {
+  const resp = await fetch(`${API_URL}/contactos`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  return checkResponse(resp);
+}
+
+export async function apiUpdateContacto(id, data) {
+  const resp = await fetch(`${API_URL}/contactos/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  return checkResponse(resp);
+}
+
+export async function apiDeleteContacto(id) {
+  const resp = await fetch(`${API_URL}/contactos/${id}`, { method: 'DELETE' });
+  return checkResponse(resp);
+}
+
+/* ======================================================
+   VISITAS (nuevo módulo)
+   - GET por contactoId (si el endpoint no existe, devolvemos [])
+   - POST crear visita
+   (PUT/DELETE los agregamos cuando los necesites)
+   ====================================================== */
+
+// Tolerante: si 404, devuelve []
+export async function apiGetVisitasByContacto(contactoId) {
+  if (!contactoId) return [];
+  const url = `${API_URL}/visitas?contactoId=${encodeURIComponent(contactoId)}`;
+  try {
+    const resp = await fetch(url);
+    if (resp.status === 404) return []; // backend aún no implementado
+    return checkResponse(resp);
+  } catch (e) {
+    // evita romper la UI si hay CORS/404/500
+    return [];
+  }
+}
+
+export async function apiCreateVisita(data) {
+  const resp = await fetch(`${API_URL}/visitas`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  return checkResponse(resp);
+}
+
+// (Opcionales para futuro)
+// export async function apiUpdateVisita(id, data) { ... }
+// export async function apiDeleteVisita(id) { ... }
