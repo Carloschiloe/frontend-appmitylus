@@ -1,320 +1,136 @@
 /* ==============================
-   CENTROS – ESTILO EXCLUSIVO MEJORADO
+   CENTROS – Overrides sobre global
    ============================== */
 
-/* ---- CONTAINER FLEX: arreglar corte de contenido ---- */
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
-.container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  overflow: visible !important; /* CRUCIAL: NO esconder paginación ni flotantes */
+/* Cabezal de la tabla Centros con color institucional */
+#centrosTable.dataTable thead th{
+  background: var(--primary) !important; /* teal oscuro */
+  color:#fff !important;
 }
 
-/* ---- TABLA PRINCIPAL ---- */
-#centrosTable_wrapper {
-  width: 100% !important;
-  max-width: 100vw;
-  overflow-x: auto !important;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.1);
-  padding-bottom: 26px !important; /* deja espacio a la paginación y scroll horizontal */
-}
-
-#centrosTable {
-  width: 100% !important;
-  background: #fff;
-  border-radius: 8px;
-  margin: 0 !important;
-}
-
+/* Densidad un pelo más compacta (opcional) */
+#centrosTable,
 #centrosTable th,
-#centrosTable td {
-  font-size: 0.95rem;
-  padding: 0.4rem 0.5rem;
-  white-space: nowrap;
-  vertical-align: middle;
-  border-bottom: 1px solid #e0e0e0;
+#centrosTable td{
+  font-size: 0.92em !important;
+  padding: 0.26em 0.48em !important;
 }
+
+/* Columna Proveedor (1ª): permite salto de línea + límites */
 #centrosTable th:first-child,
-#centrosTable td:first-child {
-  max-width: 300px !important;
-  min-width: 120px !important;
-  font-size: 0.90em !important;
-  text-transform: capitalize !important;
+#centrosTable td:first-child{
   white-space: normal !important;
   word-break: break-word !important;
+  max-width: 420px !important;
+  min-width: 100px !important;
 }
+
+/* Segunda columna: capitalizar (si tu data viene en minúsculas) */
 #centrosTable th:nth-child(2),
-#centrosTable td:nth-child(2) {
-  font-size: 0.90em !important;
+#centrosTable td:nth-child(2){
   text-transform: capitalize !important;
 }
-#centrosTable th {
-  background-color: #004d40;
-  color: white;
-  font-weight: 600;
-}
-#centrosTable td:last-child,
-.child-row-lineas td:last-child {
+
+/* Columna de acciones al final sin quiebre */
+#centrosTable td:last-child{
   white-space: nowrap !important;
   text-align: left;
 }
+
+/* Íconos en tabla principal y filas hijas */
 #centrosTable td .material-icons,
-.child-row-lineas td .material-icons {
-  display: inline-block !important;
-  vertical-align: middle;
-  font-size: 1.25em;
-  margin-right: 8px;
-  color: #555;
-  cursor: pointer;
-  transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
+.child-row-lineas td .material-icons{
+  font-size: 1.1em;
+  margin-right: 6px;
 }
 #centrosTable td .material-icons:hover,
-.child-row-lineas td .material-icons:hover {
-  color: #009688;
-  transform: scale(1.1);
+.child-row-lineas td .material-icons:hover{
+  color: var(--primary-acc);
+  transform: translateY(-1px);
 }
 
-/* ---- PAGINACIÓN SIEMPRE VISIBLE ---- */
-.dataTables_paginate,
-#centrosTable_paginate {
-  position: static !important;
-  background: transparent !important;
-  padding: 8px 0 0 0 !important;
-  margin-bottom: 0 !important;
-  z-index: 100 !important;
-  text-align: right !important;
-}
-
-/* ----------- CHILD-ROW: LÍNEAS ----------- */
-.child-row-lineas {
+/* ----------- CHILD-ROW: LÍNEAS (solo estilos propios) ----------- */
+.child-row-lineas{
   width: 100% !important;
-  overflow-x: visible !important;
   padding: 14px 12px 10px 20px !important;
   background: #f7faf9;
   border-bottom: 2px solid #b2dfdb;
   box-shadow: 0 2px 14px 0 rgba(0,150,136,0.1);
-  font-size: 1rem;
-  position: relative;
   border-radius: 0 0 16px 16px;
 }
-.child-row-lineas table.striped,
-.child-table-lineas {
-  width: 100% !important;
-  background: transparent !important;
+.child-table-lineas{
+  width:100% !important;
+  background: transparent !important; /* deja ver el fondo verdoso */
   border-collapse: collapse !important;
   table-layout: auto !important;
 }
-.child-table-lineas th {
-  background: #e0f2f1 !important;
-  color: #004d40 !important;
-  font-weight: 700 !important;
-  padding: 0.18rem 0.13rem !important;
-  border-bottom: 1px solid #b2dfdb !important;
-  text-align: center;
-  white-space: nowrap !important;
+.child-table-lineas th{
+  background:#e0f2f1 !important;
+  color:#004d40 !important;
+  font-weight:700 !important;
+  padding: .18rem .13rem !important;
+  border-bottom:1px solid #b2dfdb !important;
+  text-align:center; white-space:nowrap !important;
 }
 .child-table-lineas th,
-.child-table-lineas td {
-  padding: 0.15rem 0.1rem !important;
-  font-size: 0.94em !important;
-  border-bottom: 1px solid #eee;
-  text-align: center;
-  white-space: nowrap !important;
+.child-table-lineas td{
+  padding:.15rem .1rem !important;
+  font-size:.94em !important;
+  border-bottom:1px solid #eee;
+  text-align:center; white-space:nowrap !important;
 }
 .child-table-lineas input,
-.child-table-lineas select {
-  width: 92%;
-  font-size: 0.93em;
-  padding: 2px 4px;
-  margin: 0;
-  border: 1px solid #bdbdbd;
-  border-radius: 3px;
-  box-sizing: border-box;
-  transition: border-color 0.2s ease-in-out;
-}
-.child-table-lineas input:focus,
-.child-table-lineas select:focus {
-  border-color: #009688;
-  outline: none;
+.child-table-lineas select{
+  width:92%;
+  font-size:.93em; padding:2px 4px; margin:0;
+  border:1px solid #bdbdbd; border-radius:3px;
 }
 
-/* ---- MODAL DETALLES CENTRO ---- */
-#modalDetallesCentro.modal {
-  width: 90% !important;
-  max-width: 600px !important;
-  max-height: 80vh !important;
-  top: 10vh !important;
-  overflow: hidden;
+/* ----------- MAPA (shell + fullscreen + sidebar propia) ----------- */
+#mapShell{
+  flex:1; position:relative;
+  border:1px solid #ddd; border-radius:7px;
+  background:#d8d8d8; overflow:hidden;
 }
-#modalDetallesCentro .modal-content {
-  padding: 1rem 1.5rem !important;
-  max-height: 65vh;
-  overflow-y: auto;
+#map, #map.leaflet-container{
+  width:100% !important; height:100% !important;
+  min-height:400px; background:#d8d8d8;
 }
-#modalDetallesCentro .modal-footer {
-  padding: 0.5rem 1rem !important;
-}
-#modalDetallesCentro .modal-footer .btn,
-#modalDetallesCentro .modal-footer .modal-close {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.2;
+#map:focus-visible{
+  outline:2px solid #26a69a; outline-offset:2px;
 }
 
-/* ============================= */
-/* FILTRO FLOTANTE SOBRE EL MAPA */
-/* ============================= */
-.filter-overlay {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  z-index: 1000;
-  background: rgba(255,255,255,0.9);
-  padding: 0.5rem 0.75rem;
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  width: 260px;
+/* Fullscreen limpio */
+:fullscreen #mapShell, #mapShell:fullscreen{
+  width:100vw; height:100vh; margin:0; padding:0; border-radius:0;
 }
-.filter-overlay input {
-  width: 100%;
-  padding: 0.5rem;
-  font-size: 0.9rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+:fullscreen #map, #map:fullscreen{
+  width:100vw; height:100vh; margin:0; padding:0;
 }
+body:has(#mapShell:fullscreen){ overflow:hidden; }
 
-/* Ocultar sidebar original si lo necesitas */
-#sidebarCentros,
-#toggleSidebar {
-  display: none !important;
+/* Sidebar de centros (si la usas) */
+.sidebar-centros{
+  position:absolute; top:28px; left:28px; width:260px;
+  background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.14);
+  border-radius:10px; z-index:800; padding:12px 12px 8px;
 }
+.sidebar-centros.minimized{ left:-230px; width:30px; }
+.sidebar-list{ margin:0; padding:0; list-style:none; max-height:250px; overflow-y:auto; }
+.sidebar-list li{ cursor:pointer; padding:7px 0; border-bottom:1px solid #eee; font-size:15px; }
+.sidebar-list li.selected{ background:#e0f2f1; font-weight:700; }
 
-/* ============================= */
-/* MAPA Y SHELL MAPA */
-/* ============================= */
-#mapShell {
-  flex: 1;
-  position: relative;
-  border: 1px solid #ddd;
-  border-radius: 7px;
-  background: #d8d8d8;
-  overflow: hidden;
+/* Responsive específicos de esta vista */
+@media (max-width: 900px){
+  #centrosTable, #centrosTable_wrapper{ display:block !important; min-width:360px !important; }
+  .dataTables_paginate{ justify-content:center; }
+  #mapShell{ min-height:220px !important; height:54vh; }
+  #map{ min-height:220px !important; height:52vh !important; }
 }
-#map,
-#map.leaflet-container {
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 400px;
-  box-sizing: border-box;
-  background: #d8d8d8;
+@media (max-width: 700px){
+  .sidebar-centros{ top:12px; left:12px; width:92vw; }
+  .sidebar-centros.minimized{ left:-90vw; width:35px; }
 }
-#map:focus-visible {
-  outline: 2px solid #26a69a;
-  outline-offset: 2px;
-}
-
-/* FULLSCREEN */
-:fullscreen #mapShell,
-#mapShell:fullscreen {
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  padding: 0;
-  border-radius: 0;
-}
-:fullscreen #map,
-#map:fullscreen {
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  padding: 0;
-}
-body:has(#mapShell:fullscreen) {
-  overflow: hidden;
-}
-
-/* ----------- RESPONSIVE ----------- */
-@media (max-width: 900px) {
-  #centrosTable_wrapper,
-  #centrosTable {
-    min-width: 360px !important;
-    width: 100vw !important;
-    overflow-x: auto !important;
-    display: block !important;
-  }
-  .dataTables_paginate,
-  #centrosTable_paginate {
-    text-align: center !important;
-  }
-  #mapShell {
-    min-height: 220px !important;
-    height: 54vh;
-  }
-  #map {
-    min-height: 220px !important;
-    height: 52vh !important;
-  }
-}
-@media (max-width: 600px) {
-  #mapShell,
-  #map {
-    min-height: 160px !important;
-    height: 41vh !important;
-    border-radius: 7px;
-  }
-}
-
-/* ----------- SIDEBAR ----------- */
-.sidebar-centros {
-  position: absolute;
-  top: 28px;
-  left: 28px;
-  width: 260px;
-  background: #fff;
-  box-shadow: 0 2px 12px rgba(0,0,0,.14);
-  border-radius: 10px;
-  z-index: 800;
-  padding: 12px 12px 8px 12px;
-  transition: left .3s, width .3s;
-}
-.sidebar-centros.minimized {
-  left: -230px;
-  width: 30px;
-}
-.toggle-btn {
-  background: none;
-  border: none;
-  float: right;
-  cursor: pointer;
-  margin-bottom: 7px;
-  outline: none;
-  padding: 0;
-}
-.sidebar-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  max-height: 250px;
-  overflow-y: auto;
-}
-.sidebar-list li {
-  cursor: pointer;
-  padding: 7px 0 7px 0;
-  border-bottom: 1px solid #eee;
-  font-size: 15px;
-}
-.sidebar-list li.selected {
-  background: #e0f2f1;
-  font-weight: bold;
-}
-@media (max-width: 700px) {
-  .sidebar-centros { top:12px; left:12px; width: 92vw; }
-  .sidebar-centros.minimized { left:-90vw; width: 35px;}
+@media (max-width: 600px){
+  #mapShell, #map{ min-height:160px !important; height:41vh !important; }
 }
