@@ -1,5 +1,5 @@
-// contactos.js — versión con trazas fuertes para debug
-// (ruta absoluta a api.js: /js/core/api.js)
+// contactos.js — versión robusta con normalización y trazas
+// (ruta a API: /js/core/api.js)
 
 import {
   apiGetCentros,
@@ -11,7 +11,9 @@ import {
   apiCreateVisita,
 } from '/js/core/api.js';
 
-// ========== DEBUG HOOK (loggea cada fetch a /api/contactos) ==========
+/* ============================
+   DEBUG: log de cada fetch a /api/contactos
+============================ */
 (() => {
   if (window.__fetchLogged__) return;
   window.__fetchLogged__ = true;
@@ -37,16 +39,21 @@ import {
   };
 })();
 
-console.log('%c[contactos.js] v-debug – cargado', 'color:#09c');
+console.log('%c[contactos.js] v2 – cargado', 'color:#09c');
 
-// ==== STATE ====
-let listaProveedores = [];
+/* ============================
+   STATE
+============================ */
+let listaProveedores = [];     // [{nombreOriginal, nombreNormalizado, proveedorKey}]
+let proveedoresIndex = {};     // { proveedorKey : { proveedor } } para lookup rápido
 let listaCentros = [];
 let contactosGuardados = [];
 let dt = null;
 let editId = null;
 
-// ==== UTILS ====
+/* ============================
+   UTILS
+============================ */
 const $  = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 const slug = (s) => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
@@ -71,41 +78,105 @@ function getVal(ids) {
   return '';
 }
 
-// ==== API LOAD ====
+/* ============================
+   NORMALIZADORES
+============================ */
+function coerceArray(res) {
+  if (Array.isArray(res)) return res;
+  if (res && typeof res === 'object') {
+    return res.data || res.items || res.results || res.contactos || res.contacts || [];
+  }
+  return [];
+}
+
+function normalizeContacto(c = {}) {
+  // key y nombre
+  const key = c.proveedorKey || slug(c.proveedorNombre || c.proveedor || '');
+  const nombre = c.proveedorNombre
+    || (proveedoresIndex[key]?.proveedor)
+    || c.proveedor
+    || '';
+
+  // fechas
+  const created = c.createdAt || c.created_at || c.fecha || c.fechaCreacion;
+
+  // toneladas (corrige typo y asegura string)
+  const tons = (c.tonsDisponiblesAprox ?? c.onsDisponiblesAprox ?? c.tnsDisponiblesAprox ?? '');
+
+  // centro
+  const centroCodigo = c.centroCodigo || c.centro_code || c.codigoCentro || '';
+  const centroId = c.centroId || c.centro_id || c.idCentro || null;
+
+  return {
+    ...c,
+    proveedorKey: key,
+    proveedorNombre: nombre,
+    createdAt: created,
+    tonsDisponiblesAprox: (tons === '' || tons === null) ? '' : Number(tons),
+    centroCodigo,
+    centroId,
+  };
+}
+
+function normalizeVisitas(res) {
+  return coerceArray(res).map(v => ({
+    ...v,
+    fecha: v.fecha || v.createdAt || v.created_at || '',
+    estado: v.estado || v.resultado || '-',
+  }));
+}
+
+/* ============================
+   API LOAD
+============================ */
 async function cargarCentros() {
   try {
     console.log('[cargarCentros] → apiGetCentros()');
     listaCentros = await apiGetCentros();
-    console.log('[cargarCentros] ←', listaCentros?.length, 'centros');
+    listaCentros = coerceArray(listaCentros);
+    console.log('[cargarCentros] ←', listaCentros.length, 'centros');
 
     const mapa = new Map();
+    proveedoresIndex = {};
     for (const c of listaCentros) {
       const nombreOriginal = (c.proveedor || '').trim();
       if (!nombreOriginal) continue;
-      const nombreNormalizado = nombreOriginal.toLowerCase().replace(/\s+/g, ' ');
       const key = c.proveedorKey?.length ? c.proveedorKey : slug(nombreOriginal);
-      if (!mapa.has(key)) mapa.set(key, { nombreOriginal, nombreNormalizado, proveedorKey: key });
+      if (!mapa.has(key)) {
+        mapa.set(key, {
+          nombreOriginal,
+          nombreNormalizado: nombreOriginal.toLowerCase().replace(/\s+/g, ' '),
+          proveedorKey: key
+        });
+      }
+      if (!proveedoresIndex[key]) proveedoresIndex[key] = { proveedor: nombreOriginal };
     }
     listaProveedores = Array.from(mapa.values());
     console.log('[cargarCentros] proveedores indexados:', listaProveedores.length);
   } catch (e) {
     console.error('[cargarCentros] error:', e);
-    listaCentros = []; listaProveedores = [];
+    listaCentros = []; listaProveedores = []; proveedoresIndex = {};
     M.toast?.({ html: 'Error al cargar centros', displayLength: 2500 });
   }
 }
+
 async function cargarContactosGuardados() {
   try {
     console.log('[cargarContactosGuardados] → apiGetContactos()');
-    contactosGuardados = await apiGetContactos();
-    console.log('[cargarContactosGuardados] ←', contactosGuardados?.length, 'contactos');
+    const res = await apiGetContactos();
+    const raw = coerceArray(res);
+    const normalizados = raw.map(normalizeContacto);
+    contactosGuardados = normalizados;
+    console.log('[cargarContactosGuardados] ←', contactosGuardados.length, 'contactos');
   } catch (e) {
     console.error('[cargarContactosGuardados] error:', e);
     contactosGuardados = [];
   }
 }
 
-// ==== BUSCADOR PROVEEDORES ====
+/* ============================
+   BUSCADOR PROVEEDORES
+============================ */
 function setupBuscadorProveedores() {
   const input = $('#buscadorProveedor');
   const datalist = $('#datalistProveedores');
@@ -140,7 +211,9 @@ function setupBuscadorProveedores() {
   });
 }
 
-// ==== CENTROS (UI del select) ====
+/* ============================
+   CENTROS (UI del select)
+============================ */
 function mostrarCentrosDeProveedor(proveedorKey, preselectCentroId = null) {
   const select = $('#selectCentro'); if (!select) return;
   const centros = listaCentros.filter(c => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor||'')) === proveedorKey);
@@ -151,8 +224,8 @@ function mostrarCentrosDeProveedor(proveedorKey, preselectCentroId = null) {
   html += centros.map(c => {
     const id = (c._id || c.id);
     const sel = preselectCentroId && String(preselectCentroId) === String(id) ? 'selected' : '';
-    return `<option ${sel} value="${id}" data-code="${c.code || ''}" data-comuna="${c.comuna || ''}" data-hect="${c.hectareas ?? ''}">
-      ${c.code || ''} – ${c.comuna || 's/comuna'} (${c.hectareas ?? '-'} ha)
+    return `<option ${sel} value="${id}" data-code="${c.code || c.codigo || ''}" data-comuna="${c.comuna || ''}" data-hect="${c.hectareas ?? ''}">
+      ${c.code || c.codigo || ''} – ${c.comuna || 's/comuna'} (${c.hectareas ?? '-'} ha)
     </option>`;
   }).join('');
   select.innerHTML = html; select.disabled = false;
@@ -178,7 +251,9 @@ function resetSelectCentros(){
   setVal(['centroId'],''); setVal(['centroCode','centroCodigo'],''); setVal(['centroComuna'],''); setVal(['centroHectareas'],'');
 }
 
-// ==== FORM CONTACTO ====
+/* ============================
+   FORM CONTACTO (crear/editar)
+============================ */
 function setupFormulario() {
   const form = $('#formContacto'); if (!form) return;
 
@@ -247,7 +322,9 @@ function setupFormulario() {
   });
 }
 
-// ==== TABLA (DataTables) + Acciones ====
+/* ============================
+   TABLA (DataTables) + acciones
+============================ */
 function initTablaContactos(){
   const jq = window.jQuery || window.$; if (!jq || dt) return;
 
@@ -302,7 +379,11 @@ function renderTablaContactos() {
   const jq = window.jQuery || window.$;
   console.log('[renderTablaContactos] entradas:', contactosGuardados?.length || 0);
 
-  const filas = contactosGuardados.slice().sort((a,b)=>new Date(b.createdAt||b.fecha||0)-new Date(a.createdAt||a.fecha||0))
+  const filas = contactosGuardados.slice().sort((a,b)=>{
+      const da = new Date(a.createdAt || a.fecha || 0).getTime();
+      const db = new Date(b.createdAt || b.fecha || 0).getTime();
+      return db - da;
+    })
     .map(c => {
       const f = new Date(c.createdAt || c.fecha || Date.now());
       const dd = String(f.getDate()).padStart(2,'0');
@@ -334,7 +415,7 @@ function renderTablaContactos() {
         c.tieneMMPP || '',
         c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '',
         c.dispuestoVender || '',
-        (c.onsDisponiblesAprox ?? c.tonsDisponiblesAprox ?? '') + '',
+        (c.tonsDisponiblesAprox ?? '') + '',
         c.vendeActualmenteA || '',
         acciones
       ];
@@ -354,6 +435,7 @@ function renderTablaContactos() {
     tbody.appendChild(tr);
   });
 
+  // Bind manual (por si no hay DataTables)
   tbody.querySelectorAll('a.icon-action.ver').forEach(a => {
     a.addEventListener('click', () => {
       const id = a.dataset.id;
@@ -392,7 +474,9 @@ function renderTablaContactos() {
   });
 }
 
-// ==== DETALLE (modal) ====
+/* ============================
+   DETALLE (modal)
+============================ */
 function comunasDelProveedor(proveedorKey) {
   const key = proveedorKey?.length ? proveedorKey : null;
   const comunas = new Set();
@@ -437,7 +521,8 @@ async function abrirDetalleContacto(c) {
     ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${x}</span>`).join('')
     : '<span class="text-soft">Sin centros asociados</span>';
 
-  const visitas = await apiGetVisitasByContacto(c._id);
+  const visitasRaw = await apiGetVisitasByContacto(c._id);
+  const visitas = normalizeVisitas(visitasRaw);
 
   body.innerHTML = `
     <div class="mb-4">
@@ -477,7 +562,9 @@ async function abrirDetalleContacto(c) {
   inst.open();
 }
 
-// ==== VISITA (modal + submit) ====
+/* ============================
+   VISITA (modal + submit)
+============================ */
 function abrirModalVisita(contacto) {
   setVal(['visita_proveedorId'], contacto._id);
   const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
@@ -527,7 +614,9 @@ function setupFormularioVisita() {
   });
 }
 
-// ==== EDICIÓN ====
+/* ============================
+   EDICIÓN
+============================ */
 function abrirEdicion(c) {
   editId = c._id;
   console.log('[abrirEdicion] editId=', editId, c);
@@ -557,7 +646,9 @@ function abrirEdicion(c) {
   modalInst.open();
 }
 
-// ==== INIT ====
+/* ============================
+   INIT
+============================ */
 export async function initContactosTab() {
   await cargarCentros();
   await cargarContactosGuardados();
@@ -577,3 +668,5 @@ export async function initContactosTab() {
     resetSelectCentros();
   });
 }
+
+
