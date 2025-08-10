@@ -1,9 +1,8 @@
-// js/abastecimiento/contactos/contactos.js
-
 // ==== CONFIG ====
-const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
-const API_CENTROS   = `${API_URL}/centros`;
-const API_CONTACTOS = `${API_URL}/contactos`;
+const API_URL        = 'https://backend-appmitylus-production.up.railway.app/api';
+const API_CENTROS    = `${API_URL}/centros`;
+const API_CONTACTOS  = `${API_URL}/contactos`;
+const API_VISITAS    = `${API_URL}/visitas`;      // <-- NUEVO: endpoint de visitas
 
 // ==== STATE ====
 let listaProveedores = [];
@@ -12,10 +11,14 @@ let contactosGuardados = [];
 let dt = null;
 let editId = null; // ← si no es null, estamos editando ese _id
 
+// caches simples
+const cacheVisitasByContactoId = Object.create(null);
+
 // ==== UTILS ====
 const $  = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
-const slug = (s) => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').replace(/-+/g,'-');
+const slug = (s) => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').replace(/-+/g,'-');
 
 function setVal(ids, value='') {
   for (const id of ids) {
@@ -43,6 +46,7 @@ async function cargarCentros() {
     if (!res.ok) throw new Error('No se pudo cargar centros');
     listaCentros = await res.json();
 
+    // construir índice de proveedores desde centros
     const mapa = new Map();
     for (const c of listaCentros) {
       const nombreOriginal = (c.proveedor || '').trim();
@@ -66,6 +70,20 @@ async function cargarContactosGuardados() {
   } catch (e) {
     console.error('[cargarContactosGuardados] error:', e);
     contactosGuardados = [];
+  }
+}
+async function cargarVisitasPorContacto(contactoId) {
+  if (!contactoId) return [];
+  if (cacheVisitasByContactoId[contactoId]) return cacheVisitasByContactoId[contactoId];
+  try {
+    const res = await fetch(`${API_VISITAS}?contactoId=${encodeURIComponent(contactoId)}`);
+    if (!res.ok) throw new Error('No se pudo cargar visitas');
+    const visitas = await res.json();
+    cacheVisitasByContactoId[contactoId] = visitas || [];
+    return visitas || [];
+  } catch (e) {
+    console.error('[cargarVisitasPorContacto] error:', e);
+    return [];
   }
 }
 
@@ -141,7 +159,7 @@ function resetSelectCentros(){
   setVal(['centroId'],''); setVal(['centroCode','centroCodigo'],''); setVal(['centroComuna'],''); setVal(['centroHectareas'],'');
 }
 
-// ==== FORM ====
+// ==== FORM CONTACTO ====
 function setupFormulario() {
   const form = $('#formContacto'); if (!form) return;
 
@@ -215,7 +233,7 @@ function setupFormulario() {
   });
 }
 
-// ==== TABLA (DataTables) + Acciones con íconos ====
+// ==== TABLA (DataTables) + Acciones ====
 function initTablaContactos(){
   const jq = window.jQuery || window.$; if (!jq || dt) return;
 
@@ -234,12 +252,17 @@ function initTablaContactos(){
     ]
   });
 
-  // Eventos delegados (ver/editar/eliminar)
+  // Eventos delegados (ver/editar/eliminar/visita)
   jq('#tablaContactos tbody')
     .on('click', 'a.icon-action.ver', function(){
       const id = this.dataset.id;
       const c = contactosGuardados.find(x => String(x._id) === String(id));
       if (c) abrirDetalleContacto(c);
+    })
+    .on('click', 'a.icon-action.visita', function(){
+      const id = this.dataset.id;
+      const c = contactosGuardados.find(x => String(x._id) === String(id));
+      if (c) abrirModalVisita(c);
     })
     .on('click', 'a.icon-action.editar', function(){
       const id = this.dataset.id;
@@ -265,67 +288,23 @@ function initTablaContactos(){
 function renderTablaContactos() {
   const jq = window.jQuery || window.$;
 
-  if (dt && jq) {
-    dt.clear();
-    const rows = contactosGuardados.slice().sort((a,b)=>new Date(b.createdAt||b.fecha||0)-new Date(a.createdAt||a.fecha||0))
-      .map(c => {
-        const f = new Date(c.createdAt || c.fecha || Date.now());
-        const dd = String(f.getDate()).padStart(2,'0');
-        const mm = String(f.getMonth()+1).padStart(2,'0');
-        const yyyy = f.getFullYear();
-        const hh = String(f.getHours()).padStart(2,'0');
-        const mi = String(f.getMinutes()).padStart(2,'0');
-        const when = `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
-
-        const acciones = `
-          <a href="#!" class="icon-action ver" title="Ver" data-id="${c._id}">
-            <i class="material-icons">visibility</i>
-          </a>
-          <a href="#!" class="icon-action editar" title="Editar" data-id="${c._id}">
-            <i class="material-icons">edit</i>
-          </a>
-          <a href="#!" class="icon-action eliminar" title="Eliminar" data-id="${c._id}">
-            <i class="material-icons">delete</i>
-          </a>
-        `;
-
-        return [
-          when,
-          c.proveedorNombre || '',
-          c.centroCodigo || '',
-          c.tieneMMPP || '',
-          c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '',
-          c.dispuestoVender || '',
-          (c.tonsDisponiblesAprox ?? '') + '',
-          c.vendeActualmenteA || '',
-          c.notas || '',
-          acciones
-        ];
-      });
-    dt.rows.add(rows).draw();
-    return;
-  }
-
-  // Fallback sin DataTables
-  const tbody = $('#tablaContactos tbody'); if (!tbody) return;
-  tbody.innerHTML = '';
-  if (!contactosGuardados.length) {
-    tbody.innerHTML = `<tr><td colspan="10" style="color:#888">No hay contactos registrados aún.</td></tr>`;
-    return;
-  }
-  contactosGuardados.slice().sort((a,b)=>new Date(b.createdAt||b.fecha||0)-new Date(a.createdAt||a.fecha||0))
-    .forEach(c => {
+  // filas para DataTables (sin columna "Notas")
+  const filas = contactosGuardados.slice().sort((a,b)=>new Date(b.createdAt||b.fecha||0)-new Date(a.createdAt||a.fecha||0))
+    .map(c => {
       const f = new Date(c.createdAt || c.fecha || Date.now());
       const dd = String(f.getDate()).padStart(2,'0');
       const mm = String(f.getMonth()+1).padStart(2,'0');
       const yyyy = f.getFullYear();
       const hh = String(f.getHours()).padStart(2,'0');
       const mi = String(f.getMinutes()).padStart(2,'0');
-      const fechaFmt = `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+      const when = `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
 
       const acciones = `
         <a href="#!" class="icon-action ver" title="Ver" data-id="${c._id}">
           <i class="material-icons">visibility</i>
+        </a>
+        <a href="#!" class="icon-action visita" title="Registrar visita" data-id="${c._id}">
+          <i class="material-icons">event_available</i>
         </a>
         <a href="#!" class="icon-action editar" title="Editar" data-id="${c._id}">
           <i class="material-icons">edit</i>
@@ -335,21 +314,36 @@ function renderTablaContactos() {
         </a>
       `;
 
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${fechaFmt}</td>
-        <td>${c.proveedorNombre || ''}</td>
-        <td>${c.centroCodigo || ''}</td>
-        <td>${c.tieneMMPP || ''}</td>
-        <td>${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : ''}</td>
-        <td>${c.dispuestoVender || ''}</td>
-        <td>${(c.tonsDisponiblesAprox ?? '') + ''}</td>
-        <td>${c.vendeActualmenteA || ''}</td>
-        <td>${c.notas || ''}</td>
-        <td>${acciones}</td>
-      `;
-      tbody.appendChild(tr);
+      return [
+        when,
+        c.proveedorNombre || '',
+        c.centroCodigo || '',
+        c.tieneMMPP || '',
+        c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '',
+        c.dispuestoVender || '',
+        (c.onsDisponiblesAprox ?? c.tonsDisponiblesAprox ?? '') + '', // tolera typo antiguo
+        c.vendeActualmenteA || '',
+        acciones // <-- última columna
+      ];
     });
+
+  if (dt && jq) {
+    dt.clear(); dt.rows.add(filas).draw();
+    return;
+  }
+
+  // Fallback sin DataTables (9 columnas)
+  const tbody = $('#tablaContactos tbody'); if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!contactosGuardados.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="color:#888">No hay contactos registrados aún.</td></tr>`;
+    return;
+  }
+  filas.forEach(arr => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = arr.map(td => `<td>${td}</td>`).join('');
+    tbody.appendChild(tr);
+  });
 
   // Listeners fallback
   tbody.querySelectorAll('a.icon-action.ver').forEach(a => {
@@ -357,6 +351,13 @@ function renderTablaContactos() {
       const id = a.dataset.id;
       const c = contactosGuardados.find(x => String(x._id) === String(id));
       if (c) abrirDetalleContacto(c);
+    });
+  });
+  tbody.querySelectorAll('a.icon-action.visita').forEach(a => {
+    a.addEventListener('click', () => {
+      const id = a.dataset.id;
+      const c = contactosGuardados.find(x => String(x._id) === String(id));
+      if (c) abrirModalVisita(c);
     });
   });
   tbody.querySelectorAll('a.icon-action.editar').forEach(a => {
@@ -385,8 +386,35 @@ function renderTablaContactos() {
 }
 
 // ==== DETALLE (modal) ====
-function abrirDetalleContacto(c) {
+function comunasDelProveedor(proveedorKey) {
+  const key = proveedorKey?.length ? proveedorKey : null;
+  const comunas = new Set();
+  for (const c of listaCentros) {
+    const k = c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor||'');
+    if (!key || k === key) {
+      const comuna = (c.comuna || '').trim();
+      if (comuna) comunas.add(comuna);
+    }
+  }
+  return Array.from(comunas);
+}
+
+function miniTimelineHTML(visitas = []) {
+  if (!visitas.length) return '<div class="text-soft">Sin visitas registradas</div>';
+  const filas = visitas.slice(0,3).map(v => `
+    <div class="row" style="margin-bottom:.35rem">
+      <div class="col s4"><strong>${(v.fecha||'').slice(0,10)}</strong></div>
+      <div class="col s4">${v.centroCodigo || v.centroId || '-'}</div>
+      <div class="col s4">${v.estado || '-'}</div>
+      <div class="col s12"><span class="text-soft">${v.tonsComprometidas ? (v.tonsComprometidas + ' t • ') : ''}${v.observaciones || ''}</span></div>
+    </div>
+  `).join('');
+  return filas + `<a class="btn btn--ghost" id="btnVerVisitas">Ver todas</a>`;
+}
+
+async function abrirDetalleContacto(c) {
   const body = $('#detalleContactoBody'); if (!body) return;
+
   const fechaFmt = (() => {
     const f = new Date(c.createdAt || c.fecha || Date.now());
     const dd = String(f.getDate()).padStart(2,'0');
@@ -397,23 +425,115 @@ function abrirDetalleContacto(c) {
     return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
   })();
 
+  const comunas = comunasDelProveedor(c.proveedorKey || slug(c.proveedorNombre||''));
+  const chips = comunas.length
+    ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${x}</span>`).join('')
+    : '<span class="text-soft">Sin centros asociados</span>';
+
+  // visitas
+  const visitas = await cargarVisitasPorContacto(c._id);
+
   body.innerHTML = `
+    <div class="mb-4">
+      <h6 class="text-soft" style="margin:0 0 .5rem">Comunas con centros del proveedor</h6>
+      ${chips}
+    </div>
+
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
       <div><strong>Fecha:</strong> ${fechaFmt}</div>
       <div><strong>Proveedor:</strong> ${c.proveedorNombre || ''}</div>
-      <div><strong>Centro:</strong> ${c.centroCodigo || ''}</div>
-      <div><strong>Disponibilidad:</strong> ${c.tieneMMPP || ''}</div>
-      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : ''}</div>
-      <div><strong>Disposición:</strong> ${c.dispuestoVender || ''}</div>
+      <div><strong>Centro:</strong> ${c.centroCodigo || '-'}</div>
+      <div><strong>Disponibilidad:</strong> ${c.tieneMMPP || '-'}</div>
+      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '-'}</div>
+      <div><strong>Disposición:</strong> ${c.dispuestoVender || '-'}</div>
       <div><strong>Tons aprox.:</strong> ${(c.tonsDisponiblesAprox ?? '') + ''}</div>
-      <div><strong>Vende a:</strong> ${c.vendeActualmenteA || ''}</div>
-      <div style="grid-column:1/-1;"><strong>Notas:</strong> ${c.notas || ''}</div>
+      <div><strong>Vende a:</strong> ${c.vendeActualmenteA || '-'}</div>
+      <div style="grid-column:1/-1;"><strong>Notas:</strong> ${c.notas || '<span class="text-soft">Sin notas</span>'}</div>
       <div style="grid-column:1/-1;"><strong>Contacto:</strong>
         ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).join(' • ') || '-'}</div>
     </div>
+
+    <div class="mb-4" style="margin-top:1rem;">
+      <h6 class="text-soft" style="margin:0 0 .5rem">Últimas visitas</h6>
+      ${miniTimelineHTML(visitas)}
+    </div>
+
+    <div class="right-align">
+      <button class="btn teal" id="btnNuevaVisita" data-id="${c._id}">
+        <i class="material-icons left">event_available</i>Registrar visita
+      </button>
+    </div>
   `;
+
+  // acciones dentro del modal
+  $('#btnNuevaVisita')?.addEventListener('click', () => abrirModalVisita(c));
+
   const inst = M.Modal.getInstance(document.getElementById('modalDetalleContacto')) || M.Modal.init(document.getElementById('modalDetalleContacto'));
   inst.open();
+}
+
+// ==== VISITA (modal + submit) ====
+function abrirModalVisita(contacto) {
+  // set hidden + cargar centros del proveedor para el select
+  setVal(['visita_proveedorId'], contacto._id);
+  const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
+  mostrarCentrosDeProveedor(proveedorKey); // reutilizamos el mismo selector (opcional: usa el del modal visita si lo separas)
+
+  // si tienes un select distinto en el modal de visitas, inicialízalo acá:
+  const selectVisita = $('#visita_centroId');
+  if (selectVisita) {
+    // poblar con centros del proveedor
+    const centros = listaCentros.filter(c => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor||'')) === proveedorKey);
+    let options = `<option value="">Centro visitado (opcional)</option>`;
+    options += centros.map(c => `<option value="${c._id || c.id}">${c.code || c.codigo || ''} – ${(c.comuna||'s/comuna')}</option>`).join('');
+    selectVisita.innerHTML = options;
+    const inst = M.FormSelect.getInstance(selectVisita); if (inst) inst.destroy(); M.FormSelect.init(selectVisita);
+  }
+
+  // abrir modal
+  const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'));
+  modalVisita.open();
+}
+
+function setupFormularioVisita() {
+  const form = $('#formVisita'); if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const contactoId = $('#visita_proveedorId').value;
+    const payload = {
+      contactoId,                                     // vínculo directo al contacto
+      fecha: $('#visita_fecha').value,
+      centroId: $('#visita_centroId').value || null,
+      contacto: $('#visita_contacto').value || null,
+      enAgua: $('#visita_enAgua').value || null,
+      tonsComprometidas: $('#visita_tonsComprometidas').value ? Number($('#visita_tonsComprometidas').value) : null,
+      estado: $('#visita_estado').value || 'Realizada',
+      observaciones: $('#visita_observaciones').value || null
+    };
+
+    try {
+      const res = await fetch(API_VISITAS, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`POST /visitas -> ${res.status} ${await res.text()}`);
+
+      // refrescar cache de visitas del contacto y feedback
+      cacheVisitasByContactoId[contactoId] = null;
+      M.toast?.({ html: 'Visita guardada', classes: 'teal', displayLength: 1800 });
+
+      const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita'));
+      modalVisita?.close();
+      form.reset();
+      $$('#formVisita select').forEach(sel => {
+        const inst = M.FormSelect.getInstance(sel); if (inst) inst.destroy();
+        M.FormSelect.init(sel);
+      });
+    } catch (e) {
+      console.error('guardarVisita error:', e);
+      M.toast?.({ html: 'Error al guardar la visita', displayLength: 2200 });
+    }
+  });
 }
 
 // ==== EDICIÓN ====
@@ -452,6 +572,7 @@ export async function initContactosTab() {
   await cargarContactosGuardados();
   setupBuscadorProveedores();
   setupFormulario();
+  setupFormularioVisita();        // <-- init del form de visitas
   initTablaContactos();
   renderTablaContactos();
 
