@@ -58,8 +58,10 @@
   <div class="container" style="margin-top: 1rem;">
     <!-- Pestañas -->
     <ul id="tabs" class="tabs">
-      <li class="tab col s4"><a class="active" href="#tab-contactos">Contactos</a></li>
-    </ul>
+  <li class="tab col s4"><a class="active" href="#tab-contactos">Contactos</a></li>
+  <li class="tab col s4"><a href="#tab-visitas">Visitas</a></li>
+</ul>
+
 
     <!-- PESTAÑA: Contactos -->
     <section id="tab-contactos" class="col s12">
@@ -70,6 +72,32 @@
           </a>
         </div>
       </div>
+    <!-- PESTAÑA: Visitas -->
+<section id="tab-visitas" class="col s12" style="display:none;">
+  <div class="row" style="margin-bottom:.5rem;">
+    <div class="col s12">
+      <span class="grey-text text-darken-1">
+        Revisión, filtros y exportación de visitas (la creación sigue en Contactos).
+      </span>
+    </div>
+  </div>
+
+  <table id="tablaVisitas" class="highlight display" style="width:100%; margin-top:.75rem;">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Proveedor</th>
+        <th>Centro</th>
+        <th>Actividad</th>
+        <th>Próximo paso</th>
+        <th>Tons</th>
+        <th>Observaciones</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
 
       <!-- Tabla de proveedores contactados -->
       <table id="tablaContactos" class="highlight display" style="width:100%; margin-top:.75rem;">
@@ -305,3 +333,4 @@
   </script>
 </body>
 </html>
+
