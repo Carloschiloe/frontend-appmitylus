@@ -116,16 +116,23 @@ export function setupFormularioVisita() {
       contactoId,
       fecha: $('#visita_fecha').value,
       centroId,
-      centroCodigo, // clave para mostrar bien
+      centroCodigo, // para mostrar bien en timeline sin segundo lookup
       contacto: $('#visita_contacto').value || null,
       enAgua: $('#visita_enAgua').value || null,
       tonsComprometidas: $('#visita_tonsComprometidas').value ? Number($('#visita_tonsComprometidas').value) : null,
-      estado: $('#visita_estado').value || 'Realizada',
+      // por defecto usamos el “Próximo paso”
+      estado: $('#visita_estado').value || 'Programar nueva visita',
       observaciones: $('#visita_observaciones').value || null
     };
 
     try {
-      await apiCreateVisita(payload);
+      const nueva = await apiCreateVisita(payload);
+
+      // 🔔 Notifica a toda la app que se creó una visita
+      window.dispatchEvent(new CustomEvent('visita:created', {
+        detail: { visita: nueva, contactoId }
+      }));
+
       M.toast?.({ html: 'Visita guardada', classes: 'teal', displayLength: 1800 });
 
       const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita'));
