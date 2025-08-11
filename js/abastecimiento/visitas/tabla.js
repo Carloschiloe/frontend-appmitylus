@@ -23,6 +23,9 @@ export function renderTablaVisitas(rows = []) {
     (r.tonsComprometidas ?? '') + '',
     r.observaciones || '',
     `
+      <a href="#!" class="icon-action editar" data-id="${r._id}" title="Editar">
+        <i class="material-icons">edit</i>
+      </a>    
       <a href="#!" class="icon-action eliminar" data-id="${r._id}" title="Eliminar">
         <i class="material-icons">delete</i>
       </a>
@@ -54,3 +57,4 @@ export function renderTablaVisitas(rows = []) {
   // guarda la instancia en el state para futuros reloads
   setDtVisitas(instance);
 }
+
