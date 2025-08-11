@@ -33,21 +33,30 @@
     .toolbar .input-field{margin:0}
     .toolbar .actions{grid-column:span 12;display:flex;gap:8px;justify-content:flex-end}
     @media(min-width:600px){
-      .toolbar .w3{grid-column:span 3}
       .toolbar .w2{grid-column:span 2}
+      .toolbar .w3{grid-column:span 3}
       .toolbar .w4{grid-column:span 4}
+      .toolbar .w5{grid-column:span 5}
+      .toolbar .w6{grid-column:span 6}
       .toolbar .w12{grid-column:span 12}
     }
     @media(min-width:992px){
       .toolbar .w2{grid-column:span 2}
       .toolbar .w3{grid-column:span 3}
       .toolbar .w4{grid-column:span 4}
+      .toolbar .w5{grid-column:span 5}
+      .toolbar .w6{grid-column:span 6}
     }
 
     #tablaProgramaSemanal.dataTable thead th{
       background:var(--primary,#00695c)!important;color:#fff!important
     }
     .chart-card{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+
+    .hidden{display:none!important}
+    .periodo-nav{display:flex;gap:6px;align-items:center}
+    .periodo-wrap{display:flex;gap:10px;align-items:end}
+    .btn-ghost{background:transparent!important}
   </style>
 </head>
 <body class="grey lighten-5">
@@ -65,9 +74,9 @@
     <!-- KPIs -->
     <div class="kpi-grid">
       <div class="kpi">
-        <h6>Meta semana (t)</h6>
+        <h6>Meta (t) período</h6>
         <div class="val" id="kpi_meta">—</div>
-        <div class="sub">Objetivo definible</div>
+        <div class="sub">Escala según vista</div>
       </div>
       <div class="kpi">
         <h6>Planificado (t)</h6>
@@ -86,13 +95,46 @@
       </div>
     </div>
 
-    <!-- Toolbar (sin “Planta”) -->
+    <!-- Toolbar -->
     <div class="card-panel" style="padding:14px 16px;">
       <div class="toolbar">
-        <div class="input-field w2">
-          <input type="week" id="f_semana">
-          <label class="active" for="f_semana">Semana</label>
+        <!-- Vista -->
+        <div class="input-field w3">
+          <select id="f_vista" class="browser-default">
+            <option value="semana" selected>Semana</option>
+            <option value="mes">Mes</option>
+            <option value="anio">Año</option>
+          </select>
+          <label class="active" for="f_vista" style="transform:none;font-size:.9rem;color:#9e9e9e">Vista</label>
         </div>
+
+        <!-- Periodo -->
+        <div class="w5 periodo-wrap">
+          <div class="periodo-nav">
+            <a id="btnPrevPeriodo" class="btn-flat btn-ghost" title="Anterior"><i class="material-icons">chevron_left</i></a>
+          </div>
+
+          <div class="input-field" id="wrap_semana">
+            <input type="week" id="f_semana" max="2027-W52">
+            <label class="active" for="f_semana">Semana</label>
+          </div>
+
+          <div class="input-field hidden" id="wrap_mes">
+            <input type="month" id="f_mes" max="2027-12">
+            <label class="active" for="f_mes">Mes</label>
+          </div>
+
+          <div class="input-field hidden" id="wrap_anio">
+            <input type="number" id="f_anio" min="2020" max="2027" step="1" placeholder="YYYY">
+            <label class="active" for="f_anio">Año</label>
+          </div>
+
+          <div class="periodo-nav">
+            <a id="btnNextPeriodo" class="btn-flat btn-ghost" title="Siguiente"><i class="material-icons">chevron_right</i></a>
+          </div>
+        </div>
+
+        <!-- Escenario -->
         <div class="input-field w3">
           <select id="f_escenario" class="browser-default">
             <option value="base" selected>Base</option>
@@ -101,11 +143,13 @@
           </select>
           <label class="active" for="f_escenario" style="transform:none;font-size:.9rem;color:#9e9e9e">Escenario</label>
         </div>
+
+        <!-- Búsqueda + toggles -->
         <div class="input-field w4">
           <input id="f_buscar" type="text" placeholder="Buscar proveedor o centro…">
           <label for="f_buscar" class="active">Búsqueda</label>
         </div>
-        <div class="w3" style="display:flex;gap:16px;align-items:center;">
+        <div class="w6" style="display:flex;gap:16px;align-items:center;">
           <label>
             <input type="checkbox" id="f_soloConfirmado" class="filled-in"/>
             <span>Sólo confirmados</span>
@@ -115,8 +159,10 @@
             <span>Ocultar cancelados</span>
           </label>
         </div>
+
+        <!-- Acciones -->
         <div class="actions">
-          <a id="btnNuevoBloque" class="btn teal"><i class="material-icons left">add_circle</i>Nuevo bloque</a>
+          <a id="btnAsignarMMPP" class="btn teal"><i class="material-icons left">add_circle</i>Asignar MMPP</a>
           <a id="btnXls" class="btn-flat waves-effect">Excel</a>
           <a id="btnPdf" class="btn-flat waves-effect">PDF</a>
         </div>
@@ -125,13 +171,13 @@
 
     <!-- Pestañas -->
     <ul class="tabs">
-      <li class="tab col s3"><a class="active" href="#tab-semanal">Programa semanal</a></li>
+      <li class="tab col s3"><a class="active" href="#tab-semanal">Programa</a></li>
       <li class="tab col s3"><a href="#tab-tablero">Tablero</a></li>
       <li class="tab col s3"><a href="#tab-mensual">Plan mensual</a></li>
       <li class="tab col s3"><a href="#tab-parametros">Parámetros</a></li>
     </ul>
 
-    <!-- TAB: Semanal -->
+    <!-- TAB: Programa -->
     <section id="tab-semanal" class="col s12" style="margin-top:12px">
       <table id="tablaProgramaSemanal" class="highlight display" style="width:100%">
         <thead>
@@ -162,7 +208,7 @@
         </div>
         <div class="col s12 l6">
           <div class="chart-card">
-            <h6 style="margin:0 0 8px">Tons por día (semana)</h6>
+            <h6 id="lbl_ch_dias" style="margin:0 0 8px">Tons por día (semana)</h6>
             <canvas id="ch_dias"></canvas>
           </div>
         </div>
@@ -218,10 +264,10 @@
     </section>
   </div>
 
-  <!-- MODAL: Nuevo bloque -->
+  <!-- MODAL: Asignar MMPP -->
   <div id="modalBloque" class="modal">
     <div class="modal-content">
-      <h5>Nuevo bloque de plan</h5>
+      <h5>Asignar MMPP</h5>
       <form id="formBloque" autocomplete="off">
         <div class="row">
           <div class="input-field col s12 m4">
@@ -229,7 +275,7 @@
             <label class="active" for="b_fecha">Fecha</label>
           </div>
           <div class="input-field col s12 m4">
-            <input id="b_proveedor" type="text" list="dl_proveedores" placeholder="Proveedor">
+            <input id="b_proveedor" type="text" list="dl_proveedores" placeholder="Proveedor" required>
             <label for="b_proveedor">Proveedor</label>
             <datalist id="dl_proveedores"></datalist>
           </div>
@@ -244,7 +290,7 @@
         <div class="row">
           <div class="input-field col s12 m4">
             <input type="number" id="b_tons" min="0" step="0.01" placeholder="Ej: 120" required>
-            <label for="b_tons">Toneladas</label>
+            <label for="b_tons">Toneladas MMPP</label>
           </div>
           <div class="input-field col s12 m4">
             <select id="b_estado" class="browser-default">
@@ -287,10 +333,10 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
-  <!-- Chart.js para el Tablero -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-  <!-- Tu módulo de lógica -->
+  <!-- Lógica -->
   <script type="module" src="/js/abastecimiento/planificacion/index.js"></script>
 
   <script>
@@ -298,14 +344,14 @@
       M.Tabs.init(document.querySelectorAll('.tabs'));
       M.Modal.init(document.getElementById('modalBloque'));
 
-      // DataTable vacío (llenas en /js/abastecimiento/planificacion/index.js)
+      // DataTable vacío (llenado desde index.js vía window.planSetData)
       const $ = window.jQuery;
       window.dtPrograma = $('#tablaProgramaSemanal').DataTable({
         data: [],
         dom: 'Bfrtip',
         buttons: [
-          { extend:'excelHtml5', title:'Programa_Semanal' },
-          { extend:'pdfHtml5',   title:'Programa_Semanal', orientation:'landscape', pageSize:'A4' }
+          { extend:'excelHtml5', title:'Programa' },
+          { extend:'pdfHtml5',   title:'Programa', orientation:'landscape', pageSize:'A4' }
         ],
         order: [[0,'asc']],
         pageLength: 20,
@@ -314,7 +360,7 @@
         columnDefs: [{ targets:-1, orderable:false, searchable:false }]
       });
 
-      // Gráficos – instancias (puedes sobre-escribir desde index.js)
+      // Gráficos (index.js actualizará data + labels)
       const chMeta = new Chart(document.getElementById('ch_meta'), {
         type:'bar',
         data:{labels:['Meta','Plan','Confirmado'],datasets:[{data:[0,0,0]}]},
@@ -322,7 +368,7 @@
       });
       const chDias = new Chart(document.getElementById('ch_dias'), {
         type:'line',
-        data:{labels:[],datasets:[{label:'t/día',data:[]}]},
+        data:{labels:[],datasets:[{label:'t/periodo',data:[]}]},
         options:{responsive:true}
       });
       const chEstados = new Chart(document.getElementById('ch_estados'), {
@@ -331,14 +377,14 @@
         options:{responsive:true}
       });
 
-      // Barra de progreso KPI
+      // KPI barra
       function setCumplimientoBar(pct){
         document.getElementById('kpi_cumplimiento').textContent = (pct||0) + '%';
         document.getElementById('kpi_bar').style.width = (pct||0) + '%';
       }
 
-      // Hook simple para que tu index.js actualice TODO de una
-      window.planSetData = ({kpis={}, semanal=[], dias=[], estados=[]}={}) => {
+      // Hook global para que index.js actualice todo
+      window.planSetData = ({kpis={}, semanal=[], dias=[], estados=[], labelDias='Tons por día (semana)'}={}) => {
         // KPIs
         document.getElementById('kpi_meta').textContent = kpis.meta ?? '—';
         document.getElementById('kpi_plan').textContent = kpis.plan ?? '—';
@@ -358,7 +404,9 @@
         chMeta.data.datasets[0].data = [kpis.meta||0, kpis.plan||0, kpis.confirmado||0];
         chMeta.update();
 
+        document.getElementById('lbl_ch_dias').textContent = labelDias;
         chDias.data.labels = (dias||[]).map(d=>d.label);
+        chDias.data.datasets[0].label = labelDias.replace('Tons por ','t/').replace(' (',' (');
         chDias.data.datasets[0].data = (dias||[]).map(d=>d.tons||0);
         chDias.update();
 
@@ -369,8 +417,8 @@
         chEstados.update();
       };
 
-      // Botón “Nuevo bloque”
-      document.getElementById('btnNuevoBloque')?.addEventListener('click', () => {
+      // Botón “Asignar MMPP”
+      document.getElementById('btnAsignarMMPP')?.addEventListener('click', () => {
         M.Modal.getInstance(document.getElementById('modalBloque')).open();
       });
     });
