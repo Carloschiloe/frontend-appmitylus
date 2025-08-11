@@ -3,7 +3,8 @@ import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
 
 export function initTablaContactos(){
-  const jq = window.jQuery || window.$; if (!jq || state.dt) return;
+  const jq = window.jQuery || window.$; 
+  if (!jq || state.dt) return;
 
   state.dt = jq('#tablaContactos').DataTable({
     dom: 'Bfrtip',
@@ -15,7 +16,10 @@ export function initTablaContactos(){
     pageLength: 25,
     autoWidth: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-    columnDefs: [ { targets: -1, orderable: false, searchable: false } ]
+    columnDefs: [
+      { targets: 0, width: '110px' },                     // 👈 columna fecha más angosta
+      { targets: -1, orderable: false, searchable: false }
+    ]
   });
 
   const $jq = jq;
@@ -38,8 +42,11 @@ export function initTablaContactos(){
     .on('click', 'a.icon-action.eliminar', async function(){
       const id = this.dataset.id;
       if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
-      try { await eliminarContacto(id); } catch (e) {
-        console.error(e); M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 });
+      try { 
+        await eliminarContacto(id); 
+      } catch (e) {
+        console.error(e); 
+        M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 });
       }
     });
 }
@@ -47,35 +54,59 @@ export function initTablaContactos(){
 export function renderTablaContactos() {
   const jq = window.jQuery || window.$;
 
-  const filas = state.contactosGuardados.slice().sort((a,b)=>{
-    const da = new Date(a.createdAt || a.fecha || 0).getTime();
-    const db = new Date(b.createdAt || b.fecha || 0).getTime();
-    return db - da;
-  }).map(c => {
-    const f = new Date(c.createdAt || c.fecha || Date.now());
-    const when = `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')} ${String(f.getHours()).padStart(2,'0')}:${String(f.getMinutes()).padStart(2,'0')}`;
-    const acciones = `
-      <a href="#!" class="icon-action ver" title="Ver detalle" data-id="${c._id}"><i class="material-icons">visibility</i></a>
-      <a href="#!" class="icon-action visita" title="Registrar visita" data-id="${c._id}"><i class="material-icons">event_available</i></a>
-      <a href="#!" class="icon-action editar" title="Editar" data-id="${c._id}"><i class="material-icons">edit</i></a>
-      <a href="#!" class="icon-action eliminar" title="Eliminar" data-id="${c._id}"><i class="material-icons">delete</i></a>
-    `;
-    return [
-      when,
-      c.proveedorNombre || '',
-      c.centroCodigo || '',
-      c.tieneMMPP || '',
-      c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '',
-      c.dispuestoVender || '',
-      (c.tonsDisponiblesAprox ?? '') + '',
-      c.vendeActualmenteA || '',
-      acciones
-    ];
-  });
+  const filas = state.contactosGuardados
+    .slice()
+    .sort((a,b)=>{
+      const da = new Date(a.createdAt || a.fecha || 0).getTime();
+      const db = new Date(b.createdAt || b.fecha || 0).getTime();
+      return db - da;
+    })
+    .map(c => {
+      const f = new Date(c.createdAt || c.fecha || Date.now());
+      const yyyy = f.getFullYear();
+      const mm   = String(f.getMonth() + 1).padStart(2, '0');
+      const dd   = String(f.getDate()).padStart(2, '0');
 
-  if (state.dt && jq) { state.dt.clear(); state.dt.rows.add(filas).draw(); return; }
+      const whenDisplay = `${yyyy}-${mm}-${dd}`;  // 👈 solo fecha
+      const whenKey     = f.getTime();            // para ordenar bien
 
-  const tbody = $('#tablaContactos tbody'); if (!tbody) return;
+      const acciones = `
+        <a href="#!" class="icon-action ver" title="Ver detalle" data-id="${c._id}">
+          <i class="material-icons">visibility</i>
+        </a>
+        <a href="#!" class="icon-action visita" title="Registrar visita" data-id="${c._id}">
+          <i class="material-icons">event_available</i>
+        </a>
+        <a href="#!" class="icon-action editar" title="Editar" data-id="${c._id}">
+          <i class="material-icons">edit</i>
+        </a>
+        <a href="#!" class="icon-action eliminar" title="Eliminar" data-id="${c._id}">
+          <i class="material-icons">delete</i>
+        </a>
+      `;
+
+      return [
+        `<span data-order="${whenKey}">${whenDisplay}</span>`, // 👈 usa data-order
+        c.proveedorNombre || '',
+        c.centroCodigo || '',
+        c.tieneMMPP || '',
+        c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '',
+        c.dispuestoVender || '',
+        (c.tonsDisponiblesAprox ?? '') + '',
+        c.vendeActualmenteA || '',
+        acciones
+      ];
+    });
+
+  if (state.dt && jq) { 
+    state.dt.clear(); 
+    state.dt.rows.add(filas).draw(); 
+    return; 
+  }
+
+  const tbody = $('#tablaContactos tbody'); 
+  if (!tbody) return;
+
   tbody.innerHTML = '';
   if (!state.contactosGuardados.length) {
     tbody.innerHTML = `<tr><td colspan="9" style="color:#888">No hay contactos registrados aún.</td></tr>`;
