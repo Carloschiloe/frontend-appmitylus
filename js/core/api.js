@@ -129,6 +129,15 @@ export async function apiDeleteContacto(id) {
    VISITAS
    ====================================================== */
 
+// Lista global (con filtros opcionales por querystring)
+export async function apiGetVisitas(params = {}) {
+  const qs = Object.keys(params).length
+    ? '?' + new URLSearchParams(params).toString()
+    : '';
+  const resp = await fetch(`${API_URL}/visitas${qs}`);
+  return checkResponse(resp);
+}
+
 // Tolerante: si 404, devuelve []
 export async function apiGetVisitasByContacto(contactoId) {
   if (!contactoId) return [];
@@ -150,5 +159,24 @@ export async function apiCreateVisita(data) {
   });
   return checkResponse(resp);
 }
-// export async function apiUpdateVisita(id, data) { ... }
-// export async function apiDeleteVisita(id) { ... }
+
+// ← con fallback: PATCH → si 404/405/501 → PUT
+export async function apiUpdateVisita(id, data) {
+  const url = `${API_URL}/visitas/${id}`;
+  const opts = (m) => ({
+    method: m,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+
+  let resp = await fetch(url, opts('PATCH'));
+  if (resp.status === 404 || resp.status === 405 || resp.status === 501) {
+    resp = await fetch(url, opts('PUT'));
+  }
+  return checkResponse(resp);
+}
+
+export async function apiDeleteVisita(id) {
+  const resp = await fetch(`${API_URL}/visitas/${id}`, { method: 'DELETE' });
+  return checkResponse(resp);
+}
