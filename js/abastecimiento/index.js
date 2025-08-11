@@ -1,30 +1,40 @@
 // /js/abastecimiento/index.js
 
-// Importa el orquestador de la pestaña "Contactos"
 import { initContactosTab } from './contactos/index.js';
-// (Más adelante)
-// import { initVisitasTab } from './visitas/index.js';
+import { initVisitasTab }   from './visitas/index.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Inicializa las tabs de Materialize (si existen en la página)
-  const tabsEl = document.querySelectorAll('.tabs');
-  if (tabsEl && tabsEl.length) {
-    M.Tabs.init(tabsEl, {});
+  // Inicializa las tabs de Materialize (si existen)
+  const tabsEls = document.querySelectorAll('.tabs');
+  if (tabsEls && tabsEls.length) {
+    try { M.Tabs.init(tabsEls, {}); } catch (_) {}
   }
 
-  // Carga la pestaña principal al inicio
-  initContactosTab(); // tiene guard interno para evitar re-init
+  // Carga inicial según hash (por defecto Contactos)
+  const initial = (location.hash || '#tab-contactos');
+  if (initial === '#tab-visitas') {
+    initVisitasTab();
+  } else {
+    initContactosTab();
+  }
 
-  // Manejador de cambio de pestañas
+  // Lazy init por pestaña
   const tabLinks = document.querySelectorAll('.tabs a[href^="#"]');
   tabLinks.forEach(link => {
     link.addEventListener('click', () => {
       const target = link.getAttribute('href');
       if (target === '#tab-contactos') {
-        initContactosTab(); // seguro: no se re-inicializa por el guard
+        initContactosTab();       // tiene guard interno
+      } else if (target === '#tab-visitas') {
+        initVisitasTab();         // tiene guard interno
       }
-      // Ejemplo futuro:
-      // else if (target === '#tab-visitas') { initVisitasTab(); }
     });
   });
+
+  // Si se crea una visita desde Contactos, refresca la pestaña Visitas si ya existe
+  window.addEventListener('visita:created', () => {
+    initVisitasTab(true /* forceReload */);
+  });
 });
+
+
