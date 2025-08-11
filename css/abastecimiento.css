@@ -2,82 +2,109 @@
    ABASTECIMIENTO – Overrides sobre global
    ========================================= */
 
-/* Tabla de Contactos con cabezal teal */
-#tablaContactos.dataTable thead th{
+/* ======= TABLAS: Contactos + Visitas ======= */
+
+/* Cabezal teal */
+#tablaContactos.dataTable thead th,
+#tablaVisitas.dataTable thead th {
   background: var(--primary) !important;
-  color:#fff !important;
+  color: #fff !important;
 }
 
-/* Ajuste de densidad en esta vista */
-#tablaContactos th,
-#tablaContactos td{
+/* Densidad de filas */
+#tablaContactos th, #tablaContactos td,
+#tablaVisitas  th, #tablaVisitas  td {
   font-size: 0.92rem;
   padding: 0.38rem 0.5rem;
   border-bottom: 1px solid #e0e0e0;
 }
 
-/* Acciones: misma interacción que en global pero tamaño propio */
-#tablaContactos td .material-icons{
+/* Acciones (íconos) */
+#tablaContactos td .material-icons,
+#tablaVisitas  td .material-icons {
   font-size: 1.22em;
   margin-right: 8px;
+  transition: transform .12s ease, color .12s ease;
 }
-#tablaContactos td .material-icons:hover{
+#tablaContactos td .material-icons:hover,
+#tablaVisitas  td .material-icons:hover {
   color: var(--primary-acc);
   transform: scale(1.08);
 }
 
-/* Botón “Registrar contacto” alineado con la toolbar */
+/* ======= BOTONES / TOOLBAR ======= */
 #btnOpenContactoModal{ margin:.25rem 0 .5rem 0; }
 
-/* Modales de Contacto/Detalle ligeramente más chicos que el global */
+/* ======= MODALES ======= */
+/* Contacto y Detalle */
 #modalContacto.modal,
-#modalDetalleContacto.modal{
+#modalDetalleContacto.modal {
   max-width: 760px !important;
   max-height: 86vh !important;
   top: 7vh !important;
 }
 #modalContacto .modal-content,
-#modalDetalleContacto .modal-content{
+#modalDetalleContacto .modal-content {
   max-height: 72vh !important;
 }
 #modalContacto .modal-footer,
-#modalDetalleContacto .modal-footer{
+#modalDetalleContacto .modal-footer {
   padding: .5rem .75rem !important;
 }
 
-/* Inputs un poco más compactos dentro del modal */
+/* Visita (mismo look) */
+#modalVisita.modal {
+  max-width: 760px !important;
+  max-height: 86vh !important;
+  top: 7vh !important;
+}
+#modalVisita .modal-content {
+  max-height: 72vh !important;
+}
+#modalVisita .modal-footer {
+  padding: .5rem .75rem !important;
+}
+
+/* Inputs más compactos dentro de los modales */
 #modalContacto .input-field input,
 #modalContacto .input-field select,
-#modalContacto .input-field textarea{
+#modalContacto .input-field textarea,
+#modalVisita   .input-field input,
+#modalVisita   .input-field select,
+#modalVisita   .input-field textarea {
   margin-bottom: .6rem;
 }
 #modalContacto .input-field label,
-#modalDetalleContacto .input-field label{
+#modalDetalleContacto .input-field label,
+#modalVisita   .input-field label {
   font-size: .9rem;
 }
 
-/* Responsive propios de esta vista */
+/* ======= RESPONSIVE ======= */
 @media (max-width: 992px){
-  #tablaContactos,
-  #tablaContactos_wrapper{
-    min-width:360px !important; width:100vw !important;
-    display:block !important;
+  #tablaContactos, #tablaContactos_wrapper,
+  #tablaVisitas,  #tablaVisitas_wrapper {
+    min-width: 360px !important;
+    width: 100vw !important;
+    display: block !important;
   }
   .dataTables_paginate{ justify-content:center; }
 }
 @media (max-width: 600px){
   #modalContacto.modal,
-  #modalDetalleContacto.modal{
-    width:96% !important;
-    top:4vh !important;
+  #modalDetalleContacto.modal,
+  #modalVisita.modal {
+    width: 96% !important;
+    top: 4vh !important;
   }
-  #tablaContactos th, #tablaContactos td{
-    font-size:.88rem;
-    padding:.34rem .45rem;
+  #tablaContactos th, #tablaContactos td,
+  #tablaVisitas  th, #tablaVisitas  td {
+    font-size: .88rem;
+    padding: .34rem .45rem;
   }
 }
 
-/* Select nativo con look Materialize dentro de modales */
+/* ======= SELECT nativo con look Materialize en modales ======= */
 .modal .browser-default {
   width: 100%;
   background: transparent;
@@ -97,4 +124,3 @@
   margin-bottom: 2px;
   display: block;
 }
-
