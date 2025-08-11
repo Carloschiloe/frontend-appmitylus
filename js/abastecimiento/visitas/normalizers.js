@@ -37,3 +37,28 @@ export function normalizeVisita(v, contacto = null, centro = null) {
     observaciones: short(v.observaciones, 100),
   };
 }
+
+// añade/ajusta esta función
+export function toRows(visitas = [], contactosMap = new Map(), centrosMap = new Map()) {
+  return visitas.map(v => {
+    const contacto = contactosMap.get(String(v.contactoId)) || {};
+    const proveedor = contacto.proveedorNombre || contacto.proveedor || '';
+    const centro =
+      v.centroCodigo ||
+      centrosMap.get(String(v.centroId))?.code ||
+      centrosMap.get(String(v.centroId))?.codigo ||
+      '';
+
+    return {
+      _id: v._id,
+      fecha: (v.fecha || '').slice(0, 10),
+      proveedor,
+      centro,
+      actividad: v.enAgua ?? '',                 // “Sí” / “No”
+      proximoPaso: v.estado ?? '',               // antes podían ser “Realizada”
+      tons: v.tonsComprometidas ?? '',
+      observaciones: v.observaciones ?? ''
+    };
+  });
+}
+
