@@ -11,7 +11,10 @@ const state = {
   proveedores: [],       // ['Proveedor A', 'Proveedor B', ...]
   bloques: [],           // [{ _id, fecha:'YYYY-MM-DD', proveedor, centro, tons, estado, prioridad, origen, notas, escenario }]
   filtros: {
+    vista: 'semana',     // 'semana' | 'mes' | 'anio'
     semana: null,        // 'YYYY-Www'
+    mes: null,           // 'YYYY-MM'
+    anio: null,          // 'YYYY'
     escenario: 'base',
     texto: '',
     soloConfirmado: false,
@@ -28,6 +31,7 @@ const state = {
 const LS_KEYS = {
   BLOQUES: 'plan_bloques_v1',
   PARAMS:  'plan_params_v1',
+  FILTROS: 'plan_filtros_v1'
 };
 
 /* =========================================
@@ -40,7 +44,7 @@ export async function init() {
   cargarDesdeStorage();
   prepararUI();
   poblarProveedoresYCentros();
-  setDefaultWeekIfNeeded();
+  setDefaultPeriodIfNeeded();
   render();
   _initialized = true;
 }
@@ -55,9 +59,7 @@ async function cargarCentros() {
   try {
     const arr = await apiGetCentros();
     state.centros = Array.isArray(arr) ? arr : (arr.items || arr.data || []);
-    // normaliza proveedor strings vacíos
     state.centros.forEach(c => { if (!c.proveedor) c.proveedor = ''; });
-    // lista de proveedores únicos (limpio y ordenado)
     const setp = new Set(state.centros.map(c => (c.proveedor || '').trim()).filter(Boolean));
     state.proveedores = Array.from(setp).sort((a,b)=>a.localeCompare(b));
   } catch (e) {
@@ -76,6 +78,11 @@ function cargarDesdeStorage() {
     const p = JSON.parse(localStorage.getItem(LS_KEYS.PARAMS) || '{}');
     state.params = { ...state.params, ...p };
   } catch {}
+
+  try {
+    const f = JSON.parse(localStorage.getItem(LS_KEYS.FILTROS) || '{}');
+    state.filtros = { ...state.filtros, ...f };
+  } catch {}
 }
 
 function guardarBloques() {
@@ -83,6 +90,15 @@ function guardarBloques() {
 }
 function guardarParams() {
   localStorage.setItem(LS_KEYS.PARAMS, JSON.stringify(state.params));
+}
+function guardarFiltros() {
+  localStorage.setItem(LS_KEYS.FILTROS, JSON.stringify({
+    vista: state.filtros.vista,
+    semana: state.filtros.semana,
+    mes: state.filtros.mes,
+    anio: state.filtros.anio,
+    escenario: state.filtros.escenario
+  }));
 }
 
 /* =========================================
@@ -97,21 +113,45 @@ function prepararUI() {
   setVal('#p_lead', state.params.lead);
   setVal('#p_buffer', state.params.buffer);
 
-  // Filtros
+  // Filtros básicos
   const semana = $('#f_semana');
+  const mes    = $('#f_mes');
+  const anio   = $('#f_anio');
+  const vista  = $('#f_vista');
   const escenario = $('#f_escenario');
   const buscar = $('#f_buscar');
   const soloConf = $('#f_soloConfirmado');
   const ocCanc = $('#f_ocultarCancelados');
 
-  semana?.addEventListener('change', () => { state.filtros.semana = semana.value || null; render(); });
-  escenario?.addEventListener('change', () => { state.filtros.escenario = escenario.value || 'base'; render(); });
+  // Eventos de periodo
+  semana?.addEventListener('change', () => { state.filtros.semana = semana.value || null; guardarFiltros(); render(); });
+  mes?.addEventListener('change',    () => { state.filtros.mes    = mes.value || null;    guardarFiltros(); render(); });
+  anio?.addEventListener('change',   () => { state.filtros.anio   = clampAnio(anio.value); setVal('#f_anio', state.filtros.anio); guardarFiltros(); render(); });
 
+  // Vista
+  vista?.addEventListener('change', () => {
+    state.filtros.vista = vista.value || 'semana';
+    toggleVistaUI();
+    setDefaultPeriodIfNeeded();
+    guardarFiltros();
+    render();
+  });
+
+  // Navegación de periodo
+  $('#btnPrevPeriodo')?.addEventListener('click', () => { navigatePeriodo(-1); });
+  $('#btnNextPeriodo')?.addEventListener('click', () => { navigatePeriodo(+1); });
+
+  // Escenario
+  escenario?.addEventListener('change', () => { state.filtros.escenario = escenario.value || 'base'; guardarFiltros(); render(); });
+
+  // Búsqueda
   let tmr = null;
   buscar?.addEventListener('input', () => {
     clearTimeout(tmr);
     tmr = setTimeout(()=>{ state.filtros.texto = (buscar.value||'').trim().toLowerCase(); render(); }, 180);
   });
+
+  // Toggles
   soloConf?.addEventListener('change', () => { state.filtros.soloConfirmado = !!soloConf.checked; render(); });
   ocCanc?.addEventListener('change', () => { state.filtros.ocultarCancelados = !!ocCanc.checked; render(); });
 
@@ -133,17 +173,14 @@ function prepararUI() {
     if (!payload.fecha || !payload.proveedor || !isFinite(payload.tons)) {
       M.toast?.({ html:'Completa fecha, proveedor y toneladas', displayLength:1800 }); return;
     }
-    // escenario actual
     payload.escenario = state.filtros.escenario || 'base';
 
     if (state.editingId) {
-      // update
       const idx = state.bloques.findIndex(b => b._id === state.editingId);
       if (idx >= 0) state.bloques[idx] = { ...state.bloques[idx], ...payload };
       state.editingId = null;
       M.toast?.({ html:'Bloque actualizado', classes:'teal' });
     } else {
-      // create
       payload._id = uid();
       state.bloques.push(payload);
       M.toast?.({ html:'Bloque agregado', classes:'teal' });
@@ -171,6 +208,50 @@ function prepararUI() {
       render();
       M.toast?.({ html:'Eliminado', displayLength:1200 });
     });
+
+  // Pinta UI inicial de vista/periodos
+  toggleVistaUI();
+}
+
+function toggleVistaUI(){
+  const v = state.filtros.vista || 'semana';
+  const wrapSemana = $('#wrap_semana');
+  const wrapMes    = $('#wrap_mes');
+  const wrapAnio   = $('#wrap_anio');
+
+  wrapSemana?.classList.toggle('hidden', v !== 'semana');
+  wrapMes?.classList.toggle('hidden',    v !== 'mes');
+  wrapAnio?.classList.toggle('hidden',   v !== 'anio');
+}
+
+function navigatePeriodo(delta){
+  const v = state.filtros.vista || 'semana';
+  if (v === 'semana') {
+    const curr = state.filtros.semana || isoWeekString(new Date());
+    const d = weekStrToDate(curr);
+    d.setDate(d.getDate() + delta*7);
+    const next = isoWeekString(d);
+    if (yearFromWeekStr(next) > 2027) return;
+    state.filtros.semana = next;
+    setVal('#f_semana', next);
+  } else if (v === 'mes') {
+    const base = state.filtros.mes || fmtMonth(new Date());
+    const [y,m] = base.split('-').map(Number);
+    const d = new Date(y, m-1, 1);
+    d.setMonth(d.getMonth() + delta);
+    const y2 = d.getFullYear(), m2 = d.getMonth()+1;
+    if (y2 > 2027) return;
+    const next = `${y2}-${String(m2).padStart(2,'0')}`;
+    state.filtros.mes = next;
+    setVal('#f_mes', next);
+  } else {
+    let y = Number(state.filtros.anio || new Date().getFullYear());
+    y = clampAnio(String(y + delta));
+    state.filtros.anio = y;
+    setVal('#f_anio', y);
+  }
+  guardarFiltros();
+  render();
 }
 
 function poblarProveedoresYCentros() {
@@ -192,14 +273,17 @@ function poblarProveedoresYCentros() {
   }
 }
 
-function setDefaultWeekIfNeeded() {
-  const el = $('#f_semana');
-  if (!el) return;
-  if (!el.value) {
-    el.value = isoWeekString(new Date());
-    state.filtros.semana = el.value;
+function setDefaultPeriodIfNeeded() {
+  const v = state.filtros.vista || 'semana';
+  if (v === 'semana') {
+    if (!state.filtros.semana) state.filtros.semana = isoWeekString(new Date());
+    setVal('#f_semana', state.filtros.semana);
+  } else if (v === 'mes') {
+    if (!state.filtros.mes) state.filtros.mes = fmtMonth(new Date());
+    setVal('#f_mes', state.filtros.mes);
   } else {
-    state.filtros.semana = el.value;
+    if (!state.filtros.anio) state.filtros.anio = String(new Date().getFullYear());
+    setVal('#f_anio', state.filtros.anio);
   }
 }
 
@@ -207,17 +291,17 @@ function setDefaultWeekIfNeeded() {
    RENDER (tabla + KPIs + charts via window.planSetData)
 ========================================= */
 function render() {
-  const semana = state.filtros.semana;
-  const rango = semana ? isoWeekRange(semana) : null;
+  const rango = getRangeFromFilters();
+  const vista = state.filtros.vista || 'semana';
 
-  // Filtra por semana + escenario
+  // Filtra por rango + escenario
   let rows = state.bloques.filter(b => {
     if (b.escenario && b.escenario !== state.filtros.escenario) return false;
     if (!rango) return true;
     return inRange(b.fecha, rango.start, rango.end);
   });
 
-  // Filtros toggles
+  // Toggles
   if (state.filtros.soloConfirmado) {
     rows = rows.filter(b => b.estado === 'Confirmado');
   }
@@ -238,24 +322,35 @@ function render() {
   // Orden por fecha asc
   rows.sort((a,b)=> (a.fecha||'').localeCompare(b.fecha||''));
 
-  // KPIs
-  const meta = number(state.params.objetivo);
+  // KPIs (meta escalada por duración del período)
+  const metaSemana = number(state.params.objetivo);
+  const durDias = rango ? diffDaysInclusive(rango.start, rango.end) : 7;
+  const meta = Math.round(metaSemana * (durDias / 7)); // escala simple
   const plan = sumTons(state.bloques.filter(b =>
-    (!semana || inRange(b.fecha, rango.start, rango.end)) &&
+    (!rango || inRange(b.fecha, rango.start, rango.end)) &&
     (b.escenario === (state.filtros.escenario||'base')) &&
     (b.estado !== 'Cancelado')
   ));
   const confirmado = sumTons(state.bloques.filter(b =>
-    (!semana || inRange(b.fecha, rango.start, rango.end)) &&
+    (!rango || inRange(b.fecha, rango.start, rango.end)) &&
     (b.escenario === (state.filtros.escenario||'base')) &&
     (b.estado === 'Confirmado')
   ));
   const cumplimiento = meta ? Math.round(Math.min(100, (confirmado/meta)*100)) : 0;
 
-  // Series por día (de los visibles no cancelados)
-  const dias = agruparPorDia(
-    rows.filter(b => b.estado !== 'Cancelado')
-  );
+  // Series "dias" (según vista)
+  let dias = [];
+  let labelDias = 'Tons por día (semana)';
+  if (vista === 'semana') {
+    dias = agruparPorDia(rows.filter(b => b.estado !== 'Cancelado'));
+    labelDias = 'Tons por día (semana)';
+  } else if (vista === 'mes') {
+    dias = agruparPorSemana(rows.filter(b => b.estado !== 'Cancelado'));
+    labelDias = 'Tons por semana (mes)';
+  } else {
+    dias = agruparPorMes(rows.filter(b => b.estado !== 'Cancelado'));
+    labelDias = 'Tons por mes (año)';
+  }
 
   // Estados (tons)
   const estados = [
@@ -264,7 +359,7 @@ function render() {
     { label:'Cancelado',   value: sumTons(rows.filter(b => b.estado==='Cancelado')) },
   ];
 
-  // Mapea a lo que espera la tabla
+  // Tabla
   const semanal = rows.map(b => ({
     _id: b._id,
     fecha: b.fecha,
@@ -277,12 +372,13 @@ function render() {
     notas: b.notas || '',
   }));
 
-  // Empuja todo al hook global que definimos en el HTML
+  // Empuja al hook global en el HTML
   window.planSetData?.({
     kpis: { meta, plan, confirmado, cumplimiento },
     semanal,
-    dias,     // [{label:'Lun', tons: 120}, ...]
-    estados,  // [{label:'Planificado', value: X}, ...]
+    dias,       // array { label, tons }
+    estados,    // array { label, value }
+    labelDias
   });
 }
 
@@ -329,36 +425,49 @@ function number(n){ const x = Number(n); return Number.isFinite(x) ? x : 0; }
 function uid(){ return (Date.now().toString(36) + Math.random().toString(36).slice(2,8)); }
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
+function clampAnio(y){
+  let n = Number(String(y).replace(/\D/g,'')) || new Date().getFullYear();
+  if (n < 2020) n = 2020;
+  if (n > 2027) n = 2027;
+  return String(n);
+}
+
 function isoWeekString(d) {
   const dt = new Date(d);
   dt.setHours(0,0,0,0);
-  // ISO week: jueves define la semana
   dt.setDate(dt.getDate() + 4 - (dt.getDay() || 7));
   const year = dt.getFullYear();
   const start = new Date(year,0,1);
   const week = Math.ceil((((dt - start) / 86400000) + 1) / 7);
   return `${year}-W${String(week).padStart(2,'0')}`;
 }
+function yearFromWeekStr(ws){ return Number(ws.split('-W')[0] || new Date().getFullYear()); }
+function weekStrToDate(ws){
+  const { start } = isoWeekRange(ws);
+  return new Date(start);
+}
 function isoWeekRange(weekStr) {
-  // 'YYYY-Www' → lunes/domingo
   const [y, w] = weekStr.split('-W');
   const year = Number(y);
   const week = Number(w);
-  // lunes de esa ISO semana:
   const simple = new Date(year, 0, 1 + (week - 1) * 7);
-  const dayOfWeek = simple.getDay(); // 0 dom ... 6 sab
+  const dayOfWeek = simple.getDay();
   const ISOweekStart = new Date(simple);
-  if (dayOfWeek <= 4) {
-    ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
-  } else {
-    ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
-  }
+  if (dayOfWeek <= 4) ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+  else ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
   const ISOweekEnd = new Date(ISOweekStart);
   ISOweekEnd.setDate(ISOweekStart.getDate() + 6);
-
-  const start = fmtDate(ISOweekStart);
-  const end = fmtDate(ISOweekEnd);
-  return { start, end };
+  return { start: fmtDate(ISOweekStart), end: fmtDate(ISOweekEnd) };
+}
+function monthRange(yyyy_mm){
+  const [y,m] = (yyyy_mm||'').split('-').map(Number);
+  const d1 = new Date(y, (m||1)-1, 1);
+  const d2 = new Date(y, (m||1), 0);
+  return { start: fmtDate(d1), end: fmtDate(d2) };
+}
+function yearRange(yyyy){
+  const y = Number(yyyy)||new Date().getFullYear();
+  return { start: `${y}-01-01`, end: `${y}-12-31` };
 }
 function fmtDate(d) {
   const f = new Date(d);
@@ -367,10 +476,27 @@ function fmtDate(d) {
   const dd = String(f.getDate()).padStart(2,'0');
   return `${y}-${m}-${dd}`;
 }
+function fmtMonth(d){
+  const f = new Date(d);
+  return `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}`;
+}
 function inRange(yyyy_mm_dd, start, end) {
   return yyyy_mm_dd >= start && yyyy_mm_dd <= end;
 }
-function sumTons(arr){ return Math.round((arr.reduce((a,b)=>a + (Number(b.tons)||0), 0)) * 100) / 100; }
+function diffDaysInclusive(a,b){
+  const d1 = new Date(a+'T00:00:00'); const d2 = new Date(b+'T00:00:00');
+  return Math.floor((d2 - d1)/86400000) + 1;
+}
+function sumTons(arr){ return Math.round((arr.reduce((x,b)=>x + (Number(b.tons)||0), 0)) * 100) / 100; }
+
+function getRangeFromFilters(){
+  const v = state.filtros.vista || 'semana';
+  if (v === 'semana') return isoWeekRange(state.filtros.semana || isoWeekString(new Date()));
+  if (v === 'mes')    return monthRange(state.filtros.mes || fmtMonth(new Date()));
+  return yearRange(state.filtros.anio || String(new Date().getFullYear()));
+}
+
+/* ---------- Agrupadores para el chart derecho ---------- */
 function agruparPorDia(rows) {
   const map = new Map(); // 'YYYY-MM-DD' -> tons
   rows.forEach(b => {
@@ -378,18 +504,42 @@ function agruparPorDia(rows) {
     map.set(b.fecha, (map.get(b.fecha)||0) + (Number(b.tons)||0));
   });
   const fechas = Array.from(map.keys()).sort();
-  // Etiquetas legibles: Lun, Mar, ...
   const labels = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   return fechas.map(f => {
     const d = new Date(f);
     return { label: labels[d.getDay()], tons: Math.round(map.get(f)*100)/100 };
   });
 }
+function agruparPorSemana(rows){
+  // usa ISO week dentro del mes actual (o rango)
+  const rango = getRangeFromFilters();
+  const map = new Map(); // 'YYYY-Www' -> tons
+  rows.forEach(b => {
+    if (!b.fecha) return;
+    if (!inRange(b.fecha, rango.start, rango.end)) return;
+    const ws = isoWeekString(new Date(b.fecha));
+    map.set(ws, (map.get(ws)||0) + (Number(b.tons)||0));
+  });
+  const keys = Array.from(map.keys()).sort();
+  return keys.map(ws => ({ label: 'Sem ' + ws.split('-W')[1], tons: Math.round(map.get(ws)*100)/100 }));
+}
+function agruparPorMes(rows){
+  const map = new Map(); // 'YYYY-MM' -> tons
+  rows.forEach(b => {
+    if (!b.fecha) return;
+    const ym = b.fecha.slice(0,7);
+    map.set(ym, (map.get(ym)||0) + (Number(b.tons)||0));
+  });
+  const mesesEs = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const keys = Array.from(map.keys()).sort();
+  return keys.map(ym => {
+    const [y,m] = ym.split('-').map(Number);
+    return { label: mesesEs[(m-1)%12], tons: Math.round(map.get(ym)*100)/100 };
+  });
+}
 
 /* =========================================
    EXTRAS (semilla opcional para probar)
-========================================= */
-// Si no hay bloques, puedes descomentar para ver algo:
 // if (!state.bloques.length) {
 //   const today = fmtDate(new Date());
 //   state.bloques = [
@@ -397,3 +547,4 @@ function agruparPorDia(rows) {
 //   ];
 //   guardarBloques();
 // }
+========================================= */
