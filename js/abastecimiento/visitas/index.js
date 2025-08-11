@@ -5,7 +5,7 @@ import { renderTablaVisitas } from './tabla.js';
 
 import { apiDeleteVisita, apiUpdateVisita } from '/js/core/api.js';
 
-// helpers del módulo Contactos (solo usamos el $ para seleccionar rápido)
+// helper del módulo Contactos (solo usamos el $ para seleccionar rápido)
 import { $ } from '../contactos/state.js';
 
 let _initialized = false;
@@ -26,7 +26,8 @@ export async function initVisitasTab(forceReload = false) {
 // ------- internos --------
 async function cargarYRenderVisitas() {
   try {
-    const { raw, rows } = await cargarVisitasEnriquecidas(); // ya nos devuelve enriquecido
+    // ya nos devuelve enriquecido; NO pasar función
+    const { raw, rows } = await cargarVisitasEnriquecidas();
     setVisitas(raw, rows);
     renderTablaVisitas(rows);
   } catch (e) {
@@ -84,6 +85,8 @@ function openEditVisita(v) {
       const opt = document.createElement('option');
       opt.value = v.centroId;
       opt.textContent = (v.centroCodigo || v.centroId);
+      // 🔴 importante: para que al guardar podamos leer centroCodigo
+      opt.dataset.code = v.centroCodigo || '';
       sel.insertBefore(opt, sel.firstChild);
     }
     sel.value = v.centroId || '';
@@ -111,7 +114,8 @@ function hookEditSubmit() {
 
     const selCentro = $('#visita_centroId');
     const centroId = selCentro?.value || null;
-    const centroCodigo = selCentro?.selectedOptions?.[0]?.dataset?.code || null;
+    const centroCodigo =
+      selCentro?.selectedOptions?.[0]?.dataset?.code || null;
 
     const payload = {
       contactoId: $('#visita_proveedorId').value,
@@ -157,3 +161,5 @@ function setHidden(id, val) {
   }
   el.value = val ?? '';
 }
+
+
