@@ -10,6 +10,16 @@ async function checkResponse(resp) {
   return resp.json();
 }
 
+// QS helper: evita mandar claves vacías/undefined/null
+function buildQS(params = {}) {
+  const clean = {};
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null && v !== '') clean[k] = v;
+  }
+  const qs = new URLSearchParams(clean).toString();
+  return qs ? `?${qs}` : '';
+}
+
 /* ======================================================
    CENTROS
    ====================================================== */
@@ -131,21 +141,22 @@ export async function apiDeleteContacto(id) {
 
 // Lista global (con filtros opcionales por querystring)
 export async function apiGetVisitas(params = {}) {
-  const qs = Object.keys(params).length
-    ? '?' + new URLSearchParams(params).toString()
-    : '';
+  const qs = buildQS(params);
   const resp = await fetch(`${API_URL}/visitas${qs}`);
-  return checkResponse(resp);
+  const json = await checkResponse(resp);
+  // soporta tanto [] como { items: [] }
+  return Array.isArray(json) ? json : (Array.isArray(json?.items) ? json.items : []);
 }
 
 // Tolerante: si 404, devuelve []
 export async function apiGetVisitasByContacto(contactoId) {
   if (!contactoId) return [];
-  const url = `${API_URL}/visitas?contactoId=${encodeURIComponent(contactoId)}`;
+  const url = `${API_URL}/visitas${buildQS({ contactoId })}`;
   try {
     const resp = await fetch(url);
     if (resp.status === 404) return [];
-    return checkResponse(resp);
+    const json = await checkResponse(resp);
+    return Array.isArray(json) ? json : (Array.isArray(json?.items) ? json.items : []);
   } catch {
     return [];
   }
