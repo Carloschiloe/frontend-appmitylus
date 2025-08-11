@@ -239,12 +239,15 @@
             <input id="visita_tonsComprometidas" type="number" step="0.01" min="0" placeholder="Ej: 120">
             <label for="visita_tonsComprometidas" class="active">Tons comprometidas (opcional)</label>
           </div>
+          <!-- CAMBIADO: Estado -> Próximo paso -->
           <div class="input-field col s4">
-            <label for="visita_estado" class="active">Estado</label>
+            <label for="visita_estado" class="active">Próximo paso</label>
             <select id="visita_estado" class="browser-default">
-              <option value="Planificada">Planificada</option>
-              <option value="Realizada" selected>Realizada</option>
-              <option value="Seguimiento">Seguimiento</option>
+              <option value="Programar nueva visita" selected>Programar nueva visita</option>
+              <option value="Tomar/entregar muestras">Tomar/entregar muestras</option>
+              <option value="Negociar precio/volumen">Negociar precio/volumen</option>
+              <option value="Esperar disponibilidad">Esperar disponibilidad</option>
+              <option value="Sin acción">Sin acción</option>
             </select>
           </div>
         </div>
@@ -302,4 +305,3 @@
   </script>
 </body>
 </html>
-
