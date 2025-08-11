@@ -1,28 +1,30 @@
 // /js/abastecimiento/index.js
 
-// Importa módulos de las pestañas (por ahora solo contactos, después agregas visitas, gestión, etc.)
-import { initContactosTab } from './contactos/contactos.js';
-// Si luego tienes: import { initVisitasTab } from './visitas/visitas.js';
+// Importa el orquestador de la pestaña "Contactos"
+import { initContactosTab } from './contactos/index.js';
+// (Más adelante)
+// import { initVisitasTab } from './visitas/index.js';
 
-document.addEventListener('DOMContentLoaded', function () {
-  // Inicializa las tabs de Materialize
+document.addEventListener('DOMContentLoaded', () => {
+  // Inicializa las tabs de Materialize (si existen en la página)
   const tabsEl = document.querySelectorAll('.tabs');
-  M.Tabs.init(tabsEl, {});
-
-  // Manejador de cambio de pestañas
-  const tabLinks = document.querySelectorAll('.tabs a');
-  tabLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-      // Opcional: puedes cargar el módulo solo al entrar por primera vez
-      if (link.getAttribute('href') === '#tab-contactos') {
-        initContactosTab();
-      }
-      // Si después tienes más pestañas:
-      // else if (link.getAttribute('href') === '#tab-visitas') { initVisitasTab(); }
-      // etc.
-    });
-  });
+  if (tabsEl && tabsEl.length) {
+    M.Tabs.init(tabsEl, {});
+  }
 
   // Carga la pestaña principal al inicio
-  initContactosTab();
+  initContactosTab(); // tiene guard interno para evitar re-init
+
+  // Manejador de cambio de pestañas
+  const tabLinks = document.querySelectorAll('.tabs a[href^="#"]');
+  tabLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      const target = link.getAttribute('href');
+      if (target === '#tab-contactos') {
+        initContactosTab(); // seguro: no se re-inicializa por el guard
+      }
+      // Ejemplo futuro:
+      // else if (target === '#tab-visitas') { initVisitasTab(); }
+    });
+  });
 });
