@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planificación Producción · Abastecimiento</title>
+
+  <!-- Materialize & Google Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+
+  <!-- DataTables + Buttons -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+
+  <!-- Global styles -->
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/css/abastecimiento.css" />
+
+  <style>
+    .kpi-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin:14px 0 6px}
+    .kpi{grid-column:span 12;background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+    .kpi h6{margin:0;font-size:.95rem;color:#546e7a;font-weight:600}
+    .kpi .val{font-size:1.6rem;font-weight:700;margin-top:4px;color:#004d40}
+    .kpi .sub{font-size:.9rem;color:#78909c;margin-top:2px}
+    .progress.slim{height:8px;border-radius:8px;margin:.4rem 0 0}
+    .progress .determinate{border-radius:8px}
+
+    @media(min-width:600px){.kpi{grid-column:span 6}}
+    @media(min-width:992px){.kpi{grid-column:span 3}}
+
+    .toolbar{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;align-items:end;margin:8px 0 4px}
+    .toolbar .input-field{margin:0}
+    .toolbar .actions{grid-column:span 12;display:flex;gap:8px;justify-content:flex-end}
+    @media(min-width:600px){
+      .toolbar .w3{grid-column:span 3}
+      .toolbar .w2{grid-column:span 2}
+      .toolbar .w4{grid-column:span 4}
+      .toolbar .w12{grid-column:span 12}
+    }
+    @media(min-width:992px){
+      .toolbar .w2{grid-column:span 2}
+      .toolbar .w3{grid-column:span 3}
+      .toolbar .w4{grid-column:span 4}
+    }
+
+    #tablaProgramaSemanal.dataTable thead th{
+      background:var(--primary,#00695c)!important;color:#fff!important
+    }
+    .chart-card{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+  </style>
+</head>
+<body class="grey lighten-5">
+  <!-- NAV -->
+  <nav class="teal">
+    <div class="nav-wrapper container">
+      <a href="../categorias.html" class="btn-flat left" title="Volver">
+        <i class="material-icons">arrow_back</i>
+      </a>
+      <a class="brand-logo center">Planificación de Producción</a>
+    </div>
+  </nav>
+
+  <div class="container" style="margin-top:16px;margin-bottom:32px;">
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <h6>Meta semana (t)</h6>
+        <div class="val" id="kpi_meta">—</div>
+        <div class="sub">Objetivo definible</div>
+      </div>
+      <div class="kpi">
+        <h6>Planificado (t)</h6>
+        <div class="val" id="kpi_plan">—</div>
+        <div class="sub">Bloques agendados</div>
+      </div>
+      <div class="kpi">
+        <h6>Confirmado (t)</h6>
+        <div class="val" id="kpi_confirmado">—</div>
+        <div class="sub">Compromiso proveedor</div>
+      </div>
+      <div class="kpi">
+        <h6>Cumplimiento</h6>
+        <div class="val" id="kpi_cumplimiento">—%</div>
+        <div class="progress slim"><div id="kpi_bar" class="determinate" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- Toolbar (sin “Planta”) -->
+    <div class="card-panel" style="padding:14px 16px;">
+      <div class="toolbar">
+        <div class="input-field w2">
+          <input type="week" id="f_semana">
+          <label class="active" for="f_semana">Semana</label>
+        </div>
+        <div class="input-field w3">
+          <select id="f_escenario" class="browser-default">
+            <option value="base" selected>Base</option>
+            <option value="optimista">Optimista</option>
+            <option value="conservador">Conservador</option>
+          </select>
+          <label class="active" for="f_escenario" style="transform:none;font-size:.9rem;color:#9e9e9e">Escenario</label>
+        </div>
+        <div class="input-field w4">
+          <input id="f_buscar" type="text" placeholder="Buscar proveedor o centro…">
+          <label for="f_buscar" class="active">Búsqueda</label>
+        </div>
+        <div class="w3" style="display:flex;gap:16px;align-items:center;">
+          <label>
+            <input type="checkbox" id="f_soloConfirmado" class="filled-in"/>
+            <span>Sólo confirmados</span>
+          </label>
+          <label>
+            <input type="checkbox" id="f_ocultarCancelados" class="filled-in" checked/>
+            <span>Ocultar cancelados</span>
+          </label>
+        </div>
+        <div class="actions">
+          <a id="btnNuevoBloque" class="btn teal"><i class="material-icons left">add_circle</i>Nuevo bloque</a>
+          <a id="btnXls" class="btn-flat waves-effect">Excel</a>
+          <a id="btnPdf" class="btn-flat waves-effect">PDF</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pestañas -->
+    <ul class="tabs">
+      <li class="tab col s3"><a class="active" href="#tab-semanal">Programa semanal</a></li>
+      <li class="tab col s3"><a href="#tab-tablero">Tablero</a></li>
+      <li class="tab col s3"><a href="#tab-mensual">Plan mensual</a></li>
+      <li class="tab col s3"><a href="#tab-parametros">Parámetros</a></li>
+    </ul>
+
+    <!-- TAB: Semanal -->
+    <section id="tab-semanal" class="col s12" style="margin-top:12px">
+      <table id="tablaProgramaSemanal" class="highlight display" style="width:100%">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Proveedor</th>
+            <th>Centro</th>
+            <th>Tons</th>
+            <th>Estado</th>
+            <th>Prioridad</th>
+            <th>Origen</th>
+            <th>Notas</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- TAB: Tablero (gráficos) -->
+    <section id="tab-tablero" class="col s12" style="margin-top:18px">
+      <div class="row">
+        <div class="col s12 l6">
+          <div class="chart-card">
+            <h6 style="margin:0 0 8px">Avance vs Meta (t)</h6>
+            <canvas id="ch_meta"></canvas>
+          </div>
+        </div>
+        <div class="col s12 l6">
+          <div class="chart-card">
+            <h6 style="margin:0 0 8px">Tons por día (semana)</h6>
+            <canvas id="ch_dias"></canvas>
+          </div>
+        </div>
+        <div class="col s12 l6" style="margin-top:14px">
+          <div class="chart-card">
+            <h6 style="margin:0 0 8px">Desglose por estado</h6>
+            <canvas id="ch_estados"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: Mensual -->
+    <section id="tab-mensual" class="col s12" style="margin-top:18px">
+      <div class="card-panel">
+        <h6 style="margin:0 0 8px">Resumen por semana (mes)</h6>
+        <table id="tablaMensual" class="striped">
+          <thead>
+            <tr>
+              <th>Semana</th>
+              <th>Meta (t)</th>
+              <th>Plan (t)</th>
+              <th>Confirmado (t)</th>
+              <th>Gap (t)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="grey-text" style="margin:.75rem 0 0">* Luego acá montamos un Gantt liviano si quieres.</p>
+      </div>
+    </section>
+
+    <!-- TAB: Parámetros -->
+    <section id="tab-parametros" class="col s12" style="margin-top:18px">
+      <div class="card-panel">
+        <h6>Parámetros del plan</h6>
+        <div class="row">
+          <div class="input-field col s12 m4">
+            <input type="number" id="p_objetivo" min="0" step="10" value="400">
+            <label for="p_objetivo">Objetivo semana (t)</label>
+          </div>
+          <div class="input-field col s12 m4">
+            <input type="number" id="p_lead" min="0" step="1" value="7">
+            <label for="p_lead">Lead time (días)</label>
+          </div>
+          <div class="input-field col s12 m4">
+            <input type="number" id="p_buffer" min="0" step="1" value="2">
+            <label for="p_buffer">Buffer logístico (días)</label>
+          </div>
+        </div>
+        <a class="btn teal" id="btnGuardarParametros"><i class="material-icons left">save</i>Guardar</a>
+      </div>
+    </section>
+  </div>
+
+  <!-- MODAL: Nuevo bloque -->
+  <div id="modalBloque" class="modal">
+    <div class="modal-content">
+      <h5>Nuevo bloque de plan</h5>
+      <form id="formBloque" autocomplete="off">
+        <div class="row">
+          <div class="input-field col s12 m4">
+            <input type="date" id="b_fecha" required>
+            <label class="active" for="b_fecha">Fecha</label>
+          </div>
+          <div class="input-field col s12 m4">
+            <input id="b_proveedor" type="text" list="dl_proveedores" placeholder="Proveedor">
+            <label for="b_proveedor">Proveedor</label>
+            <datalist id="dl_proveedores"></datalist>
+          </div>
+          <div class="input-field col s12 m4">
+            <select id="b_centro" class="browser-default">
+              <option value="">Centro (opcional)</option>
+            </select>
+            <label class="active" for="b_centro" style="transform:none;font-size:.9rem;color:#9e9e9e">Centro</label>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="input-field col s12 m4">
+            <input type="number" id="b_tons" min="0" step="0.01" placeholder="Ej: 120" required>
+            <label for="b_tons">Toneladas</label>
+          </div>
+          <div class="input-field col s12 m4">
+            <select id="b_estado" class="browser-default">
+              <option value="Planificado" selected>Planificado</option>
+              <option value="Confirmado">Confirmado</option>
+              <option value="Cancelado">Cancelado</option>
+            </select>
+            <label class="active" for="b_estado" style="transform:none;font-size:.9rem;color:#9e9e9e">Estado</label>
+          </div>
+          <div class="input-field col s12 m4">
+            <select id="b_prioridad" class="browser-default">
+              <option>Alta</option><option selected>Media</option><option>Baja</option>
+            </select>
+            <label class="active" for="b_prioridad" style="transform:none;font-size:.9rem;color:#9e9e9e">Prioridad</label>
+          </div>
+        </div>
+
+        <div class="input-field">
+          <textarea id="b_notas" class="materialize-textarea" placeholder="Observaciones"></textarea>
+          <label for="b_notas">Notas</label>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <a class="modal-close btn-flat">Cancelar</a>
+      <button class="btn teal" type="submit" form="formBloque"><i class="material-icons left">save</i>Guardar</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- DataTables + Buttons -->
+  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+  <!-- Chart.js para el Tablero -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Tu módulo de lógica -->
+  <script type="module" src="/js/abastecimiento/planificacion/index.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      M.Tabs.init(document.querySelectorAll('.tabs'));
+      M.Modal.init(document.getElementById('modalBloque'));
+
+      // DataTable vacío (llenas en /js/abastecimiento/planificacion/index.js)
+      const $ = window.jQuery;
+      window.dtPrograma = $('#tablaProgramaSemanal').DataTable({
+        data: [],
+        dom: 'Bfrtip',
+        buttons: [
+          { extend:'excelHtml5', title:'Programa_Semanal' },
+          { extend:'pdfHtml5',   title:'Programa_Semanal', orientation:'landscape', pageSize:'A4' }
+        ],
+        order: [[0,'asc']],
+        pageLength: 20,
+        autoWidth: false,
+        language: { url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+        columnDefs: [{ targets:-1, orderable:false, searchable:false }]
+      });
+
+      // Gráficos – instancias (puedes sobre-escribir desde index.js)
+      const chMeta = new Chart(document.getElementById('ch_meta'), {
+        type:'bar',
+        data:{labels:['Meta','Plan','Confirmado'],datasets:[{data:[0,0,0]}]},
+        options:{responsive:true,plugins:{legend:{display:false}}}
+      });
+      const chDias = new Chart(document.getElementById('ch_dias'), {
+        type:'line',
+        data:{labels:[],datasets:[{label:'t/día',data:[]}]},
+        options:{responsive:true}
+      });
+      const chEstados = new Chart(document.getElementById('ch_estados'), {
+        type:'doughnut',
+        data:{labels:['Planificado','Confirmado','Cancelado'],datasets:[{data:[0,0,0]}]},
+        options:{responsive:true}
+      });
+
+      // Barra de progreso KPI
+      function setCumplimientoBar(pct){
+        document.getElementById('kpi_cumplimiento').textContent = (pct||0) + '%';
+        document.getElementById('kpi_bar').style.width = (pct||0) + '%';
+      }
+
+      // Hook simple para que tu index.js actualice TODO de una
+      window.planSetData = ({kpis={}, semanal=[], dias=[], estados=[]}={}) => {
+        // KPIs
+        document.getElementById('kpi_meta').textContent = kpis.meta ?? '—';
+        document.getElementById('kpi_plan').textContent = kpis.plan ?? '—';
+        document.getElementById('kpi_confirmado').textContent = kpis.confirmado ?? '—';
+        setCumplimientoBar(kpis.cumplimiento ?? 0);
+
+        // Tabla
+        const rows = (semanal||[]).map(r => ([
+          r.fecha || '', r.proveedor || '', r.centro || '', r.tons ?? '',
+          r.estado || '', r.prioridad || '', r.origen || '', r.notas || '',
+          `<a href="#!" class="icon-action editar" data-id="${r._id||''}" title="Editar"><i class="material-icons">edit</i></a>
+           <a href="#!" class="icon-action eliminar" data-id="${r._id||''}" title="Eliminar"><i class="material-icons">delete</i></a>`
+        ]));
+        window.dtPrograma.clear(); window.dtPrograma.rows.add(rows).draw();
+
+        // Charts
+        chMeta.data.datasets[0].data = [kpis.meta||0, kpis.plan||0, kpis.confirmado||0];
+        chMeta.update();
+
+        chDias.data.labels = (dias||[]).map(d=>d.label);
+        chDias.data.datasets[0].data = (dias||[]).map(d=>d.tons||0);
+        chDias.update();
+
+        const estVals = ['Planificado','Confirmado','Cancelado'].map(n =>
+          (estados||[]).find(e=>e.label===n)?.value || 0
+        );
+        chEstados.data.datasets[0].data = estVals;
+        chEstados.update();
+      };
+
+      // Botón “Nuevo bloque”
+      document.getElementById('btnNuevoBloque')?.addEventListener('click', () => {
+        M.Modal.getInstance(document.getElementById('modalBloque')).open();
+      });
+    });
+  </script>
+</body>
+</html>
