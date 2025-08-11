@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
   <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="../../css/abastecimiento.css" />
+  <link rel="stylesheet" href="/css/abastecimiento.css" />
 
   <!-- DataTables + Buttons -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
@@ -47,6 +47,7 @@
   <!-- NAV -->
   <nav class="teal">
     <div class="nav-wrapper">
+      <!-- Si prefieres volver a categorías usa ../categorias.html -->
       <a href="/index.html" class="btn-flat left" title="Volver">
         <i class="material-icons">arrow_back</i>
       </a>
@@ -266,7 +267,6 @@
             <input id="visita_tonsComprometidas" type="number" step="0.01" min="0" placeholder="Ej: 120">
             <label for="visita_tonsComprometidas" class="active">Tons comprometidas (opcional)</label>
           </div>
-          <!-- CAMBIADO: Estado -> Próximo paso -->
           <div class="input-field col s4">
             <label for="visita_estado" class="active">Próximo paso</label>
             <select id="visita_estado" class="browser-default">
@@ -308,7 +308,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
   <!-- Orquestador de pestañas (contactos + visitas) -->
-  <script type="module" src="../../js/abastecimiento/index.js"></script>
+  <script type="module" src="/js/abastecimiento/index.js"></script>
 
   <!-- Init de modales -->
   <script>
@@ -333,5 +333,3 @@
   </script>
 </body>
 </html>
-
-
