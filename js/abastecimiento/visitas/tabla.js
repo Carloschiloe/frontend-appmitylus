@@ -9,23 +9,28 @@ function fmtDate(d) {
   const dd = String(f.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 }
+const toStr = (v) => (v === undefined || v === null ? '' : String(v));
 
 export function renderTablaVisitas(rows = []) {
   const jq = window.jQuery || window.$;
   if (!jq) return;
 
-  const data = (rows || []).map(r => ([
+  const list = Array.isArray(rows) ? rows : [];
+
+  // Mapeo ordenado a las columnas del THEAD:
+  // Fecha | Proveedor | Centro | Actividad | Próximo paso | Tons | Observaciones | Acciones
+  const data = list.map(r => ([
     fmtDate(r.fecha),
-    r.proveedorNombre || '',
-    r.centroCodigo || r.centroId || '',
-    r.enAgua ?? '',
-    r.estado || '',
-    (r.tonsComprometidas ?? '') + '',
-    r.observaciones || '',
+    toStr(r.proveedorNombre),
+    toStr(r.centroCodigo || r.centroId),
+    toStr(r.enAgua),             // Actividad (¿Toma de Muestras?)
+    toStr(r.estado),             // Próximo paso
+    toStr(r.tonsComprometidas),  // Tons
+    toStr(r.observaciones),
     `
       <a href="#!" class="icon-action editar" data-id="${r._id}" title="Editar">
         <i class="material-icons">edit</i>
-      </a>    
+      </a>
       <a href="#!" class="icon-action eliminar" data-id="${r._id}" title="Eliminar">
         <i class="material-icons">delete</i>
       </a>
@@ -54,7 +59,6 @@ export function renderTablaVisitas(rows = []) {
     ]
   });
 
-  // guarda la instancia en el state para futuros reloads
   setDtVisitas(instance);
 }
 
