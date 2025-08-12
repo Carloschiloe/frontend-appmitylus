@@ -193,11 +193,11 @@ export async function apiDeleteVisita(id) {
 }
 
 export async function apiContactosDisponibles({ q = '', minTons = 1 } = {}) {
-  const url = `/api/contactos/disponibles?q=${encodeURIComponent(q)}&minTons=${minTons}`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error('contactos_disponibles_error');
-  const { items } = await r.json();
-  return items || [];
+  const qs = buildQS({ q, minTons });
+  const resp = await fetch(`${API_URL}/contactos/disponibles${qs}`);
+  const json = await checkResponse(resp);
+  // Soporta tanto { items: [...] } como un array directo
+  return Array.isArray(json) ? json : (json.items || []);
 }
 
 
