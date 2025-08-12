@@ -2,11 +2,11 @@
 // Controller: orquesta estado + eventos; delega cálculos a calc.buildViewModel
 
 import { apiGetCentros /*, apiGetContactos */ } from '/js/core/api.js';
-import { initUI, planSetData } from '/js/abastecimiento/planificacion/ui/view.js';
-import { state, loadState, saveBlocks, saveParams, saveFiltros } from '/js/abastecimiento/planificacion/state.js';
+import { initUI, planSetData, populateProveedoresYCentros } from './ui/view.js';
+import { state, loadState, saveBlocks, saveParams, saveFiltros } from './state.js';
 import { setVal, val, num, number, clampAnio,
-         isoWeekString, fmtMonth, yearFromWeekStr, weekStrToDate } from '/js/abastecimiento/planificacion/utils.js';
-import { buildViewModel } from '/js/abastecimiento/planificacion/calc.js';
+         isoWeekString, fmtMonth, yearFromWeekStr, weekStrToDate } from './utils.js';
+import { buildViewModel } from './calc.js';
 
 // Bootstrap
 document.addEventListener('DOMContentLoaded', async () => {
@@ -17,10 +17,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 let _initialized = false;
 async function init(){
   if (_initialized) return;
+
   await cargarCentros();
   loadState();
   prepararUI();
-  poblarProveedoresYCentros();
+
+  // ✅ ahora la población de proveedores/centros vive en la capa UI
+  populateProveedoresYCentros({ proveedores: state.proveedores, centros: state.centros });
+
   setDefaultPeriodIfNeeded();
   render();
   _initialized = true;
