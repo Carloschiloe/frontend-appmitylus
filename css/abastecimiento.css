@@ -1,4 +1,4 @@
-=========================================
+/* =========================================
    ABASTECIMIENTO – Overrides sobre global
    ========================================= */
 
@@ -74,11 +74,6 @@
 #modalVisita   .input-field textarea {
   margin-bottom: .6rem;
 }
-#modalContacto .input-field label,
-#modalDetalleContacto .input-field label,
-#modalVisita   .input-field label {
-  font-size: .9rem;
-}
 
 /* ======= RESPONSIVE ======= */
 @media (max-width: 992px){
@@ -141,23 +136,84 @@
 /* Evita que contenedores tapen el overlay por overflow/transform */
 .container, .card-panel { overflow: visible !important; }
 
-/* Select nativo dentro del modal (coincide con tu estilo existente) */
-#modalBloque .browser-default {
-  width: 100%;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid #9e9e9e;
-  padding: 8px 0 6px;
-  font-size: 16px;
+/* =========================================
+   PLANIFICACIÓN – Complementos sin duplicados
+   ========================================= */
+
+/* Utilidades generales */
+.mt-12{margin-top:12px}
+.mt-14{margin-top:14px}
+.mt-18{margin-top:18px}
+.mb-32{margin-bottom:32px}
+.hidden{display:none!important}
+.static-label{transform:none!important;font-size:.9rem;color:#9e9e9e}
+
+/* Barras de progreso compactas (KPIs y realtime) */
+.progress.slim{height:8px;border-radius:8px;margin:.4rem 0 0}
+.progress .determinate{border-radius:8px}
+
+/* KPIs (grid responsive) */
+.kpi-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin:14px 0 6px}
+.kpi{grid-column:span 12;background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+.kpi h6{margin:0;font-size:.95rem;color:#546e7a;font-weight:600}
+.kpi .val{font-size:1.6rem;font-weight:700;margin-top:4px;color:#004d40}
+.kpi .sub{font-size:.9rem;color:#78909c;margin-top:2px}
+@media(min-width:600px){.kpi{grid-column:span 6}}
+@media(min-width:992px){.kpi{grid-column:span 3}}
+
+/* Toolbar / filtros */
+.toolbar-panel{padding:14px 16px}
+.toolbar{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;align-items:end}
+.toolbar .input-field{margin:0}
+.toolbar .actions{grid-column:span 12;display:flex;gap:8px;justify-content:flex-end}
+.toolbar .toggles{display:flex;gap:16px;align-items:center}
+.periodo-wrap{display:flex;gap:10px;align-items:end}
+.periodo-nav{display:flex;gap:6px;align-items:center}
+.btn-ghost{background:transparent!important}
+@media(min-width:600px){
+  .toolbar .w2{grid-column:span 2}
+  .toolbar .w3{grid-column:span 3}
+  .toolbar .w4{grid-column:span 4}
+  .toolbar .w5{grid-column:span 5}
+  .toolbar .w6{grid-column:span 6}
+  .toolbar .w12{grid-column:span 12}
 }
-#modalBloque .browser-default:focus {
-  outline: none;
-  border-bottom: 2px solid #26a69a;
+@media(min-width:992px){
+  .toolbar .w2{grid-column:span 2}
+  .toolbar .w3{grid-column:span 3}
+  .toolbar .w4{grid-column:span 4}
+  .toolbar .w5{grid-column:span 5}
+  .toolbar .w6{grid-column:span 6}
 }
-#modalBloque .input-field label.active {
-  transform: none !important;
-  font-size: 0.9rem;
-  color: #9e9e9e;
-  margin-bottom: 2px;
-  display: block;
+
+/* Tablas planificación */
+#tablaProgramaSemanal.dataTable thead th{
+  background: var(--primary) !important;
+  color: #fff !important;
+}
+#tablaProgramaSemanal td.right-align{ text-align:right }
+
+/* Tarjetas de gráfico / tablero */
+.chart-card{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+.chart-card .chart-title{margin:0 0 8px}
+
+/* Realtime list (últimos 5 abastecimientos) */
+.rt-list{margin:0;list-style:none;display:grid;gap:8px}
+.rt-list .progress{margin:.25rem 0 0}
+
+/* Gantt mensual liviano */
+.gantt{display:grid;gap:8px}
+.gantt__row{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:8px}
+.gantt__label{font-size:.9rem;color:#607d8b}
+.gantt__track{position:relative;height:20px;background:#eceff1;border-radius:10px;overflow:hidden}
+.gantt__bar{position:absolute;top:0;bottom:0;border-radius:10px}
+.gantt__bar--meta{left:0;right:0;border:2px dashed #90a4ae;background:transparent}
+.gantt__bar--plan{left:0;width:0;background:#64b5f6}
+.gantt__bar--real{left:0;width:0;background:#66bb6a;opacity:.9}
+
+/* Impresión (oculta UI y limpia tarjetas) */
+@media print{
+  nav, .tabs, .actions, .modal, .toolbar-panel .input-field{ display:none !important; }
+  .kpi-grid{ grid-template-columns:repeat(4,1fr)!important }
+  .chart-card{ box-shadow:none!important; border:1px solid #eee }
 }
