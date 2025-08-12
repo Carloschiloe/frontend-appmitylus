@@ -1,40 +1,46 @@
 // /js/abastecimiento/index.js
-
-import { initContactosTab } from './contactos/index.js';
-import { initVisitasTab }   from './visitas/index.js';
+// Orquestador de pestañas (Contactos / Visitas)
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Inicializa las tabs de Materialize (si existen)
+  // Inicializa Tabs de Materialize
   const tabsEls = document.querySelectorAll('.tabs');
+  let tabsInstance = null;
   if (tabsEls && tabsEls.length) {
-    try { M.Tabs.init(tabsEls, {}); } catch (_) {}
+    try { tabsInstance = M.Tabs.init(tabsEls, {}); } catch (_) {}
+    tabsInstance = Array.isArray(tabsInstance) ? tabsInstance[0] : tabsInstance;
   }
 
-  // Carga inicial según hash (por defecto Contactos)
-  const initial = (location.hash || '#tab-contactos');
-  if (initial === '#tab-visitas') {
-    initVisitasTab();
-  } else {
-    initContactosTab();
+  const loadContactos = () =>
+    import('./contactos/index.js').then(m => m.initContactosTab());
+  const loadVisitas = (forceReload=false) =>
+    import('./visitas/index.js').then(m => m.initVisitasTab(forceReload));
+
+  // Normaliza hash y selecciona pestaña visible
+  const currentHash = (location.hash === '#tab-visitas') ? '#tab-visitas' : '#tab-contactos';
+  if (tabsInstance && tabsInstance.select) {
+    tabsInstance.select(currentHash.replace('#', '')); // 'tab-visitas' | 'tab-contactos'
   }
 
-  // Lazy init por pestaña
-  const tabLinks = document.querySelectorAll('.tabs a[href^="#"]');
-  tabLinks.forEach(link => {
+  // Carga inicial (lazy)
+  if (currentHash === '#tab-visitas') loadVisitas();
+  else loadContactos();
+
+  // Click en tabs (lazy, con guard interno del submódulo)
+  document.querySelectorAll('.tabs a[href^="#"]').forEach(link => {
     link.addEventListener('click', () => {
       const target = link.getAttribute('href');
-      if (target === '#tab-contactos') {
-        initContactosTab();       // tiene guard interno
-      } else if (target === '#tab-visitas') {
-        initVisitasTab();         // tiene guard interno
-      }
+      if (target === '#tab-contactos') loadContactos();
+      else if (target === '#tab-visitas') loadVisitas();
     });
   });
 
-  // Si se crea una visita desde Contactos, refresca la pestaña Visitas si ya existe
-  window.addEventListener('visita:created', () => {
-    initVisitasTab(true /* forceReload */);
+  // Soporte back/forward (hashchange)
+  window.addEventListener('hashchange', () => {
+    const h = (location.hash === '#tab-visitas') ? '#tab-visitas' : '#tab-contactos';
+    if (tabsInstance && tabsInstance.select) tabsInstance.select(h.replace('#',''));
+    if (h === '#tab-visitas') loadVisitas(); else loadContactos();
   });
+
+  // Evento cruzado: actualizar Visitas al crear una
+  window.addEventListener('visita:created', () => loadVisitas(true));
 });
-
-
