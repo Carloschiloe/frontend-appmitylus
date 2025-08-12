@@ -162,9 +162,7 @@
 
         <!-- Acciones -->
         <div class="actions">
-          <a id="btnAsignarMMPP" href="#modalBloque" class="btn teal modal-trigger">
-  <i class="material-icons left">add_circle</i>Asignar MMPP
-</a>
+          <a id="btnAsignarMMPP" class="btn teal"><i class="material-icons left">add_circle</i>Asignar MMPP</a>
           <a id="btnXls" class="btn-flat waves-effect">Excel</a>
           <a id="btnPdf" class="btn-flat waves-effect">PDF</a>
         </div>
@@ -341,58 +339,13 @@
   <!-- Lógica -->
   <script type="module" src="/js/abastecimiento/planificacion/index.js"></script>
 
- <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // ========= Materialize: Tabs + Modal =========
-    try { M.Tabs.init(document.querySelectorAll('.tabs')); } catch(e){ console.error(e); }
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      M.Tabs.init(document.querySelectorAll('.tabs'));
+      M.Modal.init(document.getElementById('modalBloque'));
 
-    const modalEl = document.getElementById('modalBloque');
-    let modalInstance = null;
-    if (modalEl) {
-      try {
-        modalInstance = M.Modal.getInstance(modalEl) || M.Modal.init(modalEl, { dismissible: true });
-      } catch (e) {
-        console.error('[Modal] init error', e);
-      }
-    } else {
-      console.error('[Modal] No se encontró #modalBloque');
-    }
-
-    // Botón “Asignar MMPP” (doble seguro: trigger + JS)
-    const btnMMPP = document.getElementById('btnAsignarMMPP');
-    if (btnMMPP) {
-      // Forzar atributos de trigger por si faltaban
-      btnMMPP.setAttribute('href', '#modalBloque');
-      btnMMPP.classList.add('modal-trigger');
-
-      btnMMPP.addEventListener('click', (e) => {
-        e.preventDefault(); // evita salto al hash
-        try {
-          // Si por cualquier razón el trigger no abre, abrimos por JS
-          (modalInstance || (modalInstance = M.Modal.init(modalEl, { dismissible:true }))).open();
-        } catch (err) {
-          console.error('[Modal] open error', err);
-        }
-      });
-    } else {
-      console.warn('[UI] No se encontró #btnAsignarMMPP');
-    }
-
-    // Delegado de respaldo (por si el botón se re-renderiza)
-    document.body.addEventListener('click', (e) => {
-      const a = e.target.closest('#btnAsignarMMPP');
-      if (!a) return;
-      e.preventDefault();
-      try {
-        (modalInstance || (modalInstance = M.Modal.init(modalEl, { dismissible:true }))).open();
-      } catch (err) {
-        console.error('[Modal] open error (delegado)', err);
-      }
-    });
-
-    // ========= DataTable (aislado para no romper el flujo) =========
-    try {
-      const $ = window.jQuery || window.$;
+      // DataTable vacío (llenado desde index.js vía window.planSetData)
+      const $ = window.jQuery;
       window.dtPrograma = $('#tablaProgramaSemanal').DataTable({
         data: [],
         dom: 'Bfrtip',
@@ -406,257 +359,69 @@
         language: { url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
         columnDefs: [{ targets:-1, orderable:false, searchable:false }]
       });
-    } catch (e) {
-      console.error('[DataTable] init error', e);
-    }
 
-    // ========= Charts (aislados) =========
-    let chMeta, chDias, chEstados;
-    try {
-      chMeta = new Chart(document.getElementById('ch_meta'), {
+      // Gráficos (index.js actualizará data + labels)
+      const chMeta = new Chart(document.getElementById('ch_meta'), {
         type:'bar',
         data:{labels:['Meta','Plan','Confirmado'],datasets:[{data:[0,0,0]}]},
         options:{responsive:true,plugins:{legend:{display:false}}}
       });
-    } catch(e){ console.error('[Chart] ch_meta', e); }
-    try {
-      chDias = new Chart(document.getElementById('ch_dias'), {
+      const chDias = new Chart(document.getElementById('ch_dias'), {
         type:'line',
         data:{labels:[],datasets:[{label:'t/periodo',data:[]}]},
         options:{responsive:true}
       });
-    } catch(e){ console.error('[Chart] ch_dias', e); }
-    try {
-      chEstados = new Chart(document.getElementById('ch_estados'), {
+      const chEstados = new Chart(document.getElementById('ch_estados'), {
         type:'doughnut',
         data:{labels:['Planificado','Confirmado','Cancelado'],datasets:[{data:[0,0,0]}]},
         options:{responsive:true}
       });
-    } catch(e){ console.error('[Chart] ch_estados', e); }
 
-    // ========= KPIs =========
-    function setCumplimientoBar(pct){
-      const n = (pct||0);
-      const lbl = document.getElementById('kpi_cumplimiento');
-      const bar = document.getElementById('kpi_bar');
-      if (lbl) lbl.textContent = n + '%';
-      if (bar) bar.style.width = n + '%';
-    }
+      // KPI barra
+      function setCumplimientoBar(pct){
+        document.getElementById('kpi_cumplimiento').textContent = (pct||0) + '%';
+        document.getElementById('kpi_bar').style.width = (pct||0) + '%';
+      }
 
-    // ========= Hook global para que index.js actualice todo =========
-    window.planSetData = ({kpis={}, semanal=[], dias=[], estados=[], labelDias='Tons por día (semana)'}={}) => {
-      try {
+      // Hook global para que index.js actualice todo
+      window.planSetData = ({kpis={}, semanal=[], dias=[], estados=[], labelDias='Tons por día (semana)'}={}) => {
         // KPIs
-        const kMeta = document.getElementById('kpi_meta');
-        const kPlan = document.getElementById('kpi_plan');
-        const kConf = document.getElementById('kpi_confirmado');
-        if (kMeta) kMeta.textContent = kpis.meta ?? '—';
-        if (kPlan) kPlan.textContent = kpis.plan ?? '—';
-        if (kConf) kConf.textContent = kpis.confirmado ?? '—';
+        document.getElementById('kpi_meta').textContent = kpis.meta ?? '—';
+        document.getElementById('kpi_plan').textContent = kpis.plan ?? '—';
+        document.getElementById('kpi_confirmado').textContent = kpis.confirmado ?? '—';
         setCumplimientoBar(kpis.cumplimiento ?? 0);
 
         // Tabla
-        if (window.dtPrograma) {
-          const rows = (semanal||[]).map(r => ([
-            r.fecha || '', r.proveedor || '', r.centro || '', r.tons ?? '',
-            r.estado || '', r.prioridad || '', r.origen || '', r.notas || '',
-            `<a href="#!" class="icon-action editar" data-id="${r._id||''}" title="Editar"><i class="material-icons">edit</i></a>
-             <a href="#!" class="icon-action eliminar" data-id="${r._id||''}" title="Eliminar"><i class="material-icons">delete</i></a>`
-          ]));
-          window.dtPrograma.clear(); window.dtPrograma.rows.add(rows).draw();
-        }
+        const rows = (semanal||[]).map(r => ([
+          r.fecha || '', r.proveedor || '', r.centro || '', r.tons ?? '',
+          r.estado || '', r.prioridad || '', r.origen || '', r.notas || '',
+          `<a href="#!" class="icon-action editar" data-id="${r._id||''}" title="Editar"><i class="material-icons">edit</i></a>
+           <a href="#!" class="icon-action eliminar" data-id="${r._id||''}" title="Eliminar"><i class="material-icons">delete</i></a>`
+        ]));
+        window.dtPrograma.clear(); window.dtPrograma.rows.add(rows).draw();
 
         // Charts
-        try { if (chMeta){ chMeta.data.datasets[0].data = [kpis.meta||0, kpis.plan||0, kpis.confirmado||0]; chMeta.update(); } } catch(e){}
-        try {
-          const lbl = document.getElementById('lbl_ch_dias');
-          if (lbl) lbl.textContent = labelDias;
-          if (chDias){
-            chDias.data.labels = (dias||[]).map(d=>d.label);
-            chDias.data.datasets[0].label = labelDias.replace('Tons por ','t/').replace(' (',' (');
-            chDias.data.datasets[0].data = (dias||[]).map(d=>d.tons||0);
-            chDias.update();
-          }
-        } catch(e){}
-        try {
-          if (chEstados){
-            const estVals = ['Planificado','Confirmado','Cancelado'].map(n =>
-              (estados||[]).find(e=>e.label===n)?.value || 0
-            );
-            chEstados.data.datasets[0].data = estVals;
-            chEstados.update();
-          }
-        } catch(e){}
-      } catch (e) {
-        console.error('[planSetData] error', e);
-      }
-    };
+        chMeta.data.datasets[0].data = [kpis.meta||0, kpis.plan||0, kpis.confirmado||0];
+        chMeta.update();
 
-    // (Opcional) exposición para probar desde consola
-    window.__openMMPP = () => {
-      try { (modalInstance || (modalInstance = M.Modal.init(modalEl, { dismissible:true }))).open(); }
-      catch(e){ console.error('[Modal] open error (__openMMPP)', e); }
-    };
-  });
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // ========== TABS ==========
-    try { M.Tabs.init(document.querySelectorAll('.tabs')); } catch(e){}
+        document.getElementById('lbl_ch_dias').textContent = labelDias;
+        chDias.data.labels = (dias||[]).map(d=>d.label);
+        chDias.data.datasets[0].label = labelDias.replace('Tons por ','t/').replace(' (',' (');
+        chDias.data.datasets[0].data = (dias||[]).map(d=>d.tons||0);
+        chDias.update();
 
-    // ========== MODAL: INIT A PRUEBA DE BALAS ==========
-    const modalEl = document.getElementById('modalBloque');
-    const btnMMPP = document.getElementById('btnAsignarMMPP');
+        const estVals = ['Planificado','Confirmado','Cancelado'].map(n =>
+          (estados||[]).find(e=>e.label===n)?.value || 0
+        );
+        chEstados.data.datasets[0].data = estVals;
+        chEstados.update();
+      };
 
-    // Asegura atributos de trigger
-    if (btnMMPP) {
-      btnMMPP.setAttribute('href', '#modalBloque');
-      btnMMPP.classList.add('modal-trigger');
-    }
-
-    // 1) Init con vanilla
-    let modalInstance = null;
-    try {
-      if (modalEl && window.M && M.Modal) {
-        modalInstance = M.Modal.getInstance(modalEl) || M.Modal.init(modalEl, { dismissible: true });
-      }
-    } catch(e){ console.error('[Modal] vanilla init', e); }
-
-    // 2) Init con jQuery wrapper (fallback)
-    try {
-      const $ = window.jQuery || window.$;
-      if ($ && $.fn.modal) {
-        $('.modal').modal(); // crea instancias jQuery
-        if (!modalInstance && M && M.Modal) modalInstance = M.Modal.getInstance(modalEl);
-      }
-    } catch(e){ console.error('[Modal] jquery init', e); }
-
-    // 3) Click: abrir siempre por JS (aunque falle el trigger)
-    function openMMPP() {
-      try {
-        if (!modalInstance && window.M && M.Modal) {
-          modalInstance = M.Modal.init(modalEl, { dismissible: true });
-        }
-        if (modalInstance) {
-          modalInstance.open();
-        } else {
-          // Último recurso: fallback visual sin Materialize (muy simple)
-          modalEl.style.display = 'block';
-          modalEl.style.opacity = '1';
-          document.body.classList.add('modal-open');
-        }
-      } catch (e) { console.error('[Modal] open', e); }
-    }
-
-    if (btnMMPP) {
-      btnMMPP.addEventListener('click', (e) => { e.preventDefault(); openMMPP(); });
-    }
-    // Delegado por si el botón se re-renderiza
-    document.body.addEventListener('click', (e) => {
-      const a = e.target.closest('#btnAsignarMMPP');
-      if (!a) return;
-      e.preventDefault();
-      openMMPP();
+      // Botón “Asignar MMPP”
+      document.getElementById('btnAsignarMMPP')?.addEventListener('click', () => {
+        M.Modal.getInstance(document.getElementById('modalBloque')).open();
+      });
     });
-
-    // Exponer para probar desde consola:
-    window.__openMMPP = openMMPP;
-
-    // ========== DATATABLES ==========
-    try {
-      const $ = window.jQuery || window.$;
-      window.dtPrograma = $('#tablaProgramaSemanal').DataTable({
-        data: [],
-        dom: 'Bfrtip',
-        buttons: [
-          { extend:'excelHtml5', title:'Programa' },
-          { extend:'pdfHtml5',   title:'Programa', orientation:'landscape', pageSize:'A4' }
-        ],
-        order: [[0,'asc']],
-        pageLength: 20,
-        autoWidth: false,
-        language: { url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-        columnDefs: [{ targets:-1, orderable:false, searchable:false }]
-      });
-    } catch(e){ console.error('[DataTable]', e); }
-
-    // ========== CHARTS ==========
-    let chMeta, chDias, chEstados;
-    try {
-      chMeta = new Chart(document.getElementById('ch_meta'), {
-        type:'bar',
-        data:{labels:['Meta','Plan','Confirmado'],datasets:[{data:[0,0,0]}]},
-        options:{responsive:true,plugins:{legend:{display:false}}}
-      });
-      chDias = new Chart(document.getElementById('ch_dias'), {
-        type:'line',
-        data:{labels:[],datasets:[{label:'t/periodo',data:[]}]},
-        options:{responsive:true}
-      });
-      chEstados = new Chart(document.getElementById('ch_estados'), {
-        type:'doughnut',
-        data:{labels:['Planificado','Confirmado','Cancelado'],datasets:[{data:[0,0,0]}]},
-        options:{responsive:true}
-      });
-    } catch(e){ console.error('[Charts]', e); }
-
-    // ========== KPI & HOOK ==========
-    function setCumplimientoBar(pct){
-      const n = (pct||0);
-      const lbl = document.getElementById('kpi_cumplimiento');
-      const bar = document.getElementById('kpi_bar');
-      if (lbl) lbl.textContent = n + '%';
-      if (bar) bar.style.width = n + '%';
-    }
-
-    window.planSetData = ({kpis={}, semanal=[], dias=[], estados=[], labelDias='Tons por día (semana)'}={}) => {
-      try {
-        const kMeta = document.getElementById('kpi_meta');
-        const kPlan = document.getElementById('kpi_plan');
-        const kConf = document.getElementById('kpi_confirmado');
-        if (kMeta) kMeta.textContent = kpis.meta ?? '—';
-        if (kPlan) kPlan.textContent = kpis.plan ?? '—';
-        if (kConf) kConf.textContent = kpis.confirmado ?? '—';
-        setCumplimientoBar(kpis.cumplimiento ?? 0);
-
-        if (window.dtPrograma) {
-          const rows = (semanal||[]).map(r => ([
-            r.fecha || '', r.proveedor || '', r.centro || '', r.tons ?? '',
-            r.estado || '', r.prioridad || '', r.origen || '', r.notas || '',
-            `<a href="#!" class="icon-action editar" data-id="${r._id||''}" title="Editar"><i class="material-icons">edit</i></a>
-             <a href="#!" class="icon-action eliminar" data-id="${r._id||''}" title="Eliminar"><i class="material-icons">delete</i></a>`
-          ]));
-          window.dtPrograma.clear(); window.dtPrograma.rows.add(rows).draw();
-        }
-
-        if (chMeta){ chMeta.data.datasets[0].data = [kpis.meta||0, kpis.plan||0, kpis.confirmado||0]; chMeta.update(); }
-
-        const lbl = document.getElementById('lbl_ch_dias');
-        if (lbl) lbl.textContent = labelDias;
-        if (chDias){
-          chDias.data.labels = (dias||[]).map(d=>d.label);
-          chDias.data.datasets[0].label = labelDias.replace('Tons por ','t/').replace(' (',' (');
-          chDias.data.datasets[0].data = (dias||[]).map(d=>d.tons||0);
-          chDias.update();
-        }
-
-        if (chEstados){
-          const estVals = ['Planificado','Confirmado','Cancelado'].map(n =>
-            (estados||[]).find(e=>e.label===n)?.value || 0
-          );
-          chEstados.data.datasets[0].data = estVals;
-          chEstados.update();
-        }
-      } catch (e) { console.error('[planSetData]', e); }
-    };
-  });
-</script>
-
-
-
+  </script>
 </body>
 </html>
-
-
-
-
-
