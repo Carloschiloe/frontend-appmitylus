@@ -1,7 +1,7 @@
 // /js/abastecimiento/planificacion/index.js
 // Controller: orquesta estado + eventos; delega cálculos a calc.buildViewModel
 
-import { apiGetCentros /*, apiGetContactos */ } from '/js/core/api.js';
+import { apiGetCentros, apiContactosDisponibles } from '/js/core/api.js';
 import { initUI, planSetData, populateProveedoresYCentros } from './ui/view.js';
 import { state, loadState, saveBlocks, saveParams, saveFiltros } from './state.js';
 import { setVal, val, num, number, clampAnio,
@@ -22,7 +22,7 @@ async function init(){
   loadState();
   prepararUI();
 
-  // ✅ ahora la población de proveedores/centros vive en la capa UI
+  // proveedores + centros en UI
   populateProveedoresYCentros({ proveedores: state.proveedores, centros: state.centros });
 
   setDefaultPeriodIfNeeded();
@@ -109,6 +109,16 @@ function prepararUI(){
     saveParams();
     M.toast?.({ html:'Parámetros guardados', classes:'teal', displayLength:1500 });
     render();
+  });
+
+  // *** NUEVO: Importar contactos → bloques ***
+  document.getElementById('btnImportarContactos')?.addEventListener('click', async () => {
+    try {
+      await importarDesdeContactos();  // abajo
+    } catch (e) {
+      console.error(e);
+      M.toast?.({ html:'No se pudo importar', classes:'red' });
+    }
   });
 
   // Modal CRUD
@@ -227,3 +237,63 @@ function cerrarModalBloque(){
   const modal = M.Modal.getInstance(document.getElementById('modalBloque'));
   modal?.close();
 }
+
+/* ===== NUEVO: Importar contactos → bloques ===== */
+async function importarDesdeContactos({ minTons = 1 } = {}) {
+  const btn = document.getElementById('btnImportarContactos');
+  const prevText = btn?.textContent;
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = 'Importando…'; }
+
+    // 1) pedir contactos disponibles al backend
+    const items = await apiContactosDisponibles({ minTons });
+
+    if (!items.length) {
+      M.toast?.({ html:'No hay contactos con disponibilidad', displayLength: 1800 });
+      return;
+    }
+
+    // 2) mapear a bloques planificados (evitando duplicados simples)
+    const hoy = new Date().toISOString().slice(0,10);
+    let creados = 0;
+
+    items.forEach(c => {
+      const fecha = c.fechaDisp || hoy;
+      const proveedor = c.proveedorNombre || '(sin nombre)';
+      const centro = c.centroCodigo || '';
+      const tons = Number(c.tonsAprox) || 0;
+
+      const dup = state.bloques.some(b =>
+        b.proveedor === proveedor && b.fecha === fecha && Number(b.tons) === tons
+      );
+      if (dup) return;
+
+      state.bloques.push({
+        _id: (Date.now().toString(36) + Math.random().toString(36).slice(2,8)),
+        fecha,
+        proveedor,
+        centro,
+        tons,
+        estado: 'Planificado',
+        prioridad: 'Media',
+        origen: 'Contactos',
+        notas: c.observaciones || '',
+        escenario: state.filtros.escenario || 'base',
+      });
+      creados++;
+    });
+
+    if (creados > 0) {
+      saveBlocks();
+      render();
+    }
+    M.toast?.({ html:`Importados ${creados} contactos`, classes:'teal' });
+
+  } catch (e) {
+    console.error('[plan] importarDesdeContactos', e);
+    M.toast?.({ html:'API no disponible (configura /api/contactos-disponibles)', classes:'red' });
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = prevText || 'Importar contactos'; }
+  }
+}
+
