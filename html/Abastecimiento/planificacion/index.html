@@ -500,45 +500,68 @@
   });
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // ====== Materialize base ======
-    try { M.AutoInit(); } catch(e) {}
+    // ========== TABS ==========
     try { M.Tabs.init(document.querySelectorAll('.tabs')); } catch(e){}
 
-    // ====== Modal: init + open robusto ======
-    const modalEl  = document.getElementById('modalBloque');
-    const btnMMPP  = document.getElementById('btnAsignarMMPP');
-    let   modalIns = null;
+    // ========== MODAL: INIT A PRUEBA DE BALAS ==========
+    const modalEl = document.getElementById('modalBloque');
+    const btnMMPP = document.getElementById('btnAsignarMMPP');
 
-    function ensureModal(){
-      if (!modalEl || !window.M || !M.Modal) return null;
-      try { return M.Modal.getInstance(modalEl) || M.Modal.init(modalEl, {dismissible:true}); }
-      catch(e){ console.error('[Modal] init', e); return null; }
-    }
-    function openMMPP(){
-      modalIns = ensureModal();
-      if (modalIns) { modalIns.open(); return; }
-      // fallback ultra simple si Materialize no carga:
-      if (modalEl){ modalEl.style.display='block'; modalEl.style.opacity='1'; document.body.classList.add('modal-open'); }
-    }
-
-    // Asegura atributos del trigger por si se pierden en runtime
-    if (btnMMPP){
+    // Asegura atributos de trigger
+    if (btnMMPP) {
       btnMMPP.setAttribute('href', '#modalBloque');
       btnMMPP.classList.add('modal-trigger');
-      btnMMPP.addEventListener('click', (e)=>{ e.preventDefault(); openMMPP(); });
+    }
+
+    // 1) Init con vanilla
+    let modalInstance = null;
+    try {
+      if (modalEl && window.M && M.Modal) {
+        modalInstance = M.Modal.getInstance(modalEl) || M.Modal.init(modalEl, { dismissible: true });
+      }
+    } catch(e){ console.error('[Modal] vanilla init', e); }
+
+    // 2) Init con jQuery wrapper (fallback)
+    try {
+      const $ = window.jQuery || window.$;
+      if ($ && $.fn.modal) {
+        $('.modal').modal(); // crea instancias jQuery
+        if (!modalInstance && M && M.Modal) modalInstance = M.Modal.getInstance(modalEl);
+      }
+    } catch(e){ console.error('[Modal] jquery init', e); }
+
+    // 3) Click: abrir siempre por JS (aunque falle el trigger)
+    function openMMPP() {
+      try {
+        if (!modalInstance && window.M && M.Modal) {
+          modalInstance = M.Modal.init(modalEl, { dismissible: true });
+        }
+        if (modalInstance) {
+          modalInstance.open();
+        } else {
+          // Último recurso: fallback visual sin Materialize (muy simple)
+          modalEl.style.display = 'block';
+          modalEl.style.opacity = '1';
+          document.body.classList.add('modal-open');
+        }
+      } catch (e) { console.error('[Modal] open', e); }
+    }
+
+    if (btnMMPP) {
+      btnMMPP.addEventListener('click', (e) => { e.preventDefault(); openMMPP(); });
     }
     // Delegado por si el botón se re-renderiza
-    document.body.addEventListener('click', (e)=>{
+    document.body.addEventListener('click', (e) => {
       const a = e.target.closest('#btnAsignarMMPP');
       if (!a) return;
       e.preventDefault();
       openMMPP();
     });
 
-    // expón helper para probar en consola
+    // Exponer para probar desde consola:
     window.__openMMPP = openMMPP;
 
-    // ====== DataTable ======
+    // ========== DATATABLES ==========
     try {
       const $ = window.jQuery || window.$;
       window.dtPrograma = $('#tablaProgramaSemanal').DataTable({
@@ -556,7 +579,7 @@
       });
     } catch(e){ console.error('[DataTable]', e); }
 
-    // ====== Charts ======
+    // ========== CHARTS ==========
     let chMeta, chDias, chEstados;
     try {
       chMeta = new Chart(document.getElementById('ch_meta'), {
@@ -576,7 +599,7 @@
       });
     } catch(e){ console.error('[Charts]', e); }
 
-    // ====== KPIs + hook ======
+    // ========== KPI & HOOK ==========
     function setCumplimientoBar(pct){
       const n = (pct||0);
       const lbl = document.getElementById('kpi_cumplimiento');
@@ -629,8 +652,10 @@
 </script>
 
 
+
 </body>
 </html>
+
 
 
 
