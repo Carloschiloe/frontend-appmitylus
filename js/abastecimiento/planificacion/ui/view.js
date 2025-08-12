@@ -1,7 +1,8 @@
 // /js/abastecimiento/planificacion/ui/view.js
 // UI de alto nivel: DataTable/KPIs/Realtime/Gantt. Usa charts.js para los gráficos.
 
-import { initCharts, updateCharts } from '/js/abastecimiento/planificacion/ui/charts.js';
+import { initCharts, updateCharts } from './charts.js';
+import { escapeHtml } from '../utils.js';
 
 const $ = window.jQuery; // DataTables requiere jQuery
 const UI = { dt:null, nf: new Intl.NumberFormat('es-CL') };
@@ -32,12 +33,32 @@ export async function initUI(){
   initCharts();
 }
 
+/** Población de proveedores (datalist) y centros (select) */
+export function populateProveedoresYCentros({ proveedores = [], centros = [] } = {}) {
+  // Datalist de proveedores
+  const dl = document.getElementById('dl_proveedores');
+  if (dl) {
+    dl.innerHTML = proveedores.map(p => `<option value="${escapeHtml(p)}"></option>`).join('');
+  }
+  // Select de centros
+  const sel = document.getElementById('b_centro');
+  if (sel) {
+    let opts = `<option value="">Centro (opcional)</option>`;
+    const list = centros.slice().sort((a,b)=> (a.code||'').localeCompare(b.code||''));
+    opts += list.map(c =>
+      `<option value="${escapeHtml(c.code||'')}">${escapeHtml((c.code||'') + (c.comuna? ' – '+c.comuna:''))}</option>`
+    ).join('');
+    sel.innerHTML = opts;
+  }
+}
+
 export function planSetData({
   kpis={}, semanal=[], dias=[], estados=[], labelDias='Tons por día (semana)',
   rpa={labels:[],requerida:[],programada:[],abastecida:[]},
   rt={required:0,supplied:0,items:[]},
   mensualWeeks=[]
 }={}){
+
   // KPIs
   setTxt('kpi_meta', kpis.meta ?? '—');
   setTxt('kpi_plan', kpis.plan ?? '—');
@@ -60,7 +81,7 @@ export function planSetData({
 
 /* ===== Tabla ===== */
 function updateTable(semanal){
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const rows = (semanal||[]).map(r => ([
     `<span data-order="${esc(r.fechaISO||r.fecha||'')}">${esc(r.fecha||'')}</span>`,
     esc(r.proveedor), esc(r.centro), r.tons ?? '', esc(r.estado), esc(r.prioridad), esc(r.origen), esc(r.notas),
@@ -72,7 +93,7 @@ function updateTable(semanal){
 
 /* ===== KPIs ===== */
 function setTxt(id, val){ const el=document.getElementById(id); if(el) el.textContent = val ?? '—'; }
-function setCumplimientoBar(pct){ const val = Number.isFinite(pct) ? pct : 0; const elPct = document.getElementById('kpi_cumplimiento'); const bar = document.getElementById('kpi_bar'); if (elPct) elPct.textContent = `${val}%`; if (bar) bar.style.width = `${val}%`; }
+function setCumplimientoBar(pct){ const v = Number.isFinite(pct) ? pct : 0; const elPct = document.getElementById('kpi_cumplimiento'); const bar = document.getElementById('kpi_bar'); if (elPct) elPct.textContent = `${v}%`; if (bar) bar.style.width = `${v}%`; }
 
 /* ===== Realtime ===== */
 function setRealtime(required, supplied){
