@@ -191,3 +191,12 @@ export async function apiDeleteVisita(id) {
   const resp = await fetch(`${API_URL}/visitas/${id}`, { method: 'DELETE' });
   return checkResponse(resp);
 }
+
+export async function apiContactosDisponibles({ q = '', minTons = 1 } = {}) {
+  const url = `/api/contactos-disponibles?q=${encodeURIComponent(q)}&minTons=${minTons}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('contactos_disponibles_error');
+  const json = await r.json();
+  return json.items || [];
+}
+
