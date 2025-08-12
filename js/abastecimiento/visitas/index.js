@@ -2,11 +2,10 @@
 import { setVisitas, visitasRaw } from './state.js';
 import { cargarVisitasEnriquecidas } from './data.js';
 import { renderTablaVisitas } from './tabla.js';
-
 import { apiDeleteVisita, apiUpdateVisita } from '/js/core/api.js';
 
-// helper del módulo Contactos (solo usamos el $ para seleccionar rápido)
-import { $ } from '../contactos/state.js';
+// Helper local (evita depender de Contactos)
+const qs = (sel) => document.querySelector(sel);
 
 let _initialized = false;
 let _bound = false;
@@ -16,18 +15,16 @@ let __editVisitaId = null;
 // ------- público --------
 export async function initVisitasTab(forceReload = false) {
   if (_initialized && !forceReload) return;
-
   await cargarYRenderVisitas();
-  bindActions();     // click en editar/eliminar (una sola vez)
-  hookEditSubmit();  // intercepta submit SOLO cuando es edición
+  bindActions();     // delegación jQuery (una sola vez)
+  hookEditSubmit();  // intercepta submit SOLO en edición
   _initialized = true;
 }
 
 // ------- internos --------
 async function cargarYRenderVisitas() {
   try {
-    // ya nos devuelve enriquecido; NO pasar función
-    const { raw, rows } = await cargarVisitasEnriquecidas();
+    const { raw, rows } = await cargarVisitasEnriquecidas(); // ya enriquecidas
     setVisitas(raw, rows);
     renderTablaVisitas(rows);
   } catch (e) {
@@ -47,7 +44,6 @@ function bindActions() {
     .on('click', 'a.icon-action.eliminar', async function () {
       const id = this.dataset.id;
       if (!confirm('¿Eliminar esta visita?')) return;
-
       try {
         await apiDeleteVisita(id);
         M.toast?.({ html: 'Visita eliminada', displayLength: 1500 });
@@ -68,7 +64,7 @@ function bindActions() {
 function openEditVisita(v) {
   __editVisitaId = v._id;
 
-  // Rellenamos campos del modal
+  // Relleno campos
   setHidden('visita_proveedorId', v.contactoId);
   setValue('visita_fecha', (v.fecha || '').slice(0, 10));
   setValue('visita_contacto', v.contacto || '');
@@ -77,15 +73,14 @@ function openEditVisita(v) {
   setValue('visita_estado', v.estado || '');
   setValue('visita_observaciones', v.observaciones || '');
 
-  // Centro: si la opción no existe, la creamos temporalmente para poder seleccionarla
-  const sel = $('#visita_centroId');
+  // Centro: si la opción no existe, se crea temporal con data-code
+  const sel = qs('#visita_centroId');
   if (sel) {
     const hasOption = v.centroId && [...sel.options].some(o => String(o.value) === String(v.centroId));
     if (!hasOption && v.centroId) {
       const opt = document.createElement('option');
       opt.value = v.centroId;
       opt.textContent = (v.centroCodigo || v.centroId);
-      // 🔴 importante: para que al guardar podamos leer centroCodigo
       opt.dataset.code = v.centroCodigo || '';
       sel.insertBefore(opt, sel.firstChild);
     }
@@ -93,8 +88,13 @@ function openEditVisita(v) {
   }
 
   M.updateTextFields();
-  const modal = M.Modal.getInstance(document.getElementById('modalVisita'))
-             || M.Modal.init(document.getElementById('modalVisita'));
+  const el = document.getElementById('modalVisita');
+  const modal = M.Modal.getInstance(el) || M.Modal.init(el, {
+    onCloseEnd: () => {                // 🔒 limpia estado si se cierra sin guardar
+      __editVisitaId = null;
+      const f = qs('#formVisita'); f?.reset();
+    }
+  });
   modal.open();
 }
 
@@ -102,7 +102,7 @@ function hookEditSubmit() {
   if (_submitHooked) return;
   _submitHooked = true;
 
-  const form = $('#formVisita');
+  const form = qs('#formVisita');
   if (!form) return;
 
   form.addEventListener('submit', async (e) => {
@@ -112,22 +112,23 @@ function hookEditSubmit() {
     e.preventDefault();
     e.stopImmediatePropagation();
 
-    const selCentro = $('#visita_centroId');
+    const selCentro = qs('#visita_centroId');
     const centroId = selCentro?.value || null;
-    const centroCodigo =
-      selCentro?.selectedOptions?.[0]?.dataset?.code || null;
+    const centroCodeFromDataset =
+      selCentro?.selectedOptions?.[0]?.dataset?.code ||
+      selCentro?.selectedOptions?.[0]?.getAttribute('data-code') || null;
 
     const payload = {
-      contactoId: $('#visita_proveedorId').value,
-      fecha: $('#visita_fecha').value,
+      contactoId: qs('#visita_proveedorId')?.value || null,
+      fecha: qs('#visita_fecha')?.value || null,
       centroId,
-      centroCodigo,
-      contacto: $('#visita_contacto').value || null,
-      enAgua: $('#visita_enAgua').value || null,
-      tonsComprometidas: $('#visita_tonsComprometidas').value
-        ? Number($('#visita_tonsComprometidas').value) : null,
-      estado: $('#visita_estado').value || '',
-      observaciones: $('#visita_observaciones').value || null
+      centroCodigo: centroCodeFromDataset,
+      contacto: qs('#visita_contacto')?.value || null,
+      enAgua: qs('#visita_enAgua')?.value || null,
+      tonsComprometidas: qs('#visita_tonsComprometidas')?.value
+        ? Number(qs('#visita_tonsComprometidas').value) : null,
+      estado: qs('#visita_estado')?.value || '',
+      observaciones: qs('#visita_observaciones')?.value || null
     };
 
     try {
@@ -146,7 +147,7 @@ function hookEditSubmit() {
   });
 }
 
-// pequeños helpers de valores
+// helpers DOM
 function setValue(id, val) {
   const el = document.getElementById(id);
   if (el) el.value = val ?? '';
@@ -157,9 +158,8 @@ function setHidden(id, val) {
     el = document.createElement('input');
     el.type = 'hidden';
     el.id = id;
-    document.body.appendChild(el);
+    const form = qs('#formVisita');
+    (form || document.body).appendChild(el);  // ✅ dentro del form si existe
   }
   el.value = val ?? '';
 }
-
-
