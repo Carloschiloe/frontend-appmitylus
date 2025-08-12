@@ -193,10 +193,12 @@ export async function apiDeleteVisita(id) {
 }
 
 export async function apiContactosDisponibles({ q = '', minTons = 1 } = {}) {
-  const url = `/api/contactos-disponibles?q=${encodeURIComponent(q)}&minTons=${minTons}`;
+  const url = `/api/contactos/disponibles?q=${encodeURIComponent(q)}&minTons=${minTons}`;
   const r = await fetch(url);
   if (!r.ok) throw new Error('contactos_disponibles_error');
-  const json = await r.json();
-  return json.items || [];
+  const { items } = await r.json();
+  return items || [];
 }
+
+
 
