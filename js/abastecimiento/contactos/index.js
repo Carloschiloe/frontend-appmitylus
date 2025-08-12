@@ -1,40 +1,49 @@
 // /js/abastecimiento/contactos/index.js
 
-// Efecto de debug (loggea fetch a /api/contactos)
-import './debug-fetch.js';
+// Solo carga debug en desarrollo
+if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+  import('./debug-fetch.js').catch(() => {});
+}
 
-// Orquestador: sólo importa y llama a los inicializadores
+// Orquestador de Contactos
 import { cargarCentros, cargarContactosGuardados } from './data.js';
 import { setupBuscadorProveedores } from './proveedores.js';
 import { setupFormulario } from './form-contacto.js';
 import { setupFormularioVisita } from './visitas.js';
 import { initTablaContactos, renderTablaContactos } from './tabla.js';
 
-// === GUARD para evitar doble init ===
 let booted = false;
 
-/**
- * Inicializa la pestaña de Contactos una sola vez.
- */
-export async function initContactosTab() {
-  if (booted) return;     // <- evita re-inicialización
-  booted = true;
+/** Inicializa la pestaña Contactos (idempotente). */
+export async function initContactosTab(forceReload = false) {
+  if (booted && !forceReload) return;
 
-  await cargarCentros();
-  await cargarContactosGuardados();
+  try {
+    // Datos base
+    await cargarCentros();
+    await cargarContactosGuardados();
 
-  setupBuscadorProveedores();
-  setupFormulario();
-  setupFormularioVisita();
+    // Wiring (idempotente si tus módulos lo manejan internamente)
+    setupBuscadorProveedores();
+    setupFormulario();
+    setupFormularioVisita();
 
-  initTablaContactos();
-  renderTablaContactos();
+    // Tabla + primer render (init solo 1 vez; render puedes repetir)
+    initTablaContactos();        // internamente debería tener su propio guard
+    renderTablaContactos();      // render es seguro repetir
+
+    booted = true;
+  } catch (err) {
+    console.error('[contactos] init error', err);
+    M.toast?.({ html: 'No se pudo inicializar Contactos', classes: 'red' });
+  }
 }
 
-/**
- * (Opcional, dev) permite “rebootear” la pestaña manualmente si lo necesitas.
- * Llama luego a initContactosTab() otra vez.
- */
-export function __resetContactosTabForDev() {
-  booted = false;
+/** Re-render liviano cuando cambian datos (sin reinstalar nada). */
+export function refreshContactos() {
+  try { renderTablaContactos(); } catch (e) { console.error(e); }
 }
+
+// (Opcional dev) reset manual
+export function __resetContactosTabForDev() { booted = false; }
+
