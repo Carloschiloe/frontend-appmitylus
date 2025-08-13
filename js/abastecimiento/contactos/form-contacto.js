@@ -31,9 +31,11 @@ export function setupFormulario() {
     const centroId    = getVal(['centroId']) || null;
     const _centroCode = getVal(['centroCode','centroCodigo']) || null;
 
+    // resultado derivado — igual que antes
     const resultado = tieneMMPP === 'Sí' ? 'Disponible' : (tieneMMPP === 'No' ? 'No disponible' : '');
     if (!resultado) { M.toast?.({ html: 'Selecciona disponibilidad (Sí/No)', displayLength: 2500 }); return; }
 
+    // ⚠️ Jamás mandar _id en el payload de update/create
     const payload = {
       proveedorKey, proveedorNombre,
       resultado, tieneMMPP, fechaDisponibilidad, dispuestoVender,
@@ -45,10 +47,13 @@ export function setupFormulario() {
 
     try {
       if (state.editId) {
-        await apiUpdateContacto(state.editId, payload);
+        // Normalizamos el id a string por si viniera como ObjectId/objeto
+        const id = String(state.editId);
+        await apiUpdateContacto(id, payload);
       } else {
         await apiCreateContacto(payload);
       }
+
       await cargarContactosGuardados();
       renderTablaContactos();
       M.toast?.({ html: state.editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
@@ -65,7 +70,8 @@ export function setupFormulario() {
 }
 
 export function abrirEdicion(c) {
-  state.editId = c._id;
+  // Guarda SIEMPRE el _id del contacto como string para el update
+  state.editId = String(c?._id || '');
 
   $('#buscadorProveedor').value = c.proveedorNombre || '';
   setVal(['proveedorNombre'], c.proveedorNombre || '');
@@ -93,7 +99,7 @@ export function abrirEdicion(c) {
 }
 
 export async function eliminarContacto(id) {
-  await apiDeleteContacto(id);
+  await apiDeleteContacto(String(id));
   await cargarContactosGuardados();
   renderTablaContactos();
   M.toast?.({ html: 'Contacto eliminado', displayLength: 1800 });
