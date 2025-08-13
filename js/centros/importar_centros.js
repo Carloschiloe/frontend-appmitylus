@@ -19,7 +19,29 @@ const MAPEO_CAMPOS = {
   'Comuna': 'comuna',
   'Codigo Centro': 'code',
   'Hectareas': 'hectareas',
+  'Región': 'region',
+  'Ubicación': 'ubicacion',
+  'Grupo Especie': 'grupoEspecie',
+  'Tons Max': 'tonsMax',          // <<-- NUEVO
 };
+
+// convierte "Lat,Lon; Lat,Lon" o "Lat Lon | Lat Lon"
+function parsearCoordenadasDecimales(str) {
+  if (!str) return [];
+  return String(str)
+    .replace(/[\[\]\(\)]/g, ' ')
+    .split(/[;|]/)
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(pair => {
+      const a = pair.split(/[,\s]+/).filter(Boolean);
+      if (a.length !== 2) return null;
+      const lat = Number(String(a[0]).replace(',', '.'));
+      const lng = Number(String(a[1]).replace(',', '.'));
+      return (Number.isFinite(lat) && Number.isFinite(lng)) ? { lat, lng } : null;
+    })
+    .filter(Boolean);
+}
 
 function dmsToDecimal(dms) {
   if (!dms) return null;
@@ -35,17 +57,20 @@ function dmsToDecimal(dms) {
 function parsearCoordenadasDMS(str) {
   if (!str) return [];
   return String(str)
-    .split(';')
+    .split(/[;|]/)
     .map(s => s.trim())
     .filter(Boolean)
     .map(par => {
       const [latDMS, lngDMS] = par.split(',').map(x => x.trim());
       const lat = dmsToDecimal(latDMS);
       const lng = dmsToDecimal(lngDMS);
-      return { lat, lng };
+      return (Number.isFinite(lat) && Number.isFinite(lng)) ? { lat, lng } : null;
     })
-    .filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+    .filter(Boolean);
 }
+
+const splitList = (s) =>
+  !s ? [] : String(s).split(/[;,|/]/).map(x => x.trim()).filter(Boolean);
 
 // util para dividir en lotes
 const chunk = (arr, size) =>
@@ -94,20 +119,25 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
     const parseFila = (fila) => {
       const centro = {};
       const detalles = {};
+
+      // mapeo directo de columnas conocidas
       for (const k in fila) {
         if (MAPEO_CAMPOS[k]) {
           centro[MAPEO_CAMPOS[k]] = fila[k];
-        } else if (k.toLowerCase().includes('coordenada')) {
-          centro.coords = parsearCoordenadasDMS(fila[k]);
-        } else {
-          detalles[k] = fila[k];
+          continue;
         }
+        if (k.toLowerCase().includes('coordenada')) continue; // lo tratamos abajo
+        if (k === 'Especies') continue;                        // lo tratamos abajo
+        // acumula todo lo demás
+        detalles[k] = fila[k];
       }
-      centro.detalles = detalles;
 
-      if ((!centro.coords || !centro.coords.length) && detalles['Coordenadas']) {
-        centro.coords = parsearCoordenadasDMS(detalles['Coordenadas']);
-      }
+      // coordenadas: intenta DMS, si falla usa decimales
+      const strCoords = fila['Coordenadas'] || detalles['Coordenadas'];
+      const coordsDMS = parsearCoordenadasDMS(strCoords);
+      centro.coords = coordsDMS.length ? coordsDMS : parsearCoordenadasDecimales(strCoords);
+
+      // proveedor → title case + key
       if (centro.proveedor) {
         centro.proveedor = toTitleCase(centro.proveedor);
         centro.proveedorKey = makeProveedorKey(centro.proveedor);
@@ -115,10 +145,39 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
         centro.proveedorKey = '';
       }
       if (centro.comuna) centro.comuna = toTitleCase(centro.comuna);
+
+      // números
       if (centro.hectareas != null && centro.hectareas !== '') {
         const n = Number(String(centro.hectareas).replace(',', '.'));
         if (!Number.isNaN(n)) centro.hectareas = n;
       }
+      if (centro.tonsMax != null && centro.tonsMax !== '') {
+        const t = Number(String(centro.tonsMax).replace(',', '.'));
+        centro.tonsMax = Number.isFinite(t) ? t : null;
+      }
+
+      // especies
+      if (fila['Especies']) {
+        centro.especies = splitList(fila['Especies']);
+      }
+
+      // normaliza resSSP / resSSFFAA en detalles
+      const resSSP = {};
+      if (fila['Numero ResSSP']) resSSP.numero = String(fila['Numero ResSSP']).trim();
+      if (fila['Fecha ResSSP'])  resSSP.fecha  = String(fila['Fecha ResSSP']).trim();
+      if (Object.keys(resSSP).length) detalles.resSSP = resSSP;
+
+      const resSSFFAA = {};
+      if (fila['Numero ResSSFFAA']) resSSFFAA.numero = String(fila['Numero ResSSFFAA']).trim();
+      if (fila['Fecha ResSSFFAA'])  resSSFFAA.fecha  = String(fila['Fecha ResSSFFAA']).trim();
+      if (Object.keys(resSSFFAA).length) detalles.resSSFFAA = resSSFFAA;
+
+      // rut / nroPert
+      if (fila['Rut Titular']) detalles.rutTitular = String(fila['Rut Titular']).trim();
+      if (fila['NroPert'])     detalles.nroPert    = String(fila['NroPert']).trim();
+
+      centro.detalles = detalles;
+
       return centro;
     };
 
@@ -145,14 +204,12 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
           console.error('Error en lote', i + 1, e);
           lotesError++;
         }
-        // Cede tiempo al navegador (evita UI congelada)
-        // eslint-disable-next-line no-await-in-loop
-        await new Promise(r => setTimeout(r, 0));
+        await new Promise(r => setTimeout(r, 0)); // evita congelar UI
       }
 
       const msg = `¡Importación completa! Upserted: ${totalUpserted}, Modificados: ${totalModified}, Coincidencias: ${totalMatched}, Lotes con error: ${lotesError}`;
       resultadoDiv.textContent = msg;
-      if (window.M?.toast) window.M.toast({ html: msg, displayLength: 5000 });
+      window.M?.toast?.({ html: msg, displayLength: 5000 });
     } finally {
       btnImportar.disabled = false;
       const modalEl = document.querySelector('#modalImportarCentros');
