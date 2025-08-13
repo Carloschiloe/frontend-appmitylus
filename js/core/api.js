@@ -7,6 +7,8 @@ async function checkResponse(resp) {
     const text = await resp.text();
     throw new Error(`HTTP ${resp.status} - ${text}`);
   }
+  // Puede haber 204 sin body
+  if (resp.status === 204) return null;
   return resp.json();
 }
 
@@ -20,14 +22,11 @@ function buildQS(params = {}) {
   return qs ? `?${qs}` : '';
 }
 
-/* ======================================================
-   CENTROS
-   ====================================================== */
+/* ==================== CENTROS ==================== */
 export async function apiGetCentros() {
   const resp = await fetch(`${API_URL}/centros`);
   return checkResponse(resp);
 }
-
 export async function apiCreateCentro(data) {
   const resp = await fetch(`${API_URL}/centros`, {
     method: 'POST',
@@ -36,7 +35,6 @@ export async function apiCreateCentro(data) {
   });
   return checkResponse(resp);
 }
-
 export async function apiUpdateCentro(id, data) {
   const resp = await fetch(`${API_URL}/centros/${id}`, {
     method: 'PUT',
@@ -45,7 +43,6 @@ export async function apiUpdateCentro(id, data) {
   });
   return checkResponse(resp);
 }
-
 export async function apiDeleteCentro(id) {
   const resp = await fetch(`${API_URL}/centros/${id}`, { method: 'DELETE' });
   return checkResponse(resp);
@@ -60,7 +57,6 @@ export async function apiAddLinea(centroId, data) {
   });
   return checkResponse(resp);
 }
-
 export async function apiUpdateLinea(centroId, lineaId, data) {
   const resp = await fetch(`${API_URL}/centros/${centroId}/lines/${lineaId}`, {
     method: 'PUT',
@@ -69,7 +65,6 @@ export async function apiUpdateLinea(centroId, lineaId, data) {
   });
   return checkResponse(resp);
 }
-
 export async function apiDeleteLinea(centroId, lineaId) {
   const resp = await fetch(`${API_URL}/centros/${centroId}/lines/${lineaId}`, {
     method: 'DELETE'
@@ -97,14 +92,11 @@ export async function apiBulkUpsertCentros(arr) {
   return checkResponse(resp);
 }
 
-/* ======================================================
-   CONTACTOS
-   ====================================================== */
+/* ==================== CONTACTOS ==================== */
 export async function apiGetContactos() {
   const resp = await fetch(`${API_URL}/contactos`);
   return checkResponse(resp);
 }
-
 export async function apiCreateContacto(data) {
   const resp = await fetch(`${API_URL}/contactos`, {
     method: 'POST',
@@ -113,8 +105,7 @@ export async function apiCreateContacto(data) {
   });
   return checkResponse(resp);
 }
-
-// ← con fallback: PATCH → si 404/405/501 → PUT
+// PATCH con fallback a PUT
 export async function apiUpdateContacto(id, data) {
   const url = `${API_URL}/contactos/${id}`;
   const opts = (m) => ({
@@ -122,33 +113,24 @@ export async function apiUpdateContacto(id, data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-
   let resp = await fetch(url, opts('PATCH'));
   if (resp.status === 404 || resp.status === 405 || resp.status === 501) {
     resp = await fetch(url, opts('PUT'));
   }
   return checkResponse(resp);
 }
-
 export async function apiDeleteContacto(id) {
   const resp = await fetch(`${API_URL}/contactos/${id}`, { method: 'DELETE' });
   return checkResponse(resp);
 }
 
-/* ======================================================
-   VISITAS
-   ====================================================== */
-
-// Lista global (con filtros opcionales por querystring)
+/* ==================== VISITAS ==================== */
 export async function apiGetVisitas(params = {}) {
   const qs = buildQS(params);
   const resp = await fetch(`${API_URL}/visitas${qs}`);
   const json = await checkResponse(resp);
-  // soporta tanto [] como { items: [] }
   return Array.isArray(json) ? json : (Array.isArray(json?.items) ? json.items : []);
 }
-
-// Tolerante: si 404, devuelve []
 export async function apiGetVisitasByContacto(contactoId) {
   if (!contactoId) return [];
   const url = `${API_URL}/visitas${buildQS({ contactoId })}`;
@@ -161,7 +143,6 @@ export async function apiGetVisitasByContacto(contactoId) {
     return [];
   }
 }
-
 export async function apiCreateVisita(data) {
   const resp = await fetch(`${API_URL}/visitas`, {
     method: 'POST',
@@ -170,8 +151,6 @@ export async function apiCreateVisita(data) {
   });
   return checkResponse(resp);
 }
-
-// ← con fallback: PATCH → si 404/405/501 → PUT
 export async function apiUpdateVisita(id, data) {
   const url = `${API_URL}/visitas/${id}`;
   const opts = (m) => ({
@@ -179,26 +158,28 @@ export async function apiUpdateVisita(id, data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-
   let resp = await fetch(url, opts('PATCH'));
   if (resp.status === 404 || resp.status === 405 || resp.status === 501) {
     resp = await fetch(url, opts('PUT'));
   }
   return checkResponse(resp);
 }
-
 export async function apiDeleteVisita(id) {
   const resp = await fetch(`${API_URL}/visitas/${id}`, { method: 'DELETE' });
   return checkResponse(resp);
 }
 
+/* ======= CONTACTOS DISPONIBLES (Planificación) ======= */
 export async function apiContactosDisponibles({ q = '', minTons = 1 } = {}) {
-  const qs = buildQS({ q, minTons });
+  const n = Number(minTons);
+  const qs = buildQS({ q, minTons: Number.isFinite(n) ? n : 1 });
   const resp = await fetch(`${API_URL}/contactos/disponibles${qs}`);
   const json = await checkResponse(resp);
-  // Soporta tanto { items: [...] } como un array directo
-  return Array.isArray(json) ? json : (json.items || []);
+  // Normaliza la salida a array
+  return Array.isArray(json) ? json : (json?.items || []);
 }
 
-
-
+// Útil para debug en UI (lista TODO sin filtro por toneladas)
+export async function apiContactosDisponiblesAll({ q = '' } = {}) {
+  return apiContactosDisponibles({ q, minTons: 0 });
+}
