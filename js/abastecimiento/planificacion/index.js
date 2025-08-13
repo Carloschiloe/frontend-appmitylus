@@ -111,10 +111,11 @@ function prepararUI(){
     render();
   });
 
-  // *** NUEVO: Importar contactos → bloques ***
+  // *** Importar contactos → bloques ***
   document.getElementById('btnImportarContactos')?.addEventListener('click', async () => {
     try {
-      await importarDesdeContactos();  // abajo
+      const q = (state.filtros.texto || '').trim();
+      await importarDesdeContactos({ minTons: 0, q }); // ← por defecto 0 para no filtrar contactos sin tons
     } catch (e) {
       console.error(e);
       M.toast?.({ html:'No se pudo importar', classes:'red' });
@@ -238,15 +239,15 @@ function cerrarModalBloque(){
   modal?.close();
 }
 
-/* ===== NUEVO: Importar contactos → bloques ===== */
-async function importarDesdeContactos({ minTons = 1 } = {}) {
+/* ===== Importar contactos → bloques ===== */
+async function importarDesdeContactos({ minTons = 0, q = '' } = {}) {
   const btn = document.getElementById('btnImportarContactos');
   const prevText = btn?.textContent;
   try {
     if (btn) { btn.disabled = true; btn.textContent = 'Importando…'; }
 
-    // 1) pedir contactos disponibles al backend
-    const items = await apiContactosDisponibles({ minTons });
+    // 1) pedir contactos disponibles al backend (con filtro opcional de búsqueda)
+    const items = await apiContactosDisponibles({ q, minTons });
 
     if (!items.length) {
       M.toast?.({ html:'No hay contactos con disponibilidad', displayLength: 1800 });
@@ -291,9 +292,8 @@ async function importarDesdeContactos({ minTons = 1 } = {}) {
 
   } catch (e) {
     console.error('[plan] importarDesdeContactos', e);
-    M.toast?.({ html:'API no disponible (configura /api/contactos-disponibles)', classes:'red' });
+    M.toast?.({ html:'API no disponible (configura /api/contactos/disponibles)', classes:'red' });
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = prevText || 'Importar contactos'; }
   }
 }
-
