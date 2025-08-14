@@ -24,52 +24,106 @@ export function registerTablaCentrosEventos() {
   $t2
     .off('click', '.btn-coords')
     .on('click', '.btn-coords', function () {
-      const idx = +this.dataset.idx;
-      const c = Estado.centros[idx];
+      const idx   = +this.dataset.idx;
+      const c     = Estado.centros[idx];
       const modal = document.getElementById('modalDetallesCentro');
-      const body = document.getElementById('detallesCentroBody');
-      if (c && modal && body) {
-        // DATOS PRINCIPALES
-        let html = `<table class="striped">
-          <tbody>
-            <tr><th>Proveedor</th><td>${toTitleCase(c.proveedor || '')}</td></tr>
-            <tr><th>Comuna</th><td>${toTitleCase(c.comuna || '')}</td></tr>
-            <tr><th>Código</th><td>${c.code || ''}</td></tr>
-            <tr><th>Hectáreas</th><td>${c.hectareas || ''}</td></tr>
-          </tbody>
-        </table>`;
+      const body  = document.getElementById('detallesCentroBody');
+      if (!c || !modal || !body) return;
 
-        // DETALLES EXTRAS
-        if (c.detalles && typeof c.detalles === 'object' && Object.keys(c.detalles).length) {
-          html += `<h6 style="margin-top:1.5em;">Detalles Extras</h6>
-            <table class="striped"><tbody>`;
-          for (const [k, v] of Object.entries(c.detalles)) {
-            html += `<tr><th>${k}</th><td>${v}</td></tr>`;
+      // Etiquetas bonitas y orden sugerido para "detalles"
+      const LABELS = {
+        region: 'Región',
+        rutTitular: 'RUT Titular',
+        nroPert: 'Nro. Pert',
+        numeroResSSP: 'N° ResSSP',
+        fechaResSSP: 'Fecha ResSSP',
+        numeroResSSFFAA: 'N° ResSSFFAA',
+        fechaResSSFFAA: 'Fecha ResSSFFAA',
+        ubicacion: 'Ubicación',
+        especies: 'Especies',
+        grupoEspecie: 'Grupo Especie'
+      };
+      const ORDER = [
+        'region','rutTitular','nroPert',
+        'numeroResSSP','fechaResSSP',
+        'numeroResSSFFAA','fechaResSSFFAA',
+        'ubicacion','especies','grupoEspecie'
+      ];
+      const prettyKey = k =>
+        LABELS[k] || k.replace(/([A-Z])/g, ' $1').replace(/^./, m => m.toUpperCase());
+
+      const fmtDate = v => {
+        if (!v) return '';
+        const s = String(v);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+        const d = new Date(s);
+        return Number.isNaN(d.getTime()) ? s : d.toISOString().slice(0, 10);
+      };
+
+      // DATOS PRINCIPALES
+      let html = `<table class="striped">
+        <tbody>
+          <tr><th>Proveedor</th><td>${toTitleCase(c.proveedor || '')}</td></tr>
+          <tr><th>Comuna</th><td>${toTitleCase(c.comuna || '')}</td></tr>
+          <tr><th>Código</th><td>${c.code || ''}</td></tr>
+          <tr><th>Hectáreas</th><td>${c.hectareas ?? ''}</td></tr>
+          ${c.tonsMax != null ? `<tr><th>Tons Máx</th><td>${c.tonsMax}</td></tr>` : ''}
+        </tbody>
+      </table>`;
+
+      // DETALLES EXTRAS (ordenado + etiquetas)
+      const d = (c.detalles && typeof c.detalles === 'object') ? c.detalles : {};
+      const orderedRows = [];
+      ORDER.forEach(k => {
+        const v = d[k];
+        if (v !== undefined && v !== null && String(v) !== '') {
+          orderedRows.push([k, (k.startsWith('fecha') ? fmtDate(v) : v)]);
+        }
+      });
+      // Cualquier otra clave no contemplada en ORDER
+      Object.keys(d)
+        .filter(k => !ORDER.includes(k))
+        .sort()
+        .forEach(k => {
+          const v = d[k];
+          if (v !== undefined && v !== null && String(v) !== '') {
+            orderedRows.push([k, v]);
           }
-          html += `</tbody></table>`;
-        }
+        });
 
-        // COORDENADAS
-        if (Array.isArray(c.coords) && c.coords.length) {
-          html += `<h6 style="margin-top:1.5em;">Coordenadas</h6>
-            <table class="striped">
-              <thead><tr><th>#</th><th>Latitud</th><th>Longitud</th></tr></thead>
-              <tbody>`;
-          c.coords.forEach((p, i) => {
-            html += `<tr>
-              <td>${i + 1}</td>
-              <td>${p.lat?.toFixed(6) ?? ''}</td>
-              <td>${p.lng?.toFixed(6) ?? ''}</td>
-            </tr>`;
-          });
-          html += `</tbody></table>`;
-        } else {
-          html += `<div class="grey-text" style="margin-top:1em;">Sin coordenadas registradas</div>`;
-        }
-
-        body.innerHTML = html;
-        M.Modal.getInstance(modal).open();
+      if (orderedRows.length) {
+        html += `<h6 style="margin-top:1.5em;">Detalles</h6>
+          <table class="striped"><tbody>`;
+        orderedRows.forEach(([k, v]) => {
+          html += `<tr><th>${prettyKey(k)}</th><td>${v}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      } else {
+        html += `<div class="grey-text" style="margin-top:1em;">Sin detalles adicionales</div>`;
       }
+
+      // COORDENADAS
+      if (Array.isArray(c.coords) && c.coords.length) {
+        html += `<h6 style="margin-top:1.5em;">Coordenadas</h6>
+          <table class="striped">
+            <thead><tr><th>#</th><th>Latitud</th><th>Longitud</th></tr></thead>
+            <tbody>`;
+        c.coords.forEach((p, i) => {
+          const lat = p?.lat;
+          const lng = p?.lng;
+          html += `<tr>
+            <td>${i + 1}</td>
+            <td>${(lat && lat.toFixed) ? lat.toFixed(6) : (lat ?? '')}</td>
+            <td>${(lng && lng.toFixed) ? lng.toFixed(6) : (lng ?? '')}</td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+      } else {
+        html += `<div class="grey-text" style="margin-top:1em;">Sin coordenadas registradas</div>`;
+      }
+
+      body.innerHTML = html;
+      M.Modal.getInstance(modal).open();
     });
 
   // --- Abrir/colapsar líneas (acordeón) ---
@@ -162,7 +216,7 @@ export function registerTablaCentrosEventos() {
     });
 }
 
-// ============ LISTENERS DE LÍNEAS DENTRO DEL ACORDEÓN ============ //
+// ============ LISTENERS DE LÍNEAS DENTRO DEL ACORDEÓN ============
 function attachLineasListeners(idx, acordeonCont) {
   const tbody = acordeonCont.querySelector('table.striped tbody');
   if (!tbody) return;
@@ -292,7 +346,7 @@ function attachLineasListeners(idx, acordeonCont) {
 
       const centro = Estado.centros[idx];
       await import('../core/centros_repo.js').then(m =>
-        m.addLinea(centro._1d, {
+        m.addLinea(centro._id, { // <-- fix aquí (_id)
           number:        numStr,
           longitud:      longVal,
           observaciones: obsStr,
