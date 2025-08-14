@@ -26,67 +26,79 @@ import { tabMapaActiva } from './core/utilidades_app.js';
 import { parseOneDMS } from './core/utilidades.js';
 import { renderImportadorCentros } from './centros/importar_centros.js';
 
-
 document.addEventListener('DOMContentLoaded', async () => {
-  // Inicializar importador de centros
-  renderImportadorCentros('importarCentrosContainer');
-
-  // Inicializar Materialize
-  M.Tabs.init(document.querySelector('#tabs'), {
-    onShow: (tabElem) => {
-      if (tabElem.id === 'tab-mapa' && Estado.map) {
-        Estado.map.invalidateSize();
-        renderMapaAlways();
+  // ==== Materialize UI ====
+  const tabsEl = document.querySelector('#tabs');
+  if (tabsEl) {
+    M.Tabs.init(tabsEl, {
+      onShow: (tabElem) => {
+        if (tabElem.id === 'tab-mapa' && Estado.map) {
+          Estado.map.invalidateSize();
+          renderMapaAlways();
+        }
       }
-    }
-  });
+    });
+  }
   M.FormSelect.init(document.querySelectorAll('select'));
   M.Modal.init(document.querySelectorAll('.modal'));
+  M.Tooltip.init(document.querySelectorAll('.tooltipped'));
 
-  // Inicializar tabla y mapa
+  // ==== Importador (evita doble inicialización) ====
+  const importCont = document.getElementById('importarCentrosContainer');
+  if (importCont && importCont.dataset.inited !== '1') {
+    // Marca el contenedor para que si alguien lo llama de nuevo, no se duplique
+    importCont.dataset.inited = '1';
+    renderImportadorCentros('importarCentrosContainer');
+  }
+
+  // ==== Tabla y Mapa ====
   initTablaCentros();
   initMapa();
 
-  // Cargar datos y renderizar
+  // ==== Carga inicial ====
   await cargarCentros();
   if (tabMapaActiva()) renderMapaAlways(true);
 
-  // Elementos del modal de Centro
+  // ==== Modal "Nuevo/Editar Centro" ====
   const btnNuevoCentro  = document.getElementById('btnOpenCentroModal');
   const centroModalElem = document.getElementById('centroModal');
-  const centroModal     = M.Modal.getInstance(centroModalElem);
+  const centroModal     = centroModalElem
+    ? (M.Modal.getInstance(centroModalElem) || M.Modal.init(centroModalElem))
+    : null;
 
   const els = {
-    formTitle:     document.getElementById('formTitle'),
-    inputCentroId: document.getElementById('inputCentroId'),
-    inputProveedor:document.getElementById('inputProveedor'),
-    inputComuna:   document.getElementById('inputComuna'),
-    inputCode:     document.getElementById('inputCode'),
-    inputHectareas:document.getElementById('inputHectareas'),
-    inputLat:      document.getElementById('inputLat'),
-    inputLng:      document.getElementById('inputLng'),
-    btnAddPoint:   document.getElementById('btnAddPoint'),
-    btnClearPoints:document.getElementById('btnClearPoints'),
-    btnSaveCentro: document.getElementById('btnSaveCentro'),
-    pointsBody:    document.getElementById('pointsBody')
+    formTitle:      document.getElementById('formTitle'),
+    inputCentroId:  document.getElementById('inputCentroId'),
+    inputProveedor: document.getElementById('inputProveedor'),
+    inputComuna:    document.getElementById('inputComuna'),
+    inputCode:      document.getElementById('inputCode'),
+    inputHectareas: document.getElementById('inputHectareas'),
+    inputLat:       document.getElementById('inputLat'),
+    inputLng:       document.getElementById('inputLng'),
+    btnAddPoint:    document.getElementById('btnAddPoint'),
+    btnClearPoints: document.getElementById('btnClearPoints'),
+    btnSaveCentro:  document.getElementById('btnSaveCentro'),
+    pointsBody:     document.getElementById('pointsBody')
   };
 
   // Nuevo centro
   btnNuevoCentro?.addEventListener('click', () => {
     Estado.currentCentroIdx = null;
     Estado.currentPoints = [];
-    openNewForm(els, Estado.map, Estado.currentPoints, v => Estado.currentCentroIdx = v);
+    openNewForm(els, Estado.map, Estado.currentPoints, v => (Estado.currentCentroIdx = v));
     renderPointsTable(els.pointsBody, Estado.currentPoints);
-    centroModal.open();
+    centroModal?.open();
   });
 
-  // Listener para edición desde tabla
+  // Edición desde la tabla
   const $t2 = window.$('#centrosTable');
-  $t2.off('click', '.editar-centro').on('click', '.editar-centro', function() {
+  $t2.off('click', '.editar-centro').on('click', '.editar-centro', function () {
     const idx = +this.dataset.idx;
     Estado.currentCentroIdx = idx;
+
     const modalElem = document.getElementById('centroModal');
-    const modal     = M.Modal.getInstance(modalElem);
+    const modal = modalElem ? (M.Modal.getInstance(modalElem) || M.Modal.init(modalElem)) : null;
+
     const elsEdit = {
       formTitle:      document.getElementById('formTitle'),
       inputCentroId:  document.getElementById('inputCentroId'),
@@ -98,17 +110,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       inputLng:       document.getElementById('inputLng'),
       pointsBody:     document.getElementById('pointsBody')
     };
+
     openEditForm(
       elsEdit,
       Estado.map,
       Estado.currentPoints,
-      v => Estado.currentCentroIdx = v,
+      v => (Estado.currentCentroIdx = v),
       idx
     );
-    modal.open();
+    modal?.open();
   });
 
-  // Agregar punto al formulario
+  // Agregar punto desde el formulario (DMS → decimal)
   els.btnAddPoint?.addEventListener('click', () => {
     const lat = parseOneDMS(els.inputLat.value.trim());
     const lng = parseOneDMS(els.inputLng.value.trim());
@@ -132,14 +145,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Guardar (crear o actualizar) centro
-  document.getElementById('formCentro')?.addEventListener('submit', async e => {
+  document.getElementById('formCentro')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const proveedor = els.inputProveedor.value.trim();
     const comuna    = els.inputComuna.value.trim();
     const code      = els.inputCode.value.trim();
-    const hect      = els.inputHectareas.value.trim();
-    if (!proveedor || !comuna) {
-      M.toast({ html: 'Proveedor y comuna son obligatorios', classes: 'red' });
+    const hectStr   = els.inputHectareas.value.trim();
+
+    if (!proveedor || !comuna || !code) {
+      M.toast({ html: 'Proveedor, comuna y código son obligatorios', classes: 'red' });
+      return;
+    }
+
+    const hect = hectStr ? Number(hectStr) : null;
+    if (hectStr && Number.isNaN(hect)) {
+      M.toast({ html: 'Hectáreas inválidas', classes: 'red' });
       return;
     }
 
@@ -149,9 +169,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       code,
       hectareas: hect,
       coords: Estado.currentPoints,
-      lines: Estado.currentCentroIdx !== null
-        ? (Estado.centros[Estado.currentCentroIdx]?.lines || [])
-        : []
+      lines:
+        Estado.currentCentroIdx !== null
+          ? (Estado.centros[Estado.currentCentroIdx]?.lines || [])
+          : []
     };
 
     els.btnSaveCentro.disabled = true;
@@ -170,7 +191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       await cargarCentros();
       if (tabMapaActiva()) renderMapaAlways(true);
-      centroModal.close();
+      centroModal?.close();
     } catch (err) {
       M.toast({ html: err.message || 'Error al guardar centro', classes: 'red' });
     } finally {
@@ -179,7 +200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Cerrar cualquier modal con botones .modal-close
-  document.querySelectorAll('.modal .modal-close').forEach(btn => {
+  document.querySelectorAll('.modal .modal-close').forEach((btn) => {
     btn.addEventListener('click', () => {
       const inst = M.Modal.getInstance(btn.closest('.modal'));
       inst?.close();
@@ -187,7 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-// Función para cargar centros desde API y refrescar UI
+// Cargar centros desde API y refrescar UI
 async function cargarCentros() {
   try {
     Estado.centros = await getCentrosAll();
@@ -199,7 +220,7 @@ async function cargarCentros() {
   }
 }
 
-// Workaround para Materialize selects dentro de DataTables
+// Workaround para selects de Materialize dentro de DataTables
 $(document).on('mousedown focusin', '.select-wrapper input.select-dropdown', function () {
   $(this).closest('tr').addClass('editando-select');
 });
@@ -208,4 +229,3 @@ $(document).on('blur', '.select-wrapper input.select-dropdown', function () {
     $('.editando-select').removeClass('editando-select');
   }, 200);
 });
-
