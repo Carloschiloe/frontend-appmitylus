@@ -14,15 +14,22 @@ function makeProveedorKey(name) {
     .replace(/^-+|-+$/g, '')
     .replace(/-+/g, '-');
 }
+
+// Normaliza nombres de columnas: quita saltos de línea y dobles espacios
+function normKey(k) {
+  return String(k).replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 const MAPEO_CAMPOS = {
   'Proveedor': 'proveedor',
   'Comuna': 'comuna',
   'Codigo Centro': 'code',
   'Hectareas': 'hectareas',
+  'Codigo Area': 'codigoArea',     // <<-- NUEVO
   'Región': 'region',
   'Ubicación': 'ubicacion',
   'Grupo Especie': 'grupoEspecie',
-  'Tons Max': 'tonsMax',          // <<-- NUEVO
+  'Tons Max': 'tonsMax',
 };
 
 // convierte "Lat,Lon; Lat,Lon" o "Lat Lon | Lat Lon"
@@ -117,23 +124,34 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
 
     // 1) Normaliza TODAS las filas a tu esquema
     const parseFila = (fila) => {
+      // normaliza headers de la fila
+      const row = {};
+      for (const [k, v] of Object.entries(fila)) row[normKey(k)] = v;
+
       const centro = {};
       const detalles = {};
 
       // mapeo directo de columnas conocidas
-      for (const k in fila) {
+      for (const k in row) {
         if (MAPEO_CAMPOS[k]) {
-          centro[MAPEO_CAMPOS[k]] = fila[k];
+          centro[MAPEO_CAMPOS[k]] = row[k];
           continue;
         }
-        if (k.toLowerCase().includes('coordenada')) continue; // lo tratamos abajo
-        if (k === 'Especies') continue;                        // lo tratamos abajo
-        // acumula todo lo demás
-        detalles[k] = fila[k];
+        if (k.toLowerCase().includes('coordenada')) continue; // se trata abajo
+        if (k === 'Especies') continue;                        // se trata abajo
+
+        // estos cuatro se agrupan como objetos
+        if (k === 'Numero ResSSP' || k === 'Fecha ResSSP' ||
+            k === 'Numero ResSSFFAA' || k === 'Fecha ResSSFFAA') {
+          continue; // se trata abajo
+        }
+
+        // acumula todo lo demás (ya con key normalizada)
+        detalles[k] = row[k];
       }
 
       // coordenadas: intenta DMS, si falla usa decimales
-      const strCoords = fila['Coordenadas'] || detalles['Coordenadas'];
+      const strCoords = row['Coordenadas'];
       const coordsDMS = parsearCoordenadasDMS(strCoords);
       centro.coords = coordsDMS.length ? coordsDMS : parsearCoordenadasDecimales(strCoords);
 
@@ -157,24 +175,27 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
       }
 
       // especies
-      if (fila['Especies']) {
-        centro.especies = splitList(fila['Especies']);
+      if (row['Especies']) {
+        centro.especies = splitList(row['Especies']);
       }
 
-      // normaliza resSSP / resSSFFAA en detalles
+      // normaliza resSSP / resSSFFAA en detalles (soporta headers con \n ya normalizados)
       const resSSP = {};
-      if (fila['Numero ResSSP']) resSSP.numero = String(fila['Numero ResSSP']).trim();
-      if (fila['Fecha ResSSP'])  resSSP.fecha  = String(fila['Fecha ResSSP']).trim();
+      if (row['Numero ResSSP']) resSSP.numero = String(row['Numero ResSSP']).trim();
+      if (row['Fecha ResSSP'])  resSSP.fecha  = String(row['Fecha ResSSP']).trim();
       if (Object.keys(resSSP).length) detalles.resSSP = resSSP;
 
       const resSSFFAA = {};
-      if (fila['Numero ResSSFFAA']) resSSFFAA.numero = String(fila['Numero ResSSFFAA']).trim();
-      if (fila['Fecha ResSSFFAA'])  resSSFFAA.fecha  = String(fila['Fecha ResSSFFAA']).trim();
+      if (row['Numero ResSSFFAA']) resSSFFAA.numero = String(row['Numero ResSSFFAA']).trim();
+      if (row['Fecha ResSSFFAA'])  resSSFFAA.fecha  = String(row['Fecha ResSSFFAA']).trim();
       if (Object.keys(resSSFFAA).length) detalles.resSSFFAA = resSSFFAA;
 
       // rut / nroPert
-      if (fila['Rut Titular']) detalles.rutTitular = String(fila['Rut Titular']).trim();
-      if (fila['NroPert'])     detalles.nroPert    = String(fila['NroPert']).trim();
+      if (row['Rut Titular']) detalles.rutTitular = String(row['Rut Titular']).trim();
+      if (row['NroPert'])     detalles.nroPert    = String(row['NroPert']).trim();
+
+      // opcional: guardar fila original por auditoría
+      // detalles._raw = fila;
 
       centro.detalles = detalles;
 
