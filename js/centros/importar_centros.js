@@ -15,21 +15,26 @@ function makeProveedorKey(name) {
     .replace(/-+/g, '-');
 }
 
-// Normaliza nombres de columnas: quita saltos de línea y dobles espacios
+// Normaliza nombres de columnas: minúsculas, sin tildes, sin saltos ni dobles espacios
 function normKey(k) {
-  return String(k).replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+  return String(k)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // sin tildes
+    .toLowerCase()
+    .replace(/\r?\n/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 const MAPEO_CAMPOS = {
-  'Proveedor': 'proveedor',
-  'Comuna': 'comuna',
-  'Codigo Centro': 'code',
-  'Hectareas': 'hectareas',
-  'Codigo Area': 'codigoArea',     // <<-- NUEVO
-  'Región': 'region',
-  'Ubicación': 'ubicacion',
-  'Grupo Especie': 'grupoEspecie',
-  'Tons Max': 'tonsMax',
+  'proveedor': 'proveedor',
+  'comuna': 'comuna',
+  'codigo centro': 'code',
+  'hectareas': 'hectareas',
+  'codigo area': 'codigoArea',
+  'region': 'region',
+  'ubicacion': 'ubicacion',
+  'grupo especie': 'grupoEspecie',
+  'tons max': 'tonsMax',
 };
 
 // convierte "Lat,Lon; Lat,Lon" o "Lat Lon | Lat Lon"
@@ -137,21 +142,20 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
           centro[MAPEO_CAMPOS[k]] = row[k];
           continue;
         }
-        if (k.toLowerCase().includes('coordenada')) continue; // se trata abajo
-        if (k === 'Especies') continue;                        // se trata abajo
+        // saltar coordenadas y especies (los tratamos abajo)
+        if (k.includes('coordenada')) continue;
+        if (k === 'especies') continue;
 
-        // estos cuatro se agrupan como objetos
-        if (k === 'Numero ResSSP' || k === 'Fecha ResSSP' ||
-            k === 'Numero ResSSFFAA' || k === 'Fecha ResSSFFAA') {
-          continue; // se trata abajo
-        }
+        // saltar campos de resoluciones (se tratan abajo)
+        if (k === 'numero resssp' || k === 'fecha resssp' ||
+            k === 'numero resssffaa' || k === 'fecha resssffaa') continue;
 
-        // acumula todo lo demás (ya con key normalizada)
+        // acumula todo lo demás (clave ya normalizada)
         detalles[k] = row[k];
       }
 
       // coordenadas: intenta DMS, si falla usa decimales
-      const strCoords = row['Coordenadas'];
+      const strCoords = row['coordenadas'];
       const coordsDMS = parsearCoordenadasDMS(strCoords);
       centro.coords = coordsDMS.length ? coordsDMS : parsearCoordenadasDecimales(strCoords);
 
@@ -164,35 +168,52 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
       }
       if (centro.comuna) centro.comuna = toTitleCase(centro.comuna);
 
-      // números
-      if (centro.hectareas != null && centro.hectareas !== '') {
+      // números ("" => null; coma/ punto)
+      if (centro.hectareas === '' || centro.hectareas == null) {
+        centro.hectareas = null;
+      } else {
         const n = Number(String(centro.hectareas).replace(',', '.'));
-        if (!Number.isNaN(n)) centro.hectareas = n;
+        centro.hectareas = Number.isNaN(n) ? null : n;
       }
-      if (centro.tonsMax != null && centro.tonsMax !== '') {
+
+      if (centro.tonsMax === '' || centro.tonsMax == null) {
+        centro.tonsMax = null;
+      } else {
         const t = Number(String(centro.tonsMax).replace(',', '.'));
         centro.tonsMax = Number.isFinite(t) ? t : null;
       }
 
-      // especies
-      if (row['Especies']) {
-        centro.especies = splitList(row['Especies']);
+      // codigoArea → string o null
+      if (centro.codigoArea === '' || centro.codigoArea == null) {
+        centro.codigoArea = null;
+      } else {
+        centro.codigoArea = String(centro.codigoArea).trim();
       }
 
-      // normaliza resSSP / resSSFFAA en detalles (soporta headers con \n ya normalizados)
+      // strings simples (limpios)
+      if (centro.region != null)       centro.region = String(centro.region).trim();
+      if (centro.ubicacion != null)    centro.ubicacion = String(centro.ubicacion).trim();
+      if (centro.grupoEspecie != null) centro.grupoEspecie = String(centro.grupoEspecie).trim();
+
+      // especies (string o array)
+      if (row['especies']) {
+        centro.especies = splitList(row['especies']);
+      }
+
+      // normaliza resSSP / resSSFFAA en detalles (usando keys normalizadas)
       const resSSP = {};
-      if (row['Numero ResSSP']) resSSP.numero = String(row['Numero ResSSP']).trim();
-      if (row['Fecha ResSSP'])  resSSP.fecha  = String(row['Fecha ResSSP']).trim();
+      if (row['numero resssp']) resSSP.numero = String(row['numero resssp']).trim();
+      if (row['fecha resssp'])  resSSP.fecha  = String(row['fecha resssp']).trim();
       if (Object.keys(resSSP).length) detalles.resSSP = resSSP;
 
       const resSSFFAA = {};
-      if (row['Numero ResSSFFAA']) resSSFFAA.numero = String(row['Numero ResSSFFAA']).trim();
-      if (row['Fecha ResSSFFAA'])  resSSFFAA.fecha  = String(row['Fecha ResSSFFAA']).trim();
+      if (row['numero resssffaa']) resSSFFAA.numero = String(row['numero resssffaa']).trim();
+      if (row['fecha resssffaa'])  resSSFFAA.fecha  = String(row['fecha resssffaa']).trim();
       if (Object.keys(resSSFFAA).length) detalles.resSSFFAA = resSSFFAA;
 
       // rut / nroPert
-      if (row['Rut Titular']) detalles.rutTitular = String(row['Rut Titular']).trim();
-      if (row['NroPert'])     detalles.nroPert    = String(row['NroPert']).trim();
+      if (row['rut titular']) detalles.rutTitular = String(row['rut titular']).trim();
+      if (row['nropert'])     detalles.nroPert    = String(row['nropert']).trim();
 
       // opcional: guardar fila original por auditoría
       // detalles._raw = fila;
@@ -202,9 +223,9 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
       return centro;
     };
 
-    const docs = centrosData.map(parseFila).filter(d => d && d.code);
+    const docs = centrosData.map(parseFila).filter(d => d && d.code != null && String(d.code).trim() !== '');
     if (!docs.length) {
-      resultadoDiv.textContent = 'No hay filas válidas con "Codigo Centro" (code).';
+      resultadoDiv.textContent = 'No hay filas válidas con "Código Centro" (code).';
       btnImportar.disabled = false;
       return;
     }
