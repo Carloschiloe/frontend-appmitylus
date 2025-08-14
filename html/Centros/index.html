@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Configuración de Centros – Choritos</title>
+  <title>Directorio de Centros Mitílidos</title>
 
   <!-- CSS de terceros -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
@@ -21,10 +21,10 @@
   <!-- NAV -->
   <nav class="teal">
     <div class="nav-wrapper">
-      <a href="/index.html" class="btn-flat left" title="Volver">
+      <a href="/index.html" class="btn-flat left" title="Volver" aria-label="Volver">
         <i class="material-icons">arrow_back</i>
       </a>
-      <a href="#" class="brand-logo center">Configuración de Centros</a>
+      <a href="#" class="brand-logo center">Directorio de Centros Mitílidos</a>
     </div>
   </nav>
 
@@ -32,7 +32,7 @@
   <div class="container" style="margin-top: 1rem;">
     <!-- Pestañas -->
     <ul id="tabs" class="tabs">
-      <li class="tab col s6"><a class="active" href="#tab-centros">Centros</a></li>
+      <li class="tab col s6"><a class="active" href="#tab-centros">Directorio</a></li>
       <li class="tab col s6"><a href="#tab-mapa">Mapa</a></li>
     </ul>
 
@@ -100,7 +100,7 @@
       </section>
     </section>
 
-    <!-- MODALES (sin cambios) -->
+    <!-- MODALES -->
     <!-- Modal Agregar/Editar Centro -->
     <div id="centroModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="formTitle" tabindex="-1">
       <div class="modal-content">
@@ -168,7 +168,7 @@
       </div>
     </div>
 
-    <!-- Modal Detalles y Coordenadas del Centro -->
+    <!-- Modal Detalles -->
     <div id="modalDetallesCentro" class="modal" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle" tabindex="-1">
       <div class="modal-content">
         <h5 id="detallesCentroTitle">Detalles del Centro</h5>
@@ -201,7 +201,7 @@
     <div id="modalImportarCentros" class="modal" tabindex="-1">
       <div class="modal-content">
         <h5>Importar centros desde Excel o CSV</h5>
-        <div id="importarCentrosContainer"></div>
+        <div id="importarCentrosContainer" aria-live="polite"></div>
       </div>
       <div class="modal-footer">
         <button class="modal-close btn grey lighten-1">Cerrar</button>
@@ -232,32 +232,32 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <!-- XLSX pinneado a versión estable (evita cambios breaking) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <!-- Tu bundle de JS -->
+  <!-- Tu bundle de JS general -->
   <script type="module" src="../../js/app.js"></script>
 
-  <!-- Inicialización -->
+  <!-- Inicialización + Importador -->
   <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // Inicializa todos los modales
-    M.Modal.init(document.querySelectorAll('.modal'));
+    document.addEventListener('DOMContentLoaded', function () {
+      // Materialize: modales, tooltips, tabs
+      M.Modal.init(document.querySelectorAll('.modal'));
+      M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+      const tabsEl = document.getElementById('tabs');
+      if (tabsEl) M.Tabs.init(tabsEl); // activa comportamiento de pestañas
 
-    // Tooltips Materialize
-    M.Tooltip.init(document.querySelectorAll('.tooltipped'));
-
-    // Abrir modales
-    document.getElementById('btnOpenImportarModal')
-      ?.addEventListener('click', () =>
-        M.Modal.getInstance(document.getElementById('modalImportarCentros')).open()
-      );
-    document.getElementById('btnOpenCentroModal')
-      ?.addEventListener('click', () =>
-        M.Modal.getInstance(document.getElementById('centroModal')).open()
-      );
-  });
-</script>
-
+      // Abrir modales
+      document.getElementById('btnOpenImportarModal')
+        ?.addEventListener('click', () =>
+          M.Modal.getInstance(document.getElementById('modalImportarCentros')).open()
+        );
+      document.getElementById('btnOpenCentroModal')
+        ?.addEventListener('click', () =>
+          M.Modal.getInstance(document.getElementById('centroModal')).open()
+        );
+    });
+  </script>
 </body>
 </html>
 
