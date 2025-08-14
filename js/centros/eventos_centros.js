@@ -3,7 +3,8 @@ import { Estado } from '../core/estado.js';
 import {
   updateLinea,
   deleteLinea,
-  deleteCentro
+  deleteCentro,
+  getCentrosAll,     // ← para refrescar desde API
 } from '../core/centros_repo.js';
 import { renderAcordeonLineas } from './lineas.js';
 import { openEditForm } from './form_centros.js';
@@ -16,11 +17,23 @@ function toTitleCase(str) {
   return (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }
 
+// Refresca tabla + mapa desde API (evita depender de app.js)
+async function refreshCentros() {
+  try {
+    Estado.centros = await getCentrosAll();
+    loadCentros(Estado.centros);
+    if (tabMapaActiva()) renderMapaAlways(true);
+  } catch (e) {
+    console.error('Error refrescando centros:', e);
+    window.M?.toast?.({ html: 'Error refrescando centros', classes: 'red' });
+  }
+}
+
 // Registra todos los eventos de la tabla de centros
 export function registerTablaCentrosEventos() {
   const $t2 = window.$('#centrosTable');
 
-  // --- Mostrar detalles y coordenadas en modal ---
+  // --- Mostrar detalles (y coordenadas) en modal ---
   $t2
     .off('click', '.btn-coords')
     .on('click', '.btn-coords', function () {
@@ -30,25 +43,44 @@ export function registerTablaCentrosEventos() {
       const body  = document.getElementById('detallesCentroBody');
       if (!c || !modal || !body) return;
 
-      // Etiquetas bonitas y orden sugerido para "detalles"
+      // Alineado al importador: varios campos son top-level (NO en detalles)
+      // - region, ubicacion, grupoEspecie, especies[], codigoArea, tonsMax
+      // En detalles vienen objetos: detalles.resSSP{numero,fecha}, detalles.resSSFFAA{numero,fecha}
+      const d = (c.detalles && typeof c.detalles === 'object') ? c.detalles : {};
+      const dFlat = { ...d };
+      if (d.resSSP) {
+        if (d.resSSP.numero) dFlat.numeroResSSP = d.resSSP.numero;
+        if (d.resSSP.fecha)  dFlat.fechaResSSP  = d.resSSP.fecha;
+      }
+      if (d.resSSFFAA) {
+        if (d.resSSFFAA.numero) dFlat.numeroResSSFFAA = d.resSSFFAA.numero;
+        if (d.resSSFFAA.fecha)  dFlat.fechaResSSFFAA  = d.resSSFFAA.fecha;
+      }
+
       const LABELS = {
         region: 'Región',
-        rutTitular: 'RUT Titular',
-        nroPert: 'Nro. Pert',
+        codigoArea: 'Código Área',
+        ubicacion: 'Ubicación',
+        grupoEspecie: 'Grupo Especie',
+        especies: 'Especies',
+        tonsMax: 'Tons Máx',
+        // de detalles “aplanados”
         numeroResSSP: 'N° ResSSP',
         fechaResSSP: 'Fecha ResSSP',
         numeroResSSFFAA: 'N° ResSSFFAA',
         fechaResSSFFAA: 'Fecha ResSSFFAA',
-        ubicacion: 'Ubicación',
-        especies: 'Especies',
-        grupoEspecie: 'Grupo Especie'
+        rutTitular: 'RUT Titular',
+        nroPert: 'Nro. Pert',
       };
-      const ORDER = [
-        'region','rutTitular','nroPert',
+      const ORDER_TOP = [
+        'region','codigoArea','ubicacion','grupoEspecie','especies','tonsMax'
+      ];
+      const ORDER_DET = [
+        'rutTitular','nroPert',
         'numeroResSSP','fechaResSSP',
         'numeroResSSFFAA','fechaResSSFFAA',
-        'ubicacion','especies','grupoEspecie'
       ];
+
       const prettyKey = k =>
         LABELS[k] || k.replace(/([A-Z])/g, ' $1').replace(/^./, m => m.toUpperCase());
 
@@ -61,35 +93,36 @@ export function registerTablaCentrosEventos() {
       };
 
       // DATOS PRINCIPALES
-      let html = `<table class="striped">
-        <tbody>
-          <tr><th>Proveedor</th><td>${toTitleCase(c.proveedor || '')}</td></tr>
-          <tr><th>Comuna</th><td>${toTitleCase(c.comuna || '')}</td></tr>
-          <tr><th>Código</th><td>${c.code || ''}</td></tr>
-          <tr><th>Hectáreas</th><td>${c.hectareas ?? ''}</td></tr>
-          ${c.tonsMax != null ? `<tr><th>Tons Máx</th><td>${c.tonsMax}</td></tr>` : ''}
-        </tbody>
-      </table>`;
+      let html = `<table class="striped"><tbody>
+        <tr><th>Proveedor</th><td>${toTitleCase(c.proveedor || '')}</td></tr>
+        <tr><th>Comuna</th><td>${toTitleCase(c.comuna || '')}</td></tr>
+        <tr><th>Código</th><td>${c.code || ''}</td></tr>
+        <tr><th>Hectáreas</th><td>${(c.hectareas ?? '')}</td></tr>
+      `;
+
+      // Agrega top-level extra si existen
+      ORDER_TOP.forEach(k => {
+        let v = c[k];
+        if (k === 'especies' && Array.isArray(c.especies)) v = c.especies.join(', ');
+        if (v !== undefined && v !== null && String(v) !== '') {
+          html += `<tr><th>${prettyKey(k)}</th><td>${k.startsWith('fecha') ? fmtDate(v) : v}</td></tr>`;
+        }
+      });
+      html += `</tbody></table>`;
 
       // DETALLES EXTRAS (ordenado + etiquetas)
-      const d = (c.detalles && typeof c.detalles === 'object') ? c.detalles : {};
       const orderedRows = [];
-      ORDER.forEach(k => {
-        const v = d[k];
+      ORDER_DET.forEach(k => {
+        const v = dFlat[k];
         if (v !== undefined && v !== null && String(v) !== '') {
           orderedRows.push([k, (k.startsWith('fecha') ? fmtDate(v) : v)]);
         }
       });
-      // Cualquier otra clave no contemplada en ORDER
-      Object.keys(d)
-        .filter(k => !ORDER.includes(k))
+      // Cualquier otra clave no contemplada
+      Object.keys(dFlat)
+        .filter(k => !ORDER_DET.includes(k) && dFlat[k] !== '' && dFlat[k] != null)
         .sort()
-        .forEach(k => {
-          const v = d[k];
-          if (v !== undefined && v !== null && String(v) !== '') {
-            orderedRows.push([k, v]);
-          }
-        });
+        .forEach(k => orderedRows.push([k, dFlat[k]]));
 
       if (orderedRows.length) {
         html += `<h6 style="margin-top:1.5em;">Detalles</h6>
@@ -109,13 +142,10 @@ export function registerTablaCentrosEventos() {
             <thead><tr><th>#</th><th>Latitud</th><th>Longitud</th></tr></thead>
             <tbody>`;
         c.coords.forEach((p, i) => {
-          const lat = p?.lat;
-          const lng = p?.lng;
-          html += `<tr>
-            <td>${i + 1}</td>
-            <td>${(lat && lat.toFixed) ? lat.toFixed(6) : (lat ?? '')}</td>
-            <td>${(lng && lng.toFixed) ? lng.toFixed(6) : (lng ?? '')}</td>
-          </tr>`;
+          const { lat, lng } = p || {};
+          const latStr = Number.isFinite(lat) ? lat.toFixed(6) : (lat ?? '');
+          const lngStr = Number.isFinite(lng) ? lng.toFixed(6) : (lng ?? '');
+          html += `<tr><td>${i + 1}</td><td>${latStr}</td><td>${lngStr}</td></tr>`;
         });
         html += `</tbody></table>`;
       } else {
@@ -123,7 +153,8 @@ export function registerTablaCentrosEventos() {
       }
 
       body.innerHTML = html;
-      M.Modal.getInstance(modal).open();
+      const inst = window.M?.Modal?.getInstance(modal) || window.M?.Modal?.init(modal);
+      inst?.open();
     });
 
   // --- Abrir/colapsar líneas (acordeón) ---
@@ -141,6 +172,7 @@ export function registerTablaCentrosEventos() {
         return;
       }
 
+      // Cierra otros child abiertos
       Estado.table.rows().every(function () {
         if (this.child.isShown()) {
           $(this.node()).removeClass('shown');
@@ -156,7 +188,7 @@ export function registerTablaCentrosEventos() {
       const acordeonCont = tr.next().find('.child-row-lineas')[0];
       if (acordeonCont) {
         const selects = acordeonCont.querySelectorAll('select');
-        if (selects.length) M.FormSelect.init(selects);
+        if (selects.length) window.M?.FormSelect?.init(selects);
 
         const inputBuscar = acordeonCont.querySelector('#inputBuscarLineas');
         if (inputBuscar) inputBuscar.addEventListener('input', () => filtrarLineas(acordeonCont));
@@ -173,7 +205,7 @@ export function registerTablaCentrosEventos() {
       Estado.currentCentroIdx = idx;
 
       const modalElem = document.getElementById('centroModal');
-      const modal     = M.Modal.getInstance(modalElem);
+      const modal     = modalElem ? (window.M?.Modal?.getInstance(modalElem) || window.M?.Modal?.init(modalElem)) : null;
 
       const els = {
         formTitle:      document.getElementById('formTitle'),
@@ -187,7 +219,6 @@ export function registerTablaCentrosEventos() {
         pointsBody:     document.getElementById('pointsBody')
       };
 
-      // Prepara y abre el formulario con datos existentes
       openEditForm(
         els,
         Estado.map,
@@ -196,7 +227,7 @@ export function registerTablaCentrosEventos() {
         idx
       );
 
-      modal.open();
+      modal?.open();
     });
 
   // --- Eliminar centro ---
@@ -210,8 +241,7 @@ export function registerTablaCentrosEventos() {
       const nombreRef = c.proveedor || c.comuna || 'este centro';
       if (confirm(`¿Eliminar el centro "${nombreRef}"?`)) {
         await deleteCentro(c._id);
-        await loadCentros();
-        if (tabMapaActiva()) renderMapaAlways(true);
+        await refreshCentros(); // ← refresca desde API y re-renderiza
       }
     });
 }
@@ -226,12 +256,11 @@ function attachLineasListeners(idx, acordeonCont) {
     btn.onclick = async () => {
       const lineIdx = +btn.dataset.lineIdx;
       const centro = Estado.centros[idx];
-      const linea = centro.lines[lineIdx];
+      const linea = centro?.lines?.[lineIdx];
       if (!linea) return;
       if (confirm(`¿Eliminar la línea ${linea.number}?`)) {
         await deleteLinea(centro._id, linea._id);
-        await loadCentros();
-        if (tabMapaActiva()) renderMapaAlways(true);
+        await refreshCentros();
       }
     };
   });
@@ -268,7 +297,7 @@ function attachLineasListeners(idx, acordeonCont) {
       const rdmtInput    = trFila.querySelector('.edit-line-rendimiento');
 
       const centro = Estado.centros[idx];
-      const linea  = centro.lines[+btn.dataset.lineIdx];
+      const linea  = centro?.lines?.[+btn.dataset.lineIdx];
 
       const num        = numInput?.value.trim() || '';
       const longitud   = longInput?.value.trim() ? parseFloat(longInput.value) : null;
@@ -281,7 +310,7 @@ function attachLineasListeners(idx, acordeonCont) {
 
       // Validaciones
       if (!num || longitud === null || !state) {
-        M.toast({ html: 'Completa N° Línea, Longitud y Estado', classes: 'red' });
+        window.M?.toast?.({ html: 'Completa N° Línea, Longitud y Estado', classes: 'red' });
         return;
       }
       if (
@@ -290,7 +319,7 @@ function attachLineasListeners(idx, acordeonCont) {
         (rechazoInput?.value && isNaN(porcRech)) ||
         (rdmtInput?.value && isNaN(rendimiento))
       ) {
-        M.toast({ html: 'Revisa los campos numéricos', classes: 'red' });
+        window.M?.toast?.({ html: 'Revisa los campos numéricos', classes: 'red' });
         return;
       }
 
@@ -308,7 +337,7 @@ function attachLineasListeners(idx, acordeonCont) {
       Estado.editingLine = { idx: null, lineIdx: null };
       const tr = $('#centrosTable tbody tr').eq(idx);
       tr.find('.btn-toggle-lineas').click().click();
-      await loadCentros();
+      await refreshCentros();
     };
   });
 
@@ -327,26 +356,26 @@ function attachLineasListeners(idx, acordeonCont) {
       const rdmtStr2     = formAdd.querySelector('.line-rendimiento').value.trim();
 
       if (!numStr || isNaN(longVal) || !stateStr) {
-        M.toast({ html: 'Completa todos los campos obligatorios', classes: 'red' });
+        window.M?.toast?.({ html: 'Completa todos los campos obligatorios', classes: 'red' });
         return;
       }
 
-      const tons2       = tonsStr2 === '' ? 0 : parseFloat(tonsStr2);
-      const unkg2       = unkgStr2 === '' ? null : parseFloat(unkgStr2);
-      const rechazo2    = rechazoStr2 === '' ? null : parseFloat(rechazoStr2);
-      const rdmt2       = rdmtStr2 === '' ? null : parseFloat(rdmtStr2);
+      const tons2     = tonsStr2 === '' ? 0 : parseFloat(tonsStr2);
+      const unkg2     = unkgStr2 === '' ? null : parseFloat(unkgStr2);
+      const rechazo2  = rechazoStr2 === '' ? null : parseFloat(rechazoStr2);
+      const rdmt2     = rdmtStr2 === '' ? null : parseFloat(rdmtStr2);
 
       if ((tonsStr2 && isNaN(tons2)) ||
           (unkgStr2 && isNaN(unkg2)) ||
           (rechazoStr2 && isNaN(rechazo2)) ||
           (rdmtStr2 && isNaN(rdmt2))) {
-        M.toast({ html: 'Verifica valores numéricos de líneas', classes: 'red' });
+        window.M?.toast?.({ html: 'Verifica valores numéricos de líneas', classes: 'red' });
         return;
       }
 
       const centro = Estado.centros[idx];
       await import('../core/centros_repo.js').then(m =>
-        m.addLinea(centro._id, { // <-- fix aquí (_id)
+        m.addLinea(centro._id, {
           number:        numStr,
           longitud:      longVal,
           observaciones: obsStr,
@@ -361,7 +390,7 @@ function attachLineasListeners(idx, acordeonCont) {
       formAdd.reset();
       const tr = $('#centrosTable tbody tr').eq(idx);
       tr.find('.btn-toggle-lineas').click().click();
-      await loadCentros();
+      await refreshCentros();
     };
   }
 }
