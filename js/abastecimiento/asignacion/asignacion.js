@@ -120,7 +120,79 @@ function paintCards(anio, data){
 
   elCards.appendChild(wrap);
 }
+function paintCards(anio, data){
+  elCards.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'quarters';
 
+  for(let q=0; q<4; q++){
+    const sec  = document.createElement('section'); sec.className = 'quarter';
+    const grid = document.createElement('div');     grid.className = 'grid';
+
+    for(let m=q*3+1; m<=q*3+3; m++){
+      const i = m-1;
+      const req = +data.requerido[i]||0;         // requerido
+      const asg = +data.asignado[i]||0;          // asignado
+      const real= +data.procesado[i]||0;         // procesado (= Real)
+      const safeReq = req>0 ? req : 1;
+
+      // % y numeritos
+      const pctReal = Math.min(100, Math.round((real/safeReq)*100));
+      const pctAsig = Math.min(100, Math.round((asg/safeReq)*100));
+      const restanteReal = Math.max(0, req - real); // numerito derecho de Real/Req
+
+      const lock = (anio===2025 && m <= lockUntilMonth2025);
+
+      const card = document.createElement('div');
+      card.className = 'card card--mock' + (lock?' lock':'');
+      card.dataset.m = m;
+
+      // HTML: pastilla mes + panel
+      card.innerHTML = `
+        <div class="month-pill">${MES_LABELS[i].toUpperCase()} ${anio}</div>
+
+        <div class="pane">
+          <div class="tons-title">TONS REQ</div>
+          <div class="tons-value">${fmt(req)}</div>
+
+          <!-- Real/Req -->
+          <div class="rowbar">
+            <div class="lbl">Real/Req</div>
+            <div class="barwrap">
+              <span class="fill-real" style="width:${pctReal}%"></span>
+              <span class="n-left">${fmt(real)}</span>
+              <span class="n-right">${fmt(restanteReal)}</span>
+            </div>
+            <div class="pct">${pctReal}%</div>
+          </div>
+
+          <!-- Asig/Req -->
+          <div class="rowbar">
+            <div class="lbl">Asig/Req</div>
+            <div class="barwrap">
+              <span class="fill-asg" style="width:${pctAsig}%"></span>
+              <span class="n-left">${fmt(asg)}</span>
+            </div>
+            <div class="pct">${pctAsig}%</div>
+          </div>
+        </div>
+      `;
+
+      if(!lock){
+        card.addEventListener('click', ()=>{
+          highlightMonth(m);
+          showDrawer(m, anio);
+        });
+      }
+      grid.appendChild(card);
+    }
+
+    sec.appendChild(grid);
+    wrap.appendChild(sec);
+  }
+
+  elCards.appendChild(wrap);
+}
 
 function highlightMonth(m){
   lastClickedMonth = m;
@@ -228,5 +300,6 @@ async function saveProcesado(){
 // =============== UTILS ===============
 function fmt(n){ return (n||0).toLocaleString('es-CL',{maximumFractionDigits:1}) }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
+
 
 
