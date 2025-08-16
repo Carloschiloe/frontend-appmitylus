@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Asignación · Dashboard</title>
 
+  <!-- Materialize & Google Icons (para barra superior y botón volver) -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+
   <!-- Global -->
   <link rel="stylesheet" href="../../../styles.css?v=2">
   <!-- Estilos de esta vista -->
@@ -14,8 +18,20 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
+
+  <!-- NAV superior (igual al de Contactos) -->
+  <nav class="teal">
+    <div class="nav-wrapper">
+      <!-- Si prefieres volver a categorías usa ../categorias.html -->
+      <a href="../categorias.html" class="btn-flat left" title="Volver">
+        <i class="material-icons">arrow_back</i>
+      </a>
+      <a href="#" class="brand-logo center">Abastecimiento de MMPP</a>
+    </div>
+  </nav>
+
   <!-- Scope de la vista -->
-  <div class="wrap asig">
+  <div class="wrap asig" style="margin-top:1rem;">
     <div class="row toolbar">
       <div class="left">
         <label for="anio">Año</label>
@@ -144,7 +160,8 @@
     </div>
   </section>
 
-  <!-- JS de la vista -->
+  <!-- SCRIPTS -->
   <script defer src="../../../js/abastecimiento/asignacion/asignacion.js?v=7"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 </body>
 </html>
