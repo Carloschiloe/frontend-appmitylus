@@ -257,3 +257,17 @@ html,body{overflow-x:hidden}
 /* (opcional) bordes neutrales */
 .asig .card--mock.full{ box-shadow:0 0 0 2px rgba(46,125,50,.10); }
 .asig .card--mock.need{ box-shadow:0 0 0 2px rgba(239,83,80,.10); }
+
+/* Asegura que el select de año se vea con Materialize cargado */
+.asig #anio.browser-default{
+  display:inline-block;
+  min-width:140px;
+  padding:6px 10px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:#fff;
+  line-height:1.2;
+}
+
+/* Opcional: separa un poco el label del select */
+.asig .toolbar .left label[for="anio"]{ margin-right:6px; color: var(--txt-soft); }
