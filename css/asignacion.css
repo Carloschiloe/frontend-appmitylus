@@ -3,221 +3,126 @@
    Scoped bajo .asig
 ============================== */
 
-:root {
-  --ok: #2e7d32;
-  --muted: #6b7280;
-  --bar-req: #cfd8dc;
-  --bar-asg: #80cbc4;
-  --bar-proc: #66bb6a;
-  --bar-bg: #eef3f2;
-  --ring: 0 0 0 3px rgba(0,150,136,.15);
+:root{
+  /* colores globales ya usados en tu proyecto */
+  --ok:#2e7d32;
+  --muted:#6b7280;
+  --bar-req:#cfd8dc;
+  --bar-asg:#80cbc4;
+  --bar-proc:#66bb6a;
+  --bar-bg:#eef3f2;
+  --ring:0 0 0 3px rgba(0,150,136,.15);
+
+  /* mock (marco verde + barras) */
+  --mock-border:#57b13f;
+  --mock-real:#66bb6a;
+  --mock-real-bg:#e9f2e9;
+  --mock-asg:#7ec8e7;
 }
 
 /* ===== Toolbar ===== */
-.asig .toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px }
-.asig .toolbar .left { display:flex; gap:10px; align-items:center }
-.asig select, .asig button, .asig input[type=number], .asig input[type=text]{
-  background:#fff; color:var(--txt); border:1px solid var(--border);
-  border-radius:10px; padding:8px 10px
-}
-.asig button{ background:var(--primary); color:#fff; border:none }
-.asig button:hover{ background:#013e34; box-shadow:var(--shadow) }
+.asig .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.asig .toolbar .left{display:flex;gap:10px;align-items:center}
+.asig select,.asig button,.asig input[type=number],.asig input[type=text]{background:#fff;color:var(--txt);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+.asig button{background:var(--primary);color:#fff;border:none}
+.asig button:hover{background:#013e34;box-shadow:var(--shadow)}
 
 /* ===== Leyenda ===== */
-.asig .legend{ display:flex; gap:14px; align-items:center; color:var(--txt-soft) }
-.asig .bullet{ width:12px; height:12px; border-radius:3px; display:inline-block }
-.asig .b-req{ background:var(--bar-req) } 
-.asig .b-asg{ background:var(--bar-asg) } 
-.asig .b-proc{ background:var(--bar-proc) }
+.asig .legend{display:flex;gap:14px;align-items:center;color:var(--txt-soft)}
+.asig .bullet{width:12px;height:12px;border-radius:3px;display:inline-block}
+.asig .b-req{background:var(--bar-req)} .asig .b-asg{background:var(--bar-asg)} .asig .b-proc{background:var(--bar-proc)}
 
-/* ===== Grid tarjetas ===== */
-.asig .grid{ display:grid; grid-template-columns:repeat(6, minmax(170px,1fr)); gap:12px }
-@media (max-width:1100px){ .asig .grid{ grid-template-columns:repeat(4,1fr) } }
-@media (max-width:780px){ .asig .grid{ grid-template-columns:repeat(2,1fr) } }
+/* ===== Grid ===== */
+.asig .grid{display:grid;grid-template-columns:repeat(6,minmax(170px,1fr));gap:12px}
+@media (max-width:1100px){.asig .grid{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:780px){.asig .grid{grid-template-columns:repeat(2,1fr)}}
 
-.asig .card{
-  background:var(--bg-soft); border:1px solid var(--border);
-  border-radius:16px; box-shadow:var(--shadow); padding:12px;
-  min-height:124px; cursor:pointer;
-  transition: transform .15s ease, box-shadow .15s ease; position:relative;
+/* ===== Card base ===== */
+.asig .card{background:transparent;border:none;border-radius:0;box-shadow:none;padding:0;cursor:pointer;position:relative}
+.asig .card.lock{opacity:.45;pointer-events:none}
+
+/* ======== TARJETA TIPO MOCK ======== */
+/* Marco exterior redondeado */
+.asig .card--month{
+  padding:16px;border:4px solid var(--mock-border);border-radius:32px;background:transparent;
 }
-.asig .card:hover{ transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.12) }
-.asig .card.lock{ opacity:.45; pointer-events:none }
 
-/* ===== Tarjeta mensual – layout limpio tipo mock ===== */
-.asig .card--month{ position:relative; padding:14px 14px 16px; }
-.asig .card--month .head{
-  display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;
-}
+/* Pastilla con MES */
+.asig .card--month .head{margin:0 8px 12px}
 .asig .card--month .month{
-  font-weight:800; color:var(--primary); letter-spacing:.2px;
-}
-.asig .card--month .pct-badge{
-  font-weight:800; background:#e8f3f2; border:1px solid #d6e7e5; color:#0f1e1d;
-  padding:3px 8px; border-radius:999px; font-size:.78rem;
+  border:4px solid var(--mock-border);border-radius:20px;background:#fff;color:#0f1e1d;
+  font-weight:800;text-align:center;padding:10px 12px;letter-spacing:.6px;font-size:1.05rem;
 }
 
-.asig .kpi-big{
-  display:flex; align-items:baseline; gap:10px; margin:4px 0 8px;
-}
-.asig .kpi-big .label{
-  font-size:.85rem; color:var(--txt-soft); font-weight:700; letter-spacing:.3px;
-}
-.asig .kpi-big .value{
-  font-size:2.2rem; line-height:1; font-weight:900; color:#0f1e1d;
+/* Panel interior */
+.asig .card--month .pane{
+  border:4px solid var(--mock-border);border-radius:22px;background:#fff;padding:14px 14px 12px;margin:0 2px;
 }
 
-.asig .mini{
-  display:grid; grid-template-columns:86px 1fr auto; align-items:center;
-  gap:10px; margin:6px 0;
-}
-.asig .mini .lbl{ color:var(--txt-soft); font-size:.84rem; font-weight:700 }
-.asig .mini .bar{
-  height:10px; border-radius:8px; border:1px solid #e3ebea; background:var(--bar-bg); overflow:hidden;
-}
-.asig .mini .bar > span{ display:block; height:100% }
-.asig .mini .bar .real{ background:#bde4c2 } /* Real/Req */
-.asig .mini .bar .asg { background:#90d5d0 } /* Asig/Req */
-.asig .mini .val{
-  font-size:.85rem; font-weight:800; color:#0f1e1d; min-width:56px; text-align:right;
-}
+/* Título + número grande */
+.asig .card--month .tons-title{ text-align:center;font-weight:800;font-size:1.1rem;letter-spacing:.5px;color:#111 }
+.asig .card--month .tons-value{ text-align:center;font-weight:900;font-size:2.4rem;line-height:1;margin:6px 0 8px;color:#111 }
 
-/* Quitar tooltip viejo */
-.asig .card--month .tip{ display:none !important }
+/* Filas de barras */
+.asig .rowbar{ display:grid;grid-template-columns:84px 1fr 48px;align-items:center;gap:10px;margin:8px 0 12px }
+.asig .rowbar .lbl{ color:#5c6b72;font-weight:700;font-size:.92rem }
+.asig .rowbar .pct{ text-align:right;font-weight:800;color:#0f1e1d }
+
+/* Barra + numeritos sobre la barra */
+.asig .barwrap{
+  position:relative;height:12px;border-radius:8px;background:var(--mock-real-bg);
+  border:1px solid #d9e8d9;overflow:hidden;
+}
+.asig .barwrap .fill-real{ position:absolute;left:0;top:0;bottom:0;width:0;background:var(--mock-real) }
+.asig .barwrap .fill-asg { position:absolute;left:0;top:0;bottom:0;width:0;background:var(--mock-asg) }
+.asig .n-left,.asig .n-right{ position:absolute;top:-14px;font-size:.78rem;color:#616e74;font-weight:700 }
+.asig .n-left{left:4px}.asig .n-right{right:4px}
 
 /* ===== Panel Chart ===== */
-.asig .panel-chart{ margin-top:18px; padding:12px }
-.asig .panel-chart.card{ border-radius:16px }
-.asig .panel-chart h3{ margin:6px 6px 10px; font-size:1rem; color:var(--primary) }
+.asig .panel-chart{margin-top:18px;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--bg-soft);box-shadow:var(--shadow)}
+.asig .panel-chart h3{margin:6px 6px 10px;font-size:1rem;color:var(--primary)}
 
 /* ===== Drawer (proveedores) ===== */
-.drawer{
-  position:fixed; top:84px; right:16px; width:420px; max-width:92vw;
-  background:#fff; border:1px solid var(--border); border-radius:16px;
-  box-shadow:var(--shadow); display:none; z-index:10400;
-}
-.drawer header{ display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--border); font-weight:700; color:var(--primary) }
-.drawer .x{ background:#fff; border:1px solid var(--border); border-radius:8px; padding:2px 8px; cursor:pointer }
-.drawer .x:hover{ filter:brightness(.96) }
-.drawer .body{ max-height:58vh; overflow:auto; padding:10px 14px }
-.drawer table{ width:100%; border-collapse:collapse }
-.drawer th, .drawer td{ padding:8px; border-bottom:1px solid #eef1f3; text-align:left }
-.drawer th{ color:#0f1e1d; font-size:.86rem; font-weight:800; background:#f7faf9 }
+.drawer{position:fixed;top:84px;right:16px;width:420px;max-width:92vw;background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);display:none;z-index:10400}
+.drawer header{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border);font-weight:700;color:var(--primary)}
+.drawer .x{background:#fff;border:1px solid var(--border);border-radius:8px;padding:2px 8px;cursor:pointer}
+.drawer .x:hover{filter:brightness(.96)}
+.drawer .body{max-height:58vh;overflow:auto;padding:10px 14px}
+.drawer table{width:100%;border-collapse:collapse}
+.drawer th,.drawer td{padding:8px;border-bottom:1px solid #eef1f3;text-align:left}
+.drawer th{color:#0f1e1d;font-size:.86rem;font-weight:800;background:#f7faf9}
 
 /* ===== Modales ===== */
-.asig-mask{ position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; z-index:10500 }
-.asig-modal{
-  position:fixed; left:0; right:0; top:6vh; margin:0 auto;
-  width:92%; max-width:760px; max-height:88vh;
-  background:#fff; border:1px solid var(--border);
-  border-radius:16px; box-shadow:0 18px 60px rgba(0,0,0,.25);
-  display:none; z-index:10600; overflow:hidden;
-}
-.asig-modal--sm{ max-width:560px }
-.asig-modal header{ padding:12px 16px; font-weight:700; border-bottom:1px solid var(--border); color:var(--primary) }
-.asig-modal .content{ padding:14px 16px; max-height:calc(88vh - 120px); overflow:auto }
-.asig-modal .actions{
-  display:flex; gap:10px; justify-content:flex-end; padding:10px 16px;
-  border-top:1px solid var(--border); background:#fff; position:sticky; bottom:0;
-}
+.asig-mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:10500}
+.asig-modal{position:fixed;left:0;right:0;top:6vh;margin:0 auto;width:92%;max-width:760px;max-height:88vh;background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 18px 60px rgba(0,0,0,.25);display:none;z-index:10600;overflow:hidden}
+.asig-modal--sm{max-width:560px}
+.asig-modal header{padding:12px 16px;font-weight:700;border-bottom:1px solid var(--border);color:var(--primary)}
+.asig-modal .content{padding:14px 16px;max-height:calc(88vh - 120px);overflow:auto}
+.asig-modal .actions{display:flex;gap:10px;justify-content:flex-end;padding:10px 16px;border-top:1px solid var(--border);background:#fff;position:sticky;bottom:0}
 
 /* ===== FAB ===== */
-.fab{
-  position:fixed; right:22px; bottom:22px; background:var(--primary);
-  color:#fff; border:0; border-radius:999px; padding:12px 14px;
-  font-weight:700; box-shadow:var(--shadow); cursor:pointer; z-index:10300;
+.fab{position:fixed;right:22px;bottom:22px;background:var(--primary);color:#fff;border:0;border-radius:999px;padding:12px 14px;font-weight:700;box-shadow:var(--shadow);cursor:pointer;z-index:10300}
+.fab:hover{background:#013e34}
+
+/* ===== Responsive ===== */
+@media (max-width:900px){
+  .asig .grid{grid-template-columns:repeat(3,1fr);gap:10px}
+  .drawer{top:72px;right:12px;width:380px}
 }
-.fab:hover{ background:#013e34 }
-
-/* ===========================
-   MODO COMPACTO (Mobile)
-   =========================== */
-
-/* Tablets chicas / móviles apaisado */
-@media (max-width: 900px){
-  /* 3 columnas */
-  .asig .grid{ grid-template-columns:repeat(3, 1fr); gap:10px; }
-  .drawer{ top:72px; right:12px; width:380px; }
+@media (max-width:640px){
+  .asig .grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .asig .card--month{padding:12px;border-radius:26px}
+  .asig .card--month .month{padding:8px 10px;font-size:1rem}
+  .asig .card--month .pane{padding:12px;border-radius:18px}
+  .asig .card--month .tons-value{font-size:2rem}
+  .asig .rowbar{grid-template-columns:74px 1fr 44px;gap:8px;margin:6px 0 10px}
+  .asig .barwrap{height:10px}
+  .drawer{right:10px;width:92vw;top:auto;bottom:86px;max-height:58vh;border-radius:14px}
+  .drawer .body{max-height:calc(58vh - 58px)}
+  .drawer th,.drawer td{padding:7px}
+  .fab{right:16px;bottom:16px;padding:14px 16px;font-size:.95rem}
 }
-
-/* Móviles típicos */
-@media (max-width: 640px){
-  /* 2 columnas */
-  .asig .grid{ grid-template-columns:repeat(2, 1fr); gap:10px; }
-
-  /* Tarjeta más compacta */
-  .asig .card--month{ padding:12px }
-  .asig .card--month .head{ margin-bottom:4px }
-  .asig .card--month .month{ font-size:.95rem }
-  .asig .card--month .pct-badge{ font-size:.72rem; padding:2px 7px }
-
-  .asig .kpi-big{ gap:8px; margin:2px 0 6px }
-  .asig .kpi-big .label{ font-size:.78rem }
-  .asig .kpi-big .value{ font-size:1.8rem }
-
-  .asig .mini{ grid-template-columns:78px 1fr auto; gap:8px; margin:4px 0 }
-  .asig .mini .lbl{ font-size:.78rem }
-  .asig .mini .bar{ height:9px }
-  .asig .mini .val{ font-size:.78rem; min-width:48px }
-
-  /* Toolbar compacta */
-  .asig .toolbar{ flex-wrap:wrap; gap:8px }
-  .asig .toolbar .left{ flex-wrap:wrap; gap:8px }
-  .asig select, .asig button{ padding:7px 10px; border-radius:9px }
-
-  /* Drawer más angosto y alto adaptativo */
-  .drawer{ right:10px; width:92vw; top:auto; bottom:86px; max-height:58vh; border-radius:14px }
-  .drawer .body{ max-height:calc(58vh - 58px) }
-  .drawer th, .drawer td{ padding:7px }
-
-  /* FAB más grande para pulgar */
-  .fab{ right:16px; bottom:16px; padding:14px 16px; border-radius:999px; font-size:.95rem }
+@media (max-width:420px){
+  .asig .grid{grid-template-columns:1fr;gap:10px}
+  .drawer{bottom:78px}
 }
-
-/* Móviles pequeños */
-@media (max-width: 420px){
-  /* 1 columna */
-  .asig .grid{ grid-template-columns:1fr; gap:10px }
-
-  .asig .kpi-big .value{ font-size:1.6rem }
-  .asig .mini{ grid-template-columns:72px 1fr auto }
-  .asig .mini .val{ min-width:44px }
-  .drawer{ bottom:78px } /* deja espacio al FAB */
-}
-
-/* ===== Tarjeta refinada ===== */
-.asig .card--month{ padding:16px 16px 14px; }
-.asig .card--month .head{ margin:0 0 8px; }
-.asig .card--month .month{
-  font-weight:800; font-size:1rem; color:var(--primary); letter-spacing:.2px;
-}
-
-/* Barra de cumplimiento debajo del título */
-.asig .hdrbar{
-  height:6px; border-radius:999px; border:1px solid #e3ebea;
-  background:var(--bar-bg); overflow:hidden; margin-top:6px;
-}
-.asig .hdrbar .fill{ height:100%; background:var(--bar-proc) }
-
-/* KPI principal: TONS REQ */
-.asig .kpi-big{ display:flex; align-items:baseline; gap:10px; margin:10px 0 8px }
-.asig .kpi-big .label{ font-size:.85rem; color:var(--txt-soft); font-weight:600; letter-spacing:.3px }
-.asig .kpi-big .value{ font-size:2.1rem; line-height:1; font-weight:850; color:#0f1e1d }
-
-/* Mini filas de barras */
-.asig .mini{
-  display:grid; grid-template-columns:92px 1fr 52px;
-  align-items:center; gap:10px; margin:6px 0;
-}
-.asig .mini .lbl{ color:var(--txt-soft); font-size:.85rem; font-weight:600 }
-.asig .mini .bar{
-  height:8px; border-radius:8px; border:1px solid #e3ebea;
-  background:var(--bar-bg); overflow:hidden;
-}
-.asig .mini .bar > span{ display:block; height:100% }
-.asig .mini .bar .real{ background:#a9dfb1 } /* Real/Req */
-.asig .mini .bar .asg { background:#8dd1cd } /* Asig/Req */
-.asig .mini .val{ font-size:.85rem; font-weight:700; color:#0f1e1d; text-align:right }
-
-/* Limpieza: nada de bullets ni círculos invasivos */
-.asig .mini, .asig .card--month, .asig .grid{ list-style:none; }
