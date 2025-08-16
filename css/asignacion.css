@@ -1,94 +1,174 @@
-/* =========================================
-   ABASTECIMIENTO – Overrides sobre global
-   ========================================= */
+/* ==============================
+   ASIGNACIÓN – Estilo alineado a GLOBAL (compacto & moderno)
+   Scoped bajo .asig
+============================== */
 
-/* ======= TABLAS: Contactos + Visitas ======= */
+:root{
+  /* Colores base */
+  --ok:#2e7d32;
+  --muted:#6b7280;
+  --bar-req:#cfd8dc;
+  --bar-asg:#7ec8e7;
+  --bar-proc:#66bb6a;
+  --bar-bg:#eef3f2;
 
-/* Cabezal teal */
-#tablaContactos.dataTable thead th,
-#tablaVisitas.dataTable thead th {
-  background: var(--primary) !important;
-  color: #fff !important;
+  /* Colores tarjetas */
+  --mock-border:#4caf50;
+  --mock-real:#66bb6a;
+  --mock-real-bg:#e9f2e9;
+  --mock-asg:#7ec8e7;
 }
 
-/* Densidad de filas */
-#tablaContactos th, #tablaContactos td,
-#tablaVisitas  th, #tablaVisitas  td {
-  font-size: 0.92rem;
-  padding: 0.38rem 0.5rem;
-  border-bottom: 1px solid #e0e0e0;
+/* ===== Toolbar / Leyenda ===== */
+.asig .toolbar{display:flex;align-items:center;justify-content:space-between;margin:8px 0 10px}
+.asig .toolbar .left{display:flex;gap:8px;align-items:center}
+.asig select,.asig button,.asig input[type=number],.asig input[type=text]{
+  background:#fff;color:var(--txt);border:1px solid var(--border);border-radius:8px;
+  padding:6px 10px;font-size:.9rem
+}
+.asig button{background:var(--primary);color:#fff;border:none}
+.asig button:hover{background:#013e34;box-shadow:var(--shadow)}
+.asig .legend{display:flex;gap:12px;align-items:center;color:var(--txt-soft);font-size:.85rem}
+.asig .bullet{width:10px;height:10px;border-radius:3px;display:inline-block}
+.asig .b-req{background:var(--bar-req)} .asig .b-asg{background:var(--bar-asg)} .asig .b-proc{background:var(--bar-proc)}
+
+/* ===== Layout ===== */
+.asig .wrap{width:100%;max-width:none;margin:0;padding:0 10px}
+.asig #cards{width:100% !important;display:block}
+html,body{overflow-x:hidden}
+
+/* ===== Grid: 12 por fila ===== */
+.asig .grid{
+  width:100%;
+  display:grid;
+  grid-template-columns:repeat(12, 1fr);
+  gap:10px;
+  align-items:start;
 }
 
-/* Acciones (íconos) */
-#tablaContactos td .material-icons,
-#tablaVisitas  td .material-icons {
-  font-size: 1.22em;
-  margin-right: 8px;
-  transition: transform .12s ease,
-              color .12s ease;
-  cursor: pointer;
+@media (max-width:1400px){ .asig .grid{ grid-template-columns:repeat(10,1fr);} }
+@media (max-width:1200px){ .asig .grid{ grid-template-columns:repeat(8, 1fr);} }
+@media (max-width:992px){  .asig .grid{ grid-template-columns:repeat(6, 1fr);} }
+@media (max-width:768px){  .asig .grid{ grid-template-columns:repeat(4, 1fr);} }
+@media (max-width:560px){  .asig .grid{ grid-template-columns:repeat(2, 1fr);} }
+@media (max-width:380px){  .asig .grid{ grid-template-columns:1fr;} }
+
+/* ===== Card base ===== */
+.asig .card{background:transparent;border:none;border-radius:0;box-shadow:none;padding:0;cursor:pointer;position:relative}
+.asig .card.lock{opacity:.45;pointer-events:none}
+
+/* ===== Tarjeta MOCK (moderna, sin doble borde) ===== */
+.asig .card--mock{
+  padding:10px;
+  border:1px solid var(--mock-border);
+  border-radius:12px;
+  background:#fff;
+  font-family:inherit;
+  transition:.2s ease all;
+}
+.asig .card--mock:hover{box-shadow:0 3px 8px rgba(0,0,0,.12);transform:translateY(-2px)}
+
+/* Pastilla MES */
+.asig .card--mock .month-pill{
+  background:var(--mock-border);
+  color:#fff;
+  border-radius:6px;
+  font-weight:600;
+  text-align:center;
+  padding:3px 5px;
+  font-size:.65rem;
+  margin-bottom:6px;
+  letter-spacing:.3px;
 }
 
-#tablaContactos td .material-icons:hover,
-#tablaVisitas  td .material-icons:hover {
-  transform: scale(1.2);
-  color: var(--primary-dark);
+/* Contenido principal */
+.asig .card--mock .tons-title{
+  text-align:center;
+  font-weight:500;
+  font-size:.65rem;
+  color:#555;
+  margin-bottom:2px;
+}
+.asig .card--mock .tons-value{
+  text-align:center;
+  font-weight:700;
+  font-size:.95rem;
+  line-height:1.1;
+  margin:2px 0 4px;
+  color:#111;
 }
 
-/* =========================================
-   TARJETAS DE PLANIFICACIÓN (Meses)
-   ========================================= */
-.card-mes {
-  flex: 0 0 auto;
-  width: 130px;            /* 🔹 más angosta */
-  min-height: 130px;       /* 🔹 más baja */
-  margin: 8px;
-  padding: 10px 8px;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: transform .15s ease, box-shadow .15s ease;
-  border: none !important; /* 🔹 elimina doble borde */
+/* Filas de barras */
+.asig .rowbar{
+  display:grid;
+  grid-template-columns:52px 1fr 28px;
+  align-items:center;
+  gap:4px;
+  margin:3px 0;
+}
+.asig .rowbar .lbl{
+  color:#555;
+  font-weight:500;
+  font-size:.6rem;
+}
+.asig .rowbar .pct{
+  text-align:right;
+  font-weight:600;
+  color:#222;
+  font-size:.6rem;
 }
 
-.card-mes:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+/* Barra */
+.asig .barwrap{
+  position:relative;height:5px;border-radius:3px;
+  background:var(--mock-real-bg);overflow:hidden
 }
-
-/* ===== Título del Mes ===== */
-.card-mes .mes-titulo {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  text-align: center;
+.asig .barwrap .fill-real{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--mock-real)}
+.asig .barwrap .fill-asg {position:absolute;left:0;top:0;bottom:0;width:0;background:var(--mock-asg)}
+.asig .n-left,.asig .n-right{
+  position:absolute;top:-10px;font-size:.5rem;color:#666;font-weight:500
 }
+.asig .n-left{left:2px}
+.asig .n-right{right:2px}
 
-/* ===== TONS REQ ===== */
-.card-mes .tons {
-  font-size: 1.1rem;
-  font-weight: bold;
-  color: #111;
-  margin: 3px 0;
+/* ===== Panel Chart ===== */
+.asig .panel-chart{margin-top:14px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-soft);box-shadow:var(--shadow)}
+.asig .panel-chart h3{margin:4px 6px 8px;font-size:.9rem;color:var(--primary)}
+
+/* ===== Drawer (proveedores) ===== */
+.drawer{
+  position:fixed;top:78px;right:14px;width:420px;max-width:92vw;background:#fff;
+  border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);display:none;z-index:10400
 }
+.drawer header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);font-weight:700;color:var(--primary);font-size:.95rem}
+.drawer .x{background:#fff;border:1px solid var(--border);border-radius:8px;padding:2px 8px;cursor:pointer}
+.drawer .x:hover{filter:brightness(.96)}
+.drawer .body{max-height:58vh;overflow:auto;padding:8px 12px}
+.drawer table{width:100%;border-collapse:collapse;font-size:.9rem}
+.drawer th,.drawer td{padding:8px;border-bottom:1px solid #eef1f3;text-align:left}
+.drawer th{color:#0f1e1d;font-size:.86rem;font-weight:700;background:#f7faf9}
 
-/* ===== Detalles ===== */
-.card-mes .detalles {
-  font-size: 0.7rem;
-  color: #555;
-  text-align: center;
-  line-height: 1.2;
+/* ===== Modales ===== */
+.asig-mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:10500}
+.asig-modal{
+  position:fixed;left:0;right:0;top:6vh;margin:0 auto;width:92%;max-width:760px;max-height:88vh;background:#fff;
+  border:1px solid var(--border);border-radius:12px;box-shadow:0 18px 60px rgba(0,0,0,.25);display:none;z-index:10600;overflow:hidden
 }
+.asig-modal--sm{max-width:560px}
+.asig-modal header{padding:10px 14px;font-weight:700;border-bottom:1px solid var(--border);color:var(--primary)}
+.asig-modal .content{padding:12px 14px;max-height:calc(88vh - 110px);overflow:auto}
+.asig-modal .actions{display:flex;gap:8px;justify-content:flex-end;padding:8px 14px;border-top:1px solid var(--border);background:#fff;position:sticky;bottom:0}
 
-.card-mes .detalles span {
-  display: block;
-  margin: 1px 0;
-  color: #2d7a36; /* Verde para destacar */
+/* ===== FAB ===== */
+.fab{
+  position:fixed;right:18px;bottom:18px;background:var(--primary);color:#fff;border:0;border-radius:999px;
+  padding:10px 12px;font-weight:700;box-shadow:var(--shadow);cursor:pointer;z-index:10300;font-size:.85rem
+}
+.fab:hover{background:#013e34}
+
+/* ===== Responsive refinamientos ===== */
+@media (max-width:640px){
+  .drawer{right:10px;width:92vw;top:auto;bottom:86px;max-height:58vh;border-radius:12px}
+  .drawer .body{max-height:calc(58vh - 56px)}
+  .fab{right:14px;bottom:14px;padding:12px 14px}
 }
