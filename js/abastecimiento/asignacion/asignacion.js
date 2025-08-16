@@ -11,7 +11,7 @@ const elAnio  = document.getElementById('anio');
 let chart, cacheSummary, lastClickedMonth = null;
 let ctxAction = { anio:null, mes:null };
 
-// --- PREDECLARACIONES para evitar TDZ (ReferenceError) ---
+// --- PREDECLARACIONES para evitar TDZ ---
 let cardMenuEl = null;
 let cardMenuCtx = { anchor:null, anio:null, mes:null };
 
@@ -25,13 +25,10 @@ async function init(){
   ensureCardMenu();       // crea menú contextual anclable (asigCardMenu)
   ensurePopover();        // crea popover de proveedores
 
-  // AÑOS: solo 2025 en adelante
-  const start = 2025;
-  const years = Array.from({length: 6}, (_,i)=> start + i); // 2025–2030 (ajusta length si quieres)
+  // Solo 2025+ en el selector
+  const years = [2025,2026,2027,2028,2029];
   elAnio.innerHTML = years.map(y=>`<option ${y===currentYear?'selected':''}>${y}</option>`).join('');
   await loadYear(currentYear);
-
-  // (ya no hay botones sueltos, así que no registramos handlers para ellos)
 
   elAnio.onchange = async (e)=> loadYear(+e.target.value);
 
@@ -107,6 +104,7 @@ function paintCards(anio, data){
 
     card.dataset.m = m;
 
+    // 👉 Stats compactas con toneladas y %
     card.innerHTML = `
       <div class="month-pill" style="--asg:${pctAsig}">
         <span>${MES_LABELS[i].toUpperCase()} ${anio}</span>
@@ -115,20 +113,23 @@ function paintCards(anio, data){
         <div class="tons-title">TONS REQ</div>
         <div class="tons-value">${fmt(req)}</div>
 
-        <div class="rowbar">
-          <div class="lbl">Real/Req</div>
-          <div class="barwrap"><span class="fill-real" style="width:${pctReal}%"></span></div>
-          <div class="pct">${pctReal}%</div>
-        </div>
-
-        <div class="rowbar">
-          <div class="lbl">Asig/Req</div>
-          <div class="barwrap"><span class="fill-asg" style="width:${pctAsig}%"></span></div>
-          <div class="pct">${pctAsig}%</div>
+        <div class="stats">
+          <div class="stat">
+            <span class="dot dot-proc"></span><span class="label">Real</span>
+            <b>${fmt(real)}</b><span class="unit">t</span>
+            <span class="pct">${pctReal}%</span>
+          </div>
+          <div class="stat">
+            <span class="dot dot-asg"></span><span class="label">Asig</span>
+            <b>${fmt(asg)}</b><span class="unit">t</span>
+            <span class="pct">${pctAsig}%</span>
+          </div>
+          ${asg < req ? `<div class="stat stat-missing">Faltan <b>${fmt(req - asg)}</b> t</div>` : ''}
         </div>
       </div>
     `;
 
+    // click en tarjeta => menú contextual anclado
     card.addEventListener('click', (ev)=>{
       ev.stopPropagation();
       lastClickedMonth = m;
@@ -147,15 +148,18 @@ function paintCards(anio, data){
     <div class="pane">
       <div class="tons-title">TOTAL REQUERIDO</div>
       <div class="tons-value">${fmt(ysum.tReq)}</div>
-      <div class="rowbar">
-        <div class="lbl">Real/Req</div>
-        <div class="barwrap"><span class="fill-real" style="width:${ysum.pctReal}%"></span></div>
-        <div class="pct">${ysum.pctReal}%</div>
-      </div>
-      <div class="rowbar">
-        <div class="lbl">Asig/Req</div>
-        <div class="barwrap"><span class="fill-asg" style="width:${ysum.pctAsig}%"></span></div>
-        <div class="pct">${ysum.pctAsig}%</div>
+
+      <div class="stats">
+        <div class="stat">
+          <span class="dot dot-proc"></span><span class="label">Real</span>
+          <b>${fmt(ysum.tPro)}</b><span class="unit">t</span>
+          <span class="pct">${ysum.pctReal}%</span>
+        </div>
+        <div class="stat">
+          <span class="dot dot-asg"></span><span class="label">Asig</span>
+          <b>${fmt(ysum.tAsg)}</b><span class="unit">t</span>
+          <span class="pct">${ysum.pctAsig}%</span>
+        </div>
       </div>
     </div>
   `;
@@ -208,7 +212,7 @@ async function showDrawer(mes, anio){
 }
 function closeDrawer(){ document.getElementById('drawer').style.display='none' }
 
-// =============== MODALES base (tuyos) ===============
+// =============== MODALES base ===============
 const mask = document.getElementById('mask');
 
 function showModal(id){
@@ -288,7 +292,7 @@ function ensureAuxUIs(){
 function askPassword(){
   return new Promise(resolve=>{
     const pass = document.getElementById('asigPass');
-    pass.style.display = 'flex'; // << centrado, y NO aparece hasta que se llame
+    pass.style.display = 'block';
     pass.dataset.result = '';
     const input = document.getElementById('asigPassInput');
     input.value=''; setTimeout(()=>input.focus(), 50);
@@ -318,7 +322,6 @@ function ensureCardMenu(){
   document.body.appendChild(cardMenuEl);
 
   cardMenuEl.addEventListener('click', async (e)=>{
-    e.stopPropagation(); // evita que el click "salte" al document y cierre el popover
     const act = e.target?.dataset?.act;
     if(!act) return;
     const {anio, mes, anchor} = cardMenuCtx;
@@ -363,10 +366,13 @@ function positionCardMenu(){
   if(!cardMenuEl || !cardMenuCtx.anchor) return;
   const r = cardMenuCtx.anchor.getBoundingClientRect();
   const menuW = cardMenuEl.offsetWidth || 260;
+
   let left = r.right + window.scrollX + 8;
   const rightLimit = window.scrollX + window.innerWidth - 8;
   if (left + menuW > rightLimit) left = Math.max(window.scrollX + 8, r.left + window.scrollX - menuW - 8);
+
   const top = r.top + window.scrollY + 8;
+
   cardMenuEl.style.left = `${left}px`;
   cardMenuEl.style.top  = `${top}px`;
 }
@@ -391,17 +397,15 @@ function ensurePopover(){
   `;
   document.body.appendChild(popEl);
 
-  // NO cerrar si el click proviene del menú contextual
   document.addEventListener('click', (e)=>{
     if(popEl.style.display!=='block') return;
-    const clickEnCard = e.target.closest('.card--mock');
-    const clickEnMenu = e.target.closest('.asig-card-menu');
-    if(!popEl.contains(e.target) && !clickEnCard && !clickEnMenu) hideProvidersPopover();
+    if(!popEl.contains(e.target) && !e.target.closest('.card--mock')) hideProvidersPopover();
   });
   window.addEventListener('scroll', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
   window.addEventListener('resize', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
   return popEl;
 }
+
 function repositionPopover(){
   if(!popEl || !popCtx.anchor) return;
   const r = popCtx.anchor.getBoundingClientRect();
@@ -430,7 +434,7 @@ async function openProvidersPopover(mes, anio, anchorEl){
 }
 function hideProvidersPopover(){ if(popEl) popEl.style.display = 'none'; }
 
-// =============== SELECTOR DE PROVEEDORES DISPONIBLES (para modal) ===============
+// =============== SELECTOR DE PROVEEDORES para modal ===============
 async function injectProveedorSelector(anio, mes){
   const modal = document.getElementById('modalDisp');
   let slot = modal.querySelector('#provPickerSlot');
