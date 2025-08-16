@@ -272,3 +272,30 @@ html,body{overflow-x:hidden}
 
 /* Opcional: separa un poco el label del select */
 .asig .toolbar .left label[for="anio"]{ margin-right:6px; color: var(--txt-soft); }
+/* ===== Stats compactas (números en vez de barras) ===== */
+.asig .stats{ margin-top:4px; }
+
+.asig .stat{
+  display:grid;
+  grid-template-columns: 12px 46px 1fr auto auto;
+  align-items:center;
+  column-gap:6px;
+  font-size:.72rem;
+  color:#333;
+  margin:3px 0;
+}
+
+.asig .stat .label{ color:#555; }
+.asig .stat b{ font-weight:700; }
+.asig .stat .unit{ margin-left:4px; color:#666; }
+.asig .stat .pct{ margin-left:8px; color:#666; }
+
+.asig .dot{ width:8px; height:8px; border-radius:2px; display:inline-block; }
+.asig .dot-asg{ background: var(--bar-asg); }
+.asig .dot-proc{ background: var(--bar-proc); }
+
+.asig .stat-missing{
+  grid-template-columns: 1fr auto;
+  color: var(--danger);
+  font-weight:700;
+}
