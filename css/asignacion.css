@@ -172,3 +172,73 @@ html,body{overflow-x:hidden}
   .drawer .body{max-height:calc(58vh - 56px)}
   .fab{right:14px;bottom:14px;padding:12px 14px}
 }
+/* ===== Tarjeta CONSOLIDADO AÑO ===== */
+.asig .card--summary{
+  background: linear-gradient(180deg,#ffffff 0%, #f6fff7 100%);
+  border:1px solid var(--mock-border);
+  border-radius:10px;
+  padding:8px;
+}
+.asig .card--summary .month-pill{
+  background:#e8f7ea;
+  border:1px solid var(--mock-border);
+  color:#1b5e20;
+  border-radius:8px;
+  padding:4px 6px;
+  text-align:center;
+  font-weight:700;
+  font-size:.72rem;
+  margin-bottom:6px;
+}
+.asig .card--summary .tons-title{ text-align:center; font-size:.7rem; color:#205a22; font-weight:700; }
+.asig .card--summary .tons-value{ text-align:center; font-weight:800; font-size:1.1rem; margin:2px 0 6px; color:#0d3b19; }
+.asig .card--summary .rowbar .lbl{ color:#2e7d32; }
+
+/* ===== Menú de acciones pequeño ===== */
+.asig-menu{
+  position:fixed; inset:0; display:none; z-index:10650;
+}
+.asig-menu .backdrop{
+  position:absolute; inset:0; background:rgba(0,0,0,.25);
+}
+.asig-menu .sheet{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  width:90%; max-width:360px;
+  background:#fff; border:1px solid var(--border); border-radius:12px;
+  box-shadow:0 18px 60px rgba(0,0,0,.25);
+}
+.asig-menu header{
+  padding:10px 14px; border-bottom:1px solid var(--border);
+  font-weight:700; color:var(--primary);
+}
+.asig-menu .body{ padding:10px 10px 6px; }
+.asig-menu .body button{
+  width:100%; text-align:left; padding:10px 12px; margin:6px 0;
+  border:1px solid var(--border); background:#fff; border-radius:10px; cursor:pointer;
+}
+.asig-menu .body button:hover{ background:#f6fbfa }
+
+/* ===== Prompt de contraseña simple ===== */
+.asig-pass{
+  position:fixed; inset:0; display:none; z-index:10660;
+}
+.asig-pass .backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.25); }
+.asig-pass .sheet{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:90%; max-width:360px; background:#fff; border:1px solid var(--border);
+  border-radius:12px; box-shadow:0 18px 60px rgba(0,0,0,.25);
+  padding:12px 14px;
+}
+.asig-pass h4{ margin:0 0 8px; color:var(--primary) }
+.asig-pass .row{ display:flex; gap:8px; align-items:center; }
+.asig-pass input{
+  flex:1; border:1px solid var(--border); border-radius:8px;
+  padding:8px 10px; font-size:.95rem;
+}
+.asig-pass .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:10px; }
+.asig-pass .actions button{
+  padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:#fff; cursor:pointer;
+}
+.asig-pass .actions .ok{ background:var(--primary); color:#fff; border-color:transparent }
+.asig-pass .actions .ok:hover{ filter:brightness(.98) }
