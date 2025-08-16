@@ -128,3 +128,59 @@
   font-weight:700; box-shadow:var(--shadow); cursor:pointer; z-index:10300;
 }
 .fab:hover{ background:#013e34 }
+
+/* ===========================
+   MODO COMPACTO (Mobile)
+   =========================== */
+
+/* Tablets chicas / móviles apaisado */
+@media (max-width: 900px){
+  /* 3 columnas */
+  .asig .grid{ grid-template-columns:repeat(3, 1fr); gap:10px; }
+  .drawer{ top:72px; right:12px; width:380px; }
+}
+
+/* Móviles típicos */
+@media (max-width: 640px){
+  /* 2 columnas */
+  .asig .grid{ grid-template-columns:repeat(2, 1fr); gap:10px; }
+
+  /* Tarjeta más compacta */
+  .asig .card--month{ padding:12px }
+  .asig .card--month .head{ margin-bottom:4px }
+  .asig .card--month .month{ font-size:.95rem }
+  .asig .card--month .pct-badge{ font-size:.72rem; padding:2px 7px }
+
+  .asig .kpi-big{ gap:8px; margin:2px 0 6px }
+  .asig .kpi-big .label{ font-size:.78rem }
+  .asig .kpi-big .value{ font-size:1.8rem }
+
+  .asig .mini{ grid-template-columns:78px 1fr auto; gap:8px; margin:4px 0 }
+  .asig .mini .lbl{ font-size:.78rem }
+  .asig .mini .bar{ height:9px }
+  .asig .mini .val{ font-size:.78rem; min-width:48px }
+
+  /* Toolbar compacta */
+  .asig .toolbar{ flex-wrap:wrap; gap:8px }
+  .asig .toolbar .left{ flex-wrap:wrap; gap:8px }
+  .asig select, .asig button{ padding:7px 10px; border-radius:9px }
+
+  /* Drawer más angosto y alto adaptativo */
+  .drawer{ right:10px; width:92vw; top:auto; bottom:86px; max-height:58vh; border-radius:14px }
+  .drawer .body{ max-height:calc(58vh - 58px) }
+  .drawer th, .drawer td{ padding:7px }
+
+  /* FAB más grande para pulgar */
+  .fab{ right:16px; bottom:16px; padding:14px 16px; border-radius:999px; font-size:.95rem }
+}
+
+/* Móviles pequeños */
+@media (max-width: 420px){
+  /* 1 columna */
+  .asig .grid{ grid-template-columns:1fr; gap:10px }
+
+  .asig .kpi-big .value{ font-size:1.6rem }
+  .asig .mini{ grid-template-columns:72px 1fr auto }
+  .asig .mini .val{ min-width:44px }
+  .drawer{ bottom:78px } /* deja espacio al FAB */
+}
