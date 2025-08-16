@@ -34,7 +34,8 @@
     <div class="row toolbar">
       <div class="left">
         <label for="anio">Año</label>
-        <select id="anio" aria-label="Seleccionar año"></select>
+        <!-- 👇 Forzado a nativo para que no lo oculte Materialize -->
+        <select id="anio" class="browser-default modern-select" aria-label="Seleccionar año"></select>
       </div>
       <div class="legend" aria-hidden="true">
         <span class="bullet b-req"></span> Requerido
