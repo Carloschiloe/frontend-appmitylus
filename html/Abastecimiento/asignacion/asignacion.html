@@ -19,10 +19,9 @@
 </head>
 <body>
 
-  <!-- NAV superior (igual al de Contactos) -->
+  <!-- NAV superior -->
   <nav class="teal">
     <div class="nav-wrapper">
-      <!-- Si prefieres volver a categorías usa ../categorias.html -->
       <a href="../categorias.html" class="btn-flat left" title="Volver">
         <i class="material-icons">arrow_back</i>
       </a>
@@ -36,8 +35,6 @@
       <div class="left">
         <label for="anio">Año</label>
         <select id="anio" aria-label="Seleccionar año"></select>
-        <button id="btnAddDisp" type="button">+ Disponibilidad</button>
-        <button id="btnAddProc" type="button">+ Procesado semanal</button>
       </div>
       <div class="legend" aria-hidden="true">
         <span class="bullet b-req"></span> Requerido
@@ -54,9 +51,6 @@
       <h3>Evolución mensual</h3>
       <canvas id="chartMensual" height="110" aria-label="Gráfico mensual requerido vs asignado vs procesado" role="img"></canvas>
     </div>
-
-    <!-- Botón flotante (ahora dentro del wrapper para asegurar estilos) -->
-    <button class="fab" id="btnQuick" type="button">+ Asignar rápido</button>
   </div>
 
   <!-- Drawer: proveedores del mes -->
