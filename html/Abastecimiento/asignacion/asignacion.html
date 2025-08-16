@@ -6,17 +6,16 @@
   <title>Asignación · Dashboard</title>
 
   <!-- Global styles -->
-<link rel="stylesheet" href="../../../styles.css">
-
-<!-- Estilos propios de Asignación -->
-<link rel="stylesheet" href="../../../css/asignacion.css">
-
+  <link rel="stylesheet" href="../../../styles.css">
+  <!-- Estilos propios de Asignación -->
+  <link rel="stylesheet" href="../../../css/asignacion.css">
 
   <!-- Chart.js (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <div class="wrap">
+  <!-- 👇 importante: clase .asig para scope de estilos -->
+  <div class="wrap asig">
     <div class="row toolbar">
       <div class="left">
         <label for="anio">Año</label>
@@ -33,17 +32,18 @@
 
     <div id="cards" class="grid"></div>
 
-    <div class="panel-chart">
+    <!-- 👇 importante: añadir clase card para heredar estilo global -->
+    <div class="panel-chart card">
       <h3>Evolución mensual</h3>
       <canvas id="chartMensual" height="110"></canvas>
     </div>
   </div>
 
   <!-- Drawer: proveedores del mes -->
-  <aside id="drawer" class="drawer">
+  <aside id="drawer" class="drawer" aria-hidden="true">
     <header>
       <div id="drawerTitle">Mes</div>
-      <button class="x" onclick="closeDrawer()">✕</button>
+      <button class="x" onclick="closeDrawer()" aria-label="Cerrar">✕</button>
     </header>
     <div class="body">
       <table>
@@ -56,33 +56,33 @@
   </aside>
 
   <!-- Modal overlay -->
-  <div id="mask" class="modal-mask"></div>
+  <div id="mask" class="modal-mask" aria-hidden="true"></div>
 
   <!-- Modal: Disponibilidad -->
-  <section id="modalDisp" class="modal modal-small">
-    <header>Agregar/Actualizar disponibilidad</header>
+  <section id="modalDisp" class="modal modal-small" aria-hidden="true" role="dialog" aria-labelledby="dispTitle">
+    <header id="dispTitle">Agregar/Actualizar disponibilidad</header>
     <div class="content">
       <div class="row">
         <div class="col">
-          <label>Año</label>
+          <label for="mDispAnio">Año</label>
           <input id="mDispAnio" type="number" min="2023" value="2025"/>
         </div>
         <div class="col">
-          <label>Mes</label>
+          <label for="mDispMes">Mes</label>
           <input id="mDispMes" type="number" min="1" max="12" value="9"/>
         </div>
         <div class="col">
-          <label>Materia prima</label>
+          <label for="mDispMP">Materia prima</label>
           <input id="mDispMP" value="Chorito"/>
         </div>
       </div>
       <div class="row">
         <div class="col">
-          <label>Proveedor (contactId)</label>
+          <label for="mDispProv">Proveedor (contactId)</label>
           <input id="mDispProv" placeholder="ObjectId del contacto"/>
         </div>
         <div class="col">
-          <label>Stock inicial (t)</label>
+          <label for="mDispStock">Stock inicial (t)</label>
           <input id="mDispStock" type="number" min="0" step="0.1"/>
         </div>
       </div>
@@ -95,34 +95,34 @@
   </section>
 
   <!-- Modal: Procesado semanal -->
-  <section id="modalProc" class="modal modal-small">
-    <header>Registrar procesamiento semanal</header>
+  <section id="modalProc" class="modal modal-small" aria-hidden="true" role="dialog" aria-labelledby="procTitle">
+    <header id="procTitle">Registrar procesamiento semanal</header>
     <div class="content">
       <div class="row">
         <div class="col">
-          <label>Año</label>
+          <label for="mProcAnio">Año</label>
           <input id="mProcAnio" type="number" value="2025"/>
         </div>
         <div class="col">
-          <label>Mes</label>
+          <label for="mProcMes">Mes</label>
           <input id="mProcMes" type="number" min="1" max="12" value="9"/>
         </div>
         <div class="col">
-          <label>Semana ISO</label>
+          <label for="mProcWk">Semana ISO</label>
           <input id="mProcWk" type="number" min="1" max="53" value="36"/>
         </div>
       </div>
       <div class="row">
         <div class="col">
-          <label>Materia prima</label>
+          <label for="mProcMP">Materia prima</label>
           <input id="mProcMP" value="Chorito"/>
         </div>
         <div class="col">
-          <label>Planta (opcional)</label>
+          <label for="mProcPlanta">Planta (opcional)</label>
           <input id="mProcPlanta" placeholder="plantaId"/>
         </div>
         <div class="col">
-          <label>Kilos</label>
+          <label for="mProcKg">Kilos</label>
           <input id="mProcKg" type="number" min="0" step="1"/>
         </div>
       </div>
@@ -140,6 +140,3 @@
   <script defer src="../../../js/abastecimiento/asignacion/asignacion.js?v=1"></script>
 </body>
 </html>
-
-
-
