@@ -4,7 +4,7 @@
 ============================== */
 
 :root{
-  /* Colores de apoyo */
+  /* Colores base */
   --ok:#2e7d32;
   --muted:#6b7280;
   --bar-req:#cfd8dc;
@@ -13,7 +13,7 @@
   --bar-bg:#eef3f2;
 
   /* Mock (marco + barras) */
-  --mock-border:#4caf50;      /* verde más fino */
+  --mock-border:#4caf50;
   --mock-real:#66bb6a;
   --mock-real-bg:#e9f2e9;
   --mock-asg:#7ec8e7;
@@ -23,7 +23,8 @@
 .asig .toolbar{display:flex;align-items:center;justify-content:space-between;margin:8px 0 10px}
 .asig .toolbar .left{display:flex;gap:8px;align-items:center}
 .asig select,.asig button,.asig input[type=number],.asig input[type=text]{
-  background:#fff;color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.9rem
+  background:#fff;color:var(--txt);border:1px solid var(--border);border-radius:8px;
+  padding:6px 10px;font-size:.9rem
 }
 .asig button{background:var(--primary);color:#fff;border:none}
 .asig button:hover{background:#013e34;box-shadow:var(--shadow)}
@@ -34,17 +35,18 @@
 /* ===== Layout full width ===== */
 .asig .wrap{width:100%;max-width:none;margin:0;padding:0 10px}
 .asig #cards{width:100% !important;display:block}
+html,body{overflow-x:hidden}
 
-/* ===== Grid: SIEMPRE 12 EN FILA EN DESKTOP ===== */
+/* ===== Grid: 12 por fila en desktop ===== */
 .asig .grid{
   width:100%;
   display:grid;
-  grid-template-columns:repeat(12, 1fr); /* 12 por fila */
+  grid-template-columns:repeat(12, 1fr);
   gap:8px;
   align-items:start;
 }
 
-/* Ajustes responsivos: reducir columnas en pantallas chicas */
+/* Responsivo: va bajando columnas */
 @media (max-width:1400px){ .asig .grid{ grid-template-columns:repeat(10,1fr);} }
 @media (max-width:1200px){ .asig .grid{ grid-template-columns:repeat(8, 1fr);} }
 @media (max-width:992px){  .asig .grid{ grid-template-columns:repeat(6, 1fr);} }
@@ -56,10 +58,10 @@
 .asig .card{background:transparent;border:none;border-radius:0;box-shadow:none;padding:0;cursor:pointer;position:relative}
 .asig .card.lock{opacity:.45;pointer-events:none}
 
-/* ======== TARJETA MOCK (compacta y fina) ======== */
+/* ===== Tarjeta MOCK (compacta) ===== */
 .asig .card--mock{
   padding:8px;
-  border:1px solid var(--mock-border);   /* fino */
+  border:1px solid var(--mock-border);
   border-radius:10px;
   background:#fff;
   font-family:inherit;
@@ -71,10 +73,10 @@
   border-radius:8px;
   background:#fff;
   color:#222;
-  font-weight:600;                     /* menos bold */
+  font-weight:600;
   text-align:center;
   padding:4px 6px;
-  font-size:.70rem;                    /* chico */
+  font-size:.70rem;
   margin:0 2px 6px;
   letter-spacing:.3px;
 }
@@ -99,7 +101,7 @@
 .asig .card--mock .tons-value{
   text-align:center;
   font-weight:700;
-  font-size:1.05rem;                   /* número principal pequeño */
+  font-size:1.05rem;
   line-height:1.1;
   margin:2px 0 4px;
   color:#111;
@@ -138,7 +140,7 @@
 .asig .n-left{left:2px}
 .asig .n-right{right:2px}
 
-/* ===== Panel Chart (debajo) ===== */
+/* ===== Panel Chart ===== */
 .asig .panel-chart{margin-top:14px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-soft);box-shadow:var(--shadow)}
 .asig .panel-chart h3{margin:4px 6px 8px;font-size:.95rem;color:var(--primary)}
 
