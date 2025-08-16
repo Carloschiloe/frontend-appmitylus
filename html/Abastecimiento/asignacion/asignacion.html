@@ -130,18 +130,22 @@
           <input id="mProcMes" type="number" min="1" max="12" value="9"/>
         </div>
         <div class="col">
-          <label for="mProcWk">Semana ISO</label>
-          <input id="mProcWk" type="number" min="1" max="53" value="36"/>
+          <label for="mProcWk">Semana</label>
+          <input id="mProcWk" type="number" min="1" max="53" value="1" readonly/>
         </div>
       </div>
+
+      <!-- Selector visual de semana (se llena desde JS) -->
+      <div class="row">
+        <div class="col" style="width:100%">
+          <div id="weekPicker"></div>
+        </div>
+      </div>
+
       <div class="row">
         <div class="col">
           <label for="mProcMP">Materia prima</label>
           <input id="mProcMP" value="Chorito"/>
-        </div>
-        <div class="col">
-          <label for="mProcPlanta">Planta (opcional)</label>
-          <input id="mProcPlanta" placeholder="plantaId"/>
         </div>
         <div class="col">
           <label for="mProcKg">Kilos</label>
