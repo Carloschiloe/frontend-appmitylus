@@ -106,3 +106,47 @@
 
 /* El tooltip no debe bloquear los clics de la tarjeta */
 .asig .tip{ pointer-events: none; }
+
+/* ===== Tarjeta mensual – layout limpio tipo mock ===== */
+.asig .card--month{ position:relative; padding:14px 14px 16px; }
+.asig .card--month .head{
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;
+}
+.asig .card--month .month{
+  font-weight:800; color:var(--primary); letter-spacing:.2px;
+}
+.asig .card--month .pct-badge{
+  font-weight:800; background:#e8f3f2; border:1px solid #d6e7e5; color:#0f1e1d;
+  padding:3px 8px; border-radius:999px; font-size:.78rem;
+}
+
+.asig .kpi-big{
+  display:flex; align-items:baseline; gap:10px; margin:4px 0 8px;
+}
+.asig .kpi-big .label{
+  font-size:.85rem; color:var(--txt-soft); font-weight:700; letter-spacing:.3px;
+}
+.asig .kpi-big .value{
+  font-size:2.2rem; line-height:1; font-weight:900; color:#0f1e1d;
+}
+
+.asig .mini{
+  display:grid; grid-template-columns:86px 1fr auto; align-items:center;
+  gap:10px; margin:6px 0;
+}
+.asig .mini .lbl{
+  color:var(--txt-soft); font-size:.84rem; font-weight:700;
+}
+.asig .mini .bar{
+  height:10px; border-radius:8px; border:1px solid #e3ebea; background:var(--bar-bg); overflow:hidden;
+}
+.asig .mini .bar > span{ display:block; height:100% }
+.asig .mini .bar .real{ background:#bde4c2 } /* Real/Req (procesado) */
+.asig .mini .bar .asg { background:#90d5d0 } /* Asig/Req */
+
+.asig .mini .val{
+  font-size:.85rem; font-weight:800; color:#0f1e1d; min-width:56px; text-align:right;
+}
+
+/* Quitar el tooltip hover de texto largo en este diseño */
+.asig .card--month .tip{ display:none !important }
