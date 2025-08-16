@@ -8,7 +8,7 @@
   <!-- Global -->
   <link rel="stylesheet" href="../../../styles.css?v=2">
   <!-- Estilos de esta vista -->
-  <link rel="stylesheet" href="../../../css/asignacion.css?v=6">
+  <link rel="stylesheet" href="../../../css/asignacion.css?v=7">
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -38,6 +38,9 @@
       <h3>Evolución mensual</h3>
       <canvas id="chartMensual" height="110" aria-label="Gráfico mensual requerido vs asignado vs procesado" role="img"></canvas>
     </div>
+
+    <!-- Botón flotante (ahora dentro del wrapper para asegurar estilos) -->
+    <button class="fab" id="btnQuick" type="button">+ Asignar rápido</button>
   </div>
 
   <!-- Drawer: proveedores del mes -->
@@ -141,10 +144,7 @@
     </div>
   </section>
 
-  <!-- Botón flotante -->
-  <button class="fab" id="btnQuick" type="button">+ Asignar rápido</button>
-
   <!-- JS de la vista -->
-  <script defer src="../../../js/abastecimiento/asignacion/asignacion.js?v=6"></script>
+  <script defer src="../../../js/abastecimiento/asignacion/asignacion.js?v=7"></script>
 </body>
 </html>
