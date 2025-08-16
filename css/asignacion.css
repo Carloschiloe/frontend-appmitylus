@@ -184,3 +184,40 @@
   .asig .mini .val{ min-width:44px }
   .drawer{ bottom:78px } /* deja espacio al FAB */
 }
+
+/* ===== Tarjeta refinada ===== */
+.asig .card--month{ padding:16px 16px 14px; }
+.asig .card--month .head{ margin:0 0 8px; }
+.asig .card--month .month{
+  font-weight:800; font-size:1rem; color:var(--primary); letter-spacing:.2px;
+}
+
+/* Barra de cumplimiento debajo del título */
+.asig .hdrbar{
+  height:6px; border-radius:999px; border:1px solid #e3ebea;
+  background:var(--bar-bg); overflow:hidden; margin-top:6px;
+}
+.asig .hdrbar .fill{ height:100%; background:var(--bar-proc) }
+
+/* KPI principal: TONS REQ */
+.asig .kpi-big{ display:flex; align-items:baseline; gap:10px; margin:10px 0 8px }
+.asig .kpi-big .label{ font-size:.85rem; color:var(--txt-soft); font-weight:600; letter-spacing:.3px }
+.asig .kpi-big .value{ font-size:2.1rem; line-height:1; font-weight:850; color:#0f1e1d }
+
+/* Mini filas de barras */
+.asig .mini{
+  display:grid; grid-template-columns:92px 1fr 52px;
+  align-items:center; gap:10px; margin:6px 0;
+}
+.asig .mini .lbl{ color:var(--txt-soft); font-size:.85rem; font-weight:600 }
+.asig .mini .bar{
+  height:8px; border-radius:8px; border:1px solid #e3ebea;
+  background:var(--bar-bg); overflow:hidden;
+}
+.asig .mini .bar > span{ display:block; height:100% }
+.asig .mini .bar .real{ background:#a9dfb1 } /* Real/Req */
+.asig .mini .bar .asg { background:#8dd1cd } /* Asig/Req */
+.asig .mini .val{ font-size:.85rem; font-weight:700; color:#0f1e1d; text-align:right }
+
+/* Limpieza: nada de bullets ni círculos invasivos */
+.asig .mini, .asig .card--month, .asig .grid{ list-style:none; }
