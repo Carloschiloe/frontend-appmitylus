@@ -29,6 +29,7 @@ async function init(){
   elAnio.innerHTML = years.map(y=>`<option ${y===currentYear?'selected':''}>${y}</option>`).join('');
   await loadYear(currentYear);
 
+  // (por si en el futuro vuelves a habilitar estos botones)
   document.getElementById('btnAddDisp')?.addEventListener('click', ()=>showModal('modalDisp'));
   document.getElementById('btnAddProc')?.addEventListener('click', ()=>showModal('modalProc'));
   document.getElementById('btnQuick')?.addEventListener('click', ()=>showDrawer(lastClickedMonth ?? 9, +elAnio.value));
@@ -138,7 +139,7 @@ function paintCards(anio, data){
     grid.appendChild(card);
   }
 
-  // Consolidado anual (igual que lo tenías)
+  // Consolidado anual
   const ysum = yearTotals(data);
   const cardY = document.createElement('div');
   cardY.className = 'card card--summary';
@@ -184,8 +185,7 @@ function paintChart(data){
         const idx = els[0].index; const mes = idx+1;
         const year = +elAnio.value;
         if(year===2025 && mes <= lockUntilMonth2025) return;
-        // también desde el chart abrimos el menú contextual,
-        // pero anclado a la tarjeta equivalente si existe
+        // abrir menú contextual anclado a la tarjeta equivalente si existe
         const card = elCards.querySelector(`.card[data-m="${mes}"]`);
         if(card) openCardMenu(card, mes, year);
       },
@@ -287,24 +287,42 @@ function ensureAuxUIs(){
     hidePass();
   };
 }
+
 function askPassword(){
   return new Promise(resolve=>{
     const pass = document.getElementById('asigPass');
-    pass.style.display = 'block';
+    pass.style.display = 'flex';                // <— centrado con flex (CSS)
     pass.dataset.result = '';
+
+    // Congelar scroll del documento mientras está abierto
+    const prevOverflow = document.body.style.overflow || '';
+    pass.dataset._prevOverflow = prevOverflow;
+    document.body.style.overflow = 'hidden';
+
     const input = document.getElementById('asigPassInput');
-    input.value=''; setTimeout(()=>input.focus(), 50);
+    input.value = '';
+    setTimeout(()=> input.focus(), 50);
 
     const obs = new MutationObserver(()=>{
       if(pass.style.display==='none'){
         obs.disconnect();
+        // Restaurar overflow del body
+        document.body.style.overflow = pass.dataset._prevOverflow || '';
         resolve(pass.dataset.result==='ok');
       }
     });
     obs.observe(pass, {attributes:true, attributeFilter:['style']});
   });
 }
-function hidePass(){ document.getElementById('asigPass').style.display='none' }
+
+function hidePass(){
+  const el = document.getElementById('asigPass');
+  if(el){
+    el.style.display='none';
+    // Restaurar overflow por si se cierra desde el botón Cancelar
+    document.body.style.overflow = el.dataset._prevOverflow || '';
+  }
+}
 
 // =============== MENÚ CONTEXTUAL anclado a tarjeta ===============
 function ensureCardMenu(){
@@ -355,6 +373,7 @@ function ensureCardMenu(){
   window.addEventListener('resize', ()=>{ if(cardMenuEl.style.display==='block') positionCardMenu(); });
   window.addEventListener('scroll', ()=>{ if(cardMenuEl.style.display==='block') positionCardMenu(); }, true);
 }
+
 function openCardMenu(anchor, mes, anio){
   cardMenuCtx = { anchor, mes, anio };
   // Mostrar primero para que offsetWidth sea real
@@ -470,5 +489,3 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
-
-
