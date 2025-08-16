@@ -103,3 +103,6 @@
   font-weight:700; box-shadow:var(--shadow); cursor:pointer; z-index:10300;
 }
 .fab:hover{ background:#013e34 }
+
+/* El tooltip no debe bloquear los clics de la tarjeta */
+.asig .tip{ pointer-events: none; }
