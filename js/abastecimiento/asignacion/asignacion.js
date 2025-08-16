@@ -14,7 +14,9 @@ let ctxAction = {anio:null, mes:null};
 // =============== ARRANQUE ===============
 init();
 async function init(){
-  ensureAuxUIs();
+  ensureAuxUIs();         // crea UI de password (asigPass)
+  ensureCardMenu();       // crea menú contextual anclable (asigCardMenu)
+  ensurePopover();        // crea popover de proveedores
 
   const years = [2023,2024,2025,2026,2027];
   elAnio.innerHTML = years.map(y=>`<option ${y===currentYear?'selected':''}>${y}</option>`).join('');
@@ -27,28 +29,27 @@ async function init(){
   elAnio.onchange = async (e)=> loadYear(+e.target.value);
 
   // cerrar con ESC o click en máscara
-  document.addEventListener('keydown', (ev)=>{ if(ev.key === 'Escape') { hideModal(); hideActionMenu(); hidePass(); hideProvidersPopover(); } });
+  document.addEventListener('keydown', (ev)=>{
+    if(ev.key === 'Escape') { hideModal(); hideCardMenu(); hidePass(); hideProvidersPopover(); }
+  });
   const mask = document.getElementById('mask');
   mask.addEventListener('click', (ev)=>{ if(ev.target === mask) hideModal(); });
 }
 
 // =============== MOCKS / ENDPOINTS ===============
 async function fetchSummaryMensual(anio){
-  // Reemplaza con tus endpoints reales
   const req = [800,900,600,0,0,0,0,0,700,800,900,650];
   const asg = [200,300,300,0,0,0,0,0,300,600,600,450];
   const pro = [ 50,120, 80,0,0,0,0,0,100,300,450,220];
   return {anio, requerido:req, asignado:asg, procesado:pro};
 }
 async function fetchProveedoresMes(anio,mes){
-  // para Drawer y también como base del "disponible"
   return [
     { proveedor:"Proveedor X", comuna:"Castro",   tons:120, cod:"CST-101", contactId:"p1" },
     { proveedor:"MarSur Ltda", comuna:"Dalcahue", tons: 80, cod:"DLH-204", contactId:"p2" },
     { proveedor:"Acuícola Y",  comuna:"Quellón",  tons: 60, cod:"QLL-330", contactId:"p3" }
   ];
 }
-// Proveedores con disponibilidad desde ese mes en adelante (demo: mismos)
 async function fetchProveedoresDisponiblesDesde(anio, mes){
   return fetchProveedoresMes(anio, mes);
 }
@@ -85,10 +86,10 @@ function paintCards(anio, data){
     if(anio===2025 && m <= lockUntilMonth2025) continue;
 
     const i = m-1;
-    const req = +data.requerido[i]||0;
-    const asg = +data.asignado[i]||0;
-    const real= +data.procesado[i]||0;
-    const safeReq = req>0?req:1;
+    const req  = +data.requerido[i] || 0;
+    const asg  = +data.asignado[i]  || 0;
+    const real = +data.procesado[i] || 0;
+    const safeReq = req>0 ? req : 1;
 
     const pctReal = Math.min(100, Math.round((real/safeReq)*100));
     const pctAsig = Math.min(100, Math.round((asg/safeReq)*100));
@@ -107,23 +108,24 @@ function paintCards(anio, data){
 
         <div class="rowbar">
           <div class="lbl">Real/Req</div>
-          <div class="barwrap">
-            <span class="fill-real" style="width:${pctReal}%"></span>
-          </div>
+          <div class="barwrap"><span class="fill-real" style="width:${pctReal}%"></span></div>
           <div class="pct">${pctReal}%</div>
         </div>
 
         <div class="rowbar">
           <div class="lbl">Asig/Req</div>
-          <div class="barwrap">
-            <span class="fill-asg" style="width:${pctAsig}%"></span>
-          </div>
+          <div class="barwrap"><span class="fill-asg" style="width:${pctAsig}%"></span></div>
           <div class="pct">${pctAsig}%</div>
         </div>
       </div>
     `;
-    // click en tarjeta -> popover de proveedores anclado bajo la tarjeta
-    card.addEventListener('click', (ev)=> openProvidersPopover(m, anio, card));
+
+    // click en tarjeta => menú contextual anclado
+    card.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      lastClickedMonth = m;
+      openCardMenu(card, m, anio);
+    });
 
     grid.appendChild(card);
   }
@@ -140,17 +142,13 @@ function paintCards(anio, data){
 
       <div class="rowbar">
         <div class="lbl">Real/Req</div>
-        <div class="barwrap">
-          <span class="fill-real" style="width:${ysum.pctReal}%"></span>
-        </div>
+        <div class="barwrap"><span class="fill-real" style="width:${ysum.pctReal}%"></span></div>
         <div class="pct">${ysum.pctReal}%</div>
       </div>
 
       <div class="rowbar">
         <div class="lbl">Asig/Req</div>
-        <div class="barwrap">
-          <span class="fill-asg" style="width:${ysum.pctAsig}%"></span>
-        </div>
+        <div class="barwrap"><span class="fill-asg" style="width:${ysum.pctAsig}%"></span></div>
         <div class="pct">${ysum.pctAsig}%</div>
       </div>
     </div>
@@ -181,7 +179,10 @@ function paintChart(data){
         const idx = els[0].index; const mes = idx+1;
         const year = +elAnio.value;
         if(year===2025 && mes <= lockUntilMonth2025) return;
-        openActionMenu(mes, year);
+        // también desde el chart abrimos el menú contextual,
+        // pero anclado a la tarjeta equivalente si existe
+        const card = elCards.querySelector(`.card[data-m="${mes}"]`);
+        if(card) openCardMenu(card, mes, year);
       },
       scales:{ x:{stacked:true}, y:{stacked:true, beginAtZero:true, title:{display:true,text:'Toneladas'}}},
       plugins:{ legend:{position:'bottom'}, tooltip:{mode:'index',intersect:false}}
@@ -256,90 +257,31 @@ async function saveProcesado(){
   await loadYear(+elAnio.value);
 }
 
-// =============== Menú de ACCIONES y Password ===============
+// =============== Password simple ===============
 function ensureAuxUIs(){
-  // Menú
-  if(!document.getElementById('asigMenu')){
-    const wrap = document.createElement('div');
-    wrap.id = 'asigMenu';
-    wrap.className = 'asig-menu';
-    wrap.innerHTML = `
-      <div class="backdrop" onclick="hideActionMenu()"></div>
-      <div class="sheet">
-        <header id="asigMenuTitle">Acciones</header>
-        <div class="body">
-          <button id="actAsignar">Asignar MMPP</button>
-          <button id="actProd">Registrar Prod. Planta</button>
-          <button id="actVerProv">Ver proveedores</button>
-        </div>
+  if(document.getElementById('asigPass')) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'asigPass';
+  wrap.className = 'asig-pass';
+  wrap.innerHTML = `
+    <div class="backdrop" onclick="hidePass()"></div>
+    <div class="sheet">
+      <h4>Confirmación</h4>
+      <p style="margin:.25rem 0 .6rem;color:#444">Ingresa tu contraseña para continuar.</p>
+      <div class="row"><input id="asigPassInput" type="password" placeholder="Contraseña" /></div>
+      <div class="actions">
+        <button onclick="hidePass()">Cancelar</button>
+        <button class="ok" id="asigPassOk">Aceptar</button>
       </div>
-    `;
-    document.body.appendChild(wrap);
-
-    document.getElementById('actAsignar').onclick = async ()=>{
-      hideActionMenu();
-      const ok = await askPassword();
-      if(!ok) return;
-
-      // Precarga y selector de proveedores disponibles
-      document.getElementById('mDispAnio').value = ctxAction.anio;
-      document.getElementById('mDispMes').value  = ctxAction.mes;
-
-      await injectProveedorSelector(ctxAction.anio, ctxAction.mes);
-      showModal('modalDisp');
-    };
-    document.getElementById('actProd').onclick = async ()=>{
-      hideActionMenu();
-      const ok = await askPassword();
-      if(!ok) return;
-
-      document.getElementById('mProcAnio').value = ctxAction.anio;
-      document.getElementById('mProcMes').value  = ctxAction.mes;
-      showModal('modalProc');
-    };
-    document.getElementById('actVerProv').onclick = ()=>{
-      hideActionMenu();
-      showDrawer(ctxAction.mes, ctxAction.anio);
-    };
-  }
-
-  // Password
-  if(!document.getElementById('asigPass')){
-    const wrap = document.createElement('div');
-    wrap.id = 'asigPass';
-    wrap.className = 'asig-pass';
-    wrap.innerHTML = `
-      <div class="backdrop" onclick="hidePass()"></div>
-      <div class="sheet">
-        <h4>Confirmación</h4>
-        <p style="margin:.25rem 0 .6rem;color:#444">Ingresa tu contraseña para continuar.</p>
-        <div class="row">
-          <input id="asigPassInput" type="password" placeholder="Contraseña" />
-        </div>
-        <div class="actions">
-          <button onclick="hidePass()">Cancelar</button>
-          <button class="ok" id="asigPassOk">Aceptar</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(wrap);
-    document.getElementById('asigPassOk').onclick = ()=>{
-      const ok = document.getElementById('asigPassInput').value === SIMPLE_PASS;
-      wrap.dataset.result = ok ? 'ok':'fail';
-      hidePass();
-    };
-  }
+    </div>
+  `;
+  document.body.appendChild(wrap);
+  document.getElementById('asigPassOk').onclick = ()=>{
+    const ok = document.getElementById('asigPassInput').value === SIMPLE_PASS;
+    wrap.dataset.result = ok ? 'ok':'fail';
+    hidePass();
+  };
 }
-
-// Abrir menú
-function openActionMenu(mes, anio){
-  ctxAction = {anio, mes};
-  document.getElementById('asigMenuTitle').textContent = `Acciones — ${MES_LABELS[mes-1].toUpperCase()} ${anio}`;
-  document.getElementById('asigMenu').style.display = 'block';
-}
-function hideActionMenu(){ document.getElementById('asigMenu').style.display = 'none'; }
-
-// Password simple
 function askPassword(){
   return new Promise(resolve=>{
     const pass = document.getElementById('asigPass');
@@ -359,7 +301,130 @@ function askPassword(){
 }
 function hidePass(){ document.getElementById('asigPass').style.display='none' }
 
-// Inyecta selector de proveedores disponibles en tu modal de disponibilidad
+// =============== MENÚ CONTEXTUAL anclado a tarjeta ===============
+let cardMenuEl, cardMenuCtx = {anchor:null, anio:null, mes:null};
+function ensureCardMenu(){
+  if(cardMenuEl) return;
+  cardMenuEl = document.createElement('div');
+  cardMenuEl.id = 'asigCardMenu';
+  cardMenuEl.className = 'asig-card-menu';
+  cardMenuEl.innerHTML = `
+    <button data-act="asignar">Asignar MMPP</button>
+    <button data-act="producir">Registrar Prod. Planta</button>
+    <button data-act="ver">Ver proveedores</button>
+  `;
+  document.body.appendChild(cardMenuEl);
+
+  cardMenuEl.addEventListener('click', async (e)=>{
+    const act = e.target?.dataset?.act;
+    if(!act) return;
+    const {anio, mes, anchor} = cardMenuCtx;
+
+    if(act==='ver'){
+      hideCardMenu();
+      openProvidersPopover(mes, anio, anchor);
+      return;
+    }
+    // acciones con password
+    hideCardMenu();
+    const ok = await askPassword();
+    if(!ok) return;
+
+    if(act==='asignar'){
+      document.getElementById('mDispAnio').value = anio;
+      document.getElementById('mDispMes').value  = mes;
+      await injectProveedorSelector(anio, mes);
+      showModal('modalDisp');
+    } else if(act==='producir'){
+      document.getElementById('mProcAnio').value = anio;
+      document.getElementById('mProcMes').value  = mes;
+      showModal('modalProc');
+    }
+  });
+
+  // cerrar si se hace click fuera
+  document.addEventListener('click', (ev)=>{
+    if(!cardMenuEl) return;
+    if(cardMenuEl.style.display!=='block') return;
+    if(!cardMenuEl.contains(ev.target) && !ev.target.closest('.card--mock')) hideCardMenu();
+  });
+  window.addEventListener('resize', ()=>{ if(cardMenuEl.style.display==='block') positionCardMenu(); });
+  window.addEventListener('scroll', ()=>{ if(cardMenuEl.style.display==='block') positionCardMenu(); }, true);
+}
+function openCardMenu(anchor, mes, anio){
+  cardMenuCtx = {anchor, mes, anio};
+  positionCardMenu();
+  cardMenuEl.style.display = 'block';
+}
+function positionCardMenu(){
+  if(!cardMenuEl || !cardMenuCtx.anchor) return;
+  const r = cardMenuCtx.anchor.getBoundingClientRect();
+  const top = r.top + window.scrollY + 8;
+  const left = r.right + window.scrollX - cardMenuEl.offsetWidth; // pegado al borde derecho
+  cardMenuEl.style.top  = `${top}px`;
+  cardMenuEl.style.left = `${Math.max(window.scrollX+8, left)}px`;
+}
+function hideCardMenu(){ if(cardMenuEl) cardMenuEl.style.display='none'; }
+
+// =============== POPUP PROVEEDORES anclado a tarjeta ===============
+let popEl;
+function ensurePopover(){
+  if(popEl) return popEl;
+  popEl = document.createElement('div');
+  popEl.className = 'asig-pop';
+  popEl.innerHTML = `
+    <header>
+      <div id="popTitle">Mes · Proveedores</div>
+      <button class="x" onclick="hideProvidersPopover()">×</button>
+    </header>
+    <div class="body">
+      <table>
+        <thead><tr><th>Proveedor</th><th>Comuna</th><th>Tons</th><th>Cod.Centro</th></tr></thead>
+        <tbody id="popRows"></tbody>
+      </table>
+    </div>
+  `;
+  document.body.appendChild(popEl);
+
+  document.addEventListener('click', (e)=>{
+    if(popEl.style.display!=='block') return;
+    if(!popEl.contains(e.target) && !e.target.closest('.card--mock')) hideProvidersPopover();
+  });
+  window.addEventListener('scroll', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
+  window.addEventListener('resize', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
+  return popEl;
+}
+
+let popCtx = {anchor:null, mes:null, anio:null};
+function repositionPopover(){
+  if(!popEl || !popCtx.anchor) return;
+  const r = popCtx.anchor.getBoundingClientRect();
+  const top = r.bottom + window.scrollY + 8;
+  let left = r.left + window.scrollX;
+  const maxLeft = window.scrollX + (window.innerWidth - popEl.offsetWidth - 8);
+  if(left > maxLeft) left = Math.max(window.scrollX + 8, maxLeft);
+  popEl.style.top = `${top}px`;
+  popEl.style.left = `${left}px`;
+}
+async function openProvidersPopover(mes, anio, anchorEl){
+  popCtx = {anchor:anchorEl, mes, anio};
+  document.getElementById('popTitle').textContent = `${MES_LABELS[mes-1]} ${anio} · Proveedores`;
+  const rows = await fetchProveedoresMes(anio, mes);
+  const tbody = document.getElementById('popRows');
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td>${esc(r.proveedor)}</td>
+      <td>${esc(r.comuna)}</td>
+      <td class="text-right">${fmt(r.tons)}</td>
+      <td>${esc(r.cod)}</td>
+    </tr>
+  `).join('');
+  popEl.style.display = 'block';
+  repositionPopover();
+}
+function hideProvidersPopover(){ if(popEl) popEl.style.display = 'none'; }
+
+// =============== SELECTOR DE PROVEEDORES DISPONIBLES (para modal) ===============
 async function injectProveedorSelector(anio, mes){
   const modal = document.getElementById('modalDisp');
   let slot = modal.querySelector('#provPickerSlot');
@@ -379,83 +444,6 @@ async function injectProveedorSelector(anio, mes){
     <label style="font-weight:700">Proveedor disponible</label>
     <select id="mDispProvSel" class="modern-select" style="margin:4px 0 8px">${opts}</select>
   `;
-}
-
-// ===== POPUP anclado a la tarjeta para proveedores =====
-let popEl;
-function ensurePopover(){
-  if(popEl) return popEl;
-  popEl = document.createElement('div');
-  popEl.className = 'asig-pop';
-  popEl.innerHTML = `
-    <header>
-      <div id="popTitle">Mes · Proveedores</div>
-      <button class="x" onclick="hideProvidersPopover()">×</button>
-    </header>
-    <div class="body">
-      <table>
-        <thead>
-          <tr>
-            <th>Proveedor</th><th>Comuna</th><th>Tons</th><th>Cod.Centro</th>
-          </tr>
-        </thead>
-        <tbody id="popRows"></tbody>
-      </table>
-    </div>
-  `;
-  document.body.appendChild(popEl);
-
-  // click fuera
-  document.addEventListener('click', (e)=>{
-    if(!popEl?.isConnected) return;
-    if(popEl.style.display!=='block') return;
-    if(!popEl.contains(e.target) && !e.target.closest('.card--mock')) hideProvidersPopover();
-  });
-  window.addEventListener('scroll', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
-  window.addEventListener('resize', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
-  return popEl;
-}
-
-let popCtx = {anchor:null, mes:null, anio:null};
-function repositionPopover(){
-  if(!popEl || !popCtx.anchor) return;
-  const r = popCtx.anchor.getBoundingClientRect();
-  const top = r.bottom + window.scrollY + 8;
-  let left = r.left + window.scrollX;
-
-  // evitar desbordes en X
-  const maxLeft = window.scrollX + (window.innerWidth - popEl.offsetWidth - 8);
-  if(left > maxLeft) left = Math.max(window.scrollX + 8, maxLeft);
-
-  popEl.style.top = `${top}px`;
-  popEl.style.left = `${left}px`;
-}
-
-async function openProvidersPopover(mes, anio, anchorEl){
-  ensurePopover();
-  popCtx = {anchor:anchorEl, mes, anio};
-
-  // titulo
-  document.getElementById('popTitle').textContent = `${MES_LABELS[mes-1]} ${anio} · Proveedores`;
-
-  // datos
-  const rows = await fetchProveedoresMes(anio, mes);
-  const tbody = document.getElementById('popRows');
-  tbody.innerHTML = rows.map(r=>`
-    <tr>
-      <td>${esc(r.proveedor)}</td>
-      <td>${esc(r.comuna)}</td>
-      <td class="text-right">${fmt(r.tons)}</td>
-      <td>${esc(r.cod)}</td>
-    </tr>
-  `).join('');
-
-  popEl.style.display = 'block';
-  repositionPopover();
-}
-
-function hideProvidersPopover(){
-  if(popEl) popEl.style.display = 'none';
 }
 
 // =============== UTILS ===============
