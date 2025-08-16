@@ -38,6 +38,22 @@ async function init(){
   });
   const mask = document.getElementById('mask');
   mask?.addEventListener('click', (ev)=>{ if(ev.target === mask) hideModal(); });
+
+  // Eventos para renderizar el week-picker si cambian Año/Mes del modal
+  const anioIn = document.getElementById('mProcAnio');
+  const mesIn  = document.getElementById('mProcMes');
+  if (anioIn && mesIn) {
+    anioIn.addEventListener('input', ()=> {
+      const y = +anioIn.value || currentYear;
+      const m = clampMes(+mesIn.value);
+      renderWeekPicker(y, m, +document.getElementById('mProcWk').value || 1);
+    });
+    mesIn.addEventListener('input', ()=> {
+      const y = +anioIn.value || currentYear;
+      const m = clampMes(+mesIn.value);
+      renderWeekPicker(y, m, +document.getElementById('mProcWk').value || 1);
+    });
+  }
 }
 
 // =============== MOCKS / ENDPOINTS ===============
@@ -104,7 +120,7 @@ function paintCards(anio, data){
 
     card.dataset.m = m;
 
-    // 👉 Stats compactas con toneladas y %
+    // Stats compactas con toneladas y %
     card.innerHTML = `
       <div class="month-pill" style="--asg:${pctAsig}">
         <span>${MES_LABELS[i].toUpperCase()} ${anio}</span>
@@ -116,15 +132,15 @@ function paintCards(anio, data){
         <div class="stats">
           <div class="stat">
             <span class="dot dot-proc"></span><span class="label">Real</span>
-            <b>${fmt(real)}</b><span class="unit">t</span>
+            <span>${fmt(real)}</span><span class="unit">t</span>
             <span class="pct">${pctReal}%</span>
           </div>
           <div class="stat">
             <span class="dot dot-asg"></span><span class="label">Asig</span>
-            <b>${fmt(asg)}</b><span class="unit">t</span>
+            <span>${fmt(asg)}</span><span class="unit">t</span>
             <span class="pct">${pctAsig}%</span>
           </div>
-          ${asg < req ? `<div class="stat stat-missing">Faltan <b>${fmt(req - asg)}</b> t</div>` : ''}
+          ${asg < req ? `<div class="stat stat-missing">Faltan <span>${fmt(req - asg)}</span> <span class="unit">t</span></div>` : ''}
         </div>
       </div>
     `;
@@ -152,12 +168,12 @@ function paintCards(anio, data){
       <div class="stats">
         <div class="stat">
           <span class="dot dot-proc"></span><span class="label">Real</span>
-          <b>${fmt(ysum.tPro)}</b><span class="unit">t</span>
+          <span>${fmt(ysum.tPro)}</span><span class="unit">t</span>
           <span class="pct">${ysum.pctReal}%</span>
         </div>
         <div class="stat">
           <span class="dot dot-asg"></span><span class="label">Asig</span>
-          <b>${fmt(ysum.tAsg)}</b><span class="unit">t</span>
+          <span>${fmt(ysum.tAsg)}</span><span class="unit">t</span>
           <span class="pct">${ysum.pctAsig}%</span>
         </div>
       </div>
@@ -254,9 +270,8 @@ async function saveProcesado(){
   const payload = {
     anio:+document.getElementById('mProcAnio').value,
     mes:+document.getElementById('mProcMes').value,
-    semanaISO:+document.getElementById('mProcWk').value,
+    semanaISO:+document.getElementById('mProcWk').value,  // mantiene el nombre usado antes
     materiaPrima:document.getElementById('mProcMP').value.trim(),
-    plantaId:document.getElementById('mProcPlanta').value.trim()||null,
     kilos:+document.getElementById('mProcKg').value
   };
   await putProcesado(payload);
@@ -292,7 +307,7 @@ function ensureAuxUIs(){
 function askPassword(){
   return new Promise(resolve=>{
     const pass = document.getElementById('asigPass');
-    pass.style.display = 'flex';              // centrar con flex
+    pass.style.display = 'flex';              // centrado (flex)
     pass.dataset.result = '';
     const input = document.getElementById('asigPassInput');
     input.value=''; setTimeout(()=>input.focus(), 50);
@@ -327,11 +342,8 @@ function ensureCardMenu(){
     const {anio, mes, anchor} = cardMenuCtx;
 
     if(act==='ver'){
-      e.stopPropagation();                 // evita que el click burbujee y cierre
       hideCardMenu();
-      setTimeout(()=>{                     // abrir en el siguiente tick
-        openProvidersPopover(mes, anio, anchor);
-      }, 0);
+      openProvidersPopover(mes, anio, anchor);
       return;
     }
     // acciones con password
@@ -347,7 +359,13 @@ function ensureCardMenu(){
     } else if(act==='producir'){
       document.getElementById('mProcAnio').value = anio;
       document.getElementById('mProcMes').value  = mes;
+
+      // default week
+      const defW = defaultWeekFor(anio, mes);
+      document.getElementById('mProcWk').value = defW;
+
       showModal('modalProc');
+      renderWeekPicker(anio, mes, defW);
     }
   });
 
@@ -402,10 +420,7 @@ function ensurePopover(){
 
   document.addEventListener('click', (e)=>{
     if(popEl.style.display!=='block') return;
-    const clickEnPopover = popEl.contains(e.target);
-    const clickEnTarjeta = e.target.closest('.card--mock');
-    const clickEnMenu   = e.target.closest('.asig-card-menu'); // no cerrar si viene del menú
-    if(!clickEnPopover && !clickEnTarjeta && !clickEnMenu) hideProvidersPopover();
+    if(!popEl.contains(e.target) && !e.target.closest('.card--mock')) hideProvidersPopover();
   });
   window.addEventListener('scroll', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
   window.addEventListener('resize', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
@@ -439,6 +454,69 @@ async function openProvidersPopover(mes, anio, anchorEl){
   repositionPopover();
 }
 function hideProvidersPopover(){ if(popEl) popEl.style.display = 'none'; }
+
+// =============== WEEK PICKER ===============
+function clampMes(m){ return Math.min(12, Math.max(1, +m || 1)); }
+function daysInMonth(y, m){ return new Date(y, m, 0).getDate(); } // m: 1-12
+
+function defaultWeekFor(y, m){
+  const now = new Date();
+  if(now.getFullYear()===y && (now.getMonth()+1)===m){
+    return Math.max(1, Math.ceil(now.getDate()/7));
+  }
+  return 1;
+}
+
+function renderWeekPicker(y, m, selectedWeek=1){
+  const host = document.getElementById('weekPicker');
+  if(!host) return;
+
+  const n = daysInMonth(y, m);
+  const weeks = Math.ceil(n/7);
+
+  // estilos mínimos embebidos (para mantener simple)
+  const styles = `
+    <style>
+      .wk-table{width:100%;border-collapse:collapse;margin:.25rem 0;}
+      .wk-table th,.wk-table td{padding:6px 8px;border-bottom:1px solid #eef1f3;text-align:center}
+      .wk-table th:first-child,.wk-table td:first-child{width:52px;color:#555}
+      .wk-row{cursor:pointer}
+      .wk-row:hover{background:#f6fbfa}
+      .wk-row.selected{background:#eaf6ff}
+      .wk-head{color:#0f1e1d;font-weight:700}
+      .wk-cap{font-weight:700;text-align:center;padding:6px 0;color:#0f1e1d}
+    </style>
+  `;
+
+  let html = `${styles}
+  <div class="wk-cap">${MES_LABELS[m-1].toUpperCase()} ${y}</div>
+  <table class="wk-table">
+    <thead><tr class="wk-head"><th>SEM</th>${Array.from({length:7},(_,i)=>`<th>${i+1}</th>`).join('')}</tr></thead>
+    <tbody>`;
+
+  for(let w=1; w<=weeks; w++){
+    const start = (w-1)*7 + 1;
+    const end = Math.min(w*7, n);
+    html += `<tr class="wk-row ${w===selectedWeek?'selected':''}" data-w="${w}"><td>${w}</td>`;
+    for(let d=start; d<=end; d++) html += `<td>${d}</td>`;
+    for(let k=0; k<7-(end-start+1); k++) html += `<td></td>`;
+    html += `</tr>`;
+  }
+
+  html += `</tbody></table>`;
+
+  host.innerHTML = html;
+
+  host.querySelectorAll('.wk-row').forEach(tr=>{
+    tr.addEventListener('click', ()=>{
+      const w = +tr.dataset.w;
+      host.querySelectorAll('.wk-row').forEach(r=>r.classList.remove('selected'));
+      tr.classList.add('selected');
+      const wkInput = document.getElementById('mProcWk');
+      if(wkInput){ wkInput.value = w; }
+    });
+  });
+}
 
 // =============== SELECTOR DE PROVEEDORES para modal ===============
 async function injectProveedorSelector(anio, mes){
