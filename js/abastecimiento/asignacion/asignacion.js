@@ -1,7 +1,7 @@
 // =============== CONFIG INICIAL ===============
 const MES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const currentYear = 2025;
-const lockUntilMonth2025 = 8;
+const lockUntilMonth2025 = 8; // Ene(1)–Ago(8) -> ocultos en 2025
 
 const elCards = document.getElementById('cards');
 const elAnio  = document.getElementById('anio');
@@ -10,13 +10,13 @@ let chart, cacheSummary, lastClickedMonth = null;
 // =============== ARRANQUE ===============
 init();
 async function init(){
-  const years = [2023,2024,2025,2026,2027];
-  elAnio.innerHTML = years.map(y=>`<option ${y===currentYear?'selected':''}>${y}</option>`).join('');
+  const years = [2023, 2024, 2025, 2026, 2027];
+  elAnio.innerHTML = years.map(y => `<option ${y===currentYear?'selected':''}>${y}</option>`).join('');
   await loadYear(currentYear);
 
-  document.getElementById('btnAddDisp').onclick = ()=>showModal('modalDisp');
-  document.getElementById('btnAddProc').onclick = ()=>showModal('modalProc');
-  document.getElementById('btnQuick').onclick   = ()=>showDrawer(lastClickedMonth ?? 9, +elAnio.value);
+  document.getElementById('btnAddDisp').onclick = () => showModal('modalDisp');
+  document.getElementById('btnAddProc').onclick = () => showModal('modalProc');
+  document.getElementById('btnQuick').onclick   = () => showDrawer(lastClickedMonth ?? 9, +elAnio.value);
 
   elAnio.onchange = async (e)=> loadYear(+e.target.value);
 
@@ -28,6 +28,7 @@ async function init(){
 
 // =============== CARGA DE DATOS (mock) ===============
 async function fetchSummaryMensual(anio){
+  // Datos demo
   const req = [800,900,600,0,0,0,0,0,700,800,900,650];
   const asg = [200,300,300,0,0,0,0,0,300,600,600,450];
   const pro = [ 50,120, 80,0,0,0,0,0,100,300,450,220];
@@ -49,156 +50,78 @@ async function loadYear(y){
   paintChart(cacheSummary);
 }
 
-// =============== TARJETAS ===============
+// =============== TARJETAS (grid único, ocultando Ene–Ago 2025) ===============
 function paintCards(anio, data){
   elCards.innerHTML = '';
-  const wrap = document.createElement('div');
-  wrap.className = 'quarters'; // en caso de que estés usando la agrupación por trimestres
 
-  // 4 trimestres (3 meses cada uno)
-  for(let q=0; q<4; q++){
-    const sec = document.createElement('section');
-    sec.className = 'quarter';
-    const grid = document.createElement('div');
-    grid.className = 'grid';
+  // grid único
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  elCards.appendChild(grid);
 
-    for(let m=q*3+1; m<=q*3+3; m++){
-      const i = m-1;
-      const req = +data.requerido[i]||0;
-      const asg = +data.asignado[i]||0;
-      const pro = +data.procesado[i]||0;
+  for(let m=1; m<=12; m++){
+    // 2025: ocultar meses pasados (Ene–Ago)
+    if(anio === 2025 && m <= lockUntilMonth2025) continue;
 
-      const safeReq = req>0?req:1;
-      const pctCumpl = req>0 ? Math.min(100, Math.round((pro/req)*100)) : 0; // barra header
-      const pctReal  = Math.min(100, Math.round((pro/safeReq)*100));
-      const pctAsig  = Math.min(100, Math.round((asg/safeReq)*100));
+    const i = m-1;
+    const req  = +data.requerido[i] || 0;
+    const asg  = +data.asignado[i]  || 0;
+    const real = +data.procesado[i] || 0;
 
-      const lock = (anio===2025 && m <= lockUntilMonth2025);
+    const safeReq = req > 0 ? req : 1;
+    const pctReal = Math.min(100, Math.round((real/safeReq)*100));
+    const pctAsig = Math.min(100, Math.round((asg/safeReq)*100));
+    const restanteReal = Math.max(0, req - real);
 
-      const card = document.createElement('div');
-      card.className = 'card card--month' + (lock?' lock':'');
-      card.dataset.m = m;
+    const card = document.createElement('div');
+    card.className = 'card card--mock';
+    card.dataset.m = m;
 
-      card.innerHTML = `
-        <div class="head">
-          <div class="month">${MES_LABELS[i]} ${anio}</div>
-          <div class="hdrbar" aria-label="Cumplimiento ${pctCumpl}%">
-            <span class="fill" style="width:${pctCumpl}%"></span>
-          </div>
-        </div>
+    // Tarjeta estilo mock (pastilla y panel)
+    card.innerHTML = `
+      <div class="month-pill">${MES_LABELS[i].toUpperCase()} ${anio}</div>
 
-        <div class="kpi-big">
-          <div class="label">Tons req</div>
-          <div class="value">${fmt(req)}</div>
-        </div>
+      <div class="pane">
+        <div class="tons-title">TONS REQ</div>
+        <div class="tons-value">${fmt(req)}</div>
 
-        <div class="mini">
+        <div class="rowbar">
           <div class="lbl">Real/Req</div>
-          <div class="bar"><span class="real" style="width:${pctReal}%"></span></div>
-          <div class="val">${pctReal}%</div>
+          <div class="barwrap">
+            <span class="fill-real" style="width:${pctReal}%"></span>
+            <span class="n-left">${fmt(real)}</span>
+            <span class="n-right">${fmt(restanteReal)}</span>
+          </div>
+          <div class="pct">${pctReal}%</div>
         </div>
 
-        <div class="mini">
+        <div class="rowbar">
           <div class="lbl">Asig/Req</div>
-          <div class="bar"><span class="asg" style="width:${pctAsig}%"></span></div>
-          <div class="val">${pctAsig}%</div>
-        </div>
-      `;
-
-      if(!lock){
-        card.addEventListener('click', ()=>{
-          highlightMonth(m);
-          showDrawer(m, anio);
-        });
-      }
-      grid.appendChild(card);
-    }
-
-    sec.appendChild(grid);
-    wrap.appendChild(sec);
-  }
-
-  elCards.appendChild(wrap);
-}
-function paintCards(anio, data){
-  elCards.innerHTML = '';
-  const wrap = document.createElement('div');
-  wrap.className = 'quarters';
-
-  for(let q=0; q<4; q++){
-    const sec  = document.createElement('section'); sec.className = 'quarter';
-    const grid = document.createElement('div');     grid.className = 'grid';
-
-    for(let m=q*3+1; m<=q*3+3; m++){
-      const i = m-1;
-      const req = +data.requerido[i]||0;         // requerido
-      const asg = +data.asignado[i]||0;          // asignado
-      const real= +data.procesado[i]||0;         // procesado (= Real)
-      const safeReq = req>0 ? req : 1;
-
-      // % y numeritos
-      const pctReal = Math.min(100, Math.round((real/safeReq)*100));
-      const pctAsig = Math.min(100, Math.round((asg/safeReq)*100));
-      const restanteReal = Math.max(0, req - real); // numerito derecho de Real/Req
-
-      const lock = (anio===2025 && m <= lockUntilMonth2025);
-
-      const card = document.createElement('div');
-      card.className = 'card card--mock' + (lock?' lock':'');
-      card.dataset.m = m;
-
-      // HTML: pastilla mes + panel
-      card.innerHTML = `
-        <div class="month-pill">${MES_LABELS[i].toUpperCase()} ${anio}</div>
-
-        <div class="pane">
-          <div class="tons-title">TONS REQ</div>
-          <div class="tons-value">${fmt(req)}</div>
-
-          <!-- Real/Req -->
-          <div class="rowbar">
-            <div class="lbl">Real/Req</div>
-            <div class="barwrap">
-              <span class="fill-real" style="width:${pctReal}%"></span>
-              <span class="n-left">${fmt(real)}</span>
-              <span class="n-right">${fmt(restanteReal)}</span>
-            </div>
-            <div class="pct">${pctReal}%</div>
+          <div class="barwrap">
+            <span class="fill-asg" style="width:${pctAsig}%"></span>
+            <span class="n-left">${fmt(asg)}</span>
           </div>
-
-          <!-- Asig/Req -->
-          <div class="rowbar">
-            <div class="lbl">Asig/Req</div>
-            <div class="barwrap">
-              <span class="fill-asg" style="width:${pctAsig}%"></span>
-              <span class="n-left">${fmt(asg)}</span>
-            </div>
-            <div class="pct">${pctAsig}%</div>
-          </div>
+          <div class="pct">${pctAsig}%</div>
         </div>
-      `;
+      </div>
+    `;
 
-      if(!lock){
-        card.addEventListener('click', ()=>{
-          highlightMonth(m);
-          showDrawer(m, anio);
-        });
-      }
-      grid.appendChild(card);
-    }
+    card.addEventListener('click', ()=>{
+      highlightMonth(m);
+      showDrawer(m, anio);
+    });
 
-    sec.appendChild(grid);
-    wrap.appendChild(sec);
+    grid.appendChild(card);
   }
-
-  elCards.appendChild(wrap);
 }
 
 function highlightMonth(m){
   lastClickedMonth = m;
-  Array.from(elCards.children).forEach(c=>c.style.outline='none');
-  const el = Array.from(elCards.children).find(c=>+c.dataset.m===m);
-  if(el) el.style.outline='2px solid rgba(0,150,136,.35)';
+  const grid = elCards.querySelector('.grid');
+  if(!grid) return;
+  grid.querySelectorAll('.card').forEach(c => c.style.outline = 'none');
+  const el = grid.querySelector(`.card[data-m="${m}"]`);
+  if(el) el.style.outline = '2px solid rgba(0,150,136,.35)';
 }
 
 // =============== CHART ===============
@@ -221,6 +144,7 @@ function paintChart(data){
         if(!els?.length) return;
         const idx = els[0].index; const mes = idx+1;
         const year = +elAnio.value;
+        // si es 2025 y el mes está oculto (Ene–Ago), no abrir
         if(year===2025 && mes <= lockUntilMonth2025) return;
         highlightMonth(mes);
         showDrawer(mes, year);
@@ -300,6 +224,3 @@ async function saveProcesado(){
 // =============== UTILS ===============
 function fmt(n){ return (n||0).toLocaleString('es-CL',{maximumFractionDigits:1}) }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
-
-
-
