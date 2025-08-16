@@ -1,71 +1,60 @@
 /* ==============================
-   ASIGNACIÓN – Estilo alineado a GLOBAL (styles.css)
-   Scoped bajo .asig para no afectar otras vistas
+   ASIGNACIÓN – Estilo alineado a GLOBAL
+   Scoped bajo .asig cuando aplica
 ============================== */
 
 :root {
-  --ok: #2e7d32;        /* verde procesado */
-  --muted: #6b7280;     /* texto suave */
-  --bar-req: #cfd8dc;   /* requerido (gris azulado) */
-  --bar-asg: #80cbc4;   /* asignado (teal claro) */
-  --bar-proc: #66bb6a;  /* procesado (verde medio) */
-  --bar-bg: #eef3f2;    /* fondo barras */
+  --ok: #2e7d32;
+  --muted: #6b7280;
+  --bar-req: #cfd8dc;
+  --bar-asg: #80cbc4;
+  --bar-proc: #66bb6a;
+  --bar-bg: #eef3f2;
   --ring: 0 0 0 3px rgba(0,150,136,.15);
 }
 
 /* ===== Toolbar ===== */
-.asig .toolbar {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:12px;
-}
-.asig .toolbar .left { display:flex; gap:10px; align-items:center; }
+.asig .toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px }
+.asig .toolbar .left { display:flex; gap:10px; align-items:center }
 .asig select, .asig button, .asig input[type=number], .asig input[type=text]{
   background:#fff; color:var(--txt); border:1px solid var(--border);
-  border-radius:10px; padding:8px 10px;
+  border-radius:10px; padding:8px 10px
 }
-.asig button { background:var(--primary); color:#fff; border:none; }
-.asig button:hover { background:#013e34; box-shadow:var(--shadow); }
+.asig button{ background:var(--primary); color:#fff; border:none }
+.asig button:hover{ background:#013e34; box-shadow:var(--shadow) }
 
 /* ===== Leyenda ===== */
-.asig .legend { display:flex; gap:14px; align-items:center; color:var(--txt-soft); }
-.asig .bullet { width:12px; height:12px; border-radius:3px; display:inline-block; }
-.asig .b-req{ background:var(--bar-req) }
-.asig .b-asg{ background:var(--bar-asg) }
-.asig .b-proc{ background:var(--bar-proc) }
+.asig .legend{ display:flex; gap:14px; align-items:center; color:var(--txt-soft) }
+.asig .bullet{ width:12px; height:12px; border-radius:3px; display:inline-block }
+.asig .b-req{ background:var(--bar-req) } .asig .b-asg{ background:var(--bar-asg) } .asig .b-proc{ background:var(--bar-proc) }
 
-/* ===== Grid tarjetas (meses) ===== */
-.asig .grid{
-  display:grid; grid-template-columns:repeat(6, minmax(170px,1fr)); gap:12px;
-}
+/* ===== Grid tarjetas ===== */
+.asig .grid{ display:grid; grid-template-columns:repeat(6, minmax(170px,1fr)); gap:12px }
 @media (max-width:1100px){ .asig .grid{ grid-template-columns:repeat(4,1fr) } }
-@media (max-width:780px){  .asig .grid{ grid-template-columns:repeat(2,1fr) } }
+@media (max-width:780px){ .asig .grid{ grid-template-columns:repeat(2,1fr) } }
 
 .asig .card{
   background:var(--bg-soft); border:1px solid var(--border);
-  border-radius:16px; box-shadow:var(--shadow);
-  padding:12px; min-height:124px; cursor:pointer;
-  transition: transform .15s ease, box-shadow .15s ease;
+  border-radius:16px; box-shadow:var(--shadow); padding:12px; min-height:124px; cursor:pointer;
+  transition: transform .15s ease, box-shadow .15s ease; position:relative;
 }
 .asig .card:hover{ transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.12) }
 .asig .card.lock{ opacity:.45; pointer-events:none }
 .asig .card h4{ margin:0 0 6px; font-size:.95rem; font-weight:700; color:var(--primary) }
 .asig .muted{ color:var(--txt-soft) }
 .asig .kpis{ display:flex; gap:10px; margin-top:8px; flex-wrap:wrap }
-.asig .chip{
-  padding:4px 8px; border-radius:999px; background:#f0f5f4;
-  border:1px solid #e0efed; color:#0f1e1d; font-weight:700;
-}
+.asig .chip{ padding:4px 8px; border-radius:999px; background:#f0f5f4; border:1px solid #e0efed; color:#0f1e1d; font-weight:700 }
 .asig .pct{ position:absolute; right:10px; top:10px; font-weight:700; color:#0f1e1d }
 
 /* Tooltip */
 .asig .tip{
   position:absolute; inset:auto auto calc(100% + 8px) 0; min-width:230px;
-  background:#fff; border:1px solid var(--border); border-radius:12px;
-  padding:10px; box-shadow:0 12px 30px rgba(0,0,0,.12); display:none; z-index:5;
+  background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px;
+  box-shadow:0 12px 30px rgba(0,0,0,.12); display:none; z-index:5;
 }
 .asig .card:hover .tip{ display:block }
 
-/* ===== Barras internas ===== */
+/* ===== Barras ===== */
 .asig .bar{ height:9px; border-radius:6px; background:var(--bar-bg); overflow:hidden; margin-top:8px; border:1px solid #e3ebea }
 .asig .bar .req{ background:#dbe3e7; height:100%; width:100% }
 .asig .bar .asg{ background:var(--bar-asg); height:100% }
@@ -77,27 +66,21 @@
 .asig .panel-chart h3{ margin:6px 6px 10px; font-size:1rem; color:var(--primary) }
 
 /* ===== Drawer (proveedores) ===== */
-.asig .drawer{
+.drawer{
   position:fixed; top:84px; right:16px; width:420px; max-width:92vw;
   background:#fff; border:1px solid var(--border); border-radius:16px;
   box-shadow:var(--shadow); display:none; z-index:10400;
 }
-.asig .drawer header{
-  display:flex; justify-content:space-between; align-items:center;
-  padding:12px 14px; border-bottom:1px solid var(--border); font-weight:700; color:var(--primary);
-}
-.asig .drawer .x{ background:#fff; border:1px solid var(--border); border-radius:8px; padding:2px 8px; cursor:pointer }
-.asig .drawer .x:hover{ filter:brightness(.96) }
-.asig .drawer .body{ max-height:58vh; overflow:auto; padding:10px 14px }
-.asig table{ width:100%; border-collapse:collapse }
-.asig th, .asig td{ padding:8px; border-bottom:1px solid #eef1f3; text-align:left }
-.asig th{ color:#0f1e1d; font-size:.86rem; font-weight:800; background:#f7faf9 }
+.drawer header{ display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--border); font-weight:700; color:var(--primary) }
+.drawer .x{ background:#fff; border:1px solid var(--border); border-radius:8px; padding:2px 8px; cursor:pointer }
+.drawer .x:hover{ filter:brightness(.96) }
+.drawer .body{ max-height:58vh; overflow:auto; padding:10px 14px }
+.drawer table{ width:100%; border-collapse:collapse }
+.drawer th, .drawer td{ padding:8px; border-bottom:1px solid #eef1f3; text-align:left }
+.drawer th{ color:#0f1e1d; font-size:.86rem; font-weight:800; background:#f7faf9 }
 
-/* ===== Modales propios (evita choque con .modal global) ===== */
-.asig-mask{
-  position:fixed; inset:0; background:rgba(0,0,0,.45);
-  display:none; z-index:10500;
-}
+/* ===== Modales propios ===== */
+.asig-mask{ position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; z-index:10500 }
 .asig-modal{
   position:fixed; left:0; right:0; top:6vh; margin:0 auto;
   width:92%; max-width:760px; max-height:88vh;
@@ -106,19 +89,17 @@
   display:none; z-index:10600; overflow:hidden;
 }
 .asig-modal--sm{ max-width:560px }
-.asig-modal header{
-  padding:12px 16px; font-weight:700; border-bottom:1px solid var(--border); color:var(--primary)
-}
+.asig-modal header{ padding:12px 16px; font-weight:700; border-bottom:1px solid var(--border); color:var(--primary) }
 .asig-modal .content{ padding:14px 16px; max-height:calc(88vh - 120px); overflow:auto }
 .asig-modal .actions{
   display:flex; gap:10px; justify-content:flex-end; padding:10px 16px;
   border-top:1px solid var(--border); background:#fff; position:sticky; bottom:0;
 }
 
-/* ===== FAB ===== */
-.asig .fab{
+/* ===== FAB (global para evitar problemas de scope) ===== */
+.fab{
   position:fixed; right:22px; bottom:22px; background:var(--primary);
   color:#fff; border:0; border-radius:999px; padding:12px 14px;
-  font-weight:700; box-shadow:var(--shadow); cursor:pointer;
+  font-weight:700; box-shadow:var(--shadow); cursor:pointer; z-index:10300;
 }
-.asig .fab:hover{ background:#013e34 }
+.fab:hover{ background:#013e34 }
