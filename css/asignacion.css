@@ -1,5 +1,5 @@
 /* ==============================
-   ASIGNACIÓN – Estilo alineado a GLOBAL (compacto & moderno)
+   ASIGNACIÓN – Estilo compacto
    Scoped bajo .asig
 ============================== */
 
@@ -13,34 +13,43 @@
   --bar-req:#cfd8dc;
   --bar-asg:#7ec8e7;
   --bar-proc:#66bb6a;
-  --bar-bg:#eef3f2;
 
-  /* Colores tarjetas */
-  --mock-border:#4caf50;
-  --mock-real:#66bb6a;
-  --mock-real-bg:#e9f2e9;
-  --mock-asg:#7ec8e7;
+  /* UI global */
+  --border:#e2e8f0;
+  --txt:#0f172a;
+  --txt-soft:#6b7280;
+  --bg-soft:#f7faf9;
+  --primary:#0d6b61;
+  --shadow:0 3px 10px rgba(0,0,0,.08);
 }
 
 /* ===== Toolbar / Leyenda ===== */
 .asig .toolbar{display:flex;align-items:center;justify-content:space-between;margin:8px 0 10px}
 .asig .toolbar .left{display:flex;gap:8px;align-items:center}
-.asig select,.asig button,.asig input[type=number],.asig input[type=text]{
-  background:#fff;color:var(--txt);border:1px solid var(--border);border-radius:8px;
-  padding:6px 10px;font-size:.9rem
-}
-.asig button{background:var(--primary);color:#fff;border:none}
-.asig button:hover{background:#013e34;box-shadow:var(--shadow)}
 .asig .legend{display:flex;gap:12px;align-items:center;color:var(--txt-soft);font-size:.85rem}
 .asig .bullet{width:10px;height:10px;border-radius:3px;display:inline-block}
 .asig .b-req{background:var(--bar-req)} .asig .b-asg{background:var(--bar-asg)} .asig .b-proc{background:var(--bar-proc)}
+.asig .toolbar .left label[for="anio"]{ margin-right:6px; color: var(--txt-soft); }
+
+/* Forzar select nativo para que Materialize no lo esconda */
+.asig #anio.browser-default{
+  display:inline-block;
+  min-width:140px;
+  padding:6px 10px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:#fff;
+  line-height:1.2;
+  font-size:.9rem;
+  color:var(--txt);
+}
 
 /* ===== Layout ===== */
 .asig .wrap{width:100%;max-width:none;margin:0;padding:0 10px}
 .asig #cards{width:100% !important;display:block}
 html,body{overflow-x:hidden}
 
-/* ===== Grid: 12 por fila ===== */
+/* ===== Grid ===== */
 .asig .grid{
   width:100%;
   display:grid;
@@ -59,18 +68,17 @@ html,body{overflow-x:hidden}
 .asig .card{background:transparent;border:none;border-radius:0;box-shadow:none;padding:0;cursor:pointer;position:relative}
 .asig .card.lock{opacity:.45;pointer-events:none}
 
-/* ===== Tarjeta MOCK ===== */
+/* ===== Tarjeta ===== */
 .asig .card--mock{
   padding:10px;
   border:1px solid var(--mock-border);
   border-radius:12px;
   background:#fff;
-  font-family:inherit;
   transition:.2s ease all;
 }
 .asig .card--mock:hover{box-shadow:0 3px 8px rgba(0,0,0,.12);transform:translateY(-2px)}
 
-/* ===== Pastilla MES (gradiente según --asg: 0–100) ===== */
+/* Pastilla MES con gradiente según % asignado (CSS var --asg de 0–100) */
 .asig .card--mock .month-pill{
   position:relative;
   color:#fff;
@@ -79,7 +87,7 @@ html,body{overflow-x:hidden}
   text-align:center;
   padding:6px 8px;
   font-size:.72rem;
-  margin-bottom:6px;
+  margin-bottom:8px;
   letter-spacing:.3px;
   background: linear-gradient(
     90deg,
@@ -90,46 +98,54 @@ html,body{overflow-x:hidden}
 .asig .card--mock.full .month-pill{ background:var(--ok) !important; }
 .asig .card--mock.zero .month-pill{ background:var(--muted-pill) !important; }
 
-/* ===== Contenido principal ===== */
+/* Contenido principal */
 .asig .card--mock .tons-title{
   text-align:center;
-  font-weight:500;
-  font-size:.65rem;
-  color:#555;
+  font-weight:600;
+  font-size:.66rem;
+  color:#4b5563;
   margin-bottom:2px;
 }
 .asig .card--mock .tons-value{
   text-align:center;
-  font-weight:700;
-  font-size:.95rem;
+  font-weight:800;
+  font-size:1.15rem;
   line-height:1.1;
-  margin:2px 0 4px;
-  color:#111;
+  margin:2px 0 6px;
+  color:#111827;
 }
 
-/* ===== Filas de barras ===== */
-.asig .rowbar{
+/* ===== Stats compactas (números, sin barras) ===== */
+.asig .stats{ margin-top:4px; }
+
+.asig .stat{
   display:grid;
-  grid-template-columns:52px 1fr 28px;
+  grid-template-columns: 12px 56px 1fr auto auto;
   align-items:center;
-  gap:4px;
-  margin:3px 0;
+  column-gap:6px;
+  font-size:.75rem;
+  color:#374151;
+  margin:4px 0;
 }
-.asig .rowbar .lbl{ color:#555; font-weight:500; font-size:.6rem; }
-.asig .rowbar .pct{ text-align:right; font-weight:600; color:#222; font-size:.6rem; }
+.asig .stat .label{ color:#4b5563; }
+.asig .stat b{ font-weight:800; color:#111827; }
+.asig .stat .unit{ margin-left:4px; color:#6b7280; font-weight:600; }
+.asig .stat .pct{ margin-left:8px; color:#6b7280; font-weight:600; }
 
-/* ===== Barra ===== */
-.asig .barwrap{
-  position:relative;height:5px;border-radius:3px;
-  background:var(--mock-real-bg);overflow:hidden
-}
-.asig .barwrap .fill-real{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--mock-real)}
-.asig .barwrap .fill-asg {position:absolute;left:0;top:0;bottom:0;width:0;background:var(--mock-asg)}
-.asig .n-left,.asig .n-right{ position:absolute;top:-10px;font-size:.5rem;color:#666;font-weight:500 }
-.asig .n-left{left:2px} .asig .n-right{right:2px}
+.asig .dot{ width:8px; height:8px; border-radius:2px; display:inline-block; }
+.asig .dot-asg{ background: var(--bar-asg); }
+.asig .dot-proc{ background: var(--bar-proc); }
+.asig .stat-missing{ grid-template-columns: 1fr auto; color: var(--danger); font-weight:700; }
 
 /* ===== Panel Chart ===== */
-.asig .panel-chart{margin-top:14px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-soft);box-shadow:var(--shadow)}
+.asig .panel-chart{
+  margin-top:14px;
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--bg-soft);
+  box-shadow:var(--shadow)
+}
 .asig .panel-chart h3{margin:4px 6px 8px;font-size:.9rem;color:var(--primary)}
 
 /* ===== Drawer (proveedores) ===== */
@@ -145,7 +161,7 @@ html,body{overflow-x:hidden}
 .drawer th,.drawer td{padding:8px;border-bottom:1px solid #eef1f3;text-align:left}
 .drawer th{color:#0f1e1d;font-size:.86rem;font-weight:700;background:#f7faf9}
 
-/* ===== Modales ===== */
+/* ===== Overlay y Modales ===== */
 .asig-mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:10500}
 .asig-modal{
   position:fixed;left:0;right:0;top:6vh;margin:0 auto;width:92%;max-width:760px;max-height:88vh;background:#fff;
@@ -159,54 +175,19 @@ html,body{overflow-x:hidden}
 /* ===== Prompt de contraseña (centrado con flex) ===== */
 .asig-pass{
   position:fixed; inset:0; display:none; z-index:10660;
-  align-items:center; justify-content:center; /* se aplican cuando JS pone display:flex */
+  align-items:center; justify-content:center;
 }
-
 .asig-pass .backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.25); }
 .asig-pass .sheet{
-  position:relative; left:auto; top:auto; transform:none;
-  width:90%; max-width:360px; background:#fff; border:1px solid var(--border);
-  border-radius:12px; box-shadow:0 18px 60px rgba(0,0,0,.25);
-  padding:12px 14px; z-index:1;
+  position:relative; width:90%; max-width:360px; background:#fff; border:1px solid var(--border);
+  border-radius:12px; box-shadow:0 18px 60px rgba(0,0,0,.25); padding:12px 14px; z-index:1;
 }
+.asig-pass h4{ margin:0 0 8px; color:var(--primary) }
+.asig-pass .actions button{ padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:#fff; cursor:pointer; }
+.asig-pass .actions .ok{ background:var(--primary); color:#fff; border-color:transparent }
+.asig-pass .actions .ok:hover{ filter:brightness(.98) }
 
-/* ===== FAB (actualmente no se usa, lo dejamos por si vuelve) ===== */
-.fab{
-  position:fixed;right:18px;bottom:18px;background:var(--primary);color:#fff;border:0;border-radius:999px;
-  padding:10px 12px;font-weight:700;box-shadow:var(--shadow);cursor:pointer;z-index:10300;font-size:.85rem
-}
-.fab:hover{background:#013e34}
-
-/* ===== Responsive refinamientos ===== */
-@media (max-width:640px){
-  .drawer{right:10px;width:92vw;top:auto;bottom:86px;max-height:58vh;border-radius:12px}
-  .drawer .body{max-height:calc(58vh - 56px)}
-  .fab{right:14px;bottom:14px;padding:12px 14px}
-}
-
-/* ===== Tarjeta CONSOLIDADO AÑO ===== */
-.asig .card--summary{
-  background: linear-gradient(180deg,#ffffff 0%, #f6fff7 100%);
-  border:1px solid var(--mock-border);
-  border-radius:10px;
-  padding:8px;
-}
-.asig .card--summary .month-pill{
-  background:#e8f7ea;
-  border:1px solid var(--mock-border);
-  color:#1b5e20;
-  border-radius:8px;
-  padding:4px 6px;
-  text-align:center;
-  font-weight:700;
-  font-size:.72rem;
-  margin-bottom:6px;
-}
-.asig .card--summary .tons-title{ text-align:center; font-size:.7rem; color:#205a22; font-weight:700; }
-.asig .card--summary .tons-value{ text-align:center; font-weight:800; font-size:1.1rem; margin:2px 0 6px; color:#0d3b19; }
-.asig .card--summary .rowbar .lbl{ color:#2e7d32; }
-
-/* ===== Popover anclado a la tarjeta ===== */
+/* ===== Popover anclado a la tarjeta (Ver proveedores) ===== */
 .asig-pop{
   position:absolute; z-index:10620; display:none;
   width:min(560px, 92vw);
@@ -232,70 +213,18 @@ html,body{overflow-x:hidden}
 
 /* ===== Menú contextual anclado a la tarjeta ===== */
 .asig-card-menu{
-  position:absolute;
-  z-index:10610;
-  display:none;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:10px;
-  box-shadow:0 16px 40px rgba(0,0,0,.22);
-  padding:6px;
-  min-width:220px;
+  position:absolute; z-index:10610; display:none;
+  background:#fff; border:1px solid var(--border); border-radius:10px;
+  box-shadow:0 16px 40px rgba(0,0,0,.22); padding:6px; min-width:260px;
 }
 .asig-card-menu button{
-  width:100%;
-  text-align:left;
-  padding:10px 12px;
-  margin:6px 0;
-  border:1px solid var(--border);
-  background:#fff;
-  border-radius:8px;
-  cursor:pointer;
-  font-size:.9rem;
+  width:100%; text-align:left; padding:10px 12px; margin:6px 0;
+  border:1px solid var(--border); background:#fff; border-radius:8px; cursor:pointer; font-size:.95rem;
 }
 .asig-card-menu button:hover{ background:#f6fbfa }
 
-/* (opcional) bordes neutrales */
-.asig .card--mock.full{ box-shadow:0 0 0 2px rgba(46,125,50,.10); }
-.asig .card--mock.need{ box-shadow:0 0 0 2px rgba(239,83,80,.10); }
-
-/* Asegura que el select de año se vea con Materialize cargado */
-.asig #anio.browser-default{
-  display:inline-block;
-  min-width:140px;
-  padding:6px 10px;
-  border:1px solid var(--border);
-  border-radius:8px;
-  background:#fff;
-  line-height:1.2;
-}
-
-/* Opcional: separa un poco el label del select */
-.asig .toolbar .left label[for="anio"]{ margin-right:6px; color: var(--txt-soft); }
-/* ===== Stats compactas (números en vez de barras) ===== */
-.asig .stats{ margin-top:4px; }
-
-.asig .stat{
-  display:grid;
-  grid-template-columns: 12px 46px 1fr auto auto;
-  align-items:center;
-  column-gap:6px;
-  font-size:.72rem;
-  color:#333;
-  margin:3px 0;
-}
-
-.asig .stat .label{ color:#555; }
-.asig .stat b{ font-weight:700; }
-.asig .stat .unit{ margin-left:4px; color:#666; }
-.asig .stat .pct{ margin-left:8px; color:#666; }
-
-.asig .dot{ width:8px; height:8px; border-radius:2px; display:inline-block; }
-.asig .dot-asg{ background: var(--bar-asg); }
-.asig .dot-proc{ background: var(--bar-proc); }
-
-.asig .stat-missing{
-  grid-template-columns: 1fr auto;
-  color: var(--danger);
-  font-weight:700;
+/* ===== Responsive refinamientos ===== */
+@media (max-width:640px){
+  .drawer{right:10px;width:92vw;top:auto;bottom:86px;max-height:58vh;border-radius:12px}
+  .drawer .body{max-height:calc(58vh - 56px)}
 }
