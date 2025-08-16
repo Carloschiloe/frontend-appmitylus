@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Asignación · Dashboard</title>
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="../asignacion.css" />
+
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row toolbar">
+      <div class="left">
+        <label for="anio">Año</label>
+        <select id="anio"></select>
+        <button id="btnAddDisp">+ Disponibilidad</button>
+        <button id="btnAddProc">+ Procesado semanal</button>
+      </div>
+      <div class="legend">
+        <span class="bullet b-req"></span> Requerido
+        <span class="bullet b-asg"></span> Asignado
+        <span class="bullet b-proc"></span> Procesado
+      </div>
+    </div>
+
+    <div id="cards" class="grid"></div>
+
+    <div class="panel-chart">
+      <h3>Evolución mensual</h3>
+      <canvas id="chartMensual" height="110"></canvas>
+    </div>
+  </div>
+
+  <!-- Drawer: proveedores del mes -->
+  <aside id="drawer" class="drawer">
+    <header>
+      <div id="drawerTitle">Mes</div>
+      <button class="x" onclick="closeDrawer()">✕</button>
+    </header>
+    <div class="body">
+      <table>
+        <thead>
+          <tr><th>Proveedor</th><th>Comuna</th><th>Tons</th><th>Cod.Centro</th></tr>
+        </thead>
+        <tbody id="provRows"></tbody>
+      </table>
+    </div>
+  </aside>
+
+  <!-- Modal overlay -->
+  <div id="mask" class="modal-mask"></div>
+
+  <!-- Modal: Disponibilidad -->
+  <section id="modalDisp" class="modal modal-small">
+    <header>Agregar/Actualizar disponibilidad</header>
+    <div class="content">
+      <div class="row">
+        <div class="col">
+          <label>Año</label>
+          <input id="mDispAnio" type="number" min="2023" value="2025"/>
+        </div>
+        <div class="col">
+          <label>Mes</label>
+          <input id="mDispMes" type="number" min="1" max="12" value="9"/>
+        </div>
+        <div class="col">
+          <label>Materia prima</label>
+          <input id="mDispMP" value="Chorito"/>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <label>Proveedor (contactId)</label>
+          <input id="mDispProv" placeholder="ObjectId del contacto"/>
+        </div>
+        <div class="col">
+          <label>Stock inicial (t)</label>
+          <input id="mDispStock" type="number" min="0" step="0.1"/>
+        </div>
+      </div>
+      <p class="muted">Al crear, <b>stockRestante</b> = stockInicial.</p>
+    </div>
+    <div class="actions">
+      <button onclick="hideModal()">Cancelar</button>
+      <button onclick="saveDisponibilidad()">Guardar</button>
+    </div>
+  </section>
+
+  <!-- Modal: Procesado semanal -->
+  <section id="modalProc" class="modal modal-small">
+    <header>Registrar procesamiento semanal</header>
+    <div class="content">
+      <div class="row">
+        <div class="col">
+          <label>Año</label>
+          <input id="mProcAnio" type="number" value="2025"/>
+        </div>
+        <div class="col">
+          <label>Mes</label>
+          <input id="mProcMes" type="number" min="1" max="12" value="9"/>
+        </div>
+        <div class="col">
+          <label>Semana ISO</label>
+          <input id="mProcWk" type="number" min="1" max="53" value="36"/>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <label>Materia prima</label>
+          <input id="mProcMP" value="Chorito"/>
+        </div>
+        <div class="col">
+          <label>Planta (opcional)</label>
+          <input id="mProcPlanta" placeholder="plantaId"/>
+        </div>
+        <div class="col">
+          <label>Kilos</label>
+          <input id="mProcKg" type="number" min="0" step="1"/>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button onclick="hideModal()">Cancelar</button>
+      <button onclick="saveProcesado()">Guardar</button>
+    </div>
+  </section>
+
+  <!-- Botón flotante -->
+  <button class="fab" id="btnQuick">+ Asignar rápido</button>
+
+  <!-- JS -->
+  <script src="../../../asignacion.js"></script>
+</body>
+</html>
