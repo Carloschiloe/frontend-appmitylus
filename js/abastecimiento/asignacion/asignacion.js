@@ -27,7 +27,7 @@ async function init(){
   elAnio.onchange = async (e)=> loadYear(+e.target.value);
 
   // cerrar con ESC o click en máscara
-  document.addEventListener('keydown', (ev)=>{ if(ev.key === 'Escape') { hideModal(); hideActionMenu(); hidePass(); } });
+  document.addEventListener('keydown', (ev)=>{ if(ev.key === 'Escape') { hideModal(); hideActionMenu(); hidePass(); hideProvidersPopover(); } });
   const mask = document.getElementById('mask');
   mask.addEventListener('click', (ev)=>{ if(ev.target === mask) hideModal(); });
 }
@@ -93,7 +93,7 @@ function paintCards(anio, data){
     const pctReal = Math.min(100, Math.round((real/safeReq)*100));
     const pctAsig = Math.min(100, Math.round((asg/safeReq)*100));
 
-        const card = document.createElement('div');
+    const card = document.createElement('div');
     card.className = 'card card--mock';
     card.dataset.m = m;
     card.innerHTML = `
@@ -122,15 +122,18 @@ function paintCards(anio, data){
         </div>
       </div>
     `;
+    // click en tarjeta -> popover de proveedores anclado bajo la tarjeta
     card.addEventListener('click', (ev)=> openProvidersPopover(m, anio, card));
 
+    grid.appendChild(card);
+  }
 
-  // Tarjeta Consolidado año
+  // Tarjeta Consolidado año (fuera del bucle)
   const ysum = yearTotals(data);
   const cardY = document.createElement('div');
   cardY.className = 'card card--summary';
   cardY.innerHTML = `
-    <div class="month-pill">CONSOLIDADO ${anio}</div>
+    <div class="month-pill"><span>CONSOLIDADO ${anio}</span></div>
     <div class="pane">
       <div class="tons-title">TOTAL REQUERIDO</div>
       <div class="tons-value">${fmt(ysum.tReq)}</div>
@@ -377,6 +380,7 @@ async function injectProveedorSelector(anio, mes){
     <select id="mDispProvSel" class="modern-select" style="margin:4px 0 8px">${opts}</select>
   `;
 }
+
 // ===== POPUP anclado a la tarjeta para proveedores =====
 let popEl;
 function ensurePopover(){
@@ -407,8 +411,8 @@ function ensurePopover(){
     if(popEl.style.display!=='block') return;
     if(!popEl.contains(e.target) && !e.target.closest('.card--mock')) hideProvidersPopover();
   });
-  window.addEventListener('scroll', ()=>{ if(popEl.style.display==='block') repositionPopover() }, true);
-  window.addEventListener('resize', ()=>{ if(popEl.style.display==='block') repositionPopover() }, true);
+  window.addEventListener('scroll', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
+  window.addEventListener('resize', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
   return popEl;
 }
 
@@ -457,5 +461,3 @@ function hideProvidersPopover(){
 // =============== UTILS ===============
 function fmt(n){ return (n||0).toLocaleString('es-CL',{maximumFractionDigits:1}) }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
-
-
