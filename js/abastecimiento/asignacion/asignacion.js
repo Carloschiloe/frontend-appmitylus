@@ -292,7 +292,7 @@ function ensureAuxUIs(){
 function askPassword(){
   return new Promise(resolve=>{
     const pass = document.getElementById('asigPass');
-    pass.style.display = 'flex';              // <— clave para centrar (flex)
+    pass.style.display = 'flex';              // centrar con flex
     pass.dataset.result = '';
     const input = document.getElementById('asigPassInput');
     input.value=''; setTimeout(()=>input.focus(), 50);
@@ -306,7 +306,6 @@ function askPassword(){
     obs.observe(pass, {attributes:true, attributeFilter:['style']});
   });
 }
-
 function hidePass(){ document.getElementById('asigPass').style.display='none' }
 
 // =============== MENÚ CONTEXTUAL anclado a tarjeta ===============
@@ -328,8 +327,11 @@ function ensureCardMenu(){
     const {anio, mes, anchor} = cardMenuCtx;
 
     if(act==='ver'){
+      e.stopPropagation();                 // evita que el click burbujee y cierre
       hideCardMenu();
-      openProvidersPopover(mes, anio, anchor);
+      setTimeout(()=>{                     // abrir en el siguiente tick
+        openProvidersPopover(mes, anio, anchor);
+      }, 0);
       return;
     }
     // acciones con password
@@ -400,7 +402,10 @@ function ensurePopover(){
 
   document.addEventListener('click', (e)=>{
     if(popEl.style.display!=='block') return;
-    if(!popEl.contains(e.target) && !e.target.closest('.card--mock')) hideProvidersPopover();
+    const clickEnPopover = popEl.contains(e.target);
+    const clickEnTarjeta = e.target.closest('.card--mock');
+    const clickEnMenu   = e.target.closest('.asig-card-menu'); // no cerrar si viene del menú
+    if(!clickEnPopover && !clickEnTarjeta && !clickEnMenu) hideProvidersPopover();
   });
   window.addEventListener('scroll', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
   window.addEventListener('resize', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
@@ -467,4 +472,3 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
-
