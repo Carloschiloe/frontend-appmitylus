@@ -358,18 +358,30 @@ function ensureCardMenu(){
   window.addEventListener('scroll', ()=>{ if(cardMenuEl.style.display==='block') positionCardMenu(); }, true);
 }
 function openCardMenu(anchor, mes, anio){
-  cardMenuCtx = {anchor, mes, anio};
-  positionCardMenu();
+  cardMenuCtx = { anchor, mes, anio };
+  // Mostrar primero para que offsetWidth sea real
   cardMenuEl.style.display = 'block';
+  // Posicionar en el próximo frame (ya con ancho real)
+  requestAnimationFrame(positionCardMenu);
 }
+
 function positionCardMenu(){
   if(!cardMenuEl || !cardMenuCtx.anchor) return;
+
   const r = cardMenuCtx.anchor.getBoundingClientRect();
+  const menuW = cardMenuEl.offsetWidth || 260;
+
+  // Preferir anclar al lado derecho de la tarjeta; si no cabe, caer a la izquierda
+  let left = r.right + window.scrollX + 8;
+  const rightLimit = window.scrollX + window.innerWidth - 8;
+  if (left + menuW > rightLimit) left = Math.max(window.scrollX + 8, r.left + window.scrollX - menuW - 8);
+
   const top = r.top + window.scrollY + 8;
-  const left = r.right + window.scrollX - cardMenuEl.offsetWidth; // pegado al borde derecho
+
+  cardMenuEl.style.left = `${left}px`;
   cardMenuEl.style.top  = `${top}px`;
-  cardMenuEl.style.left = `${Math.max(window.scrollX+8, left)}px`;
 }
+
 function hideCardMenu(){ if(cardMenuEl) cardMenuEl.style.display='none'; }
 
 // =============== POPUP PROVEEDORES anclado a tarjeta ===============
@@ -460,3 +472,4 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+
