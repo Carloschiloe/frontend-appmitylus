@@ -25,14 +25,13 @@ async function init(){
   ensureCardMenu();       // crea menú contextual anclable (asigCardMenu)
   ensurePopover();        // crea popover de proveedores
 
-  const years = [2023,2024,2025,2026,2027];
+  // AÑOS: solo 2025 en adelante
+  const start = 2025;
+  const years = Array.from({length: 6}, (_,i)=> start + i); // 2025–2030 (ajusta length si quieres)
   elAnio.innerHTML = years.map(y=>`<option ${y===currentYear?'selected':''}>${y}</option>`).join('');
   await loadYear(currentYear);
 
-  // (por si en el futuro vuelves a habilitar estos botones)
-  document.getElementById('btnAddDisp')?.addEventListener('click', ()=>showModal('modalDisp'));
-  document.getElementById('btnAddProc')?.addEventListener('click', ()=>showModal('modalProc'));
-  document.getElementById('btnQuick')?.addEventListener('click', ()=>showDrawer(lastClickedMonth ?? 9, +elAnio.value));
+  // (ya no hay botones sueltos, así que no registramos handlers para ellos)
 
   elAnio.onchange = async (e)=> loadYear(+e.target.value);
 
@@ -185,7 +184,6 @@ function paintChart(data){
         const idx = els[0].index; const mes = idx+1;
         const year = +elAnio.value;
         if(year===2025 && mes <= lockUntilMonth2025) return;
-        // abrir menú contextual anclado a la tarjeta equivalente si existe
         const card = elCards.querySelector(`.card[data-m="${mes}"]`);
         if(card) openCardMenu(card, mes, year);
       },
@@ -287,42 +285,24 @@ function ensureAuxUIs(){
     hidePass();
   };
 }
-
 function askPassword(){
   return new Promise(resolve=>{
     const pass = document.getElementById('asigPass');
-    pass.style.display = 'flex';                // <— centrado con flex (CSS)
+    pass.style.display = 'flex'; // << centrado, y NO aparece hasta que se llame
     pass.dataset.result = '';
-
-    // Congelar scroll del documento mientras está abierto
-    const prevOverflow = document.body.style.overflow || '';
-    pass.dataset._prevOverflow = prevOverflow;
-    document.body.style.overflow = 'hidden';
-
     const input = document.getElementById('asigPassInput');
-    input.value = '';
-    setTimeout(()=> input.focus(), 50);
+    input.value=''; setTimeout(()=>input.focus(), 50);
 
     const obs = new MutationObserver(()=>{
       if(pass.style.display==='none'){
         obs.disconnect();
-        // Restaurar overflow del body
-        document.body.style.overflow = pass.dataset._prevOverflow || '';
         resolve(pass.dataset.result==='ok');
       }
     });
     obs.observe(pass, {attributes:true, attributeFilter:['style']});
   });
 }
-
-function hidePass(){
-  const el = document.getElementById('asigPass');
-  if(el){
-    el.style.display='none';
-    // Restaurar overflow por si se cierra desde el botón Cancelar
-    document.body.style.overflow = el.dataset._prevOverflow || '';
-  }
-}
+function hidePass(){ document.getElementById('asigPass').style.display='none' }
 
 // =============== MENÚ CONTEXTUAL anclado a tarjeta ===============
 function ensureCardMenu(){
@@ -338,6 +318,7 @@ function ensureCardMenu(){
   document.body.appendChild(cardMenuEl);
 
   cardMenuEl.addEventListener('click', async (e)=>{
+    e.stopPropagation(); // evita que el click "salte" al document y cierre el popover
     const act = e.target?.dataset?.act;
     if(!act) return;
     const {anio, mes, anchor} = cardMenuCtx;
@@ -373,32 +354,22 @@ function ensureCardMenu(){
   window.addEventListener('resize', ()=>{ if(cardMenuEl.style.display==='block') positionCardMenu(); });
   window.addEventListener('scroll', ()=>{ if(cardMenuEl.style.display==='block') positionCardMenu(); }, true);
 }
-
 function openCardMenu(anchor, mes, anio){
   cardMenuCtx = { anchor, mes, anio };
-  // Mostrar primero para que offsetWidth sea real
   cardMenuEl.style.display = 'block';
-  // Posicionar en el próximo frame (ya con ancho real)
   requestAnimationFrame(positionCardMenu);
 }
-
 function positionCardMenu(){
   if(!cardMenuEl || !cardMenuCtx.anchor) return;
-
   const r = cardMenuCtx.anchor.getBoundingClientRect();
   const menuW = cardMenuEl.offsetWidth || 260;
-
-  // Preferir anclar al lado derecho de la tarjeta; si no cabe, caer a la izquierda
   let left = r.right + window.scrollX + 8;
   const rightLimit = window.scrollX + window.innerWidth - 8;
   if (left + menuW > rightLimit) left = Math.max(window.scrollX + 8, r.left + window.scrollX - menuW - 8);
-
   const top = r.top + window.scrollY + 8;
-
   cardMenuEl.style.left = `${left}px`;
   cardMenuEl.style.top  = `${top}px`;
 }
-
 function hideCardMenu(){ if(cardMenuEl) cardMenuEl.style.display='none'; }
 
 // =============== POPUP PROVEEDORES anclado a tarjeta ===============
@@ -420,15 +391,17 @@ function ensurePopover(){
   `;
   document.body.appendChild(popEl);
 
+  // NO cerrar si el click proviene del menú contextual
   document.addEventListener('click', (e)=>{
     if(popEl.style.display!=='block') return;
-    if(!popEl.contains(e.target) && !e.target.closest('.card--mock')) hideProvidersPopover();
+    const clickEnCard = e.target.closest('.card--mock');
+    const clickEnMenu = e.target.closest('.asig-card-menu');
+    if(!popEl.contains(e.target) && !clickEnCard && !clickEnMenu) hideProvidersPopover();
   });
   window.addEventListener('scroll', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
   window.addEventListener('resize', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
   return popEl;
 }
-
 function repositionPopover(){
   if(!popEl || !popCtx.anchor) return;
   const r = popCtx.anchor.getBoundingClientRect();
