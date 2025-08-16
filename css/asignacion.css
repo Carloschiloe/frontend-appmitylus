@@ -316,3 +316,37 @@ html,body{overflow-x:hidden}
   font-size:.9rem;
 }
 .asig-card-menu button:hover{ background:#f6fbfa }
+
+:root{
+  --ok:#2e7d32;
+  --danger:#ef5350;
+  --muted-pill:#9aa3af;
+}
+
+/* Pastilla MES con gradiente por % asignado */
+.asig .card--mock .month-pill{
+  position:relative;
+  color:#fff;
+  border-radius:8px;
+  font-weight:700;
+  text-align:center;
+  padding:6px 8px;
+  font-size:.72rem;
+  margin-bottom:6px;
+  /* usa --asg (0–100) seteado por JS */
+  background: linear-gradient(
+    90deg,
+    var(--ok) 0 calc(var(--asg,0)*1%),
+    var(--danger) calc(var(--asg,0)*1%) 100%
+  );
+}
+
+/* Estados especiales */
+.asig .card--mock.full   .month-pill{ background: var(--ok) !important; }
+.asig .card--mock.zero   .month-pill{ background: var(--muted-pill) !important; }
+.asig .card--mock.need   .month-pill{ /* ya usa el gradiente por defecto */ }
+
+/* (opcional) bordes neutrales, sin “gritar” */
+.asig .card--mock{ border:1px solid #4caf50; }
+.asig .card--mock.full{ box-shadow:0 0 0 2px rgba(46,125,50,.10); }
+.asig .card--mock.need{ box-shadow:0 0 0 2px rgba(239,83,80,.10); }
