@@ -32,39 +32,75 @@
 .asig .bullet{width:12px;height:12px;border-radius:3px;display:inline-block}
 .asig .b-req{background:var(--bar-req)} .asig .b-asg{background:var(--bar-asg)} .asig .b-proc{background:var(--bar-proc)}
 
-/* ===== Grid ===== */
-.asig .grid{display:grid;grid-template-columns:repeat(6,minmax(170px,1fr));gap:12px}
-@media (max-width:1100px){.asig .grid{grid-template-columns:repeat(4,1fr)}}
-@media (max-width:780px){.asig .grid{grid-template-columns:repeat(2,1fr)}}
+/* ===== Grid (full width) ===== */
+.asig .wrap{ width:100%; max-width:none; margin:0; padding:0 12px; }
+.asig #cards{ width:100% !important; display:block; }
+.asig .grid{
+  width:100%;
+  display:grid;
+  grid-template-columns:repeat(6, minmax(200px, 1fr));
+  gap:12px;
+  justify-items:stretch;
+}
+
+/* Responsive: 4/3/2/1 columnas */
+@media (max-width:1280px){ .asig .grid{ grid-template-columns:repeat(4, minmax(200px,1fr)); } }
+@media (max-width:960px){  .asig .grid{ grid-template-columns:repeat(3, minmax(180px,1fr)); } }
+@media (max-width:640px){  .asig .grid{ grid-template-columns:repeat(2, minmax(160px,1fr)); } }
+@media (max-width:420px){  .asig .grid{ grid-template-columns:1fr; } }
+
+/* por si algún estilo global puso max-width al main/container */
+main, .container{ max-width:none !important; }
 
 /* ===== Card base ===== */
 .asig .card{background:transparent;border:none;border-radius:0;box-shadow:none;padding:0;cursor:pointer;position:relative}
 .asig .card.lock{opacity:.45;pointer-events:none}
 
-/* ======== TARJETA TIPO MOCK ======== */
+/* ======== TARJETA TIPO MOCK (coincide con el JS actual) ======== */
 /* Marco exterior redondeado */
-.asig .card--month{
-  padding:16px;border:4px solid var(--mock-border);border-radius:32px;background:transparent;
+.asig .card--mock{
+  padding:16px;
+  border:4px solid var(--mock-border);
+  border-radius:32px;
+  background:transparent;
 }
 
-/* Pastilla con MES */
-.asig .card--month .head{margin:0 8px 12px}
-.asig .card--month .month{
-  border:4px solid var(--mock-border);border-radius:20px;background:#fff;color:#0f1e1d;
-  font-weight:800;text-align:center;padding:10px 12px;letter-spacing:.6px;font-size:1.05rem;
+/* Pastilla con MES (arriba) */
+.asig .card--mock .month-pill{
+  border:4px solid var(--mock-border);
+  border-radius:20px;
+  background:#fff;
+  color:#0f1e1d;
+  font-weight:800;
+  text-align:center;
+  padding:10px 12px;
+  letter-spacing:.6px;
+  font-size:1.05rem;
+  margin:0 8px 12px;
 }
 
 /* Panel interior */
-.asig .card--month .pane{
-  border:4px solid var(--mock-border);border-radius:22px;background:#fff;padding:14px 14px 12px;margin:0 2px;
+.asig .card--mock .pane{
+  border:4px solid var(--mock-border);
+  border-radius:22px;
+  background:#fff;
+  padding:14px 14px 12px;
+  margin:0 2px;
 }
 
 /* Título + número grande */
-.asig .card--month .tons-title{ text-align:center;font-weight:800;font-size:1.1rem;letter-spacing:.5px;color:#111 }
-.asig .card--month .tons-value{ text-align:center;font-weight:900;font-size:2.4rem;line-height:1;margin:6px 0 8px;color:#111 }
+.asig .card--mock .tons-title{
+  text-align:center;font-weight:800;font-size:1.1rem;letter-spacing:.5px;color:#111;
+}
+.asig .card--mock .tons-value{
+  text-align:center;font-weight:900;font-size:2.4rem;line-height:1;margin:6px 0 8px;color:#111;
+}
 
 /* Filas de barras */
-.asig .rowbar{ display:grid;grid-template-columns:84px 1fr 48px;align-items:center;gap:10px;margin:8px 0 12px }
+.asig .rowbar{
+  display:grid;grid-template-columns:84px 1fr 48px;
+  align-items:center;gap:10px;margin:8px 0 12px;
+}
 .asig .rowbar .lbl{ color:#5c6b72;font-weight:700;font-size:.92rem }
 .asig .rowbar .pct{ text-align:right;font-weight:800;color:#0f1e1d }
 
@@ -104,41 +140,12 @@
 .fab{position:fixed;right:22px;bottom:22px;background:var(--primary);color:#fff;border:0;border-radius:999px;padding:12px 14px;font-weight:700;box-shadow:var(--shadow);cursor:pointer;z-index:10300}
 .fab:hover{background:#013e34}
 
-/* ===== Responsive ===== */
-@media (max-width:900px){
-  .asig .grid{grid-template-columns:repeat(3,1fr);gap:10px}
-  .drawer{top:72px;right:12px;width:380px}
-}
+/* ===== Extra responsive ajustes a la tarjeta ===== */
 @media (max-width:640px){
-  .asig .grid{grid-template-columns:repeat(2,1fr);gap:10px}
-  .asig .card--month{padding:12px;border-radius:26px}
-  .asig .card--month .month{padding:8px 10px;font-size:1rem}
-  .asig .card--month .pane{padding:12px;border-radius:18px}
-  .asig .card--month .tons-value{font-size:2rem}
+  .asig .card--mock{padding:12px;border-radius:26px}
+  .asig .card--mock .month-pill{padding:8px 10px;font-size:1rem}
+  .asig .card--mock .pane{padding:12px;border-radius:18px}
+  .asig .card--mock .tons-value{font-size:2rem}
   .asig .rowbar{grid-template-columns:74px 1fr 44px;gap:8px;margin:6px 0 10px}
   .asig .barwrap{height:10px}
-  .drawer{right:10px;width:92vw;top:auto;bottom:86px;max-height:58vh;border-radius:14px}
-  .drawer .body{max-height:calc(58vh - 58px)}
-  .drawer th,.drawer td{padding:7px}
-  .fab{right:16px;bottom:16px;padding:14px 16px;font-size:.95rem}
 }
-@media (max-width:420px){
-  .asig .grid{grid-template-columns:1fr;gap:10px}
-  .drawer{bottom:78px}
-}
-
-/* ====== FIX ancho completo para la vista Asignación ====== */
-.asig .wrap{ width:100%; max-width:none; margin:0; padding:0 12px; }
-.asig #cards{ width:100% !important; display:block; }
-.asig .quarters{ width:100% !important; display:block; }
-.asig .quarter{ width:100% !important; display:block; }
-
-/* el grid debe usar todo el ancho disponible */
-.asig .grid{
-  width:100% !important;
-  grid-template-columns:repeat(6, minmax(200px, 1fr)); /* ajusta si quieres más ancho mínimo */
-  justify-items:stretch;
-}
-
-/* por si algún estilo global puso max-width al main/container */
-main, .container{ max-width:none !important; }
