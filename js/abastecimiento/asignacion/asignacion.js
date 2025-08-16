@@ -1,7 +1,7 @@
 // =============== CONFIG INICIAL ===============
 const MES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-const currentYear = 2025;   // según tu caso
-const lockUntilMonth2025 = 8; // Ene(1)–Ago(8) bloqueados si anio=2025
+const currentYear = 2025;                // año seleccionado por defecto
+const lockUntilMonth2025 = 8;            // Ene(1)–Ago(8) bloqueados si anio=2025
 
 const elCards = document.getElementById('cards');
 const elAnio  = document.getElementById('anio');
@@ -14,12 +14,21 @@ async function init(){
   elAnio.innerHTML = years.map(y=>`<option ${y===currentYear?'selected':''}>${y}</option>`).join('');
   await loadYear(currentYear);
 
-  // botones
+  // Botones
   document.getElementById('btnAddDisp').onclick = ()=>showModal('modalDisp');
   document.getElementById('btnAddProc').onclick = ()=>showModal('modalProc');
   document.getElementById('btnQuick').onclick   = ()=>showDrawer(lastClickedMonth ?? 9, +elAnio.value);
 
   elAnio.onchange = async (e)=> loadYear(+e.target.value);
+
+  // Cerrar modales con ESC y clic en máscara
+  document.addEventListener('keydown', (ev)=>{
+    if(ev.key === 'Escape') hideModal();
+  });
+  const mask = document.getElementById('mask');
+  mask.addEventListener('click', (ev)=>{
+    if(ev.target === mask) hideModal();
+  });
 }
 
 // =============== CARGA DE DATOS ===============
@@ -72,21 +81,23 @@ function paintCards(anio, data){
       <h4>${MES_LABELS[i]} ${anio}</h4>
       <div class="pct">${pct}%</div>
       <div class="muted">Req: <b>${fmt(req)}</b> t · Asig: <b>${fmt(asg)}</b> t · Proc: <b>${fmt(pro)}</b> t</div>
+
+      <!-- Barra base (requerido visual) -->
       <div class="bar" style="margin-top:10px">
-        <div class="stack" style="width:100%">
-          <div class="fill-req" style="flex:${req||1}"></div>
-        </div>
+        <div class="req" style="width:100%"></div>
       </div>
+
+      <!-- Barra progreso (asignado + procesado) -->
       <div class="bar">
-        <div class="stack" style="width:100%">
-          <div class="fill-asg"  style="flex:${asg}"></div>
-          <div class="fill-proc" style="flex:${pro}"></div>
-        </div>
+        <div class="asg"  style="width:${req ? Math.min(100, (asg/req)*100) : 0}%"></div>
+        <div class="proc" style="width:${req ? Math.min(100, (pro/req)*100) : 0}%"></div>
       </div>
+
       <div class="kpis">
         <span class="chip">Cumpl. ${pct}%</span>
         <span class="chip">${fmt(pro)}/${fmt(req)} t</span>
       </div>
+
       <div class="tip">
         <b>${MES_LABELS[i]}</b> — Req ${fmt(req)} t · Asig ${fmt(asg)} t · Proc ${fmt(pro)} t
         <div class="muted" style="margin-top:6px">Click para ver proveedores del mes</div>
@@ -106,7 +117,7 @@ function highlightMonth(m){
   lastClickedMonth = m;
   Array.from(elCards.children).forEach(c=>c.style.outline='none');
   const el = Array.from(elCards.children).find(c=>+c.dataset.m===m);
-  if(el) el.style.outline='2px solid rgba(91,157,255,.6)';
+  if(el) el.style.outline='2px solid rgba(0,150,136,.35)';
 }
 
 // =============== CHART ===============
@@ -145,7 +156,7 @@ async function showDrawer(mes, anio){
   const rows = await fetchProveedoresMes(anio, mes);
   const tbody = document.getElementById('provRows');
   tbody.innerHTML = rows.map(r=>`<tr>
-    <td>${esc(r.proveedor)}</td><td>${esc(r.comuna)}</td><td>${fmt(r.tons)}</td><td>${esc(r.cod)}</td>
+    <td>${esc(r.proveedor)}</td><td>${esc(r.comuna)}</td><td class="text-right">${fmt(r.tons)}</td><td>${esc(r.cod)}</td>
   </tr>`).join('');
   document.getElementById('drawer').style.display='block';
 }
@@ -153,12 +164,25 @@ function closeDrawer(){ document.getElementById('drawer').style.display='none' }
 
 // =============== MODALES & GUARDADOS ===============
 const mask = document.getElementById('mask');
-function showModal(id){ mask.style.display='block'; document.getElementById(id).style.display='block' }
+
+function showModal(id){
+  mask.style.display='block';
+  const modal = document.getElementById(id);
+  modal.style.display='block';
+  document.body.style.overflow='hidden';            // bloquear scroll del body
+  modal.setAttribute('aria-hidden','false');
+  mask.setAttribute('aria-hidden','false');
+}
 function hideModal(){
   mask.style.display='none';
-  document.getElementById('modalDisp').style.display='none';
-  document.getElementById('modalProc').style.display='none';
+  document.querySelectorAll('.asig-modal').forEach(m=>{
+    m.style.display='none';
+    m.setAttribute('aria-hidden','true');
+  });
+  document.body.style.overflow='';                  // restaurar scroll
+  mask.setAttribute('aria-hidden','true');
 }
+
 async function saveDisponibilidad(){
   const payload = {
     anio: +document.getElementById('mDispAnio').value,
@@ -167,7 +191,9 @@ async function saveDisponibilidad(){
     materiaPrima: document.getElementById('mDispMP').value.trim(),
     stockInicialTons: +document.getElementById('mDispStock').value
   };
-  await putDisponibilidad(payload); hideModal(); await loadYear(+elAnio.value);
+  await putDisponibilidad(payload);
+  hideModal();
+  await loadYear(+elAnio.value);
 }
 async function saveProcesado(){
   const payload = {
@@ -178,7 +204,9 @@ async function saveProcesado(){
     plantaId:document.getElementById('mProcPlanta').value.trim()||null,
     kilos:+document.getElementById('mProcKg').value
   };
-  await putProcesado(payload); hideModal(); await loadYear(+elAnio.value);
+  await putProcesado(payload);
+  hideModal();
+  await loadYear(+elAnio.value);
 }
 
 // =============== UTILS ===============
