@@ -377,8 +377,85 @@ async function injectProveedorSelector(anio, mes){
     <select id="mDispProvSel" class="modern-select" style="margin:4px 0 8px">${opts}</select>
   `;
 }
+// ===== POPUP anclado a la tarjeta para proveedores =====
+let popEl;
+function ensurePopover(){
+  if(popEl) return popEl;
+  popEl = document.createElement('div');
+  popEl.className = 'asig-pop';
+  popEl.innerHTML = `
+    <header>
+      <div id="popTitle">Mes · Proveedores</div>
+      <button class="x" onclick="hideProvidersPopover()">×</button>
+    </header>
+    <div class="body">
+      <table>
+        <thead>
+          <tr>
+            <th>Proveedor</th><th>Comuna</th><th>Tons</th><th>Cod.Centro</th>
+          </tr>
+        </thead>
+        <tbody id="popRows"></tbody>
+      </table>
+    </div>
+  `;
+  document.body.appendChild(popEl);
+
+  // click fuera
+  document.addEventListener('click', (e)=>{
+    if(!popEl?.isConnected) return;
+    if(popEl.style.display!=='block') return;
+    if(!popEl.contains(e.target) && !e.target.closest('.card--mock')) hideProvidersPopover();
+  });
+  window.addEventListener('scroll', ()=>{ if(popEl.style.display==='block') repositionPopover() }, true);
+  window.addEventListener('resize', ()=>{ if(popEl.style.display==='block') repositionPopover() }, true);
+  return popEl;
+}
+
+let popCtx = {anchor:null, mes:null, anio:null};
+function repositionPopover(){
+  if(!popEl || !popCtx.anchor) return;
+  const r = popCtx.anchor.getBoundingClientRect();
+  const top = r.bottom + window.scrollY + 8;
+  let left = r.left + window.scrollX;
+
+  // evitar desbordes en X
+  const maxLeft = window.scrollX + (window.innerWidth - popEl.offsetWidth - 8);
+  if(left > maxLeft) left = Math.max(window.scrollX + 8, maxLeft);
+
+  popEl.style.top = `${top}px`;
+  popEl.style.left = `${left}px`;
+}
+
+async function openProvidersPopover(mes, anio, anchorEl){
+  ensurePopover();
+  popCtx = {anchor:anchorEl, mes, anio};
+
+  // titulo
+  document.getElementById('popTitle').textContent = `${MES_LABELS[mes-1]} ${anio} · Proveedores`;
+
+  // datos
+  const rows = await fetchProveedoresMes(anio, mes);
+  const tbody = document.getElementById('popRows');
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td>${esc(r.proveedor)}</td>
+      <td>${esc(r.comuna)}</td>
+      <td class="text-right">${fmt(r.tons)}</td>
+      <td>${esc(r.cod)}</td>
+    </tr>
+  `).join('');
+
+  popEl.style.display = 'block';
+  repositionPopover();
+}
+
+function hideProvidersPopover(){
+  if(popEl) popEl.style.display = 'none';
+}
 
 // =============== UTILS ===============
 function fmt(n){ return (n||0).toLocaleString('es-CL',{maximumFractionDigits:1}) }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
+
 
