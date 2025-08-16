@@ -292,7 +292,7 @@ function ensureAuxUIs(){
 function askPassword(){
   return new Promise(resolve=>{
     const pass = document.getElementById('asigPass');
-    pass.style.display = 'block';
+    pass.style.display = 'flex';              // <— clave para centrar (flex)
     pass.dataset.result = '';
     const input = document.getElementById('asigPassInput');
     input.value=''; setTimeout(()=>input.focus(), 50);
@@ -306,6 +306,7 @@ function askPassword(){
     obs.observe(pass, {attributes:true, attributeFilter:['style']});
   });
 }
+
 function hidePass(){ document.getElementById('asigPass').style.display='none' }
 
 // =============== MENÚ CONTEXTUAL anclado a tarjeta ===============
@@ -466,3 +467,4 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+
