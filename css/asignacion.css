@@ -126,3 +126,19 @@
   .asig .grid{grid-template-columns:1fr;gap:10px}
   .drawer{bottom:78px}
 }
+
+/* ====== FIX ancho completo para la vista Asignación ====== */
+.asig .wrap{ width:100%; max-width:none; margin:0; padding:0 12px; }
+.asig #cards{ width:100% !important; display:block; }
+.asig .quarters{ width:100% !important; display:block; }
+.asig .quarter{ width:100% !important; display:block; }
+
+/* el grid debe usar todo el ancho disponible */
+.asig .grid{
+  width:100% !important;
+  grid-template-columns:repeat(6, minmax(200px, 1fr)); /* ajusta si quieres más ancho mínimo */
+  justify-items:stretch;
+}
+
+/* por si algún estilo global puso max-width al main/container */
+main, .container{ max-width:none !important; }
