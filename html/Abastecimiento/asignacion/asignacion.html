@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Asignación · Dashboard</title>
 
-  <!-- Materialize & Google Icons (para barra superior y botón volver) -->
+  <!-- Materialize & Google Icons (barra superior y botón volver) -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
 
@@ -22,7 +22,7 @@
   <!-- NAV superior -->
   <nav class="teal">
     <div class="nav-wrapper">
-      <a href="../categorias.html" class="btn-flat left" title="Volver">
+      <a href="../categorias.html" class="btn-flat left" title="Volver" aria-label="Volver">
         <i class="material-icons">arrow_back</i>
       </a>
       <a href="#" class="brand-logo center">Asignación y gestión de MMPP</a>
@@ -34,7 +34,7 @@
     <div class="row toolbar">
       <div class="left">
         <label for="anio">Año</label>
-        <!-- 👇 Forzado a nativo para que no lo oculte Materialize -->
+        <!-- Forzado a nativo para que no lo oculte Materialize -->
         <select id="anio" class="browser-default modern-select" aria-label="Seleccionar año"></select>
       </div>
       <div class="legend" aria-hidden="true">
@@ -86,7 +86,7 @@
       <div class="row">
         <div class="col">
           <label for="mDispAnio">Año</label>
-          <input id="mDispAnio" type="number" min="2023" value="2025"/>
+          <input id="mDispAnio" type="number" min="2025" value="2025"/>
         </div>
         <div class="col">
           <label for="mDispMes">Mes</label>
@@ -123,7 +123,7 @@
       <div class="row">
         <div class="col">
           <label for="mProcAnio">Año</label>
-          <input id="mProcAnio" type="number" value="2025"/>
+          <input id="mProcAnio" type="number" min="2025" value="2025"/>
         </div>
         <div class="col">
           <label for="mProcMes">Mes</label>
@@ -160,4 +160,3 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 </body>
 </html>
-
