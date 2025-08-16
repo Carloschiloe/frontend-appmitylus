@@ -2,8 +2,10 @@ import { state, $ } from './state.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
 
-export function initTablaContactos(){
-  const jq = window.jQuery || window.$; 
+let filtroActual = 'todos'; // 'todos' | 'sin' | 'con'
+
+export function initTablaContactos() {
+  const jq = window.jQuery || window.$;
   if (!jq || state.dt) return;
 
   state.dt = jq('#tablaContactos').DataTable({
@@ -12,51 +14,76 @@ export function initTablaContactos(){
       { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
       { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
     ],
-    order: [[0,'desc']],
+    order: [[0, 'desc']],
     pageLength: 25,
     autoWidth: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
     columnDefs: [
-      { targets: 0, width: '110px' },                     // 👈 columna fecha más angosta
-      { targets: -1, orderable: false, searchable: false }
+      { targets: 0, width: '110px' },          // Fecha angosta
+      { targets: -1, orderable: false, searchable: false } // Acciones
     ]
   });
 
   const $jq = jq;
   $jq('#tablaContactos tbody')
-    .on('click', 'a.icon-action.ver', function(){
+    .on('click', 'a.icon-action.ver', function () {
       const id = this.dataset.id;
       const c = state.contactosGuardados.find(x => String(x._id) === String(id));
       if (c) abrirDetalleContacto(c);
     })
-    .on('click', 'a.icon-action.visita', function(){
+    .on('click', 'a.icon-action.visita', function () {
       const id = this.dataset.id;
       const c = state.contactosGuardados.find(x => String(x._id) === String(id));
       if (c) abrirModalVisita(c);
     })
-    .on('click', 'a.icon-action.editar', function(){
+    .on('click', 'a.icon-action.editar', function () {
       const id = this.dataset.id;
       const c = state.contactosGuardados.find(x => String(x._id) === String(id));
       if (c) abrirEdicion(c);
     })
-    .on('click', 'a.icon-action.eliminar', async function(){
+    .on('click', 'a.icon-action.eliminar', async function () {
       const id = this.dataset.id;
       if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
-      try { 
-        await eliminarContacto(id); 
+      try {
+        await eliminarContacto(id);
       } catch (e) {
-        console.error(e); 
+        console.error(e);
         M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 });
       }
     });
+
+  // Escucha de filtros (chips) y reload externo (modal asociar)
+  document.addEventListener('filtro-contactos-changed', (e) => {
+    filtroActual = e.detail?.filtro || 'todos';
+    renderTablaContactos();
+  });
+  document.addEventListener('reload-tabla-contactos', () => {
+    renderTablaContactos();
+  });
+}
+
+function empresaColHTML(c) {
+  if (c?.empresaId) {
+    const nombre = c.empresaNombre || '(sin nombre)';
+    return `
+      <span>${escapeHTML(nombre)}</span>
+      <a href="#!" class="btn-flat teal-text asociar-btn" data-id="${c._id}">Cambiar</a>
+    `;
+  }
+  return `
+    <span class="new badge red" data-badge-caption="">Sin empresa</span>
+    <a href="#!" class="btn-flat teal-text asociar-btn" data-id="${c._id}">Asociar</a>
+  `;
 }
 
 export function renderTablaContactos() {
   const jq = window.jQuery || window.$;
 
-  const filas = state.contactosGuardados
+  const fuente = filtrar(state.contactosGuardados || [], filtroActual);
+
+  const filas = fuente
     .slice()
-    .sort((a,b)=>{
+    .sort((a, b) => {
       const da = new Date(a.createdAt || a.fecha || 0).getTime();
       const db = new Date(b.createdAt || b.fecha || 0).getTime();
       return db - da;
@@ -64,11 +91,11 @@ export function renderTablaContactos() {
     .map(c => {
       const f = new Date(c.createdAt || c.fecha || Date.now());
       const yyyy = f.getFullYear();
-      const mm   = String(f.getMonth() + 1).padStart(2, '0');
-      const dd   = String(f.getDate()).padStart(2, '0');
+      const mm = String(f.getMonth() + 1).padStart(2, '0');
+      const dd = String(f.getDate()).padStart(2, '0');
 
-      const whenDisplay = `${yyyy}-${mm}-${dd}`;  // 👈 solo fecha
-      const whenKey     = f.getTime();            // para ordenar bien
+      const whenDisplay = `${yyyy}-${mm}-${dd}`;  // solo fecha
+      const whenKey = f.getTime();                // para ordenar
 
       const acciones = `
         <a href="#!" class="icon-action ver" title="Ver detalle" data-id="${c._id}">
@@ -85,31 +112,38 @@ export function renderTablaContactos() {
         </a>
       `;
 
+      // NUEVO: comuna y empresa
+      const comuna = c.centroComuna || c.comuna || '';
+
       return [
-        `<span data-order="${whenKey}">${whenDisplay}</span>`, // 👈 usa data-order
-        c.proveedorNombre || '',
-        c.centroCodigo || '',
-        c.tieneMMPP || '',
-        c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '',
-        c.dispuestoVender || '',
+        `<span data-order="${whenKey}">${whenDisplay}</span>`,
+        escapeHTML(c.proveedorNombre || ''),
+        escapeHTML(c.centroCodigo || ''),
+        escapeHTML(comuna),
+        escapeHTML(c.tieneMMPP || ''),
+        c.fechaDisponibilidad ? ('' + c.fechaDisponibilidad).slice(0, 10) : '',
+        escapeHTML(c.dispuestoVender || ''),
         (c.tonsDisponiblesAprox ?? '') + '',
-        c.vendeActualmenteA || '',
+        escapeHTML(c.vendeActualmenteA || ''),
+        empresaColHTML(c), // 👈 NUEVA columna Empresa
         acciones
       ];
     });
 
-  if (state.dt && jq) { 
-    state.dt.clear(); 
-    state.dt.rows.add(filas).draw(); 
-    return; 
+  // DataTables
+  if (state.dt && jq) {
+    state.dt.clear();
+    state.dt.rows.add(filas).draw();
+    return;
   }
 
-  const tbody = $('#tablaContactos tbody'); 
+  // Fallback sin DataTables
+  const tbody = $('#tablaContactos tbody');
   if (!tbody) return;
 
   tbody.innerHTML = '';
-  if (!state.contactosGuardados.length) {
-    tbody.innerHTML = `<tr><td colspan="9" style="color:#888">No hay contactos registrados aún.</td></tr>`;
+  if (!fuente.length) {
+    tbody.innerHTML = `<tr><td colspan="11" style="color:#888">No hay contactos registrados aún.</td></tr>`;
     return;
   }
   filas.forEach(arr => {
@@ -117,4 +151,22 @@ export function renderTablaContactos() {
     tr.innerHTML = arr.map(td => `<td>${td}</td>`).join('');
     tbody.appendChild(tr);
   });
+}
+
+/* =========================
+   Helpers
+========================= */
+function filtrar(lista, filtro) {
+  if (filtro === 'sin') return lista.filter(c => !c.empresaId);
+  if (filtro === 'con') return lista.filter(c => !!c.empresaId);
+  return lista;
+}
+
+function escapeHTML(s = '') {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
