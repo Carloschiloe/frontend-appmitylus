@@ -52,57 +52,75 @@ async function loadYear(y){
 // =============== TARJETAS ===============
 function paintCards(anio, data){
   elCards.innerHTML = '';
-  for(let m=1;m<=12;m++){
-    const i = m-1;
-    const req = +data.requerido[i]||0;
-    const asg = +data.asignado[i]||0;
-    const pro = +data.procesado[i]||0;
+  const wrap = document.createElement('div');
+  wrap.className = 'quarters'; // en caso de que estés usando la agrupación por trimestres
 
-    // %s
-    const reqSafe = req > 0 ? req : 1;
-    const pctCumpl = req > 0 ? Math.min(100, Math.round((pro/req)*100)) : 0;
-    const pctReal  = Math.min(100, Math.round((pro/reqSafe)*100)); // Real/Req
-    const pctAsig  = Math.min(100, Math.round((asg/reqSafe)*100)); // Asig/Req
+  // 4 trimestres (3 meses cada uno)
+  for(let q=0; q<4; q++){
+    const sec = document.createElement('section');
+    sec.className = 'quarter';
+    const grid = document.createElement('div');
+    grid.className = 'grid';
 
-    const lock = (anio===2025 && m <= lockUntilMonth2025);
+    for(let m=q*3+1; m<=q*3+3; m++){
+      const i = m-1;
+      const req = +data.requerido[i]||0;
+      const asg = +data.asignado[i]||0;
+      const pro = +data.procesado[i]||0;
 
-    const card = document.createElement('div');
-    card.className = 'card card--month' + (lock?' lock':'');
-    card.dataset.m = m;
-    card.innerHTML = `
-      <div class="head">
-        <div class="month">${MES_LABELS[i]} ${anio}</div>
-        <div class="pct-badge">${pctCumpl}%</div>
-      </div>
+      const safeReq = req>0?req:1;
+      const pctCumpl = req>0 ? Math.min(100, Math.round((pro/req)*100)) : 0; // barra header
+      const pctReal  = Math.min(100, Math.round((pro/safeReq)*100));
+      const pctAsig  = Math.min(100, Math.round((asg/safeReq)*100));
 
-      <div class="kpi-big">
-        <div class="label">TONS REQ</div>
-        <div class="value">${fmt(req)}</div>
-      </div>
+      const lock = (anio===2025 && m <= lockUntilMonth2025);
 
-      <div class="mini">
-        <div class="lbl">Real/Req</div>
-        <div class="bar"><span class="real" style="width:${pctReal}%"></span></div>
-        <div class="val">${pctReal}%</div>
-      </div>
+      const card = document.createElement('div');
+      card.className = 'card card--month' + (lock?' lock':'');
+      card.dataset.m = m;
 
-      <div class="mini">
-        <div class="lbl">Asig/Req</div>
-        <div class="bar"><span class="asg" style="width:${pctAsig}%"></span></div>
-        <div class="val">${pctAsig}%</div>
-      </div>
-    `;
+      card.innerHTML = `
+        <div class="head">
+          <div class="month">${MES_LABELS[i]} ${anio}</div>
+          <div class="hdrbar" aria-label="Cumplimiento ${pctCumpl}%">
+            <span class="fill" style="width:${pctCumpl}%"></span>
+          </div>
+        </div>
 
-    elCards.appendChild(card);
+        <div class="kpi-big">
+          <div class="label">Tons req</div>
+          <div class="value">${fmt(req)}</div>
+        </div>
 
-    if(!lock){
-      card.addEventListener('click', ()=>{
-        highlightMonth(m);
-        showDrawer(m, anio);
-      });
+        <div class="mini">
+          <div class="lbl">Real/Req</div>
+          <div class="bar"><span class="real" style="width:${pctReal}%"></span></div>
+          <div class="val">${pctReal}%</div>
+        </div>
+
+        <div class="mini">
+          <div class="lbl">Asig/Req</div>
+          <div class="bar"><span class="asg" style="width:${pctAsig}%"></span></div>
+          <div class="val">${pctAsig}%</div>
+        </div>
+      `;
+
+      if(!lock){
+        card.addEventListener('click', ()=>{
+          highlightMonth(m);
+          showDrawer(m, anio);
+        });
+      }
+      grid.appendChild(card);
     }
+
+    sec.appendChild(grid);
+    wrap.appendChild(sec);
   }
+
+  elCards.appendChild(wrap);
 }
+
 
 function highlightMonth(m){
   lastClickedMonth = m;
@@ -210,4 +228,5 @@ async function saveProcesado(){
 // =============== UTILS ===============
 function fmt(n){ return (n||0).toLocaleString('es-CL',{maximumFractionDigits:1}) }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
+
 
