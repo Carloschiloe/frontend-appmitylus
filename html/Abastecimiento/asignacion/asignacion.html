@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Asignación · Dashboard</title>
 
-  <!-- Global styles -->
-  <link rel="stylesheet" href="../../../styles.css">
-  <!-- Estilos propios de Asignación (los pegas en css/asignacion.css) -->
-  <link rel="stylesheet" href="../../../css/asignacion.css">
+  <!-- Global -->
+  <link rel="stylesheet" href="../../../styles.css?v=2">
+  <!-- Estilos de esta vista -->
+  <link rel="stylesheet" href="../../../css/asignacion.css?v=6">
 
-  <!-- Chart.js (CDN) -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -41,7 +41,7 @@
   </div>
 
   <!-- Drawer: proveedores del mes -->
-  <aside id="drawer" class="drawer" aria-hidden="true">
+  <aside id="drawer" class="drawer" aria-hidden="true" style="display:none">
     <header>
       <div id="drawerTitle">Mes</div>
       <button class="x" type="button" onclick="closeDrawer()" aria-label="Cerrar panel">✕</button>
@@ -62,10 +62,11 @@
   </aside>
 
   <!-- Overlay de modales -->
-  <div id="mask" class="asig-mask" aria-hidden="true"></div>
+  <div id="mask" class="asig-mask" aria-hidden="true" style="display:none"></div>
 
   <!-- Modal: Disponibilidad -->
-  <section id="modalDisp" class="asig-modal asig-modal--sm" aria-hidden="true" role="dialog" aria-labelledby="dispTitle">
+  <section id="modalDisp" class="asig-modal asig-modal--sm" aria-hidden="true"
+           role="dialog" aria-labelledby="dispTitle" style="display:none">
     <header id="dispTitle">Agregar/Actualizar disponibilidad</header>
     <div class="content">
       <div class="row">
@@ -101,7 +102,8 @@
   </section>
 
   <!-- Modal: Procesado semanal -->
-  <section id="modalProc" class="asig-modal asig-modal--sm" aria-hidden="true" role="dialog" aria-labelledby="procTitle">
+  <section id="modalProc" class="asig-modal asig-modal--sm" aria-hidden="true"
+           role="dialog" aria-labelledby="procTitle" style="display:none">
     <header id="procTitle">Registrar procesamiento semanal</header>
     <div class="content">
       <div class="row">
@@ -143,6 +145,6 @@
   <button class="fab" id="btnQuick" type="button">+ Asignar rápido</button>
 
   <!-- JS de la vista -->
-  <script defer src="../../../js/abastecimiento/asignacion/asignacion.js?v=2"></script>
+  <script defer src="../../../js/abastecimiento/asignacion/asignacion.js?v=6"></script>
 </body>
 </html>
