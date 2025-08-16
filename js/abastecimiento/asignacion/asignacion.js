@@ -54,44 +54,56 @@ function paintCards(anio, data){
   elCards.innerHTML = '';
   for(let m=1;m<=12;m++){
     const i = m-1;
-    const req = +data.requerido[i]||0, asg = +data.asignado[i]||0, pro= +data.procesado[i]||0;
-    const pct = req>0 ? Math.min(100, Math.round((pro/req)*100)) : 0;
+    const req = +data.requerido[i]||0;
+    const asg = +data.asignado[i]||0;
+    const pro = +data.procesado[i]||0;
+
+    // %s
+    const reqSafe = req > 0 ? req : 1;
+    const pctCumpl = req > 0 ? Math.min(100, Math.round((pro/req)*100)) : 0;
+    const pctReal  = Math.min(100, Math.round((pro/reqSafe)*100)); // Real/Req
+    const pctAsig  = Math.min(100, Math.round((asg/reqSafe)*100)); // Asig/Req
+
     const lock = (anio===2025 && m <= lockUntilMonth2025);
 
     const card = document.createElement('div');
-    card.className = 'card' + (lock?' lock':'');
+    card.className = 'card card--month' + (lock?' lock':'');
     card.dataset.m = m;
     card.innerHTML = `
-      <h4>${MES_LABELS[i]} ${anio}</h4>
-      <div class="pct">${pct}%</div>
-      <div class="muted">Req: <b>${fmt(req)}</b> t · Asig: <b>${fmt(asg)}</b> t · Proc: <b>${fmt(pro)}</b> t</div>
-
-      <div class="bar" style="margin-top:10px"><div class="req" style="width:100%"></div></div>
-      <div class="bar">
-        <div class="asg"  style="width:${req ? Math.min(100, (asg/req)*100) : 0}%"></div>
-        <div class="proc" style="width:${req ? Math.min(100, (pro/req)*100) : 0}%"></div>
+      <div class="head">
+        <div class="month">${MES_LABELS[i]} ${anio}</div>
+        <div class="pct-badge">${pctCumpl}%</div>
       </div>
 
-      <div class="kpis">
-        <span class="chip">Cumpl. ${pct}%</span>
-        <span class="chip">${fmt(pro)}/${fmt(req)} t</span>
+      <div class="kpi-big">
+        <div class="label">TONS REQ</div>
+        <div class="value">${fmt(req)}</div>
       </div>
 
-      <div class="tip">
-        <b>${MES_LABELS[i]}</b> — Req ${fmt(req)} t · Asig ${fmt(asg)} t · Proc ${fmt(pro)} t
-        <div class="muted" style="margin-top:6px">Click para ver proveedores del mes</div>
+      <div class="mini">
+        <div class="lbl">Real/Req</div>
+        <div class="bar"><span class="real" style="width:${pctReal}%"></span></div>
+        <div class="val">${pctReal}%</div>
+      </div>
+
+      <div class="mini">
+        <div class="lbl">Asig/Req</div>
+        <div class="bar"><span class="asg" style="width:${pctAsig}%"></span></div>
+        <div class="val">${pctAsig}%</div>
       </div>
     `;
+
     elCards.appendChild(card);
 
     if(!lock){
-      card.addEventListener('click', async ()=>{
+      card.addEventListener('click', ()=>{
         highlightMonth(m);
         showDrawer(m, anio);
       });
     }
   }
 }
+
 function highlightMonth(m){
   lastClickedMonth = m;
   Array.from(elCards.children).forEach(c=>c.style.outline='none');
@@ -198,3 +210,4 @@ async function saveProcesado(){
 // =============== UTILS ===============
 function fmt(n){ return (n||0).toLocaleString('es-CL',{maximumFractionDigits:1}) }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
+
