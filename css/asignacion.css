@@ -291,3 +291,28 @@ html,body{overflow-x:hidden}
 .asig-pop table{ width:100%; border-collapse:collapse }
 .asig-pop th, .asig-pop td{ padding:8px; border-bottom:1px solid #eef1f3; text-align:left }
 .asig-pop th{ background:#f7faf9; font-weight:800; color:#0f1e1d; font-size:.86rem }
+
+/* ===== Menú contextual anclado a la tarjeta ===== */
+.asig-card-menu{
+  position:absolute;
+  z-index:10610;          /* sobre máscara/modales */
+  display:none;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  box-shadow:0 16px 40px rgba(0,0,0,.22);
+  padding:6px;
+  min-width:220px;
+}
+.asig-card-menu button{
+  width:100%;
+  text-align:left;
+  padding:10px 12px;
+  margin:6px 0;
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:.9rem;
+}
+.asig-card-menu button:hover{ background:#f6fbfa }
