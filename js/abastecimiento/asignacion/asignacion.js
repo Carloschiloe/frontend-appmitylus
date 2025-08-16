@@ -1,7 +1,7 @@
 // =============== CONFIG INICIAL ===============
 const MES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-const currentYear = 2025;                // año por defecto
-const lockUntilMonth2025 = 8;            // Ene(1)–Ago(8) bloqueados si anio=2025
+const currentYear = 2025;
+const lockUntilMonth2025 = 8;
 
 const elCards = document.getElementById('cards');
 const elAnio  = document.getElementById('anio');
@@ -14,14 +14,13 @@ async function init(){
   elAnio.innerHTML = years.map(y=>`<option ${y===currentYear?'selected':''}>${y}</option>`).join('');
   await loadYear(currentYear);
 
-  // Botones
   document.getElementById('btnAddDisp').onclick = ()=>showModal('modalDisp');
   document.getElementById('btnAddProc').onclick = ()=>showModal('modalProc');
   document.getElementById('btnQuick').onclick   = ()=>showDrawer(lastClickedMonth ?? 9, +elAnio.value);
 
   elAnio.onchange = async (e)=> loadYear(+e.target.value);
 
-  // Accesibilidad: cerrar con ESC o click en máscara
+  // cerrar con ESC o click en máscara
   document.addEventListener('keydown', (ev)=>{ if(ev.key === 'Escape') hideModal(); });
   const mask = document.getElementById('mask');
   mask.addEventListener('click', (ev)=>{ if(ev.target === mask) hideModal(); });
@@ -29,28 +28,20 @@ async function init(){
 
 // =============== CARGA DE DATOS (mock) ===============
 async function fetchSummaryMensual(anio){
-  // GET /planning/monthly?anio=...&materiaPrima=...
   const req = [800,900,600,0,0,0,0,0,700,800,900,650];
   const asg = [200,300,300,0,0,0,0,0,300,600,600,450];
   const pro = [ 50,120, 80,0,0,0,0,0,100,300,450,220];
   return {anio, requerido:req, asignado:asg, procesado:pro};
 }
 async function fetchProveedoresMes(anio,mes){
-  // GET /availability/search?anio=..&mes=..&materiaPrima=..
   return [
     { proveedor:"Proveedor X", comuna:"Castro",   tons:120, cod:"CST-101" },
     { proveedor:"MarSur Ltda", comuna:"Dalcahue", tons: 80, cod:"DLH-204" },
     { proveedor:"Acuícola Y",  comuna:"Quellón",  tons: 60, cod:"QLL-330" }
   ];
 }
-async function putDisponibilidad(payload){
-  console.log('[PUT disponibilidad]', payload);
-  alert('Disponibilidad guardada (demo)');
-}
-async function putProcesado(payload){
-  console.log('[PUT procesado semanal]', payload);
-  alert('Procesado guardado (demo)');
-}
+async function putDisponibilidad(payload){ console.log('[PUT disponibilidad]', payload); alert('Disponibilidad guardada (demo)'); }
+async function putProcesado(payload){ console.log('[PUT procesado semanal]', payload); alert('Procesado guardado (demo)'); }
 
 async function loadYear(y){
   cacheSummary = await fetchSummaryMensual(y);
@@ -75,12 +66,7 @@ function paintCards(anio, data){
       <div class="pct">${pct}%</div>
       <div class="muted">Req: <b>${fmt(req)}</b> t · Asig: <b>${fmt(asg)}</b> t · Proc: <b>${fmt(pro)}</b> t</div>
 
-      <!-- Barra base (requerido visual) -->
-      <div class="bar" style="margin-top:10px">
-        <div class="req" style="width:100%"></div>
-      </div>
-
-      <!-- Barra progreso (asignado + procesado) -->
+      <div class="bar" style="margin-top:10px"><div class="req" style="width:100%"></div></div>
       <div class="bar">
         <div class="asg"  style="width:${req ? Math.min(100, (asg/req)*100) : 0}%"></div>
         <div class="proc" style="width:${req ? Math.min(100, (pro/req)*100) : 0}%"></div>
@@ -168,7 +154,6 @@ function showModal(id){
   document.body.style.overflow = 'hidden';
   modal.setAttribute('aria-hidden','false');
   mask.setAttribute('aria-hidden','false');
-  // foco al primer campo
   setTimeout(()=>{
     const focusable = modal.querySelector('input,select,button,textarea');
     focusable?.focus();
@@ -213,4 +198,3 @@ async function saveProcesado(){
 // =============== UTILS ===============
 function fmt(n){ return (n||0).toLocaleString('es-CL',{maximumFractionDigits:1}) }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
-
