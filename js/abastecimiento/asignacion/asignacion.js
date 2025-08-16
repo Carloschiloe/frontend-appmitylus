@@ -1,6 +1,6 @@
 // =============== CONFIG INICIAL ===============
 const MES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-const currentYear = 2025;                // año seleccionado por defecto
+const currentYear = 2025;                // año por defecto
 const lockUntilMonth2025 = 8;            // Ene(1)–Ago(8) bloqueados si anio=2025
 
 const elCards = document.getElementById('cards');
@@ -21,18 +21,13 @@ async function init(){
 
   elAnio.onchange = async (e)=> loadYear(+e.target.value);
 
-  // Cerrar modales con ESC y clic en máscara
-  document.addEventListener('keydown', (ev)=>{
-    if(ev.key === 'Escape') hideModal();
-  });
+  // Accesibilidad: cerrar con ESC o click en máscara
+  document.addEventListener('keydown', (ev)=>{ if(ev.key === 'Escape') hideModal(); });
   const mask = document.getElementById('mask');
-  mask.addEventListener('click', (ev)=>{
-    if(ev.target === mask) hideModal();
-  });
+  mask.addEventListener('click', (ev)=>{ if(ev.target === mask) hideModal(); });
 }
 
-// =============== CARGA DE DATOS ===============
-// TODO: Reemplaza por tus endpoints reales
+// =============== CARGA DE DATOS (mock) ===============
 async function fetchSummaryMensual(anio){
   // GET /planning/monthly?anio=...&materiaPrima=...
   const req = [800,900,600,0,0,0,0,0,700,800,900,650];
@@ -49,12 +44,10 @@ async function fetchProveedoresMes(anio,mes){
   ];
 }
 async function putDisponibilidad(payload){
-  // PUT /availability
   console.log('[PUT disponibilidad]', payload);
   alert('Disponibilidad guardada (demo)');
 }
 async function putProcesado(payload){
-  // PUT /processings
   console.log('[PUT procesado semanal]', payload);
   alert('Procesado guardado (demo)');
 }
@@ -156,7 +149,10 @@ async function showDrawer(mes, anio){
   const rows = await fetchProveedoresMes(anio, mes);
   const tbody = document.getElementById('provRows');
   tbody.innerHTML = rows.map(r=>`<tr>
-    <td>${esc(r.proveedor)}</td><td>${esc(r.comuna)}</td><td class="text-right">${fmt(r.tons)}</td><td>${esc(r.cod)}</td>
+    <td>${esc(r.proveedor)}</td>
+    <td>${esc(r.comuna)}</td>
+    <td class="text-right">${fmt(r.tons)}</td>
+    <td>${esc(r.cod)}</td>
   </tr>`).join('');
   document.getElementById('drawer').style.display='block';
 }
@@ -166,20 +162,25 @@ function closeDrawer(){ document.getElementById('drawer').style.display='none' }
 const mask = document.getElementById('mask');
 
 function showModal(id){
-  mask.style.display='block';
   const modal = document.getElementById(id);
-  modal.style.display='block';
-  document.body.style.overflow='hidden';            // bloquear scroll del body
+  mask.style.display = 'block';
+  modal.style.display = 'block';
+  document.body.style.overflow = 'hidden';
   modal.setAttribute('aria-hidden','false');
   mask.setAttribute('aria-hidden','false');
+  // foco al primer campo
+  setTimeout(()=>{
+    const focusable = modal.querySelector('input,select,button,textarea');
+    focusable?.focus();
+  }, 0);
 }
 function hideModal(){
-  mask.style.display='none';
+  mask.style.display = 'none';
   document.querySelectorAll('.asig-modal').forEach(m=>{
-    m.style.display='none';
+    m.style.display = 'none';
     m.setAttribute('aria-hidden','true');
   });
-  document.body.style.overflow='';                  // restaurar scroll
+  document.body.style.overflow = '';
   mask.setAttribute('aria-hidden','true');
 }
 
@@ -212,3 +213,4 @@ async function saveProcesado(){
 // =============== UTILS ===============
 function fmt(n){ return (n||0).toLocaleString('es-CL',{maximumFractionDigits:1}) }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
+
