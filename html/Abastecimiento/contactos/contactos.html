@@ -15,61 +15,35 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
 
-  <!-- Fix visual para selects nativos dentro de modales -->
   <style>
-    /* dropdowns/scroll en modales */
-    #modalContacto, #modalVisita { overflow: visible !important; }
-    #modalContacto .modal-content, #modalVisita .modal-content { overflow: visible !important; }
-
-    /* select nativo con look Materialize dentro de modales */
-    .modal .browser-default {
-      width: 100%;
-      background: transparent;
-      border: none;
-      border-bottom: 1px solid #9e9e9e;
-      padding: 8px 0 6px;
-      font-size: 16px;
-    }
-    .modal .browser-default:focus {
-      outline: none;
-      border-bottom: 2px solid #26a69a;
-    }
-    .modal .input-field label.active {
-      transform: none !important;
-      font-size: 0.9rem;
-      color: #9e9e9e;
-      margin-bottom: 2px;
-      display: block;
-    }
-
-    /* NUEVO: estilos simples para KPIs y chips */
+    #modalContacto, #modalVisita, #modalAsociar { overflow: visible !important; }
+    #modalContacto .modal-content, #modalVisita .modal-content, #modalAsociar .modal-content { overflow: visible !important; }
+    .modal .browser-default{width:100%;background:transparent;border:none;border-bottom:1px solid #9e9e9e;padding:8px 0 6px;font-size:16px}
+    .modal .browser-default:focus{outline:none;border-bottom:2px solid #26a69a}
+    .modal .input-field label.active{transform:none !important;font-size:.9rem;color:#9e9e9e;margin-bottom:2px;display:block}
     .kpi-num{font-size:1.4rem;font-weight:600}
     .chip-group .chip{margin-right:6px}
   </style>
 </head>
 <body>
-  <!-- NAV -->
   <nav class="teal">
     <div class="nav-wrapper">
-      <!-- Si prefieres volver a categorías usa ../categorias.html -->
-      <a href="../categorias.html" class="btn-flat left" title="Volver">
-        <i class="material-icons">arrow_back</i>
-      </a>
+      <a href="../categorias.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
       <a href="#" class="brand-logo center">Abastecimiento de MMPP</a>
     </div>
   </nav>
 
-  <!-- CONTENIDO -->
   <div class="container" style="margin-top: 1rem;">
-    <!-- Pestañas -->
+    <!-- Tabs -->
     <ul id="tabs" class="tabs">
       <li class="tab col s4"><a class="active" href="#tab-contactos">Contactos</a></li>
       <li class="tab col s4"><a href="#tab-visitas">Visitas</a></li>
+      <li class="tab col s4"><a href="#tab-personas">Personas</a></li>
     </ul>
 
-    <!-- PESTAÑA: Contactos -->
+    <!-- CONTACTOS (tu tabla principal) -->
     <section id="tab-contactos" class="col s12">
-      <div class="row" style="margin-bottom: .5rem;">
+      <div class="row" style="margin-bottom:.5rem;">
         <div class="col s12">
           <a id="btnOpenContactoModal" class="btn teal waves-effect">
             <i class="material-icons left">record_voice_over</i>Registrar contacto
@@ -77,37 +51,18 @@
         </div>
       </div>
 
-      <!-- ===== NUEVO: KPIs arriba ===== -->
-      <div class="row" id="kpisContactos" style="margin-top:8px">
-        <div class="col s3 center"><h6>Total</h6><div id="kpiTotal" class="kpi-num">0</div></div>
-        <div class="col s3 center"><h6>Sin empresa</h6><div id="kpiSin" class="kpi-num">0</div></div>
-        <div class="col s3 center"><h6>Con empresa</h6><div id="kpiCon" class="kpi-num">0</div></div>
-        <div class="col s3 center"><h6>Visitas (30d) sin empresa</h6><div id="kpiVisitasSin" class="kpi-num">0</div></div>
-      </div>
-
-      <!-- ===== NUEVO: Chips de filtro ===== -->
-      <div class="chip-group" id="chipsFiltroContactos" style="margin-bottom:10px">
-        <a id="fltTodos" class="chip teal white-text">Todos</a>
-        <a id="fltSin"   class="chip">Sin empresa</a>
-        <a id="fltCon"   class="chip">Con empresa</a>
-      </div>
-
-      <!-- Tabla de proveedores contactados -->
       <table id="tablaContactos" class="highlight display" style="width:100%; margin-top:.75rem;">
         <thead>
           <tr>
             <th>Fecha</th>
-            <th>Proveedor</th>
+            <th>Proveedor</th> <!-- = EMPRESA -->
             <th>Centro</th>
-            <!-- ===== NUEVO: Columna Comuna ===== -->
-            <th>Comuna</th>
+            <th>Comuna</th>    <!-- NUEVO -->
             <th>Disp.</th>
             <th>Fecha Disp.</th>
             <th>Disposición</th>
             <th>Tons aprox</th>
             <th>Vende a</th>
-            <!-- ===== NUEVO: Columna Empresa (del contacto) ===== -->
-            <th>Empresa</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -115,13 +70,11 @@
       </table>
     </section>
 
-    <!-- PESTAÑA: Visitas (hermana, NO anidada) -->
+    <!-- VISITAS -->
     <section id="tab-visitas" class="col s12">
       <div class="row" style="margin-bottom:.5rem;">
         <div class="col s12">
-          <span class="grey-text text-darken-1">
-            Revisión, filtros y exportación de visitas (la creación sigue en Contactos).
-          </span>
+          <span class="grey-text text-darken-1">Revisión, filtros y exportación de visitas (la creación sigue en Contactos).</span>
         </div>
       </div>
 
@@ -141,21 +94,55 @@
         <tbody></tbody>
       </table>
     </section>
+
+    <!-- PERSONAS (contactos individuales con asociación a empresa) -->
+    <section id="tab-personas" class="col s12" style="margin-top:12px">
+      <!-- KPIs -->
+      <div class="row" id="kpisPersonas" style="margin-top:8px">
+        <div class="col s3 center"><h6>Total</h6><div id="kpiPTotal" class="kpi-num">0</div></div>
+        <div class="col s3 center"><h6>Sin empresa</h6><div id="kpiPSin" class="kpi-num">0</div></div>
+        <div class="col s3 center"><h6>Con empresa</h6><div id="kpiPCon" class="kpi-num">0</div></div>
+        <div class="col s3 center"><h6>Visitas (30d) sin empresa</h6><div id="kpiPVisitasSin" class="kpi-num">0</div></div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="chip-group" id="chipsFiltroPersonas" style="margin-bottom:10px">
+        <a id="fltTodosP" class="chip teal white-text">Todos</a>
+        <a id="fltSinP"   class="chip">Sin empresa</a>
+        <a id="fltConP"   class="chip">Con empresa</a>
+      </div>
+
+      <!-- Tabla Personas -->
+      <table id="tablaPersonas" class="highlight display" style="width:100%; margin-top:.5rem;">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Contacto</th>
+            <th>Teléfono(s)</th>
+            <th>Email</th>
+            <th>Empresa</th>
+            <th>Notas</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
   </div>
 
-  <!-- ===== MODAL: Registrar contacto ===== -->
+  <!-- MODAL: Registrar contacto (empresa = proveedor; contactos/personas se manejan aquí) -->
   <div id="modalContacto" class="modal">
     <div class="modal-content">
       <h5>Registrar Contacto</h5>
 
-      <!-- Buscador de proveedor -->
+      <!-- Buscador de proveedor/empresa -->
       <div class="input-field" style="position:relative;">
         <input type="text" id="buscadorProveedor" list="datalistProveedores" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
         <label for="buscadorProveedor">Proveedor</label>
         <datalist id="datalistProveedores"></datalist>
       </div>
 
-      <!-- Select de centros (nativo) -->
+      <!-- Centro -->
       <div class="input-field">
         <label for="selectCentro" class="active">Centro</label>
         <select id="selectCentro" class="browser-default modern-select" disabled>
@@ -163,7 +150,7 @@
         </select>
       </div>
 
-      <!-- Ocultos -->
+      <!-- Hidden -->
       <input type="hidden" id="proveedorId">
       <input type="hidden" id="proveedorNombre">
       <input type="hidden" id="proveedorKey">
@@ -173,7 +160,7 @@
       <input type="hidden" id="centroComuna">
       <input type="hidden" id="centroHectareas">
 
-      <!-- Form -->
+      <!-- Form empresa + persona -->
       <form id="formContacto" autocomplete="off">
         <div class="row">
           <div class="input-field col s4">
@@ -214,6 +201,7 @@
           </div>
         </div>
 
+        <!-- Persona de contacto (dentro del modal) -->
         <div class="row">
           <div class="input-field col s4">
             <input id="contactoNombre" type="text" placeholder="Nombre y apellido">
@@ -231,7 +219,6 @@
       </form>
     </div>
 
-    <!-- Footer fijo, siempre visible -->
     <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:8px;">
       <button type="button" class="modal-close btn-flat">Cancelar</button>
       <button class="btn teal" type="submit" form="formContacto">
@@ -240,55 +227,36 @@
     </div>
   </div>
 
-  <!-- ===== MODAL: Detalle de contacto ===== -->
+  <!-- MODALES extra -->
   <div id="modalDetalleContacto" class="modal">
-    <div class="modal-content">
-      <h5>Detalle del contacto</h5>
-      <div id="detalleContactoBody"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-close btn teal">Cerrar</button>
-    </div>
+    <div class="modal-content"><h5>Detalle del contacto</h5><div id="detalleContactoBody"></div></div>
+    <div class="modal-footer"><button class="modal-close btn teal">Cerrar</button></div>
   </div>
 
-  <!-- ===== MODAL: Registrar visita ===== -->
   <div id="modalVisita" class="modal">
     <div class="modal-content">
       <h5>Registrar visita</h5>
       <form id="formVisita" autocomplete="off">
         <input type="hidden" id="visita_proveedorId">
-
         <div class="row">
           <div class="input-field col s4">
-            <input type="date" id="visita_fecha" required>
-            <label for="visita_fecha" class="active">Fecha</label>
+            <input type="date" id="visita_fecha" required><label for="visita_fecha" class="active">Fecha</label>
           </div>
-
           <div class="input-field col s4">
             <label for="visita_centroId" class="active">Centro</label>
-            <select id="visita_centroId" class="browser-default">
-              <option value="">Centro visitado (opcional)</option>
-            </select>
+            <select id="visita_centroId" class="browser-default"><option value="">Centro visitado (opcional)</option></select>
           </div>
-
           <div class="input-field col s4">
-            <input id="visita_contacto" type="text" placeholder="Persona contactada">
-            <label for="visita_contacto">Contacto</label>
+            <input id="visita_contacto" type="text" placeholder="Persona contactada"><label for="visita_contacto">Contacto</label>
           </div>
         </div>
-
         <div class="row">
           <div class="input-field col s4">
             <label for="visita_enAgua" class="active">Actividad</label>
-            <select id="visita_enAgua" class="browser-default">
-              <option value="">¿Toma de Muestras?</option>
-              <option>Sí</option>
-              <option>No</option>
-            </select>
+            <select id="visita_enAgua" class="browser-default"><option value="">¿Toma de Muestras?</option><option>Sí</option><option>No</option></select>
           </div>
           <div class="input-field col s4">
-            <input id="visita_tonsComprometidas" type="number" step="0.01" min="0" placeholder="Ej: 120">
-            <label for="visita_tonsComprometidas" class="active">Tons comprometidas (opcional)</label>
+            <input id="visita_tonsComprometidas" type="number" step="0.01" min="0" placeholder="Ej: 120"><label for="visita_tonsComprometidas" class="active">Tons comprometidas (opcional)</label>
           </div>
           <div class="input-field col s4">
             <label for="visita_estado" class="active">Próximo paso</label>
@@ -301,30 +269,24 @@
             </select>
           </div>
         </div>
-
         <div class="input-field">
           <textarea id="visita_observaciones" class="materialize-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
           <label for="visita_observaciones">Observaciones</label>
         </div>
-
         <div class="right-align">
           <button type="button" class="modal-close btn-flat">Cancelar</button>
-          <button class="btn teal" type="submit">
-            <i class="material-icons left">save</i>Guardar visita
-          </button>
+          <button class="btn teal" type="submit"><i class="material-icons left">save</i>Guardar visita</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ===== NUEVO: MODAL Asociar/Cambiar empresa ===== -->
+  <!-- Modal para asociar empresa (solo lo usa la pestaña PERSONAS) -->
   <div id="modalAsociar" class="modal">
     <div class="modal-content">
       <h5>Asociar a empresa</h5>
-      <div class="input-field">
-        <input id="empresaSearch" type="text" placeholder="Buscar empresa... (mín. 2 letras)">
-      </div>
-      <ul id="searchResults" class="collection" style="max-height: 260px; overflow:auto;"></ul>
+      <div class="input-field"><input id="empresaSearch" type="text" placeholder="Buscar empresa... (mín. 2 letras)"></div>
+      <ul id="searchResults" class="collection" style="max-height:260px;overflow:auto;"></ul>
     </div>
     <div class="modal-footer">
       <a href="#!" id="btnCrearEmpresa" class="btn-flat">Crear empresa nueva</a>
@@ -333,43 +295,30 @@
     </div>
   </div>
 
-  <!-- SCRIPTS -->
+  <!-- Libs -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-  <!-- DataTables + Buttons -->
   <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
-  <!-- Orquestador de pestañas (contactos + visitas) -->
-  <script type="module" src="/js/abastecimiento/index.js"></script>
+  <!-- ÚNICO orquestador -->
+  <script type="module" src="/js/contactos/index.js?v=4"></script>
 
-  <!-- Init de modales existentes -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       M.Tabs.init(document.querySelectorAll('.tabs'), {});
-
-      // Modal principal (registrar contacto)
       const modalContacto = M.Modal.init(document.getElementById('modalContacto'), {
         onCloseEnd: () => document.getElementById('formContacto')?.reset()
       });
-      document.getElementById('btnOpenContactoModal')
-        ?.addEventListener('click', () => modalContacto.open());
-
-      // Modal detalle
-      if (document.getElementById('modalDetalleContacto')) {
-        M.Modal.init(document.getElementById('modalDetalleContacto'));
-      }
-
-      // Modal visita
+      document.getElementById('btnOpenContactoModal')?.addEventListener('click', () => modalContacto.open());
+      if (document.getElementById('modalDetalleContacto')) M.Modal.init(document.getElementById('modalDetalleContacto'));
       M.Modal.init(document.getElementById('modalVisita'));
+      M.Modal.init(document.getElementById('modalAsociar'));
     });
   </script>
 </body>
 </html>
-
