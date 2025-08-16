@@ -84,29 +84,31 @@ function yearTotals(data){
 // =============== TARJETAS ===============
 function paintCards(anio, data){
   elCards.innerHTML = '';
-
   const grid = document.createElement('div');
   grid.className = 'grid';
 
   for(let m=1; m<=12; m++){
-    // 2025: ocultar Ene–Ago (<=8) completamente
     if(anio===2025 && m <= lockUntilMonth2025) continue;
 
     const i = m-1;
     const req  = +data.requerido[i] || 0;
     const asg  = +data.asignado[i]  || 0;
     const real = +data.procesado[i] || 0;
-    const safeReq = req>0 ? req : 1;
 
-    const pctReal = Math.min(100, Math.round((real/safeReq)*100));
+    const safeReq = req>0 ? req : 1;
     const pctAsig = Math.min(100, Math.round((asg/safeReq)*100));
+    const pctReal = Math.min(100, Math.round((real/safeReq)*100));
 
     const card = document.createElement('div');
     card.className = 'card card--mock';
+    if(req === 0){ card.classList.add('zero'); }
+    else if(asg >= req){ card.classList.add('full'); }
+    else { card.classList.add('need'); }
+
     card.dataset.m = m;
+
     card.innerHTML = `
-      <div class="month-pill">
-        <div class="pill-fill" style="width:${pctAsig}%"></div>
+      <div class="month-pill" style="--asg:${pctAsig}">
         <span>${MES_LABELS[i].toUpperCase()} ${anio}</span>
       </div>
       <div class="pane">
@@ -127,7 +129,6 @@ function paintCards(anio, data){
       </div>
     `;
 
-    // click en tarjeta => menú contextual anclado
     card.addEventListener('click', (ev)=>{
       ev.stopPropagation();
       lastClickedMonth = m;
@@ -137,7 +138,7 @@ function paintCards(anio, data){
     grid.appendChild(card);
   }
 
-  // Tarjeta Consolidado año (fuera del bucle)
+  // Consolidado anual (igual que lo tenías)
   const ysum = yearTotals(data);
   const cardY = document.createElement('div');
   cardY.className = 'card card--summary';
@@ -146,13 +147,11 @@ function paintCards(anio, data){
     <div class="pane">
       <div class="tons-title">TOTAL REQUERIDO</div>
       <div class="tons-value">${fmt(ysum.tReq)}</div>
-
       <div class="rowbar">
         <div class="lbl">Real/Req</div>
         <div class="barwrap"><span class="fill-real" style="width:${ysum.pctReal}%"></span></div>
         <div class="pct">${ysum.pctReal}%</div>
       </div>
-
       <div class="rowbar">
         <div class="lbl">Asig/Req</div>
         <div class="barwrap"><span class="fill-asg" style="width:${ysum.pctAsig}%"></span></div>
@@ -161,7 +160,6 @@ function paintCards(anio, data){
     </div>
   `;
   grid.appendChild(cardY);
-
   elCards.appendChild(grid);
 }
 
@@ -472,4 +470,5 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+
 
