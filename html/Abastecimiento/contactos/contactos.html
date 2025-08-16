@@ -41,6 +41,10 @@
       margin-bottom: 2px;
       display: block;
     }
+
+    /* NUEVO: estilos simples para KPIs y chips */
+    .kpi-num{font-size:1.4rem;font-weight:600}
+    .chip-group .chip{margin-right:6px}
   </style>
 </head>
 <body>
@@ -73,6 +77,21 @@
         </div>
       </div>
 
+      <!-- ===== NUEVO: KPIs arriba ===== -->
+      <div class="row" id="kpisContactos" style="margin-top:8px">
+        <div class="col s3 center"><h6>Total</h6><div id="kpiTotal" class="kpi-num">0</div></div>
+        <div class="col s3 center"><h6>Sin empresa</h6><div id="kpiSin" class="kpi-num">0</div></div>
+        <div class="col s3 center"><h6>Con empresa</h6><div id="kpiCon" class="kpi-num">0</div></div>
+        <div class="col s3 center"><h6>Visitas (30d) sin empresa</h6><div id="kpiVisitasSin" class="kpi-num">0</div></div>
+      </div>
+
+      <!-- ===== NUEVO: Chips de filtro ===== -->
+      <div class="chip-group" id="chipsFiltroContactos" style="margin-bottom:10px">
+        <a id="fltTodos" class="chip teal white-text">Todos</a>
+        <a id="fltSin"   class="chip">Sin empresa</a>
+        <a id="fltCon"   class="chip">Con empresa</a>
+      </div>
+
       <!-- Tabla de proveedores contactados -->
       <table id="tablaContactos" class="highlight display" style="width:100%; margin-top:.75rem;">
         <thead>
@@ -80,11 +99,15 @@
             <th>Fecha</th>
             <th>Proveedor</th>
             <th>Centro</th>
+            <!-- ===== NUEVO: Columna Comuna ===== -->
+            <th>Comuna</th>
             <th>Disp.</th>
             <th>Fecha Disp.</th>
             <th>Disposición</th>
             <th>Tons aprox</th>
             <th>Vende a</th>
+            <!-- ===== NUEVO: Columna Empresa (del contacto) ===== -->
+            <th>Empresa</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -294,6 +317,22 @@
     </div>
   </div>
 
+  <!-- ===== NUEVO: MODAL Asociar/Cambiar empresa ===== -->
+  <div id="modalAsociar" class="modal">
+    <div class="modal-content">
+      <h5>Asociar a empresa</h5>
+      <div class="input-field">
+        <input id="empresaSearch" type="text" placeholder="Buscar empresa... (mín. 2 letras)">
+      </div>
+      <ul id="searchResults" class="collection" style="max-height: 260px; overflow:auto;"></ul>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" id="btnCrearEmpresa" class="btn-flat">Crear empresa nueva</a>
+      <a href="#!" id="btnQuitarEmpresa" class="btn-flat red-text">Quitar empresa</a>
+      <a href="#!" class="modal-close btn teal">Cerrar</a>
+    </div>
+  </div>
+
   <!-- SCRIPTS -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -310,7 +349,11 @@
   <!-- Orquestador de pestañas (contactos + visitas) -->
   <script type="module" src="/js/abastecimiento/index.js"></script>
 
-  <!-- Init de modales -->
+  <!-- NUEVO: módulos de filtros/KPIs y asociación de empresa -->
+  <script type="module" src="/js/contactos/filtros-kpis.js?v=1"></script>
+  <script type="module" src="/js/contactos/asociar-empresa.js?v=1"></script>
+
+  <!-- Init de modales existentes -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       M.Tabs.init(document.querySelectorAll('.tabs'), {});
@@ -333,4 +376,3 @@
   </script>
 </body>
 </html>
-
