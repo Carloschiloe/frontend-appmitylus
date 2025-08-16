@@ -93,11 +93,14 @@ function paintCards(anio, data){
     const pctReal = Math.min(100, Math.round((real/safeReq)*100));
     const pctAsig = Math.min(100, Math.round((asg/safeReq)*100));
 
-    const card = document.createElement('div');
+        const card = document.createElement('div');
     card.className = 'card card--mock';
     card.dataset.m = m;
     card.innerHTML = `
-      <div class="month-pill">${MES_LABELS[i].toUpperCase()} ${anio}</div>
+      <div class="month-pill">
+        <div class="pill-fill" style="width:${pctAsig}%"></div>
+        <span>${MES_LABELS[i].toUpperCase()} ${anio}</span>
+      </div>
       <div class="pane">
         <div class="tons-title">TONS REQ</div>
         <div class="tons-value">${fmt(req)}</div>
@@ -119,9 +122,8 @@ function paintCards(anio, data){
         </div>
       </div>
     `;
-    card.addEventListener('click', ()=>openActionMenu(m, anio));
-    grid.appendChild(card);
-  }
+    card.addEventListener('click', (ev)=> openProvidersPopover(m, anio, card));
+
 
   // Tarjeta Consolidado año
   const ysum = yearTotals(data);
@@ -379,3 +381,4 @@ async function injectProveedorSelector(anio, mes){
 // =============== UTILS ===============
 function fmt(n){ return (n||0).toLocaleString('es-CL',{maximumFractionDigits:1}) }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
+
