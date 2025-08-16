@@ -9,7 +9,14 @@ const elCards = document.getElementById('cards');
 const elAnio  = document.getElementById('anio');
 
 let chart, cacheSummary, lastClickedMonth = null;
-let ctxAction = {anio:null, mes:null};
+let ctxAction = { anio:null, mes:null };
+
+// --- PREDECLARACIONES para evitar TDZ (ReferenceError) ---
+let cardMenuEl = null;
+let cardMenuCtx = { anchor:null, anio:null, mes:null };
+
+let popEl = null;
+let popCtx = { anchor:null, mes:null, anio:null };
 
 // =============== ARRANQUE ===============
 init();
@@ -22,9 +29,9 @@ async function init(){
   elAnio.innerHTML = years.map(y=>`<option ${y===currentYear?'selected':''}>${y}</option>`).join('');
   await loadYear(currentYear);
 
-  document.getElementById('btnAddDisp').onclick = ()=>showModal('modalDisp');
-  document.getElementById('btnAddProc').onclick = ()=>showModal('modalProc');
-  document.getElementById('btnQuick').onclick   = ()=>showDrawer(lastClickedMonth ?? 9, +elAnio.value);
+  document.getElementById('btnAddDisp')?.addEventListener('click', ()=>showModal('modalDisp'));
+  document.getElementById('btnAddProc')?.addEventListener('click', ()=>showModal('modalProc'));
+  document.getElementById('btnQuick')?.addEventListener('click', ()=>showDrawer(lastClickedMonth ?? 9, +elAnio.value));
 
   elAnio.onchange = async (e)=> loadYear(+e.target.value);
 
@@ -33,7 +40,7 @@ async function init(){
     if(ev.key === 'Escape') { hideModal(); hideCardMenu(); hidePass(); hideProvidersPopover(); }
   });
   const mask = document.getElementById('mask');
-  mask.addEventListener('click', (ev)=>{ if(ev.target === mask) hideModal(); });
+  mask?.addEventListener('click', (ev)=>{ if(ev.target === mask) hideModal(); });
 }
 
 // =============== MOCKS / ENDPOINTS ===============
@@ -302,7 +309,6 @@ function askPassword(){
 function hidePass(){ document.getElementById('asigPass').style.display='none' }
 
 // =============== MENÚ CONTEXTUAL anclado a tarjeta ===============
-let cardMenuEl, cardMenuCtx = {anchor:null, anio:null, mes:null};
 function ensureCardMenu(){
   if(cardMenuEl) return;
   cardMenuEl = document.createElement('div');
@@ -367,7 +373,6 @@ function positionCardMenu(){
 function hideCardMenu(){ if(cardMenuEl) cardMenuEl.style.display='none'; }
 
 // =============== POPUP PROVEEDORES anclado a tarjeta ===============
-let popEl;
 function ensurePopover(){
   if(popEl) return popEl;
   popEl = document.createElement('div');
@@ -395,7 +400,6 @@ function ensurePopover(){
   return popEl;
 }
 
-let popCtx = {anchor:null, mes:null, anio:null};
 function repositionPopover(){
   if(!popEl || !popCtx.anchor) return;
   const r = popCtx.anchor.getBoundingClientRect();
@@ -448,4 +452,11 @@ async function injectProveedorSelector(anio, mes){
 
 // =============== UTILS ===============
 function fmt(n){ return (n||0).toLocaleString('es-CL',{maximumFractionDigits:1}) }
-function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
+function esc(s){
+  return String(s ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
