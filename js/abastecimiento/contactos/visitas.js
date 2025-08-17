@@ -1,7 +1,172 @@
-import { apiGetVisitasByContacto, apiCreateVisita } from '/js/core/api.js';
+// /js/contactos/visitas.js
+import {
+  apiGetVisitas,
+  apiGetVisitasByContacto,
+  apiCreateVisita,
+} from '/js/core/api.js';
 import { state, $, setVal, slug } from './state.js';
 import { normalizeVisitas, centroCodigoById } from './normalizers.js';
+import { abrirEdicion } from './form-contacto.js'; // por si lo necesitas
 
+/* ---------------- utils locales ---------------- */
+const esc = (s='') => String(s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+
+const fmtISO = (d) => {
+  if (!d) return '';
+  const x = new Date(d);
+  if (Number.isNaN(x.getTime())) return '';
+  const y = x.getFullYear();
+  const m = String(x.getMonth()+1).padStart(2,'0');
+  const dd = String(x.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+};
+
+const trunc = (s='', max=42) => {
+  const t = String(s);
+  return t.length > max ? t.slice(0, max - 1) + '…' : t;
+};
+
+// busca proveedorNombre desde contactos ya cargados
+function proveedorDeVisita(v) {
+  const id = v.contactoId ? String(v.contactoId) : null;
+  if (!id) return '';
+  const c = (state.contactosGuardados || []).find(x => String(x._id) === id);
+  return c?.proveedorNombre || '';
+}
+
+function codigoDeVisita(v) {
+  return v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '') || '';
+}
+
+/* --------------- DataTable Visitas --------------- */
+let dtV = null;
+
+export async function initVisitasTab() {
+  const jq = window.jQuery || window.$;
+  const tabla = $('#tablaVisitas');
+  if (!tabla) return;
+
+  // DataTable (10 por página y export)
+  if (jq && !dtV) {
+    dtV = jq('#tablaVisitas').DataTable({
+      dom: 'Blfrtip',
+      buttons: [
+        { extend:'excelHtml5', title:'Visitas_Abastecimiento' },
+        { extend:'pdfHtml5',   title:'Visitas_Abastecimiento', orientation:'landscape', pageSize:'A4' }
+      ],
+      order: [[0,'desc']],
+      paging: true,
+      pageLength: 10,
+      lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
+      autoWidth: false,
+      language: { url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+      columnDefs: [
+        { targets: 0, width: '110px' },       // Fecha
+        { targets: 1, width: '260px' },       // Proveedor (angosta + tooltip)
+        { targets: -1, orderable:false, searchable:false }
+      ]
+    });
+
+    // acciones en filas
+    jq('#tablaVisitas tbody')
+      .on('click', 'a.v-ver', function(){
+        const contactoId = this.dataset.contactoId;
+        const c = (state.contactosGuardados || []).find(x => String(x._id) === String(contactoId));
+        if (c) abrirDetalleContacto(c);
+      })
+      .on('click', 'a.v-nueva', function(){
+        const contactoId = this.dataset.contactoId;
+        const c = (state.contactosGuardados || []).find(x => String(x._id) === String(contactoId));
+        if (c) abrirModalVisita(c);
+      });
+  }
+
+  await renderTablaVisitas();
+
+  // si se crea una visita desde el modal, refresca tabla
+  window.addEventListener('visita:created', async () => {
+    await renderTablaVisitas();
+  });
+}
+
+/* carga y pinta la tabla */
+export async function renderTablaVisitas() {
+  const jq = window.jQuery || window.$;
+
+  // Trae todas las visitas del backend
+  let visitas = [];
+  try {
+    const raw = await apiGetVisitas();
+    visitas = normalizeVisitas(Array.isArray(raw) ? raw : (raw?.items || []));
+  } catch (e) {
+    console.error('[visitas] apiGetVisitas error:', e?.message || e);
+    visitas = [];
+  }
+
+  // arma filas
+  const filas = visitas
+    .slice()
+    .sort((a,b)=> new Date(b.fecha||0) - new Date(a.fecha||0))
+    .map(v => {
+      const fecha = fmtISO(v.fecha);
+      const proveedor = proveedorDeVisita(v);
+      const proveedorHTML = proveedor
+        ? `<span title="${esc(proveedor)}">${esc(trunc(proveedor, 36))}</span>`
+        : '<span class="text-soft">—</span>';
+
+      const centro = codigoDeVisita(v);
+      const actividad = v.enAgua || '';
+      const proximoPaso = v.estado || '';
+      const tons = (v.tonsComprometidas ?? '') + '';
+      const obs = v.observaciones || '';
+      const obsHTML = obs ? `<span title="${esc(obs)}">${esc(trunc(obs, 56))}</span>` : '—';
+
+      const acciones = `
+        <a href="#!" class="v-ver"   title="Ver detalle del proveedor" data-contacto-id="${esc(v.contactoId||'')}">
+          <i class="material-icons">visibility</i>
+        </a>
+        <a href="#!" class="v-nueva" title="Registrar nueva visita" data-contacto-id="${esc(v.contactoId||'')}">
+          <i class="material-icons">event_available</i>
+        </a>
+      `;
+
+      return [
+        `<span data-order="${new Date(v.fecha||0).getTime()}">${fecha || ''}</span>`,
+        proveedorHTML,
+        esc(centro),
+        esc(actividad),
+        esc(proximoPaso),
+        esc(tons),
+        obsHTML,
+        acciones
+      ];
+    });
+
+  // pinta con DataTables si está activo
+  if (dtV && jq) {
+    dtV.clear();
+    dtV.rows.add(filas).draw();
+    return;
+  }
+
+  // fallback sin DataTables
+  const tbody = $('#tablaVisitas tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!filas.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="color:#888">No hay visitas registradas.</td></tr>`;
+    return;
+  }
+  filas.forEach(arr => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = arr.map(td => `<td>${td}</td>`).join('');
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---------------------- Detalle + modal visitas (lo que ya tenías) ---------------------- */
 function comunasDelProveedor(proveedorKey) {
   const key = proveedorKey?.length ? proveedorKey : null;
   const comunas = new Set();
@@ -24,7 +189,7 @@ function miniTimelineHTML(visitas = []) {
         <div class="col s4"><strong>${(v.fecha||'').slice(0,10)}</strong></div>
         <div class="col s4">${code}</div>
         <div class="col s4">${v.estado || '-'}</div>
-        <div class="col s12"><span class="text-soft">${v.tonsComprometidas ? (v.tonsComprometidas + ' t • ') : ''}${v.observaciones || ''}</span></div>
+        <div class="col s12"><span class="text-soft">${v.tonsComprometidas ? (v.tonsComprometidas + ' t • ') : ''}${esc(v.observaciones || '')}</span></div>
       </div>
     `;
   }).join('');
@@ -39,7 +204,7 @@ export async function abrirDetalleContacto(c) {
 
   const comunas = comunasDelProveedor(c.proveedorKey || slug(c.proveedorNombre||''));
   const chips = comunas.length
-    ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${x}</span>`).join('')
+    ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${esc(x)}</span>`).join('')
     : '<span class="text-soft">Sin centros asociados</span>';
 
   const visitas = normalizeVisitas(await apiGetVisitasByContacto(c._id));
@@ -52,16 +217,16 @@ export async function abrirDetalleContacto(c) {
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
       <div><strong>Fecha:</strong> ${fechaFmt}</div>
-      <div><strong>Proveedor:</strong> ${c.proveedorNombre || ''}</div>
-      <div><strong>Centro:</strong> ${c.centroCodigo || '-'}</div>
-      <div><strong>Disponibilidad:</strong> ${c.tieneMMPP || '-'}</div>
+      <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
+      <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
+      <div><strong>Disponibilidad:</strong> ${esc(c.tieneMMPP || '-')}</div>
       <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '-'}</div>
-      <div><strong>Disposición:</strong> ${c.dispuestoVender || '-'}</div>
+      <div><strong>Disposición:</strong> ${esc(c.dispuestoVender || '-')}</div>
       <div><strong>Tons aprox.:</strong> ${(c.tonsDisponiblesAprox ?? '') + ''}</div>
-      <div><strong>Vende a:</strong> ${c.vendeActualmenteA || '-'}</div>
-      <div style="grid-column:1/-1;"><strong>Notas:</strong> ${c.notas || '<span class="text-soft">Sin notas</span>'}</div>
+      <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
+      <div style="grid-column:1/-1;"><strong>Notas:</strong> ${c.notas ? esc(c.notas) : '<span class="text-soft">Sin notas</span>'}</div>
       <div style="grid-column:1/-1;"><strong>Contacto:</strong>
-        ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).join(' • ') || '-'}</div>
+        ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).map(esc).join(' • ') || '-'}</div>
     </div>
 
     <div class="mb-4" style="margin-top:1rem;">
@@ -116,11 +281,10 @@ export function setupFormularioVisita() {
       contactoId,
       fecha: $('#visita_fecha').value,
       centroId,
-      centroCodigo, // para mostrar bien en timeline sin segundo lookup
+      centroCodigo,
       contacto: $('#visita_contacto').value || null,
       enAgua: $('#visita_enAgua').value || null,
       tonsComprometidas: $('#visita_tonsComprometidas').value ? Number($('#visita_tonsComprometidas').value) : null,
-      // por defecto usamos el “Próximo paso”
       estado: $('#visita_estado').value || 'Programar nueva visita',
       observaciones: $('#visita_observaciones').value || null
     };
@@ -128,21 +292,16 @@ export function setupFormularioVisita() {
     try {
       const nueva = await apiCreateVisita(payload);
 
-      // 🔔 Notifica a toda la app que se creó una visita
-      window.dispatchEvent(new CustomEvent('visita:created', {
-        detail: { visita: nueva, contactoId }
-      }));
-
+      // notifica y refresca tabla
+      window.dispatchEvent(new CustomEvent('visita:created', { detail: { visita: nueva, contactoId } }));
       M.toast?.({ html: 'Visita guardada', classes: 'teal', displayLength: 1800 });
 
       const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita'));
       modalVisita?.close();
       form.reset();
     } catch (e2) {
-      console.warn('apiCreateVisita aún no disponible:', e2?.message || e2);
-      M.toast?.({ html: 'Visitas aún no disponible (backend)', displayLength: 2200 });
-      const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita'));
-      modalVisita?.close();
+      console.warn('apiCreateVisita error:', e2?.message || e2);
+      M.toast?.({ html: 'No se pudo guardar la visita', displayLength: 2200, classes:'red' });
     }
   });
 }
