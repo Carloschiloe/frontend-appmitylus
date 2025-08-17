@@ -8,20 +8,13 @@ let filtroActualP = 'todos'; // 'todos' | 'sin' | 'con'
 
 function injectPersonasStyles() {
   if (document.getElementById('personas-sticky-styles')) return;
-
-  // Calcula un offset para que el thead no se meta bajo la barra superior
-  const nav = document.querySelector('nav');
-  const topOffset = (nav?.getBoundingClientRect()?.height || 56) + 8; // px
-
   const css = `
-    /* Sticky header para Personas */
     #tablaPersonas thead th {
       position: sticky;
-      top: ${topOffset}px;
+      top: var(--sticky-offset, 64px);
       background: #fff;
       z-index: 3;
     }
-    /* Columnas con ancho contenido + elipsis */
     #tablaPersonas th.col-empresa, #tablaPersonas td.col-empresa { max-width: 280px; }
     #tablaPersonas th.col-notas,   #tablaPersonas td.col-notas   { max-width: 320px; }
     #tablaPersonas td .ellipsis {
@@ -37,8 +30,18 @@ function injectPersonasStyles() {
   document.head.appendChild(style);
 }
 
+function setStickyOffset() {
+  // suma altura de la barra superior + un pequeño margen
+  const nav = document.querySelector('nav');
+  const offset = (nav?.getBoundingClientRect()?.height || 56) + 8;
+  const table = document.getElementById('tablaPersonas');
+  if (table) table.style.setProperty('--sticky-offset', `${Math.round(offset)}px`);
+}
+
 export function initPersonasTab() {
   injectPersonasStyles();
+  setStickyOffset();
+  window.addEventListener('resize', setStickyOffset);
 
   const jq = window.jQuery || window.$;
   const tabla = document.getElementById('tablaPersonas');
@@ -52,13 +55,12 @@ export function initPersonasTab() {
         { extend:'pdfHtml5',   title:'Personas_Abastecimiento', orientation:'landscape', pageSize:'A4' }
       ],
       order: [[0,'desc']],
-      pageLength: 10,                 // ← 10 por página
+      pageLength: 10,
       lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
       autoWidth: false,
       language: { url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: [
         { targets: 0, width: '110px' },
-        // marca columnas con clases para el estilo/ellipsis
         { targets: 4, className: 'col-empresa' },
         { targets: 5, className: 'col-notas' },
         { targets: -1, orderable:false, searchable:false }
@@ -87,13 +89,12 @@ export function initPersonasTab() {
         if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
         try {
           await eliminarContacto(id);
-          renderTablaPersonas(); // refresca Personas también
+          renderTablaPersonas();
         } catch(e){
           console.error(e);
           M.toast?.({ html:'No se pudo eliminar', displayLength:2000 });
         }
       })
-      // Abrir modal "Asociar/Cambiar"
       .on('click', 'a.asociar-btn', function(e){
         e.preventDefault();
         const id = this.dataset.id;
@@ -141,21 +142,20 @@ export function renderTablaPersonas() {
       const whenDisplay = `${yyyy}-${mm}-${dd}`;
       const whenKey = f.getTime();
 
-      // Teléfonos / emails tolerantes a array o string
       const tels = Array.isArray(c.contactoTelefonos) ? c.contactoTelefonos.join(' / ')
                  : (c.contactoTelefono || '');
       const mails = Array.isArray(c.contactoEmails) ? c.contactoEmails.join(' / ')
                   : (c.contactoEmail || '');
 
-      // Empresa con elipsis + title para tooltip
-      const empresaTxt = c.empresaNombre || c.proveedorNombre || '';
-      const empresaBlock = c.empresaId
-        ? `<span class="ellipsis" title="${esc(empresaTxt)}">${esc(empresaTxt || '(sin nombre)')}</span>
+      // ✅ Con empresa si hay empresaId o (proveedorKey & proveedorNombre)
+      const tieneEmpresa = !!(c.empresaId || (c.proveedorKey && c.proveedorNombre));
+      const empresaNombre = c.empresaNombre || c.proveedorNombre || '';
+      const empresaBlock = tieneEmpresa
+        ? `<span class="ellipsis" title="${esc(empresaNombre)}">${esc(empresaNombre || '(sin nombre)')}</span>
            <a href="#!" class="btn-flat teal-text asociar-btn" data-id="${c._id}">Cambiar</a>`
         : `<span class="new badge red" data-badge-caption="" title="Sin empresa">Sin empresa</span>
            <a href="#!" class="btn-flat teal-text asociar-btn" data-id="${c._id}">Asociar</a>`;
 
-      // Notas con elipsis + title
       const notasTxt = c.notasContacto || c.notas || '';
       const notasBlock = `<span class="ellipsis" title="${esc(notasTxt)}">${esc(notasTxt)}</span>`;
 
@@ -177,9 +177,11 @@ export function renderTablaPersonas() {
       ];
     });
 
-  if (dtP && jq) {
+  const jqInst = window.jQuery || window.$;
+  if (dtP && jqInst) {
     dtP.clear();
-    dtP.rows.add(filas).draw();
+    dtP.rows.add(filas).draw(false);
+    dtP.columns.adjust();
     return;
   }
 
@@ -193,7 +195,6 @@ export function renderTablaPersonas() {
   }
   filas.forEach(arr=>{
     const tr = document.createElement('tr');
-    // aplica clases de columnas “estrechas” a td 5 (empresa) y 6 (notas)
     tr.innerHTML = arr.map((td,i)=>{
       const extra = (i === 4) ? ' class="col-empresa"' : (i === 5) ? ' class="col-notas"' : '';
       return `<td${extra}>${td}</td>`;
@@ -203,8 +204,10 @@ export function renderTablaPersonas() {
 }
 
 function filtrar(lista, filtro){
-  if (filtro === 'sin') return lista.filter(c => !c.empresaId);
-  if (filtro === 'con') return lista.filter(c => !!c.empresaId);
+  // usa la misma definición que en la tabla para “con empresa”
+  const hasEmp = (c) => !!(c.empresaId || (c.proveedorKey && c.proveedorNombre));
+  if (filtro === 'sin') return lista.filter(c => !hasEmp(c));
+  if (filtro === 'con') return lista.filter(c =>  hasEmp(c));
   return lista;
 }
 function esc(s=''){
