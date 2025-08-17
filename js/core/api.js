@@ -105,7 +105,7 @@ export async function apiCreateContacto(data) {
   });
   return checkResponse(resp);
 }
-// PATCH con fallback a PUT
+// PATCH con fallback a PUT y reintento si hay error de red/DNS
 export async function apiUpdateContacto(id, data) {
   const url = `${API_URL}/contactos/${id}`;
   const opts = (m) => ({
@@ -113,16 +113,26 @@ export async function apiUpdateContacto(id, data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  let resp = await fetch(url, opts('PATCH'));
-  if (resp.status === 404 || resp.status === 405 || resp.status === 501) {
-    resp = await fetch(url, opts('PUT'));
+
+  try {
+    // 1) Intento PATCH
+    let resp = await fetch(url, opts('PATCH'));
+    // Fallback a PUT si el server no soporta PATCH
+    if (!resp.ok && (resp.status === 404 || resp.status === 405 || resp.status === 501)) {
+      resp = await fetch(url, opts('PUT'));
+    }
+    return checkResponse(resp);
+  } catch (err) {
+    // 2) Error de red (DNS/timeout): reintenta 1 vez por PUT
+    try {
+      const resp2 = await fetch(url, opts('PUT'));
+      return checkResponse(resp2);
+    } catch (err2) {
+      throw err2;
+    }
   }
-  return checkResponse(resp);
 }
-export async function apiDeleteContacto(id) {
-  const resp = await fetch(`${API_URL}/contactos/${id}`, { method: 'DELETE' });
-  return checkResponse(resp);
-}
+
 
 /* ==================== VISITAS ==================== */
 export async function apiGetVisitas(params = {}) {
@@ -183,3 +193,4 @@ export async function apiContactosDisponibles({ q = '', minTons = 1 } = {}) {
 export async function apiContactosDisponiblesAll({ q = '' } = {}) {
   return apiContactosDisponibles({ q, minTons: 0 });
 }
+
