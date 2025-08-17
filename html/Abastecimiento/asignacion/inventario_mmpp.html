@@ -8,30 +8,32 @@
   <!-- Materialize & Google Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+
+  <!-- DataTables + Buttons -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
 
   <style>
-    body { background:#fafafa; }
-    .kpi-card {
-      border-radius: 14px; background:#fff; border:1px solid #eaeaea;
-      padding: 16px; text-align:center;
-    }
-    .kpi-title { color:#777; margin:0 0 4px; font-weight:600; }
-    .kpi-value { font-size: 2rem; font-weight: 700; margin:0; }
-    .switch label input[type=checkbox]:checked + .lever { background-color: #80cbc4; }
-    .switch label input[type=checkbox]:checked + .lever:after { background-color: #26a69a; }
+    body{background:#fafafa}
+    .kpi-card{border-radius:14px;background:#fff;border:1px solid #eaeaea;padding:16px;text-align:center}
+    .kpi-title{color:#777;margin:0 0 4px;font-weight:600}
+    .kpi-value{font-size:2rem;font-weight:700;margin:0}
 
-    /* Vista agrupada */
-    #invGrouped details { margin-bottom:10px; border:1px solid #e0e0e0; border-radius:10px; background:#fff; }
-    #invGrouped summary { cursor:pointer; padding:10px 14px; list-style:none; }
-    #invGrouped summary::-webkit-details-marker { display:none; }
-    .group-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .group-head .tag { font-size:.85rem; color:#fff; background:#26a69a; border-radius:999px; padding:4px 10px; }
-    .group-sub { font-size:.85rem; color:#666 }
-    .group-table { padding: 0 10px 10px 10px; }
-    .group-table table { width:100%; }
-    .group-table th, .group-table td { padding:8px 10px; }
+    /* Agrupado */
+    #invGrouped details{margin-bottom:10px;border:1px solid #e0e0e0;border-radius:10px;background:#fff}
+    #invGrouped summary{cursor:pointer;padding:10px 14px;list-style:none}
+    #invGrouped summary::-webkit-details-marker{display:none}
+    .group-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .group-tags{display:flex;gap:6px;flex-wrap:wrap}
+    .tag{font-size:.85rem;color:#fff;border-radius:999px;padding:4px 10px}
+    .tag-sub{background:#26a69a}
+    .tag-asig{background:#7e57c2}
+    .tag-saldo{background:#ef5350}
+    .group-sub{font-size:.9rem;color:#666}
+    .group-table{padding:0 10px 10px 10px}
+    .group-table th,.group-table td{padding:8px 10px}
+    .toolbar{display:flex;gap:8px;align-items:center}
+    .toolbar .btn-flat{color:#26a69a}
   </style>
 </head>
 <body>
@@ -46,65 +48,34 @@
     </div>
   </nav>
 
-  <div class="container" style="margin-top: 16px;">
-    <!-- FILTROS / ACCIONES -->
+  <div class="container" style="margin-top:16px">
+    <!-- CONTROLES -->
     <div class="row" style="margin-bottom:8px">
       <div class="col s12 m8">
-        <div class="row" style="margin-bottom:0">
-          <div class="col s12">
-            <div class="switch" style="display:inline-flex;align-items:center;gap:16px">
-              <label style="font-size:1rem">
-                <input type="checkbox" id="invToggleGroup">
-                <span class="lever"></span>
-                Agrupar por mes
-              </label>
-              <div class="input-field" style="margin:0;max-width:380px">
-                <input id="invSearch" type="text" placeholder="Buscar (mes, proveedor, centro, comuna)…">
-              </div>
-            </div>
+        <div class="toolbar">
+          <a id="btnToggleGroup" class="btn-flat"><i class="material-icons left">view_agenda</i>Agrupar por mes</a>
+          <a id="btnExpandAll" class="btn-flat" style="display:none"><i class="material-icons left">unfold_more</i>Expandir todo</a>
+          <a id="btnCollapseAll" class="btn-flat" style="display:none"><i class="material-icons left">unfold_less</i>Contraer todo</a>
+          <div class="input-field" style="margin:0;max-width:380px">
+            <input id="invSearch" type="text" placeholder="Buscar (mes, proveedor, centro, comuna)…">
           </div>
         </div>
       </div>
 
       <div class="col s12 m4 right-align" style="margin-top:8px">
-        <a class="btn grey darken-1" id="btnGoAsignacion">
-          <i class="material-icons left">assignment</i> ASIGNACIÓN
-        </a>
-        <a class="btn teal" id="btnReload">
-          <i class="material-icons left">refresh</i> ACTUALIZAR
-        </a>
+        <a class="btn teal" id="btnReload"><i class="material-icons left">refresh</i>ACTUALIZAR</a>
       </div>
     </div>
 
     <!-- KPIs -->
-    <div class="row" id="kpis" style="margin-bottom: 10px">
-      <div class="col s12 m3">
-        <div class="kpi-card">
-          <div class="kpi-title">Total tons</div>
-          <p class="kpi-value" id="kpiTons">0</p>
-        </div>
-      </div>
-      <div class="col s12 m3">
-        <div class="kpi-card">
-          <div class="kpi-title">Proveedores</div>
-          <p class="kpi-value" id="kpiProv">0</p>
-        </div>
-      </div>
-      <div class="col s12 m3">
-        <div class="kpi-card">
-          <div class="kpi-title">Centros</div>
-          <p class="kpi-value" id="kpiCentros">0</p>
-        </div>
-      </div>
-      <div class="col s12 m3">
-        <div class="kpi-card">
-          <div class="kpi-title">Meses</div>
-          <p class="kpi-value" id="kpiMeses">0</p>
-        </div>
-      </div>
+    <div class="row" id="kpis" style="margin-bottom:10px">
+      <div class="col s12 m3"><div class="kpi-card"><div class="kpi-title">Total tons</div><p class="kpi-value" id="kpiTons">0</p></div></div>
+      <div class="col s12 m3"><div class="kpi-card"><div class="kpi-title">Proveedores</div><p class="kpi-value" id="kpiProv">0</p></div></div>
+      <div class="col s12 m3"><div class="kpi-card"><div class="kpi-title">Centros</div><p class="kpi-value" id="kpiCentros">0</p></div></div>
+      <div class="col s12 m3"><div class="kpi-card"><div class="kpi-title">Meses</div><p class="kpi-value" id="kpiMeses">0</p></div></div>
     </div>
 
-    <!-- VISTA AGRUPADA -->
+    <!-- AGRUPADO -->
     <div id="invGrouped" style="display:none"></div>
 
     <!-- TABLA PLANA -->
@@ -116,9 +87,11 @@
               <th>Mes</th>
               <th>Proveedor</th>
               <th>Código centro</th>
+              <th>Código área</th>
               <th>Comuna</th>
-              <th>Ha</th>
               <th>Tons</th>
+              <th>Asignado (mes)</th>
+              <th>Saldo (mes)</th>
               <th>Fuente</th>
             </tr>
           </thead>
@@ -144,318 +117,316 @@
 
     /* ================== HELPERS ================== */
     const $id = (x) => document.getElementById(x);
-    const $ = (sel) => document.querySelector(sel);
+    const $ = (s) => document.querySelector(s);
     const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-    const esc = (s='') => String(s)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    const esc = (s='') => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    const fmt = (n) => (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:2});
 
-    const fmtTons = (n) => (Number(n)||0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
+    function isValidDate(d){const x=new Date(d);return !Number.isNaN(x.getTime())}
+    function monthKey(d){ if(!isValidDate(d)) return 's/fecha'; const x=new Date(d); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`;}
+    function monthLabel(k){ if(!k||k==='s/fecha') return 's/FECHA'; const [y,m]=k.split('-'); return `${MES[+m-1]} ${y}`;}
 
-    function isValidDate(d) {
-      const x = new Date(d);
-      return !Number.isNaN(x.getTime());
+    async function checkResponse(resp){
+      if(!resp.ok){const text=await resp.text().catch(()=> ''); throw new Error(`HTTP ${resp.status} - ${text}`)}
+      if(resp.status===204) return null; return await resp.json().catch(()=> null);
     }
-    function monthKey(d) {
-      if (!isValidDate(d)) return 's/fecha';
-      const x = new Date(d);
-      const y = x.getFullYear();
-      const m = String(x.getMonth()+1).padStart(2,'0');
-      return `${y}-${m}`;
-    }
-    function monthLabel(k) {
-      if (!k || k === 's/fecha') return 's/FECHA';
-      const [y,m] = k.split('-'); return `${MES[+m-1]} ${y}`;
+    async function apiGet(path){ const r=await fetch(`${API_URL}${path}`); return checkResponse(r); }
+
+    /* ================== FETCH BASE ================== */
+    async function getCentros(){ const arr=await apiGet('/centros'); return Array.isArray(arr)?arr:[]; }
+    async function getContactos(){ const arr=await apiGet('/contactos'); return Array.isArray(arr)?arr:[]; }
+    async function getVisitas(){
+      const raw=await apiGet('/visitas'); return Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
     }
 
-    async function checkResponse(resp) {
-      if (!resp.ok) {
-        const text = await resp.text().catch(()=> '');
-        throw new Error(`HTTP ${resp.status} - ${text}`);
+    // Intentos para planificación (asignado por mes). Devuelve Map<YYYY-MM, tonsAsignadas>
+    async function getAsignacionesMap(){
+      const tryPaths=['/asignacion/mes','/plan/mes','/asignacion','/plan'];
+      for(const p of tryPaths){
+        try{
+          const raw=await apiGet(p);
+          if(!raw) continue;
+          const arr=Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
+          if(!arr.length) continue;
+          const map=new Map();
+          for(const it of arr){
+            // intenta normalizar: puede venir {key:'2025-09', asignado:900} o {anio,mes,tons} o {fecha:...}
+            const key = it.key || it.mesKey || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : monthKey(it.fecha || it.fechaPlan || it.fch));
+            const val = Number(it.asignado ?? it.tons ?? it.total ?? it.valor ?? 0);
+            if(key && Number.isFinite(val)) map.set(key, (map.get(key)||0) + val);
+          }
+          return map;
+        }catch(_e){/* intenta el siguiente */}
       }
-      if (resp.status === 204) return null;
-      const j = await resp.json().catch(()=> null);
-      return j;
+      return new Map(); // fallback: todo 0
     }
 
-    async function apiGet(path) {
-      const resp = await fetch(`${API_URL}${path}`);
-      return checkResponse(resp);
-    }
-
-    /* ================== CARGA BASE ================== */
-    async function getCentros() {
-      const arr = await apiGet('/centros');
-      return Array.isArray(arr) ? arr : [];
-    }
-    async function getContactos() {
-      const arr = await apiGet('/contactos');
-      return Array.isArray(arr) ? arr : [];
-    }
-    async function getVisitas() {
-      const raw = await apiGet('/visitas');
-      return Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
-    }
-
-    /* ============ INVENTARIO: normalización ============ */
-    // Mapa centroId-> {codigo, comuna, hectareas}
-    function buildCentrosIndex(centros) {
-      const m = new Map();
-      for (const c of centros) {
-        const id = String(c._id || c.id || '');
-        const codigo = c.code ?? c.codigo ?? c.Codigo ?? null;
-        const comuna = c.comuna ?? c.Comuna ?? '';
-        const ha = c.hectareas ?? c.Hectareas ?? c.ha ?? null;
-        if (id) m.set(id, { codigo: codigo ? String(codigo) : null, comuna, ha });
+    /* ================== NORMALIZACIÓN ================== */
+    function buildCentrosIndex(centros){
+      const m=new Map();
+      for(const c of centros){
+        const id=String(c._id||c.id||'');
+        const codigo=c.code ?? c.codigo ?? c.Codigo ?? null;
+        const comuna=c.comuna ?? c.Comuna ?? '';
+        // area: intenta varias llaves comunes
+        const area = c.areaCodigo ?? c.areaCode ?? c.codigoArea ?? c.lineaCodigo ?? c.lineCode ?? null;
+        if(id) m.set(id,{codigo:codigo?String(codigo):null, comuna, area});
       }
       return m;
     }
+    function makeContactosIndex(contactos){const m=new Map(); for(const c of contactos)m.set(String(c._id||''),c); return m;}
 
-    // De contactos → filas inventario (si declara Tons disponibles)
-    function rowsFromContactos(contactos, centroIdx) {
-      const out = [];
-      for (const c of contactos) {
-        const tons = Number(c.tonsDisponiblesAprox ?? c.tons ?? 0);
-        if (!Number.isFinite(tons) || tons <= 0) continue;
+    function rowsFromContactos(contactos, centroIdx){
+      const out=[];
+      for(const c of contactos){
+        const tons=Number(c.tonsDisponiblesAprox ?? c.tons ?? 0);
+        if(!Number.isFinite(tons)||tons<=0) continue;
 
-        const mes = monthKey(c.fechaDisponibilidad || c.createdAt);
-        const centroCodigo = c.centroCodigo || centroIdx.get(String(c.centroId||'') )?.codigo || null;
-        const comuna = (c.centroComuna || centroIdx.get(String(c.centroId||''))?.comuna || '') || '';
-        const ha = c.centroHectareas ?? centroIdx.get(String(c.centroId||''))?.ha ?? null;
+        const mes=monthKey(c.fechaDisponibilidad || c.createdAt);
+        const centro = centroIdx.get(String(c.centroId||'')) || {};
+        const centroCodigo = c.centroCodigo || centro.codigo || null;
+        const comuna = c.centroComuna || centro.comuna || '';
+        const areaCodigo = c.centroAreaCodigo || c.areaCodigo || c.lineaCodigo || centro.area || null;
+        const proveedor = c.proveedorNombre || c.proveedor || (c.contactoNombre?`(persona) ${c.contactoNombre}`:'(s/empresa)');
 
-        const proveedor = c.proveedorNombre || c.proveedor || (c.contactoNombre ? `(persona) ${c.contactoNombre}` : '(s/empresa)');
-        out.push({
-          mes, proveedor, centroCodigo, comuna, ha, tons, fuente:'Contacto'
-        });
+        out.push({ mes, proveedor, centroCodigo, areaCodigo, comuna, tons, fuente:'Contacto' });
+      }
+      return out;
+    }
+    function rowsFromVisitas(visitas, centroIdx, contactosIdx){
+      const out=[];
+      for(const v of visitas){
+        const tons=Number(v.tonsComprometidas ?? 0);
+        if(!Number.isFinite(tons)||tons<=0) continue;
+
+        const mes=monthKey(v.fecha || v.createdAt);
+        const centro = centroIdx.get(String(v.centroId||'')) || {};
+        const centroCodigo = v.centroCodigo || centro.codigo || null;
+        const comuna = centro.comuna || '';
+        const areaCodigo = v.areaCodigo || v.lineaCodigo || centro.area || null;
+        const proveedor = (contactosIdx.get(String(v.contactoId||''))?.proveedorNombre) || '(s/empresa)';
+
+        out.push({ mes, proveedor, centroCodigo, areaCodigo, comuna, tons, fuente:'Visita' });
       }
       return out;
     }
 
-    // De visitas → filas inventario (si declara tons comprometidas)
-    function rowsFromVisitas(visitas, centroIdx, contactosIdx) {
-      const out = [];
-      for (const v of visitas) {
-        const tons = Number(v.tonsComprometidas ?? 0);
-        if (!Number.isFinite(tons) || tons <= 0) continue;
-
-        const mes = monthKey(v.fecha || v.createdAt);
-        const centroCodigo = v.centroCodigo || centroIdx.get(String(v.centroId||''))?.codigo || null;
-        const comuna = centroIdx.get(String(v.centroId||''))?.comuna || '';
-        const ha = centroIdx.get(String(v.centroId||''))?.ha ?? null;
-        const proveedor = contactosIdx.get(String(v.contactoId||''))?.proveedorNombre || contactosIdx.get(String(v.contactoId||''))?.proveedor || '(s/empresa)';
-
-        out.push({ mes, proveedor, centroCodigo, comuna, ha, tons, fuente:'Visita' });
-      }
-      return out;
-    }
-
-    function makeContactosIndex(contactos) {
-      const m = new Map();
-      for (const c of contactos) m.set(String(c._id||''), c);
-      return m;
-    }
-
-    /* ================== RENDER KPI ================== */
-    function renderKPIs(rows) {
-      const total = rows.reduce((s,r)=> s + (Number(r.tons)||0), 0);
-      const prov = new Set(rows.map(r => r.proveedor||'').filter(Boolean)).size;
-      const centros = new Set(rows.map(r => r.centroCodigo||'').filter(Boolean)).size;
-      const meses = new Set(rows.map(r => r.mes||'s/fecha')).size;
-
-      $id('kpiTons').textContent = fmtTons(total);
+    /* ================== KPI ================== */
+    function renderKPIs(rows){
+      const total = rows.reduce((s,r)=>s+(Number(r.tons)||0),0);
+      const prov = new Set(rows.map(r=>r.proveedor||'').filter(Boolean)).size;
+      const centros = new Set(rows.map(r=>r.centroCodigo||'').filter(Boolean)).size;
+      const meses = new Set(rows.map(r=>r.mes||'s/fecha')).size;
+      $id('kpiTons').textContent = fmt(total);
       $id('kpiProv').textContent = prov;
       $id('kpiCentros').textContent = centros;
       $id('kpiMeses').textContent = meses;
     }
 
-    /* ================== TABLA (DataTables) ================== */
-    let dt = null;
-
-    function ensureDataTable() {
-      const jq = window.jQuery || window.$;
-      if (!jq) return;
-
-      if (dt) { try { dt.destroy(); } catch{} dt = null; }
+    /* ================== TABLA ================== */
+    let dt=null;
+    function ensureDataTable(){
+      const jq=window.jQuery || window.$; if(!jq) return;
+      if(dt){ try{dt.destroy();}catch{} dt=null; }
       dt = jq('#tablaInv').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-          { extend: 'excelHtml5', title:'Inventario_MMPP' },
-          { extend: 'pdfHtml5',   title:'Inventario_MMPP', orientation:'landscape', pageSize:'A4' }
+        dom:'Bfrtip',
+        buttons:[
+          {extend:'excelHtml5', title:'Inventario_MMPP'},
+          {extend:'pdfHtml5', title:'Inventario_MMPP', orientation:'landscape', pageSize:'A4'}
         ],
-        order: [[0,'asc'], [1,'asc']],
-        pageLength: 10,
-        autoWidth: false,
-        language: { url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-        columnDefs: [
-          { targets: 0, width:'110px' },
-          { targets: 5, className: 'right-align' }
+        order:[[0,'asc'],[1,'asc']],
+        pageLength:10,
+        autoWidth:false,
+        language:{url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'},
+        columnDefs:[
+          {targets:0, width:'110px'},
+          {targets:[5,6,7], className:'right-align'}
         ]
       });
     }
+    function fillDataTable(rows, asigMap, monthTotals){
+      const jq=window.jQuery || window.$; if(!jq) return;
 
-    function fillDataTable(rows) {
-      const jq = window.jQuery || window.$;
-      if (!jq) return;
-
-      const data = rows.map(r => [
-        esc(monthLabel(r.mes)),
-        esc(r.proveedor||''),
-        esc(r.centroCodigo||''),
-        esc(r.comuna||''),
-        r.ha ?? '',
-        fmtTons(r.tons),
-        esc(r.fuente||'')
-      ]);
+      const data = rows.map(r=>{
+        const asig = Number(asigMap.get(r.mes)||0);
+        const totalMes = Number(monthTotals.get(r.mes)||0);
+        const saldo = totalMes - asig;
+        return [
+          esc(monthLabel(r.mes)),
+          esc(r.proveedor||''),
+          esc(r.centroCodigo||''),
+          esc(r.areaCodigo||''),
+          esc(r.comuna||''),
+          fmt(r.tons),
+          fmt(asig),
+          fmt(saldo),
+          esc(r.fuente||'')
+        ];
+      });
 
       ensureDataTable();
       dt.clear();
       dt.rows.add(data).draw();
     }
 
-    /* ================== VISTA AGRUPADA ================== */
-    function filterRows(rows, q) {
-      const s = String(q||'').trim().toLowerCase();
-      if (!s) return rows;
+    /* ================== AGRUPADO ================== */
+    function calcMonthTotals(rows){
+      const m=new Map();
+      for(const r of rows){
+        const k=r.mes||'s/fecha';
+        m.set(k, (m.get(k)||0) + (Number(r.tons)||0));
+      }
+      return m;
+    }
+    function filterRows(rows,q){
+      const s=String(q||'').trim().toLowerCase();
+      if(!s) return rows;
       return rows.filter(r =>
         (r.mes||'').toLowerCase().includes(s) ||
         (r.proveedor||'').toLowerCase().includes(s) ||
         String(r.centroCodigo||'').toLowerCase().includes(s) ||
+        String(r.areaCodigo||'').toLowerCase().includes(s) ||
         (r.comuna||'').toLowerCase().includes(s) ||
-        String(r.ha??'').toLowerCase().includes(s) ||
         String(r.tons??'').toLowerCase().includes(s) ||
         (r.fuente||'').toLowerCase().includes(s)
       );
     }
+    function renderGrouped(rows, asigMap){
+      const cont=$id('invGrouped');
+      const q=$id('invSearch')?.value || '';
+      const filtered=filterRows(rows,q);
 
-    function renderGrouped(rows) {
-      const cont = $id('invGrouped');
-      const q = $id('invSearch')?.value || '';
-      const filtered = filterRows(rows, q);
-
-      const map = new Map();
-      for (const r of filtered) {
-        const k = r.mes || 's/fecha';
-        if (!map.has(k)) map.set(k, []);
-        map.get(k).push(r);
+      // group by month
+      const groups=new Map();
+      for(const r of filtered){
+        const k=r.mes||'s/fecha';
+        if(!groups.has(k)) groups.set(k,[]);
+        groups.get(k).push(r);
       }
-      const keys = [...map.keys()].sort();
+      const keys=[...groups.keys()].sort();
 
-      let html = '';
-      for (const k of keys) {
-        const items = map.get(k).slice().sort((a,b) =>
+      let html='';
+      for(const k of keys){
+        const items=groups.get(k).slice().sort((a,b)=>
           (a.proveedor||'').localeCompare(b.proveedor||'') ||
           String(a.centroCodigo||'').localeCompare(String(b.centroCodigo||''))
         );
-        const subtotal = items.reduce((s, x) => s + (Number(x.tons)||0), 0);
+        const subtotal = items.reduce((s,x)=>s+(Number(x.tons)||0),0);
+        const asig = Number(asigMap.get(k)||0);
+        const saldo = subtotal - asig;
 
         html += `
-        <details open>
-          <summary>
-            <div class="group-head">
-              <div>
-                <strong>${esc(monthLabel(k))}</strong>
-                <span class="group-sub">• ${items.length} registros</span>
+          <details open>
+            <summary>
+              <div class="group-head">
+                <div class="group-sub"><strong>${esc(monthLabel(k))}</strong> • ${items.length} registros</div>
+                <div class="group-tags">
+                  <span class="tag tag-sub"   title="Subtotal suministro">${fmt(subtotal)} t</span>
+                  <span class="tag tag-asig"  title="Asignado en planificación">${fmt(asig)} t</span>
+                  <span class="tag tag-saldo" title="Saldo (suministro - asignado)">${fmt(saldo)} t</span>
+                </div>
               </div>
-              <div class="tag">${fmtTons(subtotal)} t</div>
-            </div>
-          </summary>
-          <div class="group-table">
-            <div class="responsive-table">
-              <table class="striped highlight">
-                <thead>
-                  <tr>
-                    <th>Proveedor</th>
-                    <th>Código centro</th>
-                    <th>Comuna</th>
-                    <th>Ha</th>
-                    <th class="right-align">Tons</th>
-                    <th>Fuente</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${items.map(r => `
+            </summary>
+            <div class="group-table">
+              <div class="responsive-table">
+                <table class="striped highlight">
+                  <thead>
                     <tr>
-                      <td title="${esc(r.proveedor||'')}">${esc(r.proveedor||'')}</td>
-                      <td title="${esc(r.centroCodigo||'')}">${esc(r.centroCodigo||'')}</td>
-                      <td title="${esc(r.comuna||'')}">${esc(r.comuna||'')}</td>
-                      <td>${r.ha ?? ''}</td>
-                      <td class="right-align" title="${fmtTons(r.tons)}">${fmtTons(r.tons)}</td>
-                      <td>${esc(r.fuente||'')}</td>
+                      <th>Proveedor</th>
+                      <th>Código centro</th>
+                      <th>Código área</th>
+                      <th>Comuna</th>
+                      <th class="right-align">Tons</th>
+                      <th>Fuente</th>
                     </tr>
-                  `).join('')}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    ${items.map(r=>`
+                      <tr>
+                        <td title="${esc(r.proveedor||'')}">${esc(r.proveedor||'')}</td>
+                        <td title="${esc(r.centroCodigo||'')}">${esc(r.centroCodigo||'')}</td>
+                        <td title="${esc(r.areaCodigo||'')}">${esc(r.areaCodigo||'')}</td>
+                        <td title="${esc(r.comuna||'')}">${esc(r.comuna||'')}</td>
+                        <td class="right-align" title="${fmt(r.tons)}">${fmt(r.tons)}</td>
+                        <td>${esc(r.fuente||'')}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        </details>`;
+          </details>`;
       }
-
       cont.innerHTML = html || `<div class="grey-text">Sin registros para mostrar.</div>`;
     }
-
-    function setGroupedView(on, rows) {
-      const grouped = $id('invGrouped');
-      const tableWrap = document.getElementById('tablaInv')?.closest('.dataTables_wrapper') || document.getElementById('tablaInv');
-      if (!grouped || !tableWrap) return;
-
-      if (on) {
-        tableWrap.style.display = 'none';
-        grouped.style.display = 'block';
-        renderGrouped(rows);
-      } else {
-        grouped.style.display = 'none';
-        tableWrap.style.display = '';
-      }
+    function setGroupedView(on){
+      const grouped=$id('invGrouped');
+      const wrap=document.getElementById('tablaInv')?.closest('.dataTables_wrapper') || document.getElementById('tablaInv');
+      if(!grouped||!wrap) return;
+      $id('btnExpandAll').style.display = on ? '' : 'none';
+      $id('btnCollapseAll').style.display = on ? '' : 'none';
+      $id('btnToggleGroup').classList.toggle('teal-text', on);
+      if(on){ wrap.style.display='none'; grouped.style.display='block'; }
+      else { grouped.style.display='none'; wrap.style.display=''; }
     }
 
-    /* ================== LOAD & BOOT ================== */
-    let __allRows = [];
+    /* ================== LOAD ================== */
+    let __rows=[], __asigMap=new Map(), __monthTotals=new Map(), __grouped=false;
 
-    async function loadData() {
-      try {
-        const [centros, contactos, visitas] = await Promise.all([
+    async function loadData(){
+      try{
+        const [centros, contactos, visitas, asigMap] = await Promise.all([
           getCentros(),
           getContactos(),
-          getVisitas()
+          getVisitas(),
+          getAsignacionesMap()
         ]);
 
-        const centroIdx = buildCentrosIndex(centros);
-        const contactosIdx = makeContactosIndex(contactos);
+        const cIdx = buildCentrosIndex(centros);
+        const contIdx = makeContactosIndex(contactos);
 
-        const rowsC = rowsFromContactos(contactos, centroIdx);
-        const rowsV = rowsFromVisitas(visitas, centroIdx, contactosIdx);
+        const rowsC = rowsFromContactos(contactos, cIdx);
+        const rowsV = rowsFromVisitas(visitas, cIdx, contIdx);
 
-        __allRows = [...rowsC, ...rowsV];
+        __rows = [...rowsC, ...rowsV];
+        __asigMap = asigMap;
+        __monthTotals = calcMonthTotals(__rows);
 
-        renderKPIs(__allRows);
-        fillDataTable(__allRows);
+        renderKPIs(__rows);
+        fillDataTable(__rows, __asigMap, __monthTotals);
 
-        // refrescar vista agrupada si está activa
-        if ($id('invToggleGroup')?.checked) renderGrouped(__allRows);
-      } catch (e) {
+        if(__grouped) renderGrouped(__rows, __asigMap);
+      }catch(e){
         console.error(e);
-        M.toast?.({ html: 'No se pudo cargar el inventario', classes: 'red' });
+        M.toast?.({html:'No se pudo cargar el inventario',classes:'red'});
       }
     }
 
+    /* ================== UI ================== */
     document.addEventListener('DOMContentLoaded', () => {
-      // Botón Asignación (seguro para rutas relativas)
-      $id('btnGoAsignacion')?.addEventListener('click', () => {
-        location.href = './asignacion.html';
+      $id('btnReload')?.addEventListener('click', loadData);
+
+      $id('btnToggleGroup')?.addEventListener('click', () => {
+        __grouped = !__grouped;
+        setGroupedView(__grouped);
+        if(__grouped) renderGrouped(__rows, __asigMap);
       });
 
-      // Toggle agrupado
-      $id('invToggleGroup')?.addEventListener('change', (e) => {
-        setGroupedView(e.target.checked, __allRows);
-      });
       $id('invSearch')?.addEventListener('input', () => {
-        if ($id('invToggleGroup')?.checked) renderGrouped(__allRows);
+        if(__grouped) renderGrouped(__rows, __asigMap);
+        else { // filtra DataTable
+          const jq=window.jQuery||window.$;
+          if(jq && dt) dt.search($id('invSearch').value).draw();
+        }
       });
 
-      // Reload
-      $id('btnReload')?.addEventListener('click', () => loadData());
+      $id('btnExpandAll')?.addEventListener('click', () => {
+        document.querySelectorAll('#invGrouped details').forEach(d=>d.open=true);
+      });
+      $id('btnCollapseAll')?.addEventListener('click', () => {
+        document.querySelectorAll('#invGrouped details').forEach(d=>d.open=false);
+      });
 
-      // Boot
       loadData();
     });
   </script>
