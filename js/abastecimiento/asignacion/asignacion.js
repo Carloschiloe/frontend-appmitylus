@@ -31,13 +31,64 @@ async function checkResponse(resp){
 }
 async function apiGet(path){ const r = await fetch(`${API_URL}${path}`); return checkResponse(r); }
 
+// =============== ESTILOS DEL MODAL (para que no se corte) ===============
+function injectModalStyles(){
+  if(document.getElementById('asig-modal-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'asig-modal-styles';
+  style.textContent = `
+    /* Overlay del modal */
+    .asig-modal{
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center;
+      z-index: 10001;  /* sobre el mask */
+      padding: 12px;   /* margen para pantallas chicas */
+    }
+    /* Caja del modal */
+    .asig-modal__box{
+      background:#fff; border-radius:12px;
+      width: min(780px, 94vw);
+      max-height: 90vh;                /* clave */
+      box-shadow: 0 10px 30px rgba(0,0,0,.15);
+      display: flex; flex-direction: column; /* clave */
+    }
+    .asig-modal__header{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:8px; padding:16px 20px; border-bottom:1px solid #eef1f3;
+      position: sticky; top:0; background:#fff; z-index:1;
+    }
+    .asig-modal__header h3{ margin:0; font-size:1.35rem; color:#0d6b63; }
+    .asig-modal__header .x{ border:0; background:#eef3f2; width:32px; height:32px; border-radius:8px; font-size:18px; cursor:pointer; }
+    .asig-modal .content{
+      padding:14px 20px; overflow:auto; /* scroll interno */
+    }
+    .asig-modal__footer{
+      padding:12px 20px; border-top:1px solid #eef1f3;
+      display:flex; justify-content:flex-end; gap:10px;
+      position: sticky; bottom:0; background:#fff;
+    }
+    .asig-modal .row{ display:flex; flex-direction:column; gap:6px; margin:8px 0; }
+    .asig-modal input, .asig-modal select{
+      width:100%; padding:10px 12px; border:1px solid #dfe4e6; border-radius:8px;
+      outline:none;
+    }
+    .asig-modal input:focus, .asig-modal select:focus{ border-color:#26a69a; box-shadow:0 0 0 3px rgba(38,166,154,.15); }
+    .asig-modal__footer .ok{
+      background:#26a69a; color:#fff; border:0; padding:10px 16px; border-radius:8px; cursor:pointer;
+    }
+    .asig-modal__footer button{ border:1px solid #cfd8dc; background:#fff; padding:10px 16px; border-radius:8px; cursor:pointer; }
+  `;
+  document.head.appendChild(style);
+}
+
 // =============== ARRANQUE ===============
 init();
 async function init(){
-  ensureAuxUIs();         // password (asigPass)
-  ensureReqModal();       // <-- NUEVO: modal Requerido
-  ensureCardMenu();       // menú contextual
-  ensurePopover();        // popover proveedores
+  injectModalStyles();   // <-- asegura modal con max-height + scroll
+  ensureAuxUIs();        // password (asigPass)
+  ensureReqModal();      // modal Requerido
+  ensureCardMenu();      // menú contextual
+  ensurePopover();       // popover proveedores
 
   // Solo 2025+ en el selector
   const years = [2025,2026,2027,2028,2029];
@@ -53,7 +104,7 @@ async function init(){
   const mask = document.getElementById('mask');
   mask?.addEventListener('click', (ev)=>{ if(ev.target === mask) hideModal(); });
 
-  // Eventos para renderizar el week-picker si cambian Año/Mes del modal
+  // Eventos para renderizar el week-picker si cambian Año/Mes del modal (para "producir")
   const anioIn = document.getElementById('mProcAnio');
   const mesIn  = document.getElementById('mProcMes');
   if (anioIn && mesIn) {
@@ -70,7 +121,7 @@ async function init(){
   }
 }
 
-// =============== ENDPOINTS REALES ===============
+// =============== ENDPOINTS REALES (lecturas) ===============
 async function fetchSummaryMensual(anio){
   // 1) Asignado por mes
   const asignado = Array(12).fill(0);
@@ -101,7 +152,7 @@ async function fetchSummaryMensual(anio){
     }
   }catch(e){ console.warn('[planificacion/mes]', e.message); }
 
-  // 3) Procesado (aún 0 si no hay backend)
+  // 3) Procesado (de momento en 0 si no lo conectaste aún)
   const procesado = Array(12).fill(0);
 
   return { anio, requerido, asignado, procesado };
@@ -132,7 +183,7 @@ async function fetchProveedoresDisponiblesDesde(anio, mes){
   return fetchProveedoresMes(anio, mes);
 }
 
-// Aún sin endpoints reales para estos dos:
+// =============== (Opcionales aún) Guardados de otros flujos ===============
 async function putDisponibilidad(payload){ console.log('[PUT disponibilidad] (no-op)', payload); alert('Disponibilidad guardada (demo)'); }
 async function putProcesado(payload){ console.log('[PUT procesado semanal] (no-op)', payload); alert('Procesado guardado (demo)'); }
 
@@ -293,7 +344,7 @@ const mask = document.getElementById('mask');
 function showModal(id){
   const modal = document.getElementById(id);
   mask.style.display = 'block';
-  modal.style.display = 'block';
+  modal.style.display = 'flex';   // <-- centrado y compatible con max-height
   document.body.style.overflow = 'hidden';
   modal.setAttribute('aria-hidden','false');
   mask.setAttribute('aria-hidden','false');
@@ -411,6 +462,7 @@ function ensureReqModal(){
   document.body.appendChild(modal);
   document.getElementById('mReqSave').onclick = saveRequerido;
 }
+
 async function putRequeridoMensual(payload){
   const body = {
     mesKey: payload.mesKey || `${payload.anio}-${String(payload.mes).padStart(2,'0')}`,
@@ -425,6 +477,7 @@ async function putRequeridoMensual(payload){
   });
   return checkResponse(resp);
 }
+
 async function saveRequerido(){
   const anio = +document.getElementById('mReqAnio').value;
   const mes  = Math.min(12, Math.max(1, +document.getElementById('mReqMes').value||1));
@@ -478,7 +531,7 @@ function ensureCardMenu(){
     if(act==='requerido'){
       document.getElementById('mReqAnio').value = anio;
       document.getElementById('mReqMes').value  = mes;
-      // sugerir como starting point lo asignado actual de ese mes
+      // sugerir como punto de partida lo asignado actual de ese mes
       const i = mes-1;
       document.getElementById('mReqTons').value = (cacheSummary?.asignado?.[i] || 0);
       document.getElementById('mReqMP').value = '';
