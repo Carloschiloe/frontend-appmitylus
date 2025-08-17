@@ -14,56 +14,67 @@ export function setupFormulario() {
   // modo "nuevo" por defecto
   state.editId = null;
 
-  // cuando cambie el centro, copiar data-* a los hidden (incluye comuna)
+  // copiar data-* del <option> del centro a inputs hidden
   const selCentro = $('#selectCentro');
   selCentro?.addEventListener('change', () => copyCentroToHidden(selCentro));
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // ✅ Empresa/proveedor opcional (para poder registrar personas sin empresa)
+    // --- EMPRESA (opcional) ---
     const proveedorKeyRaw    = (getVal(['proveedorKey','proveedorId']) || '').trim();
     const proveedorNombreRaw = (getVal(['proveedorNombre']) || '').trim();
     const proveedorKey       = proveedorKeyRaw || null;
     const proveedorNombre    = proveedorNombreRaw || null;
+    const hasEmpresa         = !!(proveedorKey && proveedorNombre);
 
-    // si no hay proveedor, aseguramos que no viaje ningún centro “antiguo”
-    if (!proveedorKey) {
+    // --- PERSONA (para permitir "sin empresa") ---
+    const contactoNombre   = $('#contactoNombre')?.value?.trim() || '';
+    const contactoTelefono = $('#contactoTelefono')?.value?.trim() || '';
+    const contactoEmail    = $('#contactoEmail')?.value?.trim() || '';
+    const hasPersona       = !!contactoNombre && (!!contactoTelefono || !!contactoEmail);
+
+    // Validación mínima: debe haber empresa O persona
+    if (!hasEmpresa && !hasPersona) {
+      M.toast?.({ html: 'Ingresa una empresa o una persona (nombre + teléfono o email).', displayLength: 2800 });
+      ($('#contactoNombre')?.focus?.());
+      return;
+    }
+
+    // si no hay empresa, asegurar que NO viaja centro
+    if (!hasEmpresa) {
       setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
       resetSelectCentros();
     }
 
-    const tieneMMPP            = $('#tieneMMPP').value;
+    // --- resto de campos ---
+    const tieneMMPP            = $('#tieneMMPP').value;           // opcional
     const fechaDisponibilidad  = $('#fechaDisponibilidad').value || null;
-    const dispuestoVender      = $('#dispuestoVender').value;
+    const dispuestoVender      = $('#dispuestoVender').value;     // opcional
     const vendeActualmenteA    = $('#vendeActualmenteA').value.trim();
     const notas                = $('#notasContacto').value.trim();
     const tonsDisponiblesAprox = $('#tonsDisponiblesAprox')?.value ?? '';
 
-    const contactoNombre   = $('#contactoNombre')?.value?.trim() || '';
-    const contactoTelefono = $('#contactoTelefono')?.value?.trim() || '';
-    const contactoEmail    = $('#contactoEmail')?.value?.trim() || '';
-
     // sincroniza hidden del centro por si el usuario no salió del select
     copyCentroToHidden(selCentro);
 
-    const centroId       = getVal(['centroId']) || null;
-    const centroCodigo   = getVal(['centroCode','centroCodigo']) || null;
-    const centroComuna   = getVal(['centroComuna']) || lookupComunaByCodigo(centroCodigo) || null;
-    const centroHectareas= getVal(['centroHectareas']) || null;
+    const centroId        = hasEmpresa ? (getVal(['centroId']) || null) : null;
+    const centroCodigo    = hasEmpresa ? (getVal(['centroCode','centroCodigo']) || null) : null;
+    const centroComuna    = hasEmpresa ? (getVal(['centroComuna']) || lookupComunaByCodigo(centroCodigo) || null) : null;
+    const centroHectareas = hasEmpresa ? (getVal(['centroHectareas']) || null) : null;
 
-    const resultado = (tieneMMPP === 'Sí') ? 'Disponible'
-                    : (tieneMMPP === 'No') ? 'No disponible' : '';
-    if (!resultado) {
-      M.toast?.({ html: 'Selecciona disponibilidad (Sí/No)', displayLength: 2500 });
-      return;
-    }
+    // Resultado: solo lo inferimos si eliges disponibilidad; si no, va vacío
+    let resultado = '';
+    if (tieneMMPP === 'Sí') resultado = 'Disponible';
+    else if (tieneMMPP === 'No') resultado = 'No disponible';
+    // (si está vacío y no hay empresa, el backend lo acepta)
 
     const payload = {
-      // empresa opcional
-      proveedorKey,                  // null si viene vacío
-      proveedorNombre,               // null si viene vacío
+      // Empresa (opcional)
+      proveedorKey,
+      proveedorNombre,
 
+      // Estado / disposición (opcionales)
       resultado,
       tieneMMPP,
       fechaDisponibilidad,
@@ -71,18 +82,19 @@ export function setupFormulario() {
       vendeActualmenteA,
       notas,
 
-      // centro opcional; si no hay proveedor suele ser null
+      // Centro (opcional)
       centroId,
       centroCodigo,
       centroComuna,
       centroHectareas,
 
-      tonsDisponiblesAprox: normalizeNumber(tonsDisponiblesAprox),
-
-      // datos de la persona
+      // Persona
       contactoNombre,
       contactoTelefono,
-      contactoEmail
+      contactoEmail,
+
+      // numérico
+      tonsDisponiblesAprox: normalizeNumber(tonsDisponiblesAprox),
     };
 
     try {
@@ -104,10 +116,11 @@ export function setupFormulario() {
 
       const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
       form.reset();
-      // limpia hidden del centro
+
+      // limpia hidden y proveedor
       setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
-      // limpia proveedor
       setVal(['proveedorKey','proveedorId','proveedorNombre'], '');
+
       state.editId = null;
       modalInst?.close();
     } catch (err) {
@@ -120,20 +133,28 @@ export function setupFormulario() {
 export function abrirEdicion(c) {
   state.editId = c._id; // solo al editar
 
+  // --- Empresa ---
+  const hasEmpresa = !!(c.proveedorKey || c.proveedorNombre);
   $('#buscadorProveedor').value = c.proveedorNombre || '';
   setVal(['proveedorNombre'], c.proveedorNombre || '');
   const key = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
-  setVal(['proveedorKey','proveedorId'], key);
+  setVal(['proveedorKey','proveedorId'], key || '');
 
-  // poblar centros del proveedor y seleccionar el actual
-  mostrarCentrosDeProveedor(key, c.centroId || null);
+  // --- Centros del proveedor ---
+  if (hasEmpresa && key) {
+    mostrarCentrosDeProveedor(key, c.centroId || null);
+    // setear hidden del centro por si no cambia nada
+    setVal(['centroId'], c.centroId || '');
+    setVal(['centroCodigo','centroCode'], c.centroCodigo || '');
+    setVal(['centroComuna'], c.centroComuna || '');
+    setVal(['centroHectareas'], c.centroHectareas || '');
+  } else {
+    // sin empresa => no pueblas centros
+    resetSelectCentros();
+    setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
+  }
 
-  // setear hidden del centro por si no cambia nada
-  setVal(['centroId'], c.centroId || '');
-  setVal(['centroCodigo','centroCode'], c.centroCodigo || '');
-  setVal(['centroComuna'], c.centroComuna || '');
-  setVal(['centroHectareas'], c.centroHectareas || '');
-
+  // --- Estado / campos varios ---
   $('#tieneMMPP').value = c.tieneMMPP || '';
   $('#dispuestoVender').value = c.dispuestoVender || '';
   $('#fechaDisponibilidad').value = c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '';
@@ -141,6 +162,7 @@ export function abrirEdicion(c) {
   $('#vendeActualmenteA').value = c.vendeActualmenteA || '';
   $('#notasContacto').value = c.notas || '';
 
+  // --- Persona ---
   $('#contactoNombre').value = c.contactoNombre || '';
   $('#contactoTelefono').value = c.contactoTelefono || '';
   $('#contactoEmail').value = c.contactoEmail || '';
@@ -159,13 +181,11 @@ export async function eliminarContacto(id) {
 }
 
 export function prepararNuevo() {
-  // cada vez que abras “Registrar contacto”, limpia editId
   state.editId = null;
   const form = $('#formContacto');
   form?.reset();
   setVal(['proveedorKey','proveedorId','proveedorNombre'], '');
   resetSelectCentros();
-  // limpia hidden del centro
   setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
 }
 
