@@ -6,6 +6,18 @@ import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
 let dtP = null;
 let filtroActualP = 'todos'; // 'todos' | 'sin' | 'con'
 
+// helper consistente para saber si tiene empresa
+function tieneEmpresa(c = {}) {
+  const provNombre = (c.proveedorNombre || '').trim();
+  const provKey    = (c.proveedorKey || '').trim();
+  const empId      = c.empresaId;             // legacy
+  const empNombre  = (c.empresaNombre || '').trim(); // legacy
+  return !!( (provNombre && provKey) || empId || empNombre );
+}
+function nombreEmpresa(c = {}) {
+  return (c.proveedorNombre || c.empresaNombre || '').trim();
+}
+
 export function initPersonasTab() {
   const jq = window.jQuery || window.$;
   const tabla = document.getElementById('tablaPersonas');
@@ -50,25 +62,22 @@ export function initPersonasTab() {
         if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
         try {
           await eliminarContacto(id);
-          renderTablaPersonas(); // refresca Personas también
+          renderTablaPersonas();
         } catch(e){
           console.error(e);
           M.toast?.({ html:'No se pudo eliminar', displayLength:2000 });
         }
       })
-      // Asociar/Cambiar empresa
       .on('click', 'a.asociar-btn', function(e){
         e.preventDefault();
         const id = this.dataset.id;
-        // marca el objetivo en un lugar común
         state.asociarContactoId = id;
-        // avisa al módulo de asociación (si escucha)
+
         try { document.dispatchEvent(new CustomEvent('asociar-open', { detail: { contactoId: id } })); } catch {}
-        // abre el modal
+
         const modal = document.getElementById('modalAsociar');
         if (modal && window.M && M.Modal) {
           const inst = M.Modal.getInstance(modal) || M.Modal.init(modal, {});
-          // limpia buscador y resultados
           const inp = document.getElementById('empresaSearch');
           const ul  = document.getElementById('searchResults');
           if (inp) inp.value = '';
@@ -114,8 +123,9 @@ export function renderTablaPersonas() {
       const mails = Array.isArray(c.contactoEmails) ? c.contactoEmails.join(' / ')
                   : (c.contactoEmail || '');
 
-      const empresaHTML = c.empresaId
-        ? `<span>${esc(c.empresaNombre||'(sin nombre)')}</span> <a href="#!" class="btn-flat teal-text asociar-btn" data-id="${c._id}">Cambiar</a>`
+      const hasEmp = tieneEmpresa(c);
+      const empHTML = hasEmp
+        ? `<span>${esc(nombreEmpresa(c) || '(sin nombre)')}</span> <a href="#!" class="btn-flat teal-text asociar-btn" data-id="${c._id}">Cambiar</a>`
         : `<span class="new badge red" data-badge-caption="">Sin empresa</span> <a href="#!" class="btn-flat teal-text asociar-btn" data-id="${c._id}">Asociar</a>`;
 
       const acciones = `
@@ -130,7 +140,7 @@ export function renderTablaPersonas() {
         esc(c.contactoNombre || c.proveedorNombre || ''),
         esc(String(tels)),
         esc(String(mails)),
-        empresaHTML,
+        empHTML,
         esc(c.notas || c.notasContacto || ''),
         acciones
       ];
@@ -158,8 +168,8 @@ export function renderTablaPersonas() {
 }
 
 function filtrar(lista, filtro){
-  if (filtro === 'sin') return lista.filter(c => !c.empresaId);
-  if (filtro === 'con') return lista.filter(c => !!c.empresaId);
+  if (filtro === 'sin') return lista.filter(c => !tieneEmpresa(c));
+  if (filtro === 'con') return lista.filter(c => tieneEmpresa(c));
   return lista;
 }
 function esc(s=''){
