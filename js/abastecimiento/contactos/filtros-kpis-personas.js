@@ -1,56 +1,52 @@
 // /js/contactos/filtros-kpis-personas.js
-const API_BASE = window.API_BASE || '';
+import { state, $ } from './state.js';
+import { prepararNuevo } from './form-contacto.js';
 
 export function initFiltrosYKPIsPersonas() {
-  const $todos = document.getElementById('fltTodosP');
-  const $sin   = document.getElementById('fltSinP');
-  const $con   = document.getElementById('fltConP');
-
-  if ($todos && $sin && $con) {
-    $todos.addEventListener('click', () => setFiltro('todos'));
-    $sin.addEventListener('click',   () => setFiltro('sin'));
-    $con.addEventListener('click',   () => setFiltro('con'));
-  }
-  refrescarKPIsP();
-}
-
-function setFiltro(valor) {
-  ['fltTodosP','fltSinP','fltConP'].forEach(id => {
+  // Chips de filtro
+  const chips = [
+    ['fltTodosP', 'todos'],
+    ['fltSinP',  'sin'],
+    ['fltConP',  'con'],
+  ];
+  chips.forEach(([id, filtro]) => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.classList.remove('teal','white-text');
+    el.addEventListener('click', () => {
+      chips.forEach(([idx]) => document.getElementById(idx)?.classList.remove('teal','white-text'));
+      el.classList.add('teal','white-text');
+      document.dispatchEvent(new CustomEvent('filtro-personas-changed', { detail: { filtro } }));
+    });
   });
-  const activo = valor === 'todos' ? 'fltTodosP' : valor === 'sin' ? 'fltSinP' : 'fltConP';
-  const elAct = document.getElementById(activo);
-  if (elAct) elAct.classList.add('teal','white-text');
 
-  document.dispatchEvent(new CustomEvent('filtro-personas-changed', { detail: { filtro: valor }}));
-  refrescarKPIsP().catch(console.error);
+  // Botón "Agregar persona" (si existe)
+  const btn = document.getElementById('btnAgregarPersona');
+  if (btn) btn.addEventListener('click', () => {
+    prepararNuevo();
+    const modal = document.getElementById('modalContacto');
+    (M.Modal.getInstance(modal) || M.Modal.init(modal)).open();
+  });
+
+  // Refrescar KPIs cuando cambie el dataset
+  document.addEventListener('reload-tabla-contactos', refrescarKPIs);
+  refrescarKPIs();
 }
 
-async function refrescarKPIsP() {
-  try {
-    const [todos, sin, con] = await Promise.all([
-      fetchJSON('/contactos'),
-      fetchJSON('/contactos?conEmpresa=0'),
-      fetchJSON('/contactos?conEmpresa=1'),
-    ]);
-    put('kpiPTotal', todos.length);
-    put('kpiPSin',   sin.length);
-    put('kpiPCon',   con.length);
-
-    let visitasSin = [];
-    try {
-      visitasSin = await fetchJSON('/visitas?deContactosSinEmpresa=1&dias=30');
-    } catch(_) {}
-    put('kpiPVisitasSin', visitasSin.length || 0);
-  } catch(e){ console.error('[KPIs Personas]', e); }
+function tieneEmpresa(c) {
+  return !!(c.empresaId) || (!!c.proveedorKey && !!c.proveedorNombre);
 }
 
-function put(id,v){ const el = document.getElementById(id); if(el) el.textContent=v; }
+export function refrescarKPIs() {
+  const arr = Array.isArray(state.contactosGuardados) ? state.contactosGuardados : [];
+  const total = arr.length;
+  const con   = arr.filter(tieneEmpresa).length;
+  const sin   = total - con;
 
-async function fetchJSON(path, opts = {}) {
-  const r = await fetch((API_BASE||'') + path, { headers:{'Content-Type':'application/json'}, ...opts });
-  if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
-  return r.json();
+  // (opcional) si no tienes dato de visitas, déjalo en 0
+  const visitasSin30d = 0;
+
+  const t = $('#kpiPTotal');        if (t) t.textContent = String(total);
+  const s = $('#kpiPSin');          if (s) s.textContent = String(sin);
+  const c = $('#kpiPCon');          if (c) c.textContent = String(con);
+  const v = $('#kpiPVisitasSin');   if (v) v.textContent = String(visitasSin30d);
 }
