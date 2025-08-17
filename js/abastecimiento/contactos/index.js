@@ -11,29 +11,93 @@ import { initTablaContactos, renderTablaContactos } from './tabla.js';
 
 import { initAsociacionContactos } from './asociar-empresa.js';
 
-// Personas (separado)
+// Personas
 import { initPersonasTab, renderTablaPersonas } from './personas.js';
 import { initFiltrosYKPIsPersonas } from './filtros-kpis-personas.js';
 
 let booted = false, listenersHooked = false;
 
+/* ---------- UI init: tabs + modales (una sola vez, sin AutoInit) ---------- */
+function initUIOnce() {
+  if (!window.M) return;
+
+  // Tabs
+  const tabs = document.querySelectorAll('.tabs');
+  if (tabs.length) M.Tabs.init(tabs, {});
+
+  // Helper: limpiar overlays colgadas
+  const cleanupOverlays = () => {
+    document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+    document.body.style.overflow = '';
+  };
+
+  // Modal Registrar Contacto
+  const modalContactoEl = document.getElementById('modalContacto');
+  if (modalContactoEl) {
+    const inst = M.Modal.getInstance(modalContactoEl) || M.Modal.init(modalContactoEl, {
+      onCloseEnd: () => {
+        document.getElementById('formContacto')?.reset();
+        cleanupOverlays();
+      }
+    });
+
+    // Botón abrir
+    const openBtn = document.getElementById('btnOpenContactoModal');
+    if (openBtn) openBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      inst.open();
+    });
+
+    // Cualquier .modal-close debe cerrar SIEMPRE esta instancia
+    modalContactoEl.querySelectorAll('.modal-close').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        (M.Modal.getInstance(modalContactoEl) || inst).close();
+      });
+    });
+  }
+
+  // Modal Detalle
+  const modalDetalleEl = document.getElementById('modalDetalleContacto');
+  if (modalDetalleEl) {
+    M.Modal.getInstance(modalDetalleEl) || M.Modal.init(modalDetalleEl, {
+      onCloseEnd: () => cleanupOverlays()
+    });
+  }
+
+  // Modal Visita
+  const modalVisitaEl = document.getElementById('modalVisita');
+  if (modalVisitaEl) {
+    M.Modal.getInstance(modalVisitaEl) || M.Modal.init(modalVisitaEl, {
+      onCloseEnd: () => cleanupOverlays()
+    });
+  }
+
+  // Limpieza extra por si navegas con hash
+  window.addEventListener('hashchange', cleanupOverlays);
+}
+
 export async function initContactosTab(forceReload = false) {
   if (booted && !forceReload) return;
-  try {
-    if (window.M && M.AutoInit) M.AutoInit();
 
+  try {
+    // ❌ NADA de M.AutoInit aquí (evita doble init y overlays colgando)
+    initUIOnce();
+
+    // Datos base
     await cargarCentros();
     await cargarContactosGuardados();
 
+    // Wiring
     setupBuscadorProveedores();
     setupFormulario();
     setupFormularioVisita();
 
-    // CONTACTOS (sin KPIs/chips de empresa)
+    // Tabla
     initTablaContactos();
     renderTablaContactos();
 
-    // PERSONAS (con KPIs/chips)
+    // Personas (si existe pestaña)
     if (document.getElementById('tab-personas')) {
       initFiltrosYKPIsPersonas();
       initPersonasTab();
@@ -41,9 +105,6 @@ export async function initContactosTab(forceReload = false) {
 
     initAsociacionContactos();
     hookGlobalListeners();
-
-    // 👇 Parche: asegurar que el modal de contacto cierre siempre
-    fixModalClose();
 
     booted = true;
   } catch (err) {
@@ -66,32 +127,6 @@ function hookGlobalListeners() {
     }
   });
   listenersHooked = true;
-}
-
-// ------- Parche: forzar cierre del modal de contacto -------
-function fixModalClose() {
-  const modalEl = document.getElementById('modalContacto');
-  if (!modalEl || !window.M || !M.Modal) return;
-
-  // crea/recupera instancia (idempotente)
-  let inst = M.Modal.getInstance(modalEl) || M.Modal.init(modalEl, {
-    onCloseEnd: () => document.getElementById('formContacto')?.reset()
-  });
-
-  // asegura que cualquier .modal-close lo cierre
-  modalEl.querySelectorAll('.modal-close').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      try { (M.Modal.getInstance(modalEl) || inst).close(); } catch {}
-    });
-  });
-
-  // por si abres el modal con el botón superior
-  const openBtn = document.getElementById('btnOpenContactoModal');
-  if (openBtn) openBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    (M.Modal.getInstance(modalEl) || inst).open();
-  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
