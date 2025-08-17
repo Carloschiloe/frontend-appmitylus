@@ -1,15 +1,28 @@
 // api.js
 const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
 
-// Utilidad común
+/* ===================== Helpers comunes ===================== */
+
+// Respuesta segura (tolera 204 y respuestas sin body)
 async function checkResponse(resp) {
   if (!resp.ok) {
-    const text = await resp.text();
+    const text = await safeReadText(resp);
     throw new Error(`HTTP ${resp.status} - ${text}`);
   }
-  // Puede haber 204 sin body
   if (resp.status === 204) return null;
-  return resp.json();
+
+  const ct = (resp.headers.get('content-type') || '').toLowerCase();
+  // Si es JSON, parsea; si no, devuelve texto
+  if (ct.includes('application/json')) return resp.json();
+  return resp.text();
+}
+
+async function safeReadText(resp) {
+  try {
+    return await resp.text();
+  } catch {
+    return '(sin cuerpo)';
+  }
 }
 
 // QS helper: evita mandar claves vacías/undefined/null
@@ -22,170 +35,126 @@ function buildQS(params = {}) {
   return qs ? `?${qs}` : '';
 }
 
+/**
+ * Wrapper de fetch con:
+ *  - Fallback PATCH→PUT si el server no soporta PATCH (405/404/501)
+ *  - Reintento 1 vez si hay error de red/DNS/timeout (en PATCH reintenta como PUT)
+ */
+async function request(path, { method = 'GET', json, headers = {}, retry = true } = {}) {
+  const url = `${API_URL}${path}`;
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', ...headers },
+  };
+  if (json !== undefined) opts.body = JSON.stringify(json);
+
+  let resp;
+  try {
+    resp = await fetch(url, opts);
+  } catch (e) {
+    // Error de red: reintenta 1 vez
+    if (!retry) throw e;
+    // Si era PATCH, reintenta como PUT
+    const fallbackMethod = method === 'PATCH' ? 'PUT' : method;
+    const resp2 = await fetch(url, { ...opts, method: fallbackMethod });
+    return checkResponse(resp2);
+  }
+
+  // Si PATCH no es soportado por el server, reintenta como PUT
+  if (
+    retry &&
+    method === 'PATCH' &&
+    (!resp.ok && (resp.status === 404 || resp.status === 405 || resp.status === 501))
+  ) {
+    const resp2 = await fetch(url, { ...opts, method: 'PUT' });
+    return checkResponse(resp2);
+  }
+
+  return checkResponse(resp);
+}
+
 /* ==================== CENTROS ==================== */
 export async function apiGetCentros() {
-  const resp = await fetch(`${API_URL}/centros`);
-  return checkResponse(resp);
+  return request('/centros');
 }
 export async function apiCreateCentro(data) {
-  const resp = await fetch(`${API_URL}/centros`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  return checkResponse(resp);
+  return request('/centros', { method: 'POST', json: data });
 }
 export async function apiUpdateCentro(id, data) {
-  const resp = await fetch(`${API_URL}/centros/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  return checkResponse(resp);
+  return request(`/centros/${id}`, { method: 'PUT', json: data });
 }
 export async function apiDeleteCentro(id) {
-  const resp = await fetch(`${API_URL}/centros/${id}`, { method: 'DELETE' });
-  return checkResponse(resp);
+  return request(`/centros/${id}`, { method: 'DELETE' });
 }
 
 /* LÍNEAS */
 export async function apiAddLinea(centroId, data) {
-  const resp = await fetch(`${API_URL}/centros/${centroId}/lines`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  return checkResponse(resp);
+  return request(`/centros/${centroId}/lines`, { method: 'POST', json: data });
 }
 export async function apiUpdateLinea(centroId, lineaId, data) {
-  const resp = await fetch(`${API_URL}/centros/${centroId}/lines/${lineaId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  return checkResponse(resp);
+  return request(`/centros/${centroId}/lines/${lineaId}`, { method: 'PUT', json: data });
 }
 export async function apiDeleteLinea(centroId, lineaId) {
-  const resp = await fetch(`${API_URL}/centros/${centroId}/lines/${lineaId}`, {
-    method: 'DELETE'
-  });
-  return checkResponse(resp);
+  return request(`/centros/${centroId}/lines/${lineaId}`, { method: 'DELETE' });
 }
 
 /* INVENTARIO LÍNEA */
 export async function apiAddInventarioLinea(centroId, lineaId, data) {
-  const resp = await fetch(`${API_URL}/centros/${centroId}/lines/${lineaId}/inventarios`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  return checkResponse(resp);
+  return request(`/centros/${centroId}/lines/${lineaId}/inventarios`, { method: 'POST', json: data });
 }
 
 /* BULK CENTROS */
 export async function apiBulkUpsertCentros(arr) {
-  const resp = await fetch(`${API_URL}/centros/bulk-upsert`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(arr)
-  });
-  return checkResponse(resp);
+  return request('/centros/bulk-upsert', { method: 'PUT', json: arr });
 }
 
 /* ==================== CONTACTOS ==================== */
 export async function apiGetContactos() {
-  const resp = await fetch(`${API_URL}/contactos`);
-  return checkResponse(resp);
+  return request('/contactos');
 }
 export async function apiCreateContacto(data) {
-  const resp = await fetch(`${API_URL}/contactos`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  return checkResponse(resp);
+  return request('/contactos', { method: 'POST', json: data });
 }
 // PATCH con fallback a PUT y reintento si hay error de red/DNS
 export async function apiUpdateContacto(id, data) {
-  const url = `${API_URL}/contactos/${id}`;
-  const opts = (m) => ({
-    method: m,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-
-  try {
-    // 1) Intento PATCH
-    let resp = await fetch(url, opts('PATCH'));
-    // Fallback a PUT si el server no soporta PATCH
-    if (!resp.ok && (resp.status === 404 || resp.status === 405 || resp.status === 501)) {
-      resp = await fetch(url, opts('PUT'));
-    }
-    return checkResponse(resp);
-  } catch (err) {
-    // 2) Error de red (DNS/timeout): reintenta 1 vez por PUT
-    try {
-      const resp2 = await fetch(url, opts('PUT'));
-      return checkResponse(resp2);
-    } catch (err2) {
-      throw err2;
-    }
-  }
+  return request(`/contactos/${id}`, { method: 'PATCH', json: data, retry: true });
 }
-
+export async function apiDeleteContacto(id) {
+  return request(`/contactos/${id}`, { method: 'DELETE' });
+}
 
 /* ==================== VISITAS ==================== */
 export async function apiGetVisitas(params = {}) {
   const qs = buildQS(params);
-  const resp = await fetch(`${API_URL}/visitas${qs}`);
-  const json = await checkResponse(resp);
+  const json = await request(`/visitas${qs}`);
   return Array.isArray(json) ? json : (Array.isArray(json?.items) ? json.items : []);
 }
 export async function apiGetVisitasByContacto(contactoId) {
   if (!contactoId) return [];
-  const url = `${API_URL}/visitas${buildQS({ contactoId })}`;
+  const qs = buildQS({ contactoId });
   try {
-    const resp = await fetch(url);
-    if (resp.status === 404) return [];
-    const json = await checkResponse(resp);
+    const json = await request(`/visitas${qs}`);
     return Array.isArray(json) ? json : (Array.isArray(json?.items) ? json.items : []);
   } catch {
     return [];
   }
 }
 export async function apiCreateVisita(data) {
-  const resp = await fetch(`${API_URL}/visitas`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  return checkResponse(resp);
+  return request('/visitas', { method: 'POST', json: data });
 }
+// Igual que contactos: PATCH con fallback a PUT y reintento
 export async function apiUpdateVisita(id, data) {
-  const url = `${API_URL}/visitas/${id}`;
-  const opts = (m) => ({
-    method: m,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  let resp = await fetch(url, opts('PATCH'));
-  if (resp.status === 404 || resp.status === 405 || resp.status === 501) {
-    resp = await fetch(url, opts('PUT'));
-  }
-  return checkResponse(resp);
+  return request(`/visitas/${id}`, { method: 'PATCH', json: data, retry: true });
 }
 export async function apiDeleteVisita(id) {
-  const resp = await fetch(`${API_URL}/visitas/${id}`, { method: 'DELETE' });
-  return checkResponse(resp);
+  return request(`/visitas/${id}`, { method: 'DELETE' });
 }
 
 /* ======= CONTACTOS DISPONIBLES (Planificación) ======= */
 export async function apiContactosDisponibles({ q = '', minTons = 1 } = {}) {
   const n = Number(minTons);
   const qs = buildQS({ q, minTons: Number.isFinite(n) ? n : 1 });
-  const resp = await fetch(`${API_URL}/contactos/disponibles${qs}`);
-  const json = await checkResponse(resp);
-  // Normaliza la salida a array
+  const json = await request(`/contactos/disponibles${qs}`);
   return Array.isArray(json) ? json : (json?.items || []);
 }
 
@@ -193,4 +162,3 @@ export async function apiContactosDisponibles({ q = '', minTons = 1 } = {}) {
 export async function apiContactosDisponiblesAll({ q = '' } = {}) {
   return apiContactosDisponibles({ q, minTons: 0 });
 }
-
