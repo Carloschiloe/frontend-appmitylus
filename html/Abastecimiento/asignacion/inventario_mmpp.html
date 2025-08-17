@@ -128,149 +128,170 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <script>
-    // Igual que en tu front:
-    const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
+ <script>
+(() => {
+  const API = 'https://backend-appmitylus-production.up.railway.app/api';
 
-    const $ = (sel) => document.querySelector(sel);
-    const miles = (n) => (Number(n)||0).toLocaleString('es-CL');
+  // --- helpers ---
+  const $  = (sel) => document.querySelector(sel);
+  const esc = (s='') => String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  const toMonth = (iso) => {
+    if (!iso) return '(s/fecha)';
+    // acepta 'YYYY-MM-DD' o Date/ISO
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso).slice(0,7) || '(s/fecha)';
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  };
+  const n = (v) => Number(v) || 0;
 
-    let dt = null;
-    let chart = null;
+  async function fetchJSON(url) {
+    const r = await fetch(url);
+    if (!r.ok) {
+      const t = await r.text().catch(()=>r.statusText);
+      throw new Error(`HTTP ${r.status} - ${t || r.statusText}`);
+    }
+    return r.json();
+  }
 
-    function initDT(){
-      if (dt) return;
-      dt = $('#tablaInventario') && $(window.jQuery ? '#tablaInventario' : null);
-      const jq = window.jQuery || window.$;
-      if (!jq) return;
-
-      dt = jq('#tablaInventario').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-          { extend:'excelHtml5', title:'Inventario_MMPP' },
-          { extend:'pdfHtml5', title:'Inventario_MMPP', orientation:'landscape', pageSize:'A4' }
-        ],
-        order: [[0,'asc'], [5,'desc']],
-        pageLength: 10,
-        lengthMenu: [[10,25,50,100], [10,25,50,100]],
-        autoWidth: false,
-        language: { url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-        columnDefs: [
-          { targets: 0, width:'110px' },
-          { targets: 1, className:'w-prov' },
-          { targets: 2, className:'w-centro' },
-          { targets: 3, className:'w-comuna' },
-          { targets: 4, width:'70px' },
-          { targets: 5, className:'w-tons', width:'90px' },
-          { targets: 6, width:'90px' }
-        ]
+  // --- índices de centros por código ---
+  const centrosByCode = new Map();
+  function indexCentros(arr = []) {
+    centrosByCode.clear();
+    arr.forEach(c => {
+      const code = String(c.code ?? c.codigo ?? c.Codigo ?? '').trim();
+      if (!code) return;
+      centrosByCode.set(code, {
+        comuna:     c.comuna ?? c.Comuna ?? '',
+        hectareas:  c.hectareas ?? c.Hectareas ?? c.ha ?? null
       });
-    }
-
-    function updateKPIs(items){
-      const totalTons = items.reduce((s,r)=>s+(Number(r.tons)||0),0);
-      const provs = new Set(items.map(r=>r.proveedorKey||r.proveedorNombre||''));
-      const centros = new Set(items.map(r=>r.centroCodigo||''));
-      const meses = new Set(items.map(r=>r.mes));
-
-      $('#kpiTons').textContent = miles(totalTons);
-      $('#kpiProvs').textContent = miles(provs.size);
-      $('#kpiCentros').textContent = miles(centros.size);
-      $('#kpiMeses').textContent = miles(meses.size);
-    }
-
-    function drawChart(items){
-      const byMonth = {};
-      for (const r of items){
-        byMonth[r.mes] = (byMonth[r.mes]||0) + (Number(r.tons)||0);
-      }
-      const labels = Object.keys(byMonth).sort();
-      const data = labels.map(m => byMonth[m]);
-
-      const ctx = document.getElementById('chartMeses');
-      if (chart){ chart.destroy(); }
-      // colores por defecto (no seteamos explícitos)
-      chart = new Chart(ctx, {
-        type: 'bar',
-        data: { labels, datasets: [{ label: 'Tons por mes', data }] },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true } }
-        }
-      });
-    }
-
-    function rowsForDT(items){
-      return items.map(r => [
-        r.mes,
-        `<span class="w-prov" title="${escapeHtml(r.proveedorNombre)}">${escapeHtml(r.proveedorNombre)}</span>`,
-        `<span class="w-centro" title="${escapeHtml(r.centroCodigo)}">${escapeHtml(r.centroCodigo)}</span>`,
-        `<span class="w-comuna" title="${escapeHtml(r.comuna||'')}">${escapeHtml(r.comuna||'')}</span>`,
-        r.hectareas ?? '',
-        miles(r.tons),
-        r.fuente || ''
-      ]);
-    }
-
-    function escapeHtml(s=''){
-      return String(s)
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-    }
-
-    async function loadData(){
-      try{
-        const q = $('#fltQ').value || '';
-        const min = Number($('#fltMinTons').value) || 1;
-
-        const url = `${API_URL}/plan/mes?q=${encodeURIComponent(q)}&minTons=${min}`;
-        const resp = await fetch(url);
-        if (!resp.ok){
-          const t = await resp.text();
-          throw new Error(`HTTP ${resp.status} - ${t}`);
-        }
-        const json = await resp.json();
-        const items = Array.isArray(json?.items) ? json.items : [];
-
-        updateKPIs(items);
-        drawChart(items);
-
-        const jq = window.jQuery || window.$;
-        initDT();
-        if (dt && jq){
-          dt.clear();
-          dt.rows.add(rowsForDT(items)).draw();
-        } else {
-          // fallback sin DataTables (no debería usarse)
-          const tbody = document.querySelector('#tablaInventario tbody');
-          tbody.innerHTML = rowsForDT(items).map(row =>
-            `<tr>${row.map(td=>`<td>${td}</td>`).join('')}</tr>`
-          ).join('');
-        }
-      }catch(err){
-        console.error(err);
-        M.toast?.({ html:'No se pudo cargar el inventario', classes:'red' });
-      }
-    }
-
-    function hookUI(){
-      document.getElementById('btnBuscar')?.addEventListener('click', loadData);
-      // Enter en búsqueda
-      document.getElementById('fltQ')?.addEventListener('keydown', (e)=>{
-        if (e.key === 'Enter'){ e.preventDefault(); loadData(); }
-      });
-      // refrescar si desde otra vista crean visita/contacto y mandan evento
-      window.addEventListener('visita:created', loadData);
-      window.addEventListener('contacto:created', loadData);
-      window.addEventListener('contacto:updated', loadData);
-    }
-
-    document.addEventListener('DOMContentLoaded', ()=>{
-      hookUI();
-      initDT();
-      loadData();
     });
-  </script>
+  }
+
+  // KPIs
+  function renderKPIs(rows) {
+    const totalTons = rows.reduce((acc, r) => acc + n(r.tons), 0);
+    const proveedores = new Set(rows.map(r => r.proveedor)).size;
+    const centros = new Set(rows.map(r => r.codigo)).size;
+    const meses = new Set(rows.map(r => r.mes)).size;
+
+    // Ajusta estos IDs a los tuyos si difieren
+    const kTotal = document.querySelector('[data-kpi="total"]') || $('#kpiTotal');
+    const kProv  = document.querySelector('[data-kpi="proveedores"]') || $('#kpiProveedores');
+    const kCent  = document.querySelector('[data-kpi="centros"]') || $('#kpiCentros');
+    const kMeses = document.querySelector('[data-kpi="meses"]') || $('#kpiMeses');
+
+    kTotal && (kTotal.textContent = totalTons.toLocaleString('es-CL'));
+    kProv  && (kProv.textContent  = proveedores);
+    kCent  && (kCent.textContent  = centros);
+    kMeses && (kMeses.textContent = meses);
+  }
+
+  // --- DataTable ---
+  let dt = null;
+  function ensureDataTable() {
+    const jq = window.jQuery || window.$;
+    if (!jq) return;
+    if (dt) return dt;
+
+    dt = jq('#tablaInventario').DataTable({
+      dom: 'Bfrtip',
+      buttons: [
+        { extend:'excelHtml5', title:'Inventario_MMPP' },
+        { extend:'pdfHtml5',   title:'Inventario_MMPP', orientation:'landscape', pageSize:'A4' }
+      ],
+      pageLength: 10,
+      autoWidth: false,
+      language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+      order: [[0,'asc']]
+    });
+
+    // filtro rápido
+    const bus = document.querySelector('#tablaInventario_filter input');
+    const buscador = $('#buscadorTabla');
+    if (buscador && bus) {
+      buscador.addEventListener('input', () => {
+        dt.search(buscador.value || '').draw();
+      });
+    }
+
+    return dt;
+  }
+
+  function fillTable(rows) {
+    const jq = window.jQuery || window.$;
+    const table = $('#tablaInventario');
+    if (!table || !jq) return;
+
+    ensureDataTable();
+
+    const data = rows.map(r => ([
+      esc(r.mes),
+      `<span title="${esc(r.notas || r.proveedor)}">${esc(r.proveedor)}</span>`,
+      esc(r.codigo),
+      esc(r.comuna || ''),
+      r.ha != null ? esc(String(r.ha)) : '',
+      n(r.tons).toLocaleString('es-CL'),
+      esc(r.fuente || '')
+    ]));
+
+    dt.clear();
+    dt.rows.add(data).draw();
+  }
+
+  // --- carga principal ---
+  async function loadCentros() {
+    const arr = await fetchJSON(`${API}/centros`);
+    indexCentros(Array.isArray(arr) ? arr : []);
+  }
+
+  async function loadData() {
+    const q = ($('#fltQ')?.value || '').trim();
+    const min = Number($('#fltMinTons')?.value) || 1;
+
+    // 🔁 Usa el endpoint existente
+    const url = `${API}/contactos/disponibles?q=${encodeURIComponent(q)}&minTons=${min}`;
+    const raw = await fetchJSON(url);
+    const items = Array.isArray(raw) ? raw : (raw?.items || []);
+
+    const rows = items.map(it => {
+      const code = String(it.centroCodigo || '').trim();
+      const info = centrosByCode.get(code) || {};
+      return {
+        mes: toMonth(it.fechaDisp || it.fechaDisponibilidad || null),
+        proveedor: it.proveedorNombre || '',
+        codigo: code,
+        comuna: info.comuna || '',
+        ha: info.hectareas ?? null,
+        tons: n(it.tonsAprox ?? it.tonsDisponiblesAprox ?? it.tons),
+        fuente: 'Contacto',
+        notas: it.observaciones || ''
+      };
+    });
+
+    renderKPIs(rows);
+    fillTable(rows);
+  }
+
+  async function boot() {
+    try {
+      await loadCentros();
+      await loadData();
+    } catch (e) {
+      console.error(e);
+      alert(`Error: ${e.message}`);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // soporta ambos ids por si tu botón se llama distinto
+    $('#btnBuscar')?.addEventListener('click', (e) => { e.preventDefault(); loadData().catch(console.error); });
+    $('#btnActualizar')?.addEventListener('click', (e) => { e.preventDefault(); loadData().catch(console.error); });
+    boot().catch(console.error);
+  });
+})();
+</script>
+
 </body>
 </html>
