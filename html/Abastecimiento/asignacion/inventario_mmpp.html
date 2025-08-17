@@ -32,32 +32,45 @@
 <body>
 
   <nav class="teal">
-    <div class="nav-wrapper">
-      <a href="./index.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
-      <a href="#" class="brand-logo center">Inventario de MMPP</a>
-    </div>
-  </nav>
+  <div class="nav-wrapper">
+    <a href="./index.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
+    <a href="#" class="brand-logo center">Inventario de MMPP</a>
+    <a href="./Abastecimiento/asignacion/asignacion.html" class="btn-flat right white-text">
+      <i class="material-icons left">assignment</i>Asignación
+    </a>
+  </div>
+</nav>
+
 
   <div class="container" style="margin-top:16px">
 
     <!-- Filtros -->
-    <div class="row filters" style="margin-bottom:10px">
-      <div class="col s12 l7">
-        <div class="row" style="margin-bottom:0">
-          <div class="input-field col s8 m8 l8">
-            <input id="fltQ" type="text" placeholder="Buscar por proveedor, código centro o comuna…" />
-            <label for="fltQ" class="active">Búsqueda</label>
-          </div>
-          <div class="input-field col s4 m4 l4">
-            <input id="fltMinTons" type="number" min="0" step="1" value="1" />
-            <label for="fltMinTons" class="active">Mín. tons</label>
-          </div>
-        </div>
+<div class="row filters" style="margin-bottom:10px">
+  <div class="col s12 l7">
+    <div class="row" style="margin-bottom:0">
+      <div class="input-field col s8 m8 l8">
+        <input id="fltQ" type="text" placeholder="Buscar por proveedor, código centro o comuna…" />
+        <label for="fltQ" class="active">Búsqueda</label>
       </div>
-      <div class="col s12 l5 right-align" style="margin-top:6px">
-        <a id="btnBuscar" class="btn teal"><i class="material-icons left">refresh</i>Actualizar</a>
+      <div class="input-field col s4 m4 l4">
+        <input id="fltMinTons" type="number" min="0" step="1" value="1" />
+        <label for="fltMinTons" class="active">Mín. tons</label>
       </div>
     </div>
+  </div>
+
+  <!-- 🔹 Botones a la derecha -->
+  <div class="col s12 l5 right-align" style="margin-top:6px">
+    <a href="./Abastecimiento/asignacion/asignacion.html"
+       class="btn grey darken-1 waves-effect" id="btnIrAsignacion">
+      <i class="material-icons left">assignment</i>Asignación
+    </a>
+    <a id="btnBuscar" class="btn teal waves-effect">
+      <i class="material-icons left">refresh</i>Actualizar
+    </a>
+  </div>
+</div>
+
 
     <!-- KPIs -->
     <div class="row" id="kpisRow" style="margin-bottom:16px">
