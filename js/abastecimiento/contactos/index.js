@@ -41,11 +41,20 @@ function initUIOnce() {
       }
     });
 
-    // Botón abrir
+    // Botón abrir (pestaña Contactos)
     const openBtn = document.getElementById('btnOpenContactoModal');
     if (openBtn) openBtn.addEventListener('click', (e) => {
       e.preventDefault();
       inst.open();
+    });
+
+    // Botón abrir (pestaña Personas) → modo "nuevo"
+    const personaBtn = document.getElementById('btnOpenPersonaModal');
+    if (personaBtn) personaBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      try { prepararNuevo(); } catch {}
+      const i = M.Modal.getInstance(modalContactoEl) || inst;
+      i.open();
     });
 
     // Cualquier .modal-close debe cerrar SIEMPRE esta instancia
@@ -69,6 +78,14 @@ function initUIOnce() {
   const modalVisitaEl = document.getElementById('modalVisita');
   if (modalVisitaEl) {
     M.Modal.getInstance(modalVisitaEl) || M.Modal.init(modalVisitaEl, {
+      onCloseEnd: () => cleanupOverlays()
+    });
+  }
+
+  // Modal Asociar Empresa (pestaña Personas)
+  const modalAsociarEl = document.getElementById('modalAsociar');
+  if (modalAsociarEl) {
+    M.Modal.getInstance(modalAsociarEl) || M.Modal.init(modalAsociarEl, {
       onCloseEnd: () => cleanupOverlays()
     });
   }
@@ -132,4 +149,3 @@ function hookGlobalListeners() {
 document.addEventListener('DOMContentLoaded', () => {
   initContactosTab().catch(console.error);
 });
-
