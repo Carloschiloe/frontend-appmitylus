@@ -144,11 +144,8 @@
   <script>
     /* ================== CONFIG ================== */
     const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
-    <script>
-  /* ...ya tienes const API_URL = 'https://backend-appmitylus-production.up.railway.app/api' */
-  window.INV_ASIG_ENDPOINT = '/asignaciones/map'; // <-- NUEVO
-</script>
-
+    // endpoint agregado que entrega el mapa (mesKey → asignado)
+    window.INV_ASIG_ENDPOINT = '/asignaciones/map';
 
     /* ================== HELPERS ================== */
     const $id = (x) => document.getElementById(x);
@@ -187,7 +184,7 @@
       const raw=await apiGet('/visitas'); return Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
     }
 
-    // Asignación por mes (opcional; si no existe endpoint no hacemos llamadas)
+    // Asignación por mes (lee /asignaciones/map)
     async function getAsignacionesMap(){
       const endpoint = (window.INV_ASIG_ENDPOINT || qp('asig') || '').trim();
       if(!endpoint) return new Map();
@@ -210,7 +207,7 @@
       for(const c of centros){
         const id=String(c._id||c.id||'');
         const codigo=c.code ?? c.codigo ?? c.Codigo ?? null;
-        const comuna=c.comuna ?? c.Comuna ?? '';
+        the comuna=c.comuna ?? c.Comuna ?? '';
         const area = c.areaCodigo ?? c.areaCode ?? c.codigoArea ?? c.lineaCodigo ?? c.lineCode ?? null;
         if(id) m.set(id,{codigo:codigo?String(codigo):null, comuna, area});
       }
@@ -218,14 +215,14 @@
     }
     function makeContactosIndex(contactos){const m=new Map(); for(const c of contactos)m.set(String(c._id||''),c); return m;}
 
-    // CONTACTOS → usan SIEMPRE fechaDisponibilidad; si no hay, van a "s/fecha"
+    // CONTACTOS → usan SIEMPRE fechaDisponibilidad
     function rowsFromContactos(contactos, centroIdx){
       const out=[];
       for(const c of contactos){
         const tons=Number(c.tonsDisponiblesAprox ?? c.tons ?? 0);
         if(!Number.isFinite(tons)||tons<=0) continue;
 
-        const mes = monthKey(c.fechaDisponibilidad); // <- NUNCA usamos createdAt aquí
+        const mes = monthKey(c.fechaDisponibilidad);
 
         const centro = centroIdx.get(String(c.centroId||'')) || {};
         const centroCodigo = c.centroCodigo || centro.codigo || null;
@@ -238,7 +235,7 @@
       return out;
     }
 
-    // VISITAS → solo si traen fecha de disponibilidad explícita; de lo contrario "s/fecha"
+    // VISITAS → sólo si traen fecha de disponibilidad explícita
     function rowsFromVisitas(visitas, centroIdx, contactosIdx){
       const out=[];
       for(const v of visitas){
@@ -246,7 +243,7 @@
         if(!Number.isFinite(tons)||tons<=0) continue;
 
         const disp = v.fechaDisponibilidad || v.disponibilidad || v.fechaDisp || null;
-        const mes = monthKey(disp); // si no hay fecha de disponibilidad => s/fecha
+        const mes = monthKey(disp);
 
         const centro = centroIdx.get(String(v.centroId||'')) || {};
         const centroCodigo = v.centroCodigo || centro.codigo || null;
@@ -400,7 +397,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    ${items.map((r,i)=>`
+                    ${items.map((r)=>`
                       <tr>
                         <td title="${esc(r.proveedor||'')}">${esc(r.proveedor||'')}</td>
                         <td title="${esc(r.centroCodigo||'')}">${esc(r.centroCodigo||'')}</td>
@@ -536,17 +533,45 @@
         document.querySelectorAll('#invGrouped details').forEach(d=>d.open=false);
       });
 
-      // Acción de asignar (demo/local; si tienes endpoint, acá harías el POST)
-      $id('btnDoAssign')?.addEventListener('click', ()=>{
+      // === POST real de asignación ===
+      $id('btnDoAssign')?.addEventListener('click', async ()=>{
         const mesVal = $id('asig_mes').value; // "YYYY-MM"
         const tonsVal = Number($id('asig_tons').value||0);
+
         if(!mesVal || !Number.isFinite(tonsVal) || tonsVal<=0){
           M.toast?.({html:'Completa mes y toneladas válidas', classes:'red'});
           return;
         }
-        // Aquí podrías invocar tu endpoint de asignación.
-        M.toast?.({html:'Asignación registrada (demo local).', classes:'teal'});
-        const m = M.Modal.getInstance($id('modalAsignar')); m?.close();
+        if(!assignCtx || !assignCtx.proveedor){
+          M.toast?.({html:'Proveedor inválido', classes:'red'});
+          return;
+        }
+
+        const btn = $id('btnDoAssign');
+        btn.disabled = true;
+
+        try{
+          const resp = await fetch(`${API_URL}/asignaciones`, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify({
+              mesKey: mesVal,
+              proveedorNombre: assignCtx.proveedor,
+              tons: tonsVal,
+              fuente: 'ui-inventario'
+            })
+          });
+          if(!resp.ok){ const t = await resp.text().catch(()=> ''); throw new Error(`HTTP ${resp.status} - ${t}`); }
+
+          M.toast?.({html:'Asignación registrada', classes:'teal'});
+          M.Modal.getInstance($id('modalAsignar'))?.close();
+          await loadData(); // refresca KPIs, agrupado y tabla con asignado/saldo
+        }catch(e){
+          console.error(e);
+          M.toast?.({html:'Error guardando asignación', classes:'red'});
+        } finally {
+          btn.disabled = false;
+        }
       });
 
       loadData();
