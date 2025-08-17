@@ -20,6 +20,8 @@ let booted = false, listenersHooked = false;
 export async function initContactosTab(forceReload = false) {
   if (booted && !forceReload) return;
   try {
+    if (window.M && M.AutoInit) M.AutoInit();
+
     await cargarCentros();
     await cargarContactosGuardados();
 
@@ -39,6 +41,10 @@ export async function initContactosTab(forceReload = false) {
 
     initAsociacionContactos();
     hookGlobalListeners();
+
+    // 👇 Parche: asegurar que el modal de contacto cierre siempre
+    fixModalClose();
+
     booted = true;
   } catch (err) {
     console.error('[contactos] init error', err);
@@ -62,7 +68,32 @@ function hookGlobalListeners() {
   listenersHooked = true;
 }
 
+// ------- Parche: forzar cierre del modal de contacto -------
+function fixModalClose() {
+  const modalEl = document.getElementById('modalContacto');
+  if (!modalEl || !window.M || !M.Modal) return;
+
+  // crea/recupera instancia (idempotente)
+  let inst = M.Modal.getInstance(modalEl) || M.Modal.init(modalEl, {
+    onCloseEnd: () => document.getElementById('formContacto')?.reset()
+  });
+
+  // asegura que cualquier .modal-close lo cierre
+  modalEl.querySelectorAll('.modal-close').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      try { (M.Modal.getInstance(modalEl) || inst).close(); } catch {}
+    });
+  });
+
+  // por si abres el modal con el botón superior
+  const openBtn = document.getElementById('btnOpenContactoModal');
+  if (openBtn) openBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    (M.Modal.getInstance(modalEl) || inst).open();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  if (window.M && M.AutoInit) M.AutoInit();
   initContactosTab().catch(console.error);
 });
