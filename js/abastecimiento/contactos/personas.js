@@ -48,14 +48,37 @@ export function initPersonasTab() {
       .on('click', 'a.icon-action.eliminar', async function(){
         const id = this.dataset.id;
         if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
-        try { await eliminarContacto(id); } catch(e){
+        try {
+          await eliminarContacto(id);
+          renderTablaPersonas(); // refresca Personas también
+        } catch(e){
           console.error(e);
           M.toast?.({ html:'No se pudo eliminar', displayLength:2000 });
+        }
+      })
+      // Asociar/Cambiar empresa
+      .on('click', 'a.asociar-btn', function(e){
+        e.preventDefault();
+        const id = this.dataset.id;
+        // marca el objetivo en un lugar común
+        state.asociarContactoId = id;
+        // avisa al módulo de asociación (si escucha)
+        try { document.dispatchEvent(new CustomEvent('asociar-open', { detail: { contactoId: id } })); } catch {}
+        // abre el modal
+        const modal = document.getElementById('modalAsociar');
+        if (modal && window.M && M.Modal) {
+          const inst = M.Modal.getInstance(modal) || M.Modal.init(modal, {});
+          // limpia buscador y resultados
+          const inp = document.getElementById('empresaSearch');
+          const ul  = document.getElementById('searchResults');
+          if (inp) inp.value = '';
+          if (ul)  ul.innerHTML = '';
+          inst.open();
         }
       });
   }
 
-  // Listeners
+  // Listeners externos
   document.addEventListener('filtro-personas-changed', (e)=>{
     filtroActualP = e.detail?.filtro || 'todos';
     renderTablaPersonas();
@@ -85,6 +108,12 @@ export function renderTablaPersonas() {
       const whenDisplay = `${yyyy}-${mm}-${dd}`;
       const whenKey = f.getTime();
 
+      // Teléfonos / emails tolerantes a array o string
+      const tels = Array.isArray(c.contactoTelefonos) ? c.contactoTelefonos.join(' / ')
+                 : (c.contactoTelefono || '');
+      const mails = Array.isArray(c.contactoEmails) ? c.contactoEmails.join(' / ')
+                  : (c.contactoEmail || '');
+
       const empresaHTML = c.empresaId
         ? `<span>${esc(c.empresaNombre||'(sin nombre)')}</span> <a href="#!" class="btn-flat teal-text asociar-btn" data-id="${c._id}">Cambiar</a>`
         : `<span class="new badge red" data-badge-caption="">Sin empresa</span> <a href="#!" class="btn-flat teal-text asociar-btn" data-id="${c._id}">Asociar</a>`;
@@ -99,10 +128,10 @@ export function renderTablaPersonas() {
       return [
         `<span data-order="${whenKey}">${whenDisplay}</span>`,
         esc(c.contactoNombre || c.proveedorNombre || ''),
-        esc((c.contactoTelefono || '').toString()),
-        esc(c.contactoEmail || ''),
+        esc(String(tels)),
+        esc(String(mails)),
         empresaHTML,
-        esc(c.notasContacto || ''),
+        esc(c.notas || c.notasContacto || ''),
         acciones
       ];
     });
@@ -133,4 +162,11 @@ function filtrar(lista, filtro){
   if (filtro === 'con') return lista.filter(c => !!c.empresaId);
   return lista;
 }
-function esc(s=''){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+function esc(s=''){
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
