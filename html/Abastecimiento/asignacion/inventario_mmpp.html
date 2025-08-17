@@ -35,12 +35,16 @@
     .group-table{padding:0 10px 12px 10px}
     .group-table th,.group-table td{padding:8px 10px}
     .group-total-row{background:#f6f6f6;font-weight:600}
+    .right-align{ text-align:right }
 
     .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .toolbar .btn-flat{color:#26a69a}
 
-    /* Botón asignar en la tabla agrupada */
-    .assign-cell .btn{min-height:30px;line-height:30px}
+    .btn-mini{height:32px;line-height:32px;padding:0 10px;border-radius:8px}
+    .pill{border-radius:999px;padding:2px 10px;font-size:.85rem;color:#fff}
+    .pill.green{background:#26a69a}
+    .pill.purple{background:#7e57c2}
+    .pill.red{background:#ef5350}
   </style>
 </head>
 <body>
@@ -66,9 +70,11 @@
         </div>
       </div>
 
-      <div class="col s12 m4 right-align" style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
+      <div class="col s12 m4 right-align" style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end">
         <a class="btn teal" id="btnReload"><i class="material-icons left">refresh</i>ACTUALIZAR</a>
-        <a class="btn grey darken-2" href="./asignacion.html"><i class="material-icons left">assignment</i>Ir a Asignación</a>
+        <a class="btn grey darken-1" href="./asignacion.html" id="btnIrAsignacion">
+          <i class="material-icons left">assignment</i>Ir a Asignación
+        </a>
       </div>
     </div>
 
@@ -106,43 +112,6 @@
     </div>
   </div>
 
-  <!-- Modal Asignación rápida -->
-  <div id="modalAsignar" class="modal">
-    <div class="modal-content">
-      <h5>Asignar MMPP</h5>
-      <p id="asignarDesc" class="grey-text"></p>
-      <div class="row" style="margin-top:8px">
-        <div class="input-field col s12 m4">
-          <input id="asigMes" type="text" disabled>
-          <label for="asigMes" class="active">Mes</label>
-        </div>
-        <div class="input-field col s12 m8">
-          <input id="asigProveedor" type="text" disabled>
-          <label for="asigProveedor" class="active">Proveedor</label>
-        </div>
-      </div>
-      <div class="row" style="margin-top:0">
-        <div class="input-field col s12 m4">
-          <input id="asigCentro" type="text" disabled>
-          <label for="asigCentro" class="active">Código centro</label>
-        </div>
-        <div class="input-field col s12 m4">
-          <input id="asigArea" type="text" disabled>
-          <label for="asigArea" class="active">Código área</label>
-        </div>
-        <div class="input-field col s12 m4">
-          <input id="asigTons" type="number" step="0.01" min="0">
-          <label for="asigTons" class="active">Tons a asignar</label>
-        </div>
-      </div>
-      <p class="grey-text">Nota: si no configuras un endpoint de asignación, este formulario sólo mostrará un aviso (no se enviará nada).</p>
-    </div>
-    <div class="modal-footer">
-      <a href="#!" class="modal-close btn-flat">Cancelar</a>
-      <a href="#!" id="btnGuardarAsignacion" class="btn teal">Guardar</a>
-    </div>
-  </div>
-
   <!-- Libs -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
@@ -157,52 +126,38 @@
     /* ================== CONFIG ================== */
     const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
 
-    // Opcional: define dónde leer “asignado por mes”. Ej:
-    //   inventario_mmpp.html?asig=/plan/asignacion-mensual
-    // Si no lo pones, no se hace ninguna llamada (evita 404).
-    //
-    // Opcional post asignación rápida:
-    //   window.INV_ASSIGN_POST = '/plan/asignaciones';   // {mesKey, proveedor, centroCodigo, areaCodigo, tons}
-    //   o query: ?postAssign=/plan/asignaciones
     /* ================== HELPERS ================== */
     const $id = (x) => document.getElementById(x);
     const $ = (s) => document.querySelector(s);
     const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-    const NOFECHA_KEY = '__SIN_FECHA__';
-
     const esc = (s='') => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
     const fmt = (n) => (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:2});
     function qp(name){const u=new URL(location.href);return u.searchParams.get(name)||'';}
 
-    function monthKey(d){
-      // SIN FECHA si: null/empty/invalid/epoch o años raros (<2000)
-      if(!d) return NOFECHA_KEY;
-      const t = Date.parse(d);
-      if(!Number.isFinite(t) || t <= 0) return NOFECHA_KEY;
-      const y = new Date(t).getUTCFullYear();
-      if (y < 2000) return NOFECHA_KEY;
-      // Cortamos en UTC para evitar desfases TZ → YYYY-MM
-      return new Date(t).toISOString().slice(0,7);
+    // Parser estricto: SOLO fechas reales → de lo contrario null
+    function parseDateStrict(d){
+      if(!d && d!==0) return null;
+      const s = String(d).trim();
+      // ISO completo
+      const t = Date.parse(s);
+      if(!Number.isNaN(t)) return new Date(t);
+      // YYYY-MM-DD plano
+      if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return new Date(s+'T00:00:00Z');
+      return null;
     }
-    function monthLabel(k){
-      if(!k || k===NOFECHA_KEY) return 'SIN FECHA';
-      const [y,m]=k.split('-');
-      return `${MES[+m-1]} ${y}`;
+    function monthKeyFrom(d){
+      const dt = parseDateStrict(d);
+      if(!dt) return 's/fecha';
+      // usamos UTC para evitar desliz por timezone
+      return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,'0')}`;
     }
+    function monthLabel(k){ if(!k||k==='s/fecha') return 's/FECHA'; const [y,m]=k.split('-'); return `${MES[+m-1]} ${y}`;}
 
     async function checkResponse(resp){
       if(!resp.ok){const text=await resp.text().catch(()=> ''); throw new Error(`HTTP ${resp.status} - ${text}`)}
       if(resp.status===204) return null; return await resp.json().catch(()=> null);
     }
     async function apiGet(path){ const r=await fetch(`${API_URL}${path}`); return checkResponse(r); }
-    async function apiPost(path, body){
-      const r = await fetch(`${API_URL}${path}`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(body||{})
-      });
-      return checkResponse(r);
-    }
 
     /* ================== FETCH BASE ================== */
     async function getCentros(){ const arr=await apiGet('/centros'); return Array.isArray(arr)?arr:[]; }
@@ -211,15 +166,16 @@
       const raw=await apiGet('/visitas'); return Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
     }
 
+    // Asignación por mes (opcional – si no hay endpoint, no se llama)
     async function getAsignacionesMap(){
       const endpoint = (window.INV_ASIG_ENDPOINT || qp('asig') || '').trim();
-      if(!endpoint) return new Map();   // sin asignación configurada
+      if(!endpoint) return new Map();
       try{
         const raw=await apiGet(endpoint);
         const arr=Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
         const map=new Map();
         for(const it of arr){
-          const key = it.key || it.mesKey || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : monthKey(it.fecha || it.fechaPlan || it.fch));
+          const key = it.key || it.mesKey || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : monthKeyFrom(it.fecha || it.fechaPlan || it.fch));
           const val = Number(it.asignado ?? it.tons ?? it.total ?? it.valor ?? 0);
           if(key && Number.isFinite(val)) map.set(key, (map.get(key)||0) + val);
         }
@@ -241,14 +197,14 @@
     }
     function makeContactosIndex(contactos){const m=new Map(); for(const c of contactos)m.set(String(c._id||''),c); return m;}
 
+    // 👉 AGRUPA SOLO por fechaDisponibilidad; si no existe → s/fecha
     function rowsFromContactos(contactos, centroIdx){
       const out=[];
       for(const c of contactos){
         const tons=Number(c.tonsDisponiblesAprox ?? c.tons ?? 0);
         if(!Number.isFinite(tons)||tons<=0) continue;
 
-        // ✅ NO usamos createdAt como fallback. Sin fecha → SIN FECHA
-        const mes=monthKey(c.fechaDisponibilidad);
+        const mes = monthKeyFrom(c.fechaDisponibilidad); // <-- sin createdAt de respaldo
         const centro = centroIdx.get(String(c.centroId||'')) || {};
         const centroCodigo = c.centroCodigo || centro.codigo || null;
         const comuna = c.centroComuna || centro.comuna || '';
@@ -259,14 +215,15 @@
       }
       return out;
     }
+
+    // 👉 AGRUPA SOLO por fecha de la visita; si no existe → s/fecha
     function rowsFromVisitas(visitas, centroIdx, contactosIdx){
       const out=[];
       for(const v of visitas){
         const tons=Number(v.tonsComprometidas ?? 0);
         if(!Number.isFinite(tons)||tons<=0) continue;
 
-        // ✅ Sin fecha de visita → SIN FECHA (no usamos createdAt)
-        const mes=monthKey(v.fecha);
+        const mes = monthKeyFrom(v.fecha); // <-- sin createdAt de respaldo
         const centro = centroIdx.get(String(v.centroId||'')) || {};
         const centroCodigo = v.centroCodigo || centro.codigo || null;
         const comuna = centro.comuna || '';
@@ -283,7 +240,7 @@
       const total = rows.reduce((s,r)=>s+(Number(r.tons)||0),0);
       const prov = new Set(rows.map(r=>r.proveedor||'').filter(Boolean)).size;
       const centros = new Set(rows.map(r=>r.centroCodigo||'').filter(Boolean)).size;
-      const meses = new Set(rows.map(r=>r.mes||NOFECHA_KEY)).size;
+      const meses = new Set(rows.map(r=>r.mes||'s/fecha')).size;
       $id('kpiTons').textContent = fmt(total);
       $id('kpiProv').textContent = prov;
       $id('kpiCentros').textContent = centros;
@@ -340,7 +297,7 @@
     function calcMonthTotals(rows){
       const m=new Map();
       for(const r of rows){
-        const k=r.mes||NOFECHA_KEY;
+        const k=r.mes||'s/fecha';
         m.set(k, (m.get(k)||0) + (Number(r.tons)||0));
       }
       return m;
@@ -359,9 +316,18 @@
       );
     }
 
-    function monthSortKey(k){
-      if(!k || k===NOFECHA_KEY) return '9999-99'; // SIN FECHA al final
-      return k;
+    // Abre Asignación con mes & proveedor preseleccionados (en otra pestaña)
+    function openAsignacionPre({mesKey, proveedor, tons}){
+      // mesKey = YYYY-MM o 's/fecha' (si es s/fecha, sólo pasamos proveedor)
+      const url = new URL('./asignacion.html', location.href);
+      if(mesKey && mesKey!=='s/fecha'){
+        const [y,m] = mesKey.split('-');
+        url.searchParams.set('anio', y);
+        url.searchParams.set('mes', m);
+      }
+      if(proveedor) url.searchParams.set('q', proveedor);
+      if(tons) url.searchParams.set('sugerido', tons);
+      window.open(url.toString(), '_blank');
     }
 
     function renderGrouped(rows, asigMap){
@@ -369,14 +335,20 @@
       const q=$id('invSearch')?.value || '';
       const filtered=filterRows(rows,q);
 
-      // agrupa
+      // group by month
       const groups=new Map();
       for(const r of filtered){
-        const k=r.mes||NOFECHA_KEY;
+        const k=r.mes||'s/fecha';
         if(!groups.has(k)) groups.set(k,[]);
         groups.get(k).push(r);
       }
-      const keys=[...groups.keys()].sort((a,b)=> monthSortKey(a).localeCompare(monthSortKey(b)));
+      // Orden: s/fecha al final
+      const keys=[...groups.keys()].sort((a,b)=>{
+        if(a==='s/fecha' && b==='s/fecha') return 0;
+        if(a==='s/fecha') return 1;
+        if(b==='s/fecha') return -1;
+        return a.localeCompare(b);
+      });
 
       let html='';
       for(const k of keys){
@@ -396,9 +368,9 @@
                 <div><strong>${esc(monthLabel(k))}</strong> • ${items.length} registros</div>
               </div>
               <div class="group-tags">
-                <span class="tag tag-sub"   title="Subtotal suministro">${fmt(subtotal)} t</span>
-                <span class="tag tag-asig"  title="Asignado en planificación">${fmt(asig)} t</span>
-                <span class="tag tag-saldo" title="Saldo (suministro - asignado)">${fmt(saldo)} t</span>
+                <span class="pill green"  title="Subtotal suministro">${fmt(subtotal)} t</span>
+                <span class="pill purple" title="Asignado en planificación">${fmt(asig)} t</span>
+                <span class="pill red"    title="Saldo (suministro - asignado)">${fmt(saldo)} t</span>
               </div>
             </summary>
             <div class="group-table">
@@ -416,7 +388,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    ${items.map((r,idx)=>`
+                    ${items.map((r,i)=>`
                       <tr>
                         <td title="${esc(r.proveedor||'')}">${esc(r.proveedor||'')}</td>
                         <td title="${esc(r.centroCodigo||'')}">${esc(r.centroCodigo||'')}</td>
@@ -424,9 +396,12 @@
                         <td title="${esc(r.comuna||'')}">${esc(r.comuna||'')}</td>
                         <td class="right-align" title="${fmt(r.tons)}">${fmt(r.tons)}</td>
                         <td>${esc(r.fuente||'')}</td>
-                        <td class="assign-cell right-align">
-                          <a href="#!" class="btn teal lighten-1" data-assign='${esc(JSON.stringify(r))}'>
-                            <i class="material-icons left">add</i>ASIGNAR
+                        <td class="right-align">
+                          <a href="#!" class="btn teal btn-mini btnAsignar"
+                             data-mes="${esc(k)}"
+                             data-prov="${esc(r.proveedor||'')}"
+                             data-tons="${Number(r.tons)||0}">
+                             <i class="material-icons left" style="font-size:18px">add</i> ASIGNAR
                           </a>
                         </td>
                       </tr>
@@ -436,7 +411,8 @@
                     <tr class="group-total-row">
                       <td colspan="4" class="right-align">Subtotal</td>
                       <td class="right-align">${fmt(subtotal)}</td>
-                      <td colspan="2"></td>
+                      <td></td>
+                      <td></td>
                     </tr>
                   </tfoot>
                 </table>
@@ -446,18 +422,22 @@
       }
       cont.innerHTML = html || `<div class="grey-text">Sin registros para mostrar.</div>`;
 
-      // signo +/-
+      // Actualiza el signo +/-
       cont.querySelectorAll('details').forEach(d=>{
         const sign = d.querySelector('.sign');
         const set = () => sign.textContent = d.open ? '−' : '+';
         d.addEventListener('toggle', set); set();
       });
 
-      // handlers ASIGNAR
-      cont.querySelectorAll('[data-assign]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const r = JSON.parse(btn.getAttribute('data-assign'));
-          openAssignModal(r);
+      // Delegación para botones ASIGNAR
+      cont.querySelectorAll('.btnAsignar').forEach(btn=>{
+        btn.addEventListener('click', (e)=>{
+          e.preventDefault();
+          openAsignacionPre({
+            mesKey: btn.dataset.mes,
+            proveedor: btn.dataset.prov,
+            tons: btn.dataset.tons
+          });
         });
       });
     }
@@ -470,48 +450,6 @@
       $id('btnToggleGroup').classList.toggle('teal-text', on);
       grouped.style.display = on ? 'block' : 'none';
       flatWrap.style.display = on ? 'none' : 'block';
-    }
-
-    /* ================== ASIGNACIÓN RÁPIDA ================== */
-    function openAssignModal(row){
-      $id('asignarDesc').textContent = `Vas a asignar parte del suministro del proveedor en el mes seleccionado.`;
-      $id('asigMes').value = monthLabel(row.mes);
-      $id('asigProveedor').value = row.proveedor || '';
-      $id('asigCentro').value = row.centroCodigo || '';
-      $id('asigArea').value = row.areaCodigo || '';
-      $id('asigTons').value = '';
-
-      M.updateTextFields();
-      const modal = M.Modal.getInstance($id('modalAsignar')) || M.Modal.init($id('modalAsignar'));
-      modal.open();
-
-      $id('btnGuardarAsignacion').onclick = async () => {
-        const tons = Number($id('asigTons').value);
-        if(!Number.isFinite(tons) || tons<=0){
-          M.toast({html:'Ingresa un número válido de tons', classes:'red'}); return;
-        }
-        const postPath = (window.INV_ASSIGN_POST || qp('postAssign') || '').trim();
-        if(!postPath){
-          M.toast({html:'(Demo) No hay endpoint configurado; nada se envía.', classes:'orange'});
-          modal.close(); return;
-        }
-        try{
-          await apiPost(postPath, {
-            mesKey: row.mes,
-            proveedor: row.proveedor,
-            centroCodigo: row.centroCodigo,
-            areaCodigo: row.areaCodigo,
-            tons
-          });
-          M.toast({html:'Asignación guardada', classes:'teal'});
-          modal.close();
-          // Reload para refrescar asignado del mes (si tu endpoint lo refleja)
-          loadData();
-        }catch(e){
-          console.error(e);
-          M.toast({html:'No se pudo guardar la asignación', classes:'red'});
-        }
-      };
     }
 
     /* ================== LOAD ================== */
@@ -538,7 +476,6 @@
 
         renderKPIs(__rows);
         fillDataTable(__rows, __asigMap, __monthTotals);
-
         renderGrouped(__rows, __asigMap);     // por defecto en agrupado
       }catch(e){
         console.error(e);
@@ -548,7 +485,7 @@
 
     /* ================== UI ================== */
     document.addEventListener('DOMContentLoaded', () => {
-      // vista inicial agrupada
+      // Vista inicial: agrupada
       setGroupedView(true);
 
       $id('btnReload')?.addEventListener('click', loadData);
@@ -570,9 +507,6 @@
       $id('btnCollapseAll')?.addEventListener('click', () => {
         document.querySelectorAll('#invGrouped details').forEach(d=>d.open=false);
       });
-
-      // inicializa modal
-      M.Modal.init($id('modalAsignar'));
 
       loadData();
     });
