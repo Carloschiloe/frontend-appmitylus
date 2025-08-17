@@ -5,7 +5,7 @@ if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
 
 import { cargarCentros, cargarContactosGuardados } from './data.js';
 import { setupBuscadorProveedores } from './proveedores.js';
-import { setupFormulario } from './form-contacto.js';
+import { setupFormulario, prepararNuevo } from './form-contacto.js';
 import { setupFormularioVisita } from './visitas.js';
 import { initTablaContactos, renderTablaContactos } from './tabla.js';
 
@@ -132,3 +132,4 @@ function hookGlobalListeners() {
 document.addEventListener('DOMContentLoaded', () => {
   initContactosTab().catch(console.error);
 });
+
