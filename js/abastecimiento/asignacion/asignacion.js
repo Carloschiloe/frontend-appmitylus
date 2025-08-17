@@ -34,9 +34,10 @@ async function apiGet(path){ const r = await fetch(`${API_URL}${path}`); return 
 // =============== ARRANQUE ===============
 init();
 async function init(){
-  ensureAuxUIs();         // crea UI de password (asigPass)
-  ensureCardMenu();       // crea menú contextual anclable (asigCardMenu)
-  ensurePopover();        // crea popover de proveedores
+  ensureAuxUIs();         // password (asigPass)
+  ensureReqModal();       // <-- NUEVO: modal Requerido
+  ensureCardMenu();       // menú contextual
+  ensurePopover();        // popover proveedores
 
   // Solo 2025+ en el selector
   const years = [2025,2026,2027,2028,2029];
@@ -71,7 +72,7 @@ async function init(){
 
 // =============== ENDPOINTS REALES ===============
 async function fetchSummaryMensual(anio){
-  // 1) Asignado por mes (12 slots)
+  // 1) Asignado por mes
   const asignado = Array(12).fill(0);
   try{
     const arr = await apiGet(`/asignaciones/map?from=${anio}-01&to=${anio}-12`);
@@ -85,37 +86,35 @@ async function fetchSummaryMensual(anio){
     }
   }catch(e){ console.warn('[asignaciones/map]', e.message); }
 
-  // 2) Requerido por mes: usamos /planificacion/mes y agregamos por mes del año seleccionado
+  // 2) Requerido por mes desde /planificacion/mes
   const requerido = Array(12).fill(0);
   try{
     const json = await apiGet('/planificacion/mes');
     const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
     for(const it of items){
-      // esperamos "mes" como ISO (YYYY-MM-01) y "tons" (o campos equivalentes)
-      const d = new Date(it.mes || it.fecha || it.mesKey || '');
-      if(!Number.isFinite(d.getTime?.()) && isNaN(d)) continue;
-      const y = d.getFullYear(); const m = d.getMonth(); // 0-11
+      const d = new Date(it.mes || it.fecha || it.mesKey || `${anio}-${String(it.mes||'').padStart(2,'0')}-01`);
+      if (isNaN(d.getTime())) continue;
+      const y = d.getFullYear(); const m = d.getMonth();
       if (y !== anio) continue;
       const tons = Number(it.tons ?? it.total ?? it.tonsComprometidas ?? it.tonsDisponiblesAprox ?? 0);
       if (Number.isFinite(tons)) requerido[m] += tons;
     }
   }catch(e){ console.warn('[planificacion/mes]', e.message); }
 
-  // 3) Procesado (de momento no hay backend): queda en 0
+  // 3) Procesado (aún 0 si no hay backend)
   const procesado = Array(12).fill(0);
 
   return { anio, requerido, asignado, procesado };
 }
 
 async function fetchProveedoresMes(anio, mes1a12){
-  // Derivamos la lista desde /planificacion/mes filtrando mes y mapeando campos tolerantes
   try{
     const json = await apiGet('/planificacion/mes');
     const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
     return items
       .filter(it=>{
         const d = new Date(it.mes || it.fecha || it.mesKey || '');
-        return d.getFullYear() === anio && (d.getMonth()+1) === mes1a12;
+        return !isNaN(d.getTime()) && d.getFullYear() === anio && (d.getMonth()+1) === mes1a12;
       })
       .map(it=>({
         proveedor: it.proveedorNombre || it.proveedor || it.contactoNombre || '(s/empresa)',
@@ -130,7 +129,6 @@ async function fetchProveedoresMes(anio, mes1a12){
   }
 }
 async function fetchProveedoresDisponiblesDesde(anio, mes){
-  // Por ahora, mismo origen que arriba (si luego hay otro endpoint, se cambia aquí)
   return fetchProveedoresMes(anio, mes);
 }
 
@@ -314,7 +312,7 @@ function hideModal(){
   mask.setAttribute('aria-hidden','true');
 }
 
-// Guardados
+// Guardados (otros)
 async function saveDisponibilidad(){
   const payload = {
     anio: +document.getElementById('mDispAnio').value,
@@ -384,6 +382,69 @@ function askPassword(){
 }
 function hidePass(){ document.getElementById('asigPass').style.display='none' }
 
+// =============== MODAL: Definir Requerido (MMPP) ===============
+function ensureReqModal(){
+  if(document.getElementById('modalReq')) return;
+  const modal = document.createElement('div');
+  modal.id = 'modalReq';
+  modal.className = 'asig-modal';
+  modal.setAttribute('aria-hidden','true');
+
+  modal.innerHTML = `
+    <div class="asig-modal__box">
+      <header class="asig-modal__header">
+        <h3>Definir Requerido (MMPP)</h3>
+        <button class="x" onclick="hideModal()">×</button>
+      </header>
+      <div class="content">
+        <div class="row"><label>Año</label><input id="mReqAnio" type="number" min="2024" step="1" /></div>
+        <div class="row"><label>Mes</label><input id="mReqMes" type="number" min="1" max="12" step="1" /></div>
+        <div class="row"><label>Materia prima</label><input id="mReqMP" type="text" placeholder="p. ej. MMPP genérica" /></div>
+        <div class="row"><label>Tons requeridas</label><input id="mReqTons" type="number" step="0.01" min="0" /></div>
+      </div>
+      <footer class="asig-modal__footer">
+        <button onclick="hideModal()">Cancelar</button>
+        <button class="ok" id="mReqSave">Guardar</button>
+      </footer>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  document.getElementById('mReqSave').onclick = saveRequerido;
+}
+async function putRequeridoMensual(payload){
+  const body = {
+    mesKey: payload.mesKey || `${payload.anio}-${String(payload.mes).padStart(2,'0')}`,
+    anio: payload.anio, mes: payload.mes,
+    materiaPrima: payload.materiaPrima || '',
+    tons: Number(payload.tons)||0
+  };
+  const resp = await fetch(`${API_URL}/planificacion/mes`, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json' },
+    body: JSON.stringify(body)
+  });
+  return checkResponse(resp);
+}
+async function saveRequerido(){
+  const anio = +document.getElementById('mReqAnio').value;
+  const mes  = Math.min(12, Math.max(1, +document.getElementById('mReqMes').value||1));
+  const mp   = (document.getElementById('mReqMP').value||'').trim();
+  const tons = +document.getElementById('mReqTons').value;
+
+  if(!anio || !mes || !Number.isFinite(tons) || tons<0){
+    alert('Completa Año, Mes y toneladas válidas');
+    return;
+  }
+  try{
+    await putRequeridoMensual({ anio, mes, materiaPrima: mp, tons });
+    hideModal();
+    await loadYear(+elAnio.value); // refresca tarjetas y chart
+  }catch(e){
+    console.error(e);
+    alert('No se pudo guardar el Requerido');
+  }
+}
+
 // =============== MENÚ CONTEXTUAL anclado a tarjeta ===============
 function ensureCardMenu(){
   if(cardMenuEl) return;
@@ -391,6 +452,7 @@ function ensureCardMenu(){
   cardMenuEl.id = 'asigCardMenu';
   cardMenuEl.className = 'asig-card-menu';
   cardMenuEl.innerHTML = `
+    <button data-act="requerido">Definir Requerido</button>
     <button data-act="asignar">Asignar MMPP</button>
     <button data-act="producir">Registrar Prod. Planta</button>
     <button data-act="ver">Ver proveedores</button>
@@ -407,10 +469,22 @@ function ensureCardMenu(){
       openProvidersPopover(mes, anio, anchor);
       return;
     }
+
     // acciones con password
     hideCardMenu();
     const ok = await askPassword();
     if(!ok) return;
+
+    if(act==='requerido'){
+      document.getElementById('mReqAnio').value = anio;
+      document.getElementById('mReqMes').value  = mes;
+      // sugerir como starting point lo asignado actual de ese mes
+      const i = mes-1;
+      document.getElementById('mReqTons').value = (cacheSummary?.asignado?.[i] || 0);
+      document.getElementById('mReqMP').value = '';
+      showModal('modalReq');
+      return;
+    }
 
     if(act==='asignar'){
       document.getElementById('mDispAnio').value = anio;
@@ -486,7 +560,6 @@ function ensurePopover(){
   window.addEventListener('resize', ()=>{ if(popEl.style.display==='block') repositionPopover(); }, true);
   return popEl;
 }
-
 function repositionPopover(){
   if(!popEl || !popCtx.anchor) return;
   const r = popCtx.anchor.getBoundingClientRect();
@@ -518,7 +591,6 @@ function hideProvidersPopover(){ if(popEl) popEl.style.display = 'none'; }
 // =============== WEEK PICKER ===============
 function clampMes(m){ return Math.min(12, Math.max(1, +m || 1)); }
 function daysInMonth(y, m){ return new Date(y, m, 0).getDate(); } // m: 1-12
-
 function defaultWeekFor(y, m){
   const now = new Date();
   if(now.getFullYear()===y && (now.getMonth()+1)===m){
@@ -526,7 +598,6 @@ function defaultWeekFor(y, m){
   }
   return 1;
 }
-
 function renderWeekPicker(y, m, selectedWeek=1){
   const host = document.getElementById('weekPicker');
   if(!host) return;
