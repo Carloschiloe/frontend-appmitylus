@@ -6,7 +6,6 @@ if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
 import { cargarCentros, cargarContactosGuardados } from './data.js';
 import { setupBuscadorProveedores } from './proveedores.js';
 import { setupFormulario, prepararNuevo } from './form-contacto.js';
-import { setupFormularioVisita } from './visitas.js';
 import { initTablaContactos, renderTablaContactos } from './tabla.js';
 
 import { initAsociacionContactos } from './asociar-empresa.js';
@@ -15,7 +14,12 @@ import { initAsociacionContactos } from './asociar-empresa.js';
 import { initPersonasTab, renderTablaPersonas } from './personas.js';
 import { initFiltrosYKPIsPersonas } from './filtros-kpis-personas.js';
 
-let booted = false, listenersHooked = false;
+// Visitas (⚠️ nuevo: también inicializamos la tabla)
+import { setupFormularioVisita, initVisitasTab } from './visitas.js';
+
+let booted = false;
+let listenersHooked = false;
+let visitasBooted = false;
 
 /* ---------- UI init: tabs + modales (una sola vez, sin AutoInit) ---------- */
 function initUIOnce() {
@@ -53,8 +57,7 @@ function initUIOnce() {
     if (personaBtn) personaBtn.addEventListener('click', (e) => {
       e.preventDefault();
       try { prepararNuevo(); } catch {}
-      const i = M.Modal.getInstance(modalContactoEl) || inst;
-      i.open();
+      (M.Modal.getInstance(modalContactoEl) || inst).open();
     });
 
     // Cualquier .modal-close debe cerrar SIEMPRE esta instancia
@@ -92,6 +95,17 @@ function initUIOnce() {
 
   // Limpieza extra por si navegas con hash
   window.addEventListener('hashchange', cleanupOverlays);
+
+  // Lazy-load de Visitas al hacer click en la pestaña (si aún no se inicializa)
+  const tabVisitas = document.querySelector('a[href="#tab-visitas"]');
+  tabVisitas?.addEventListener('click', async () => {
+    if (!visitasBooted) {
+      try {
+        await initVisitasTab();       // crea DataTable y hace fetch /api/visitas
+        visitasBooted = true;
+      } catch (e) { console.error('[visitas] init (lazy) error', e); }
+    }
+  });
 }
 
 export async function initContactosTab(forceReload = false) {
@@ -108,9 +122,9 @@ export async function initContactosTab(forceReload = false) {
     // Wiring
     setupBuscadorProveedores();
     setupFormulario();
-    setupFormularioVisita();
+    setupFormularioVisita();   // prepara el modal de visitas
 
-    // Tabla
+    // Tabla Contactos (Empresas)
     initTablaContactos();
     renderTablaContactos();
 
@@ -118,6 +132,14 @@ export async function initContactosTab(forceReload = false) {
     if (document.getElementById('tab-personas')) {
       initFiltrosYKPIsPersonas();
       initPersonasTab();
+    }
+
+    // Visitas: inicialización directa (si quieres lazy sólo con el click del tab, comenta esta línea)
+    try {
+      await initVisitasTab();
+      visitasBooted = true;
+    } catch (e) {
+      console.warn('[visitas] init directo falló, se intentará al abrir la pestaña', e?.message || e);
     }
 
     initAsociacionContactos();
@@ -132,7 +154,9 @@ export async function initContactosTab(forceReload = false) {
 
 function hookGlobalListeners() {
   if (listenersHooked) return;
+
   document.addEventListener('filtro-personas-changed', () => renderTablaPersonas?.());
+
   document.addEventListener('reload-tabla-contactos', async () => {
     try {
       await cargarContactosGuardados();
@@ -143,6 +167,17 @@ function hookGlobalListeners() {
       M.toast?.({ html: 'No se pudo refrescar', classes: 'red' });
     }
   });
+
+  // 🔁 Cuando se cree una visita, recarga la tabla de visitas
+  window.addEventListener('visita:created', async () => {
+    try {
+      await initVisitasTab(true); // soporta forceReload si tu visitas.js lo expone; si no, no pasa nada
+      visitasBooted = true;
+    } catch (e) {
+      console.error('[visitas] reload tras crear', e);
+    }
+  });
+
   listenersHooked = true;
 }
 
