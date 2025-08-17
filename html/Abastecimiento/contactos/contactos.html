@@ -308,18 +308,7 @@
   <!-- ÚNICO orquestador -->
   <script type="module" src="/js/abastecimiento/contactos/index.js?v=5"></script>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      M.Tabs.init(document.querySelectorAll('.tabs'), {});
-      const modalContacto = M.Modal.init(document.getElementById('modalContacto'), {
-        onCloseEnd: () => document.getElementById('formContacto')?.reset()
-      });
-      document.getElementById('btnOpenContactoModal')?.addEventListener('click', () => modalContacto.open());
-      if (document.getElementById('modalDetalleContacto')) M.Modal.init(document.getElementById('modalDetalleContacto'));
-      M.Modal.init(document.getElementById('modalVisita'));
-      M.Modal.init(document.getElementById('modalAsociar'));
-    });
-  </script>
 </body>
 </html>
+
 
