@@ -1,9 +1,10 @@
+// /js/contactos/tabla.js
 import { state, $ } from './state.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
 
 export function initTablaContactos(){
-  const jq = window.jQuery || window.$; 
+  const jq = window.jQuery || window.$;
   if (!jq || state.dt) return;
 
   state.dt = jq('#tablaContactos').DataTable({
@@ -17,13 +18,12 @@ export function initTablaContactos(){
     autoWidth: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
     columnDefs: [
-      { targets: 0, width: '110px' },   // fecha
-      { targets: -1, orderable: false, searchable: false } // acciones
+      { targets: 0, width: '110px' },
+      { targets: -1, orderable: false, searchable: false }
     ]
   });
 
-  const $jq = jq;
-  $jq('#tablaContactos tbody')
+  jq('#tablaContactos tbody')
     .on('click', 'a.icon-action.ver', function(){
       const id = this.dataset.id;
       const c = state.contactosGuardados.find(x => String(x._id) === String(id));
@@ -42,10 +42,9 @@ export function initTablaContactos(){
     .on('click', 'a.icon-action.eliminar', async function(){
       const id = this.dataset.id;
       if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
-      try { 
-        await eliminarContacto(id); 
-      } catch (e) {
-        console.error(e); 
+      try { await eliminarContacto(id); }
+      catch (e) {
+        console.error(e);
         M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 });
       }
     });
@@ -85,13 +84,20 @@ export function renderTablaContactos() {
         </a>
       `;
 
-      const comuna = c.centroComuna || c.comuna || '';
+      // 👇 Fallback inteligente para mostrar COMUNA aunque el contacto no la tenga guardada
+      const comuna =
+        c.centroComuna
+        || (state.centros && c.centroCodigo
+              ? (state.centros.find(ct => String(ct.codigo) === String(c.centroCodigo))?.comuna || '')
+              : '')
+        || c.comuna
+        || '';
 
       return [
         `<span data-order="${whenKey}">${whenDisplay}</span>`,
-        esc(c.proveedorNombre || ''),   // EMPRESA (Proveedor)
+        esc(c.proveedorNombre || ''),   // Proveedor = Empresa
         esc(c.centroCodigo || ''),
-        esc(comuna),                    // NUEVO: Comuna
+        esc(comuna),                    // ← Comuna visible
         esc(c.tieneMMPP || ''),
         c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '',
         esc(c.dispuestoVender || ''),
@@ -101,13 +107,13 @@ export function renderTablaContactos() {
       ];
     });
 
-  if (state.dt && jq) { 
-    state.dt.clear(); 
-    state.dt.rows.add(filas).draw(); 
-    return; 
+  if (state.dt && jq) {
+    state.dt.clear();
+    state.dt.rows.add(filas).draw();
+    return;
   }
 
-  const tbody = $('#tablaContactos tbody'); 
+  const tbody = $('#tablaContactos tbody');
   if (!tbody) return;
 
   tbody.innerHTML = '';
