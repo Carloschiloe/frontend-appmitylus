@@ -39,8 +39,8 @@
     .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .toolbar .btn-flat{color:#26a69a}
 
-    .right-align{ text-align:right !important }
-    .btn-mini{ padding:0 10px; height:28px; line-height:28px; }
+    /* Botón asignar en la tabla agrupada */
+    .assign-cell .btn{min-height:30px;line-height:30px}
   </style>
 </head>
 <body>
@@ -66,11 +66,9 @@
         </div>
       </div>
 
-      <div class="col s12 m4 right-align" style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end">
-        <a class="btn grey darken-2" id="btnIrAsignacion">
-          <i class="material-icons left">assignment</i>Ir a Asignación
-        </a>
-        <a class="btn teal" id="btnReload"><i class="material-icons left">refresh</i>Actualizar</a>
+      <div class="col s12 m4 right-align" style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
+        <a class="btn teal" id="btnReload"><i class="material-icons left">refresh</i>ACTUALIZAR</a>
+        <a class="btn grey darken-2" href="./asignacion.html"><i class="material-icons left">assignment</i>Ir a Asignación</a>
       </div>
     </div>
 
@@ -108,54 +106,40 @@
     </div>
   </div>
 
-  <!-- MODAL ASIGNAR -->
+  <!-- Modal Asignación rápida -->
   <div id="modalAsignar" class="modal">
     <div class="modal-content">
       <h5>Asignar MMPP</h5>
-      <div class="row" style="margin-bottom:0">
-        <div class="input-field col s12 m6">
-          <input id="asg_proveedor" type="text" disabled>
-          <label class="active" for="asg_proveedor">Proveedor</label>
+      <p id="asignarDesc" class="grey-text"></p>
+      <div class="row" style="margin-top:8px">
+        <div class="input-field col s12 m4">
+          <input id="asigMes" type="text" disabled>
+          <label for="asigMes" class="active">Mes</label>
         </div>
-        <div class="input-field col s6 m3">
-          <input id="asg_centro" type="text" disabled>
-          <label class="active" for="asg_centro">Código centro</label>
-        </div>
-        <div class="input-field col s6 m3">
-          <input id="asg_area" type="text" disabled>
-          <label class="active" for="asg_area">Código área</label>
+        <div class="input-field col s12 m8">
+          <input id="asigProveedor" type="text" disabled>
+          <label for="asigProveedor" class="active">Proveedor</label>
         </div>
       </div>
-
-      <div class="row" style="margin-bottom:0">
-        <div class="input-field col s6 m3">
-          <input id="asg_mes" type="month">
-          <label class="active" for="asg_mes">Mes (yyyy-mm)</label>
+      <div class="row" style="margin-top:0">
+        <div class="input-field col s12 m4">
+          <input id="asigCentro" type="text" disabled>
+          <label for="asigCentro" class="active">Código centro</label>
         </div>
-        <div class="input-field col s6 m3">
-          <input id="asg_disponible" type="text" disabled>
-          <label class="active" for="asg_disponible">Disponible fila (t)</label>
+        <div class="input-field col s12 m4">
+          <input id="asigArea" type="text" disabled>
+          <label for="asigArea" class="active">Código área</label>
         </div>
-        <div class="input-field col s6 m3">
-          <input id="asg_saldo_mes" type="text" disabled>
-          <label class="active" for="asg_saldo_mes">Saldo del mes (t)</label>
-        </div>
-        <div class="input-field col s6 m3">
-          <input id="asg_tons" type="number" step="0.01" min="0" placeholder="0.00" required>
-          <label class="active" for="asg_tons">Tons a asignar</label>
+        <div class="input-field col s12 m4">
+          <input id="asigTons" type="number" step="0.01" min="0">
+          <label for="asigTons" class="active">Tons a asignar</label>
         </div>
       </div>
-
-      <div class="row" style="margin-bottom:0">
-        <div class="input-field col s12">
-          <input id="asg_nota" type="text" placeholder="Nota (opcional)">
-          <label class="active" for="asg_nota">Nota</label>
-        </div>
-      </div>
+      <p class="grey-text">Nota: si no configuras un endpoint de asignación, este formulario sólo mostrará un aviso (no se enviará nada).</p>
     </div>
     <div class="modal-footer">
-      <a class="modal-close btn-flat">Cancelar</a>
-      <a id="btnAsignarGuardar" class="btn teal">Guardar</a>
+      <a href="#!" class="modal-close btn-flat">Cancelar</a>
+      <a href="#!" id="btnGuardarAsignacion" class="btn teal">Guardar</a>
     </div>
   </div>
 
@@ -172,27 +156,53 @@
   <script>
     /* ================== CONFIG ================== */
     const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
-    const ASIG_POST_PATH = '/plan/asignaciones'; // <- Cambia si tu backend usa otra ruta
 
+    // Opcional: define dónde leer “asignado por mes”. Ej:
+    //   inventario_mmpp.html?asig=/plan/asignacion-mensual
+    // Si no lo pones, no se hace ninguna llamada (evita 404).
+    //
+    // Opcional post asignación rápida:
+    //   window.INV_ASSIGN_POST = '/plan/asignaciones';   // {mesKey, proveedor, centroCodigo, areaCodigo, tons}
+    //   o query: ?postAssign=/plan/asignaciones
     /* ================== HELPERS ================== */
     const $id = (x) => document.getElementById(x);
     const $ = (s) => document.querySelector(s);
     const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const NOFECHA_KEY = '__SIN_FECHA__';
+
     const esc = (s='') => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
     const fmt = (n) => (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:2});
     function qp(name){const u=new URL(location.href);return u.searchParams.get(name)||'';}
 
-    function isValidDate(d){const x=new Date(d);return !Number.isNaN(x.getTime())}
-    function monthKey(d){ if(!isValidDate(d)) return 's/fecha'; const x=new Date(d); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`;}
-    function monthLabel(k){ if(!k||k==='s/fecha') return 's/FECHA'; const [y,m]=k.split('-'); return `${MES[+m-1]} ${y}`;}
-    function keyToMonthInput(k){ if(!k||k==='s/fecha') return ''; return k; }
+    function monthKey(d){
+      // SIN FECHA si: null/empty/invalid/epoch o años raros (<2000)
+      if(!d) return NOFECHA_KEY;
+      const t = Date.parse(d);
+      if(!Number.isFinite(t) || t <= 0) return NOFECHA_KEY;
+      const y = new Date(t).getUTCFullYear();
+      if (y < 2000) return NOFECHA_KEY;
+      // Cortamos en UTC para evitar desfases TZ → YYYY-MM
+      return new Date(t).toISOString().slice(0,7);
+    }
+    function monthLabel(k){
+      if(!k || k===NOFECHA_KEY) return 'SIN FECHA';
+      const [y,m]=k.split('-');
+      return `${MES[+m-1]} ${y}`;
+    }
 
     async function checkResponse(resp){
       if(!resp.ok){const text=await resp.text().catch(()=> ''); throw new Error(`HTTP ${resp.status} - ${text}`)}
       if(resp.status===204) return null; return await resp.json().catch(()=> null);
     }
     async function apiGet(path){ const r=await fetch(`${API_URL}${path}`); return checkResponse(r); }
-    async function apiPost(path, body){ const r=await fetch(`${API_URL}${path}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}); return checkResponse(r); }
+    async function apiPost(path, body){
+      const r = await fetch(`${API_URL}${path}`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body||{})
+      });
+      return checkResponse(r);
+    }
 
     /* ================== FETCH BASE ================== */
     async function getCentros(){ const arr=await apiGet('/centros'); return Array.isArray(arr)?arr:[]; }
@@ -201,8 +211,6 @@
       const raw=await apiGet('/visitas'); return Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
     }
 
-    // Asignación por mes **opcional**:
-    // - Usa ?asig=/plan/meses?minTons=1  (o define window.INV_ASIG_ENDPOINT)
     async function getAsignacionesMap(){
       const endpoint = (window.INV_ASIG_ENDPOINT || qp('asig') || '').trim();
       if(!endpoint) return new Map();   // sin asignación configurada
@@ -233,24 +241,21 @@
     }
     function makeContactosIndex(contactos){const m=new Map(); for(const c of contactos)m.set(String(c._id||''),c); return m;}
 
-    let __ridCounter = 1;
-
     function rowsFromContactos(contactos, centroIdx){
       const out=[];
       for(const c of contactos){
         const tons=Number(c.tonsDisponiblesAprox ?? c.tons ?? 0);
         if(!Number.isFinite(tons)||tons<=0) continue;
 
-        // >>> FIX: si no hay fechaDisponibilidad -> s/FECHA (no usar createdAt)
+        // ✅ NO usamos createdAt como fallback. Sin fecha → SIN FECHA
         const mes=monthKey(c.fechaDisponibilidad);
-
         const centro = centroIdx.get(String(c.centroId||'')) || {};
         const centroCodigo = c.centroCodigo || centro.codigo || null;
         const comuna = c.centroComuna || centro.comuna || '';
         const areaCodigo = c.centroAreaCodigo || c.areaCodigo || c.lineaCodigo || centro.area || null;
         const proveedor = c.proveedorNombre || c.proveedor || (c.contactoNombre?`(persona) ${c.contactoNombre}`:'(s/empresa)');
 
-        out.push({ __rid: __ridCounter++, mes, proveedor, centroCodigo, areaCodigo, comuna, tons, fuente:'Contacto', origenId: String(c._id||'') });
+        out.push({ mes, proveedor, centroCodigo, areaCodigo, comuna, tons, fuente:'Contacto' });
       }
       return out;
     }
@@ -260,15 +265,15 @@
         const tons=Number(v.tonsComprometidas ?? 0);
         if(!Number.isFinite(tons)||tons<=0) continue;
 
-        const mes=monthKey(v.fecha); // visitas usan su propia fecha
-
+        // ✅ Sin fecha de visita → SIN FECHA (no usamos createdAt)
+        const mes=monthKey(v.fecha);
         const centro = centroIdx.get(String(v.centroId||'')) || {};
         const centroCodigo = v.centroCodigo || centro.codigo || null;
         const comuna = centro.comuna || '';
         const areaCodigo = v.areaCodigo || v.lineaCodigo || centro.area || null;
         const proveedor = (contactosIdx.get(String(v.contactoId||''))?.proveedorNombre) || '(s/empresa)';
 
-        out.push({ __rid: __ridCounter++, mes, proveedor, centroCodigo, areaCodigo, comuna, tons, fuente:'Visita', origenId: String(v._id||'') });
+        out.push({ mes, proveedor, centroCodigo, areaCodigo, comuna, tons, fuente:'Visita' });
       }
       return out;
     }
@@ -278,7 +283,7 @@
       const total = rows.reduce((s,r)=>s+(Number(r.tons)||0),0);
       const prov = new Set(rows.map(r=>r.proveedor||'').filter(Boolean)).size;
       const centros = new Set(rows.map(r=>r.centroCodigo||'').filter(Boolean)).size;
-      const meses = new Set(rows.map(r=>r.mes||'s/fecha')).size;
+      const meses = new Set(rows.map(r=>r.mes||NOFECHA_KEY)).size;
       $id('kpiTons').textContent = fmt(total);
       $id('kpiProv').textContent = prov;
       $id('kpiCentros').textContent = centros;
@@ -335,7 +340,7 @@
     function calcMonthTotals(rows){
       const m=new Map();
       for(const r of rows){
-        const k=r.mes||'s/fecha';
+        const k=r.mes||NOFECHA_KEY;
         m.set(k, (m.get(k)||0) + (Number(r.tons)||0));
       }
       return m;
@@ -354,19 +359,24 @@
       );
     }
 
+    function monthSortKey(k){
+      if(!k || k===NOFECHA_KEY) return '9999-99'; // SIN FECHA al final
+      return k;
+    }
+
     function renderGrouped(rows, asigMap){
       const cont=$id('invGrouped');
       const q=$id('invSearch')?.value || '';
       const filtered=filterRows(rows,q);
 
-      // group by month
+      // agrupa
       const groups=new Map();
       for(const r of filtered){
-        const k=r.mes||'s/fecha';
+        const k=r.mes||NOFECHA_KEY;
         if(!groups.has(k)) groups.set(k,[]);
         groups.get(k).push(r);
       }
-      const keys=[...groups.keys()].sort();
+      const keys=[...groups.keys()].sort((a,b)=> monthSortKey(a).localeCompare(monthSortKey(b)));
 
       let html='';
       for(const k of keys){
@@ -406,27 +416,21 @@
                     </tr>
                   </thead>
                   <tbody>
-                    ${items.map(r=>{
-                      const mesInput = keyToMonthInput(k);
-                      const saldoMes = Math.max(0, saldo); // saldo mensual del grupo
-                      const maxFila = Math.min(Number(r.tons)||0, saldoMes);
-                      return `
-                        <tr>
-                          <td title="${esc(r.proveedor||'')}">${esc(r.proveedor||'')}</td>
-                          <td title="${esc(r.centroCodigo||'')}">${esc(r.centroCodigo||'')}</td>
-                          <td title="${esc(r.areaCodigo||'')}">${esc(r.areaCodigo||'')}</td>
-                          <td title="${esc(r.comuna||'')}">${esc(r.comuna||'')}</td>
-                          <td class="right-align" title="${fmt(r.tons)}">${fmt(r.tons)}</td>
-                          <td>${esc(r.fuente||'')}</td>
-                          <td class="right-align">
-                            <a href="#!" class="btn btn-mini teal lighten-1 waves-effect btn-asignar"
-                               data-rid="${r.__rid}" data-mes="${esc(k)}"
-                               data-maxfila="${maxFila}">
-                               <i class="material-icons left" style="font-size:18px;line-height:28px">add</i>Asignar
-                            </a>
-                          </td>
-                        </tr>`;
-                    }).join('')}
+                    ${items.map((r,idx)=>`
+                      <tr>
+                        <td title="${esc(r.proveedor||'')}">${esc(r.proveedor||'')}</td>
+                        <td title="${esc(r.centroCodigo||'')}">${esc(r.centroCodigo||'')}</td>
+                        <td title="${esc(r.areaCodigo||'')}">${esc(r.areaCodigo||'')}</td>
+                        <td title="${esc(r.comuna||'')}">${esc(r.comuna||'')}</td>
+                        <td class="right-align" title="${fmt(r.tons)}">${fmt(r.tons)}</td>
+                        <td>${esc(r.fuente||'')}</td>
+                        <td class="assign-cell right-align">
+                          <a href="#!" class="btn teal lighten-1" data-assign='${esc(JSON.stringify(r))}'>
+                            <i class="material-icons left">add</i>ASIGNAR
+                          </a>
+                        </td>
+                      </tr>
+                    `).join('')}
                   </tbody>
                   <tfoot>
                     <tr class="group-total-row">
@@ -442,11 +446,19 @@
       }
       cont.innerHTML = html || `<div class="grey-text">Sin registros para mostrar.</div>`;
 
-      // Actualiza el signo +/-
+      // signo +/-
       cont.querySelectorAll('details').forEach(d=>{
         const sign = d.querySelector('.sign');
         const set = () => sign.textContent = d.open ? '−' : '+';
         d.addEventListener('toggle', set); set();
+      });
+
+      // handlers ASIGNAR
+      cont.querySelectorAll('[data-assign]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const r = JSON.parse(btn.getAttribute('data-assign'));
+          openAssignModal(r);
+        });
       });
     }
 
@@ -460,14 +472,50 @@
       flatWrap.style.display = on ? 'none' : 'block';
     }
 
+    /* ================== ASIGNACIÓN RÁPIDA ================== */
+    function openAssignModal(row){
+      $id('asignarDesc').textContent = `Vas a asignar parte del suministro del proveedor en el mes seleccionado.`;
+      $id('asigMes').value = monthLabel(row.mes);
+      $id('asigProveedor').value = row.proveedor || '';
+      $id('asigCentro').value = row.centroCodigo || '';
+      $id('asigArea').value = row.areaCodigo || '';
+      $id('asigTons').value = '';
+
+      M.updateTextFields();
+      const modal = M.Modal.getInstance($id('modalAsignar')) || M.Modal.init($id('modalAsignar'));
+      modal.open();
+
+      $id('btnGuardarAsignacion').onclick = async () => {
+        const tons = Number($id('asigTons').value);
+        if(!Number.isFinite(tons) || tons<=0){
+          M.toast({html:'Ingresa un número válido de tons', classes:'red'}); return;
+        }
+        const postPath = (window.INV_ASSIGN_POST || qp('postAssign') || '').trim();
+        if(!postPath){
+          M.toast({html:'(Demo) No hay endpoint configurado; nada se envía.', classes:'orange'});
+          modal.close(); return;
+        }
+        try{
+          await apiPost(postPath, {
+            mesKey: row.mes,
+            proveedor: row.proveedor,
+            centroCodigo: row.centroCodigo,
+            areaCodigo: row.areaCodigo,
+            tons
+          });
+          M.toast({html:'Asignación guardada', classes:'teal'});
+          modal.close();
+          // Reload para refrescar asignado del mes (si tu endpoint lo refleja)
+          loadData();
+        }catch(e){
+          console.error(e);
+          M.toast({html:'No se pudo guardar la asignación', classes:'red'});
+        }
+      };
+    }
+
     /* ================== LOAD ================== */
     let __rows=[], __asigMap=new Map(), __monthTotals=new Map(), __grouped=true;
-    let __rowById = new Map();
-
-    function rebuildRowIndex(){
-      __rowById.clear();
-      for(const r of __rows){ __rowById.set(r.__rid, r); }
-    }
 
     async function loadData(){
       try{
@@ -485,8 +533,6 @@
         const rowsV = rowsFromVisitas(visitas, cIdx, contIdx);
 
         __rows = [...rowsC, ...rowsV];
-        rebuildRowIndex();
-
         __asigMap = asigMap;
         __monthTotals = calcMonthTotals(__rows);
 
@@ -500,87 +546,12 @@
       }
     }
 
-    /* ================== ASIGNAR (modal) ================== */
-    let __asgContext = null; // {row, mesKey, maxFila}
-
-    function openAsignarModal(row, mesKey, maxFila){
-      __asgContext = {row, mesKey, maxFila};
-
-      // Prefill
-      $id('asg_proveedor').value = row.proveedor || '';
-      $id('asg_centro').value = row.centroCodigo || '';
-      $id('asg_area').value = row.areaCodigo || '';
-      $id('asg_mes').value = keyToMonthInput(mesKey); // '' si es s/fecha
-      $id('asg_disponible').value = fmt(row.tons || 0);
-
-      // saldo mensual (suministro total del mes - asignado mes)
-      const subtotal = Number(__monthTotals.get(mesKey)||0);
-      const asigMes = Number(__asigMap.get(mesKey)||0);
-      const saldoMes = Math.max(0, subtotal - asigMes);
-      $id('asg_saldo_mes').value = fmt(saldoMes);
-
-      // máximo sugerido = min(tons fila, saldo mes)
-      const max = Math.min(Number(row.tons)||0, saldoMes);
-      $id('asg_tons').value = '';
-      $id('asg_tons').setAttribute('max', String(max));
-
-      M.updateTextFields();
-      const inst = M.Modal.getInstance($id('modalAsignar')) || M.Modal.init($id('modalAsignar'));
-      inst.open();
-    }
-
-    async function guardarAsignacion(){
-      const ctx = __asgContext; if(!ctx){ return; }
-      const mesInput = $id('asg_mes').value?.trim();
-      const tons = parseFloat($id('asg_tons').value || '0');
-      const nota = $id('asg_nota').value?.trim() || null;
-
-      if(!mesInput){ M.toast({html:'Selecciona el mes (yyyy-mm)', classes:'red'}); return; }
-      if(!(tons>0)){ M.toast({html:'Ingresa toneladas a asignar', classes:'red'}); return; }
-
-      // Seguridad: no exceder max fila (min(tons fila, saldo mes))
-      const max = parseFloat($id('asg_tons').getAttribute('max') || '0');
-      if(tons > max + 1e-9){
-        M.toast({html:`No puedes asignar más de ${fmt(max)} t`, classes:'red'}); return;
-      }
-
-      const body = {
-        mes: mesInput,                               // yyyy-mm
-        proveedorNombre: ctx.row.proveedor || null,
-        proveedorKey: null,                          // si la tienes, agrégala aquí
-        centroCodigo: ctx.row.centroCodigo || null,
-        areaCodigo: ctx.row.areaCodigo || null,
-        tons,
-        fuente: 'Manual',
-        origenId: ctx.row.origenId || null,
-        nota
-      };
-
-      try{
-        await apiPost(ASIG_POST_PATH, body);
-        M.toast({html:'Asignación guardada', classes:'teal'});
-
-        // Refrescar asignado (sin recargar todo si no quieres)
-        // Aquí simplemente recargamos todo para asegurar consistencia:
-        const inst = M.Modal.getInstance($id('modalAsignar'));
-        inst?.close();
-        await loadData();
-      }catch(e){
-        console.error(e);
-        M.toast({html:'No se pudo asignar', classes:'red'});
-      }
-    }
-
     /* ================== UI ================== */
     document.addEventListener('DOMContentLoaded', () => {
-      // Vista inicial: agrupada
+      // vista inicial agrupada
       setGroupedView(true);
 
-      // Botones principales
       $id('btnReload')?.addEventListener('click', loadData);
-      $id('btnIrAsignacion')?.addEventListener('click', () => {
-        location.href = '/html/Abastecimiento/asignacion/asignacion.html';
-      });
 
       $id('btnToggleGroup')?.addEventListener('click', () => {
         __grouped = !__grouped;
@@ -600,19 +571,8 @@
         document.querySelectorAll('#invGrouped details').forEach(d=>d.open=false);
       });
 
-      // Delegación: botón "Asignar" en la tabla agrupada
-      $id('invGrouped').addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-asignar');
-        if(!btn) return;
-        const rid = Number(btn.dataset.rid);
-        const mesKey = String(btn.dataset.mes || 's/fecha');
-        const row = __rowById.get(rid);
-        if(!row){ return; }
-        openAsignarModal(row, mesKey, Number(btn.dataset.maxfila||'0'));
-      });
-
-      // Guardar en modal
-      $id('btnAsignarGuardar')?.addEventListener('click', guardarAsignacion);
+      // inicializa modal
+      M.Modal.init($id('modalAsignar'));
 
       loadData();
     });
