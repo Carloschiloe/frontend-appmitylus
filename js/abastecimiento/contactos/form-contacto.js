@@ -21,12 +21,16 @@ export function setupFormulario() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const proveedorKey    = getVal(['proveedorKey','proveedorId']).trim();
-    const proveedorNombre = getVal(['proveedorNombre']).trim();
-    if (!proveedorKey || !proveedorNombre) {
-      M.toast?.({ html: 'Selecciona un proveedor válido', displayLength: 2500 });
-      $('#buscadorProveedor')?.focus();
-      return;
+    // ✅ Empresa/proveedor opcional (para poder registrar personas sin empresa)
+    const proveedorKeyRaw    = (getVal(['proveedorKey','proveedorId']) || '').trim();
+    const proveedorNombreRaw = (getVal(['proveedorNombre']) || '').trim();
+    const proveedorKey       = proveedorKeyRaw || null;
+    const proveedorNombre    = proveedorNombreRaw || null;
+
+    // si no hay proveedor, aseguramos que no viaje ningún centro “antiguo”
+    if (!proveedorKey) {
+      setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
+      resetSelectCentros();
     }
 
     const tieneMMPP            = $('#tieneMMPP').value;
@@ -43,29 +47,42 @@ export function setupFormulario() {
     // sincroniza hidden del centro por si el usuario no salió del select
     copyCentroToHidden(selCentro);
 
-    const centroId     = getVal(['centroId']) || null;
-    const centroCodigo = getVal(['centroCode','centroCodigo']) || null;
-    // 👇 comuna a guardar: hidden -> fallback al catálogo de centros
-    const centroComuna = getVal(['centroComuna']) || lookupComunaByCodigo(centroCodigo) || null;
-    const centroHectareas = getVal(['centroHectareas']) || null;
+    const centroId       = getVal(['centroId']) || null;
+    const centroCodigo   = getVal(['centroCode','centroCodigo']) || null;
+    const centroComuna   = getVal(['centroComuna']) || lookupComunaByCodigo(centroCodigo) || null;
+    const centroHectareas= getVal(['centroHectareas']) || null;
 
-    const resultado = tieneMMPP === 'Sí' ? 'Disponible'
-                    : (tieneMMPP === 'No' ? 'No disponible' : '');
+    const resultado = (tieneMMPP === 'Sí') ? 'Disponible'
+                    : (tieneMMPP === 'No') ? 'No disponible' : '';
     if (!resultado) {
       M.toast?.({ html: 'Selecciona disponibilidad (Sí/No)', displayLength: 2500 });
       return;
     }
 
     const payload = {
-      proveedorKey, proveedorNombre,
-      resultado, tieneMMPP, fechaDisponibilidad, dispuestoVender,
-      vendeActualmenteA, notas,
+      // empresa opcional
+      proveedorKey,                  // null si viene vacío
+      proveedorNombre,               // null si viene vacío
+
+      resultado,
+      tieneMMPP,
+      fechaDisponibilidad,
+      dispuestoVender,
+      vendeActualmenteA,
+      notas,
+
+      // centro opcional; si no hay proveedor suele ser null
       centroId,
       centroCodigo,
-      centroComuna,          // ← se guarda
-      centroHectareas,       // (por si lo necesitas en backend)
+      centroComuna,
+      centroHectareas,
+
       tonsDisponiblesAprox: normalizeNumber(tonsDisponiblesAprox),
-      contactoNombre, contactoTelefono, contactoEmail
+
+      // datos de la persona
+      contactoNombre,
+      contactoTelefono,
+      contactoEmail
     };
 
     try {
@@ -89,6 +106,8 @@ export function setupFormulario() {
       form.reset();
       // limpia hidden del centro
       setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
+      // limpia proveedor
+      setVal(['proveedorKey','proveedorId','proveedorNombre'], '');
       state.editId = null;
       modalInst?.close();
     } catch (err) {
@@ -103,7 +122,7 @@ export function abrirEdicion(c) {
 
   $('#buscadorProveedor').value = c.proveedorNombre || '';
   setVal(['proveedorNombre'], c.proveedorNombre || '');
-  const key = c.proveedorKey || slug(c.proveedorNombre || '');
+  const key = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
   setVal(['proveedorKey','proveedorId'], key);
 
   // poblar centros del proveedor y seleccionar el actual
