@@ -3,6 +3,23 @@ import { state, $ } from './state.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
 
+/* ---------- estilos: columna proveedor angosta + ellipsis ---------- */
+(function injectStyles () {
+  const css = `
+    #tablaContactos td .ellipsisCell{
+      display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle;
+    }
+    /* ~mitad de lo que tenías: angosta y con puntos suspensivos */
+    #tablaContactos td .ellipsisProv{ max-width:26ch; }
+  `;
+  if (!document.getElementById('tabla-contactos-inline-styles')) {
+    const s = document.createElement('style');
+    s.id = 'tabla-contactos-inline-styles';
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+})();
+
 /* -------------------- helpers locales (solo UI, no escriben BD) -------------------- */
 const esc = (s='') => String(s)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -44,7 +61,8 @@ export function initTablaContactos() {
     autoWidth: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
     columnDefs: [
-      { targets: 0, width: '110px' },            // Fecha angosta
+      { targets: 0, width: '110px' },              // Fecha angosta
+      { targets: 1, width: '260px' },              // Proveedor (más angosta)
       { targets: -1, orderable: false, searchable: false }
     ]
   });
@@ -106,6 +124,12 @@ export function renderTablaContactos() {
       // Comuna: usa lo guardado; si falta, dedúcela por código
       const comuna = c.centroComuna || c.comuna || getComunaByCodigo(centroCodigo) || '';
 
+      // Proveedor con ellipsis + tooltip
+      const provName = esc(c.proveedorNombre || '');
+      const provCell = provName
+        ? `<span class="ellipsisCell ellipsisProv" title="${provName}">${provName}</span>`
+        : '';
+
       const acciones = `
         <a href="#!" class="icon-action ver" title="Ver detalle" data-id="${c._id}">
           <i class="material-icons">visibility</i>
@@ -123,7 +147,7 @@ export function renderTablaContactos() {
 
       return [
         `<span data-order="${whenKey}">${whenDisplay}</span>`,
-        esc(c.proveedorNombre || ''),
+        provCell,
         esc(centroCodigo),
         esc(comuna),
         esc(c.tieneMMPP || ''),
