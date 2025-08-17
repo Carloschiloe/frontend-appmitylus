@@ -1,9 +1,11 @@
 // =============== CONFIG INICIAL ===============
+const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
+
 const MES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const currentYear = 2025;
 const lockUntilMonth2025 = 8;
 
-const SIMPLE_PASS = '1234'; // <-- cámbiala si quieres
+const SIMPLE_PASS = '1234'; // cámbiala si quieres
 
 const elCards = document.getElementById('cards');
 const elAnio  = document.getElementById('anio');
@@ -17,6 +19,17 @@ let cardMenuCtx = { anchor:null, anio:null, mes:null };
 
 let popEl = null;
 let popCtx = { anchor:null, mes:null, anio:null };
+
+// =============== HELPERS HTTP ===============
+async function checkResponse(resp){
+  if (!resp.ok) {
+    const txt = await resp.text().catch(()=> '');
+    throw new Error(`HTTP ${resp.status} - ${txt}`);
+  }
+  if (resp.status === 204) return null;
+  return await resp.json().catch(()=> null);
+}
+async function apiGet(path){ const r = await fetch(`${API_URL}${path}`); return checkResponse(r); }
 
 // =============== ARRANQUE ===============
 init();
@@ -56,26 +69,74 @@ async function init(){
   }
 }
 
-// =============== MOCKS / ENDPOINTS ===============
+// =============== ENDPOINTS REALES ===============
 async function fetchSummaryMensual(anio){
-  const req = [800,900,600,0,0,0,0,0,700,800,900,650];
-  const asg = [200,300,300,0,0,0,0,0,300,600,600,450];
-  const pro = [ 50,120, 80,0,0,0,0,0,100,300,450,220];
-  return {anio, requerido:req, asignado:asg, procesado:pro};
+  // 1) Asignado por mes (12 slots)
+  const asignado = Array(12).fill(0);
+  try{
+    const arr = await apiGet(`/asignaciones/map?from=${anio}-01&to=${anio}-12`);
+    const rows = Array.isArray(arr) ? arr : (arr?.items || []);
+    for(const it of rows){
+      const k = it.mesKey || it.key;
+      if(!k || !/^\d{4}-\d{2}$/.test(k)) continue;
+      const m = Number(k.slice(5,7)) - 1;
+      const val = Number(it.asignado ?? it.total ?? it.tons ?? 0);
+      if(m>=0 && m<12 && Number.isFinite(val)) asignado[m] += val;
+    }
+  }catch(e){ console.warn('[asignaciones/map]', e.message); }
+
+  // 2) Requerido por mes: usamos /planificacion/mes y agregamos por mes del año seleccionado
+  const requerido = Array(12).fill(0);
+  try{
+    const json = await apiGet('/planificacion/mes');
+    const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
+    for(const it of items){
+      // esperamos "mes" como ISO (YYYY-MM-01) y "tons" (o campos equivalentes)
+      const d = new Date(it.mes || it.fecha || it.mesKey || '');
+      if(!Number.isFinite(d.getTime?.()) && isNaN(d)) continue;
+      const y = d.getFullYear(); const m = d.getMonth(); // 0-11
+      if (y !== anio) continue;
+      const tons = Number(it.tons ?? it.total ?? it.tonsComprometidas ?? it.tonsDisponiblesAprox ?? 0);
+      if (Number.isFinite(tons)) requerido[m] += tons;
+    }
+  }catch(e){ console.warn('[planificacion/mes]', e.message); }
+
+  // 3) Procesado (de momento no hay backend): queda en 0
+  const procesado = Array(12).fill(0);
+
+  return { anio, requerido, asignado, procesado };
 }
-async function fetchProveedoresMes(anio,mes){
-  return [
-    { proveedor:"Proveedor X", comuna:"Castro",   tons:120, cod:"CST-101", contactId:"p1" },
-    { proveedor:"MarSur Ltda", comuna:"Dalcahue", tons: 80, cod:"DLH-204", contactId:"p2" },
-    { proveedor:"Acuícola Y",  comuna:"Quellón",  tons: 60, cod:"QLL-330", contactId:"p3" }
-  ];
+
+async function fetchProveedoresMes(anio, mes1a12){
+  // Derivamos la lista desde /planificacion/mes filtrando mes y mapeando campos tolerantes
+  try{
+    const json = await apiGet('/planificacion/mes');
+    const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
+    return items
+      .filter(it=>{
+        const d = new Date(it.mes || it.fecha || it.mesKey || '');
+        return d.getFullYear() === anio && (d.getMonth()+1) === mes1a12;
+      })
+      .map(it=>({
+        proveedor: it.proveedorNombre || it.proveedor || it.contactoNombre || '(s/empresa)',
+        comuna: it.comuna || it.centroComuna || '',
+        tons: Number(it.tons ?? it.total ?? it.tonsComprometidas ?? it.tonsDisponiblesAprox ?? 0) || 0,
+        cod: it.centroCodigo || it.centro?.codigo || '',
+        contactId: it.proveedorKey || it.contactoId || it.contactId || ''
+      }));
+  }catch(e){
+    console.warn('[fetchProveedoresMes]', e.message);
+    return [];
+  }
 }
 async function fetchProveedoresDisponiblesDesde(anio, mes){
+  // Por ahora, mismo origen que arriba (si luego hay otro endpoint, se cambia aquí)
   return fetchProveedoresMes(anio, mes);
 }
 
-async function putDisponibilidad(payload){ console.log('[PUT disponibilidad]', payload); alert('Disponibilidad guardada (demo)'); }
-async function putProcesado(payload){ console.log('[PUT procesado semanal]', payload); alert('Procesado guardado (demo)'); }
+// Aún sin endpoints reales para estos dos:
+async function putDisponibilidad(payload){ console.log('[PUT disponibilidad] (no-op)', payload); alert('Disponibilidad guardada (demo)'); }
+async function putProcesado(payload){ console.log('[PUT procesado semanal] (no-op)', payload); alert('Procesado guardado (demo)'); }
 
 // =============== CARGA AÑO ===============
 async function loadYear(y){
@@ -270,7 +331,7 @@ async function saveProcesado(){
   const payload = {
     anio:+document.getElementById('mProcAnio').value,
     mes:+document.getElementById('mProcMes').value,
-    semanaISO:+document.getElementById('mProcWk').value,  // mantiene el nombre usado antes
+    semanaISO:+document.getElementById('mProcWk').value,
     materiaPrima:document.getElementById('mProcMP').value.trim(),
     kilos:+document.getElementById('mProcKg').value
   };
@@ -307,7 +368,7 @@ function ensureAuxUIs(){
 function askPassword(){
   return new Promise(resolve=>{
     const pass = document.getElementById('asigPass');
-    pass.style.display = 'flex';              // centrado (flex)
+    pass.style.display = 'flex';
     pass.dataset.result = '';
     const input = document.getElementById('asigPassInput');
     input.value=''; setTimeout(()=>input.focus(), 50);
@@ -360,7 +421,6 @@ function ensureCardMenu(){
       document.getElementById('mProcAnio').value = anio;
       document.getElementById('mProcMes').value  = mes;
 
-      // default week
       const defW = defaultWeekFor(anio, mes);
       document.getElementById('mProcWk').value = defW;
 
@@ -474,7 +534,6 @@ function renderWeekPicker(y, m, selectedWeek=1){
   const n = daysInMonth(y, m);
   const weeks = Math.ceil(n/7);
 
-  // estilos mínimos embebidos (para mantener simple)
   const styles = `
     <style>
       .wk-table{width:100%;border-collapse:collapse;margin:.25rem 0;}
