@@ -51,18 +51,21 @@ export function initTablaContactos() {
   if (!jq || state.dt) return;
 
   state.dt = jq('#tablaContactos').DataTable({
-    dom: 'Bfrtip',
+    // Buttons + length ('l') + filter + table + info + paging
+    dom: 'Blfrtip',
     buttons: [
       { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
       { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
     ],
     order: [[0,'desc']],
-    pageLength: 25,
+    paging: true,              // 🔹 paginación
+    pageLength: 10,            // 🔹 10 por página
+    lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, 'Todos'] ],
     autoWidth: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
     columnDefs: [
-      { targets: 0, width: '110px' },              // Fecha angosta
-      { targets: 1, width: '260px' },              // Proveedor (más angosta)
+      { targets: 0, width: '110px' },   // Fecha
+      { targets: 1, width: '260px' },   // Proveedor (angosta)
       { targets: -1, orderable: false, searchable: false }
     ]
   });
@@ -94,6 +97,7 @@ export function initTablaContactos() {
       }
     });
 }
+
 
 /* ------------------------------- Render de filas -------------------------------- */
 export function renderTablaContactos() {
@@ -180,3 +184,4 @@ export function renderTablaContactos() {
     tbody.appendChild(tr);
   });
 }
+
