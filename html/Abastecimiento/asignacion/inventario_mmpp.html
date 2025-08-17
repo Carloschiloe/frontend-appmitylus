@@ -207,7 +207,7 @@
       for(const c of centros){
         const id=String(c._id||c.id||'');
         const codigo=c.code ?? c.codigo ?? c.Codigo ?? null;
-        the comuna=c.comuna ?? c.Comuna ?? '';
+        const comuna = c.comuna ?? c.Comuna ?? '';
         const area = c.areaCodigo ?? c.areaCode ?? c.codigoArea ?? c.lineaCodigo ?? c.lineCode ?? null;
         if(id) m.set(id,{codigo:codigo?String(codigo):null, comuna, area});
       }
