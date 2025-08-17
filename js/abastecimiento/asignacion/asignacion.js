@@ -33,25 +33,42 @@ async function apiGet(path){ const r = await fetch(`${API_URL}${path}`); return 
 
 // =============== ESTILOS DEL MODAL (para que no se corte) ===============
 function injectModalStyles(){
-  if(document.getElementById('asig-modal-styles')) return;
+  // evita duplicar estilos
+  const old = document.getElementById('asig-modal-styles');
+  if (old) return;
+
   const style = document.createElement('style');
   style.id = 'asig-modal-styles';
   style.textContent = `
-    /* Overlay del modal */
-    .asig-modal{
-      position: fixed; inset: 0; display: none;
-      align-items: center; justify-content: center;
-      z-index: 10001;  /* sobre el mask */
-      padding: 12px;   /* margen para pantallas chicas */
+    /* --- overlay base de tu app --- */
+    #mask{
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.35);
+      display: none;
+      z-index: 2147482900;          /* < modal */
     }
-    /* Caja del modal */
+
+    /* Si Materialize inyecta .modal-overlay, mándala más abajo también */
+    .modal-overlay{ z-index: 2147482800 !important; }
+
+    /* --- contenedor del modal custom --- */
+    .asig-modal{
+      position: fixed; inset: 0;
+      display: none;                 /* se cambia a 'flex' en showModal */
+      align-items: center; justify-content: center;
+      padding: 12px;
+      z-index: 2147483000;           /* > mask y > cualquier overlay */
+    }
+
+    /* caja del modal */
     .asig-modal__box{
       background:#fff; border-radius:12px;
       width: min(780px, 94vw);
-      max-height: 90vh;                /* clave */
+      max-height: 90vh;              /* evita que se corte */
       box-shadow: 0 10px 30px rgba(0,0,0,.15);
-      display: flex; flex-direction: column; /* clave */
+      display: flex; flex-direction: column;
     }
+
     .asig-modal__header{
       display:flex; align-items:center; justify-content:space-between;
       gap:8px; padding:16px 20px; border-bottom:1px solid #eef1f3;
@@ -59,20 +76,25 @@ function injectModalStyles(){
     }
     .asig-modal__header h3{ margin:0; font-size:1.35rem; color:#0d6b63; }
     .asig-modal__header .x{ border:0; background:#eef3f2; width:32px; height:32px; border-radius:8px; font-size:18px; cursor:pointer; }
+
     .asig-modal .content{
-      padding:14px 20px; overflow:auto; /* scroll interno */
+      padding:14px 20px;
+      overflow: auto;                /* scroll interno */
     }
+
     .asig-modal__footer{
       padding:12px 20px; border-top:1px solid #eef1f3;
       display:flex; justify-content:flex-end; gap:10px;
       position: sticky; bottom:0; background:#fff;
     }
+
     .asig-modal .row{ display:flex; flex-direction:column; gap:6px; margin:8px 0; }
     .asig-modal input, .asig-modal select{
-      width:100%; padding:10px 12px; border:1px solid #dfe4e6; border-radius:8px;
-      outline:none;
+      width:100%; padding:10px 12px; border:1px solid #dfe4e6; border-radius:8px; outline:none;
     }
-    .asig-modal input:focus, .asig-modal select:focus{ border-color:#26a69a; box-shadow:0 0 0 3px rgba(38,166,154,.15); }
+    .asig-modal input:focus, .asig-modal select:focus{
+      border-color:#26a69a; box-shadow:0 0 0 3px rgba(38,166,154,.15);
+    }
     .asig-modal__footer .ok{
       background:#26a69a; color:#fff; border:0; padding:10px 16px; border-radius:8px; cursor:pointer;
     }
@@ -733,3 +755,4 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+
