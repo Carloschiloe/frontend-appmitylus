@@ -1,106 +1,141 @@
 // /js/contactos/asociar-empresa.js
-const API_BASE = window.API_BASE || '';
-let contactoActualId = null;
-let modalInst = null;
-let debounceTimer = null;
+import { apiUpdateContacto } from '/js/core/api.js';
+import { state, $, slug } from './state.js';
+import { cargarContactosGuardados } from './data.js';
+
+// --- índice de empresas a partir de centros y contactos ---
+function buildProvidersIndex() {
+  const out = new Map();
+
+  // desde centros (ya están cacheados por cargarCentros())
+  (state.centros || []).forEach(c => {
+    const name = (c.proveedorNombre || c.proveedor || '').trim();
+    if (!name) return;
+    const key = (c.proveedorKey || slug(name));
+    if (!out.has(key)) out.set(key, { key, name });
+  });
+
+  // incluir empresas que ya existan en contactos (por si no hay centros)
+  (state.contactosGuardados || []).forEach(ct => {
+    const name = (ct.proveedorNombre || '').trim();
+    const key = (ct.proveedorKey || (name ? slug(name) : ''));
+    if (name && key && !out.has(key)) out.set(key, { key, name });
+  });
+
+  return Array.from(out.values());
+}
+
+let providersCache = [];
 
 export function initAsociacionContactos() {
-  // Modal
-  const modalEl = document.getElementById('modalAsociar');
-  if (modalEl && window.M && M.Modal) {
-    modalInst = M.Modal.init(modalEl, { endingTop: '10%' });
-  }
+  providersCache = buildProvidersIndex();
 
-  // Delegado global: cualquier .asociar-btn (en tabla Personas o donde sea)
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('.asociar-btn');
-    if (!btn) return;
+  const input = $('#empresaSearch');
+  const ul    = $('#searchResults');
+  const btnCrear  = $('#btnCrearEmpresa');
+  const btnQuitar = $('#btnQuitarEmpresa');
+
+  const render = (items = []) => {
+    if (!ul) return;
+    if (!items.length) {
+      ul.innerHTML = '<li class="collection-item grey-text">Sin resultados</li>';
+      return;
+    }
+    ul.innerHTML = items
+      .map(p => `<li class="collection-item">
+        <a href="#!" class="sel-prov" data-key="${p.key}" data-name="${esc(p.name)}">${esc(p.name)}</a>
+      </li>`)
+      .join('');
+  };
+
+  const search = (q) => {
+    const s = (q || '').trim().toLowerCase();
+    if (s.length < 2) { ul && (ul.innerHTML = ''); return; }
+    const items = providersCache.filter(p => p.name.toLowerCase().includes(s)).slice(0, 20);
+    render(items);
+  };
+
+  input?.addEventListener('input', e => search(e.target.value));
+
+  ul?.addEventListener('click', async (e) => {
+    const a = e.target.closest('a.sel-prov');
+    if (!a) return;
+    await asociarAProveedor(a.dataset.key, a.dataset.name);
+  });
+
+  btnCrear?.addEventListener('click', async (e) => {
     e.preventDefault();
-    contactoActualId = btn.dataset.id;
-    abrirModal();
+    const name = (input?.value || '').trim();
+    if (name.length < 2) { M.toast?.({ html: 'Escribe un nombre (mín 2 letras)' }); return; }
+    await asociarAProveedor(slug(name), name);
   });
 
-  // Buscar empresas
-  const $search = document.getElementById('empresaSearch');
-  if ($search) {
-    $search.addEventListener('input', () => {
-      const q = $search.value.trim();
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => buscarEmpresas(q), 250);
-    });
-  }
-
-  // Crear empresa inline
-  const $crear = document.getElementById('btnCrearEmpresa');
-  if ($crear) {
-    $crear.addEventListener('click', async () => {
-      const nombre = prompt('Nombre de la nueva empresa:');
-      if (!nombre) return;
-      const emp = await fetchJSON('/empresas', { method:'POST', body: JSON.stringify({ nombre }) });
-      await patchEmpresa(contactoActualId, emp._id);
-      toast('Empresa creada y asociada');
+  btnQuitar?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const id = state.asociarContactoId;
+    if (!id) return;
+    try {
+      await apiUpdateContacto(id, {
+        proveedorKey: null,
+        proveedorNombre: null,
+        centroId: null,
+        centroCodigo: null,
+        centroComuna: null,
+        centroHectareas: null
+      });
+      await cargarContactosGuardados();
+      document.dispatchEvent(new Event('reload-tabla-contactos'));
+      M.toast?.({ html: 'Empresa quitada' });
       cerrarModal();
-      recargarTablas();
-    });
-  }
+    } catch (err) {
+      console.error(err);
+      M.toast?.({ html: 'No se pudo quitar', classes: 'red' });
+    }
+  });
 
-  // Quitar
-  const $quitar = document.getElementById('btnQuitarEmpresa');
-  if ($quitar) {
-    $quitar.addEventListener('click', async () => {
-      await patchEmpresa(contactoActualId, null);
-      toast('Empresa quitada del contacto');
-      cerrarModal();
-      recargarTablas();
-    });
-  }
-
-  // Seleccionar resultado
-  const $results = document.getElementById('searchResults');
-  if ($results) {
-    $results.addEventListener('click', async (e) => {
-      const a = e.target.closest('a.sel-empresa');
-      if (!a) return;
-      e.preventDefault();
-      await patchEmpresa(contactoActualId, a.dataset.id);
-      toast('Asociado correctamente');
-      cerrarModal();
-      recargarTablas();
-    });
-  }
-}
-
-function abrirModal(){ 
-  const s = document.getElementById('empresaSearch'); 
-  const r = document.getElementById('searchResults');
-  if (s) s.value = ''; 
-  if (r) r.innerHTML = ''; 
-  if (modalInst) modalInst.open();
-}
-function cerrarModal(){ if (modalInst) modalInst.close(); }
-
-async function buscarEmpresas(q){
-  const r = document.getElementById('searchResults'); 
-  if (!r) return;
-  if (!q || q.length<2){ r.innerHTML=''; return; }
-  const items = await fetchJSON(`/empresas/search?q=${encodeURIComponent(q)}`).catch(()=>[]);
-  r.innerHTML = items.map(i=>`
-    <li class="collection-item">
-      <a href="#!" class="sel-empresa" data-id="${i._id}" data-nombre="${i.nombre}">${i.nombre}</a>
-    </li>`).join('');
-}
-
-async function patchEmpresa(contactoId, empresaIdOrNull) {
-  await fetchJSON(`/contactos/${contactoId}/empresa`, {
-    method:'PATCH',
-    body: JSON.stringify({ empresaId: empresaIdOrNull })
+  // cada vez que se abra desde Personas, reconstruimos índice y limpiamos UI
+  document.addEventListener('asociar-open', () => {
+    providersCache = buildProvidersIndex();
+    if (input) input.value = '';
+    if (ul) ul.innerHTML = '';
   });
 }
 
-async function fetchJSON(path, opts={}) {
-  const res = await fetch((API_BASE||'') + path, { headers:{'Content-Type':'application/json'}, ...opts });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-  return res.json();
+async function asociarAProveedor(proveedorKey, proveedorNombre) {
+  const id = state.asociarContactoId;
+  if (!id) { M.toast?.({ html: 'No hay contacto seleccionado', classes: 'red' }); return; }
+  try {
+    await apiUpdateContacto(id, {
+      proveedorKey,
+      proveedorNombre,
+      // al asociar, dejamos centro en blanco hasta que elijan uno
+      centroId: null,
+      centroCodigo: null,
+      centroComuna: null,
+      centroHectareas: null
+    });
+    await cargarContactosGuardados();
+    document.dispatchEvent(new Event('reload-tabla-contactos'));
+    M.toast?.({ html: `Asociado a ${proveedorNombre}` });
+    cerrarModal();
+  } catch (err) {
+    console.error(err);
+    M.toast?.({ html: 'No se pudo asociar', classes: 'red' });
+  }
 }
-function toast(html){ if (window.M && M.toast) M.toast({ html }); }
-function recargarTablas(){ document.dispatchEvent(new CustomEvent('reload-tabla-contactos')); }
+
+function cerrarModal() {
+  const modal = document.getElementById('modalAsociar');
+  if (modal && window.M && M.Modal) {
+    (M.Modal.getInstance(modal) || M.Modal.init(modal, {})).close();
+  }
+}
+
+function esc(s = '') {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
