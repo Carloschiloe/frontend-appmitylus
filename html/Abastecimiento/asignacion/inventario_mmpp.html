@@ -19,20 +19,24 @@
     .kpi-title{color:#777;margin:0 0 4px;font-weight:600}
     .kpi-value{font-size:2rem;font-weight:700;margin:0}
 
-    /* Agrupado */
-    #invGrouped details{margin-bottom:10px;border:1px solid #e0e0e0;border-radius:10px;background:#fff}
-    #invGrouped summary{cursor:pointer;padding:10px 14px;list-style:none}
+    /* Vista agrupada (pivot-like) */
+    #invGrouped details{margin-bottom:10px;border:1px solid #e0e0e0;border-radius:10px;background:#fff;overflow:hidden}
+    #invGrouped summary{cursor:pointer;padding:12px 14px;list-style:none;display:flex;align-items:center;justify-content:space-between}
     #invGrouped summary::-webkit-details-marker{display:none}
-    .group-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    #invGrouped summary:focus{outline:none}
+    #invGrouped summary .left-part{display:flex;align-items:center;gap:10px}
+    #invGrouped summary .sign{width:22px;height:22px;border-radius:6px;border:1px solid #bdbdbd;display:flex;align-items:center;justify-content:center;font-weight:700;color:#616161;background:#f5f5f5}
+    #invGrouped details[open] summary .sign{color:#e53935;border-color:#e57373;background:#ffebee}
     .group-tags{display:flex;gap:6px;flex-wrap:wrap}
     .tag{font-size:.85rem;color:#fff;border-radius:999px;padding:4px 10px}
     .tag-sub{background:#26a69a}
     .tag-asig{background:#7e57c2}
     .tag-saldo{background:#ef5350}
-    .group-sub{font-size:.9rem;color:#666}
-    .group-table{padding:0 10px 10px 10px}
+    .group-table{padding:0 10px 12px 10px}
     .group-table th,.group-table td{padding:8px 10px}
-    .toolbar{display:flex;gap:8px;align-items:center}
+    .group-total-row{background:#f6f6f6;font-weight:600}
+
+    .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .toolbar .btn-flat{color:#26a69a}
   </style>
 </head>
@@ -53,9 +57,9 @@
     <div class="row" style="margin-bottom:8px">
       <div class="col s12 m8">
         <div class="toolbar">
-          <a id="btnToggleGroup" class="btn-flat"><i class="material-icons left">view_agenda</i>Agrupar por mes</a>
-          <a id="btnExpandAll" class="btn-flat" style="display:none"><i class="material-icons left">unfold_more</i>Expandir todo</a>
-          <a id="btnCollapseAll" class="btn-flat" style="display:none"><i class="material-icons left">unfold_less</i>Contraer todo</a>
+          <a id="btnToggleGroup" class="btn-flat teal-text"><i class="material-icons left">view_agenda</i>Agrupar por mes</a>
+          <a id="btnExpandAll" class="btn-flat"><i class="material-icons left">unfold_more</i>Expandir todo</a>
+          <a id="btnCollapseAll" class="btn-flat"><i class="material-icons left">unfold_less</i>Contraer todo</a>
           <div class="input-field" style="margin:0;max-width:380px">
             <input id="invSearch" type="text" placeholder="Buscar (mes, proveedor, centro, comuna)…">
           </div>
@@ -76,10 +80,10 @@
     </div>
 
     <!-- AGRUPADO -->
-    <div id="invGrouped" style="display:none"></div>
+    <div id="invGrouped"></div>
 
     <!-- TABLA PLANA -->
-    <div class="row" style="margin-top:8px">
+    <div class="row" style="margin-top:8px; display:none" id="flatWrapper">
       <div class="col s12">
         <table id="tablaInv" class="highlight display" style="width:100%">
           <thead>
@@ -121,6 +125,7 @@
     const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
     const esc = (s='') => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
     const fmt = (n) => (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:2});
+    function qp(name){const u=new URL(location.href);return u.searchParams.get(name)||'';}
 
     function isValidDate(d){const x=new Date(d);return !Number.isNaN(x.getTime())}
     function monthKey(d){ if(!isValidDate(d)) return 's/fecha'; const x=new Date(d); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`;}
@@ -139,26 +144,23 @@
       const raw=await apiGet('/visitas'); return Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
     }
 
-    // Intentos para planificación (asignado por mes). Devuelve Map<YYYY-MM, tonsAsignadas>
+    // Asignación por mes **opcional**:
+    // - Usa ?asig=/asignacion/mes  (o define window.INV_ASIG_ENDPOINT)
+    // - Si no está, no se llama **ningún** endpoint → evita 404 en consola
     async function getAsignacionesMap(){
-      const tryPaths=['/asignacion/mes','/plan/mes','/asignacion','/plan'];
-      for(const p of tryPaths){
-        try{
-          const raw=await apiGet(p);
-          if(!raw) continue;
-          const arr=Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
-          if(!arr.length) continue;
-          const map=new Map();
-          for(const it of arr){
-            // intenta normalizar: puede venir {key:'2025-09', asignado:900} o {anio,mes,tons} o {fecha:...}
-            const key = it.key || it.mesKey || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : monthKey(it.fecha || it.fechaPlan || it.fch));
-            const val = Number(it.asignado ?? it.tons ?? it.total ?? it.valor ?? 0);
-            if(key && Number.isFinite(val)) map.set(key, (map.get(key)||0) + val);
-          }
-          return map;
-        }catch(_e){/* intenta el siguiente */}
-      }
-      return new Map(); // fallback: todo 0
+      const endpoint = (window.INV_ASIG_ENDPOINT || qp('asig') || '').trim();
+      if(!endpoint) return new Map();   // sin asignación configurada
+      try{
+        const raw=await apiGet(endpoint);
+        const arr=Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
+        const map=new Map();
+        for(const it of arr){
+          const key = it.key || it.mesKey || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : monthKey(it.fecha || it.fechaPlan || it.fch));
+          const val = Number(it.asignado ?? it.tons ?? it.total ?? it.valor ?? 0);
+          if(key && Number.isFinite(val)) map.set(key, (map.get(key)||0) + val);
+        }
+        return map;
+      }catch(_e){ return new Map(); }
     }
 
     /* ================== NORMALIZACIÓN ================== */
@@ -168,7 +170,6 @@
         const id=String(c._id||c.id||'');
         const codigo=c.code ?? c.codigo ?? c.Codigo ?? null;
         const comuna=c.comuna ?? c.Comuna ?? '';
-        // area: intenta varias llaves comunes
         const area = c.areaCodigo ?? c.areaCode ?? c.codigoArea ?? c.lineaCodigo ?? c.lineCode ?? null;
         if(id) m.set(id,{codigo:codigo?String(codigo):null, comuna, area});
       }
@@ -282,7 +283,7 @@
       const s=String(q||'').trim().toLowerCase();
       if(!s) return rows;
       return rows.filter(r =>
-        (r.mes||'').toLowerCase().includes(s) ||
+        (monthLabel(r.mes)).toLowerCase().includes(s) ||
         (r.proveedor||'').toLowerCase().includes(s) ||
         String(r.centroCodigo||'').toLowerCase().includes(s) ||
         String(r.areaCodigo||'').toLowerCase().includes(s) ||
@@ -316,15 +317,16 @@
         const saldo = subtotal - asig;
 
         html += `
-          <details open>
+          <details>
             <summary>
-              <div class="group-head">
-                <div class="group-sub"><strong>${esc(monthLabel(k))}</strong> • ${items.length} registros</div>
-                <div class="group-tags">
-                  <span class="tag tag-sub"   title="Subtotal suministro">${fmt(subtotal)} t</span>
-                  <span class="tag tag-asig"  title="Asignado en planificación">${fmt(asig)} t</span>
-                  <span class="tag tag-saldo" title="Saldo (suministro - asignado)">${fmt(saldo)} t</span>
-                </div>
+              <div class="left-part">
+                <div class="sign">+</div>
+                <div><strong>${esc(monthLabel(k))}</strong> • ${items.length} registros</div>
+              </div>
+              <div class="group-tags">
+                <span class="tag tag-sub"   title="Subtotal suministro">${fmt(subtotal)} t</span>
+                <span class="tag tag-asig"  title="Asignado en planificación">${fmt(asig)} t</span>
+                <span class="tag tag-saldo" title="Saldo (suministro - asignado)">${fmt(saldo)} t</span>
               </div>
             </summary>
             <div class="group-table">
@@ -352,26 +354,39 @@
                       </tr>
                     `).join('')}
                   </tbody>
+                  <tfoot>
+                    <tr class="group-total-row">
+                      <td colspan="4" class="right-align">Subtotal</td>
+                      <td class="right-align">${fmt(subtotal)}</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </div>
           </details>`;
       }
       cont.innerHTML = html || `<div class="grey-text">Sin registros para mostrar.</div>`;
+
+      // Actualiza el signo +/-
+      cont.querySelectorAll('details').forEach(d=>{
+        const sign = d.querySelector('.sign');
+        const set = () => sign.textContent = d.open ? '−' : '+';
+        d.addEventListener('toggle', set); set();
+      });
     }
     function setGroupedView(on){
       const grouped=$id('invGrouped');
-      const wrap=document.getElementById('tablaInv')?.closest('.dataTables_wrapper') || document.getElementById('tablaInv');
-      if(!grouped||!wrap) return;
+      const flatWrap=$id('flatWrapper');
       $id('btnExpandAll').style.display = on ? '' : 'none';
       $id('btnCollapseAll').style.display = on ? '' : 'none';
       $id('btnToggleGroup').classList.toggle('teal-text', on);
-      if(on){ wrap.style.display='none'; grouped.style.display='block'; }
-      else { grouped.style.display='none'; wrap.style.display=''; }
+      grouped.style.display = on ? 'block' : 'none';
+      flatWrap.style.display = on ? 'none' : 'block';
     }
 
     /* ================== LOAD ================== */
-    let __rows=[], __asigMap=new Map(), __monthTotals=new Map(), __grouped=false;
+    let __rows=[], __asigMap=new Map(), __monthTotals=new Map(), __grouped=true;
 
     async function loadData(){
       try{
@@ -379,7 +394,7 @@
           getCentros(),
           getContactos(),
           getVisitas(),
-          getAsignacionesMap()
+          getAsignacionesMap()     // 0 llamadas si no configuraste ?asig
         ]);
 
         const cIdx = buildCentrosIndex(centros);
@@ -395,7 +410,7 @@
         renderKPIs(__rows);
         fillDataTable(__rows, __asigMap, __monthTotals);
 
-        if(__grouped) renderGrouped(__rows, __asigMap);
+        renderGrouped(__rows, __asigMap);     // por defecto en agrupado
       }catch(e){
         console.error(e);
         M.toast?.({html:'No se pudo cargar el inventario',classes:'red'});
@@ -404,6 +419,9 @@
 
     /* ================== UI ================== */
     document.addEventListener('DOMContentLoaded', () => {
+      // Vista inicial: agrupada
+      setGroupedView(true);
+
       $id('btnReload')?.addEventListener('click', loadData);
 
       $id('btnToggleGroup')?.addEventListener('click', () => {
@@ -414,10 +432,7 @@
 
       $id('invSearch')?.addEventListener('input', () => {
         if(__grouped) renderGrouped(__rows, __asigMap);
-        else { // filtra DataTable
-          const jq=window.jQuery||window.$;
-          if(jq && dt) dt.search($id('invSearch').value).draw();
-        }
+        else { const jq=window.jQuery||window.$; if(jq && dt) dt.search($id('invSearch').value).draw(); }
       });
 
       $id('btnExpandAll')?.addEventListener('click', () => {
