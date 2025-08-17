@@ -6,42 +6,41 @@ import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
 let dtP = null;
 let filtroActualP = 'todos'; // 'todos' | 'sin' | 'con'
 
-function injectPersonasStyles() {
-  if (document.getElementById('personas-sticky-styles')) return;
+// CSS solo para Personas (scoped al id de la tabla)
+function ensurePersonasStyles() {
+  if (document.getElementById('personas-fit-cols')) return;
   const css = `
-    #tablaPersonas thead th {
-      position: sticky;
-      top: var(--sticky-offset, 64px);
-      background: #fff;
-      z-index: 3;
+    /* cabecera pegada y celdas con elipsis */
+    #tablaPersonas_wrapper .dataTables_scrollHead { position: sticky; top: 0; z-index: 3; }
+    #tablaPersonas td, #tablaPersonas th { vertical-align: middle; }
+    #tablaPersonas .cell-ellipsis { 
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis; 
+      max-width: var(--w, 240px);
+      display: inline-block;
+      vertical-align: bottom;
     }
-    #tablaPersonas th.col-empresa, #tablaPersonas td.col-empresa { max-width: 280px; }
-    #tablaPersonas th.col-notas,   #tablaPersonas td.col-notas   { max-width: 320px; }
-    #tablaPersonas td .ellipsis {
-      display: block;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    #tablaPersonas .col-empresa { --w: 220px; }
+    #tablaPersonas .col-notas   { --w: 320px; }
+    #tablaPersonas .chip-empresa {
+      display:inline-block; max-width:100%;
+      padding: 2px 8px; border-radius: 16px; background:#eef6f6; 
+      border:1px solid #cfe9e9; font-size: .9rem;
+      overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+      vertical-align: middle;
     }
-  `;
-  const style = document.createElement('style');
-  style.id = 'personas-sticky-styles';
-  style.textContent = css;
-  document.head.appendChild(style);
-}
-
-function setStickyOffset() {
-  // suma altura de la barra superior + un pequeño margen
-  const nav = document.querySelector('nav');
-  const offset = (nav?.getBoundingClientRect()?.height || 56) + 8;
-  const table = document.getElementById('tablaPersonas');
-  if (table) table.style.setProperty('--sticky-offset', `${Math.round(offset)}px`);
+    #tablaPersonas .badge-sin { margin-right:6px; }
+    /* iconos de acciones compactos */
+    #tablaPersonas a.icon-action { margin: 0 4px; color:#00897B; }
+    #tablaPersonas a.icon-action:hover { color:#00695C; }
+  `.trim();
+  const tag = document.createElement('style');
+  tag.id = 'personas-fit-cols';
+  tag.textContent = css;
+  document.head.appendChild(tag);
 }
 
 export function initPersonasTab() {
-  injectPersonasStyles();
-  setStickyOffset();
-  window.addEventListener('resize', setStickyOffset);
+  ensurePersonasStyles();
 
   const jq = window.jQuery || window.$;
   const tabla = document.getElementById('tablaPersonas');
@@ -56,14 +55,27 @@ export function initPersonasTab() {
       ],
       order: [[0,'desc']],
       pageLength: 10,
-      lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
       autoWidth: false,
+      fixedHeader: true,
+      scrollX: true,
       language: { url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: [
-        { targets: 0, width: '110px' },
-        { targets: 4, className: 'col-empresa' },
-        { targets: 5, className: 'col-notas' },
-        { targets: -1, orderable:false, searchable:false }
+        // Fecha angosta
+        { targets: 0, width: 110 },
+        // Empresa (col 4) con elipsis y título
+        { targets: 4, width: 220, createdCell: (td, data) => {
+            td.classList.add('cell-ellipsis','col-empresa');
+            td.title = stripHtml(String(data || ''));
+          }
+        },
+        // Notas (col 5) con elipsis y título
+        { targets: 5, width: 320, createdCell: (td, data) => {
+            td.classList.add('cell-ellipsis','col-notas');
+            td.title = stripHtml(String(data || ''));
+          }
+        },
+        // Acciones sin orden ni búsqueda
+        { targets: -1, orderable:false, searchable:false, width: 140 }
       ]
     });
 
@@ -89,13 +101,14 @@ export function initPersonasTab() {
         if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
         try {
           await eliminarContacto(id);
-          renderTablaPersonas();
+          renderTablaPersonas(); // refresca Personas
         } catch(e){
           console.error(e);
           M.toast?.({ html:'No se pudo eliminar', displayLength:2000 });
         }
       })
-      .on('click', 'a.asociar-btn', function(e){
+      // Asociar/Cambiar empresa (icono en Acciones)
+      .on('click', 'a.icon-action.asociar', function(e){
         e.preventDefault();
         const id = this.dataset.id;
         state.asociarContactoId = id;
@@ -125,6 +138,8 @@ export function initPersonasTab() {
 }
 
 export function renderTablaPersonas() {
+  ensurePersonasStyles();
+
   const jq = window.jQuery || window.$;
   const lista = filtrar(state.contactosGuardados || [], filtroActualP);
 
@@ -142,49 +157,47 @@ export function renderTablaPersonas() {
       const whenDisplay = `${yyyy}-${mm}-${dd}`;
       const whenKey = f.getTime();
 
+      // Teléfonos / emails tolerantes a array o string
       const tels = Array.isArray(c.contactoTelefonos) ? c.contactoTelefonos.join(' / ')
                  : (c.contactoTelefono || '');
       const mails = Array.isArray(c.contactoEmails) ? c.contactoEmails.join(' / ')
                   : (c.contactoEmail || '');
 
-      // ✅ Con empresa si hay empresaId o (proveedorKey & proveedorNombre)
-      const tieneEmpresa = !!(c.empresaId || (c.proveedorKey && c.proveedorNombre));
-      const empresaNombre = c.empresaNombre || c.proveedorNombre || '';
-      const empresaBlock = tieneEmpresa
-        ? `<span class="ellipsis" title="${esc(empresaNombre)}">${esc(empresaNombre || '(sin nombre)')}</span>
-           <a href="#!" class="btn-flat teal-text asociar-btn" data-id="${c._id}">Cambiar</a>`
-        : `<span class="new badge red" data-badge-caption="" title="Sin empresa">Sin empresa</span>
-           <a href="#!" class="btn-flat teal-text asociar-btn" data-id="${c._id}">Asociar</a>`;
+      // Empresa: chip + sin botón de texto
+      const nombreEmpresa = c.proveedorNombre || '';
+      const empresaHTML = nombreEmpresa
+        ? `<span class="chip-empresa" title="${esc(nombreEmpresa)}">${esc(nombreEmpresa)}</span>`
+        : `<span class="new badge red badge-sin" data-badge-caption="">Sin empresa</span>`;
 
-      const notasTxt = c.notasContacto || c.notas || '';
-      const notasBlock = `<span class="ellipsis" title="${esc(notasTxt)}">${esc(notasTxt)}</span>`;
-
+      // Acciones (agregamos ícono 'business' para asociar/cambiar)
       const acciones = `
-        <a href="#!" class="icon-action ver" title="Ver detalle" data-id="${c._id}"><i class="material-icons">visibility</i></a>
-        <a href="#!" class="icon-action visita" title="Registrar visita" data-id="${c._id}"><i class="material-icons">event_available</i></a>
-        <a href="#!" class="icon-action editar" title="Editar" data-id="${c._id}"><i class="material-icons">edit</i></a>
-        <a href="#!" class="icon-action eliminar" title="Eliminar" data-id="${c._id}"><i class="material-icons">delete</i></a>
+        <a href="#!" class="icon-action ver"     title="Ver detalle"                data-id="${c._id}"><i class="material-icons">visibility</i></a>
+        <a href="#!" class="icon-action visita"  title="Registrar visita"           data-id="${c._id}"><i class="material-icons">event_available</i></a>
+        <a href="#!" class="icon-action asociar" title="Asociar/Cambiar empresa"    data-id="${c._id}"><i class="material-icons">business</i></a>
+        <a href="#!" class="icon-action editar"  title="Editar"                     data-id="${c._id}"><i class="material-icons">edit</i></a>
+        <a href="#!" class="icon-action eliminar"title="Eliminar"                   data-id="${c._id}"><i class="material-icons">delete</i></a>
       `;
+
+      const notas = c.notas || c.notasContacto || '';
 
       return [
         `<span data-order="${whenKey}">${whenDisplay}</span>`,
         esc(c.contactoNombre || c.proveedorNombre || ''),
         esc(String(tels)),
         esc(String(mails)),
-        empresaBlock,
-        notasBlock,
+        empresaHTML,
+        esc(notas),
         acciones
       ];
     });
 
-  const jqInst = window.jQuery || window.$;
-  if (dtP && jqInst) {
+  if (dtP && jq) {
     dtP.clear();
-    dtP.rows.add(filas).draw(false);
-    dtP.columns.adjust();
+    dtP.rows.add(filas).draw();
     return;
   }
 
+  // Fallback sin DataTables (por si no carga)
   const tbody = $('#tablaPersonas tbody');
   if (!tbody) return;
 
@@ -195,21 +208,17 @@ export function renderTablaPersonas() {
   }
   filas.forEach(arr=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = arr.map((td,i)=>{
-      const extra = (i === 4) ? ' class="col-empresa"' : (i === 5) ? ' class="col-notas"' : '';
-      return `<td${extra}>${td}</td>`;
-    }).join('');
+    tr.innerHTML = arr.map(td=>`<td>${td}</td>`).join('');
     tbody.appendChild(tr);
   });
 }
 
 function filtrar(lista, filtro){
-  // usa la misma definición que en la tabla para “con empresa”
-  const hasEmp = (c) => !!(c.empresaId || (c.proveedorKey && c.proveedorNombre));
-  if (filtro === 'sin') return lista.filter(c => !hasEmp(c));
-  if (filtro === 'con') return lista.filter(c =>  hasEmp(c));
+  if (filtro === 'sin') return lista.filter(c => !c.empresaId && !c.proveedorKey);
+  if (filtro === 'con') return lista.filter(c => !!(c.empresaId || c.proveedorKey));
   return lista;
 }
+
 function esc(s=''){
   return String(s)
     .replace(/&/g,'&amp;')
@@ -217,4 +226,8 @@ function esc(s=''){
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#039;');
+}
+
+function stripHtml(s=''){
+  return s.replace(/<[^>]*>/g,'');
 }
