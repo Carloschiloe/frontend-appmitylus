@@ -1,101 +1,116 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Inventario de MMPP (Planificación)</title>
+  <title>Inventario de MMPP</title>
 
   <!-- Materialize & Google Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-
-  <!-- DataTables + Buttons -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
 
   <style>
-    .kpi-card{padding:12px;border-radius:10px;background:#f9fbfb;border:1px solid #e6efef}
-    .kpi-title{margin:0;font-size:.9rem;color:#607d8b}
-    .kpi-num{margin:.1rem 0 0;font-size:1.6rem;font-weight:700}
-    .filters .input-field{margin:0}
-    .w-prov{max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .w-centro{width:110px}
-    .w-comuna{max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .w-tons{text-align:right}
-    .dt-buttons{margin-bottom:.4rem}
-    @media (max-width: 992px){
-      .w-prov{max-width:220px}
-      .w-comuna{max-width:140px}
+    body { background:#fafafa; }
+    .kpi-card {
+      border-radius: 14px; background:#fff; border:1px solid #eaeaea;
+      padding: 16px; text-align:center;
     }
+    .kpi-title { color:#777; margin:0 0 4px; font-weight:600; }
+    .kpi-value { font-size: 2rem; font-weight: 700; margin:0; }
+    .switch label input[type=checkbox]:checked + .lever { background-color: #80cbc4; }
+    .switch label input[type=checkbox]:checked + .lever:after { background-color: #26a69a; }
+
+    /* Vista agrupada */
+    #invGrouped details { margin-bottom:10px; border:1px solid #e0e0e0; border-radius:10px; background:#fff; }
+    #invGrouped summary { cursor:pointer; padding:10px 14px; list-style:none; }
+    #invGrouped summary::-webkit-details-marker { display:none; }
+    .group-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .group-head .tag { font-size:.85rem; color:#fff; background:#26a69a; border-radius:999px; padding:4px 10px; }
+    .group-sub { font-size:.85rem; color:#666 }
+    .group-table { padding: 0 10px 10px 10px; }
+    .group-table table { width:100%; }
+    .group-table th, .group-table td { padding:8px 10px; }
   </style>
 </head>
 <body>
-
+  <!-- NAV -->
   <nav class="teal">
-  <div class="nav-wrapper">
-    <a href="./index.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
-    <a href="#" class="brand-logo center">Inventario de MMPP</a>
+    <div class="nav-wrapper">
+      <a href="../index.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
+      <span class="brand-logo center" style="font-size:1.25rem">Inventario de MMPP</span>
+      <a href="./asignacion.html" class="btn-flat right white-text" style="margin-right:8px" title="Ir a Asignación">
+        <i class="material-icons left">assignment</i> ASIGNACIÓN
+      </a>
     </div>
-</nav>
+  </nav>
 
-
-  <div class="container" style="margin-top:16px">
-
-    <!-- Filtros -->
-<div class="row filters" style="margin-bottom:10px">
-  <div class="col s12 l7">
-    <div class="row" style="margin-bottom:0">
-      <div class="input-field col s8 m8 l8">
-        <input id="fltQ" type="text" placeholder="Buscar por proveedor, código centro o comuna…" />
-        <label for="fltQ" class="active">Búsqueda</label>
+  <div class="container" style="margin-top: 16px;">
+    <!-- FILTROS / ACCIONES -->
+    <div class="row" style="margin-bottom:8px">
+      <div class="col s12 m8">
+        <div class="row" style="margin-bottom:0">
+          <div class="col s12">
+            <div class="switch" style="display:inline-flex;align-items:center;gap:16px">
+              <label style="font-size:1rem">
+                <input type="checkbox" id="invToggleGroup">
+                <span class="lever"></span>
+                Agrupar por mes
+              </label>
+              <div class="input-field" style="margin:0;max-width:380px">
+                <input id="invSearch" type="text" placeholder="Buscar (mes, proveedor, centro, comuna)…">
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="input-field col s4 m4 l4">
-        <input id="fltMinTons" type="number" min="0" step="1" value="1" />
-        <label for="fltMinTons" class="active">Mín. tons</label>
+
+      <div class="col s12 m4 right-align" style="margin-top:8px">
+        <a class="btn grey darken-1" id="btnGoAsignacion">
+          <i class="material-icons left">assignment</i> ASIGNACIÓN
+        </a>
+        <a class="btn teal" id="btnReload">
+          <i class="material-icons left">refresh</i> ACTUALIZAR
+        </a>
       </div>
     </div>
-  </div>
-
-  <!-- 🔹 Botones a la derecha -->
-  <div class="col s12 l5 right-align" style="margin-top:6px">
-    <a href="./Abastecimiento/asignacion/asignacion.html"
-       class="btn grey darken-1 waves-effect" id="btnIrAsignacion">
-      <i class="material-icons left">assignment</i>Asignación
-    </a>
-    <a id="btnBuscar" class="btn teal waves-effect">
-      <i class="material-icons left">refresh</i>Actualizar
-    </a>
-  </div>
-</div>
-
 
     <!-- KPIs -->
-    <div class="row" id="kpisRow" style="margin-bottom:16px">
-      <div class="col s6 m3"><div class="kpi-card center">
-        <p class="kpi-title">Total tons</p><div id="kpiTons" class="kpi-num">0</div>
-      </div></div>
-      <div class="col s6 m3"><div class="kpi-card center">
-        <p class="kpi-title">Proveedores</p><div id="kpiProvs" class="kpi-num">0</div>
-      </div></div>
-      <div class="col s6 m3"><div class="kpi-card center">
-        <p class="kpi-title">Centros</p><div id="kpiCentros" class="kpi-num">0</div>
-      </div></div>
-      <div class="col s6 m3"><div class="kpi-card center">
-        <p class="kpi-title">Meses</p><div id="kpiMeses" class="kpi-num">0</div>
-      </div></div>
-    </div>
-
-    <!-- Gráfico mensual -->
-    <div class="row" style="margin-bottom:18px">
-      <div class="col s12">
-        <canvas id="chartMeses" height="80"></canvas>
+    <div class="row" id="kpis" style="margin-bottom: 10px">
+      <div class="col s12 m3">
+        <div class="kpi-card">
+          <div class="kpi-title">Total tons</div>
+          <p class="kpi-value" id="kpiTons">0</p>
+        </div>
+      </div>
+      <div class="col s12 m3">
+        <div class="kpi-card">
+          <div class="kpi-title">Proveedores</div>
+          <p class="kpi-value" id="kpiProv">0</p>
+        </div>
+      </div>
+      <div class="col s12 m3">
+        <div class="kpi-card">
+          <div class="kpi-title">Centros</div>
+          <p class="kpi-value" id="kpiCentros">0</p>
+        </div>
+      </div>
+      <div class="col s12 m3">
+        <div class="kpi-card">
+          <div class="kpi-title">Meses</div>
+          <p class="kpi-value" id="kpiMeses">0</p>
+        </div>
       </div>
     </div>
 
-    <!-- Tabla -->
-    <div class="row">
+    <!-- VISTA AGRUPADA -->
+    <div id="invGrouped" style="display:none"></div>
+
+    <!-- TABLA PLANA -->
+    <div class="row" style="margin-top:8px">
       <div class="col s12">
-        <table id="tablaInventario" class="highlight display" style="width:100%">
+        <table id="tablaInv" class="highlight display" style="width:100%">
           <thead>
             <tr>
               <th>Mes</th>
@@ -111,7 +126,6 @@
         </table>
       </div>
     </div>
-
   </div>
 
   <!-- Libs -->
@@ -123,172 +137,327 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
- <script>
-(() => {
-  const API = 'https://backend-appmitylus-production.up.railway.app/api';
+  <script>
+    /* ================== CONFIG ================== */
+    const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
 
-  // --- helpers ---
-  const $  = (sel) => document.querySelector(sel);
-  const esc = (s='') => String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-  const toMonth = (iso) => {
-    if (!iso) return '(s/fecha)';
-    // acepta 'YYYY-MM-DD' o Date/ISO
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return String(iso).slice(0,7) || '(s/fecha)';
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-  };
-  const n = (v) => Number(v) || 0;
+    /* ================== HELPERS ================== */
+    const $id = (x) => document.getElementById(x);
+    const $ = (sel) => document.querySelector(sel);
+    const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const esc = (s='') => String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
-  async function fetchJSON(url) {
-    const r = await fetch(url);
-    if (!r.ok) {
-      const t = await r.text().catch(()=>r.statusText);
-      throw new Error(`HTTP ${r.status} - ${t || r.statusText}`);
+    const fmtTons = (n) => (Number(n)||0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
+
+    function isValidDate(d) {
+      const x = new Date(d);
+      return !Number.isNaN(x.getTime());
     }
-    return r.json();
-  }
+    function monthKey(d) {
+      if (!isValidDate(d)) return 's/fecha';
+      const x = new Date(d);
+      const y = x.getFullYear();
+      const m = String(x.getMonth()+1).padStart(2,'0');
+      return `${y}-${m}`;
+    }
+    function monthLabel(k) {
+      if (!k || k === 's/fecha') return 's/FECHA';
+      const [y,m] = k.split('-'); return `${MES[+m-1]} ${y}`;
+    }
 
-  // --- índices de centros por código ---
-  const centrosByCode = new Map();
-  function indexCentros(arr = []) {
-    centrosByCode.clear();
-    arr.forEach(c => {
-      const code = String(c.code ?? c.codigo ?? c.Codigo ?? '').trim();
-      if (!code) return;
-      centrosByCode.set(code, {
-        comuna:     c.comuna ?? c.Comuna ?? '',
-        hectareas:  c.hectareas ?? c.Hectareas ?? c.ha ?? null
+    async function checkResponse(resp) {
+      if (!resp.ok) {
+        const text = await resp.text().catch(()=> '');
+        throw new Error(`HTTP ${resp.status} - ${text}`);
+      }
+      if (resp.status === 204) return null;
+      const j = await resp.json().catch(()=> null);
+      return j;
+    }
+
+    async function apiGet(path) {
+      const resp = await fetch(`${API_URL}${path}`);
+      return checkResponse(resp);
+    }
+
+    /* ================== CARGA BASE ================== */
+    async function getCentros() {
+      const arr = await apiGet('/centros');
+      return Array.isArray(arr) ? arr : [];
+    }
+    async function getContactos() {
+      const arr = await apiGet('/contactos');
+      return Array.isArray(arr) ? arr : [];
+    }
+    async function getVisitas() {
+      const raw = await apiGet('/visitas');
+      return Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : []);
+    }
+
+    /* ============ INVENTARIO: normalización ============ */
+    // Mapa centroId-> {codigo, comuna, hectareas}
+    function buildCentrosIndex(centros) {
+      const m = new Map();
+      for (const c of centros) {
+        const id = String(c._id || c.id || '');
+        const codigo = c.code ?? c.codigo ?? c.Codigo ?? null;
+        const comuna = c.comuna ?? c.Comuna ?? '';
+        const ha = c.hectareas ?? c.Hectareas ?? c.ha ?? null;
+        if (id) m.set(id, { codigo: codigo ? String(codigo) : null, comuna, ha });
+      }
+      return m;
+    }
+
+    // De contactos → filas inventario (si declara Tons disponibles)
+    function rowsFromContactos(contactos, centroIdx) {
+      const out = [];
+      for (const c of contactos) {
+        const tons = Number(c.tonsDisponiblesAprox ?? c.tons ?? 0);
+        if (!Number.isFinite(tons) || tons <= 0) continue;
+
+        const mes = monthKey(c.fechaDisponibilidad || c.createdAt);
+        const centroCodigo = c.centroCodigo || centroIdx.get(String(c.centroId||'') )?.codigo || null;
+        const comuna = (c.centroComuna || centroIdx.get(String(c.centroId||''))?.comuna || '') || '';
+        const ha = c.centroHectareas ?? centroIdx.get(String(c.centroId||''))?.ha ?? null;
+
+        const proveedor = c.proveedorNombre || c.proveedor || (c.contactoNombre ? `(persona) ${c.contactoNombre}` : '(s/empresa)');
+        out.push({
+          mes, proveedor, centroCodigo, comuna, ha, tons, fuente:'Contacto'
+        });
+      }
+      return out;
+    }
+
+    // De visitas → filas inventario (si declara tons comprometidas)
+    function rowsFromVisitas(visitas, centroIdx, contactosIdx) {
+      const out = [];
+      for (const v of visitas) {
+        const tons = Number(v.tonsComprometidas ?? 0);
+        if (!Number.isFinite(tons) || tons <= 0) continue;
+
+        const mes = monthKey(v.fecha || v.createdAt);
+        const centroCodigo = v.centroCodigo || centroIdx.get(String(v.centroId||''))?.codigo || null;
+        const comuna = centroIdx.get(String(v.centroId||''))?.comuna || '';
+        const ha = centroIdx.get(String(v.centroId||''))?.ha ?? null;
+        const proveedor = contactosIdx.get(String(v.contactoId||''))?.proveedorNombre || contactosIdx.get(String(v.contactoId||''))?.proveedor || '(s/empresa)';
+
+        out.push({ mes, proveedor, centroCodigo, comuna, ha, tons, fuente:'Visita' });
+      }
+      return out;
+    }
+
+    function makeContactosIndex(contactos) {
+      const m = new Map();
+      for (const c of contactos) m.set(String(c._id||''), c);
+      return m;
+    }
+
+    /* ================== RENDER KPI ================== */
+    function renderKPIs(rows) {
+      const total = rows.reduce((s,r)=> s + (Number(r.tons)||0), 0);
+      const prov = new Set(rows.map(r => r.proveedor||'').filter(Boolean)).size;
+      const centros = new Set(rows.map(r => r.centroCodigo||'').filter(Boolean)).size;
+      const meses = new Set(rows.map(r => r.mes||'s/fecha')).size;
+
+      $id('kpiTons').textContent = fmtTons(total);
+      $id('kpiProv').textContent = prov;
+      $id('kpiCentros').textContent = centros;
+      $id('kpiMeses').textContent = meses;
+    }
+
+    /* ================== TABLA (DataTables) ================== */
+    let dt = null;
+
+    function ensureDataTable() {
+      const jq = window.jQuery || window.$;
+      if (!jq) return;
+
+      if (dt) { try { dt.destroy(); } catch{} dt = null; }
+      dt = jq('#tablaInv').DataTable({
+        dom: 'Bfrtip',
+        buttons: [
+          { extend: 'excelHtml5', title:'Inventario_MMPP' },
+          { extend: 'pdfHtml5',   title:'Inventario_MMPP', orientation:'landscape', pageSize:'A4' }
+        ],
+        order: [[0,'asc'], [1,'asc']],
+        pageLength: 10,
+        autoWidth: false,
+        language: { url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+        columnDefs: [
+          { targets: 0, width:'110px' },
+          { targets: 5, className: 'right-align' }
+        ]
       });
-    });
-  }
+    }
 
-  // KPIs
-  function renderKPIs(rows) {
-    const totalTons = rows.reduce((acc, r) => acc + n(r.tons), 0);
-    const proveedores = new Set(rows.map(r => r.proveedor)).size;
-    const centros = new Set(rows.map(r => r.codigo)).size;
-    const meses = new Set(rows.map(r => r.mes)).size;
+    function fillDataTable(rows) {
+      const jq = window.jQuery || window.$;
+      if (!jq) return;
 
-    // Ajusta estos IDs a los tuyos si difieren
-    const kTotal = document.querySelector('[data-kpi="total"]') || $('#kpiTotal');
-    const kProv  = document.querySelector('[data-kpi="proveedores"]') || $('#kpiProveedores');
-    const kCent  = document.querySelector('[data-kpi="centros"]') || $('#kpiCentros');
-    const kMeses = document.querySelector('[data-kpi="meses"]') || $('#kpiMeses');
+      const data = rows.map(r => [
+        esc(monthLabel(r.mes)),
+        esc(r.proveedor||''),
+        esc(r.centroCodigo||''),
+        esc(r.comuna||''),
+        r.ha ?? '',
+        fmtTons(r.tons),
+        esc(r.fuente||'')
+      ]);
 
-    kTotal && (kTotal.textContent = totalTons.toLocaleString('es-CL'));
-    kProv  && (kProv.textContent  = proveedores);
-    kCent  && (kCent.textContent  = centros);
-    kMeses && (kMeses.textContent = meses);
-  }
+      ensureDataTable();
+      dt.clear();
+      dt.rows.add(data).draw();
+    }
 
-  // --- DataTable ---
-  let dt = null;
-  function ensureDataTable() {
-    const jq = window.jQuery || window.$;
-    if (!jq) return;
-    if (dt) return dt;
+    /* ================== VISTA AGRUPADA ================== */
+    function filterRows(rows, q) {
+      const s = String(q||'').trim().toLowerCase();
+      if (!s) return rows;
+      return rows.filter(r =>
+        (r.mes||'').toLowerCase().includes(s) ||
+        (r.proveedor||'').toLowerCase().includes(s) ||
+        String(r.centroCodigo||'').toLowerCase().includes(s) ||
+        (r.comuna||'').toLowerCase().includes(s) ||
+        String(r.ha??'').toLowerCase().includes(s) ||
+        String(r.tons??'').toLowerCase().includes(s) ||
+        (r.fuente||'').toLowerCase().includes(s)
+      );
+    }
 
-    dt = jq('#tablaInventario').DataTable({
-      dom: 'Bfrtip',
-      buttons: [
-        { extend:'excelHtml5', title:'Inventario_MMPP' },
-        { extend:'pdfHtml5',   title:'Inventario_MMPP', orientation:'landscape', pageSize:'A4' }
-      ],
-      pageLength: 10,
-      autoWidth: false,
-      language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-      order: [[0,'asc']]
-    });
+    function renderGrouped(rows) {
+      const cont = $id('invGrouped');
+      const q = $id('invSearch')?.value || '';
+      const filtered = filterRows(rows, q);
 
-    // filtro rápido
-    const bus = document.querySelector('#tablaInventario_filter input');
-    const buscador = $('#buscadorTabla');
-    if (buscador && bus) {
-      buscador.addEventListener('input', () => {
-        dt.search(buscador.value || '').draw();
+      const map = new Map();
+      for (const r of filtered) {
+        const k = r.mes || 's/fecha';
+        if (!map.has(k)) map.set(k, []);
+        map.get(k).push(r);
+      }
+      const keys = [...map.keys()].sort();
+
+      let html = '';
+      for (const k of keys) {
+        const items = map.get(k).slice().sort((a,b) =>
+          (a.proveedor||'').localeCompare(b.proveedor||'') ||
+          String(a.centroCodigo||'').localeCompare(String(b.centroCodigo||''))
+        );
+        const subtotal = items.reduce((s, x) => s + (Number(x.tons)||0), 0);
+
+        html += `
+        <details open>
+          <summary>
+            <div class="group-head">
+              <div>
+                <strong>${esc(monthLabel(k))}</strong>
+                <span class="group-sub">• ${items.length} registros</span>
+              </div>
+              <div class="tag">${fmtTons(subtotal)} t</div>
+            </div>
+          </summary>
+          <div class="group-table">
+            <div class="responsive-table">
+              <table class="striped highlight">
+                <thead>
+                  <tr>
+                    <th>Proveedor</th>
+                    <th>Código centro</th>
+                    <th>Comuna</th>
+                    <th>Ha</th>
+                    <th class="right-align">Tons</th>
+                    <th>Fuente</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${items.map(r => `
+                    <tr>
+                      <td title="${esc(r.proveedor||'')}">${esc(r.proveedor||'')}</td>
+                      <td title="${esc(r.centroCodigo||'')}">${esc(r.centroCodigo||'')}</td>
+                      <td title="${esc(r.comuna||'')}">${esc(r.comuna||'')}</td>
+                      <td>${r.ha ?? ''}</td>
+                      <td class="right-align" title="${fmtTons(r.tons)}">${fmtTons(r.tons)}</td>
+                      <td>${esc(r.fuente||'')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>`;
+      }
+
+      cont.innerHTML = html || `<div class="grey-text">Sin registros para mostrar.</div>`;
+    }
+
+    function setGroupedView(on, rows) {
+      const grouped = $id('invGrouped');
+      const tableWrap = document.getElementById('tablaInv')?.closest('.dataTables_wrapper') || document.getElementById('tablaInv');
+      if (!grouped || !tableWrap) return;
+
+      if (on) {
+        tableWrap.style.display = 'none';
+        grouped.style.display = 'block';
+        renderGrouped(rows);
+      } else {
+        grouped.style.display = 'none';
+        tableWrap.style.display = '';
+      }
+    }
+
+    /* ================== LOAD & BOOT ================== */
+    let __allRows = [];
+
+    async function loadData() {
+      try {
+        const [centros, contactos, visitas] = await Promise.all([
+          getCentros(),
+          getContactos(),
+          getVisitas()
+        ]);
+
+        const centroIdx = buildCentrosIndex(centros);
+        const contactosIdx = makeContactosIndex(contactos);
+
+        const rowsC = rowsFromContactos(contactos, centroIdx);
+        const rowsV = rowsFromVisitas(visitas, centroIdx, contactosIdx);
+
+        __allRows = [...rowsC, ...rowsV];
+
+        renderKPIs(__allRows);
+        fillDataTable(__allRows);
+
+        // refrescar vista agrupada si está activa
+        if ($id('invToggleGroup')?.checked) renderGrouped(__allRows);
+      } catch (e) {
+        console.error(e);
+        M.toast?.({ html: 'No se pudo cargar el inventario', classes: 'red' });
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Botón Asignación (seguro para rutas relativas)
+      $id('btnGoAsignacion')?.addEventListener('click', () => {
+        location.href = './asignacion.html';
       });
-    }
 
-    return dt;
-  }
+      // Toggle agrupado
+      $id('invToggleGroup')?.addEventListener('change', (e) => {
+        setGroupedView(e.target.checked, __allRows);
+      });
+      $id('invSearch')?.addEventListener('input', () => {
+        if ($id('invToggleGroup')?.checked) renderGrouped(__allRows);
+      });
 
-  function fillTable(rows) {
-    const jq = window.jQuery || window.$;
-    const table = $('#tablaInventario');
-    if (!table || !jq) return;
+      // Reload
+      $id('btnReload')?.addEventListener('click', () => loadData());
 
-    ensureDataTable();
-
-    const data = rows.map(r => ([
-      esc(r.mes),
-      `<span title="${esc(r.notas || r.proveedor)}">${esc(r.proveedor)}</span>`,
-      esc(r.codigo),
-      esc(r.comuna || ''),
-      r.ha != null ? esc(String(r.ha)) : '',
-      n(r.tons).toLocaleString('es-CL'),
-      esc(r.fuente || '')
-    ]));
-
-    dt.clear();
-    dt.rows.add(data).draw();
-  }
-
-  // --- carga principal ---
-  async function loadCentros() {
-    const arr = await fetchJSON(`${API}/centros`);
-    indexCentros(Array.isArray(arr) ? arr : []);
-  }
-
-  async function loadData() {
-    const q = ($('#fltQ')?.value || '').trim();
-    const min = Number($('#fltMinTons')?.value) || 1;
-
-    // 🔁 Usa el endpoint existente
-    const url = `${API}/contactos/disponibles?q=${encodeURIComponent(q)}&minTons=${min}`;
-    const raw = await fetchJSON(url);
-    const items = Array.isArray(raw) ? raw : (raw?.items || []);
-
-    const rows = items.map(it => {
-      const code = String(it.centroCodigo || '').trim();
-      const info = centrosByCode.get(code) || {};
-      return {
-        mes: toMonth(it.fechaDisp || it.fechaDisponibilidad || null),
-        proveedor: it.proveedorNombre || '',
-        codigo: code,
-        comuna: info.comuna || '',
-        ha: info.hectareas ?? null,
-        tons: n(it.tonsAprox ?? it.tonsDisponiblesAprox ?? it.tons),
-        fuente: 'Contacto',
-        notas: it.observaciones || ''
-      };
+      // Boot
+      loadData();
     });
-
-    renderKPIs(rows);
-    fillTable(rows);
-  }
-
-  async function boot() {
-    try {
-      await loadCentros();
-      await loadData();
-    } catch (e) {
-      console.error(e);
-      alert(`Error: ${e.message}`);
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    // soporta ambos ids por si tu botón se llama distinto
-    $('#btnBuscar')?.addEventListener('click', (e) => { e.preventDefault(); loadData().catch(console.error); });
-    $('#btnActualizar')?.addEventListener('click', (e) => { e.preventDefault(); loadData().catch(console.error); });
-    boot().catch(console.error);
-  });
-})();
-</script>
-
+  </script>
 </body>
 </html>
