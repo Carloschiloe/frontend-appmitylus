@@ -1,54 +1,37 @@
-// /js/contactos/tabla.js
 import { state, $ } from './state.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
 
-export function initTablaContactos(){
-  const jq = window.jQuery || window.$;
-  if (!jq || state.dt) return;
+// 👇 helpers de fallback (no escriben nada)
+const norm = (s='') => String(s).trim().toLowerCase();
+const provKeyOf = (ct) => (ct?.proveedorKey && ct.proveedorKey.length)
+  ? ct.proveedorKey
+  : norm(ct?.proveedor || '');
 
-  state.dt = jq('#tablaContactos').DataTable({
-    dom: 'Bfrtip',
-    buttons: [
-      { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
-      { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
-    ],
-    order: [[0,'desc']],
-    pageLength: 25,
-    autoWidth: false,
-    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-    columnDefs: [
-      { targets: 0, width: '110px' },
-      { targets: -1, orderable: false, searchable: false }
-    ]
-  });
-
-  jq('#tablaContactos tbody')
-    .on('click', 'a.icon-action.ver', function(){
-      const id = this.dataset.id;
-      const c = state.contactosGuardados.find(x => String(x._id) === String(id));
-      if (c) abrirDetalleContacto(c);
-    })
-    .on('click', 'a.icon-action.visita', function(){
-      const id = this.dataset.id;
-      const c = state.contactosGuardados.find(x => String(x._id) === String(id));
-      if (c) abrirModalVisita(c);
-    })
-    .on('click', 'a.icon-action.editar', function(){
-      const id = this.dataset.id;
-      const c = state.contactosGuardados.find(x => String(x._id) === String(id));
-      if (c) abrirEdicion(c);
-    })
-    .on('click', 'a.icon-action.eliminar', async function(){
-      const id = this.dataset.id;
-      if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
-      try { await eliminarContacto(id); }
-      catch (e) {
-        console.error(e);
-        M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 });
-      }
-    });
+function codigoPorCentroId(id) {
+  if (!id) return '';
+  const ct = (state.listaCentros || []).find(x => String(x._id ?? x.id) === String(id));
+  return ct ? String(ct.codigo ?? ct.code ?? ct.Codigo ?? '') : '';
 }
+function comunaPorCodigo(codigo) {
+  if (!codigo) return '';
+  const cod = String(codigo);
+  const ct = (state.listaCentros || []).find(x => {
+    const cs = [x.codigo, x.code, x.Codigo].filter(v => v!=null).map(String);
+    return cs.includes(cod);
+  });
+  return ct?.comuna ?? ct?.Comuna ?? '';
+}
+function codigoPorProveedorYComuna(proveedorKey, comuna) {
+  const cand = (state.listaCentros || []).filter(x => provKeyOf(x) === proveedorKey);
+  if (!cand.length) return '';
+  const porComuna = cand.filter(x => (x.comuna ?? x.Comuna) === comuna);
+  const lista = (porComuna.length ? porComuna : cand)
+    .map(x => String(x.codigo ?? x.code ?? x.Codigo ?? '')).filter(Boolean);
+  const unicos = [...new Set(lista)];
+  return unicos.length === 1 ? unicos[0] : '';
+}
+const esCodigoValido = (x) => /^\d{4,7}$/.test(String(x || ''));
 
 export function renderTablaContactos() {
   const jq = window.jQuery || window.$;
@@ -65,9 +48,19 @@ export function renderTablaContactos() {
       const yyyy = f.getFullYear();
       const mm   = String(f.getMonth() + 1).padStart(2, '0');
       const dd   = String(f.getDate()).padStart(2, '0');
-
       const whenDisplay = `${yyyy}-${mm}-${dd}`;
       const whenKey     = f.getTime();
+
+      // --------- Fallbacks SOLO PARA MOSTRAR ----------
+      // 1) Centro (código)
+      let centroCodigo = c.centroCodigo;
+      if (!esCodigoValido(centroCodigo)) {
+        centroCodigo = codigoPorCentroId(c.centroId)
+                    || codigoPorProveedorYComuna(c.proveedorKey, c.centroComuna || c.comuna)
+                    || ''; // si hay ambigüedad, mostramos vacío
+      }
+      // 2) Comuna
+      const comuna = (c.centroComuna || c.comuna || comunaPorCodigo(centroCodigo) || '');
 
       const acciones = `
         <a href="#!" class="icon-action ver" title="Ver detalle" data-id="${c._id}">
@@ -84,20 +77,11 @@ export function renderTablaContactos() {
         </a>
       `;
 
-      // 👇 Fallback inteligente para mostrar COMUNA aunque el contacto no la tenga guardada
-      const comuna =
-        c.centroComuna
-        || (state.centros && c.centroCodigo
-              ? (state.centros.find(ct => String(ct.codigo) === String(c.centroCodigo))?.comuna || '')
-              : '')
-        || c.comuna
-        || '';
-
       return [
         `<span data-order="${whenKey}">${whenDisplay}</span>`,
-        esc(c.proveedorNombre || ''),   // Proveedor = Empresa
-        esc(c.centroCodigo || ''),
-        esc(comuna),                    // ← Comuna visible
+        esc(c.proveedorNombre || ''),
+        esc(centroCodigo),                 // ← Centro (con fallback)
+        esc(comuna),                       // ← Comuna (con fallback)
         esc(c.tieneMMPP || ''),
         c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '',
         esc(c.dispuestoVender || ''),
@@ -107,15 +91,10 @@ export function renderTablaContactos() {
       ];
     });
 
-  if (state.dt && jq) {
-    state.dt.clear();
-    state.dt.rows.add(filas).draw();
-    return;
-  }
+  if (state.dt && jq) { state.dt.clear(); state.dt.rows.add(filas).draw(); return; }
 
   const tbody = $('#tablaContactos tbody');
   if (!tbody) return;
-
   tbody.innerHTML = '';
   if (!filas.length) {
     tbody.innerHTML = `<tr><td colspan="10" style="color:#888">No hay contactos registrados aún.</td></tr>`;
