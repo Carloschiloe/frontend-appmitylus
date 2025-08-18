@@ -168,44 +168,51 @@ async function fetchSummaryMensual(anio){
 }
 
 // === DETALLE DE PROVEEDORES (asignaciones -> fallback ofertas) ===
-// === DETALLE DE PROVEEDORES (desde ASIGNACIONES del mes) ===
 async function fetchProveedoresMes(anio, mes1a12){
+  const mk = `${anio}-${String(mes1a12).padStart(2,'0')}`;
+
+  // 1) Intentar con /asignaciones (enriquecido con centro y área)
   try{
-    const mk = `${anio}-${String(mes1a12).padStart(2,'0')}`;
     const json = await apiGet(`/asignaciones?from=${mk}&to=${mk}`);
     const items = Array.isArray(json?.items) ? json.items : [];
-    return items.map(it => ({
+    let rows = items.map(it => ({
       proveedor: it.proveedorNombre || it.proveedor || '(s/empresa)',
       comuna:    it.comuna || '',
       tons:      Number(it.tons) || 0,
-      cod:       it.centroCodigo || '',                // ← Cod.Centro
-      area:      it.areaCodigo || it.area || ''        // ← Área (fallback)
-    })).sort((a,b)=> b.tons - a.tons);
-  }catch(e){
-    console.warn('[fetchProveedoresMes]', e.message);
-    return [];
-  }
-}
+      cod:       it.centroCodigo || '',
+      area:      it.areaCodigo || it.area || '',
+      contactId: it.contactId || it.proveedorKey || ''
+    })).filter(r => r.tons > 0);
 
-  // 2) Fallback: ofertas (contactos/visitas) para ese mes
+    if (rows.length) return rows.sort((a,b)=> b.tons - a.tons);
+  }catch(e){
+    console.warn('[asignaciones detalle]', e.message);
+  }
+
+  // 2) Fallback con /planificacion/ofertas (contactos/visitas)
   try{
     const json = await apiGet('/planificacion/ofertas');
     const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
-    return items
-      .filter(it=>{
+    const rows = items
+      .filter(it => {
         const d = new Date(it.mes || it.fecha || it.mesKey || '');
         return !isNaN(d.getTime()) && d.getFullYear() === anio && (d.getMonth()+1) === mes1a12;
       })
-      .map(it=>({
+      .map(it => ({
         proveedor: it.proveedorNombre || '(s/empresa)',
-        comuna: it.comuna || it.centroComuna || '',
-        tons: Number(it.tons) || 0,
-        cod: it.centroCodigo || '',
-        area: it.area || it.areaCodigo || '',
+        comuna:    it.comuna || it.centroComuna || '',
+        tons:      Number(it.tons) || 0,
+        cod:       it.centroCodigo || '',
+        area:      it.area || it.areaCodigo || '',
         contactId: it.contactId || it.contactoId || it.proveedorKey || ''
       }))
+      .filter(r => r.tons > 0)
       .sort((a,b)=> b.tons - a.tons);
-  }catch(e){ console.warn('[ofertas]', e.message); }
+
+    if (rows.length) return rows;
+  }catch(e){
+    console.warn('[ofertas detalle]', e.message);
+  }
 
   return [];
 }
@@ -765,4 +772,3 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
-
