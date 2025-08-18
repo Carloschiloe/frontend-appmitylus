@@ -95,7 +95,7 @@ init();
 async function init(){
   injectModalStyles();
   ensureAuxUIs();
-  ensureReqModal();      // ← siempre engancha el botón, exista o no el modal en el HTML
+  ensureReqModal();
   ensureCardMenu();
   ensurePopover();
 
@@ -130,9 +130,6 @@ async function init(){
 }
 
 // =============== ENDPOINTS REALES (lecturas) ===============
-// --- dentro de asignacion.js ---
-
-// 2) Requerido por mes desde /planificacion/mes
 async function fetchSummaryMensual(anio){
   // 1) Asignado
   const asignado = Array(12).fill(0);
@@ -170,25 +167,25 @@ async function fetchSummaryMensual(anio){
   return { anio, requerido, asignado, procesado };
 }
 
+// === DETALLE DE PROVEEDORES (usa /planificacion/ofertas) ===
 async function fetchProveedoresMes(anio, mes1a12){
   try{
-    const json = await apiGet('/planificacion/mes?raw=true');
+    const json = await apiGet('/planificacion/ofertas'); // detalle por proveedor/centro
     const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
     return items
       .filter(it=>{
-        const mk = String(it.mesKey || '');
-        if (!/^\d{4}-\d{2}$/.test(mk)) return false;
-        const y = Number(mk.slice(0,4));
-        const m = Number(mk.slice(5,7));
-        return y === anio && m === mes1a12;
+        const d = new Date(it.mes || it.fecha || it.mesKey || '');
+        return !isNaN(d.getTime()) && d.getFullYear() === anio && (d.getMonth()+1) === mes1a12;
       })
       .map(it=>({
         proveedor: it.proveedorNombre || it.proveedor || '(s/empresa)',
         comuna: it.comuna || it.centroComuna || '',
-        tons: Number(it.tons ?? 0) || 0,
-        cod: it.centroCodigo || it.centro?.codigo || '',
-        contactId: it.proveedorKey || it.contactoId || it.contactId || ''
-      }));
+        tons: Number(it.tons) || 0,
+        cod: it.centroCodigo || '',
+        area: it.area || it.areaCodigo || '',
+        contactId: it.contactId || it.contactoId || it.proveedorKey || ''
+      }))
+      .sort((a,b)=> b.tons - a.tons);
   }catch(e){
     console.warn('[fetchProveedoresMes]', e.message);
     return [];
@@ -452,7 +449,6 @@ function hidePass(){ document.getElementById('asigPass').style.display='none' }
 function ensureReqModal(){
   let modal = document.getElementById('modalReq');
 
-  // Si NO existe en el HTML, lo creo dinámico
   if(!modal){
     modal = document.createElement('div');
     modal.id = 'modalReq';
@@ -479,7 +475,6 @@ function ensureReqModal(){
     document.body.appendChild(modal);
   }
 
-  // SIEMPRE enganchar el handler del botón (evita que se “pierda”)
   const btn = document.getElementById('mReqSave');
   if (btn) btn.onclick = saveRequerido;
 }
@@ -551,7 +546,6 @@ function ensureCardMenu(){
     if(act==='requerido'){
       document.getElementById('mReqAnio').value = anio;
       document.getElementById('mReqMes').value  = mes;
-      // Prefill con el requerido actual del mes (si existe)
       const i = mes-1;
       document.getElementById('mReqTons').value = (cacheSummary?.requerido?.[i] || 0);
       document.getElementById('mReqMP').value = '';
@@ -615,7 +609,9 @@ function ensurePopover(){
     </header>
     <div class="body">
       <table>
-        <thead><tr><th>Proveedor</th><th>Comuna</th><th>Tons</th><th>Cod.Centro</th></tr></thead>
+        <thead>
+          <tr><th>Proveedor</th><th>Comuna</th><th>Tons</th><th>Cod.Centro</th><th>Área</th></tr>
+        </thead>
         <tbody id="popRows"></tbody>
       </table>
     </div>
@@ -651,6 +647,7 @@ async function openProvidersPopover(mes, anio, anchorEl){
       <td>${esc(r.comuna)}</td>
       <td class="text-right">${fmt(r.tons)}</td>
       <td>${esc(r.cod)}</td>
+      <td>${esc(r.area || '')}</td>
     </tr>
   `).join('');
   popEl.style.display = 'block';
@@ -750,4 +747,3 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
-
