@@ -242,3 +242,9 @@ html,body{overflow-x:hidden}
 /* Opcional: bordes sutiles por estado */
 .asig .card--mock.full{ box-shadow:0 0 0 2px rgba(46,125,50,.08); }
 .asig .card--mock.need{ box-shadow:0 0 0 2px rgba(239,83,80,.08); }
+
+/* Evita que la leyenda se parta en 2 líneas */
+.wrap.asig .legend{ white-space: nowrap; }
+
+/* Evita que el título del nav se desborde hacia abajo */
+nav .brand-logo{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
