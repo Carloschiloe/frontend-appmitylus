@@ -302,9 +302,12 @@ function paintCards(anio, data){
     grid.appendChild(card);
   }
 
-  const ysum = yearTotals(data);
+    const ysum = yearTotals(data);
+  const faltanY = Math.max(0, ysum.tReq - ysum.tAsg);
+  const summaryState = ysum.tReq === 0 ? 'zero' : (ysum.tAsg >= ysum.tReq ? 'full' : 'need');
+
   const cardY = document.createElement('div');
-  cardY.className = 'card card--summary';
+  cardY.className = `card card--summary ${summaryState}`;
   cardY.innerHTML = `
     <div class="month-pill"><span>CONSOLIDADO ${anio}</span></div>
     <div class="pane">
@@ -322,9 +325,11 @@ function paintCards(anio, data){
           <span>${fmt(ysum.tAsg)}</span><span class="unit">t</span>
           <span class="pct">${ysum.pctAsig}%</span>
         </div>
+        ${faltanY > 0 ? `<div class="stat stat-missing">Faltan <span>${fmt(faltanY)}</span> <span class="unit">t</span></div>` : ''}
       </div>
     </div>
   `;
+
   grid.appendChild(cardY);
   elCards.appendChild(grid);
 }
@@ -778,5 +783,6 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+
 
 
