@@ -302,14 +302,19 @@ function paintCards(anio, data){
     grid.appendChild(card);
   }
 
-    const ysum = yearTotals(data);
-  const faltanY = Math.max(0, ysum.tReq - ysum.tAsg);
+     // --- CONSOLIDADO ---
+  const ysum = yearTotals(data);
+  const pctAsigY = ysum.tReq > 0 ? Math.round((ysum.tAsg / ysum.tReq) * 100) : 0;
+  const faltanY  = Math.max(0, ysum.tReq - ysum.tAsg);
   const summaryState = ysum.tReq === 0 ? 'zero' : (ysum.tAsg >= ysum.tReq ? 'full' : 'need');
 
   const cardY = document.createElement('div');
-  cardY.className = `card card--summary ${summaryState}`;
+  // le agregamos también "card--mock" para reutilizar los mismos colores/estados
+  cardY.className = `card card--summary card--mock ${summaryState}`;
   cardY.innerHTML = `
-    <div class="month-pill"><span>CONSOLIDADO ${anio}</span></div>
+    <div class="month-pill" style="--asg:${pctAsigY}">
+      <span>CONSOLIDADO ${anio}</span>
+    </div>
     <div class="pane">
       <div class="tons-title">TOTAL REQUERIDO</div>
       <div class="tons-value">${fmt(ysum.tReq)}</div>
@@ -329,7 +334,6 @@ function paintCards(anio, data){
       </div>
     </div>
   `;
-
   grid.appendChild(cardY);
   elCards.appendChild(grid);
 }
@@ -783,6 +787,7 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+
 
 
 
