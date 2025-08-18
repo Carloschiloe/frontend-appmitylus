@@ -33,42 +33,34 @@ async function apiGet(path){ const r = await fetch(`${API_URL}${path}`); return 
 
 // =============== ESTILOS DEL MODAL (para que no se corte) ===============
 function injectModalStyles(){
-  // evita duplicar estilos
   const old = document.getElementById('asig-modal-styles');
   if (old) return;
 
   const style = document.createElement('style');
   style.id = 'asig-modal-styles';
   style.textContent = `
-    /* --- overlay base de tu app --- */
     #mask{
       position: fixed; inset: 0;
       background: rgba(0,0,0,.35);
       display: none;
-      z-index: 2147482900;          /* < modal */
+      z-index: 2147482900;
     }
-
-    /* Si Materialize inyecta .modal-overlay, mándala más abajo también */
     .modal-overlay{ z-index: 2147482800 !important; }
 
-    /* --- contenedor del modal custom --- */
     .asig-modal{
       position: fixed; inset: 0;
-      display: none;                 /* se cambia a 'flex' en showModal */
+      display: none;
       align-items: center; justify-content: center;
       padding: 12px;
-      z-index: 2147483000;           /* > mask y > cualquier overlay */
+      z-index: 2147483000;
     }
-
-    /* caja del modal */
     .asig-modal__box{
       background:#fff; border-radius:12px;
       width: min(780px, 94vw);
-      max-height: 90vh;              /* evita que se corte */
+      max-height: 90vh;
       box-shadow: 0 10px 30px rgba(0,0,0,.15);
       display: flex; flex-direction: column;
     }
-
     .asig-modal__header{
       display:flex; align-items:center; justify-content:space-between;
       gap:8px; padding:16px 20px; border-bottom:1px solid #eef1f3;
@@ -77,17 +69,12 @@ function injectModalStyles(){
     .asig-modal__header h3{ margin:0; font-size:1.35rem; color:#0d6b63; }
     .asig-modal__header .x{ border:0; background:#eef3f2; width:32px; height:32px; border-radius:8px; font-size:18px; cursor:pointer; }
 
-    .asig-modal .content{
-      padding:14px 20px;
-      overflow: auto;                /* scroll interno */
-    }
-
+    .asig-modal .content{ padding:14px 20px; overflow:auto; }
     .asig-modal__footer{
       padding:12px 20px; border-top:1px solid #eef1f3;
       display:flex; justify-content:flex-end; gap:10px;
       position: sticky; bottom:0; background:#fff;
     }
-
     .asig-modal .row{ display:flex; flex-direction:column; gap:6px; margin:8px 0; }
     .asig-modal input, .asig-modal select{
       width:100%; padding:10px 12px; border:1px solid #dfe4e6; border-radius:8px; outline:none;
@@ -106,13 +93,12 @@ function injectModalStyles(){
 // =============== ARRANQUE ===============
 init();
 async function init(){
-  injectModalStyles();   // <-- asegura modal con max-height + scroll
-  ensureAuxUIs();        // password (asigPass)
-  ensureReqModal();      // modal Requerido
-  ensureCardMenu();      // menú contextual
-  ensurePopover();       // popover proveedores
+  injectModalStyles();
+  ensureAuxUIs();
+  ensureReqModal();      // ← siempre engancha el botón, exista o no el modal en el HTML
+  ensureCardMenu();
+  ensurePopover();
 
-  // Solo 2025+ en el selector
   const years = [2025,2026,2027,2028,2029];
   elAnio.innerHTML = years.map(y=>`<option ${y===currentYear?'selected':''}>${y}</option>`).join('');
   await loadYear(currentYear);
@@ -126,7 +112,7 @@ async function init(){
   const mask = document.getElementById('mask');
   mask?.addEventListener('click', (ev)=>{ if(ev.target === mask) hideModal(); });
 
-  // Eventos para renderizar el week-picker si cambian Año/Mes del modal (para "producir")
+  // Week-picker reactivo
   const anioIn = document.getElementById('mProcAnio');
   const mesIn  = document.getElementById('mProcMes');
   if (anioIn && mesIn) {
@@ -159,7 +145,7 @@ async function fetchSummaryMensual(anio){
     }
   }catch(e){ console.warn('[asignaciones/map]', e.message); }
 
-  // 2) Requerido por mes desde /planificacion/mes
+  // 2) Requerido por mes (desde /planificacion/mes -> suma por mes del año)
   const requerido = Array(12).fill(0);
   try{
     const json = await apiGet('/planificacion/mes');
@@ -174,7 +160,7 @@ async function fetchSummaryMensual(anio){
     }
   }catch(e){ console.warn('[planificacion/mes]', e.message); }
 
-  // 3) Procesado (de momento en 0 si no lo conectaste aún)
+  // 3) Procesado (placeholder)
   const procesado = Array(12).fill(0);
 
   return { anio, requerido, asignado, procesado };
@@ -252,7 +238,6 @@ function paintCards(anio, data){
 
     card.dataset.m = m;
 
-    // Stats compactas con toneladas y %
     card.innerHTML = `
       <div class="month-pill" style="--asg:${pctAsig}">
         <span>${MES_LABELS[i].toUpperCase()} ${anio}</span>
@@ -277,7 +262,6 @@ function paintCards(anio, data){
       </div>
     `;
 
-    // click en tarjeta => menú contextual anclado
     card.addEventListener('click', (ev)=>{
       ev.stopPropagation();
       lastClickedMonth = m;
@@ -287,7 +271,6 @@ function paintCards(anio, data){
     grid.appendChild(card);
   }
 
-  // Consolidado anual
   const ysum = yearTotals(data);
   const cardY = document.createElement('div');
   cardY.className = 'card card--summary';
@@ -366,9 +349,10 @@ const mask = document.getElementById('mask');
 function showModal(id){
   const modal = document.getElementById(id);
   mask.style.display = 'block';
-  modal.style.display = 'flex';   // <-- centrado y compatible con max-height
+  modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
   modal.setAttribute('aria-hidden','false');
+  modal.setAttribute('aria-modal','true');
   mask.setAttribute('aria-hidden','false');
   setTimeout(()=>{
     const focusable = modal.querySelector('input,select,button,textarea');
@@ -380,6 +364,7 @@ function hideModal(){
   document.querySelectorAll('.asig-modal').forEach(m=>{
     m.style.display = 'none';
     m.setAttribute('aria-hidden','true');
+    m.removeAttribute('aria-modal');
   });
   document.body.style.overflow = '';
   mask.setAttribute('aria-hidden','true');
@@ -457,32 +442,38 @@ function hidePass(){ document.getElementById('asigPass').style.display='none' }
 
 // =============== MODAL: Definir Requerido (MMPP) ===============
 function ensureReqModal(){
-  if(document.getElementById('modalReq')) return;
-  const modal = document.createElement('div');
-  modal.id = 'modalReq';
-  modal.className = 'asig-modal';
-  modal.setAttribute('aria-hidden','true');
+  let modal = document.getElementById('modalReq');
 
-  modal.innerHTML = `
-    <div class="asig-modal__box">
-      <header class="asig-modal__header">
-        <h3>Definir Requerido (MMPP)</h3>
-        <button class="x" onclick="hideModal()">×</button>
-      </header>
-      <div class="content">
-        <div class="row"><label>Año</label><input id="mReqAnio" type="number" min="2024" step="1" /></div>
-        <div class="row"><label>Mes</label><input id="mReqMes" type="number" min="1" max="12" step="1" /></div>
-        <div class="row"><label>Materia prima</label><input id="mReqMP" type="text" placeholder="p. ej. MMPP genérica" /></div>
-        <div class="row"><label>Tons requeridas</label><input id="mReqTons" type="number" step="0.01" min="0" /></div>
+  // Si NO existe en el HTML, lo creo dinámico
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'modalReq';
+    modal.className = 'asig-modal';
+    modal.setAttribute('aria-hidden','true');
+    modal.innerHTML = `
+      <div class="asig-modal__box">
+        <header class="asig-modal__header">
+          <h3>Definir Requerido (MMPP)</h3>
+          <button class="x" onclick="hideModal()">×</button>
+        </header>
+        <div class="content">
+          <div class="row"><label>Año</label><input id="mReqAnio" type="number" min="2024" step="1" /></div>
+          <div class="row"><label>Mes</label><input id="mReqMes" type="number" min="1" max="12" step="1" /></div>
+          <div class="row"><label>Materia prima</label><input id="mReqMP" type="text" placeholder="p. ej. MMPP genérica" /></div>
+          <div class="row"><label>Tons requeridas</label><input id="mReqTons" type="number" step="0.01" min="0" /></div>
+        </div>
+        <footer class="asig-modal__footer">
+          <button onclick="hideModal()">Cancelar</button>
+          <button class="ok" id="mReqSave">Guardar</button>
+        </footer>
       </div>
-      <footer class="asig-modal__footer">
-        <button onclick="hideModal()">Cancelar</button>
-        <button class="ok" id="mReqSave">Guardar</button>
-      </footer>
-    </div>
-  `;
-  document.body.appendChild(modal);
-  document.getElementById('mReqSave').onclick = saveRequerido;
+    `;
+    document.body.appendChild(modal);
+  }
+
+  // SIEMPRE enganchar el handler del botón (evita que se “pierda”)
+  const btn = document.getElementById('mReqSave');
+  if (btn) btn.onclick = saveRequerido;
 }
 
 async function putRequeridoMensual(payload){
@@ -513,7 +504,7 @@ async function saveRequerido(){
   try{
     await putRequeridoMensual({ anio, mes, materiaPrima: mp, tons });
     hideModal();
-    await loadYear(+elAnio.value); // refresca tarjetas y chart
+    await loadYear(+elAnio.value);
   }catch(e){
     console.error(e);
     alert('No se pudo guardar el Requerido');
@@ -545,7 +536,6 @@ function ensureCardMenu(){
       return;
     }
 
-    // acciones con password
     hideCardMenu();
     const ok = await askPassword();
     if(!ok) return;
@@ -553,9 +543,9 @@ function ensureCardMenu(){
     if(act==='requerido'){
       document.getElementById('mReqAnio').value = anio;
       document.getElementById('mReqMes').value  = mes;
-      // sugerir como punto de partida lo asignado actual de ese mes
+      // Prefill con el requerido actual del mes (si existe)
       const i = mes-1;
-      document.getElementById('mReqTons').value = (cacheSummary?.asignado?.[i] || 0);
+      document.getElementById('mReqTons').value = (cacheSummary?.requerido?.[i] || 0);
       document.getElementById('mReqMP').value = '';
       showModal('modalReq');
       return;
@@ -569,16 +559,13 @@ function ensureCardMenu(){
     } else if(act==='producir'){
       document.getElementById('mProcAnio').value = anio;
       document.getElementById('mProcMes').value  = mes;
-
       const defW = defaultWeekFor(anio, mes);
       document.getElementById('mProcWk').value = defW;
-
       showModal('modalProc');
       renderWeekPicker(anio, mes, defW);
     }
   });
 
-  // cerrar si se hace click fuera
   document.addEventListener('click', (ev)=>{
     if(!cardMenuEl) return;
     if(cardMenuEl.style.display!=='block') return;
@@ -755,4 +742,3 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
-
