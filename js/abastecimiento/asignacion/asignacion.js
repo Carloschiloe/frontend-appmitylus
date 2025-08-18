@@ -168,24 +168,24 @@ async function fetchSummaryMensual(anio){
 }
 
 // === DETALLE DE PROVEEDORES (asignaciones -> fallback ofertas) ===
+// === DETALLE DE PROVEEDORES (desde ASIGNACIONES del mes) ===
 async function fetchProveedoresMes(anio, mes1a12){
-  const mk = `${anio}-${String(mes1a12).padStart(2,'0')}`;
-
-  // 1) Principal: leer asignaciones del mes
   try{
+    const mk = `${anio}-${String(mes1a12).padStart(2,'0')}`;
     const json = await apiGet(`/asignaciones?from=${mk}&to=${mk}`);
-    const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
-    if (items.length){
-      return items.map(it => ({
-        proveedor: it.proveedorNombre || '(s/empresa)',
-        comuna: it.comuna || '',
-        tons: Number(it.tons) || 0,
-        cod: it.centroCodigo || '',
-        area: it.areaCodigo || '',
-        contactId: it.proveedorKey || ''
-      })).sort((a,b)=> b.tons - a.tons);
-    }
-  }catch(e){ console.warn('[asignaciones]', e.message); }
+    const items = Array.isArray(json?.items) ? json.items : [];
+    return items.map(it => ({
+      proveedor: it.proveedorNombre || it.proveedor || '(s/empresa)',
+      comuna:    it.comuna || '',
+      tons:      Number(it.tons) || 0,
+      cod:       it.centroCodigo || '',                // ← Cod.Centro
+      area:      it.areaCodigo || it.area || ''        // ← Área (fallback)
+    })).sort((a,b)=> b.tons - a.tons);
+  }catch(e){
+    console.warn('[fetchProveedoresMes]', e.message);
+    return [];
+  }
+}
 
   // 2) Fallback: ofertas (contactos/visitas) para ese mes
   try{
@@ -765,3 +765,4 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+
