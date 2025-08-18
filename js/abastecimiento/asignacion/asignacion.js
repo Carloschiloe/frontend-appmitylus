@@ -130,8 +130,11 @@ async function init(){
 }
 
 // =============== ENDPOINTS REALES (lecturas) ===============
+// --- dentro de asignacion.js ---
+
+// 2) Requerido por mes desde /planificacion/mes
 async function fetchSummaryMensual(anio){
-  // 1) Asignado por mes
+  // 1) Asignado
   const asignado = Array(12).fill(0);
   try{
     const arr = await apiGet(`/asignaciones/map?from=${anio}-01&to=${anio}-12`);
@@ -145,22 +148,23 @@ async function fetchSummaryMensual(anio){
     }
   }catch(e){ console.warn('[asignaciones/map]', e.message); }
 
-  // 2) Requerido por mes (desde /planificacion/mes -> suma por mes del año)
+  // 2) Requerido
   const requerido = Array(12).fill(0);
   try{
     const json = await apiGet('/planificacion/mes');
     const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
-    for(const it of items){
-      const d = new Date(it.mes || it.fecha || it.mesKey || `${anio}-${String(it.mes||'').padStart(2,'0')}-01`);
-      if (isNaN(d.getTime())) continue;
-      const y = d.getFullYear(); const m = d.getMonth();
-      if (y !== anio) continue;
-      const tons = Number(it.tons ?? it.total ?? it.tonsComprometidas ?? it.tonsDisponiblesAprox ?? 0);
+    for (const it of items) {
+      const mk = String(it.mesKey || '');
+      if (!/^\d{4}-\d{2}$/.test(mk)) continue;
+      const y = Number(mk.slice(0,4));
+      const m = Number(mk.slice(5,7)) - 1; // 0..11
+      if (y !== anio || m<0 || m>11) continue;
+      const tons = Number(it.tons ?? 0);
       if (Number.isFinite(tons)) requerido[m] += tons;
     }
   }catch(e){ console.warn('[planificacion/mes]', e.message); }
 
-  // 3) Procesado (placeholder)
+  // 3) Procesado (si aún no lo conectas, queda en 0)
   const procesado = Array(12).fill(0);
 
   return { anio, requerido, asignado, procesado };
@@ -168,17 +172,20 @@ async function fetchSummaryMensual(anio){
 
 async function fetchProveedoresMes(anio, mes1a12){
   try{
-    const json = await apiGet('/planificacion/mes');
+    const json = await apiGet('/planificacion/mes?raw=true');
     const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
     return items
       .filter(it=>{
-        const d = new Date(it.mes || it.fecha || it.mesKey || '');
-        return !isNaN(d.getTime()) && d.getFullYear() === anio && (d.getMonth()+1) === mes1a12;
+        const mk = String(it.mesKey || '');
+        if (!/^\d{4}-\d{2}$/.test(mk)) return false;
+        const y = Number(mk.slice(0,4));
+        const m = Number(mk.slice(5,7));
+        return y === anio && m === mes1a12;
       })
       .map(it=>({
-        proveedor: it.proveedorNombre || it.proveedor || it.contactoNombre || '(s/empresa)',
+        proveedor: it.proveedorNombre || it.proveedor || '(s/empresa)',
         comuna: it.comuna || it.centroComuna || '',
-        tons: Number(it.tons ?? it.total ?? it.tonsComprometidas ?? it.tonsDisponiblesAprox ?? 0) || 0,
+        tons: Number(it.tons ?? 0) || 0,
         cod: it.centroCodigo || it.centro?.codigo || '',
         contactId: it.proveedorKey || it.contactoId || it.contactId || ''
       }));
@@ -187,6 +194,7 @@ async function fetchProveedoresMes(anio, mes1a12){
     return [];
   }
 }
+
 async function fetchProveedoresDisponiblesDesde(anio, mes){
   return fetchProveedoresMes(anio, mes);
 }
@@ -742,3 +750,4 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+
