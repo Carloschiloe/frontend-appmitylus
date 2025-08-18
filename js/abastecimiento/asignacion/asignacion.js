@@ -167,10 +167,29 @@ async function fetchSummaryMensual(anio){
   return { anio, requerido, asignado, procesado };
 }
 
-// === DETALLE DE PROVEEDORES (usa /planificacion/ofertas) ===
+// === DETALLE DE PROVEEDORES (asignaciones -> fallback ofertas) ===
 async function fetchProveedoresMes(anio, mes1a12){
+  const mk = `${anio}-${String(mes1a12).padStart(2,'0')}`;
+
+  // 1) Principal: leer asignaciones del mes
   try{
-    const json = await apiGet('/planificacion/ofertas'); // detalle por proveedor/centro
+    const json = await apiGet(`/asignaciones?from=${mk}&to=${mk}`);
+    const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
+    if (items.length){
+      return items.map(it => ({
+        proveedor: it.proveedorNombre || '(s/empresa)',
+        comuna: it.comuna || '',
+        tons: Number(it.tons) || 0,
+        cod: it.centroCodigo || '',
+        area: it.areaCodigo || '',
+        contactId: it.proveedorKey || ''
+      })).sort((a,b)=> b.tons - a.tons);
+    }
+  }catch(e){ console.warn('[asignaciones]', e.message); }
+
+  // 2) Fallback: ofertas (contactos/visitas) para ese mes
+  try{
+    const json = await apiGet('/planificacion/ofertas');
     const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
     return items
       .filter(it=>{
@@ -178,7 +197,7 @@ async function fetchProveedoresMes(anio, mes1a12){
         return !isNaN(d.getTime()) && d.getFullYear() === anio && (d.getMonth()+1) === mes1a12;
       })
       .map(it=>({
-        proveedor: it.proveedorNombre || it.proveedor || '(s/empresa)',
+        proveedor: it.proveedorNombre || '(s/empresa)',
         comuna: it.comuna || it.centroComuna || '',
         tons: Number(it.tons) || 0,
         cod: it.centroCodigo || '',
@@ -186,10 +205,9 @@ async function fetchProveedoresMes(anio, mes1a12){
         contactId: it.contactId || it.contactoId || it.proveedorKey || ''
       }))
       .sort((a,b)=> b.tons - a.tons);
-  }catch(e){
-    console.warn('[fetchProveedoresMes]', e.message);
-    return [];
-  }
+  }catch(e){ console.warn('[ofertas]', e.message); }
+
+  return [];
 }
 
 async function fetchProveedoresDisponiblesDesde(anio, mes){
