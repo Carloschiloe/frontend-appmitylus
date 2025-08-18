@@ -171,55 +171,56 @@ async function fetchSummaryMensual(anio){
 async function fetchProveedoresMes(anio, mes1a12){
   const mk = `${anio}-${String(mes1a12).padStart(2,'0')}`;
 
-  // 1) Intentar con /asignaciones (enriquecido con centro y área)
+  // 1) Asignaciones del mes
+  let asignaciones = [];
   try{
-    const json = await apiGet(`/asignaciones?from=${mk}&to=${mk}`);
-    const items = Array.isArray(json?.items) ? json.items : [];
-    let rows = items.map(it => ({
-      proveedor: it.proveedorNombre || it.proveedor || '(s/empresa)',
-      comuna:    it.comuna || '',
-      tons:      Number(it.tons) || 0,
-      cod:       it.centroCodigo || '',
-      area:      it.areaCodigo || it.area || '',
-      contactId: it.contactId || it.proveedorKey || ''
-    })).filter(r => r.tons > 0);
+    const j = await apiGet(`/asignaciones?from=${mk}&to=${mk}`);
+    asignaciones = Array.isArray(j?.items) ? j.items : (Array.isArray(j) ? j : []);
+  }catch(e){ console.warn('[asignaciones]', e.message); }
 
-    if (rows.length) return rows.sort((a,b)=> b.tons - a.tons);
-  }catch(e){
-    console.warn('[asignaciones detalle]', e.message);
+  // 2) Ofertas del mes (contactos/visitas ya enriquecidas con centros)
+  let ofertasMes = [];
+  try{
+    const j2 = await apiGet(`/planificacion/ofertas`);
+    const arr2 = Array.isArray(j2?.items) ? j2.items : (Array.isArray(j2) ? j2 : []);
+    ofertasMes = arr2.filter(it=>{
+      const d = new Date(it.mes || it.fecha || '');
+      return !isNaN(d) && d.getFullYear()===anio && (d.getMonth()+1)===mes1a12;
+    });
+  }catch(e){ console.warn('[ofertas]', e.message); }
+
+  // 3) Índice para completar campos que falten en asignaciones
+  const keyOf = (r) => [
+    String(r.proveedorKey || '').toLowerCase(),
+    String(r.proveedorNombre || r.proveedor || '').toLowerCase(),
+    String(r.centroCodigo || '').toLowerCase()
+  ].join('|');
+
+  const idxOfertas = new Map();
+  for(const o of ofertasMes){
+    idxOfertas.set(keyOf(o), o);
+    idxOfertas.set([String(o.proveedorKey||'').toLowerCase(), String(o.proveedorNombre||'').toLowerCase(), ''].join('|'), o);
   }
 
-  // 2) Fallback con /planificacion/ofertas (contactos/visitas)
-  try{
-    const json = await apiGet('/planificacion/ofertas');
-    const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
-    const rows = items
-      .filter(it => {
-        const d = new Date(it.mes || it.fecha || it.mesKey || '');
-        return !isNaN(d.getTime()) && d.getFullYear() === anio && (d.getMonth()+1) === mes1a12;
-      })
-      .map(it => ({
-        proveedor: it.proveedorNombre || '(s/empresa)',
-        comuna:    it.comuna || it.centroComuna || '',
-        tons:      Number(it.tons) || 0,
-        cod:       it.centroCodigo || '',
-        area:      it.area || it.areaCodigo || '',
-        contactId: it.contactId || it.contactoId || it.proveedorKey || ''
-      }))
-      .filter(r => r.tons > 0)
-      .sort((a,b)=> b.tons - a.tons);
+  const base = asignaciones.length ? asignaciones : ofertasMes;
 
-    if (rows.length) return rows;
-  }catch(e){
-    console.warn('[ofertas detalle]', e.message);
-  }
+  const out = base.map(a=>{
+    const k = keyOf(a);
+    const cand = idxOfertas.get(k) ||
+                 idxOfertas.get([String(a.proveedorKey||'').toLowerCase(), String(a.proveedorNombre||a.proveedor||'').toLowerCase(), ''].join('|'));
 
-  return [];
+    const proveedor = a.proveedorNombre || a.proveedor || cand?.proveedorNombre || '(s/empresa)';
+    const comuna    = a.comuna || a.centroComuna || cand?.comuna || cand?.centroComuna || '';
+    const cod       = a.centroCodigo || cand?.centroCodigo || '';
+    const area      = a.areaCodigo || a.area || cand?.areaCodigo || cand?.area || '';
+    const tons      = Number(a.tons ?? cand?.tons ?? 0) || 0;
+
+    return { proveedor, comuna, tons, cod, area };
+  });
+
+  return out.sort((x,y)=> y.tons - x.tons);
 }
 
-async function fetchProveedoresDisponiblesDesde(anio, mes){
-  return fetchProveedoresMes(anio, mes);
-}
 
 // =============== (Opcionales aún) Guardados de otros flujos ===============
 async function putDisponibilidad(payload){ console.log('[PUT disponibilidad] (no-op)', payload); alert('Disponibilidad guardada (demo)'); }
@@ -772,3 +773,4 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+
