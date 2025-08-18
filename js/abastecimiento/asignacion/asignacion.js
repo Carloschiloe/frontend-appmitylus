@@ -333,14 +333,15 @@ function paintCards(anio, data){
 function paintChart(data){
   const ctx = document.getElementById('chartMensual');
   chart?.destroy();
+
   chart = new Chart(ctx, {
     type:'bar',
     data:{
       labels: MES_LABELS,
       datasets:[
-        {label:'Requerido (t)', data:data.requerido, stack:'s', borderWidth:1},
-        {label:'Asignado (t)',  data:data.asignado,  stack:'s', borderWidth:1},
-        {label:'Procesado (t)', data:data.procesado, stack:'s', borderWidth:1}
+        { label:'Requerido (t)', data:data.requerido, borderWidth:1, categoryPercentage:0.7, barPercentage:0.9 },
+        { label:'Asignado (t)',  data:data.asignado,  borderWidth:1, categoryPercentage:0.7, barPercentage:0.9 },
+        { label:'Procesado (t)', data:data.procesado, borderWidth:1, categoryPercentage:0.7, barPercentage:0.9 }
       ]
     },
     options:{
@@ -353,11 +354,15 @@ function paintChart(data){
         const card = elCards.querySelector(`.card[data-m="${mes}"]`);
         if(card) openCardMenu(card, mes, year);
       },
-      scales:{ x:{stacked:true}, y:{stacked:true, beginAtZero:true, title:{display:true,text:'Toneladas'}}},
-      plugins:{ legend:{position:'bottom'}, tooltip:{mode:'index',intersect:false}}
+      scales:{
+        x:{ stacked:false },
+        y:{ stacked:false, beginAtZero:true, title:{display:true, text:'Toneladas'} }
+      },
+      plugins:{ legend:{position:'bottom'}, tooltip:{mode:'index', intersect:false} }
     }
   });
 }
+
 
 // =============== DRAWER (proveedores del mes) ===============
 async function showDrawer(mes, anio){
@@ -773,4 +778,5 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+
 
