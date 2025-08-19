@@ -22,19 +22,19 @@ const norm = (s = '') =>
 function buildProvidersIndex() {
   const out = new Map();
 
-  // desde centros (cacheados por cargarCentros())
-  (state.centros || []).forEach((c) => {
-    const name = (c.proveedorNombre || c.proveedor || '').trim();
+  // ✅ desde CENTROS (catálogo completo)
+  (state.listaCentros || []).forEach((c) => {
+    const name = (c.proveedor || c.name || '').trim();  // <- antes usaba proveedorNombre (no existe)
     if (!name) return;
-    const key = (c.proveedorKey || slug(name));
+    const key = (c.proveedorKey && c.proveedorKey.length) ? c.proveedorKey : slug(name);
     if (!out.has(key)) out.set(key, { key, name });
   });
 
-  // desde contactos (por si no hay centros)
+  // ✅ desde CONTACTOS (complementa por si hay alguno que no está en centros)
   (state.contactosGuardados || []).forEach((ct) => {
     const name = (ct.proveedorNombre || '').trim();
     if (!name) return;
-    const key = (ct.proveedorKey || slug(name));
+    const key = (ct.proveedorKey && ct.proveedorKey.length) ? ct.proveedorKey : slug(name);
     if (!out.has(key)) out.set(key, { key, name });
   });
 
