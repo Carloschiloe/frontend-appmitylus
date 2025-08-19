@@ -251,10 +251,23 @@
           <div class="input-field col s4">
             <input type="date" id="visita_fecha" required><label for="visita_fecha" class="active">Fecha</label>
           </div>
-          <div class="input-field col s4">
-            <label for="visita_centroId" class="active">Centro</label>
-            <select id="visita_centroId" class="browser-default"><option value="">Centro visitado (opcional)</option></select>
-          </div>
+          <div class="col s4">
+  <!-- 🔎 Autocomplete de Titular/Centro -->
+  <div class="input-field" style="margin-bottom:6px">
+    <input id="buscaCentro" type="text" class="autocomplete"
+           placeholder="Buscar titular o código (2+ letras)" autocomplete="off">
+    <label for="buscaCentro" class="active">Buscar Titular/Centro</label>
+  </div>
+
+  <!-- Select que se completa al elegir en el autocomplete -->
+  <div class="input-field" style="margin-top:2px">
+    <label for="visita_centroId" class="active">Centro</label>
+    <select id="visita_centroId" class="browser-default">
+      <option value="">Centro visitado (opcional)</option>
+    </select>
+  </div>
+</div>
+
           <div class="input-field col s4">
             <input id="visita_contacto" type="text" placeholder="Persona contactada"><label for="visita_contacto">Contacto</label>
           </div>
@@ -319,6 +332,7 @@
 
 </body>
 </html>
+
 
 
 
