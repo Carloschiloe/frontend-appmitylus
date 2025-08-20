@@ -3,14 +3,27 @@ import {
   apiGetVisitas,
   apiGetVisitasByContacto,
   apiCreateVisita,
-  apiDeleteVisita,
+  apiDeleteVisita,          // ✅ eliminar visitas
 } from '/js/core/api.js';
 import { state, $, setVal, slug } from './state.js';
 
 // ✅ usa el normalizer de la carpeta VISITAS (no el de contactos)
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
-// helper plural para normalizar arreglos
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
+
+/* ---------------- estilos: achicar Observaciones + ellipsis ---------------- */
+(function injectVisitasStyles(){
+  if (document.getElementById('visitas-inline-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'visitas-inline-styles';
+  s.textContent = `
+    #tablaVisitas td .ellipsisObs{
+      display:inline-block; max-width:46ch; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      vertical-align:middle;
+    }
+  `;
+  document.head.appendChild(s);
+})();
 
 /* ---------------- utils locales ---------------- */
 const esc = (s = '') =>
@@ -59,6 +72,9 @@ export async function initVisitasTab(forceReload = false) {
   // Si ya existe la tabla y piden refrescar, sólo recargamos datos
   if (dtV && forceReload) {
     await renderTablaVisitas();
+    // aseguramos renombrar encabezado
+    const ths = tabla?.querySelectorAll('thead th');
+    if (ths?.[3]) ths[3].textContent = 'Muestra';
     return;
   }
 
@@ -77,20 +93,24 @@ export async function initVisitasTab(forceReload = false) {
       order: [[0, 'desc']],
       paging: true,
       pageLength: 10,
-      lengthMenu: [
-        [10, 25, 50, -1],
-        [10, 25, 50, 'Todos'],
-      ],
+      lengthMenu: [[10, 25, 50, -1],[10, 25, 50, 'Todos']],
       autoWidth: false,
-      language: {
-        url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json',
-      },
+      language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: [
-        { targets: 0, width: '110px' }, // Fecha
-        { targets: 1, width: '260px' }, // Proveedor (angosta + tooltip)
-        { targets: -1, orderable: false, searchable: false },
-      ],
+        { targets: 0, width: '110px' },  // Fecha
+        { targets: 1, width: '280px' },  // Proveedor
+        { targets: 2, width: '100px' },  // Centro
+        { targets: 3, width: '110px' },  // Muestra (antes Actividad)
+        { targets: 4, width: '170px' },  // Próximo paso
+        { targets: 5, width: '80px', className: 'dt-body-right' }, // Tons
+        { targets: 6, width: '440px' },  // Observaciones (más angosta)
+        { targets: -1, orderable: false, searchable: false, width: '120px' } // Acciones
+      ]
     });
+
+    // Cambiar encabezado "Actividad" → "Muestra"
+    const ths = tabla?.querySelectorAll('thead th');
+    if (ths?.[3]) ths[3].textContent = 'Muestra';
 
     // acciones en filas (delegadas)
     jq('#tablaVisitas tbody')
@@ -107,6 +127,20 @@ export async function initVisitasTab(forceReload = false) {
           (x) => String(x._id) === String(contactoId),
         );
         if (c) abrirModalVisita(c);
+      })
+      // ✅ eliminar visita
+      .on('click', 'a.v-eliminar', async function(){
+        const id = this.dataset.id;
+        if (!id) return;
+        if (!confirm('¿Eliminar esta visita?')) return;
+        try {
+          await apiDeleteVisita(id);
+          M.toast?.({ html: 'Visita eliminada' });
+          await renderTablaVisitas(); // refresca en tiempo real
+        } catch (e) {
+          console.error(e);
+          M.toast?.({ html: 'No se pudo eliminar', classes: 'red' });
+        }
       });
   }
 
@@ -149,19 +183,18 @@ export async function renderTablaVisitas() {
       const tons = (v.tonsComprometidas ?? '') + '';
       const obs = v.observaciones || '';
       const obsHTML = obs
-        ? `<span title="${esc(obs)}">${esc(trunc(obs, 56))}</span>`
+        ? `<span class="ellipsisObs" title="${esc(obs)}">${esc(trunc(obs, 56))}</span>`
         : '—';
 
       const acciones = `
-        <a href="#!" class="v-ver"   title="Ver detalle del proveedor" data-contacto-id="${esc(
-          v.contactoId || '',
-        )}">
+        <a href="#!" class="v-ver"   title="Ver detalle del proveedor" data-contacto-id="${esc(v.contactoId || '')}">
           <i class="material-icons">visibility</i>
         </a>
-        <a href="#!" class="v-nueva" title="Registrar nueva visita" data-contacto-id="${esc(
-          v.contactoId || '',
-        )}">
+        <a href="#!" class="v-nueva" title="Registrar nueva visita" data-contacto-id="${esc(v.contactoId || '')}">
           <i class="material-icons">event_available</i>
+        </a>
+        <a href="#!" class="v-eliminar" title="Eliminar visita" data-id="${esc(v._id || '')}">
+          <i class="material-icons">delete</i>
         </a>
       `;
 
@@ -238,24 +271,11 @@ export async function abrirDetalleContacto(c) {
   if (!body) return;
 
   const f = new Date(c.createdAt || c.fecha || Date.now());
-  const fechaFmt = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(
-    2,
-    '0',
-  )}-${String(f.getDate()).padStart(2, '0')} ${String(f.getHours()).padStart(
-    2,
-    '0',
-  )}:${String(f.getMinutes()).padStart(2, '0')}`;
+  const fechaFmt = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')} ${String(f.getHours()).padStart(2, '0')}:${String(f.getMinutes()).padStart(2, '0')}`;
 
   const comunas = comunasDelProveedor(c.proveedorKey || slug(c.proveedorNombre || ''));
   const chips = comunas.length
-    ? comunas
-        .map(
-          (x) =>
-            `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${esc(
-              x,
-            )}</span>`,
-        )
-        .join('')
+    ? comunas.map((x) => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${esc(x)}</span>`).join('')
     : '<span class="text-soft">Sin centros asociados</span>';
 
   const visitas = normalizeVisitas(await apiGetVisitasByContacto(c._id));
@@ -271,22 +291,13 @@ export async function abrirDetalleContacto(c) {
       <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
       <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
       <div><strong>Disponibilidad:</strong> ${esc(c.tieneMMPP || '-')}</div>
-      <div><strong>Fecha Disp.:</strong> ${
-        c.fechaDisponibilidad ? ('' + c.fechaDisponibilidad).slice(0, 10) : '-'
-      }</div>
+      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? ('' + c.fechaDisponibilidad).slice(0, 10) : '-'}</div>
       <div><strong>Disposición:</strong> ${esc(c.dispuestoVender || '-')}</div>
       <div><strong>Tons aprox.:</strong> ${(c.tonsDisponiblesAprox ?? '') + ''}</div>
       <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
-      <div style="grid-column:1/-1;"><strong>Notas:</strong> ${
-        c.notas ? esc(c.notas) : '<span class="text-soft">Sin notas</span>'
-      }</div>
+      <div style="grid-column:1/-1;"><strong>Notas:</strong> ${c.notas ? esc(c.notas) : '<span class="text-soft">Sin notas</span>'}</div>
       <div style="grid-column:1/-1;"><strong>Contacto:</strong>
-        ${
-          [c.contactoNombre, c.contactoTelefono, c.contactoEmail]
-            .filter(Boolean)
-            .map(esc)
-            .join(' • ') || '-'
-        }</div>
+        ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).map(esc).join(' • ') || '-'}</div>
     </div>
 
     <div class="mb-4" style="margin-top:1rem;">
@@ -382,4 +393,3 @@ export function setupFormularioVisita() {
     }
   });
 }
-
