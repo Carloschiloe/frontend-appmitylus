@@ -3,25 +3,30 @@ import { state, $ } from './state.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
 
-/* ------------ estilos específicos (layout fluido + ellipsis) ------------ */
+/* ------------ estilos específicos (una sola línea + ellipsis) ------------ */
 (function injectStyles() {
   const css = `
-  /* Layout fluido: sin forzar ancho fijo */
-  #tablaPersonas{ table-layout:auto; width:100%; }
+  #tablaPersonas{ table-layout:auto; width:100% !important; }
+  #tablaPersonas thead th{ position:sticky; top:0; z-index:2; }
+  /* fuerza una línea + ellipsis en celdas */
+  #tablaPersonas th, #tablaPersonas td{ white-space:nowrap; }
+  #tablaPersonas td{ overflow:hidden; text-overflow:ellipsis; }
 
-  /* El color del thead lo pone abastecimiento.css (teal), aquí solo sticky */
-  #tablaPersonas thead th { position: sticky; top: 0; z-index: 2; }
-
-  /* Ellipsis solo para las celdas largas, no afecta al resto */
-  #tablaPersonas td .ellipsisCell{
-    display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle;
+  /* contenedor inline para Empresa/Notas con íconos al lado */
+  #tablaPersonas .cell-inline{
+    display:flex; align-items:center; gap:6px; min-width:0;
   }
-  #tablaPersonas td .ellipsisEmpresa { max-width: 26ch; }
-  #tablaPersonas td .ellipsisNotas   { max-width: 40ch; }
+  #tablaPersonas .cell-inline .ellipsisCell{
+    flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
 
-  #tablaPersonas a.icon-action { display:inline-flex; align-items:center; gap:2px; margin-left:.35rem; }
-  #tablaPersonas a.icon-action i { font-size:18px; line-height:18px; }
-  #tablaPersonas .chip.small { height:22px; line-height:22px; font-size:12px; }
+  /* tamaños de ellipsis razonables */
+  #tablaPersonas td .ellipsisEmpresa { max-width: 28ch; }
+  #tablaPersonas td .ellipsisNotas   { max-width: 42ch; }
+
+  #tablaPersonas a.icon-action{ display:inline-flex; align-items:center; gap:2px; margin-left:.35rem; }
+  #tablaPersonas a.icon-action i{ font-size:18px; line-height:18px; }
+  #tablaPersonas .chip.small{ height:22px; line-height:22px; font-size:12px; }
   `;
   if (!document.getElementById('personas-inline-styles')) {
     const s = document.createElement('style');
@@ -58,8 +63,8 @@ export function initPersonasTab() {
 
   // chips
   document.getElementById('fltTodosP')?.addEventListener('click', () => { filtroActualP = 'todos'; renderTablaPersonas(); actualizarKPIs(); });
-  document.getElementById('fltSinP')  ?.addEventListener('click', () => { filtroActualP = 'sin';   renderTablaPersonas(); actualizarKPIs(); });
-  document.getElementById('fltConP')  ?.addEventListener('click', () => { filtroActualP = 'con';   renderTablaPersonas(); actualizarKPIs(); });
+  document.getElementById('fltSinP')?.addEventListener('click',   () => { filtroActualP = 'sin';   renderTablaPersonas(); actualizarKPIs(); });
+  document.getElementById('fltConP')?.addEventListener('click',   () => { filtroActualP = 'con';   renderTablaPersonas(); actualizarKPIs(); });
 
   document.addEventListener('reload-tabla-contactos', () => { renderTablaPersonas(); actualizarKPIs(); });
 
@@ -75,17 +80,16 @@ export function initPersonasTab() {
       order: [[0, 'desc']],
       autoWidth: false,
       responsive: true,
-      scrollX: false,                           // 👈 sin scroll horizontal
+      scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-
-      // 🔧 anchos en PORCENTAJE para repartir sin overflow (≈100%)
+      // anchos en % aprox. para repartir sin overflow
       columnDefs: [
-        { targets: 0, width: '10%' },  // Fecha
+        { targets: 0, width: '9%'  },  // Fecha
         { targets: 1, width: '18%' },  // Contacto
-        { targets: 2, width: '16%' },  // Teléfonos
-        { targets: 3, width: '18%' },  // Email
+        { targets: 2, width: '16%' },  // Teléfono(s)
+        { targets: 3, width: '17%' },  // Email
         { targets: 4, width: '20%' },  // Empresa
-        { targets: 5, width: '12%' },  // Notas
+        { targets: 5, width: '14%' },  // Notas
         { targets: 6, width: '6%', orderable: false, searchable: false } // Acciones
       ]
     });
@@ -153,21 +157,26 @@ export function renderTablaPersonas() {
       const tels = Array.isArray(c.contactoTelefonos) ? c.contactoTelefonos.join(' / ') : (c.contactoTelefono || '');
       const mails = Array.isArray(c.contactoEmails) ? c.contactoEmails.join(' / ') : (c.contactoEmail || '');
 
+      // Empresa en una sola línea con ícono al lado
       let empresaCell = '';
       if (hasEmpresa(c)) {
         const name = esc(c.proveedorNombre || '');
         empresaCell = `
-          <span class="ellipsisCell ellipsisEmpresa" title="${name}">${name}</span>
-          <a href="#!" class="icon-action asociar-btn" title="Cambiar empresa" data-id="${c._id}">
-            <i class="material-icons">sync</i>
-          </a>
+          <span class="cell-inline">
+            <span class="ellipsisCell ellipsisEmpresa" title="${name}">${name}</span>
+            <a href="#!" class="icon-action asociar-btn" title="Cambiar empresa" data-id="${c._id}">
+              <i class="material-icons">sync</i>
+            </a>
+          </span>
         `;
       } else {
         empresaCell = `
-          <span class="chip red lighten-5 red-text text-darken-2 small">Sin empresa</span>
-          <a href="#!" class="icon-action asociar-btn" title="Asociar a empresa" data-id="${c._id}">
-            <i class="material-icons">person_add</i>
-          </a>
+          <span class="cell-inline">
+            <span class="chip red lighten-5 red-text text-darken-2 small">Sin empresa</span>
+            <a href="#!" class="icon-action asociar-btn" title="Asociar a empresa" data-id="${c._id}">
+              <i class="material-icons">person_add</i>
+            </a>
+          </span>
         `;
       }
 
@@ -185,7 +194,7 @@ export function renderTablaPersonas() {
         esc(String(tels)),
         esc(String(mails)),
         empresaCell,
-        `<span class="ellipsisCell ellipsisNotas" title="${notas}">${notas}</span>`,
+        `<span class="cell-inline"><span class="ellipsisCell ellipsisNotas" title="${notas}">${notas}</span></span>`,
         acciones
       ];
     });
@@ -193,8 +202,6 @@ export function renderTablaPersonas() {
   if (dtP && jq) {
     dtP.clear();
     dtP.rows.add(filas).draw(false);
-    // Ajuste por si la tabla estaba oculta
-    setTimeout(() => { try { dtP.columns.adjust().draw(false); } catch {} }, 0);
     return;
   }
 
