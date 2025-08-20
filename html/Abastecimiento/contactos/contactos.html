@@ -14,56 +14,6 @@
   <!-- DataTables + Buttons -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
-
-  <style>
-    /* ====== Layout uniforme + espacio para futura sidebar ====== */
-    :root{
-      --page-gutter: 24px;
-      --sidebar-gap: 120px;   /* ajusta aquí (p.ej. 96px, 80px, 64px) */
-      --page-max: 1280px;
-    }
-    .page-wrap{
-      max-width: var(--page-max);
-      margin: 1rem auto 2rem;
-      padding-left: calc(var(--page-gutter) + var(--sidebar-gap));
-      padding-right: var(--page-gutter);
-    }
-    @media (max-width: 992px){
-      .page-wrap{ padding-left: var(--page-gutter); }
-    }
-
-    .page-toolbar{
-      display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
-      margin: 12px 0 10px;
-    }
-
-    /* DataTables: ocupar 100% y permitir scroll horizontal si es necesario */
-    #tablaContactos_wrapper,
-    #tablaVisitas_wrapper,
-    #tablaPersonas_wrapper{
-      width: 100% !important;
-      overflow-x: auto;              /* <-- evita “corte” a la derecha */
-      -webkit-overflow-scrolling: touch;
-    }
-    #tablaContactos, #tablaVisitas, #tablaPersonas{
-      width: 100% !important;
-    }
-
-    /* Buscador de DT con ancho cómodo */
-    .dataTables_wrapper .dataTables_filter input{
-      width: 320px; max-width: 100%;
-    }
-
-    /* Modales */
-    #modalContacto, #modalVisita, #modalAsociar { overflow: visible !important; }
-    #modalContacto .modal-content, #modalVisita .modal-content, #modalAsociar .modal-content { overflow: visible !important; }
-    .modal .browser-default{width:100%;background:transparent;border:none;border-bottom:1px solid #9e9e9e;padding:8px 0 6px;font-size:16px}
-    .modal .browser-default:focus{outline:none;border-bottom:2px solid #26a69a}
-    .modal .input-field label.active{transform:none !important;font-size:.9rem;color:#9e9e9e;margin-bottom:2px;display:block}
-
-    .kpi-num{font-size:1.4rem;font-weight:600}
-    .chip-group .chip{margin-right:6px}
-  </style>
 </head>
 <body>
   <nav class="teal">
@@ -133,9 +83,8 @@
       </table>
     </section>
 
-    <!-- AGENDA DE CONTACTOS (personas) -->
+    <!-- AGENDA DE CONTACTOS -->
     <section id="tab-personas" class="col s12" style="margin-top:12px">
-      <!-- KPIs -->
       <div class="row" id="kpisPersonas" style="margin-top:8px">
         <div class="col s3 center"><h6>Total</h6><div id="kpiPTotal" class="kpi-num">0</div></div>
         <div class="col s3 center"><h6>Sin empresa</h6><div id="kpiPSin" class="kpi-num">0</div></div>
@@ -143,21 +92,18 @@
         <div class="col s3 center"><h6>Visitas (30d) sin empresa</h6><div id="kpiPVisitasSin" class="kpi-num">0</div></div>
       </div>
 
-      <!-- Filtros -->
       <div class="chip-group" id="chipsFiltroPersonas" style="margin-bottom:10px">
         <a id="fltTodosP" class="chip teal white-text">Todos</a>
         <a id="fltSinP"   class="chip">Sin empresa</a>
         <a id="fltConP"   class="chip">Con empresa</a>
       </div>
 
-      <!-- Botón Agregar persona -->
       <div class="page-toolbar" style="justify-content: flex-end;">
         <a id="btnOpenPersonaModal" class="btn teal waves-effect">
           <i class="material-icons left">person_add</i>Agregar persona
         </a>
       </div>
 
-      <!-- Tabla Personas -->
       <table id="tablaPersonas" class="highlight display" style="margin-top:.5rem;">
         <thead>
           <tr>
@@ -175,27 +121,21 @@
     </section>
   </div>
 
-  <!-- MODAL: Registrar contacto -->
+  <!-- MODALES -->
   <div id="modalContacto" class="modal">
     <div class="modal-content">
       <h5>Registrar Contacto</h5>
-
-      <!-- Buscador de proveedor/empresa -->
       <div class="input-field" style="position:relative;">
         <input type="text" id="buscadorProveedor" list="datalistProveedores" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
         <label for="buscadorProveedor">Proveedor</label>
         <datalist id="datalistProveedores"></datalist>
       </div>
-
-      <!-- Centro -->
       <div class="input-field">
         <label for="selectCentro" class="active">Centro</label>
         <select id="selectCentro" class="browser-default modern-select" disabled>
           <option value="" disabled selected>Selecciona un centro (opcional)</option>
         </select>
       </div>
-
-      <!-- Hidden -->
       <input type="hidden" id="proveedorId">
       <input type="hidden" id="proveedorNombre">
       <input type="hidden" id="proveedorKey">
@@ -205,7 +145,6 @@
       <input type="hidden" id="centroComuna">
       <input type="hidden" id="centroHectareas">
 
-      <!-- Form empresa + persona -->
       <form id="formContacto" autocomplete="off">
         <div class="row">
           <div class="input-field col s4">
@@ -246,7 +185,6 @@
           </div>
         </div>
 
-        <!-- Persona de contacto (dentro del modal) -->
         <div class="row">
           <div class="input-field col s4">
             <input id="contactoNombre" type="text" placeholder="Nombre y apellido">
@@ -272,7 +210,6 @@
     </div>
   </div>
 
-  <!-- MODALES extra -->
   <div id="modalDetalleContacto" class="modal">
     <div class="modal-content"><h5>Detalle del contacto</h5><div id="detalleContactoBody"></div></div>
     <div class="modal-footer"><button class="modal-close btn teal">Cerrar</button></div>
@@ -326,7 +263,6 @@
     </div>
   </div>
 
-  <!-- Modal para asociar empresa (solo lo usa la pestaña PERSONAS) -->
   <div id="modalAsociar" class="modal">
     <div class="modal-content">
       <h5>Asociar a empresa</h5>
@@ -362,7 +298,6 @@
       const tabsEl = document.getElementById('tabs');
       M.Tabs.init(tabsEl, {
         onShow: () => {
-          // Recalcular anchos cuando aparece la pestaña
           setTimeout(() => {
             dtAdjust('#tablaContactos');
             dtAdjust('#tablaVisitas');
@@ -370,8 +305,6 @@
           }, 50);
         }
       });
-
-      // También cuando cambie el tamaño de la ventana
       window.addEventListener('resize', () => {
         dtAdjust('#tablaContactos');
         dtAdjust('#tablaVisitas');
@@ -380,7 +313,9 @@
     });
   </script>
 
-  <!-- ÚNICO orquestador -->
+  <!-- Orquestador -->
   <script type="module" src="/js/abastecimiento/contactos/index.js?v=5"></script>
 </body>
 </html>
+
+
