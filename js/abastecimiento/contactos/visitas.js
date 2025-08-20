@@ -8,43 +8,11 @@ import {
 } from '/js/core/api.js';
 import { state, $, setVal, slug } from './state.js';
 
-// ✅ normalizer correcto (carpeta VISITAS)
+// normalizer correcto (carpeta VISITAS)
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
-/* ------------ estilos locales (layout fluido + ellipsis) ------------ */
-(function injectStyles() {
-  const css = `
-  /* wrapper al 100% del contenedor */
-  #tab-visitas .dataTables_wrapper{ width:100% !important; max-width:none !important; }
-
-  /* Layout fluido y sin nowrap global */
-  #tablaVisitas{ table-layout:auto; width:100% !important; }
-  #tablaVisitas td, #tablaVisitas th{
-    white-space: normal;
-    word-break: break-word;
-    hyphens: auto;
-  }
-
-  /* Ellipsis solo en celdas largas (no afecta al resto) */
-  #tablaVisitas .ellipsisProv,
-  #tablaVisitas .ellipsisObs{
-    display:block;
-    white-space:nowrap;
-    max-width:100%;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    vertical-align:middle;
-  }`;
-  if (!document.getElementById('visitas-inline-styles')) {
-    const s = document.createElement('style');
-    s.id = 'visitas-inline-styles';
-    s.textContent = css;
-    document.head.appendChild(s);
-  }
-})();
-
-/* ---------------- utils ---------------- */
+// ---------------- utils ----------------
 const esc = (s = '') =>
   String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
            .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
@@ -71,10 +39,10 @@ function codigoDeVisita(v) {
   return v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '') || '';
 }
 
-/* ---------------- DataTable ---------------- */
+// ---------------- DataTable ----------------
 let dtV = null;
 
-/* pequeño helper: asegurar que datatables recalcule columnas */
+// asegurar que datatables recalcule columnas
 function adjustNow() {
   const jq = window.jQuery || window.$;
   if (jq && dtV) {
@@ -106,21 +74,12 @@ export async function initVisitasTab(forceReload = false) {
       paging: true,
       pageLength: 10,
       lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
-      autoWidth: false,                 // 👈 fluido; que el browser gestione el ancho
-      responsive: true,                 // 👈 permite compactar
-      scrollX: false,                   // 👈 sin scroll horizontal
+      autoWidth: false,                 // anchos los define CSS
+      responsive: true,                 // si no quieres colapsar en móvil, poner false
+      scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-
-      // Anchos en % (~100%) para repartir sin overflow
       columnDefs: [
-        { targets: 0, width: '9%'  },   // Fecha
-        { targets: 1, width: '22%' },   // Proveedor
-        { targets: 2, width: '8%'  },   // Centro
-        { targets: 3, width: '8%'  },   // Muestra
-        { targets: 4, width: '18%' },   // Próximo paso
-        { targets: 5, width: '7%',  className: 'dt-body-right' }, // Tons
-        { targets: 6, width: '22%' },   // Observaciones
-        { targets: 7, width: '6%',  orderable:false, searchable:false } // Acciones
+        { targets: -1, orderable:false, searchable:false } // solo Acciones
       ],
       initComplete: () => adjustNow(),
       drawCallback:   () => adjustNow(),
@@ -169,7 +128,7 @@ export async function initVisitasTab(forceReload = false) {
   window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); adjustNow(); });
 }
 
-/* ---------------- render ---------------- */
+// ---------------- render ----------------
 export async function renderTablaVisitas() {
   const jq = window.jQuery || window.$;
 
@@ -177,7 +136,7 @@ export async function renderTablaVisitas() {
   try {
     const raw = await apiGetVisitas();
     visitas = normalizeVisitas(Array.isArray(raw) ? raw : raw?.items || []);
-    state.visitasGuardadas = visitas.slice(); // útil para editar
+    state.visitasGuardadas = visitas.slice();
   } catch (e) {
     console.error('[visitas] apiGetVisitas error:', e?.message || e);
     visitas = [];
@@ -190,7 +149,7 @@ export async function renderTablaVisitas() {
       const fecha = fmtISO(v.fecha);
       const proveedor = proveedorDeVisita(v);
       const proveedorHTML = proveedor
-        ? `<span class="ellipsisProv" title="${esc(proveedor)}">${esc(trunc(proveedor, 48))}</span>`
+        ? `<span class="ellipsisCell ellipsisProv" title="${esc(proveedor)}">${esc(trunc(proveedor, 48))}</span>`
         : '<span class="text-soft">—</span>';
 
       const centro = codigoDeVisita(v);
@@ -198,7 +157,7 @@ export async function renderTablaVisitas() {
       const proximoPaso = v.estado || '';
       const tons = (v.tonsComprometidas ?? '') + '';
       const obs = v.observaciones || '';
-      const obsHTML = obs ? `<span class="ellipsisObs" title="${esc(obs)}">${esc(trunc(obs, 72))}</span>` : '—';
+      const obsHTML = obs ? `<span class="ellipsisCell ellipsisObs" title="${esc(obs)}">${esc(trunc(obs, 72))}</span>` : '—';
 
       const acciones = `
         <a href="#!" class="v-ver"      title="Ver proveedor"  data-contacto-id="${esc(v.contactoId||'')}"><i class="material-icons">visibility</i></a>
@@ -240,7 +199,7 @@ export async function renderTablaVisitas() {
   });
 }
 
-/* ---------------- Detalle + Modales ---------------- */
+// ---------------- Detalle + Modales ----------------
 function comunasDelProveedor(proveedorKey) {
   const key = proveedorKey?.length ? proveedorKey : null;
   const comunas = new Set();
@@ -314,7 +273,7 @@ export async function abrirDetalleContacto(c) {
   (M.Modal.getInstance(document.getElementById('modalDetalleContacto')) || M.Modal.init(document.getElementById('modalDetalleContacto'))).open();
 }
 
-/* ------------ abrir Modal (nuevo) ------------ */
+// ------------ abrir Modal (nuevo) ------------
 export function abrirModalVisita(contacto) {
   const form = $('#formVisita');
   if (form) form.dataset.editId = ''; // nuevo
@@ -328,15 +287,14 @@ export function abrirModalVisita(contacto) {
     );
     let options = `<option value="">Centro visitado (opcional)</option>`;
     options += centros.map((c) => `
-      <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}</option>`
-    ).join('');
+      <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}</option>`).join('');
     selectVisita.innerHTML = options;
   }
 
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
-/* ------------ abrir Modal (editar) ------------ */
+// ------------ abrir Modal (editar) ------------
 function abrirEditarVisita(v) {
   const form = $('#formVisita'); if (!form) return;
   form.dataset.editId = String(v._id || '');
@@ -360,8 +318,7 @@ function abrirEditarVisita(v) {
       );
       let options = `<option value="">Centro visitado (opcional)</option>`;
       options += centros.map((c) => `
-        <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}</option>`
-      ).join('');
+        <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}</option>`).join('');
       selectVisita.innerHTML = options;
       selectVisita.value = v.centroId || '';
     }
@@ -371,7 +328,7 @@ function abrirEditarVisita(v) {
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
-/* ------------ submit (crear / editar) ------------ */
+// ------------ submit (crear / editar) ------------
 export function setupFormularioVisita() {
   const form = $('#formVisita');
   if (!form) return;
