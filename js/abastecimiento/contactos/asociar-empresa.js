@@ -24,7 +24,7 @@ function buildProvidersIndex() {
 
   // ✅ desde CENTROS (catálogo completo)
   (state.listaCentros || []).forEach((c) => {
-    const name = (c.proveedor || c.name || '').trim();  // <- antes usaba proveedorNombre (no existe)
+    const name = (c.proveedor || c.name || '').trim();  // <- usar proveedor o name
     if (!name) return;
     const key = (c.proveedorKey && c.proveedorKey.length) ? c.proveedorKey : slug(name);
     if (!out.has(key)) out.set(key, { key, name });
@@ -148,6 +148,11 @@ export function initAsociacionContactos() {
 
   // Si se recargan contactos (p.ej., guardaste otro), reconstruye índice
   document.addEventListener('reload-tabla-contactos', () => {
+    providersCache = buildProvidersIndex();
+  });
+
+  // 🔔 NUEVO: cuando se recargan/actualizan los CENTROS
+  document.addEventListener('centros:loaded', () => {
     providersCache = buildProvidersIndex();
   });
 }
