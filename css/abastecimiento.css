@@ -217,3 +217,27 @@
   .kpi-grid{ grid-template-columns:repeat(4,1fr)!important }
   .chart-card{ box-shadow:none!important; border:1px solid #eee }
 }
+/* ===== Espacio para sidebar izquierda ===== */
+#tablaVisitas_wrapper,
+#tablaContactos_wrapper,
+#tablaProgramaSemanal_wrapper {
+  margin-left: 120px; /* espacio futuro sidebar */
+  width: calc(100% - 120px); /* mantiene ancho correcto */
+}
+
+/* ===== Columnas con ancho mínimo ===== */
+#tablaVisitas th, #tablaVisitas td,
+#tablaContactos th, #tablaContactos td {
+  white-space: nowrap;      /* evita saltos de línea */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ajuste específico a la columna Fecha */
+#tablaVisitas th:nth-child(1),
+#tablaVisitas td:nth-child(1),
+#tablaContactos th:nth-child(1),
+#tablaContactos td:nth-child(1) {
+  min-width: 110px; /* suficiente para YYYY-MM-DD */
+}
+
