@@ -242,5 +242,6 @@
 .ellipsisProv { max-width: 26ch; }   /* controla cuánto puede crecer Proveedor */
 .ellipsisObs  { display:block; width:100%; } /* se ajusta al ancho de la celda */
 
-/* Garantiza que los enlaces de la columna Acciones reciban el click */
+/* Garantiza que los enlaces de Acciones reciban click y no haya overlay raro */
 #tablaVisitas td:last-child a { pointer-events: auto; cursor: pointer; }
+#tablaVisitas td:last-child i.material-icons { pointer-events: none; } /* el click sube al <a> */
