@@ -23,6 +23,23 @@ import {
 
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
+/* ---------------- helpers robustos ---------------- */
+// Convierte cualquier variante (ObjectId(".."), {$oid:..}, objeto {_id}, etc.) a string 24-hex
+function toId(val) {
+  if (!val) return '';
+  if (typeof val === 'string') {
+    const m = val.match(/ObjectId\(["']?([0-9a-fA-F]{24})["']?\)/);
+    if (m && m[1]) return m[1];
+    return val;
+  }
+  if (typeof val === 'object') {
+    if (val.$oid) return String(val.$oid);
+    if (val._id)  return toId(val._id);
+    if (val.id)   return String(val.id);
+  }
+  return String(val);
+}
+
 // ---------------- utils ----------------
 const esc = (s = '') =>
   String(s)
@@ -31,7 +48,7 @@ const esc = (s = '') =>
 
 const fmtISO = (d) => {
   if (!d) return '';
-  const x = new Date(d);
+  const x = d instanceof Date ? d : new Date(d);
   if (Number.isNaN(x.getTime())) return '';
   const y = x.getFullYear();
   const m = String(x.getMonth() + 1).padStart(2, '0');
@@ -43,13 +60,13 @@ const trunc = (s = '', max = 42) =>
   (String(s).length > max ? String(s).slice(0, max - 1) + '…' : String(s));
 
 function proveedorDeVisita(v) {
-  const id = v.contactoId ? String(v.contactoId) : null;
+  const id = toId(v.contactoId);
   if (!id) return '';
-  const c = (state.contactosGuardados || []).find((x) => String(x._id) === id);
-  return c?.proveedorNombre || '';
+  const c = (state.contactosGuardados || []).find((x) => toId(x._id) === id);
+  return c?.proveedorNombre || v.contacto || '';
 }
 function codigoDeVisita(v) {
-  return v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '') || '';
+  return v.centroCodigo || (v.centroId ? centroCodigoById(toId(v.centroId), state.listaCentros || []) : '') || '';
 }
 
 // ---------------- DataTable ----------------
@@ -123,10 +140,12 @@ export async function renderTablaVisitas() {
   try {
     const raw = await apiGetVisitas();
     visitas = normalizeVisitas(Array.isArray(raw) ? raw : raw?.items || []);
+    // guardamos normalizadas (ids string)
     state.visitasGuardadas = visitas.slice();
   } catch (e) {
     console.error('[visitas] apiGetVisitas error:', e?.message || e);
     visitas = [];
+    state.visitasGuardadas = [];
   }
 
   const filas = visitas
@@ -149,10 +168,10 @@ export async function renderTablaVisitas() {
         : '—';
 
       const acciones = `
-        <a href="javascript:void(0)" class="v-ver"      title="Ver proveedor"  data-contacto-id="${esc(v.contactoId||'')}"><i class="material-icons">visibility</i></a>
-        <a href="javascript:void(0)" class="v-nueva"    title="Nueva visita"    data-contacto-id="${esc(v.contactoId||'')}"><i class="material-icons">event_available</i></a>
-        <a href="javascript:void(0)" class="v-editar"   title="Editar visita"   data-id="${esc(v._id||'')}"><i class="material-icons">edit</i></a>
-        <a href="javascript:void(0)" class="v-eliminar" title="Eliminar visita" data-id="${esc(v._id||'')}"><i class="material-icons">delete</i></a>
+        <a href="javascript:void(0)" class="v-ver"      title="Ver proveedor"  data-contacto-id="${esc(toId(v.contactoId)||'')}"><i class="material-icons">visibility</i></a>
+        <a href="javascript:void(0)" class="v-nueva"    title="Nueva visita"    data-contacto-id="${esc(toId(v.contactoId)||'')}"><i class="material-icons">event_available</i></a>
+        <a href="javascript:void(0)" class="v-editar"   title="Editar visita"   data-id="${esc(toId(v._id)||'')}"><i class="material-icons">edit</i></a>
+        <a href="javascript:void(0)" class="v-eliminar" title="Eliminar visita" data-id="${esc(toId(v._id)||'')}"><i class="material-icons">delete</i></a>
       `;
 
       return [
@@ -192,7 +211,7 @@ export async function renderTablaVisitas() {
 function comunasDelProveedor(proveedorKey) {
   const key = proveedorKey?.length ? proveedorKey : null;
   const comunas = new Set();
-  for (const c of state.listaCentros) {
+  for (const c of (state.listaCentros || [])) {
     const k = c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '');
     if (!key || k === key) {
       const comuna = (c.comuna || '').trim();
@@ -205,10 +224,10 @@ function comunasDelProveedor(proveedorKey) {
 function miniTimelineHTML(visitas = []) {
   if (!visitas.length) return '<div class="text-soft">Sin visitas registradas</div>';
   const filas = visitas.slice(0, 3).map((v) => {
-    const code = v.centroCodigo || centroCodigoById(v.centroId) || '-';
+    const code = v.centroCodigo || centroCodigoById(v.centroId, state.listaCentros || []) || '-';
     return `
       <div class="row" style="margin-bottom:.35rem">
-        <div class="col s4"><strong>${(v.fecha || '').slice(0, 10)}</strong></div>
+        <div class="col s4"><strong>${(fmtISO(v.fecha) || '').slice(0, 10)}</strong></div>
         <div class="col s4">${code}</div>
         <div class="col s4">${v.estado || '-'}</div>
         <div class="col s12"><span class="text-soft">${v.tonsComprometidas ? (v.tonsComprometidas + ' t • ') : ''}${esc(v.observaciones || '')}</span></div>
@@ -229,7 +248,7 @@ export async function abrirDetalleContacto(c) {
     ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${esc(x)}</span>`).join('')
     : '<span class="text-soft">Sin centros asociados</span>';
 
-  const visitas = normalizeVisitas(await apiGetVisitasByContacto(c._id));
+  const visitas = normalizeVisitas(await apiGetVisitasByContacto(toId(c._id)));
 
   body.innerHTML = `
     <div class="mb-4">
@@ -249,11 +268,11 @@ export async function abrirDetalleContacto(c) {
       <div style="grid-column:1/-1;"><strong>Contacto:</strong> ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).map(esc).join(' • ') || '-'}</div>
     </div>
     <div class="mb-4" style="margin-top:1rem;">
-      <h6 class="text-soft" style="margin:0 0 .5rem">Últimas visitas</h6>
+      <h6 class="text-soft">Últimas visitas</h6>
       ${miniTimelineHTML(visitas)}
     </div>
     <div class="right-align">
-      <button class="btn teal" id="btnNuevaVisita" data-id="${c._id}">
+      <button class="btn teal" id="btnNuevaVisita" data-id="${esc(toId(c._id))}">
         <i class="material-icons left">event_available</i>Registrar visita
       </button>
     </div>
@@ -265,17 +284,17 @@ export async function abrirDetalleContacto(c) {
 export function abrirModalVisita(contacto) {
   const form = $('#formVisita');
   if (form) form.dataset.editId = ''; // nuevo
-  setVal(['visita_proveedorId'], contacto._id);
+  setVal(['visita_proveedorId'], toId(contacto._id));
   const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
 
   const selectVisita = $('#visita_centroId');
   if (selectVisita) {
-    const centros = state.listaCentros.filter(
+    const centros = (state.listaCentros || []).filter(
       (c) => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '')) === proveedorKey
     );
     let options = `<option value="">Centro visitado (opcional)</option>`;
     options += centros.map((c) => `
-      <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}</option>`
+      <option value="${esc(toId(c._id || c.id))}" data-code="${esc(c.code || c.codigo || '')}">${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}</option>`
     ).join('');
     selectVisita.innerHTML = options;
   }
@@ -288,30 +307,30 @@ export function abrirModalVisita(contacto) {
 
 async function abrirEditarVisita(v) { // ← ahora async
   const form = $('#formVisita'); if (!form) return;
-  form.dataset.editId = String(v._id || '');
+  form.dataset.editId = String(toId(v._id) || '');
 
-  setVal(['visita_proveedorId'], v.contactoId || '');
-  $('#visita_fecha').value = (v.fecha || '').slice(0,10);
+  setVal(['visita_proveedorId'], toId(v.contactoId) || '');
+  $('#visita_fecha').value = fmtISO(v.fecha);
   $('#visita_contacto').value = v.contacto || '';
   $('#visita_enAgua').value = v.enAgua || '';
   $('#visita_tonsComprometidas').value = v.tonsComprometidas ?? '';
   $('#visita_estado').value = v.estado || 'Programar nueva visita';
   $('#visita_observaciones').value = v.observaciones || '';
 
-  const contacto = (state.contactosGuardados || []).find(x => String(x._id) === String(v.contactoId));
+  const contacto = (state.contactosGuardados || []).find(x => toId(x._id) === toId(v.contactoId));
   if (contacto) {
     const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
     const selectVisita = $('#visita_centroId');
     if (selectVisita) {
-      const centros = state.listaCentros.filter(
+      const centros = (state.listaCentros || []).filter(
         (c) => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '')) === proveedorKey
       );
       let options = `<option value="">Centro visitado (opcional)</option>`;
       options += centros.map((c) => `
-        <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}</option>`
+        <option value="${esc(toId(c._id || c.id))}" data-code="${esc(c.code || c.codigo || '')}">${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}</option>`
       ).join('');
       selectVisita.innerHTML = options;
-      selectVisita.value = v.centroId || '';
+      selectVisita.value = toId(v.centroId) || '';
     }
   }
 
@@ -319,7 +338,7 @@ async function abrirEditarVisita(v) { // ← ahora async
 
   // 📸 reset + cargar galería de la visita que se edita
   resetFotosModal();
-  await renderGallery(v._id);
+  await renderGallery(toId(v._id));
 
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
@@ -330,12 +349,12 @@ export function setupFormularioVisita() {
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const contactoId = $('#visita_proveedorId').value;
+    const contactoId = toId($('#visita_proveedorId').value);
 
     const selCentro = $('#visita_centroId');
-    const centroId = selCentro?.value || null;
+    const centroId = selCentro?.value ? toId(selCentro.value) : null;
     const centroCodigo =
-      selCentro?.selectedOptions?.[0]?.dataset?.code || (centroId ? centroCodigoById(centroId) : null);
+      selCentro?.selectedOptions?.[0]?.dataset?.code || (centroId ? centroCodigoById(centroId, state.listaCentros || []) : null);
 
     const payload = {
       contactoId,
@@ -366,7 +385,7 @@ export function setupFormularioVisita() {
 
         // id robusto (soporta _id o id)
         const visitId = (nueva && (nueva._id || nueva.id)) ? (nueva._id || nueva.id) : null;
-        await handleFotosAfterSave(visitId);
+        await handleFotosAfterSave(toId(visitId));
       }
 
       (M.Modal.getInstance(document.getElementById('modalVisita')))?.close();
@@ -394,25 +413,25 @@ function handleVisitasActions(e) {
 
   try {
     if (a.classList.contains('v-ver')) {
-      const id = a.dataset.contactoId;
-      const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
+      const id = toId(a.dataset.contactoId);
+      const c = (state.contactosGuardados || []).find(x => toId(x._id) === id);
       if (c) abrirDetalleContacto(c);
       return;
     }
     if (a.classList.contains('v-nueva')) {
-      const id = a.dataset.contactoId;
-      const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
+      const id = toId(a.dataset.contactoId);
+      const c = (state.contactosGuardados || []).find(x => toId(x._id) === id);
       if (c) abrirModalVisita(c);
       return;
     }
     if (a.classList.contains('v-editar')) {
-      const vid = a.dataset.id;
-      const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(vid));
+      const vid = toId(a.dataset.id);
+      const v = (state.visitasGuardadas || []).find(x => toId(x._id) === vid);
       if (v) abrirEditarVisita(v);
       return;
     }
     if (a.classList.contains('v-eliminar')) {
-      const vid = a.dataset.id;
+      const vid = toId(a.dataset.id);
       if (!confirm('¿Eliminar esta visita?')) return;
       (async () => {
         await apiDeleteVisita(vid);
