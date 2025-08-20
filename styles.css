@@ -279,3 +279,40 @@ input:focus, select:focus, textarea:focus{
 
 /* ---------- 13) Estilos “compact” opcionales de tabla ---------- */
 .table--compact th, .table--compact td{padding:.35rem .5rem; font-size:var(--fz-13)}
+
+/* ====== Layout uniforme: Empresas / Visitas / Agenda ====== */
+:root{
+  --page-gutter: 24px;     /* borde lateral */
+  --page-max: 1280px;      /* ancho máximo del contenido */
+}
+
+.page-wrap{
+  max-width: var(--page-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--page-gutter);
+  padding-right: var(--page-gutter);
+}
+
+/* DataTables al 100% dentro del contenedor */
+#tablaEmpresas_wrapper,
+#tablaVisitas_wrapper,
+#tablaContactos_wrapper{
+  width: 100% !important;
+}
+
+/* Barra de botones/contadores alineada y con separación */
+.page-toolbar{
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 12px 0 10px;
+}
+
+/* Input de búsqueda de DataTables con ancho razonable */
+.dataTables_wrapper .dataTables_filter input{
+  width: 320px;
+  max-width: 100%;
+}
+
