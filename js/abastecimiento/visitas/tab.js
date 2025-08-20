@@ -1,4 +1,4 @@
-// /js/abastecimiento/contactos/visitas.js
+// /js/abastecimiento/visitas/tab.js
 import {
   apiGetVisitas,
   apiGetVisitasByContacto,
@@ -6,19 +6,19 @@ import {
   apiUpdateVisita,
   apiDeleteVisita,
 } from '/js/core/api.js';
-import { state, $, setVal, slug } from './state.js';
-import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
+
+// 🔁 ahora el estado está en contactos
+import { state, $, setVal, slug } from '../contactos/state.js';
+
+// normalizers viven en esta carpeta
+import { normalizeVisita, centroCodigoById } from './normalizers.js';
 
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
 // ---------------- utils ----------------
 const esc = (s = '') =>
-  String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+  String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+           .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
 const fmtISO = (d) => {
   if (!d) return '';
@@ -30,8 +30,7 @@ const fmtISO = (d) => {
   return `${y}-${m}-${dd}`;
 };
 
-const trunc = (s = '', max = 42) =>
-  (String(s).length > max ? String(s).slice(0, max - 1) + '…' : String(s));
+const trunc = (s = '', max = 42) => (String(s).length > max ? String(s).slice(0, max - 1) + '…' : String(s));
 
 function proveedorDeVisita(v) {
   const id = v.contactoId ? String(v.contactoId) : null;
@@ -45,6 +44,7 @@ function codigoDeVisita(v) {
 
 // ---------------- DataTable ----------------
 let dtV = null;
+const ROOT = typeof document !== 'undefined' ? document.getElementById('tab-visitas') : null;
 
 function adjustNow() {
   const jq = window.jQuery || window.$;
@@ -76,19 +76,18 @@ export async function initVisitasTab(forceReload = false) {
       order: [[0, 'desc']],
       paging: true,
       pageLength: 10,
-      lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'Todos']],
-      autoWidth: false,        // anchos: CSS
-      responsive: true,        // si estorba, probar false
+      lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
+      autoWidth: false,          // anchos los define CSS
+      responsive: true,          // si molesta, prueba false
       scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: [
-        { targets: -1, orderable: false, searchable: false } // Acciones
+        { targets: -1, orderable:false, searchable:false } // Acciones
       ],
       initComplete: () => adjustNow(),
       drawCallback:   () => adjustNow(),
     });
 
-    // ⚠️ NO ponemos handlers en tbody/tabla; lo haremos a nivel document (abajo).
     window.addEventListener('resize', adjustNow);
   }
 
@@ -151,7 +150,6 @@ export async function renderTablaVisitas() {
       ];
     });
 
-  const jq = window.jQuery || window.$;
   if (dtV && jq) {
     dtV.clear();
     dtV.rows.add(filas).draw(false);
@@ -207,9 +205,9 @@ export async function abrirDetalleContacto(c) {
   const body = $('#detalleContactoBody'); if (!body) return;
 
   const f = new Date(c.createdAt || c.fecha || Date.now());
-  const fechaFmt = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')} ${String(f.getHours()).padStart(2, '0')}:${String(f.getMinutes()).padStart(2, '0')}`;
+  const fechaFmt = `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')} ${String(f.getHours()).padStart(2,'0')}:${String(f.getMinutes()).padStart(2,'0')}`;
 
-  const comunas = comunasDelProveedor(c.proveedorKey || slug(c.proveedorNombre || ''));
+  const comunas = comunasDelProveedor(c.proveedorKey || slug(c.proveedorNombre||''));
   const chips = comunas.length
     ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${esc(x)}</span>`).join('')
     : '<span class="text-soft">Sin centros asociados</span>';
@@ -226,7 +224,7 @@ export async function abrirDetalleContacto(c) {
       <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
       <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
       <div><strong>Disponibilidad:</strong> ${esc(c.tieneMMPP || '-')}</div>
-      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? ('' + c.fechaDisponibilidad).slice(0, 10) : '-'}</div>
+      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '-'}</div>
       <div><strong>Disposición:</strong> ${esc(c.dispuestoVender || '-')}</div>
       <div><strong>Tons aprox.:</strong> ${(c.tonsDisponiblesAprox ?? '') + ''}</div>
       <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
@@ -247,7 +245,6 @@ export async function abrirDetalleContacto(c) {
   (M.Modal.getInstance(document.getElementById('modalDetalleContacto')) || M.Modal.init(document.getElementById('modalDetalleContacto'))).open();
 }
 
-// ------------ abrir Modal (nuevo) ------------
 export function abrirModalVisita(contacto) {
   const form = $('#formVisita');
   if (form) form.dataset.editId = ''; // nuevo
@@ -269,20 +266,18 @@ export function abrirModalVisita(contacto) {
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
-// ------------ abrir Modal (editar) ------------
 function abrirEditarVisita(v) {
   const form = $('#formVisita'); if (!form) return;
   form.dataset.editId = String(v._id || '');
 
   setVal(['visita_proveedorId'], v.contactoId || '');
-  $('#visita_fecha').value = (v.fecha || '').slice(0, 10);
+  $('#visita_fecha').value = (v.fecha || '').slice(0,10);
   $('#visita_contacto').value = v.contacto || '';
   $('#visita_enAgua').value = v.enAgua || '';
   $('#visita_tonsComprometidas').value = v.tonsComprometidas ?? '';
   $('#visita_estado').value = v.estado || 'Programar nueva visita';
   $('#visita_observaciones').value = v.observaciones || '';
 
-  // centros para ese proveedor
   const contacto = (state.contactosGuardados || []).find(x => String(x._id) === String(v.contactoId));
   if (contacto) {
     const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
@@ -304,7 +299,6 @@ function abrirEditarVisita(v) {
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
-// ------------ submit (crear / editar) ------------
 export function setupFormularioVisita() {
   const form = $('#formVisita');
   if (!form) return;
@@ -353,26 +347,15 @@ export function setupFormularioVisita() {
   });
 }
 
-/* =========================
-   Delegación global de acciones (ULTRA ROBUSTA)
-   - Funciona aunque Responsive mueva filas a child-rows
-   - Funciona aunque el click caiga en el <i>
-   - No depende de jQuery para el listener
-========================= */
-document.removeEventListener('click', handleVisitasActions, true);
-document.addEventListener('click', handleVisitasActions, true);
-
+/* ==== Delegación de acciones con scope a la pestaña ==== */
 function handleVisitasActions(e) {
-  // limitamos el alcance a elementos dentro de #tablaVisitas para no interferir en otras pantallas
-  const withinTable = e.target.closest && e.target.closest('#tablaVisitas');
-  if (!withinTable) return;
-
+  if (!ROOT || !ROOT.contains(e.target)) return;
   const a = e.target.closest('a.v-ver, a.v-nueva, a.v-editar, a.v-eliminar');
   if (!a) return;
 
   e.preventDefault();
   e.stopPropagation();
-  if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+  e.stopImmediatePropagation?.();
 
   try {
     if (a.classList.contains('v-ver')) {
@@ -411,3 +394,4 @@ function handleVisitasActions(e) {
     M.toast?.({ html: 'Acción no disponible', classes: 'red' });
   }
 }
+document.addEventListener('click', handleVisitasActions, true);
