@@ -13,12 +13,21 @@ import { state, $, setVal, slug } from '../contactos/state.js';
 // normalizers viven en esta carpeta
 import { normalizeVisita, centroCodigoById } from './normalizers.js';
 
+// 📸 UI de fotos (reutilizable)
+import {
+  mountFotosUIOnce,
+  resetFotosModal,
+  handleFotosAfterSave,
+  renderGallery,
+} from './fotos/ui.js';
+
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
 // ---------------- utils ----------------
 const esc = (s = '') =>
-  String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-           .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
 const fmtISO = (d) => {
   if (!d) return '';
@@ -30,7 +39,8 @@ const fmtISO = (d) => {
   return `${y}-${m}-${dd}`;
 };
 
-const trunc = (s = '', max = 42) => (String(s).length > max ? String(s).slice(0, max - 1) + '…' : String(s));
+const trunc = (s = '', max = 42) =>
+  (String(s).length > max ? String(s).slice(0, max - 1) + '…' : String(s));
 
 function proveedorDeVisita(v) {
   const id = v.contactoId ? String(v.contactoId) : null;
@@ -44,7 +54,11 @@ function codigoDeVisita(v) {
 
 // ---------------- DataTable ----------------
 let dtV = null;
-const ROOT = typeof document !== 'undefined' ? document.getElementById('tab-visitas') : null;
+
+// usar lookup dinámico para no depender del orden de carga
+function getROOT() {
+  return typeof document !== 'undefined' ? document.getElementById('tab-visitas') : null;
+}
 
 function adjustNow() {
   const jq = window.jQuery || window.$;
@@ -59,6 +73,9 @@ export async function initVisitasTab(forceReload = false) {
   const jq = window.jQuery || window.$;
   const tabla = $('#tablaVisitas');
   if (!tabla) return;
+
+  // montar UI de fotos una sola vez
+  mountFotosUIOnce();
 
   if (dtV && forceReload) {
     await renderTablaVisitas();
@@ -263,10 +280,13 @@ export function abrirModalVisita(contacto) {
     selectVisita.innerHTML = options;
   }
 
+  // 📸 limpiar estado de fotos para nueva visita
+  resetFotosModal();
+
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
-function abrirEditarVisita(v) {
+async function abrirEditarVisita(v) { // ← ahora async
   const form = $('#formVisita'); if (!form) return;
   form.dataset.editId = String(v._id || '');
 
@@ -296,6 +316,11 @@ function abrirEditarVisita(v) {
   }
 
   M.updateTextFields();
+
+  // 📸 reset + cargar galería de la visita que se edita
+  resetFotosModal();
+  await renderGallery(v._id);
+
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
@@ -330,10 +355,18 @@ export function setupFormularioVisita() {
         await apiUpdateVisita(editId, payload);
         window.dispatchEvent(new CustomEvent('visita:updated', { detail: { id: editId } }));
         M.toast?.({ html: 'Visita actualizada', classes: 'teal', displayLength: 1800 });
+
+        // 📸 subir pendientes y refrescar galería
+        await handleFotosAfterSave(editId);
+
       } else {
         const nueva = await apiCreateVisita(payload);
         window.dispatchEvent(new CustomEvent('visita:created', { detail: { visita: nueva, contactoId } }));
         M.toast?.({ html: 'Visita guardada', classes: 'teal', displayLength: 1800 });
+
+        // id robusto (soporta _id o id)
+        const visitId = (nueva && (nueva._id || nueva.id)) ? (nueva._id || nueva.id) : null;
+        await handleFotosAfterSave(visitId);
       }
 
       (M.Modal.getInstance(document.getElementById('modalVisita')))?.close();
@@ -349,7 +382,9 @@ export function setupFormularioVisita() {
 
 /* ==== Delegación de acciones con scope a la pestaña ==== */
 function handleVisitasActions(e) {
+  const ROOT = getROOT();
   if (!ROOT || !ROOT.contains(e.target)) return;
+
   const a = e.target.closest('a.v-ver, a.v-nueva, a.v-editar, a.v-eliminar');
   if (!a) return;
 
