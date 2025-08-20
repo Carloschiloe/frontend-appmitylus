@@ -2,268 +2,218 @@
    ABASTECIMIENTO – Overrides sobre global
    ========================================= */
 
-/* ====== Contenedor común + espacio para futura sidebar ====== */
-:root{
-  --page-gutter: 24px;
-  --sidebar-gap: 120px;
-  --page-max: 1280px;
-}
-.page-wrap{
-  max-width: var(--page-max);
-  margin: 1rem auto 2rem;
-  padding-left: calc(var(--page-gutter) + var(--sidebar-gap));
-  padding-right: var(--page-gutter);
-}
-@media (max-width: 992px){
-  .page-wrap{ padding-left: var(--page-gutter); }
-}
-
-/* ========= UNIFICAR TABLAS (Contactos, Visitas, Agenda) ========= */
+/* ======= TABLAS: Contactos + Visitas ======= */
 
 /* Cabezal teal */
 #tablaContactos.dataTable thead th,
-#tablaVisitas.dataTable thead th,
-#tablaPersonas.dataTable thead th{
+#tablaVisitas.dataTable thead th {
   background: var(--primary) !important;
-  color:#fff !important;
+  color: #fff !important;
 }
 
 /* Densidad de filas */
 #tablaContactos th, #tablaContactos td,
-#tablaVisitas  th, #tablaVisitas  td,
-#tablaPersonas th, #tablaPersonas td{
-  font-size:.92rem;
-  padding:.38rem .5rem;
-  border-bottom:1px solid #e0e0e0;
-  vertical-align: middle;
+#tablaVisitas  th, #tablaVisitas  td {
+  font-size: 0.92rem;
+  padding: 0.38rem 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-/* Íconos de acciones */
+/* Acciones (íconos) */
 #tablaContactos td .material-icons,
-#tablaVisitas  td .material-icons,
-#tablaPersonas td .material-icons{
-  font-size:1.22em; margin-right:8px;
-  transition:transform .12s ease, color .12s ease;
+#tablaVisitas  td .material-icons {
+  font-size: 1.22em;
+  margin-right: 8px;
+  transition: transform .12s ease, color .12s ease;
 }
 #tablaContactos td .material-icons:hover,
-#tablaVisitas  td .material-icons:hover,
-#tablaPersonas td .material-icons:hover{
-  color:var(--primary-acc); transform:scale(1.08);
-}
-
-/* Wrapper de DataTables 100% del contenedor */
-#tab-contactos .dataTables_wrapper,
-#tab-visitas  .dataTables_wrapper,
-#tab-personas .dataTables_wrapper{
-  width:100% !important; max-width:none !important;
-}
-
-/* Tablas: layout robusto + UNA sola línea por celda con ellipsis */
-#tablaContactos, #tablaVisitas, #tablaPersonas{
-  width:100% !important;
-  table-layout: fixed;              /* <- clave para estabilidad y sin scroll */
-}
-#tablaContactos th, #tablaContactos td,
-#tablaVisitas  th, #tablaVisitas  td,
-#tablaPersonas th, #tablaPersonas td{
-  white-space: nowrap;              /* 1 línea */
-  overflow: hidden;                 /* recorte seguro */
-  text-overflow: ellipsis;          /* … */
-}
-
-/* Acciones: no recortar íconos */
-#tablaVisitas  td:last-child,
-#tablaPersonas td:last-child{
-  overflow: visible;
-}
-
-/* -------- Reparto de anchos (porcentaje total = 100%) -------- */
-
-/* VISITAS: (1)Fecha (2)Proveedor (3)Centro (4)Muestra (5)PróxPaso (6)Tons (7)Obs (8)Acciones */
-#tablaVisitas th:nth-child(1), #tablaVisitas td:nth-child(1){ width: 9%;  }
-#tablaVisitas th:nth-child(2), #tablaVisitas td:nth-child(2){ width: 22%; }
-#tablaVisitas th:nth-child(3), #tablaVisitas td:nth-child(3){ width: 8%;  }
-#tablaVisitas th:nth-child(4), #tablaVisitas td:nth-child(4){ width: 8%;  }
-#tablaVisitas th:nth-child(5), #tablaVisitas td:nth-child(5){ width: 16%; }
-#tablaVisitas th:nth-child(6), #tablaVisitas td:nth-child(6){ width: 7%;  text-align:right; }
-#tablaVisitas th:nth-child(7), #tablaVisitas td:nth-child(7){ width: 22%; }
-#tablaVisitas th:nth-child(8), #tablaVisitas td:nth-child(8){ width: 8%;  }  /* Acciones */
-
-/* AGENDA: (1)Fecha (2)Contacto (3)Teléfono (4)Email (5)Empresa (6)Notas (7)Acciones */
-#tablaPersonas th:nth-child(1), #tablaPersonas td:nth-child(1){ width:10%; }
-#tablaPersonas th:nth-child(2), #tablaPersonas td:nth-child(2){ width:18%; }
-#tablaPersonas th:nth-child(3), #tablaPersonas td:nth-child(3){ width:16%; }
-#tablaPersonas th:nth-child(4), #tablaPersonas td:nth-child(4){ width:18%; }
-#tablaPersonas th:nth-child(5), #tablaPersonas td:nth-child(5){ width:20%; }
-#tablaPersonas th:nth-child(6), #tablaPersonas td:nth-child(6){ width:12%; }
-#tablaPersonas th:nth-child(7), #tablaPersonas td:nth-child(7){ width:6%;  }  /* Acciones */
-
-/* Empresa y Notas en Agenda: texto + iconos en la MISMA línea */
-#tablaPersonas td:nth-child(5),
-#tablaPersonas td:nth-child(6){
-  display:flex; align-items:center; gap:6px;
-}
-#tablaPersonas td:nth-child(5) .ellipsisCell,
-#tablaPersonas td:nth-child(6) .ellipsisCell{
-  min-width:0;         /* permite que el texto se encoja */
-  flex:1 1 auto;       /* y haga ellipsis sin saltar de línea */
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-}
-
-/* VISITAS: spans de proveedor/observaciones con ellipsis explícito */
-#tablaVisitas .ellipsisProv, #tablaVisitas .ellipsisObs{
-  display:block; max-width:100%;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+#tablaVisitas  td .material-icons:hover {
+  color: var(--primary-acc);
+  transform: scale(1.08);
 }
 
 /* ======= BOTONES / TOOLBAR ======= */
 #btnOpenContactoModal{ margin:.25rem 0 .5rem 0; }
 
-/* ======= MODALES (mismo look y sizing) ======= */
+/* ======= MODALES ======= */
+/* Contacto y Detalle */
 #modalContacto.modal,
-#modalDetalleContacto.modal,
-#modalVisita.modal,
-#modalBloque.modal{
-  max-width:760px !important;
-  max-height:86vh !important;
-  top:7vh !important;
+#modalDetalleContacto.modal {
+  max-width: 760px !important;
+  max-height: 86vh !important;
+  top: 7vh !important;
 }
 #modalContacto .modal-content,
-#modalDetalleContacto .modal-content,
-#modalVisita .modal-content,
-#modalBloque .modal-content{
-  max-height:72vh !important;
+#modalDetalleContacto .modal-content {
+  max-height: 72vh !important;
 }
 #modalContacto .modal-footer,
-#modalDetalleContacto .modal-footer,
-#modalVisita .modal-footer,
-#modalBloque .modal-footer{
-  padding:.5rem .75rem !important;
+#modalDetalleContacto .modal-footer {
+  padding: .5rem .75rem !important;
 }
 
-/* Inputs más compactos en modales */
+/* Visita (mismo look) */
+#modalVisita.modal {
+  max-width: 760px !important;
+  max-height: 86vh !important;
+  top: 7vh !important;
+}
+#modalVisita .modal-content {
+  max-height: 72vh !important;
+}
+#modalVisita .modal-footer {
+  padding: .5rem .75rem !important;
+}
+
+/* Inputs más compactos dentro de los modales */
 #modalContacto .input-field input,
 #modalContacto .input-field select,
 #modalContacto .input-field textarea,
 #modalVisita   .input-field input,
 #modalVisita   .input-field select,
-#modalVisita   .input-field textarea{
-  margin-bottom:.6rem;
+#modalVisita   .input-field textarea {
+  margin-bottom: .6rem;
 }
-
-/* SELECT nativo con look Materialize en modales */
-.modal .browser-default{
-  width:100%; background:transparent; border:none;
-  border-bottom:1px solid #9e9e9e; padding:8px 0 6px; font-size:16px;
-}
-.modal .browser-default:focus{ outline:none; border-bottom:2px solid #26a69a; }
-.modal .input-field label.active{
-  transform:none !important; font-size:.9rem; color:#9e9e9e; margin-bottom:2px; display:block;
-}
-
-/* Z-index modal */
-.modal{ z-index:1005 !important; }
-.modal-overlay{ z-index:1004 !important; }
-
-/* Evitar que contenedores tapen overlay */
-.container, .card-panel{ overflow:visible !important; }
 
 /* ======= RESPONSIVE ======= */
 @media (max-width: 992px){
-  /* mantenemos table-layout:fixed para no romper anchos */
+  #tablaContactos, #tablaContactos_wrapper,
+  #tablaVisitas,  #tablaVisitas_wrapper {
+    min-width: 360px !important;
+    width: 100vw !important;
+    display: block !important;
+  }
   .dataTables_paginate{ justify-content:center; }
 }
-@media (max-width:600px){
+@media (max-width: 600px){
+  #modalContacto.modal,
+  #modalDetalleContacto.modal,
+  #modalVisita.modal {
+    width: 96% !important;
+    top: 4vh !important;
+  }
   #tablaContactos th, #tablaContactos td,
-  #tablaVisitas  th, #tablaVisitas  td,
-  #tablaPersonas th, #tablaPersonas td{
-    font-size:.88rem; padding:.34rem .45rem;
+  #tablaVisitas  th, #tablaVisitas  td {
+    font-size: .88rem;
+    padding: .34rem .45rem;
   }
 }
 
-/* (Opcional) ampliar .container en desktop si lo usas en otras vistas */
-@media (min-width:1200px){ .container{ max-width:1400px; } }
-
-/* ===== QUICK FIXES: anchos y acciones visibles ===== */
-
-/* EMPRESAS: reparto de anchos + acciones visibles */
-#tablaContactos th:nth-child(1),  #tablaContactos td:nth-child(1)  { width:10%; } /* Fecha */
-#tablaContactos th:nth-child(2),  #tablaContactos td:nth-child(2)  { width:24%; } /* Proveedor */
-#tablaContactos th:nth-child(3),  #tablaContactos td:nth-child(3)  { width:8%;  } /* Centro */
-#tablaContactos th:nth-child(4),  #tablaContactos td:nth-child(4)  { width:10%; } /* Comuna */
-#tablaContactos th:nth-child(5),  #tablaContactos td:nth-child(5)  { width:6%;  } /* Disp. */
-#tablaContactos th:nth-child(6),  #tablaContactos td:nth-child(6)  { width:11%; } /* Fecha Disp. */
-#tablaContactos th:nth-child(7),  #tablaContactos td:nth-child(7)  { width:10%; } /* Disposición */
-#tablaContactos th:nth-child(8),  #tablaContactos td:nth-child(8)  { width:7%;  } /* Tons aprox */
-#tablaContactos th:nth-child(9),  #tablaContactos td:nth-child(9)  { width:9%;  } /* Vende a */
-#tablaContactos th:nth-child(10), #tablaContactos td:nth-child(10) { width:5%;  } /* Acciones */
-
-#tablaContactos td:last-child{
-  overflow: visible;             /* que no se corten los íconos */
-  white-space: nowrap;
+/* ======= SELECT nativo con look Materialize en modales ======= */
+.modal .browser-default {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #9e9e9e;
+  padding: 8px 0 6px;
+  font-size: 16px;
+}
+.modal .browser-default:focus {
+  outline: none;
+  border-bottom: 2px solid #26a69a;
+}
+.modal .input-field label.active {
+  transform: none !important;
+  font-size: 0.9rem;
+  color: #9e9e9e;
+  margin-bottom: 2px;
+  display: block;
 }
 
-/* VISITAS: ensanchar FECHA y compensar en Observaciones */
-#tablaVisitas th:nth-child(1), #tablaVisitas td:nth-child(1){ width:12%; min-width:110px; } /* Fecha */
-#tablaVisitas th:nth-child(7), #tablaVisitas td:nth-child(7){ width:19%; }                /* Observaciones */
+/* === Alinea el modal de MMPP con tus otros modales === */
+#modalBloque.modal {
+  max-width: 760px !important;
+  max-height: 86vh !important;
+  top: 7vh !important;
+}
+#modalBloque .modal-content { max-height: 72vh !important; }
+#modalBloque .modal-footer  { padding: .5rem .75rem !important; }
 
-/* AGENDA (Personas): reparto de anchos más holgado */
-#tablaPersonas th:nth-child(1), #tablaPersonas td:nth-child(1){ width:12%; min-width:110px; } /* Fecha */
-#tablaPersonas th:nth-child(2), #tablaPersonas td:nth-child(2){ width:18%; }                  /* Contacto */
-#tablaPersonas th:nth-child(3), #tablaPersonas td:nth-child(3){ width:16%; }                  /* Teléfono(s) */
-#tablaPersonas th:nth-child(4), #tablaPersonas td:nth-child(4){ width:17%; }                  /* Email */
-#tablaPersonas th:nth-child(5), #tablaPersonas td:nth-child(5){ width:20%; }                  /* Empresa */
-#tablaPersonas th:nth-child(6), #tablaPersonas td:nth-child(6){ width:11%; }                  /* Notas */
-#tablaPersonas th:nth-child(7), #tablaPersonas td:nth-child(7){ width:6%;  }                  /* Acciones */
+/* Z-index alto por si DataTables / charts crean stacking contexts */
+.modal         { z-index: 1005 !important; }
+.modal-overlay { z-index: 1004 !important; }
 
-#tablaPersonas td:last-child{
-  overflow: visible;
-  white-space: nowrap;
+/* Evita que contenedores tapen el overlay por overflow/transform */
+.container, .card-panel { overflow: visible !important; }
+
+/* =========================================
+   PLANIFICACIÓN – Complementos sin duplicados
+   ========================================= */
+
+/* Utilidades generales */
+.mt-12{margin-top:12px}
+.mt-14{margin-top:14px}
+.mt-18{margin-top:18px}
+.mb-32{margin-bottom:32px}
+.hidden{display:none!important}
+.static-label{transform:none!important;font-size:.9rem;color:#9e9e9e}
+
+/* Barras de progreso compactas (KPIs y realtime) */
+.progress.slim{height:8px;border-radius:8px;margin:.4rem 0 0}
+.progress .determinate{border-radius:8px}
+
+/* KPIs (grid responsive) */
+.kpi-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin:14px 0 6px}
+.kpi{grid-column:span 12;background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+.kpi h6{margin:0;font-size:.95rem;color:#546e7a;font-weight:600}
+.kpi .val{font-size:1.6rem;font-weight:700;margin-top:4px;color:#004d40}
+.kpi .sub{font-size:.9rem;color:#78909c;margin-top:2px}
+@media(min-width:600px){.kpi{grid-column:span 6}}
+@media(min-width:992px){.kpi{grid-column:span 3}}
+
+/* Toolbar / filtros */
+.toolbar-panel{padding:14px 16px}
+.toolbar{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;align-items:end}
+.toolbar .input-field{margin:0}
+.toolbar .actions{grid-column:span 12;display:flex;gap:8px;justify-content:flex-end}
+.toolbar .toggles{display:flex;gap:16px;align-items:center}
+.periodo-wrap{display:flex;gap:10px;align-items:end}
+.periodo-nav{display:flex;gap:6px;align-items:center}
+.btn-ghost{background:transparent!important}
+@media(min-width:600px){
+  .toolbar .w2{grid-column:span 2}
+  .toolbar .w3{grid-column:span 3}
+  .toolbar .w4{grid-column:span 4}
+  .toolbar .w5{grid-column:span 5}
+  .toolbar .w6{grid-column:span 6}
+  .toolbar .w12{grid-column:span 12}
+}
+@media(min-width:992px){
+  .toolbar .w2{grid-column:span 2}
+  .toolbar .w3{grid-column:span 3}
+  .toolbar .w4{grid-column:span 4}
+  .toolbar .w5{grid-column:span 5}
+  .toolbar .w6{grid-column:span 6}
 }
 
-/* Refuerzo: todas las tablas una sola línea + ellipsis (sin cortar acciones) */
-#tablaContactos th, #tablaContactos td,
-#tablaVisitas  th, #tablaVisitas  td,
-#tablaPersonas th, #tablaPersonas td{
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Tablas planificación */
+#tablaProgramaSemanal.dataTable thead th{
+  background: var(--primary) !important;
+  color: #fff !important;
 }
-#tablaContactos td:last-child,
-#tablaVisitas  td:last-child,
-#tablaPersonas td:last-child{
-  overflow: visible; /* íconos siempre visibles */
-}
+#tablaProgramaSemanal td.right-align{ text-align:right }
 
-/* 1) EMPRESAS: asegurar ancho para íconos de Acciones */
-#tablaContactos th:last-child,
-#tablaContactos td:last-child{
-  min-width: 120px;      /* súbelo si usas más iconos */
-  white-space: nowrap;
-  overflow: visible;
-}
+/* Tarjetas de gráfico / tablero */
+.chart-card{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+.chart-card .chart-title{margin:0 0 8px}
 
-/* 2) VISITAS: Fecha en una sola línea + no romper títulos */
-#tablaVisitas th, #tablaVisitas td { word-break: normal; }  /* evita “vertical” */
-#tablaVisitas th:nth-child(1),
-#tablaVisitas td:nth-child(1){
-  min-width: 120px;      /* evita salto de línea en fecha */
-  white-space: nowrap;
-}
+/* Realtime list (últimos 5 abastecimientos) */
+.rt-list{margin:0;list-style:none;display:grid;gap:8px}
+.rt-list .progress{margin:.25rem 0 0}
 
-/* 3) VISITAS y AGENDA: una sola línea con ellipsis, sin scroll */
-#tablaVisitas td,
-#tablaPersonas td{
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* Acciones visibles también en estas tablas */
-#tablaVisitas  th:last-child, #tablaVisitas  td:last-child,
-#tablaPersonas th:last-child, #tablaPersonas td:last-child{
-  min-width: 120px;
-  white-space: nowrap;
-  overflow: visible;
-}
+/* Gantt mensual liviano */
+.gantt{display:grid;gap:8px}
+.gantt__row{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:8px}
+.gantt__label{font-size:.9rem;color:#607d8b}
+.gantt__track{position:relative;height:20px;background:#eceff1;border-radius:10px;overflow:hidden}
+.gantt__bar{position:absolute;top:0;bottom:0;border-radius:10px}
+.gantt__bar--meta{left:0;right:0;border:2px dashed #90a4ae;background:transparent}
+.gantt__bar--plan{left:0;width:0;background:#64b5f6}
+.gantt__bar--real{left:0;width:0;background:#66bb6a;opacity:.9}
 
-
+/* Impresión (oculta UI y limpia tarjetas) */
+@media print{
+  nav, .tabs, .actions, .modal, .toolbar-panel .input-field{ display:none !important; }
+  .kpi-grid{ grid-template-columns:repeat(4,1fr)!important }
+  .chart-card{ box-shadow:none!important; border:1px solid #eee }
+}
