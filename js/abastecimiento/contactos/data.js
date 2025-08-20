@@ -35,6 +35,7 @@ export async function cargarCentros() {
 
     // 👇 NUEVO: popular el select de centros y enganchar change
     poblarSelectCentros(state.listaCentros);
+    // 🔔 avisa a otros módulos (asociar-empresa) que centros ya está listo
     document.dispatchEvent(new Event('centros:loaded'));
   } catch (e) {
     console.error('[cargarCentros] error:', e);
@@ -131,4 +132,5 @@ function setVal(id, v) {
   const el = document.getElementById(id);
   if (el) el.value = v;
 }
+
 
