@@ -221,27 +221,28 @@
 .tabla-mt { margin-top: .75rem; }
 .tabla-mt-sm { margin-top: .5rem; }
 
-/* ===== VISITAS ===== */
-#tablaVisitas { table-layout: fixed; width: 100%; }
-#tablaVisitas th, #tablaVisitas td { box-sizing: border-box; }
+/* ===== VISITAS (scopeado a la pestaña) ===== */
+#tab-visitas #tablaVisitas { table-layout: fixed; width: 100%; }
+#tab-visitas #tablaVisitas th, 
+#tab-visitas #tablaVisitas td { box-sizing: border-box; }
 
 /* Fijas (presupuesto) */
-#tablaVisitas th:nth-child(1), #tablaVisitas td:nth-child(1) { width: 7rem; }  /* Fecha */
-#tablaVisitas th:nth-child(3), #tablaVisitas td:nth-child(3) { width: 8rem; }  /* Centro */
-#tablaVisitas th:nth-child(4), #tablaVisitas td:nth-child(4) { width: 7rem; }  /* Muestra */
-#tablaVisitas th:nth-child(6), #tablaVisitas td:nth-child(6) { width: 6rem; text-align:right; } /* Tons */
-#tablaVisitas th:nth-child(8), #tablaVisitas td:nth-child(8) { width: 8rem; white-space:nowrap; } /* Acciones */
+#tab-visitas #tablaVisitas th:nth-child(1), #tab-visitas #tablaVisitas td:nth-child(1) { width: 7rem; }  /* Fecha */
+#tab-visitas #tablaVisitas th:nth-child(3), #tab-visitas #tablaVisitas td:nth-child(3) { width: 8rem; }  /* Centro */
+#tab-visitas #tablaVisitas th:nth-child(4), #tab-visitas #tablaVisitas td:nth-child(4) { width: 7rem; }  /* Muestra */
+#tab-visitas #tablaVisitas th:nth-child(6), #tab-visitas #tablaVisitas td:nth-child(6) { width: 6rem; text-align:right; } /* Tons */
+#tab-visitas #tablaVisitas th:nth-child(8), #tab-visitas #tablaVisitas td:nth-child(8) { width: 8rem; white-space:nowrap; } /* Acciones */
 
 /* Flexibles (amortiguan el resto) */
-#tablaVisitas th:nth-child(2), #tablaVisitas td:nth-child(2) { width: auto; }  /* Proveedor */
-#tablaVisitas th:nth-child(5), #tablaVisitas td:nth-child(5) { width: 14rem; } /* Próximo paso (puedes bajarlo si hace falta) */
-#tablaVisitas th:nth-child(7), #tablaVisitas td:nth-child(7) { width: auto; }  /* Observaciones */
+#tab-visitas #tablaVisitas th:nth-child(2), #tab-visitas #tablaVisitas td:nth-child(2) { width: auto; }  /* Proveedor */
+#tab-visitas #tablaVisitas th:nth-child(5), #tab-visitas #tablaVisitas td:nth-child(5) { width: 14rem; } /* Próximo paso */
+#tab-visitas #tablaVisitas th:nth-child(7), #tab-visitas #tablaVisitas td:nth-child(7) { width: auto; }  /* Observaciones */
 
 /* Ellipsis reutilizable */
 .ellipsisCell { display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
-.ellipsisProv { max-width: 26ch; }   /* controla cuánto puede crecer Proveedor */
-.ellipsisObs  { display:block; width:100%; } /* se ajusta al ancho de la celda */
+.ellipsisProv { max-width: 26ch; }
+.ellipsisObs  { display:block; width:100%; }
 
-/* Garantiza que los enlaces de Acciones reciban click y no haya overlay raro */
-#tablaVisitas td:last-child a { pointer-events: auto; cursor: pointer; }
-#tablaVisitas td:last-child i.material-icons { pointer-events: none; } /* el click sube al <a> */
+/* Garantiza click en Acciones */
+#tab-visitas #tablaVisitas td:last-child a { pointer-events: auto; cursor: pointer; }
+#tab-visitas #tablaVisitas td:last-child i.material-icons { pointer-events: none; }
