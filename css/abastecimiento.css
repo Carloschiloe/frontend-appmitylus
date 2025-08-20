@@ -187,3 +187,51 @@
 @media (min-width: 1200px){
   .container{ max-width: 1400px; }
 }
+
+/* ====== Tablas Visitas y Agenda: una sola línea por fila ====== */
+
+/* No envolver texto; cortar con ellipsis cuando no alcance */
+#tablaVisitas th, #tablaVisitas td,
+#tablaPersonas th, #tablaPersonas td{
+  white-space: nowrap;
+}
+#tablaVisitas td, #tablaPersonas td{
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Columna Acciones: no recortar íconos */
+#tablaVisitas td:last-child,
+#tablaPersonas td:last-child{
+  overflow: visible;
+}
+
+/* AGENDA: en Empresa y Notas mantener texto+iconos en UNA línea */
+#tablaPersonas td:nth-child(5),
+#tablaPersonas td:nth-child(6){
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#tablaPersonas td:nth-child(5) .ellipsisCell,
+#tablaPersonas td:nth-child(6) .ellipsisCell{
+  min-width: 0;     /* permite que el texto se achique */
+  flex: 1 1 auto;   /* y muestre ellipsis si no cabe */
+}
+
+/* VISITAS: reforzar provider/observaciones con ellipsis */
+#tablaVisitas .ellipsisProv, #tablaVisitas .ellipsisObs{
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Asegurar que el wrapper de DataTables nunca cree scroll X extra */
+#tab-visitas .dataTables_wrapper,
+#tab-personas .dataTables_wrapper{
+  width: 100% !important;
+  max-width: none !important;
+}
+
