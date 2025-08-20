@@ -12,18 +12,25 @@ import { state, $, setVal, slug } from './state.js';
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
-/* ------------ estilos locales (layout fijo + ellipsis + wrapper full width) ------------ */
+/* ------------ estilos locales (layout fluido + ellipsis) ------------ */
 (function injectStyles() {
   const css = `
-  /* que el wrapper ocupe el 100% del contenedor */
+  /* wrapper al 100% del contenedor */
   #tab-visitas .dataTables_wrapper{ width:100% !important; max-width:none !important; }
-  #tablaVisitas{ table-layout:fixed; width:100% !important; }
-  #tablaVisitas td, #tablaVisitas th{ white-space:nowrap; }
 
-  /* El contenido puede usar todo el ancho de su celda */
+  /* Layout fluido y sin nowrap global */
+  #tablaVisitas{ table-layout:auto; width:100% !important; }
+  #tablaVisitas td, #tablaVisitas th{
+    white-space: normal;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  /* Ellipsis solo en celdas largas (no afecta al resto) */
   #tablaVisitas .ellipsisProv,
   #tablaVisitas .ellipsisObs{
     display:block;
+    white-space:nowrap;
     max-width:100%;
     overflow:hidden;
     text-overflow:ellipsis;
@@ -71,12 +78,10 @@ let dtV = null;
 function adjustNow() {
   const jq = window.jQuery || window.$;
   if (jq && dtV) {
-    // doble tick para cuando se abre la pestaña y aún está “oculta”
     setTimeout(() => { try { dtV.columns.adjust().draw(false); } catch {} }, 0);
     setTimeout(() => { try { dtV.columns.adjust().draw(false); } catch {} }, 80);
   }
 }
-// export opcional por si quieres llamarlo desde fuera
 export function forceAdjustVisitas() { adjustNow(); }
 
 export async function initVisitasTab(forceReload = false) {
@@ -101,16 +106,20 @@ export async function initVisitasTab(forceReload = false) {
       paging: true,
       pageLength: 10,
       lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
-      autoWidth: true,              // ⬅️ deja que DT calcule (luego forzamos adjust)
+      autoWidth: false,                 // 👈 fluido; que el browser gestione el ancho
+      responsive: true,                 // 👈 permite compactar
+      scrollX: false,                   // 👈 sin scroll horizontal
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+
+      // Anchos en % (~100%) para repartir sin overflow
       columnDefs: [
-        { targets: 0, width: '10%' },                         // Fecha
-        { targets: 1, width: '26%' },                         // Proveedor (amplia)
-        { targets: 2, width: '10%' },                         // Centro
-        { targets: 3, width: '8%'  },                         // Muestra
-        { targets: 4, width: '18%' },                         // Próximo paso
-        { targets: 5, width: '6%',  className: 'dt-body-right' }, // Tons
-        { targets: 6, width: '16%' },                         // Observaciones
+        { targets: 0, width: '9%'  },   // Fecha
+        { targets: 1, width: '22%' },   // Proveedor
+        { targets: 2, width: '8%'  },   // Centro
+        { targets: 3, width: '8%'  },   // Muestra
+        { targets: 4, width: '18%' },   // Próximo paso
+        { targets: 5, width: '7%',  className: 'dt-body-right' }, // Tons
+        { targets: 6, width: '22%' },   // Observaciones
         { targets: 7, width: '6%',  orderable:false, searchable:false } // Acciones
       ],
       initComplete: () => adjustNow(),
@@ -319,9 +328,8 @@ export function abrirModalVisita(contacto) {
     );
     let options = `<option value="">Centro visitado (opcional)</option>`;
     options += centros.map((c) => `
-      <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">
-        ${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}
-      </option>`).join('');
+      <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}</option>`
+    ).join('');
     selectVisita.innerHTML = options;
   }
 
@@ -352,9 +360,8 @@ function abrirEditarVisita(v) {
       );
       let options = `<option value="">Centro visitado (opcional)</option>`;
       options += centros.map((c) => `
-        <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">
-          ${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}
-        </option>`).join('');
+        <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}</option>`
+      ).join('');
       selectVisita.innerHTML = options;
       selectVisita.value = v.centroId || '';
     }
