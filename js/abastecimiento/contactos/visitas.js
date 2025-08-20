@@ -17,8 +17,16 @@ const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita)
   const css = `
   #tablaVisitas{ table-layout:fixed; width:100%; }
   #tablaVisitas td, #tablaVisitas th{ white-space:nowrap; }
-  #tablaVisitas .ellipsisProv{ display:inline-block; max-width:26ch; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
-  #tablaVisitas .ellipsisObs{  display:inline-block; max-width:40ch; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
+
+  /* MUY IMPORTANTE: que el contenido pueda ocupar TODO el ancho de su columna */
+  #tablaVisitas .ellipsisProv,
+  #tablaVisitas .ellipsisObs{
+    display:block;
+    max-width:100%;        /* antes lo tenía en 26ch/40ch y achicaba la celda */
+    overflow:hidden;
+    text-overflow:ellipsis;
+    vertical-align:middle;
+  }
   `;
   if (!document.getElementById('visitas-inline-styles')) {
     const s = document.createElement('style');
@@ -382,3 +390,4 @@ export function setupFormularioVisita() {
     }
   });
 }
+
