@@ -255,6 +255,22 @@
           <textarea id="visita_observaciones" class="materialize-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
           <label for="visita_observaciones">Observaciones</label>
         </div>
+
+        <!-- Fotos de la visita -->
+<div id="visita_fotos" class="fotos-uploader">
+  <div class="fotos-actions" style="display:flex;gap:8px;align-items:center;margin:.25rem 0 .5rem;">
+    <label class="btn teal waves-effect" style="margin:0;">
+      <i class="material-icons left">photo_camera</i>
+      Tomar/Subir fotos
+      <input id="visita_fotos_input" type="file" accept="image/*" capture="environment" multiple hidden>
+    </label>
+    <small class="text-soft">JPG/PNG hasta 10&nbsp;MB c/u, máx 12.</small>
+  </div>
+
+  <!-- Contenedor de miniaturas / galería -->
+  <div id="visita_fotos_grid" class="fotos-grid"></div>
+</div>
+
         <div class="right-align">
           <button type="button" class="modal-close btn-flat">Cancelar</button>
           <button class="btn teal" type="submit"><i class="material-icons left">save</i>Guardar visita</button>
@@ -317,3 +333,4 @@
   <script type="module" src="/js/abastecimiento/contactos/index.js?v=5"></script>
 </body>
 </html>
+
