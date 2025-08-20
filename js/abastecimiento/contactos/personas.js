@@ -1,7 +1,7 @@
 // /js/abastecimiento/contactos/personas.js
 import { state, $ } from './state.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
-import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
+import { abrirDetalleContacto, abrirModalVisita } from '../visitas/tab.js';
 
 /* ------------ estilos específicos (una sola línea + ellipsis) ------------ */
 (function injectStyles() {
