@@ -12,22 +12,23 @@ import { state, $, setVal, slug } from './state.js';
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
-/* ------------ estilos locales (layout fijo + ellipsis) ------------ */
+/* ------------ estilos locales (layout fijo + ellipsis + wrapper full width) ------------ */
 (function injectStyles() {
   const css = `
-  #tablaVisitas{ table-layout:fixed; width:100%; }
+  /* que el wrapper ocupe el 100% del contenedor */
+  #tab-visitas .dataTables_wrapper{ width:100% !important; max-width:none !important; }
+  #tablaVisitas{ table-layout:fixed; width:100% !important; }
   #tablaVisitas td, #tablaVisitas th{ white-space:nowrap; }
 
-  /* MUY IMPORTANTE: que el contenido pueda ocupar TODO el ancho de su columna */
+  /* El contenido puede usar todo el ancho de su celda */
   #tablaVisitas .ellipsisProv,
   #tablaVisitas .ellipsisObs{
     display:block;
-    max-width:100%;        /* antes lo tenía en 26ch/40ch y achicaba la celda */
+    max-width:100%;
     overflow:hidden;
     text-overflow:ellipsis;
     vertical-align:middle;
-  }
-  `;
+  }`;
   if (!document.getElementById('visitas-inline-styles')) {
     const s = document.createElement('style');
     s.id = 'visitas-inline-styles';
@@ -38,9 +39,8 @@ const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita)
 
 /* ---------------- utils ---------------- */
 const esc = (s = '') =>
-  String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+           .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
 const fmtISO = (d) => {
   if (!d) return '';
@@ -67,12 +67,26 @@ function codigoDeVisita(v) {
 /* ---------------- DataTable ---------------- */
 let dtV = null;
 
+/* pequeño helper: asegurar que datatables recalcule columnas */
+function adjustNow() {
+  const jq = window.jQuery || window.$;
+  if (jq && dtV) {
+    // doble tick para cuando se abre la pestaña y aún está “oculta”
+    setTimeout(() => { try { dtV.columns.adjust().draw(false); } catch {} }, 0);
+    setTimeout(() => { try { dtV.columns.adjust().draw(false); } catch {} }, 80);
+  }
+}
+// export opcional por si quieres llamarlo desde fuera
+export function forceAdjustVisitas() { adjustNow(); }
+
 export async function initVisitasTab(forceReload = false) {
   const jq = window.jQuery || window.$;
-  if (!$('#tablaVisitas')) return;
+  const tabla = $('#tablaVisitas');
+  if (!tabla) return;
 
   if (dtV && forceReload) {
     await renderTablaVisitas();
+    adjustNow();
     return;
   }
 
@@ -87,20 +101,20 @@ export async function initVisitasTab(forceReload = false) {
       paging: true,
       pageLength: 10,
       lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
-      autoWidth: false,
+      autoWidth: true,              // ⬅️ deja que DT calcule (luego forzamos adjust)
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-      // 🔧 anchos por columna para evitar overflow
       columnDefs: [
-  { targets: 0, width: '10%' },                         // Fecha
-  { targets: 1, width: '26%' },                         // Proveedor (más ancho)
-  { targets: 2, width: '10%' },                         // Centro
-  { targets: 3, width: '8%'  },                         // Muestra
-  { targets: 4, width: '18%' },                         // Próximo paso
-  { targets: 5, width: '6%',  className: 'dt-body-right' }, // Tons
-  { targets: 6, width: '16%' },                         // Observaciones (recortada con ellipsis)
-  { targets: 7, width: '6%',  orderable:false, searchable:false } // Acciones
-],
-
+        { targets: 0, width: '10%' },                         // Fecha
+        { targets: 1, width: '26%' },                         // Proveedor (amplia)
+        { targets: 2, width: '10%' },                         // Centro
+        { targets: 3, width: '8%'  },                         // Muestra
+        { targets: 4, width: '18%' },                         // Próximo paso
+        { targets: 5, width: '6%',  className: 'dt-body-right' }, // Tons
+        { targets: 6, width: '16%' },                         // Observaciones
+        { targets: 7, width: '6%',  orderable:false, searchable:false } // Acciones
+      ],
+      initComplete: () => adjustNow(),
+      drawCallback:   () => adjustNow(),
     });
 
     // Acciones por fila
@@ -113,12 +127,12 @@ export async function initVisitasTab(forceReload = false) {
       .on('click', 'a.v-nueva', function () {
         const id = this.dataset.contactoId;
         const c = (state.contactosGuardados || []).find((x) => String(x._id) === String(id));
-        if (c) abrirModalVisita(c); // nuevo
+        if (c) abrirModalVisita(c);
       })
       .on('click', 'a.v-editar', function () {
         const vid = this.dataset.id;
         const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(vid));
-        if (v) abrirEditarVisita(v); // editar
+        if (v) abrirEditarVisita(v);
       })
       .on('click', 'a.v-eliminar', async function () {
         const vid = this.dataset.id;
@@ -127,18 +141,23 @@ export async function initVisitasTab(forceReload = false) {
           await apiDeleteVisita(vid);
           M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
           await renderTablaVisitas();
+          adjustNow();
         } catch (e) {
           console.warn(e);
           M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
         }
       });
+
+    // Ajustar si cambia el tamaño de la ventana
+    window.addEventListener('resize', adjustNow);
   }
 
   await renderTablaVisitas();
+  adjustNow();
 
   // refresco tras crear/editar
-  window.addEventListener('visita:created', renderTablaVisitas);
-  window.addEventListener('visita:updated', renderTablaVisitas);
+  window.addEventListener('visita:created', async () => { await renderTablaVisitas(); adjustNow(); });
+  window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); adjustNow(); });
 }
 
 /* ---------------- render ---------------- */
@@ -162,7 +181,7 @@ export async function renderTablaVisitas() {
       const fecha = fmtISO(v.fecha);
       const proveedor = proveedorDeVisita(v);
       const proveedorHTML = proveedor
-        ? `<span class="ellipsisProv" title="${esc(proveedor)}">${esc(trunc(proveedor, 36))}</span>`
+        ? `<span class="ellipsisProv" title="${esc(proveedor)}">${esc(trunc(proveedor, 48))}</span>`
         : '<span class="text-soft">—</span>';
 
       const centro = codigoDeVisita(v);
@@ -170,13 +189,13 @@ export async function renderTablaVisitas() {
       const proximoPaso = v.estado || '';
       const tons = (v.tonsComprometidas ?? '') + '';
       const obs = v.observaciones || '';
-      const obsHTML = obs ? `<span class="ellipsisObs" title="${esc(obs)}">${esc(trunc(obs, 56))}</span>` : '—';
+      const obsHTML = obs ? `<span class="ellipsisObs" title="${esc(obs)}">${esc(trunc(obs, 72))}</span>` : '—';
 
       const acciones = `
-        <a href="#!" class="v-ver"     title="Ver proveedor" data-contacto-id="${esc(v.contactoId||'')}"><i class="material-icons">visibility</i></a>
-        <a href="#!" class="v-nueva"   title="Nueva visita"   data-contacto-id="${esc(v.contactoId||'')}"><i class="material-icons">event_available</i></a>
-        <a href="#!" class="v-editar"  title="Editar visita"  data-id="${esc(v._id||'')}"><i class="material-icons">edit</i></a>
-        <a href="#!" class="v-eliminar"title="Eliminar visita"data-id="${esc(v._id||'')}"><i class="material-icons">delete</i></a>
+        <a href="#!" class="v-ver"      title="Ver proveedor"  data-contacto-id="${esc(v.contactoId||'')}"><i class="material-icons">visibility</i></a>
+        <a href="#!" class="v-nueva"    title="Nueva visita"    data-contacto-id="${esc(v.contactoId||'')}"><i class="material-icons">event_available</i></a>
+        <a href="#!" class="v-editar"   title="Editar visita"   data-id="${esc(v._id||'')}"><i class="material-icons">edit</i></a>
+        <a href="#!" class="v-eliminar" title="Eliminar visita" data-id="${esc(v._id||'')}"><i class="material-icons">delete</i></a>
       `;
 
       return [
@@ -385,11 +404,10 @@ export function setupFormularioVisita() {
       (M.Modal.getInstance(document.getElementById('modalVisita')))?.close();
       form.reset();
       form.dataset.editId = '';
+      adjustNow();
     } catch (e2) {
       console.warn('apiCreate/UpdateVisita error:', e2?.message || e2);
       M.toast?.({ html: 'No se pudo guardar la visita', displayLength: 2200, classes: 'red' });
     }
   });
 }
-
-
