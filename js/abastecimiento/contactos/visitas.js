@@ -7,9 +7,8 @@ import {
   apiDeleteVisita,
 } from '/js/core/api.js';
 import { state, $, setVal, slug } from './state.js';
-
-// normalizer correcto (carpeta VISITAS)
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
+
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
 // ---------------- utils ----------------
@@ -47,7 +46,6 @@ function codigoDeVisita(v) {
 // ---------------- DataTable ----------------
 let dtV = null;
 
-// asegurar que datatables recalcule columnas
 function adjustNow() {
   const jq = window.jQuery || window.$;
   if (jq && dtV) {
@@ -79,77 +77,24 @@ export async function initVisitasTab(forceReload = false) {
       paging: true,
       pageLength: 10,
       lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'Todos']],
-      autoWidth: false,        // anchos los define CSS
-      responsive: true,        // si estorba, puedes probar false
+      autoWidth: false,        // anchos: CSS
+      responsive: true,        // si estorba, probar false
       scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: [
-        { targets: -1, orderable: false, searchable: false } // solo Acciones
+        { targets: -1, orderable: false, searchable: false } // Acciones
       ],
       initComplete: () => adjustNow(),
       drawCallback:   () => adjustNow(),
     });
 
-    // Acciones por fila — delegación a nivel de la tabla (robusto incluso con Responsive)
-    jq('#tablaVisitas').off('click.visitas-actions')
-      .on('click.visitas-actions',
-          'a.v-ver, a.v-nueva, a.v-editar, a.v-eliminar, i.material-icons',
-          function (e) {
-            // Resuelve el <a> aunque el click venga del <i>
-            const a = this.closest ? this.closest('a') : jq(this).closest('a')[0];
-            if (!a) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-
-            const cls = a.className || '';
-            try {
-              if (cls.includes('v-ver')) {
-                const id = a.dataset.contactoId;
-                const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
-                if (c) abrirDetalleContacto(c);
-                return;
-              }
-              if (cls.includes('v-nueva')) {
-                const id = a.dataset.contactoId;
-                const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
-                if (c) abrirModalVisita(c);
-                return;
-              }
-              if (cls.includes('v-editar')) {
-                const vid = a.dataset.id;
-                const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(vid));
-                if (v) abrirEditarVisita(v);
-                return;
-              }
-              if (cls.includes('v-eliminar')) {
-                const vid = a.dataset.id;
-                if (!confirm('¿Eliminar esta visita?')) return;
-                (async () => {
-                  await apiDeleteVisita(vid);
-                  M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
-                  await renderTablaVisitas();
-                  adjustNow();
-                })().catch(err => {
-                  console.warn(err);
-                  M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
-                });
-              }
-            } catch (err) {
-              console.error('[visitas] acción error', err);
-              M.toast?.({ html: 'Acción no disponible', classes: 'red' });
-            }
-          });
-
-    // Ajustar si cambia el tamaño de la ventana
+    // ⚠️ NO ponemos handlers en tbody/tabla; lo haremos a nivel document (abajo).
     window.addEventListener('resize', adjustNow);
   }
 
   await renderTablaVisitas();
   adjustNow();
 
-  // refresco tras crear/editar
   window.addEventListener('visita:created', async () => { await renderTablaVisitas(); adjustNow(); });
   window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); adjustNow(); });
 }
@@ -206,13 +151,14 @@ export async function renderTablaVisitas() {
       ];
     });
 
+  const jq = window.jQuery || window.$;
   if (dtV && jq) {
     dtV.clear();
     dtV.rows.add(filas).draw(false);
     return;
   }
 
-  // fallback sin DataTables
+  // Fallback sin DataTables
   const tbody = $('#tablaVisitas tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -405,4 +351,63 @@ export function setupFormularioVisita() {
       M.toast?.({ html: 'No se pudo guardar la visita', displayLength: 2200, classes: 'red' });
     }
   });
+}
+
+/* =========================
+   Delegación global de acciones (ULTRA ROBUSTA)
+   - Funciona aunque Responsive mueva filas a child-rows
+   - Funciona aunque el click caiga en el <i>
+   - No depende de jQuery para el listener
+========================= */
+document.removeEventListener('click', handleVisitasActions, true);
+document.addEventListener('click', handleVisitasActions, true);
+
+function handleVisitasActions(e) {
+  // limitamos el alcance a elementos dentro de #tablaVisitas para no interferir en otras pantallas
+  const withinTable = e.target.closest && e.target.closest('#tablaVisitas');
+  if (!withinTable) return;
+
+  const a = e.target.closest('a.v-ver, a.v-nueva, a.v-editar, a.v-eliminar');
+  if (!a) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+  try {
+    if (a.classList.contains('v-ver')) {
+      const id = a.dataset.contactoId;
+      const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
+      if (c) abrirDetalleContacto(c);
+      return;
+    }
+    if (a.classList.contains('v-nueva')) {
+      const id = a.dataset.contactoId;
+      const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
+      if (c) abrirModalVisita(c);
+      return;
+    }
+    if (a.classList.contains('v-editar')) {
+      const vid = a.dataset.id;
+      const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(vid));
+      if (v) abrirEditarVisita(v);
+      return;
+    }
+    if (a.classList.contains('v-eliminar')) {
+      const vid = a.dataset.id;
+      if (!confirm('¿Eliminar esta visita?')) return;
+      (async () => {
+        await apiDeleteVisita(vid);
+        M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
+        await renderTablaVisitas();
+        adjustNow();
+      })().catch(err => {
+        console.warn(err);
+        M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
+      });
+    }
+  } catch (err) {
+    console.error('[visitas] acción error', err);
+    M.toast?.({ html: 'Acción no disponible', classes: 'red' });
+  }
 }
