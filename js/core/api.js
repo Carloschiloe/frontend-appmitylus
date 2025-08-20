@@ -115,9 +115,9 @@ export async function apiGetContactos() {
 export async function apiCreateContacto(data) {
   return request('/contactos', { method: 'POST', json: data });
 }
-// PATCH con fallback a PUT y reintento si hay error de red/DNS
+// PATCH sin fallback a PUT (NO pisa otros campos si el server no acepta PATCH)
 export async function apiUpdateContacto(id, data) {
-  return request(`/contactos/${id}`, { method: 'PATCH', json: data, retry: true });
+  return request(`/contactos/${id}`, { method: 'PATCH', json: data, retry: false });
 }
 export async function apiDeleteContacto(id) {
   return request(`/contactos/${id}`, { method: 'DELETE' });
@@ -142,7 +142,7 @@ export async function apiGetVisitasByContacto(contactoId) {
 export async function apiCreateVisita(data) {
   return request('/visitas', { method: 'POST', json: data });
 }
-// Igual que contactos: PATCH con fallback a PUT y reintento
+// Igual que contactos (aquí puedes dejar retry:true si no hay riesgo de campos parciales)
 export async function apiUpdateVisita(id, data) {
   return request(`/visitas/${id}`, { method: 'PATCH', json: data, retry: true });
 }
@@ -167,4 +167,3 @@ export async function apiContactosDisponiblesAll({ q = '' } = {}) {
 export async function apiPatchContactoSafe(id, data) {
   return request(`/contactos/${id}`, { method: 'PATCH', json: data, retry: false });
 }
-
