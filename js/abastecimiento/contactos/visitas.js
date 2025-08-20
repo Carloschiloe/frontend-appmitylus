@@ -3,6 +3,7 @@ import {
   apiGetVisitas,
   apiGetVisitasByContacto,
   apiCreateVisita,
+  apiDeleteVisita,
 } from '/js/core/api.js';
 import { state, $, setVal, slug } from './state.js';
 
@@ -381,3 +382,4 @@ export function setupFormularioVisita() {
     }
   });
 }
+
