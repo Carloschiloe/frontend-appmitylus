@@ -217,3 +217,7 @@
   .kpi-grid{ grid-template-columns:repeat(4,1fr)!important }
   .chart-card{ box-shadow:none!important; border:1px solid #eee }
 }
+/* Márgenes de tablas (antes estaban inline en el HTML) */
+.tabla-mt { margin-top: .75rem; }
+.tabla-mt-sm { margin-top: .5rem; }
+
