@@ -15,7 +15,7 @@ import { initPersonasTab, renderTablaPersonas } from './personas.js';
 import { initFiltrosYKPIsPersonas } from './filtros-kpis-personas.js';
 
 // Visitas
-import { setupFormularioVisita, initVisitasTab } from './visitas.js';
+import { setupFormularioVisita, initVisitasTab } from '../visitas/tab.js';
 
 let booted = false;
 let listenersHooked = false;
@@ -213,5 +213,6 @@ function hookGlobalListeners() {
 document.addEventListener('DOMContentLoaded', () => {
   initContactosTab().catch(console.error);
 });
+
 
 
