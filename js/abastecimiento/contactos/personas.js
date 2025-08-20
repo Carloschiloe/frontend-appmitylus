@@ -3,16 +3,22 @@ import { state, $ } from './state.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
 
-/* ------------ estilos específicos (layout fijo + ellipsis) ------------ */
+/* ------------ estilos específicos (layout fluido + ellipsis) ------------ */
 (function injectStyles() {
   const css = `
-  #tablaPersonas{ table-layout:fixed; width:100%; }
-  #tablaPersonas thead th { position: sticky; top: 0; z-index: 2; background: #fff; }
+  /* Layout fluido: sin forzar ancho fijo */
+  #tablaPersonas{ table-layout:auto; width:100%; }
+
+  /* El color del thead lo pone abastecimiento.css (teal), aquí solo sticky */
+  #tablaPersonas thead th { position: sticky; top: 0; z-index: 2; }
+
+  /* Ellipsis solo para las celdas largas, no afecta al resto */
   #tablaPersonas td .ellipsisCell{
     display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle;
   }
-  #tablaPersonas td .ellipsisEmpresa { max-width: 24ch; }
-  #tablaPersonas td .ellipsisNotas   { max-width: 36ch; }
+  #tablaPersonas td .ellipsisEmpresa { max-width: 26ch; }
+  #tablaPersonas td .ellipsisNotas   { max-width: 40ch; }
+
   #tablaPersonas a.icon-action { display:inline-flex; align-items:center; gap:2px; margin-left:.35rem; }
   #tablaPersonas a.icon-action i { font-size:18px; line-height:18px; }
   #tablaPersonas .chip.small { height:22px; line-height:22px; font-size:12px; }
@@ -52,8 +58,8 @@ export function initPersonasTab() {
 
   // chips
   document.getElementById('fltTodosP')?.addEventListener('click', () => { filtroActualP = 'todos'; renderTablaPersonas(); actualizarKPIs(); });
-  document.getElementById('fltSinP')?.addEventListener('click',   () => { filtroActualP = 'sin';   renderTablaPersonas(); actualizarKPIs(); });
-  document.getElementById('fltConP')?.addEventListener('click',   () => { filtroActualP = 'con';   renderTablaPersonas(); actualizarKPIs(); });
+  document.getElementById('fltSinP')  ?.addEventListener('click', () => { filtroActualP = 'sin';   renderTablaPersonas(); actualizarKPIs(); });
+  document.getElementById('fltConP')  ?.addEventListener('click', () => { filtroActualP = 'con';   renderTablaPersonas(); actualizarKPIs(); });
 
   document.addEventListener('reload-tabla-contactos', () => { renderTablaPersonas(); actualizarKPIs(); });
 
@@ -68,16 +74,19 @@ export function initPersonasTab() {
       pageLength: 10,
       order: [[0, 'desc']],
       autoWidth: false,
+      responsive: true,
+      scrollX: false,                           // 👈 sin scroll horizontal
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-      // 🔧 anchos por columna
+
+      // 🔧 anchos en PORCENTAJE para repartir sin overflow (≈100%)
       columnDefs: [
-        { targets: 0, width: '110px' },  // Fecha
-        { targets: 1, width: '220px' },  // Contacto
-        { targets: 2, width: '170px' },  // Teléfonos
-        { targets: 3, width: '220px' },  // Email
-        { targets: 4, width: '240px' },  // Empresa
-        { targets: 5, width: '340px' },  // Notas
-        { targets: 6, width: '140px', orderable: false, searchable: false } // Acciones
+        { targets: 0, width: '10%' },  // Fecha
+        { targets: 1, width: '18%' },  // Contacto
+        { targets: 2, width: '16%' },  // Teléfonos
+        { targets: 3, width: '18%' },  // Email
+        { targets: 4, width: '20%' },  // Empresa
+        { targets: 5, width: '12%' },  // Notas
+        { targets: 6, width: '6%', orderable: false, searchable: false } // Acciones
       ]
     });
 
@@ -184,6 +193,8 @@ export function renderTablaPersonas() {
   if (dtP && jq) {
     dtP.clear();
     dtP.rows.add(filas).draw(false);
+    // Ajuste por si la tabla estaba oculta
+    setTimeout(() => { try { dtP.columns.adjust().draw(false); } catch {} }, 0);
     return;
   }
 
