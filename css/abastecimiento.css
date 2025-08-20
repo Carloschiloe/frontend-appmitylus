@@ -221,3 +221,23 @@
 .tabla-mt { margin-top: .75rem; }
 .tabla-mt-sm { margin-top: .5rem; }
 
+/* ===== VISITAS ===== */
+#tablaVisitas { table-layout: fixed; width: 100%; }
+
+/* Anchos por columna (ajusta a gusto) */
+#tablaVisitas th:nth-child(1), #tablaVisitas td:nth-child(1) { width: 9rem; }   /* Fecha */
+#tablaVisitas th:nth-child(2), #tablaVisitas td:nth-child(2) { width: 22ch; }  /* Proveedor (usa ch para texto) */
+#tablaVisitas th:nth-child(3), #tablaVisitas td:nth-child(3) { width: 8rem; }  /* Centro */
+#tablaVisitas th:nth-child(4), #tablaVisitas td:nth-child(4) { width: 8rem; }  /* Muestra */
+#tablaVisitas th:nth-child(5), #tablaVisitas td:nth-child(5) { width: 18rem; } /* Próximo paso */
+#tablaVisitas th:nth-child(6), #tablaVisitas td:nth-child(6) { width: 7rem;  text-align:right; } /* Tons */
+#tablaVisitas th:nth-child(7), #tablaVisitas td:nth-child(7) { width: 22rem; } /* Observaciones */
+#tablaVisitas th:nth-child(8), #tablaVisitas td:nth-child(8) { width: 6rem;  white-space:nowrap; } /* Acciones */
+
+/* Ellipsis reutilizable */
+.ellipsisCell{
+  display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle;
+}
+.ellipsisProv{ max-width: 26ch; }
+.ellipsisObs { max-width: 100%; }
+
