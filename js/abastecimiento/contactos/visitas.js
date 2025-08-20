@@ -5,7 +5,7 @@ import {
   apiCreateVisita,
 } from '/js/core/api.js';
 import { state, $, setVal, slug } from './state.js';
-import { normalizeVisitas, centroCodigoById } from './normalizers.js';
+import { normalizeVisita, centroCodigoById } from './normalizers.js';
 import { abrirEdicion } from './form-contacto.js'; // por si lo necesitas
 
 /* ---------------- utils locales ---------------- */
@@ -305,3 +305,4 @@ export function setupFormularioVisita() {
     }
   });
 }
+
