@@ -246,3 +246,7 @@
 /* Garantiza click en Acciones */
 #tab-visitas #tablaVisitas td:last-child a { pointer-events: auto; cursor: pointer; }
 #tab-visitas #tablaVisitas td:last-child i.material-icons { pointer-events: none; }
+
+/////*Importar el css de configuracion de fotos*/////
+@import url('/js/abastecimiento/visitas/fotos/styles.css');
+
