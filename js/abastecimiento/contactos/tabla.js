@@ -1,7 +1,7 @@
 // /js/contactos/tabla.js
 import { state, $ } from './state.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
-import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
+import { abrirDetalleContacto, abrirModalVisita } from '../visitas/tab.js';
 
 /* ---------- estilos: columna proveedor angosta + ellipsis ---------- */
 (function injectStyles () {
@@ -198,4 +198,5 @@ export function renderTablaContactos() {
     tbody.appendChild(tr);
   });
 }
+
 
