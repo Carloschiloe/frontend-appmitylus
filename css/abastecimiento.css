@@ -241,3 +241,6 @@
 .ellipsisCell { display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
 .ellipsisProv { max-width: 26ch; }   /* controla cuánto puede crecer Proveedor */
 .ellipsisObs  { display:block; width:100%; } /* se ajusta al ancho de la celda */
+
+/* Garantiza que los enlaces de la columna Acciones reciban el click */
+#tablaVisitas td:last-child a { pointer-events: auto; cursor: pointer; }
