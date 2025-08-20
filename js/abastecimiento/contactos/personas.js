@@ -1,4 +1,4 @@
-// /js/contactos/personas.js
+// /js/abastecimiento/contactos/personas.js
 import { state, $ } from './state.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
@@ -181,7 +181,7 @@ export function renderTablaPersonas() {
 
       return [
         `<span data-order="${new Date(f).getTime()}">${f}</span>`,
-        esc(c.contactoNombre || ''),                  // solo persona
+        esc(c.contactoNombre || ''),         // ← solo persona, nunca empresa
         esc(String(tels)),
         esc(String(mails)),
         empresaCell,
@@ -197,7 +197,7 @@ export function renderTablaPersonas() {
     return;
   }
 
-  // Fallback sin DataTables (no debería usarse)
+  // Fallback sin DataTables
   const tbody = $('#tablaPersonas tbody');
   if (!tbody) return;
   tbody.innerHTML = filas.map(row => `<tr>${row.map(td => `<td>${td}</td>`).join('')}</tr>`).join('');
@@ -209,7 +209,7 @@ function actualizarKPIs() {
   const sin   = todos.filter(c => !hasEmpresa(c)).length;
   const con   = todos.filter(c =>  hasEmpresa(c)).length;
 
-  // Visitas (30d) sin empresa — lo calculamos sólo si hay visitas en state
+  // Visitas (30d) sin empresa — sólo si hay visitas en state
   let visitasSin = 0;
   const visitas = state.visitasGuardadas || [];
   if (Array.isArray(visitas) && visitas.length) {
