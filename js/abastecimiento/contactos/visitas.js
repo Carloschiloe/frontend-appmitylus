@@ -51,12 +51,8 @@ let dtV = null;
 function adjustNow() {
   const jq = window.jQuery || window.$;
   if (jq && dtV) {
-    setTimeout(() => {
-      try { dtV.columns.adjust().draw(false); } catch {}
-    }, 0);
-    setTimeout(() => {
-      try { dtV.columns.adjust().draw(false); } catch {}
-    }, 80);
+    setTimeout(() => { try { dtV.columns.adjust().draw(false); } catch {} }, 0);
+    setTimeout(() => { try { dtV.columns.adjust().draw(false); } catch {} }, 80);
   }
 }
 export function forceAdjustVisitas() { adjustNow(); }
@@ -83,8 +79,8 @@ export async function initVisitasTab(forceReload = false) {
       paging: true,
       pageLength: 10,
       lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'Todos']],
-      autoWidth: false,                 // anchos los define CSS
-      responsive: true,                 // si no quieres colapsar en móvil, poner false
+      autoWidth: false,        // anchos los define CSS
+      responsive: true,        // si estorba, puedes probar false
       scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: [
@@ -94,46 +90,57 @@ export async function initVisitasTab(forceReload = false) {
       drawCallback:   () => adjustNow(),
     });
 
-    // Acciones por fila (delegación robusta y con namespace para evitar duplicados)
-    jq('#tablaVisitas tbody').off('click.visitas-actions')
-      .on('click.visitas-actions', 'a.v-ver, a.v-nueva, a.v-editar, a.v-eliminar', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
+    // Acciones por fila — delegación a nivel de la tabla (robusto incluso con Responsive)
+    jq('#tablaVisitas').off('click.visitas-actions')
+      .on('click.visitas-actions',
+          'a.v-ver, a.v-nueva, a.v-editar, a.v-eliminar, i.material-icons',
+          function (e) {
+            // Resuelve el <a> aunque el click venga del <i>
+            const a = this.closest ? this.closest('a') : jq(this).closest('a')[0];
+            if (!a) return;
 
-        const $a = jq(this);
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
-        if ($a.hasClass('v-ver')) {
-          const id = this.dataset.contactoId;
-          const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
-          if (c) abrirDetalleContacto(c);
-          return;
-        }
-        if ($a.hasClass('v-nueva')) {
-          const id = this.dataset.contactoId;
-          const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
-          if (c) abrirModalVisita(c);
-          return;
-        }
-        if ($a.hasClass('v-editar')) {
-          const vid = this.dataset.id;
-          const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(vid));
-          if (v) abrirEditarVisita(v);
-          return;
-        }
-        if ($a.hasClass('v-eliminar')) {
-          const vid = this.dataset.id;
-          if (!confirm('¿Eliminar esta visita?')) return;
-          (async () => {
-            await apiDeleteVisita(vid);
-            M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
-            await renderTablaVisitas();
-            adjustNow();
-          })().catch(err => {
-            console.warn(err);
-            M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
+            const cls = a.className || '';
+            try {
+              if (cls.includes('v-ver')) {
+                const id = a.dataset.contactoId;
+                const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
+                if (c) abrirDetalleContacto(c);
+                return;
+              }
+              if (cls.includes('v-nueva')) {
+                const id = a.dataset.contactoId;
+                const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
+                if (c) abrirModalVisita(c);
+                return;
+              }
+              if (cls.includes('v-editar')) {
+                const vid = a.dataset.id;
+                const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(vid));
+                if (v) abrirEditarVisita(v);
+                return;
+              }
+              if (cls.includes('v-eliminar')) {
+                const vid = a.dataset.id;
+                if (!confirm('¿Eliminar esta visita?')) return;
+                (async () => {
+                  await apiDeleteVisita(vid);
+                  M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
+                  await renderTablaVisitas();
+                  adjustNow();
+                })().catch(err => {
+                  console.warn(err);
+                  M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
+                });
+              }
+            } catch (err) {
+              console.error('[visitas] acción error', err);
+              M.toast?.({ html: 'Acción no disponible', classes: 'red' });
+            }
           });
-        }
-      });
 
     // Ajustar si cambia el tamaño de la ventana
     window.addEventListener('resize', adjustNow);
@@ -181,10 +188,10 @@ export async function renderTablaVisitas() {
         : '—';
 
       const acciones = `
-        <a href="#!" class="v-ver"      title="Ver proveedor"  data-contacto-id="${esc(v.contactoId||'')}"><i class="material-icons">visibility</i></a>
-        <a href="#!" class="v-nueva"    title="Nueva visita"    data-contacto-id="${esc(v.contactoId||'')}"><i class="material-icons">event_available</i></a>
-        <a href="#!" class="v-editar"   title="Editar visita"   data-id="${esc(v._id||'')}"><i class="material-icons">edit</i></a>
-        <a href="#!" class="v-eliminar" title="Eliminar visita" data-id="${esc(v._id||'')}"><i class="material-icons">delete</i></a>
+        <a href="javascript:void(0)" class="v-ver"      title="Ver proveedor"  data-contacto-id="${esc(v.contactoId||'')}"><i class="material-icons">visibility</i></a>
+        <a href="javascript:void(0)" class="v-nueva"    title="Nueva visita"    data-contacto-id="${esc(v.contactoId||'')}"><i class="material-icons">event_available</i></a>
+        <a href="javascript:void(0)" class="v-editar"   title="Editar visita"   data-id="${esc(v._id||'')}"><i class="material-icons">edit</i></a>
+        <a href="javascript:void(0)" class="v-eliminar" title="Eliminar visita" data-id="${esc(v._id||'')}"><i class="material-icons">delete</i></a>
       `;
 
       return [
