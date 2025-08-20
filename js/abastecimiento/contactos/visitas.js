@@ -1,12 +1,16 @@
-// /js/contactos/visitas.js
+// /js/abastecimiento/contactos/visitas.js
 import {
   apiGetVisitas,
   apiGetVisitasByContacto,
   apiCreateVisita,
 } from '/js/core/api.js';
 import { state, $, setVal, slug } from './state.js';
-import { normalizeVisita, centroCodigoById } from './normalizers.js';
-import { abrirEdicion } from './form-contacto.js'; // por si lo necesitas
+
+// 👇 IMPORTA EL NORMALIZER CORRECTO (desde la carpeta visitas)
+import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
+
+// helper: versión "plural" que normaliza arreglos
+const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
 /* ---------------- utils locales ---------------- */
 const esc = (s='') => String(s)
@@ -118,7 +122,7 @@ export async function renderTablaVisitas() {
 
       const centro = codigoDeVisita(v);
       const actividad = v.enAgua || '';
-      const proximoPaso = v.estado || '';
+      the next step= v.estado || '';
       const tons = (v.tonsComprometidas ?? '') + '';
       const obs = v.observaciones || '';
       const obsHTML = obs ? `<span title="${esc(obs)}">${esc(trunc(obs, 56))}</span>` : '—';
@@ -137,7 +141,7 @@ export async function renderTablaVisitas() {
         proveedorHTML,
         esc(centro),
         esc(actividad),
-        esc(proximoPaso),
+        esc(the next step),
         esc(tons),
         obsHTML,
         acciones
@@ -305,4 +309,3 @@ export function setupFormularioVisita() {
     }
   });
 }
-
