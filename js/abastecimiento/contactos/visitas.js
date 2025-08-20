@@ -91,15 +91,16 @@ export async function initVisitasTab(forceReload = false) {
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       // 🔧 anchos por columna para evitar overflow
       columnDefs: [
-        { targets: 0, width: '110px' },                        // Fecha
-        { targets: 1, width: '260px', className: 'ellipsisProv' }, // Proveedor
-        { targets: 2, width: '110px' },                        // Centro
-        { targets: 3, width: '90px'  },                        // Muestra
-        { targets: 4, width: '220px' },                        // Próximo paso
-        { targets: 5, width: '80px', className: 'dt-body-right' }, // Tons
-        { targets: 6, width: '380px', className: 'ellipsisObs' },  // Observaciones
-        { targets: 7, width: '130px', orderable: false, searchable: false }, // Acciones
-      ],
+  { targets: 0, width: '10%' },                         // Fecha
+  { targets: 1, width: '26%' },                         // Proveedor (más ancho)
+  { targets: 2, width: '10%' },                         // Centro
+  { targets: 3, width: '8%'  },                         // Muestra
+  { targets: 4, width: '18%' },                         // Próximo paso
+  { targets: 5, width: '6%',  className: 'dt-body-right' }, // Tons
+  { targets: 6, width: '16%' },                         // Observaciones (recortada con ellipsis)
+  { targets: 7, width: '6%',  orderable:false, searchable:false } // Acciones
+],
+
     });
 
     // Acciones por fila
@@ -390,4 +391,5 @@ export function setupFormularioVisita() {
     }
   });
 }
+
 
