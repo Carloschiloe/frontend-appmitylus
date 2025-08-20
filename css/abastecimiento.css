@@ -235,3 +235,35 @@
   overflow: visible; /* íconos siempre visibles */
 }
 
+/* 1) EMPRESAS: asegurar ancho para íconos de Acciones */
+#tablaContactos th:last-child,
+#tablaContactos td:last-child{
+  min-width: 120px;      /* súbelo si usas más iconos */
+  white-space: nowrap;
+  overflow: visible;
+}
+
+/* 2) VISITAS: Fecha en una sola línea + no romper títulos */
+#tablaVisitas th, #tablaVisitas td { word-break: normal; }  /* evita “vertical” */
+#tablaVisitas th:nth-child(1),
+#tablaVisitas td:nth-child(1){
+  min-width: 120px;      /* evita salto de línea en fecha */
+  white-space: nowrap;
+}
+
+/* 3) VISITAS y AGENDA: una sola línea con ellipsis, sin scroll */
+#tablaVisitas td,
+#tablaPersonas td{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Acciones visibles también en estas tablas */
+#tablaVisitas  th:last-child, #tablaVisitas  td:last-child,
+#tablaPersonas th:last-child, #tablaPersonas td:last-child{
+  min-width: 120px;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+
