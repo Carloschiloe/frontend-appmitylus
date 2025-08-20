@@ -1,4 +1,4 @@
-// /js/contactos/data.js
+// /js/abastecimiento/contactos/data.js
 import { apiGetCentros, apiGetContactos } from '/js/core/api.js';
 import { state } from './state.js';
 import { coerceArray, normalizeContacto } from './normalizers.js';
@@ -14,28 +14,29 @@ export async function cargarCentros() {
     state.listaCentros = coerceArray(await apiGetCentros());
     console.log('[cargarCentros] ←', state.listaCentros.length, 'centros');
 
-    // Index de proveedores (como lo tenías)
+    // Índice de proveedores a partir de centros
     const mapa = new Map();
     state.proveedoresIndex = {};
     for (const c of state.listaCentros) {
-      const nombreOriginal = (c.proveedor || '').trim();
-      if (!nombreOriginal) continue;
-      const key = c.proveedorKey?.length ? c.proveedorKey : slug(nombreOriginal);
+      const nombre = (c.proveedor || c.name || '').trim();
+      if (!nombre) continue;
+      const key = c.proveedorKey?.length ? c.proveedorKey : slug(nombre);
       if (!mapa.has(key)) {
         mapa.set(key, {
-          nombreOriginal,
-          nombreNormalizado: nombreOriginal.toLowerCase().replace(/\s+/g, ' '),
+          nombreOriginal: nombre,
+          nombreNormalizado: nombre.toLowerCase().replace(/\s+/g, ' '),
           proveedorKey: key
         });
       }
-      if (!state.proveedoresIndex[key]) state.proveedoresIndex[key] = { proveedor: nombreOriginal };
+      if (!state.proveedoresIndex[key]) state.proveedoresIndex[key] = { proveedor: nombre };
     }
     state.listaProveedores = Array.from(mapa.values());
     console.log('[cargarCentros] proveedores indexados:', state.listaProveedores.length);
 
-    // 👇 NUEVO: popular el select de centros y enganchar change
+    // Popular select de centros y wirear change
     poblarSelectCentros(state.listaCentros);
-    // 🔔 avisa a otros módulos (asociar-empresa) que centros ya está listo
+
+    // 🔔 Notificar a otros módulos (asociar-empresa.js escuchará esto)
     document.dispatchEvent(new Event('centros:loaded'));
   } catch (e) {
     console.error('[cargarCentros] error:', e);
@@ -60,13 +61,9 @@ export async function cargarContactosGuardados() {
 }
 
 /* =========================================================================
-   Helpers NUEVOS para Centro -> Hidden y lookup de comuna por código
+   Helpers para Centro -> Hidden y lookup de comuna por código
    ========================================================================= */
 
-/**
- * Llena el <select id="selectCentro"> con opciones que llevan data-*:
- *  data-codigo, data-comuna, data-hectareas
- */
 function poblarSelectCentros(centros = []) {
   const sel = document.getElementById('selectCentro');
   if (!sel) return;
@@ -75,7 +72,7 @@ function poblarSelectCentros(centros = []) {
 
   centros.forEach(ct => {
     const codigo = ct.codigo ?? ct.code ?? ct.Codigo ?? '';
-    const nombre = ct.nombre ?? ct.Nombre ?? '';
+    const nombre = ct.nombre ?? ct.name ?? ct.Nombre ?? '';
     const comuna = ct.comuna ?? ct.Comuna ?? '';
     const hects  = ct.hectareas ?? ct.Hectareas ?? '';
 
@@ -91,17 +88,12 @@ function poblarSelectCentros(centros = []) {
 
   sel.disabled = false;
 
-  // Para no enganchar el listener más de una vez
   if (!state.__centroSelectWired) {
     sel.addEventListener('change', () => copyCentroToHidden(sel));
     state.__centroSelectWired = true;
   }
 }
 
-/**
- * Copia los data-* de la opción seleccionada a los inputs hidden del formulario:
- *  #centroId, #centroCodigo/#centroCode, #centroComuna, #centroHectareas
- */
 export function copyCentroToHidden(sel = document.getElementById('selectCentro')) {
   const opt = sel?.selectedOptions?.[0];
   setVal('centroId',        sel?.value || '');
@@ -111,10 +103,6 @@ export function copyCentroToHidden(sel = document.getElementById('selectCentro')
   setVal('centroHectareas', opt?.dataset.hectareas || '');
 }
 
-/**
- * Fallback robusto: dado un código de centro (string/number),
- * busca en state.listaCentros y retorna su comuna (si existe).
- */
 export function lookupComunaByCodigo(codigo) {
   if (!codigo) return '';
   const cod = String(codigo);
@@ -127,10 +115,10 @@ export function lookupComunaByCodigo(codigo) {
 }
 
 /* --------------------------------- utils -------------------------------- */
-
 function setVal(id, v) {
   const el = document.getElementById(id);
   if (el) el.value = v;
 }
+
 
 
