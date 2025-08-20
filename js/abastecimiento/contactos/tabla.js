@@ -53,24 +53,25 @@ export function initTablaContactos() {
   if (state.dt) return;
 
   state.dt = jq('#tablaContactos').DataTable({
-    // Buttons + length ('l') + filter + table + info + paging
-    dom: 'Blfrtip',
-    buttons: [
-      { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
-      { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
-    ],
-    order: [[0,'desc']],
-    paging: true,              // 🔹 paginación
-    pageLength: 10,            // 🔹 10 por página
-    lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, 'Todos'] ],
-    autoWidth: false,
-    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-    columnDefs: [
-      { targets: 0, width: '110px' },   // Fecha
-      { targets: 1, width: '260px' },   // Proveedor (angosta)
-      { targets: -1, orderable: false, searchable: false }
-    ]
-  });
+  dom: 'Blfrtip',
+  buttons: [
+    { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
+    { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
+  ],
+  order: [[0,'desc']],
+  paging: true,
+  pageLength: 10,
+  lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, 'Todos'] ],
+  autoWidth: false,
+  responsive: true,   // 👈 añade esto
+  scrollX: false,     // 👈 asegura que no meta scroll horizontal
+  language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+  columnDefs: [
+    { targets: 0, width: '110px' },   // Fecha (ancho fijo)
+    { targets: 1, width: '260px' },   // Proveedor (angosta + elipsis)
+    { targets: -1, orderable: false, searchable: false }
+  ]
+});
 
   // Delegación de acciones
   jq('#tablaContactos tbody')
@@ -197,3 +198,4 @@ export function renderTablaContactos() {
     tbody.appendChild(tr);
   });
 }
+
