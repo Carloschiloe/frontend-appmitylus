@@ -7,55 +7,54 @@ import { renderTablaContactos } from './tabla.js';
 
 const isValidObjectId = (s) => typeof s === 'string' && /^[0-9a-fA-F]{24}$/.test(s);
 
+/* =================== INIT =================== */
 export function setupFormulario() {
   const form = $('#formContacto');
   if (!form) return;
 
-  // modo "nuevo" por defecto
   state.editId = null;
 
-  // copiar data-* del <option> del centro a inputs hidden
+  // Sincroniza los hidden cuando cambie el centro
   const selCentro = $('#selectCentro');
   selCentro?.addEventListener('change', () => copyCentroToHidden(selCentro));
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // --- EMPRESA (opcional) ---
-    const proveedorKeyRaw    = (getVal(['proveedorKey','proveedorId']) || '').trim();
+    /* -------- EMPRESA (opcional) -------- */
+    const proveedorKeyRaw    = (getVal(['proveedorKey', 'proveedorId']) || '').trim();
     const proveedorNombreRaw = (getVal(['proveedorNombre']) || '').trim();
     const proveedorKey       = proveedorKeyRaw || null;
     const proveedorNombre    = proveedorNombreRaw || null;
     const hasEmpresa         = !!(proveedorKey && proveedorNombre);
 
-    // --- PERSONA (para permitir "sin empresa") ---
+    /* -------- PERSONA (permite “sin empresa”) -------- */
     const contactoNombre   = $('#contactoNombre')?.value?.trim() || '';
     const contactoTelefono = $('#contactoTelefono')?.value?.trim() || '';
     const contactoEmail    = $('#contactoEmail')?.value?.trim() || '';
     const hasPersona       = !!contactoNombre && (!!contactoTelefono || !!contactoEmail);
 
-    // Validación mínima: debe haber empresa O persona
     if (!hasEmpresa && !hasPersona) {
       M.toast?.({ html: 'Ingresa una empresa o una persona (nombre + teléfono o email).', displayLength: 2800 });
       ($('#contactoNombre')?.focus?.());
       return;
     }
 
-    // si no hay empresa, asegurar que NO viaja centro
+    // Si no hay empresa, limpia centro
     if (!hasEmpresa) {
       setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
       resetSelectCentros();
     }
 
-    // --- resto de campos ---
-    const tieneMMPP            = $('#tieneMMPP').value;           // opcional
+    /* -------- Otros campos -------- */
+    const tieneMMPP            = $('#tieneMMPP').value || '';
     const fechaDisponibilidad  = $('#fechaDisponibilidad').value || null;
-    const dispuestoVender      = $('#dispuestoVender').value;     // opcional
+    const dispuestoVender      = $('#dispuestoVender').value || '';
     const vendeActualmenteA    = $('#vendeActualmenteA').value.trim();
     const notas                = $('#notasContacto').value.trim();
     const tonsDisponiblesAprox = $('#tonsDisponiblesAprox')?.value ?? '';
 
-    // sincroniza hidden del centro por si el usuario no salió del select
+    // Asegura que los hidden estén sincronizados aunque no haya cambiado el select
     copyCentroToHidden(selCentro);
 
     const centroId        = hasEmpresa ? (getVal(['centroId']) || null) : null;
@@ -63,18 +62,17 @@ export function setupFormulario() {
     const centroComuna    = hasEmpresa ? (getVal(['centroComuna']) || lookupComunaByCodigo(centroCodigo) || null) : null;
     const centroHectareas = hasEmpresa ? (getVal(['centroHectareas']) || null) : null;
 
-    // Resultado: solo lo inferimos si eliges disponibilidad; si no, va vacío
+    // Resultado inferido a partir de disponibilidad (si se indicó)
     let resultado = '';
-    if (tieneMMPP === 'Sí') resultado = 'Disponible';
+    if (tieneMMPP === 'Sí')      resultado = 'Disponible';
     else if (tieneMMPP === 'No') resultado = 'No disponible';
-    // (si está vacío y no hay empresa, el backend lo acepta)
 
     const payload = {
       // Empresa (opcional)
       proveedorKey,
       proveedorNombre,
 
-      // Estado / disposición (opcionales)
+      // Estado / disposición
       resultado,
       tieneMMPP,
       fechaDisponibilidad,
@@ -99,62 +97,62 @@ export function setupFormulario() {
 
     try {
       const editId = state.editId;
-      console.log('[guardarContacto] editId=', editId, 'payload=', payload);
+      console.log('[form-contacto] submit →', isValidObjectId(editId) ? 'UPDATE' : 'CREATE', { editId, payload });
 
       if (isValidObjectId(editId)) {
-        await apiUpdateContacto(editId, payload);
+        await apiUpdateContacto(editId, payload); // PATCH (o PUT) según api.js
       } else {
         await apiCreateContacto(payload);
       }
 
+      // Refresca estado y tablas (Contactos + Personas)
       await cargarContactosGuardados();
       renderTablaContactos();
+      document.dispatchEvent(new Event('reload-tabla-contactos'));
+
       M.toast?.({
         html: isValidObjectId(editId) ? 'Contacto actualizado' : 'Contacto guardado',
         displayLength: 2000
       });
 
+      // Limpieza de formulario y estado
       const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
       form.reset();
-
-      // limpia hidden y proveedor
       setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
       setVal(['proveedorKey','proveedorId','proveedorNombre'], '');
-
       state.editId = null;
       modalInst?.close();
     } catch (err) {
-      console.error('[guardarContacto] ERROR:', err?.message || err);
+      console.error('[form-contacto] ERROR:', err?.message || err);
       M.toast?.({ html: 'Error al guardar contacto', displayLength: 2500 });
     }
   });
 }
 
+/* =================== EDICIÓN =================== */
 export function abrirEdicion(c) {
-  state.editId = c._id; // solo al editar
+  state.editId = c._id;
 
-  // --- Empresa ---
+  // Empresa
   const hasEmpresa = !!(c.proveedorKey || c.proveedorNombre);
   $('#buscadorProveedor').value = c.proveedorNombre || '';
   setVal(['proveedorNombre'], c.proveedorNombre || '');
   const key = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
   setVal(['proveedorKey','proveedorId'], key || '');
 
-  // --- Centros del proveedor ---
+  // Centros del proveedor
   if (hasEmpresa && key) {
     mostrarCentrosDeProveedor(key, c.centroId || null);
-    // setear hidden del centro por si no cambia nada
     setVal(['centroId'], c.centroId || '');
     setVal(['centroCodigo','centroCode'], c.centroCodigo || '');
     setVal(['centroComuna'], c.centroComuna || '');
     setVal(['centroHectareas'], c.centroHectareas || '');
   } else {
-    // sin empresa => no pueblas centros
     resetSelectCentros();
     setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
   }
 
-  // --- Estado / campos varios ---
+  // Estado / varios
   $('#tieneMMPP').value = c.tieneMMPP || '';
   $('#dispuestoVender').value = c.dispuestoVender || '';
   $('#fechaDisponibilidad').value = c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '';
@@ -162,24 +160,26 @@ export function abrirEdicion(c) {
   $('#vendeActualmenteA').value = c.vendeActualmenteA || '';
   $('#notasContacto').value = c.notas || '';
 
-  // --- Persona ---
+  // Persona
   $('#contactoNombre').value = c.contactoNombre || '';
   $('#contactoTelefono').value = c.contactoTelefono || '';
   $('#contactoEmail').value = c.contactoEmail || '';
 
   M.updateTextFields();
-
   const modal = document.getElementById('modalContacto');
   (M.Modal.getInstance(modal) || M.Modal.init(modal)).open();
 }
 
+/* =================== BORRADO =================== */
 export async function eliminarContacto(id) {
   await apiDeleteContacto(id);
   await cargarContactosGuardados();
   renderTablaContactos();
+  document.dispatchEvent(new Event('reload-tabla-contactos'));
   M.toast?.({ html: 'Contacto eliminado', displayLength: 1800 });
 }
 
+/* =================== NUEVO =================== */
 export function prepararNuevo() {
   state.editId = null;
   const form = $('#formContacto');
@@ -189,8 +189,8 @@ export function prepararNuevo() {
   setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
 }
 
-/* ---------------- utils ---------------- */
-function normalizeNumber(s){
+/* =================== UTILS =================== */
+function normalizeNumber(s) {
   if (s == null || s === '') return null;
   const n = Number(String(s).replace(',', '.'));
   return Number.isFinite(n) ? n : null;
