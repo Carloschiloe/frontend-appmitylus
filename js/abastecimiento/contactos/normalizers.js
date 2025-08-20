@@ -1,40 +1,57 @@
+// /js/abastecimiento/contactos/normalizers.js
 import { state, slug } from './state.js';
 
 export function coerceArray(res) {
   if (Array.isArray(res)) return res;
-  if (res && typeof res === 'object') return res.data || res.items || res.results || res.contactos || res.contacts || [];
+  if (res && typeof res === 'object') {
+    return res.data || res.items || res.results || res.contactos || res.contacts || [];
+  }
   return [];
 }
 
 export function normalizeContacto(c = {}) {
-  const key = c.proveedorKey || slug(c.proveedorNombre || c.proveedor || '');
-  const nombre = c.proveedorNombre || (state.proveedoresIndex[key]?.proveedor) || c.proveedor || '';
-  const created = c.createdAt || c.created_at || c.fecha || c.fechaCreacion;
-  const tons = (c.tonsDisponiblesAprox ?? c.onsDisponiblesAprox ?? c.tnsDisponiblesAprox ?? '');
-  const centroCodigo = c.centroCodigo || c.centro_code || c.codigoCentro || '';
-  const centroId = c.centroId || c.centro_id || c.idCentro || null;
+  // No borres nada: conserva lo que venga del backend
+  const o = { ...c };
 
-  return {
-    ...c,
-    proveedorKey: key,
-    proveedorNombre: nombre,
-    createdAt: created,
-    tonsDisponiblesAprox: (tons === '' || tons === null) ? '' : Number(tons),
-    centroCodigo,
-    centroId,
-  };
-}
+  // Identidad de proveedor/empresa
+  o.proveedorKey     = o.proveedorKey || (o.proveedorNombre ? slug(o.proveedorNombre) : (o.proveedor ? slug(o.proveedor) : ''));
+  o.proveedorNombre  = o.proveedorNombre || o.proveedor || '';
 
-export function normalizeVisitas(res) {
-  return coerceArray(res).map(v => ({
-    ...v,
-    fecha: v.fecha || v.createdAt || v.created_at || '',
-    estado: v.estado || v.resultado || '-',
-  }));
+  // Centro asociado (si existe)
+  o.centroId         = o.centroId ?? null;
+  o.centroCodigo     = o.centroCodigo || o.centro_code || o.codigoCentro || '';
+  o.centroComuna     = o.centroComuna || '';
+  o.centroHectareas  = o.centroHectareas ?? null;
+
+  // Persona
+  o.contactoNombre   = o.contactoNombre || '';
+  // teléfonos y emails: aceptar string o array
+  if (Array.isArray(o.contactoTelefonos)) {
+    o.contactoTelefonos = o.contactoTelefonos.filter(Boolean);
+  } else if (o.contactoTelefono) {
+    o.contactoTelefonos = [String(o.contactoTelefono)];
+  } else {
+    o.contactoTelefonos = [];
+  }
+  if (Array.isArray(o.contactoEmails)) {
+    o.contactoEmails = o.contactoEmails.filter(Boolean);
+  } else if (o.contactoEmail) {
+    o.contactoEmails = [String(o.contactoEmail)];
+  } else {
+    o.contactoEmails = [];
+  }
+
+  // Campos informativos usados por tablas
+  o.notas            = o.notas || o.notasContacto || '';
+  o.createdAt        = o.createdAt || o.created_at || o.fecha || o.fechaCreacion || null;
+  o.tonsDisponiblesAprox = (o.tonsDisponiblesAprox ?? o.tnsDisponiblesAprox ?? o.onsDisponiblesAprox ?? null);
+
+  return o;
 }
 
 // útil para mostrar código cuando sólo hay centroId
 export function centroCodigoById(id) {
-  const c = state.listaCentros.find(x => String(x._id || x.id) === String(id));
-  return c?.code || c?.codigo || null;
+  if (!id) return '';
+  const c = (state.listaCentros || []).find(x => String(x._id || x.id) === String(id));
+  return c?.code || c?.codigo || '';
 }
