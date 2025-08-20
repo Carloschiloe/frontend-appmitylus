@@ -181,11 +181,11 @@ export function renderTablaPersonas() {
 
       return [
         `<span data-order="${new Date(f).getTime()}">${f}</span>`,
-        esc(c.contactoNombre || c.proveedorNombre || ''),
+        esc(c.contactoNombre || ''),                  // 🔧 CAMBIO: solo persona, sin fallback a empresa
         esc(String(tels)),
         esc(String(mails)),
         empresaCell,
-        `<span class="ellipsisCell ellipsisNotas" title="${notas}">${notas}</span>`,
+        `<span class="ellipsisCell ellipsisNotas" title="${notas}">${notas}</span>',
         acciones
       ];
     });
