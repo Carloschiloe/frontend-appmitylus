@@ -2,6 +2,22 @@
    ABASTECIMIENTO – Overrides sobre global
    ========================================= */
 
+/* ====== Contenedor común + espacio para futura sidebar ====== */
+:root{
+  --page-gutter: 24px;
+  --sidebar-gap: 120px;   /* ajusta 96/80/64 si quieres */
+  --page-max: 1280px;
+}
+.page-wrap{
+  max-width: var(--page-max);
+  margin: 1rem auto 2rem;
+  padding-left: calc(var(--page-gutter) + var(--sidebar-gap));
+  padding-right: var(--page-gutter);
+}
+@media (max-width: 992px){
+  .page-wrap{ padding-left: var(--page-gutter); }
+}
+
 /* ========= UNIFICAR TABLAS (Contactos, Visitas, Agenda) ========= */
 
 /* Cabezal teal */
@@ -36,12 +52,26 @@
   transform: scale(1.08);
 }
 
-/* Evitar overflow horizontal (pestañas que tendían a desbordar) */
+/* Wrappers de DataTables: ocupar 100% y permitir scroll si no cabe */
+#tab-contactos .dataTables_wrapper,
 #tab-visitas  .dataTables_wrapper,
-#tab-personas .dataTables_wrapper { overflow-x: hidden; }
+#tab-personas .dataTables_wrapper{
+  width: 100% !important;
+  overflow-x: auto;                 /* <— evita corte a la derecha */
+  -webkit-overflow-scrolling: touch;
+}
 
-/* Layout fijo para control granular de anchos */
-#tablaVisitas, #tablaPersonas { table-layout: fixed; width: 100% !important; }
+/* Tablas: ancho y layout */
+#tablaContactos,
+#tablaVisitas,
+#tablaPersonas{
+  width: 100% !important;
+}
+#tablaVisitas,
+#tablaPersonas{
+  table-layout: fixed;              /* control granular de columnas */
+  min-width: 1280px;                /* ajusta 1200–1400 según tu contenido */
+}
 
 /* -------- Anchos por columna — VISITAS --------
    (1) Fecha, (2) Proveedor, (3) Centro, (4) Muestra,
@@ -221,12 +251,17 @@
 
 /* ======= RESPONSIVE GENERAL (tablas) ======= */
 @media (max-width: 992px){
-  #tablaContactos, #tablaContactos_wrapper,
-  #tablaVisitas,  #tablaVisitas_wrapper,
-  #tablaPersonas, #tablaPersonas_wrapper {
-    min-width: 360px !important;
-    width: 100vw !important;
-    display: block !important;
+  /* Respetar padding de .page-wrap y permitir scroll horizontal */
+  #tablaContactos_wrapper,
+  #tablaVisitas_wrapper,
+  #tablaPersonas_wrapper{
+    width: 100% !important;
+    overflow-x: auto;
+  }
+  #tablaContactos,
+  #tablaVisitas,
+  #tablaPersonas{
+    min-width: 760px;              /* ancho mínimo para no romper columnas */
   }
   .dataTables_paginate{ justify-content:center; }
 }
@@ -240,14 +275,8 @@
 }
 
 /* --- VISITAS: ocupar todo el ancho y quitar aire derecho --- */
-#tab-visitas .dataTables_wrapper,
 #tab-visitas #tablaVisitas{
   width: 100% !important;
-}
-
-#tab-visitas .dataTables_wrapper{
-  padding-right: 0 !important;
-  margin-right: 0 !important;
 }
 
 /* Mantén el mismo patrón en las otras pestañas */
@@ -256,8 +285,8 @@
   width: 100% !important;
 }
 
-/* Opcional: amplía el container en desktop para que quede menor margen lateral */
+/* Opcional: amplía el container en desktop para que quede menor margen lateral
+   (por si usas .container en otras vistas) */
 @media (min-width: 1200px){
   .container{ max-width: 1400px; }   /* sube a 1440/1500 si quieres aún menos margen */
 }
-
