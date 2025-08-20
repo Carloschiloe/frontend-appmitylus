@@ -1,11 +1,8 @@
 /* =========================================================
-   GLOBAL.css – Base del proyecto MMPP
+   GLOBAL.css – Base del proyecto MMPP (SIN ESTILOS DE TABLAS)
    - Variables, reset suave y container
-   - Tablas (DataTables), íconos y toolbar
-   - Modales (Materialize) compactos y autoajustables
-   - Fixes de dropdown/select sobre tablas y child-rows
-   - Helpers y responsive
-   Paleta inspirada en tus vistas (teal/verde petróleo)
+   - Cards, botones, modales
+   - Formularios, Leaflet, helpers, responsive
    ========================================================= */
 
 /* ---------- 1) Variables ---------- */
@@ -15,8 +12,8 @@
   --bg-soft:#fff;
   --txt:#1f2937;
   --txt-soft:#6b7280;
-  --primary:#004d40;       /* teal oscuro (Centros) */
-  --primary-acc:#009688;   /* teal acento (hover) */
+  --primary:#004d40;       /* teal oscuro */
+  --primary-acc:#009688;   /* teal acento */
   --border:#e5e7eb;
 
   /* Dimensiones y radios */
@@ -25,6 +22,10 @@
 
   /* Tipografía */
   --fz-12:.75rem; --fz-13:.8125rem; --fz-14:.875rem; --fz-15:.9375rem; --fz-16:1rem;
+
+  /* Layout base (neutro) */
+  --page-gutter: 24px;
+  --page-max: 1280px;
 }
 
 /* ---------- 2) Reset suave + container ---------- */
@@ -43,7 +44,7 @@ a:hover{filter:brightness(.95)}
 
 .container{
   display:flex; flex-direction:column; min-height:100vh;
-  overflow:visible !important; /* evita cortar paginación/flotantes */
+  overflow:visible !important;
 }
 
 /* ---------- 3) Cards y wrappers ---------- */
@@ -66,87 +67,18 @@ a:hover{filter:brightness(.95)}
   background:var(--primary); color:#fff; border:1px solid transparent;
   padding:.5rem .85rem; box-shadow:var(--shadow); cursor:pointer;
 }
-.btn:hover, .dt-button:hover{background: #013e34}
+.btn:hover, .dt-button:hover{background:#013e34}
 
-/* ---------- 5) Tablas (genérico + DataTables) ---------- */
-table{border-collapse:separate; border-spacing:0; width:100%}
-table.dataTable, .dataTable-wrapper, .card table{
-  width:100% !important; max-width:100% !important; overflow-x:auto;
-}
-
-.dataTables_wrapper{padding:.25rem}
-.dataTables_wrapper .dt-buttons{
-  display:flex; flex-wrap:wrap; gap:.4rem; margin:.5rem 0;
-}
-.dataTables_filter{
-  margin:.5rem 0; display:flex; justify-content:flex-end;
-}
-.dataTables_filter label{display:flex; align-items:center; gap:.5rem}
-.dataTables_filter input{
-  height:32px; padding:0 .6rem; font-size:var(--fz-14); max-width:260px;
-}
-.dataTables_length{margin:.5rem 0}
-.dataTables_info{color:var(--txt-soft); font-size:var(--fz-13)}
-
-.dataTables_paginate{
-  position:static !important; background:transparent !important;
-  padding:8px 0 0 0 !important; margin-bottom:0 !important; z-index:100 !important;
-  display:flex; gap:.25rem; align-items:center; justify-content:flex-end;
-}
-.dataTables_paginate .paginate_button{
-  padding:.35rem .6rem; border:1px solid var(--border);
-  border-radius:10px; background:#fff; cursor:pointer; font-size:var(--fz-14);
-}
-.dataTables_paginate .paginate_button.current{
-  background:var(--primary); color:#fff; border-color:transparent;
-}
-.dataTables_paginate .paginate_button.disabled{
-  opacity:.45; cursor:not-allowed;
-}
-
-/* Cabezal y celdas estándar */
-table.display, table.dataTable{
-  background:#fff; border-radius:var(--r-lg);
-}
-table.display thead th, table.dataTable thead th{
-  position:sticky; top:0; z-index:2;
-  background: #f0f5f4; /* suave, neutro */
-  color:#0f1e1d; font-weight:700; border-bottom:1px solid var(--border);
-}
-table.display th, table.display td,
-table.dataTable th, table.dataTable td{
-  font-size: var(--fz-15);
-  padding:.42rem .55rem;
-  white-space:nowrap; vertical-align:middle; border-bottom:1px solid #e0e0e0;
-}
-table.display tbody tr:hover{background:#fafafa}
-
-/* Última columna: acciones sin quiebre de línea */
-td:last-child, th:last-child{white-space:nowrap !important}
-
-/* ---------- 6) Íconos de acciones (Material Icons) ---------- */
-td .material-icons, th .material-icons{
-  display:inline-block !important; vertical-align:middle;
-  font-size:1.15em; margin-right:7px; color:#555; cursor:pointer;
-  transition: color .18s, transform .15s;
-}
-td .material-icons:last-child, th .material-icons:last-child{margin-right:0}
-td .material-icons:hover, th .material-icons:hover{
-  color:var(--primary-acc); filter:brightness(1.08); transform:translateY(-1px);
-}
-
-/* ---------- 7) Modales (Materialize) ---------- */
+/* ---------- 5) Modales (Materialize) ---------- */
 .modal{
   background:#fff; border-radius:var(--r-lg); box-shadow:var(--shadow);
   width:92% !important; max-width:760px !important;
-  /* ACTUALIZADO: límites y scroll controlado */
-  max-height:90vh !important;               /* que no exceda la pantalla */
+  max-height:90vh !important;
   top:7vh !important; 
-  overflow:hidden;                           /* el scroll va en .modal-content */
+  overflow:hidden;
 }
 .modal .modal-content{
   padding:1rem 1.25rem !important;
-  /* ACTUALIZADO: alto interno con scroll, restando el footer */
   max-height:calc(90vh - 70px) !important;
   overflow:auto;
   padding-bottom:0;
@@ -156,57 +88,14 @@ td .material-icons:hover, th .material-icons:hover{
   background:#fff; 
   border-top:1px solid var(--border);
   border-bottom-left-radius:var(--r-lg); border-bottom-right-radius:var(--r-lg);
-  /* ACTUALIZADO: footer siempre visible */
   position: sticky; bottom:0; z-index:3;
 }
-/* tamaños adicionales opcionales */
+/* tamaños adicionales */
 .modal.modal--sm{max-width:560px !important}
 .modal.modal--md{max-width:760px !important}
 .modal.modal--lg{max-width:1100px !important}
 
-/* ---------- 8) Fixes de dropdown/select sobre tablas y child-rows ---------- */
-/* Menú del select de Materialize siempre arriba, con posicionamiento fijo
-   (evita clipping bajo overflow/transform de DataTables o filas hijas) */
-body .dropdown-content.select-dropdown{
-  z-index: 10100 !important;
-  position: fixed !important;
-  background:#fff !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,.22) !important;
-  min-width: 110px !important; max-width: 96vw !important;
-  overflow-y:auto !important; border-radius:6px !important;
-  top:0 !important; left:0 !important; right:auto !important;
-  will-change: unset !important; display:block !important;
-  font-size:1em !important;
-}
-/* ACTUALIZADO: dentro de modales NO forzar fixed en (0,0) */
-.modal .dropdown-content.select-dropdown{
-  position: absolute !important;
-  top:auto !important; left:auto !important; right:auto !important;
-  will-change: transform !important;
-  display:block !important;
-}
-
-/* Nunca permitir clipping en estructuras de filas hijas genéricas */
-.child-row, .child-row * ,
-.child-row-lineas, .child-row-lineas * ,
-.child-table-lineas, .child-table-lineas * {
-  position:static !important; overflow:visible !important;
-  z-index:auto !important; transform:none !important; filter:none !important; will-change:auto !important;
-}
-
-/* Wrapper de select dentro de filas hijas con stacking correcto */
-.child-row .select-wrapper,
-.child-row-lineas .select-wrapper,
-.child-table-lineas .select-wrapper{
-  position:relative !important; z-index:10100 !important;
-}
-
-/* Alto mínimo cuando un select abre sobre filas compactas */
-tr.editando-select, tr.editando-select td, tr.editando-select th{
-  min-height:55px !important; height:55px !important;
-}
-
-/* ---------- 9) Formularios base ---------- */
+/* ---------- 6) Formularios base ---------- */
 input, select, textarea{
   width:100%; border:1px solid var(--border); border-radius:var(--r-xs);
   padding:.55rem .7rem; font-size:var(--fz-14); background:#fff; color:var(--txt);
@@ -215,8 +104,7 @@ input:focus, select:focus, textarea:focus{
   outline:2px solid rgba(0,150,136,.18); border-color:var(--primary-acc);
 }
 
-/* ESTILO OPCIONAL: select nativo moderno para usar en modales
-   (aplícalo con class="browser-default modern-select") */
+/* Select nativo moderno (opcional) dentro de modales */
 .modal .modern-select{
   width:100%;
   appearance:none; -webkit-appearance:none; -moz-appearance:none;
@@ -242,63 +130,19 @@ input:focus, select:focus, textarea:focus{
 }
 .modal .modern-select::-ms-expand{ display:none; }
 
-/* ---------- 10) Leaflet mínimos (si usas mapas) ---------- */
+/* ---------- 7) Leaflet mínimos (si usas mapas) ---------- */
 .leaflet-container{
   border-radius:var(--r-lg);
   border:1px solid var(--border);
   box-shadow:var(--shadow);
 }
 
-/* ---------- 11) Utilidades ---------- */
-.hidden{display:none !important}
-.text-soft{color:var(--txt-soft)}
-.text-right{text-align:right}
-.nowrap{white-space:nowrap}
-.mt-2{margin-top:.5rem} .mt-4{margin-top:1rem}
-.mb-2{margin-bottom:.5rem} .mb-4{margin-bottom:1rem}
-.p-0{padding:0} .p-4{padding:1rem} .p-5{padding:1.25rem}
-
-/* ---------- 12) Responsive ---------- */
-@media (max-width: 992px){
-  .dataTables_filter{justify-content:flex-start}
-  .dataTables_filter input{max-width:100%}
-}
-@media (max-width: 900px){
-  /* Tablas fluidas (evita desbordes en móviles) */
-  table.dataTable, .dataTable-wrapper{display:block !important}
-  .dataTables_paginate{justify-content:center}
-}
-@media (max-width:600px){
-  .modal{width:96% !important; top:4vh !important}
-  table.display th, table.display td,
-  table.dataTable th, table.dataTable td{
-    font-size: var(--fz-14);
-    padding:.38rem .5rem;
-  }
-}
-
-/* ---------- 13) Estilos “compact” opcionales de tabla ---------- */
-.table--compact th, .table--compact td{padding:.35rem .5rem; font-size:.9rem}
-
-/* ====== Layout base (neutro). El gap de sidebar lo define abastecimiento.css ====== */
-:root{
-  --page-gutter: 24px;      /* borde lateral base */
-  --page-max: 1280px;       /* ancho máximo del contenido */
-}
+/* ---------- 8) Layout de página ---------- */
 .page-wrap{
   max-width: var(--page-max);
   margin: 1rem auto 2rem;
   padding-left: var(--page-gutter);
   padding-right: var(--page-gutter);
-}
-
-/* DataTables: wrappers a 100% y con scroll horizontal si es necesario */
-#tablaContactos_wrapper,
-#tablaVisitas_wrapper,
-#tablaPersonas_wrapper{
-  width: 100% !important;
-  overflow-x: auto;              /* evita el “corte” a la derecha */
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Toolbar común */
@@ -310,8 +154,16 @@ input:focus, select:focus, textarea:focus{
   margin: 12px 0 10px;
 }
 
-/* Input de búsqueda de DataTables con ancho razonable */
-.dataTables_wrapper .dataTables_filter input{
-  width: 320px;
-  max-width: 100%;
+/* ---------- 9) Utilidades ---------- */
+.hidden{display:none !important}
+.text-soft{color:var(--txt-soft)}
+.text-right{text-align:right}
+.nowrap{white-space:nowrap}
+.mt-2{margin-top:.5rem} .mt-4{margin-top:1rem}
+.mb-2{margin-bottom:.5rem} .mb-4{margin-bottom:1rem}
+.p-0{padding:0} .p-4{padding:1rem} .p-5{padding:1.25rem}
+
+/* ---------- 10) Responsive ---------- */
+@media (max-width:600px){
+  .modal{width:96% !important; top:4vh !important}
 }
