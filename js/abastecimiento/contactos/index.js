@@ -1,4 +1,5 @@
 // /js/abastecimiento/contactos/index.js
+
 if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
   import('./debug-fetch.js').catch(() => {});
 }
@@ -20,6 +21,25 @@ let booted = false;
 let listenersHooked = false;
 let visitasBooted = false;
 let personasBooted = false;
+
+/* =======================
+   DataTables defaults (global)
+   ======================= */
+function setDTDefaults() {
+  const $ = window.jQuery || window.$;
+  if (!$ || !$.fn || !$.fn.dataTable) return;
+
+  // Evita el scroll horizontal por defecto y mejora el ajuste de columnas
+  $.extend(true, $.fn.dataTable.defaults, {
+    scrollX: false,
+    autoWidth: false,
+    responsive: true,          // que pueda reordenar/ocultar si hace falta
+    deferRender: true
+  });
+
+  // Manejo de errores silencioso en consola
+  $.fn.dataTable.ext.errMode = 'none';
+}
 
 /* Utils: ajustar columnas si la tabla existe */
 function adjustDT(selector) {
@@ -123,6 +143,9 @@ export async function initContactosTab(forceReload = false) {
   if (booted && !forceReload) return;
 
   try {
+    // ⚙️ Asegura defaults de DataTables antes de crear cualquier tabla
+    setDTDefaults();
+
     initUIOnce();
 
     // Datos base
@@ -139,9 +162,7 @@ export async function initContactosTab(forceReload = false) {
     renderTablaContactos();
     adjustDT('#tablaContactos');
 
-    // ❗ Personas y Visitas: NO inicializar aquí para evitar anchos mal calculados
-    // Se inicializan al abrir sus pestañas (lazy load en initUIOnce)
-
+    // Personas y Visitas se inicializan al abrir sus pestañas (lazy)
     initAsociacionContactos();
     hookGlobalListeners();
 
@@ -192,3 +213,5 @@ function hookGlobalListeners() {
 document.addEventListener('DOMContentLoaded', () => {
   initContactosTab().catch(console.error);
 });
+
+
