@@ -1,4 +1,4 @@
-// api.js
+// /js/core/api.js
 const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
 
 /* ===================== Helpers comunes ===================== */
@@ -12,17 +12,12 @@ async function checkResponse(resp) {
   if (resp.status === 204) return null;
 
   const ct = (resp.headers.get('content-type') || '').toLowerCase();
-  // Si es JSON, parsea; si no, devuelve texto
   if (ct.includes('application/json')) return resp.json();
   return resp.text();
 }
 
 async function safeReadText(resp) {
-  try {
-    return await resp.text();
-  } catch {
-    return '(sin cuerpo)';
-  }
+  try { return await resp.text(); } catch { return '(sin cuerpo)'; }
 }
 
 // QS helper: evita mandar claves vacías/undefined/null
@@ -42,25 +37,19 @@ function buildQS(params = {}) {
  */
 async function request(path, { method = 'GET', json, headers = {}, retry = true } = {}) {
   const url = `${API_URL}${path}`;
-  const opts = {
-    method,
-    headers: { 'Content-Type': 'application/json', ...headers },
-  };
+  const opts = { method, headers: { 'Content-Type': 'application/json', ...headers } };
   if (json !== undefined) opts.body = JSON.stringify(json);
 
   let resp;
   try {
     resp = await fetch(url, opts);
   } catch (e) {
-    // Error de red: reintenta 1 vez
     if (!retry) throw e;
-    // Si era PATCH, reintenta como PUT
     const fallbackMethod = method === 'PATCH' ? 'PUT' : method;
     const resp2 = await fetch(url, { ...opts, method: fallbackMethod });
     return checkResponse(resp2);
   }
 
-  // Si PATCH no es soportado por el server, reintenta como PUT
   if (
     retry &&
     method === 'PATCH' &&
@@ -74,18 +63,10 @@ async function request(path, { method = 'GET', json, headers = {}, retry = true 
 }
 
 /* ==================== CENTROS ==================== */
-export async function apiGetCentros() {
-  return request('/centros');
-}
-export async function apiCreateCentro(data) {
-  return request('/centros', { method: 'POST', json: data });
-}
-export async function apiUpdateCentro(id, data) {
-  return request(`/centros/${id}`, { method: 'PUT', json: data });
-}
-export async function apiDeleteCentro(id) {
-  return request(`/centros/${id}`, { method: 'DELETE' });
-}
+export async function apiGetCentros() { return request('/centros'); }
+export async function apiCreateCentro(data) { return request('/centros', { method: 'POST', json: data }); }
+export async function apiUpdateCentro(id, data) { return request(`/centros/${id}`, { method: 'PUT', json: data }); }
+export async function apiDeleteCentro(id) { return request(`/centros/${id}`, { method: 'DELETE' }); }
 
 /* LÍNEAS */
 export async function apiAddLinea(centroId, data) {
@@ -109,18 +90,16 @@ export async function apiBulkUpsertCentros(arr) {
 }
 
 /* ==================== CONTACTOS ==================== */
-export async function apiGetContactos() {
-  return request('/contactos');
-}
-export async function apiCreateContacto(data) {
-  return request('/contactos', { method: 'POST', json: data });
-}
-// PATCH sin fallback a PUT (NO pisa otros campos si el server no acepta PATCH)
+export async function apiGetContactos() { return request('/contactos'); }
+export async function apiCreateContacto(data) { return request('/contactos', { method: 'POST', json: data }); }
+// PATCH con fallback a PUT y reintento (para updates grandes)
 export async function apiUpdateContacto(id, data) {
-  return request(`/contactos/${id}`, { method: 'PATCH', json: data, retry: false });
+  return request(`/contactos/${id}`, { method: 'PATCH', json: data, retry: true });
 }
-export async function apiDeleteContacto(id) {
-  return request(`/contactos/${id}`, { method: 'DELETE' });
+export async function apiDeleteContacto(id) { return request(`/contactos/${id}`, { method: 'DELETE' }); }
+// PATCH seguro sin fallback (para NO pisar otros campos)
+export async function apiPatchContactoSafe(id, data) {
+  return request(`/contactos/${id}`, { method: 'PATCH', json: data, retry: false });
 }
 
 /* ==================== VISITAS ==================== */
@@ -135,20 +114,13 @@ export async function apiGetVisitasByContacto(contactoId) {
   try {
     const json = await request(`/visitas${qs}`);
     return Array.isArray(json) ? json : (Array.isArray(json?.items) ? json.items : []);
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
-export async function apiCreateVisita(data) {
-  return request('/visitas', { method: 'POST', json: data });
-}
-// Igual que contactos (aquí puedes dejar retry:true si no hay riesgo de campos parciales)
+export async function apiCreateVisita(data) { return request('/visitas', { method: 'POST', json: data }); }
 export async function apiUpdateVisita(id, data) {
   return request(`/visitas/${id}`, { method: 'PATCH', json: data, retry: true });
 }
-export async function apiDeleteVisita(id) {
-  return request(`/visitas/${id}`, { method: 'DELETE' });
-}
+export async function apiDeleteVisita(id) { return request(`/visitas/${id}`, { method: 'DELETE' }); }
 
 /* ======= CONTACTOS DISPONIBLES (Planificación) ======= */
 export async function apiContactosDisponibles({ q = '', minTons = 1 } = {}) {
@@ -157,13 +129,6 @@ export async function apiContactosDisponibles({ q = '', minTons = 1 } = {}) {
   const json = await request(`/contactos/disponibles${qs}`);
   return Array.isArray(json) ? json : (json?.items || []);
 }
-
-// Útil para debug en UI (lista TODO sin filtro por toneladas)
 export async function apiContactosDisponiblesAll({ q = '' } = {}) {
   return apiContactosDisponibles({ q, minTons: 0 });
-}
-
-// PATCH sin fallback a PUT (para no borrar campos en updates parciales)
-export async function apiPatchContactoSafe(id, data) {
-  return request(`/contactos/${id}`, { method: 'PATCH', json: data, retry: false });
 }
