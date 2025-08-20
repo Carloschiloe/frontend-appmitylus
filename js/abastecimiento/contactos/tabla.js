@@ -48,7 +48,9 @@ function getComunaByCodigo(codigo) {
 /* --------------------------------- DataTables --------------------------------- */
 export function initTablaContactos() {
   const jq = window.jQuery || window.$;
-  if (!jq || state.dt) return;
+  const tabla = $('#tablaContactos');
+  if (!jq || !tabla) return;
+  if (state.dt) return;
 
   state.dt = jq('#tablaContactos').DataTable({
     // Buttons + length ('l') + filter + table + info + paging
@@ -96,14 +98,25 @@ export function initTablaContactos() {
         M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 });
       }
     });
+
+  // 🔁 refresco en vivo cuando otros módulos disparan reload
+  document.addEventListener('reload-tabla-contactos', () => {
+    console.debug('[tablaContactos] reload-tabla-contactos recibido');
+    renderTablaContactos();
+  });
 }
 
 
 /* ------------------------------- Render de filas -------------------------------- */
 export function renderTablaContactos() {
   const jq = window.jQuery || window.$;
+  const tabla = $('#tablaContactos');
+  if (!tabla) return;
 
-  const filas = (state.contactosGuardados || [])
+  const base = Array.isArray(state.contactosGuardados) ? state.contactosGuardados : [];
+  console.debug('[tablaContactos] render → items:', base.length, base[0]);
+
+  const filas = base
     .slice()
     .sort((a,b)=>{
       const da = new Date(a.createdAt || a.fecha || 0).getTime();
@@ -166,7 +179,7 @@ export function renderTablaContactos() {
   // Si DataTables ya está, refrescamos por su API
   if (state.dt && jq) {
     state.dt.clear();
-    state.dt.rows.add(filas).draw();
+    state.dt.rows.add(filas).draw(false);
     return;
   }
 
@@ -184,4 +197,3 @@ export function renderTablaContactos() {
     tbody.appendChild(tr);
   });
 }
-
