@@ -162,3 +162,9 @@ export async function apiContactosDisponibles({ q = '', minTons = 1 } = {}) {
 export async function apiContactosDisponiblesAll({ q = '' } = {}) {
   return apiContactosDisponibles({ q, minTons: 0 });
 }
+
+// PATCH sin fallback a PUT (para no borrar campos en updates parciales)
+export async function apiPatchContactoSafe(id, data) {
+  return request(`/contactos/${id}`, { method: 'PATCH', json: data, retry: false });
+}
+
