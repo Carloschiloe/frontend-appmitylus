@@ -35,6 +35,7 @@ export async function cargarCentros() {
 
     // 👇 NUEVO: popular el select de centros y enganchar change
     poblarSelectCentros(state.listaCentros);
+    document.dispatchEvent(new Event('centros:loaded'));
   } catch (e) {
     console.error('[cargarCentros] error:', e);
     state.listaCentros = []; state.listaProveedores = []; state.proveedoresIndex = {};
@@ -130,3 +131,4 @@ function setVal(id, v) {
   const el = document.getElementById(id);
   if (el) el.value = v;
 }
+
