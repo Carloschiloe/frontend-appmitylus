@@ -238,3 +238,26 @@
     padding: .34rem .45rem;
   }
 }
+
+/* --- VISITAS: ocupar todo el ancho y quitar aire derecho --- */
+#tab-visitas .dataTables_wrapper,
+#tab-visitas #tablaVisitas{
+  width: 100% !important;
+}
+
+#tab-visitas .dataTables_wrapper{
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Mantén el mismo patrón en las otras pestañas */
+#tab-contactos .dataTables_wrapper,
+#tab-personas  .dataTables_wrapper{
+  width: 100% !important;
+}
+
+/* Opcional: amplía el container en desktop para que quede menor margen lateral */
+@media (min-width: 1200px){
+  .container{ max-width: 1400px; }   /* sube a 1440/1500 si quieres aún menos margen */
+}
+
