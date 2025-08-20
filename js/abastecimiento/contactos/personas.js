@@ -3,24 +3,19 @@ import { state, $ } from './state.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
 
-/* ============ estilos específicos (sticky + ellipsis) ============ */
+/* ------------ estilos específicos (layout fijo + ellipsis) ------------ */
 (function injectStyles() {
   const css = `
+  #tablaPersonas{ table-layout:fixed; width:100%; }
   #tablaPersonas thead th { position: sticky; top: 0; z-index: 2; background: #fff; }
   #tablaPersonas td .ellipsisCell{
     display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle;
   }
-  /* anchos concretos por columna de texto */
-  #tablaPersonas td .ellipsisContacto { max-width: 24ch; }
-  #tablaPersonas td .ellipsisTel      { max-width: 22ch; }
-  #tablaPersonas td .ellipsisMail     { max-width: 28ch; }
-  #tablaPersonas td .ellipsisEmpresa  { max-width: 26ch; }
-  #tablaPersonas td .ellipsisNotas    { max-width: 40ch; }
-  /* acciones siempre visibles en una línea */
-  #tablaPersonas td:last-child { white-space: nowrap; }
+  #tablaPersonas td .ellipsisEmpresa { max-width: 24ch; }
+  #tablaPersonas td .ellipsisNotas   { max-width: 36ch; }
   #tablaPersonas a.icon-action { display:inline-flex; align-items:center; gap:2px; margin-left:.35rem; }
   #tablaPersonas a.icon-action i { font-size:18px; line-height:18px; }
-  #tablaPersonas .chip.small { height: 22px; line-height: 22px; font-size: 12px; }
+  #tablaPersonas .chip.small { height:22px; line-height:22px; font-size:12px; }
   `;
   if (!document.getElementById('personas-inline-styles')) {
     const s = document.createElement('style');
@@ -30,7 +25,7 @@ import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
   }
 })();
 
-/* ============ helpers ============ */
+/* ------------ helpers ------------ */
 const fmtDateYMD = d => {
   const x = d ? new Date(d) : new Date();
   if (isNaN(x)) return '';
@@ -46,33 +41,23 @@ const esc = (s = '') =>
 
 const hasEmpresa = (c) => !!(c?.proveedorNombre && String(c.proveedorNombre).trim());
 
-/* ============ estado local ============ */
+/* ------------ estado ------------ */
 let dtP = null;
 let filtroActualP = 'todos'; // 'todos' | 'sin' | 'con'
 
-/* ============ init ============ */
+/* ------------ init ------------ */
 export function initPersonasTab() {
   const jq = window.jQuery || window.$;
-  const tabla = document.getElementById('tablaPersonas');
-  if (!tabla) return;
+  if (!$('#tablaPersonas')) return;
 
-  // chips de filtro
-  document.getElementById('fltTodosP')?.addEventListener('click', () => {
-    filtroActualP = 'todos'; renderTablaPersonas(); actualizarKPIs();
-  });
-  document.getElementById('fltSinP')?.addEventListener('click', () => {
-    filtroActualP = 'sin';   renderTablaPersonas(); actualizarKPIs();
-  });
-  document.getElementById('fltConP')?.addEventListener('click', () => {
-    filtroActualP = 'con';   renderTablaPersonas(); actualizarKPIs();
-  });
+  // chips
+  document.getElementById('fltTodosP')?.addEventListener('click', () => { filtroActualP = 'todos'; renderTablaPersonas(); actualizarKPIs(); });
+  document.getElementById('fltSinP')?.addEventListener('click',   () => { filtroActualP = 'sin';   renderTablaPersonas(); actualizarKPIs(); });
+  document.getElementById('fltConP')?.addEventListener('click',   () => { filtroActualP = 'con';   renderTablaPersonas(); actualizarKPIs(); });
 
-  // listeners externos para refrescar
-  document.addEventListener('reload-tabla-contactos', () => {
-    renderTablaPersonas(); actualizarKPIs();
-  });
+  document.addEventListener('reload-tabla-contactos', () => { renderTablaPersonas(); actualizarKPIs(); });
 
-  // DataTable solo para Personas
+  // DataTable Personas
   if (jq && !dtP) {
     dtP = jq('#tablaPersonas').DataTable({
       dom: 'Bfrtip',
@@ -81,48 +66,49 @@ export function initPersonasTab() {
         { extend: 'pdfHtml5',   title: 'Agenda_de_Personas', orientation: 'landscape', pageSize: 'A4' }
       ],
       pageLength: 10,
-      order: [[0, 'desc']], // fecha
+      order: [[0, 'desc']],
       autoWidth: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+      // 🔧 anchos por columna
       columnDefs: [
-        { targets: 0, width: '110px' }, // Fecha
-        { targets: 1, width: '240px' }, // Contacto (ellipsis)
-        { targets: 2, width: '180px' }, // Teléfono(s)
-        { targets: 3, width: '220px' }, // Email
-        { targets: 4, width: '260px' }, // Empresa
-        { targets: 5, width: '380px' }, // Notas
-        { targets: 6, orderable: false, searchable: false, width: '140px' } // Acciones
+        { targets: 0, width: '110px' },  // Fecha
+        { targets: 1, width: '220px' },  // Contacto
+        { targets: 2, width: '170px' },  // Teléfonos
+        { targets: 3, width: '220px' },  // Email
+        { targets: 4, width: '240px' },  // Empresa
+        { targets: 5, width: '340px' },  // Notas
+        { targets: 6, width: '140px', orderable: false, searchable: false } // Acciones
       ]
     });
 
-    // acciones por fila (delegadas)
+    // acciones por fila
     jq('#tablaPersonas tbody')
-      .on('click', 'a.icon-ver', function() {
+      .on('click', 'a.icon-ver', function(){
         const id = this.dataset.id;
         const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
         if (c) abrirDetalleContacto(c);
       })
-      .on('click', 'a.icon-visita', function() {
+      .on('click', 'a.icon-visita', function(){
         const id = this.dataset.id;
         const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
         if (c) abrirModalVisita(c);
       })
-      .on('click', 'a.icon-editar', function() {
+      .on('click', 'a.icon-editar', function(){
         const id = this.dataset.id;
         const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
         if (c) abrirEdicion(c);
       })
-      .on('click', 'a.icon-eliminar', async function() {
+      .on('click', 'a.icon-eliminar', async function(){
         const id = this.dataset.id;
         if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
         try { await eliminarContacto(id); renderTablaPersonas(); actualizarKPIs(); }
         catch (e) { console.error(e); M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 }); }
       })
-      // Asociar / Cambiar empresa (icono)
-      .on('click', 'a.asociar-btn', function(e) {
+      // asociar / cambiar empresa
+      .on('click', 'a.asociar-btn', function(e){
         e.preventDefault();
         const id = this.dataset.id;
-        state.asociarContactoId = id; // lo toma el módulo de asociación
+        state.asociarContactoId = id;
         try { document.dispatchEvent(new CustomEvent('asociar-open', { detail: { contactoId: id } })); } catch {}
         const modal = document.getElementById('modalAsociar');
         if (modal && window.M && M.Modal) {
@@ -136,31 +122,28 @@ export function initPersonasTab() {
   actualizarKPIs();
 }
 
-/* ============ render ============ */
+/* ------------ render ------------ */
 export function renderTablaPersonas() {
   const jq = window.jQuery || window.$;
   const lista = (state.contactosGuardados || []).slice();
 
-  // filtro
   const filtrada = lista.filter(c => {
     if (filtroActualP === 'sin') return !hasEmpresa(c);
     if (filtroActualP === 'con') return hasEmpresa(c);
     return true;
   });
 
-  // filas
   const filas = filtrada
-    .sort((a, b) => {
+    .sort((a,b)=>{
       const da = new Date(a.createdAt || a.fecha || 0).getTime();
       const db = new Date(b.createdAt || b.fecha || 0).getTime();
-      return db - da; // desc
+      return db - da;
     })
     .map(c => {
       const f = fmtDateYMD(c.createdAt || c.fecha || Date.now());
-      const tels  = Array.isArray(c.contactoTelefonos) ? c.contactoTelefonos.join(' / ') : (c.contactoTelefono || '');
-      const mails = Array.isArray(c.contactoEmails)    ? c.contactoEmails.join(' / ')    : (c.contactoEmail || '');
+      const tels = Array.isArray(c.contactoTelefonos) ? c.contactoTelefonos.join(' / ') : (c.contactoTelefono || '');
+      const mails = Array.isArray(c.contactoEmails) ? c.contactoEmails.join(' / ') : (c.contactoEmail || '');
 
-      // Empresa: chip + iconito
       let empresaCell = '';
       if (hasEmpresa(c)) {
         const name = esc(c.proveedorNombre || '');
@@ -182,16 +165,16 @@ export function renderTablaPersonas() {
       const notas = esc(c.notas || c.notasContacto || '');
       const acciones = `
         <a href="#!" class="icon-action icon-ver"     title="Ver detalle"       data-id="${c._id}"><i class="material-icons">visibility</i></a>
-        <a href="#!" class="icon-action icon-visita"  title="Registrar visita"   data-id="${c._id}"><i class="material-icons">event_available</i></a>
-        <a href="#!" class="icon-action icon-editar"  title="Editar"             data-id="${c._id}"><i class="material-icons">edit</i></a>
-        <a href="#!" class="icon-action icon-eliminar"title="Eliminar"           data-id="${c._id}"><i class="material-icons">delete</i></a>
+        <a href="#!" class="icon-action icon-visita"  title="Registrar visita"  data-id="${c._id}"><i class="material-icons">event_available</i></a>
+        <a href="#!" class="icon-action icon-editar"  title="Editar"            data-id="${c._id}"><i class="material-icons">edit</i></a>
+        <a href="#!" class="icon-action icon-eliminar"title="Eliminar"          data-id="${c._id}"><i class="material-icons">delete</i></a>
       `;
 
       return [
         `<span data-order="${new Date(f).getTime()}">${f}</span>`,
-        `<span class="ellipsisCell ellipsisContacto" title="${esc(c.contactoNombre || '')}">${esc(c.contactoNombre || '')}</span>`,
-        `<span class="ellipsisCell ellipsisTel"      title="${esc(String(tels))}">${esc(String(tels))}</span>`,
-        `<span class="ellipsisCell ellipsisMail"     title="${esc(String(mails))}">${esc(String(mails))}</span>`,
+        esc(c.contactoNombre || ''),
+        esc(String(tels)),
+        esc(String(mails)),
         empresaCell,
         `<span class="ellipsisCell ellipsisNotas" title="${notas}">${notas}</span>`,
         acciones
@@ -200,24 +183,22 @@ export function renderTablaPersonas() {
 
   if (dtP && jq) {
     dtP.clear();
-    dtP.rows.add(filas);
-    dtP.draw(false);
+    dtP.rows.add(filas).draw(false);
     return;
   }
 
-  // Fallback sin DataTables
+  // fallback
   const tbody = $('#tablaPersonas tbody');
   if (!tbody) return;
   tbody.innerHTML = filas.map(row => `<tr>${row.map(td => `<td>${td}</td>`).join('')}</tr>`).join('');
 }
 
-/* ============ KPIs ============ */
+/* ------------ KPIs ------------ */
 function actualizarKPIs() {
   const todos = state.contactosGuardados || [];
   const sin   = todos.filter(c => !hasEmpresa(c)).length;
   const con   = todos.filter(c =>  hasEmpresa(c)).length;
 
-  // Visitas (30d) sin empresa — sólo si hay visitas en state
   let visitasSin = 0;
   const visitas = state.visitasGuardadas || [];
   if (Array.isArray(visitas) && visitas.length) {
