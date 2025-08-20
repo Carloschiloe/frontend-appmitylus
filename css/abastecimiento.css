@@ -137,17 +137,22 @@
 #tablaVisitas_wrapper,
 #tablaContactos_wrapper,
 #tablaProgramaSemanal_wrapper {
-  margin-left: 120px;
-  width: calc(100% - 120px);
+  margin-left: 120px;                  /* espacio para sidebar */
+  width: auto;                         /* evita overflow */
+  max-width: calc(100% - 120px);       /* asegura que no se pase del viewport */
+  overflow-x: hidden;                  /* elimina scroll horizontal */
 }
+
 @media (max-width: 992px){
   #tablaVisitas_wrapper,
   #tablaContactos_wrapper,
   #tablaProgramaSemanal_wrapper {
-    margin-left: 0;
+    margin-left: 0;                    /* sin sidebar en pantallas chicas */
     width: 100%;
+    max-width: 100%;
   }
 }
+
 
 /* =========================================
    PLANIFICACIÓN – Complementos sin duplicados
@@ -224,3 +229,4 @@
   .kpi-grid{ grid-template-columns:repeat(4,1fr)!important }
   .chart-card{ box-shadow:none!important; border:1px solid #eee }
 }
+
