@@ -6,28 +6,31 @@ import {
 } from '/js/core/api.js';
 import { state, $, setVal, slug } from './state.js';
 
-// 👇 IMPORTA EL NORMALIZER CORRECTO (desde la carpeta visitas)
+// ✅ usa el normalizer de la carpeta VISITAS (no el de contactos)
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
-
-// helper: versión "plural" que normaliza arreglos
+// helper plural para normalizar arreglos
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
 /* ---------------- utils locales ---------------- */
-const esc = (s='') => String(s)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+const esc = (s = '') =>
+  String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 
 const fmtISO = (d) => {
   if (!d) return '';
   const x = new Date(d);
   if (Number.isNaN(x.getTime())) return '';
   const y = x.getFullYear();
-  const m = String(x.getMonth()+1).padStart(2,'0');
-  const dd = String(x.getDate()).padStart(2,'0');
+  const m = String(x.getMonth() + 1).padStart(2, '0');
+  const dd = String(x.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
 };
 
-const trunc = (s='', max=42) => {
+const trunc = (s = '', max = 42) => {
   const t = String(s);
   return t.length > max ? t.slice(0, max - 1) + '…' : t;
 };
@@ -36,7 +39,7 @@ const trunc = (s='', max=42) => {
 function proveedorDeVisita(v) {
   const id = v.contactoId ? String(v.contactoId) : null;
   if (!id) return '';
-  const c = (state.contactosGuardados || []).find(x => String(x._id) === id);
+  const c = (state.contactosGuardados || []).find((x) => String(x._id) === id);
   return c?.proveedorNombre || '';
 }
 
@@ -47,42 +50,61 @@ function codigoDeVisita(v) {
 /* --------------- DataTable Visitas --------------- */
 let dtV = null;
 
-export async function initVisitasTab() {
+export async function initVisitasTab(forceReload = false) {
   const jq = window.jQuery || window.$;
   const tabla = $('#tablaVisitas');
   if (!tabla) return;
 
-  // DataTable (10 por página y export)
+  // Si ya existe la tabla y piden refrescar, sólo recargamos datos
+  if (dtV && forceReload) {
+    await renderTablaVisitas();
+    return;
+  }
+
   if (jq && !dtV) {
     dtV = jq('#tablaVisitas').DataTable({
       dom: 'Blfrtip',
       buttons: [
-        { extend:'excelHtml5', title:'Visitas_Abastecimiento' },
-        { extend:'pdfHtml5',   title:'Visitas_Abastecimiento', orientation:'landscape', pageSize:'A4' }
+        { extend: 'excelHtml5', title: 'Visitas_Abastecimiento' },
+        {
+          extend: 'pdfHtml5',
+          title: 'Visitas_Abastecimiento',
+          orientation: 'landscape',
+          pageSize: 'A4',
+        },
       ],
-      order: [[0,'desc']],
+      order: [[0, 'desc']],
       paging: true,
       pageLength: 10,
-      lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
+      lengthMenu: [
+        [10, 25, 50, -1],
+        [10, 25, 50, 'Todos'],
+      ],
       autoWidth: false,
-      language: { url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+      language: {
+        url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json',
+      },
       columnDefs: [
-        { targets: 0, width: '110px' },       // Fecha
-        { targets: 1, width: '260px' },       // Proveedor (angosta + tooltip)
-        { targets: -1, orderable:false, searchable:false }
-      ]
+        { targets: 0, width: '110px' }, // Fecha
+        { targets: 1, width: '260px' }, // Proveedor (angosta + tooltip)
+        { targets: -1, orderable: false, searchable: false },
+      ],
     });
 
-    // acciones en filas
+    // acciones en filas (delegadas)
     jq('#tablaVisitas tbody')
-      .on('click', 'a.v-ver', function(){
+      .on('click', 'a.v-ver', function () {
         const contactoId = this.dataset.contactoId;
-        const c = (state.contactosGuardados || []).find(x => String(x._id) === String(contactoId));
+        const c = (state.contactosGuardados || []).find(
+          (x) => String(x._id) === String(contactoId),
+        );
         if (c) abrirDetalleContacto(c);
       })
-      .on('click', 'a.v-nueva', function(){
+      .on('click', 'a.v-nueva', function () {
         const contactoId = this.dataset.contactoId;
-        const c = (state.contactosGuardados || []).find(x => String(x._id) === String(contactoId));
+        const c = (state.contactosGuardados || []).find(
+          (x) => String(x._id) === String(contactoId),
+        );
         if (c) abrirModalVisita(c);
       });
   }
@@ -103,7 +125,7 @@ export async function renderTablaVisitas() {
   let visitas = [];
   try {
     const raw = await apiGetVisitas();
-    visitas = normalizeVisitas(Array.isArray(raw) ? raw : (raw?.items || []));
+    visitas = normalizeVisitas(Array.isArray(raw) ? raw : raw?.items || []);
   } catch (e) {
     console.error('[visitas] apiGetVisitas error:', e?.message || e);
     visitas = [];
@@ -112,8 +134,8 @@ export async function renderTablaVisitas() {
   // arma filas
   const filas = visitas
     .slice()
-    .sort((a,b)=> new Date(b.fecha||0) - new Date(a.fecha||0))
-    .map(v => {
+    .sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0))
+    .map((v) => {
       const fecha = fmtISO(v.fecha);
       const proveedor = proveedorDeVisita(v);
       const proveedorHTML = proveedor
@@ -122,29 +144,35 @@ export async function renderTablaVisitas() {
 
       const centro = codigoDeVisita(v);
       const actividad = v.enAgua || '';
-      the next step= v.estado || '';
+      const proximoPaso = v.estado || '';
       const tons = (v.tonsComprometidas ?? '') + '';
       const obs = v.observaciones || '';
-      const obsHTML = obs ? `<span title="${esc(obs)}">${esc(trunc(obs, 56))}</span>` : '—';
+      const obsHTML = obs
+        ? `<span title="${esc(obs)}">${esc(trunc(obs, 56))}</span>`
+        : '—';
 
       const acciones = `
-        <a href="#!" class="v-ver"   title="Ver detalle del proveedor" data-contacto-id="${esc(v.contactoId||'')}">
+        <a href="#!" class="v-ver"   title="Ver detalle del proveedor" data-contacto-id="${esc(
+          v.contactoId || '',
+        )}">
           <i class="material-icons">visibility</i>
         </a>
-        <a href="#!" class="v-nueva" title="Registrar nueva visita" data-contacto-id="${esc(v.contactoId||'')}">
+        <a href="#!" class="v-nueva" title="Registrar nueva visita" data-contacto-id="${esc(
+          v.contactoId || '',
+        )}">
           <i class="material-icons">event_available</i>
         </a>
       `;
 
       return [
-        `<span data-order="${new Date(v.fecha||0).getTime()}">${fecha || ''}</span>`,
+        `<span data-order="${new Date(v.fecha || 0).getTime()}">${fecha || ''}</span>`,
         proveedorHTML,
         esc(centro),
         esc(actividad),
-        esc(the next step),
+        esc(proximoPaso),
         esc(tons),
         obsHTML,
-        acciones
+        acciones,
       ];
     });
 
@@ -160,22 +188,23 @@ export async function renderTablaVisitas() {
   if (!tbody) return;
   tbody.innerHTML = '';
   if (!filas.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="color:#888">No hay visitas registradas.</td></tr>`;
+    tbody.innerHTML =
+      '<tr><td colspan="8" style="color:#888">No hay visitas registradas.</td></tr>';
     return;
   }
-  filas.forEach(arr => {
+  filas.forEach((arr) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = arr.map(td => `<td>${td}</td>`).join('');
+    tr.innerHTML = arr.map((td) => `<td>${td}</td>`).join('');
     tbody.appendChild(tr);
   });
 }
 
-/* ---------------------- Detalle + modal visitas (lo que ya tenías) ---------------------- */
+/* ---------------------- Detalle + modal visitas ---------------------- */
 function comunasDelProveedor(proveedorKey) {
   const key = proveedorKey?.length ? proveedorKey : null;
   const comunas = new Set();
   for (const c of state.listaCentros) {
-    const k = c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor||'');
+    const k = c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '');
     if (!key || k === key) {
       const comuna = (c.comuna || '').trim();
       if (comuna) comunas.add(comuna);
@@ -186,29 +215,46 @@ function comunasDelProveedor(proveedorKey) {
 
 function miniTimelineHTML(visitas = []) {
   if (!visitas.length) return '<div class="text-soft">Sin visitas registradas</div>';
-  const filas = visitas.slice(0,3).map(v => {
-    const code = v.centroCodigo || centroCodigoById(v.centroId) || '-';
-    return `
+  const filas = visitas
+    .slice(0, 3)
+    .map((v) => {
+      const code = v.centroCodigo || centroCodigoById(v.centroId) || '-';
+      return `
       <div class="row" style="margin-bottom:.35rem">
-        <div class="col s4"><strong>${(v.fecha||'').slice(0,10)}</strong></div>
+        <div class="col s4"><strong>${(v.fecha || '').slice(0, 10)}</strong></div>
         <div class="col s4">${code}</div>
         <div class="col s4">${v.estado || '-'}</div>
-        <div class="col s12"><span class="text-soft">${v.tonsComprometidas ? (v.tonsComprometidas + ' t • ') : ''}${esc(v.observaciones || '')}</span></div>
+        <div class="col s12"><span class="text-soft">${v.tonsComprometidas ? v.tonsComprometidas + ' t • ' : ''}${esc(v.observaciones || '')}</span></div>
       </div>
     `;
-  }).join('');
+    })
+    .join('');
   return filas + `<a class="btn btn--ghost" id="btnVerVisitas">Ver todas</a>`;
 }
 
 export async function abrirDetalleContacto(c) {
-  const body = $('#detalleContactoBody'); if (!body) return;
+  const body = $('#detalleContactoBody');
+  if (!body) return;
 
   const f = new Date(c.createdAt || c.fecha || Date.now());
-  const fechaFmt = `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')} ${String(f.getHours()).padStart(2,'0')}:${String(f.getMinutes()).padStart(2,'0')}`;
+  const fechaFmt = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(
+    2,
+    '0',
+  )}-${String(f.getDate()).padStart(2, '0')} ${String(f.getHours()).padStart(
+    2,
+    '0',
+  )}:${String(f.getMinutes()).padStart(2, '0')}`;
 
-  const comunas = comunasDelProveedor(c.proveedorKey || slug(c.proveedorNombre||''));
+  const comunas = comunasDelProveedor(c.proveedorKey || slug(c.proveedorNombre || ''));
   const chips = comunas.length
-    ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${esc(x)}</span>`).join('')
+    ? comunas
+        .map(
+          (x) =>
+            `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${esc(
+              x,
+            )}</span>`,
+        )
+        .join('')
     : '<span class="text-soft">Sin centros asociados</span>';
 
   const visitas = normalizeVisitas(await apiGetVisitasByContacto(c._id));
@@ -224,13 +270,22 @@ export async function abrirDetalleContacto(c) {
       <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
       <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
       <div><strong>Disponibilidad:</strong> ${esc(c.tieneMMPP || '-')}</div>
-      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '-'}</div>
+      <div><strong>Fecha Disp.:</strong> ${
+        c.fechaDisponibilidad ? ('' + c.fechaDisponibilidad).slice(0, 10) : '-'
+      }</div>
       <div><strong>Disposición:</strong> ${esc(c.dispuestoVender || '-')}</div>
       <div><strong>Tons aprox.:</strong> ${(c.tonsDisponiblesAprox ?? '') + ''}</div>
       <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
-      <div style="grid-column:1/-1;"><strong>Notas:</strong> ${c.notas ? esc(c.notas) : '<span class="text-soft">Sin notas</span>'}</div>
+      <div style="grid-column:1/-1;"><strong>Notas:</strong> ${
+        c.notas ? esc(c.notas) : '<span class="text-soft">Sin notas</span>'
+      }</div>
       <div style="grid-column:1/-1;"><strong>Contacto:</strong>
-        ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).map(esc).join(' • ') || '-'}</div>
+        ${
+          [c.contactoNombre, c.contactoTelefono, c.contactoEmail]
+            .filter(Boolean)
+            .map(esc)
+            .join(' • ') || '-'
+        }</div>
     </div>
 
     <div class="mb-4" style="margin-top:1rem;">
@@ -247,7 +302,9 @@ export async function abrirDetalleContacto(c) {
 
   $('#btnNuevaVisita')?.addEventListener('click', () => abrirModalVisita(c));
 
-  const inst = M.Modal.getInstance(document.getElementById('modalDetalleContacto')) || M.Modal.init(document.getElementById('modalDetalleContacto'));
+  const inst =
+    M.Modal.getInstance(document.getElementById('modalDetalleContacto')) ||
+    M.Modal.init(document.getElementById('modalDetalleContacto'));
   inst.open();
 }
 
@@ -257,21 +314,30 @@ export function abrirModalVisita(contacto) {
 
   const selectVisita = $('#visita_centroId');
   if (selectVisita) {
-    const centros = state.listaCentros.filter(c => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor||'')) === proveedorKey);
+    const centros = state.listaCentros.filter(
+      (c) => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '')) === proveedorKey,
+    );
     let options = `<option value="">Centro visitado (opcional)</option>`;
-    options += centros.map(c => `
+    options += centros
+      .map(
+        (c) => `
       <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">
-        ${(c.code || c.codigo || '')} – ${(c.comuna||'s/comuna')}
-      </option>`).join('');
+        ${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}
+      </option>`,
+      )
+      .join('');
     selectVisita.innerHTML = options;
   }
 
-  const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'));
+  const modalVisita =
+    M.Modal.getInstance(document.getElementById('modalVisita')) ||
+    M.Modal.init(document.getElementById('modalVisita'));
   modalVisita.open();
 }
 
 export function setupFormularioVisita() {
-  const form = $('#formVisita'); if (!form) return;
+  const form = $('#formVisita');
+  if (!form) return;
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -279,7 +345,9 @@ export function setupFormularioVisita() {
 
     const selCentro = $('#visita_centroId');
     const centroId = selCentro?.value || null;
-    const centroCodigo = selCentro?.selectedOptions?.[0]?.dataset?.code || (centroId ? centroCodigoById(centroId) : null);
+    const centroCodigo =
+      selCentro?.selectedOptions?.[0]?.dataset?.code ||
+      (centroId ? centroCodigoById(centroId) : null);
 
     const payload = {
       contactoId,
@@ -288,16 +356,20 @@ export function setupFormularioVisita() {
       centroCodigo,
       contacto: $('#visita_contacto').value || null,
       enAgua: $('#visita_enAgua').value || null,
-      tonsComprometidas: $('#visita_tonsComprometidas').value ? Number($('#visita_tonsComprometidas').value) : null,
+      tonsComprometidas: $('#visita_tonsComprometidas').value
+        ? Number($('#visita_tonsComprometidas').value)
+        : null,
       estado: $('#visita_estado').value || 'Programar nueva visita',
-      observaciones: $('#visita_observaciones').value || null
+      observaciones: $('#visita_observaciones').value || null,
     };
 
     try {
       const nueva = await apiCreateVisita(payload);
 
       // notifica y refresca tabla
-      window.dispatchEvent(new CustomEvent('visita:created', { detail: { visita: nueva, contactoId } }));
+      window.dispatchEvent(
+        new CustomEvent('visita:created', { detail: { visita: nueva, contactoId } }),
+      );
       M.toast?.({ html: 'Visita guardada', classes: 'teal', displayLength: 1800 });
 
       const modalVisita = M.Modal.getInstance(document.getElementById('modalVisita'));
@@ -305,7 +377,7 @@ export function setupFormularioVisita() {
       form.reset();
     } catch (e2) {
       console.warn('apiCreateVisita error:', e2?.message || e2);
-      M.toast?.({ html: 'No se pudo guardar la visita', displayLength: 2200, classes:'red' });
+      M.toast?.({ html: 'No se pudo guardar la visita', displayLength: 2200, classes: 'red' });
     }
   });
 }
