@@ -232,7 +232,7 @@
 #tablaVisitas th:nth-child(5), #tablaVisitas td:nth-child(5) { width: 18rem; } /* Próximo paso */
 #tablaVisitas th:nth-child(6), #tablaVisitas td:nth-child(6) { width: 7rem;  text-align:right; } /* Tons */
 #tablaVisitas th:nth-child(7), #tablaVisitas td:nth-child(7) { width: 22rem; } /* Observaciones */
-#tablaVisitas th:nth-child(8), #tablaVisitas td:nth-child(8) { width: 8rem;  white-space:nowrap; } /* Acciones */
+#tablaVisitas th:nth-child(8), #tablaVisitas td:nth-child(8) { width: 7rem;  white-space:nowrap; } /* Acciones */
 
 /* Ellipsis reutilizable */
 .ellipsisCell{
@@ -240,5 +240,6 @@
 }
 .ellipsisProv{ max-width: 26ch; }
 .ellipsisObs { max-width: 100%; }
+
 
 
