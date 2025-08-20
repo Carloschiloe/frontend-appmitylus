@@ -7,13 +7,9 @@ import {
   apiDeleteVisita,
 } from '/js/core/api.js';
 
-// 🔁 ahora el estado está en contactos
 import { state, $, setVal, slug } from '../contactos/state.js';
-
-// normalizers viven en esta carpeta
 import { normalizeVisita, centroCodigoById } from './normalizers.js';
 
-// 📸 UI de fotos (reutilizable)
 import {
   mountFotosUIOnce,
   resetFotosModal,
@@ -23,8 +19,7 @@ import {
 
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
-/* ---------------- helpers robustos ---------------- */
-// Convierte cualquier variante (ObjectId(".."), {$oid:..}, objeto {_id}, etc.) a string 24-hex
+/* -------------- helpers robustos -------------- */
 function toId(val) {
   if (!val) return '';
   if (typeof val === 'string') {
@@ -40,11 +35,9 @@ function toId(val) {
   return String(val);
 }
 
-// ---------------- utils ----------------
 const esc = (s = '') =>
-  String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+           .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
 const fmtISO = (d) => {
   if (!d) return '';
@@ -56,26 +49,21 @@ const fmtISO = (d) => {
   return `${y}-${m}-${dd}`;
 };
 
-const trunc = (s = '', max = 42) =>
-  (String(s).length > max ? String(s).slice(0, max - 1) + '…' : String(s));
+const trunc = (s = '', max = 42) => (String(s).length > max ? String(s).slice(0, max - 1) + '…' : String(s));
 
 function proveedorDeVisita(v) {
   const id = toId(v.contactoId);
   if (!id) return '';
   const c = (state.contactosGuardados || []).find((x) => toId(x._id) === id);
+  // fallback a campo texto si existe
   return c?.proveedorNombre || v.contacto || '';
 }
 function codigoDeVisita(v) {
   return v.centroCodigo || (v.centroId ? centroCodigoById(toId(v.centroId), state.listaCentros || []) : '') || '';
 }
 
-// ---------------- DataTable ----------------
+/* -------------- DataTable -------------- */
 let dtV = null;
-
-// usar lookup dinámico para no depender del orden de carga
-function getROOT() {
-  return typeof document !== 'undefined' ? document.getElementById('tab-visitas') : null;
-}
 
 function adjustNow() {
   const jq = window.jQuery || window.$;
@@ -91,7 +79,7 @@ export async function initVisitasTab(forceReload = false) {
   const tabla = $('#tablaVisitas');
   if (!tabla) return;
 
-  // montar UI de fotos una sola vez
+  // UI de fotos (una vez)
   mountFotosUIOnce();
 
   if (dtV && forceReload) {
@@ -111,16 +99,17 @@ export async function initVisitasTab(forceReload = false) {
       paging: true,
       pageLength: 10,
       lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
-      autoWidth: false,          // anchos los define CSS
-      responsive: true,          // si molesta, prueba false
+      autoWidth: false,
+      responsive: true,
       scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-      columnDefs: [
-        { targets: -1, orderable:false, searchable:false } // Acciones
-      ],
+      columnDefs: [{ targets: -1, orderable:false, searchable:false }],
       initComplete: () => adjustNow(),
       drawCallback:   () => adjustNow(),
     });
+
+    // 🔗 acciones por fila con delegación en el TBODY (estable con DataTables)
+    bindRowActions(jq);
 
     window.addEventListener('resize', adjustNow);
   }
@@ -132,7 +121,7 @@ export async function initVisitasTab(forceReload = false) {
   window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); adjustNow(); });
 }
 
-// ---------------- render ----------------
+/* -------------- render -------------- */
 export async function renderTablaVisitas() {
   const jq = window.jQuery || window.$;
 
@@ -140,7 +129,6 @@ export async function renderTablaVisitas() {
   try {
     const raw = await apiGetVisitas();
     visitas = normalizeVisitas(Array.isArray(raw) ? raw : raw?.items || []);
-    // guardamos normalizadas (ids string)
     state.visitasGuardadas = visitas.slice();
   } catch (e) {
     console.error('[visitas] apiGetVisitas error:', e?.message || e);
@@ -163,9 +151,7 @@ export async function renderTablaVisitas() {
       const proximoPaso = v.estado || '';
       const tons = (v.tonsComprometidas ?? '') + '';
       const obs = v.observaciones || '';
-      const obsHTML = obs
-        ? `<span class="ellipsisCell ellipsisObs" title="${esc(obs)}">${esc(trunc(obs, 72))}</span>`
-        : '—';
+      const obsHTML = obs ? `<span class="ellipsisCell ellipsisObs" title="${esc(obs)}">${esc(trunc(obs, 72))}</span>` : '—';
 
       const acciones = `
         <a href="javascript:void(0)" class="v-ver"      title="Ver proveedor"  data-contacto-id="${esc(toId(v.contactoId)||'')}"><i class="material-icons">visibility</i></a>
@@ -207,7 +193,7 @@ export async function renderTablaVisitas() {
   });
 }
 
-// ---------------- Detalle + Modales ----------------
+/* -------------- Detalle + Modales -------------- */
 function comunasDelProveedor(proveedorKey) {
   const key = proveedorKey?.length ? proveedorKey : null;
   const comunas = new Set();
@@ -299,13 +285,11 @@ export function abrirModalVisita(contacto) {
     selectVisita.innerHTML = options;
   }
 
-  // 📸 limpiar estado de fotos para nueva visita
   resetFotosModal();
-
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
-async function abrirEditarVisita(v) { // ← ahora async
+async function abrirEditarVisita(v) {
   const form = $('#formVisita'); if (!form) return;
   form.dataset.editId = String(toId(v._id) || '');
 
@@ -335,11 +319,8 @@ async function abrirEditarVisita(v) { // ← ahora async
   }
 
   M.updateTextFields();
-
-  // 📸 reset + cargar galería de la visita que se edita
   resetFotosModal();
   await renderGallery(toId(v._id));
-
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
@@ -374,16 +355,11 @@ export function setupFormularioVisita() {
         await apiUpdateVisita(editId, payload);
         window.dispatchEvent(new CustomEvent('visita:updated', { detail: { id: editId } }));
         M.toast?.({ html: 'Visita actualizada', classes: 'teal', displayLength: 1800 });
-
-        // 📸 subir pendientes y refrescar galería
         await handleFotosAfterSave(editId);
-
       } else {
         const nueva = await apiCreateVisita(payload);
         window.dispatchEvent(new CustomEvent('visita:created', { detail: { visita: nueva, contactoId } }));
         M.toast?.({ html: 'Visita guardada', classes: 'teal', displayLength: 1800 });
-
-        // id robusto (soporta _id o id)
         const visitId = (nueva && (nueva._id || nueva.id)) ? (nueva._id || nueva.id) : null;
         await handleFotosAfterSave(toId(visitId));
       }
@@ -399,53 +375,53 @@ export function setupFormularioVisita() {
   });
 }
 
-/* ==== Delegación de acciones con scope a la pestaña ==== */
-function handleVisitasActions(e) {
-  const ROOT = getROOT();
-  if (!ROOT || !ROOT.contains(e.target)) return;
+/* -------------- Delegación estable en TBODY -------------- */
+function bindRowActions(jq) {
+  const $tb = jq('#tablaVisitas tbody');
+  // limpiamos cualquier handler previo (namespace .visitas)
+  $tb.off('click.visitas');
 
-  const a = e.target.closest('a.v-ver, a.v-nueva, a.v-editar, a.v-eliminar');
-  if (!a) return;
+  $tb.on('click.visitas', 'a.v-ver, a.v-nueva, a.v-editar, a.v-eliminar', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
 
-  e.preventDefault();
-  e.stopPropagation();
-  e.stopImmediatePropagation?.();
+    const $a = jq(this);
 
-  try {
-    if (a.classList.contains('v-ver')) {
-      const id = toId(a.dataset.contactoId);
-      const c = (state.contactosGuardados || []).find(x => toId(x._id) === id);
-      if (c) abrirDetalleContacto(c);
-      return;
+    try {
+      if ($a.hasClass('v-ver')) {
+        const id = toId(this.dataset.contactoId);
+        const c = (state.contactosGuardados || []).find(x => toId(x._id) === id);
+        if (c) abrirDetalleContacto(c);
+        return;
+      }
+      if ($a.hasClass('v-nueva')) {
+        const id = toId(this.dataset.contactoId);
+        const c = (state.contactosGuardados || []).find(x => toId(x._id) === id);
+        if (c) abrirModalVisita(c);
+        return;
+      }
+      if ($a.hasClass('v-editar')) {
+        const vid = toId(this.dataset.id);
+        const v = (state.visitasGuardadas || []).find(x => toId(x._id) === vid);
+        if (v) abrirEditarVisita(v);
+        return;
+      }
+      if ($a.hasClass('v-eliminar')) {
+        const vid = toId(this.dataset.id);
+        if (!confirm('¿Eliminar esta visita?')) return;
+        (async () => {
+          await apiDeleteVisita(vid);
+          M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
+          await renderTablaVisitas();
+          adjustNow();
+        })().catch(err => {
+          console.warn(err);
+          M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
+        });
+      }
+    } catch (err) {
+      console.error('[visitas] acción error', err);
+      M.toast?.({ html: 'Acción no disponible', classes: 'red' });
     }
-    if (a.classList.contains('v-nueva')) {
-      const id = toId(a.dataset.contactoId);
-      const c = (state.contactosGuardados || []).find(x => toId(x._id) === id);
-      if (c) abrirModalVisita(c);
-      return;
-    }
-    if (a.classList.contains('v-editar')) {
-      const vid = toId(a.dataset.id);
-      const v = (state.visitasGuardadas || []).find(x => toId(x._id) === vid);
-      if (v) abrirEditarVisita(v);
-      return;
-    }
-    if (a.classList.contains('v-eliminar')) {
-      const vid = toId(a.dataset.id);
-      if (!confirm('¿Eliminar esta visita?')) return;
-      (async () => {
-        await apiDeleteVisita(vid);
-        M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
-        await renderTablaVisitas();
-        adjustNow();
-      })().catch(err => {
-        console.warn(err);
-        M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
-      });
-    }
-  } catch (err) {
-    console.error('[visitas] acción error', err);
-    M.toast?.({ html: 'Acción no disponible', classes: 'red' });
-  }
+  });
 }
-document.addEventListener('click', handleVisitasActions, true);
