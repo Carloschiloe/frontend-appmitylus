@@ -278,30 +278,30 @@ input:focus, select:focus, textarea:focus{
 }
 
 /* ---------- 13) Estilos “compact” opcionales de tabla ---------- */
-.table--compact th, .table--compact td{padding:.35rem .5rem; font-size:var(--fz-13)}
+.table--compact th, .table--compact td{padding:.35rem .5rem; font-size:.9rem}
 
-/* ====== Layout uniforme: Empresas / Visitas / Agenda ====== */
+/* ====== Layout base (neutro). El gap de sidebar lo define abastecimiento.css ====== */
 :root{
-  --page-gutter: 24px;     /* borde lateral */
-  --page-max: 1280px;      /* ancho máximo del contenido */
+  --page-gutter: 24px;      /* borde lateral base */
+  --page-max: 1280px;       /* ancho máximo del contenido */
 }
-
 .page-wrap{
   max-width: var(--page-max);
-  margin-left: auto;
-  margin-right: auto;
+  margin: 1rem auto 2rem;
   padding-left: var(--page-gutter);
   padding-right: var(--page-gutter);
 }
 
-/* DataTables al 100% dentro del contenedor */
-#tablaEmpresas_wrapper,
+/* DataTables: wrappers a 100% y con scroll horizontal si es necesario */
+#tablaContactos_wrapper,
 #tablaVisitas_wrapper,
-#tablaContactos_wrapper{
+#tablaPersonas_wrapper{
   width: 100% !important;
+  overflow-x: auto;              /* evita el “corte” a la derecha */
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Barra de botones/contadores alineada y con separación */
+/* Toolbar común */
 .page-toolbar{
   display: flex;
   gap: 12px;
@@ -315,4 +315,3 @@ input:focus, select:focus, textarea:focus{
   width: 320px;
   max-width: 100%;
 }
-
