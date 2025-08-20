@@ -7,12 +7,17 @@ import { abrirDetalleContacto, abrirModalVisita } from './visitas.js';
 (function injectStyles() {
   const css = `
   #tablaPersonas thead th { position: sticky; top: 0; z-index: 2; background: #fff; }
-  #tablaPersonas td .ellipsisCell { 
-    display: inline-block; max-width: 28ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    vertical-align: middle;
+  #tablaPersonas td .ellipsisCell{
+    display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle;
   }
-  #tablaPersonas td .ellipsisEmpresa { max-width: 26ch; }
-  #tablaPersonas td .ellipsisNotas   { max-width: 40ch; }
+  /* anchos concretos por columna de texto */
+  #tablaPersonas td .ellipsisContacto { max-width: 24ch; }
+  #tablaPersonas td .ellipsisTel      { max-width: 22ch; }
+  #tablaPersonas td .ellipsisMail     { max-width: 28ch; }
+  #tablaPersonas td .ellipsisEmpresa  { max-width: 26ch; }
+  #tablaPersonas td .ellipsisNotas    { max-width: 40ch; }
+  /* acciones siempre visibles en una línea */
+  #tablaPersonas td:last-child { white-space: nowrap; }
   #tablaPersonas a.icon-action { display:inline-flex; align-items:center; gap:2px; margin-left:.35rem; }
   #tablaPersonas a.icon-action i { font-size:18px; line-height:18px; }
   #tablaPersonas .chip.small { height: 22px; line-height: 22px; font-size: 12px; }
@@ -67,7 +72,7 @@ export function initPersonasTab() {
     renderTablaPersonas(); actualizarKPIs();
   });
 
-  // DataTable solo para Personas (no toca contactos ni visitas)
+  // DataTable solo para Personas
   if (jq && !dtP) {
     dtP = jq('#tablaPersonas').DataTable({
       dom: 'Bfrtip',
@@ -81,6 +86,9 @@ export function initPersonasTab() {
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: [
         { targets: 0, width: '110px' }, // Fecha
+        { targets: 1, width: '240px' }, // Contacto (ellipsis)
+        { targets: 2, width: '180px' }, // Teléfono(s)
+        { targets: 3, width: '220px' }, // Email
         { targets: 4, width: '260px' }, // Empresa
         { targets: 5, width: '380px' }, // Notas
         { targets: 6, orderable: false, searchable: false, width: '140px' } // Acciones
@@ -149,8 +157,8 @@ export function renderTablaPersonas() {
     })
     .map(c => {
       const f = fmtDateYMD(c.createdAt || c.fecha || Date.now());
-      const tels = Array.isArray(c.contactoTelefonos) ? c.contactoTelefonos.join(' / ') : (c.contactoTelefono || '');
-      const mails = Array.isArray(c.contactoEmails) ? c.contactoEmails.join(' / ') : (c.contactoEmail || '');
+      const tels  = Array.isArray(c.contactoTelefonos) ? c.contactoTelefonos.join(' / ') : (c.contactoTelefono || '');
+      const mails = Array.isArray(c.contactoEmails)    ? c.contactoEmails.join(' / ')    : (c.contactoEmail || '');
 
       // Empresa: chip + iconito
       let empresaCell = '';
@@ -181,9 +189,9 @@ export function renderTablaPersonas() {
 
       return [
         `<span data-order="${new Date(f).getTime()}">${f}</span>`,
-        esc(c.contactoNombre || ''),         // ← solo persona, nunca empresa
-        esc(String(tels)),
-        esc(String(mails)),
+        `<span class="ellipsisCell ellipsisContacto" title="${esc(c.contactoNombre || '')}">${esc(c.contactoNombre || '')}</span>`,
+        `<span class="ellipsisCell ellipsisTel"      title="${esc(String(tels))}">${esc(String(tels))}</span>`,
+        `<span class="ellipsisCell ellipsisMail"     title="${esc(String(mails))}">${esc(String(mails))}</span>`,
         empresaCell,
         `<span class="ellipsisCell ellipsisNotas" title="${notas}">${notas}</span>`,
         acciones
