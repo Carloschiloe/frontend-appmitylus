@@ -1,21 +1,28 @@
-// /js/abastecimiento/contactos/asociar-empresa.js
-import { apiPatchContactoSafe } from '/js/core/api.js';
+// /js/contactos/asociar-empresa.js
+import { apiPatchContactoSafe } from '/js/core/api.js';   // ← usar PATCH seguro (sin fallback a PUT)
 import { state, $, slug } from './state.js';
 import { cargarContactosGuardados } from './data.js';
 
 /* ---------------- helpers ---------------- */
 const esc = (s = '') =>
-  String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
-           .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
-           .replace(/'/g,'&#039;');
+  String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 
-const norm = (s = '') => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const norm = (s = '') =>
+  String(s)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, ''); // quita acentos
 
 /* Construye índice de empresas desde centros + contactos */
 function buildProvidersIndex() {
   const out = new Map();
 
-  // desde centros
+  // desde centros (cacheados por cargarCentros())
   (state.listaCentros || []).forEach((c) => {
     const name = (c.proveedor || c.name || '').trim();
     if (!name) return;
@@ -54,25 +61,32 @@ export function initAsociacionContactos() {
       ul.innerHTML = '<li class="collection-item grey-text">Sin resultados</li>';
       return;
     }
-    ul.innerHTML = items.map(
-      (p) => `<li class="collection-item">
-        <a href="#!" class="sel-prov" data-key="${p.key}" data-name="${esc(p.name)}">${esc(p.name)}</a>
-      </li>`
-    ).join('');
+    ul.innerHTML = items
+      .map(
+        (p) => `<li class="collection-item">
+          <a href="#!" class="sel-prov" data-key="${p.key}" data-name="${esc(p.name)}">${esc(p.name)}</a>
+        </li>`
+      )
+      .join('');
   };
 
   /* --- search (debounced, accent-insensitive) --- */
   const searchNow = (q) => {
     const s = norm(q || '');
     if (s.length < 2) { if (ul) ul.innerHTML = ''; return; }
-    const items = providersCache.filter((p) => norm(p.name).includes(s)).slice(0, 20);
+    const items = providersCache
+      .filter((p) => norm(p.name).includes(s))
+      .slice(0, 20);
     render(items);
   };
-  const search = (q) => { clearTimeout(debounceT); debounceT = setTimeout(() => searchNow(q), 120); };
+  const search = (q) => {
+    clearTimeout(debounceT);
+    debounceT = setTimeout(() => searchNow(q), 120);
+  };
 
   input?.addEventListener('input', (e) => search(e.target.value));
 
-  // Enter => el primer resultado
+  // Enter => primer resultado
   input?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -99,7 +113,7 @@ export function initAsociacionContactos() {
     await asociarAProveedor(slug(name), name);
   });
 
-  // quitar empresa (y limpiar centro)
+  // quitar empresa (y limpiar centro) — usar PATCH seguro
   btnQuitar?.addEventListener('click', async (e) => {
     e.preventDefault();
     const id = state.asociarContactoId;
@@ -123,11 +137,11 @@ export function initAsociacionContactos() {
     }
   });
 
-  // Al abrir el modal desde Personas
+  // Cuando abran el modal desde Personas
   document.addEventListener('asociar-open', () => {
-    providersCache = buildProvidersIndex();
-    if (input) input.value = '';
-    if (ul) ul.innerHTML = '';
+    providersCache = buildProvidersIndex();       // refresca índice
+    if (input) input.value = '';                  // limpia input
+    if (ul) ul.innerHTML = '';                    // limpia lista
     input?.focus();
   });
 
@@ -136,7 +150,7 @@ export function initAsociacionContactos() {
     providersCache = buildProvidersIndex();
   });
 
-  // 🔔 Cuando cargan CENTROS por primera vez
+  // Si llegan/recargan centros, reconstruye índice
   document.addEventListener('centros:loaded', () => {
     providersCache = buildProvidersIndex();
   });
@@ -153,7 +167,7 @@ async function asociarAProveedor(proveedorKey, proveedorNombre) {
   const name = (proveedorNombre || '').trim();
 
   try {
-    // PATCH seguro: NO pisa nombre, teléfonos, email ni notas
+    // PATCH seguro: NO borra otros campos si hay error de red (sin fallback PUT)
     await apiPatchContactoSafe(id, {
       proveedorKey: key,
       proveedorNombre: name,
