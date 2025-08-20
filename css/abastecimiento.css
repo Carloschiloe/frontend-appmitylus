@@ -5,7 +5,7 @@
 /* ====== Contenedor común + espacio para futura sidebar ====== */
 :root{
   --page-gutter: 24px;
-  --sidebar-gap: 120px;   /* ajusta 96/80/64 si quieres */
+  --sidebar-gap: 120px;
   --page-max: 1280px;
 }
 .page-wrap{
@@ -23,63 +23,63 @@
 /* Cabezal teal */
 #tablaContactos.dataTable thead th,
 #tablaVisitas.dataTable thead th,
-#tablaPersonas.dataTable thead th {
+#tablaPersonas.dataTable thead th{
   background: var(--primary) !important;
-  color: #fff !important;
+  color:#fff !important;
 }
 
 /* Densidad de filas */
 #tablaContactos th, #tablaContactos td,
 #tablaVisitas  th, #tablaVisitas  td,
-#tablaPersonas th, #tablaPersonas td {
-  font-size: 0.92rem;
-  padding: 0.38rem 0.5rem;
-  border-bottom: 1px solid #e0e0e0;
+#tablaPersonas th, #tablaPersonas td{
+  font-size:.92rem;
+  padding:.38rem .5rem;
+  border-bottom:1px solid #e0e0e0;
+  vertical-align: middle;
 }
 
-/* Acciones (íconos) */
+/* Íconos de acciones */
 #tablaContactos td .material-icons,
 #tablaVisitas  td .material-icons,
-#tablaPersonas td .material-icons {
-  font-size: 1.22em;
-  margin-right: 8px;
-  transition: transform .12s ease, color .12s ease;
+#tablaPersonas td .material-icons{
+  font-size:1.22em; margin-right:8px;
+  transition:transform .12s ease, color .12s ease;
 }
 #tablaContactos td .material-icons:hover,
 #tablaVisitas  td .material-icons:hover,
-#tablaPersonas td .material-icons:hover {
-  color: var(--primary-acc);
-  transform: scale(1.08);
+#tablaPersonas td .material-icons:hover{
+  color:var(--primary-acc); transform:scale(1.08);
 }
 
-/* ====== SIN SCROLL HORIZONTAL en Visitas/Agenda ======
-   Sobrescribimos el nowrap global y dejamos que el texto se envuelva. */
-#tablaVisitas th,  #tablaVisitas td,
-#tablaPersonas th,#tablaPersonas td{
-  white-space: normal !important;     /* <- clave */
-  word-break: break-word;
-  hyphens: auto;
-}
-
-/* Los wrappers quedan fluidos; no forzamos overflow ni min-width aquí */
+/* Wrapper de DataTables 100% del contenedor */
 #tab-contactos .dataTables_wrapper,
 #tab-visitas  .dataTables_wrapper,
 #tab-personas .dataTables_wrapper{
-  width: 100% !important;
+  width:100% !important; max-width:none !important;
 }
 
-/* Tablas al 100%, layout automático (mejor ajuste de columnas) */
+/* Tablas: layout robusto + UNA sola línea por celda con ellipsis */
 #tablaContactos, #tablaVisitas, #tablaPersonas{
-  width: 100% !important;
-  table-layout: auto;                 /* <- antes fixed; ahora auto */
+  width:100% !important;
+  table-layout: fixed;              /* <- clave para estabilidad y sin scroll */
+}
+#tablaContactos th, #tablaContactos td,
+#tablaVisitas  th, #tablaVisitas  td,
+#tablaPersonas th, #tablaPersonas td{
+  white-space: nowrap;              /* 1 línea */
+  overflow: hidden;                 /* recorte seguro */
+  text-overflow: ellipsis;          /* … */
 }
 
-/* -------- Anchos orientativos por porcentaje (no rígidos) --------
-   Se usan porcentajes para repartir espacio sin provocar overflow. */
+/* Acciones: no recortar íconos */
+#tablaVisitas  td:last-child,
+#tablaPersonas td:last-child{
+  overflow: visible;
+}
 
-/* VISITAS
-   (1) Fecha, (2) Proveedor, (3) Centro, (4) Muestra,
-   (5) Próximo paso, (6) Tons, (7) Observaciones, (8) Acciones */
+/* -------- Reparto de anchos (porcentaje total = 100%) -------- */
+
+/* VISITAS: (1)Fecha (2)Proveedor (3)Centro (4)Muestra (5)PróxPaso (6)Tons (7)Obs (8)Acciones */
 #tablaVisitas th:nth-child(1), #tablaVisitas td:nth-child(1){ width: 9%;  }
 #tablaVisitas th:nth-child(2), #tablaVisitas td:nth-child(2){ width: 22%; }
 #tablaVisitas th:nth-child(3), #tablaVisitas td:nth-child(3){ width: 8%;  }
@@ -87,151 +87,99 @@
 #tablaVisitas th:nth-child(5), #tablaVisitas td:nth-child(5){ width: 16%; }
 #tablaVisitas th:nth-child(6), #tablaVisitas td:nth-child(6){ width: 7%;  text-align:right; }
 #tablaVisitas th:nth-child(7), #tablaVisitas td:nth-child(7){ width: 22%; }
-#tablaVisitas th:nth-child(8), #tablaVisitas td:nth-child(8){ width: 8%;  } /* acciones: nowrap global en último col. */
+#tablaVisitas th:nth-child(8), #tablaVisitas td:nth-child(8){ width: 8%;  }  /* Acciones */
 
-/* AGENDA (Personas)
-   (1) Fecha, (2) Contacto, (3) Teléfono(s), (4) Email,
-   (5) Empresa, (6) Notas, (7) Acciones) */
-#tablaPersonas th:nth-child(1), #tablaPersonas td:nth-child(1){ width: 10%; }
-#tablaPersonas th:nth-child(2), #tablaPersonas td:nth-child(2){ width: 18%; }
-#tablaPersonas th:nth-child(3), #tablaPersonas td:nth-child(3){ width: 16%; }
-#tablaPersonas th:nth-child(4), #tablaPersonas td:nth-child(4){ width: 18%; }
-#tablaPersonas th:nth-child(5), #tablaPersonas td:nth-child(5){ width: 20%; }
-#tablaPersonas th:nth-child(6), #tablaPersonas td:nth-child(6){ width: 12%; }
-#tablaPersonas th:nth-child(7), #tablaPersonas td:nth-child(7){ width: 6%;  } /* acciones */
+/* AGENDA: (1)Fecha (2)Contacto (3)Teléfono (4)Email (5)Empresa (6)Notas (7)Acciones */
+#tablaPersonas th:nth-child(1), #tablaPersonas td:nth-child(1){ width:10%; }
+#tablaPersonas th:nth-child(2), #tablaPersonas td:nth-child(2){ width:18%; }
+#tablaPersonas th:nth-child(3), #tablaPersonas td:nth-child(3){ width:16%; }
+#tablaPersonas th:nth-child(4), #tablaPersonas td:nth-child(4){ width:18%; }
+#tablaPersonas th:nth-child(5), #tablaPersonas td:nth-child(5){ width:20%; }
+#tablaPersonas th:nth-child(6), #tablaPersonas td:nth-child(6){ width:12%; }
+#tablaPersonas th:nth-child(7), #tablaPersonas td:nth-child(7){ width:6%;  }  /* Acciones */
+
+/* Empresa y Notas en Agenda: texto + iconos en la MISMA línea */
+#tablaPersonas td:nth-child(5),
+#tablaPersonas td:nth-child(6){
+  display:flex; align-items:center; gap:6px;
+}
+#tablaPersonas td:nth-child(5) .ellipsisCell,
+#tablaPersonas td:nth-child(6) .ellipsisCell{
+  min-width:0;         /* permite que el texto se encoja */
+  flex:1 1 auto;       /* y haga ellipsis sin saltar de línea */
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+
+/* VISITAS: spans de proveedor/observaciones con ellipsis explícito */
+#tablaVisitas .ellipsisProv, #tablaVisitas .ellipsisObs{
+  display:block; max-width:100%;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
 
 /* ======= BOTONES / TOOLBAR ======= */
-#btnOpenContactoModal { margin:.25rem 0 .5rem 0; }
+#btnOpenContactoModal{ margin:.25rem 0 .5rem 0; }
 
 /* ======= MODALES (mismo look y sizing) ======= */
 #modalContacto.modal,
 #modalDetalleContacto.modal,
 #modalVisita.modal,
-#modalBloque.modal {
-  max-width: 760px !important;
-  max-height: 86vh !important;
-  top: 7vh !important;
+#modalBloque.modal{
+  max-width:760px !important;
+  max-height:86vh !important;
+  top:7vh !important;
 }
 #modalContacto .modal-content,
 #modalDetalleContacto .modal-content,
 #modalVisita .modal-content,
-#modalBloque .modal-content {
-  max-height: 72vh !important;
+#modalBloque .modal-content{
+  max-height:72vh !important;
 }
 #modalContacto .modal-footer,
 #modalDetalleContacto .modal-footer,
 #modalVisita .modal-footer,
-#modalBloque .modal-footer {
-  padding: .5rem .75rem !important;
+#modalBloque .modal-footer{
+  padding:.5rem .75rem !important;
 }
 
-/* Inputs más compactos dentro de los modales */
+/* Inputs más compactos en modales */
 #modalContacto .input-field input,
 #modalContacto .input-field select,
 #modalContacto .input-field textarea,
 #modalVisita   .input-field input,
 #modalVisita   .input-field select,
-#modalVisita   .input-field textarea {
-  margin-bottom: .6rem;
+#modalVisita   .input-field textarea{
+  margin-bottom:.6rem;
 }
 
 /* SELECT nativo con look Materialize en modales */
-.modal .browser-default {
-  width: 100%;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid #9e9e9e;
-  padding: 8px 0 6px;
-  font-size: 16px;
+.modal .browser-default{
+  width:100%; background:transparent; border:none;
+  border-bottom:1px solid #9e9e9e; padding:8px 0 6px; font-size:16px;
 }
-.modal .browser-default:focus {
-  outline: none;
-  border-bottom: 2px solid #26a69a;
-}
-.modal .input-field label.active {
-  transform: none !important;
-  font-size: 0.9rem;
-  color: #9e9e9e;
-  margin-bottom: 2px;
-  display: block;
+.modal .browser-default:focus{ outline:none; border-bottom:2px solid #26a69a; }
+.modal .input-field label.active{
+  transform:none !important; font-size:.9rem; color:#9e9e9e; margin-bottom:2px; display:block;
 }
 
-/* Z-index alto por si DataTables / charts crean stacking contexts */
-.modal         { z-index: 1005 !important; }
-.modal-overlay { z-index: 1004 !important; }
+/* Z-index modal */
+.modal{ z-index:1005 !important; }
+.modal-overlay{ z-index:1004 !important; }
 
-/* Evita que contenedores tapen el overlay por overflow/transform */
-.container, .card-panel { overflow: visible !important; }
+/* Evitar que contenedores tapen overlay */
+.container, .card-panel{ overflow:visible !important; }
 
 /* ======= RESPONSIVE ======= */
 @media (max-width: 992px){
-  /* Los wrappers siguen al 100%. Si en móviles no cabe, el navegador hará wrap. */
-  #tablaContactos,
-  #tablaVisitas,
-  #tablaPersonas{
-    table-layout: auto;
-  }
+  /* mantenemos table-layout:fixed para no romper anchos */
   .dataTables_paginate{ justify-content:center; }
 }
-
-@media (max-width: 600px){
+@media (max-width:600px){
   #tablaContactos th, #tablaContactos td,
   #tablaVisitas  th, #tablaVisitas  td,
-  #tablaPersonas th, #tablaPersonas td {
-    font-size: .88rem;
-    padding: .34rem .45rem;
+  #tablaPersonas th, #tablaPersonas td{
+    font-size:.88rem; padding:.34rem .45rem;
   }
 }
 
 /* (Opcional) ampliar .container en desktop si lo usas en otras vistas */
-@media (min-width: 1200px){
-  .container{ max-width: 1400px; }
-}
-
-/* ====== Tablas Visitas y Agenda: una sola línea por fila ====== */
-
-/* No envolver texto; cortar con ellipsis cuando no alcance */
-#tablaVisitas th, #tablaVisitas td,
-#tablaPersonas th, #tablaPersonas td{
-  white-space: nowrap;
-}
-#tablaVisitas td, #tablaPersonas td{
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Columna Acciones: no recortar íconos */
-#tablaVisitas td:last-child,
-#tablaPersonas td:last-child{
-  overflow: visible;
-}
-
-/* AGENDA: en Empresa y Notas mantener texto+iconos en UNA línea */
-#tablaPersonas td:nth-child(5),
-#tablaPersonas td:nth-child(6){
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-#tablaPersonas td:nth-child(5) .ellipsisCell,
-#tablaPersonas td:nth-child(6) .ellipsisCell{
-  min-width: 0;     /* permite que el texto se achique */
-  flex: 1 1 auto;   /* y muestre ellipsis si no cabe */
-}
-
-/* VISITAS: reforzar provider/observaciones con ellipsis */
-#tablaVisitas .ellipsisProv, #tablaVisitas .ellipsisObs{
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Asegurar que el wrapper de DataTables nunca cree scroll X extra */
-#tab-visitas .dataTables_wrapper,
-#tab-personas .dataTables_wrapper{
-  width: 100% !important;
-  max-width: none !important;
-}
-
+@media (min-width:1200px){ .container{ max-width:1400px; } }
