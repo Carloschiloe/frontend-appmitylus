@@ -1,135 +1,219 @@
 /* =========================================
-   ABASTECIMIENTO – overrides SOLO de esta vista
-   (No toca estilos globales)
+   ABASTECIMIENTO – Overrides sobre global
    ========================================= */
 
-/* ---- Gutter para futura sidebar sin afectar DataTables ---- */
-.page-wrap{
-  padding-left: 120px;
-  box-sizing: border-box;
-}
-@media (max-width: 992px){
-  .page-wrap{ padding-left: 0; }
-}
+/* ======= TABLAS: Contactos + Visitas ======= */
 
-/* =========================================
-   TABLA: VISITAS
-   ========================================= */
-
-/* Tabla fluida (dejamos que el navegador reparta ancho) */
-#tablaVisitas{
-  width: 100% !important;
-  table-layout: auto;
+/* Cabezal teal */
+#tablaContactos.dataTable thead th,
+#tablaVisitas.dataTable thead th {
+  background: var(--primary) !important;
+  color: #fff !important;
 }
 
-/* Encabezados: en UNA línea (evita “P r ó x i m o…”) */
-#tablaVisitas thead th{
-  white-space: nowrap;
-  word-break: normal;
-  hyphens: manual;
+/* Densidad de filas */
+#tablaContactos th, #tablaContactos td,
+#tablaVisitas  th, #tablaVisitas  td {
+  font-size: 0.92rem;
+  padding: 0.38rem 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-/* Celdas: pueden envolver; con protección de overflow */
-#tablaVisitas tbody td{
-  white-space: normal;
-  word-break: break-word;
-  hyphens: auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Anchos mínimos clave */
-#tablaVisitas thead th:nth-child(1),
-#tablaVisitas tbody td:nth-child(1){ min-width:110px; }   /* Fecha */
-
-#tablaVisitas thead th:nth-child(8),
-#tablaVisitas tbody td:nth-child(8){
-  min-width: 92px;                /* Acciones (no cortar íconos) */
-  white-space: nowrap;
-}
-
-/* Íconos de acciones (feedback y área clic) */
-#tablaVisitas td .material-icons{
-  font-size: 1.15em;
+/* Acciones (íconos) */
+#tablaContactos td .material-icons,
+#tablaVisitas  td .material-icons {
+  font-size: 1.22em;
   margin-right: 8px;
-  padding: 4px;
-  border-radius: 6px;
   transition: transform .12s ease, color .12s ease;
 }
-#tablaVisitas td .material-icons:hover{
+#tablaContactos td .material-icons:hover,
+#tablaVisitas  td .material-icons:hover {
   color: var(--primary-acc);
-  transform: scale(1.06);
-}
-#tablaVisitas td .material-icons:last-child{ margin-right: 0; }
-
-/* Helpers para textos largos renderizados desde JS */
-#tablaVisitas .ellipsisProv,
-#tablaVisitas .ellipsisObs{
-  display: block;
-  white-space: nowrap;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  vertical-align: middle;
+  transform: scale(1.08);
 }
 
-/* =========================================
-   TABLA: CONTACTOS
-   (mínimos seguros; no cambiamos el look de GLOBAL.css)
-   ========================================= */
-#tablaContactos{
-  width: 100%;
-  table-layout: fixed;
-}
+/* ======= BOTONES / TOOLBAR ======= */
+#btnOpenContactoModal{ margin:.25rem 0 .5rem 0; }
 
-/* Fecha y Acciones sin quiebre */
-#tablaContactos thead th:nth-child(1),
-#tablaContactos tbody td:nth-child(1){ min-width:110px; white-space:nowrap; }
-
-#tablaContactos thead th:nth-child(10),
-#tablaContactos tbody td:nth-child(10){ min-width:96px; white-space:nowrap; }
-
-#tablaContactos td .material-icons{
-  font-size: 1.15em;
-  margin-right: 7px;
-}
-#tablaContactos td .material-icons:last-child{ margin-right: 0; }
-
-/* =========================================
-   MODALES
-   ========================================= */
+/* ======= MODALES ======= */
+/* Contacto y Detalle */
 #modalContacto.modal,
-#modalDetalleContacto.modal,
-#modalVisita.modal,
-#modalBloque.modal{
+#modalDetalleContacto.modal {
   max-width: 760px !important;
   max-height: 86vh !important;
   top: 7vh !important;
 }
 #modalContacto .modal-content,
-#modalDetalleContacto .modal-content,
-#modalVisita .modal-content,
-#modalBloque .modal-content{
+#modalDetalleContacto .modal-content {
   max-height: 72vh !important;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 #modalContacto .modal-footer,
-#modalDetalleContacto .modal-footer,
-#modalVisita .modal-footer,
-#modalBloque .modal-footer{
+#modalDetalleContacto .modal-footer {
   padding: .5rem .75rem !important;
 }
 
-/* =========================================
-   RESPONSIVE
-   ========================================= */
+/* Visita (mismo look) */
+#modalVisita.modal {
+  max-width: 760px !important;
+  max-height: 86vh !important;
+  top: 7vh !important;
+}
+#modalVisita .modal-content {
+  max-height: 72vh !important;
+}
+#modalVisita .modal-footer {
+  padding: .5rem .75rem !important;
+}
+
+/* Inputs más compactos dentro de los modales */
+#modalContacto .input-field input,
+#modalContacto .input-field select,
+#modalContacto .input-field textarea,
+#modalVisita   .input-field input,
+#modalVisita   .input-field select,
+#modalVisita   .input-field textarea {
+  margin-bottom: .6rem;
+}
+
+/* ======= RESPONSIVE ======= */
+@media (max-width: 992px){
+  #tablaContactos, #tablaContactos_wrapper,
+  #tablaVisitas,  #tablaVisitas_wrapper {
+    min-width: 360px !important;
+    width: 100vw !important;
+    display: block !important;
+  }
+  .dataTables_paginate{ justify-content:center; }
+}
 @media (max-width: 600px){
   #modalContacto.modal,
   #modalDetalleContacto.modal,
-  #modalVisita.modal,
-  #modalBloque.modal{
+  #modalVisita.modal {
     width: 96% !important;
     top: 4vh !important;
   }
+  #tablaContactos th, #tablaContactos td,
+  #tablaVisitas  th, #tablaVisitas  td {
+    font-size: .88rem;
+    padding: .34rem .45rem;
+  }
+}
+
+/* ======= SELECT nativo con look Materialize en modales ======= */
+.modal .browser-default {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #9e9e9e;
+  padding: 8px 0 6px;
+  font-size: 16px;
+}
+.modal .browser-default:focus {
+  outline: none;
+  border-bottom: 2px solid #26a69a;
+}
+.modal .input-field label.active {
+  transform: none !important;
+  font-size: 0.9rem;
+  color: #9e9e9e;
+  margin-bottom: 2px;
+  display: block;
+}
+
+/* === Alinea el modal de MMPP con tus otros modales === */
+#modalBloque.modal {
+  max-width: 760px !important;
+  max-height: 86vh !important;
+  top: 7vh !important;
+}
+#modalBloque .modal-content { max-height: 72vh !important; }
+#modalBloque .modal-footer  { padding: .5rem .75rem !important; }
+
+/* Z-index alto por si DataTables / charts crean stacking contexts */
+.modal         { z-index: 1005 !important; }
+.modal-overlay { z-index: 1004 !important; }
+
+/* Evita que contenedores tapen el overlay por overflow/transform */
+.container, .card-panel { overflow: visible !important; }
+
+/* =========================================
+   PLANIFICACIÓN – Complementos sin duplicados
+   ========================================= */
+
+/* Utilidades generales */
+.mt-12{margin-top:12px}
+.mt-14{margin-top:14px}
+.mt-18{margin-top:18px}
+.mb-32{margin-bottom:32px}
+.hidden{display:none!important}
+.static-label{transform:none!important;font-size:.9rem;color:#9e9e9e}
+
+/* Barras de progreso compactas (KPIs y realtime) */
+.progress.slim{height:8px;border-radius:8px;margin:.4rem 0 0}
+.progress .determinate{border-radius:8px}
+
+/* KPIs (grid responsive) */
+.kpi-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin:14px 0 6px}
+.kpi{grid-column:span 12;background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+.kpi h6{margin:0;font-size:.95rem;color:#546e7a;font-weight:600}
+.kpi .val{font-size:1.6rem;font-weight:700;margin-top:4px;color:#004d40}
+.kpi .sub{font-size:.9rem;color:#78909c;margin-top:2px}
+@media(min-width:600px){.kpi{grid-column:span 6}}
+@media(min-width:992px){.kpi{grid-column:span 3}}
+
+/* Toolbar / filtros */
+.toolbar-panel{padding:14px 16px}
+.toolbar{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;align-items:end}
+.toolbar .input-field{margin:0}
+.toolbar .actions{grid-column:span 12;display:flex;gap:8px;justify-content:flex-end}
+.toolbar .toggles{display:flex;gap:16px;align-items:center}
+.periodo-wrap{display:flex;gap:10px;align-items:end}
+.periodo-nav{display:flex;gap:6px;align-items:center}
+.btn-ghost{background:transparent!important}
+@media(min-width:600px){
+  .toolbar .w2{grid-column:span 2}
+  .toolbar .w3{grid-column:span 3}
+  .toolbar .w4{grid-column:span 4}
+  .toolbar .w5{grid-column:span 5}
+  .toolbar .w6{grid-column:span 6}
+  .toolbar .w12{grid-column:span 12}
+}
+@media(min-width:992px){
+  .toolbar .w2{grid-column:span 2}
+  .toolbar .w3{grid-column:span 3}
+  .toolbar .w4{grid-column:span 4}
+  .toolbar .w5{grid-column:span 5}
+  .toolbar .w6{grid-column:span 6}
+}
+
+/* Tablas planificación */
+#tablaProgramaSemanal.dataTable thead th{
+  background: var(--primary) !important;
+  color: #fff !important;
+}
+#tablaProgramaSemanal td.right-align{ text-align:right }
+
+/* Tarjetas de gráfico / tablero */
+.chart-card{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+.chart-card .chart-title{margin:0 0 8px}
+
+/* Realtime list (últimos 5 abastecimientos) */
+.rt-list{margin:0;list-style:none;display:grid;gap:8px}
+.rt-list .progress{margin:.25rem 0 0}
+
+/* Gantt mensual liviano */
+.gantt{display:grid;gap:8px}
+.gantt__row{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:8px}
+.gantt__label{font-size:.9rem;color:#607d8b}
+.gantt__track{position:relative;height:20px;background:#eceff1;border-radius:10px;overflow:hidden}
+.gantt__bar{position:absolute;top:0;bottom:0;border-radius:10px}
+.gantt__bar--meta{left:0;right:0;border:2px dashed #90a4ae;background:transparent}
+.gantt__bar--plan{left:0;width:0;background:#64b5f6}
+.gantt__bar--real{left:0;width:0;background:#66bb6a;opacity:.9}
+
+/* Impresión (oculta UI y limpia tarjetas) */
+@media print{
+  nav, .tabs, .actions, .modal, .toolbar-panel .input-field{ display:none !important; }
+  .kpi-grid{ grid-template-columns:repeat(4,1fr)!important }
+  .chart-card{ box-shadow:none!important; border:1px solid #eee }
 }
