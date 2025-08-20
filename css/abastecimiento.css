@@ -2,18 +2,20 @@
    ABASTECIMIENTO – Overrides sobre global
    ========================================= */
 
-/* ======= TABLAS: Contactos + Visitas ======= */
+/* ========= UNIFICAR TABLAS (Contactos, Visitas, Agenda) ========= */
 
 /* Cabezal teal */
 #tablaContactos.dataTable thead th,
-#tablaVisitas.dataTable thead th {
+#tablaVisitas.dataTable thead th,
+#tablaPersonas.dataTable thead th {
   background: var(--primary) !important;
   color: #fff !important;
 }
 
 /* Densidad de filas */
 #tablaContactos th, #tablaContactos td,
-#tablaVisitas  th, #tablaVisitas  td {
+#tablaVisitas  th, #tablaVisitas  td,
+#tablaPersonas th, #tablaPersonas td {
   font-size: 0.92rem;
   padding: 0.38rem 0.5rem;
   border-bottom: 1px solid #e0e0e0;
@@ -21,47 +23,79 @@
 
 /* Acciones (íconos) */
 #tablaContactos td .material-icons,
-#tablaVisitas  td .material-icons {
+#tablaVisitas  td .material-icons,
+#tablaPersonas td .material-icons {
   font-size: 1.22em;
   margin-right: 8px;
   transition: transform .12s ease, color .12s ease;
 }
 #tablaContactos td .material-icons:hover,
-#tablaVisitas  td .material-icons:hover {
+#tablaVisitas  td .material-icons:hover,
+#tablaPersonas td .material-icons:hover {
   color: var(--primary-acc);
   transform: scale(1.08);
 }
 
-/* ======= BOTONES / TOOLBAR ======= */
-#btnOpenContactoModal{ margin:.25rem 0 .5rem 0; }
+/* Evitar overflow horizontal (pestañas que tendían a desbordar) */
+#tab-visitas  .dataTables_wrapper,
+#tab-personas .dataTables_wrapper { overflow-x: hidden; }
 
-/* ======= MODALES ======= */
-/* Contacto y Detalle */
+/* Layout fijo para control granular de anchos */
+#tablaVisitas, #tablaPersonas { table-layout: fixed; width: 100% !important; }
+
+/* -------- Anchos por columna — VISITAS --------
+   (1) Fecha, (2) Proveedor, (3) Centro, (4) Muestra,
+   (5) Próximo paso, (6) Tons, (7) Observaciones, (8) Acciones */
+#tablaVisitas th:nth-child(1), #tablaVisitas td:nth-child(1){ width:100px; }
+#tablaVisitas th:nth-child(2), #tablaVisitas td:nth-child(2){ width:22%;  }
+#tablaVisitas th:nth-child(3), #tablaVisitas td:nth-child(3){ width:90px;  }
+#tablaVisitas th:nth-child(4), #tablaVisitas td:nth-child(4){ width:90px;  } /* Muestra */
+#tablaVisitas th:nth-child(5), #tablaVisitas td:nth-child(5){ width:20%;  }
+#tablaVisitas th:nth-child(6), #tablaVisitas td:nth-child(6){ width:80px;  text-align:right; }
+#tablaVisitas th:nth-child(7), #tablaVisitas td:nth-child(7){ width:28%;  }
+#tablaVisitas th:nth-child(8), #tablaVisitas td:nth-child(8){ width:120px; }
+
+#tablaVisitas td:nth-child(2) span,
+#tablaVisitas td:nth-child(7) span {
+  display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* -------- Anchos por columna — AGENDA (tablaPersonas) --------
+   (1) Fecha, (2) Contacto, (3) Teléfono(s), (4) Email,
+   (5) Empresa, (6) Notas, (7) Acciones */
+#tablaPersonas th:nth-child(1), #tablaPersonas td:nth-child(1){ width:110px; }
+#tablaPersonas th:nth-child(2), #tablaPersonas td:nth-child(2){ width:22%;  }
+#tablaPersonas th:nth-child(3), #tablaPersonas td:nth-child(3){ width:18%;  }
+#tablaPersonas th:nth-child(4), #tablaPersonas td:nth-child(4){ width:18%;  }
+#tablaPersonas th:nth-child(5), #tablaPersonas td:nth-child(5){ width:20%;  }
+#tablaPersonas th:nth-child(6), #tablaPersonas td:nth-child(6){ width:22%;  }
+#tablaPersonas th:nth-child(7), #tablaPersonas td:nth-child(7){ width:120px; }
+
+#tablaPersonas td:nth-child(5) .ellipsisCell{ max-width:26ch; }
+#tablaPersonas td:nth-child(6) .ellipsisCell{ max-width:40ch; }
+
+/* ======= BOTONES / TOOLBAR ======= */
+#btnOpenContactoModal { margin:.25rem 0 .5rem 0; }
+
+/* ======= MODALES (mismo look y sizing) ======= */
 #modalContacto.modal,
-#modalDetalleContacto.modal {
+#modalDetalleContacto.modal,
+#modalVisita.modal,
+#modalBloque.modal {
   max-width: 760px !important;
   max-height: 86vh !important;
   top: 7vh !important;
 }
 #modalContacto .modal-content,
-#modalDetalleContacto .modal-content {
+#modalDetalleContacto .modal-content,
+#modalVisita .modal-content,
+#modalBloque .modal-content {
   max-height: 72vh !important;
 }
 #modalContacto .modal-footer,
-#modalDetalleContacto .modal-footer {
-  padding: .5rem .75rem !important;
-}
-
-/* Visita (mismo look) */
-#modalVisita.modal {
-  max-width: 760px !important;
-  max-height: 86vh !important;
-  top: 7vh !important;
-}
-#modalVisita .modal-content {
-  max-height: 72vh !important;
-}
-#modalVisita .modal-footer {
+#modalDetalleContacto .modal-footer,
+#modalVisita .modal-footer,
+#modalBloque .modal-footer {
   padding: .5rem .75rem !important;
 }
 
@@ -75,31 +109,7 @@
   margin-bottom: .6rem;
 }
 
-/* ======= RESPONSIVE ======= */
-@media (max-width: 992px){
-  #tablaContactos, #tablaContactos_wrapper,
-  #tablaVisitas,  #tablaVisitas_wrapper {
-    min-width: 360px !important;
-    width: 100vw !important;
-    display: block !important;
-  }
-  .dataTables_paginate{ justify-content:center; }
-}
-@media (max-width: 600px){
-  #modalContacto.modal,
-  #modalDetalleContacto.modal,
-  #modalVisita.modal {
-    width: 96% !important;
-    top: 4vh !important;
-  }
-  #tablaContactos th, #tablaContactos td,
-  #tablaVisitas  th, #tablaVisitas  td {
-    font-size: .88rem;
-    padding: .34rem .45rem;
-  }
-}
-
-/* ======= SELECT nativo con look Materialize en modales ======= */
+/* SELECT nativo con look Materialize en modales */
 .modal .browser-default {
   width: 100%;
   background: transparent;
@@ -119,15 +129,6 @@
   margin-bottom: 2px;
   display: block;
 }
-
-/* === Alinea el modal de MMPP con tus otros modales === */
-#modalBloque.modal {
-  max-width: 760px !important;
-  max-height: 86vh !important;
-  top: 7vh !important;
-}
-#modalBloque .modal-content { max-height: 72vh !important; }
-#modalBloque .modal-footer  { padding: .5rem .75rem !important; }
 
 /* Z-index alto por si DataTables / charts crean stacking contexts */
 .modal         { z-index: 1005 !important; }
@@ -211,9 +212,29 @@
 .gantt__bar--plan{left:0;width:0;background:#64b5f6}
 .gantt__bar--real{left:0;width:0;background:#66bb6a;opacity:.9}
 
-/* Impresión (oculta UI y limpia tarjetas) */
+/* Impresión */
 @media print{
   nav, .tabs, .actions, .modal, .toolbar-panel .input-field{ display:none !important; }
   .kpi-grid{ grid-template-columns:repeat(4,1fr)!important }
   .chart-card{ box-shadow:none!important; border:1px solid #eee }
+}
+
+/* ======= RESPONSIVE GENERAL (tablas) ======= */
+@media (max-width: 992px){
+  #tablaContactos, #tablaContactos_wrapper,
+  #tablaVisitas,  #tablaVisitas_wrapper,
+  #tablaPersonas, #tablaPersonas_wrapper {
+    min-width: 360px !important;
+    width: 100vw !important;
+    display: block !important;
+  }
+  .dataTables_paginate{ justify-content:center; }
+}
+@media (max-width: 600px){
+  #tablaContactos th, #tablaContactos td,
+  #tablaVisitas  th, #tablaVisitas  td,
+  #tablaPersonas th, #tablaPersonas td {
+    font-size: .88rem;
+    padding: .34rem .45rem;
+  }
 }
