@@ -1,8 +1,15 @@
 // /js/abastecimiento/contactos/index.js
 
-if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-  import('./debug-fetch.js').catch(() => {});
-}
+// ⚠️ Guard: este bloque solo corre en navegador (evita crash en Vercel/SSR)
+try {
+  if (
+    typeof window !== 'undefined' &&
+    typeof window.location !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ) {
+    import('./debug-fetch.js').catch(() => {});
+  }
+} catch (_) {}
 
 import { cargarCentros, cargarContactosGuardados } from './data.js';
 import { setupBuscadorProveedores } from './proveedores.js';
@@ -26,7 +33,7 @@ let personasBooted = false;
    DataTables defaults (global)
    ======================= */
 function setDTDefaults() {
-  const $ = window.jQuery || window.$;
+  const $ = (typeof window !== 'undefined' && (window.jQuery || window.$)) || null;
   if (!$ || !$.fn || !$.fn.dataTable) return;
 
   $.extend(true, $.fn.dataTable.defaults, {
@@ -41,7 +48,7 @@ function setDTDefaults() {
 
 /* Utils: ajustar columnas si la tabla existe */
 function adjustDT(selector) {
-  const jq = window.jQuery || window.$;
+  const jq = (typeof window !== 'undefined' && (window.jQuery || window.$)) || null;
   if (jq && jq.fn && jq.fn.DataTable && jq(selector).length) {
     try {
       const dt = jq(selector).DataTable();
@@ -52,7 +59,7 @@ function adjustDT(selector) {
 
 /* ---------- UI init: tabs + modales (una sola vez, sin AutoInit) ---------- */
 function initUIOnce() {
-  if (!window.M) return;
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
   // Helpers para iniciar cada tab cuando se muestra su panel
   const ensureVisitas = async () => {
@@ -74,89 +81,111 @@ function initUIOnce() {
   };
 
   // Tabs con onShow para cubrir cualquier href/id
-  const tabs = document.querySelectorAll('.tabs');
-  if (tabs.length) {
-    M.Tabs.init(tabs, {
-      onShow: (tabEl) => {
-        const id = (tabEl?.id || '').toLowerCase();
-        if (id.includes('visita'))  ensureVisitas();
-        if (id.includes('persona')) ensurePersonas();
-      }
-    });
-  }
+  try {
+    const tabs = document.querySelectorAll('.tabs');
+    if (tabs.length && window.M && window.M.Tabs) {
+      window.M.Tabs.init(tabs, {
+        onShow: (tabEl) => {
+          const id = (tabEl?.id || '').toLowerCase();
+          if (id.includes('visita'))  ensureVisitas();
+          if (id.includes('persona')) ensurePersonas();
+        }
+      });
+    }
+  } catch (e) { console.warn('[contactos] init tabs', e); }
 
   const cleanupOverlays = () => {
-    document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-    document.body.style.overflow = '';
+    try {
+      document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+      document.body.style.overflow = '';
+    } catch {}
   };
 
   // Modal Registrar Contacto
-  const modalContactoEl = document.getElementById('modalContacto');
-  if (modalContactoEl) {
-    const inst = M.Modal.getInstance(modalContactoEl) || M.Modal.init(modalContactoEl, {
-      onCloseEnd: () => { document.getElementById('formContacto')?.reset(); cleanupOverlays(); }
-    });
-
-    document.getElementById('btnOpenContactoModal')
-      ?.addEventListener('click', (e) => { e.preventDefault(); inst.open(); });
-
-    document.getElementById('btnOpenPersonaModal')
-      ?.addEventListener('click', (e) => {
-        e.preventDefault();
-        try { prepararNuevo(); } catch {}
-        (M.Modal.getInstance(modalContactoEl) || inst).open();
+  try {
+    const modalContactoEl = document.getElementById('modalContacto');
+    if (modalContactoEl && window.M && window.M.Modal) {
+      const inst = window.M.Modal.getInstance(modalContactoEl) || window.M.Modal.init(modalContactoEl, {
+        onCloseEnd: () => { document.getElementById('formContacto')?.reset(); cleanupOverlays(); }
       });
 
-    modalContactoEl.querySelectorAll('.modal-close').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        (M.Modal.getInstance(modalContactoEl) || inst).close();
+      document.getElementById('btnOpenContactoModal')
+        ?.addEventListener('click', (e) => { e.preventDefault(); inst.open(); });
+
+      document.getElementById('btnOpenPersonaModal')
+        ?.addEventListener('click', (e) => {
+          e.preventDefault();
+          try { prepararNuevo(); } catch {}
+          (window.M.Modal.getInstance(modalContactoEl) || inst).open();
+        });
+
+      modalContactoEl.querySelectorAll('.modal-close').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          (window.M.Modal.getInstance(modalContactoEl) || inst).close();
+        });
       });
-    });
-  }
+    }
+  } catch (e) { console.warn('[contactos] modal contacto', e); }
 
   // Modal Detalle
-  const modalDetalleEl = document.getElementById('modalDetalleContacto');
-  if (modalDetalleEl) {
-    M.Modal.getInstance(modalDetalleEl) || M.Modal.init(modalDetalleEl, { onCloseEnd: () => cleanupOverlays() });
-  }
+  try {
+    const modalDetalleEl = document.getElementById('modalDetalleContacto');
+    if (modalDetalleEl && window.M && window.M.Modal) {
+      window.M.Modal.getInstance(modalDetalleEl) || window.M.Modal.init(modalDetalleEl, { onCloseEnd: () => cleanupOverlays() });
+    }
+  } catch {}
 
   // Modal Visita
-  const modalVisitaEl = document.getElementById('modalVisita');
-  if (modalVisitaEl) {
-    M.Modal.getInstance(modalVisitaEl) || M.Modal.init(modalVisitaEl, { onCloseEnd: () => cleanupOverlays() });
-  }
+  try {
+    const modalVisitaEl = document.getElementById('modalVisita');
+    if (modalVisitaEl && window.M && window.M.Modal) {
+      window.M.Modal.getInstance(modalVisitaEl) || window.M.Modal.init(modalVisitaEl, { onCloseEnd: () => cleanupOverlays() });
+    }
+  } catch {}
 
   // Modal Asociar Empresa
-  const modalAsociarEl = document.getElementById('modalAsociar');
-  if (modalAsociarEl) {
-    M.Modal.getInstance(modalAsociarEl) || M.Modal.init(modalAsociarEl, { onCloseEnd: () => cleanupOverlays() });
-  }
+  try {
+    const modalAsociarEl = document.getElementById('modalAsociar');
+    if (modalAsociarEl && window.M && window.M.Modal) {
+      window.M.Modal.getInstance(modalAsociarEl) || window.M.Modal.init(modalAsociarEl, { onCloseEnd: () => cleanupOverlays() });
+    }
+  } catch {}
 
   window.addEventListener('hashchange', cleanupOverlays);
 
   /* ---- VISITAS: init al hacer clic en el tab (soporta #tab-visitas y #visitas) ---- */
-  const tabVisitas = document.querySelector('a[href="#tab-visitas"], a[href="#visitas"]');
-  tabVisitas?.addEventListener('click', ensureVisitas);
+  try {
+    const tabVisitas = document.querySelector('a[href="#tab-visitas"], a[href="#visitas"]');
+    tabVisitas?.addEventListener('click', ensureVisitas);
+  } catch {}
 
   /* ---- PERSONAS: init al hacer clic en el tab ---- */
-  const tabPersonas = document.querySelector('a[href="#tab-personas"], a[href="#personas"]');
-  tabPersonas?.addEventListener('click', ensurePersonas);
+  try {
+    const tabPersonas = document.querySelector('a[href="#tab-personas"], a[href="#personas"]');
+    tabPersonas?.addEventListener('click', ensurePersonas);
+  } catch {}
 
   /* ---- Ajuste al volver a EMPRESAS ---- */
-  const tabContactos = document.querySelector('a[href="#tab-contactos"], a[href="#contactos"]');
-  tabContactos?.addEventListener('click', () => adjustDT('#tablaContactos'));
+  try {
+    const tabContactos = document.querySelector('a[href="#tab-contactos"], a[href="#contactos"]');
+    tabContactos?.addEventListener('click', () => adjustDT('#tablaContactos'));
+  } catch {}
 
   /* ---- Watcher: si #tablaVisitas aparece en el DOM, inicializa automáticamente ---- */
-  const mo = new MutationObserver(() => {
-    if (!visitasBooted && document.getElementById('tablaVisitas')) {
-      initVisitasTab().then(() => {
-        visitasBooted = true;
-        adjustDT('#tablaVisitas');
-      }).catch(e => console.warn('[visitas] init via MO', e));
+  try {
+    if (typeof MutationObserver !== 'undefined') {
+      const mo = new MutationObserver(() => {
+        if (!visitasBooted && document.getElementById('tablaVisitas')) {
+          initVisitasTab().then(() => {
+            visitasBooted = true;
+            adjustDT('#tablaVisitas');
+          }).catch(e => console.warn('[visitas] init via MO', e));
+        }
+      });
+      mo.observe(document.body, { childList: true, subtree: true });
     }
-  });
-  mo.observe(document.body, { childList: true, subtree: true });
+  } catch (e) { console.warn('[contactos] MO', e); }
 }
 
 export async function initContactosTab(forceReload = false) {
@@ -185,20 +214,23 @@ export async function initContactosTab(forceReload = false) {
     hookGlobalListeners();
 
     /* 🧭 Si entras directo con hash a Visitas/Personas, inicializa de inmediato */
-    if (location.hash === '#tab-visitas' || location.hash === '#visitas') {
-      try { await initVisitasTab(); visitasBooted = true; }
-      catch (e) { console.warn('[visitas] direct-hash init', e); }
-      adjustDT('#tablaVisitas');
-    } else if (location.hash === '#tab-personas' || location.hash === '#personas') {
-      try { initFiltrosYKPIsPersonas(); initPersonasTab(); personasBooted = true; }
-      catch (e) { console.warn('[personas] direct-hash init', e); }
-      adjustDT('#tablaPersonas');
+    if (typeof window !== 'undefined') {
+      const h = (window.location?.hash || '').toLowerCase();
+      if (h === '#tab-visitas' || h === '#visitas') {
+        try { await initVisitasTab(); visitasBooted = true; }
+        catch (e) { console.warn('[visitas] direct-hash init', e); }
+        adjustDT('#tablaVisitas');
+      } else if (h === '#tab-personas' || h === '#personas') {
+        try { initFiltrosYKPIsPersonas(); initPersonasTab(); personasBooted = true; }
+        catch (e) { console.warn('[personas] direct-hash init', e); }
+        adjustDT('#tablaPersonas');
+      }
     }
 
     booted = true;
   } catch (err) {
     console.error('[contactos] init error', err);
-    M.toast?.({ html: 'No se pudo inicializar', classes: 'red' });
+    if (typeof window !== 'undefined') window.M?.toast?.({ html: 'No se pudo inicializar', classes: 'red' });
   }
 }
 
@@ -216,7 +248,7 @@ function hookGlobalListeners() {
       if (personasBooted) adjustDT('#tablaPersonas');
     } catch (e) {
       console.error(e);
-      M.toast?.({ html: 'No se pudo refrescar', classes: 'red' });
+      window.M?.toast?.({ html: 'No se pudo refrescar', classes: 'red' });
     }
   });
 
