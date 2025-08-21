@@ -66,20 +66,16 @@ const adjustNow = rafThrottle(() => {
 });
 export function forceAdjustVisitas() { adjustNow(); }
 
-// CSS para que el <i> no bloquee el click
+// CSS para que el ícono no bloquee el click y los botones sean clickeables
 (function ensureClickCSS(){
   if (document.getElementById('visitas-click-fix')) return;
   const css = `
     #tablaVisitas i.material-icons{ pointer-events:none; }
-    #tablaVisitas td:last-child a { 
-      pointer-events: auto; 
-      cursor: pointer; 
-      display: inline-block;
-      margin: 0 5px;
+    #tablaVisitas td:last-child [data-action]{
+      pointer-events:auto; cursor:pointer; display:inline-block; margin:0 5px;
     }
-    #tablaVisitas td:last-child a i {
-      font-size: 18px;
-      vertical-align: middle;
+    #tablaVisitas td:last-child [data-action] i{
+      font-size:18px; vertical-align:middle;
     }
   `;
   const s = document.createElement('style');
@@ -121,11 +117,12 @@ export async function initVisitasTab(forceReload = false) {
       drawCallback:   () => adjustNow(),
     });
 
-    // Delegación: UNA sola vez, en la tabla
+    // Delegación: UNA sola vez, en la tabla (soporta <a>, <button> o <span>)
     jq('#tablaVisitas')
       .off('click.visitas')
-      .on('click.visitas', 'a[data-action]', function(e){
-        e.preventDefault(); e.stopPropagation();
+      .on('click.visitas', '[data-action]', function(e){
+        e.preventDefault();
+        // no usamos stopImmediatePropagation para no romper otras features de DataTables
         manejarAccionVisita(this);
       });
 
@@ -135,6 +132,7 @@ export async function initVisitasTab(forceReload = false) {
   await renderTablaVisitas();
   adjustNow();
 
+  // estos listeners podrían acumularse si llamas muchas veces initVisitasTab; si es tu caso, muévelos fuera y pon {once:true}
   window.addEventListener('visita:created', async () => { await renderTablaVisitas(); adjustNow(); });
   window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); adjustNow(); });
 }
@@ -393,19 +391,19 @@ export function setupFormularioVisita() {
 
 /* ==== Delegación en la tabla (simple y estable) ==== */
 function manejarAccionVisita(aEl){
-  const action = aEl.dataset.action;
+  const action = (aEl.dataset.action || '').toLowerCase();
   try {
-    if (action === 'ver') {
+    if (action === 'ver' || action === 'detalle') {
       const c = (state.contactosGuardados || []).find(x => String(x._id) === String(aEl.dataset.contactoId));
       if (c) abrirDetalleContacto(c); else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
       return;
     }
-    if (action === 'nueva') {
+    if (action === 'nueva' || action === 'visita') {
       const c = (state.contactosGuardados || []).find(x => String(x._id) === String(aEl.dataset.contactoId));
       if (c) abrirModalVisita(c); else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
       return;
     }
-    if (action === 'editar') {
+    if (action === 'editar' || action === 'editar-visita') {
       const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(aEl.dataset.id));
       if (v) abrirEditarVisita(v); else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
       return;
