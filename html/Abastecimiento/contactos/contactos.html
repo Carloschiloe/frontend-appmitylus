@@ -1,511 +1,340 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Abastecimiento de MMPP – Choritos</title>
-
-  <!-- Materialize & Google Icons -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/css/abastecimiento.css" />
-
-  <!-- DataTables + Buttons -->
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
-  
-  <!-- CSS para solución de clics en botones de visitas -->
-  <style>
-    /* ======= SOLUCIÓN DEFINITIVA - ELIMINAR BLOQUEOS ======= */
-    #tablaVisitas a[data-action] {
-      pointer-events: auto !important;
-      cursor: pointer !important;
-      display: inline-block !important;
-      margin: 0 5px !important;
-    }
-    
-    #tablaVisitas td:last-child {
-      pointer-events: auto !important;
-    }
-    
-    #tablaVisitas i.material-icons {
-      pointer-events: none !important;
-    }
-    
-    /* Asegurar que ningún elemento padre bloquee eventos */
-    #tablaVisitas,
-    #tablaVisitas * {
-      pointer-events: auto !important;
-    }
-    
-    #tablaVisitas i.material-icons {
-      pointer-events: none !important;
-    }
-
-    /* Botones de testing */
-    .testing-buttons {
-      position: fixed; 
-      bottom: 10px; 
-      right: 10px; 
-      z-index: 10000; 
-      background: white; 
-      padding: 10px; 
-      border: 2px solid red;
-    }
-    
-    /* Visualización para debugging */
-    .debug-border {
-      border: 2px solid #ff0000 !important;
-      background-color: #fff8f8 !important;
-    }
-    
-    /* Estilo para botones conectados */
-    .button-connected {
-      border: 2px solid #4CAF50 !important;
-      border-radius: 4px !important;
-      padding: 4px !important;
-      background-color: #f8fff8 !important;
-      margin: 0 3px !important;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tonic Observaciones - Modales de Prueba</title>
+    <!-- Materialize CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7f9;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .actions-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        
+        .actions-section h2 {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .actions-list {
+            list-style: none;
+            margin-left: 20px;
+        }
+        
+        .actions-list li {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .actions-list li::before {
+            content: "•";
+            color: #42a5f5;
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+        }
+        
+        .observation {
+            background: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .observation h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .btn-container {
+            display: flex;
+            gap: 15px;
+            margin: 25px 0;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn-large {
+            padding: 0 30px;
+            height: 54px;
+            line-height: 54px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-large i {
+            font-size: 1.5rem;
+        }
+        
+        .testing-section {
+            background: #e8f5e9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .testing-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            color: #7f8c8d;
+        }
+        
+        /* Estilos para los modales */
+        .modal-content h4 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .collection-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .badge {
+            background-color: #42a5f5 !important;
+            color: white !important;
+        }
+    </style>
 </head>
 <body>
-  <!-- Botones de emergencia para testing -->
-  <div class="testing-buttons">
-    <strong>Testing Modales:</strong><br>
-    <button onclick="forceOpenModal('modalDetalleContacto')" style="margin: 5px;">Abrir Detalle</button>
-    <button onclick="forceOpenModal('modalVisita')" style="margin: 5px;">Abrir Visita</button>
-  </div>
-
-  <nav class="teal">
-    <div class="nav-wrapper">
-      <a href="../categorias.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
-      <a href="#" class="brand-logo center">Abastecimiento de MMPP</a>
-    </div>
-  </nav>
-
-  <div class="page-wrap">
-    <!-- Tabs -->
-    <ul id="tabs" class="tabs">
-      <li class="tab col s4"><a class="active" href="#tab-contactos">Empresas</a></li>
-      <li class="tab col s4"><a href="#tab-visitas">Visitas a Cultivos</a></li>
-      <li class="tab col s4"><a href="#tab-personas">Agenda de Contactos</a></li>
-    </ul>
-
-    <!-- EMPRESAS -->
-    <section id="tab-contactos" class="col s12">
-      <div class="page-toolbar">
-        <a id="btnOpenContactoModal" class="btn teal waves-effect">
-          <i class="material-icons left">record_voice_over</i>Registrar contacto
-        </a>
-      </div>
-
-      <table id="tablaContactos" class="highlight display tabla-mt">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Proveedor</th>
-            <th>Centro</th>
-            <th>Comuna</th>
-            <th>Disp.</th>
-            <th>Fecha Disp.</th>
-            <th>Disposición</th>
-            <th>Tons aprox</th>
-            <th>Vende a</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    <!-- VISITAS -->
-    <section id="tab-visitas" class="col s12">
-      <div class="page-toolbar">
-        <span class="grey-text text-darken-1">
-          Revisión, filtros y exportación de visitas (la creación sigue en Contactos).
-        </span>
-      </div>
-
-      <table id="tablaVisitas" class="highlight display tabla-mt">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Proveedor</th>
-            <th>Centro</th>
-            <th>Muestra</th>
-            <th>Próximo paso</th>
-            <th>Tons</th>
-            <th>Observaciones</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    <!-- AGENDA DE CONTACTOS -->
-    <section id="tab-personas" class="col s12">
-      <div class="row" id="kpisPersonas">
-        <div class="col s3 center"><h6>Total</h6><div id="kpiPTotal" class="kpi-num">0</div></div>
-        <div class="col s3 center"><h6>Sin empresa</h6><div id="kpiPSin" class="kpi-num">0</div></div>
-        <div class="col s3 center"><h6>Con empresa</h6><div id="kpiPCon" class="kpi-num">0</div></div>
-        <div class="col s3 center"><h6>Visitas (30d) sin empresa</h6><div id="kpiPVisitasSin" class="kpi-num">0</div></div>
-      </div>
-
-      <div class="chip-group" id="chipsFiltroPersonas">
-        <a id="fltTodosP" class="chip teal white-text">Todos</a>
-        <a id="fltSinP"   class="chip">Sin empresa</a>
-        <a id="fltConP"   class="chip">Con empresa</a>
-      </div>
-
-      <div class="page-toolbar" style="justify-content: flex-end;">
-        <a id="btnOpenPersonaModal" class="btn teal waves-effect">
-          <i class="material-icons left">person_add</i>Agregar persona
-        </a>
-      </div>
-
-      <table id="tablaPersonas" class="highlight display tabla-mt-sm">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Contacto</th>
-            <th>Teléfono(s)</th>
-            <th>Email</th>
-            <th>Empresa</th>
-            <th>Notas</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-  </div>
-
-  <!-- MODALES -->
-  <div id="modalContacto" class="modal">
-    <div class="modal-content">
-      <h5>Registrar Contacto</h5>
-      <div class="input-field" style="position:relative;">
-        <input type="text" id="buscadorProveedor" list="datalistProveedores" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
-        <label for="buscadorProveedor">Proveedor</label>
-        <datalist id="datalistProveedores"></datalist>
-      </div>
-      <div class="input-field">
-        <label for="selectCentro" class="active">Centro</label>
-        <select id="selectCentro" class="browser-default modern-select" disabled>
-          <option value="" disabled selected>Selecciona un centro (opcional)</option>
-        </select>
-      </div>
-      <input type="hidden" id="proveedorId">
-      <input type="hidden" id="proveedorNombre">
-      <input type="hidden" id="proveedorKey">
-      <input type="hidden" id="centroId">
-      <input type="hidden" id="centroCodigo">
-      <input type="hidden" id="centroCode">
-      <input type="hidden" id="centroComuna">
-      <input type="hidden" id="centroHectareas">
-
-      <form id="formContacto" autocomplete="off">
-        <div class="row">
-          <div class="input-field col s4">
-            <label for="tieneMMPP" class="active">Disponibilidad</label>
-            <select id="tieneMMPP" class="browser-default modern-select" required>
-              <option value="">¿Tiene MMPP disponible?</option>
-              <option value="Sí">Sí</option>
-              <option value="No">No</option>
-            </select>
-          </div>
-          <div class="input-field col s4">
-            <input id="fechaDisponibilidad" type="date">
-            <label for="fechaDisponibilidad" class="active">Fecha de disponibilidad</label>
-          </div>
-          <div class="input-field col s4">
-            <label for="dispuestoVender" class="active">Disposición</label>
-            <select id="dispuestoVender" class="browser-default modern-select">
-              <option value="">¿Dispuesto a vender?</option>
-              <option value="Sí">Sí</option>
-              <option value="No">No</option>
-              <option value="Por confirmar">Por confirmar</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="input-field col s4">
-            <input id="tonsDisponiblesAprox" type="number" step="0.01" min="0" placeholder="Ej: 25.5">
-            <label for="tonsDisponiblesAprox" class="active">Tons disponibles aprox</label>
-          </div>
-          <div class="input-field col s4">
-            <input id="vendeActualmenteA" type="text" placeholder="Ej: Camanchaca, Orizon...">
-            <label for="vendeActualmenteA">Vende actualmente a</label>
-          </div>
-          <div class="input-field col s4">
-            <input id="notasContacto" type="text" placeholder="Notas u observaciones">
-            <label for='notasContacto'>Notas</label>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="input-field col s4">
-            <input id="contactoNombre" type="text" placeholder="Nombre y apellido">
-            <label for="contactoNombre">Nombre del contacto</label>
-          </div>
-          <div class="input-field col s4">
-            <input id="contactoTelefono" type="tel" placeholder="+56 9 1234 5678">
-            <label for="contactoTelefono">Teléfono</label>
-          </div>
-          <div class="input-field col s4">
-            <input id="contactoEmail" type="email" placeholder="correo@dominio.cl">
-            <label for="contactoEmail">Email</label>
-          </div>
-        </div>
-      </form>
-    </div>
-
-    <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:8px;">
-      <button type="button" class="modal-close btn-flat">Cancelar</button>
-      <button class="btn teal" type="submit" form="formContacto">
-        <i class="material-icons left">save</i>Guardar
-      </button>
-    </div>
-  </div>
-
-  <div id="modalDetalleContacto" class="modal">
-    <div class="modal-content"><h5>Detalle del contacto</h5><div id="detalleContactoBody"></div></div>
-    <div class="modal-footer"><button class="modal-close btn teal">Cerrar</button></div>
-  </div>
-
-  <div id="modalVisita" class="modal">
-    <div class="modal-content">
-      <h5>Registrar visita</h5>
-      <form id="formVisita" autocomplete="off">
-        <input type="hidden" id="visita_proveedorId">
-        <div class="row">
-          <div class="input-field col s4">
-            <input type="date" id="visita_fecha" required><label for="visita_fecha" class="active">Fecha</label>
-          </div>
-          <div class="input-field col s4">
-            <label for="visita_centroId" class="active">Centro</label>
-            <select id="visita_centroId" class="browser-default"><option value="">Centro visitado (opcional)</option></select>
-          </div>
-          <div class="input-field col s4">
-            <input id="visita_contacto" type="text" placeholder="Persona contactada"><label for="visita_contacto">Contacto</label>
-          </div>
-        </div>
-        <div class="row">
-          <div class="input-field col s4">
-            <label for="visita_enAgua" class="active">Actividad</label>
-            <select id="visita_enAgua" class="browser-default"><option value="">¿Toma de Muestras?</option><option>Sí</option><option>No</option></select>
-          </div>
-          <div class="input-field col s4">
-            <input id="visita_tonsComprometidas" type="number" step="0.01" min="0" placeholder="Ej: 120"><label for="visita_tonsComprometidas" class="active">Tons comprometidas (opcional)</label>
-          </div>
-          <div class="input-field col s4">
-            <label for="visita_estado" class="active">Próximo paso</label>
-            <select id="visita_estado" class="browser-default">
-              <option value="Programar nueva visita" selected>Programar nueva visita</option>
-              <option value="Tomar/entregar muestras">Tomar/entregar muestras</option>
-              <option value="Negociar precio/volumen">Negociar precio/volumen</option>
-              <option value="Esperar disponibilidad">Esperar disponibilidad</option>
-              <option value="Sin acción">Sin acción</option>
-            </select>
-          </div>
-        </div>
-        <div class="input-field">
-          <textarea id="visita_observaciones" class="materialize-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
-          <label for="visita_observaciones">Observaciones</label>
-        </div>
-
-        <!-- Fotos de la visita -->
-        <div id="visita_fotos" class="fotos-uploader">
-          <div class="fotos-actions" style="display:flex;gap:8px;align-items:center;margin:.25rem 0 .5rem;">
-            <label class="btn teal waves-effect" style="margin:0;">
-              <i class="material-icons left">photo_camera</i>
-              Tomar/Subir fotos
-              <input id="visita_fotos_input" type="file" accept="image/*" capture="environment" multiple hidden>
-            </label>
-            <small class="text-soft">JPG/PNG hasta 10&nbsp;MB c/u, máx 12.</small>
-          </div>
-
-          <!-- Contenedor de miniaturas / galería -->
-          <div id="visita_fotos_grid" class="fotos-grid"></div>
-        </div>
-
-        <div class="right-align">
-          <button type="button" class="modal-close btn-flat">Cancelar</button>
-          <button class="btn teal" type="submit"><i class="material-icons left">save</i>Guardar visita</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div id="modalAsociar" class="modal">
-    <div class="modal-content">
-      <h5>Asociar a empresa</h5>
-      <div class="input-field"><input id="empresaSearch" type="text" placeholder="Buscar empresa... (mín. 2 letras)"></div>
-      <ul id="searchResults" class="collection" style="max-height:260px;overflow:auto;"></ul>
-    </div>
-    <div class="modal-footer">
-      <a href="#!" id="btnCrearEmpresa" class="btn-flat">Crear empresa nueva</a>
-      <a href="#!" id="btnQuitarEmpresa" class="btn-flat red-text">Quitar empresa</a>
-      <a href="#!" class="modal-close btn teal">Cerrar</a>
-    </div>
-  </div>
-
-  <!-- Libs -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-
-  <!-- SOLUCIÓN NUCLEAR PARA BOTONES DE VISITAS -->
-  <script>
-    // Función para reconectar TODOS los botones de forma agresiva
-    function nuclearReconnectButtons() {
-      console.log('🔧 SOLUCIÓN NUCLEAR: Reconectando botones...');
-      
-      // 1. Primero eliminamos cualquier CSS que bloquee eventos
-      const style = document.createElement('style');
-      style.textContent = `
-        #tablaVisitas a[data-action] {
-          pointer-events: auto !important;
-          cursor: pointer !important;
-          display: inline-block !important;
-          position: relative !important;
-          z-index: 1000 !important;
-        }
-        #tablaVisitas td:last-child {
-          pointer-events: auto !important;
-        }
-        #tablaVisitas i.material-icons {
-          pointer-events: none !important;
-        }
-        #tablaVisitas td,
-        #tablaVisitas td * {
-          pointer-events: auto !important;
-        }
-      `;
-      document.head.appendChild(style);
-      
-      // 2. Esperamos a que la tabla se cargue completamente
-      const checkTable = setInterval(() => {
-        const buttons = document.querySelectorAll('#tablaVisitas a[data-action]');
+    <div class="container">
+        <header>
+            <h1>Tonic Observaciones</h1>
+            <p>Sistema de gestión de contactos y visitas</p>
+        </header>
         
-        if (buttons.length > 0) {
-          clearInterval(checkTable);
-          console.log('🎯 Botones encontrados:', buttons.length);
-          
-          // 3. Reemplazamos TODOS los botones para eliminar event listeners conflictivos
-          buttons.forEach((button, index) => {
-            const newButton = button.cloneNode(true);
-            button.parentNode.replaceChild(newButton, button);
+        <div class="actions-section">
+            <h2>Acciones</h2>
+            <ul class="actions-list">
+                <li>Revisar estado de siembra</li>
+                <li>Programar visita técnica</li>
+                <li>Actualizar información de contacto</li>
+            </ul>
+        </div>
+        
+        <div class="observation">
+            <h3>1000</h3>
+            <p>Siembra nueva de Ago-25, 1100 ind/mt, 0% contaminacion, siembra limpia...</p>
+        </div>
+        
+        <div class="observation">
+            <h3>1000</h3>
+            <p>Siembra nueva, limpia con dispersion, visitar mas adelante en unos 3 me...</p>
+        </div>
+        
+        <div class="btn-container">
+            <a class="waves-effect waves-light btn-large blue darken-2 modal-trigger" href="#modalDetalle">
+                <i class="material-icons left">visibility</i>
+                Abrir Detalle
+            </a>
+            <a class="waves-effect waves-light btn-large green darken-2 modal-trigger" href="#modalVisita">
+                <i class="material-icons left">event_available</i>
+                Abrir Visita
+            </a>
+        </div>
+        
+        <div class="testing-section">
+            <h2>Testing Modales:</h2>
+            <p>Usa los botones de arriba para probar los modales de Detalle y Visita.</p>
+        </div>
+        
+        <footer>
+            <p>What's new in DevTools 139</p>
+        </footer>
+    </div>
+    
+    <!-- Modal Detalle -->
+    <div id="modalDetalle" class="modal">
+        <div class="modal-content">
+            <h4>Detalle del Contacto</h4>
+            <p>Información detallada del contacto seleccionado.</p>
             
-            // 4. Aplicamos estilos VISIBLES para debugging
-            newButton.classList.add('button-connected');
+            <ul class="collection">
+                <li class="collection-item">
+                    <span>Nombre</span>
+                    <span class="badge">Juan Pérez</span>
+                </li>
+                <li class="collection-item">
+                    <span>Empresa</span>
+                    <span class="badge">AgroTonic S.A.</span>
+                </li>
+                <li class="collection-item">
+                    <span>Teléfono</span>
+                    <span class="badge">+56 9 1234 5678</span>
+                </li>
+                <li class="collection-item">
+                    <span>Email</span>
+                    <span class="badge">juan@agrotonic.cl</span>
+                </li>
+                <li class="collection-item">
+                    <span>Última visita</span>
+                    <span class="badge">2023-10-15</span>
+                </li>
+            </ul>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Cerrar</a>
+            <a href="#!" class="waves-effect waves-green btn green">Editar</a>
+        </div>
+    </div>
+    
+    <!-- Modal Visita -->
+    <div id="modalVisita" class="modal">
+        <div class="modal-content">
+            <h4>Registrar Nueva Visita</h4>
+            <p>Complete la información para programar una nueva visita.</p>
             
-            // Efecto hover para confirmar que es clickeable
-            newButton.onmouseover = function() {
-              this.style.backgroundColor = '#4CAF50';
-              this.style.color = 'white';
-              this.style.transform = 'scale(1.1)';
-            };
-            
-            newButton.onmouseout = function() {
-              this.style.backgroundColor = '#f8fff8';
-              this.style.color = '';
-              this.style.transform = '';
-            };
-            
-            // 5. Event listener DIRECTO y AGRESIVO
-            newButton.addEventListener('click', function(e) {
-              e.preventDefault();
-              e.stopPropagation();
-              e.stopImmediatePropagation();
-              
-              console.log('💥 CLIC NUCLEAR en:', this.getAttribute('data-action'));
-              
-              const action = this.getAttribute('data-action');
-              const modalId = action === 'ver' ? 'modalDetalleContacto' : 'modalVisita';
-              
-              // Abrir modal de forma DIRECTA
-              openModalNuclear(modalId);
+            <div class="row">
+                <form class="col s12">
+                    <div class="row">
+                        <div class="input-field col s6">
+                            <input id="fecha_visita" type="text" class="datepicker">
+                            <label for="fecha_visita">Fecha de visita</label>
+                        </div>
+                        <div class="input-field col s6">
+                            <input id="hora_visita" type="text" class="timepicker">
+                            <label for="hora_visita">Hora de visita</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <select>
+                                <option value="" disabled selected>Tipo de visita</option>
+                                <option value="1">Evaluación de siembra</option>
+                                <option value="2">Control de calidad</option>
+                                <option value="3">Asesoría técnica</option>
+                            </select>
+                            <label>Tipo de visita</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <textarea id="observaciones" class="materialize-textarea"></textarea>
+                            <label for="observaciones">Observaciones</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Cancelar</a>
+            <a href="#!" class="waves-effect waves-green btn green">Programar visita</a>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Materialize JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    
+    <script>
+        // Inicialización de componentes de Materialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar modales
+            var modals = document.querySelectorAll('.modal');
+            M.Modal.init(modals, {
+                opacity: 0.5,
+                inDuration: 300,
+                outDuration: 200
             });
-          });
-          
-          console.log('✅ SOLUCIÓN NUCLEAR aplicada a', buttons.length, 'botones');
-        }
-      }, 500);
-    }
-
-    // Función ultra-directa para abrir modales
-    function openModalNuclear(modalId) {
-      console.log('💣 Abriendo modal nuclear:', modalId);
-      
-      const modal = document.getElementById(modalId);
-      if (!modal) {
-        console.error('❌ Modal no existe:', modalId);
-        return;
-      }
-      
-      // Destruir instancia existente si la hay
-      const oldInstance = M.Modal.getInstance(modal);
-      if (oldInstance) {
-        try { oldInstance.destroy(); } catch(e) {}
-      }
-      
-      // Crear nueva instancia y abrir
-      try {
-        const instance = M.Modal.init(modal, {
-          opacity: 0.5,
-          inDuration: 250,
-          outDuration: 250
+            
+            // Inicializar datepicker
+            var datepickers = document.querySelectorAll('.datepicker');
+            M.Datepicker.init(datepickers, {
+                format: 'yyyy-mm-dd',
+                autoClose: true,
+                i18n: {
+                    cancel: 'Cancelar',
+                    clear: 'Limpiar',
+                    done: 'Aceptar',
+                    months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+                    monthsShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+                    weekdays: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+                    weekdaysShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+                    weekdaysAbbrev: ['D', 'L', 'M', 'X', 'J', 'V', 'S']
+                }
+            });
+            
+            // Inicializar timepicker
+            var timepickers = document.querySelectorAll('.timepicker');
+            M.Timepicker.init(timepickers, {
+                twelveHour: false,
+                autoClose: true
+            });
+            
+            // Inicializar select
+            var selects = document.querySelectorAll('select');
+            M.FormSelect.init(selects);
         });
-        instance.open();
-        console.log('🚀 Modal abierto con éxito:', modalId);
-      } catch (error) {
-        console.error('💥 Error nuclear abriendo modal:', error);
-        // Fallback: mostrar el modal aunque sea sin Materialize
-        modal.style.display = 'block';
-        modal.style.opacity = '1';
-        document.body.style.overflow = 'hidden';
-      }
-    }
-
-    // Iniciar cuando la página cargue
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('🚀 Iniciando solución nuclear...');
-      
-      // Inicializar modales y tabs
-      var modals = document.querySelectorAll('.modal');
-      M.Modal.init(modals, {opacity: 0.5, inDuration: 250, outDuration: 250});
-      
-      var tabs = document.querySelectorAll('.tabs');
-      M.Tabs.init(tabs);
-      
-      // Esperar a que jQuery y DataTables se carguen
-      setTimeout(() => {
-        nuclearReconnectButtons();
         
-        // Reconectar también cuando se cambie a la pestaña de visitas
-        document.querySelector('a[href="#tab-visitas"]')?.addEventListener('click', () => {
-          setTimeout(nuclearReconnectButtons, 1000);
-        });
-      }, 2000);
-    });
-
-    // Función global para testing
-    window.forceOpenModal = function(modalId) {
-      openModalNuclear(modalId);
-    };
-  </script>
-
-  <!-- Orquestador -->
-  <script type="module" src="/js/abastecimiento/contactos/index.js?v=5"></script>
+        // Función para abrir modal de detalle manualmente
+        function openDetailModal() {
+            var modal = M.Modal.getInstance(document.getElementById('modalDetalle'));
+            modal.open();
+        }
+        
+        // Función para abrir modal de visita manualmente
+        function openVisitModal() {
+            var modal = M.Modal.getInstance(document.getElementById('modalVisita'));
+            modal.open();
+        }
+    </script>
 </body>
 </html>
