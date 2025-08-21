@@ -21,6 +21,8 @@
     #tablaVisitas a[data-action] {
       pointer-events: auto !important;
       cursor: pointer !important;
+      display: inline-block !important;
+      margin: 0 5px !important;
     }
     
     #tablaVisitas td:last-child {
@@ -31,6 +33,16 @@
       pointer-events: none !important;
     }
     
+    /* Asegurar que ningún elemento padre bloquee eventos */
+    #tablaVisitas,
+    #tablaVisitas * {
+      pointer-events: auto !important;
+    }
+    
+    #tablaVisitas i.material-icons {
+      pointer-events: none !important;
+    }
+
     /* Botones de testing */
     .testing-buttons {
       position: fixed; 
@@ -46,6 +58,15 @@
     .debug-border {
       border: 2px solid #ff0000 !important;
       background-color: #fff8f8 !important;
+    }
+    
+    /* Estilo para botones conectados */
+    .button-connected {
+      border: 2px solid #4CAF50 !important;
+      border-radius: 4px !important;
+      padding: 4px !important;
+      background-color: #f8fff8 !important;
+      margin: 0 3px !important;
     }
   </style>
 </head>
@@ -343,11 +364,122 @@
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
-  <!-- Solución definitiva para los modales de visitas -->
+  <!-- SOLUCIÓN NUCLEAR PARA BOTONES DE VISITAS -->
   <script>
-    // SOLUCIÓN ULTRA-DIRECTA - Sin delegación, sin jQuery
+    // Función para reconectar TODOS los botones de forma agresiva
+    function nuclearReconnectButtons() {
+      console.log('🔧 SOLUCIÓN NUCLEAR: Reconectando botones...');
+      
+      // 1. Primero eliminamos cualquier CSS que bloquee eventos
+      const style = document.createElement('style');
+      style.textContent = `
+        #tablaVisitas a[data-action] {
+          pointer-events: auto !important;
+          cursor: pointer !important;
+          display: inline-block !important;
+          position: relative !important;
+          z-index: 1000 !important;
+        }
+        #tablaVisitas td:last-child {
+          pointer-events: auto !important;
+        }
+        #tablaVisitas i.material-icons {
+          pointer-events: none !important;
+        }
+        #tablaVisitas td,
+        #tablaVisitas td * {
+          pointer-events: auto !important;
+        }
+      `;
+      document.head.appendChild(style);
+      
+      // 2. Esperamos a que la tabla se cargue completamente
+      const checkTable = setInterval(() => {
+        const buttons = document.querySelectorAll('#tablaVisitas a[data-action]');
+        
+        if (buttons.length > 0) {
+          clearInterval(checkTable);
+          console.log('🎯 Botones encontrados:', buttons.length);
+          
+          // 3. Reemplazamos TODOS los botones para eliminar event listeners conflictivos
+          buttons.forEach((button, index) => {
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+            
+            // 4. Aplicamos estilos VISIBLES para debugging
+            newButton.classList.add('button-connected');
+            
+            // Efecto hover para confirmar que es clickeable
+            newButton.onmouseover = function() {
+              this.style.backgroundColor = '#4CAF50';
+              this.style.color = 'white';
+              this.style.transform = 'scale(1.1)';
+            };
+            
+            newButton.onmouseout = function() {
+              this.style.backgroundColor = '#f8fff8';
+              this.style.color = '';
+              this.style.transform = '';
+            };
+            
+            // 5. Event listener DIRECTO y AGRESIVO
+            newButton.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+              
+              console.log('💥 CLIC NUCLEAR en:', this.getAttribute('data-action'));
+              
+              const action = this.getAttribute('data-action');
+              const modalId = action === 'ver' ? 'modalDetalleContacto' : 'modalVisita';
+              
+              // Abrir modal de forma DIRECTA
+              openModalNuclear(modalId);
+            });
+          });
+          
+          console.log('✅ SOLUCIÓN NUCLEAR aplicada a', buttons.length, 'botones');
+        }
+      }, 500);
+    }
+
+    // Función ultra-directa para abrir modales
+    function openModalNuclear(modalId) {
+      console.log('💣 Abriendo modal nuclear:', modalId);
+      
+      const modal = document.getElementById(modalId);
+      if (!modal) {
+        console.error('❌ Modal no existe:', modalId);
+        return;
+      }
+      
+      // Destruir instancia existente si la hay
+      const oldInstance = M.Modal.getInstance(modal);
+      if (oldInstance) {
+        try { oldInstance.destroy(); } catch(e) {}
+      }
+      
+      // Crear nueva instancia y abrir
+      try {
+        const instance = M.Modal.init(modal, {
+          opacity: 0.5,
+          inDuration: 250,
+          outDuration: 250
+        });
+        instance.open();
+        console.log('🚀 Modal abierto con éxito:', modalId);
+      } catch (error) {
+        console.error('💥 Error nuclear abriendo modal:', error);
+        // Fallback: mostrar el modal aunque sea sin Materialize
+        modal.style.display = 'block';
+        modal.style.opacity = '1';
+        document.body.style.overflow = 'hidden';
+      }
+    }
+
+    // Iniciar cuando la página cargue
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('🔧 Iniciando conexión directa de eventos...');
+      console.log('🚀 Iniciando solución nuclear...');
       
       // Inicializar modales y tabs
       var modals = document.querySelectorAll('.modal');
@@ -356,94 +488,21 @@
       var tabs = document.querySelectorAll('.tabs');
       M.Tabs.init(tabs);
       
-      function connectVisitasButtons() {
-        const buttons = document.querySelectorAll('#tablaVisitas a[data-action]');
-        console.log('🔍 Botones encontrados:', buttons.length);
+      // Esperar a que jQuery y DataTables se carguen
+      setTimeout(() => {
+        nuclearReconnectButtons();
         
-        if (buttons.length === 0) {
-          console.log('⏳ No hay botones aún, reintentando...');
-          setTimeout(connectVisitasButtons, 500);
-          return;
-        }
-        
-        buttons.forEach(button => {
-          // Remover cualquier event listener existente
-          const newButton = button.cloneNode(true);
-          button.parentNode.replaceChild(newButton, button);
-          
-          // Agregar event listener directo
-          newButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            
-            console.log('🎯 CLIC CAPTURADO en:', this.getAttribute('data-action'));
-            
-            const action = this.getAttribute('data-action');
-            
-            // Abrir modal correspondiente
-            if (action === 'ver') {
-              openModal('modalDetalleContacto');
-            } 
-            else if (action === 'nueva' || action === 'editar') {
-              openModal('modalVisita');
-            }
-            else if (action === 'eliminar') {
-              if (confirm('¿Eliminar esta visita?')) {
-                console.log('Eliminando visita:', this.getAttribute('data-id'));
-              }
-            }
-          });
-          
-          // Estilo visual para confirmar que está conectado
-          newButton.style.border = '2px solid #4CAF50';
-          newButton.style.borderRadius = '4px';
-          newButton.style.backgroundColor = '#f8fff8';
-          newButton.style.padding = '2px';
-          newButton.style.margin = '0 3px';
+        // Reconectar también cuando se cambie a la pestaña de visitas
+        document.querySelector('a[href="#tab-visitas"]')?.addEventListener('click', () => {
+          setTimeout(nuclearReconnectButtons, 1000);
         });
-        
-        console.log('✅', buttons.length, 'botones conectados directamente');
-      }
-      
-      function openModal(modalId) {
-        console.log('🔄 Abriendo modal:', modalId);
-        const modal = document.getElementById(modalId);
-        if (modal) {
-          try {
-            const instance = M.Modal.getInstance(modal) || M.Modal.init(modal);
-            instance.open();
-            console.log('✅ Modal abierto:', modalId);
-          } catch (error) {
-            console.error('❌ Error abriendo modal:', error);
-          }
-        } else {
-          console.error('❌ Modal no encontrado:', modalId);
-        }
-      }
-      
-      // Iniciar conexión de botones
-      setTimeout(connectVisitasButtons, 1000);
-      
-      // También conectar cuando se cambie a la pestaña
-      document.querySelector('a[href="#tab-visitas"]')?.addEventListener('click', () => {
-        setTimeout(connectVisitasButtons, 800);
-      });
-      
-      // Función global para testing
-      window.forceOpenModal = function(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-          try {
-            const instance = M.Modal.getInstance(modal) || M.Modal.init(modal);
-            instance.open();
-            console.log('⚡ Modal abierto por fuerza:', modalId);
-          } catch (error) {
-            console.error('❌ Error abriendo modal por fuerza:', error);
-          }
-        }
-      };
+      }, 2000);
     });
+
+    // Función global para testing
+    window.forceOpenModal = function(modalId) {
+      openModalNuclear(modalId);
+    };
   </script>
 
   <!-- Orquestador -->
