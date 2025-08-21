@@ -64,6 +64,19 @@ function adjustNow() {
 }
 export function forceAdjustVisitas() { adjustNow(); }
 
+// Inyecta CSS para que el clic “atraviese” el <i> al <a> en columna acciones
+function ensureClickCSS() {
+  if (document.getElementById('visitas-click-fix')) return;
+  const css = `
+  #tab-visitas #tablaVisitas td:last-child a { pointer-events: auto; cursor: pointer; }
+  #tab-visitas #tablaVisitas td:last-child i.material-icons { pointer-events: none; }
+  `;
+  const style = document.createElement('style');
+  style.id = 'visitas-click-fix';
+  style.textContent = css;
+  document.head.appendChild(style);
+}
+
 export async function initVisitasTab(forceReload = false) {
   const jq = window.jQuery || window.$;
   const tabla = $('#tablaVisitas');
@@ -100,7 +113,7 @@ export async function initVisitasTab(forceReload = false) {
       drawCallback:   () => adjustNow(),
     });
 
-    // ⚠️ Delegación *dentro* del tbody para que funcione con redraws
+    // Con DataTables, el tbody se reemplaza. Usamos DELEGACIÓN A NIVEL DOCUMENTO.
     wireVisitasActions();
     jq('#tablaVisitas').on('draw.dt', wireVisitasActions);
 
@@ -108,7 +121,7 @@ export async function initVisitasTab(forceReload = false) {
   }
 
   await renderTablaVisitas();
-  // asegura el wiring tras primer render (por si no disparó draw)
+  // asegura el wiring tras primer render
   wireVisitasActions();
   adjustNow();
 
@@ -381,40 +394,101 @@ export function setupFormularioVisita() {
   });
 }
 
-/* ==== Delegación de acciones en el TBODY de la DataTable ==== */
+/* ==== Delegación de acciones ROBUSTA (a nivel documento) ==== */
 function wireVisitasActions() {
+  ensureClickCSS();
   const jq = window.jQuery || window.$;
-  if (!jq) return;
-  const $tbody = jq('#tablaVisitas tbody');
 
-  // desengancha por si DataTables redibujó
-  $tbody.off('click.visitas');
+  // Si hay jQuery, usa delegación con namespace (idempotente)
+  if (jq) {
+    jq(document).off('click.visitas');
+    jq(document).on(
+      'click.visitas',
+      '#tab-visitas #tablaVisitas a.v-ver, #tab-visitas #tablaVisitas a.v-nueva, #tab-visitas #tablaVisitas a.v-editar, #tab-visitas #tablaVisitas a.v-eliminar',
+      function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const a = this;
 
-  // delega solo dentro del tbody
-  $tbody.on('click.visitas', 'a.v-ver, a.v-nueva, a.v-editar, a.v-eliminar', function(e){
+        try {
+          if (a.classList.contains('v-ver')) {
+            const c = (state.contactosGuardados || []).find(x => String(x._id) === String(a.dataset.contactoId));
+            if (c) abrirDetalleContacto(c);
+            else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
+            return;
+          }
+          if (a.classList.contains('v-nueva')) {
+            const c = (state.contactosGuardados || []).find(x => String(x._id) === String(a.dataset.contactoId));
+            if (c) abrirModalVisita(c);
+            else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
+            return;
+          }
+          if (a.classList.contains('v-editar')) {
+            const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(a.dataset.id));
+            if (v) abrirEditarVisita(v);
+            else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
+            return;
+          }
+          if (a.classList.contains('v-eliminar')) {
+            const id = a.dataset.id;
+            if (!id) return;
+            if (!confirm('¿Eliminar esta visita?')) return;
+
+            (async () => {
+              await apiDeleteVisita(id);
+              M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
+              await renderTablaVisitas();
+              adjustNow();
+            })().catch(err => {
+              console.warn(err);
+              M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
+            });
+          }
+        } catch (err) {
+          console.error('[visitas] acción error', err);
+          M.toast?.({ html: 'Acción no disponible', classes: 'red' });
+        }
+      }
+    );
+    return;
+  }
+
+  // Fallback sin jQuery: delegación manual (one-shot)
+  if (window.__visitasDocHandlerBound) return;
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest(
+      '#tab-visitas #tablaVisitas a.v-ver, ' +
+      '#tab-visitas #tablaVisitas a.v-nueva, ' +
+      '#tab-visitas #tablaVisitas a.v-editar, ' +
+      '#tab-visitas #tablaVisitas a.v-eliminar'
+    );
+    if (!a) return;
+
     e.preventDefault();
     e.stopPropagation();
-
-    const a = this; // el <a> clickeado
 
     try {
       if (a.classList.contains('v-ver')) {
         const c = (state.contactosGuardados || []).find(x => String(x._id) === String(a.dataset.contactoId));
         if (c) abrirDetalleContacto(c);
+        else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
         return;
       }
       if (a.classList.contains('v-nueva')) {
         const c = (state.contactosGuardados || []).find(x => String(x._id) === String(a.dataset.contactoId));
         if (c) abrirModalVisita(c);
+        else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
         return;
       }
       if (a.classList.contains('v-editar')) {
         const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(a.dataset.id));
         if (v) abrirEditarVisita(v);
+        else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
         return;
       }
       if (a.classList.contains('v-eliminar')) {
         const id = a.dataset.id;
+        if (!id) return;
         if (!confirm('¿Eliminar esta visita?')) return;
         (async () => {
           await apiDeleteVisita(id);
@@ -430,5 +504,7 @@ function wireVisitasActions() {
       console.error('[visitas] acción error', err);
       M.toast?.({ html: 'Acción no disponible', classes: 'red' });
     }
-  });
+  }, { passive: false });
+  window.__visitasDocHandlerBound = true;
 }
+
