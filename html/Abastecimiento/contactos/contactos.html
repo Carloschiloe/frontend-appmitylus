@@ -329,104 +329,96 @@
 
   <!-- Inicialización de modales -->
 <script>
-// SOLUCIÓN DEFINITIVA - Delegación de eventos para tabla dinámica
+// SOLUCIÓN CONFIRMADA - Delegación de eventos robusta
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('Página cargada - Iniciando configuración de eventos...');
+  console.log('🚀 Iniciando configuración de eventos...');
   
-  // Inicializar modales y tabs
+  // Inicializar modales y tabs (como antes)
   var modals = document.querySelectorAll('.modal');
-  M.Modal.init(modals, {
-    opacity: 0.5,
-    inDuration: 250,
-    outDuration: 250
-  });
+  M.Modal.init(modals, {opacity: 0.5, inDuration: 250, outDuration: 250});
   
   var tabs = document.querySelectorAll('.tabs');
-  M.Tabs.init(tabs, {
-    onShow: function(tab) {
-      setTimeout(function() {
-        if ($.fn.DataTable.isDataTable('#tablaVisitas')) {
-          $('#tablaVisitas').DataTable().columns.adjust();
-        }
-      }, 100);
+  M.Tabs.init(tabs);
+
+  // SOLUCIÓN PRINCIPAL - Delegación de eventos a nivel de documento
+  document.addEventListener('click', function(event) {
+    // Verificar si el clic fue en un botón de la tabla de visitas
+    const target = event.target;
+    const actionButton = target.closest('#tablaVisitas a[data-action]');
+    
+    if (!actionButton) return;
+    
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const action = actionButton.getAttribute('data-action');
+    const contactoId = actionButton.getAttribute('data-contacto-id');
+    const visitaId = actionButton.getAttribute('data-id');
+    
+    console.log('🎯 CLIC RECIBIDO - Acción:', action, 
+                'Contacto ID:', contactoId, 
+                'Visita ID:', visitaId);
+    
+    // Abrir el modal correspondiente
+    if (action === 'ver') {
+      openModalById('modalDetalleContacto');
+    } 
+    else if (action === 'nueva' || action === 'editar') {
+      openModalById('modalVisita');
+    }
+    else if (action === 'eliminar') {
+      if (confirm('¿Estás seguro de que deseas eliminar esta visita?')) {
+        console.log('Eliminar visita:', visitaId);
+      }
     }
   });
 
-  // DELEGACIÓN DE EVENTOS PARA ELEMENTOS DINÁMICOS
-  let eventHandlerAttached = false;
-  
-  function attachTableEventHandler() {
-    if (eventHandlerAttached) return;
+  // Función para abrir modales de forma segura
+  function openModalById(modalId) {
+    const modalElem = document.getElementById(modalId);
+    if (!modalElem) {
+      console.error('❌ Modal no encontrado:', modalId);
+      return;
+    }
     
-    // Usar delegación de eventos en el documento
-    $(document).off('click.visitasDynamic').on('click.visitasDynamic', '#tablaVisitas a[data-action]', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const action = $(this).data('action');
-      const contactoId = $(this).data('contacto-id');
-      const visitaId = $(this).data('id');
-      
-      console.log('✅ Click detectado - Acción:', action, 'Contacto ID:', contactoId, 'Visita ID:', visitaId);
-      
-      // Abrir modales
-      if (action === 'ver') {
-        const modal = M.Modal.getInstance($('#modalDetalleContacto')[0]);
-        if (modal) {
-          console.log('🔵 Abriendo modal de detalle');
-          modal.open();
-        } else {
-          console.error('❌ Modal de detalle no inicializado');
-          // Forzar inicialización
-          M.Modal.init($('#modalDetalleContacto')[0]).open();
-        }
-      } 
-      else if (action === 'nueva' || action === 'editar') {
-        const modal = M.Modal.getInstance($('#modalVisita')[0]);
-        if (modal) {
-          console.log('🔵 Abriendo modal de visita');
-          modal.open();
-        } else {
-          console.error('❌ Modal de visita no inicializado');
-          M.Modal.init($('#modalVisita')[0]).open();
-        }
+    try {
+      // Obtener instancia existente o crear nueva
+      let modalInstance = M.Modal.getInstance(modalElem);
+      if (!modalInstance) {
+        modalInstance = M.Modal.init(modalElem);
       }
-      else if (action === 'eliminar') {
-        if (confirm('¿Estás seguro de que deseas eliminar esta visita?')) {
-          console.log('🗑️ Eliminar visita:', visitaId);
-        }
-      }
-    });
-    
-    eventHandlerAttached = true;
-    console.log('✅ Event handler attached to document');
+      
+      modalInstance.open();
+      console.log('✅ Modal abierto:', modalId);
+    } catch (error) {
+      console.error('❌ Error abriendo modal:', error);
+    }
   }
 
-  // Verificar periodicamente si la tabla ya se cargó
-  function checkTableLoaded() {
-    const buttons = $('#tablaVisitas a[data-action]');
-    console.log('🔍 Botones encontrados:', buttons.length);
+  // Verificar cada segundo si la tabla ya tiene botones
+  function checkForTableButtons() {
+    const buttons = document.querySelectorAll('#tablaVisitas a[data-action]');
+    console.log('🔍 Botones en tabla:', buttons.length);
     
     if (buttons.length > 0) {
-      console.log('✅ Tabla de visitas cargada correctamente');
-      attachTableEventHandler();
+      console.log('✅ Tabla cargada con', buttons.length, 'botones');
+      // Agregar estilos visuales para confirmar que son clickeables
+      buttons.forEach(btn => {
+        btn.style.cursor = 'pointer';
+        btn.style.transition = 'opacity 0.2s';
+        btn.onmouseover = () => btn.style.opacity = '0.7';
+        btn.onmouseout = () => btn.style.opacity = '1';
+      });
     } else {
-      console.log('⏳ Esperando que la tabla se cargue...');
-      setTimeout(checkTableLoaded, 500);
+      setTimeout(checkForTableButtons, 1000);
     }
   }
 
   // Iniciar verificación
-  setTimeout(checkTableLoaded, 1000);
-
-  // También verificar cuando se cambia de pestaña
-  $('a[href="#tab-visitas"]').on('click', function() {
-    console.log('📌 Cambiando a pestaña de visitas');
-    setTimeout(checkTableLoaded, 300);
-  });
+  setTimeout(checkForTableButtons, 500);
 });
 
-// Función de emergencia - Forzar apertura de modales
+// Función global de emergencia (para testing)
 function forceOpenModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
@@ -440,6 +432,7 @@ function forceOpenModal(modalId) {
   <script type="module" src="/js/abastecimiento/contactos/index.js?v=5"></script>
 </body>
 </html>
+
 
 
 
