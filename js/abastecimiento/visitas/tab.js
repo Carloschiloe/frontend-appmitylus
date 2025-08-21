@@ -469,3 +469,41 @@ export function setupFormularioVisita() {
     }
   });
 }
+/* ===== AUTO-INIT DEL TAB DE VISITAS (por si nadie llama initVisitasTab) ===== */
+(function autoinitVisitas(){
+  if (window.__visitasAutoInit) return;
+  window.__visitasAutoInit = true;
+
+  const tryInit = () => {
+    try {
+      if (document.getElementById('tablaVisitas')) {
+        // engancha el form por si no lo hicieron
+        try { setupFormularioVisita(); } catch {}
+        // inicializa tabla y wiring si aún no corrió
+        try { initVisitasTab(); } catch (e) { console.warn('[visitas] initVisitasTab()', e); }
+      }
+    } catch (e) { console.warn('[visitas] autoinit error', e); }
+  };
+
+  // 1) al cargar el DOM
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryInit, { once: true });
+  } else {
+    tryInit();
+  }
+
+  // 2) al hacer click en la pestaña de Visitas (cubre Materialize/links con hash)
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href="#tab-visitas"], a[href="#visitas"], a[href*="Visitas"], a[href*="visitas"]');
+    if (a) setTimeout(tryInit, 0);
+  }, true);
+
+  // 3) cuando cambia el hash (SPA)
+  window.addEventListener('hashchange', tryInit);
+
+  // 4) si el DOM inserta la tabla más tarde (redraws, lazy, etc.)
+  const mo = new MutationObserver(() => {
+    if (document.getElementById('tablaVisitas')) tryInit();
+  });
+  mo.observe(document.body, { childList: true, subtree: true });
+})();
