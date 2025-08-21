@@ -14,6 +14,25 @@
   <!-- DataTables + Buttons -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+  
+  <style>
+    /* Estilos adicionales para asegurar que los clics funcionen */
+    #tablaVisitas a[data-action] {
+      cursor: pointer;
+      margin: 0 5px;
+      display: inline-block;
+    }
+    #tablaVisitas i.material-icons {
+      font-size: 18px;
+      vertical-align: middle;
+    }
+    .modal-overlay {
+      z-index: 1002 !important;
+    }
+    .modal {
+      z-index: 1003 !important;
+    }
+  </style>
 </head>
 <body>
   <nav class="teal">
@@ -257,19 +276,19 @@
         </div>
 
         <!-- Fotos de la visita -->
-<div id="visita_fotos" class="fotos-uploader">
-  <div class="fotos-actions" style="display:flex;gap:8px;align-items:center;margin:.25rem 0 .5rem;">
-    <label class="btn teal waves-effect" style="margin:0;">
-      <i class="material-icons left">photo_camera</i>
-      Tomar/Subir fotos
-      <input id="visita_fotos_input" type="file" accept="image/*" capture="environment" multiple hidden>
-    </label>
-    <small class="text-soft">JPG/PNG hasta 10&nbsp;MB c/u, máx 12.</small>
-  </div>
+        <div id="visita_fotos" class="fotos-uploader">
+          <div class="fotos-actions" style="display:flex;gap:8px;align-items:center;margin:.25rem 0 .5rem;">
+            <label class="btn teal waves-effect" style="margin:0;">
+              <i class="material-icons left">photo_camera</i>
+              Tomar/Subir fotos
+              <input id="visita_fotos_input" type="file" accept="image/*" capture="environment" multiple hidden>
+            </label>
+            <small class="text-soft">JPG/PNG hasta 10&nbsp;MB c/u, máx 12.</small>
+          </div>
 
-  <!-- Contenedor de miniaturas / galería -->
-  <div id="visita_fotos_grid" class="fotos-grid"></div>
-</div>
+          <!-- Contenedor de miniaturas / galería -->
+          <div id="visita_fotos_grid" class="fotos-grid"></div>
+        </div>
 
         <div class="right-align">
           <button type="button" class="modal-close btn-flat">Cancelar</button>
@@ -302,29 +321,28 @@
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
-  <!-- Ajuste de columnas al cambiar de pestaña / al redimensionar -->
+  <!-- Inicialización de modales -->
   <script>
-    function dtAdjust(id){
-      try{
-        const api = $(id).DataTable();
-        if (api) { api.columns.adjust(); }
-      }catch(e){}
-    }
-    document.addEventListener('DOMContentLoaded', () => {
-      const tabsEl = document.getElementById('tabs');
-      M.Tabs.init(tabsEl, {
-        onShow: () => {
-          setTimeout(() => {
-            dtAdjust('#tablaContactos');
-            dtAdjust('#tablaVisitas');
-            dtAdjust('#tablaPersonas');
-          }, 50);
-        }
+    document.addEventListener('DOMContentLoaded', function() {
+      // Inicializar todos los modales
+      var modals = document.querySelectorAll('.modal');
+      M.Modal.init(modals, {
+        opacity: 0.5,
+        inDuration: 250,
+        outDuration: 250
       });
-      window.addEventListener('resize', () => {
-        dtAdjust('#tablaContactos');
-        dtAdjust('#tablaVisitas');
-        dtAdjust('#tablaPersonas');
+      
+      // Inicializar tabs
+      var tabs = document.querySelectorAll('.tabs');
+      M.Tabs.init(tabs, {
+        onShow: function(tab) {
+          // Reajustar DataTables cuando se cambia de pestaña
+          setTimeout(function() {
+            if ($.fn.DataTable.isDataTable('#tablaVisitas')) {
+              $('#tablaVisitas').DataTable().columns.adjust();
+            }
+          }, 100);
+        }
       });
     });
   </script>
@@ -333,4 +351,3 @@
   <script type="module" src="/js/abastecimiento/contactos/index.js?v=5"></script>
 </body>
 </html>
-
