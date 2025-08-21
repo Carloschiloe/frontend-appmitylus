@@ -366,9 +366,71 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 2000);
 });
 </script>
+<script>
+// SOLUCIÓN DEFINITIVA para los clics en la tabla de visitas
+document.addEventListener('DOMContentLoaded', function() {
+  // Delegación de eventos para elementos dinámicos
+  document.addEventListener('click', function(e) {
+    // Verificar si el clic fue en un botón de acción de la tabla de visitas
+    const target = e.target.closest('#tablaVisitas a[data-action]');
+    if (!target) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const action = target.getAttribute('data-action');
+    const contactoId = target.getAttribute('data-contacto-id');
+    const visitaId = target.getAttribute('data-id');
+    
+    console.log('Acción:', action, 'Contacto ID:', contactoId, 'Visita ID:', visitaId);
+    
+    // Abrir el modal correspondiente
+    if (action === 'ver') {
+      const modal = M.Modal.getInstance(document.getElementById('modalDetalleContacto'));
+      if (modal) {
+        console.log('Abriendo modal de detalle');
+        modal.open();
+      } else {
+        console.error('Modal de detalle no encontrado');
+      }
+    } 
+    else if (action === 'nueva' || action === 'editar') {
+      const modal = M.Modal.getInstance(document.getElementById('modalVisita'));
+      if (modal) {
+        console.log('Abriendo modal de visita');
+        modal.open();
+      } else {
+        console.error('Modal de visita no encontrado');
+      }
+    }
+    else if (action === 'eliminar') {
+      if (confirm('¿Estás seguro de que deseas eliminar esta visita?')) {
+        console.log('Eliminar visita:', visitaId);
+        // Aquí iría tu lógica para eliminar
+      }
+    }
+  });
+});
 
+// Verificación adicional después de que se cargue la tabla
+function checkTableButtons() {
+  setTimeout(() => {
+    const buttons = document.querySelectorAll('#tablaVisitas a[data-action]');
+    console.log('Botones en la tabla de visitas:', buttons.length);
+    
+    if (buttons.length === 0) {
+      console.log('La tabla可能 aún no se ha cargado. Volveremos a verificar en 1 segundo.');
+      setTimeout(checkTableButtons, 1000);
+    }
+  }, 500);
+}
+
+// Iniciar verificación
+checkTableButtons();
+</script>
   <!-- Orquestador -->
   <script type="module" src="/js/abastecimiento/contactos/index.js?v=5"></script>
 </body>
 </html>
+
 
