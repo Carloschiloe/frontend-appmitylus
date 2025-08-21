@@ -346,8 +346,29 @@
       });
     });
   </script>
+  <script>
+// Debug: Verificar que los modales se inicialicen correctamente
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Modal Detalle Contacto:', document.getElementById('modalDetalleContacto'));
+  console.log('Modal Visita:', document.getElementById('modalVisita'));
+  
+  // Verificar que los event listeners se estén agregando
+  setTimeout(() => {
+    const actionButtons = document.querySelectorAll('#tablaVisitas a[data-action]');
+    console.log('Botones de acción encontrados:', actionButtons.length);
+    
+    actionButtons.forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        console.log('Click en botón:', this.dataset.action);
+        e.stopPropagation();
+      });
+    });
+  }, 2000);
+});
+</script>
 
   <!-- Orquestador -->
   <script type="module" src="/js/abastecimiento/contactos/index.js?v=5"></script>
 </body>
 </html>
+
