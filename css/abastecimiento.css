@@ -20,12 +20,19 @@
 }
 
 /* Acciones (íconos) */
-#tablaContactos td .material-icons,
-#tablaVisitas  td .material-icons {
+#tablaContactos td .material-icons {
   font-size: 1.22em;
   margin-right: 8px;
   transition: transform .12s ease, color .12s ease;
 }
+
+#tablaVisitas td .material-icons {
+  font-size: 1.22em;
+  margin-right: 8px;
+  transition: transform .12s ease, color .12s ease;
+  pointer-events: none !important; /* ← AÑADIR ESTA LÍNEA */
+}
+
 #tablaContactos td .material-icons:hover,
 #tablaVisitas  td .material-icons:hover {
   color: var(--primary-acc);
@@ -244,9 +251,15 @@
 .ellipsisObs  { display:block; width:100%; }
 
 /* Garantiza click en Acciones */
-#tab-visitas #tablaVisitas td:last-child a { pointer-events: auto; cursor: pointer; }
-#tab-visitas #tablaVisitas td:last-child i.material-icons { pointer-events: none; }
+#tab-visitas #tablaVisitas td:last-child a { 
+  pointer-events: auto !important; 
+  cursor: pointer !important; 
+}
+#tab-visitas #tablaVisitas td:last-child i.material-icons { 
+  pointer-events: none !important; 
+}
 
 /////*Importar el css de configuracion de fotos*/////
 @import url('/js/abastecimiento/visitas/fotos/styles.css');
+
 
