@@ -71,7 +71,16 @@ export function forceAdjustVisitas() { adjustNow(); }
   if (document.getElementById('visitas-click-fix')) return;
   const css = `
     #tablaVisitas i.material-icons{ pointer-events:none; }
-    #tablaVisitas td:last-child a { pointer-events:auto; cursor:pointer; }
+    #tablaVisitas td:last-child a { 
+      pointer-events: auto; 
+      cursor: pointer; 
+      display: inline-block;
+      margin: 0 5px;
+    }
+    #tablaVisitas td:last-child a i {
+      font-size: 18px;
+      vertical-align: middle;
+    }
   `;
   const s = document.createElement('style');
   s.id = 'visitas-click-fix';
