@@ -17,42 +17,18 @@
   
   <!-- CSS para solución de clics en botones de visitas -->
   <style>
-    /* ======= SOLUCIÓN DEFINITIVA PARA CLICS EN VISITAS ======= */
-    #tab-visitas #tablaVisitas td:last-child a[data-action] {
+    /* ======= SOLUCIÓN DEFINITIVA - ELIMINAR BLOQUEOS ======= */
+    #tablaVisitas a[data-action] {
       pointer-events: auto !important;
       cursor: pointer !important;
-      display: inline-block !important;
-      width: 30px !important;
-      height: 30px !important;
-      line-height: 30px !important;
-      text-align: center !important;
-      margin: 0 2px !important;
-      position: relative;
-      z-index: 100;
     }
-
-    #tab-visitas #tablaVisitas td:last-child a[data-action] i.material-icons {
+    
+    #tablaVisitas td:last-child {
+      pointer-events: auto !important;
+    }
+    
+    #tablaVisitas i.material-icons {
       pointer-events: none !important;
-      font-size: 1.22em;
-      transition: transform .12s ease, color .12s ease;
-    }
-
-    #tab-visitas #tablaVisitas td:last-child a[data-action]:hover i.material-icons {
-      color: var(--primary-acc);
-      transform: scale(1.08);
-    }
-
-    /* Remover cualquier otro estilo que bloquee eventos */
-    #tablaVisitas a[data-action],
-    #tab-visitas a[data-action] {
-      pointer-events: auto !important;
-      cursor: pointer !important;
-    }
-
-    /* Asegurar que la celda de acciones permita clics */
-    #tablaVisitas td:last-child,
-    #tab-visitas td:last-child {
-      pointer-events: auto !important;
     }
     
     /* Botones de testing */
@@ -64,6 +40,12 @@
       background: white; 
       padding: 10px; 
       border: 2px solid red;
+    }
+    
+    /* Visualización para debugging */
+    .debug-border {
+      border: 2px solid #ff0000 !important;
+      background-color: #fff8f8 !important;
     }
   </style>
 </head>
@@ -240,7 +222,7 @@
           </div>
           <div class="input-field col s4">
             <input id="notasContacto" type="text" placeholder="Notas u observaciones">
-            <label for="notasContacto">Notas</label>
+            <label for='notasContacto'>Notas</label>
           </div>
         </div>
 
@@ -378,6 +360,12 @@
         const buttons = document.querySelectorAll('#tablaVisitas a[data-action]');
         console.log('🔍 Botones encontrados:', buttons.length);
         
+        if (buttons.length === 0) {
+          console.log('⏳ No hay botones aún, reintentando...');
+          setTimeout(connectVisitasButtons, 500);
+          return;
+        }
+        
         buttons.forEach(button => {
           // Remover cualquier event listener existente
           const newButton = button.cloneNode(true);
@@ -411,6 +399,8 @@
           newButton.style.border = '2px solid #4CAF50';
           newButton.style.borderRadius = '4px';
           newButton.style.backgroundColor = '#f8fff8';
+          newButton.style.padding = '2px';
+          newButton.style.margin = '0 3px';
         });
         
         console.log('✅', buttons.length, 'botones conectados directamente');
@@ -420,26 +410,20 @@
         console.log('🔄 Abriendo modal:', modalId);
         const modal = document.getElementById(modalId);
         if (modal) {
-          const instance = M.Modal.getInstance(modal) || M.Modal.init(modal);
-          instance.open();
-          console.log('✅ Modal abierto:', modalId);
+          try {
+            const instance = M.Modal.getInstance(modal) || M.Modal.init(modal);
+            instance.open();
+            console.log('✅ Modal abierto:', modalId);
+          } catch (error) {
+            console.error('❌ Error abriendo modal:', error);
+          }
+        } else {
+          console.error('❌ Modal no encontrado:', modalId);
         }
       }
       
-      // Esperar a que la tabla se cargue
-      function waitForTable() {
-        const checkInterval = setInterval(() => {
-          const buttons = document.querySelectorAll('#tablaVisitas a[data-action]');
-          if (buttons.length > 0) {
-            clearInterval(checkInterval);
-            console.log('✅ Tabla cargada, conectando eventos...');
-            connectVisitasButtons();
-          }
-        }, 500);
-      }
-      
-      // Iniciar
-      setTimeout(waitForTable, 1000);
+      // Iniciar conexión de botones
+      setTimeout(connectVisitasButtons, 1000);
       
       // También conectar cuando se cambie a la pestaña
       document.querySelector('a[href="#tab-visitas"]')?.addEventListener('click', () => {
@@ -450,9 +434,13 @@
       window.forceOpenModal = function(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
-          const instance = M.Modal.getInstance(modal) || M.Modal.init(modal);
-          instance.open();
-          console.log('⚡ Modal abierto por fuerza:', modalId);
+          try {
+            const instance = M.Modal.getInstance(modal) || M.Modal.init(modal);
+            instance.open();
+            console.log('⚡ Modal abierto por fuerza:', modalId);
+          } catch (error) {
+            console.error('❌ Error abriendo modal por fuerza:', error);
+          }
         }
       };
     });
