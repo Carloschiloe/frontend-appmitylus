@@ -7,13 +7,9 @@ import {
   apiDeleteVisita,
 } from '/js/core/api.js';
 
-// estado, helpers (viven en contactos)
 import { state, $, setVal, slug } from '../contactos/state.js';
-
-// normalizadores de esta carpeta
 import { normalizeVisita, centroCodigoById } from './normalizers.js';
 
-// 📸 UI de fotos (reutilizable)
 import {
   mountFotosUIOnce,
   resetFotosModal,
@@ -55,16 +51,22 @@ function codigoDeVisita(v) {
 // ---------------- DataTable ----------------
 let dtV = null;
 
-function adjustNow() {
+// pequeño throttle para no recalcular columnas de más
+const rafThrottle = (fn) => {
+  let t = 0;
+  return (...args) => {
+    if (t) return;
+    t = requestAnimationFrame(() => { t = 0; fn(...args); });
+  };
+};
+
+const adjustNow = rafThrottle(() => {
   const jq = window.jQuery || window.$;
-  if (jq && dtV) {
-    setTimeout(() => { try { dtV.columns.adjust().draw(false); } catch {} }, 0);
-    setTimeout(() => { try { dtV.columns.adjust().draw(false); } catch {} }, 80);
-  }
-}
+  if (jq && dtV) { try { dtV.columns.adjust().draw(false); } catch {} }
+});
 export function forceAdjustVisitas() { adjustNow(); }
 
-// CSS: que el <i> no bloquee el click al <a>
+// CSS para que el <i> no bloquee el click
 (function ensureClickCSS(){
   if (document.getElementById('visitas-click-fix')) return;
   const css = `
@@ -82,7 +84,6 @@ export async function initVisitasTab(forceReload = false) {
   const tabla = $('#tablaVisitas');
   if (!tabla) return;
 
-  // montar UI de fotos una sola vez
   mountFotosUIOnce();
 
   if (dtV && forceReload) {
@@ -106,23 +107,23 @@ export async function initVisitasTab(forceReload = false) {
       responsive: true,
       scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-      columnDefs: [
-        { targets: -1, orderable:false, searchable:false } // Acciones
-      ],
+      columnDefs: [{ targets: -1, orderable:false, searchable:false }],
       initComplete: () => adjustNow(),
       drawCallback:   () => adjustNow(),
     });
 
-    // Delegación robusta en el TBODY (cubre todos los redraws)
-    wireVisitasActions();
-    jq('#tablaVisitas').on('draw.dt', wireVisitasActions);
+    // Delegación: UNA sola vez, en la tabla
+    jq('#tablaVisitas')
+      .off('click.visitas')
+      .on('click.visitas', 'a[data-action]', function(e){
+        e.preventDefault(); e.stopPropagation();
+        manejarAccionVisita(this);
+      });
 
     window.addEventListener('resize', adjustNow);
   }
 
   await renderTablaVisitas();
-  // asegura el wiring tras primer render
-  wireVisitasActions();
   adjustNow();
 
   window.addEventListener('visita:created', async () => { await renderTablaVisitas(); adjustNow(); });
@@ -162,14 +163,13 @@ export async function renderTablaVisitas() {
         ? `<span class="ellipsisCell ellipsisObs" title="${esc(obs)}">${esc(trunc(obs, 72))}</span>`
         : '—';
 
-      // 👇👇👇  IMPORTANTÍSIMO: identificamos la acción con data-action
       const cid = esc(v.contactoId || '');
       const vid = esc(v._id || '');
       const acciones = `
         <a href="#!" data-action="ver"      title="Ver proveedor"  data-contacto-id="${cid}"><i class="material-icons">visibility</i></a>
         <a href="#!" data-action="nueva"    title="Nueva visita"   data-contacto-id="${cid}"><i class="material-icons">event_available</i></a>
         <a href="#!" data-action="editar"   title="Editar visita"  data-id="${vid}"><i class="material-icons">edit</i></a>
-        <a href="#!" data-action="eliminar" title="Eliminar visita"data-id="${vid}"><i class="material-icons">delete</i></a>
+        <a href="#!" data-action="eliminar" title="Eliminar visita" data-id="${vid}"><i class="material-icons">delete</i></a>
       `;
 
       return [
@@ -194,16 +194,9 @@ export async function renderTablaVisitas() {
   // Fallback sin DataTables
   const tbody = $('#tablaVisitas tbody');
   if (!tbody) return;
-  tbody.innerHTML = '';
-  if (!filas.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="color:#888">No hay visitas registradas.</td></tr>';
-    return;
-  }
-  filas.forEach((arr) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = arr.map((td) => `<td>${td}</td>`).join('');
-    tbody.appendChild(tr);
-  });
+  tbody.innerHTML = filas.length
+    ? filas.map(arr => `<tr>${arr.map((td)=>`<td>${td}</td>`).join('')}</tr>`).join('')
+    : '<tr><td colspan="8" style="color:#888">No hay visitas registradas.</td></tr>';
 }
 
 // ---------------- Detalle + Modales ----------------
@@ -224,7 +217,7 @@ function miniTimelineHTML(visitas = []) {
   if (!visitas.length) return '<div class="text-soft">Sin visitas registradas</div>';
   const filas = visitas.slice(0, 3).map((v) => {
     const code = v.centroCodigo || centroCodigoById(v.centroId) || '-';
-    const fechaStr = fmtISO(v.fecha); // <-- evita .slice en Date
+    const fechaStr = fmtISO(v.fecha);
     return `
       <div class="row" style="margin-bottom:.35rem">
         <div class="col s4"><strong>${fechaStr || '-'}</strong></div>
@@ -299,9 +292,7 @@ export function abrirModalVisita(contacto) {
     selectVisita.innerHTML = options;
   }
 
-  // 📸 limpiar estado de fotos para nueva visita
   resetFotosModal();
-
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
@@ -335,11 +326,8 @@ async function abrirEditarVisita(v) {
   }
 
   M.updateTextFields();
-
-  // 📸 reset + cargar galería de la visita que se edita
   resetFotosModal();
   await renderGallery(v._id);
-
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
@@ -374,15 +362,11 @@ export function setupFormularioVisita() {
         await apiUpdateVisita(editId, payload);
         window.dispatchEvent(new CustomEvent('visita:updated', { detail: { id: editId } }));
         M.toast?.({ html: 'Visita actualizada', classes: 'teal', displayLength: 1800 });
-
-        // 📸 subir pendientes y refrescar galería
         await handleFotosAfterSave(editId);
-
       } else {
         const nueva = await apiCreateVisita(payload);
         window.dispatchEvent(new CustomEvent('visita:created', { detail: { visita: nueva, contactoId } }));
         M.toast?.({ html: 'Visita guardada', classes: 'teal', displayLength: 1800 });
-
         const visitId = (nueva && (nueva._id || nueva.id)) ? (nueva._id || nueva.id) : null;
         await handleFotosAfterSave(visitId);
       }
@@ -390,7 +374,7 @@ export function setupFormularioVisita() {
       (M.Modal.getInstance(document.getElementById('modalVisita')))?.close();
       form.reset();
       form.dataset.editId = '';
-      adjustNow();
+      forceAdjustVisitas();
     } catch (e2) {
       console.warn('apiCreate/UpdateVisita error:', e2?.message || e2);
       M.toast?.({ html: 'No se pudo guardar la visita', displayLength: 2200, classes: 'red' });
@@ -398,54 +382,23 @@ export function setupFormularioVisita() {
   });
 }
 
-/* ==== Delegación de acciones en el TBODY (ultra robusta) ==== */
-function wireVisitasActions() {
-  const jq = window.jQuery || window.$;
-  if (!jq) {
-    // Fallback sin jQuery
-    if (window.__visitasDocHandlerBound) return;
-    document.addEventListener('click', (e) => {
-      const tbody = document.querySelector('#tablaVisitas tbody');
-      if (!tbody) return;
-      if (!tbody.contains(e.target)) return;
-      const a = e.target.closest('a[data-action]');
-      if (!a) return;
-
-      e.preventDefault(); e.stopPropagation();
-      manejarAccionVisita(a);
-    }, { passive: false });
-    window.__visitasDocHandlerBound = true;
-    return;
-  }
-
-  const $tbody = jq('#tablaVisitas tbody');
-  $tbody.off('click.visitas'); // idempotente
-  $tbody.on('click.visitas', 'a[data-action]', function(e){
-    e.preventDefault();
-    e.stopPropagation();
-    manejarAccionVisita(this);
-  });
-}
-
+/* ==== Delegación en la tabla (simple y estable) ==== */
 function manejarAccionVisita(aEl){
   const action = aEl.dataset.action;
   try {
     if (action === 'ver') {
       const c = (state.contactosGuardados || []).find(x => String(x._id) === String(aEl.dataset.contactoId));
-      if (c) abrirDetalleContacto(c);
-      else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
+      if (c) abrirDetalleContacto(c); else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
       return;
     }
     if (action === 'nueva') {
       const c = (state.contactosGuardados || []).find(x => String(x._id) === String(aEl.dataset.contactoId));
-      if (c) abrirModalVisita(c);
-      else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
+      if (c) abrirModalVisita(c); else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
       return;
     }
     if (action === 'editar') {
       const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(aEl.dataset.id));
-      if (v) abrirEditarVisita(v);
-      else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
+      if (v) abrirEditarVisita(v); else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
       return;
     }
     if (action === 'eliminar') {
@@ -456,7 +409,7 @@ function manejarAccionVisita(aEl){
         await apiDeleteVisita(id);
         M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
         await renderTablaVisitas();
-        adjustNow();
+        forceAdjustVisitas();
       })().catch(err => {
         console.warn(err);
         M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
