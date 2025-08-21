@@ -27,7 +27,7 @@ const esc = (s = '') =>
 
 const fmtISO = (d) => {
   if (!d) return '';
-  const x = new Date(d);
+  const x = d instanceof Date ? d : new Date(d);
   if (Number.isNaN(x.getTime())) return '';
   const y = x.getFullYear();
   const m = String(x.getMonth() + 1).padStart(2, '0');
@@ -67,7 +67,7 @@ function bindActionsOnce() {
   if (actionsBound) return;
   actionsBound = true;
 
-  // A) CAPTURE GLOBAL (muy difícil que falle)
+  // CAPTURE GLOBAL con scope a #tab-visitas
   const cap = (e) => {
     const root = getROOT();
     if (!root || !root.contains(e.target)) return;
@@ -86,14 +86,13 @@ function bindActionsOnce() {
     dispatchAccion(a);
   };
   document.addEventListener('click', cap, true);
-  // guardamos por si necesitas quitarlo en caliente desde consola
-  window.__visitasCapListener = cap;
+  window.__visitasCapListener = cap; // para inspección desde consola
 
-  // B) DELEGACIÓN jQuery EN TBODY (fallback extra)
+  // Delegación adicional en tbody (fallback)
   const jq = window.jQuery || window.$;
   const $tb = jq ? jq('#tablaVisitas tbody') : null;
   if ($tb && $tb.length) {
-    $tb.off('click.__visitas'); // evita duplicados si recargas módulos
+    $tb.off('click.__visitas');
     $tb.on('click.__visitas', 'a.v-ver, a.v-nueva, a.v-editar, a.v-eliminar', function (e) {
       console.debug('[visitas][tbody-delegate] click', {
         class: this.className,
@@ -298,9 +297,10 @@ function miniTimelineHTML(visitas = []) {
   if (!visitas.length) return '<div class="text-soft">Sin visitas registradas</div>';
   const filas = visitas.slice(0, 3).map((v) => {
     const code = v.centroCodigo || centroCodigoById(v.centroId) || '-';
+    const f = fmtISO(v.fecha) || '-';
     return `
       <div class="row" style="margin-bottom:.35rem">
-        <div class="col s4"><strong>${(v.fecha || '').slice(0, 10)}</strong></div>
+        <div class="col s4"><strong>${f}</strong></div>
         <div class="col s4">${code}</div>
         <div class="col s4">${v.estado || '-'}</div>
         <div class="col s12"><span class="text-soft">${v.tonsComprometidas ? (v.tonsComprometidas + ' t • ') : ''}${esc(v.observaciones || '')}</span></div>
@@ -333,7 +333,7 @@ export async function abrirDetalleContacto(c) {
       <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
       <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
       <div><strong>Disponibilidad:</strong> ${esc(c.tieneMMPP || '-')}</div>
-      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '-'}</div>
+      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? fmtISO(c.fechaDisponibilidad) : '-'}</div>
       <div><strong>Disposición:</strong> ${esc(c.dispuestoVender || '-')}</div>
       <div><strong>Tons aprox.:</strong> ${(c.tonsDisponiblesAprox ?? '') + ''}</div>
       <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
@@ -372,7 +372,7 @@ export function abrirModalVisita(contacto) {
     selectVisita.innerHTML = options;
   }
 
-  resetFotosModal(); // 📸 limpiar estado
+  resetFotosModal();
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
@@ -381,7 +381,7 @@ async function abrirEditarVisita(v) {
   form.dataset.editId = String(v._id || '');
 
   setVal(['visita_proveedorId'], v.contactoId || '');
-  $('#visita_fecha').value = (v.fecha || '').slice(0,10);
+  $('#visita_fecha').value = fmtISO(v.fecha);  // ← FIX
   $('#visita_contacto').value = v.contacto || '';
   $('#visita_enAgua').value = v.enAgua || '';
   $('#visita_tonsComprometidas').value = v.tonsComprometidas ?? '';
@@ -408,7 +408,7 @@ async function abrirEditarVisita(v) {
   M.updateTextFields();
 
   resetFotosModal();
-  await renderGallery(v._id); // 📸 carga fotos actuales
+  await renderGallery(v._id);
 
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
@@ -444,13 +444,13 @@ export function setupFormularioVisita() {
         await apiUpdateVisita(editId, payload);
         window.dispatchEvent(new CustomEvent('visita:updated', { detail: { id: editId } }));
         M.toast?.({ html: 'Visita actualizada', classes: 'teal', displayLength: 1800 });
-        await handleFotosAfterSave(editId); // 📸
+        await handleFotosAfterSave(editId);
       } else {
         const nueva = await apiCreateVisita(payload);
         window.dispatchEvent(new CustomEvent('visita:created', { detail: { visita: nueva, contactoId } }));
         M.toast?.({ html: 'Visita guardada', classes: 'teal', displayLength: 1800 });
         const visitId = (nueva && (nueva._id || nueva.id)) ? (nueva._id || nueva.id) : null;
-        await handleFotosAfterSave(visitId); // 📸
+        await handleFotosAfterSave(visitId);
       }
 
       (M.Modal.getInstance(document.getElementById('modalVisita')))?.close();
@@ -463,6 +463,3 @@ export function setupFormularioVisita() {
     }
   });
 }
-
-/* ==== Listener global (se instala en init) ==== */
-// (no añadimos aquí; lo hace bindActionsOnce() dentro de init)
