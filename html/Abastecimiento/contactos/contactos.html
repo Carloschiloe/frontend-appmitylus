@@ -318,9 +318,27 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script>
+  // Init básico Materialize + helper para tus botones de testing
+  document.addEventListener('DOMContentLoaded', () => {
+    M.Modal.init(document.querySelectorAll('.modal'), { opacity: 0.5, inDuration: 250, outDuration: 250 });
+    M.Tabs.init(document.querySelectorAll('.tabs'));
+  });
+
+  window.forceOpenModal = function(modalId){
+    const el = document.getElementById(modalId);
+    if (!el) return console.error('Modal no existe:', modalId);
+    const inst = M.Modal.getInstance(el) || M.Modal.init(el, { opacity: 0.5, inDuration: 250, outDuration: 250 });
+    inst.open();
+  };
+</script>
+
+<!-- Orquestador (tu módulo se encarga de la delegación en #tablaVisitas) -->
+<script type="module" src="/js/abastecimiento/contactos/index.js?v=6"></script>
 
   <!-- Orquestador -->
   <script type="module" src="/js/abastecimiento/contactos/index.js?v=5"></script>
 </body>
 </html>
+
 
