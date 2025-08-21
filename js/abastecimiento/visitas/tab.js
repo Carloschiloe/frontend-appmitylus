@@ -64,10 +64,17 @@ function adjustNow() {
 }
 export function forceAdjustVisitas() { adjustNow(); }
 
-// Inyecta CSS para que el clic “atraviese” el <i> al <a> en columna acciones
+/* ===== CSS anti-overlay (z-index + pointer-events) ===== */
 function ensureClickCSS() {
   if (document.getElementById('visitas-click-fix')) return;
   const css = `
+  /* sube visitas por sobre posibles sticky headers/overlays */
+  #tablaVisitas_wrapper, #tablaVisitas { position: relative; z-index: 50; }
+
+  /* baja el sticky header de Personas si existe (no afecta si no está) */
+  #tablaPersonas thead th { z-index: 1 !important; }
+
+  /* deja que el clic atraviese el <i> hacia el <a> */
   #tablaVisitas a.v-ver,
   #tablaVisitas a.v-nueva,
   #tablaVisitas a.v-editar,
@@ -80,57 +87,74 @@ function ensureClickCSS() {
   document.head.appendChild(style);
 }
 
-// 🎯 Listener nativo, pegado al <table>, idempotente
-function bindTableClickOnce() {
-  const table = document.getElementById('tablaVisitas');
-  if (!table || table.__visitasBound) return;
+/* ===== Handler centralizado de acciones ===== */
+async function handleAction(a) {
+  try {
+    if (a.classList.contains('v-ver')) {
+      const c = (state.contactosGuardados || []).find(x => String(x._id) === String(a.dataset.contactoId));
+      if (c) { await abrirDetalleContacto(c); } else { M.toast?.({ html: 'Contacto no encontrado', classes: 'red' }); }
+      return true;
+    }
+    if (a.classList.contains('v-nueva')) {
+      const c = (state.contactosGuardados || []).find(x => String(x._id) === String(a.dataset.contactoId));
+      if (c) { abrirModalVisita(c); } else { M.toast?.({ html: 'Contacto no encontrado', classes: 'red' }); }
+      return true;
+    }
+    if (a.classList.contains('v-editar')) {
+      const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(a.dataset.id));
+      if (v) { await abrirEditarVisita(v); } else { M.toast?.({ html: 'Visita no encontrada', classes: 'red' }); }
+      return true;
+    }
+    if (a.classList.contains('v-eliminar')) {
+      const id = a.dataset.id;
+      if (!id) return true;
+      if (!confirm('¿Eliminar esta visita?')) return true;
+      await apiDeleteVisita(id);
+      M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
+      await renderTablaVisitas();
+      adjustNow();
+      return true;
+    }
+  } catch (err) {
+    console.error('[visitas] acción error', err);
+    M.toast?.({ html: 'Acción no disponible', classes: 'red' });
+  }
+  return false;
+}
 
-  table.addEventListener('click', async (e) => {
-    const a = e.target.closest('a.v-ver, a.v-nueva, a.v-editar, a.v-eliminar');
-    if (!a || !table.contains(a)) return;
+/* ===== Delegación con CAPTURA + elementsFromPoint (anti overlays) ===== */
+function wireVisitasActions() {
+  ensureClickCSS();
+
+  if (window.__visitasCapBound) return;
+
+  const selector = '#tablaVisitas a.v-ver, #tablaVisitas a.v-nueva, #tablaVisitas a.v-editar, #tablaVisitas a.v-eliminar';
+
+  const onClickCapture = async (e) => {
+    // 1) Normal: ¿el target o un ancestro es uno de los <a>?
+    let a = e.target.closest?.(selector);
+
+    // 2) Si hay overlay encima, buscamos el <a> "debajo del cursor"
+    if (!a && Number.isFinite(e.clientX) && Number.isFinite(e.clientY) && document.elementsFromPoint) {
+      const stack = document.elementsFromPoint(e.clientX, e.clientY) || [];
+      a = stack.find(el => el?.matches?.(selector));
+    }
+
+    if (!a) return; // no es un click de nuestras acciones
 
     e.preventDefault();
     e.stopPropagation();
 
-    try {
-      if (a.classList.contains('v-ver')) {
-        const c = (state.contactosGuardados || []).find(x => String(x._id) === String(a.dataset.contactoId));
-        if (c) {
-          await abrirDetalleContacto(c);
-        } else {
-          M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
-        }
-        return;
-      }
-      if (a.classList.contains('v-nueva')) {
-        const c = (state.contactosGuardados || []).find(x => String(x._id) === String(a.dataset.contactoId));
-        if (c) abrirModalVisita(c);
-        else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
-        return;
-      }
-      if (a.classList.contains('v-editar')) {
-        const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(a.dataset.id));
-        if (v) await abrirEditarVisita(v);
-        else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
-        return;
-      }
-      if (a.classList.contains('v-eliminar')) {
-        const id = a.dataset.id;
-        if (!id) return;
-        if (!confirm('¿Eliminar esta visita?')) return;
-        await apiDeleteVisita(id);
-        M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
-        await renderTablaVisitas();
-        adjustNow();
-        return;
-      }
-    } catch (err) {
-      console.error('[visitas] acción error', err);
-      M.toast?.({ html: 'Acción no disponible', classes: 'red' });
-    }
-  }, { passive: false });
+    await handleAction(a);
+  };
 
-  table.__visitasBound = true;
+  // Modo captura para ganar a overlays/otros listeners que hagan stopPropagation en burbuja
+  document.addEventListener('click', onClickCapture, true);
+  // Por si algún overlay cancela "click" pero deja pasar el pointer
+  document.addEventListener('pointerup', onClickCapture, true);
+  document.addEventListener('touchend', onClickCapture, true);
+
+  window.__visitasCapBound = true;
 }
 
 export async function initVisitasTab(forceReload = false) {
@@ -140,7 +164,7 @@ export async function initVisitasTab(forceReload = false) {
 
   mountFotosUIOnce();
   ensureClickCSS();
-  bindTableClickOnce();
+  wireVisitasActions();
 
   if (dtV && forceReload) {
     await renderTablaVisitas();
@@ -166,15 +190,14 @@ export async function initVisitasTab(forceReload = false) {
       columnDefs: [
         { targets: -1, orderable:false, searchable:false } // Acciones
       ],
-      initComplete: () => { adjustNow(); bindTableClickOnce(); },
-      drawCallback:   () => { adjustNow(); /* el listener ya está en <table> */ },
+      initComplete: () => { adjustNow(); },
+      drawCallback:   () => { adjustNow(); },
     });
 
     window.addEventListener('resize', adjustNow);
   }
 
   await renderTablaVisitas();
-  bindTableClickOnce(); // por si el <table> aún no estaba cuando corrimos init
   adjustNow();
 
   window.addEventListener('visita:created', async () => { await renderTablaVisitas(); adjustNow(); });
