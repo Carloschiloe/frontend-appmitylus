@@ -190,8 +190,90 @@ function hookGlobalListeners() {
   listenersHooked = true;
 }
 
+// SOLUCIÓN: Delegación de eventos para los botones de acción en visitas
+function setupVisitasClickHandlers() {
+  const jq = window.jQuery || window.$;
+  if (!jq) return;
+  
+  // Delegación de eventos para la tabla de visitas
+  jq(document).off('click.visitasActions').on('click.visitasActions', '#tablaVisitas a[data-action]', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const action = jq(this).data('action');
+    const contactoId = jq(this).data('contacto-id');
+    const visitaId = jq(this).data('id');
+    
+    console.log('Acción en visita:', action, 'Contacto ID:', contactoId, 'Visita ID:', visitaId);
+    
+    if (action === 'ver') {
+      // Buscar el contacto y abrir modal de detalle
+      const contacto = (window.state?.contactosGuardados || []).find(x => String(x._id) === String(contactoId));
+      if (contacto) {
+        // Necesitas importar o tener acceso a abrirDetalleContacto
+        if (typeof window.abrirDetalleContacto === 'function') {
+          window.abrirDetalleContacto(contacto);
+        } else {
+          // Fallback: abrir modal directamente
+          const modal = M.Modal.getInstance(document.getElementById('modalDetalleContacto'));
+          if (modal) modal.open();
+        }
+      }
+    } 
+    else if (action === 'nueva') {
+      // Buscar el contacto y abrir modal de nueva visita
+      const contacto = (window.state?.contactosGuardados || []).find(x => String(x._id) === String(contactoId));
+      if (contacto) {
+        if (typeof window.abrirModalVisita === 'function') {
+          window.abrirModalVisita(contacto);
+        } else {
+          const modal = M.Modal.getInstance(document.getElementById('modalVisita'));
+          if (modal) modal.open();
+        }
+      }
+    }
+    else if (action === 'editar') {
+      // Aquí necesitarías tener acceso a la función abrirEditarVisita
+      console.log('Editar visita:', visitaId);
+      const modal = M.Modal.getInstance(document.getElementById('modalVisita'));
+      if (modal) modal.open();
+    }
+    else if (action === 'eliminar') {
+      if (confirm('¿Estás seguro de que deseas eliminar esta visita?')) {
+        console.log('Eliminar visita:', visitaId);
+        // Aquí iría la lógica para eliminar la visita
+      }
+    }
+  });
+}
+
+// Modificar la función initUIOnce para incluir los handlers de visitas
+const originalInitUIOnce = initUIOnce;
+initUIOnce = function() {
+  originalInitUIOnce();
+  setupVisitasClickHandlers();
+};
+
+// También asegurarnos de que se ejecute cuando se carga la pestaña de visitas
+const originalInitContactosTab = initContactosTab;
+initContactosTab = async function(forceReload = false) {
+  await originalInitContactosTab(forceReload);
+  setupVisitasClickHandlers();
+};
+
+// Exponer funciones globalmente para que estén disponibles
+window.abrirDetalleContacto = async function(c) {
+  const modal = M.Modal.getInstance(document.getElementById('modalDetalleContacto'));
+  if (modal) modal.open();
+};
+
+window.abrirModalVisita = function(contacto) {
+  const modal = M.Modal.getInstance(document.getElementById('modalVisita'));
+  if (modal) modal.open();
+};
 document.addEventListener('DOMContentLoaded', () => {
   initContactosTab().catch(console.error);
 });
+
 
 
