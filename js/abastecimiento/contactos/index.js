@@ -54,9 +54,36 @@ function adjustDT(selector) {
 function initUIOnce() {
   if (!window.M) return;
 
-  // Tabs
+  // Helpers para iniciar cada tab cuando se muestra su panel
+  const ensureVisitas = async () => {
+    if (!visitasBooted) {
+      try { await initVisitasTab(); visitasBooted = true; }
+      catch (e) { console.error('[visitas] init onShow', e); }
+    }
+    adjustDT('#tablaVisitas');
+  };
+  const ensurePersonas = () => {
+    if (!personasBooted) {
+      try {
+        initFiltrosYKPIsPersonas();
+        initPersonasTab();
+        personasBooted = true;
+      } catch (e) { console.error('[personas] init onShow', e); }
+    }
+    adjustDT('#tablaPersonas');
+  };
+
+  // Tabs con onShow para cubrir cualquier href/id
   const tabs = document.querySelectorAll('.tabs');
-  if (tabs.length) M.Tabs.init(tabs, {});
+  if (tabs.length) {
+    M.Tabs.init(tabs, {
+      onShow: (tabEl) => {
+        const id = (tabEl?.id || '').toLowerCase();
+        if (id.includes('visita'))  ensureVisitas();
+        if (id.includes('persona')) ensurePersonas();
+      }
+    });
+  }
 
   const cleanupOverlays = () => {
     document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
@@ -110,26 +137,11 @@ function initUIOnce() {
 
   /* ---- VISITAS: init al hacer clic en el tab (soporta #tab-visitas y #visitas) ---- */
   const tabVisitas = document.querySelector('a[href="#tab-visitas"], a[href="#visitas"]');
-  tabVisitas?.addEventListener('click', async () => {
-    if (!visitasBooted) {
-      try { await initVisitasTab(); visitasBooted = true; }
-      catch (e) { console.error('[visitas] init (lazy) error', e); }
-    }
-    adjustDT('#tablaVisitas');
-  });
+  tabVisitas?.addEventListener('click', ensureVisitas);
 
   /* ---- PERSONAS: init al hacer clic en el tab ---- */
   const tabPersonas = document.querySelector('a[href="#tab-personas"], a[href="#personas"]');
-  tabPersonas?.addEventListener('click', async () => {
-    if (!personasBooted) {
-      try {
-        initFiltrosYKPIsPersonas();
-        initPersonasTab();
-        personasBooted = true;
-      } catch (e) { console.error('[personas] init (lazy) error', e); }
-    }
-    adjustDT('#tablaPersonas');
-  });
+  tabPersonas?.addEventListener('click', ensurePersonas);
 
   /* ---- Ajuste al volver a EMPRESAS ---- */
   const tabContactos = document.querySelector('a[href="#tab-contactos"], a[href="#contactos"]');
@@ -174,10 +186,12 @@ export async function initContactosTab(forceReload = false) {
 
     /* 🧭 Si entras directo con hash a Visitas/Personas, inicializa de inmediato */
     if (location.hash === '#tab-visitas' || location.hash === '#visitas') {
-      try { await initVisitasTab(); visitasBooted = true; } catch (e) { console.warn('[visitas] direct-hash init', e); }
+      try { await initVisitasTab(); visitasBooted = true; }
+      catch (e) { console.warn('[visitas] direct-hash init', e); }
       adjustDT('#tablaVisitas');
     } else if (location.hash === '#tab-personas' || location.hash === '#personas') {
-      try { initFiltrosYKPIsPersonas(); initPersonasTab(); personasBooted = true; } catch (e) { console.warn('[personas] direct-hash init', e); }
+      try { initFiltrosYKPIsPersonas(); initPersonasTab(); personasBooted = true; }
+      catch (e) { console.warn('[personas] direct-hash init', e); }
       adjustDT('#tablaPersonas');
     }
 
