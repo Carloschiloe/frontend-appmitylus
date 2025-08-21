@@ -307,7 +307,7 @@ async function abrirEditarVisita(v) {
   form.dataset.editId = String(v._id || '');
 
   setVal(['visita_proveedorId'], v.contactoId || '');
-  $('#visita_fecha').value = (v.fecha || '').slice(0,10);
+  $('#visita_fecha').value = fmtISO(v.fecha);
   $('#visita_contacto').value = v.contacto || '';
   $('#visita_enAgua').value = v.enAgua || '';
   $('#visita_tonsComprometidas').value = v.tonsComprometidas ?? '';
