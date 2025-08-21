@@ -221,9 +221,10 @@ function miniTimelineHTML(visitas = []) {
   if (!visitas.length) return '<div class="text-soft">Sin visitas registradas</div>';
   const filas = visitas.slice(0, 3).map((v) => {
     const code = v.centroCodigo || centroCodigoById(v.centroId) || '-';
+    const fechaStr = fmtISO(v.fecha); // <-- evita .slice en Date
     return `
       <div class="row" style="margin-bottom:.35rem">
-        <div class="col s4"><strong>${(v.fecha || '').slice(0, 10)}</strong></div>
+        <div class="col s4"><strong>${fechaStr || '-'}</strong></div>
         <div class="col s4">${code}</div>
         <div class="col s4">${v.estado || '-'}</div>
         <div class="col s12"><span class="text-soft">${v.tonsComprometidas ? (v.tonsComprometidas + ' t • ') : ''}${esc(v.observaciones || '')}</span></div>
