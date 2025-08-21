@@ -7,9 +7,13 @@ import {
   apiDeleteVisita,
 } from '/js/core/api.js';
 
+// estado, helpers (viven en contactos)
 import { state, $, setVal, slug } from '../contactos/state.js';
+
+// normalizadores de esta carpeta
 import { normalizeVisita, centroCodigoById } from './normalizers.js';
 
+// 📸 UI de fotos (reutilizable)
 import {
   mountFotosUIOnce,
   resetFotosModal,
@@ -18,11 +22,12 @@ import {
 } from './fotos/ui.js';
 
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
-const L = (...a) => console.log('%c[VISITAS]', 'color:#22c55e;font-weight:700', ...a);
 
 // ---------------- utils ----------------
 const esc = (s = '') =>
-  String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
 const fmtISO = (d) => {
   if (!d) return '';
@@ -33,14 +38,19 @@ const fmtISO = (d) => {
   const dd = String(x.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
 };
-const trunc = (s = '', max = 42) => (String(s).length > max ? String(s).slice(0, max - 1) + '…' : String(s));
+
+const trunc = (s = '', max = 42) =>
+  (String(s).length > max ? String(s).slice(0, max - 1) + '…' : String(s));
+
 function proveedorDeVisita(v) {
   const id = v.contactoId ? String(v.contactoId) : null;
   if (!id) return '';
   const c = (state.contactosGuardados || []).find((x) => String(x._id) === id);
   return c?.proveedorNombre || '';
 }
-function codigoDeVisita(v) { return v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '') || ''; }
+function codigoDeVisita(v) {
+  return v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '') || '';
+}
 
 // ---------------- DataTable ----------------
 let dtV = null;
@@ -54,39 +64,34 @@ function adjustNow() {
 }
 export function forceAdjustVisitas() { adjustNow(); }
 
-// CSS para que el <i> no bloquee click
+// CSS: que el <i> no bloquee el click al <a>
 (function ensureClickCSS(){
   if (document.getElementById('visitas-click-fix')) return;
   const css = `
     #tablaVisitas i.material-icons{ pointer-events:none; }
     #tablaVisitas td:last-child a { pointer-events:auto; cursor:pointer; }
-    #tablaVisitas, #tablaVisitas_wrapper{ position:relative; z-index:10; }
   `;
   const s = document.createElement('style');
   s.id = 'visitas-click-fix';
   s.textContent = css;
   document.head.appendChild(s);
-  L('CSS click fix inyectado');
 })();
 
 export async function initVisitasTab(forceReload = false) {
-  L('initVisitasTab()', { forceReload });
   const jq = window.jQuery || window.$;
-
   const tabla = $('#tablaVisitas');
-  if (!tabla) { L('NO existe #tablaVisitas en DOM'); return; }
+  if (!tabla) return;
 
-  try { mountFotosUIOnce(); L('mountFotosUIOnce OK'); } catch (e) { L('mountFotosUIOnce error', e); }
+  // montar UI de fotos una sola vez
+  mountFotosUIOnce();
 
   if (dtV && forceReload) {
-    L('Ya había DataTable, solo refresco');
     await renderTablaVisitas();
     adjustNow();
     return;
   }
 
   if (jq && !dtV) {
-    L('Inicializando DataTable de visitas…');
     dtV = jq('#tablaVisitas').DataTable({
       dom: 'Blfrtip',
       buttons: [
@@ -102,30 +107,30 @@ export async function initVisitasTab(forceReload = false) {
       scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: [
-        { targets: -1, orderable:false, searchable:false }
+        { targets: -1, orderable:false, searchable:false } // Acciones
       ],
-      initComplete: () => { L('DataTable ready'); adjustNow(); },
-      drawCallback:   () => { L('DataTable drawCallback'); adjustNow(); },
+      initComplete: () => adjustNow(),
+      drawCallback:   () => adjustNow(),
     });
 
-    // Delegación robusta: documento
+    // Delegación robusta en el TBODY (cubre todos los redraws)
     wireVisitasActions();
     jq('#tablaVisitas').on('draw.dt', wireVisitasActions);
+
     window.addEventListener('resize', adjustNow);
-  } else {
-    L('jQuery no está, o ya había dtV');
   }
 
   await renderTablaVisitas();
+  // asegura el wiring tras primer render
+  wireVisitasActions();
   adjustNow();
 
-  window.addEventListener('visita:created', async () => { L('evt visita:created'); await renderTablaVisitas(); adjustNow(); });
-  window.addEventListener('visita:updated', async () => { L('evt visita:updated'); await renderTablaVisitas(); adjustNow(); });
+  window.addEventListener('visita:created', async () => { await renderTablaVisitas(); adjustNow(); });
+  window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); adjustNow(); });
 }
 
 // ---------------- render ----------------
 export async function renderTablaVisitas() {
-  L('renderTablaVisitas() -> llamando apiGetVisitas');
   const jq = window.jQuery || window.$;
 
   let visitas = [];
@@ -133,11 +138,9 @@ export async function renderTablaVisitas() {
     const raw = await apiGetVisitas();
     visitas = normalizeVisitas(Array.isArray(raw) ? raw : raw?.items || []);
     state.visitasGuardadas = visitas.slice();
-    L('apiGetVisitas OK, visitas:', visitas.length);
   } catch (e) {
     console.error('[visitas] apiGetVisitas error:', e?.message || e);
     visitas = [];
-    L('apiGetVisitas ERROR', e);
   }
 
   const filas = visitas
@@ -159,13 +162,14 @@ export async function renderTablaVisitas() {
         ? `<span class="ellipsisCell ellipsisObs" title="${esc(obs)}">${esc(trunc(obs, 72))}</span>`
         : '—';
 
+      // 👇👇👇  IMPORTANTÍSIMO: identificamos la acción con data-action
       const cid = esc(v.contactoId || '');
       const vid = esc(v._id || '');
       const acciones = `
-        <a href="#!" class="v-ver"      title="Ver proveedor"  data-contacto-id="${cid}"><i class="material-icons">visibility</i></a>
-        <a href="#!" class="v-nueva"    title="Nueva visita"   data-contacto-id="${cid}"><i class="material-icons">event_available</i></a>
-        <a href="#!" class="v-editar"   title="Editar visita"  data-id="${vid}"><i class="material-icons">edit</i></a>
-        <a href="#!" class="v-eliminar" title="Eliminar visita"data-id="${vid}"><i class="material-icons">delete</i></a>
+        <a href="#!" data-action="ver"      title="Ver proveedor"  data-contacto-id="${cid}"><i class="material-icons">visibility</i></a>
+        <a href="#!" data-action="nueva"    title="Nueva visita"   data-contacto-id="${cid}"><i class="material-icons">event_available</i></a>
+        <a href="#!" data-action="editar"   title="Editar visita"  data-id="${vid}"><i class="material-icons">edit</i></a>
+        <a href="#!" data-action="eliminar" title="Eliminar visita"data-id="${vid}"><i class="material-icons">delete</i></a>
       `;
 
       return [
@@ -180,18 +184,16 @@ export async function renderTablaVisitas() {
       ];
     });
 
-  L('filas render:', filas.length);
-
   const jqOk = jq && jq.fn && jq.fn.DataTable;
   if (dtV && jqOk) {
     dtV.clear();
     dtV.rows.add(filas).draw(false);
-    L('DataTable rows added');
     return;
   }
 
+  // Fallback sin DataTables
   const tbody = $('#tablaVisitas tbody');
-  if (!tbody) { L('NO hay tbody de #tablaVisitas'); return; }
+  if (!tbody) return;
   tbody.innerHTML = '';
   if (!filas.length) {
     tbody.innerHTML = '<tr><td colspan="8" style="color:#888">No hay visitas registradas.</td></tr>';
@@ -202,7 +204,6 @@ export async function renderTablaVisitas() {
     tr.innerHTML = arr.map((td) => `<td>${td}</td>`).join('');
     tbody.appendChild(tr);
   });
-  L('Fallback tabla renderizado');
 }
 
 // ---------------- Detalle + Modales ----------------
@@ -223,7 +224,7 @@ function miniTimelineHTML(visitas = []) {
   if (!visitas.length) return '<div class="text-soft">Sin visitas registradas</div>';
   const filas = visitas.slice(0, 3).map((v) => {
     const code = v.centroCodigo || centroCodigoById(v.centroId) || '-';
-    const fechaStr = fmtISO(v.fecha);
+    const fechaStr = fmtISO(v.fecha); // <-- evita .slice en Date
     return `
       <div class="row" style="margin-bottom:.35rem">
         <div class="col s4"><strong>${fechaStr || '-'}</strong></div>
@@ -278,13 +279,11 @@ export async function abrirDetalleContacto(c) {
   `;
   $('#btnNuevaVisita')?.addEventListener('click', () => abrirModalVisita(c));
   (M.Modal.getInstance(document.getElementById('modalDetalleContacto')) || M.Modal.init(document.getElementById('modalDetalleContacto'))).open();
-  L('abrirDetalleContacto -> modal abierto');
 }
 
 export function abrirModalVisita(contacto) {
-  L('abrirModalVisita', contacto?._id);
   const form = $('#formVisita');
-  if (form) form.dataset.editId = '';
+  if (form) form.dataset.editId = ''; // nuevo
   setVal(['visita_proveedorId'], contacto._id);
   const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
 
@@ -300,13 +299,13 @@ export function abrirModalVisita(contacto) {
     selectVisita.innerHTML = options;
   }
 
+  // 📸 limpiar estado de fotos para nueva visita
   resetFotosModal();
 
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
 async function abrirEditarVisita(v) {
-  L('abrirEditarVisita', v?._id);
   const form = $('#formVisita'); if (!form) return;
   form.dataset.editId = String(v._id || '');
 
@@ -337,6 +336,7 @@ async function abrirEditarVisita(v) {
 
   M.updateTextFields();
 
+  // 📸 reset + cargar galería de la visita que se edita
   resetFotosModal();
   await renderGallery(v._id);
 
@@ -345,9 +345,8 @@ async function abrirEditarVisita(v) {
 
 export function setupFormularioVisita() {
   const form = $('#formVisita');
-  if (!form) { L('setupFormularioVisita: no hay #formVisita'); return; }
+  if (!form) return;
 
-  L('setupFormularioVisita: OK');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const contactoId = $('#visita_proveedorId').value;
@@ -368,7 +367,6 @@ export function setupFormularioVisita() {
       estado: $('#visita_estado').value || 'Programar nueva visita',
       observaciones: $('#visita_observaciones').value || null
     };
-    L('submit visita', payload);
 
     try {
       const editId = (form.dataset.editId || '').trim();
@@ -376,11 +374,15 @@ export function setupFormularioVisita() {
         await apiUpdateVisita(editId, payload);
         window.dispatchEvent(new CustomEvent('visita:updated', { detail: { id: editId } }));
         M.toast?.({ html: 'Visita actualizada', classes: 'teal', displayLength: 1800 });
+
+        // 📸 subir pendientes y refrescar galería
         await handleFotosAfterSave(editId);
+
       } else {
         const nueva = await apiCreateVisita(payload);
         window.dispatchEvent(new CustomEvent('visita:created', { detail: { visita: nueva, contactoId } }));
         M.toast?.({ html: 'Visita guardada', classes: 'teal', displayLength: 1800 });
+
         const visitId = (nueva && (nueva._id || nueva.id)) ? (nueva._id || nueva.id) : null;
         await handleFotosAfterSave(visitId);
       }
@@ -396,115 +398,73 @@ export function setupFormularioVisita() {
   });
 }
 
-/* ==== Delegación de acciones (documento) + logs ==== */
+/* ==== Delegación de acciones en el TBODY (ultra robusta) ==== */
 function wireVisitasActions() {
   const jq = window.jQuery || window.$;
+  if (!jq) {
+    // Fallback sin jQuery
+    if (window.__visitasDocHandlerBound) return;
+    document.addEventListener('click', (e) => {
+      const tbody = document.querySelector('#tablaVisitas tbody');
+      if (!tbody) return;
+      if (!tbody.contains(e.target)) return;
+      const a = e.target.closest('a[data-action]');
+      if (!a) return;
 
-  // jQuery: delegación
-  if (jq) {
-    jq(document).off('click.visitas');
-    jq(document).on(
-      'click.visitas',
-      '#tablaVisitas a.v-ver, #tablaVisitas a.v-nueva, #tablaVisitas a.v-editar, #tablaVisitas a.v-eliminar',
-      function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const a = this;
-        L('CLICK ->', a.className, a.dataset);
-
-        try {
-          if (a.classList.contains('v-ver')) {
-            const c = (state.contactosGuardados || []).find(x => String(x._id) === String(a.dataset.contactoId));
-            if (c) abrirDetalleContacto(c); else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
-            return;
-          }
-          if (a.classList.contains('v-nueva')) {
-            const c = (state.contactosGuardados || []).find(x => String(x._id) === String(a.dataset.contactoId));
-            if (c) abrirModalVisita(c); else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
-            return;
-          }
-          if (a.classList.contains('v-editar')) {
-            const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(a.dataset.id));
-            if (v) abrirEditarVisita(v); else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
-            return;
-          }
-          if (a.classList.contains('v-eliminar')) {
-            const id = a.dataset.id;
-            if (!id) return;
-            if (!confirm('¿Eliminar esta visita?')) return;
-            (async () => {
-              await apiDeleteVisita(id);
-              M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
-              await renderTablaVisitas();
-              adjustNow();
-            })().catch(err => {
-              console.warn(err);
-              M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
-            });
-          }
-        } catch (err) {
-          console.error('[visitas] acción error', err);
-          M.toast?.({ html: 'Acción no disponible', classes: 'red' });
-        }
-      }
-    );
-    L('wireVisitasActions: delegación jQuery lista');
+      e.preventDefault(); e.stopPropagation();
+      manejarAccionVisita(a);
+    }, { passive: false });
+    window.__visitasDocHandlerBound = true;
     return;
   }
 
-  // Fallback sin jQuery
-  if (window.__visitasDocHandlerBound) return;
-  document.addEventListener('click', (e) => {
-    const a = e.target.closest('#tablaVisitas a.v-ver, #tablaVisitas a.v-nueva, #tablaVisitas a.v-editar, #tablaVisitas a.v-eliminar');
-    if (!a) return;
-
+  const $tbody = jq('#tablaVisitas tbody');
+  $tbody.off('click.visitas'); // idempotente
+  $tbody.on('click.visitas', 'a[data-action]', function(e){
     e.preventDefault();
     e.stopPropagation();
-    L('CLICK (fallback) ->', a.className, a.dataset);
-
-    try {
-      if (a.classList.contains('v-ver')) {
-        const c = (state.contactosGuardados || []).find(x => String(x._id) === String(a.dataset.contactoId));
-        if (c) abrirDetalleContacto(c); else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
-        return;
-      }
-      if (a.classList.contains('v-nueva')) {
-        const c = (state.contactosGuardados || []).find(x => String(x._id) === String(a.dataset.contactoId));
-        if (c) abrirModalVisita(c); else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
-        return;
-      }
-      if (a.classList.contains('v-editar')) {
-        const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(a.dataset.id));
-        if (v) abrirEditarVisita(v); else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
-        return;
-      }
-      if (a.classList.contains('v-eliminar')) {
-        const id = a.dataset.id;
-        if (!id) return;
-        if (!confirm('¿Eliminar esta visita?')) return;
-        (async () => {
-          await apiDeleteVisita(id);
-          M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
-          await renderTablaVisitas();
-          adjustNow();
-        })().catch(err => {
-          console.warn(err);
-          M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
-        });
-      }
-    } catch (err) {
-      console.error('[visitas] acción error', err);
-      M.toast?.({ html: 'Acción no disponible', classes: 'red' });
-    }
-  }, { passive: false });
-  window.__visitasDocHandlerBound = true;
-  L('wireVisitasActions: delegación Fallback lista');
+    manejarAccionVisita(this);
+  });
 }
 
-// Helpers debug
-window.__visitasInfo = () => ({
-  dt: !!dtV,
-  filasDT: dtV ? dtV.rows().count() : null,
-  guardadas: (state.visitasGuardadas || []).length,
-  tabla: !!document.getElementById('tablaVisitas'),
-});
+function manejarAccionVisita(aEl){
+  const action = aEl.dataset.action;
+  try {
+    if (action === 'ver') {
+      const c = (state.contactosGuardados || []).find(x => String(x._id) === String(aEl.dataset.contactoId));
+      if (c) abrirDetalleContacto(c);
+      else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
+      return;
+    }
+    if (action === 'nueva') {
+      const c = (state.contactosGuardados || []).find(x => String(x._id) === String(aEl.dataset.contactoId));
+      if (c) abrirModalVisita(c);
+      else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
+      return;
+    }
+    if (action === 'editar') {
+      const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(aEl.dataset.id));
+      if (v) abrirEditarVisita(v);
+      else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
+      return;
+    }
+    if (action === 'eliminar') {
+      const id = aEl.dataset.id;
+      if (!id) return;
+      if (!confirm('¿Eliminar esta visita?')) return;
+      (async () => {
+        await apiDeleteVisita(id);
+        M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
+        await renderTablaVisitas();
+        adjustNow();
+      })().catch(err => {
+        console.warn(err);
+        M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
+      });
+      return;
+    }
+  } catch (err) {
+    console.error('[visitas] acción error', err);
+    M.toast?.({ html: 'Acción no disponible', classes: 'red' });
+  }
+}
