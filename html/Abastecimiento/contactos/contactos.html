@@ -319,45 +319,8 @@
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
-  <!-- Delegación en fase de captura para los botones de VISITAS -->
-  <script>
-    function openModalSafe(modalId) {
-      const el = document.getElementById(modalId);
-      if (!el) return console.error('Modal no existe:', modalId);
-      const inst = M.Modal.getInstance(el) || M.Modal.init(el, { opacity: 0.5, inDuration: 250, outDuration: 250 });
-      inst.open();
-    }
-    // testing
-    window.forceOpenModal = openModalSafe;
-
-    document.addEventListener('DOMContentLoaded', () => {
-      // Init Materialize
-      M.Modal.init(document.querySelectorAll('.modal'), { opacity: 0.5, inDuration: 250, outDuration: 250 });
-      M.Tabs.init(document.querySelectorAll('.tabs'));
-    });
-
-    // Listener global en CAPTURA: llega antes que cualquier burbuja/conflicto
-    document.addEventListener('click', function (e) {
-      const el = e.target.closest('#tablaVisitas [data-action]');
-      if (!el) return;
-
-      e.preventDefault();
-
-      const action = (el.dataset.action || '').toLowerCase();
-      // feedback visual (opcional)
-      el.classList.add('button-connected');
-      setTimeout(() => el.classList.remove('button-connected'), 250);
-
-      if (action === 'ver' || action === 'detalle') {
-        openModalSafe('modalDetalleContacto');
-      } else {
-        // visita / editar / etc.
-        openModalSafe('modalVisita');
-      }
-    }, true); // <-- fase de captura
-  </script>
-
   <!-- Orquestador -->
   <script type="module" src="/js/abastecimiento/contactos/index.js?v=5"></script>
 </body>
 </html>
+
