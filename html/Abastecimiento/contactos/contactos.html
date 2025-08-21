@@ -322,115 +322,118 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
   <!-- Inicialización de modales -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Inicializar todos los modales
-      var modals = document.querySelectorAll('.modal');
-      M.Modal.init(modals, {
-        opacity: 0.5,
-        inDuration: 250,
-        outDuration: 250
-      });
-      
-      // Inicializar tabs
-      var tabs = document.querySelectorAll('.tabs');
-      M.Tabs.init(tabs, {
-        onShow: function(tab) {
-          // Reajustar DataTables cuando se cambia de pestaña
-          setTimeout(function() {
-            if ($.fn.DataTable.isDataTable('#tablaVisitas')) {
-              $('#tablaVisitas').DataTable().columns.adjust();
-            }
-          }, 100);
-        }
-      });
-    });
-  </script>
-  <script>
-// Debug: Verificar que los modales se inicialicen correctamente
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('Modal Detalle Contacto:', document.getElementById('modalDetalleContacto'));
-  console.log('Modal Visita:', document.getElementById('modalVisita'));
-  
-  // Verificar que los event listeners se estén agregando
-  setTimeout(() => {
-    const actionButtons = document.querySelectorAll('#tablaVisitas a[data-action]');
-    console.log('Botones de acción encontrados:', actionButtons.length);
-    
-    actionButtons.forEach(btn => {
-      btn.addEventListener('click', function(e) {
-        console.log('Click en botón:', this.dataset.action);
-        e.stopPropagation();
-      });
-    });
-  }, 2000);
-});
-</script>
 <script>
-// SOLUCIÓN DEFINITIVA para los clics en la tabla de visitas
+// SOLUCIÓN DEFINITIVA - Delegación de eventos para tabla dinámica
 document.addEventListener('DOMContentLoaded', function() {
-  // Delegación de eventos para elementos dinámicos
-  document.addEventListener('click', function(e) {
-    // Verificar si el clic fue en un botón de acción de la tabla de visitas
-    const target = e.target.closest('#tablaVisitas a[data-action]');
-    if (!target) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const action = target.getAttribute('data-action');
-    const contactoId = target.getAttribute('data-contacto-id');
-    const visitaId = target.getAttribute('data-id');
-    
-    console.log('Acción:', action, 'Contacto ID:', contactoId, 'Visita ID:', visitaId);
-    
-    // Abrir el modal correspondiente
-    if (action === 'ver') {
-      const modal = M.Modal.getInstance(document.getElementById('modalDetalleContacto'));
-      if (modal) {
-        console.log('Abriendo modal de detalle');
-        modal.open();
-      } else {
-        console.error('Modal de detalle no encontrado');
-      }
-    } 
-    else if (action === 'nueva' || action === 'editar') {
-      const modal = M.Modal.getInstance(document.getElementById('modalVisita'));
-      if (modal) {
-        console.log('Abriendo modal de visita');
-        modal.open();
-      } else {
-        console.error('Modal de visita no encontrado');
-      }
+  console.log('Página cargada - Iniciando configuración de eventos...');
+  
+  // Inicializar modales y tabs
+  var modals = document.querySelectorAll('.modal');
+  M.Modal.init(modals, {
+    opacity: 0.5,
+    inDuration: 250,
+    outDuration: 250
+  });
+  
+  var tabs = document.querySelectorAll('.tabs');
+  M.Tabs.init(tabs, {
+    onShow: function(tab) {
+      setTimeout(function() {
+        if ($.fn.DataTable.isDataTable('#tablaVisitas')) {
+          $('#tablaVisitas').DataTable().columns.adjust();
+        }
+      }, 100);
     }
-    else if (action === 'eliminar') {
-      if (confirm('¿Estás seguro de que deseas eliminar esta visita?')) {
-        console.log('Eliminar visita:', visitaId);
-        // Aquí iría tu lógica para eliminar
+  });
+
+  // DELEGACIÓN DE EVENTOS PARA ELEMENTOS DINÁMICOS
+  let eventHandlerAttached = false;
+  
+  function attachTableEventHandler() {
+    if (eventHandlerAttached) return;
+    
+    // Usar delegación de eventos en el documento
+    $(document).off('click.visitasDynamic').on('click.visitasDynamic', '#tablaVisitas a[data-action]', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const action = $(this).data('action');
+      const contactoId = $(this).data('contacto-id');
+      const visitaId = $(this).data('id');
+      
+      console.log('✅ Click detectado - Acción:', action, 'Contacto ID:', contactoId, 'Visita ID:', visitaId);
+      
+      // Abrir modales
+      if (action === 'ver') {
+        const modal = M.Modal.getInstance($('#modalDetalleContacto')[0]);
+        if (modal) {
+          console.log('🔵 Abriendo modal de detalle');
+          modal.open();
+        } else {
+          console.error('❌ Modal de detalle no inicializado');
+          // Forzar inicialización
+          M.Modal.init($('#modalDetalleContacto')[0]).open();
+        }
+      } 
+      else if (action === 'nueva' || action === 'editar') {
+        const modal = M.Modal.getInstance($('#modalVisita')[0]);
+        if (modal) {
+          console.log('🔵 Abriendo modal de visita');
+          modal.open();
+        } else {
+          console.error('❌ Modal de visita no inicializado');
+          M.Modal.init($('#modalVisita')[0]).open();
+        }
       }
+      else if (action === 'eliminar') {
+        if (confirm('¿Estás seguro de que deseas eliminar esta visita?')) {
+          console.log('🗑️ Eliminar visita:', visitaId);
+        }
+      }
+    });
+    
+    eventHandlerAttached = true;
+    console.log('✅ Event handler attached to document');
+  }
+
+  // Verificar periodicamente si la tabla ya se cargó
+  function checkTableLoaded() {
+    const buttons = $('#tablaVisitas a[data-action]');
+    console.log('🔍 Botones encontrados:', buttons.length);
+    
+    if (buttons.length > 0) {
+      console.log('✅ Tabla de visitas cargada correctamente');
+      attachTableEventHandler();
+    } else {
+      console.log('⏳ Esperando que la tabla se cargue...');
+      setTimeout(checkTableLoaded, 500);
     }
+  }
+
+  // Iniciar verificación
+  setTimeout(checkTableLoaded, 1000);
+
+  // También verificar cuando se cambia de pestaña
+  $('a[href="#tab-visitas"]').on('click', function() {
+    console.log('📌 Cambiando a pestaña de visitas');
+    setTimeout(checkTableLoaded, 300);
   });
 });
 
-// Verificación adicional después de que se cargue la tabla
-function checkTableButtons() {
-  setTimeout(() => {
-    const buttons = document.querySelectorAll('#tablaVisitas a[data-action]');
-    console.log('Botones en la tabla de visitas:', buttons.length);
-    
-    if (buttons.length === 0) {
-      console.log('La tabla可能 aún no se ha cargado. Volveremos a verificar en 1 segundo.');
-      setTimeout(checkTableButtons, 1000);
-    }
-  }, 500);
+// Función de emergencia - Forzar apertura de modales
+function forceOpenModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    const instance = M.Modal.getInstance(modal) || M.Modal.init(modal);
+    instance.open();
+    console.log('⚡ Modal abierto por fuerza:', modalId);
+  }
 }
-
-// Iniciar verificación
-checkTableButtons();
 </script>
   <!-- Orquestador -->
   <script type="module" src="/js/abastecimiento/contactos/index.js?v=5"></script>
 </body>
 </html>
+
 
 
