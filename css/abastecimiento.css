@@ -2,6 +2,27 @@
    ABASTECIMIENTO – Overrides sobre global
    ========================================= */
 
+/* ======= SOLUCIÓN DEFINITIVA - REMOVER BLOQUEOS DE CLIC ======= */
+#tablaVisitas a[data-action] {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  display: inline-block !important;
+}
+
+#tablaVisitas td:last-child {
+  pointer-events: auto !important;
+}
+
+#tablaVisitas td .material-icons {
+  pointer-events: none !important;
+}
+
+/* Anular cualquier otro estilo que pueda estar bloqueando eventos */
+#tablaVisitas td a,
+#tablaVisitas td a * {
+  pointer-events: auto !important;
+}
+
 /* ======= TABLAS: Contactos + Visitas ======= */
 
 /* Cabezal teal */
@@ -19,7 +40,7 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
-/* Acciones (íconos) */
+/* Acciones (íconos) - REGLA CORREGIDA */
 #tablaContactos td .material-icons {
   font-size: 1.22em;
   margin-right: 8px;
@@ -30,7 +51,7 @@
   font-size: 1.22em;
   margin-right: 8px;
   transition: transform .12s ease, color .12s ease;
-  pointer-events: none !important; /* ← AÑADIR ESTA LÍNEA */
+  pointer-events: none !important; /* ← ESTA LÍNEA ES CRÍTICA */
 }
 
 #tablaContactos td .material-icons:hover,
@@ -250,7 +271,7 @@
 .ellipsisProv { max-width: 26ch; }
 .ellipsisObs  { display:block; width:100%; }
 
-/* Garantiza click en Acciones */
+/* Garantiza click en Acciones - REGLA CORREGIDA */
 #tab-visitas #tablaVisitas td:last-child a { 
   pointer-events: auto !important; 
   cursor: pointer !important; 
@@ -261,5 +282,3 @@
 
 /////*Importar el css de configuracion de fotos*/////
 @import url('/js/abastecimiento/visitas/fotos/styles.css');
-
-
