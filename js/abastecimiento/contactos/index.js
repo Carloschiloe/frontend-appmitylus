@@ -29,15 +29,13 @@ function setDTDefaults() {
   const $ = window.jQuery || window.$;
   if (!$ || !$.fn || !$.fn.dataTable) return;
 
-  // Evita el scroll horizontal por defecto y mejora el ajuste de columnas
   $.extend(true, $.fn.dataTable.defaults, {
     scrollX: false,
     autoWidth: false,
-    responsive: true,          // que pueda reordenar/ocultar si hace falta
+    responsive: true,
     deferRender: true
   });
 
-  // Manejo de errores silencioso en consola
   $.fn.dataTable.ext.errMode = 'none';
 }
 
@@ -47,7 +45,6 @@ function adjustDT(selector) {
   if (jq && jq.fn && jq.fn.DataTable && jq(selector).length) {
     try {
       const dt = jq(selector).DataTable();
-      // pequeño delay asegura que el tab ya quedó visible
       setTimeout(() => dt.columns.adjust().draw(false), 0);
     } catch {}
   }
@@ -112,7 +109,7 @@ function initUIOnce() {
   window.addEventListener('hashchange', cleanupOverlays);
 
   // --- Lazy-load de VISITAS al hacer click en la pestaña
-  const tabVisitas = document.querySelector('a[href="#tab-visitas"]');
+  const tabVisitas = document.querySelector('a[href="#tab-visitas"], a[href="#visitas"]');
   tabVisitas?.addEventListener('click', async () => {
     if (!visitasBooted) {
       try { await initVisitasTab(); visitasBooted = true; }
@@ -122,7 +119,7 @@ function initUIOnce() {
   });
 
   // --- Lazy-load de AGENDA (PERSONAS) al hacer click en la pestaña
-  const tabPersonas = document.querySelector('a[href="#tab-personas"]');
+  const tabPersonas = document.querySelector('a[href="#tab-personas"], a[href="#personas"]');
   tabPersonas?.addEventListener('click', async () => {
     if (!personasBooted) {
       try {
@@ -135,7 +132,7 @@ function initUIOnce() {
   });
 
   // Ajuste opcional al volver a EMPRESAS
-  const tabContactos = document.querySelector('a[href="#tab-contactos"]');
+  const tabContactos = document.querySelector('a[href="#tab-contactos"], a[href="#contactos"]');
   tabContactos?.addEventListener('click', () => adjustDT('#tablaContactos'));
 }
 
@@ -143,7 +140,7 @@ export async function initContactosTab(forceReload = false) {
   if (booted && !forceReload) return;
 
   try {
-    // ⚙️ Asegura defaults de DataTables antes de crear cualquier tabla
+    // ⚙️ Defaults DataTables
     setDTDefaults();
 
     initUIOnce();
@@ -152,7 +149,7 @@ export async function initContactosTab(forceReload = false) {
     await cargarCentros();
     await cargarContactosGuardados();
 
-    // Wiring
+    // Wiring base
     setupBuscadorProveedores();
     setupFormulario();
     setupFormularioVisita();   // prepara el modal de visitas
@@ -165,6 +162,15 @@ export async function initContactosTab(forceReload = false) {
     // Personas y Visitas se inicializan al abrir sus pestañas (lazy)
     initAsociacionContactos();
     hookGlobalListeners();
+
+    // 🧭 Si entras directo con hash a Visitas/Personas, inicializa de inmediato
+    if (location.hash === '#tab-visitas' || location.hash === '#visitas') {
+      try { await initVisitasTab(); visitasBooted = true; } catch (e) { console.warn('[visitas] direct-hash init', e); }
+      adjustDT('#tablaVisitas');
+    } else if (location.hash === '#tab-personas' || location.hash === '#personas') {
+      try { initFiltrosYKPIsPersonas(); initPersonasTab(); personasBooted = true; } catch (e) { console.warn('[personas] direct-hash init', e); }
+      adjustDT('#tablaPersonas');
+    }
 
     booted = true;
   } catch (err) {
@@ -194,7 +200,7 @@ function hookGlobalListeners() {
   // 🔁 Cuando se cree una visita, si la tabla ya está montada, recárgala y ajusta
   window.addEventListener('visita:created', async () => {
     if (visitasBooted) {
-      try { await initVisitasTab(true); }  // recarga datos en el módulo de visitas
+      try { await initVisitasTab(true); }  // recarga datos en Visitas
       catch (e) { console.error('[visitas] reload tras crear', e); }
       adjustDT('#tablaVisitas');
     }
@@ -213,6 +219,3 @@ function hookGlobalListeners() {
 document.addEventListener('DOMContentLoaded', () => {
   initContactosTab().catch(console.error);
 });
-
-
-
