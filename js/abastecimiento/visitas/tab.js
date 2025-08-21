@@ -68,8 +68,8 @@ export function forceAdjustVisitas() { adjustNow(); }
 function ensureClickCSS() {
   if (document.getElementById('visitas-click-fix')) return;
   const css = `
-  #tab-visitas #tablaVisitas td:last-child a { pointer-events: auto; cursor: pointer; }
-  #tab-visitas #tablaVisitas td:last-child i.material-icons { pointer-events: none; }
+  #tablaVisitas td:last-child a { pointer-events: auto; cursor: pointer; }
+  #tablaVisitas td:last-child i.material-icons { pointer-events: none; }
   `;
   const style = document.createElement('style');
   style.id = 'visitas-click-fix';
@@ -113,7 +113,7 @@ export async function initVisitasTab(forceReload = false) {
       drawCallback:   () => adjustNow(),
     });
 
-    // Con DataTables, el tbody se reemplaza. Usamos DELEGACIÓN A NIVEL DOCUMENTO.
+    // Con DataTables, el tbody se reemplaza. Re-enlaza tras cada redraw.
     wireVisitasActions();
     jq('#tablaVisitas').on('draw.dt', wireVisitasActions);
 
@@ -221,7 +221,7 @@ function miniTimelineHTML(visitas = []) {
   if (!visitas.length) return '<div class="text-soft">Sin visitas registradas</div>';
   const filas = visitas.slice(0, 3).map((v) => {
     const code = v.centroCodigo || centroCodigoById(v.centroId) || '-';
-    const fechaStr = fmtISO(v.fecha); // <-- evita .slice en Date
+    const fechaStr = fmtISO(v.fecha); // evita .slice en Date
     return `
       <div class="row" style="margin-bottom:.35rem">
         <div class="col s4"><strong>${fechaStr || '-'}</strong></div>
@@ -257,7 +257,7 @@ export async function abrirDetalleContacto(c) {
       <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
       <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
       <div><strong>Disponibilidad:</strong> ${esc(c.tieneMMPP || '-')}</div>
-      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '-'}</div>
+      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? fmtISO(c.fechaDisponibilidad) : '-'}</div>
       <div><strong>Disposición:</strong> ${esc(c.dispuestoVender || '-')}</div>
       <div><strong>Tons aprox.:</strong> ${(c.tonsDisponiblesAprox ?? '') + ''}</div>
       <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
@@ -405,7 +405,7 @@ function wireVisitasActions() {
     jq(document).off('click.visitas');
     jq(document).on(
       'click.visitas',
-      '#tab-visitas #tablaVisitas a.v-ver, #tab-visitas #tablaVisitas a.v-nueva, #tab-visitas #tablaVisitas a.v-editar, #tab-visitas #tablaVisitas a.v-eliminar',
+      '#tablaVisitas a.v-ver, #tablaVisitas a.v-nueva, #tablaVisitas a.v-editar, #tablaVisitas a.v-eliminar',
       function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -458,10 +458,10 @@ function wireVisitasActions() {
   if (window.__visitasDocHandlerBound) return;
   document.addEventListener('click', (e) => {
     const a = e.target.closest(
-      '#tab-visitas #tablaVisitas a.v-ver, ' +
-      '#tab-visitas #tablaVisitas a.v-nueva, ' +
-      '#tab-visitas #tablaVisitas a.v-editar, ' +
-      '#tab-visitas #tablaVisitas a.v-eliminar'
+      '#tablaVisitas a.v-ver, ' +
+      '#tablaVisitas a.v-nueva, ' +
+      '#tablaVisitas a.v-editar, ' +
+      '#tablaVisitas a.v-eliminar'
     );
     if (!a) return;
 
@@ -508,4 +508,3 @@ function wireVisitasActions() {
   }, { passive: false });
   window.__visitasDocHandlerBound = true;
 }
-
