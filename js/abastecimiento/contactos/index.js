@@ -70,15 +70,15 @@ function initUIOnce() {
       onCloseEnd: () => { document.getElementById('formContacto')?.reset(); cleanupOverlays(); }
     });
 
-    const openBtn = document.getElementById('btnOpenContactoModal');
-    if (openBtn) openBtn.addEventListener('click', (e) => { e.preventDefault(); inst.open(); });
+    document.getElementById('btnOpenContactoModal')
+      ?.addEventListener('click', (e) => { e.preventDefault(); inst.open(); });
 
-    const personaBtn = document.getElementById('btnOpenPersonaModal');
-    if (personaBtn) personaBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      try { prepararNuevo(); } catch {}
-      (M.Modal.getInstance(modalContactoEl) || inst).open();
-    });
+    document.getElementById('btnOpenPersonaModal')
+      ?.addEventListener('click', (e) => {
+        e.preventDefault();
+        try { prepararNuevo(); } catch {}
+        (M.Modal.getInstance(modalContactoEl) || inst).open();
+      });
 
     modalContactoEl.querySelectorAll('.modal-close').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -108,7 +108,7 @@ function initUIOnce() {
 
   window.addEventListener('hashchange', cleanupOverlays);
 
-  // --- Lazy-load de VISITAS al hacer click en la pestaña
+  /* ---- VISITAS: init al hacer clic en el tab (soporta #tab-visitas y #visitas) ---- */
   const tabVisitas = document.querySelector('a[href="#tab-visitas"], a[href="#visitas"]');
   tabVisitas?.addEventListener('click', async () => {
     if (!visitasBooted) {
@@ -118,7 +118,7 @@ function initUIOnce() {
     adjustDT('#tablaVisitas');
   });
 
-  // --- Lazy-load de AGENDA (PERSONAS) al hacer click en la pestaña
+  /* ---- PERSONAS: init al hacer clic en el tab ---- */
   const tabPersonas = document.querySelector('a[href="#tab-personas"], a[href="#personas"]');
   tabPersonas?.addEventListener('click', async () => {
     if (!personasBooted) {
@@ -131,18 +131,27 @@ function initUIOnce() {
     adjustDT('#tablaPersonas');
   });
 
-  // Ajuste opcional al volver a EMPRESAS
+  /* ---- Ajuste al volver a EMPRESAS ---- */
   const tabContactos = document.querySelector('a[href="#tab-contactos"], a[href="#contactos"]');
   tabContactos?.addEventListener('click', () => adjustDT('#tablaContactos'));
+
+  /* ---- Watcher: si #tablaVisitas aparece en el DOM, inicializa automáticamente ---- */
+  const mo = new MutationObserver(() => {
+    if (!visitasBooted && document.getElementById('tablaVisitas')) {
+      initVisitasTab().then(() => {
+        visitasBooted = true;
+        adjustDT('#tablaVisitas');
+      }).catch(e => console.warn('[visitas] init via MO', e));
+    }
+  });
+  mo.observe(document.body, { childList: true, subtree: true });
 }
 
 export async function initContactosTab(forceReload = false) {
   if (booted && !forceReload) return;
 
   try {
-    // ⚙️ Defaults DataTables
     setDTDefaults();
-
     initUIOnce();
 
     // Datos base
@@ -154,7 +163,7 @@ export async function initContactosTab(forceReload = false) {
     setupFormulario();
     setupFormularioVisita();   // prepara el modal de visitas
 
-    // Tabla Contactos (Empresas) — esta pestaña sí se inicia visible
+    // Tabla Contactos (Empresas)
     initTablaContactos();
     renderTablaContactos();
     adjustDT('#tablaContactos');
@@ -163,7 +172,7 @@ export async function initContactosTab(forceReload = false) {
     initAsociacionContactos();
     hookGlobalListeners();
 
-    // 🧭 Si entras directo con hash a Visitas/Personas, inicializa de inmediato
+    /* 🧭 Si entras directo con hash a Visitas/Personas, inicializa de inmediato */
     if (location.hash === '#tab-visitas' || location.hash === '#visitas') {
       try { await initVisitasTab(); visitasBooted = true; } catch (e) { console.warn('[visitas] direct-hash init', e); }
       adjustDT('#tablaVisitas');
