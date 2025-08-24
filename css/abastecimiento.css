@@ -1,5 +1,5 @@
 /* =========================================
-   ABASTECIMIENTO – Overrides sobre global
+   ABASTECIMIENTO – Overrides generales
    ========================================= */
 
 /* ===== TABLAS: Contactos + Visitas ===== */
@@ -32,7 +32,7 @@
   transform: scale(1.08);
 }
 
-/* ===== CLICS EN TABLA DE VISITAS (reglas críticas) ===== */
+/* ===== CLICK en “Acciones” de VISITAS (crítico) ===== */
 #tablaVisitas a[data-action] {           /* el click entra al <a> */
   pointer-events: auto !important;
   cursor: pointer;
@@ -49,7 +49,7 @@
 /* ===== BOTONES / TOOLBAR ===== */
 #btnOpenContactoModal { margin: .25rem 0 .5rem; }
 
-/* ===== MODALES ===== */
+/* ===== MODALES (mismo look) ===== */
 #modalContacto.modal,
 #modalDetalleContacto.modal,
 #modalVisita.modal,
@@ -231,29 +231,3 @@
 
 /* ===== Fotos de visitas ===== */
 @import url('/js/abastecimiento/visitas/fotos/styles.css');
-
-/* Wrapper del botón + input “transparente” */
-.filepick-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* El input ocupa el área del botón y recibe el tap directamente */
-.filepick-input {
-  position: absolute;
-  inset: 0 auto auto 0; /* top:0; left:0 */
-  width: 100%;
-  height: 100%;
-  opacity: 0;           /* invisible pero clickeable */
-  cursor: pointer;
-  z-index: 2;
-}
-
-/* El botón queda debajo */
-#btnPickFotos { position: relative; z-index: 1; }
-
-/* Asegura que nada mate el tap dentro del modal */
-#modalVisita,
-#modalVisita * { pointer-events: auto; }
