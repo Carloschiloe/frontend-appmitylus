@@ -428,3 +428,5 @@ function manejarAccionVisita(aEl){
     M.toast?.({ html: 'Acción no disponible', classes: 'red' });
   }
 }
+
+window.initVisitasTab = initVisitasTab;
