@@ -84,13 +84,11 @@ export function forceAdjustVisitas() { adjustNow(); }
   document.head.appendChild(s);
 })();
 
-/* ========= Helper ULTRA-PRIORITARIO: dispara en pointerdown =========
-   Evita por completo que otros listeners de "click" en captura
-   maten el evento antes de que nos llegue. */
+/* ========= Helper ULTRA-PRIORITARIO: dispara en pointerdown ========= */
 function __visAction(el, ev) {
   try {
     ev?.preventDefault?.();
-    ev?.stopPropagation?.();              // no dejes que siga a otros handlers
+    ev?.stopPropagation?.();
     console.log('[visitas] pointerdown →', el?.dataset?.action, el?.dataset);
     manejarAccionVisita(el);
   } catch (err) {
@@ -106,20 +104,12 @@ function manejarAccionVisita(aEl){
 
   try {
     if (action === 'ver' || action === 'detalle') {
-      const c = (state.contactosGuardados || []).find(
-        x => String(x._id) === String(aEl.dataset.contactoId)
+      // ➜ Ver detalle de la VISITA (read-only)
+      const v = (state.visitasGuardadas || []).find(
+        x => String(x._id) === String(aEl.dataset.id)
       );
-      if (c) abrirDetalleContacto(c);
-      else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
-      return;
-    }
-
-    if (action === 'nueva' || action === 'visita') {
-      const c = (state.contactosGuardados || []).find(
-        x => String(x._id) === String(aEl.dataset.contactoId)
-      );
-      if (c) abrirModalVisita(c);
-      else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
+      if (v) abrirEditarVisita(v, true); // readOnly
+      else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
       return;
     }
 
@@ -127,7 +117,7 @@ function manejarAccionVisita(aEl){
       const v = (state.visitasGuardadas || []).find(
         x => String(x._id) === String(aEl.dataset.id)
       );
-      if (v) abrirEditarVisita(v);
+      if (v) abrirEditarVisita(v, false);
       else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
       return;
     }
@@ -147,6 +137,8 @@ function manejarAccionVisita(aEl){
       });
       return;
     }
+
+    // Nota: se elimina la acción "nueva" en la pestaña Visitas.
   } catch (err) {
     console.error('[visitas] acción error', err);
     M.toast?.({ html: 'Acción no disponible', classes: 'red' });
@@ -189,7 +181,7 @@ export async function initVisitasTab(forceReload = false) {
       drawCallback:   () => adjustNow(),
     });
 
-    // Mantengo el wiring de seguridad (por si acaso)
+    // listener de seguridad en captura (por si acaso)
     document.addEventListener('click', (e) => {
       const a = e.target.closest?.('[data-action]');
       if (!a || !a.closest?.('#tablaVisitas')) return;
@@ -245,26 +237,18 @@ export async function renderTablaVisitas() {
         ? `<span class="ellipsisCell ellipsisObs" title="${esc(obs)}">${esc(trunc(obs, 72))}</span>`
         : '—';
 
-      const cid = esc(v.contactoId || '');
       const vid = esc(v._id || '');
 
-      // Acciones: disparamos en pointerdown para esquivar capturas de click externas
+      // ⚠️ SOLO ver / editar / eliminar (sin "nueva")
       const acciones = `
-        <a href="#!" data-action="ver"      title="Ver proveedor"  data-contacto-id="${cid}"
+        <a href="#!" data-action="ver" title="Ver visita" data-id="${vid}"
            role="button"
            onpointerdown="window.__visAction && window.__visAction(this,event)"
            ontouchstart="window.__visAction && window.__visAction(this,event)"
            onclick="return false;">
           <i class="material-icons">visibility</i>
         </a>
-        <a href="#!" data-action="nueva"    title="Nueva visita"   data-contacto-id="${cid}"
-           role="button"
-           onpointerdown="window.__visAction && window.__visAction(this,event)"
-           ontouchstart="window.__visAction && window.__visAction(this,event)"
-           onclick="return false;">
-          <i class="material-icons">event_available</i>
-        </a>
-        <a href="#!" data-action="editar"   title="Editar visita"  data-id="${vid}"
+        <a href="#!" data-action="editar" title="Editar visita" data-id="${vid}"
            role="button"
            onpointerdown="window.__visAction && window.__visAction(this,event)"
            ontouchstart="window.__visAction && window.__visAction(this,event)"
@@ -405,7 +389,8 @@ export function abrirModalVisita(contacto) {
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
-async function abrirEditarVisita(v) {
+/** Abre el modal de visita en modo edición o solo lectura */
+async function abrirEditarVisita(v, readOnly = false) {
   const form = $('#formVisita'); if (!form) return;
   form.dataset.editId = String(v._id || '');
 
@@ -438,7 +423,31 @@ async function abrirEditarVisita(v) {
   M.updateTextFields();
   resetFotosModal();
   await renderGallery(v._id);
-  (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
+
+  const modal = M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'));
+  modal.open();
+
+  // —— Modo ReadOnly (para "ver") ——
+  const inputs = form.querySelectorAll('input, select, textarea, button, label input');
+  const btnSave = form.querySelector('button[type="submit"]');
+  const fotosActions = document.querySelector('#visita_fotos .fotos-actions');
+  const closeBtn = form.closest('.modal-content')?.parentElement?.querySelector('.modal-close');
+
+  if (readOnly) {
+    inputs.forEach(el => {
+      if (el.type !== 'button') el.setAttribute('disabled', 'disabled');
+    });
+    if (btnSave) btnSave.style.display = 'none';
+    if (fotosActions) fotosActions.style.display = 'none';
+    if (closeBtn) closeBtn.textContent = 'Cerrar';
+    document.querySelector('#modalVisita h5')?.replaceChildren(document.createTextNode('Detalle de visita'));
+  } else {
+    inputs.forEach(el => el.removeAttribute('disabled'));
+    if (btnSave) btnSave.style.display = '';
+    if (fotosActions) fotosActions.style.display = '';
+    if (closeBtn) closeBtn.textContent = 'Cancelar';
+    document.querySelector('#modalVisita h5')?.replaceChildren(document.createTextNode('Registrar visita'));
+  }
 }
 
 export function setupFormularioVisita() {
