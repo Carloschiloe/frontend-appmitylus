@@ -86,6 +86,40 @@ export function forceAdjustVisitas() { adjustNow(); }
   document.head.appendChild(s);
 })();
 
+function wireClicksOnce() {
+  if (window.__visitasClicksWired) return;
+  window.__visitasClicksWired = true;
+
+  // 1) Global CAPTURE: nada lo bloquea aunque haya stopPropagation
+  const globalHandler = (e) => {
+    const a = e.target.closest('[data-action]');
+    if (!a) return;
+
+    // asegúrate que pertenece a la tabla de visitas
+    const tbl = a.closest('#tablaVisitas');
+    if (!tbl) return;
+
+    e.preventDefault();
+    console.log('[visitas] (capture) click → action=%s  dataset=%o', a.dataset.action, a.dataset);
+    manejarAccionVisita(a);
+  };
+  document.addEventListener('click', globalHandler, true); // capture=true
+
+  // 2) Fallback: listener directo sobre la tabla (bubbling)
+  const tbl = document.getElementById('tablaVisitas');
+  if (tbl) {
+    tbl.addEventListener('click', (e) => {
+      const a = e.target.closest('[data-action]');
+      if (!a) return;
+      e.preventDefault();
+      console.log('[visitas] (bubble) click → action=%s  dataset=%o', a.dataset.action, a.dataset);
+      manejarAccionVisita(a);
+    });
+  }
+
+  console.log('[visitas] wiring de clicks listo. tabla?', !!tbl);
+}
+
 export async function initVisitasTab(forceReload = false) {
   const jq = window.jQuery || window.$;
   const tabla = $('#tablaVisitas');
@@ -120,18 +154,7 @@ export async function initVisitasTab(forceReload = false) {
       drawCallback:   () => adjustNow(),
     });
 
-    // --- wiring de clicks (global y solo 1 vez) ---
-    if (!window.__visitasClicksWired) {
-      window.__visitasClicksWired = true;
-      document.addEventListener('click', (e) => {
-        const a = e.target.closest('#tablaVisitas [data-action]');
-        if (!a) return;
-        e.preventDefault();
-        console.log('[visitas] click capturado → action=%s  dataset=%o', a.dataset.action, a.dataset);
-        manejarAccionVisita(a);
-      });
-    }
-
+    wireClicksOnce();
     window.addEventListener('resize', adjustNow);
   }
 
