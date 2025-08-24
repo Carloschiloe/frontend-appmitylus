@@ -84,7 +84,22 @@ export function forceAdjustVisitas() { adjustNow(); }
   document.head.appendChild(s);
 })();
 
-/* ================== Delegación a prueba de balas ================== */
+/* ========= Helper ULTRA-PRIORITARIO: dispara en pointerdown =========
+   Evita por completo que otros listeners de "click" en captura
+   maten el evento antes de que nos llegue. */
+function __visAction(el, ev) {
+  try {
+    ev?.preventDefault?.();
+    ev?.stopPropagation?.();              // no dejes que siga a otros handlers
+    console.log('[visitas] pointerdown →', el?.dataset?.action, el?.dataset);
+    manejarAccionVisita(el);
+  } catch (err) {
+    console.warn('[visitas] __visAction error', err);
+  }
+}
+window.__visAction = __visAction;
+
+/* ================== Delegación / acciones ================== */
 function manejarAccionVisita(aEl){
   const action = (aEl?.dataset?.action || '').toLowerCase();
   console.log('[visitas] manejarAccionVisita()', action, aEl?.dataset);
@@ -137,38 +152,7 @@ function manejarAccionVisita(aEl){
     M.toast?.({ html: 'Acción no disponible', classes: 'red' });
   }
 }
-
-// expón para fallback inline + pruebas
 window.manejarAccionVisita = manejarAccionVisita;
-
-function wireClicksOnce(){
-  if (window.__visitasClicksWired) return;
-  window.__visitasClicksWired = true;
-
-  // 1) CAPTURE global: nada lo bloquea
-  document.addEventListener('click', (e) => {
-    const a = e.target.closest('[data-action]');
-    if (!a) return;
-    if (!a.closest('#tablaVisitas')) return;
-    e.preventDefault();
-    console.log('[visitas] (capture) click → action=%s  dataset=%o', a.dataset.action, a.dataset);
-    manejarAccionVisita(a);
-  }, true);
-
-  // 2) BUBBLE local: por si acaso
-  const tbl = document.getElementById('tablaVisitas');
-  if (tbl) {
-    tbl.addEventListener('click', (e) => {
-      const a = e.target.closest('[data-action]');
-      if (!a) return;
-      e.preventDefault();
-      console.log('[visitas] (bubble) click → action=%s  dataset=%o', a.dataset.action, a.dataset);
-      manejarAccionVisita(a);
-    });
-  }
-
-  console.log('[visitas] wiring de clicks listo. tabla?', !!tbl);
-}
 
 /* ================== Init / Render ================== */
 export async function initVisitasTab(forceReload = false) {
@@ -205,7 +189,15 @@ export async function initVisitasTab(forceReload = false) {
       drawCallback:   () => adjustNow(),
     });
 
-    wireClicksOnce();
+    // Mantengo el wiring de seguridad (por si acaso)
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest?.('[data-action]');
+      if (!a || !a.closest?.('#tablaVisitas')) return;
+      e.preventDefault();
+      console.log('[visitas] (capture) click →', a.dataset.action);
+      manejarAccionVisita(a);
+    }, true);
+
     window.addEventListener('resize', adjustNow);
   }
 
@@ -256,22 +248,34 @@ export async function renderTablaVisitas() {
       const cid = esc(v.contactoId || '');
       const vid = esc(v._id || '');
 
-      // Acciones con fallback inline (onclick)
+      // Acciones: disparamos en pointerdown para esquivar capturas de click externas
       const acciones = `
         <a href="#!" data-action="ver"      title="Ver proveedor"  data-contacto-id="${cid}"
-           onclick="window.manejarAccionVisita && window.manejarAccionVisita(this)">
+           role="button"
+           onpointerdown="window.__visAction && window.__visAction(this,event)"
+           ontouchstart="window.__visAction && window.__visAction(this,event)"
+           onclick="return false;">
           <i class="material-icons">visibility</i>
         </a>
         <a href="#!" data-action="nueva"    title="Nueva visita"   data-contacto-id="${cid}"
-           onclick="window.manejarAccionVisita && window.manejarAccionVisita(this)">
+           role="button"
+           onpointerdown="window.__visAction && window.__visAction(this,event)"
+           ontouchstart="window.__visAction && window.__visAction(this,event)"
+           onclick="return false;">
           <i class="material-icons">event_available</i>
         </a>
         <a href="#!" data-action="editar"   title="Editar visita"  data-id="${vid}"
-           onclick="window.manejarAccionVisita && window.manejarAccionVisita(this)">
+           role="button"
+           onpointerdown="window.__visAction && window.__visAction(this,event)"
+           ontouchstart="window.__visAction && window.__visAction(this,event)"
+           onclick="return false;">
           <i class="material-icons">edit</i>
         </a>
         <a href="#!" data-action="eliminar" title="Eliminar visita" data-id="${vid}"
-           onclick="window.manejarAccionVisita && window.manejarAccionVisita(this)">
+           role="button"
+           onpointerdown="window.__visAction && window.__visAction(this,event)"
+           ontouchstart="window.__visAction && window.__visAction(this,event)"
+           onclick="return false;">
           <i class="material-icons">delete</i>
         </a>
       `;
@@ -488,5 +492,5 @@ export function setupFormularioVisita() {
   });
 }
 
-// Exponer por si necesitas llamarlo desde consola
+// Exponer por consola si se requiere
 window.initVisitasTab = initVisitasTab;
