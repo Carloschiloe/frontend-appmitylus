@@ -4,11 +4,14 @@ import * as fotos from './service.js';
 let mounted = false;
 let pendingFiles = [];
 
+// 🔁 SELECTORES CORREGIDOS: el input real es #visita_fotos_input
 const SEL = {
-  input:   '#visita_fotos',
-  preview: '#visita_fotos_preview',   // pendientes
-  gallery: '#visita_fotos_gallery',   // guardadas
+  input:   '#visita_fotos_input',   // ⬅️ antes apuntaba al <div id="visita_fotos">
+  preview: '#visita_fotos_preview', // pendientes
+  gallery: '#visita_fotos_gallery', // guardadas
+  btn:     '#btnPickFotos',         // botón visible (opcional)
 };
+
 const $ = (s) => document.querySelector(s);
 
 function thumbHTML(src, title, actions=''){
@@ -61,11 +64,25 @@ export async function renderGallery(visitId){
 
 export function mountFotosUIOnce(){
   if (mounted) return; mounted = true;
+
   const input = $(SEL.input);
+  const btn = $(SEL.btn);
+
+  // 1) Cambio en el INPUT correcto ✅
   if (input){
     input.addEventListener('change', ()=>{
       pendingFiles = Array.from(input.files || []);
       renderPending();
+    }, { passive: true });
+  } else {
+    console.warn('[fotos] No se encontró', SEL.input);
+  }
+
+  // 2) (Opcional) click en el botón visible dispara el picker
+  if (btn && input){
+    btn.addEventListener('click', (e)=>{
+      // En iOS esto funciona porque proviene de interacción directa
+      input.click();
     });
   }
 }
@@ -74,6 +91,8 @@ export function resetFotosModal(){
   pendingFiles = [];
   $(SEL.preview)?.replaceChildren();
   $(SEL.gallery)?.replaceChildren();
+  const input = $(SEL.input);
+  if (input) input.value = '';
 }
 
 export async function handleFotosAfterSave(visitId){
