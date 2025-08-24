@@ -17,7 +17,7 @@ import { initPersonasTab, renderTablaPersonas } from './personas.js';
 import { initFiltrosYKPIsPersonas } from './filtros-kpis-personas.js';
 
 // Visitas
-import { setupFormularioVisita, initVisitasTab } from '../visitas/tab.js';
+import { setupFormularioVisita, initVisitasTab, abrirDetalleContacto, abrirModalVisita } from '../visitas/tab.js';
 
 let booted = false;
 let listenersHooked = false;
@@ -207,3 +207,7 @@ function hookGlobalListeners() {
 document.addEventListener('DOMContentLoaded', () => {
   initContactosTab().catch(console.error);
 });
+
+// ✅ Agregado para que los botones puedan abrir contenido de los modales
+window.abrirDetalleContacto = abrirDetalleContacto;
+window.abrirModalVisita = abrirModalVisita;
