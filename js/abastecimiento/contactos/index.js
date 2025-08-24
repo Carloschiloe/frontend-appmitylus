@@ -1,3 +1,5 @@
+// /js/abastecimiento/contactos/index.js
+
 // Evita romper el build en Vercel
 try {
   if (typeof window !== 'undefined' &&
@@ -6,6 +8,7 @@ try {
   }
 } catch {}
 
+/* ======================= Imports ======================= */
 import { cargarCentros, cargarContactosGuardados } from './data.js';
 import { setupBuscadorProveedores } from './proveedores.js';
 import { setupFormulario, prepararNuevo } from './form-contacto.js';
@@ -19,12 +22,13 @@ import { initFiltrosYKPIsPersonas } from './filtros-kpis-personas.js';
 // Visitas
 import { setupFormularioVisita, initVisitasTab, abrirDetalleContacto, abrirModalVisita } from '../visitas/tab.js';
 
+/* ======================= Estado ======================= */
 let booted = false;
 let listenersHooked = false;
 let visitasBooted = false;
 let personasBooted = false;
 
-/* ======================= DataTables defaults ======================= */
+/* ======================= Util: DataTables defaults ======================= */
 function setDTDefaults() {
   const $ = window.jQuery || window.$;
   if (!$ || !$.fn || !$.fn.dataTable) return;
@@ -47,7 +51,21 @@ function adjustDT(selector) {
   }
 }
 
-/* ---------------- UI: tabs + modales (una sola vez) ---------------- */
+/* ======================= Util: limpiar overlays “pegados” ======================= */
+function nukeStuckOverlays() {
+  // Quita overlays de Materialize si quedaron colgando
+  document.querySelectorAll('.modal-overlay, .sidenav-overlay').forEach(el => el.remove());
+  // Cierra y oculta modales que hayan quedado con .open
+  document.querySelectorAll('.modal.open').forEach(el => {
+    try { M.Modal.getInstance(el)?.close(); } catch {}
+    el.classList.remove('open');
+    el.style.display = 'none';
+  });
+  // Desbloquea el scroll por seguridad
+  document.body.style.overflow = '';
+}
+
+/* ======================= UI: tabs + modales (init una sola vez) ======================= */
 function initUIOnce() {
   if (!window.M) return;
 
@@ -70,14 +88,15 @@ function initUIOnce() {
           adjustDT('#tablaPersonas');
         }
         if (id.includes('contacto')) adjustDT('#tablaContactos');
+        // por si cambia de tab con un overlay colgado
+        nukeStuckOverlays();
       }
     });
   }
 
   // Limpia overlays de Materialize al cerrar modales o cambiar hash
   const cleanupOverlays = () => {
-    document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-    document.body.style.overflow = '';
+    nukeStuckOverlays();
   };
 
   // Modal Registrar Contacto / Persona
@@ -95,14 +114,11 @@ function initUIOnce() {
     });
   }
 
-  // Otros modales: se inicializan una vez, pero la apertura la maneja tab.js
-['modalDetalleContacto','modalVisita','modalAsociar'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el && !M.Modal.getInstance(el)) {
-    M.Modal.init(el, { onCloseEnd: cleanupOverlays });
-  }
-});
-
+  // Otros modales
+  ['modalDetalleContacto','modalVisita','modalAsociar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) M.Modal.getInstance(el) || M.Modal.init(el, { onCloseEnd: cleanupOverlays });
+  });
 
   window.addEventListener('hashchange', cleanupOverlays);
 
@@ -111,6 +127,7 @@ function initUIOnce() {
     ?.addEventListener('click', async () => {
       if (!visitasBooted) { await initVisitasTab().catch(()=>{}); visitasBooted = true; }
       adjustDT('#tablaVisitas');
+      nukeStuckOverlays();
     });
 
   document.querySelector('a[href="#tab-personas"], a[href="#personas"]')
@@ -121,12 +138,17 @@ function initUIOnce() {
         personasBooted = true;
       }
       adjustDT('#tablaPersonas');
+      nukeStuckOverlays();
     });
 
   document.querySelector('a[href="#tab-contactos"], a[href="#contactos"]')
-    ?.addEventListener('click', () => adjustDT('#tablaContactos'));
+    ?.addEventListener('click', () => { adjustDT('#tablaContactos'); nukeStuckOverlays(); });
+
+  // Limpieza inicial por si llegó la página con algo pegado
+  nukeStuckOverlays();
 }
 
+/* ======================= Boot principal ======================= */
 export async function initContactosTab(forceReload = false) {
   if (booted && !forceReload) return;
 
@@ -147,6 +169,7 @@ export async function initContactosTab(forceReload = false) {
     initTablaContactos();
     renderTablaContactos();
     adjustDT('#tablaContactos');
+    nukeStuckOverlays();
 
     // Asociación y listeners globales
     initAsociacionContactos();
@@ -165,6 +188,7 @@ export async function initContactosTab(forceReload = false) {
       adjustDT('#tablaPersonas');
     }
 
+    nukeStuckOverlays();
     booted = true;
   } catch (err) {
     console.error('[contactos] init error', err);
@@ -172,6 +196,7 @@ export async function initContactosTab(forceReload = false) {
   }
 }
 
+/* ======================= Listeners globales ======================= */
 function hookGlobalListeners() {
   if (listenersHooked) return;
 
@@ -184,6 +209,7 @@ function hookGlobalListeners() {
       renderTablaPersonas?.();
       adjustDT('#tablaContactos');
       if (personasBooted) adjustDT('#tablaPersonas');
+      nukeStuckOverlays();
     } catch (e) {
       console.error(e);
       M.toast?.({ html: 'No se pudo refrescar', classes: 'red' });
@@ -194,6 +220,7 @@ function hookGlobalListeners() {
     if (visitasBooted) {
       try { await initVisitasTab(true); } catch {}
       adjustDT('#tablaVisitas');
+      nukeStuckOverlays();
     }
   });
 
@@ -206,12 +233,15 @@ function hookGlobalListeners() {
   listenersHooked = true;
 }
 
-// Arranque
+/* ======================= Arranque ======================= */
 document.addEventListener('DOMContentLoaded', () => {
   initContactosTab().catch(console.error);
 });
 
-// ✅ Agregado para que los botones puedan abrir contenido de los modales
+/* ======================= Exponer helpers a window ======================= */
+// Para que los botones externos (o llamados inline) puedan abrir los modales correctos
 window.abrirDetalleContacto = abrirDetalleContacto;
 window.abrirModalVisita = abrirModalVisita;
 
+// Por si quieres forzar la limpieza desde consola
+window.nukeStuckOverlays = nukeStuckOverlays;
