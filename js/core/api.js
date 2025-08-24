@@ -2,7 +2,7 @@
 
 // 👉 Opción simple: detecta local vs producción
 // /js/core/api.js
-const API_URL = 'https://backend-appmitylus.vercel.app/api';
+const API_URL = '/api';
 
 /* ===================== Helpers comunes ===================== */
 
