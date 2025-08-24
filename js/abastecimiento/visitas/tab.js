@@ -90,22 +90,18 @@ function wireClicksOnce() {
   if (window.__visitasClicksWired) return;
   window.__visitasClicksWired = true;
 
-  // 1) Global CAPTURE: nada lo bloquea aunque haya stopPropagation
+  // 1) Global CAPTURE (nada lo bloquea aunque tengan stopPropagation)
   const globalHandler = (e) => {
     const a = e.target.closest('[data-action]');
     if (!a) return;
-
-    // asegúrate que pertenece a la tabla de visitas
-    const tbl = a.closest('#tablaVisitas');
-    if (!tbl) return;
-
+    if (!a.closest('#tablaVisitas')) return;
     e.preventDefault();
     console.log('[visitas] (capture) click → action=%s  dataset=%o', a.dataset.action, a.dataset);
     manejarAccionVisita(a);
   };
-  document.addEventListener('click', globalHandler, true); // capture=true
+  document.addEventListener('click', globalHandler, true);
 
-  // 2) Fallback: listener directo sobre la tabla (bubbling)
+  // 2) Fallback local (bubble) por si acaso
   const tbl = document.getElementById('tablaVisitas');
   if (tbl) {
     tbl.addEventListener('click', (e) => {
@@ -203,11 +199,25 @@ export async function renderTablaVisitas() {
 
       const cid = esc(v.contactoId || '');
       const vid = esc(v._id || '');
+
+      // 👇👇👇 AQUI EL INLINE FALLBACK CON onclick 👇👇👇
       const acciones = `
-        <a href="#!" data-action="ver"      title="Ver proveedor"  data-contacto-id="${cid}"><i class="material-icons">visibility</i></a>
-        <a href="#!" data-action="nueva"    title="Nueva visita"   data-contacto-id="${cid}"><i class="material-icons">event_available</i></a>
-        <a href="#!" data-action="editar"   title="Editar visita"  data-id="${vid}"><i class="material-icons">edit</i></a>
-        <a href="#!" data-action="eliminar" title="Eliminar visita" data-id="${vid}"><i class="material-icons">delete</i></a>
+        <a href="#!" data-action="ver"      title="Ver proveedor"  data-contacto-id="${cid}"
+           onclick="window.manejarAccionVisita && window.manejarAccionVisita(this)">
+          <i class="material-icons">visibility</i>
+        </a>
+        <a href="#!" data-action="nueva"    title="Nueva visita"   data-contacto-id="${cid}"
+           onclick="window.manejarAccionVisita && window.manejarAccionVisita(this)">
+          <i class="material-icons">event_available</i>
+        </a>
+        <a href="#!" data-action="editar"   title="Editar visita"  data-id="${vid}"
+           onclick="window.manejarAccionVisita && window.manejarAccionVisita(this)">
+          <i class="material-icons">edit</i>
+        </a>
+        <a href="#!" data-action="eliminar" title="Eliminar visita" data-id="${vid}"
+           onclick="window.manejarAccionVisita && window.manejarAccionVisita(this)">
+          <i class="material-icons">delete</i>
+        </a>
       `;
 
       return [
