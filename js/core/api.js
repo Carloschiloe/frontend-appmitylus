@@ -1,6 +1,5 @@
 // /js/core/api.js
-const API_URL = (typeof window!=='undefined' && window.__CONFIG__?.API_URL) || 'https://backend-appmitylus-production.up.railway.app/api';
-
+const API_URL = '/api';
 /* ===================== Helpers comunes ===================== */
 
 // Respuesta segura (tolera 204 y respuestas sin body)
