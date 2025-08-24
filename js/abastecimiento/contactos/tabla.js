@@ -3,14 +3,21 @@ import { state, $ } from './state.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto, abrirModalVisita } from '../visitas/tab.js';
 
-/* ---------- estilos: columna proveedor angosta + ellipsis ---------- */
+/* ---------- estilos: columna proveedor angosta + ellipsis + click seguro ---------- */
 (function injectStyles () {
   const css = `
     #tablaContactos td .ellipsisCell{
       display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle;
     }
-    /* ~mitad de lo que tenías: angosta y con puntos suspensivos */
     #tablaContactos td .ellipsisProv{ max-width:26ch; }
+
+    /* clicks seguros en acciones */
+    #tablaContactos td:last-child a.icon-action { 
+      pointer-events:auto; cursor:pointer; display:inline-block; margin:0 6px;
+    }
+    #tablaContactos td:last-child a.icon-action i.material-icons{
+      pointer-events:none; font-size:18px; vertical-align:middle;
+    }
   `;
   if (!document.getElementById('tabla-contactos-inline-styles')) {
     const s = document.createElement('style');
@@ -45,68 +52,82 @@ function getComunaByCodigo(codigo) {
   return ct?.comuna ?? ct?.Comuna ?? '';
 }
 
+/* ===== handler único expuesto para fallback inline ===== */
+function _clickAccContacto(aEl){
+  try{
+    const id = aEl?.dataset?.id;
+    const cls = (aEl?.className || '').toLowerCase();
+    console.log('[contactos] click inline →', cls, 'id=', id);
+
+    if (cls.includes('ver')) {
+      const c = state.contactosGuardados.find(x => String(x._id) === String(id));
+      if (c) abrirDetalleContacto(c); else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
+      return;
+    }
+    if (cls.includes('visita')) {
+      const c = state.contactosGuardados.find(x => String(x._id) === String(id));
+      if (c) abrirModalVisita(c); else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
+      return;
+    }
+    if (cls.includes('editar')) {
+      const c = state.contactosGuardados.find(x => String(x._id) === String(id));
+      if (c) abrirEdicion(c);
+      return;
+    }
+    if (cls.includes('eliminar')) {
+      if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
+      eliminarContacto(id).catch(e=>{
+        console.error(e);
+        M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000, classes: 'red' });
+      });
+      return;
+    }
+  }catch(err){
+    console.error('[contactos] error en _clickAccContacto', err);
+  }
+}
+window._clickAccContacto = _clickAccContacto;
+
 /* --------------------------------- DataTables --------------------------------- */
 export function initTablaContactos() {
   const jq = window.jQuery || window.$;
-  const tabla = $('#tablaContactos');
-  if (!jq || !tabla) return;
+  const tablaEl = $('#tablaContactos');
+  if (!jq || !tablaEl) return;
   if (state.dt) return;
 
   state.dt = jq('#tablaContactos').DataTable({
-  dom: 'Blfrtip',
-  buttons: [
-    { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
-    { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
-  ],
-  order: [[0,'desc']],
-  paging: true,
-  pageLength: 10,
-  lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, 'Todos'] ],
-  autoWidth: false,
-  responsive: true,   // 👈 añade esto
-  scrollX: false,     // 👈 asegura que no meta scroll horizontal
-  language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-  columnDefs: [
-    { targets: 0, width: '110px' },   // Fecha (ancho fijo)
-    { targets: 1, width: '260px' },   // Proveedor (angosta + elipsis)
-    { targets: -1, orderable: false, searchable: false }
-  ]
-});
+    dom: 'Blfrtip',
+    buttons: [
+      { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
+      { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
+    ],
+    order: [[0,'desc']],
+    paging: true,
+    pageLength: 10,
+    lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, 'Todos'] ],
+    autoWidth: false,
+    responsive: true,
+    scrollX: false,
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+    columnDefs: [
+      { targets: 0, width: '110px' },
+      { targets: 1, width: '260px' },
+      { targets: -1, orderable: false, searchable: false }
+    ]
+  });
 
-  // Delegación de acciones
+  // Delegación de acciones (bubbling)
   jq('#tablaContactos tbody')
-    .on('click', 'a.icon-action.ver', function(){
-      const id = this.dataset.id;
-      const c = state.contactosGuardados.find(x => String(x._id) === String(id));
-      if (c) abrirDetalleContacto(c);
-    })
-    .on('click', 'a.icon-action.visita', function(){
-      const id = this.dataset.id;
-      const c = state.contactosGuardados.find(x => String(x._id) === String(id));
-      if (c) abrirModalVisita(c);
-    })
-    .on('click', 'a.icon-action.editar', function(){
-      const id = this.dataset.id;
-      const c = state.contactosGuardados.find(x => String(x._id) === String(id));
-      if (c) abrirEdicion(c);
-    })
-    .on('click', 'a.icon-action.eliminar', async function(){
-      const id = this.dataset.id;
-      if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
-      try { await eliminarContacto(id); }
-      catch (e) {
-        console.error(e);
-        M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 });
-      }
+    .off('click.contactos')
+    .on('click.contactos', 'a.icon-action', function(e){
+      e.preventDefault();
+      console.log('[contactos] delegación →', this.className, 'id=', this.dataset.id);
+      _clickAccContacto(this);
     });
 
-  // 🔁 refresco en vivo cuando otros módulos disparan reload
-  document.addEventListener('reload-tabla-contactos', () => {
-    console.debug('[tablaContactos] reload-tabla-contactos recibido');
-    renderTablaContactos();
-  });
+  // Log útil
+  console.log('[contactos] DataTable lista. filas=', state.dt.rows().count());
 }
-
 
 /* ------------------------------- Render de filas -------------------------------- */
 export function renderTablaContactos() {
@@ -139,7 +160,7 @@ export function renderTablaContactos() {
         centroCodigo = getCodigoByCentroId(c.centroId) || '';
       }
 
-      // Comuna: usa lo guardado; si falta, dedúcela por código
+      // Comuna
       const comuna = c.centroComuna || c.comuna || getComunaByCodigo(centroCodigo) || '';
 
       // Proveedor con ellipsis + tooltip
@@ -148,17 +169,22 @@ export function renderTablaContactos() {
         ? `<span class="ellipsisCell ellipsisProv" title="${provName}">${provName}</span>`
         : '';
 
+      // 👇 acciones con fallback inline
       const acciones = `
-        <a href="#!" class="icon-action ver" title="Ver detalle" data-id="${c._id}">
+        <a href="#!" class="icon-action ver" title="Ver detalle" data-id="${c._id}"
+           onclick="window._clickAccContacto && window._clickAccContacto(this)">
           <i class="material-icons">visibility</i>
         </a>
-        <a href="#!" class="icon-action visita" title="Registrar visita" data-id="${c._id}">
+        <a href="#!" class="icon-action visita" title="Registrar visita" data-id="${c._id}"
+           onclick="window._clickAccContacto && window._clickAccContacto(this)">
           <i class="material-icons">event_available</i>
         </a>
-        <a href="#!" class="icon-action editar" title="Editar" data-id="${c._id}">
+        <a href="#!" class="icon-action editar" title="Editar" data-id="${c._id}"
+           onclick="window._clickAccContacto && window._clickAccContacto(this)">
           <i class="material-icons">edit</i>
         </a>
-        <a href="#!" class="icon-action eliminar" title="Eliminar" data-id="${c._id}">
+        <a href="#!" class="icon-action eliminar" title="Eliminar" data-id="${c._id}"
+           onclick="window._clickAccContacto && window._clickAccContacto(this)">
           <i class="material-icons">delete</i>
         </a>
       `;
@@ -181,10 +207,11 @@ export function renderTablaContactos() {
   if (state.dt && jq) {
     state.dt.clear();
     state.dt.rows.add(filas).draw(false);
+    console.log('[contactos] filas renderizadas:', filas.length);
     return;
-  }
+    }
 
-  // Fallback sin DataTables (no debería usarse en producción)
+  // Fallback sin DataTables
   const tbody = $('#tablaContactos tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -199,4 +226,8 @@ export function renderTablaContactos() {
   });
 }
 
-
+/* 🔁 refresco en vivo cuando otros módulos disparan reload */
+document.addEventListener('reload-tabla-contactos', () => {
+  console.debug('[tablaContactos] reload-tabla-contactos recibido');
+  renderTablaContactos();
+});
