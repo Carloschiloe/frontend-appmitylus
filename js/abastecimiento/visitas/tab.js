@@ -21,7 +21,7 @@ console.log('[visitas] tab.js cargado');
 
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
-// ---------------- utils ----------------
+// ---------- utils ----------
 const esc = (s = '') =>
   String(s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -50,10 +50,30 @@ function codigoDeVisita(v) {
   return v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '') || '';
 }
 
-// ---------------- DataTable ----------------
+// ---------- Modal safe open helper ----------
+function openModalByIdSafe(id) {
+  const el = document.getElementById(id);
+  if (!el) { console.error('[modal] no existe:', id); return null; }
+  let inst = M.Modal.getInstance(el);
+  if (!inst) {
+    try {
+      inst = M.Modal.init(el, { dismissible: true, opacity: 0.5, inDuration: 250, outDuration: 250 });
+    } catch (e) {
+      console.error('[modal] init error', e);
+      return null;
+    }
+  }
+  // dar un tick al layout antes de abrir
+  setTimeout(() => {
+    try { inst.open(); }
+    catch (e) { console.error('[modal] open error', e); }
+  }, 0);
+  return inst;
+}
+
+// ---------- DataTable ----------
 let dtV = null;
 
-// pequeño throttle para no recalcular columnas de más
 const rafThrottle = (fn) => {
   let t = 0;
   return (...args) => {
@@ -90,7 +110,7 @@ function wireClicksOnce() {
   if (window.__visitasClicksWired) return;
   window.__visitasClicksWired = true;
 
-  // 1) Global CAPTURE (nada lo bloquea aunque tengan stopPropagation)
+  // Global CAPTURE
   const globalHandler = (e) => {
     const a = e.target.closest('[data-action]');
     if (!a) return;
@@ -101,7 +121,7 @@ function wireClicksOnce() {
   };
   document.addEventListener('click', globalHandler, true);
 
-  // 2) Fallback local (bubble) por si acaso
+  // Fallback local (bubble)
   const tbl = document.getElementById('tablaVisitas');
   if (tbl) {
     tbl.addEventListener('click', (e) => {
@@ -157,14 +177,13 @@ export async function initVisitasTab(forceReload = false) {
   await renderTablaVisitas();
   adjustNow();
 
-  // estos listeners podrían acumularse si llamas muchas veces initVisitasTab; si es tu caso, muévelos fuera y pon {once:true}
   window.addEventListener('visita:created', async () => { await renderTablaVisitas(); adjustNow(); });
   window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); adjustNow(); });
 
   console.log('[visitas] initVisitasTab listo. dtV?', !!dtV);
 }
 
-// ---------------- render ----------------
+// ---------- render ----------
 export async function renderTablaVisitas() {
   const jq = window.jQuery || window.$;
 
@@ -200,7 +219,7 @@ export async function renderTablaVisitas() {
       const cid = esc(v.contactoId || '');
       const vid = esc(v._id || '');
 
-      // 👇👇👇 AQUI EL INLINE FALLBACK CON onclick 👇👇👇
+      // Inline fallback (onclick) + data-action
       const acciones = `
         <a href="#!" data-action="ver"      title="Ver proveedor"  data-contacto-id="${cid}"
            onclick="window.manejarAccionVisita && window.manejarAccionVisita(this)">
@@ -247,7 +266,7 @@ export async function renderTablaVisitas() {
     : '<tr><td colspan="8" style="color:#888">No hay visitas registradas.</td></tr>';
 }
 
-// ---------------- Detalle + Modales ----------------
+// ---------- Detalle + Modales ----------
 function comunasDelProveedor(proveedorKey) {
   const key = proveedorKey?.length ? proveedorKey : null;
   const comunas = new Set();
@@ -279,69 +298,86 @@ function miniTimelineHTML(visitas = []) {
 }
 
 export async function abrirDetalleContacto(c) {
-  const body = $('#detalleContactoBody'); if (!body) return;
+  try {
+    console.log('[detalleContacto] abrir para:', c && c._id, c && c.proveedorNombre);
 
-  const f = new Date(c.createdAt || c.fecha || Date.now());
-  const fechaFmt = `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')} ${String(f.getHours()).padStart(2,'0')}:${String(f.getMinutes()).padStart(2,'0')}`;
+    const body = $('#detalleContactoBody'); 
+    if (!body) { console.error('[detalleContacto] #detalleContactoBody no encontrado'); return; }
 
-  const comunas = comunasDelProveedor(c.proveedorKey || slug(c.proveedorNombre||''));
-  const chips = comunas.length
-    ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${esc(x)}</span>`).join('')
-    : '<span class="text-soft">Sin centros asociados</span>';
+    const f = new Date(c.createdAt || c.fecha || Date.now());
+    const fechaFmt = `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')} ${String(f.getHours()).padStart(2,'0')}:${String(f.getMinutes()).padStart(2,'0')}`;
 
-  const visitas = normalizeVisitas(await apiGetVisitasByContacto(c._id));
+    const comunas = comunasDelProveedor(c.proveedorKey || slug(c.proveedorNombre||''));
+    const chips = comunas.length
+      ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${esc(x)}</span>`).join('')
+      : '<span class="text-soft">Sin centros asociados</span>';
 
-  body.innerHTML = `
-    <div class="mb-4">
-      <h6 class="text-soft" style="margin:0 0 .5rem">Comunas con centros del proveedor</h6>
-      ${chips}
-    </div>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-      <div><strong>Fecha:</strong> ${fechaFmt}</div>
-      <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
-      <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
-      <div><strong>Disponibilidad:</strong> ${esc(c.tieneMMPP || '-')}</div>
-      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '-'}</div>
-      <div><strong>Disposición:</strong> ${esc(c.dispuestoVender || '-')}</div>
-      <div><strong>Tons aprox.:</strong> ${(c.tonsDisponiblesAprox ?? '') + ''}</div>
-      <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
-      <div style="grid-column:1/-1;"><strong>Notas:</strong> ${c.notas ? esc(c.notas) : '<span class="text-soft">Sin notas</span>'}</div>
-      <div style="grid-column:1/-1;"><strong>Contacto:</strong> ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).map(esc).join(' • ') || '-'}</div>
-    </div>
-    <div class="mb-4" style="margin-top:1rem;">
-      <h6 class="text-soft" style="margin:0 0 .5rem">Últimas visitas</h6>
-      ${miniTimelineHTML(visitas)}
-    </div>
-    <div class="right-align">
-      <button class="btn teal" id="btnNuevaVisita" data-id="${c._id}">
-        <i class="material-icons left">event_available</i>Registrar visita
-      </button>
-    </div>
-  `;
-  $('#btnNuevaVisita')?.addEventListener('click', () => abrirModalVisita(c));
-  (M.Modal.getInstance(document.getElementById('modalDetalleContacto')) || M.Modal.init(document.getElementById('modalDetalleContacto'))).open();
+    const visitas = normalizeVisitas(await apiGetVisitasByContacto(c._id));
+
+    body.innerHTML = `
+      <div class="mb-4">
+        <h6 class="text-soft" style="margin:0 0 .5rem">Comunas con centros del proveedor</h6>
+        ${chips}
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div><strong>Fecha:</strong> ${fechaFmt}</div>
+        <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
+        <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
+        <div><strong>Disponibilidad:</strong> ${esc(c.tieneMMPP || '-')}</div>
+        <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '-'}</div>
+        <div><strong>Disposición:</strong> ${esc(c.dispuestoVender || '-')}</div>
+        <div><strong>Tons aprox.:</strong> ${(c.tonsDisponiblesAprox ?? '') + ''}</div>
+        <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
+        <div style="grid-column:1/-1;"><strong>Notas:</strong> ${c.notas ? esc(c.notas) : '<span class="text-soft">Sin notas</span>'}</div>
+        <div style="grid-column:1/-1;"><strong>Contacto:</strong> ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).map(esc).join(' • ') || '-'}</div>
+      </div>
+      <div class="mb-4" style="margin-top:1rem;">
+        <h6 class="text-soft" style="margin:0 0 .5rem">Últimas visitas</h6>
+        ${miniTimelineHTML(visitas)}
+      </div>
+      <div class="right-align">
+        <button class="btn teal" id="btnNuevaVisita" data-id="${c._id}">
+          <i class="material-icons left">event_available</i>Registrar visita
+        </button>
+      </div>
+    `;
+
+    $('#btnNuevaVisita')?.addEventListener('click', () => abrirModalVisita(c));
+
+    openModalByIdSafe('modalDetalleContacto');
+  } catch (err) {
+    console.error('[detalleContacto] error:', err);
+    M.toast?.({ html: 'No se pudo abrir el detalle', classes: 'red' });
+  }
 }
 
 export function abrirModalVisita(contacto) {
-  const form = $('#formVisita');
-  if (form) form.dataset.editId = ''; // nuevo
-  setVal(['visita_proveedorId'], contacto._id);
-  const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
+  try {
+    console.log('[visita] abrir para:', contacto && contacto._id, contacto && contacto.proveedorNombre);
 
-  const selectVisita = $('#visita_centroId');
-  if (selectVisita) {
-    const centros = state.listaCentros.filter(
-      (c) => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '')) === proveedorKey
-    );
-    let options = `<option value="">Centro visitado (opcional)</option>`;
-    options += centros.map((c) => `
-      <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}</option>`
-    ).join('');
-    selectVisita.innerHTML = options;
+    const form = $('#formVisita');
+    if (form) form.dataset.editId = ''; // nuevo
+    setVal(['visita_proveedorId'], contacto._id);
+    const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
+
+    const selectVisita = $('#visita_centroId');
+    if (selectVisita) {
+      const centros = state.listaCentros.filter(
+        (c) => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '')) === proveedorKey
+      );
+      let options = `<option value="">Centro visitado (opcional)</option>`;
+      options += centros.map((c) => `
+        <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}</option>`
+      ).join('');
+      selectVisita.innerHTML = options;
+    }
+
+    resetFotosModal();
+    openModalByIdSafe('modalVisita');
+  } catch (err) {
+    console.error('[visita] error al abrir:', err);
+    M.toast?.({ html: 'No se pudo abrir el modal de visita', classes: 'red' });
   }
-
-  resetFotosModal();
-  (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
 
 async function abrirEditarVisita(v) {
@@ -376,7 +412,7 @@ async function abrirEditarVisita(v) {
   M.updateTextFields();
   resetFotosModal();
   await renderGallery(v._id);
-  (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
+  openModalByIdSafe('modalVisita');
 }
 
 export function setupFormularioVisita() {
@@ -419,7 +455,8 @@ export function setupFormularioVisita() {
         await handleFotosAfterSave(visitId);
       }
 
-      (M.Modal.getInstance(document.getElementById('modalVisita')))?.close();
+      const inst = M.Modal.getInstance(document.getElementById('modalVisita'));
+      inst?.close();
       form.reset();
       form.dataset.editId = '';
       forceAdjustVisitas();
@@ -476,6 +513,9 @@ function manejarAccionVisita(aEl){
 }
 
 // helpers para consola / test
-window.initVisitasTab = initVisitasTab;
-window.manejarAccionVisita = manejarAccionVisita;
-window.forceAdjustVisitas = forceAdjustVisitas;
+window.initVisitasTab       = initVisitasTab;
+window.manejarAccionVisita  = manejarAccionVisita;
+window.forceAdjustVisitas   = forceAdjustVisitas;
+// útil para probar manualmente:
+window.__abrirDetalleContacto = abrirDetalleContacto;
+window.__abrirModalVisita     = abrirModalVisita;
