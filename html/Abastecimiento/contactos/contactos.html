@@ -14,32 +14,8 @@
   <!-- DataTables + Buttons -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
-
-  <!-- Ajustes mínimos -->
-  <style>
-    /* El ícono no intercepta el click; lo hace el elemento con [data-action] */
-    #tablaVisitas [data-action] i.material-icons { pointer-events: none; }
-    /* Visual de test opcional */
-    .testing-buttons {
-      position: fixed; bottom: 10px; right: 10px; z-index: 10000;
-      background: white; padding: 10px; border: 2px solid red;
-    }
-    .button-connected { outline: 2px solid #4CAF50; border-radius: 4px; }
-    
-/* El panel de test NO intercepta clicks; solo sus botones sí */
-.testing-buttons { pointer-events: none; }
-.testing-buttons button { pointer-events: auto; }
-
-  </style>
 </head>
 <body>
-  <!-- Botones de emergencia para testing -->
-  <div class="testing-buttons">
-    <strong>Testing Modales:</strong><br>
-    <button onclick="forceOpenModal('modalDetalleContacto')" style="margin: 5px;">Abrir Detalle</button>
-    <button onclick="forceOpenModal('modalVisita')" style="margin: 5px;">Abrir Visita</button>
-  </div>
-
   <nav class="teal">
     <div class="nav-wrapper">
       <a href="../categorias.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
@@ -65,18 +41,18 @@
 
       <table id="tablaContactos" class="highlight display tabla-mt">
         <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Proveedor</th>
-          <th>Centro</th>
-          <th>Comuna</th>
-          <th>Disp.</th>
-          <th>Fecha Disp.</th>
-          <th>Disposición</th>
-          <th>Tons aprox</th>
-          <th>Vende a</th>
-          <th>Acciones</th>
-        </tr>
+          <tr>
+            <th>Fecha</th>
+            <th>Proveedor</th>
+            <th>Centro</th>
+            <th>Comuna</th>
+            <th>Disp.</</th>
+            <th>Fecha Disp.</th>
+            <th>Disposición</th>
+            <th>Tons aprox</th>
+            <th>Vende a</th>
+            <th>Acciones</th>
+          </tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -92,16 +68,16 @@
 
       <table id="tablaVisitas" class="highlight display tabla-mt">
         <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Proveedor</th>
-          <th>Centro</th>
-          <th>Muestra</th>
-          <th>Próximo paso</th>
-          <th>Tons</th>
-          <th>Observaciones</th>
-          <th>Acciones</th>
-        </tr>
+          <tr>
+            <th>Fecha</th>
+            <th>Proveedor</th>
+            <th>Centro</th>
+            <th>Muestra</th>
+            <th>Próximo paso</th>
+            <th>Tons</th>
+            <th>Observaciones</th>
+            <th>Acciones</th>
+          </tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -130,15 +106,15 @@
 
       <table id="tablaPersonas" class="highlight display tabla-mt-sm">
         <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Contacto</th>
-          <th>Teléfono(s)</th>
-          <th>Email</th>
-          <th>Empresa</th>
-          <th>Notas</th>
-          <th>Acciones</th>
-        </tr>
+          <tr>
+            <th>Fecha</th>
+            <th>Contacto</th>
+            <th>Teléfono(s)</th>
+            <th>Email</th>
+            <th>Empresa</th>
+            <th>Notas</th>
+            <th>Acciones</th>
+          </tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -258,7 +234,7 @@
         </div>
         <div class="row">
           <div class="input-field col s4">
-            <label for="visita_enAgua" class="active">Actividad</label>
+            <label for="visita_enAgua" class="active">Muestra</label>
             <select id="visita_enAgua" class="browser-default"><option value="">¿Toma de Muestras?</option><option>Sí</option><option>No</option></select>
           </div>
           <div class="input-field col s4">
@@ -282,19 +258,17 @@
 
         <!-- Fotos de la visita -->
         <div id="visita_fotos" class="fotos-uploader">
-  <div class="fotos-actions" style="display:flex;gap:8px;align-items:center;margin:.25rem 0 .5rem;">
-    <label class="btn teal waves-effect" style="margin:0;">
-      <i class="material-icons left">photo_camera</i>
-      Tomar/Subir fotos
-      <input id="visita_fotos_input" type="file" accept="image/*" capture="environment" multiple hidden>
-    </label>
-    <small class="text-soft">JPG/PNG hasta 10&nbsp;MB c/u, máx 12.</small>
-  </div>
-  <!-- Agrega estos dos divs como corresponde -->
-  <div id="visita_fotos_preview" class="fotos-grid"></div>
-  <div id="visita_fotos_gallery" class="fotos-grid"></div>
-</div>
-
+          <div class="fotos-actions" style="display:flex;gap:8px;align-items:center;margin:.25rem 0 .5rem;">
+            <label class="btn teal waves-effect" style="margin:0;">
+              <i class="material-icons left">photo_camera</i>
+              Tomar/Subir fotos
+              <input id="visita_fotos_input" type="file" accept="image/*" capture="environment" multiple hidden>
+            </label>
+            <small class="text-soft">JPG/PNG hasta 10&nbsp;MB c/u, máx 12.</small>
+          </div>
+          <div id="visita_fotos_preview" class="fotos-grid"></div>
+          <div id="visita_fotos_gallery" class="fotos-grid"></div>
+        </div>
 
         <div class="right-align">
           <button type="button" class="modal-close btn-flat">Cancelar</button>
@@ -326,27 +300,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-<script>
-  // Init básico Materialize + helper para tus botones de testing
-  document.addEventListener('DOMContentLoaded', () => {
-    M.Modal.init(document.querySelectorAll('.modal'), { opacity: 0.5, inDuration: 250, outDuration: 250 });
-    M.Tabs.init(document.querySelectorAll('.tabs'));
-  });
 
-  window.forceOpenModal = function(modalId){
-    const el = document.getElementById(modalId);
-    if (!el) return console.error('Modal no existe:', modalId);
-    const inst = M.Modal.getInstance(el) || M.Modal.init(el, { opacity: 0.5, inDuration: 250, outDuration: 250 });
-    inst.open();
-  };
-</script>
+  <script>
+    // Init mínimo de Materialize
+    document.addEventListener('DOMContentLoaded', () => {
+      M.Modal.init(document.querySelectorAll('.modal'), { opacity: 0.5, inDuration: 250, outDuration: 250 });
+      M.Tabs.init(document.querySelectorAll('.tabs'));
+    });
+  </script>
 
-<!-- Orquestador (tu módulo se encarga de la delegación en #tablaVisitas) -->
-<script type="module" src="../../../js/abastecimiento/contactos/index.js?v=6"></script>
-
-  <!-- Orquestador -->
-  
+  <!-- Orquestador (la delegación de clicks de VISITAS vive en /visitas/tab.js) -->
+  <script type="module" src="../../../js/abastecimiento/contactos/index.js?v=7"></script>
 </body>
 </html>
-
-
