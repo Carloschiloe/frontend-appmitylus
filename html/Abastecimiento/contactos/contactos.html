@@ -257,18 +257,31 @@
         </div>
 
         <!-- Fotos de la visita -->
-        <div id="visita_fotos" class="fotos-uploader">
-          <div class="fotos-actions" style="display:flex;gap:8px;align-items:center;margin:.25rem 0 .5rem;">
-            <label class="btn teal waves-effect" style="margin:0;">
-              <i class="material-icons left">photo_camera</i>
-              Tomar/Subir fotos
-              <input id="visita_fotos_input" type="file" accept="image/*" capture="environment" multiple hidden>
-            </label>
-            <small class="text-soft">JPG/PNG hasta 10&nbsp;MB c/u, máx 12.</small>
-          </div>
-          <div id="visita_fotos_preview" class="fotos-grid"></div>
-          <div id="visita_fotos_gallery" class="fotos-grid"></div>
-        </div>
+<div id="visita_fotos" class="fotos-uploader">
+  <div class="fotos-actions filepick-wrap">
+    <button type="button" id="btnPickFotos" class="btn teal waves-effect">
+      <i class="material-icons left">photo_camera</i>
+      Tomar/Subir fotos
+    </button>
+
+    <!-- Input VISIBLE para el navegador (pero con opacity:0 y encima del botón) -->
+    <input
+      id="visita_fotos_input"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      multiple
+      class="filepick-input"
+      aria-label="Tomar o subir fotos"
+    />
+
+    <small class="text-soft">JPG/PNG hasta 10&nbsp;MB c/u, máx 12.</small>
+  </div>
+
+  <div id="visita_fotos_preview" class="fotos-grid"></div>
+  <div id="visita_fotos_gallery" class="fotos-grid"></div>
+</div>
+
 
         <div class="right-align">
           <button type="button" class="modal-close btn-flat">Cancelar</button>
