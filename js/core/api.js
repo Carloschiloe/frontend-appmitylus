@@ -1,10 +1,8 @@
 // /js/core/api.js
 
 // 👉 Opción simple: detecta local vs producción
-const API_URL =
-  (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-    ? 'http://localhost:3001/api'                     // trabajando en tu PC
-    : 'https://backend-appmitylus.vercel.app/api';    // deploy en Vercel
+// /js/core/api.js
+const API_URL = 'https://backend-appmitylus.vercel.app/api';
 
 /* ===================== Helpers comunes ===================== */
 
