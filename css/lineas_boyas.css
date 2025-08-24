@@ -1,0 +1,153 @@
+.fixed-action-btn {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+}
+
+.btn-count {
+  width: 100%;
+  height: 70px;
+  font-size: 1.05rem;
+  position: relative;
+}
+
+.btn-count::after {
+  content: attr(data-label);
+  display: block;
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+  font-size: 1.1rem;
+}
+
+.tabs .tab a {
+  color: #00796b;
+}
+
+.tabs .tab a.active {
+  color: #004d40;
+}
+
+.tabs .indicator {
+  background: #004d40;
+}
+
+table.dataTable td {
+  white-space: nowrap;
+}
+
+/* === KPIs agrupados === */
+#kpiGroups {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+/* Tarjetas grandes */
+.kpi-card {
+  flex: 0 0 30%;
+  min-width: 120px;
+  background: #e0f2f1;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.kpi-card .title {
+  font-size: .95rem;
+  font-weight: 600;
+  color: #004d40;
+  margin-bottom: 4px;
+}
+
+.kpi-card .big {
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+.kpi-card .subs span {
+  display: block;
+  font-size: .85rem;
+  color: #00695c;
+  margin: 2px 0;
+  cursor: pointer;
+}
+
+.kpi-card .subs span.active {
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+/* Contenedor botones pequeños */
+#kpiSmallGroup {
+  display: flex;
+  justify-content: space-around;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+}
+
+/* Tarjetas pequeñas (filtros) */
+.kpi-mini {
+  flex: 0 0 28%;
+  min-width: 90px;
+  background: #e0f2f1;
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.kpi-mini:hover {
+  background: #b2dfdb;
+}
+
+.kpi-mini .valor {
+  font-size: 1.4rem;
+  font-weight: 600;
+  display: block;
+  line-height: 1.2;
+}
+
+.kpi-mini.active {
+  background: #80cbc4;
+}
+
+/* Select pequeño */
+#fEstadoLineaDiv {
+  margin: 6px 0 12px;
+  max-width: 230px;
+}
+
+/* Para pantallas más anchas */
+@media (min-width: 600px) {
+  #kpiGroups {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .kpi-card {
+    flex: 1 1 260px;
+    min-width: 240px;
+  }
+  #kpiSmallGroup {
+    justify-content: flex-start;
+    margin-top: 0;
+    margin-bottom: 14px;
+  }
+  .kpi-mini {
+    flex: 1 1 140px;
+    min-width: 140px;
+    margin-top: 0;
+  }
+}
