@@ -95,11 +95,14 @@ function initUIOnce() {
     });
   }
 
-  // Otros modales
-  ['modalDetalleContacto','modalVisita','modalAsociar'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) M.Modal.getInstance(el) || M.Modal.init(el, { onCloseEnd: cleanupOverlays });
-  });
+  // Otros modales: se inicializan una vez, pero la apertura la maneja tab.js
+['modalDetalleContacto','modalVisita','modalAsociar'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el && !M.Modal.getInstance(el)) {
+    M.Modal.init(el, { onCloseEnd: cleanupOverlays });
+  }
+});
+
 
   window.addEventListener('hashchange', cleanupOverlays);
 
@@ -211,3 +214,4 @@ document.addEventListener('DOMContentLoaded', () => {
 // ✅ Agregado para que los botones puedan abrir contenido de los modales
 window.abrirDetalleContacto = abrirDetalleContacto;
 window.abrirModalVisita = abrirModalVisita;
+
