@@ -17,6 +17,8 @@ import {
   renderGallery,
 } from './fotos/ui.js';
 
+console.log('[visitas] tab.js cargado');
+
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
 // ---------------- utils ----------------
@@ -87,11 +89,12 @@ export function forceAdjustVisitas() { adjustNow(); }
 export async function initVisitasTab(forceReload = false) {
   const jq = window.jQuery || window.$;
   const tabla = $('#tablaVisitas');
-  if (!tabla) return;
+  if (!tabla) { console.warn('[visitas] #tablaVisitas no está en el DOM aún'); return; }
 
   mountFotosUIOnce();
 
   if (dtV && forceReload) {
+    console.log('[visitas] reload (force) → renderTablaVisitas()');
     await renderTablaVisitas();
     adjustNow();
     return;
@@ -117,14 +120,17 @@ export async function initVisitasTab(forceReload = false) {
       drawCallback:   () => adjustNow(),
     });
 
-    // Delegación: UNA sola vez, en la tabla (soporta <a>, <button> o <span>)
-    jq('#tablaVisitas')
-      .off('click.visitas')
-      .on('click.visitas', '[data-action]', function(e){
+    // --- wiring de clicks (global y solo 1 vez) ---
+    if (!window.__visitasClicksWired) {
+      window.__visitasClicksWired = true;
+      document.addEventListener('click', (e) => {
+        const a = e.target.closest('#tablaVisitas [data-action]');
+        if (!a) return;
         e.preventDefault();
-        // no usamos stopImmediatePropagation para no romper otras features de DataTables
-        manejarAccionVisita(this);
+        console.log('[visitas] click capturado → action=%s  dataset=%o', a.dataset.action, a.dataset);
+        manejarAccionVisita(a);
       });
+    }
 
     window.addEventListener('resize', adjustNow);
   }
@@ -135,6 +141,8 @@ export async function initVisitasTab(forceReload = false) {
   // estos listeners podrían acumularse si llamas muchas veces initVisitasTab; si es tu caso, muévelos fuera y pon {once:true}
   window.addEventListener('visita:created', async () => { await renderTablaVisitas(); adjustNow(); });
   window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); adjustNow(); });
+
+  console.log('[visitas] initVisitasTab listo. dtV?', !!dtV);
 }
 
 // ---------------- render ----------------
@@ -391,24 +399,29 @@ export function setupFormularioVisita() {
 
 /* ==== Delegación en la tabla (simple y estable) ==== */
 function manejarAccionVisita(aEl){
+  console.log('[visitas] manejarAccionVisita()', aEl?.dataset);
   const action = (aEl.dataset.action || '').toLowerCase();
   try {
     if (action === 'ver' || action === 'detalle') {
+      console.log('[visitas] abrirDetalleContacto para contactoId=', aEl.dataset.contactoId);
       const c = (state.contactosGuardados || []).find(x => String(x._id) === String(aEl.dataset.contactoId));
       if (c) abrirDetalleContacto(c); else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
       return;
     }
     if (action === 'nueva' || action === 'visita') {
+      console.log('[visitas] abrirModalVisita para contactoId=', aEl.dataset.contactoId);
       const c = (state.contactosGuardados || []).find(x => String(x._id) === String(aEl.dataset.contactoId));
       if (c) abrirModalVisita(c); else M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
       return;
     }
     if (action === 'editar' || action === 'editar-visita') {
+      console.log('[visitas] abrirEditarVisita para visitaId=', aEl.dataset.id);
       const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(aEl.dataset.id));
       if (v) abrirEditarVisita(v); else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
       return;
     }
     if (action === 'eliminar') {
+      console.log('[visitas] eliminar visitaId=', aEl.dataset.id);
       const id = aEl.dataset.id;
       if (!id) return;
       if (!confirm('¿Eliminar esta visita?')) return;
@@ -429,4 +442,7 @@ function manejarAccionVisita(aEl){
   }
 }
 
+// helpers para consola / test
 window.initVisitasTab = initVisitasTab;
+window.manejarAccionVisita = manejarAccionVisita;
+window.forceAdjustVisitas = forceAdjustVisitas;
