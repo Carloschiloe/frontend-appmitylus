@@ -1,19 +1,200 @@
-/* /js/abastecimiento/visitas/fotos/styles.css */
-.fotos-grid{ display:grid; grid-template-columns:repeat(12,1fr); gap:10px; }
-@media (max-width:1200px){ .fotos-grid{ grid-template-columns:repeat(8,1fr); } }
-@media (max-width:768px){  .fotos-grid{ grid-template-columns:repeat(6,1fr); } }
-@media (max-width:600px){  .fotos-grid{ grid-template-columns:repeat(4,1fr); } }
+/* /js/abastecimiento/visitas/fotos/styles.css
+   Estilos del componente de fotos (uploader + grid + cards)
+   -------------------------------------------------------- */
 
-.foto-item{
-  grid-column: span 3;
-  background:#fff; border:1px solid var(--border,#e5e7eb);
-  border-radius:12px; overflow:hidden; box-shadow:0 1px 6px rgba(0,0,0,.06);
-  display:flex; flex-direction:column;
+/* ===== Uploader: botón + input file "tap friendly" ===== */
+#visita_fotos .fotos-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-.foto-thumb{ aspect-ratio:4/3; background:#fafafa; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-.foto-thumb img{ max-width:100%; max-height:100%; object-fit:cover; display:block; }
-.foto-meta{ display:flex; align-items:center; justify-content:space-between; gap:6px; padding:6px 8px; }
-.foto-meta .trunc{ display:inline-block; max-width:80%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.foto-actions a{ display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:#f2f5f6; }
-.foto-actions a:hover{ filter:brightness(.95); }
-.foto-actions .material-icons{ font-size:18px; }
+
+#visita_fotos .filepick-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  /* Mejora de tap en móviles */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transform: translateZ(0); /* evita bugs de stacking en iOS */
+}
+
+/* El <input type="file"> ocupa el área del botón y recibe el tap */
+#visita_fotos .filepick-input {
+  position: absolute;
+  inset: 0 auto auto 0; /* top:0; left:0 */
+  width: 100%;
+  height: 100%;
+  opacity: 0;                /* invisible pero clickeable */
+  cursor: pointer;
+  z-index: 2;
+  border: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  /* Evita zoom en iOS al enfocar */
+  font-size: 16px;
+}
+
+/* El botón visible queda debajo del input superpuesto */
+#visita_fotos #btnPickFotos {
+  position: relative;
+  z-index: 1;
+}
+
+/* Estados deshabilitados (por si el JS desactiva el picker) */
+#visita_fotos .filepick-input:disabled {
+  pointer-events: none;
+}
+#visita_fotos .filepick-input:disabled + #btnPickFotos,
+#visita_fotos #btnPickFotos:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* (Opcional) estado drag-over si más adelante añades DnD */
+#visita_fotos .filepick-wrap.is-dragover {
+  outline: 2px dashed var(--primary, #26a69a);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+
+/* ===== Grid de fotos ===== */
+.fotos-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 10px;
+}
+
+@media (max-width:1200px){ .fotos-grid{ grid-template-columns: repeat(8, 1fr); } }
+@media (max-width:768px){  .fotos-grid{ grid-template-columns: repeat(6, 1fr); } }
+@media (max-width:600px){  .fotos-grid{ grid-template-columns: repeat(4, 1fr); } }
+
+/* Tarjeta de foto */
+.foto-item {
+  grid-column: span 3; /* 3/12 = 25% en desktop */
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0,0,0,.06);
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+
+@media (max-width:768px){
+  .foto-item { grid-column: span 3; } /* 3/6 = 50% */
+}
+@media (max-width:600px){
+  .foto-item { grid-column: span 4; } /* 4/4 = 100% */
+}
+
+.foto-item:hover {
+  box-shadow: 0 4px 18px rgba(0,0,0,.08);
+  transform: translateY(-1px);
+}
+
+.foto-item:focus-within {
+  outline: 2px solid var(--primary, #26a69a);
+  outline-offset: 2px;
+}
+
+/* Miniatura */
+.foto-thumb {
+  aspect-ratio: 4/3;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.foto-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* (Opcional) esqueleto de carga */
+.foto-thumb.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+/* Meta + acciones */
+.foto-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 8px;
+}
+
+.foto-meta .trunc {
+  display: inline-block;
+  max-width: 80%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.foto-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.foto-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f2f5f6;
+  transition: filter .12s ease, transform .12s ease;
+}
+
+.foto-actions a:hover {
+  filter: brightness(.95);
+  transform: scale(1.04);
+}
+
+.foto-actions .material-icons {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Estados de error / carga en una tarjeta (si el JS los agrega) */
+.foto-item.is-loading { opacity: .7; }
+.foto-item.is-error   { border-color: #ef5350; box-shadow: 0 0 0 2px rgba(239,83,80,.15); }
+
+/* Barra de progreso básica (si subes en chunks) */
+.foto-progress {
+  height: 4px;
+  border-radius: 4px;
+  background: #eceff1;
+  overflow: hidden;
+  margin: 4px 8px 8px;
+}
+.foto-progress__bar {
+  height: 100%;
+  width: 0%;
+  background: var(--primary, #26a69a);
+  transition: width .2s ease;
+}
+
+/* Asegura que dentro del modal todo reciba eventos (evita “capas muertas”) */
+#modalVisita, #modalVisita * { pointer-events: auto; }
