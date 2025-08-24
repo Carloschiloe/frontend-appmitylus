@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Asignación · Dashboard</title>
+
+  <!-- Materialize & Google Icons (barra superior y botón volver) -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+
+  <!-- Global -->
+  <link rel="stylesheet" href="../../../styles.css?v=2">
+  <!-- Estilos de esta vista -->
+  <link rel="stylesheet" href="../../../css/asignacion.css?v=7">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <!-- Fix de capas, máscara y modales (por si el CSS global no está) -->
+  <style>
+    .asig-mask{position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:1990; display:none;}
+    .asig-modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:2000;}
+    .asig-modal .content{max-height:70vh; overflow:auto}
+    .drawer{z-index:1500}
+  </style>
+</head>
+<body>
+
+  <!-- NAV superior -->
+  <nav class="teal">
+    <div class="nav-wrapper">
+      <a href="../categorias.html" class="btn-flat left" title="Volver" aria-label="Volver">
+        <i class="material-icons">arrow_back</i>
+      </a>
+      <a href="#" class="brand-logo center">Asignación y gestión de MMPP</a>
+    </div>
+  </nav>
+
+  <!-- Scope de la vista -->
+  <div class="wrap asig" style="margin-top:1rem;">
+    <div class="row toolbar">
+      <div class="left">
+        <label for="anio">Año</label>
+        <!-- Forzado a nativo para que no lo oculte Materialize -->
+        <select id="anio" class="browser-default modern-select" aria-label="Seleccionar año"></select>
+      </div>
+      <div class="legend" aria-hidden="true">
+        <span class="bullet b-req"></span> Requerido
+        <span class="bullet b-asg"></span> Asignado
+        <span class="bullet b-proc"></span> Procesado
+      </div>
+    </div>
+
+    <!-- Tarjetas por mes -->
+    <div id="cards" class="grid" aria-live="polite"></div>
+
+    <!-- Gráfico mensual -->
+    <div class="panel-chart card">
+      <h3>Evolución mensual</h3>
+      <canvas id="chartMensual" height="110" aria-label="Gráfico mensual requerido vs asignado vs procesado" role="img"></canvas>
+    </div>
+  </div>
+
+  <!-- Drawer: proveedores del mes -->
+  <aside id="drawer" class="drawer" aria-hidden="true" style="display:none">
+    <header>
+      <div id="drawerTitle">Mes</div>
+      <button class="x" type="button" onclick="closeDrawer()" aria-label="Cerrar panel">✕</button>
+    </header>
+    <div class="body">
+      <table>
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Comuna</th>
+            <th>Tons</th>
+            <th>Cod.Centro</th>
+          </tr>
+        </thead>
+        <tbody id="provRows"></tbody>
+      </table>
+    </div>
+  </aside>
+
+  <!-- Overlay de modales -->
+  <div id="mask" class="asig-mask" aria-hidden="true" style="display:none"></div>
+
+  <!-- Modal: Definir Requerido (MMPP) -->
+  <section id="modalReq" class="asig-modal asig-modal--sm" aria-hidden="true" tabindex="-1" style="display:none">
+    <div class="card" style="width:min(800px,92vw);">
+      <div class="card-content">
+        <span class="card-title">Definir Requerido (MMPP)</span>
+        <div class="content">
+          <div class="row" style="display:flex; gap:12px;">
+            <div class="col" style="flex:1 1 120px">
+              <label for="mReqAnio">Año</label>
+              <input id="mReqAnio" type="number" min="2025" value="2025"/>
+            </div>
+            <div class="col" style="flex:1 1 120px">
+              <label for="mReqMes">Mes</label>
+              <input id="mReqMes" type="number" min="1" max="12" value="9"/>
+            </div>
+          </div>
+          <div class="row" style="display:flex; gap:12px;">
+            <div class="col" style="flex:1 1 100%">
+              <label for="mReqMP">Materia prima</label>
+              <input id="mReqMP" placeholder="p. ej. MMPP genérica"/>
+            </div>
+          </div>
+          <div class="row" style="display:flex; gap:12px;">
+            <div class="col" style="flex:1 1 240px">
+              <label for="mReqTons">Tons requeridas</label>
+              <input id="mReqTons" type="number" min="0" step="0.1" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-action" style="display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" class="btn-flat" onclick="hideModal()">Cancelar</button>
+        <button type="button" id="mReqSave" class="btn teal">Guardar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal: Disponibilidad -->
+  <section id="modalDisp" class="asig-modal asig-modal--sm" aria-hidden="true" tabindex="-1" style="display:none">
+    <div class="card" style="width:min(800px,92vw);">
+      <div class="card-content">
+        <span class="card-title" id="dispTitle">Agregar/Actualizar disponibilidad</span>
+        <div class="content">
+          <div class="row" style="display:flex; gap:12px;">
+            <div class="col" style="flex:1 1 120px">
+              <label for="mDispAnio">Año</label>
+              <input id="mDispAnio" type="number" min="2025" value="2025"/>
+            </div>
+            <div class="col" style="flex:1 1 120px">
+              <label for="mDispMes">Mes</label>
+              <input id="mDispMes" type="number" min="1" max="12" value="9"/>
+            </div>
+            <div class="col" style="flex:2 1 240px">
+              <label for="mDispMP">Materia prima</label>
+              <input id="mDispMP" value="Chorito"/>
+            </div>
+          </div>
+          <div class="row" style="display:flex; gap:12px;">
+            <div class="col" style="flex:2 1 240px">
+              <label for="mDispProv">Proveedor (contactId)</label>
+              <input id="mDispProv" placeholder="ObjectId del contacto"/>
+            </div>
+            <div class="col" style="flex:1 1 200px">
+              <label for="mDispStock">Stock inicial (t)</label>
+              <input id="mDispStock" type="number" min="0" step="0.1"/>
+            </div>
+          </div>
+          <p class="muted">Al crear, <b>stockRestante</b> = stockInicial.</p>
+        </div>
+      </div>
+      <div class="card-action" style="display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" class="btn-flat" onclick="hideModal()">Cancelar</button>
+        <button type="button" class="btn teal" onclick="saveDisponibilidad()">Guardar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal: Procesado semanal -->
+  <section id="modalProc" class="asig-modal asig-modal--sm" aria-hidden="true" tabindex="-1" style="display:none">
+    <div class="card" style="width:min(900px,96vw);">
+      <div class="card-content">
+        <span class="card-title" id="procTitle">Registrar procesamiento semanal</span>
+        <div class="content">
+          <div class="row" style="display:flex; gap:12px;">
+            <div class="col" style="flex:1 1 120px">
+              <label for="mProcAnio">Año</label>
+              <input id="mProcAnio" type="number" min="2025" value="2025"/>
+            </div>
+            <div class="col" style="flex:1 1 120px">
+              <label for="mProcMes">Mes</label>
+              <input id="mProcMes" type="number" min="1" max="12" value="9"/>
+            </div>
+            <div class="col" style="flex:1 1 120px">
+              <label for="mProcWk">Semana</label>
+              <input id="mProcWk" type="number" min="1" max="53" value="1" readonly/>
+            </div>
+          </div>
+
+          <!-- Selector visual de semana (se llena desde JS) -->
+          <div class="row">
+            <div class="col" style="width:100%">
+              <div id="weekPicker"></div>
+            </div>
+          </div>
+
+          <div class="row" style="display:flex; gap:12px;">
+            <div class="col" style="flex:2 1 240px">
+              <label for="mProcMP">Materia prima</label>
+              <input id="mProcMP" value="Chorito"/>
+            </div>
+            <div class="col" style="flex:1 1 240px">
+              <label for="mProcKg">Kilos</label>
+              <input id="mProcKg" type="number" min="0" step="1"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-action" style="display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" class="btn-flat" onclick="hideModal()">Cancelar</button>
+        <button type="button" class="btn teal" onclick="saveProcesado()">Guardar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCRIPTS: primero Materialize, luego tu JS (ambos defer) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script defer src="../../../js/abastecimiento/asignacion/asignacion.js?v=7"></script>
+</body>
+</html>
