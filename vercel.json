@@ -3,3 +3,4 @@
     { "source": "/api/:path*", "destination": "https://backend-appmitylus.vercel.app/api/:path*" }
   ]
 }
+
