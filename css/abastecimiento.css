@@ -283,3 +283,46 @@
 /////*Importar el css de configuracion de fotos*/////
 @import url('/js/abastecimiento/visitas/fotos/styles.css');
 
+/* --- SNIPER: garantiza que se pueda hacer click en Acciones de #tablaVisitas --- */
+
+/* 0) El panel de testing NO debe interceptar eventos */
+.testing-buttons { pointer-events: none !important; z-index: 5 !important; }
+.testing-buttons button { pointer-events: auto !important; }
+
+/* 1) Anclas clickeables y el ícono no intercepta (se propaga al <a>) */
+#tablaVisitas td:last-child a,
+#tablaVisitas a[data-action] {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  display: inline-block !important;
+}
+#tablaVisitas td:last-child i.material-icons,
+#tablaVisitas a[data-action] i.material-icons {
+  pointer-events: none !important;
+}
+
+/* 2) Mata posibles overlays “fantasma” que queden sobre la tabla */
+.modal-overlay,
+.sidenav-overlay,
+.mfp-bg,
+.mfp-wrap,
+.dt-button-background,
+div[data-overlay] {
+  pointer-events: none !important;
+  background: transparent !important;
+}
+
+/* 3) Rehabilita overlays solo cuando un modal esté realmente abierto */
+.modal.open,
+.modal.open + .modal-overlay {
+  pointer-events: auto !important;
+}
+
+/* 4) Por si DataTables generara un head flotante (no debería con scrollX:false) */
+#tablaVisitas_wrapper .dataTables_scrollHead {
+  pointer-events: none !important;
+}
+
+/* 5) Refuerzo de clicks en la última columna de Acciones */
+#tab-visitas #tablaVisitas td:last-child { pointer-events: auto !important; }
+
