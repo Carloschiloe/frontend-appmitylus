@@ -143,8 +143,9 @@
 
   <script>
     /* ================== CONFIG ================== */
-    const API_URL = 'https://backend-appmitylus-production.up.railway.app/api';
-    // endpoint agregado que entrega el mapa (mesKey → asignado)
+    // >>> Cambiado a Vercel (antes: Railway)
+    const API_URL = 'https://backend-appmitylus.vercel.app/api';
+    // endpoint que entrega el mapa (mesKey → asignado)
     window.INV_ASIG_ENDPOINT = '/asignaciones/map';
 
     /* ================== HELPERS ================== */
@@ -430,7 +431,7 @@
       }
       cont.innerHTML = html || `<div class="grey-text">Sin registros para mostrar.</div>`;
 
-      // signo +/-
+      // signo +/- automático
       cont.querySelectorAll('details').forEach(d=>{
         const sign = d.querySelector('.sign');
         const set = () => sign.textContent = d.open ? '−' : '+';
@@ -451,7 +452,6 @@
           const mInput = $id('asig_mes');
           const tInput = $id('asig_tons');
           $id('asig_info').textContent = `Proveedor: ${assignCtx.proveedor} • Mes: ${monthLabel(mesKey)} • Oferta: ${fmt(assignCtx.tons)} t`;
-          // Si el mes es real, precargar input month
           if(mesKey !== 's/fecha'){
             const [y,m] = mesKey.split('-');
             mInput.value = `${y}-${m}`;
@@ -508,10 +508,8 @@
 
     /* ================== UI ================== */
     document.addEventListener('DOMContentLoaded', () => {
-      // Materialize modal
-      M.Modal.init(document.querySelectorAll('.modal'));
-      // Vista inicial: agrupada
-      setGroupedView(true);
+      M.Modal.init(document.querySelectorAll('.modal')); // Materialize modal
+      setGroupedView(true); // Vista inicial: agrupada
 
       $id('btnReload')?.addEventListener('click', loadData);
 
