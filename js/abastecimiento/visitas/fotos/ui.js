@@ -3,56 +3,66 @@ import * as fotos from './service.js';
 
 let mounted = false;
 let pendingFiles = [];
+let dblBound = false; // para no registrar dos veces el listener global
 
 // Selectores (input real + contenedores de previews)
 const SEL = {
-  input:   '#visita_fotos_input',
-  preview: '#visita_fotos_preview', // pendientes
-  gallery: '#visita_fotos_gallery', // guardadas
-  btn:     '#btnPickFotos',
+  input:   '#visita_fotos_input',   // input file real
+  preview: '#visita_fotos_preview', // pendientes (antes de guardar)
+  gallery: '#visita_fotos_gallery', // guardadas (después de guardar)
+  btn:     '#btnPickFotos',         // botón visible (opcional)
 };
 
 const $ = (s) => document.querySelector(s);
 
 /* =========================================================
-   Visor FULLSCREEN (doble click en miniatura)
+   Visor en VENTANA NUEVA (fullscreen sin scroll)
    ========================================================= */
-let viewerEl = null, viewerImg = null, dblBound = false;
-
-function ensureViewer(){
-  if (viewerEl) return;
-  const html = `
-    <div class="foto-viewer" id="fotoViewer" role="dialog" aria-modal="true">
-      <button class="foto-viewer__close" type="button" aria-label="Cerrar">Cerrar</button>
-      <img id="fotoViewerImg" alt="Foto" />
-    </div>`;
-  document.body.insertAdjacentHTML('beforeend', html);
-
-  viewerEl  = document.getElementById('fotoViewer');
-  viewerImg = document.getElementById('fotoViewerImg');
-
-  const closeViewer = () => {
-    viewerEl.classList.remove('open');
-    document.body.classList.remove('viewer-open');
-  };
-
-  viewerEl.querySelector('.foto-viewer__close')?.addEventListener('click', closeViewer);
-  // Cerrar al hacer click en el fondo oscuro
-  viewerEl.addEventListener('click', (e) => { if (e.target === viewerEl) closeViewer(); });
-  // Esc para cerrar
-  document.addEventListener('keydown', (e) => {
-    if (viewerEl.classList.contains('open') && e.key === 'Escape') closeViewer();
-  });
-}
-
 function openViewer(src){
-  ensureViewer();
-  viewerImg.src = src;
-  viewerEl.classList.add('open');
-  document.body.classList.add('viewer-open'); // bloquear scroll de fondo
+  const w = window.open('', '_blank', 'noopener,noreferrer');
+  if (!w) {
+    alert('Tu navegador bloqueó la ventana emergente. Habilita popups para este sitio.');
+    return;
+  }
+  const safeSrc = String(src || '').replace(/"/g, '&quot;');
+  w.document.write(`<!DOCTYPE html>
+  <html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <title>Foto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;}
+      .wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+      img{max-width:100vw;max-height:100vh;object-fit:contain;display:block}
+      .hint{
+        position:fixed;left:12px;bottom:10px;color:#bbb;font:14px/1.2 system-ui,Segoe UI,Roboto,Arial;
+        background:rgba(255,255,255,.08);padding:6px 10px;border-radius:8px
+      }
+      .close{
+        position:fixed;right:12px;top:10px;color:#eee;font:14px/1.2 system-ui,Segoe UI,Roboto,Arial;
+        background:rgba(255,255,255,.12);padding:8px 12px;border-radius:999px;cursor:pointer;user-select:none
+      }
+      .close:hover{background:rgba(255,255,255,.2)}
+    </style>
+  </head>
+  <body>
+    <div class="wrap"><img src="${safeSrc}" alt="Foto"></div>
+    <div class="hint">Doble clic o ESC para cerrar</div>
+    <div class="close" id="btnClose">Cerrar</div>
+    <script>
+      const close = () => window.close();
+      document.getElementById('btnClose').addEventListener('click', close);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+      document.addEventListener('dblclick', close);
+    </script>
+  </body>
+  </html>`);
+  w.document.close();
+  w.focus();
 }
 
-// Listener global en captura: funciona aunque se vuelva a renderizar el grid
+// Listener global en captura para doble click (funciona aunque se re-renderice)
 function bindGlobalDblClick(){
   if (dblBound) return; dblBound = true;
   document.addEventListener('dblclick', (e) => {
@@ -60,7 +70,7 @@ function bindGlobalDblClick(){
     if (!img) return;
     e.preventDefault();
     openViewer(img.currentSrc || img.src);
-  }, true); // captura para adelantarnos a otros handlers
+  }, true);
 }
 
 /* =========================================================
@@ -127,7 +137,6 @@ export async function renderGallery(visitId){
 export function mountFotosUIOnce(){
   if (mounted) return; mounted = true;
 
-  ensureViewer();
   bindGlobalDblClick();
 
   const input = $(SEL.input);
