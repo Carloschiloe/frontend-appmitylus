@@ -1,5 +1,28 @@
-// =============== CONFIG INICIAL ===============
-const API_URL = (typeof window!=='undefined' && window.__CONFIG__?.API_URL) || 'https://backend-appmitylus-production.up.railway.app/api';
+/* =========================
+   Asignación · Dashboard
+   ========================= */
+
+/* =============== CONFIG INICIAL =============== */
+const API_URL =
+  (typeof window !== 'undefined' && window.__CONFIG__?.API_URL) ||
+  'https://backend-appmitylus.vercel.app/api'; // ✅ Vercel
+
+// (cinturón y tirantes) si algo llegara con Railway, lo reescribimos a Vercel
+(function hardenFetchDomain() {
+  const RAIL = 'backend-appmitylus-production.up.railway.app';
+  const VERC = 'backend-appmitylus.vercel.app';
+  const _orig = window.fetch;
+  window.fetch = function (input, init) {
+    try {
+      const u = typeof input === 'string' ? input : (input?.url || '');
+      if (u.includes(RAIL)) {
+        const fixed = u.replace(RAIL, VERC);
+        return _orig.call(this, fixed, init);
+      }
+    } catch {}
+    return _orig.call(this, input, init);
+  };
+})();
 
 const MES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const currentYear = 2025;
@@ -20,18 +43,24 @@ let cardMenuCtx = { anchor:null, anio:null, mes:null };
 let popEl = null;
 let popCtx = { anchor:null, mes:null, anio:null };
 
-// =============== HELPERS HTTP ===============
+/* =============== HELPERS HTTP =============== */
 async function checkResponse(resp){
   if (!resp.ok) {
     const txt = await resp.text().catch(()=> '');
     throw new Error(`HTTP ${resp.status} - ${txt}`);
   }
   if (resp.status === 204) return null;
-  return await resp.json().catch(()=> null);
+  // si devuelve texto simple, toleramos
+  const ct = (resp.headers.get('content-type') || '').toLowerCase();
+  if (ct.includes('application/json')) return await resp.json().catch(()=> null);
+  return await resp.json().catch(async()=> { try { return await resp.text(); } catch { return null; }});
 }
-async function apiGet(path){ const r = await fetch(`${API_URL}${path}`); return checkResponse(r); }
+async function apiGet(path){
+  const r = await fetch(`${API_URL}${path}`);
+  return checkResponse(r);
+}
 
-// =============== ESTILOS DEL MODAL (para que no se corte) ===============
+/* =============== ESTILOS DEL MODAL (para que no se corte) =============== */
 function injectModalStyles(){
   const old = document.getElementById('asig-modal-styles');
   if (old) return;
@@ -39,58 +68,25 @@ function injectModalStyles(){
   const style = document.createElement('style');
   style.id = 'asig-modal-styles';
   style.textContent = `
-    #mask{
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.35);
-      display: none;
-      z-index: 2147482900;
-    }
-    .modal-overlay{ z-index: 2147482800 !important; }
-
-    .asig-modal{
-      position: fixed; inset: 0;
-      display: none;
-      align-items: center; justify-content: center;
-      padding: 12px;
-      z-index: 2147483000;
-    }
-    .asig-modal__box{
-      background:#fff; border-radius:12px;
-      width: min(780px, 94vw);
-      max-height: 90vh;
-      box-shadow: 0 10px 30px rgba(0,0,0,.15);
-      display: flex; flex-direction: column;
-    }
-    .asig-modal__header{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:8px; padding:16px 20px; border-bottom:1px solid #eef1f3;
-      position: sticky; top:0; background:#fff; z-index:1;
-    }
+    #mask{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; z-index:2147482900; }
+    .modal-overlay{ z-index:2147482800 !important; }
+    .asig-modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:12px; z-index:2147483000; }
+    .asig-modal__box{ background:#fff; border-radius:12px; width:min(780px,94vw); max-height:90vh; box-shadow:0 10px 30px rgba(0,0,0,.15); display:flex; flex-direction:column; }
+    .asig-modal__header{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:16px 20px; border-bottom:1px solid #eef1f3; position:sticky; top:0; background:#fff; z-index:1; }
     .asig-modal__header h3{ margin:0; font-size:1.35rem; color:#0d6b63; }
     .asig-modal__header .x{ border:0; background:#eef3f2; width:32px; height:32px; border-radius:8px; font-size:18px; cursor:pointer; }
-
     .asig-modal .content{ padding:14px 20px; overflow:auto; }
-    .asig-modal__footer{
-      padding:12px 20px; border-top:1px solid #eef1f3;
-      display:flex; justify-content:flex-end; gap:10px;
-      position: sticky; bottom:0; background:#fff;
-    }
+    .asig-modal__footer{ padding:12px 20px; border-top:1px solid #eef1f3; display:flex; justify-content:flex-end; gap:10px; position:sticky; bottom:0; background:#fff; }
     .asig-modal .row{ display:flex; flex-direction:column; gap:6px; margin:8px 0; }
-    .asig-modal input, .asig-modal select{
-      width:100%; padding:10px 12px; border:1px solid #dfe4e6; border-radius:8px; outline:none;
-    }
-    .asig-modal input:focus, .asig-modal select:focus{
-      border-color:#26a69a; box-shadow:0 0 0 3px rgba(38,166,154,.15);
-    }
-    .asig-modal__footer .ok{
-      background:#26a69a; color:#fff; border:0; padding:10px 16px; border-radius:8px; cursor:pointer;
-    }
+    .asig-modal input, .asig-modal select{ width:100%; padding:10px 12px; border:1px solid #dfe4e6; border-radius:8px; outline:none; }
+    .asig-modal input:focus, .asig-modal select:focus{ border-color:#26a69a; box-shadow:0 0 0 3px rgba(38,166,154,.15); }
+    .asig-modal__footer .ok{ background:#26a69a; color:#fff; border:0; padding:10px 16px; border-radius:8px; cursor:pointer; }
     .asig-modal__footer button{ border:1px solid #cfd8dc; background:#fff; padding:10px 16px; border-radius:8px; cursor:pointer; }
   `;
   document.head.appendChild(style);
 }
 
-// =============== ARRANQUE ===============
+/* =============== ARRANQUE =============== */
 init();
 async function init(){
   injectModalStyles();
@@ -106,9 +102,7 @@ async function init(){
   elAnio.onchange = async (e)=> loadYear(+e.target.value);
 
   // cerrar con ESC o click en máscara
-  document.addEventListener('keydown', (ev)=>{
-    if(ev.key === 'Escape') { hideModal(); hideCardMenu(); hidePass(); hideProvidersPopover(); }
-  });
+  document.addEventListener('keydown', (ev)=>{ if(ev.key === 'Escape') { hideModal(); hideCardMenu(); hidePass(); hideProvidersPopover(); } });
   const mask = document.getElementById('mask');
   mask?.addEventListener('click', (ev)=>{ if(ev.target === mask) hideModal(); });
 
@@ -116,20 +110,17 @@ async function init(){
   const anioIn = document.getElementById('mProcAnio');
   const mesIn  = document.getElementById('mProcMes');
   if (anioIn && mesIn) {
-    anioIn.addEventListener('input', ()=> {
+    const rerender = ()=> {
       const y = +anioIn.value || currentYear;
       const m = clampMes(+mesIn.value);
       renderWeekPicker(y, m, +document.getElementById('mProcWk').value || 1);
-    });
-    mesIn.addEventListener('input', ()=> {
-      const y = +anioIn.value || currentYear;
-      const m = clampMes(+mesIn.value);
-      renderWeekPicker(y, m, +document.getElementById('mProcWk').value || 1);
-    });
+    };
+    anioIn.addEventListener('input', rerender);
+    mesIn.addEventListener('input', rerender);
   }
 }
 
-// =============== ENDPOINTS REALES (lecturas) ===============
+/* =============== ENDPOINTS REALES (lecturas) =============== */
 async function fetchSummaryMensual(anio){
   // 1) Asignado
   const asignado = Array(12).fill(0);
@@ -184,7 +175,7 @@ async function fetchProveedoresMes(anio, mes1a12){
     const j2 = await apiGet(`/planificacion/ofertas`);
     const arr2 = Array.isArray(j2?.items) ? j2.items : (Array.isArray(j2) ? j2 : []);
     ofertasMes = arr2.filter(it=>{
-      const d = new Date(it.mes || it.fecha || '');
+      const d = new Date(it.mes || it.fecha || it.fechaDisponibilidad || '');
       return !isNaN(d) && d.getFullYear()===anio && (d.getMonth()+1)===mes1a12;
     });
   }catch(e){ console.warn('[ofertas]', e.message); }
@@ -221,12 +212,11 @@ async function fetchProveedoresMes(anio, mes1a12){
   return out.sort((x,y)=> y.tons - x.tons);
 }
 
-
-// =============== (Opcionales aún) Guardados de otros flujos ===============
+/* =============== (Opcionales aún) Guardados de otros flujos =============== */
 async function putDisponibilidad(payload){ console.log('[PUT disponibilidad] (no-op)', payload); alert('Disponibilidad guardada (demo)'); }
 async function putProcesado(payload){ console.log('[PUT procesado semanal] (no-op)', payload); alert('Procesado guardado (demo)'); }
 
-// =============== CARGA AÑO ===============
+/* =============== CARGA AÑO =============== */
 async function loadYear(y){
   cacheSummary = await fetchSummaryMensual(y);
   paintCards(y, cacheSummary);
@@ -243,7 +233,7 @@ function yearTotals(data){
   return {tReq,tAsg,tPro,pctReal,pctAsig};
 }
 
-// =============== TARJETAS ===============
+/* =============== TARJETAS =============== */
 function paintCards(anio, data){
   elCards.innerHTML = '';
   const grid = document.createElement('div');
@@ -302,14 +292,13 @@ function paintCards(anio, data){
     grid.appendChild(card);
   }
 
-     // --- CONSOLIDADO ---
+  // --- CONSOLIDADO ---
   const ysum = yearTotals(data);
   const pctAsigY = ysum.tReq > 0 ? Math.round((ysum.tAsg / ysum.tReq) * 100) : 0;
   const faltanY  = Math.max(0, ysum.tReq - ysum.tAsg);
   const summaryState = ysum.tReq === 0 ? 'zero' : (ysum.tAsg >= ysum.tReq ? 'full' : 'need');
 
   const cardY = document.createElement('div');
-  // le agregamos también "card--mock" para reutilizar los mismos colores/estados
   cardY.className = `card card--summary card--mock ${summaryState}`;
   cardY.innerHTML = `
     <div class="month-pill" style="--asg:${pctAsigY}">
@@ -338,7 +327,7 @@ function paintCards(anio, data){
   elCards.appendChild(grid);
 }
 
-// =============== CHART ===============
+/* =============== CHART =============== */
 function paintChart(data){
   const ctx = document.getElementById('chartMensual');
   chart?.destroy();
@@ -372,8 +361,7 @@ function paintChart(data){
   });
 }
 
-
-// =============== DRAWER (proveedores del mes) ===============
+/* =============== DRAWER (proveedores del mes) =============== */
 async function showDrawer(mes, anio){
   document.getElementById('drawerTitle').textContent = `${MES_LABELS[mes-1]} ${anio} · Proveedores`;
   const rows = await fetchProveedoresMes(anio, mes);
@@ -388,7 +376,7 @@ async function showDrawer(mes, anio){
 }
 function closeDrawer(){ document.getElementById('drawer').style.display='none' }
 
-// =============== MODALES base ===============
+/* =============== MODALES base =============== */
 const mask = document.getElementById('mask');
 
 function showModal(id){
@@ -441,7 +429,7 @@ async function saveProcesado(){
   await loadYear(+elAnio.value);
 }
 
-// =============== Password simple ===============
+/* =============== Password simple =============== */
 function ensureAuxUIs(){
   if(document.getElementById('asigPass')) return;
   const wrap = document.createElement('div');
@@ -485,7 +473,7 @@ function askPassword(){
 }
 function hidePass(){ document.getElementById('asigPass').style.display='none' }
 
-// =============== MODAL: Definir Requerido (MMPP) ===============
+/* =============== MODAL: Definir Requerido (MMPP) =============== */
 function ensureReqModal(){
   let modal = document.getElementById('modalReq');
 
@@ -554,7 +542,7 @@ async function saveRequerido(){
   }
 }
 
-// =============== MENÚ CONTEXTUAL anclado a tarjeta ===============
+/* =============== MENÚ CONTEXTUAL anclado a tarjeta =============== */
 function ensureCardMenu(){
   if(cardMenuEl) return;
   cardMenuEl = document.createElement('div');
@@ -637,7 +625,7 @@ function positionCardMenu(){
 }
 function hideCardMenu(){ if(cardMenuEl) cardMenuEl.style.display='none'; }
 
-// =============== POPUP PROVEEDORES anclado a tarjeta ===============
+/* =============== POPUP PROVEEDORES anclado a tarjeta =============== */
 function ensurePopover(){
   if(popEl) return popEl;
   popEl = document.createElement('div');
@@ -695,7 +683,7 @@ async function openProvidersPopover(mes, anio, anchorEl){
 }
 function hideProvidersPopover(){ if(popEl) popEl.style.display = 'none'; }
 
-// =============== WEEK PICKER ===============
+/* =============== WEEK PICKER =============== */
 function clampMes(m){ return Math.min(12, Math.max(1, +m || 1)); }
 function daysInMonth(y, m){ return new Date(y, m, 0).getDate(); } // m: 1-12
 function defaultWeekFor(y, m){
@@ -755,7 +743,54 @@ function renderWeekPicker(y, m, selectedWeek=1){
   });
 }
 
-// =============== SELECTOR DE PROVEEDORES para modal ===============
+/* =============== SELECTOR DE PROVEEDORES para modal =============== */
+async function fetchProveedoresDisponiblesDesde(anio, mes){
+  const fromMk = `${anio}-${String(mes).padStart(2,'0')}-01`;
+  const fromDate = new Date(fromMk);
+
+  // 1) Intento: endpoint dedicado de contactos disponibles
+  try{
+    const j = await apiGet(`/contactos/disponibles?minTons=1`);
+    const arr = Array.isArray(j?.items) ? j.items : (Array.isArray(j)? j : []);
+    const rows = arr
+      .filter(x=>{
+        const d = new Date(x.fechaDisponibilidad || x.fecha || x.disponibilidad || fromMk);
+        return !isNaN(d) && d >= fromDate;
+      })
+      .map(x=>({
+        contactId : String(x._id || x.contactId || ''),
+        proveedor : x.proveedorNombre || x.proveedor || (x.contactoNombre ? `(persona) ${x.contactoNombre}` : '(s/empresa)'),
+        comuna    : x.centroComuna || x.comuna || '',
+        cod       : x.centroCodigo || x.code || '',
+        tons      : Number(x.tonsDisponiblesAprox ?? x.tons ?? 0) || 0
+      }))
+      .sort((a,b)=> b.tons - a.tons);
+    if(rows.length) return rows;
+  }catch(e){ console.warn('[contactos/disponibles]', e.message); }
+
+  // 2) Fallback: ofertas normalizadas
+  try{
+    const j2 = await apiGet('/planificacion/ofertas');
+    const arr2 = Array.isArray(j2?.items) ? j2.items : (Array.isArray(j2) ? j2 : []);
+    const rows2 = arr2
+      .filter(x=>{
+        const d = new Date(x.mes || x.fecha || x.fechaDisponibilidad || fromMk);
+        return !isNaN(d) && d >= fromDate;
+      })
+      .map(x=>({
+        contactId : String(x.contactId || x._id || ''),
+        proveedor : x.proveedorNombre || x.proveedor || (x.contactoNombre ? `(persona) ${x.contactoNombre}` : '(s/empresa)'),
+        comuna    : x.centroComuna || x.comuna || '',
+        cod       : x.centroCodigo || x.code || '',
+        tons      : Number(x.tons ?? 0) || 0
+      }))
+      .sort((a,b)=> b.tons - a.tons);
+    return rows2;
+  }catch(e){ console.warn('[planificacion/ofertas]', e.message); }
+
+  return [];
+}
+
 async function injectProveedorSelector(anio, mes){
   const modal = document.getElementById('modalDisp');
   let slot = modal.querySelector('#provPickerSlot');
@@ -777,8 +812,8 @@ async function injectProveedorSelector(anio, mes){
   `;
 }
 
-// =============== UTILS ===============
-function fmt(n){ return (n||0).toLocaleString('es-CL',{maximumFractionDigits:1}) }
+/* =============== UTILS =============== */
+function fmt(n){ return (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:1}) }
 function esc(s){
   return String(s ?? '')
     .replace(/&/g,'&amp;')
@@ -788,6 +823,8 @@ function esc(s){
     .replace(/'/g,'&#39;');
 }
 
-
-
-
+/* Exponer funciones usadas por onclick en el HTML */
+window.closeDrawer = closeDrawer;
+window.hideModal = hideModal;
+window.saveDisponibilidad = saveDisponibilidad;
+window.saveProcesado = saveProcesado;
