@@ -143,9 +143,9 @@
 
   <script>
     /* ================== CONFIG ================== */
-    // >>> Cambiado a Vercel (antes: Railway)
+    // Backend activo en Vercel
     const API_URL = 'https://backend-appmitylus.vercel.app/api';
-    // endpoint que entrega el mapa (mesKey → asignado)
+    // endpoint asignado (mesKey → total asignado)
     window.INV_ASIG_ENDPOINT = '/asignaciones/map';
 
     /* ================== HELPERS ================== */
@@ -178,14 +178,29 @@
     }
     async function apiGet(path){ const r=await fetch(`${API_URL}${path}`); return checkResponse(r); }
 
-    /* ================== FETCH BASE ================== */
-    async function getCentros(){ const arr=await apiGet('/centros'); return Array.isArray(arr)?arr:[]; }
-    async function getContactos(){ const arr=await apiGet('/contactos'); return Array.isArray(arr)?arr:[]; }
-    async function getVisitas(){
-      const raw=await apiGet('/visitas'); return Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
+    /* ================== FUENTES ================== */
+
+    // 1) Ofertas (exclusivo: vienen de disponibilidades)
+    async function getOfertas(){
+      // puedes agregar filtros si quieres: ?minTons=1&from=YYYY-MM&to=YYYY-MM
+      const raw = await apiGet('/planificacion/ofertas');
+      const arr = Array.isArray(raw?.items) ? raw.items : (Array.isArray(raw) ? raw : []);
+      // Normalizar a filas de inventario
+      return arr.map(it=>{
+        const mes = monthKey(it.mes || it.fecha || it.mesKey || '');
+        return {
+          mes,
+          proveedor: it.proveedorNombre || it.proveedor || '',
+          centroCodigo: it.centroCodigo || '',
+          areaCodigo: it.areaCodigo || it.area || '',
+          comuna: it.comuna || it.centroComuna || '',
+          tons: Number(it.tons)||0,
+          fuente: it.fuente ? it.fuente[0].toUpperCase()+it.fuente.slice(1) : 'Disponibilidad'
+        };
+      }).filter(r=>r.tons>0);
     }
 
-    // Asignación por mes (lee /asignaciones/map)
+    // 2) Asignación por mes (lee /asignaciones/map)
     async function getAsignacionesMap(){
       const endpoint = (window.INV_ASIG_ENDPOINT || qp('asig') || '').trim();
       if(!endpoint) return new Map();
@@ -200,61 +215,6 @@
         }
         return map;
       }catch(_e){ return new Map(); }
-    }
-
-    /* ================== NORMALIZACIÓN ================== */
-    function buildCentrosIndex(centros){
-      const m=new Map();
-      for(const c of centros){
-        const id=String(c._id||c.id||'');
-        const codigo=c.code ?? c.codigo ?? c.Codigo ?? null;
-        const comuna = c.comuna ?? c.Comuna ?? '';
-        const area = c.areaCodigo ?? c.areaCode ?? c.codigoArea ?? c.lineaCodigo ?? c.lineCode ?? null;
-        if(id) m.set(id,{codigo:codigo?String(codigo):null, comuna, area});
-      }
-      return m;
-    }
-    function makeContactosIndex(contactos){const m=new Map(); for(const c of contactos)m.set(String(c._id||''),c); return m;}
-
-    // CONTACTOS → usan SIEMPRE fechaDisponibilidad
-    function rowsFromContactos(contactos, centroIdx){
-      const out=[];
-      for(const c of contactos){
-        const tons=Number(c.tonsDisponiblesAprox ?? c.tons ?? 0);
-        if(!Number.isFinite(tons)||tons<=0) continue;
-
-        const mes = monthKey(c.fechaDisponibilidad);
-
-        const centro = centroIdx.get(String(c.centroId||'')) || {};
-        const centroCodigo = c.centroCodigo || centro.codigo || null;
-        const comuna = c.centroComuna || centro.comuna || '';
-        const areaCodigo = c.centroAreaCodigo || c.areaCodigo || c.lineaCodigo || centro.area || null;
-        const proveedor = c.proveedorNombre || c.proveedor || (c.contactoNombre?`(persona) ${c.contactoNombre}`:'(s/empresa)');
-
-        out.push({ mes, proveedor, centroCodigo, areaCodigo, comuna, tons, fuente:'Contacto' });
-      }
-      return out;
-    }
-
-    // VISITAS → sólo si traen fecha de disponibilidad explícita
-    function rowsFromVisitas(visitas, centroIdx, contactosIdx){
-      const out=[];
-      for(const v of visitas){
-        const tons=Number(v.tonsComprometidas ?? 0);
-        if(!Number.isFinite(tons)||tons<=0) continue;
-
-        const disp = v.fechaDisponibilidad || v.disponibilidad || v.fechaDisp || null;
-        const mes = monthKey(disp);
-
-        const centro = centroIdx.get(String(v.centroId||'')) || {};
-        const centroCodigo = v.centroCodigo || centro.codigo || null;
-        const comuna = centro.comuna || '';
-        const areaCodigo = v.areaCodigo || v.lineaCodigo || centro.area || null;
-        const proveedor = (contactosIdx.get(String(v.contactoId||''))?.proveedorNombre) || '(s/empresa)';
-
-        out.push({ mes, proveedor, centroCodigo, areaCodigo, comuna, tons, fuente:'Visita' });
-      }
-      return out;
     }
 
     /* ================== KPI ================== */
@@ -378,9 +338,9 @@
                 <div><strong>${esc(monthLabel(k))}</strong> • ${items.length} registros</div>
               </div>
               <div class="group-tags">
-                <span class="tag tag-sub"   title="Subtotal suministro">${fmt(subtotal)} t</span>
+                <span class="tag tag-sub"   title="Subtotal disponible">${fmt(subtotal)} t</span>
                 <span class="tag tag-asig"  title="Asignado en planificación">${fmt(asig)} t</span>
-                <span class="tag tag-saldo" title="Saldo (suministro - asignado)">${fmt(saldo)} t</span>
+                <span class="tag tag-saldo" title="Saldo (disp. - asignado)">${fmt(saldo)} t</span>
               </div>
             </summary>
             <div class="group-table">
@@ -480,20 +440,12 @@
 
     async function loadData(){
       try{
-        const [centros, contactos, visitas, asigMap] = await Promise.all([
-          getCentros(),
-          getContactos(),
-          getVisitas(),
+        const [rows, asigMap] = await Promise.all([
+          getOfertas(),
           getAsignacionesMap()
         ]);
 
-        const cIdx = buildCentrosIndex(centros);
-        const contIdx = makeContactosIndex(contactos);
-
-        const rowsC = rowsFromContactos(contactos, cIdx);
-        const rowsV = rowsFromVisitas(visitas, cIdx, contIdx);
-
-        __rows = [...rowsC, ...rowsV];
+        __rows = rows;
         __asigMap = asigMap;
         __monthTotals = calcMonthTotals(__rows);
 
