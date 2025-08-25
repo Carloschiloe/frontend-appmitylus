@@ -1,8 +1,9 @@
 // /js/contactos/form-contacto.js
 import { apiCreateContacto, apiUpdateContacto, apiDeleteContacto } from '../../core/api.js';
 import { state, $, getVal, setVal, slug } from './state.js';
-import { cargarContactosGuardados, copyCentroToHidden, lookupComunaByCodigo } from './data.js';
-import { mostrarCentrosDeProveedor, resetSelectCentros } from './proveedores.js';
+import { cargarContactosGuardados } from './data.js';
+import { syncHiddenFromSelect, mostrarCentrosDeProveedor, resetSelectCentros } from './proveedores.js';
+import { comunaPorCodigo } from './normalizers.js';
 import { renderTablaContactos } from './tabla.js';
 
 const isValidObjectId = (s) => typeof s === 'string' && /^[0-9a-fA-F]{24}$/.test(s);
@@ -16,7 +17,7 @@ export function setupFormulario() {
 
   // Sincroniza los hidden cuando cambie el centro
   const selCentro = $('#selectCentro');
-  selCentro?.addEventListener('change', () => copyCentroToHidden(selCentro));
+  selCentro?.addEventListener('change', () => syncHiddenFromSelect(selCentro));
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -42,7 +43,7 @@ export function setupFormulario() {
 
     // Si no hay empresa, limpia centro
     if (!hasEmpresa) {
-      setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
+      setVal(['centroId','centroCodigo','centroComuna','centroHectareas'], '');
       resetSelectCentros();
     }
 
@@ -55,11 +56,11 @@ export function setupFormulario() {
     const tonsDisponiblesAprox = $('#tonsDisponiblesAprox')?.value ?? '';
 
     // Asegura que los hidden estén sincronizados aunque no haya cambiado el select
-    copyCentroToHidden(selCentro);
+    syncHiddenFromSelect(selCentro);
 
     const centroId        = hasEmpresa ? (getVal(['centroId']) || null) : null;
-    const centroCodigo    = hasEmpresa ? (getVal(['centroCode','centroCodigo']) || null) : null;
-    const centroComuna    = hasEmpresa ? (getVal(['centroComuna']) || lookupComunaByCodigo(centroCodigo) || null) : null;
+    const centroCodigo    = hasEmpresa ? (getVal(['centroCodigo']) || null) : null;
+    const centroComuna    = hasEmpresa ? (getVal(['centroComuna']) || comunaPorCodigo(centroCodigo) || null) : null;
     const centroHectareas = hasEmpresa ? (getVal(['centroHectareas']) || null) : null;
 
     // Resultado inferido a partir de disponibilidad (si se indicó)
@@ -118,7 +119,7 @@ export function setupFormulario() {
       // Limpieza de formulario y estado
       const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
       form.reset();
-      setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
+      setVal(['centroId','centroCodigo','centroComuna','centroHectareas'], '');
       setVal(['proveedorKey','proveedorId','proveedorNombre'], '');
       state.editId = null;
       modalInst?.close();
@@ -144,12 +145,12 @@ export function abrirEdicion(c) {
   if (hasEmpresa && key) {
     mostrarCentrosDeProveedor(key, c.centroId || null);
     setVal(['centroId'], c.centroId || '');
-    setVal(['centroCodigo','centroCode'], c.centroCodigo || '');
+    setVal(['centroCodigo'], c.centroCodigo || '');
     setVal(['centroComuna'], c.centroComuna || '');
     setVal(['centroHectareas'], c.centroHectareas || '');
   } else {
     resetSelectCentros();
-    setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
+    setVal(['centroId','centroCodigo','centroComuna','centroHectareas'], '');
   }
 
   // Estado / varios
@@ -186,7 +187,7 @@ export function prepararNuevo() {
   form?.reset();
   setVal(['proveedorKey','proveedorId','proveedorNombre'], '');
   resetSelectCentros();
-  setVal(['centroId','centroCodigo','centroCode','centroComuna','centroHectareas'], '');
+  setVal(['centroId','centroCodigo','centroComuna','centroHectareas'], '');
 }
 
 /* =================== UTILS =================== */
