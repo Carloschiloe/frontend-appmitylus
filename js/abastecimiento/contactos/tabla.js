@@ -1,5 +1,6 @@
 // /js/contactos/tabla.js
 import { state, $ } from './state.js';
+import { centroCodigoById, comunaPorCodigo } from './normalizers.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto, abrirModalVisita } from '../visitas/tab.js';
 
@@ -34,14 +35,14 @@ const esc = (s='') => String(s)
 
 const esCodigoValido = (x) => /^\d{4,7}$/.test(String(x || ''));
 
-function getCodigoByCentroId(id) {
+function centroCodigoById(id) {
   if (!id) return '';
   const lista = Array.isArray(state.listaCentros) ? state.listaCentros : [];
   const ct = lista.find(x => String(x._id ?? x.id) === String(id));
   return ct ? String(ct.codigo ?? ct.code ?? ct.Codigo ?? '') : '';
 }
 
-function getComunaByCodigo(codigo) {
+function comunaPorCodigo(codigo) {
   if (!codigo) return '';
   const cod = String(codigo);
   const lista = Array.isArray(state.listaCentros) ? state.listaCentros : [];
@@ -157,11 +158,11 @@ export function renderTablaContactos() {
       // Centro (código) con fallback por centroId
       let centroCodigo = c.centroCodigo;
       if (!esCodigoValido(centroCodigo)) {
-        centroCodigo = getCodigoByCentroId(c.centroId) || '';
+        centroCodigo = centroCodigoById(c.centroId) || '';
       }
 
       // Comuna
-      const comuna = c.centroComuna || c.comuna || getComunaByCodigo(centroCodigo) || '';
+      const comuna = c.centroComuna || c.comuna || comunaPorCodigo(centroCodigo) || '';
 
       // Proveedor con ellipsis + tooltip
       const provName = esc(c.proveedorNombre || '');
