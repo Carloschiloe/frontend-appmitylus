@@ -8,6 +8,23 @@ import { renderTablaContactos } from './tabla.js';
 
 const isValidObjectId = (s) => typeof s === 'string' && /^[0-9a-fA-F]{24}$/.test(s);
 
+/* helpers locales */
+function clearCentroHidden() {
+  setVal(['centroId'], ''); 
+  setVal(['centroCodigo'], ''); 
+  setVal(['centroComuna'], ''); 
+  setVal(['centroHectareas'], '');
+}
+function clearProveedorHidden() {
+  setVal(['proveedorKey'], ''); 
+  setVal(['proveedorId'], ''); 
+  setVal(['proveedorNombre'], '');
+}
+function getOptionalValue(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : undefined;
+}
+
 /* =================== INIT =================== */
 export function setupFormulario() {
   const form = $('#formContacto');
@@ -43,17 +60,17 @@ export function setupFormulario() {
 
     // Si no hay empresa, limpia centro
     if (!hasEmpresa) {
-      setVal(['centroId','centroCodigo','centroComuna','centroHectareas'], '');
+      clearCentroHidden();
       resetSelectCentros();
     }
 
-    /* -------- Otros campos -------- */
-    const tieneMMPP            = $('#tieneMMPP').value || '';
-    const fechaDisponibilidad  = $('#fechaDisponibilidad').value || null;
-    const dispuestoVender      = $('#dispuestoVender').value || '';
-    const vendeActualmenteA    = $('#vendeActualmenteA').value.trim();
-    const notas                = $('#notasContacto').value.trim();
-    const tonsDisponiblesAprox = $('#tonsDisponiblesAprox')?.value ?? '';
+    /* -------- Otros campos (con opcionales protegidos) -------- */
+    const tieneMMPP            = $('#tieneMMPP')?.value || '';
+    const fechaDisponibilidad  = getOptionalValue('fechaDisponibilidad') || null; // puede no existir
+    const dispuestoVender      = $('#dispuestoVender')?.value || '';
+    const vendeActualmenteA    = $('#vendeActualmenteA')?.value?.trim() || '';
+    const notas                = $('#notasContacto')?.value?.trim() || '';
+    const tonsDisponiblesAprox = getOptionalValue('tonsDisponiblesAprox') ?? '';  // puede no existir
 
     // Asegura que los hidden estén sincronizados aunque no haya cambiado el select
     syncHiddenFromSelect(selCentro);
@@ -92,7 +109,7 @@ export function setupFormulario() {
       contactoTelefono,
       contactoEmail,
 
-      // numérico
+      // numérico (opcional)
       tonsDisponiblesAprox: normalizeNumber(tonsDisponiblesAprox),
     };
 
@@ -119,8 +136,8 @@ export function setupFormulario() {
       // Limpieza de formulario y estado
       const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
       form.reset();
-      setVal(['centroId','centroCodigo','centroComuna','centroHectareas'], '');
-      setVal(['proveedorKey','proveedorId','proveedorNombre'], '');
+      clearCentroHidden();
+      clearProveedorHidden();
       state.editId = null;
       modalInst?.close();
     } catch (err) {
@@ -136,10 +153,12 @@ export function abrirEdicion(c) {
 
   // Empresa
   const hasEmpresa = !!(c.proveedorKey || c.proveedorNombre);
+  const key = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
+
   $('#buscadorProveedor').value = c.proveedorNombre || '';
   setVal(['proveedorNombre'], c.proveedorNombre || '');
-  const key = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
-  setVal(['proveedorKey','proveedorId'], key || '');
+  setVal(['proveedorKey'], key || '');
+  setVal(['proveedorId'], key || '');
 
   // Centros del proveedor
   if (hasEmpresa && key) {
@@ -150,23 +169,26 @@ export function abrirEdicion(c) {
     setVal(['centroHectareas'], c.centroHectareas || '');
   } else {
     resetSelectCentros();
-    setVal(['centroId','centroCodigo','centroComuna','centroHectareas'], '');
+    clearCentroHidden();
   }
 
-  // Estado / varios
-  $('#tieneMMPP').value = c.tieneMMPP || '';
-  $('#dispuestoVender').value = c.dispuestoVender || '';
-  $('#fechaDisponibilidad').value = c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '';
-  $('#tonsDisponiblesAprox').value = c.tonsDisponiblesAprox ?? '';
-  $('#vendeActualmenteA').value = c.vendeActualmenteA || '';
-  $('#notasContacto').value = c.notas || '';
+  // Estado / varios (protegidos por si faltan campos)
+  const fdEl = document.getElementById('fechaDisponibilidad');
+  const tonsEl = document.getElementById('tonsDisponiblesAprox');
+
+  if ($('#tieneMMPP'))       $('#tieneMMPP').value = c.tieneMMPP || '';
+  if ($('#dispuestoVender')) $('#dispuestoVender').value = c.dispuestoVender || '';
+  if (fdEl)  fdEl.value  = c.fechaDisponibilidad ? String(c.fechaDisponibilidad).slice(0,10) : '';
+  if (tonsEl) tonsEl.value = (c.tonsDisponiblesAprox ?? '');
+  if ($('#vendeActualmenteA')) $('#vendeActualmenteA').value = c.vendeActualmenteA || '';
+  if ($('#notasContacto'))     $('#notasContacto').value     = c.notas || '';
 
   // Persona
-  $('#contactoNombre').value = c.contactoNombre || '';
-  $('#contactoTelefono').value = c.contactoTelefono || '';
-  $('#contactoEmail').value = c.contactoEmail || '';
+  if ($('#contactoNombre'))   $('#contactoNombre').value   = c.contactoNombre || '';
+  if ($('#contactoTelefono')) $('#contactoTelefono').value = c.contactoTelefono || '';
+  if ($('#contactoEmail'))    $('#contactoEmail').value    = c.contactoEmail || '';
 
-  M.updateTextFields();
+  M.updateTextFields?.();
   const modal = document.getElementById('modalContacto');
   (M.Modal.getInstance(modal) || M.Modal.init(modal)).open();
 }
@@ -185,9 +207,9 @@ export function prepararNuevo() {
   state.editId = null;
   const form = $('#formContacto');
   form?.reset();
-  setVal(['proveedorKey','proveedorId','proveedorNombre'], '');
+  clearProveedorHidden();
   resetSelectCentros();
-  setVal(['centroId','centroCodigo','centroComuna','centroHectareas'], '');
+  clearCentroHidden();
 }
 
 /* =================== UTILS =================== */
