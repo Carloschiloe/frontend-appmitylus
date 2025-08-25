@@ -1,8 +1,8 @@
 /* /js/abastecimiento/visitas/fotos/styles.css
-   Estilos del componente de fotos (uploader + grid + cards)
+   Estilos del componente de fotos (uploader + grid + visor)
    -------------------------------------------------------- */
 
-/* ===== Uploader: botón + input file "tap friendly" ===== */
+/* ===== Botón + input file ===== */
 #visita_fotos .fotos-actions {
   display: inline-flex;
   align-items: center;
@@ -20,55 +20,47 @@
   transform: translateZ(0);
 }
 
-/* El <input type="file"> ocupa el área del botón y recibe el tap */
 #visita_fotos .filepick-input {
   position: absolute;
-  inset: 0 auto auto 0; /* top:0; left:0 */
+  inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0;                /* invisible pero clickeable */
+  opacity: 0;
   cursor: pointer;
   z-index: 2;
   border: 0;
   background: transparent;
   appearance: none;
   -webkit-appearance: none;
-  font-size: 16px; /* evita zoom en iOS */
+  font-size: 16px;
 }
 
-/* El botón visible queda debajo del input superpuesto */
 #visita_fotos #btnPickFotos {
   position: relative;
   z-index: 1;
 }
 
-/* Deshabilitado */
-#visita_fotos .filepick-input:disabled { pointer-events: none; }
-#visita_fotos .filepick-input:disabled + #btnPickFotos,
-#visita_fotos #btnPickFotos:disabled { opacity: .5; cursor: not-allowed; }
-
-/* (Opcional) estado drag-over si luego añades DnD */
-#visita_fotos .filepick-wrap.is-dragover {
-  outline: 2px dashed var(--primary, #26a69a);
-  outline-offset: 4px;
-  border-radius: 10px;
+#visita_fotos .filepick-input:disabled,
+#visita_fotos #btnPickFotos:disabled {
+  opacity: .5;
+  cursor: not-allowed;
 }
 
-/* ===== Grid de fotos ===== */
+/* ===== Grilla de fotos ===== */
 .fotos-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 10px;
 }
+
 @media (max-width:1200px){ .fotos-grid{ grid-template-columns: repeat(8, 1fr); } }
 @media (max-width:768px){  .fotos-grid{ grid-template-columns: repeat(6, 1fr); } }
 @media (max-width:600px){  .fotos-grid{ grid-template-columns: repeat(4, 1fr); } }
 
-/* Tarjeta de foto */
 .foto-item {
-  grid-column: span 3; /* 3/12 = 25% en desktop */
+  grid-column: span 3;
   background: #fff;
-  border: 1px solid var(--border, #e5e7eb);
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 6px rgba(0,0,0,.06);
@@ -76,13 +68,12 @@
   flex-direction: column;
   transition: box-shadow .15s ease, transform .15s ease;
 }
-@media (max-width:768px){ .foto-item { grid-column: span 3; } }   /* 3/6 = 50% */
-@media (max-width:600px){ .foto-item { grid-column: span 4; } }   /* 4/4 = 100% */
 
-.foto-item:hover { box-shadow: 0 4px 18px rgba(0,0,0,.08); transform: translateY(-1px); }
-.foto-item:focus-within { outline: 2px solid var(--primary, #26a69a); outline-offset: 2px; }
+.foto-item:hover {
+  box-shadow: 0 4px 18px rgba(0,0,0,.08);
+  transform: translateY(-1px);
+}
 
-/* Miniatura */
 .foto-thumb {
   aspect-ratio: 4/3;
   background: #fafafa;
@@ -92,75 +83,96 @@
   overflow: hidden;
   position: relative;
 }
-.foto-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* Esqueleto opcional */
-.foto-thumb.skeleton::after {
-  content: "";
-  position: absolute; inset: 0;
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
-  background-size: 400% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+.foto-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
-@keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:0 0} }
 
 /* Meta + acciones */
 .foto-meta {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 6px; padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 8px;
 }
+
 .foto-meta .trunc {
-  display: inline-block; max-width: 80%;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: inline-block;
+  max-width: 80%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.foto-actions { display: inline-flex; gap: 6px; }
+
+.foto-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
 .foto-actions a {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 50%;
-  background: #f2f5f6; transition: filter .12s ease, transform .12s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f2f5f6;
+  transition: filter .12s ease, transform .12s ease;
 }
-.foto-actions a:hover { filter: brightness(.95); transform: scale(1.04); }
-.foto-actions .material-icons { font-size: 18px; line-height: 1; }
 
-/* Estados de tarjeta */
-.foto-item.is-loading { opacity: .7; }
-.foto-item.is-error   { border-color: #ef5350; box-shadow: 0 0 0 2px rgba(239,83,80,.15); }
-
-/* Progreso opcional */
-.foto-progress { height: 4px; border-radius: 4px; background: #eceff1; overflow: hidden; margin: 4px 8px 8px; }
-.foto-progress__bar { height: 100%; width: 0%; background: var(--primary, #26a69a); transition: width .2s ease; }
-
-/* Asegura eventos dentro del modal de Materialize */
-#modalVisita, #modalVisita * { pointer-events: auto; }
-
-/* =========================================================
-   VISOR DE FOTO PANTALLA COMPLETA (overlay propio)
-   ========================================================= */
-.foto-viewer{
-  position: fixed; inset: 0;
-  background: #000;
-  display: none;               /* aparece con .open */
-  align-items: center; justify-content: center;
-  z-index: 9999;               /* por encima de cualquier modal/popover */
+.foto-actions a:hover {
+  filter: brightness(.95);
+  transform: scale(1.04);
 }
-.foto-viewer.open{ display: flex; }
 
-.foto-viewer img{
-  max-width: 100vw;
-  max-height: 100vh;
+.foto-actions .material-icons {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* ===== Visor fullscreen ===== */
+.foto-viewer {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.foto-viewer.open {
+  display: flex;
+}
+
+.foto-viewer img {
+  max-width: 95vw;
+  max-height: 95vh;
   object-fit: contain;
-  display: block;
   box-shadow: 0 10px 40px rgba(0,0,0,.4);
 }
 
-.fv-close{
+.foto-viewer__close {
   position: absolute;
-  top: 12px; right: 16px;
-  background: rgba(255,255,255,.18);
-  color:#fff; border:0; border-radius: 999px;
-  padding: 8px 12px; cursor: pointer; font-weight: 600;
+  top: 16px;
+  right: 20px;
+  background: rgba(255,255,255,.2);
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 20px;
+  border-radius: 6px;
 }
-.fv-close:hover{ background: rgba(255,255,255,.3); }
+.foto-viewer__close:hover {
+  background: rgba(255,255,255,.35);
+}
 
-/* Evita scroll del fondo cuando el visor está abierto */
-body.viewer-open { overflow: hidden; }
+/* Evita scroll en body cuando visor está abierto */
+body.viewer-open {
+  overflow: hidden;
+}
