@@ -3,15 +3,12 @@
    ========================================= */
 
 /* ===== TABLAS: Contactos + Visitas ===== */
-
-/* Cabezal teal */
 #tablaContactos.dataTable thead th,
 #tablaVisitas.dataTable thead th {
   background: var(--primary) !important;
   color: #fff !important;
 }
 
-/* Densidad de filas */
 #tablaContactos th, #tablaContactos td,
 #tablaVisitas  th, #tablaVisitas  td {
   font-size: .92rem;
@@ -19,13 +16,13 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
-/* Íconos de acciones */
 #tablaContactos td .material-icons,
 #tablaVisitas  td .material-icons {
   font-size: 1.22em;
   margin-right: 8px;
   transition: transform .12s ease, color .12s ease;
 }
+
 #tablaContactos td .material-icons:hover,
 #tablaVisitas  td .material-icons:hover {
   color: var(--primary-acc);
@@ -33,15 +30,15 @@
 }
 
 /* ===== CLICK en “Acciones” de VISITAS (crítico) ===== */
-#tablaVisitas a[data-action] {           /* el click entra al <a> */
+#tablaVisitas a[data-action] {
   pointer-events: auto !important;
   cursor: pointer;
   display: inline-block;
 }
-#tablaVisitas i.material-icons {         /* el ícono NO intercepta */
+#tablaVisitas i.material-icons {
   pointer-events: none !important;
 }
-#tab-visitas #tablaVisitas td:last-child { /* columna Acciones */
+#tab-visitas #tablaVisitas td:last-child {
   white-space: nowrap;
   pointer-events: auto !important;
 }
@@ -49,7 +46,7 @@
 /* ===== BOTONES / TOOLBAR ===== */
 #btnOpenContactoModal { margin: .25rem 0 .5rem; }
 
-/* ===== MODALES (mismo look) ===== */
+/* ===== MODALES ===== */
 #modalContacto.modal,
 #modalDetalleContacto.modal,
 #modalVisita.modal,
@@ -71,7 +68,6 @@
   padding: .5rem .75rem !important;
 }
 
-/* Inputs más compactos en modales */
 #modalContacto .input-field input,
 #modalContacto .input-field select,
 #modalContacto .input-field textarea,
@@ -81,7 +77,6 @@
   margin-bottom: .6rem;
 }
 
-/* Select nativo con look Materialize (sólo en modales) */
 .modal .browser-default {
   width: 100%;
   background: transparent;
@@ -106,7 +101,6 @@
 .modal         { z-index: 1005 !important; }
 .modal-overlay { z-index: 1004 !important; }
 
-/* Evita que contenedores tapen el overlay */
 .container, .card-panel { overflow: visible !important; }
 
 /* ===== RESPONSIVE ===== */
@@ -139,81 +133,12 @@
 .hidden{display:none!important}
 .static-label{transform:none!important;font-size:.9rem;color:#9e9e9e}
 
-/* ===== PLANIFICACIÓN (sin duplicados) ===== */
-.progress.slim{height:8px;border-radius:8px;margin:.4rem 0 0}
-.progress .determinate{border-radius:8px}
-
-.kpi-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin:14px 0 6px}
-.kpi{grid-column:span 12;background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
-.kpi h6{margin:0;font-size:.95rem;color:#546e7a;font-weight:600}
-.kpi .val{font-size:1.6rem;font-weight:700;margin-top:4px;color:#004d40}
-.kpi .sub{font-size:.9rem;color:#78909c;margin-top:2px}
-@media (min-width:600px){.kpi{grid-column:span 6}}
-@media (min-width:992px){.kpi{grid-column:span 3}}
-
-.toolbar-panel{padding:14px 16px}
-.toolbar{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;align-items:end}
-.toolbar .input-field{margin:0}
-.toolbar .actions{grid-column:span 12;display:flex;gap:8px;justify-content:flex-end}
-.toolbar .toggles{display:flex;gap:16px;align-items:center}
-.periodo-wrap{display:flex;gap:10px;align-items:end}
-.periodo-nav{display:flex;gap:6px;align-items:center}
-.btn-ghost{background:transparent!important}
-@media (min-width:600px){
-  .toolbar .w2{grid-column:span 2}
-  .toolbar .w3{grid-column:span 3}
-  .toolbar .w4{grid-column:span 4}
-  .toolbar .w5{grid-column:span 5}
-  .toolbar .w6{grid-column:span 6}
-  .toolbar .w12{grid-column:span 12}
-}
-@media (min-width:992px){
-  .toolbar .w2{grid-column:span 2}
-  .toolbar .w3{grid-column:span 3}
-  .toolbar .w4{grid-column:span 4}
-  .toolbar .w5{grid-column:span 5}
-  .toolbar .w6{grid-column:span 6}
-}
-
-#tablaProgramaSemanal.dataTable thead th{
-  background: var(--primary) !important;
-  color: #fff !important;
-}
-#tablaProgramaSemanal td.right-align{ text-align:right }
-
-.chart-card{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
-.chart-card .chart-title{margin:0 0 8px}
-
-.rt-list{margin:0;list-style:none;display:grid;gap:8px}
-.rt-list .progress{margin:.25rem 0 0}
-
-.gantt{display:grid;gap:8px}
-.gantt__row{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:8px}
-.gantt__label{font-size:.9rem;color:#607d8b}
-.gantt__track{position:relative;height:20px;background:#eceff1;border-radius:10px;overflow:hidden}
-.gantt__bar{position:absolute;top:0;bottom:0;border-radius:10px}
-.gantt__bar--meta{left:0;right:0;border:2px dashed #90a4ae;background:transparent}
-.gantt__bar--plan{left:0;width:0;background:#64b5f6}
-.gantt__bar--real{left:0;width:0;background:#66bb6a;opacity:.9}
-
-/* Impresión */
-@media print{
-  nav, .tabs, .actions, .modal, .toolbar-panel .input-field { display:none !important; }
-  .kpi-grid { grid-template-columns:repeat(4,1fr) !important; }
-  .chart-card { box-shadow:none !important; border:1px solid #eee; }
-}
-
-/* Márgenes de tablas */
-.tabla-mt   { margin-top: .75rem; }
-.tabla-mt-sm{ margin-top: .5rem; }
-
-/* ===== VISITAS: layout de columnas con ellipsis y sin solapes ===== */
+/* ===== VISITAS: layout columnas ===== */
 #tab-visitas #tablaVisitas {
   table-layout: fixed;
   width: 100%;
   border-collapse: collapse;
 }
-
 #tab-visitas #tablaVisitas th,
 #tab-visitas #tablaVisitas td {
   box-sizing: border-box;
@@ -224,16 +149,24 @@
 }
 
 /* Anchos fijos */
-#tab-visitas #tablaVisitas th:nth-child(1), #tab-visitas #tablaVisitas td:nth-child(1) { width: 7rem; }   /* Fecha */
-#tab-visitas #tablaVisitas th:nth-child(3), #tab-visitas #tablaVisitas td:nth-child(3) { width: 8rem; }   /* Centro */
-#tab-visitas #tablaVisitas th:nth-child(4), #tab-visitas #tablaVisitas td:nth-child(4) { width: 7rem; }   /* Muestra */
-#tab-visitas #tablaVisitas th:nth-child(6), #tab-visitas #tablaVisitas td:nth-child(6) { width: 6rem; text-align:right; } /* Tons */
-#tab-visitas #tablaVisitas th:nth-child(8), #tab-visitas #tablaVisitas td:nth-child(8) { width: 8rem; text-align:center; } /* Acciones */
+#tab-visitas #tablaVisitas th:nth-child(1),
+#tab-visitas #tablaVisitas td:nth-child(1) { width: 7rem; }
+#tab-visitas #tablaVisitas th:nth-child(3),
+#tab-visitas #tablaVisitas td:nth-child(3) { width: 8rem; }
+#tab-visitas #tablaVisitas th:nth-child(4),
+#tab-visitas #tablaVisitas td:nth-child(4) { width: 7rem; }
+#tab-visitas #tablaVisitas th:nth-child(6),
+#tab-visitas #tablaVisitas td:nth-child(6) { width: 6rem; text-align:right; }
+#tab-visitas #tablaVisitas th:nth-child(8),
+#tab-visitas #tablaVisitas td:nth-child(8) { width: 8rem; text-align:center; }
 
 /* Flexibles con límites */
-#tab-visitas #tablaVisitas th:nth-child(2), #tab-visitas #tablaVisitas td:nth-child(2) { max-width: 24ch; }  /* Proveedor */
-#tab-visitas #tablaVisitas th:nth-child(5), #tab-visitas #tablaVisitas td:nth-child(5) { max-width: 20ch; }  /* Próximo paso */
-#tab-visitas #tablaVisitas th:nth-child(7), #tab-visitas #tablaVisitas td:nth-child(7) { max-width: 30ch; }  /* Observaciones */
+#tab-visitas #tablaVisitas th:nth-child(2),
+#tab-visitas #tablaVisitas td:nth-child(2) { max-width: 24ch; }
+#tab-visitas #tablaVisitas th:nth-child(5),
+#tab-visitas #tablaVisitas td:nth-child(5) { max-width: 20ch; }
+#tab-visitas #tablaVisitas th:nth-child(7),
+#tab-visitas #tablaVisitas td:nth-child(7) { max-width: 30ch; }
 
 /* Íconos en línea */
 #tab-visitas #tablaVisitas td:nth-child(8){
@@ -244,34 +177,70 @@
 
 /* Responsive */
 @media (max-width: 1024px) {
-  #tab-visitas #tablaVisitas th:nth-child(2), #tab-visitas #tablaVisitas td:nth-child(2) { max-width: 20ch; }
-  #tab-visitas #tablaVisitas th:nth-child(7), #tab-visitas #tablaVisitas td:nth-child(7) { max-width: 20ch; }
+  #tab-visitas #tablaVisitas th:nth-child(2),
+  #tab-visitas #tablaVisitas td:nth-child(2) { max-width: 20ch; }
+  #tab-visitas #tablaVisitas th:nth-child(7),
+  #tab-visitas #tablaVisitas td:nth-child(7) { max-width: 20ch; }
 }
 @media (max-width: 768px) {
-  #tab-visitas #tablaVisitas th:nth-child(2), #tab-visitas #tablaVisitas td:nth-child(2) { max-width: 18ch; }
-  #tab-visitas #tablaVisitas th:nth-child(5), #tab-visitas #tablaVisitas td:nth-child(5) { max-width: 16ch; }
+  #tab-visitas #tablaVisitas th:nth-child(2),
+  #tab-visitas #tablaVisitas td:nth-child(2) { max-width: 18ch; }
+  #tab-visitas #tablaVisitas th:nth-child(5),
+  #tab-visitas #tablaVisitas td:nth-child(5) { max-width: 16ch; }
 }
 
-/* Ocultar input file por defecto y usar solo el botón custom */
+/* ===== Fotos: ocultar input y full screen ===== */
 #visita_fotos_input.filepick-input {
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;          /* invisible pero clickeable */
-  cursor: pointer;     /* cursor de mano */
-  z-index: 2;          /* encima del botón */
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+.filepick-wrap { position: relative; display: inline-block; }
+
+/* Visor full screen */
+.foto-viewer {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.foto-viewer.open { display: flex; }
+
+.foto-viewer img {
+  max-width: 95vw;
+  max-height: 95vh;
+  object-fit: contain;
+  box-shadow: 0 10px 40px rgba(0,0,0,.4);
 }
 
-/* Asegurar que el contenedor tenga posición relativa */
-.filepick-wrap {
-  position: relative;
-  display: inline-block;
+.foto-viewer__close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  background: rgba(255,255,255,.2);
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 20px;
+  border-radius: 6px;
 }
+.foto-viewer__close:hover {
+  background: rgba(255,255,255,.35);
+}
+
+/* Evita scroll en body */
+body.viewer-open { overflow: hidden; }
 
 /* ===== Fotos de visitas ===== */
 @import url('/js/abastecimiento/visitas/fotos/styles.css');
+
 
 
 
