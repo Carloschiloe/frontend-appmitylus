@@ -1,8 +1,8 @@
 // /js/core/api.js
 
 // 👉 Opción simple: detecta local vs producción
-// /js/core/api.js
 const API_URL = 'https://backend-appmitylus.vercel.app/api';
+
 /* ===================== Helpers comunes ===================== */
 
 // Respuesta segura (tolera 204 y respuestas sin body)
@@ -133,4 +133,10 @@ export async function apiContactosDisponibles({ q = '', minTons = 1 } = {}) {
 }
 export async function apiContactosDisponiblesAll({ q = '' } = {}) {
   return apiContactosDisponibles({ q, minTons: 0 });
+}
+
+/* ======= Planificación: Disponibilidad por mes (nuevo) ======= */
+export async function apiUpsertDisponibilidad(data) {
+  // data: { mesKey, tons, proveedorKey?, proveedorNombre?, centroId?, centroCodigo?, comuna? }
+  return request('/planificacion/disponibilidad', { method: 'POST', json: data });
 }
