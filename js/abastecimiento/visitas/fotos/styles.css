@@ -222,4 +222,38 @@
 /* Evita que la página se desplace detrás del visor */
 body.viewer-open { overflow: hidden; }
 
+.foto-viewer {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.foto-viewer.open { display: flex; }
+
+.foto-viewer img {
+  max-width: 95vw;
+  max-height: 95vh;
+  object-fit: contain;
+  box-shadow: 0 10px 40px rgba(0,0,0,.4);
+}
+
+.foto-viewer__close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: rgba(255,255,255,.2);
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 20px;
+  border-radius: 6px;
+}
+.foto-viewer__close:hover {
+  background: rgba(255,255,255,.35);
+}
+
 
