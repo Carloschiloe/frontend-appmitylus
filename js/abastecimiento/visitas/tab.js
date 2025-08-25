@@ -503,3 +503,35 @@ export function setupFormularioVisita() {
 
 // Exponer por consola si se requiere
 window.initVisitasTab = initVisitasTab;
+
+// ========== Doble click en fotos para ver en grande ==========
+
+// 1) Crea modal si no existe
+document.addEventListener('DOMContentLoaded', () => {
+  if (!document.getElementById('modalFotoGrande')) {
+    const modalHTML = `
+      <div id="modalFotoGrande" class="modal modal-fixed-footer">
+        <div class="modal-content" style="padding:0;text-align:center">
+          <img id="modalFotoImg" src="" alt="Foto" style="max-width:100%;max-height:80vh;display:block;margin:auto">
+        </div>
+        <div class="modal-footer">
+          <button class="modal-close btn teal">Cerrar</button>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    M.Modal.init(document.getElementById('modalFotoGrande'));
+  }
+
+  // 2) Delegación para el doble click en previews
+  const modal = M.Modal.getInstance(document.getElementById('modalFotoGrande'));
+  document.querySelectorAll('#visita_fotos_preview, #visita_fotos_gallery').forEach(container => {
+    container.addEventListener('dblclick', e => {
+      const img = e.target.closest('img');
+      if (!img) return;
+      document.getElementById('modalFotoImg').src = img.src;
+      modal.open();
+    });
+  });
+});
+
