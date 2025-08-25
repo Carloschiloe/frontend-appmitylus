@@ -270,7 +270,13 @@
   display: inline-block;
 }
 
+#visita_fotos_preview img,
+#visita_fotos_gallery img {
+  cursor: zoom-in;
+}
+
 /* ===== Fotos de visitas ===== */
 @import url('/js/abastecimiento/visitas/fotos/styles.css');
+
 
 
