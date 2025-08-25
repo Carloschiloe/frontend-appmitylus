@@ -17,7 +17,6 @@ import { initAsociacionContactos } from './asociar-empresa.js';
 
 // Personas
 import { initPersonasTab, renderTablaPersonas } from './personas.js';
-import { initFiltrosYKPIsPersonas } from './filtros-kpis-personas.js';
 
 // Visitas
 import { setupFormularioVisita, initVisitasTab, abrirDetalleContacto, abrirModalVisita } from '../visitas/tab.js';
@@ -81,7 +80,6 @@ function initUIOnce() {
         }
         if (id.includes('persona')) {
           if (!personasBooted) {
-            initFiltrosYKPIsPersonas();
             initPersonasTab();
             personasBooted = true;
           }
@@ -133,7 +131,6 @@ function initUIOnce() {
   document.querySelector('a[href="#tab-personas"], a[href="#personas"]')
     ?.addEventListener('click', () => {
       if (!personasBooted) {
-        initFiltrosYKPIsPersonas();
         initPersonasTab();
         personasBooted = true;
       }
@@ -182,7 +179,6 @@ export async function initContactosTab(forceReload = false) {
       visitasBooted = true;
       adjustDT('#tablaVisitas');
     } else if (h === '#tab-personas' || h === '#personas') {
-      initFiltrosYKPIsPersonas();
       initPersonasTab();
       personasBooted = true;
       adjustDT('#tablaPersonas');
