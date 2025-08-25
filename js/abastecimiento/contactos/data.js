@@ -33,9 +33,6 @@ export async function cargarCentros() {
     state.listaProveedores = Array.from(mapa.values());
     console.log('[cargarCentros] proveedores indexados:', state.listaProveedores.length);
 
-    // Popular select de centros y wirear change
-    poblarSelectCentros(state.listaCentros);
-
     // 🔔 Notificar a otros módulos (asociar-empresa.js escuchará esto)
     document.dispatchEvent(new Event('centros:loaded'));
   } catch (e) {
@@ -64,61 +61,9 @@ export async function cargarContactosGuardados() {
    Helpers para Centro -> Hidden y lookup de comuna por código
    ========================================================================= */
 
-function poblarSelectCentros(centros = []) {
-  const sel = document.getElementById('selectCentro');
-  if (!sel) return;
 
-  sel.innerHTML = '<option value="" selected>Selecciona un centro (opcional)</option>';
 
-  centros.forEach(ct => {
-    const codigo = ct.codigo ?? ct.code ?? ct.Codigo ?? '';
-    const nombre = ct.nombre ?? ct.name ?? ct.Nombre ?? '';
-    const comuna = ct.comuna ?? ct.Comuna ?? '';
-    const hects  = ct.hectareas ?? ct.Hectareas ?? '';
 
-    const opt = document.createElement('option');
-    opt.value = ct._id ?? ct.id ?? codigo;
-    opt.textContent = `${codigo}${nombre ? ' — ' + nombre : ''}`;
-    opt.dataset.codigo    = codigo;
-    opt.dataset.comuna    = comuna;
-    opt.dataset.hectareas = hects;
-
-    sel.appendChild(opt);
-  });
-
-  sel.disabled = false;
-
-  if (!state.__centroSelectWired) {
-    sel.addEventListener('change', () => copyCentroToHidden(sel));
-    state.__centroSelectWired = true;
-  }
-}
-
-export function copyCentroToHidden(sel = document.getElementById('selectCentro')) {
-  const opt = sel?.selectedOptions?.[0];
-  setVal('centroId',        sel?.value || '');
-  setVal('centroCodigo',    opt?.dataset.codigo || '');
-  setVal('centroCode',      opt?.dataset.codigo || '');
-  setVal('centroComuna',    opt?.dataset.comuna || '');
-  setVal('centroHectareas', opt?.dataset.hectareas || '');
-}
-
-export function lookupComunaByCodigo(codigo) {
-  if (!codigo) return '';
-  const cod = String(codigo);
-  const lista = Array.isArray(state.listaCentros) ? state.listaCentros : [];
-  const match = lista.find(ct => {
-    const cands = [ct.codigo, ct.code, ct.Codigo].filter(v => v != null).map(String);
-    return cands.includes(cod);
-  });
-  return match?.comuna ?? match?.Comuna ?? '';
-}
-
-/* --------------------------------- utils -------------------------------- */
-function setVal(id, v) {
-  const el = document.getElementById(id);
-  if (el) el.value = v;
-}
 
 
 
