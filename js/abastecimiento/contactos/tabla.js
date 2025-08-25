@@ -35,24 +35,6 @@ const esc = (s='') => String(s)
 
 const esCodigoValido = (x) => /^\d{4,7}$/.test(String(x || ''));
 
-function centroCodigoById(id) {
-  if (!id) return '';
-  const lista = Array.isArray(state.listaCentros) ? state.listaCentros : [];
-  const ct = lista.find(x => String(x._id ?? x.id) === String(id));
-  return ct ? String(ct.codigo ?? ct.code ?? ct.Codigo ?? '') : '';
-}
-
-function comunaPorCodigo(codigo) {
-  if (!codigo) return '';
-  const cod = String(codigo);
-  const lista = Array.isArray(state.listaCentros) ? state.listaCentros : [];
-  const ct = lista.find(x => {
-    const cs = [x.codigo, x.code, x.Codigo].filter(v => v != null).map(String);
-    return cs.includes(cod);
-  });
-  return ct?.comuna ?? ct?.Comuna ?? '';
-}
-
 /* ===== handler único expuesto para fallback inline ===== */
 function _clickAccContacto(aEl){
   try{
@@ -210,7 +192,7 @@ export function renderTablaContactos() {
     state.dt.rows.add(filas).draw(false);
     console.log('[contactos] filas renderizadas:', filas.length);
     return;
-    }
+  }
 
   // Fallback sin DataTables
   const tbody = $('#tablaContactos tbody');
