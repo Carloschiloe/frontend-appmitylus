@@ -3,6 +3,7 @@ import * as fotos from './service.js';
 
 let mounted = false;
 let pendingFiles = [];
+let dblBound = false; // evita registrar doble el listener global
 
 const SEL = {
   input:   '#visita_fotos_input',
@@ -13,6 +14,76 @@ const SEL = {
 
 const $ = (s) => document.querySelector(s);
 
+/* =========================================================
+   Visor overlay + Fullscreen API
+   ========================================================= */
+let viewerEl = null, viewerImg = null, closeBtn = null;
+
+function buildViewer(){
+  if (viewerEl) return;
+  viewerEl = document.createElement('div');
+  viewerEl.className = 'foto-viewer';
+  viewerEl.innerHTML = `
+    <img alt="Foto" />
+    <button type="button" class="fv-close" aria-label="Cerrar">Cerrar ✕</button>
+  `;
+  document.body.appendChild(viewerEl);
+  viewerImg = viewerEl.querySelector('img');
+  closeBtn  = viewerEl.querySelector('.fv-close');
+
+  const close = () => {
+    viewerEl.classList.remove('open');
+    document.body.classList.remove('viewer-open');
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(()=>{});
+    }
+  };
+
+  // Cerrar con X
+  closeBtn.addEventListener('click', close);
+  // Cerrar al clicar fuera de la imagen
+  viewerEl.addEventListener('click', (e) => { if (e.target === viewerEl) close(); });
+  // Cerrar con ESC
+  document.addEventListener('keydown', (e) => {
+    if (viewerEl.classList.contains('open') && e.key === 'Escape') close();
+  });
+  // Si el usuario sale de fullscreen con ESC, quitamos el overlay
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && viewerEl.classList.contains('open')) {
+      viewerEl.classList.remove('open');
+      document.body.classList.remove('viewer-open');
+    }
+  });
+}
+
+async function openViewer(src){
+  buildViewer();
+  viewerImg.src = src;
+  viewerEl.classList.add('open');
+  document.body.classList.add('viewer-open');
+
+  // Intentar Fullscreen (mejor experiencia). Si falla, queda el overlay.
+  if (viewerEl.requestFullscreen) {
+    try { await viewerEl.requestFullscreen(); } catch {}
+  }
+}
+
+/* =========================================================
+   Doble click global (sirve aunque se re-renderice el grid)
+   ========================================================= */
+function bindGlobalDblClick(){
+  if (dblBound) return; dblBound = true;
+  document.addEventListener('dblclick', (e) => {
+    const img = e.target.closest('#visita_fotos_preview img, #visita_fotos_gallery img');
+    if (!img) return;
+    e.preventDefault();
+    openViewer(img.currentSrc || img.src);
+  }, true); // captura para adelantarnos a otros handlers
+}
+
+/* =========================================================
+   UI de miniaturas
+   ========================================================= */
 function thumbHTML(src, title, actions=''){
   return `
     <div class="foto-item" data-src="${src}">
@@ -24,29 +95,6 @@ function thumbHTML(src, title, actions=''){
     </div>`;
 }
 
-function openViewer(src) {
-  let viewer = document.querySelector('.foto-viewer');
-  if (!viewer) {
-    viewer = document.createElement('div');
-    viewer.className = 'foto-viewer';
-    viewer.innerHTML = `
-      <div class="foto-viewer__content">
-        <img src="" alt="Foto" />
-        <button class="foto-viewer__close">×</button>
-      </div>`;
-    document.body.appendChild(viewer);
-
-    viewer.addEventListener('click', (e) => {
-      if (e.target.classList.contains('foto-viewer') || e.target.classList.contains('foto-viewer__close')) {
-        viewer.classList.remove('open');
-      }
-    });
-  }
-
-  viewer.querySelector('img').src = src;
-  viewer.classList.add('open');
-}
-
 function renderPending(){
   const wrap = $(SEL.preview); if (!wrap) return;
   if (!pendingFiles.length) return wrap.replaceChildren();
@@ -54,17 +102,13 @@ function renderPending(){
     URL.createObjectURL(f), f.name,
     `<a href="#!" class="foto-del-pend" data-idx="${i}" title="Quitar"><i class="material-icons">close</i></a>`
   )).join('');
+
   wrap.querySelectorAll('.foto-del-pend').forEach(a=>{
     a.addEventListener('click', (e)=>{
       e.preventDefault();
       const idx = Number(a.dataset.idx);
       if (!Number.isNaN(idx)) { pendingFiles.splice(idx,1); renderPending(); }
     });
-  });
-
-  // Doble click → fullscreen
-  wrap.querySelectorAll('.foto-item').forEach(item=>{
-    item.addEventListener('dblclick', ()=> openViewer(item.dataset.src));
   });
 }
 
@@ -88,15 +132,16 @@ export async function renderGallery(visitId){
       M.toast?.({ html: 'Foto eliminada', displayLength: 1400 });
     });
   });
-
-  // Doble click → fullscreen
-  wrap.querySelectorAll('.foto-item').forEach(item=>{
-    item.addEventListener('dblclick', ()=> openViewer(item.dataset.src));
-  });
 }
 
+/* =========================================================
+   Montaje
+   ========================================================= */
 export function mountFotosUIOnce(){
   if (mounted) return; mounted = true;
+
+  buildViewer();         // tener el overlay listo
+  bindGlobalDblClick();  // un solo listener global
 
   const input = $(SEL.input);
   const btn = $(SEL.btn);
@@ -106,6 +151,8 @@ export function mountFotosUIOnce(){
       pendingFiles = Array.from(input.files || []);
       renderPending();
     }, { passive: true });
+  } else {
+    console.warn('[fotos] No se encontró', SEL.input);
   }
 
   if (btn && input){
@@ -113,6 +160,9 @@ export function mountFotosUIOnce(){
   }
 }
 
+/* =========================================================
+   Utilidades públicas
+   ========================================================= */
 export function resetFotosModal(){
   pendingFiles = [];
   $(SEL.preview)?.replaceChildren();
@@ -139,3 +189,4 @@ export async function handleFotosAfterSave(visitId){
     await renderGallery(visitId);
   }
 }
+
