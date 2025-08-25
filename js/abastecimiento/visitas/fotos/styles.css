@@ -198,3 +198,24 @@
 
 /* Asegura que dentro del modal todo reciba eventos (evita “capas muertas”) */
 #modalVisita, #modalVisita * { pointer-events: auto; }
+
+/* === Visor de foto en pantalla completa === */
+.foto-viewer{
+  position: fixed; inset: 0; z-index: 1006; /* sobre modales */
+  background: rgba(0,0,0,.9);
+  display: none; align-items: center; justify-content: center;
+}
+.foto-viewer.open{ display: flex; }
+
+.foto-viewer img{
+  max-width: 95vw; max-height: 95vh; object-fit: contain; display:block;
+  box-shadow: 0 10px 40px rgba(0,0,0,.4);
+}
+
+.foto-viewer__close{
+  position: fixed; top: 12px; right: 16px;
+  background: rgba(255,255,255,.18); color:#fff; border:0; border-radius: 999px;
+  padding: 10px 14px; cursor: pointer; font-weight: 600; letter-spacing: .3px;
+}
+.foto-viewer__close:hover{ background: rgba(255,255,255,.3); }
+
