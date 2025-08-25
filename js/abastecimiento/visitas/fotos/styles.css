@@ -15,10 +15,9 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  /* Mejora de tap en móviles */
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  transform: translateZ(0); /* evita bugs de stacking en iOS */
+  transform: translateZ(0);
 }
 
 /* El <input type="file"> ocupa el área del botón y recibe el tap */
@@ -34,8 +33,7 @@
   background: transparent;
   appearance: none;
   -webkit-appearance: none;
-  /* Evita zoom en iOS al enfocar */
-  font-size: 16px;
+  font-size: 16px; /* evita zoom en iOS */
 }
 
 /* El botón visible queda debajo del input superpuesto */
@@ -44,15 +42,12 @@
   z-index: 1;
 }
 
-/* Estados deshabilitados (por si el JS desactiva el picker) */
+/* Deshabilitado */
 #visita_fotos .filepick-input:disabled { pointer-events: none; }
 #visita_fotos .filepick-input:disabled + #btnPickFotos,
-#visita_fotos #btnPickFotos:disabled {
-  opacity: .5;
-  cursor: not-allowed;
-}
+#visita_fotos #btnPickFotos:disabled { opacity: .5; cursor: not-allowed; }
 
-/* (Opcional) estado drag-over si más adelante añades DnD */
+/* (Opcional) estado drag-over si luego añades DnD */
 #visita_fotos .filepick-wrap.is-dragover {
   outline: 2px dashed var(--primary, #26a69a);
   outline-offset: 4px;
@@ -65,7 +60,6 @@
   grid-template-columns: repeat(12, 1fr);
   gap: 10px;
 }
-
 @media (max-width:1200px){ .fotos-grid{ grid-template-columns: repeat(8, 1fr); } }
 @media (max-width:768px){  .fotos-grid{ grid-template-columns: repeat(6, 1fr); } }
 @media (max-width:600px){  .fotos-grid{ grid-template-columns: repeat(4, 1fr); } }
@@ -82,23 +76,11 @@
   flex-direction: column;
   transition: box-shadow .15s ease, transform .15s ease;
 }
+@media (max-width:768px){ .foto-item { grid-column: span 3; } }   /* 3/6 = 50% */
+@media (max-width:600px){ .foto-item { grid-column: span 4; } }   /* 4/4 = 100% */
 
-@media (max-width:768px){
-  .foto-item { grid-column: span 3; } /* 3/6 = 50% */
-}
-@media (max-width:600px){
-  .foto-item { grid-column: span 4; } /* 4/4 = 100% */
-}
-
-.foto-item:hover {
-  box-shadow: 0 4px 18px rgba(0,0,0,.08);
-  transform: translateY(-1px);
-}
-
-.foto-item:focus-within {
-  outline: 2px solid var(--primary, #26a69a);
-  outline-offset: 2px;
-}
+.foto-item:hover { box-shadow: 0 4px 18px rgba(0,0,0,.08); transform: translateY(-1px); }
+.foto-item:focus-within { outline: 2px solid var(--primary, #26a69a); outline-offset: 2px; }
 
 /* Miniatura */
 .foto-thumb {
@@ -110,77 +92,45 @@
   overflow: hidden;
   position: relative;
 }
+.foto-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-.foto-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* (Opcional) esqueleto de carga */
+/* Esqueleto opcional */
 .foto-thumb.skeleton::after {
   content: "";
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
   background-size: 400% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
 }
-@keyframes shimmer {
-  0% { background-position: 100% 0; }
-  100% { background-position: 0 0; }
-}
+@keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:0 0} }
 
 /* Meta + acciones */
 .foto-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 6px 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 6px; padding: 6px 8px;
 }
-
 .foto-meta .trunc {
-  display: inline-block;
-  max-width: 80%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: inline-block; max-width: 80%;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-
-.foto-actions {
-  display: inline-flex;
-  gap: 6px;
-}
-
+.foto-actions { display: inline-flex; gap: 6px; }
 .foto-actions a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #f2f5f6;
-  transition: filter .12s ease, transform .12s ease;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #f2f5f6; transition: filter .12s ease, transform .12s ease;
 }
-
-.foto-actions a:hover {
-  filter: brightness(.95);
-  transform: scale(1.04);
-}
-
+.foto-actions a:hover { filter: brightness(.95); transform: scale(1.04); }
 .foto-actions .material-icons { font-size: 18px; line-height: 1; }
 
-/* Estados de error / carga en una tarjeta (si el JS los agrega) */
+/* Estados de tarjeta */
 .foto-item.is-loading { opacity: .7; }
 .foto-item.is-error   { border-color: #ef5350; box-shadow: 0 0 0 2px rgba(239,83,80,.15); }
 
-/* Barra de progreso básica (si subes en chunks) */
+/* Progreso opcional */
 .foto-progress { height: 4px; border-radius: 4px; background: #eceff1; overflow: hidden; margin: 4px 8px 8px; }
 .foto-progress__bar { height: 100%; width: 0%; background: var(--primary, #26a69a); transition: width .2s ease; }
 
-/* Asegura que dentro del modal todo reciba eventos (evita “capas muertas”) */
+/* Asegura eventos dentro del modal de Materialize */
 #modalVisita, #modalVisita * { pointer-events: auto; }
 
 /* =========================================================
@@ -191,7 +141,7 @@
   background: #000;
   display: none;               /* aparece con .open */
   align-items: center; justify-content: center;
-  z-index: 4000;               /* por encima de Materialize modal (~1005) */
+  z-index: 9999;               /* por encima de cualquier modal/popover */
 }
 .foto-viewer.open{ display: flex; }
 
@@ -212,5 +162,5 @@
 }
 .fv-close:hover{ background: rgba(255,255,255,.3); }
 
-/* Evita que la página se desplace detrás del visor */
+/* Evita scroll del fondo cuando el visor está abierto */
 body.viewer-open { overflow: hidden; }
