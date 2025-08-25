@@ -152,13 +152,10 @@
               <option value="">¿Tiene MMPP disponible?</option>
               <option value="Sí">Sí</option>
               <option value="No">No</option>
+              <option value="pordefinir">Por definir</option>
+              
             </select>
-          </div>
-          <div class="input-field col s4">
-            <input id="fechaDisponibilidad" type="date">
-            <label for="fechaDisponibilidad" class="active">Fecha de disponibilidad</label>
-          </div>
-          <div class="input-field col s4">
+            <div class="input-field col s4">
             <label for="dispuestoVender" class="active">Disposición</label>
             <select id="dispuestoVender" class="browser-default modern-select">
               <option value="">¿Dispuesto a vender?</option>
@@ -169,11 +166,6 @@
           </div>
         </div>
 
-        <div class="row">
-          <div class="input-field col s4">
-            <input id="tonsDisponiblesAprox" type="number" step="0.01" min="0" placeholder="Ej: 25.5">
-            <label for="tonsDisponiblesAprox" class="active">Tons disponibles aprox</label>
-          </div>
           <div class="input-field col s4">
             <input id="vendeActualmenteA" type="text" placeholder="Ej: Camanchaca, Orizon...">
             <label for="vendeActualmenteA">Vende actualmente a</label>
@@ -200,6 +192,50 @@
         </div>
       </form>
     </div>
+    <!-- Bloque: Disponibilidad MMPP (asignaciones) -->
+<div class="row" id="asigDisponibilidadBlock" style="display:none">
+  <div class="col s12">
+    <label style="display:flex;align-items:center;gap:.5rem">
+      <input type="checkbox" id="asigAgregarDisponibilidad" />
+      <span>Agregar disponibilidad de MMPP para este centro</span>
+    </label>
+  </div>
+
+  <div class="col s12 m4">
+    <div class="input-field">
+      <input id="asigAnio" type="number" min="2020" max="2100">
+      <label for="asigAnio">Año</label>
+    </div>
+  </div>
+
+  <div class="col s12 m4">
+    <div class="input-field">
+      <select id="asigMes">
+        <option value="" selected>Mes…</option>
+        <option value="1">Enero</option>
+        <option value="2">Febrero</option>
+        <option value="3">Marzo</option>
+        <option value="4">Abril</option>
+        <option value="5">Mayo</option>
+        <option value="6">Junio</option>
+        <option value="7">Julio</option>
+        <option value="8">Agosto</option>
+        <option value="9">Septiembre</option>
+        <option value="10">Octubre</option>
+        <option value="11">Noviembre</option>
+        <option value="12">Diciembre</option>
+      </select>
+      <label for="asigMes">Mes</label>
+    </div>
+  </div>
+
+  <div class="col s12 m4">
+    <div class="input-field">
+      <input id="asigTons" type="number" step="0.01" min="0">
+      <label for="asigTons">Cantidad (ton)</label>
+    </div>
+  </div>
+</div>
 
     <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:8px;">
       <button type="button" class="modal-close btn-flat">Cancelar</button>
