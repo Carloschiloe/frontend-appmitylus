@@ -219,3 +219,7 @@
 }
 .foto-viewer__close:hover{ background: rgba(255,255,255,.3); }
 
+/* Evita que la página se desplace detrás del visor */
+body.viewer-open { overflow: hidden; }
+
+
