@@ -55,3 +55,16 @@ export function centroCodigoById(id) {
   const c = (state.listaCentros || []).find(x => String(x._id || x.id) === String(id));
   return c?.code || c?.codigo || '';
 }
+
+
+// retorna comuna a partir del código de centro
+export function comunaPorCodigo(codigo){
+  if (!codigo) return '';
+  const lista = Array.isArray(state.listaCentros) ? state.listaCentros : [];
+  const cod = String(codigo);
+  const ct = lista.find(x => {
+    const cs = [x.codigo, x.code, x.Codigo].filter(v => v != null).map(String);
+    return cs.includes(cod);
+  });
+  return ct?.comuna ?? ct?.Comuna ?? '';
+}
