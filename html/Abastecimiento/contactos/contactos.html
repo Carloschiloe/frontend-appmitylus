@@ -46,7 +46,7 @@
             <th>Proveedor</th>
             <th>Centro</th>
             <th>Comuna</th>
-            <th>Disp.</</th>
+            <th>Disp.</th>
             <th>Fecha Disp.</th>
             <th>Disposición</th>
             <th>Tons aprox</th>
@@ -199,6 +199,30 @@
             <label for="contactoEmail">Email</label>
           </div>
         </div>
+
+        <!-- === Disponibilidad por mes (opcional) === -->
+        <div class="card-panel" id="dispPorMes" style="padding:12px 14px; border-radius:10px;">
+          <h6 style="margin:.2rem 0 .6rem">Disponibilidad por mes (opcional)</h6>
+
+          <div class="row" style="margin-bottom:.4rem">
+            <div class="input-field col s5">
+              <input id="disp_month" type="month" />
+              <label class="active" for="disp_month">Mes (YYYY-MM)</label>
+            </div>
+            <div class="input-field col s5">
+              <input id="disp_tons" type="number" step="0.01" min="0" placeholder="Ej: 300" />
+              <label class="active" for="disp_tons">Toneladas</label>
+            </div>
+            <div class="input-field col s2" style="margin-top:22px">
+              <a class="btn teal" id="disp_add"><i class="material-icons left">add</i>Agregar</a>
+            </div>
+          </div>
+
+          <ul id="disp_list" class="collection" style="margin:.5rem 0 0; max-height:180px; overflow:auto"></ul>
+          <input type="hidden" id="disp_json" />
+        </div>
+        <!-- === /Disponibilidad por mes === -->
+
       </form>
     </div>
 
@@ -257,32 +281,31 @@
         </div>
 
         <!-- Fotos de la visita -->
-<div id="visita_fotos" class="fotos-uploader">
-  <div class="fotos-actions filepick-wrap">
-    <button type="button" id="btnPickFotos" class="btn teal waves-effect">
-      <i class="material-icons left">photo_camera</i>
-      Tomar/Subir fotos
-    </button>
+        <div id="visita_fotos" class="fotos-uploader">
+          <div class="fotos-actions filepick-wrap">
+            <button type="button" id="btnPickFotos" class="btn teal waves-effect">
+              <i class="material-icons left">photo_camera</i>
+              Tomar/Subir fotos
+            </button>
 
-    <!-- Input VISIBLE para el navegador (pero con opacity:0 y encima del botón) -->
-    <input
-      id="visita_fotos_input"
-      type="file"
-      accept="image/*"
-      capture="environment"
-      multiple
-      class="filepick-input"
-      aria-label="Tomar o subir fotos"
-    />
+            <input
+              id="visita_fotos_input"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              class="filepick-input"
+              aria-label="Tomar o subir fotos"
+            />
 
-    <small class="text-soft">JPG/PNG hasta 10&nbsp;MB c/u, máx 12.</small>
-  </div>
+            <small class="text-soft">JPG/PNG hasta 10&nbsp;MB c/u, máx 12.</small>
+          </div>
 
-  <div id="visita_fotos_preview" class="fotos-grid"></div>
-  <div id="visita_fotos_gallery" class="fotos-grid"></div>
-</div>
+          <div id="visita_fotos_preview" class="fotos-grid"></div>
+          <div id="visita_fotos_gallery" class="fotos-grid"></div>
+        </div>
 
-  <div class="right-align">
+        <div class="right-align">
           <button type="button" class="modal-close btn-flat">Cancelar</button>
           <button class="btn teal" type="submit"><i class="material-icons left">save</i>Guardar visita</button>
         </div>
@@ -323,5 +346,94 @@
 
   <!-- Orquestador (la delegación de clicks de VISITAS vive en /visitas/tab.js) -->
   <script type="module" src="../../../js/abastecimiento/contactos/index.js?v=7"></script>
+
+  <!-- Módulo ligero: UI y guardado de "Disponibilidad por mes" -->
+  <script type="module">
+    import { apiUpsertDisponibilidad } from "../../../js/core/api.js";
+
+    const dispDraft = [];
+    const $id = (x) => document.getElementById(x);
+
+    function monthKeyFromInput(val){
+      if(!val) return "";
+      const s = String(val).trim();
+      if (/^\d{4}-\d{2}$/.test(s)) return s;
+      const d = new Date(s);
+      if (Number.isNaN(d.getTime())) return "";
+      return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+    }
+
+    function renderDispList(){
+      const ul = $id("disp_list");
+      $id("disp_json").value = JSON.stringify(dispDraft);
+      if (!ul) return;
+      if (!dispDraft.length) {
+        ul.innerHTML = `<li class="collection-item grey-text">Sin ítems. Agrega Mes + Tons y presiona "Agregar".</li>`;
+        return;
+      }
+      ul.innerHTML = dispDraft.map((it,idx)=>`
+        <li class="collection-item" style="display:flex; align-items:center; justify-content:space-between;">
+          <span><strong>${it.mes}</strong> — ${Number(it.tons).toLocaleString('es-CL',{maximumFractionDigits:2})} t</span>
+          <a href="#!" class="red-text" data-del="${idx}" title="Quitar"><i class="material-icons">delete</i></a>
+        </li>
+      `).join("");
+      ul.querySelectorAll('[data-del]').forEach(a=>{
+        a.addEventListener('click', (e)=>{
+          e.preventDefault();
+          const i = +a.dataset.del;
+          dispDraft.splice(i,1);
+          renderDispList();
+        });
+      });
+    }
+
+    $id("disp_add")?.addEventListener("click", (e)=>{
+      e.preventDefault();
+      const mk = monthKeyFromInput($id("disp_month")?.value);
+      const tons = Number($id("disp_tons")?.value||0);
+      if(!mk || !Number.isFinite(tons) || tons<=0){
+        M.toast?.({html:"Completa un Mes válido (YYYY-MM) y Tons > 0", classes:"red"});
+        return;
+      }
+      dispDraft.push({ mes: mk, tons });
+      $id("disp_month").value = "";
+      $id("disp_tons").value = "";
+      renderDispList();
+    });
+
+    renderDispList();
+
+    // Al refrescar la tabla (post-guardar contacto), disparamos los POST de disponibilidad
+    document.addEventListener("reload-tabla-contactos", async ()=>{
+      if (!dispDraft.length) return;
+
+      const proveedorKey    = $id("proveedorKey")?.value || "";
+      const proveedorNombre = $id("proveedorNombre")?.value || "";
+      const centroId        = $id("centroId")?.value || null;
+      const centroCodigo    = $id("centroCodigo")?.value || "";
+      const comuna          = $id("centroComuna")?.value || "";
+
+      try{
+        for(const it of dispDraft){
+          await apiUpsertDisponibilidad({
+            mesKey: it.mes,
+            tons: it.tons,
+            proveedorKey,
+            proveedorNombre,
+            centroId,
+            centroCodigo,
+            comuna
+          });
+        }
+        M.toast?.({html:"Disponibilidades registradas", classes:"teal"});
+      }catch(err){
+        console.warn(err);
+        M.toast?.({html:"No se pudo registrar la disponibilidad por mes", classes:"red"});
+      }finally{
+        dispDraft.splice(0, dispDraft.length);
+        renderDispList();
+      }
+    }, { passive:true });
+  </script>
 </body>
 </html>
