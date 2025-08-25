@@ -4,12 +4,12 @@ import * as fotos from './service.js';
 let mounted = false;
 let pendingFiles = [];
 
-// 🔁 SELECTORES CORREGIDOS: el input real es #visita_fotos_input
+// Selectores (input real + contenedores de previews)
 const SEL = {
-  input:   '#visita_fotos_input',   // ⬅️ input file real
-  preview: '#visita_fotos_preview', // pendientes (antes de guardar)
-  gallery: '#visita_fotos_gallery', // guardadas (después de guardar)
-  btn:     '#btnPickFotos',         // botón visible (opcional)
+  input:   '#visita_fotos_input',
+  preview: '#visita_fotos_preview', // pendientes
+  gallery: '#visita_fotos_gallery', // guardadas
+  btn:     '#btnPickFotos',
 };
 
 const $ = (s) => document.querySelector(s);
@@ -17,7 +17,7 @@ const $ = (s) => document.querySelector(s);
 /* =========================================================
    Visor FULLSCREEN (doble click en miniatura)
    ========================================================= */
-let viewerEl = null, viewerImg = null;
+let viewerEl = null, viewerImg = null, dblBound = false;
 
 function ensureViewer(){
   if (viewerEl) return;
@@ -31,11 +31,15 @@ function ensureViewer(){
   viewerEl  = document.getElementById('fotoViewer');
   viewerImg = document.getElementById('fotoViewerImg');
 
-  const closeViewer = () => viewerEl.classList.remove('open');
+  const closeViewer = () => {
+    viewerEl.classList.remove('open');
+    document.body.classList.remove('viewer-open');
+  };
+
   viewerEl.querySelector('.foto-viewer__close')?.addEventListener('click', closeViewer);
-  // Click en fondo cierra
+  // Cerrar al hacer click en el fondo oscuro
   viewerEl.addEventListener('click', (e) => { if (e.target === viewerEl) closeViewer(); });
-  // ESC cierra
+  // Esc para cerrar
   document.addEventListener('keydown', (e) => {
     if (viewerEl.classList.contains('open') && e.key === 'Escape') closeViewer();
   });
@@ -45,6 +49,18 @@ function openViewer(src){
   ensureViewer();
   viewerImg.src = src;
   viewerEl.classList.add('open');
+  document.body.classList.add('viewer-open'); // bloquear scroll de fondo
+}
+
+// Listener global en captura: funciona aunque se vuelva a renderizar el grid
+function bindGlobalDblClick(){
+  if (dblBound) return; dblBound = true;
+  document.addEventListener('dblclick', (e) => {
+    const img = e.target.closest('#visita_fotos_preview img, #visita_fotos_gallery img');
+    if (!img) return;
+    e.preventDefault();
+    openViewer(img.currentSrc || img.src);
+  }, true); // captura para adelantarnos a otros handlers
 }
 
 /* =========================================================
@@ -78,12 +94,6 @@ function renderPending(){
       if (!Number.isNaN(idx)) { pendingFiles.splice(idx,1); renderPending(); }
     });
   });
-
-  // doble click → visor fullscreen
-  wrap.addEventListener('dblclick', (e)=>{
-    const img = e.target.closest('.foto-thumb img');
-    if (img) openViewer(img.src);
-  }, { once: true }); // se vuelve a adjuntar en cada render
 }
 
 export async function renderGallery(visitId){
@@ -109,12 +119,6 @@ export async function renderGallery(visitId){
       M.toast?.({ html: 'Foto eliminada', displayLength: 1400 });
     });
   });
-
-  // doble click → visor fullscreen
-  wrap.addEventListener('dblclick', (e)=>{
-    const img = e.target.closest('.foto-thumb img');
-    if (img) openViewer(img.src);
-  }, { once: true });
 }
 
 /* =========================================================
@@ -123,10 +127,13 @@ export async function renderGallery(visitId){
 export function mountFotosUIOnce(){
   if (mounted) return; mounted = true;
 
+  ensureViewer();
+  bindGlobalDblClick();
+
   const input = $(SEL.input);
   const btn = $(SEL.btn);
 
-  // 1) Cambio en el INPUT correcto ✅
+  // 1) Cambio en el INPUT correcto
   if (input){
     input.addEventListener('change', ()=>{
       pendingFiles = Array.from(input.files || []);
@@ -138,9 +145,7 @@ export function mountFotosUIOnce(){
 
   // 2) (Opcional) botón visible dispara el picker
   if (btn && input){
-    btn.addEventListener('click', ()=>{
-      input.click();
-    });
+    btn.addEventListener('click', ()=> input.click());
   }
 }
 
@@ -174,4 +179,3 @@ export async function handleFotosAfterSave(visitId){
     await renderGallery(visitId);
   }
 }
-
