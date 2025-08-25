@@ -207,27 +207,52 @@
 .tabla-mt   { margin-top: .75rem; }
 .tabla-mt-sm{ margin-top: .5rem; }
 
-/* ===== VISITAS: layout de columnas ===== */
-#tab-visitas #tablaVisitas { table-layout: fixed; width: 100%; }
-#tab-visitas #tablaVisitas th,
-#tab-visitas #tablaVisitas td { box-sizing: border-box; }
+/* ===== VISITAS: layout de columnas con ellipsis y sin solapes ===== */
+#tab-visitas #tablaVisitas {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
 
-/* Fijas */
+#tab-visitas #tablaVisitas th,
+#tab-visitas #tablaVisitas td {
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+/* Anchos fijos */
 #tab-visitas #tablaVisitas th:nth-child(1), #tab-visitas #tablaVisitas td:nth-child(1) { width: 7rem; }   /* Fecha */
 #tab-visitas #tablaVisitas th:nth-child(3), #tab-visitas #tablaVisitas td:nth-child(3) { width: 8rem; }   /* Centro */
 #tab-visitas #tablaVisitas th:nth-child(4), #tab-visitas #tablaVisitas td:nth-child(4) { width: 7rem; }   /* Muestra */
 #tab-visitas #tablaVisitas th:nth-child(6), #tab-visitas #tablaVisitas td:nth-child(6) { width: 6rem; text-align:right; } /* Tons */
-#tab-visitas #tablaVisitas th:nth-child(8), #tab-visitas #tablaVisitas td:nth-child(8) { width: 8rem; }    /* Acciones */
+#tab-visitas #tablaVisitas th:nth-child(8), #tab-visitas #tablaVisitas td:nth-child(8) { width: 8rem; text-align:center; } /* Acciones */
 
-/* Flexibles */
-#tab-visitas #tablaVisitas th:nth-child(2), #tab-visitas #tablaVisitas td:nth-child(2) { width: auto; }    /* Proveedor */
-#tab-visitas #tablaVisitas th:nth-child(5), #tab-visitas #tablaVisitas td:nth-child(5) { width: 14rem; }   /* Próximo paso */
-#tab-visitas #tablaVisitas th:nth-child(7), #tab-visitas #tablaVisitas td:nth-child(7) { width: auto; }    /* Observaciones */
+/* Flexibles con límites */
+#tab-visitas #tablaVisitas th:nth-child(2), #tab-visitas #tablaVisitas td:nth-child(2) { max-width: 24ch; }  /* Proveedor */
+#tab-visitas #tablaVisitas th:nth-child(5), #tab-visitas #tablaVisitas td:nth-child(5) { max-width: 20ch; }  /* Próximo paso */
+#tab-visitas #tablaVisitas th:nth-child(7), #tab-visitas #tablaVisitas td:nth-child(7) { max-width: 30ch; }  /* Observaciones */
 
-/* Ellipsis */
-.ellipsisCell { display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
-.ellipsisProv { max-width: 26ch; }
-.ellipsisObs  { display:block; width:100%; }
+/* Íconos en línea */
+#tab-visitas #tablaVisitas td:nth-child(8){
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  #tab-visitas #tablaVisitas th:nth-child(2), #tab-visitas #tablaVisitas td:nth-child(2) { max-width: 20ch; }
+  #tab-visitas #tablaVisitas th:nth-child(7), #tab-visitas #tablaVisitas td:nth-child(7) { max-width: 20ch; }
+}
+@media (max-width: 768px) {
+  #tab-visitas #tablaVisitas th:nth-child(2), #tab-visitas #tablaVisitas td:nth-child(2) { max-width: 18ch; }
+  #tab-visitas #tablaVisitas th:nth-child(5), #tab-visitas #tablaVisitas td:nth-child(5) { max-width: 16ch; }
+}
+
 
 /* ===== Fotos de visitas ===== */
 @import url('/js/abastecimiento/visitas/fotos/styles.css');
+
