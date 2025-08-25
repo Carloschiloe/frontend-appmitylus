@@ -45,9 +45,7 @@
 }
 
 /* Estados deshabilitados (por si el JS desactiva el picker) */
-#visita_fotos .filepick-input:disabled {
-  pointer-events: none;
-}
+#visita_fotos .filepick-input:disabled { pointer-events: none; }
 #visita_fotos .filepick-input:disabled + #btnPickFotos,
 #visita_fotos #btnPickFotos:disabled {
   opacity: .5;
@@ -172,88 +170,47 @@
   transform: scale(1.04);
 }
 
-.foto-actions .material-icons {
-  font-size: 18px;
-  line-height: 1;
-}
+.foto-actions .material-icons { font-size: 18px; line-height: 1; }
 
 /* Estados de error / carga en una tarjeta (si el JS los agrega) */
 .foto-item.is-loading { opacity: .7; }
 .foto-item.is-error   { border-color: #ef5350; box-shadow: 0 0 0 2px rgba(239,83,80,.15); }
 
 /* Barra de progreso básica (si subes en chunks) */
-.foto-progress {
-  height: 4px;
-  border-radius: 4px;
-  background: #eceff1;
-  overflow: hidden;
-  margin: 4px 8px 8px;
-}
-.foto-progress__bar {
-  height: 100%;
-  width: 0%;
-  background: var(--primary, #26a69a);
-  transition: width .2s ease;
-}
+.foto-progress { height: 4px; border-radius: 4px; background: #eceff1; overflow: hidden; margin: 4px 8px 8px; }
+.foto-progress__bar { height: 100%; width: 0%; background: var(--primary, #26a69a); transition: width .2s ease; }
 
 /* Asegura que dentro del modal todo reciba eventos (evita “capas muertas”) */
 #modalVisita, #modalVisita * { pointer-events: auto; }
 
-/* === Visor de foto en pantalla completa === */
+/* =========================================================
+   VISOR DE FOTO PANTALLA COMPLETA (overlay propio)
+   ========================================================= */
 .foto-viewer{
-  position: fixed; inset: 0; z-index: 1006; /* sobre modales */
-  background: rgba(0,0,0,.9);
-  display: none; align-items: center; justify-content: center;
+  position: fixed; inset: 0;
+  background: #000;
+  display: none;               /* aparece con .open */
+  align-items: center; justify-content: center;
+  z-index: 4000;               /* por encima de Materialize modal (~1005) */
 }
 .foto-viewer.open{ display: flex; }
 
 .foto-viewer img{
-  max-width: 95vw; max-height: 95vh; object-fit: contain; display:block;
+  max-width: 100vw;
+  max-height: 100vh;
+  object-fit: contain;
+  display: block;
   box-shadow: 0 10px 40px rgba(0,0,0,.4);
 }
 
-.foto-viewer__close{
-  position: fixed; top: 12px; right: 16px;
-  background: rgba(255,255,255,.18); color:#fff; border:0; border-radius: 999px;
-  padding: 10px 14px; cursor: pointer; font-weight: 600; letter-spacing: .3px;
+.fv-close{
+  position: absolute;
+  top: 12px; right: 16px;
+  background: rgba(255,255,255,.18);
+  color:#fff; border:0; border-radius: 999px;
+  padding: 8px 12px; cursor: pointer; font-weight: 600;
 }
-.foto-viewer__close:hover{ background: rgba(255,255,255,.3); }
+.fv-close:hover{ background: rgba(255,255,255,.3); }
 
 /* Evita que la página se desplace detrás del visor */
 body.viewer-open { overflow: hidden; }
-
-.foto-viewer {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.9);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-}
-.foto-viewer.open { display: flex; }
-
-.foto-viewer img {
-  max-width: 95vw;
-  max-height: 95vh;
-  object-fit: contain;
-  box-shadow: 0 10px 40px rgba(0,0,0,.4);
-}
-
-.foto-viewer__close {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  background: rgba(255,255,255,.2);
-  color: #fff;
-  border: none;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 20px;
-  border-radius: 6px;
-}
-.foto-viewer__close:hover {
-  background: rgba(255,255,255,.35);
-}
-
-
