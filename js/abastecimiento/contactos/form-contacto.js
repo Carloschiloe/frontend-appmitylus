@@ -31,16 +31,23 @@ const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
 })();
 
 /* ---------- API helpers para DISPONIBILIDADES ---------- */
-// helper local para aplanar el _id (string, objeto {$oid}, etc.)
+// aplanar cualquier formato de _id
 const normId = (x) => {
   let id = (x && (x._id ?? x.id)) ?? null;
-  if (id && typeof id === 'object') id = id.$oid || String(id);
-  return id || null;
+  if (!id) return null;
+  if (typeof id === 'string') return id;
+  if (typeof id === 'object') {
+    if (id.$oid) return id.$oid;
+    if (id.oid) return id.oid;
+    // Último intento: extraer 24 hex de toString()
+    const m = String(id).match(/[0-9a-fA-F]{24}/);
+    if (m) return m[0];
+  }
+  return null;
 };
 
 // GET a /disponibilidades (colección real con tus datos)
 async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } = {}) {
-  // ❗ Si no hay filtros, no consultes (evita devolver TODO)
   if (!proveedorKey && !centroId) return [];
 
   const q = new URLSearchParams();
@@ -54,12 +61,9 @@ async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } 
     const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
     if (!r.ok) return [];
     const data = await r.json();
-
-    // Soportar tanto {items:[...]} como array plano
     const list = Array.isArray(data) ? data : (data.items || []);
 
-    // Map a objetos consistentes (con id aplanado)
-    return list.map(x => {
+    const mapped = list.map(x => {
       const id = normId(x);
       const mk = x.mesKey || (x.anio && x.mes ? mesKeyFrom(x.anio, x.mes) : null);
       return {
@@ -73,6 +77,8 @@ async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } 
         centroId: x.centroId || null
       };
     });
+
+    return mapped;
   } catch {
     return [];
   }
@@ -104,7 +110,7 @@ async function postDisponibilidad(d){
 async function patchDisponibilidad(id, d){
   const payload = {};
   if (d.anio && d.mes) payload.mesKey = mesKeyFrom(d.anio, d.mes);
-  if ('tons' in d) payload.tonsDisponible = d.tons;   // ✅ nombre correcto
+  if ('tons' in d) payload.tonsDisponible = d.tons;
   if (d.estado) payload.estado = d.estado;
 
   const r = await fetch(`${API_BASE}/disponibilidades/${id}`, {
@@ -127,15 +133,16 @@ function renderAsignaciones(list){
   const rows = list.slice().sort((a,b)=>((b.anio||0)*100+b.mes)-((a.anio||0)*100+a.mes))
     .map(a=>{
       const rowId = (a._id || a.id || '');
+      const mk = a.mesKey || '';
       return `<tr>
         <td>${MES[a.mes]||a.mes} ${a.anio||''}</td>
         <td class="num">${Number(a.tons||0).toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
         <td>${a.estado||''}</td>
         <td class="mini-actions">
-          <a href="javascript:;" class="mini-edit" data-id="${rowId}" data-anio="${a.anio||''}" data-mes="${a.mes||''}" data-tons="${a.tons||''}" title="Editar">
+          <a href="javascript:;" class="mini-edit" data-id="${rowId}" data-meskey="${mk}" data-anio="${a.anio||''}" data-mes="${a.mes||''}" data-tons="${a.tons||''}" title="Editar">
             <i class="material-icons">edit</i>
           </a>
-          <a href="javascript:;" class="mini-del" data-id="${rowId}" title="Eliminar">
+          <a href="javascript:;" class="mini-del" data-id="${rowId}" data-meskey="${mk}" title="Eliminar">
             <i class="material-icons red-text">delete</i>
           </a>
         </td>
@@ -155,18 +162,20 @@ async function pintarHistorialEdicion(contacto){
   const proveedorKey = contacto?.proveedorKey || (contacto?.proveedorNombre ? slug(contacto.proveedorNombre) : '');
   const centroId = contacto?.centroId || null;
 
-  // ❗ Sin filtros, mostrar vacío
   if (!proveedorKey && !centroId) {
     box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
+    state._ultimaDispLista = [];
     return;
   }
 
   box.innerHTML = '<span class="grey-text">Cargando disponibilidad...</span>';
   try {
     const lista = await fetchDisponibilidades({ proveedorKey, centroId });
+    state._ultimaDispLista = lista; // <- guardo para resolver id por mesKey si hiciera falta
     box.innerHTML = renderAsignaciones(lista);
   } catch(e){
     console.error(e);
+    state._ultimaDispLista = [];
     box.innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
   }
 }
@@ -191,14 +200,12 @@ function hookDetalleHistorial(){
       const proveedorKey = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
       const centroId = c.centroId || null;
 
-      // ❗ Sin filtros, mostrar vacío
       if (!proveedorKey && !centroId) {
         body.querySelector('#detalleAsignacionesTable').innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
         return;
       }
 
       const lista = await fetchDisponibilidades({ proveedorKey, centroId });
-      // en detalle no hay acciones
       const html = renderAsignaciones(lista)
         .replace(/<th[^>]*>Opciones<\/th>/,'<th></th>')
         .replace(/<td class="mini-actions">[\s\S]*?<\/td>/g,'<td></td>');
@@ -236,8 +243,17 @@ export function setupFormulario() {
     const btn = e.target.closest('.mini-actions a'); if(!btn) return;
     e.preventDefault();
 
-    const id = btn.dataset.id?.trim();
-    if (!id) {
+    let id = btn.dataset.id?.trim() || '';
+    if (!isValidObjectId(id)) {
+      // intentar resolver por mesKey con la lista cached
+      const mk = btn.dataset.meskey || '';
+      if (mk && Array.isArray(state._ultimaDispLista)) {
+        const found = state._ultimaDispLista.find(x => x.mesKey === mk && isValidObjectId(x._id));
+        if (found) id = found._id;
+      }
+    }
+
+    if (!isValidObjectId(id)) {
       M.toast?.({ html:'No hay ID válido para esta fila', classes:'red' });
       return;
     }
