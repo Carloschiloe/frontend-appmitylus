@@ -8,46 +8,94 @@ import { renderTablaContactos } from './tabla.js';
 
 const isValidObjectId = (s) => typeof s === 'string' && /^[0-9a-fA-F]{24}$/.test(s);
 
-/* ---------- Asignaciones (mínimo necesario) ---------- */
+/* ---------- Disponibilidades (colección nueva, con fallback a asignaciones) ---------- */
 const API_BASE = window.API_URL || '/api';
-const MES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_N = ['', 'Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const pad2 = (n)=>String(n).padStart(2,'0');
 const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
 
-async function postAsignacion(a){
-  const r = await fetch(`${API_BASE}/asignaciones`, {
-    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(a)
+// Crea disponibilidad en /disponibilidades; si falla, intenta /asignaciones (compat)
+async function postDisponibilidad(disp){
+  // intento principal: /disponibilidades
+  let r = await fetch(`${API_BASE}/disponibilidades`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(disp)
   });
-  if(!r.ok) throw new Error('asignaciones POST '+r.status);
+  if (r.ok) { try { return await r.json(); } catch { return null; } }
+
+  // fallback legacy: /asignaciones (conversión tonsDisponible -> tons)
+  const legacy = { ...disp, tons: disp.tonsDisponible };
+  delete legacy.tonsDisponible;
+  r = await fetch(`${API_BASE}/asignaciones`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(legacy)
+  });
+  if(!r.ok) throw new Error('POST disponibilidad/asignacion '+r.status);
   try { return await r.json(); } catch { return null; }
 }
-async function fetchAsignaciones(contactoId){
-  if(!contactoId) return [];
-  const r = await fetch(`${API_BASE}/asignaciones?contactoId=${encodeURIComponent(contactoId)}`);
-  if(!r.ok) return [];
+
+// Lee disponibilidades por proveedorKey y (opcional) centroId. Si no existe endpoint, hace fallback.
+async function fetchDisponibilidades({ proveedorKey, centroId }){
+  const qs = new URLSearchParams();
+  if (proveedorKey) qs.set('proveedorKey', proveedorKey);
+  if (centroId)     qs.set('centroId', centroId);
+
+  // 1) /disponibilidades
+  let r = await fetch(`${API_BASE}/disponibilidades?${qs.toString()}`);
+  if (r.ok) { try { return await r.json(); } catch { /* noop */ } }
+
+  // 2) fallback /asignaciones
+  r = await fetch(`${API_BASE}/asignaciones?${qs.toString()}`);
+  if (!r.ok) return [];
   try { return await r.json(); } catch { return []; }
 }
-function renderAsignaciones(list){
-  if(!list?.length) return '<span class="grey-text">Sin asignaciones registradas.</span>';
-  const rows = list.slice().sort((a,b)=>((b.anio||0)*100+b.mes)-((a.anio||0)*100+a.mes))
-    .map(a=>`<tr><td>${MES[a.mes]||a.mes} ${a.anio||''}</td>
-      <td style="text-align:right">${Number(a.tons||0).toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
-      <td>${a.estado||''}</td></tr>`).join('');
-  return `<table class="striped" style="margin:6px 0"><thead><tr>
-    <th>Mes</th><th style="text-align:right">Tons</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
+
+function renderDisponibilidades(list){
+  if(!Array.isArray(list) || !list.length){
+    return '<span class="grey-text">Sin asignaciones registradas.</span>';
+  }
+  const rows = list.slice()
+    .sort((a,b)=>((b.anio||0)*100+(b.mes||0))-((a.anio||0)*100+(a.mes||0)))
+    .map(a=>{
+      const mm = MESES_N[a.mes] || a.mes || '';
+      const yy = a.anio ?? '';
+      const tons = Number((a.tonsDisponible ?? a.tons) || 0);
+      const estado = a.estado || '';
+      return `<tr>
+        <td>${mm} ${yy}</td>
+        <td style="text-align:right">${tons.toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
+        <td>${estado}</td>
+      </tr>`;
+    }).join('');
+  return `<table class="striped" style="margin:6px 0">
+    <thead><tr><th>Mes</th><th style="text-align:right">Tons</th><th>Estado</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
-async function pintarHistorialEdicion(contactoId){
+
+// Pinta historial en el panel del modal de edición (bloque asigHist)
+async function pintarHistorialEdicionFromContacto(c){
   const box = document.getElementById('asigHist'); if(!box) return;
   box.innerHTML = '<span class="grey-text">Cargando disponibilidad...</span>';
-  try { box.innerHTML = renderAsignaciones(await fetchAsignaciones(contactoId)); }
-  catch(e){ console.error(e); box.innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>'; }
+  try {
+    const lista = await fetchDisponibilidades({ proveedorKey: c.proveedorKey, centroId: c.centroId });
+    box.innerHTML = renderDisponibilidades(lista);
+  } catch (e) {
+    console.error(e);
+    box.innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
+  }
 }
+
+// Inyecta el historial en el modal del ojo al abrirse
 function hookDetalleHistorial(){
   const body = document.getElementById('detalleContactoBody');
   if(!body) return;
   const obs = new MutationObserver(async ()=>{
     const c = state.contactoActual; if(!c) return;
     if(body.querySelector('#detalleAsignaciones')) return;
+
     const wrap = document.createElement('div');
     wrap.id='detalleAsignaciones';
     wrap.innerHTML = `
@@ -56,23 +104,27 @@ function hookDetalleHistorial(){
         <span class="grey-text">Cargando disponibilidad...</span>
       </div>`;
     body.appendChild(wrap);
-    try {
-      const lista = await fetchAsignaciones(c._id);
-      body.querySelector('#detalleAsignacionesTable').innerHTML = renderAsignaciones(lista);
-    } catch(e) {
+
+    try{
+      const lista = await fetchDisponibilidades({ proveedorKey: c.proveedorKey, centroId: c.centroId });
+      body.querySelector('#detalleAsignacionesTable').innerHTML = renderDisponibilidades(lista);
+    }catch(e){
       body.querySelector('#detalleAsignacionesTable').innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
     }
   });
   obs.observe(body, {childList:true, subtree:true});
 }
 
+/* -------------------- utilidades de formulario -------------------- */
 function clearCentroHidden(){ setVal(['centroId'],''); setVal(['centroCodigo'],''); setVal(['centroComuna'],''); setVal(['centroHectareas'],''); }
 function clearProveedorHidden(){ setVal(['proveedorKey'],''); setVal(['proveedorId'],''); setVal(['proveedorNombre'],''); }
 
+/* ============================ Setup ============================ */
 export function setupFormulario() {
   const form = $('#formContacto'); if (!form) return;
   state.editId = null;
 
+  // Para el modal del ojo: guarda el contacto seleccionado
   document.addEventListener('click', (e)=>{
     const a = e.target.closest?.('a.icon-action.ver'); if(!a) return;
     const id = a.dataset.id;
@@ -133,17 +185,20 @@ export function setupFormulario() {
       if (esUpdate) await apiUpdateContacto(editId, payload);
       else          await apiCreateContacto(payload);
 
+      // Registrar disponibilidad (si se llenaron los campos)
       if (puedeGuardarAsignacion) {
-        let contactoId = esUpdate ? editId : null;
-        if (!contactoId) {
-          const ultimo = (state.contactosGuardados || []).slice(-1)[0];
-          contactoId = (ultimo && ultimo._id) || null;
-        }
-        if (contactoId) {
-          await postAsignacion({
-            contactoId, proveedorKey, centroId,
+        if (!proveedorKey || !centroId) {
+          M.toast?.({ html: 'Para registrar disponibilidad necesitas empresa y centro.', classes: 'orange' });
+        } else {
+          await postDisponibilidad({
+            proveedorKey, proveedorNombre,
+            centroId, centroCodigo,
+            comuna: centroComuna || '',
             anio: asigAnio, mes: asigMes, mesKey: mesKeyFrom(asigAnio, asigMes),
-            tons: asigTonsNum, estado: 'disponible', fuente: 'contactos', createdFrom: 'modal_contacto'
+            tonsDisponible: asigTonsNum,
+            estado: 'disponible',
+            fuente: 'contactos',
+            createdFrom: 'modal_contacto'
           });
           M.toast?.({ html: 'Disponibilidad registrada', classes:'teal' });
         }
@@ -163,6 +218,7 @@ export function setupFormulario() {
   });
 }
 
+/* ============================ Edición / Borrar / Nuevo ============================ */
 export function abrirEdicion(c) {
   state.editId = c._id;
   const hasEmpresa = !!(c.proveedorKey || c.proveedorNombre);
@@ -197,7 +253,8 @@ export function abrirEdicion(c) {
   if (anioEl && !anioEl.value) anioEl.value = hoy.getFullYear();
   if (mesEl && !mesEl.value) mesEl.value = String(hoy.getMonth() + 1);
 
-  pintarHistorialEdicion(c._id);
+  // Historial en el bloque inferior del modal de edición
+  pintarHistorialEdicionFromContacto(c);
 
   M.updateTextFields?.();
   const modal = document.getElementById('modalContacto');
