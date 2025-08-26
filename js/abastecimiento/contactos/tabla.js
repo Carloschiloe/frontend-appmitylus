@@ -40,13 +40,9 @@ function _clickAccContacto(aEl){
   try{
     const id = aEl?.dataset?.id;
     const cls = (aEl?.className || '').toLowerCase();
-    console.log('[contactos] click inline →', cls, 'id=', id);
 
     const c = state.contactosGuardados.find(x => String(x._id) === String(id));
-    if (!c) {
-      M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
-      return;
-    }
+    if (!c) { M.toast?.({ html: 'Contacto no encontrado', classes: 'red' }); return; }
 
     if (cls.includes('ver')) return abrirDetalleContacto(c);
     if (cls.includes('visita')) return abrirModalVisita(c);
@@ -86,9 +82,9 @@ export function initTablaContactos() {
     scrollX: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
     columnDefs: [
-      { targets: 0, width: '110px' },
-      { targets: 1, width: '260px' },
-      { targets: -1, orderable: false, searchable: false }
+      { targets: 0, width: '110px' },   // Fecha (registro)
+      { targets: 1, width: '260px' },   // Proveedor
+      { targets: -1, orderable: false, searchable: false } // Acciones
     ]
   });
 
@@ -97,7 +93,6 @@ export function initTablaContactos() {
     .off('click.contactos')
     .on('click.contactos', 'a.icon-action', function(e){
       e.preventDefault();
-      console.log('[contactos] delegación →', this.className, 'id=', this.dataset.id);
       _clickAccContacto(this);
     });
 
@@ -121,6 +116,7 @@ export function renderTablaContactos() {
       return db - da;
     })
     .map(c => {
+      // Fecha de registro/creación
       const f = new Date(c.createdAt || c.fecha || Date.now());
       const yyyy = f.getFullYear();
       const mm   = String(f.getMonth() + 1).padStart(2, '0');
@@ -128,45 +124,52 @@ export function renderTablaContactos() {
       const whenDisplay = `${yyyy}-${mm}-${dd}`;
       const whenKey     = f.getTime();
 
+      // Centro (código) con fallback por centroId
       let centroCodigo = c.centroCodigo;
       if (!esCodigoValido(centroCodigo)) {
         centroCodigo = centroCodigoById(c.centroId) || '';
       }
 
+      // Comuna
       const comuna = c.centroComuna || c.comuna || comunaPorCodigo(centroCodigo) || '';
+
+      // Proveedor con ellipsis + tooltip
       const provName = esc(c.proveedorNombre || '');
       const provCell = provName
         ? `<span class="ellipsisCell ellipsisProv" title="${provName}">${provName}</span>`
         : '';
 
-      const acciones = `
-        <a href="#" class="icon-action ver" title="Ver detalle" data-id="${c._id}" onclick="window._clickAccContacto(this)">
-          <i class="material-icons">visibility</i>
-        </a>
-        <a href="#" class="icon-action visita" title="Registrar visita" data-id="${c._id}" onclick="window._clickAccContacto(this)">
-          <i class="material-icons">event_available</i>
-        </a>
-        <a href="#" class="icon-action editar" title="Editar" data-id="${c._id}" onclick="window._clickAccContacto(this)">
-          <i class="material-icons">edit</i>
-        </a>
-        <a href="#" class="icon-action eliminar" title="Eliminar" data-id="${c._id}" onclick="window._clickAccContacto(this)">
-          <i class="material-icons">delete</i>
-        </a>`;
+      // MMPP (tieneMMPP)
+      const mmpp = c.tieneMMPP || '';
 
+      // Tons (compat: usa el campo viejo si existe)
+      const tons = (c.tonsDisponiblesAprox ?? c.tonsDisponible ?? '') + '';
+
+      // Acciones
+      const acciones = `
+        <a href="#!" class="icon-action ver" title="Ver detalle" data-id="${c._id}"
+           onclick="window._clickAccContacto(this)"><i class="material-icons">visibility</i></a>
+        <a href="#!" class="icon-action visita" title="Registrar visita" data-id="${c._id}"
+           onclick="window._clickAccContacto(this)"><i class="material-icons">event_available</i></a>
+        <a href="#!" class="icon-action editar" title="Editar" data-id="${c._id}"
+           onclick="window._clickAccContacto(this)"><i class="material-icons">edit</i></a>
+        <a href="#!" class="icon-action eliminar" title="Eliminar" data-id="${c._id}"
+           onclick="window._clickAccContacto(this)"><i class="material-icons">delete</i></a>
+      `;
+
+      // ⬇️ 7 columnas exactas para coincidir con el THEAD del HTML
       return [
-        `<span data-order="${whenKey}">${whenDisplay}</span>`,
-        provCell,
-        esc(centroCodigo),
-        esc(comuna),
-        esc(c.tieneMMPP || ''),
-        c.fechaDisponible ? (''+c.fechaDisponible).slice(0,10) : '',
-        esc(c.dispuestoVender || ''),
-        (c.tonsDisponible ?? '') + '',
-        esc(c.vendeActualmenteA || ''),
-        acciones
+        `<span data-order="${whenKey}">${whenDisplay}</span>`, // Fecha (registro)
+        provCell,                                              // Proveedor
+        esc(centroCodigo),                                     // Centro
+        esc(comuna),                                           // Comuna
+        esc(mmpp),                                             // MMPP
+        esc(tons),                                             // Tons
+        acciones                                               // Acciones
       ];
     });
 
+  // Si DataTables ya está, refrescar por su API
   if (state.dt && jq) {
     state.dt.clear();
     state.dt.rows.add(filas).draw(false);
@@ -174,11 +177,12 @@ export function renderTablaContactos() {
     return;
   }
 
+  // Fallback sin DataTables
   const tbody = $('#tablaContactos tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
   if (!filas.length) {
-    tbody.innerHTML = `<tr><td colspan="10" style="color:#888">No hay contactos registrados aún.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="color:#888">No hay contactos registrados aún.</td></tr>`;
     return;
   }
   filas.forEach(arr => {
