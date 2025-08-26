@@ -185,31 +185,35 @@ export function abrirEdicion(c) {
 
   $('#buscadorProveedor').value = c.proveedorNombre || '';
   setVal(['proveedorNombre'], c.proveedorNombre || '');
-  setVal(['proveedorKey'], key || ''); setVal(['proveedorId'], key || '');
+  setVal(['proveedorKey'], key || '');
+  setVal(['proveedorId'], key || '');
 
   if (hasEmpresa && key) {
     mostrarCentrosDeProveedor(key, c.centroId || null);
-    setVal(['centroId'], c.centroId || ''); setVal(['centroCodigo'], c.centroCodigo || '');
-    setVal(['centroComuna'], c.centroComuna || ''); setVal(['centroHectareas'], c.centroHectareas || '');
-  } else { resetSelectCentros(); clearCentroHidden(); }
+    setVal(['centroId'], c.centroId || '');
+    setVal(['centroCodigo'], c.centroCodigo || '');
+    setVal(['centroComuna'], c.centroComuna || '');
+    setVal(['centroHectareas'], c.centroHectareas || '');
+  } else {
+    resetSelectCentros();
+    clearCentroHidden();
+  }
 
-  const fdEl = document.getElementById('fechaDisponibilidad');
-  const tonsEl = document.getElementById('tonsDisponiblesAprox');
-  if ($('#tieneMMPP'))       $('#tieneMMPP').value = c.tieneMMPP || '';
+  if ($('#tieneMMPP')) $('#tieneMMPP').value = c.tieneMMPP || '';
   if ($('#dispuestoVender')) $('#dispuestoVender').value = c.dispuestoVender || '';
-  if (fdEl)  fdEl.value  = c.fechaDisponibilidad ? String(c.fechaDisponibilidad).slice(0,10) : '';
-  if (tonsEl) tonsEl.value = (c.tonsDisponiblesAprox ?? '');
   if ($('#vendeActualmenteA')) $('#vendeActualmenteA').value = c.vendeActualmenteA || '';
-  if ($('#notasContacto'))     $('#notasContacto').value     = c.notas || '';
-  if ($('#contactoNombre'))   $('#contactoNombre').value   = c.contactoNombre || '';
+  if ($('#notasContacto')) $('#notasContacto').value = c.notas || '';
+  if ($('#contactoNombre')) $('#contactoNombre').value = c.contactoNombre || '';
   if ($('#contactoTelefono')) $('#contactoTelefono').value = c.contactoTelefono || '';
-  if ($('#contactoEmail'))    $('#contactoEmail').value    = c.contactoEmail || '';
+  if ($('#contactoEmail')) $('#contactoEmail').value = c.contactoEmail || '';
 
-  // Historial + defaults año/mes
+  // Asignar año/mes actuales si están vacíos
   const hoy = new Date();
-  const anioEl = document.getElementById('asigAnio'); const mesEl = document.getElementById('asigMes');
+  const anioEl = document.getElementById('asigAnio');
+  const mesEl = document.getElementById('asigMes');
   if (anioEl && !anioEl.value) anioEl.value = hoy.getFullYear();
-  if (mesEl && !mesEl.value)   mesEl.value  = String(hoy.getMonth()+1);
+  if (mesEl && !mesEl.value) mesEl.value = String(hoy.getMonth() + 1);
+
   pintarHistorialEdicion(c._id);
 
   M.updateTextFields?.();
