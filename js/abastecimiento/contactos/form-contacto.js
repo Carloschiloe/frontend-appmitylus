@@ -8,13 +8,14 @@ import { renderTablaContactos } from './tabla.js';
 
 const isValidObjectId = (s) => typeof s === 'string' && /^[0-9a-fA-F]{24}$/.test(s);
 
-/* ---------- Asignaciones / Disponibilidades (mínimo necesario) ---------- */
+/* ---------- Constantes ---------- */
 const API_BASE = window.API_URL || '/api';
 const MES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const pad2 = (n)=>String(n).padStart(2,'0');
 const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
 
-/* --- crear una asignación (flujo de guardado opcional) --- */
+/* ---------- API helpers ---------- */
+// POST a /asignaciones (mantenemos tu flujo actual)
 async function postAsignacion(a){
   const r = await fetch(`${API_BASE}/asignaciones`, {
     method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(a)
@@ -23,82 +24,53 @@ async function postAsignacion(a){
   try { return await r.json(); } catch { return null; }
 }
 
-/* --- leer asignaciones (colección antigua) por contactoId --- */
-async function fetchAsignaciones(contactoId){
-  if(!contactoId) return [];
-  try{
-    const r = await fetch(`${API_BASE}/asignaciones?contactoId=${encodeURIComponent(contactoId)}`);
-    if(!r.ok) return [];
-    return await r.json();
-  }catch{ return []; }
+// GET a /disponibilidades (colección real con tus datos)
+async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } = {}){
+  const q = new URLSearchParams();
+  if (proveedorKey) q.set('proveedorKey', proveedorKey);
+  if (centroId)     q.set('centroId', centroId);
+  if (from)         q.set('from', from);
+  if (to)           q.set('to', to);
+  if (anio)         q.set('anio', anio);
+
+  const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
+  if(!r.ok) return [];
+  try {
+    const data = await r.json();
+    // Soportar tanto {items:[...]} como array llano
+    const list = Array.isArray(data) ? data : (data.items || []);
+    // Nos aseguramos del shape que usa el render
+    return list.map(x => ({
+      anio: x.anio ?? Number((x.mesKey||'').slice(0,4)) || null,
+      mes: x.mes ?? Number((x.mesKey||'').slice(5,7)) || null,
+      tons: Number(x.tons ?? x.tonsDisponible ?? 0) || 0,
+      estado: x.estado || 'disponible'
+    }));
+  } catch {
+    return [];
+  }
 }
 
-/* --- leer disponibilidades (colección actual) por proveedorKey (+ opcional centroId) --- */
-async function fetchDisponibilidades({ proveedorKey, centroId }){
-  if(!proveedorKey) return [];
-  try{
-    const url = new URL(`${API_BASE}/disponibilidades`, window.location.origin);
-    url.searchParams.set('proveedorKey', proveedorKey);
-    if (centroId) url.searchParams.set('centroId', centroId);
-    const r = await fetch(url.toString());
-    if(!r.ok) return [];
-    return await r.json();
-  }catch{ return []; }
-}
-
-/* --- normaliza y dibuja tabla compacta --- */
+/* ---------- Render helpers ---------- */
 function renderAsignaciones(list){
   if(!list?.length) return '<span class="grey-text">Sin asignaciones registradas.</span>';
-  const rows = list.slice()
-    .sort((a,b)=>((b.anio||0)*100+(b.mes||0)) - ((a.anio||0)*100+(a.mes||0)))
-    .map(a=>{
-      const tonsNum = Number(a.tons||0);
-      const fuente = a.fuente || ''; // opcional
-      return `<tr>
-        <td>${MES[a.mes]||a.mes} ${a.anio||''}${fuente ? ` <span class="grey-text">(${fuente})</span>` : ''}</td>
-        <td style="text-align:right">${tonsNum.toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
-        <td>${a.estado||''}</td>
-      </tr>`;
-    }).join('');
-  return `<table class="striped" style="margin:6px 0">
-    <thead><tr><th>Mes</th><th style="text-align:right">Tons</th><th>Estado</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
+  const rows = list.slice().sort((a,b)=>((b.anio||0)*100+b.mes)-((a.anio||0)*100+a.mes))
+    .map(a=>`<tr><td>${MES[a.mes]||a.mes} ${a.anio||''}</td>
+      <td style="text-align:right">${Number(a.tons||0).toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
+      <td>${a.estado||''}</td></tr>`).join('');
+  return `<table class="striped" style="margin:6px 0"><thead><tr>
+    <th>Mes</th><th style="text-align:right">Tons</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
-/* --- carga combinada (asignaciones + disponibilidades) para un contacto --- */
-async function cargarDisponibilidadDeContacto(c){
-  if (!c) return [];
-  // 1) asignaciones clásicas (si existen)
-  const asigs = await fetchAsignaciones(c._id);
-  const normAsigs = Array.isArray(asigs) ? asigs.map(a => ({
-    anio: a.anio ?? a.year ?? null,
-    mes:  a.mes ?? a.month ?? null,
-    tons: Number(a.tons ?? a.cantidad ?? 0),
-    estado: a.estado || 'disponible',
-    fuente: 'asignaciones'
-  })) : [];
-
-  // 2) disponibilidades nuevas (colección actual)
-  const disps = await fetchDisponibilidades({ proveedorKey: c.proveedorKey, centroId: c.centroId });
-  const normDisps = Array.isArray(disps) ? disps.map(d => ({
-    anio: d.anio ?? null,
-    mes:  d.mes ?? null,
-    tons: Number(d.tonsDisponible ?? d.tons ?? 0),
-    estado: d.estado || 'disponible',
-    fuente: 'disponibilidades'
-  })) : [];
-
-  return [...normAsigs, ...normDisps];
-}
-
-/* --- pinta historial en modal de edición (abajo del formulario) --- */
-async function pintarHistorialEdicionContacto(c){
-  const box = document.getElementById('asigHist'); 
-  if(!box) return;
+async function pintarHistorialEdicion(contacto){
+  const box = document.getElementById('asigHist'); if(!box) return;
   box.innerHTML = '<span class="grey-text">Cargando disponibilidad...</span>';
   try {
-    const lista = await cargarDisponibilidadDeContacto(c);
+    const proveedorKey = contacto.proveedorKey || (contacto.proveedorNombre ? slug(contacto.proveedorNombre) : '');
+    const lista = await fetchDisponibilidades({
+      proveedorKey,
+      centroId: contacto.centroId || undefined
+    });
     box.innerHTML = renderAsignaciones(lista);
   } catch(e){
     console.error(e);
@@ -106,13 +78,12 @@ async function pintarHistorialEdicionContacto(c){
   }
 }
 
-/* --- hook: cuando abres el modal del ojo, inyecta el bloque y lo llena --- */
 function hookDetalleHistorial(){
   const body = document.getElementById('detalleContactoBody');
   if(!body) return;
   const obs = new MutationObserver(async ()=>{
-    const c = state.contactoActual; 
-    if(!c) return;
+
+    const c = state.contactoActual; if(!c) return;
     if(body.querySelector('#detalleAsignaciones')) return;
 
     const wrap = document.createElement('div');
@@ -125,7 +96,11 @@ function hookDetalleHistorial(){
     body.appendChild(wrap);
 
     try {
-      const lista = await cargarDisponibilidadDeContacto(c);
+      const proveedorKey = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
+      const lista = await fetchDisponibilidades({
+        proveedorKey,
+        centroId: c.centroId || undefined
+      });
       body.querySelector('#detalleAsignacionesTable').innerHTML = renderAsignaciones(lista);
     } catch(e) {
       console.error(e);
@@ -135,16 +110,15 @@ function hookDetalleHistorial(){
   obs.observe(body, {childList:true, subtree:true});
 }
 
-/* ---------- helpers de formulario ---------- */
+/* ---------- Utilidades de formulario ---------- */
 function clearCentroHidden(){ setVal(['centroId'],''); setVal(['centroCodigo'],''); setVal(['centroComuna'],''); setVal(['centroHectareas'],''); }
 function clearProveedorHidden(){ setVal(['proveedorKey'],''); setVal(['proveedorId'],''); setVal(['proveedorNombre'],''); }
 
-/* ================================== INIT ================================== */
+/* ---------- Setup ---------- */
 export function setupFormulario() {
   const form = $('#formContacto'); if (!form) return;
   state.editId = null;
 
-  // capturar contactoActual cuando se abre el "ojo"
   document.addEventListener('click', (e)=>{
     const a = e.target.closest?.('a.icon-action.ver'); if(!a) return;
     const id = a.dataset.id;
@@ -186,9 +160,7 @@ export function setupFormulario() {
     const centroComuna    = hasEmpresa ? (getVal(['centroComuna']) || comunaPorCodigo(centroCodigo) || null) : null;
     const centroHectareas = hasEmpresa ? (getVal(['centroHectareas']) || null) : null;
 
-    let resultado = ''; 
-    if (tieneMMPP==='Sí') resultado='Disponible'; 
-    else if (tieneMMPP==='No') resultado='No disponible';
+    let resultado = ''; if (tieneMMPP==='Sí') resultado='Disponible'; else if (tieneMMPP==='No') resultado='No disponible';
 
     const payload = {
       proveedorKey, proveedorNombre,
@@ -207,6 +179,7 @@ export function setupFormulario() {
       if (esUpdate) await apiUpdateContacto(editId, payload);
       else          await apiCreateContacto(payload);
 
+      // Guardar una nueva "asignación" (si mantenés este flujo)
       if (puedeGuardarAsignacion) {
         let contactoId = esUpdate ? editId : null;
         if (!contactoId) {
@@ -237,7 +210,7 @@ export function setupFormulario() {
   });
 }
 
-/* ============================= EDICIÓN / DETALLE ============================= */
+/* ---------- Acciones ---------- */
 export function abrirEdicion(c) {
   state.editId = c._id;
   const hasEmpresa = !!(c.proveedorKey || c.proveedorNombre);
@@ -272,8 +245,8 @@ export function abrirEdicion(c) {
   if (anioEl && !anioEl.value) anioEl.value = hoy.getFullYear();
   if (mesEl && !mesEl.value) mesEl.value = String(hoy.getMonth() + 1);
 
-  // ❗ cargar historial combinado en el formulario de edición
-  pintarHistorialEdicionContacto(c);
+  // 👇 ahora carga desde /disponibilidades
+  pintarHistorialEdicion(c);
 
   M.updateTextFields?.();
   const modal = document.getElementById('modalContacto');
