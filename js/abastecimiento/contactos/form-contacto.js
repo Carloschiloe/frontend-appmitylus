@@ -51,13 +51,14 @@ async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } 
 
     // 🔧 Devuelve OBJETOS con claves (no expresiones sueltas)
     return list.map(x => ({
-      _id:    x._id || x.id || null,
-      anio:   x.anio ?? Number((x.mesKey || '').slice(0, 4)) || null,
-      mes:    x.mes  ?? Number((x.mesKey || '').slice(5, 7)) || null,
-      tons:   Number(x.tons ?? x.tonsDisponible ?? 0) || 0,
-      estado: x.estado || 'disponible',
-      mesKey: x.mesKey || (x.anio && x.mes ? mesKeyFrom(x.anio, x.mes) : null),
-    }));
+  _id:    x._id || x.id || null,
+  anio:   x.anio ?? (Number((x.mesKey || '').slice(0, 4)) || null),
+  mes:    x.mes  ?? (Number((x.mesKey || '').slice(5, 7)) || null),
+  tons:   Number(x.tons ?? x.tonsDisponible ?? 0) || 0,
+  estado: x.estado || 'disponible',
+  mesKey: x.mesKey || (x.anio && x.mes ? mesKeyFrom(x.anio, x.mes) : null),
+}));
+
   } catch {
     return [];
   }
