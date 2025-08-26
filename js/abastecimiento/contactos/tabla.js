@@ -1,8 +1,12 @@
-// /js/contactos/tabla.js
+// /js/contactos/tabla.js 
 import { state, $ } from './state.js';
 import { centroCodigoById, comunaPorCodigo } from './normalizers.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto, abrirModalVisita } from '../visitas/tab.js';
+
+/* ---------- Config local ---------- */
+const API_BASE = window.API_URL || '/api';
+const fmtCL = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
 
 /* ---------- estilos: columna proveedor angosta + ellipsis + click seguro ---------- */
 (function injectStyles () {
@@ -19,6 +23,10 @@ import { abrirDetalleContacto, abrirModalVisita } from '../visitas/tab.js';
     #tablaContactos td:last-child a.icon-action i.material-icons{
       pointer-events:none; font-size:18px; vertical-align:middle;
     }
+
+    /* celda tons mientras carga */
+    #tablaContactos .tons-cell.loading{ opacity:.6 }
+    #tablaContactos tfoot th{ font-weight:700; background:#f6f6f7 }
   `;
   if (!document.getElementById('tabla-contactos-inline-styles')) {
     const s = document.createElement('style');
@@ -60,12 +68,60 @@ function _clickAccContacto(aEl){
 }
 window._clickAccContacto = _clickAccContacto;
 
+/* ---------- Cache de totales de disponibilidad por proveedor/centro ---------- */
+state.dispTotalCache = state.dispTotalCache || new Map(); // key: `${proveedorKey}|${centroId}` -> number
+
+async function fetchTotalDisponibilidad({ proveedorKey='', centroId='' }){
+  const key = `${proveedorKey}|${centroId||''}`;
+  if (state.dispTotalCache.has(key)) return state.dispTotalCache.get(key);
+
+  const q = new URLSearchParams();
+  if (proveedorKey) q.set('proveedorKey', proveedorKey);
+  if (centroId)     q.set('centroId', centroId);
+  try{
+    const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
+    if (!r.ok) throw new Error('GET /disponibilidades '+r.status);
+    const data = await r.json();
+    const list = Array.isArray(data) ? data : (data.items || []);
+    const total = list.reduce((acc, it)=> acc + Number(it.tons ?? it.tonsDisponible ?? 0), 0);
+    state.dispTotalCache.set(key, total);
+    return total;
+  }catch(e){
+    console.error('[tablaContactos] fetchTotalDisponibilidad error', e);
+    state.dispTotalCache.set(key, 0);
+    return 0;
+  }
+}
+
+/* ---------- Footer total (solo registros visibles/página actual/filtrados) ---------- */
+function ensureFooter(){
+  const table = $('#tablaContactos');
+  if (!table) return;
+  if (!table.tFoot) {
+    const tfoot = table.createTFoot();
+    const tr = tfoot.insertRow(0);
+    for (let i=0; i<7; i++){
+      const th = document.createElement('th');
+      if (i === 5) th.textContent = 'Total página: 0';
+      tr.appendChild(th);
+    }
+  }
+}
+function setFooterTotal(total){
+  const table = $('#tablaContactos');
+  if (!table || !table.tFoot) return;
+  const th = table.tFoot.querySelectorAll('th')[5];
+  if (th) th.textContent = `Total página: ${fmtCL(total)}`;
+}
+
 /* --------------------------------- DataTables --------------------------------- */
 export function initTablaContactos() {
   const jq = window.jQuery || window.$;
   const tablaEl = $('#tablaContactos');
   if (!jq || !tablaEl) return;
   if (state.dt) return;
+
+  ensureFooter();
 
   state.dt = jq('#tablaContactos').DataTable({
     dom: 'Blfrtip',
@@ -96,7 +152,70 @@ export function initTablaContactos() {
       _clickAccContacto(this);
     });
 
+  // Cada vez que cambia la página / filtro / orden, recalculamos celdas y footer
+  jq('#tablaContactos').on('draw.dt', async () => {
+    await actualizarTonsVisiblesYFooter();
+  });
+
   console.log('[contactos] DataTable lista. filas=', state.dt.rows().count());
+}
+
+/* ---------------------------- Actualizar celdas visibles ---------------------------- */
+async function actualizarTonsVisiblesYFooter(){
+  const jq = window.jQuery || window.$;
+  if (!state.dt || !jq) return;
+
+  let totalPagina = 0;
+
+  // Recorre filas visibles en la página actual
+  state.dt.rows({ page: 'current', search: 'applied' }).every(function(){
+    const cellNode = state.dt.cell(this, 5).node(); // columna Tons
+    if (!cellNode) return;
+    const span = cellNode.querySelector('.tons-cell');
+    if (!span) return;
+
+    const proveedorKey = span.dataset.provkey || '';
+    const centroId     = span.dataset.centroid || '';
+
+    // Si ya está cargado, sumar y seguir
+    const cached = span.dataset.value;
+    if (cached !== undefined && cached !== null && cached !== '') {
+      totalPagina += Number(cached || 0);
+      return;
+    }
+
+    // Marcar loading visual
+    span.classList.add('loading');
+    span.textContent = '…';
+
+    // Fetch + cache + escribir valor
+    fetchTotalDisponibilidad({ proveedorKey, centroId }).then(total => {
+      span.dataset.value = String(total);
+      span.textContent = fmtCL(total);
+      span.classList.remove('loading');
+
+      // Recalcular total de página (puede llegar de a poco)
+      recalcularFooterDesdeDom();
+    });
+  });
+
+  // Al terminar el barrido inicial, setear total rápido con lo que ya estaba cargado
+  recalcularFooterDesdeDom();
+}
+
+function recalcularFooterDesdeDom(){
+  const table = $('#tablaContactos');
+  if (!table) return;
+  const spans = table.querySelectorAll('tbody .tons-cell');
+  let sum = 0;
+  spans.forEach(sp => {
+    // solo contar las visibles en el DOM (página actual):
+    const tr = sp.closest('tr');
+    if (tr && tr.offsetParent !== null) {
+      sum += Number(sp.dataset.value || 0);
+    }
+  });
+  setFooterTotal(sum);
 }
 
 /* ------------------------------- Render de filas -------------------------------- */
@@ -142,8 +261,9 @@ export function renderTablaContactos() {
       // MMPP (tieneMMPP)
       const mmpp = c.tieneMMPP || '';
 
-      // Tons (compat: usa el campo viejo si existe)
-      const tons = (c.tonsDisponiblesAprox ?? c.tonsDisponible ?? '') + '';
+      // Tons: YA NO usamos el valor antiguo guardado en el contacto.
+      // Ponemos un span "tons-cell" con data para que luego se llene con el total real.
+      const tonsCell = `<span class="tons-cell" data-provkey="${esc(c.proveedorKey || '')}" data-centroid="${esc(c.centroId || '')}" data-value=""> </span>`;
 
       // Acciones
       const acciones = `
@@ -164,7 +284,7 @@ export function renderTablaContactos() {
         esc(centroCodigo),                                     // Centro
         esc(comuna),                                           // Comuna
         esc(mmpp),                                             // MMPP
-        esc(tons),                                             // Tons
+        tonsCell,                                              // Tons (se llena asíncrono)
         acciones                                               // Acciones
       ];
     });
@@ -173,16 +293,19 @@ export function renderTablaContactos() {
   if (state.dt && jq) {
     state.dt.clear();
     state.dt.rows.add(filas).draw(false);
+    // después del draw, se dispara actualizarTonsVisiblesYFooter por el evento 'draw.dt'
     console.log('[contactos] filas renderizadas:', filas.length);
     return;
   }
 
   // Fallback sin DataTables
   const tbody = $('#tablaContactos tbody');
+  ensureFooter();
   if (!tbody) return;
   tbody.innerHTML = '';
   if (!filas.length) {
     tbody.innerHTML = `<tr><td colspan="7" style="color:#888">No hay contactos registrados aún.</td></tr>`;
+    setFooterTotal(0);
     return;
   }
   filas.forEach(arr => {
@@ -190,6 +313,25 @@ export function renderTablaContactos() {
     tr.innerHTML = arr.map(td => `<td>${td}</td>`).join('');
     tbody.appendChild(tr);
   });
+
+  // Completar celdas + footer en fallback
+  (async () => {
+    const spans = tbody.querySelectorAll('.tons-cell');
+    for (const sp of spans) {
+      sp.classList.add('loading'); sp.textContent = '…';
+      const total = await fetchTotalDisponibilidad({
+        proveedorKey: sp.dataset.provkey || '',
+        centroId: sp.dataset.centroid || ''
+      });
+      sp.dataset.value = String(total);
+      sp.textContent = fmtCL(total);
+      sp.classList.remove('loading');
+    }
+    // total visible (todas las filas en fallback)
+    let sum = 0;
+    tbody.querySelectorAll('.tons-cell').forEach(s => sum += Number(s.dataset.value || 0));
+    setFooterTotal(sum);
+  })();
 }
 
 /* 🔁 refresco en vivo cuando otros módulos disparan reload */
