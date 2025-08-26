@@ -140,23 +140,18 @@ export function renderTablaContactos() {
         : '';
 
       const acciones = `
-        <a href="#!" class="icon-action ver" title="Ver detalle" data-id="${c._id}"
-           onclick="window._clickAccContacto(this)">
+        <a href="#" class="icon-action ver" title="Ver detalle" data-id="${c._id}" onclick="window._clickAccContacto(this)">
           <i class="material-icons">visibility</i>
         </a>
-        <a href="#!" class="icon-action visita" title="Registrar visita" data-id="${c._id}"
-           onclick="window._clickAccContacto(this)">
+        <a href="#" class="icon-action visita" title="Registrar visita" data-id="${c._id}" onclick="window._clickAccContacto(this)">
           <i class="material-icons">event_available</i>
         </a>
-        <a href="#!" class="icon-action editar" title="Editar" data-id="${c._id}"
-           onclick="window._clickAccContacto(this)">
+        <a href="#" class="icon-action editar" title="Editar" data-id="${c._id}" onclick="window._clickAccContacto(this)">
           <i class="material-icons">edit</i>
         </a>
-        <a href="#!" class="icon-action eliminar" title="Eliminar" data-id="${c._id}"
-           onclick="window._clickAccContacto(this)">
+        <a href="#" class="icon-action eliminar" title="Eliminar" data-id="${c._id}" onclick="window._clickAccContacto(this)">
           <i class="material-icons">delete</i>
-        </a>
-      `;
+        </a>`;
 
       return [
         `<span data-order="${whenKey}">${whenDisplay}</span>`,
@@ -164,9 +159,9 @@ export function renderTablaContactos() {
         esc(centroCodigo),
         esc(comuna),
         esc(c.tieneMMPP || ''),
-        c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '',
+        c.fechaDisponible ? (''+c.fechaDisponible).slice(0,10) : '',
         esc(c.dispuestoVender || ''),
-        (c.tonsDisponiblesAprox ?? '') + '',
+        (c.tonsDisponible ?? '') + '',
         esc(c.vendeActualmenteA || ''),
         acciones
       ];
