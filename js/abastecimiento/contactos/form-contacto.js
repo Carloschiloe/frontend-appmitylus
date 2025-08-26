@@ -136,8 +136,8 @@ export function setupFormulario() {
       if (puedeGuardarAsignacion) {
         let contactoId = esUpdate ? editId : null;
         if (!contactoId) {
-          const ultimo = (state.contactosGuardados||[]).slice(-1)[0];
-          contactoId = ultimo?._id : null;
+          const ultimo = (state.contactosGuardados || []).slice(-1)[0];
+          contactoId = (ultimo && ultimo._id) || null;
         }
         if (contactoId) {
           await postAsignacion({
