@@ -238,8 +238,16 @@
 /* Evita scroll en body */
 body.viewer-open { overflow: hidden; }
 
+#modalVisita #visita_observaciones {
+  min-height: 100px !important;
+  height: 120px !important;
+  overflow-y: auto;
+  resize: vertical; /* Para permitir agrandarlo manualmente */
+}
+
 /* ===== Fotos de visitas ===== */
 @import url('/js/abastecimiento/visitas/fotos/styles.css');
+
 
 
 
