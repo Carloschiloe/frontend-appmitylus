@@ -10,41 +10,42 @@ const isValidObjectId = (s) => typeof s === 'string' && /^[0-9a-fA-F]{24}$/.test
 
 /* ---------- Constantes ---------- */
 const API_BASE = window.API_URL || '/api';
-const MES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const pad2 = (n)=>String(n).padStart(2,'0');
-const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
+const MES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const pad2 = (n) => String(n).padStart(2, '0');
+const mesKeyFrom = (y, m) => `${y}-${pad2(m)}`;
 
 /* ---------- API helpers ---------- */
 // POST a /asignaciones (mantenemos tu flujo actual)
-async function postAsignacion(a){
+async function postAsignacion(a) {
   const r = await fetch(`${API_BASE}/asignaciones`, {
-    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(a)
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(a),
   });
-  if(!r.ok) throw new Error('asignaciones POST '+r.status);
+  if (!r.ok) throw new Error('asignaciones POST ' + r.status);
   try { return await r.json(); } catch { return null; }
 }
 
 // GET a /disponibilidades (colección real con tus datos)
-async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } = {}){
+async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } = {}) {
   const q = new URLSearchParams();
   if (proveedorKey) q.set('proveedorKey', proveedorKey);
-  if (centroId)     q.set('centroId', centroId);
-  if (from)         q.set('from', from);
-  if (to)           q.set('to', to);
-  if (anio)         q.set('anio', anio);
+  if (centroId) q.set('centroId', centroId);
+  if (from) q.set('from', from);
+  if (to) q.set('to', to);
+  if (anio) q.set('anio', anio);
 
   const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
-  if(!r.ok) return [];
+  if (!r.ok) return [];
   try {
     const data = await r.json();
-    // Soportar tanto {items:[...]} como array llano
     const list = Array.isArray(data) ? data : (data.items || []);
-    // Nos aseguramos del shape que usa el render
-    return list.map(x => ({
-      anio: x.anio ?? Number((x.mesKey||'').slice(0,4)) || null,
-      mes: x.mes ?? Number((x.mesKey||'').slice(5,7)) || null,
+    // 👇 Evitar mezcla ?? con || sin paréntesis
+    return list.map((x) => ({
+      anio: x.anio ?? (Number((x.mesKey || '').slice(0, 4)) || null),
+      mes:  x.mes  ?? (Number((x.mesKey || '').slice(5, 7)) || null),
       tons: Number(x.tons ?? x.tonsDisponible ?? 0) || 0,
-      estado: x.estado || 'disponible'
+      estado: x.estado || 'disponible',
     }));
   } catch {
     return [];
@@ -52,42 +53,52 @@ async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } 
 }
 
 /* ---------- Render helpers ---------- */
-function renderAsignaciones(list){
-  if(!list?.length) return '<span class="grey-text">Sin asignaciones registradas.</span>';
-  const rows = list.slice().sort((a,b)=>((b.anio||0)*100+b.mes)-((a.anio||0)*100+a.mes))
-    .map(a=>`<tr><td>${MES[a.mes]||a.mes} ${a.anio||''}</td>
-      <td style="text-align:right">${Number(a.tons||0).toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
-      <td>${a.estado||''}</td></tr>`).join('');
-  return `<table class="striped" style="margin:6px 0"><thead><tr>
-    <th>Mes</th><th style="text-align:right">Tons</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
+function renderAsignaciones(list) {
+  if (!list?.length) return '<span class="grey-text">Sin asignaciones registradas.</span>';
+  const rows = list
+    .slice()
+    .sort((a, b) => ((b.anio || 0) * 100 + b.mes) - ((a.anio || 0) * 100 + a.mes))
+    .map(
+      (a) => `<tr>
+        <td>${MES[a.mes] || a.mes} ${a.anio || ''}</td>
+        <td style="text-align:right">${Number(a.tons || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 })}</td>
+        <td>${a.estado || ''}</td>
+      </tr>`
+    )
+    .join('');
+  return `<table class="striped" style="margin:6px 0">
+    <thead><tr><th>Mes</th><th style="text-align:right">Tons</th><th>Estado</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 
-async function pintarHistorialEdicion(contacto){
-  const box = document.getElementById('asigHist'); if(!box) return;
+async function pintarHistorialEdicion(contacto) {
+  const box = document.getElementById('asigHist');
+  if (!box) return;
   box.innerHTML = '<span class="grey-text">Cargando disponibilidad...</span>';
   try {
     const proveedorKey = contacto.proveedorKey || (contacto.proveedorNombre ? slug(contacto.proveedorNombre) : '');
     const lista = await fetchDisponibilidades({
       proveedorKey,
-      centroId: contacto.centroId || undefined
+      centroId: contacto.centroId || undefined,
     });
     box.innerHTML = renderAsignaciones(lista);
-  } catch(e){
+  } catch (e) {
     console.error(e);
     box.innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
   }
 }
 
-function hookDetalleHistorial(){
+function hookDetalleHistorial() {
   const body = document.getElementById('detalleContactoBody');
-  if(!body) return;
-  const obs = new MutationObserver(async ()=>{
-
-    const c = state.contactoActual; if(!c) return;
-    if(body.querySelector('#detalleAsignaciones')) return;
+  if (!body) return;
+  const obs = new MutationObserver(async () => {
+    const c = state.contactoActual;
+    if (!c) return;
+    if (body.querySelector('#detalleAsignaciones')) return;
 
     const wrap = document.createElement('div');
-    wrap.id='detalleAsignaciones';
+    wrap.id = 'detalleAsignaciones';
     wrap.innerHTML = `
       <h6 class="grey-text text-darken-2" style="margin-top:12px">Disponibilidad registrada</h6>
       <div id="detalleAsignacionesTable" class="card-panel grey lighten-4" style="padding:8px 12px">
@@ -99,31 +110,48 @@ function hookDetalleHistorial(){
       const proveedorKey = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
       const lista = await fetchDisponibilidades({
         proveedorKey,
-        centroId: c.centroId || undefined
+        centroId: c.centroId || undefined,
       });
       body.querySelector('#detalleAsignacionesTable').innerHTML = renderAsignaciones(lista);
-    } catch(e) {
+    } catch (e) {
       console.error(e);
-      body.querySelector('#detalleAsignacionesTable').innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
+      body.querySelector('#detalleAsignacionesTable').innerHTML =
+        '<span class="red-text">No se pudo cargar disponibilidad</span>';
     }
   });
-  obs.observe(body, {childList:true, subtree:true});
+  obs.observe(body, { childList: true, subtree: true });
 }
 
 /* ---------- Utilidades de formulario ---------- */
-function clearCentroHidden(){ setVal(['centroId'],''); setVal(['centroCodigo'],''); setVal(['centroComuna'],''); setVal(['centroHectareas'],''); }
-function clearProveedorHidden(){ setVal(['proveedorKey'],''); setVal(['proveedorId'],''); setVal(['proveedorNombre'],''); }
+function clearCentroHidden() {
+  setVal(['centroId'], '');
+  setVal(['centroCodigo'], '');
+  setVal(['centroComuna'], '');
+  setVal(['centroHectareas'], '');
+}
+function clearProveedorHidden() {
+  setVal(['proveedorKey'], '');
+  setVal(['proveedorId'], '');
+  setVal(['proveedorNombre'], '');
+}
 
 /* ---------- Setup ---------- */
 export function setupFormulario() {
-  const form = $('#formContacto'); if (!form) return;
+  const form = $('#formContacto');
+  if (!form) return;
   state.editId = null;
 
-  document.addEventListener('click', (e)=>{
-    const a = e.target.closest?.('a.icon-action.ver'); if(!a) return;
-    const id = a.dataset.id;
-    state.contactoActual = (state.contactosGuardados||[]).find(x=>String(x._id)===String(id)) || null;
-  }, true);
+  // Para que el modal de "ver" tenga el contacto actual y pueda cargar disponibilidades
+  document.addEventListener(
+    'click',
+    (e) => {
+      const a = e.target.closest?.('a.icon-action.ver');
+      if (!a) return;
+      const id = a.dataset.id;
+      state.contactoActual = (state.contactosGuardados || []).find((x) => String(x._id) === String(id)) || null;
+    },
+    true
+  );
   hookDetalleHistorial();
 
   const selCentro = $('#selectCentro');
@@ -132,52 +160,70 @@ export function setupFormulario() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const proveedorKeyRaw    = (getVal(['proveedorKey','proveedorId']) || '').trim();
+    const proveedorKeyRaw = (getVal(['proveedorKey', 'proveedorId']) || '').trim();
     const proveedorNombreRaw = (getVal(['proveedorNombre']) || '').trim();
-    const proveedorKey    = proveedorKeyRaw || null;
+    const proveedorKey = proveedorKeyRaw || null;
     const proveedorNombre = proveedorNombreRaw || null;
-    const hasEmpresa      = !!(proveedorKey && proveedorNombre);
+    const hasEmpresa = !!(proveedorKey && proveedorNombre);
 
-    const contactoNombre   = $('#contactoNombre')?.value?.trim() || '';
+    const contactoNombre = $('#contactoNombre')?.value?.trim() || '';
     const contactoTelefono = $('#contactoTelefono')?.value?.trim() || '';
-    const contactoEmail    = $('#contactoEmail')?.value?.trim() || '';
-    const hasPersona       = !!contactoNombre && (!!contactoTelefono || !!contactoEmail);
+    const contactoEmail = $('#contactoEmail')?.value?.trim() || '';
+    const hasPersona = !!contactoNombre && (!!contactoTelefono || !!contactoEmail);
     if (!hasEmpresa && !hasPersona) {
       M.toast?.({ html: 'Ingresa una empresa o una persona (nombre + teléfono o email).', displayLength: 2800 });
-      ($('#contactoNombre')?.focus?.()); return;
+      $('#contactoNombre')?.focus?.();
+      return;
     }
 
-    if (!hasEmpresa) { clearCentroHidden(); resetSelectCentros(); }
+    if (!hasEmpresa) {
+      clearCentroHidden();
+      resetSelectCentros();
+    }
 
-    const tieneMMPP         = $('#tieneMMPP')?.value || '';
-    const dispuestoVender   = $('#dispuestoVender')?.value || '';
+    const tieneMMPP = $('#tieneMMPP')?.value || '';
+    const dispuestoVender = $('#dispuestoVender')?.value || '';
     const vendeActualmenteA = $('#vendeActualmenteA')?.value?.trim() || '';
-    const notas             = $('#notasContacto')?.value?.trim() || '';
+    const notas = $('#notasContacto')?.value?.trim() || '';
 
     syncHiddenFromSelect(selCentro);
-    const centroId        = hasEmpresa ? (getVal(['centroId']) || null) : null;
-    const centroCodigo    = hasEmpresa ? (getVal(['centroCodigo']) || null) : null;
-    const centroComuna    = hasEmpresa ? (getVal(['centroComuna']) || comunaPorCodigo(centroCodigo) || null) : null;
-    const centroHectareas = hasEmpresa ? (getVal(['centroHectareas']) || null) : null;
+    const centroId = hasEmpresa ? getVal(['centroId']) || null : null;
+    const centroCodigo = hasEmpresa ? getVal(['centroCodigo']) || null : null;
+    const centroComuna = hasEmpresa ? getVal(['centroComuna']) || comunaPorCodigo(centroCodigo) || null : null;
+    const centroHectareas = hasEmpresa ? getVal(['centroHectareas']) || null : null;
 
-    let resultado = ''; if (tieneMMPP==='Sí') resultado='Disponible'; else if (tieneMMPP==='No') resultado='No disponible';
+    let resultado = '';
+    if (tieneMMPP === 'Sí') resultado = 'Disponible';
+    else if (tieneMMPP === 'No') resultado = 'No disponible';
 
     const payload = {
-      proveedorKey, proveedorNombre,
-      resultado, tieneMMPP, dispuestoVender, vendeActualmenteA, notas,
-      centroId, centroCodigo, centroComuna, centroHectareas,
-      contactoNombre, contactoTelefono, contactoEmail
+      proveedorKey,
+      proveedorNombre,
+      resultado,
+      tieneMMPP,
+      dispuestoVender,
+      vendeActualmenteA,
+      notas,
+      centroId,
+      centroCodigo,
+      centroComuna,
+      centroHectareas,
+      contactoNombre,
+      contactoTelefono,
+      contactoEmail,
     };
 
-    const asigAnio = parseInt(document.getElementById('asigAnio')?.value || '',10);
-    const asigMes  = parseInt(document.getElementById('asigMes')?.value || '',10);
+    const asigAnio = parseInt(document.getElementById('asigAnio')?.value || '', 10);
+    const asigMes = parseInt(document.getElementById('asigMes')?.value || '', 10);
     const asigTonsNum = Number(document.getElementById('asigTons')?.value || NaN);
-    const puedeGuardarAsignacion = hasEmpresa && centroId && Number.isInteger(asigAnio) && Number.isInteger(asigMes) && Number.isFinite(asigTonsNum);
+    const puedeGuardarAsignacion =
+      hasEmpresa && centroId && Number.isInteger(asigAnio) && Number.isInteger(asigMes) && Number.isFinite(asigTonsNum);
 
     try {
-      const editId = state.editId, esUpdate = isValidObjectId(editId);
+      const editId = state.editId;
+      const esUpdate = isValidObjectId(editId);
       if (esUpdate) await apiUpdateContacto(editId, payload);
-      else          await apiCreateContacto(payload);
+      else await apiCreateContacto(payload);
 
       // Guardar una nueva "asignación" (si mantenés este flujo)
       if (puedeGuardarAsignacion) {
@@ -188,11 +234,18 @@ export function setupFormulario() {
         }
         if (contactoId) {
           await postAsignacion({
-            contactoId, proveedorKey, centroId,
-            anio: asigAnio, mes: asigMes, mesKey: mesKeyFrom(asigAnio, asigMes),
-            tons: asigTonsNum, estado: 'disponible', fuente: 'contactos', createdFrom: 'modal_contacto'
+            contactoId,
+            proveedorKey,
+            centroId,
+            anio: asigAnio,
+            mes: asigMes,
+            mesKey: mesKeyFrom(asigAnio, asigMes),
+            tons: asigTonsNum,
+            estado: 'disponible',
+            fuente: 'contactos',
+            createdFrom: 'modal_contacto',
           });
-          M.toast?.({ html: 'Disponibilidad registrada', classes:'teal' });
+          M.toast?.({ html: 'Disponibilidad registrada', classes: 'teal' });
         }
       }
 
@@ -202,7 +255,11 @@ export function setupFormulario() {
       M.toast?.({ html: state.editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
 
       const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
-      form.reset(); clearCentroHidden(); clearProveedorHidden(); state.editId = null; modalInst?.close();
+      form.reset();
+      clearCentroHidden();
+      clearProveedorHidden();
+      state.editId = null;
+      modalInst?.close();
     } catch (err) {
       console.error('[form-contacto] ERROR:', err?.message || err);
       M.toast?.({ html: 'Error al guardar contacto', displayLength: 2500 });
@@ -228,7 +285,8 @@ export function abrirEdicion(c) {
     setVal(['centroComuna'], c.centroComuna || '');
     setVal(['centroHectareas'], c.centroHectareas || '');
   } else {
-    resetSelectCentros(); clearCentroHidden();
+    resetSelectCentros();
+    clearCentroHidden();
   }
 
   if ($('#tieneMMPP')) $('#tieneMMPP').value = c.tieneMMPP || '';
@@ -245,7 +303,7 @@ export function abrirEdicion(c) {
   if (anioEl && !anioEl.value) anioEl.value = hoy.getFullYear();
   if (mesEl && !mesEl.value) mesEl.value = String(hoy.getMonth() + 1);
 
-  // 👇 ahora carga desde /disponibilidades
+  // Carga desde /disponibilidades
   pintarHistorialEdicion(c);
 
   M.updateTextFields?.();
@@ -263,8 +321,11 @@ export async function eliminarContacto(id) {
 
 export function prepararNuevo() {
   state.editId = null;
-  const form = $('#formContacto'); form?.reset();
-  clearProveedorHidden(); resetSelectCentros(); clearCentroHidden();
+  const form = $('#formContacto');
+  form?.reset();
+  clearProveedorHidden();
+  resetSelectCentros();
+  clearCentroHidden();
   const hoy = new Date();
   const anioEl = document.getElementById('asigAnio');
   const mesEl = document.getElementById('asigMes');
