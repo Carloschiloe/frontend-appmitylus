@@ -8,65 +8,56 @@ import { renderTablaContactos } from './tabla.js';
 
 const isValidObjectId = (s) => typeof s === 'string' && /^[0-9a-fA-F]{24}$/.test(s);
 
-/* ---------- Disponibilidades (colección nueva, con fallback a asignaciones) ---------- */
+/* ---------- Asignaciones / Disponibilidades (mínimo necesario) ---------- */
 const API_BASE = window.API_URL || '/api';
-const MESES_N = ['', 'Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const pad2 = (n)=>String(n).padStart(2,'0');
 const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
 
-// Crea disponibilidad en /disponibilidades; si falla, intenta /asignaciones (compat)
-async function postDisponibilidad(disp){
-  // intento principal: /disponibilidades
-  let r = await fetch(`${API_BASE}/disponibilidades`, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(disp)
+/* --- crear una asignación (flujo de guardado opcional) --- */
+async function postAsignacion(a){
+  const r = await fetch(`${API_BASE}/asignaciones`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(a)
   });
-  if (r.ok) { try { return await r.json(); } catch { return null; } }
-
-  // fallback legacy: /asignaciones (conversión tonsDisponible -> tons)
-  const legacy = { ...disp, tons: disp.tonsDisponible };
-  delete legacy.tonsDisponible;
-  r = await fetch(`${API_BASE}/asignaciones`, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(legacy)
-  });
-  if(!r.ok) throw new Error('POST disponibilidad/asignacion '+r.status);
+  if(!r.ok) throw new Error('asignaciones POST '+r.status);
   try { return await r.json(); } catch { return null; }
 }
 
-// Lee disponibilidades por proveedorKey y (opcional) centroId. Si no existe endpoint, hace fallback.
-async function fetchDisponibilidades({ proveedorKey, centroId }){
-  const qs = new URLSearchParams();
-  if (proveedorKey) qs.set('proveedorKey', proveedorKey);
-  if (centroId)     qs.set('centroId', centroId);
-
-  // 1) /disponibilidades
-  let r = await fetch(`${API_BASE}/disponibilidades?${qs.toString()}`);
-  if (r.ok) { try { return await r.json(); } catch { /* noop */ } }
-
-  // 2) fallback /asignaciones
-  r = await fetch(`${API_BASE}/asignaciones?${qs.toString()}`);
-  if (!r.ok) return [];
-  try { return await r.json(); } catch { return []; }
+/* --- leer asignaciones (colección antigua) por contactoId --- */
+async function fetchAsignaciones(contactoId){
+  if(!contactoId) return [];
+  try{
+    const r = await fetch(`${API_BASE}/asignaciones?contactoId=${encodeURIComponent(contactoId)}`);
+    if(!r.ok) return [];
+    return await r.json();
+  }catch{ return []; }
 }
 
-function renderDisponibilidades(list){
-  if(!Array.isArray(list) || !list.length){
-    return '<span class="grey-text">Sin asignaciones registradas.</span>';
-  }
+/* --- leer disponibilidades (colección actual) por proveedorKey (+ opcional centroId) --- */
+async function fetchDisponibilidades({ proveedorKey, centroId }){
+  if(!proveedorKey) return [];
+  try{
+    const url = new URL(`${API_BASE}/disponibilidades`, window.location.origin);
+    url.searchParams.set('proveedorKey', proveedorKey);
+    if (centroId) url.searchParams.set('centroId', centroId);
+    const r = await fetch(url.toString());
+    if(!r.ok) return [];
+    return await r.json();
+  }catch{ return []; }
+}
+
+/* --- normaliza y dibuja tabla compacta --- */
+function renderAsignaciones(list){
+  if(!list?.length) return '<span class="grey-text">Sin asignaciones registradas.</span>';
   const rows = list.slice()
-    .sort((a,b)=>((b.anio||0)*100+(b.mes||0))-((a.anio||0)*100+(a.mes||0)))
+    .sort((a,b)=>((b.anio||0)*100+(b.mes||0)) - ((a.anio||0)*100+(a.mes||0)))
     .map(a=>{
-      const mm = MESES_N[a.mes] || a.mes || '';
-      const yy = a.anio ?? '';
-      const tons = Number((a.tonsDisponible ?? a.tons) || 0);
-      const estado = a.estado || '';
+      const tonsNum = Number(a.tons||0);
+      const fuente = a.fuente || ''; // opcional
       return `<tr>
-        <td>${mm} ${yy}</td>
-        <td style="text-align:right">${tons.toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
-        <td>${estado}</td>
+        <td>${MES[a.mes]||a.mes} ${a.anio||''}${fuente ? ` <span class="grey-text">(${fuente})</span>` : ''}</td>
+        <td style="text-align:right">${tonsNum.toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
+        <td>${a.estado||''}</td>
       </tr>`;
     }).join('');
   return `<table class="striped" style="margin:6px 0">
@@ -75,25 +66,53 @@ function renderDisponibilidades(list){
   </table>`;
 }
 
-// Pinta historial en el panel del modal de edición (bloque asigHist)
-async function pintarHistorialEdicionFromContacto(c){
-  const box = document.getElementById('asigHist'); if(!box) return;
+/* --- carga combinada (asignaciones + disponibilidades) para un contacto --- */
+async function cargarDisponibilidadDeContacto(c){
+  if (!c) return [];
+  // 1) asignaciones clásicas (si existen)
+  const asigs = await fetchAsignaciones(c._id);
+  const normAsigs = Array.isArray(asigs) ? asigs.map(a => ({
+    anio: a.anio ?? a.year ?? null,
+    mes:  a.mes ?? a.month ?? null,
+    tons: Number(a.tons ?? a.cantidad ?? 0),
+    estado: a.estado || 'disponible',
+    fuente: 'asignaciones'
+  })) : [];
+
+  // 2) disponibilidades nuevas (colección actual)
+  const disps = await fetchDisponibilidades({ proveedorKey: c.proveedorKey, centroId: c.centroId });
+  const normDisps = Array.isArray(disps) ? disps.map(d => ({
+    anio: d.anio ?? null,
+    mes:  d.mes ?? null,
+    tons: Number(d.tonsDisponible ?? d.tons ?? 0),
+    estado: d.estado || 'disponible',
+    fuente: 'disponibilidades'
+  })) : [];
+
+  return [...normAsigs, ...normDisps];
+}
+
+/* --- pinta historial en modal de edición (abajo del formulario) --- */
+async function pintarHistorialEdicionContacto(c){
+  const box = document.getElementById('asigHist'); 
+  if(!box) return;
   box.innerHTML = '<span class="grey-text">Cargando disponibilidad...</span>';
   try {
-    const lista = await fetchDisponibilidades({ proveedorKey: c.proveedorKey, centroId: c.centroId });
-    box.innerHTML = renderDisponibilidades(lista);
-  } catch (e) {
+    const lista = await cargarDisponibilidadDeContacto(c);
+    box.innerHTML = renderAsignaciones(lista);
+  } catch(e){
     console.error(e);
     box.innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
   }
 }
 
-// Inyecta el historial en el modal del ojo al abrirse
+/* --- hook: cuando abres el modal del ojo, inyecta el bloque y lo llena --- */
 function hookDetalleHistorial(){
   const body = document.getElementById('detalleContactoBody');
   if(!body) return;
   const obs = new MutationObserver(async ()=>{
-    const c = state.contactoActual; if(!c) return;
+    const c = state.contactoActual; 
+    if(!c) return;
     if(body.querySelector('#detalleAsignaciones')) return;
 
     const wrap = document.createElement('div');
@@ -105,26 +124,27 @@ function hookDetalleHistorial(){
       </div>`;
     body.appendChild(wrap);
 
-    try{
-      const lista = await fetchDisponibilidades({ proveedorKey: c.proveedorKey, centroId: c.centroId });
-      body.querySelector('#detalleAsignacionesTable').innerHTML = renderDisponibilidades(lista);
-    }catch(e){
+    try {
+      const lista = await cargarDisponibilidadDeContacto(c);
+      body.querySelector('#detalleAsignacionesTable').innerHTML = renderAsignaciones(lista);
+    } catch(e) {
+      console.error(e);
       body.querySelector('#detalleAsignacionesTable').innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
     }
   });
   obs.observe(body, {childList:true, subtree:true});
 }
 
-/* -------------------- utilidades de formulario -------------------- */
+/* ---------- helpers de formulario ---------- */
 function clearCentroHidden(){ setVal(['centroId'],''); setVal(['centroCodigo'],''); setVal(['centroComuna'],''); setVal(['centroHectareas'],''); }
 function clearProveedorHidden(){ setVal(['proveedorKey'],''); setVal(['proveedorId'],''); setVal(['proveedorNombre'],''); }
 
-/* ============================ Setup ============================ */
+/* ================================== INIT ================================== */
 export function setupFormulario() {
   const form = $('#formContacto'); if (!form) return;
   state.editId = null;
 
-  // Para el modal del ojo: guarda el contacto seleccionado
+  // capturar contactoActual cuando se abre el "ojo"
   document.addEventListener('click', (e)=>{
     const a = e.target.closest?.('a.icon-action.ver'); if(!a) return;
     const id = a.dataset.id;
@@ -166,7 +186,9 @@ export function setupFormulario() {
     const centroComuna    = hasEmpresa ? (getVal(['centroComuna']) || comunaPorCodigo(centroCodigo) || null) : null;
     const centroHectareas = hasEmpresa ? (getVal(['centroHectareas']) || null) : null;
 
-    let resultado = ''; if (tieneMMPP==='Sí') resultado='Disponible'; else if (tieneMMPP==='No') resultado='No disponible';
+    let resultado = ''; 
+    if (tieneMMPP==='Sí') resultado='Disponible'; 
+    else if (tieneMMPP==='No') resultado='No disponible';
 
     const payload = {
       proveedorKey, proveedorNombre,
@@ -185,20 +207,17 @@ export function setupFormulario() {
       if (esUpdate) await apiUpdateContacto(editId, payload);
       else          await apiCreateContacto(payload);
 
-      // Registrar disponibilidad (si se llenaron los campos)
       if (puedeGuardarAsignacion) {
-        if (!proveedorKey || !centroId) {
-          M.toast?.({ html: 'Para registrar disponibilidad necesitas empresa y centro.', classes: 'orange' });
-        } else {
-          await postDisponibilidad({
-            proveedorKey, proveedorNombre,
-            centroId, centroCodigo,
-            comuna: centroComuna || '',
+        let contactoId = esUpdate ? editId : null;
+        if (!contactoId) {
+          const ultimo = (state.contactosGuardados || []).slice(-1)[0];
+          contactoId = (ultimo && ultimo._id) || null;
+        }
+        if (contactoId) {
+          await postAsignacion({
+            contactoId, proveedorKey, centroId,
             anio: asigAnio, mes: asigMes, mesKey: mesKeyFrom(asigAnio, asigMes),
-            tonsDisponible: asigTonsNum,
-            estado: 'disponible',
-            fuente: 'contactos',
-            createdFrom: 'modal_contacto'
+            tons: asigTonsNum, estado: 'disponible', fuente: 'contactos', createdFrom: 'modal_contacto'
           });
           M.toast?.({ html: 'Disponibilidad registrada', classes:'teal' });
         }
@@ -218,7 +237,7 @@ export function setupFormulario() {
   });
 }
 
-/* ============================ Edición / Borrar / Nuevo ============================ */
+/* ============================= EDICIÓN / DETALLE ============================= */
 export function abrirEdicion(c) {
   state.editId = c._id;
   const hasEmpresa = !!(c.proveedorKey || c.proveedorNombre);
@@ -253,8 +272,8 @@ export function abrirEdicion(c) {
   if (anioEl && !anioEl.value) anioEl.value = hoy.getFullYear();
   if (mesEl && !mesEl.value) mesEl.value = String(hoy.getMonth() + 1);
 
-  // Historial en el bloque inferior del modal de edición
-  pintarHistorialEdicionFromContacto(c);
+  // ❗ cargar historial combinado en el formulario de edición
+  pintarHistorialEdicionContacto(c);
 
   M.updateTextFields?.();
   const modal = document.getElementById('modalContacto');
