@@ -47,17 +47,25 @@ const esCodigoValido = (x) => /^\d{4,7}$/.test(String(x || ''));
 function _clickAccContacto(aEl){
   try{
     const id = aEl?.dataset?.id;
-    const cls = (aEl?.className || '').toLowerCase();
+    const action = (aEl?.dataset?.action || '').toLowerCase();   // ← acción explícita
+    const cls = (aEl?.className || '').toLowerCase();            // ← fallback por clase
 
     const c = state.contactosGuardados.find(x => String(x._id) === String(id));
     if (!c) { M.toast?.({ html: 'Contacto no encontrado', classes: 'red' }); return; }
 
-    if (cls.includes('ver')) return abrirDetalleContacto(c);
-    if (cls.includes('visita')) return abrirModalVisita(c);
-    if (cls.includes('editar')) return abrirEdicion(c);
-    if (cls.includes('eliminar')) {
+    // Resolver acción final
+    const act = action || (cls.includes('ver') ? 'ver'
+                  : cls.includes('visita') ? 'visita'
+                  : cls.includes('editar') ? 'editar'
+                  : cls.includes('eliminar') ? 'eliminar'
+                  : '');
+
+    if (act === 'ver')     return abrirDetalleContacto(c); // modal de detalle de contacto
+    if (act === 'visita')  return abrirModalVisita(c);     // modal de REGISTRO de visita
+    if (act === 'editar')  return abrirEdicion(c);
+    if (act === 'eliminar'){
       if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
-      eliminarContacto(id).catch(e => {
+      return eliminarContacto(id).catch(e => {
         console.error(e);
         M.toast?.({ html: 'No se pudo eliminar', classes: 'red' });
       });
@@ -149,6 +157,7 @@ export function initTablaContactos() {
     .off('click.contactos')
     .on('click.contactos', 'a.icon-action', function(e){
       e.preventDefault();
+      e.stopPropagation();              // ← evita que abra otro modal por burbujeo
       _clickAccContacto(this);
     });
 
@@ -165,8 +174,6 @@ async function actualizarTonsVisiblesYFooter(){
   const jq = window.jQuery || window.$;
   if (!state.dt || !jq) return;
 
-  let totalPagina = 0;
-
   // Recorre filas visibles en la página actual
   state.dt.rows({ page: 'current', search: 'applied' }).every(function(){
     const cellNode = state.dt.cell(this, 5).node(); // columna Tons
@@ -177,12 +184,9 @@ async function actualizarTonsVisiblesYFooter(){
     const proveedorKey = span.dataset.provkey || '';
     const centroId     = span.dataset.centroid || '';
 
-    // Si ya está cargado, sumar y seguir
+    // Si ya está cargado, sólo recalcular footer
     const cached = span.dataset.value;
-    if (cached !== undefined && cached !== null && cached !== '') {
-      totalPagina += Number(cached || 0);
-      return;
-    }
+    if (cached !== undefined && cached !== null && cached !== '') return;
 
     // Marcar loading visual
     span.classList.add('loading');
@@ -263,17 +267,17 @@ export function renderTablaContactos() {
 
       // Tons: YA NO usamos el valor antiguo guardado en el contacto.
       // Ponemos un span "tons-cell" con data para que luego se llene con el total real.
-      const tonsCell = `<span class="tons-cell" data-provkey="${esc(c.proveedorKey || '')}" data-centroid="${esc(c.centroId || '')}" data-value=""> </span>`;
+      const tonsCell = `<span class="tons-cell" data-provkey="${esc(c.proveedorKey || '')}" data-centroid="${esc(c.centroId || '')}" data-value=""></span>`;
 
-      // Acciones
+      // Acciones (con data-action explícito)
       const acciones = `
-        <a href="#!" class="icon-action ver" title="Ver detalle" data-id="${c._id}"
+        <a href="#!" class="icon-action ver" data-action="ver" title="Ver detalle" data-id="${c._id}"
            onclick="window._clickAccContacto(this)"><i class="material-icons">visibility</i></a>
-        <a href="#!" class="icon-action visita" title="Registrar visita" data-id="${c._id}"
+        <a href="#!" class="icon-action visita" data-action="visita" title="Registrar visita" data-id="${c._id}"
            onclick="window._clickAccContacto(this)"><i class="material-icons">event_available</i></a>
-        <a href="#!" class="icon-action editar" title="Editar" data-id="${c._id}"
+        <a href="#!" class="icon-action editar" data-action="editar" title="Editar" data-id="${c._id}"
            onclick="window._clickAccContacto(this)"><i class="material-icons">edit</i></a>
-        <a href="#!" class="icon-action eliminar" title="Eliminar" data-id="${c._id}"
+        <a href="#!" class="icon-action eliminar" data-action="eliminar" title="Eliminar" data-id="${c._id}"
            onclick="window._clickAccContacto(this)"><i class="material-icons">delete</i></a>
       `;
 
