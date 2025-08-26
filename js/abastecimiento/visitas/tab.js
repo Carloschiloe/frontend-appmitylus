@@ -107,7 +107,6 @@ function manejarAccionVisita(aEl){
 
   try {
     if (action === 'ver' || action === 'detalle') {
-      // ➜ Ver detalle de la VISITA (read-only)
       const v = (state.visitasGuardadas || []).find(
         x => String(x._id) === String(aEl.dataset.id)
       );
@@ -351,7 +350,6 @@ function setVisitaModalMode(readOnly){
 
 /* ----------- Inyección segura del bloque de FOTOS ----------- */
 function ensureFotosBlock() {
-  // Si ya existe el contenedor, listo
   if (document.getElementById('visita_fotos')) return;
 
   const form = $('#formVisita');
@@ -371,7 +369,6 @@ function ensureFotosBlock() {
     <div id="visita_fotos_gallery" class="fotos-grid" style="margin-top:10px"></div>
   `;
 
-  // Insertar antes del botón Guardar
   const submitBtn = form.querySelector('button[type="submit"]');
   if (submitBtn?.parentElement) {
     submitBtn.parentElement.insertBefore(wrapper, submitBtn);
@@ -379,8 +376,27 @@ function ensureFotosBlock() {
     form.appendChild(wrapper);
   }
 
-  // Reconectar handlers de la UI de fotos (si hace falta)
+  // Conectar botón → input
+  wireFotoPickers();
   try { mountFotosUIOnce(); } catch {}
+}
+
+/* ----------- Conecta el botón al input (explorador/cámara) ----------- */
+function wireFotoPickers(){
+  const btn = document.getElementById('btnPickFotos');
+  const inp = document.getElementById('visita_fotos_input');
+  if (!btn || !inp) return;
+
+  // Evitar handlers duplicados
+  btn.onclick = null;
+  btn.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    try { inp.click(); } catch {}
+  }, { passive: false });
+
+  // Seguridad extra: el input NO debe capturar clicks fuera
+  inp.style.display = 'none';
 }
 
 /* ---------------------- Detalle de Contacto ---------------------- */
@@ -471,8 +487,9 @@ export function abrirModalVisita(contacto) {
 
   M.updateTextFields();
 
-  // Reset estado de fotos
+  // Reset estado de fotos y reconectar botón
   resetFotosModal();
+  wireFotoPickers();
 
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
@@ -513,6 +530,7 @@ async function abrirEditarVisita(v, readOnly = false) {
   M.updateTextFields();
   resetFotosModal();
   await renderGallery(v._id);
+  wireFotoPickers();
 
   const modal = M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'));
   modal.open();
@@ -565,7 +583,6 @@ export function setupFormularioVisita() {
       (M.Modal.getInstance(document.getElementById('modalVisita')))?.close();
       form.reset();
       form.dataset.editId = '';
-      // dejar el modal limpio por si se reabre como "registrar"
       setVisitaModalMode(false);
       resetFotosModal();
       forceAdjustVisitas();
