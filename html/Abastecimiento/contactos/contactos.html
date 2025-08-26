@@ -39,23 +39,20 @@
         </a>
       </div>
 
-      <table id="tablaContactos">
-  <thead>
-    <tr>
-      <th>Fecha</th>
-      <th>Proveedor</th>
-      <th>Centro</th>
-      <th>Comuna</th>
-      <th>MMPP</th>
-      <th>Fecha</th>
-      <th>¿Disp. a vender?</th>
-      <th>Tons</th>
-      <th>Cliente actual</th>
-      <th>Acciones</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+      <table id="tablaContactos" class="highlight display tabla-mt">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Proveedor</th>
+            <th>Centro</th>
+            <th>Comuna</th>
+            <th>MMPP</th>
+            <th>Tons</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </section>
 
     <!-- VISITAS -->
@@ -159,28 +156,20 @@
             </select>
           </div>
 
-          <div class="input-field col s4">
-            <label for="dispuestoVender" class="active">Disposición</label>
-            <select id="dispuestoVender" class="browser-default modern-select">
-              <option value="">¿Dispuesto a vender?</option>
-              <option value="Sí">Sí</option>
-              <option value="No">No</option>
-              <option value="Por confirmar">Por confirmar</option>
-            </select>
-          </div>
+          <!-- Campo 'Disposición' eliminado -->
 
           <div class="input-field col s4">
             <input id="vendeActualmenteA" type="text" placeholder="Ej: Camanchaca, Orizon...">
             <label for="vendeActualmenteA">Vende actualmente a</label>
           </div>
-        </div>
 
-        <div class="row">
           <div class="input-field col s4">
             <input id="notasContacto" type="text" placeholder="Notas u observaciones">
             <label for="notasContacto">Notas</label>
           </div>
+        </div>
 
+        <div class="row">
           <div class="input-field col s4">
             <input id="contactoNombre" type="text" placeholder="Nombre y apellido">
             <label for="contactoNombre">Nombre del contacto</label>
@@ -190,16 +179,14 @@
             <input id="contactoTelefono" type="tel" placeholder="+56 9 1234 5678">
             <label for="contactoTelefono">Teléfono</label>
           </div>
-        </div>
 
-        <div class="row">
           <div class="input-field col s4">
             <input id="contactoEmail" type="email" placeholder="correo@dominio.cl">
             <label for="contactoEmail">Email</label>
           </div>
         </div>
 
-        <!-- DISPONIBILIDAD MMPP (siempre visible) -->
+        <!-- DISPONIBILIDAD MMPP (asignaciones) -->
         <div class="row" id="asigDisponibilidadBlock">
           <div class="col s12"><h6 class="grey-text text-darken-2" style="margin:4px 0 8px">Disponibilidad de MMPP (asignaciones)</h6></div>
 
@@ -313,31 +300,6 @@
         <div class="input-field">
           <textarea id="visita_observaciones" class="materialize-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
           <label for="visita_observaciones">Observaciones</label>
-        </div>
-
-        <!-- Fotos de la visita -->
-        <div id="visita_fotos" class="fotos-uploader">
-          <div class="fotos-actions filepick-wrap">
-            <button type="button" id="btnPickFotos" class="btn teal waves-effect">
-              <i class="material-icons left">photo_camera</i>
-              Tomar/Subir fotos
-            </button>
-
-            <input
-              id="visita_fotos_input"
-              type="file"
-              accept="image/*"
-              capture="environment"
-              multiple
-              class="filepick-input"
-              aria-label="Tomar o subir fotos"
-            />
-
-            <small class="text-soft">JPG/PNG hasta 10&nbsp;MB c/u, máx 12.</small>
-          </div>
-
-          <div id="visita_fotos_preview" class="fotos-grid"></div>
-          <div id="visita_fotos_gallery" class="fotos-grid"></div>
         </div>
 
         <div class="right-align">
