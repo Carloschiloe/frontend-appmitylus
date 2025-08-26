@@ -76,10 +76,7 @@ export function forceAdjustVisitas() { adjustNow(); }
       pointer-events:auto; cursor:pointer; display:inline-block; margin:0 6px;
     }
     #tablaVisitas td:last-child [data-action] i{ font-size:18px; vertical-align:middle; }
-    /* Textarea de observaciones más alto */
-    #modalVisita textarea#visita_observaciones{
-      min-height: 110px; resize: vertical;
-    }
+    #modalVisita textarea#visita_observaciones{ min-height:110px; resize:vertical; }
   `;
   const s = document.createElement('style');
   s.id = 'visitas-click-fix';
@@ -92,7 +89,6 @@ function __visAction(el, ev) {
   try {
     ev?.preventDefault?.();
     ev?.stopPropagation?.();
-    console.log('[visitas] pointerdown →', el?.dataset?.action, el?.dataset);
     manejarAccionVisita(el);
   } catch (err) {
     console.warn('[visitas] __visAction error', err);
@@ -103,22 +99,17 @@ window.__visAction = __visAction;
 /* ================== Delegación / acciones ================== */
 function manejarAccionVisita(aEl){
   const action = (aEl?.dataset?.action || '').toLowerCase();
-  console.log('[visitas] manejarAccionVisita()', action, aEl?.dataset);
 
   try {
     if (action === 'ver' || action === 'detalle') {
-      const v = (state.visitasGuardadas || []).find(
-        x => String(x._id) === String(aEl.dataset.id)
-      );
-      if (v) abrirEditarVisita(v, true); // readOnly
+      const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(aEl.dataset.id));
+      if (v) abrirEditarVisita(v, true);
       else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
       return;
     }
 
     if (action === 'editar' || action === 'editar-visita') {
-      const v = (state.visitasGuardadas || []).find(
-        x => String(x._id) === String(aEl.dataset.id)
-      );
+      const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(aEl.dataset.id));
       if (v) abrirEditarVisita(v, false);
       else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
       return;
@@ -156,7 +147,6 @@ export async function initVisitasTab(forceReload = false) {
   mountFotosUIOnce();
 
   if (dtV && forceReload) {
-    console.log('[visitas] reload (force) → renderTablaVisitas()');
     await renderTablaVisitas();
     adjustNow();
     return;
@@ -187,7 +177,6 @@ export async function initVisitasTab(forceReload = false) {
       const a = e.target.closest?.('[data-action]');
       if (!a || !a.closest?.('#tablaVisitas')) return;
       e.preventDefault();
-      console.log('[visitas] (capture) click →', a.dataset.action);
       manejarAccionVisita(a);
     }, true);
 
@@ -199,11 +188,9 @@ export async function initVisitasTab(forceReload = false) {
 
   window.addEventListener('visita:created', async () => { await renderTablaVisitas(); adjustNow(); });
   window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); adjustNow(); });
-
-  console.log('[visitas] initVisitasTab listo. dtV?', !!dtV);
 }
 
-// ---------------- render ----------------
+/* ---------------- render ---------------- */
 export async function renderTablaVisitas() {
   const jq = window.jQuery || window.$;
 
@@ -216,8 +203,6 @@ export async function renderTablaVisitas() {
     console.error('[visitas] apiGetVisitas error:', e?.message || e);
     visitas = [];
   }
-
-  console.log('[visitas] render filas:', visitas.length);
 
   const filas = visitas
     .slice()
@@ -324,8 +309,7 @@ function miniTimelineHTML(visitas = []) {
 
 /* ----------- Modo del modal (ReadOnly vs Edición) ----------- */
 function setVisitaModalMode(readOnly){
-  const form = $('#formVisita');
-  if (!form) return;
+  const form = $('#formVisita'); if (!form) return;
 
   const inputs = form.querySelectorAll('input, select, textarea, label input');
   const btnSave = form.querySelector('button[type="submit"]');
@@ -376,26 +360,41 @@ function ensureFotosBlock() {
     form.appendChild(wrapper);
   }
 
-  // Conectar botón → input
   wireFotoPickers();
   try { mountFotosUIOnce(); } catch {}
 }
 
 /* ----------- Conecta el botón al input (explorador/cámara) ----------- */
 function wireFotoPickers(){
-  const btn = document.getElementById('btnPickFotos');
-  const inp = document.getElementById('visita_fotos_input');
-  if (!btn || !inp) return;
+  const btnOld = document.getElementById('btnPickFotos');
+  const inpOld = document.getElementById('visita_fotos_input');
+  if (!btnOld || !inpOld) return;
 
-  // Evitar handlers duplicados
-  btn.onclick = null;
+  // Clonar para eliminar listeners previos que vengan de otros módulos
+  const btn = btnOld.cloneNode(true);
+  const inp = inpOld.cloneNode(true);
+  btnOld.replaceWith(btn);
+  inpOld.replaceWith(inp);
+
+  let opening = false;
+
   btn.addEventListener('click', (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
+    if (opening) return;
+    opening = true;
+    // si otro listener externo intenta abrir, este guard lo bloquea
+    setTimeout(() => { opening = false; }, 600);
     try { inp.click(); } catch {}
   }, { passive: false });
 
-  // Seguridad extra: el input NO debe capturar clicks fuera
+  // Si el usuario selecciona o cancela, liberamos el guard
+  inp.addEventListener('change', () => { opening = false; }, { passive: true });
+  // por seguridad extra: al recibir foco o blur también liberamos
+  inp.addEventListener('blur',   () => { opening = false; }, { passive: true });
+  inp.addEventListener('focus',  () => { opening = false; }, { passive: true });
+
+  // Asegurar que el input no capture el scroll/gestos
   inp.style.display = 'none';
 }
 
@@ -449,14 +448,11 @@ export function abrirModalVisita(contacto) {
   const form = $('#formVisita');
   if (!form) return;
 
-  // Nuevo (no edición)
   form.dataset.editId = '';
 
-  // Asegurar bloque de fotos y modo EDICIÓN (registro)
   ensureFotosBlock();
   setVisitaModalMode(false);
 
-  // Setear proveedor y poblar centros del proveedor
   setVal(['visita_proveedorId'], contacto._id);
   const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
 
@@ -474,7 +470,6 @@ export function abrirModalVisita(contacto) {
     selectVisita.value = '';
   }
 
-  // Fecha hoy + campos en blanco
   const hoy = new Date();
   const fechaEl = $('#visita_fecha');
   if (fechaEl) fechaEl.value = fmtISO(hoy);
@@ -487,7 +482,6 @@ export function abrirModalVisita(contacto) {
 
   M.updateTextFields();
 
-  // Reset estado de fotos y reconectar botón
   resetFotosModal();
   wireFotoPickers();
 
@@ -535,7 +529,6 @@ async function abrirEditarVisita(v, readOnly = false) {
   const modal = M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'));
   modal.open();
 
-  // Alternar modo según readOnly
   setVisitaModalMode(!!readOnly);
 }
 
