@@ -322,6 +322,32 @@ function miniTimelineHTML(visitas = []) {
   return filas + `<a class="btn btn--ghost" id="btnVerVisitas">Ver todas</a>`;
 }
 
+/* ----------- Modo del modal (ReadOnly vs Edición) ----------- */
+function setVisitaModalMode(readOnly){
+  const form = $('#formVisita');
+  if (!form) return;
+
+  const inputs = form.querySelectorAll('input, select, textarea, label input');
+  const btnSave = form.querySelector('button[type="submit"]');
+  const fotosActions = document.querySelector('#visita_fotos .fotos-actions');
+  const closeBtn = form.closest('.modal-content')?.parentElement?.querySelector('.modal-close');
+  const titleEl = document.querySelector('#modalVisita h5');
+
+  if (readOnly) {
+    inputs.forEach(el => { if (el.type !== 'button') el.setAttribute('disabled','disabled'); });
+    if (btnSave) btnSave.style.display = 'none';
+    if (fotosActions) fotosActions.style.display = 'none';
+    if (closeBtn) closeBtn.textContent = 'Cerrar';
+    if (titleEl) titleEl.textContent = 'Detalle de visita';
+  } else {
+    inputs.forEach(el => el.removeAttribute('disabled'));
+    if (btnSave) btnSave.style.display = '';
+    if (fotosActions) fotosActions.style.display = '';
+    if (closeBtn) closeBtn.textContent = 'Cancelar';
+    if (titleEl) titleEl.textContent = 'Registrar visita';
+  }
+}
+
 export async function abrirDetalleContacto(c) {
   const body = $('#detalleContactoBody'); if (!body) return;
 
@@ -368,7 +394,11 @@ export async function abrirDetalleContacto(c) {
 
 export function abrirModalVisita(contacto) {
   const form = $('#formVisita');
-  if (form) form.dataset.editId = ''; // nuevo
+  if (form) form.dataset.editId = ''; // nuevo (no edición)
+
+  // Asegurar MODO EDICIÓN (registro) SIEMPRE
+  setVisitaModalMode(false);
+
   setVal(['visita_proveedorId'], contacto._id);
   const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
 
@@ -427,27 +457,8 @@ async function abrirEditarVisita(v, readOnly = false) {
   const modal = M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'));
   modal.open();
 
-  // —— Modo ReadOnly (para "ver") ——
-  const inputs = form.querySelectorAll('input, select, textarea, button, label input');
-  const btnSave = form.querySelector('button[type="submit"]');
-  const fotosActions = document.querySelector('#visita_fotos .fotos-actions');
-  const closeBtn = form.closest('.modal-content')?.parentElement?.querySelector('.modal-close');
-
-  if (readOnly) {
-    inputs.forEach(el => {
-      if (el.type !== 'button') el.setAttribute('disabled', 'disabled');
-    });
-    if (btnSave) btnSave.style.display = 'none';
-    if (fotosActions) fotosActions.style.display = 'none';
-    if (closeBtn) closeBtn.textContent = 'Cerrar';
-    document.querySelector('#modalVisita h5')?.replaceChildren(document.createTextNode('Detalle de visita'));
-  } else {
-    inputs.forEach(el => el.removeAttribute('disabled'));
-    if (btnSave) btnSave.style.display = '';
-    if (fotosActions) fotosActions.style.display = '';
-    if (closeBtn) closeBtn.textContent = 'Cancelar';
-    document.querySelector('#modalVisita h5')?.replaceChildren(document.createTextNode('Registrar visita'));
-  }
+  // Alternar modo según readOnly
+  setVisitaModalMode(!!readOnly);
 }
 
 export function setupFormularioVisita() {
@@ -493,6 +504,8 @@ export function setupFormularioVisita() {
       (M.Modal.getInstance(document.getElementById('modalVisita')))?.close();
       form.reset();
       form.dataset.editId = '';
+      // dejar el modal limpio por si se reabre como "registrar"
+      setVisitaModalMode(false);
       forceAdjustVisitas();
     } catch (e2) {
       console.warn('apiCreate/UpdateVisita error:', e2?.message || e2);
