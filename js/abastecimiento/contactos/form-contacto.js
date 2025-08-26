@@ -1,4 +1,4 @@
-// /js/contactos/form-contacto.js
+// /js/contactos/form-contacto.js 
 import { apiCreateContacto, apiUpdateContacto, apiDeleteContacto } from '../../core/api.js';
 import { state, $, getVal, setVal, slug } from './state.js';
 import { cargarContactosGuardados } from './data.js';
@@ -31,6 +31,13 @@ const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
 })();
 
 /* ---------- API helpers para DISPONIBILIDADES ---------- */
+// helper local para aplanar el _id (string, objeto {$oid}, etc.)
+const normId = (x) => {
+  let id = (x && (x._id ?? x.id)) ?? null;
+  if (id && typeof id === 'object') id = id.$oid || String(id);
+  return id || null;
+};
+
 // GET a /disponibilidades (colección real con tus datos)
 async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } = {}) {
   // ❗ Si no hay filtros, no consultes (evita devolver TODO)
@@ -51,15 +58,21 @@ async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } 
     // Soportar tanto {items:[...]} como array plano
     const list = Array.isArray(data) ? data : (data.items || []);
 
-    // Map a objetos consistentes
-    return list.map(x => ({
-      _id:    x._id || x.id || null,
-      anio:   x.anio ?? (Number((x.mesKey || '').slice(0, 4)) || null),
-      mes:    x.mes  ?? (Number((x.mesKey || '').slice(5, 7)) || null),
-      tons:   Number(x.tons ?? x.tonsDisponible ?? 0) || 0,
-      estado: x.estado || 'disponible',
-      mesKey: x.mesKey || (x.anio && x.mes ? mesKeyFrom(x.anio, x.mes) : null),
-    }));
+    // Map a objetos consistentes (con id aplanado)
+    return list.map(x => {
+      const id = normId(x);
+      const mk = x.mesKey || (x.anio && x.mes ? mesKeyFrom(x.anio, x.mes) : null);
+      return {
+        _id: id, id,
+        anio:   x.anio ?? (Number((mk || '').slice(0, 4)) || null),
+        mes:    x.mes  ?? (Number((mk || '').slice(5, 7)) || null),
+        tons:   Number(x.tons ?? x.tonsDisponible ?? 0) || 0,
+        estado: x.estado || 'disponible',
+        mesKey: mk,
+        proveedorKey: x.proveedorKey || '',
+        centroId: x.centroId || null
+      };
+    });
   } catch {
     return [];
   }
@@ -112,19 +125,22 @@ async function deleteDisponibilidad(id){
 function renderAsignaciones(list){
   if(!list?.length) return '<span class="grey-text">Sin disponibilidades registradas.</span>';
   const rows = list.slice().sort((a,b)=>((b.anio||0)*100+b.mes)-((a.anio||0)*100+a.mes))
-    .map(a=>`<tr>
-      <td>${MES[a.mes]||a.mes} ${a.anio||''}</td>
-      <td class="num">${Number(a.tons||0).toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
-      <td>${a.estado||''}</td>
-      <td class="mini-actions">
-        <a href="javascript:;" class="mini-edit" data-id="${a._id||''}" data-anio="${a.anio||''}" data-mes="${a.mes||''}" data-tons="${a.tons||''}" title="Editar">
-          <i class="material-icons">edit</i>
-        </a>
-        <a href="javascript:;" class="mini-del" data-id="${a._id||''}" title="Eliminar">
-          <i class="material-icons red-text">delete</i>
-        </a>
-      </td>
-    </tr>`).join('');
+    .map(a=>{
+      const rowId = (a._id || a.id || '');
+      return `<tr>
+        <td>${MES[a.mes]||a.mes} ${a.anio||''}</td>
+        <td class="num">${Number(a.tons||0).toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
+        <td>${a.estado||''}</td>
+        <td class="mini-actions">
+          <a href="javascript:;" class="mini-edit" data-id="${rowId}" data-anio="${a.anio||''}" data-mes="${a.mes||''}" data-tons="${a.tons||''}" title="Editar">
+            <i class="material-icons">edit</i>
+          </a>
+          <a href="javascript:;" class="mini-del" data-id="${rowId}" title="Eliminar">
+            <i class="material-icons red-text">delete</i>
+          </a>
+        </td>
+      </tr>`;
+    }).join('');
 
   return `<table class="striped" style="margin:6px 0">
     <thead><tr>
@@ -183,7 +199,9 @@ function hookDetalleHistorial(){
 
       const lista = await fetchDisponibilidades({ proveedorKey, centroId });
       // en detalle no hay acciones
-      const html = renderAsignaciones(lista).replace(/<th[^>]*>Opciones<\/th>/,'<th></th>').replace(/<td class="mini-actions">[\s\S]*?<\/td>/g,'<td></td>');
+      const html = renderAsignaciones(lista)
+        .replace(/<th[^>]*>Opciones<\/th>/,'<th></th>')
+        .replace(/<td class="mini-actions">[\s\S]*?<\/td>/g,'<td></td>');
       body.querySelector('#detalleAsignacionesTable').innerHTML = html;
     } catch(e) {
       console.error(e);
