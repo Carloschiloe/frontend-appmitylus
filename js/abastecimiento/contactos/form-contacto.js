@@ -1,4 +1,4 @@
-// /js/contactos/form-contacto.js 
+// /js/contactos/form-contacto.js  
 import { apiCreateContacto, apiUpdateContacto, apiDeleteContacto } from '../../core/api.js';
 import { state, $, getVal, setVal, slug } from './state.js';
 import { cargarContactosGuardados } from './data.js';
@@ -39,7 +39,6 @@ const normId = (x) => {
   if (typeof id === 'object') {
     if (id.$oid) return id.$oid;
     if (id.oid) return id.oid;
-    // Último intento: extraer 24 hex de toString()
     const m = String(id).match(/[0-9a-fA-F]{24}/);
     if (m) return m[0];
   }
@@ -47,7 +46,7 @@ const normId = (x) => {
 };
 
 // GET a /disponibilidades (colección real con tus datos)
-async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } = {}) {
+async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio, mesKey } = {}) {
   if (!proveedorKey && !centroId) return [];
 
   const q = new URLSearchParams();
@@ -56,6 +55,7 @@ async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } 
   if (from)         q.set('from', from);
   if (to)           q.set('to', to);
   if (anio)         q.set('anio', anio);
+  if (mesKey)       q.set('mesKey', mesKey); // <- soporte para resolver por mesKey
 
   try {
     const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
@@ -82,6 +82,15 @@ async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } 
   } catch {
     return [];
   }
+}
+
+// Resolver _id haciendo una query específica por mesKey (fallback)
+async function resolverDispIdPorMesKey({ proveedorKey, centroId, mesKey }) {
+  if (!proveedorKey && !centroId) return null;
+  if (!mesKey) return null;
+  const lista = await fetchDisponibilidades({ proveedorKey, centroId, mesKey });
+  const item = (lista || []).find(x => x.mesKey === mesKey && (x._id || x.id));
+  return item ? (item._id || item.id || null) : null;
 }
 
 // POST /disponibilidades
@@ -171,7 +180,7 @@ async function pintarHistorialEdicion(contacto){
   box.innerHTML = '<span class="grey-text">Cargando disponibilidad...</span>';
   try {
     const lista = await fetchDisponibilidades({ proveedorKey, centroId });
-    state._ultimaDispLista = lista; // <- guardo para resolver id por mesKey si hiciera falta
+    state._ultimaDispLista = lista; // cache para acciones
     box.innerHTML = renderAsignaciones(lista);
   } catch(e){
     console.error(e);
@@ -244,16 +253,21 @@ export function setupFormulario() {
     e.preventDefault();
 
     let id = btn.dataset.id?.trim() || '';
-    if (!isValidObjectId(id)) {
-      // intentar resolver por mesKey con la lista cached
+    if (!id || !isValidObjectId(id)) {
+      // intentar resolver por mesKey con API si el id no vino en la lista
       const mk = btn.dataset.meskey || '';
-      if (mk && Array.isArray(state._ultimaDispLista)) {
-        const found = state._ultimaDispLista.find(x => x.mesKey === mk && isValidObjectId(x._id));
-        if (found) id = found._id;
+      const contacto = state.editingContacto || state.contactoActual || {};
+      const proveedorKey = contacto?.proveedorKey || (contacto?.proveedorNombre ? slug(contacto.proveedorNombre) : '');
+      const centroId = contacto?.centroId || null;
+      if (mk) {
+        try {
+          const resolved = await resolverDispIdPorMesKey({ proveedorKey, centroId, mesKey: mk });
+          if (resolved) id = resolved;
+        } catch {}
       }
     }
 
-    if (!isValidObjectId(id)) {
+    if (!id || !isValidObjectId(id)) {
       M.toast?.({ html:'No hay ID válido para esta fila', classes:'red' });
       return;
     }
