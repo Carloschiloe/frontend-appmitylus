@@ -32,7 +32,8 @@ const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
 
 /* ---------- API helpers para DISPONIBILIDADES ---------- */
 // GET /disponibilidades
-async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } = {}){
+// GET a /disponibilidades (colección real con tus datos)
+async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } = {}) {
   const q = new URLSearchParams();
   if (proveedorKey) q.set('proveedorKey', proveedorKey);
   if (centroId)     q.set('centroId', centroId);
@@ -40,20 +41,26 @@ async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } 
   if (to)           q.set('to', to);
   if (anio)         q.set('anio', anio);
 
-  const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
-  if(!r.ok) return [];
   try {
+    const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
+    if (!r.ok) return [];
     const data = await r.json();
+
+    // Soportar tanto {items:[...]} como array plano
     const list = Array.isArray(data) ? data : (data.items || []);
+
+    // 🔧 Devuelve OBJETOS con claves (no expresiones sueltas)
     return list.map(x => ({
-      _id: x._id || x.id || null,
-      anio: x.anio ?? Number((x.mesKey||'').slice(0,4)) || null,
-      mes:  x.mes  ?? Number((x.mesKey||'').slice(5,7)) || null,
-      tons: Number(x.tons ?? x.tonsDisponible ?? 0) || 0,
+      _id:    x._id || x.id || null,
+      anio:   x.anio ?? Number((x.mesKey || '').slice(0, 4)) || null,
+      mes:    x.mes  ?? Number((x.mesKey || '').slice(5, 7)) || null,
+      tons:   Number(x.tons ?? x.tonsDisponible ?? 0) || 0,
       estado: x.estado || 'disponible',
       mesKey: x.mesKey || (x.anio && x.mes ? mesKeyFrom(x.anio, x.mes) : null),
     }));
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 // POST /disponibilidades
