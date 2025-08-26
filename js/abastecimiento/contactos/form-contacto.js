@@ -14,17 +14,24 @@ const MES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto
 const pad2 = (n)=>String(n).padStart(2,'0');
 const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
 
-/* ---------- API helpers ---------- */
-// POST a /disponibilidades (stock declarado)
-async function postDisponibilidad(d){
-  const r = await fetch(`${API_BASE}/disponibilidades`, {
-    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)
-  });
-  if(!r.ok) throw new Error('disponibilidades POST '+r.status);
-  try { return await r.json(); } catch { return null; }
-}
+/* ---------- CSS para mini acciones en la grilla de disponibilidades ---------- */
+(function injectMiniStyles () {
+  const css = `
+    #asigHist .mini-actions a { display:inline-block; margin:0 6px; cursor:pointer; }
+    #asigHist .mini-actions i { font-size:18px; vertical-align:middle; }
+    #asigHist table td, #asigHist table th { padding:10px 12px; }
+    #asigHist .num { text-align:right; }
+  `;
+  if (!document.getElementById('disp-mini-styles')) {
+    const s = document.createElement('style');
+    s.id = 'disp-mini-styles';
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+})();
 
-// GET a /disponibilidades
+/* ---------- API helpers para DISPONIBILIDADES ---------- */
+// GET /disponibilidades
 async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } = {}){
   const q = new URLSearchParams();
   if (proveedorKey) q.set('proveedorKey', proveedorKey);
@@ -39,41 +46,99 @@ async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio } 
     const data = await r.json();
     const list = Array.isArray(data) ? data : (data.items || []);
     return list.map(x => ({
-      anio:  (x.anio ?? (Number((x.mesKey || '').slice(0,4)) || null)),
-      mes:   (x.mes  ?? (Number((x.mesKey || '').slice(5,7)) || null)),
-      tons:  Number(x.tons ?? x.tonsDisponible ?? 0) || 0,
-      estado: x.estado || 'disponible'
+      _id: x._id || x.id || null,
+      anio: x.anio ?? Number((x.mesKey||'').slice(0,4)) || null,
+      mes:  x.mes  ?? Number((x.mesKey||'').slice(5,7)) || null,
+      tons: Number(x.tons ?? x.tonsDisponible ?? 0) || 0,
+      estado: x.estado || 'disponible',
+      mesKey: x.mesKey || (x.anio && x.mes ? mesKeyFrom(x.anio, x.mes) : null),
     }));
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
-/* ---------- Render helpers ---------- */
-function renderDisponibilidades(list){
+// POST /disponibilidades
+async function postDisponibilidad(d){
+  // back espera tonsDisponible y mesKey
+  const payload = {
+    proveedorKey: d.proveedorKey || '',
+    proveedorNombre: d.proveedorNombre || '',
+    centroId: d.centroId || null,
+    centroCodigo: d.centroCodigo || '',
+    comuna: d.comuna || '',
+    areaCodigo: d.areaCodigo || '',
+    mesKey: d.mesKey || mesKeyFrom(d.anio, d.mes),
+    anio: d.anio,
+    mes: d.mes,
+    tonsDisponible: d.tons,
+    estado: d.estado || 'disponible'
+  };
+  const r = await fetch(`${API_BASE}/disponibilidades`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+  });
+  if (!r.ok) throw new Error('disponibilidades POST '+r.status);
+  return r.json();
+}
+
+// PATCH /disponibilidades/:id
+async function patchDisponibilidad(id, d){
+  const payload = {};
+  if (d.anio && d.mes) payload.mesKey = mesKeyFrom(d.anio, d.mes);
+  if ('tons' in d) payload.tons = d.tons;
+  if (d.estado) payload.estado = d.estado;
+
+  const r = await fetch(`${API_BASE}/disponibilidades/${id}`, {
+    method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+  });
+  if(!r.ok) throw new Error('disponibilidades PATCH '+r.status);
+  return r.json();
+}
+
+// DELETE /disponibilidades/:id
+async function deleteDisponibilidad(id){
+  const r = await fetch(`${API_BASE}/disponibilidades/${id}`, { method:'DELETE' });
+  if(!r.ok) throw new Error('disponibilidades DELETE '+r.status);
+  return r.json();
+}
+
+/* ---------- Render helpers (grilla en el modal) ---------- */
+function renderAsignaciones(list){
   if(!list?.length) return '<span class="grey-text">Sin disponibilidades registradas.</span>';
   const rows = list.slice().sort((a,b)=>((b.anio||0)*100+b.mes)-((a.anio||0)*100+a.mes))
-    .map(a=>`<tr><td>${MES[a.mes]||a.mes} ${a.anio||''}</td>
-      <td style="text-align:right">${Number(a.tons||0).toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
-      <td>${a.estado||''}</td></tr>`).join('');
-  return `<table class="striped" style="margin:6px 0"><thead><tr>
-    <th>Mes</th><th style="text-align:right">Tons</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
+    .map(a=>`<tr>
+      <td>${MES[a.mes]||a.mes} ${a.anio||''}</td>
+      <td class="num">${Number(a.tons||0).toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
+      <td>${a.estado||''}</td>
+      <td class="mini-actions">
+        <a class="mini-edit" data-id="${a._id||''}" data-anio="${a.anio||''}" data-mes="${a.mes||''}" data-tons="${a.tons||''}" title="Editar">
+          <i class="material-icons">edit</i>
+        </a>
+        <a class="mini-del" data-id="${a._id||''}" title="Eliminar">
+          <i class="material-icons red-text">delete</i>
+        </a>
+      </td>
+    </tr>`).join('');
+
+  return `<table class="striped" style="margin:6px 0">
+    <thead><tr>
+      <th>Mes</th><th class="num">Tons</th><th>Estado</th><th style="width:100px">Opciones</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 
 async function pintarHistorialEdicion(contacto){
-  const box = document.getElementById('asigHist'); // reutilizamos contenedor
-  if(!box) return;
-  box.innerHTML = '<span class="grey-text">Cargando disponibilidades...</span>';
+  const box = document.getElementById('asigHist'); if(!box) return;
+  box.innerHTML = '<span class="grey-text">Cargando disponibilidad...</span>';
   try {
     const proveedorKey = contacto.proveedorKey || (contacto.proveedorNombre ? slug(contacto.proveedorNombre) : '');
     const lista = await fetchDisponibilidades({
       proveedorKey,
       centroId: contacto.centroId || undefined
     });
-    box.innerHTML = renderDisponibilidades(lista);
+    box.innerHTML = renderAsignaciones(lista);
   } catch(e){
     console.error(e);
-    box.innerHTML = '<span class="red-text">No se pudo cargar disponibilidades</span>';
+    box.innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
   }
 }
 
@@ -82,14 +147,14 @@ function hookDetalleHistorial(){
   if(!body) return;
   const obs = new MutationObserver(async ()=>{
     const c = state.contactoActual; if(!c) return;
-    if(body.querySelector('#detalleDisponibilidades')) return;
+    if(body.querySelector('#detalleAsignaciones')) return;
 
     const wrap = document.createElement('div');
-    wrap.id='detalleDisponibilidades';
+    wrap.id='detalleAsignaciones';
     wrap.innerHTML = `
       <h6 class="grey-text text-darken-2" style="margin-top:12px">Disponibilidad registrada</h6>
-      <div id="detalleDisponibilidadesTable" class="card-panel grey lighten-4" style="padding:8px 12px">
-        <span class="grey-text">Cargando disponibilidades...</span>
+      <div id="detalleAsignacionesTable" class="card-panel grey lighten-4" style="padding:8px 12px">
+        <span class="grey-text">Cargando disponibilidad...</span>
       </div>`;
     body.appendChild(wrap);
 
@@ -99,10 +164,10 @@ function hookDetalleHistorial(){
         proveedorKey,
         centroId: c.centroId || undefined
       });
-      body.querySelector('#detalleDisponibilidadesTable').innerHTML = renderDisponibilidades(lista);
+      body.querySelector('#detalleAsignacionesTable').innerHTML = renderAsignaciones(lista).replace(/<th[^>]*>Opciones<\/th>.*?<\/th>/,'<th></th>');
     } catch(e) {
       console.error(e);
-      body.querySelector('#detalleDisponibilidadesTable').innerHTML = '<span class="red-text">No se pudo cargar disponibilidades</span>';
+      body.querySelector('#detalleAsignacionesTable').innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
     }
   });
   obs.observe(body, {childList:true, subtree:true});
@@ -116,13 +181,7 @@ function clearProveedorHidden(){ setVal(['proveedorKey'],''); setVal(['proveedor
 export function setupFormulario() {
   const form = $('#formContacto'); if (!form) return;
   state.editId = null;
-
-  // Ajuste de textos (el HTML antiguo dice "asignaciones")
-  const tituloDisp = document.querySelector('#asigDisponibilidadBlock h6');
-  if (tituloDisp) tituloDisp.textContent = 'Disponibilidad de MMPP';
-
-  const box = document.getElementById('asigHist');
-  if (box) box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
+  state.dispEditId = null; // para PATCH
 
   document.addEventListener('click', (e)=>{
     const a = e.target.closest?.('a.icon-action.ver'); if(!a) return;
@@ -133,6 +192,40 @@ export function setupFormulario() {
 
   const selCentro = $('#selectCentro');
   selCentro?.addEventListener('change', () => syncHiddenFromSelect(selCentro));
+
+  // Delegación de acciones en la tabla de disponibilidades (editar/eliminar)
+  document.getElementById('asigHist')?.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.mini-actions a'); if(!btn) return;
+    const id = btn.dataset.id;
+    if (!id) return;
+
+    if (btn.classList.contains('mini-del')) {
+      if (!confirm('¿Eliminar esta disponibilidad?')) return;
+      try {
+        await deleteDisponibilidad(id);
+        const c = state.editingContacto || state.contactoActual || {};
+        await pintarHistorialEdicion(c);
+        M.toast?.({ html:'Disponibilidad eliminada', classes:'teal' });
+      } catch (err) {
+        console.error(err);
+        M.toast?.({ html:'No se pudo eliminar', classes:'red' });
+      }
+      return;
+    }
+
+    if (btn.classList.contains('mini-edit')) {
+      // prefilla Año/Mes/Tons y deja lista para PATCH en Guardar
+      const anioEl = document.getElementById('asigAnio');
+      const mesEl  = document.getElementById('asigMes');
+      const tonsEl = document.getElementById('asigTons');
+      if (anioEl) anioEl.value = btn.dataset.anio || '';
+      if (mesEl)  mesEl.value  = btn.dataset.mes  || '';
+      if (tonsEl) tonsEl.value = btn.dataset.tons || '';
+      state.dispEditId = id;
+      M.toast?.({ html:'Editando disponibilidad: recuerda presionar Guardar', displayLength: 2200 });
+      return;
+    }
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -165,9 +258,7 @@ export function setupFormulario() {
     const centroComuna    = hasEmpresa ? (getVal(['centroComuna']) || comunaPorCodigo(centroCodigo) || null) : null;
     const centroHectareas = hasEmpresa ? (getVal(['centroHectareas']) || null) : null;
 
-    let resultado = '';
-    if (tieneMMPP==='Sí') resultado='Disponible';
-    else if (tieneMMPP==='No') resultado='No disponible';
+    let resultado = ''; if (tieneMMPP==='Sí') resultado='Disponible'; else if (tieneMMPP==='No') resultado='No disponible';
 
     const payload = {
       proveedorKey, proveedorNombre,
@@ -176,43 +267,48 @@ export function setupFormulario() {
       contactoNombre, contactoTelefono, contactoEmail
     };
 
-    const dispAnio = parseInt(document.getElementById('asigAnio')?.value || '',10);
-    const dispMes  = parseInt(document.getElementById('asigMes')?.value || '',10);
-    const dispTonsNum = Number(document.getElementById('asigTons')?.value || NaN);
-    const puedeGuardarDisp = hasEmpresa && centroId && Number.isInteger(dispAnio) && Number.isInteger(dispMes) && Number.isFinite(dispTonsNum);
+    // Campos de disponibilidad (crear o patch)
+    const asigAnio = parseInt(document.getElementById('asigAnio')?.value || '',10);
+    const asigMes  = parseInt(document.getElementById('asigMes')?.value || '',10);
+    const asigTonsNum = Number(document.getElementById('asigTons')?.value || NaN);
+    const tieneDispCampos = Number.isInteger(asigAnio) && Number.isInteger(asigMes) && Number.isFinite(asigTonsNum) && asigTonsNum>0;
 
     try {
       const editId = state.editId, esUpdate = isValidObjectId(editId);
       if (esUpdate) await apiUpdateContacto(editId, payload);
       else          await apiCreateContacto(payload);
 
-      // Guardar disponibilidad (NO asignación)
-      if (puedeGuardarDisp) {
-        await postDisponibilidad({
-          proveedorKey, proveedorNombre,
-          centroId, centroCodigo, comuna: centroComuna,
-          anio: dispAnio, mes: dispMes, mesKey: mesKeyFrom(dispAnio, dispMes),
-          tonsDisponible: dispTonsNum,
-        });
-        M.toast?.({ html: 'Disponibilidad registrada', classes:'teal' });
+      // Crear o actualizar disponibilidad
+      if (tieneDispCampos && hasEmpresa && centroId) {
+        if (state.dispEditId) {
+          await patchDisponibilidad(state.dispEditId, { anio: asigAnio, mes: asigMes, tons: asigTonsNum, estado:'disponible' });
+          state.dispEditId = null;
+          M.toast?.({ html:'Disponibilidad actualizada', classes:'teal' });
+        } else {
+          await postDisponibilidad({
+            proveedorKey, proveedorNombre,
+            centroId, centroCodigo: centroCodigo||'', comuna: centroComuna||'',
+            anio: asigAnio, mes: asigMes, tons: asigTonsNum, estado:'disponible'
+          });
+          M.toast?.({ html:'Disponibilidad registrada', classes:'teal' });
+        }
       }
 
       await cargarContactosGuardados();
       renderTablaContactos();
       document.dispatchEvent(new Event('reload-tabla-contactos'));
-      M.toast?.({ html: state.editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
 
-      // refrescar listado en edición (si se agregó disponibilidad)
-      if (puedeGuardarDisp) {
-        const ctmp = { _id: esUpdate ? editId : null, proveedorKey, proveedorNombre, centroId };
-        await pintarHistorialEdicion(ctmp);
-      }
+      // refresca el panel de historial en edición
+      const c = state.editId ? { _id: state.editId, proveedorKey, proveedorNombre, centroId } : (state.contactoActual || {});
+      await pintarHistorialEdicion(c);
+
+      M.toast?.({ html: state.editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
 
       const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
       form.reset(); clearCentroHidden(); clearProveedorHidden(); state.editId = null; modalInst?.close();
     } catch (err) {
       console.error('[form-contacto] ERROR:', err?.message || err);
-      M.toast?.({ html: 'Error al guardar', displayLength: 2500 });
+      M.toast?.({ html: 'Error al guardar contacto', displayLength: 2500 });
     }
   });
 }
@@ -220,6 +316,9 @@ export function setupFormulario() {
 /* ---------- Acciones ---------- */
 export function abrirEdicion(c) {
   state.editId = c._id;
+  state.editingContacto = c; // para refresco al borrar/editar
+  state.dispEditId = null;
+
   const hasEmpresa = !!(c.proveedorKey || c.proveedorNombre);
   const key = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
 
@@ -252,7 +351,6 @@ export function abrirEdicion(c) {
   if (anioEl && !anioEl.value) anioEl.value = hoy.getFullYear();
   if (mesEl && !mesEl.value) mesEl.value = String(hoy.getMonth() + 1);
 
-  // Cargar disponibilidades del proveedor/centro
   pintarHistorialEdicion(c);
 
   M.updateTextFields?.();
@@ -270,6 +368,7 @@ export async function eliminarContacto(id) {
 
 export function prepararNuevo() {
   state.editId = null;
+  state.dispEditId = null;
   const form = $('#formContacto'); form?.reset();
   clearProveedorHidden(); resetSelectCentros(); clearCentroHidden();
   const hoy = new Date();
