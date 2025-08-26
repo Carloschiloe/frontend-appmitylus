@@ -199,14 +199,9 @@
           </div>
         </div>
 
-        <!-- Bloque: Disponibilidad MMPP (asignaciones) -->
+        <!-- DISPONIBILIDAD MMPP (siempre visible) -->
         <div class="row" id="asigDisponibilidadBlock">
-          <div class="col s12">
-            <label style="display:flex;align-items:center;gap:.5rem">
-              <input type="checkbox" id="asigAgregarDisponibilidad" checked />
-              <span>Agregar disponibilidad de MMPP para este centro</span>
-            </label>
-          </div>
+          <div class="col s12"><h6 class="grey-text text-darken-2" style="margin:4px 0 8px">Disponibilidad de MMPP (asignaciones)</h6></div>
 
           <div class="col s12 m4">
             <div class="input-field">
@@ -242,8 +237,15 @@
               <label for="asigTons">Cantidad (ton)</label>
             </div>
           </div>
+
+          <!-- Historial compactado -->
+          <div class="col s12">
+            <div id="asigHist" class="card-panel grey lighten-4" style="padding:8px 12px">
+              <span class="grey-text">Sin asignaciones registradas.</span>
+            </div>
+          </div>
         </div>
-        <!-- /Bloque Disponibilidad -->
+        <!-- /DISPONIBILIDAD -->
       </form>
     </div>
 
@@ -256,7 +258,10 @@
   </div>
 
   <div id="modalDetalleContacto" class="modal">
-    <div class="modal-content"><h5>Detalle del contacto</h5><div id="detalleContactoBody"></div></div>
+    <div class="modal-content">
+      <h5>Detalle del contacto</h5>
+      <div id="detalleContactoBody"></div>
+    </div>
     <div class="modal-footer"><button class="modal-close btn teal">Cerrar</button></div>
   </div>
 
@@ -369,6 +374,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
   <!-- Orquestador -->
-  <script type="module" src="../../../js/abastecimiento/contactos/index.js?v=9"></script>
+  <script type="module" src="../../../js/abastecimiento/contactos/index.js?v=10"></script>
 </body>
 </html>
