@@ -42,7 +42,6 @@ async function pintarHistorialEdicion(contactoId){
   try { box.innerHTML = renderAsignaciones(await fetchAsignaciones(contactoId)); }
   catch(e){ console.error(e); box.innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>'; }
 }
-/* modal del ojo: inyecta historial cuando se abre */
 function hookDetalleHistorial(){
   const body = document.getElementById('detalleContactoBody');
   if(!body) return;
@@ -57,28 +56,23 @@ function hookDetalleHistorial(){
         <span class="grey-text">Cargando disponibilidad...</span>
       </div>`;
     body.appendChild(wrap);
-    try{
+    try {
       const lista = await fetchAsignaciones(c._id);
       body.querySelector('#detalleAsignacionesTable').innerHTML = renderAsignaciones(lista);
-    }catch(e){
+    } catch(e) {
       body.querySelector('#detalleAsignacionesTable').innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
     }
   });
   obs.observe(body, {childList:true, subtree:true});
 }
 
-/* ---------- helpers ---------- */
 function clearCentroHidden(){ setVal(['centroId'],''); setVal(['centroCodigo'],''); setVal(['centroComuna'],''); setVal(['centroHectareas'],''); }
 function clearProveedorHidden(){ setVal(['proveedorKey'],''); setVal(['proveedorId'],''); setVal(['proveedorNombre'],''); }
-function getOptionalValue(id){ const el=document.getElementById(id); return el?el.value:undefined; }
-function normalizeNumber(s){ if(s==null||s==='') return null; const n=Number(String(s).replace(',','.')); return Number.isFinite(n)?n:null; }
 
-/* =================== INIT =================== */
 export function setupFormulario() {
   const form = $('#formContacto'); if (!form) return;
   state.editId = null;
 
-  // mantener estado del contacto al abrir "ver"
   document.addEventListener('click', (e)=>{
     const a = e.target.closest?.('a.icon-action.ver'); if(!a) return;
     const id = a.dataset.id;
@@ -92,14 +86,12 @@ export function setupFormulario() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    /* Empresa (opcional) */
     const proveedorKeyRaw    = (getVal(['proveedorKey','proveedorId']) || '').trim();
     const proveedorNombreRaw = (getVal(['proveedorNombre']) || '').trim();
     const proveedorKey    = proveedorKeyRaw || null;
     const proveedorNombre = proveedorNombreRaw || null;
     const hasEmpresa      = !!(proveedorKey && proveedorNombre);
 
-    /* Persona (permite sin empresa) */
     const contactoNombre   = $('#contactoNombre')?.value?.trim() || '';
     const contactoTelefono = $('#contactoTelefono')?.value?.trim() || '';
     const contactoEmail    = $('#contactoEmail')?.value?.trim() || '';
@@ -111,13 +103,10 @@ export function setupFormulario() {
 
     if (!hasEmpresa) { clearCentroHidden(); resetSelectCentros(); }
 
-    /* Otros campos */
-    const tieneMMPP           = $('#tieneMMPP')?.value || '';
-    const fechaDisponibilidad = getOptionalValue('fechaDisponibilidad') || null;
-    const dispuestoVender     = $('#dispuestoVender')?.value || '';
-    const vendeActualmenteA   = $('#vendeActualmenteA')?.value?.trim() || '';
-    const notas               = $('#notasContacto')?.value?.trim() || '';
-    const tonsDisponiblesAprox= getOptionalValue('tonsDisponiblesAprox') ?? '';
+    const tieneMMPP         = $('#tieneMMPP')?.value || '';
+    const dispuestoVender   = $('#dispuestoVender')?.value || '';
+    const vendeActualmenteA = $('#vendeActualmenteA')?.value?.trim() || '';
+    const notas             = $('#notasContacto')?.value?.trim() || '';
 
     syncHiddenFromSelect(selCentro);
     const centroId        = hasEmpresa ? (getVal(['centroId']) || null) : null;
@@ -129,13 +118,11 @@ export function setupFormulario() {
 
     const payload = {
       proveedorKey, proveedorNombre,
-      resultado, tieneMMPP, fechaDisponibilidad, dispuestoVender, vendeActualmenteA, notas,
+      resultado, tieneMMPP, dispuestoVender, vendeActualmenteA, notas,
       centroId, centroCodigo, centroComuna, centroHectareas,
-      contactoNombre, contactoTelefono, contactoEmail,
-      tonsDisponiblesAprox: normalizeNumber(tonsDisponiblesAprox),
+      contactoNombre, contactoTelefono, contactoEmail
     };
 
-    // Campos de disponibilidad a guardar
     const asigAnio = parseInt(document.getElementById('asigAnio')?.value || '',10);
     const asigMes  = parseInt(document.getElementById('asigMes')?.value || '',10);
     const asigTonsNum = Number(document.getElementById('asigTons')?.value || NaN);
@@ -176,10 +163,8 @@ export function setupFormulario() {
   });
 }
 
-/* =================== EDICIÓN =================== */
 export function abrirEdicion(c) {
   state.editId = c._id;
-
   const hasEmpresa = !!(c.proveedorKey || c.proveedorNombre);
   const key = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
 
@@ -195,8 +180,7 @@ export function abrirEdicion(c) {
     setVal(['centroComuna'], c.centroComuna || '');
     setVal(['centroHectareas'], c.centroHectareas || '');
   } else {
-    resetSelectCentros();
-    clearCentroHidden();
+    resetSelectCentros(); clearCentroHidden();
   }
 
   if ($('#tieneMMPP')) $('#tieneMMPP').value = c.tieneMMPP || '';
@@ -207,7 +191,6 @@ export function abrirEdicion(c) {
   if ($('#contactoTelefono')) $('#contactoTelefono').value = c.contactoTelefono || '';
   if ($('#contactoEmail')) $('#contactoEmail').value = c.contactoEmail || '';
 
-  // Asignar año/mes actuales si están vacíos
   const hoy = new Date();
   const anioEl = document.getElementById('asigAnio');
   const mesEl = document.getElementById('asigMes');
@@ -221,7 +204,6 @@ export function abrirEdicion(c) {
   (M.Modal.getInstance(modal) || M.Modal.init(modal)).open();
 }
 
-/* =================== BORRADO =================== */
 export async function eliminarContacto(id) {
   await apiDeleteContacto(id);
   await cargarContactosGuardados();
@@ -230,12 +212,15 @@ export async function eliminarContacto(id) {
   M.toast?.({ html: 'Contacto eliminado', displayLength: 1800 });
 }
 
-/* =================== NUEVO =================== */
 export function prepararNuevo() {
   state.editId = null;
   const form = $('#formContacto'); form?.reset();
   clearProveedorHidden(); resetSelectCentros(); clearCentroHidden();
-  const hoy=new Date(); const anioEl=document.getElementById('asigAnio'); const mesEl=document.getElementById('asigMes');
-  if (anioEl) anioEl.value=hoy.getFullYear(); if (mesEl) mesEl.value=String(hoy.getMonth()+1);
-  const box=document.getElementById('asigHist'); if(box) box.innerHTML='<span class="grey-text">Sin asignaciones registradas.</span>';
+  const hoy = new Date();
+  const anioEl = document.getElementById('asigAnio');
+  const mesEl = document.getElementById('asigMes');
+  if (anioEl) anioEl.value = hoy.getFullYear();
+  if (mesEl) mesEl.value = String(hoy.getMonth() + 1);
+  const box = document.getElementById('asigHist');
+  if (box) box.innerHTML = '<span class="grey-text">Sin asignaciones registradas.</span>';
 }
