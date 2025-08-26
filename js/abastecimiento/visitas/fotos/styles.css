@@ -2,7 +2,7 @@
    Estilos del componente de fotos (uploader + grid + visor)
    -------------------------------------------------------- */
 
-/* ===== Botón + input file ===== */
+/* ===== Acciones (botones) + input file ===== */
 #visita_fotos .fotos-actions {
   display: inline-flex;
   align-items: center;
@@ -10,6 +10,35 @@
   flex-wrap: wrap;
 }
 
+/* Botón para abrir explorador/cámara */
+#visita_fotos .fotos-actions button,
+#visita_fotos .fotos-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #009688;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background .18s ease;
+}
+#visita_fotos .fotos-actions button:hover,
+#visita_fotos .fotos-actions .btn:hover {
+  background: #00796B;
+}
+
+/* 🔧 FIX: ocultar por completo el input real (lo disparas por JS) */
+#visita_fotos_input,
+#visita_fotos .filepick-input {
+  display: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
+/* (Compat) wrapper anterior si existiera */
 #visita_fotos .filepick-wrap {
   position: relative;
   display: inline-flex;
@@ -17,42 +46,35 @@
   gap: 8px;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  transform: translateZ(0);
 }
 
-#visita_fotos .filepick-input {
-  position: absolute;
-  inset: 0;
+/* ===== Contenedores de previews/galería ===== */
+#visita_fotos_preview,
+#visita_fotos_gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Miniaturas */
+#visita_fotos_preview img,
+#visita_fotos_gallery img {
   width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 2;
-  border: 0;
-  background: transparent;
-  appearance: none;
-  -webkit-appearance: none;
-  font-size: 16px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+  display: block;
 }
 
-#visita_fotos #btnPickFotos {
-  position: relative;
-  z-index: 1;
-}
-
-#visita_fotos .filepick-input:disabled,
-#visita_fotos #btnPickFotos:disabled {
-  opacity: .5;
-  cursor: not-allowed;
-}
-
-/* ===== Grilla de fotos ===== */
+/* ===== Grilla “tarjetas” alternativa (si usas .fotos-grid) ===== */
 .fotos-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 10px;
 }
-
 @media (max-width:1200px){ .fotos-grid{ grid-template-columns: repeat(8, 1fr); } }
 @media (max-width:768px){  .fotos-grid{ grid-template-columns: repeat(6, 1fr); } }
 @media (max-width:600px){  .fotos-grid{ grid-template-columns: repeat(4, 1fr); } }
@@ -68,7 +90,6 @@
   flex-direction: column;
   transition: box-shadow .15s ease, transform .15s ease;
 }
-
 .foto-item:hover {
   box-shadow: 0 4px 18px rgba(0,0,0,.08);
   transform: translateY(-1px);
@@ -83,7 +104,6 @@
   overflow: hidden;
   position: relative;
 }
-
 .foto-thumb img {
   width: 100%;
   height: 100%;
@@ -91,7 +111,7 @@
   display: block;
 }
 
-/* Meta + acciones */
+/* Meta + acciones de cada tarjeta */
 .foto-meta {
   display: flex;
   align-items: center;
@@ -99,7 +119,6 @@
   gap: 6px;
   padding: 6px 8px;
 }
-
 .foto-meta .trunc {
   display: inline-block;
   max-width: 80%;
@@ -107,12 +126,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .foto-actions {
   display: inline-flex;
   gap: 6px;
 }
-
 .foto-actions a {
   display: inline-flex;
   align-items: center;
@@ -123,15 +140,33 @@
   background: #f2f5f6;
   transition: filter .12s ease, transform .12s ease;
 }
-
 .foto-actions a:hover {
   filter: brightness(.95);
   transform: scale(1.04);
 }
-
 .foto-actions .material-icons {
   font-size: 18px;
   line-height: 1;
+}
+
+/* Botón eliminar flotante (si lo usas dentro de cada imagen) */
+#visita_fotos_gallery .foto-del {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+#visita_fotos_gallery .foto-del:hover {
+  background: rgba(0,0,0,0.7);
 }
 
 /* ===== Visor fullscreen ===== */
@@ -144,10 +179,7 @@
   justify-content: center;
   z-index: 2000;
 }
-
-.foto-viewer.open {
-  display: flex;
-}
+.foto-viewer.open { display: flex; }
 
 .foto-viewer img {
   max-width: 95vw;
@@ -173,6 +205,4 @@
 }
 
 /* Evita scroll en body cuando visor está abierto */
-body.viewer-open {
-  overflow: hidden;
-}
+body.viewer-open { overflow: hidden; }
