@@ -50,6 +50,35 @@ function codigoDeVisita(v) {
   return v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '') || '';
 }
 
+// ======= Cache rápido: proveedorKey -> [centros...] =======
+const centrosByProveedor = new Map();
+
+function getProveedorKeyDeContacto(c) {
+  return c?.proveedorKey || (c?.proveedorNombre ? slug(c.proveedorNombre) : '');
+}
+
+function buildCentrosCacheSiHaceFalta() {
+  if (centrosByProveedor.size || !Array.isArray(state.listaCentros)) return;
+  for (const c of state.listaCentros) {
+    const k = c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '');
+    if (!centrosByProveedor.has(k)) centrosByProveedor.set(k, []);
+    centrosByProveedor.get(k).push(c);
+  }
+}
+
+function opcionesCentrosHTML(proveedorKey) {
+  buildCentrosCacheSiHaceFalta();
+  const centros = centrosByProveedor.get(proveedorKey) || [];
+  let html = `<option value="">Centro visitado (opcional)</option>`;
+  for (const c of centros) {
+    html += `
+      <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">
+        ${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}
+      </option>`;
+  }
+  return html;
+}
+
 // ---------------- DataTable ----------------
 let dtV = null;
 
@@ -394,29 +423,40 @@ export async function abrirDetalleContacto(c) {
 
 export function abrirModalVisita(contacto) {
   const form = $('#formVisita');
-  if (form) form.dataset.editId = ''; // nuevo (no edición)
+  if (!form) return;
 
-  // Asegurar MODO EDICIÓN (registro) SIEMPRE
-  setVisitaModalMode(false);
+  // NUEVO siempre
+  form.dataset.editId = '';
+  setVisitaModalMode(false); // habilitado + acciones fotos visibles
 
-  setVal(['visita_proveedorId'], contacto._id);
-  const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
+  // Fecha = hoy
+  const hoy = new Date();
+  const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  $('#visita_fecha').value = hoyStr;
 
+  // Limpiar demás campos
+  $('#visita_contacto').value = '';
+  $('#visita_enAgua').value = '';
+  $('#visita_tonsComprometidas').value = '';
+  $('#visita_estado').value = 'Programar nueva visita';
+  $('#visita_observaciones').value = '';
+
+  // Proveedor actual
+  const proveedorKey = getProveedorKeyDeContacto(contacto);
+  setVal(['visita_proveedorId'], contacto?._id || '');
+
+  // Poblar select de centros SOLO de ese proveedor (y limpiar antes)
   const selectVisita = $('#visita_centroId');
   if (selectVisita) {
-    const centros = state.listaCentros.filter(
-      (c) => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '')) === proveedorKey
-    );
-    let options = `<option value="">Centro visitado (opcional)</option>`;
-    options += centros.map((c) => `
-      <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">
-        ${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}
-      </option>`).join('');
-    selectVisita.innerHTML = options;
+    selectVisita.innerHTML = opcionesCentrosHTML(proveedorKey);
+    selectVisita.value = ''; // sin selección por defecto
   }
 
+  M.updateTextFields?.();
   resetFotosModal();
-  (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
+
+  const modalEl = document.getElementById('modalVisita');
+  (M.Modal.getInstance(modalEl) || M.Modal.init(modalEl)).open();
 }
 
 /** Abre el modal de visita en modo edición o solo lectura */
@@ -434,18 +474,10 @@ async function abrirEditarVisita(v, readOnly = false) {
 
   const contacto = (state.contactosGuardados || []).find(x => String(x._id) === String(v.contactoId));
   if (contacto) {
-    const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
+    const proveedorKey = getProveedorKeyDeContacto(contacto);
     const selectVisita = $('#visita_centroId');
     if (selectVisita) {
-      const centros = state.listaCentros.filter(
-        (c) => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '')) === proveedorKey
-      );
-      let options = `<option value="">Centro visitado (opcional)</option>`;
-      options += centros.map((c) => `
-        <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">
-          ${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}
-        </option>`).join('');
-      selectVisita.innerHTML = options;
+      selectVisita.innerHTML = opcionesCentrosHTML(proveedorKey);
       selectVisita.value = v.centroId || '';
     }
   }
