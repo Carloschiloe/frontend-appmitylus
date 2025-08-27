@@ -19,6 +19,7 @@ import {
 
 console.log('[visitas] tab.js cargado');
 
+const API_BASE = window.API_URL || '/api';
 const normalizeVisitas = (arr) => (Array.isArray(arr) ? arr.map(normalizeVisita) : []);
 
 // ---------------- utils ----------------
@@ -26,6 +27,8 @@ const esc = (s = '') =>
   String(s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+
+const fmtCL = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
 
 const fmtISO = (d) => {
   const x = (d instanceof Date) ? d : new Date(d);
@@ -44,6 +47,12 @@ function proveedorDeVisita(v) {
   if (!id) return '';
   const c = (state.contactosGuardados || []).find((x) => String(x._id) === id);
   return c?.proveedorNombre || '';
+}
+function proveedorKeyDeVisita(v) {
+  const id = v?.contactoId ? String(v.contactoId) : null;
+  if (!id) return '';
+  const c = (state.contactosGuardados || []).find((x) => String(x._id) === id);
+  return c?.proveedorKey || (c?.proveedorNombre ? slug(c.proveedorNombre) : '');
 }
 function codigoDeVisita(v) {
   return v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '') || '';
@@ -80,6 +89,9 @@ export function forceAdjustVisitas() { adjustNow(); }
     #modalVisita textarea#visita_observaciones{
       min-height: 110px; resize: vertical;
     }
+    /* Estilos para la celda de tons async y footer */
+    #tablaVisitas .v-tons.loading{ opacity:.6 }
+    #tablaVisitas tfoot th{ font-weight:700; background:#f6f6f7 }
   `;
   const s = document.createElement('style');
   s.id = 'visitas-click-fix';
@@ -107,6 +119,7 @@ function manejarAccionVisita(aEl){
 
   try {
     if (action === 'ver' || action === 'detalle') {
+      // ➜ Ver detalle de la VISITA (read-only)
       const v = (state.visitasGuardadas || []).find(
         x => String(x._id) === String(aEl.dataset.id)
       );
@@ -146,6 +159,103 @@ function manejarAccionVisita(aEl){
 }
 window.manejarAccionVisita = manejarAccionVisita;
 
+/* ================== Sumatoria de disponibilidad (como Empresas) ================== */
+// Reutilizamos el mismo cache global si existe
+state.dispTotalCache = state.dispTotalCache || new Map(); // key: `${provKey}|${centroId}` -> number
+
+async function fetchTotalDisponibilidad({ proveedorKey='', centroId='' }){
+  const key = `${proveedorKey}|${centroId||''}`;
+  if (state.dispTotalCache.has(key)) return state.dispTotalCache.get(key);
+
+  const q = new URLSearchParams();
+  if (proveedorKey) q.set('proveedorKey', proveedorKey);
+  if (centroId)     q.set('centroId', centroId);
+
+  try{
+    const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
+    if (!r.ok) throw new Error('GET /disponibilidades '+r.status);
+    const data = await r.json();
+    const list = Array.isArray(data) ? data : (data.items || []);
+    const total = list.reduce((acc, it)=> acc + Number(it.tons ?? it.tonsDisponible ?? 0), 0);
+    state.dispTotalCache.set(key, total);
+    return total;
+  }catch(e){
+    console.error('[visitas] fetchTotalDisponibilidad error', e);
+    state.dispTotalCache.set(key, 0);
+    return 0;
+  }
+}
+
+/* ---------- Footer total (solo registros visibles/página actual/filtrados) ---------- */
+function ensureFooterVis(){
+  const table = $('#tablaVisitas');
+  if (!table) return;
+  if (!table.tFoot) {
+    const tfoot = table.createTFoot();
+    const tr = tfoot.insertRow(0);
+    // 8 columnas en visitas
+    for (let i=0; i<8; i++){
+      const th = document.createElement('th');
+      if (i === 5) th.textContent = 'Total página: 0';
+      tr.appendChild(th);
+    }
+  }
+}
+function setFooterTotalVis(total){
+  const table = $('#tablaVisitas');
+  if (!table || !table.tFoot) return;
+  const th = table.tFoot.querySelectorAll('th')[5];
+  if (th) th.textContent = `Total página: ${fmtCL(total)}`;
+}
+
+async function actualizarTonsVisiblesYFooterVis(){
+  const jq = window.jQuery || window.$;
+  if (!dtV || !jq) return;
+
+  // Recorre filas visibles de la página actual
+  dtV.rows({ page: 'current', search: 'applied' }).every(function(){
+    const cellNode = dtV.cell(this, 5).node(); // columna Tons
+    if (!cellNode) return;
+    const span = cellNode.querySelector('.v-tons');
+    if (!span) return;
+
+    const proveedorKey = span.dataset.provkey || '';
+    const centroId     = span.dataset.centroid || '';
+
+    // Si ya está cargado, saltamos
+    if (span.dataset.value !== undefined && span.dataset.value !== '') return;
+
+    // Loading
+    span.classList.add('loading');
+    span.textContent = '…';
+
+    fetchTotalDisponibilidad({ proveedorKey, centroId }).then(total => {
+      span.dataset.value = String(total);
+      span.textContent = fmtCL(total);
+      span.classList.remove('loading');
+      // Recalcular footer con lo que ya hay cargado
+      recalcularFooterDesdeDomVis();
+    });
+  });
+
+  // Calcular footer con lo que ya está disponible
+  recalcularFooterDesdeDomVis();
+}
+
+function recalcularFooterDesdeDomVis(){
+  const table = $('#tablaVisitas');
+  if (!table) return;
+  const spans = table.querySelectorAll('tbody .v-tons');
+  let sum = 0;
+  spans.forEach(sp => {
+    const tr = sp.closest('tr');
+    if (tr && tr.offsetParent !== null) { // visible en la página
+      sum += Number(sp.dataset.value || 0);
+    }
+  });
+  setFooterTotalVis(sum);
+}
+
 /* ================== Init / Render ================== */
 export async function initVisitasTab(forceReload = false) {
   const jq = window.jQuery || window.$;
@@ -163,6 +273,8 @@ export async function initVisitasTab(forceReload = false) {
   }
 
   if (jq && !dtV) {
+    ensureFooterVis();
+
     dtV = jq('#tablaVisitas').DataTable({
       dom: 'Blfrtip',
       buttons: [
@@ -179,7 +291,7 @@ export async function initVisitasTab(forceReload = false) {
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: [{ targets: -1, orderable:false, searchable:false }],
       initComplete: () => adjustNow(),
-      drawCallback:   () => adjustNow(),
+      drawCallback:   () => { adjustNow(); actualizarTonsVisiblesYFooterVis(); },
     });
 
     // listener de seguridad en captura
@@ -225,6 +337,9 @@ export async function renderTablaVisitas() {
     .map((v) => {
       const fecha = fmtISO(v.fecha);
       const proveedor = proveedorDeVisita(v);
+      const provKey   = proveedorKeyDeVisita(v);     // clave para sumar
+      const centroId  = v.centroId || '';            // par proveedor+centro, igual que en Empresas
+
       const proveedorHTML = proveedor
         ? `<span class="ellipsisCell ellipsisProv" title="${esc(proveedor)}">${esc(trunc(proveedor, 48))}</span>`
         : '<span class="text-soft">—</span>';
@@ -232,7 +347,9 @@ export async function renderTablaVisitas() {
       const centro = codigoDeVisita(v);
       const actividad = v.enAgua || '';
       const proximoPaso = v.estado || '';
-      const tons = (v.tonsComprometidas ?? '') + '';
+      // Celda de Tons asíncrona (suma de disponibilidades)
+      const tonsCell = `<span class="v-tons" data-provkey="${esc(provKey)}" data-centroid="${esc(centroId)}" data-value=""></span>`;
+
       const obs = v.observaciones || '';
       const obsHTML = obs
         ? `<span class="ellipsisCell ellipsisObs" title="${esc(obs)}">${esc(trunc(obs, 72))}</span>`
@@ -270,7 +387,7 @@ export async function renderTablaVisitas() {
         esc(centro),
         esc(actividad),
         esc(proximoPaso),
-        esc(tons),
+        tonsCell,       // <- SUMA asíncrona
         obsHTML,
         acciones,
       ];
@@ -279,16 +396,36 @@ export async function renderTablaVisitas() {
   const jqOk = jq && jq.fn && jq.fn.DataTable;
   if (dtV && jqOk) {
     dtV.clear();
-    dtV.rows.add(filas).draw(false);
+    dtV.rows.add(filas).draw(false);  // disparará actualizarTonsVisiblesYFooterVis() en drawCallback
     return;
   }
 
   // Fallback sin DataTables
   const tbody = $('#tablaVisitas tbody');
+  ensureFooterVis();
   if (!tbody) return;
   tbody.innerHTML = filas.length
     ? filas.map(arr => `<tr>${arr.map((td)=>`<td>${td}</td>`).join('')}</tr>`).join('')
     : '<tr><td colspan="8" style="color:#888">No hay visitas registradas.</td></tr>';
+
+  // Completar celdas + footer en fallback
+  (async () => {
+    const spans = tbody.querySelectorAll('.v-tons');
+    for (const sp of spans) {
+      sp.classList.add('loading'); sp.textContent = '…';
+      const total = await fetchTotalDisponibilidad({
+        proveedorKey: sp.dataset.provkey || '',
+        centroId: sp.dataset.centroid || ''
+      });
+      sp.dataset.value = String(total);
+      sp.textContent = fmtCL(total);
+      sp.classList.remove('loading');
+    }
+    // total visible (todas las filas en fallback)
+    let sum = 0;
+    tbody.querySelectorAll('.v-tons').forEach(s => sum += Number(s.dataset.value || 0));
+    setFooterTotalVis(sum);
+  })();
 }
 
 /* ================== Detalle + Modales ================== */
@@ -350,6 +487,7 @@ function setVisitaModalMode(readOnly){
 
 /* ----------- Inyección segura del bloque de FOTOS ----------- */
 function ensureFotosBlock() {
+  // Si ya existe el contenedor, listo
   if (document.getElementById('visita_fotos')) return;
 
   const form = $('#formVisita');
@@ -369,6 +507,7 @@ function ensureFotosBlock() {
     <div id="visita_fotos_gallery" class="fotos-grid" style="margin-top:10px"></div>
   `;
 
+  // Insertar antes del botón Guardar
   const submitBtn = form.querySelector('button[type="submit"]');
   if (submitBtn?.parentElement) {
     submitBtn.parentElement.insertBefore(wrapper, submitBtn);
@@ -376,6 +515,7 @@ function ensureFotosBlock() {
     form.appendChild(wrapper);
   }
 
+  // Reconectar handlers de la UI de fotos (si hace falta)
   try { mountFotosUIOnce(); } catch {}
 }
 
@@ -393,7 +533,6 @@ export async function abrirDetalleContacto(c) {
 
   const visitas = normalizeVisitas(await apiGetVisitasByContacto(c._id));
 
-  // 🔻 Se eliminaron: Fecha Disp., Tons aprox. y Disposición
   body.innerHTML = `
     <div class="mb-4">
       <h6 class="text-soft" style="margin:0 0 .5rem">Comunas con centros del proveedor</h6>
@@ -404,7 +543,6 @@ export async function abrirDetalleContacto(c) {
       <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
       <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
       <div><strong>Disponibilidad:</strong> ${esc(c.tieneMMPP || '-')}</div>
-      <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
       <div style="grid-column:1/-1;"><strong>Notas:</strong> ${c.notas ? esc(c.notas) : '<span class="text-soft">Sin notas</span>'}</div>
       <div style="grid-column:1/-1;"><strong>Contacto:</strong> ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).map(esc).join(' • ') || '-'}</div>
     </div>
@@ -427,10 +565,14 @@ export function abrirModalVisita(contacto) {
   const form = $('#formVisita');
   if (!form) return;
 
-  form.dataset.editId = ''; // nuevo
+  // Nuevo (no edición)
+  form.dataset.editId = '';
+
+  // Asegurar bloque de fotos y modo EDICIÓN (registro)
   ensureFotosBlock();
   setVisitaModalMode(false);
 
+  // Setear proveedor y poblar centros del proveedor
   setVal(['visita_proveedorId'], contacto._id);
   const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
 
@@ -448,6 +590,7 @@ export function abrirModalVisita(contacto) {
     selectVisita.value = '';
   }
 
+  // Fecha hoy + campos en blanco
   const hoy = new Date();
   const fechaEl = $('#visita_fecha');
   if (fechaEl) fechaEl.value = fmtISO(hoy);
@@ -459,6 +602,8 @@ export function abrirModalVisita(contacto) {
   $('#visita_observaciones').value = '';
 
   M.updateTextFields();
+
+  // Reset estado de fotos
   resetFotosModal();
 
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
@@ -504,6 +649,7 @@ async function abrirEditarVisita(v, readOnly = false) {
   const modal = M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'));
   modal.open();
 
+  // Alternar modo según readOnly
   setVisitaModalMode(!!readOnly);
 }
 
@@ -551,6 +697,7 @@ export function setupFormularioVisita() {
       (M.Modal.getInstance(document.getElementById('modalVisita')))?.close();
       form.reset();
       form.dataset.editId = '';
+      // dejar el modal limpio por si se reabre como "registrar"
       setVisitaModalMode(false);
       resetFotosModal();
       forceAdjustVisitas();
