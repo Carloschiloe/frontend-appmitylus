@@ -186,31 +186,33 @@ export async function abrirDetalleContacto(c) {
       <h6 class="text-soft" style="margin:0 0 .5rem">Comunas con centros del proveedor</h6>
       ${chips}
     </div>
+
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
       <div><strong>Fecha:</strong> ${fechaFmt}</div>
       <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
       <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
-      <div><strong>Disponibilidad:</strong> ${esc(c.tieneMMPP || '-')}</div>
-      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '-'}</div>
       <div><strong>Disposición:</strong> ${esc(c.dispuestoVender || '-')}</div>
-      <div><strong>Tons aprox.:</strong> ${(c.tonsDisponiblesAprox ?? '') + ''}</div>
       <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
       <div style="grid-column:1/-1;"><strong>Notas:</strong> ${c.notas ? esc(c.notas) : '<span class="text-soft">Sin notas</span>'}</div>
       <div style="grid-column:1/-1;"><strong>Contacto:</strong> ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).map(esc).join(' • ') || '-'}</div>
     </div>
+
     <div class="mb-4" style="margin-top:1rem;">
       <h6 class="text-soft" style="margin:0 0 .5rem">Últimas visitas</h6>
       ${miniTimelineHTML(visitas)}
     </div>
+
     <div class="right-align">
       <button class="btn teal" id="btnNuevaVisita" data-id="${c._id}">
         <i class="material-icons left">event_available</i>Registrar visita
       </button>
     </div>
   `;
+
   $('#btnNuevaVisita')?.addEventListener('click', () => abrirModalVisita(c));
   (M.Modal.getInstance(document.getElementById('modalDetalleContacto')) || M.Modal.init(document.getElementById('modalDetalleContacto'))).open();
 }
+
 
 export function abrirModalVisita(contacto) {
   const form = $('#formVisita');
@@ -508,3 +510,4 @@ export async function initVisitasTab(forceReload = false) {
 
   console.log('[visitas/ui] initVisitasTab listo. dtV?', !!dtV);
 }
+
