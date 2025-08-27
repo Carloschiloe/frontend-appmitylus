@@ -76,7 +76,10 @@ export function forceAdjustVisitas() { adjustNow(); }
       pointer-events:auto; cursor:pointer; display:inline-block; margin:0 6px;
     }
     #tablaVisitas td:last-child [data-action] i{ font-size:18px; vertical-align:middle; }
-    #modalVisita textarea#visita_observaciones{ min-height:110px; resize:vertical; }
+    /* Textarea de observaciones más alto */
+    #modalVisita textarea#visita_observaciones{
+      min-height: 110px; resize: vertical;
+    }
   `;
   const s = document.createElement('style');
   s.id = 'visitas-click-fix';
@@ -89,6 +92,7 @@ function __visAction(el, ev) {
   try {
     ev?.preventDefault?.();
     ev?.stopPropagation?.();
+    console.log('[visitas] pointerdown →', el?.dataset?.action, el?.dataset);
     manejarAccionVisita(el);
   } catch (err) {
     console.warn('[visitas] __visAction error', err);
@@ -99,17 +103,22 @@ window.__visAction = __visAction;
 /* ================== Delegación / acciones ================== */
 function manejarAccionVisita(aEl){
   const action = (aEl?.dataset?.action || '').toLowerCase();
+  console.log('[visitas] manejarAccionVisita()', action, aEl?.dataset);
 
   try {
     if (action === 'ver' || action === 'detalle') {
-      const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(aEl.dataset.id));
-      if (v) abrirEditarVisita(v, true);
+      const v = (state.visitasGuardadas || []).find(
+        x => String(x._id) === String(aEl.dataset.id)
+      );
+      if (v) abrirEditarVisita(v, true); // readOnly
       else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
       return;
     }
 
     if (action === 'editar' || action === 'editar-visita') {
-      const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(aEl.dataset.id));
+      const v = (state.visitasGuardadas || []).find(
+        x => String(x._id) === String(aEl.dataset.id)
+      );
       if (v) abrirEditarVisita(v, false);
       else M.toast?.({ html: 'Visita no encontrada', classes: 'red' });
       return;
@@ -147,6 +156,7 @@ export async function initVisitasTab(forceReload = false) {
   mountFotosUIOnce();
 
   if (dtV && forceReload) {
+    console.log('[visitas] reload (force) → renderTablaVisitas()');
     await renderTablaVisitas();
     adjustNow();
     return;
@@ -177,6 +187,7 @@ export async function initVisitasTab(forceReload = false) {
       const a = e.target.closest?.('[data-action]');
       if (!a || !a.closest?.('#tablaVisitas')) return;
       e.preventDefault();
+      console.log('[visitas] (capture) click →', a.dataset.action);
       manejarAccionVisita(a);
     }, true);
 
@@ -188,9 +199,11 @@ export async function initVisitasTab(forceReload = false) {
 
   window.addEventListener('visita:created', async () => { await renderTablaVisitas(); adjustNow(); });
   window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); adjustNow(); });
+
+  console.log('[visitas] initVisitasTab listo. dtV?', !!dtV);
 }
 
-/* ---------------- render ---------------- */
+// ---------------- render ----------------
 export async function renderTablaVisitas() {
   const jq = window.jQuery || window.$;
 
@@ -203,6 +216,8 @@ export async function renderTablaVisitas() {
     console.error('[visitas] apiGetVisitas error:', e?.message || e);
     visitas = [];
   }
+
+  console.log('[visitas] render filas:', visitas.length);
 
   const filas = visitas
     .slice()
@@ -309,7 +324,8 @@ function miniTimelineHTML(visitas = []) {
 
 /* ----------- Modo del modal (ReadOnly vs Edición) ----------- */
 function setVisitaModalMode(readOnly){
-  const form = $('#formVisita'); if (!form) return;
+  const form = $('#formVisita');
+  if (!form) return;
 
   const inputs = form.querySelectorAll('input, select, textarea, label input');
   const btnSave = form.querySelector('button[type="submit"]');
@@ -360,42 +376,7 @@ function ensureFotosBlock() {
     form.appendChild(wrapper);
   }
 
-  wireFotoPickers();
   try { mountFotosUIOnce(); } catch {}
-}
-
-/* ----------- Conecta el botón al input (explorador/cámara) ----------- */
-function wireFotoPickers(){
-  const btnOld = document.getElementById('btnPickFotos');
-  const inpOld = document.getElementById('visita_fotos_input');
-  if (!btnOld || !inpOld) return;
-
-  // Clonar para eliminar listeners previos que vengan de otros módulos
-  const btn = btnOld.cloneNode(true);
-  const inp = inpOld.cloneNode(true);
-  btnOld.replaceWith(btn);
-  inpOld.replaceWith(inp);
-
-  let opening = false;
-
-  btn.addEventListener('click', (ev) => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    if (opening) return;
-    opening = true;
-    // si otro listener externo intenta abrir, este guard lo bloquea
-    setTimeout(() => { opening = false; }, 600);
-    try { inp.click(); } catch {}
-  }, { passive: false });
-
-  // Si el usuario selecciona o cancela, liberamos el guard
-  inp.addEventListener('change', () => { opening = false; }, { passive: true });
-  // por seguridad extra: al recibir foco o blur también liberamos
-  inp.addEventListener('blur',   () => { opening = false; }, { passive: true });
-  inp.addEventListener('focus',  () => { opening = false; }, { passive: true });
-
-  // Asegurar que el input no capture el scroll/gestos
-  inp.style.display = 'none';
 }
 
 /* ---------------------- Detalle de Contacto ---------------------- */
@@ -412,6 +393,7 @@ export async function abrirDetalleContacto(c) {
 
   const visitas = normalizeVisitas(await apiGetVisitasByContacto(c._id));
 
+  // 🔻 Se eliminaron: Fecha Disp., Tons aprox. y Disposición
   body.innerHTML = `
     <div class="mb-4">
       <h6 class="text-soft" style="margin:0 0 .5rem">Comunas con centros del proveedor</h6>
@@ -422,9 +404,6 @@ export async function abrirDetalleContacto(c) {
       <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
       <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
       <div><strong>Disponibilidad:</strong> ${esc(c.tieneMMPP || '-')}</div>
-      <div><strong>Fecha Disp.:</strong> ${c.fechaDisponibilidad ? (''+c.fechaDisponibilidad).slice(0,10) : '-'}</div>
-      <div><strong>Disposición:</strong> ${esc(c.dispuestoVender || '-')}</div>
-      <div><strong>Tons aprox.:</strong> ${(c.tonsDisponiblesAprox ?? '') + ''}</div>
       <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
       <div style="grid-column:1/-1;"><strong>Notas:</strong> ${c.notas ? esc(c.notas) : '<span class="text-soft">Sin notas</span>'}</div>
       <div style="grid-column:1/-1;"><strong>Contacto:</strong> ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).map(esc).join(' • ') || '-'}</div>
@@ -448,8 +427,7 @@ export function abrirModalVisita(contacto) {
   const form = $('#formVisita');
   if (!form) return;
 
-  form.dataset.editId = '';
-
+  form.dataset.editId = ''; // nuevo
   ensureFotosBlock();
   setVisitaModalMode(false);
 
@@ -481,9 +459,7 @@ export function abrirModalVisita(contacto) {
   $('#visita_observaciones').value = '';
 
   M.updateTextFields();
-
   resetFotosModal();
-  wireFotoPickers();
 
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
@@ -524,7 +500,6 @@ async function abrirEditarVisita(v, readOnly = false) {
   M.updateTextFields();
   resetFotosModal();
   await renderGallery(v._id);
-  wireFotoPickers();
 
   const modal = M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'));
   modal.open();
