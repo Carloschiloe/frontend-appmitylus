@@ -5,7 +5,7 @@
 /* ===== TABLAS: Contactos + Visitas ===== */
 #tablaContactos.dataTable thead th,
 #tablaVisitas.dataTable thead th {
-  background: var(--primary) !important;
+  background: var(--primary, #1565c0) !important; /* ← fallback seguro */
   color: #fff !important;
 }
 
@@ -25,22 +25,47 @@
 
 #tablaContactos td .material-icons:hover,
 #tablaVisitas  td .material-icons:hover {
-  color: var(--primary-acc);
+  color: var(--primary-acc, #26a69a);
   transform: scale(1.08);
 }
 
-/* ===== CLICK en “Acciones” de VISITAS (crítico) ===== */
-#tablaVisitas a[data-action] {
+/* ===== Celdas ellipsis comunes (Contactos + Visitas) ===== */
+#tablaContactos .ellipsisCell,
+#tablaVisitas  .ellipsisCell {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+#tablaContactos .ellipsisProv,
+#tablaVisitas  .ellipsisProv { max-width: 26ch; }
+#tablaVisitas  .ellipsisObs  { max-width: 30ch; }
+
+/* ===== CLICK en “Acciones” (VISITAS + CONTACTOS) ===== */
+#tablaVisitas a[data-action],
+#tablaContactos td:last-child a.icon-action {
   pointer-events: auto !important;
   cursor: pointer;
   display: inline-block;
+  margin: 0 6px;
 }
-#tablaVisitas i.material-icons {
+#tablaVisitas i.material-icons,
+#tablaContactos td:last-child a.icon-action i.material-icons {
   pointer-events: none !important;
+  font-size: 18px;
+  vertical-align: middle;
 }
 #tab-visitas #tablaVisitas td:last-child {
   white-space: nowrap;
   pointer-events: auto !important;
+}
+
+/* ===== Contactos: tons async + footer ===== */
+#tablaContactos .tons-cell.loading { opacity: .6; }
+#tablaContactos tfoot th {
+  font-weight: 700;
+  background: #f6f6f7;
 }
 
 /* ===== BOTONES / TOOLBAR ===== */
@@ -175,7 +200,7 @@
   gap: 10px;
 }
 
-/* Responsive */
+/* Responsive Visitas */
 @media (max-width: 1024px) {
   #tab-visitas #tablaVisitas th:nth-child(2),
   #tab-visitas #tablaVisitas td:nth-child(2) { max-width: 20ch; }
@@ -235,21 +260,20 @@
   background: rgba(255,255,255,.35);
 }
 
-/* Evita scroll en body */
+/* Evita scroll en body cuando se abre el visor */
 body.viewer-open { overflow: hidden; }
 
+/* Modal Visita: textarea */
 #modalVisita #visita_observaciones {
-  min-height: 100px !important;
-  height: 120px !important;
+  min-height: 110px !important;
   overflow-y: auto;
-  resize: vertical; /* Para permitir agrandarlo manualmente */
+  resize: vertical;
 }
 
-/* ===== Fotos de visitas ===== */
+/* ===== Tablas utilitarias ===== */
+.table-compact td, .table-compact th { padding: 6px 10px; }
+.table-ellipsis td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.table-actions a { margin-right: 6px; display: inline-flex; align-items: center; }
+
+/* ===== Fotos de visitas (extra) ===== */
 @import url('/js/abastecimiento/visitas/fotos/styles.css');
-
-
-
-
-
-
