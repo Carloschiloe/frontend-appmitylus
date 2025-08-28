@@ -496,30 +496,24 @@
 
 function renderPivot(rows, asigMap, monthTotals){
   const jq = window.jQuery || window.$;
-  if (!jq || !jq.fn) {
-    console.warn('jQuery / PivotTable no disponible');
-    return;
-  }
+  if (!jq || !jq.fn) return;
 
   const data = buildPivotRecords(rows, asigMap, monthTotals);
+  const u = jq.pivotUtilities || {};
+  const es = (u.locales && u.locales.es) ? u.locales.es : null;
 
-  const u   = jq.pivotUtilities || {};
-  const hasES = !!(u.locales && u.locales.es);
-
-  // localeStrings seguros (evita "rowSymbol" undefined)
-  const esStrings = (hasES && u.locales.es.localeStrings) ? u.locales.es.localeStrings : {};
-  const safeLocaleStrings = Object.assign(
-    { rowSymbol: '→', colSymbol: '↓' }, // mínimos obligatorios
-    esStrings
+  // SIEMPRE define símbolos para que no reviente
+  const safeStrings = Object.assign(
+    { rowSymbol: '→', colSymbol: '↓', uiRenderError: 'Ocurrió un error durante el dibujado de la tabla dinámica.' },
+    (es && es.localeStrings) ? es.localeStrings : {}
   );
 
-  // etiqueta MES AAAA desde YYYY-MM
+  // Etiqueta MES AAAA desde YYYY-MM
   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
   const fmtMes = (k) => (/^\d{4}-\d{2}$/.test(k) ? `${MESES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
 
   const afterRender = () => {
-    document
-      .querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
+    document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
       .forEach(cell => {
         const t = cell.textContent.trim();
         if (/^\d{4}-\d{2}$/.test(t)) cell.textContent = fmtMes(t);
@@ -530,24 +524,33 @@ function renderPivot(rows, asigMap, monthTotals){
     rows: ['Mes'],
     cols: ['Métrica', 'Proveedor'],
     vals: ['Valor'],
-    aggregatorName: (hasES && u.locales.es.aggregators && u.locales.es.aggregators['Suma']) ? 'Suma' : 'Sum',
-    rendererName:  (hasES && u.locales.es.renderers  && u.locales.es.renderers['Tabla'])    ? 'Tabla' : 'Table',
-    renderers:     (hasES ? u.locales.es.renderers : (u.renderers || {})),
-    aggregators:   (hasES ? u.locales.es.aggregators : (u.aggregators || {})),
-    localeStrings: safeLocaleStrings,   // ← nunca undefined
+    aggregatorName: (es && es.aggregators && es.aggregators['Suma']) ? 'Suma' : 'Sum',
+    rendererName:  (es && es.renderers  && es.renderers['Tabla'])    ? 'Tabla' : 'Table',
+    renderers:     (es && es.renderers)   ? es.renderers   : (u.renderers   || {}),
+    aggregators:   (es && es.aggregators) ? es.aggregators : (u.aggregators || {}),
+    localeStrings: safeStrings,           // ← nunca queda undefined
     rowOrder: 'value_z-a',
     colOrder: 'value_z-a',
     onRefresh: afterRender
   };
 
   const $el = jq('#pivotUI').empty();
-  if (typeof $el.pivotUI === 'function') {
-    // pasa la locale 'es' si está disponible
-    $el.pivotUI(data, opts, true, hasES ? 'es' : undefined);
-  } else {
-    console.warn('pivotUI no está disponible en este entorno.');
+  try {
+    // IMPORTANTE: no pasar el 4º parámetro "es" para que no pise opts
+    $el.pivotUI(data, opts, true);
+  } catch (e) {
+    console.error(e);
+    // Mensaje visible bajo la toolbar
+    const wrap = document.getElementById('pivotWrapper');
+    if (wrap && !wrap.querySelector('.pivot-error')) {
+      const div = document.createElement('div');
+      div.className = 'pivot-error card-panel';
+      div.textContent = safeStrings.uiRenderError || 'Error al dibujar la tabla dinámica.';
+      wrap.prepend(div);
+    }
   }
 }
+
 
 
     function setPivotView(on){
