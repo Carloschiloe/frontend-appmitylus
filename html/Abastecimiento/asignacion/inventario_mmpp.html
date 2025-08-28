@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Inventario de MMPP – Tabla Dinámica</title>
 
-  <!-- Materialize (solo para estilos básicos y toasts) -->
+  <!-- Materialize (estilos básicos y toasts) -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
 
-  <!-- Tabulator -->
+  <!-- Tabulator (tabla profesional) -->
   <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css">
+
   <style>
     body{background:#fafafa}
     nav.teal .brand-logo{font-size:1.1rem}
@@ -90,7 +91,7 @@
     <div id="pivotTable"></div>
 
     <div style="margin:10px 0" class="footer-note">
-      Tip: puedes reordenar columnas arrastrando, y hacer <em>click</em> en los encabezados para ordenar. Doble click para auto-ajustar ancho.
+      Tip: reordena columnas arrastrando y ordena con click en encabezados. Doble click para auto-ajustar ancho.
     </div>
   </div>
 
@@ -116,12 +117,12 @@
     function monthLabel(k){ if(!k||k==='s/fecha') return 's/FECHA'; const [y,m]=k.split('-'); return `${MES[+m-1]} ${y}`; }
 
     async function checkResponse(resp){
-      if(!resp.ok){const text=await resp.text().catch(()=> ''); throw new Error(\`HTTP \${resp.status} - \${text}\`)}
+      if(!resp.ok){const text=await resp.text().catch(()=> ''); throw new Error(`HTTP ${resp.status} - ${text}`)}
       if(resp.status===204) return null; return await resp.json().catch(()=> null);
     }
-    async function apiGet(path){ const r=await fetch(\`\${API_URL}\${path}\`); return checkResponse(r); }
+    async function apiGet(path){ const r=await fetch(`${API_URL}${path}`); return checkResponse(r); }
 
-    /* ================== DATA SOURCES ================== */
+    /* ================== DATA ================== */
     async function getOfertas(){
       const raw = await apiGet('/planificacion/ofertas');
       const arr = Array.isArray(raw?.items) ? raw.items : (Array.isArray(raw) ? raw : []);
@@ -147,7 +148,7 @@
         const arr=Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
         const map=new Map();
         for(const it of arr){
-          const key = it.key || it.mesKey || (it.anio && it.mes ? \`\${it.anio}-\${String(it.mes).padStart(2,'0')}\` : monthKey(it.fecha || it.fechaPlan || it.fch));
+          const key = it.key || it.mesKey || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : monthKey(it.fecha || it.fechaPlan || it.fch));
           const val = Number(it.asignado ?? it.tons ?? it.total ?? it.valor ?? 0);
           if(key && Number.isFinite(val)) map.set(key, (map.get(key)||0) + val);
         }
@@ -155,14 +156,13 @@
       }catch(_e){ return new Map(); }
     }
 
-    /* ================== PIVOT PREP ================== */
     function monthTotals(rows){
       const m=new Map();
       for(const r of rows){ const k=r.Mes||'s/fecha'; m.set(k,(m.get(k)||0)+(Number(r.Tons)||0)); }
       return m;
     }
 
-    // Inserta Asignado y Saldo prorrateando por participación dentro del mes
+    // Añade Asignado y Saldo prorrateando por participación dentro del mes
     function enrichMetrics(rows, asigMap, mTotals){
       return rows.map(r=>{
         const Tm = Number(mTotals.get(r.Mes)||0);
@@ -180,7 +180,6 @@
       const rowKeys = [...new Set(rows.map(r=>r[rowDim] || '(vacío)'))];
       const colKeys = [...new Set(rows.map(r=>r[colDim] || '(vacío)'))];
 
-      // helpers
       const aggFns = {
         sum: arr => arr.reduce((s,n)=>s+(Number(n)||0),0),
         avg: arr => arr.length? (arr.reduce((s,n)=>s+(Number(n)||0),0)/arr.length):0,
@@ -197,16 +196,12 @@
                             .map(x => x[metric]);
           rowObj[ck] = fn(slice);
         }
-        // total por fila
-        rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
+        rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck])); // total por fila
         return rowObj;
       });
 
-      // total por columna (fila "Total")
       const totalRow = {[rowDim]:'Total'};
-      for(const ck of colKeys){
-        totalRow[ck] = fn(matrix.map(r => r[ck]));
-      }
+      for(const ck of colKeys){ totalRow[ck] = fn(matrix.map(r => r[ck])); }
       totalRow['Total'] = fn(matrix.map(r => r['Total']));
       matrix.push(totalRow);
 
@@ -224,32 +219,49 @@
       for(const ck of colKeys){
         cols.push({
           title: ck, field: ck, hozAlign:"right", headerHozAlign:"right",
-          headerSort:true, formatter:(cell)=> fmt(cell.getValue())
+          headerSort:true, formatter:(cell)=> (ck==='Total'? fmt(cell.getValue()): fmt(cell.getValue()))
         });
       }
-      cols.push({title:'Total', field:'Total', hozAlign:"right", headerHozAlign:"right", headerSort:true, bottomCalc:"sum",
+      cols.push({title:'Total', field:'Total', hozAlign:"right", headerHozAlign:"right", headerSort:true,
                  formatter:(cell)=> fmt(cell.getValue())});
       return cols;
     }
 
     /* ================== UI / TABULATOR ================== */
     let table = null;
-    let __rowsRaw = []; // con Tons
+    let __rowsRaw = [];  // con Tons
     let __rowsFull = []; // con Asignado/Saldo
 
     function populateSelects(){
-      // nada especial, Materialize ya lo arma
-      const elems = document.querySelectorAll('select');
-      M.FormSelect.init(elems);
+      M.FormSelect.init(document.querySelectorAll('select'));
+    }
+
+    function savePrefs(){
+      const prefs = {
+        rowDim: $id('rowDim').value,
+        colDim: $id('colDim').value,
+        metric: $id('metric').value,
+        agg: $id('agg').value,
+      };
+      localStorage.setItem('pivot_prefs', JSON.stringify(prefs));
+    }
+    function loadPrefs(){
+      try{
+        const p = JSON.parse(localStorage.getItem('pivot_prefs')||'{}');
+        if(p.rowDim) $id('rowDim').value = p.rowDim;
+        if(p.colDim) $id('colDim').value = p.colDim;
+        if(p.metric) $id('metric').value = p.metric;
+        if(p.agg)    $id('agg').value    = p.agg;
+      }catch(_e){}
     }
 
     function applyPivot(){
+      savePrefs();
       const rowDim = $id('rowDim').value;
       const colDim = $id('colDim').value;
       const metric = $id('metric').value;
       const agg = $id('agg').value;
 
-      // construir data
       const {matrix, colKeys} = pivotData(__rowsFull, rowDim, colDim, metric, agg);
       const columns = makeColumns(rowDim, colKeys);
 
@@ -270,9 +282,7 @@
         });
       }
 
-      // badge
-      const registros = __rowsRaw.length;
-      $id('badgeReg').textContent = `${registros.toLocaleString('es-CL')} registros`;
+      $id('badgeReg').textContent = `${__rowsRaw.length.toLocaleString('es-CL')} registros`;
     }
 
     async function loadAll(){
@@ -290,7 +300,11 @@
 
     /* ================== EVENTS ================== */
     document.addEventListener('DOMContentLoaded', ()=>{
+      loadPrefs();
       populateSelects();
+      // Re-inicializa selects después de setear valores
+      setTimeout(()=> populateSelects(), 0);
+
       $id('btnApply').addEventListener('click', applyPivot);
 
       $id('btnCSV').addEventListener('click', ()=>{
