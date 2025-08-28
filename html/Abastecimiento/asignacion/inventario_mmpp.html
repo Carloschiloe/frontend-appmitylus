@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
 
-  <!-- PivotTable.js (tabla dinámica estilo Excel) -->
+  <!-- PivotTable.css -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.css">
 
   <style>
@@ -36,11 +36,11 @@
     .group-table{padding:0 10px 12px 10px}
     .group-table th,.group-table td{padding:8px 10px}
     .group-total-row{background:#f6f6f6;font-weight:600}
-    .right-align{ text-align:right; }
+    .right-align{text-align:right}
     .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .toolbar .btn-flat{color:#26a69a}
-    .btn-assign { display:inline-flex; align-items:center; gap:6px; }
-    .pivot-error { margin:8px 0; }
+    .btn-assign{display:inline-flex;align-items:center;gap:6px}
+    .pivot-error{margin:8px 0}
   </style>
 </head>
 <body>
@@ -67,11 +67,9 @@
         </div>
       </div>
 
-      <div class="col s12 m4 right-align" style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
+      <div class="col s12 m4 right-align" style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
         <a class="btn teal" id="btnReload"><i class="material-icons left">refresh</i>ACTUALIZAR</a>
-        <a class="btn grey darken-2" href="./asignacion.html">
-          <i class="material-icons left">assignment</i>IR A ASIGNACIÓN
-        </a>
+        <a class="btn grey darken-2" href="./asignacion.html"><i class="material-icons left">assignment</i>IR A ASIGNACIÓN</a>
       </div>
     </div>
 
@@ -87,20 +85,13 @@
     <div id="invGrouped"></div>
 
     <!-- TABLA PLANA -->
-    <div class="row" style="margin-top:8px;" id="flatWrapper">
+    <div class="row" style="margin-top:8px" id="flatWrapper">
       <div class="col s12">
         <table id="tablaInv" class="highlight display" style="width:100%">
           <thead>
             <tr>
-              <th>Mes</th>
-              <th>Proveedor</th>
-              <th>Código centro</th>
-              <th>Código área</th>
-              <th>Comuna</th>
-              <th>Tons</th>
-              <th>Asignado (mes)</th>
-              <th>Saldo (mes)</th>
-              <th>Fuente</th>
+              <th>Mes</th><th>Proveedor</th><th>Código centro</th><th>Código área</th>
+              <th>Comuna</th><th>Tons</th><th>Asignado (mes)</th><th>Saldo (mes)</th><th>Fuente</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -121,12 +112,10 @@
       <h5>Asignar MMPP</h5>
       <div class="row">
         <div class="input-field col s6">
-          <input id="asig_mes" type="month">
-          <label for="asig_mes" class="active">Mes de asignación</label>
+          <input id="asig_mes" type="month"><label for="asig_mes" class="active">Mes de asignación</label>
         </div>
         <div class="input-field col s6">
-          <input id="asig_tons" type="number" step="0.01" min="0">
-          <label for="asig_tons" class="active">Tons a asignar</label>
+          <input id="asig_tons" type="number" step="0.01" min="0"><label for="asig_tons" class="active">Tons a asignar</label>
         </div>
       </div>
       <p id="asig_info" class="grey-text"></p>
@@ -147,9 +136,42 @@
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
-  <!-- PivotTable.js (JS + locale ES) -->
+  <!-- PivotTable.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.es.min.js"></script>
+
+  <!-- ===== HOTFIX GLOBAL PARA PIVOTABLE ===== -->
+  <script>
+    (function(){
+      const $ = window.jQuery;
+      if(!$ || !$.pivotUtilities) return;
+      const u = $.pivotUtilities;
+
+      function ensureLocale(pkg){
+        if(!pkg) return;
+        if(!pkg.localeStrings) pkg.localeStrings = {};
+        if(!pkg.localeStrings.rowSymbol) pkg.localeStrings.rowSymbol = '→';
+        if(!pkg.localeStrings.colSymbol) pkg.localeStrings.colSymbol = '↓';
+      }
+
+      // defaults usados por pivotUI
+      if(!u.options) u.options = {};
+      if(!u.options.localeStrings) u.options.localeStrings = {};
+      ensureLocale(u.options);
+
+      // todas las locales registradas
+      if(u.locales){
+        Object.keys(u.locales).forEach(k => ensureLocale(u.locales[k]));
+      }
+
+      console.log('PIVOT hotfix applied', {
+        hasLocales: !!u.locales,
+        rowSymbol: u.options.localeStrings.rowSymbol,
+        colSymbol: u.options.localeStrings.colSymbol
+      });
+    })();
+  </script>
+  <!-- ======================================== -->
 
   <script>
     /* ================== CONFIG ================== */
@@ -162,23 +184,11 @@
     const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
     const esc = (s='') => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
     const fmt = (n) => (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:2});
-    function qp(name){const u=new URL(location.href);return u.searchParams.get(name)||'';}
+    const qp = (name)=>{const u=new URL(location.href);return u.searchParams.get(name)||'';}
 
-    function parseDateOrNull(d){
-      if(d===0 || d===null || d===undefined || d==='') return null;
-      const x = new Date(d);
-      return (!Number.isNaN(x.getTime()) && x.getTime() !== 0) ? x : null;
-    }
-    function monthKey(d){
-      const x = parseDateOrNull(d);
-      if(!x) return 's/fecha';
-      return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`;
-    }
-    function monthLabel(k){
-      if(!k || k==='s/fecha') return 's/FECHA';
-      const [y,m] = k.split('-');
-      return `${MES[+m-1]} ${y}`;
-    }
+    function parseDateOrNull(d){ if(d===0||d==null||d==='') return null; const x=new Date(d); return (!Number.isNaN(x.getTime())&&x.getTime()!==0)?x:null; }
+    function monthKey(d){ const x=parseDateOrNull(d); if(!x) return 's/fecha'; return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`; }
+    function monthLabel(k){ if(!k||k==='s/fecha') return 's/FECHA'; const [y,m]=k.split('-'); return `${MES[+m-1]} ${y}`; }
 
     async function checkResponse(resp){
       if(!resp.ok){const text=await resp.text().catch(()=> ''); throw new Error(`HTTP ${resp.status} - ${text}`)}
@@ -280,8 +290,7 @@
         ];
       });
       ensureDataTable();
-      dt.clear();
-      dt.rows.add(data).draw();
+      dt.clear(); dt.rows.add(data).draw();
     }
 
     function filterRows(rows,q){
@@ -337,8 +346,8 @@
                 <div><strong>${esc(monthLabel(k))}</strong> • ${items.length} registros</div>
               </div>
               <div class="group-tags">
-                <span class="tag tag-sub"   title="Subtotal disponible">${fmt(subtotal)} t</span>
-                <span class="tag tag-asig"  title="Asignado en planificación">${fmt(asig)} t</span>
+                <span class="tag tag-sub" title="Subtotal disponible">${fmt(subtotal)} t</span>
+                <span class="tag tag-asig" title="Asignado en planificación">${fmt(asig)} t</span>
                 <span class="tag tag-saldo" title="Saldo (disp. - asignado)">${fmt(saldo)} t</span>
               </div>
             </summary>
@@ -347,13 +356,8 @@
                 <table class="striped highlight">
                   <thead>
                     <tr>
-                      <th>Proveedor</th>
-                      <th>Código centro</th>
-                      <th>Código área</th>
-                      <th>Comuna</th>
-                      <th class="right-align">Tons</th>
-                      <th>Fuente</th>
-                      <th class="right-align">Acciones</th>
+                      <th>Proveedor</th><th>Código centro</th><th>Código área</th>
+                      <th>Comuna</th><th class="right-align">Tons</th><th>Fuente</th><th class="right-align">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -366,9 +370,8 @@
                         <td class="right-align" title="${fmt(r.tons)}">${fmt(r.tons)}</td>
                         <td>${esc(r.fuente||'')}</td>
                         <td class="right-align">
-                          <a href="#!" class="btn teal btn-assign" 
-                             data-mes="${esc(k)}" data-proveedor="${esc(r.proveedor||'')}" 
-                             data-tons="${Number(r.tons)||0}">
+                          <a href="#!" class="btn teal btn-assign"
+                             data-mes="${esc(k)}" data-proveedor="${esc(r.proveedor||'')}" data-tons="${Number(r.tons)||0}">
                              <i class="material-icons">add</i> ASIGNAR
                           </a>
                         </td>
@@ -377,10 +380,7 @@
                   </tbody>
                   <tfoot>
                     <tr class="group-total-row">
-                      <td colspan="4" class="right-align">Subtotal</td>
-                      <td class="right-align">${fmt(subtotal)}</td>
-                      <td></td>
-                      <td></td>
+                      <td colspan="4" class="right-align">Subtotal</td><td class="right-align">${fmt(subtotal)}</td><td></td><td></td>
                     </tr>
                   </tfoot>
                 </table>
@@ -391,31 +391,25 @@
       cont.innerHTML = html || `<div class="grey-text">Sin registros para mostrar.</div>`;
 
       cont.querySelectorAll('details').forEach(d=>{
-        const sign = d.querySelector('.sign');
-        const set = () => sign.textContent = d.open ? '−' : '+';
-        d.addEventListener('toggle', set); set();
+        const sign=d.querySelector('.sign'); const set=()=>sign.textContent=d.open?'−':'+'; d.addEventListener('toggle',set); set();
       });
 
       cont.querySelectorAll('.btn-assign').forEach(btn=>{
-        btn.addEventListener('click', (e)=>{
+        btn.addEventListener('click',(e)=>{
           e.preventDefault();
-          const mesKey = btn.dataset.mes || 's/fecha';
-          assignCtx = { mesKey, proveedor: btn.dataset.proveedor || '', tons: Number(btn.dataset.tons)||0 };
-          const mInput = $id('asig_mes');
-          const tInput = $id('asig_tons');
-          $id('asig_info').textContent = `Proveedor: ${assignCtx.proveedor} • Mes: ${monthLabel(mesKey)} • Oferta: ${fmt(assignCtx.tons)} t`;
-
-          const parts = (mesKey && mesKey !== 's/fecha') ? mesKey.split('-') : [];
-          mInput.value = (parts.length === 2) ? `${parts[0]}-${parts[1]}` : '';
-          tInput.value = '';
-          (M.Modal.getInstance($id('modalAsignar')) || M.Modal.init($id('modalAsignar'))).open();
+          const mesKey=btn.dataset.mes||'s/fecha';
+          assignCtx={mesKey, proveedor:btn.dataset.proveedor||'', tons:Number(btn.dataset.tons)||0};
+          $id('asig_info').textContent=`Proveedor: ${assignCtx.proveedor} • Mes: ${monthLabel(mesKey)} • Oferta: ${fmt(assignCtx.tons)} t`;
+          const parts=(mesKey && mesKey!=='s/fecha')?mesKey.split('-'):[];
+          $id('asig_mes').value=(parts.length===2)?`${parts[0]}-${parts[1]}`:'';
+          $id('asig_tons').value='';
+          (M.Modal.getInstance($id('modalAsignar'))||M.Modal.init($id('modalAsignar'))).open();
         });
       });
     }
 
     function setGroupedView(on){
-      const grouped=$id('invGrouped');
-      const flatWrap=$id('flatWrapper');
+      const grouped=$id('invGrouped'); const flatWrap=$id('flatWrapper');
       $id('btnExpandAll').style.display = on ? '' : 'none';
       $id('btnCollapseAll').style.display = on ? '' : 'none';
       $id('btnToggleGroup').classList.toggle('teal-text', on);
@@ -429,167 +423,98 @@
     async function loadData(){
       try{
         const [rows, asigMap] = await Promise.all([ getOfertas(), getAsignacionesMap() ]);
-        __rows = rows;
-        __asigMap = asigMap;
-        __monthTotals = calcMonthTotals(__rows);
-
-        renderKPIs(__rows);
-        fillDataTable(__rows, __asigMap, __monthTotals);
-        renderGrouped(__rows, __asigMap);
-
+        __rows = rows; __asigMap = asigMap; __monthTotals = calcMonthTotals(__rows);
+        renderKPIs(__rows); fillDataTable(__rows, __asigMap, __monthTotals); renderGrouped(__rows, __asigMap);
         if (__pivotOn) renderPivot(__rows, __asigMap, __monthTotals);
-      }catch(e){
-        console.error(e);
-        M.toast?.({html:'No se pudo cargar el inventario',classes:'red'});
-      }
+      }catch(e){ console.error(e); M.toast?.({html:'No se pudo cargar el inventario',classes:'red'}); }
     }
 
-    /* ================== PIVOT (con DIAGNÓSTICOS) ================== */
+    /* ================== PIVOT ================== */
     function buildPivotRecords(rows, asigMap, monthTotals){
       const recs=[];
       for(const r of rows){
-        const mes = r.mes;
-        const t   = Number(r.tons)||0;
-        const Tm  = Number(monthTotals.get(mes)||0);
-        const Am  = Number(asigMap.get(mes)||0);
-        const Sm  = Tm - Am;
+        const mes=r.mes, t=Number(r.tons)||0;
+        const Tm=Number(monthTotals.get(mes)||0), Am=Number(asigMap.get(mes)||0), Sm=Tm-Am;
         const factor = Tm>0 ? (t/Tm) : 0;
-
-        const asigProp  = Am * factor;
-        const saldoProp = Sm * factor;
-
-        const base = {
-          Mes: mes,
-          Proveedor: r.proveedor || '(sin proveedor)',
-          Centro: r.centroCodigo || '',
-          Área: r.areaCodigo || '',
-          Comuna: r.comuna || '',
-          Fuente: r.fuente || ''
-        };
-        recs.push({...base, Métrica:'Tons',      Valor: t});
-        recs.push({...base, Métrica:'Asignado',  Valor: asigProp});
-        recs.push({...base, Métrica:'Saldo',     Valor: saldoProp});
+        const asigProp = Am*factor, saldoProp = Sm*factor;
+        const base={Mes:mes, Proveedor:r.proveedor||'(sin proveedor)', Centro:r.centroCodigo||'', Área:r.areaCodigo||'', Comuna:r.comuna||'', Fuente:r.fuente||''};
+        recs.push({...base, Métrica:'Tons', Valor:t});
+        recs.push({...base, Métrica:'Asignado', Valor:asigProp});
+        recs.push({...base, Métrica:'Saldo', Valor:saldoProp});
       }
       return recs;
     }
 
     function renderPivot(rows, asigMap, monthTotals){
-      const jq = window.jQuery || window.$;
-      if (!jq || !jq.fn) { console.warn('PIVOT: jQuery no disponible'); return; }
-
-      const u = jq.pivotUtilities || {};
-      const es = (u.locales && u.locales.es) ? u.locales.es : null;
-
-      // ===== DIAGNÓSTICO PREVIO =====
-      console.groupCollapsed('%cPIVOT: diagnóstico previo','color:#00897b;font-weight:700');
-      console.log('jQuery version:', jq.fn.jquery);
-      console.log('pivotUtilities keys:', Object.keys(u||{}));
-      console.log('has locales.es:', !!es);
-      if (es) {
-        console.table({
-          hasRenderers: !!es.renderers,
-          hasAggregators: !!es.aggregators,
-          hasLocaleStrings: !!es.localeStrings,
-          rowSymbol: es.localeStrings?.rowSymbol,
-          colSymbol: es.localeStrings?.colSymbol
-        });
-      }
-      console.groupEnd();
+      const jq=window.jQuery||window.$; if(!jq||!jq.fn) return;
+      const u = jq.pivotUtilities||{};
+      const loc = (u.locales && u.locales.es) ? u.locales.es : null;
 
       const data = buildPivotRecords(rows, asigMap, monthTotals);
 
-      // Strings seguros (evita rowSymbol undefined)
+      // strings seguros
       const safeStrings = Object.assign(
-        { rowSymbol: '→', colSymbol: '↓', uiRenderError: 'Ocurrió un error durante el dibujado de la tabla dinámica.' },
-        (es && es.localeStrings) ? es.localeStrings : {}
+        {rowSymbol:'→', colSymbol:'↓', uiRenderError:'Ocurrió un error durante el dibujado de la tabla dinámica.'},
+        (loc && loc.localeStrings) ? loc.localeStrings : (u.options && u.options.localeStrings ? u.options.localeStrings : {})
       );
-      if (!safeStrings.rowSymbol) { console.warn('PIVOT: parchando rowSymbol'); safeStrings.rowSymbol = '→'; }
-      if (!safeStrings.colSymbol) { console.warn('PIVOT: parchando colSymbol'); safeStrings.colSymbol = '↓'; }
 
-      // Etiqueta MES AAAA desde YYYY-MM
       const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-      const fmtMes = (k) => (/^\d{4}-\d{2}$/.test(k) ? `${MESES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
+      const fmtMes = (k)=> (/^\d{4}-\d{2}$/.test(k) ? `${MESES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
 
-      const afterRender = () => {
+      const afterRender = ()=>{
         document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
-          .forEach(cell => {
-            const t = cell.textContent.trim();
-            if (/^\d{4}-\d{2}$/.test(t)) cell.textContent = fmtMes(t);
-          });
+          .forEach(cell=>{const t=cell.textContent.trim(); if(/^\d{4}-\d{2}$/.test(t)) cell.textContent=fmtMes(t);});
       };
 
       const opts = {
-        rows: ['Mes'],
-        cols: ['Métrica', 'Proveedor'],
-        vals: ['Valor'],
-        aggregatorName: (es && es.aggregators && es.aggregators['Suma']) ? 'Suma' : 'Sum',
-        rendererName:  (es && es.renderers  && es.renderers['Tabla'])    ? 'Tabla' : 'Table',
-        renderers:     (es && es.renderers)   ? es.renderers   : (u.renderers   || {}),
-        aggregators:   (es && es.aggregators) ? es.aggregators : (u.aggregators || {}),
-        localeStrings: safeStrings,
-        rowOrder: 'value_z-a',
-        colOrder: 'value_z-a',
-        onRefresh: afterRender
+        rows:['Mes'], cols:['Métrica','Proveedor'], vals:['Valor'],
+        aggregatorName:(loc && loc.aggregators && loc.aggregators['Suma'])?'Suma':'Sum',
+        rendererName:(loc && loc.renderers && loc.renderers['Tabla'])?'Tabla':'Table',
+        renderers:(loc && loc.renderers)?loc.renderers:(u.renderers||{}),
+        aggregators:(loc && loc.aggregators)?loc.aggregators:(u.aggregators||{}),
+        localeStrings:safeStrings, rowOrder:'value_z-a', colOrder:'value_z-a', onRefresh:afterRender
       };
 
       const $el = jq('#pivotUI').empty();
-      const diagDiv = $id('pivotDiag');
-      try {
-        console.groupCollapsed('%cPIVOT: options finales','color:#5e35b1;font-weight:700');
-        console.log('opts.localeStrings:', opts.localeStrings);
-        console.log('rendererName:', opts.rendererName, 'aggregatorName:', opts.aggregatorName);
-        console.log('Tiene $el.pivotUI ?', typeof $el.pivotUI);
-        console.groupEnd();
+      const diagDiv=$id('pivotDiag');
+      console.log('PIVOT: options finales', opts);
 
-        // IMPORTANTE: no pasar el 4º parámetro "es" (a veces pisa opts)
-        $el.pivotUI(data, opts, true);
-
-        diagDiv.textContent = 'Pivot renderizado OK';
+      try{
+        // NO pasamos 'es' como 4º parámetro para que no pise opts
+        if (loc && typeof loc.pivotUI === 'function') {
+          // usar binder que ya viene “localizado”
+          loc.pivotUI($el, data, opts, true);
+        } else {
+          $el.pivotUI(data, opts, true);
+        }
+        diagDiv.textContent='Pivot renderizado OK';
         console.info('PIVOT: render OK');
-      } catch (e) {
-        console.error('PIVOT: EXCEPCIÓN al renderizar', e, e?.stack);
-        diagDiv.textContent = (opts.localeStrings?.uiRenderError) || 'Error al dibujar la tabla dinámica.';
-        const wrap = document.getElementById('pivotWrapper');
+      }catch(e){
+        console.error('PIVOT: fallo', e);
+        diagDiv.textContent = opts.localeStrings.uiRenderError || 'Error al dibujar la tabla dinámica.';
+        const wrap=$id('pivotWrapper');
         if (wrap && !wrap.querySelector('.pivot-error')) {
-          const div = document.createElement('div');
-          div.className = 'pivot-error card-panel';
-          div.textContent = diagDiv.textContent;
+          const div=document.createElement('div');
+          div.className='pivot-error card-panel';
+          div.textContent=diagDiv.textContent;
           wrap.prepend(div);
         }
       }
     }
 
     function setPivotView(on){
-      const g = document.getElementById('invGrouped');
-      const f = document.getElementById('flatWrapper');
-      const p = document.getElementById('pivotWrapper');
-      if (on) {
-        g.style.display = 'none';
-        f.style.display = 'none';
-        p.style.display = 'block';
-        document.getElementById('btnExpandAll').style.display = 'none';
-        document.getElementById('btnCollapseAll').style.display = 'none';
-      } else {
-        p.style.display = 'none';
-        if (__grouped) {
-          g.style.display = 'block';
-          f.style.display = 'none';
-          document.getElementById('btnExpandAll').style.display = '';
-          document.getElementById('btnCollapseAll').style.display = '';
-        } else {
-          g.style.display = 'none';
-          f.style.display = 'block';
-          document.getElementById('btnExpandAll').style.display = 'none';
-          document.getElementById('btnCollapseAll').style.display = 'none';
-        }
-      }
+      const g=$id('invGrouped'), f=$id('flatWrapper'), p=$id('pivotWrapper');
+      if(on){ g.style.display='none'; f.style.display='none'; p.style.display='block';
+              $id('btnExpandAll').style.display='none'; $id('btnCollapseAll').style.display='none'; }
+      else  { p.style.display='none';
+              if(__grouped){ g.style.display='block'; f.style.display='none'; $id('btnExpandAll').style.display=''; $id('btnCollapseAll').style.display=''; }
+              else{ g.style.display='none'; f.style.display='block'; $id('btnExpandAll').style.display='none'; $id('btnCollapseAll').style.display='none'; } }
     }
 
     /* ================== UI ================== */
-    document.addEventListener('DOMContentLoaded', () => {
-      // LOG de carga de librerías
-      console.groupCollapsed('%cPIVOT: carga de librerías','color:#37474f;font-weight:700');
-      console.log('jQuery?', !!window.jQuery, 'version', window.jQuery?.fn?.jquery);
+    document.addEventListener('DOMContentLoaded', ()=>{
+      console.groupCollapsed('PIVOT: carga de librerías');
+      console.log('jQuery?', !!window.jQuery, 'ver', window.jQuery?.fn?.jquery);
       console.log('pivotUtilities?', !!(window.jQuery?.pivotUtilities));
       console.log('locales.es?', !!(window.jQuery?.pivotUtilities?.locales?.es));
       console.groupEnd();
@@ -599,71 +524,38 @@
 
       $id('btnReload')?.addEventListener('click', loadData);
 
-      $id('btnToggleGroup')?.addEventListener('click', () => {
-        __grouped = !__grouped;
-        setGroupedView(__grouped);
+      $id('btnToggleGroup')?.addEventListener('click', ()=>{
+        __grouped=!__grouped; setGroupedView(__grouped);
         if(__grouped) renderGrouped(__rows, __asigMap);
       });
 
-      $id('btnTogglePivot')?.addEventListener('click', () => {
-        __pivotOn = !__pivotOn;
-        console.log('PIVOT: toggle ->', __pivotOn);
+      $id('btnTogglePivot')?.addEventListener('click', ()=>{
+        __pivotOn=!__pivotOn; console.log('PIVOT: toggle ->', __pivotOn);
         setPivotView(__pivotOn);
-        if (__pivotOn) renderPivot(__rows, __asigMap, __monthTotals);
+        if(__pivotOn) renderPivot(__rows, __asigMap, __monthTotals);
       });
 
-      $id('invSearch')?.addEventListener('input', () => {
-        if(__pivotOn){ return; }
+      $id('invSearch')?.addEventListener('input', ()=>{
+        if(__pivotOn) return;
         if(__grouped) renderGrouped(__rows, __asigMap);
         else { const jq=window.jQuery||window.$; if(jq && dt) dt.search($id('invSearch').value).draw(); }
       });
 
-      $id('btnExpandAll')?.addEventListener('click', () => {
-        document.querySelectorAll('#invGrouped details').forEach(d=>d.open=true);
-      });
-      $id('btnCollapseAll')?.addEventListener('click', () => {
-        document.querySelectorAll('#invGrouped details').forEach(d=>d.open=false);
-      });
+      $id('btnExpandAll')?.addEventListener('click', ()=>{ document.querySelectorAll('#invGrouped details').forEach(d=>d.open=true); });
+      $id('btnCollapseAll')?.addEventListener('click', ()=>{ document.querySelectorAll('#invGrouped details').forEach(d=>d.open=false); });
 
-      // POST real de asignación
       $id('btnDoAssign')?.addEventListener('click', async ()=>{
-        const mesVal = $id('asig_mes').value; // "YYYY-MM"
-        const tonsVal = Number($id('asig_tons').value||0);
-
-        if(!mesVal || !Number.isFinite(tonsVal) || tonsVal<=0){
-          M.toast?.({html:'Completa mes y toneladas válidas', classes:'red'});
-          return;
-        }
-        if(!assignCtx || !assignCtx.proveedor){
-          M.toast?.({html:'Proveedor inválido', classes:'red'});
-          return;
-        }
-
-        const btn = $id('btnDoAssign');
-        btn.disabled = true;
-
+        const mesVal=$id('asig_mes').value; const tonsVal=Number($id('asig_tons').value||0);
+        if(!mesVal || !Number.isFinite(tonsVal) || tonsVal<=0){ M.toast?.({html:'Completa mes y toneladas válidas',classes:'red'}); return; }
+        if(!assignCtx || !assignCtx.proveedor){ M.toast?.({html:'Proveedor inválido',classes:'red'}); return; }
+        const btn=$id('btnDoAssign'); btn.disabled=true;
         try{
-          const resp = await fetch(`${API_URL}/asignaciones`, {
-            method: 'POST',
-            headers: { 'Content-Type':'application/json' },
-            body: JSON.stringify({
-              mesKey: mesVal,
-              proveedorNombre: assignCtx.proveedor,
-              tons: tonsVal,
-              fuente: 'ui-inventario'
-            })
-          });
-          if(!resp.ok){ const t = await resp.text().catch(()=> ''); throw new Error(`HTTP ${resp.status} - ${t}`); }
-
-          M.toast?.({html:'Asignación registrada', classes:'teal'});
-          M.Modal.getInstance($id('modalAsignar'))?.close();
-          await loadData();
-        }catch(e){
-          console.error(e);
-          M.toast?.({html:'Error guardando asignación', classes:'red'});
-        } finally {
-          btn.disabled = false;
-        }
+          const resp=await fetch(`${API_URL}/asignaciones`, {method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({mesKey:mesVal, proveedorNombre:assignCtx.proveedor, tons:tonsVal, fuente:'ui-inventario'})});
+          if(!resp.ok){ const t=await resp.text().catch(()=> ''); throw new Error(`HTTP ${resp.status} - ${t}`); }
+          M.toast?.({html:'Asignación registrada',classes:'teal'}); M.Modal.getInstance($id('modalAsignar'))?.close(); await loadData();
+        }catch(e){ console.error(e); M.toast?.({html:'Error guardando asignación',classes:'red'}); }
+        finally{ btn.disabled=false; }
       });
 
       loadData();
