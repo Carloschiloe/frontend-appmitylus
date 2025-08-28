@@ -494,44 +494,45 @@
     }
 
     function renderPivot(rows, asigMap, monthTotals){
-      const jq = window.jQuery || window.$;
-      if (!jq || !jq.fn || !jq.fn.pivotUI) { 
-        console.warn('PivotTable.js no disponible'); 
-        return; 
-      }
+  const jq = window.jQuery || window.$;
+  if (!jq || !jq.fn || !jq.fn.pivotUI) {
+    console.warn('PivotTable.js no disponible');
+    return;
+  }
 
-      const data = buildPivotRecords(rows, asigMap, monthTotals);
+  const data = buildPivotRecords(rows, asigMap, monthTotals);
 
-      const fmtMes = (k) => {
-        if (!k || !/^\d{4}-\d{2}$/.test(k)) return 's/FECHA';
-        const [y,m] = k.split('-');
-        return `${MES[+m-1]} ${y}`;
-      };
+  const fmtMes = (k) => {
+    if (!k || !/^\d{4}-\d{2}$/.test(k)) return 's/FECHA';
+    const [y,m] = k.split('-');
+    return `${MES[+m-1]} ${y}`;
+  };
 
-      const afterRender = () => {
-        document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
-          .forEach(cell => {
-            const t = cell.textContent.trim();
-            if (/^\d{4}-\d{2}$/.test(t)) cell.textContent = fmtMes(t);
-          });
-      };
+  const afterRender = () => {
+    document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
+      .forEach(cell => {
+        const t = cell.textContent.trim();
+        if (/^\d{4}-\d{2}$/.test(t)) cell.textContent = fmtMes(t);
+      });
+  };
 
-      jq('#pivotUI').pivotUI(
-        data,
-        {
-          rows: ['Mes'],
-          cols: ['Métrica', 'Proveedor'],
-          vals: ['Valor'],
-          aggregatorName: 'Suma',
-          rendererName: 'Tabla',
-          renderers: jq.pivotUtilities.renderers,
-          rowOrder: 'value_z-a',
-          colOrder: 'value_z-a',
-          onRefresh: afterRender
-        },
-        true
-      );
-    }
+  // 👇 clave: pasar locale 'es' como 4º parámetro
+  jq('#pivotUI').pivotUI(
+    data,
+    {
+      rows: ['Mes'],
+      cols: ['Métrica', 'Proveedor'],
+      vals: ['Valor'],
+      aggregatorName: 'Suma',   // nombres en español (requiere locale)
+      rendererName: 'Tabla',    // nombres en español (requiere locale)
+      rowOrder: 'value_z-a',
+      colOrder: 'value_z-a',
+      onRefresh: afterRender
+    },
+    true,     // overwrite
+    'es'      // 👈 locale
+  );
+}
 
     function setPivotView(on){
       const g = document.getElementById('invGrouped');
