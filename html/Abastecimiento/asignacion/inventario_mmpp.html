@@ -150,9 +150,10 @@
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
-  <!-- PivotTable.js -->
-  <script src="https://cdn.jsdelivr.net/npm/pivottable@2.23.0/dist/pivot.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/pivottable@2.23.0/dist/pivot.es.min.js"></script>
+ <!-- PivotTable.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.es.min.js"></script>
+
 
   <script>
     /* ================== CONFIG ================== */
@@ -494,23 +495,44 @@
     }
 
 function renderPivot(rows, asigMap, monthTotals){
-  const jq = window.jQuery || window.$;
-  if (!jq || !jq.fn) {
-    console.warn('jQuery / PivotTable no disponible');
-    return;
-  }
+  const $ = window.jQuery || window.$;
+  if (!$ || !$.fn) { console.warn('jQuery no disponible'); return; }
 
-  // dataset “largo” con Tons, Asignado y Saldo por fila
+  // dataset "largo": Tons / Asignado / Saldo por fila
   const data = buildPivotRecords(rows, asigMap, monthTotals);
 
-  // Locales y utilidades
-  const u   = jq.pivotUtilities || {};
-  const loc = (u.locales && u.locales.es) ? u.locales.es : null;
+  // Utilidades / locale
+  const pu    = $.pivotUtilities || {};
+  const locES = (pu.locales && pu.locales.es) ? pu.locales.es : null;
 
-  // Formateo de etiqueta de mes YYYY-MM -> MES AAAA
+  // Asegura localeStrings con símbolos para no volver a romperse
+  const safeLocaleStrings = (base) => {
+    const ls = Object.assign(
+      {
+        renderError: "Error al renderizar tabla.",
+        computeError: "Error calculando los datos.",
+        uiRenderError: "Error al renderizar la UI.",
+        cancel: "Cancelar",
+        apply: "Aplicar",
+        totals: "Totales",
+        vs: "vs",
+        by: "por",
+        row: "Fila",
+        col: "Columna",
+        value: "Valor",
+        rowLabel: "Filas",
+        colLabel: "Columnas",
+        rowSymbol: "▸",   // << clave
+        colSymbol: "▾"    // << clave
+      },
+      base || {}
+    );
+    return ls;
+  };
+
+  // Etiqueta Mes bonita
   const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
   const fmtMes = (k) => (/^\d{4}-\d{2}$/.test(k) ? `${MES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
-
   const afterRender = () => {
     document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
       .forEach(cell => {
@@ -519,35 +541,33 @@ function renderPivot(rows, asigMap, monthTotals){
       });
   };
 
-  // Opciones con fallback si no existe la locale en el build
+  // Opciones con inyección de renderers/aggregators/localeStrings
   const opts = {
     rows: ['Mes'],
     cols: ['Métrica', 'Proveedor'],
     vals: ['Valor'],
-    // usar nombres en español si existen; si no, en inglés
-    aggregatorName: (loc && loc.aggregators && loc.aggregators['Suma']) ? 'Suma' : 'Sum',
-    rendererName:  (loc && loc.renderers  && loc.renderers['Tabla'])    ? 'Tabla' : 'Table',
-    // inyecta renderers/aggregators/strings de la locale, con fallback al core
-    renderers:      (loc && loc.renderers)      || (u.renderers || {}),
-    aggregators:    (loc && loc.aggregators)    || (u.aggregators || {}),
-    localeStrings:  (loc && loc.localeStrings)  || {},
+    aggregatorName: (locES && locES.aggregators && locES.aggregators['Suma']) ? 'Suma' : 'Sum',
+    rendererName:  (locES && locES.renderers  && locES.renderers['Tabla'])    ? 'Tabla' : 'Table',
+    renderers:     (locES && locES.renderers)   || (pu.renderers   || {}),
+    aggregators:   (locES && locES.aggregators) || (pu.aggregators || {}),
+    localeStrings: safeLocaleStrings(locES && locES.localeStrings),
     rowOrder: 'value_z-a',
     colOrder: 'value_z-a',
     onRefresh: afterRender
   };
 
-  // Limpia y renderiza con el binder correcto
-  const $el = jq('#pivotUI').empty();
-  if (loc && typeof loc.pivotUI === 'function') {
-    // ✔️ Binder de locale (100% compatible)
-    loc.pivotUI($el, data, opts, true);
+  const $el = $('#pivotUI').empty();
+
+  // Si existe el binder de la locale ES, úsalo. Si no, fallback a plugin base.
+  if (locES && typeof locES.pivotUI === 'function') {
+    locES.pivotUI($el, data, opts, true);
   } else if (typeof $el.pivotUI === 'function') {
-    // Fallback sin locale explícita
     $el.pivotUI(data, opts, true);
   } else {
     console.warn('pivotUI no está disponible en este entorno.');
   }
 }
+
 
     function setPivotView(on){
       const g = document.getElementById('invGrouped');
