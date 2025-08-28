@@ -14,15 +14,13 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
 
   <!-- PivotTable.js (tabla dinámica estilo Excel) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pivottable@2.23.0/dist/pivot.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.css">
 
   <style>
     body{background:#fafafa}
     .kpi-card{border-radius:14px;background:#fff;border:1px solid #eaeaea;padding:16px;text-align:center}
     .kpi-title{color:#777;margin:0 0 4px;font-weight:600}
     .kpi-value{font-size:2rem;font-weight:700;margin:0}
-
-    /* Vista agrupada (pivot-like sencilla) */
     #invGrouped details{margin-bottom:10px;border:1px solid #e0e0e0;border-radius:10px;background:#fff;overflow:hidden}
     #invGrouped summary{cursor:pointer;padding:12px 14px;list-style:none;display:flex;align-items:center;justify-content:space-between}
     #invGrouped summary::-webkit-details-marker{display:none}
@@ -39,12 +37,10 @@
     .group-table th,.group-table td{padding:8px 10px}
     .group-total-row{background:#f6f6f6;font-weight:600}
     .right-align{ text-align:right; }
-
     .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .toolbar .btn-flat{color:#26a69a}
-
-    /* Botón asignar en fila */
     .btn-assign { display:inline-flex; align-items:center; gap:6px; }
+    .pivot-error { margin:8px 0; }
   </style>
 </head>
 <body>
@@ -112,9 +108,10 @@
       </div>
     </div>
 
-    <!-- PIVOT (drag-and-drop estilo Excel) -->
+    <!-- PIVOT -->
     <div id="pivotWrapper" style="display:none">
       <div id="pivotUI" style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:10px"></div>
+      <div id="pivotDiag" class="grey-text" style="font-size:.85rem;margin-top:6px"></div>
     </div>
   </div>
 
@@ -150,15 +147,13 @@
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
- <!-- PivotTable.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.es.min.js"></script>
-
+  <!-- PivotTable.js (JS + locale ES) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.es.min.js"></script>
 
   <script>
     /* ================== CONFIG ================== */
     const API_URL = 'https://backend-appmitylus.vercel.app/api';
-    // endpoint asignado (mesKey → total asignado)
     window.INV_ASIG_ENDPOINT = '/asignaciones/map';
 
     /* ================== HELPERS ================== */
@@ -401,29 +396,17 @@
         d.addEventListener('toggle', set); set();
       });
 
-      // FIX: seteo del mes en el modal (sin el error de split)
       cont.querySelectorAll('.btn-assign').forEach(btn=>{
         btn.addEventListener('click', (e)=>{
           e.preventDefault();
           const mesKey = btn.dataset.mes || 's/fecha';
-          assignCtx = {
-            mesKey,
-            proveedor: btn.dataset.proveedor || '',
-            tons: Number(btn.dataset.tons)||0
-          };
+          assignCtx = { mesKey, proveedor: btn.dataset.proveedor || '', tons: Number(btn.dataset.tons)||0 };
           const mInput = $id('asig_mes');
           const tInput = $id('asig_tons');
-          $id('asig_info').textContent =
-            `Proveedor: ${assignCtx.proveedor} • Mes: ${monthLabel(mesKey)} • Oferta: ${fmt(assignCtx.tons)} t`;
+          $id('asig_info').textContent = `Proveedor: ${assignCtx.proveedor} • Mes: ${monthLabel(mesKey)} • Oferta: ${fmt(assignCtx.tons)} t`;
 
           const parts = (mesKey && mesKey !== 's/fecha') ? mesKey.split('-') : [];
-          if (parts.length === 2) {
-            const [y,m] = parts;
-            mInput.value = `${y}-${m}`;
-          } else {
-            mInput.value = '';
-          }
-
+          mInput.value = (parts.length === 2) ? `${parts[0]}-${parts[1]}` : '';
           tInput.value = '';
           (M.Modal.getInstance($id('modalAsignar')) || M.Modal.init($id('modalAsignar'))).open();
         });
@@ -445,11 +428,7 @@
 
     async function loadData(){
       try{
-        const [rows, asigMap] = await Promise.all([
-          getOfertas(),
-          getAsignacionesMap()
-        ]);
-
+        const [rows, asigMap] = await Promise.all([ getOfertas(), getAsignacionesMap() ]);
         __rows = rows;
         __asigMap = asigMap;
         __monthTotals = calcMonthTotals(__rows);
@@ -465,7 +444,7 @@
       }
     }
 
-    /* ================== PIVOT (Tabla dinámica con Saldo) ================== */
+    /* ================== PIVOT (con DIAGNÓSTICOS) ================== */
     function buildPivotRecords(rows, asigMap, monthTotals){
       const recs=[];
       for(const r of rows){
@@ -494,64 +473,91 @@
       return recs;
     }
 
-function renderPivot(rows, asigMap, monthTotals){
-  const jq = window.jQuery || window.$;
-  if (!jq || !jq.fn) return;
+    function renderPivot(rows, asigMap, monthTotals){
+      const jq = window.jQuery || window.$;
+      if (!jq || !jq.fn) { console.warn('PIVOT: jQuery no disponible'); return; }
 
-  const data = buildPivotRecords(rows, asigMap, monthTotals);
-  const u = jq.pivotUtilities || {};
-  const es = (u.locales && u.locales.es) ? u.locales.es : null;
+      const u = jq.pivotUtilities || {};
+      const es = (u.locales && u.locales.es) ? u.locales.es : null;
 
-  // SIEMPRE define símbolos para que no reviente
-  const safeStrings = Object.assign(
-    { rowSymbol: '→', colSymbol: '↓', uiRenderError: 'Ocurrió un error durante el dibujado de la tabla dinámica.' },
-    (es && es.localeStrings) ? es.localeStrings : {}
-  );
+      // ===== DIAGNÓSTICO PREVIO =====
+      console.groupCollapsed('%cPIVOT: diagnóstico previo','color:#00897b;font-weight:700');
+      console.log('jQuery version:', jq.fn.jquery);
+      console.log('pivotUtilities keys:', Object.keys(u||{}));
+      console.log('has locales.es:', !!es);
+      if (es) {
+        console.table({
+          hasRenderers: !!es.renderers,
+          hasAggregators: !!es.aggregators,
+          hasLocaleStrings: !!es.localeStrings,
+          rowSymbol: es.localeStrings?.rowSymbol,
+          colSymbol: es.localeStrings?.colSymbol
+        });
+      }
+      console.groupEnd();
 
-  // Etiqueta MES AAAA desde YYYY-MM
-  const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-  const fmtMes = (k) => (/^\d{4}-\d{2}$/.test(k) ? `${MESES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
+      const data = buildPivotRecords(rows, asigMap, monthTotals);
 
-  const afterRender = () => {
-    document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
-      .forEach(cell => {
-        const t = cell.textContent.trim();
-        if (/^\d{4}-\d{2}$/.test(t)) cell.textContent = fmtMes(t);
-      });
-  };
+      // Strings seguros (evita rowSymbol undefined)
+      const safeStrings = Object.assign(
+        { rowSymbol: '→', colSymbol: '↓', uiRenderError: 'Ocurrió un error durante el dibujado de la tabla dinámica.' },
+        (es && es.localeStrings) ? es.localeStrings : {}
+      );
+      if (!safeStrings.rowSymbol) { console.warn('PIVOT: parchando rowSymbol'); safeStrings.rowSymbol = '→'; }
+      if (!safeStrings.colSymbol) { console.warn('PIVOT: parchando colSymbol'); safeStrings.colSymbol = '↓'; }
 
-  const opts = {
-    rows: ['Mes'],
-    cols: ['Métrica', 'Proveedor'],
-    vals: ['Valor'],
-    aggregatorName: (es && es.aggregators && es.aggregators['Suma']) ? 'Suma' : 'Sum',
-    rendererName:  (es && es.renderers  && es.renderers['Tabla'])    ? 'Tabla' : 'Table',
-    renderers:     (es && es.renderers)   ? es.renderers   : (u.renderers   || {}),
-    aggregators:   (es && es.aggregators) ? es.aggregators : (u.aggregators || {}),
-    localeStrings: safeStrings,           // ← nunca queda undefined
-    rowOrder: 'value_z-a',
-    colOrder: 'value_z-a',
-    onRefresh: afterRender
-  };
+      // Etiqueta MES AAAA desde YYYY-MM
+      const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+      const fmtMes = (k) => (/^\d{4}-\d{2}$/.test(k) ? `${MESES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
 
-  const $el = jq('#pivotUI').empty();
-  try {
-    // IMPORTANTE: no pasar el 4º parámetro "es" para que no pise opts
-    $el.pivotUI(data, opts, true);
-  } catch (e) {
-    console.error(e);
-    // Mensaje visible bajo la toolbar
-    const wrap = document.getElementById('pivotWrapper');
-    if (wrap && !wrap.querySelector('.pivot-error')) {
-      const div = document.createElement('div');
-      div.className = 'pivot-error card-panel';
-      div.textContent = safeStrings.uiRenderError || 'Error al dibujar la tabla dinámica.';
-      wrap.prepend(div);
+      const afterRender = () => {
+        document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
+          .forEach(cell => {
+            const t = cell.textContent.trim();
+            if (/^\d{4}-\d{2}$/.test(t)) cell.textContent = fmtMes(t);
+          });
+      };
+
+      const opts = {
+        rows: ['Mes'],
+        cols: ['Métrica', 'Proveedor'],
+        vals: ['Valor'],
+        aggregatorName: (es && es.aggregators && es.aggregators['Suma']) ? 'Suma' : 'Sum',
+        rendererName:  (es && es.renderers  && es.renderers['Tabla'])    ? 'Tabla' : 'Table',
+        renderers:     (es && es.renderers)   ? es.renderers   : (u.renderers   || {}),
+        aggregators:   (es && es.aggregators) ? es.aggregators : (u.aggregators || {}),
+        localeStrings: safeStrings,
+        rowOrder: 'value_z-a',
+        colOrder: 'value_z-a',
+        onRefresh: afterRender
+      };
+
+      const $el = jq('#pivotUI').empty();
+      const diagDiv = $id('pivotDiag');
+      try {
+        console.groupCollapsed('%cPIVOT: options finales','color:#5e35b1;font-weight:700');
+        console.log('opts.localeStrings:', opts.localeStrings);
+        console.log('rendererName:', opts.rendererName, 'aggregatorName:', opts.aggregatorName);
+        console.log('Tiene $el.pivotUI ?', typeof $el.pivotUI);
+        console.groupEnd();
+
+        // IMPORTANTE: no pasar el 4º parámetro "es" (a veces pisa opts)
+        $el.pivotUI(data, opts, true);
+
+        diagDiv.textContent = 'Pivot renderizado OK';
+        console.info('PIVOT: render OK');
+      } catch (e) {
+        console.error('PIVOT: EXCEPCIÓN al renderizar', e, e?.stack);
+        diagDiv.textContent = (opts.localeStrings?.uiRenderError) || 'Error al dibujar la tabla dinámica.';
+        const wrap = document.getElementById('pivotWrapper');
+        if (wrap && !wrap.querySelector('.pivot-error')) {
+          const div = document.createElement('div');
+          div.className = 'pivot-error card-panel';
+          div.textContent = diagDiv.textContent;
+          wrap.prepend(div);
+        }
+      }
     }
-  }
-}
-
-
 
     function setPivotView(on){
       const g = document.getElementById('invGrouped');
@@ -581,6 +587,13 @@ function renderPivot(rows, asigMap, monthTotals){
 
     /* ================== UI ================== */
     document.addEventListener('DOMContentLoaded', () => {
+      // LOG de carga de librerías
+      console.groupCollapsed('%cPIVOT: carga de librerías','color:#37474f;font-weight:700');
+      console.log('jQuery?', !!window.jQuery, 'version', window.jQuery?.fn?.jquery);
+      console.log('pivotUtilities?', !!(window.jQuery?.pivotUtilities));
+      console.log('locales.es?', !!(window.jQuery?.pivotUtilities?.locales?.es));
+      console.groupEnd();
+
       M.Modal.init(document.querySelectorAll('.modal'));
       setGroupedView(true);
 
@@ -594,6 +607,7 @@ function renderPivot(rows, asigMap, monthTotals){
 
       $id('btnTogglePivot')?.addEventListener('click', () => {
         __pivotOn = !__pivotOn;
+        console.log('PIVOT: toggle ->', __pivotOn);
         setPivotView(__pivotOn);
         if (__pivotOn) renderPivot(__rows, __asigMap, __monthTotals);
       });
