@@ -493,32 +493,24 @@
       return recs;
     }
 
-  function renderPivot(rows, asigMap, monthTotals){
+function renderPivot(rows, asigMap, monthTotals){
   const jq = window.jQuery || window.$;
-  if (!jq?.fn?.pivotUI) { console.warn('PivotTable.js no disponible'); return; }
+  if (!jq || !jq.fn) {
+    console.warn('jQuery / PivotTable no disponible');
+    return;
+  }
 
-  // --- dataset para la pivot ---
+  // dataset “largo” con Tons, Asignado y Saldo por fila
   const data = buildPivotRecords(rows, asigMap, monthTotals);
 
-  // --- formato de número estilo CL (1.234,56) ---
-  const utils = jq.pivotUtilities;
-  const numberFormat = utils.numberFormat;
-  const fmtCL = numberFormat({ digitsAfterDecimal: 0, thousandsSep: '.', decimalSep: ',' });
+  // Locales y utilidades
+  const u   = jq.pivotUtilities || {};
+  const loc = (u.locales && u.locales.es) ? u.locales.es : null;
 
-  // Agregadores personalizados (suma con formato CL)
-  const baseAggs = (utils.locales?.es?.aggregators) || utils.aggregators;
-  const sumAgg   = baseAggs['Suma'] || baseAggs['Sum'];
-  const customAggs = {
-    ...(utils.locales?.es?.aggregators || {}),
-    'Suma (CL)': sumAgg(fmtCL)
-  };
-
-  // Post-procesa encabezados de columna/fila con clave YYYY-MM → "MES AAAA"
+  // Formateo de etiqueta de mes YYYY-MM -> MES AAAA
   const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-  const fmtMes = (k) => {
-    if (!k || !/^\d{4}-\d{2}$/.test(k)) return 's/FECHA';
-    const [y,m] = k.split('-'); return `${MES[+m-1]} ${y}`;
-  };
+  const fmtMes = (k) => (/^\d{4}-\d{2}$/.test(k) ? `${MES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
+
   const afterRender = () => {
     document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
       .forEach(cell => {
@@ -527,33 +519,34 @@
       });
   };
 
-  // 🔑 IMPORTANTE: pasar 'es' como 4º parámetro para que use los nombres en español
-  jq('#pivotUI').pivotUI(
-    data,
-    {
-      // layout por defecto
-      rows: ['Mes'],
-      cols: ['Métrica', 'Proveedor'],
-      vals: ['Valor'],
+  // Opciones con fallback si no existe la locale en el build
+  const opts = {
+    rows: ['Mes'],
+    cols: ['Métrica', 'Proveedor'],
+    vals: ['Valor'],
+    // usar nombres en español si existen; si no, en inglés
+    aggregatorName: (loc && loc.aggregators && loc.aggregators['Suma']) ? 'Suma' : 'Sum',
+    rendererName:  (loc && loc.renderers  && loc.renderers['Tabla'])    ? 'Tabla' : 'Table',
+    // inyecta renderers/aggregators/strings de la locale, con fallback al core
+    renderers:      (loc && loc.renderers)      || (u.renderers || {}),
+    aggregators:    (loc && loc.aggregators)    || (u.aggregators || {}),
+    localeStrings:  (loc && loc.localeStrings)  || {},
+    rowOrder: 'value_z-a',
+    colOrder: 'value_z-a',
+    onRefresh: afterRender
+  };
 
-      // usamos nuestro agregador con formato CL
-      aggregatorName: 'Suma (CL)',                 // <-- SIEMPRE suma con formato
-      rendererName:  (utils.locales?.es ? 'Tabla' : 'Table'),
-
-      // totales y orden
-      rendererOptions: { table: { rowTotals: true, colTotals: true } },
-      rowOrder: 'value_z-a',
-      colOrder: 'value_z-a',
-
-      // etiquetas en español si existen
-      localeStrings: (utils.locales?.es?.localeStrings || {}),
-      aggregators: customAggs,
-
-      onRefresh: afterRender
-    },
-    true,     // overwrite
-    'es'      // <-- usa la locale en español
-  );
+  // Limpia y renderiza con el binder correcto
+  const $el = jq('#pivotUI').empty();
+  if (loc && typeof loc.pivotUI === 'function') {
+    // ✔️ Binder de locale (100% compatible)
+    loc.pivotUI($el, data, opts, true);
+  } else if (typeof $el.pivotUI === 'function') {
+    // Fallback sin locale explícita
+    $el.pivotUI(data, opts, true);
+  } else {
+    console.warn('pivotUI no está disponible en este entorno.');
+  }
 }
 
     function setPivotView(on){
