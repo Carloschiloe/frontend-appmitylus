@@ -310,7 +310,6 @@
       const q=$id('invSearch')?.value || '';
       const filtered=filterRows(rows,q);
 
-      // group by month
       const groups=new Map();
       for(const r of filtered){
         const k=r.mes||'s/fecha';
@@ -401,6 +400,7 @@
         d.addEventListener('toggle', set); set();
       });
 
+      // FIX: seteo del mes en el modal (sin el error de split)
       cont.querySelectorAll('.btn-assign').forEach(btn=>{
         btn.addEventListener('click', (e)=>{
           e.preventDefault();
@@ -412,14 +412,17 @@
           };
           const mInput = $id('asig_mes');
           const tInput = $id('asig_tons');
-          $id('asig_info').textContent = `Proveedor: ${assignCtx.proveedor} • Mes: ${monthLabel(mesKey)} • Oferta: ${fmt(assignCtx.tons)} t`;
-          if(mesKey !== 's/fecha'){
-            const [y,m] = mesKey split('-');
-          }else{
+          $id('asig_info').textContent =
+            `Proveedor: ${assignCtx.proveedor} • Mes: ${monthLabel(mesKey)} • Oferta: ${fmt(assignCtx.tons)} t`;
+
+          const parts = (mesKey && mesKey !== 's/fecha') ? mesKey.split('-') : [];
+          if (parts.length === 2) {
+            const [y,m] = parts;
+            mInput.value = `${y}-${m}`;
+          } else {
             mInput.value = '';
           }
-          const [y,m] = mesKey.split('-') || [];
-          if(y && m){ mInput.value = `${y}-${m}`; }
+
           tInput.value = '';
           (M.Modal.getInstance($id('modalAsignar')) || M.Modal.init($id('modalAsignar'))).open();
         });
@@ -462,7 +465,6 @@
     }
 
     /* ================== PIVOT (Tabla dinámica con Saldo) ================== */
-    // Dataset “largo”: Métrica + Valor (permite ver varias métricas lado a lado)
     function buildPivotRecords(rows, asigMap, monthTotals){
       const recs=[];
       for(const r of rows){
@@ -473,7 +475,6 @@
         const Sm  = Tm - Am;
         const factor = Tm>0 ? (t/Tm) : 0;
 
-        // Distribución proporcional por fila
         const asigProp  = Am * factor;
         const saldoProp = Sm * factor;
 
@@ -518,7 +519,6 @@
       jq('#pivotUI').pivotUI(
         data,
         {
-          // ← default: Mes x (Métrica,Proveedor) mostrando Valor (Suma)
           rows: ['Mes'],
           cols: ['Métrica', 'Proveedor'],
           vals: ['Valor'],
@@ -561,8 +561,8 @@
 
     /* ================== UI ================== */
     document.addEventListener('DOMContentLoaded', () => {
-      M.Modal.init(document.querySelectorAll('.modal')); // Materialize modal
-      setGroupedView(true); // Vista inicial: agrupada
+      M.Modal.init(document.querySelectorAll('.modal'));
+      setGroupedView(true);
 
       $id('btnReload')?.addEventListener('click', loadData);
 
@@ -579,7 +579,7 @@
       });
 
       $id('invSearch')?.addEventListener('input', () => {
-        if(__pivotOn){ return; } // Pivot maneja su propio filtrado vía UI
+        if(__pivotOn){ return; }
         if(__grouped) renderGrouped(__rows, __asigMap);
         else { const jq=window.jQuery||window.$; if(jq && dt) dt.search($id('invSearch').value).draw(); }
       });
@@ -591,7 +591,7 @@
         document.querySelectorAll('#invGrouped details').forEach(d=>d.open=false);
       });
 
-      // === POST real de asignación ===
+      // POST real de asignación
       $id('btnDoAssign')?.addEventListener('click', async ()=>{
         const mesVal = $id('asig_mes').value; // "YYYY-MM"
         const tonsVal = Number($id('asig_tons').value||0);
