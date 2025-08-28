@@ -140,38 +140,76 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.es.min.js"></script>
 
-  <!-- ===== HOTFIX GLOBAL PARA PIVOTABLE ===== -->
+  <!-- ===== PARCHE GLOBAL Y WRAPPERS pivotUI ===== -->
   <script>
     (function(){
       const $ = window.jQuery;
       if(!$ || !$.pivotUtilities) return;
+
       const u = $.pivotUtilities;
 
-      function ensureLocale(pkg){
-        if(!pkg) return;
-        if(!pkg.localeStrings) pkg.localeStrings = {};
-        if(!pkg.localeStrings.rowSymbol) pkg.localeStrings.rowSymbol = '→';
-        if(!pkg.localeStrings.colSymbol) pkg.localeStrings.colSymbol = '↓';
+      // Asegura symbols en cualquier objeto localeStrings que exista
+      function ensureLocaleStrings(obj){
+        if(!obj) obj = {};
+        if(!obj.rowSymbol) obj.rowSymbol = '→';
+        if(!obj.colSymbol) obj.colSymbol = '↓';
+        return obj;
       }
 
-      // defaults usados por pivotUI
+      // Parchea defaults usados por la lib
       if(!u.options) u.options = {};
-      if(!u.options.localeStrings) u.options.localeStrings = {};
-      ensureLocale(u.options);
+      u.options.localeStrings = ensureLocaleStrings(u.options.localeStrings);
 
-      // todas las locales registradas
       if(u.locales){
-        Object.keys(u.locales).forEach(k => ensureLocale(u.locales[k]));
+        Object.keys(u.locales).forEach(k=>{
+          const L = u.locales[k];
+          if(L) L.localeStrings = ensureLocaleStrings(L.localeStrings);
+        });
       }
 
-      console.log('PIVOT hotfix applied', {
+      // --- WRAP global $.fn.pivotUI ---
+      if ($.fn && typeof $.fn.pivotUI === 'function') {
+        const _orig = $.fn.pivotUI;
+        $.fn.pivotUI = function(input, opts, overwrite, locale){
+          opts = opts || {};
+          opts.localeStrings = ensureLocaleStrings(opts.localeStrings);
+          try {
+            return _orig.call(this, input, opts, overwrite, locale);
+          } catch (e) {
+            console.error('PIVOT wrapper (global) capturó excepción:', e);
+            throw e;
+          }
+        };
+      }
+
+      // --- WRAP los binders por locale (u.locales.*.pivotUI) ---
+      if (u.locales) {
+        Object.keys(u.locales).forEach(k=>{
+          const L = u.locales[k];
+          if (L && typeof L.pivotUI === 'function') {
+            const _lp = L.pivotUI;
+            L.pivotUI = function($el, input, opts, overwrite){
+              opts = opts || {};
+              opts.localeStrings = ensureLocaleStrings(opts.localeStrings);
+              try {
+                return _lp($el, input, opts, overwrite);
+              } catch (e) {
+                console.error(`PIVOT wrapper (locale ${k}) capturó excepción:`, e);
+                throw e;
+              }
+            };
+          }
+        });
+      }
+
+      console.log('PIVOT wrappers/hotfix listos', {
         hasLocales: !!u.locales,
         rowSymbol: u.options.localeStrings.rowSymbol,
         colSymbol: u.options.localeStrings.colSymbol
       });
     })();
   </script>
-  <!-- ======================================== -->
+  <!-- ============================================ -->
 
   <script>
     /* ================== CONFIG ================== */
@@ -257,10 +295,7 @@
         pageLength:10,
         autoWidth:false,
         language:{url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'},
-        columnDefs:[
-          {targets:0, width:'110px'},
-          {targets:[5,6,7], className:'right-align'}
-        ]
+        columnDefs:[{targets:0, width:'110px'},{targets:[5,6,7], className:'right-align'}]
       });
     }
     function calcMonthTotals(rows){
@@ -278,19 +313,11 @@
         const totalMes = Number(monthTotals.get(r.mes)||0);
         const saldo = totalMes - asig;
         return [
-          esc(monthLabel(r.mes)),
-          esc(r.proveedor||''),
-          esc(r.centroCodigo||''),
-          esc(r.areaCodigo||''),
-          esc(r.comuna||''),
-          fmt(r.tons),
-          fmt(asig),
-          fmt(saldo),
-          esc(r.fuente||'')
+          esc(monthLabel(r.mes)), esc(r.proveedor||''), esc(r.centroCodigo||''),
+          esc(r.areaCodigo||''), esc(r.comuna||''), fmt(r.tons), fmt(asig), fmt(saldo), esc(r.fuente||'')
         ];
       });
-      ensureDataTable();
-      dt.clear(); dt.rows.add(data).draw();
+      ensureDataTable(); dt.clear(); dt.rows.add(data).draw();
     }
 
     function filterRows(rows,q){
@@ -408,13 +435,13 @@
       });
     }
 
-    function setGroupedView(on){
-      const grouped=$id('invGrouped'); const flatWrap=$id('flatWrapper');
-      $id('btnExpandAll').style.display = on ? '' : 'none';
-      $id('btnCollapseAll').style.display = on ? '' : 'none';
-      $id('btnToggleGroup').classList.toggle('teal-text', on);
-      grouped.style.display = on ? 'block' : 'none';
-      flatWrap.style.display = on ? 'none' : 'block';
+    function setPivotView(on){
+      const g=$id('invGrouped'), f=$id('flatWrapper'), p=$id('pivotWrapper');
+      if(on){ g.style.display='none'; f.style.display='none'; p.style.display='block';
+              $id('btnExpandAll').style.display='none'; $id('btnCollapseAll').style.display='none'; }
+      else  { p.style.display='none';
+              if(__grouped){ g.style.display='block'; f.style.display='none'; $id('btnExpandAll').style.display=''; $id('btnCollapseAll').style.display=''; }
+              else{ g.style.display='none'; f.style.display='block'; $id('btnExpandAll').style.display='none'; $id('btnCollapseAll').style.display='none'; } }
     }
 
     /* ================== LOAD ================== */
@@ -480,9 +507,8 @@
       console.log('PIVOT: options finales', opts);
 
       try{
-        // NO pasamos 'es' como 4º parámetro para que no pise opts
+        // podemos usar el binder localizado, ya está envuelto por el wrapper de arriba
         if (loc && typeof loc.pivotUI === 'function') {
-          // usar binder que ya viene “localizado”
           loc.pivotUI($el, data, opts, true);
         } else {
           $el.pivotUI(data, opts, true);
