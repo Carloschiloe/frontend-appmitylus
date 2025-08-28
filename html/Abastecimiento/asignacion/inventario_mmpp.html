@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
 
-  <!-- PivotTable.css -->
+  <!-- PivotTable core CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.css">
 
   <style>
@@ -24,15 +24,12 @@
     #invGrouped details{margin-bottom:10px;border:1px solid #e0e0e0;border-radius:10px;background:#fff;overflow:hidden}
     #invGrouped summary{cursor:pointer;padding:12px 14px;list-style:none;display:flex;align-items:center;justify-content:space-between}
     #invGrouped summary::-webkit-details-marker{display:none}
-    #invGrouped summary:focus{outline:none}
     #invGrouped summary .left-part{display:flex;align-items:center;gap:10px}
     #invGrouped summary .sign{width:22px;height:22px;border-radius:6px;border:1px solid #bdbdbd;display:flex;align-items:center;justify-content:center;font-weight:700;color:#616161;background:#f5f5f5}
     #invGrouped details[open] summary .sign{color:#e53935;border-color:#e57373;background:#ffebee}
     .group-tags{display:flex;gap:6px;flex-wrap:wrap}
     .tag{font-size:.85rem;color:#fff;border-radius:999px;padding:4px 10px}
-    .tag-sub{background:#26a69a}
-    .tag-asig{background:#7e57c2}
-    .tag-saldo{background:#ef5350}
+    .tag-sub{background:#26a69a}.tag-asig{background:#7e57c2}.tag-saldo{background:#ef5350}
     .group-table{padding:0 10px 12px 10px}
     .group-table th,.group-table td{padding:8px 10px}
     .group-total-row{background:#f6f6f6;font-weight:600}
@@ -44,7 +41,6 @@
   </style>
 </head>
 <body>
-  <!-- NAV -->
   <nav class="teal">
     <div class="nav-wrapper">
       <a href="../categorias.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
@@ -53,7 +49,6 @@
   </nav>
 
   <div class="container" style="margin-top:16px">
-    <!-- CONTROLES -->
     <div class="row" style="margin-bottom:8px">
       <div class="col s12 m8">
         <div class="toolbar">
@@ -73,7 +68,6 @@
       </div>
     </div>
 
-    <!-- KPIs -->
     <div class="row" id="kpis" style="margin-bottom:10px">
       <div class="col s12 m3"><div class="kpi-card"><div class="kpi-title">Total tons</div><p class="kpi-value" id="kpiTons">0</p></div></div>
       <div class="col s12 m3"><div class="kpi-card"><div class="kpi-title">Proveedores</div><p class="kpi-value" id="kpiProv">0</p></div></div>
@@ -81,10 +75,8 @@
       <div class="col s12 m3"><div class="kpi-card"><div class="kpi-title">Meses</div><p class="kpi-value" id="kpiMeses">0</p></div></div>
     </div>
 
-    <!-- AGRUPADO -->
     <div id="invGrouped"></div>
 
-    <!-- TABLA PLANA -->
     <div class="row" style="margin-top:8px" id="flatWrapper">
       <div class="col s12">
         <table id="tablaInv" class="highlight display" style="width:100%">
@@ -99,14 +91,13 @@
       </div>
     </div>
 
-    <!-- PIVOT -->
     <div id="pivotWrapper" style="display:none">
       <div id="pivotUI" style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:10px"></div>
       <div id="pivotDiag" class="grey-text" style="font-size:.85rem;margin-top:6px"></div>
     </div>
   </div>
 
-  <!-- Modal de asignación rápida -->
+  <!-- Modal -->
   <div id="modalAsignar" class="modal">
     <div class="modal-content">
       <h5>Asignar MMPP</h5>
@@ -136,67 +127,8 @@
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
-  <!-- PivotTable.js -->
+  <!-- PivotTable core JS (solo core, SIN locale) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.js"></script>
-  
-  <!-- ===== PARCHE GLOBAL Y WRAPPERS pivotUI ===== -->
-  <script>
-    (function(){
-      const $ = window.jQuery;
-      if(!$ || !$.pivotUtilities) return;
-
-      const u = $.pivotUtilities;
-
-      function ensureLocaleStrings(obj){
-        if(!obj) obj = {};
-        if(!obj.rowSymbol) obj.rowSymbol = '→';
-        if(!obj.colSymbol) obj.colSymbol = '↓';
-        return obj;
-      }
-
-      if(!u.options) u.options = {};
-      u.options.localeStrings = ensureLocaleStrings(u.options.localeStrings);
-
-      if(u.locales){
-        Object.keys(u.locales).forEach(k=>{
-          const L = u.locales[k];
-          if(L) L.localeStrings = ensureLocaleStrings(L.localeStrings);
-        });
-      }
-
-      if ($.fn && typeof $.fn.pivotUI === 'function') {
-        const _orig = $.fn.pivotUI;
-        $.fn.pivotUI = function(input, opts, overwrite, locale){
-          opts = opts || {};
-          opts.localeStrings = ensureLocaleStrings(opts.localeStrings);
-          try { return _orig.call(this, input, opts, overwrite, locale); }
-          catch (e) { console.error('PIVOT wrapper (global) capturó excepción:', e); throw e; }
-        };
-      }
-
-      if (u.locales) {
-        Object.keys(u.locales).forEach(k=>{
-          const L = u.locales[k];
-          if (L && typeof L.pivotUI === 'function') {
-            const _lp = L.pivotUI;
-            L.pivotUI = function($el, input, opts, overwrite){
-              opts = opts || {};
-              opts.localeStrings = ensureLocaleStrings(opts.localeStrings);
-              try { return _lp($el, input, opts, overwrite); }
-              catch (e) { console.error(`PIVOT wrapper (locale ${k}) capturó excepción:`, e); throw e; }
-            };
-          }
-        });
-      }
-
-      console.log('PIVOT wrappers/hotfix listos', {
-        hasLocales: !!u.locales,
-        rowSymbol: u.options.localeStrings.rowSymbol,
-        colSymbol: u.options.localeStrings.colSymbol
-      });
-    })();
-  </script>
-  <!-- ============================================ -->
 
   <script>
     /* ================== CONFIG ================== */
@@ -274,23 +206,15 @@
       if(dt){ try{dt.destroy();}catch{} dt=null; }
       dt = jq('#tablaInv').DataTable({
         dom:'Bfrtip',
-        buttons:[
-          {extend:'excelHtml5', title:'Inventario_MMPP'},
-          {extend:'pdfHtml5', title:'Inventario_MMPP', orientation:'landscape', pageSize:'A4'}
-        ],
-        order:[[0,'asc'],[1,'asc']],
-        pageLength:10,
-        autoWidth:false,
+        buttons:[{extend:'excelHtml5', title:'Inventario_MMPP'},{extend:'pdfHtml5', title:'Inventario_MMPP', orientation:'landscape', pageSize:'A4'}],
+        order:[[0,'asc'],[1,'asc']], pageLength:10, autoWidth:false,
         language:{url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'},
-        columnDefs:[{targets:0, width:'110px'},{targets:[5,6,7], className:'right-align'}]
+        columnDefs:[{targets:0,width:'110px'},{targets:[5,6,7],className:'right-align'}]
       });
     }
     function calcMonthTotals(rows){
       const m=new Map();
-      for(const r of rows){
-        const k=r.mes||'s/fecha';
-        m.set(k, (m.get(k)||0) + (Number(r.tons)||0));
-      }
+      for(const r of rows){ const k=r.mes||'s/fecha'; m.set(k,(m.get(k)||0)+(Number(r.tons)||0)); }
       return m;
     }
     function fillDataTable(rows, asigMap, monthTotals){
@@ -299,10 +223,7 @@
         const asig = Number(asigMap.get(r.mes)||0);
         const totalMes = Number(monthTotals.get(r.mes)||0);
         const saldo = totalMes - asig;
-        return [
-          esc(monthLabel(r.mes)), esc(r.proveedor||''), esc(r.centroCodigo||''),
-          esc(r.areaCodigo||''), esc(r.comuna||''), fmt(r.tons), fmt(asig), fmt(saldo), esc(r.fuente||'')
-        ];
+        return [esc(monthLabel(r.mes)), esc(r.proveedor||''), esc(r.centroCodigo||''), esc(r.areaCodigo||''), esc(r.comuna||''), fmt(r.tons), fmt(asig), fmt(saldo), esc(r.fuente||'')];
       });
       ensureDataTable(); dt.clear(); dt.rows.add(data).draw();
     }
@@ -321,8 +242,7 @@
       );
     }
 
-    // Estado de asignación rápida (modal)
-    let assignCtx = null;
+    let assignCtx=null;
 
     function renderGrouped(rows, asigMap){
       const cont=$id('invGrouped');
@@ -330,35 +250,21 @@
       const filtered=filterRows(rows,q);
 
       const groups=new Map();
-      for(const r of filtered){
-        const k=r.mes||'s/fecha';
-        if(!groups.has(k)) groups.set(k,[]);
-        groups.get(k).push(r);
-      }
+      for(const r of filtered){ const k=r.mes||'s/fecha'; if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(r); }
 
-      const keys=[...groups.keys()].sort((a,b)=>{
-        if(a==='s/fecha') return 1;
-        if(b==='s/fecha') return -1;
-        return a.localeCompare(b);
-      });
+      const keys=[...groups.keys()].sort((a,b)=>{ if(a==='s/fecha') return 1; if(b==='s/fecha') return -1; return a.localeCompare(b); });
 
       let html='';
       for(const k of keys){
-        const items=groups.get(k).slice().sort((a,b)=>
-          (a.proveedor||'').localeCompare(b.proveedor||'') ||
-          String(a.centroCodigo||'').localeCompare(String(b.centroCodigo||''))
-        );
-        const subtotal = items.reduce((s,x)=>s+(Number(x.tons)||0),0);
-        const asig = Number(asigMap.get(k)||0);
-        const saldo = subtotal - asig;
+        const items=groups.get(k).slice().sort((a,b)=>(a.proveedor||'').localeCompare(b.proveedor||'') || String(a.centroCodigo||'').localeCompare(String(b.centroCodigo||'')));
+        const subtotal=items.reduce((s,x)=>s+(Number(x.tons)||0),0);
+        const asig=Number(asigMap.get(k)||0);
+        const saldo=subtotal - asig;
 
         html += `
           <details>
             <summary>
-              <div class="left-part">
-                <div class="sign">+</div>
-                <div><strong>${esc(monthLabel(k))}</strong> • ${items.length} registros</div>
-              </div>
+              <div class="left-part"><div class="sign">+</div><div><strong>${esc(monthLabel(k))}</strong> • ${items.length} registros</div></div>
               <div class="group-tags">
                 <span class="tag tag-sub" title="Subtotal disponible">${fmt(subtotal)} t</span>
                 <span class="tag tag-asig" title="Asignado en planificación">${fmt(asig)} t</span>
@@ -370,8 +276,7 @@
                 <table class="striped highlight">
                   <thead>
                     <tr>
-                      <th>Proveedor</th><th>Código centro</th><th>Código área</th>
-                      <th>Comuna</th><th class="right-align">Tons</th><th>Fuente</th><th class="right-align">Acciones</th>
+                      <th>Proveedor</th><th>Código centro</th><th>Código área</th><th>Comuna</th><th class="right-align">Tons</th><th>Fuente</th><th class="right-align">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -384,18 +289,15 @@
                         <td class="right-align" title="${fmt(r.tons)}">${fmt(r.tons)}</td>
                         <td>${esc(r.fuente||'')}</td>
                         <td class="right-align">
-                          <a href="#!" class="btn teal btn-assign"
-                             data-mes="${esc(k)}" data-proveedor="${esc(r.proveedor||'')}" data-tons="${Number(r.tons)||0}">
-                             <i class="material-icons">add</i> ASIGNAR
+                          <a href="#!" class="btn teal btn-assign" data-mes="${esc(k)}" data-proveedor="${esc(r.proveedor||'')}" data-tons="${Number(r.tons)||0}">
+                            <i class="material-icons">add</i> ASIGNAR
                           </a>
                         </td>
                       </tr>
                     `).join('')}
                   </tbody>
                   <tfoot>
-                    <tr class="group-total-row">
-                      <td colspan="4" class="right-align">Subtotal</td><td class="right-align">${fmt(subtotal)}</td><td></td><td></td>
-                    </tr>
+                    <tr class="group-total-row"><td colspan="4" class="right-align">Subtotal</td><td class="right-align">${fmt(subtotal)}</td><td></td><td></td></tr>
                   </tfoot>
                 </table>
               </div>
@@ -404,9 +306,7 @@
       }
       cont.innerHTML = html || `<div class="grey-text">Sin registros para mostrar.</div>`;
 
-      cont.querySelectorAll('details').forEach(d=>{
-        const sign=d.querySelector('.sign'); const set=()=>sign.textContent=d.open?'−':'+'; d.addEventListener('toggle',set); set();
-      });
+      cont.querySelectorAll('details').forEach(d=>{ const sign=d.querySelector('.sign'); const set=()=>sign.textContent=d.open?'−':'+'; d.addEventListener('toggle',set); set(); });
 
       cont.querySelectorAll('.btn-assign').forEach(btn=>{
         btn.addEventListener('click',(e)=>{
@@ -422,7 +322,6 @@
       });
     }
 
-    /* ======= VISTAS ======= */
     function setGroupedView(on){
       const grouped=$id('invGrouped');
       const flatWrap=$id('flatWrapper');
@@ -454,7 +353,6 @@
       }catch(e){ console.error(e); M.toast?.({html:'No se pudo cargar el inventario',classes:'red'}); }
     }
 
-    /* ================== PIVOT ================== */
     function buildPivotRecords(rows, asigMap, monthTotals){
       const recs=[];
       for(const r of rows){
@@ -470,77 +368,52 @@
       return recs;
     }
 
-  function renderPivot(rows, asigMap, monthTotals){
-    const jq = window.jQuery || window.$;
-    if (!jq || !jq.fn) return;
+    // ======== PIVOT (core, sin locale) ========
+    function renderPivot(rows, asigMap, monthTotals){
+      const jq = window.jQuery || window.$;
+      if (!jq || !jq.fn) return;
 
-    const u = jq.pivotUtilities || {};
-    const data = buildPivotRecords(rows, asigMap, monthTotals);
+      const u = jq.pivotUtilities || {};
+      const data = buildPivotRecords(rows, asigMap, monthTotals);
 
-    // Asegurar que existan símbolos por si algo los usa
-    const coreStrings = Object.assign(
-      { rowSymbol: '→', colSymbol: '↓', uiRenderError: 'Ocurrió un error durante el dibujado de la tabla dinámica.' },
-      (u.options && u.options.localeStrings) ? u.options.localeStrings : {}
-    );
-    if (u.options) u.options.localeStrings = coreStrings;
+      const coreStrings = { rowSymbol:'→', colSymbol:'↓', uiRenderError:'Ocurrió un error durante el dibujado de la tabla dinámica.' };
 
-    // Etiqueta MES AAAA desde YYYY-MM
-    const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-    const fmtMes = (k) => (/^\d{4}-\d{2}$/.test(k) ? `${MESES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
+      const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+      const fmtMes = (k)=> (/^\d{4}-\d{2}$/.test(k) ? `${MESES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
 
-    const afterRender = () => {
-      document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
-        .forEach(cell => {
-          const t = cell.textContent.trim();
-          if (/^\d{4}-\d{2}$/.test(t)) cell.textContent = fmtMes(t);
-        });
-    };
+      const afterRender = ()=>{
+        document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
+          .forEach(cell=>{const t=cell.textContent.trim(); if(/^\d{4}-\d{2}$/.test(t)) cell.textContent=fmtMes(t);});
+      };
 
-    // ⚠️ Fuerzo SIEMPRE los renderers/aggregators del core (inglés)
-    //    y nombres 'Table'/'Sum' para evitar involucrar el "locale es"
-    const opts = {
-      rows: ['Mes'],
-      cols: ['Métrica', 'Proveedor'],
-      vals: ['Valor'],
-      aggregatorName: 'Sum',        // core
-      rendererName:  'Table',       // core
-      renderers:     (u.renderers || {}),
-      aggregators:   (u.aggregators || {}),
-      localeStrings: coreStrings,   // por si la lib los mira desde opts
-      rowOrder: 'value_z-a',
-      colOrder: 'value_z-a',
-      onRefresh: afterRender
-    };
+      const opts = {
+        rows:['Mes'], cols:['Métrica','Proveedor'], vals:['Valor'],
+        aggregatorName:'Sum', rendererName:'Table',
+        renderers:(u.renderers||{}), aggregators:(u.aggregators||{}),
+        localeStrings:coreStrings, rowOrder:'value_z-a', colOrder:'value_z-a', onRefresh:afterRender
+      };
 
-    const $el = jq('#pivotUI').empty();
-    try {
-      // No pasar locale alguno (4º parámetro) -> core puro
-      $el.pivotUI(data, opts, true);
-      const diagDiv = document.getElementById('pivotDiag');
-      if (diagDiv) diagDiv.textContent = 'Pivot renderizado OK';
-      console.info('PIVOT: render OK (core renderers)');
-    } catch (e) {
-      console.error('PIVOT: fallo', e);
-      const wrap = document.getElementById('pivotWrapper');
-      if (wrap && !wrap.querySelector('.pivot-error')) {
-        const div = document.createElement('div');
-        div.className = 'pivot-error card-panel';
-        div.textContent = coreStrings.uiRenderError || 'Error al dibujar la tabla dinámica.';
-        wrap.prepend(div);
+      const $el = jq('#pivotUI').empty();
+      try{
+        $el.pivotUI(data, opts, true); // <- sin pasar locale
+        const diagDiv=$id('pivotDiag'); if(diagDiv) diagDiv.textContent='Pivot renderizado OK';
+        console.info('PIVOT: render OK (core renderers)');
+      }catch(e){
+        console.error('PIVOT: fallo', e);
+        const wrap=$id('pivotWrapper');
+        if (wrap && !wrap.querySelector('.pivot-error')) {
+          const div=document.createElement('div');
+          div.className='pivot-error card-panel';
+          div.textContent=coreStrings.uiRenderError;
+          wrap.prepend(div);
+        }
       }
     }
-  }
 
     /* ================== UI ================== */
     document.addEventListener('DOMContentLoaded', ()=>{
-      console.groupCollapsed('PIVOT: carga de librerías');
-      console.log('jQuery?', !!window.jQuery, 'ver', window.jQuery?.fn?.jquery);
-      console.log('pivotUtilities?', !!(window.jQuery?.pivotUtilities));
-      console.log('locales.es?', !!(window.jQuery?.pivotUtilities?.locales?.es));
-      console.groupEnd();
-
       M.Modal.init(document.querySelectorAll('.modal'));
-      setGroupedView(true);   // << ya existe
+      setGroupedView(true);
 
       $id('btnReload')?.addEventListener('click', loadData);
 
@@ -550,8 +423,7 @@
       });
 
       $id('btnTogglePivot')?.addEventListener('click', ()=>{
-        __pivotOn=!__pivotOn; console.log('PIVOT: toggle ->', __pivotOn);
-        setPivotView(__pivotOn);
+        __pivotOn=!__pivotOn; setPivotView(__pivotOn);
         if (__pivotOn) renderPivot(__rows, __asigMap, __monthTotals);
       });
 
