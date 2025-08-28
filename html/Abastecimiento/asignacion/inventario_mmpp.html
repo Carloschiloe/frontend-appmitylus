@@ -5,24 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Inventario de MMPP – Tabla Dinámica</title>
 
-  <!-- Materialize (estilos básicos y toasts) -->
+  <!-- Materialize -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
 
-  <!-- Tabulator (tabla profesional) -->
+  <!-- Tabulator -->
   <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css">
 
   <style>
     body{background:#fafafa}
     nav.teal .brand-logo{font-size:1.1rem}
-    .toolbar{display:grid;grid-template-columns:repeat(6,minmax(180px,1fr)) auto;gap:12px;align-items:end}
+    .toolbar{display:grid;grid-template-columns:repeat(7,minmax(180px,1fr)) auto;gap:12px;align-items:end}
     .toolbar .input-field{margin:0}
-    .tabulator{border-radius:12px;border:1px solid #e0e0e0}
     .card-soft{border-radius:14px;background:#fff;border:1px solid #eaeaea}
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#e0f2f1;color:#00695c;font-size:.8rem}
     .right-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end}
     .footer-note{font-size:.85rem;color:#666}
-    @media(max-width:960px){.toolbar{grid-template-columns:repeat(2,minmax(180px,1fr)) auto}}
+    #pivotWrap{overflow-x:auto}
+    .tabulator{border-radius:12px;border:1px solid #e0e0e0;min-width:680px}
+    @media(max-width:1080px){.toolbar{grid-template-columns:repeat(2,minmax(180px,1fr)) auto}}
   </style>
 </head>
 <body>
@@ -37,19 +38,19 @@
       <div class="toolbar">
         <div class="input-field">
           <select id="rowDim">
-            <option value="Mes">Mes</option>
-            <option value="Semana">Semana</option>
             <option value="Comuna" selected>Comuna</option>
             <option value="Proveedor">Proveedor</option>
             <option value="Centro">Centro</option>
             <option value="Área">Área</option>
+            <option value="Mes">Mes</option>
+            <option value="Semana">Semana</option>
             <option value="Fuente">Fuente</option>
           </select>
-          <label>Fila</label>
+          <label>Fila (nivel 1)</label>
         </div>
 
         <div class="input-field">
-          <select id="subRowDim">
+          <select id="subRowDim1">
             <option value="">— Ninguna —</option>
             <option value="Proveedor" selected>Proveedor</option>
             <option value="Centro">Centro</option>
@@ -59,7 +60,21 @@
             <option value="Semana">Semana</option>
             <option value="Fuente">Fuente</option>
           </select>
-          <label>Subfila (expandible)</label>
+          <label>Subfila 1 (expandible)</label>
+        </div>
+
+        <div class="input-field">
+          <select id="subRowDim2">
+            <option value="">— Ninguna —</option>
+            <option value="Semana">Semana</option>
+            <option value="Mes">Mes</option>
+            <option value="Centro">Centro</option>
+            <option value="Área">Área</option>
+            <option value="Proveedor">Proveedor</option>
+            <option value="Comuna">Comuna</option>
+            <option value="Fuente">Fuente</option>
+          </select>
+          <label>Subfila 2 (expandible)</label>
         </div>
 
         <div class="input-field">
@@ -112,7 +127,9 @@
       </div>
     </div>
 
-    <div id="pivotTable"></div>
+    <div id="pivotWrap">
+      <div id="pivotTable"></div>
+    </div>
 
     <div style="margin:10px 0" class="footer-note" id="unitNote">
       Unidad actual: Toneladas.
@@ -228,64 +245,75 @@
     }
 
     /* ================== PIVOT ================== */
-    function unique(arr){ return [...new Set(arr)]; }
+    const uniq = (arr)=>[...new Set(arr)];
 
-    // rows: data enriquecida; dims: rowDim, subRowDim?, colDim; metric: Tons/Asignado/Saldo; agg: sum/avg/count/min/max; unit: tons/trucks
-    function pivotData(rows, rowDim, subRowDim, colDim, metric, agg, unit){
+    // rows: datos; dims: rowDim, sub1?, sub2?, colDim; metric: Tons/Asignado/Saldo; agg; unit
+    function pivotData(rows, rowDim, sub1, sub2, colDim, metric, agg, unit){
       const factor = (unit === 'trucks' && agg !== 'count') ? (1/10) : 1; // 10 t por camión
-      const rowPrimaryKeys = unique(rows.map(r => r[rowDim] || '(vacío)'));
-      const colKeys = unique(rows.map(r => r[colDim] || '(vacío)'));
+      const rowKeys = uniq(rows.map(r => r[rowDim] || '(vacío)'));
+      const colKeys = uniq(rows.map(r => r[colDim] || '(vacío)'));
 
       const aggFns = {
-        sum: arr => arr.reduce((s,n)=>s+(Number(n)||0),0),
-        avg: arr => arr.length? (arr.reduce((s,n)=>s+(Number(n)||0),0)/arr.length):0,
-        count: arr => arr.length,
-        min: arr => arr.length? Math.min(...arr.map(n=>Number(n)||0)) : 0,
-        max: arr => arr.length? Math.max(...arr.map(n=>Number(n)||0)) : 0,
+        sum: a => a.reduce((s,n)=>s+(Number(n)||0),0),
+        avg: a => a.length? (a.reduce((s,n)=>s+(Number(n)||0),0)/a.length):0,
+        count: a => a.length,
+        min: a => a.length? Math.min(...a.map(n=>Number(n)||0)) : 0,
+        max: a => a.length? Math.max(...a.map(n=>Number(n)||0)) : 0,
       };
       const fn = aggFns[agg] || aggFns.sum;
 
-      const rowLabelField = subRowDim || rowDim;
       const matrix = [];
+      const labelField = sub2 || sub1 || rowDim;
 
-      for(const rk of rowPrimaryKeys){
-        if(subRowDim){
-          const subs = unique(rows.filter(r => (r[rowDim]||'(vacío)')===rk).map(r => r[subRowDim] || '(vacío)'));
-          for(const sk of subs){
-            const rowObj = {[rowDim]: rk, [rowLabelField]: sk};
-            for(const ck of colKeys){
-              const sliceVals = rows
-                .filter(x =>
-                  (x[rowDim]||'(vacío)')===rk &&
-                  (x[subRowDim]||'(vacío)')===sk &&
-                  (x[colDim]||'(vacío)')===ck
-                )
-                .map(x => (agg==='count' ? 1 : (Number(x[metric])||0)*factor));
-              rowObj[ck] = fn(sliceVals);
+      for(const rk of rowKeys){
+        if(sub1){
+          const sub1Keys = uniq(rows.filter(r => (r[rowDim]||'(vacío)')===rk).map(r => r[sub1] || '(vacío)'));
+          for(const s1 of sub1Keys){
+            if(sub2){
+              const sub2Keys = uniq(rows.filter(r => (r[rowDim]||'(vacío)')===rk && (r[sub1]||'(vacío)')===s1).map(r => r[sub2] || '(vacío)'));
+              for(const s2 of sub2Keys){
+                const rowObj = {[rowDim]: rk, [sub1]: s1, [labelField]: s2};
+                for(const ck of colKeys){
+                  const slice = rows
+                    .filter(x => (x[rowDim]||'(vacío)')===rk && (x[sub1]||'(vacío)')===s1 && (x[sub2]||'(vacío)')===s2 && (x[colDim]||'(vacío)')===ck)
+                    .map(x => (agg==='count'?1:(Number(x[metric])||0)*factor));
+                  rowObj[ck] = fn(slice);
+                }
+                rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
+                matrix.push(rowObj);
+              }
+            }else{
+              const rowObj = {[rowDim]: rk, [labelField]: s1};
+              for(const ck of colKeys){
+                const slice = rows
+                  .filter(x => (x[rowDim]||'(vacío)')===rk && (x[sub1]||'(vacío)')===s1 && (x[colDim]||'(vacío)')===ck)
+                  .map(x => (agg==='count'?1:(Number(x[metric])||0)*factor));
+                rowObj[ck] = fn(slice);
+              }
+              rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
+              matrix.push(rowObj);
             }
-            rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
-            matrix.push(rowObj);
           }
         }else{
-          const rowObj = {[rowDim]: rk, [rowLabelField]: rk};
+          const rowObj = {[rowDim]: rk, [labelField]: rk};
           for(const ck of colKeys){
-            const sliceVals = rows
+            const slice = rows
               .filter(x => (x[rowDim]||'(vacío)')===rk && (x[colDim]||'(vacío)')===ck)
-              .map(x => (agg==='count' ? 1 : (Number(x[metric])||0)*factor));
-            rowObj[ck] = fn(sliceVals);
+              .map(x => (agg==='count'?1:(Number(x[metric])||0)*factor));
+            rowObj[ck] = fn(slice);
           }
           rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
           matrix.push(rowObj);
         }
       }
 
-      // fila total
-      const totalRow = {[rowDim]:'Total', [rowLabelField]:'Total'};
+      // fila total general
+      const totalRow = {[rowDim]:'Total', [labelField]:'Total'};
       for(const ck of colKeys){ totalRow[ck] = fn(matrix.map(r => r[ck])); }
       totalRow['Total'] = fn(matrix.map(r => r['Total']));
       matrix.push(totalRow);
 
-      return {matrix, colKeys, rowLabelField};
+      return {matrix, colKeys, labelField};
     }
 
     function prettyColTitle(colDim, key){
@@ -294,55 +322,47 @@
       return key;
     }
 
-    function makeColumns(rowLabelField, colKeys, colDim){
+    function makeColumns(labelField, colKeys, colDim){
       const cols = [
-        {title: rowLabelField || 'Fila', field: rowLabelField || 'Fila', frozen:true, headerSort:true, width: 220,
+        {title: labelField, field: labelField, frozen:true, headerSort:true, width: 220, minWidth:160,
           formatter:(cell)=>{
             const v = cell.getValue();
-            if(rowLabelField==='Mes' && /^\d{4}-\d{2}$/.test(v)) return monthLabel(v);
-            if(rowLabelField==='Semana' && /^\d{4}-W\d{2}$/.test(v)) return weekLabel(v);
+            if(labelField==='Mes' && /^\d{4}-\d{2}$/.test(v)) return monthLabel(v);
+            if(labelField==='Semana' && /^\d{4}-W\d{2}$/.test(v)) return weekLabel(v);
             return v;
           }
         }
       ];
       for(const ck of colKeys){
-        cols.push({
-          title: prettyColTitle(colDim, ck),
-          field: ck, hozAlign:"right", headerHozAlign:"right",
-          headerSort:true, formatter:(cell)=> fmt(cell.getValue())
-        });
+        cols.push({ title: prettyColTitle(colDim, ck), field: ck, hozAlign:"right", headerHozAlign:"right", headerSort:true, formatter:(c)=>fmt(c.getValue()), width:120, minWidth:110 });
       }
-      cols.push({title:'Total', field:'Total', hozAlign:"right", headerHozAlign:"right", headerSort:true,
-                 formatter:(cell)=> fmt(cell.getValue())});
+      cols.push({title:'Total', field:'Total', hozAlign:"right", headerHozAlign:"right", headerSort:true, formatter:(c)=>fmt(c.getValue()), width:130, minWidth:110});
       return cols;
     }
 
     /* ================== UI / TABULATOR ================== */
     let table = null;
-    let __rowsRaw = [];  // con Tons
-    let __rowsFull = []; // con Asignado/Saldo
+    let __rowsRaw = [];
+    let __rowsFull = [];
 
     function populateSelects(){ M.FormSelect.init(document.querySelectorAll('select')); }
     function savePrefs(){
       const prefs = {
-        rowDim: $id('rowDim').value,
-        subRowDim: $id('subRowDim').value,
-        colDim: $id('colDim').value,
-        metric: $id('metric').value,
-        unit: $id('unit').value,
-        agg: $id('agg').value,
+        rowDim:$id('rowDim').value, sub1:$id('subRowDim1').value, sub2:$id('subRowDim2').value,
+        colDim:$id('colDim').value, metric:$id('metric').value, unit:$id('unit').value, agg:$id('agg').value,
       };
-      localStorage.setItem('pivot_prefs_v2', JSON.stringify(prefs));
+      localStorage.setItem('pivot_prefs_v3', JSON.stringify(prefs));
     }
     function loadPrefs(){
       try{
-        const p = JSON.parse(localStorage.getItem('pivot_prefs_v2')||'{}');
-        if(p.rowDim) $id('rowDim').value = p.rowDim;
-        if(p.subRowDim !== undefined) $id('subRowDim').value = p.subRowDim;
-        if(p.colDim) $id('colDim').value = p.colDim;
-        if(p.metric) $id('metric').value = p.metric;
-        if(p.unit) $id('unit').value = p.unit;
-        if(p.agg) $id('agg').value = p.agg;
+        const p=JSON.parse(localStorage.getItem('pivot_prefs_v3')||'{}');
+        if(p.rowDim) $id('rowDim').value=p.rowDim;
+        if(p.sub1!==undefined) $id('subRowDim1').value=p.sub1;
+        if(p.sub2!==undefined) $id('subRowDim2').value=p.sub2;
+        if(p.colDim) $id('colDim').value=p.colDim;
+        if(p.metric) $id('metric').value=p.metric;
+        if(p.unit) $id('unit').value=p.unit;
+        if(p.agg) $id('agg').value=p.agg;
       }catch(_e){}
     }
 
@@ -350,19 +370,33 @@
       savePrefs();
 
       const rowDim   = $id('rowDim').value;
-      const subRowDim= $id('subRowDim').value || '';
+      const sub1     = $id('subRowDim1').value || '';
+      const sub2     = $id('subRowDim2').value || '';
       const colDim   = $id('colDim').value;
       const metric   = $id('metric').value;
       const unit     = $id('unit').value;
       const agg      = $id('agg').value;
 
-      const {matrix, colKeys, rowLabelField} = pivotData(__rowsFull, rowDim, subRowDim, colDim, metric, agg, unit);
-      const columns = makeColumns(rowLabelField, colKeys, colDim);
+      const {matrix, colKeys, labelField} = pivotData(__rowsFull, rowDim, sub1, sub2, colDim, metric, agg, unit);
+      const columns = makeColumns(labelField, colKeys, colDim);
 
-      const groupBy = subRowDim ? rowDim : false;
+      // niveles de agrupación (para expandir/contraer)
+      const groupBy = (sub1 && sub2) ? [rowDim, sub1] : (sub1 ? [rowDim] : false);
+
+      // header con totales por grupo
+      const unitText = (unit==='trucks') ? ' cam.' : ' t';
+      const groupHeader = function(value, count, data, group){
+        // suma de columna "Total" dentro del grupo
+        const total = data.reduce((s,r)=>s+(Number(r.Total)||0),0);
+        const field = group.getField(); // rowDim o sub1
+        // título legible
+        const pretty = (field==='Mes')?monthLabel(value):(field==='Semana')?weekLabel(value):value;
+        return `<span><strong>${field}:</strong> ${pretty} <span class="grey-text">(${count} ítem)</span> — <strong>Total:</strong> ${fmt(total)}${unitText}</span>`;
+      };
 
       if(table){
         table.setGroupBy(groupBy || []);
+        table.setGroupHeader(groupHeader);
         table.setColumns(columns);
         table.setData(matrix);
       }else{
@@ -370,15 +404,17 @@
           data: matrix,
           columns,
           height: "70vh",
-          layout: "fitDataStretch",
+          layout: "fitColumns",             // evita crecer a la izquierda
+          columnMinWidth: 110,
           resizableColumnFit: true,
           movableColumns: true,
           selectable: false,
           groupBy: groupBy || [],
+          groupHeader,
           groupStartOpen: false,
           groupToggleElement: "header",
           columnDefaults:{ headerFilter:false },
-          index: rowLabelField,
+          index: labelField,
         });
       }
 
@@ -407,15 +443,8 @@
 
       $id('btnApply').addEventListener('click', applyPivot);
 
-      $id('btnCSV').addEventListener('click', ()=>{
-        if(!table) return;
-        table.download("csv", "inventario_pivot.csv");
-      });
-
-      $id('btnXLSX').addEventListener('click', ()=>{
-        if(!table) return;
-        table.download("xlsx", "inventario_pivot.xlsx", {sheetName:"Pivot"});
-      });
+      $id('btnCSV').addEventListener('click', ()=>{ if(table) table.download("csv","inventario_pivot.csv"); });
+      $id('btnXLSX').addEventListener('click', ()=>{ if(table) table.download("xlsx","inventario_pivot.xlsx",{sheetName:"Pivot"}); });
 
       loadAll();
     });
