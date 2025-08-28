@@ -3,132 +3,103 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Inventario de MMPP</title>
+  <title>Inventario de MMPP – Tabla Dinámica</title>
 
-  <!-- Materialize & Google Icons -->
+  <!-- Materialize (solo para estilos básicos y toasts) -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
 
-  <!-- DataTables + Buttons -->
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
-
-  <!-- PivotTable core CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.css">
-
+  <!-- Tabulator -->
+  <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css">
   <style>
     body{background:#fafafa}
-    .kpi-card{border-radius:14px;background:#fff;border:1px solid #eaeaea;padding:16px;text-align:center}
-    .kpi-title{color:#777;margin:0 0 4px;font-weight:600}
-    .kpi-value{font-size:2rem;font-weight:700;margin:0}
-    #invGrouped details{margin-bottom:10px;border:1px solid #e0e0e0;border-radius:10px;background:#fff;overflow:hidden}
-    #invGrouped summary{cursor:pointer;padding:12px 14px;list-style:none;display:flex;align-items:center;justify-content:space-between}
-    #invGrouped summary::-webkit-details-marker{display:none}
-    #invGrouped summary .left-part{display:flex;align-items:center;gap:10px}
-    #invGrouped summary .sign{width:22px;height:22px;border-radius:6px;border:1px solid #bdbdbd;display:flex;align-items:center;justify-content:center;font-weight:700;color:#616161;background:#f5f5f5}
-    #invGrouped details[open] summary .sign{color:#e53935;border-color:#e57373;background:#ffebee}
-    .group-tags{display:flex;gap:6px;flex-wrap:wrap}
-    .tag{font-size:.85rem;color:#fff;border-radius:999px;padding:4px 10px}
-    .tag-sub{background:#26a69a}.tag-asig{background:#7e57c2}.tag-saldo{background:#ef5350}
-    .group-table{padding:0 10px 12px 10px}
-    .group-table th,.group-table td{padding:8px 10px}
-    .group-total-row{background:#f6f6f6;font-weight:600}
-    .right-align{text-align:right}
-    .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .toolbar .btn-flat{color:#26a69a}
-    .btn-assign{display:inline-flex;align-items:center;gap:6px}
-    .pivot-error{margin:8px 0}
+    nav.teal .brand-logo{font-size:1.1rem}
+    .toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+    .toolbar .input-field{margin:0;width:220px}
+    .tabulator{border-radius:12px;border:1px solid #e0e0e0}
+    .card-soft{border-radius:14px;background:#fff;border:1px solid #eaeaea}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#e0f2f1;color:#00695c;font-size:.8rem}
+    .right-actions{display:flex;gap:8px;align-items:center}
+    .footer-note{font-size:.85rem;color:#666}
   </style>
 </head>
 <body>
   <nav class="teal">
-    <div class="nav-wrapper">
-      <a href="../categorias.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
-      <span class="brand-logo center" style="font-size:1.25rem">Inventario de MMPP</span>
+    <div class="nav-wrapper container">
+      <a href="#!" class="brand-logo center">Tabla Dinámica de Inventario</a>
     </div>
   </nav>
 
   <div class="container" style="margin-top:16px">
-    <div class="row" style="margin-bottom:8px">
-      <div class="col s12 m8">
-        <div class="toolbar">
-          <a id="btnToggleGroup" class="btn-flat teal-text"><i class="material-icons left">view_agenda</i>Agrupar por mes</a>
-          <a id="btnExpandAll" class="btn-flat"><i class="material-icons left">unfold_more</i>Expandir todo</a>
-          <a id="btnCollapseAll" class="btn-flat"><i class="material-icons left">unfold_less</i>Contraer todo</a>
-          <a id="btnTogglePivot" class="btn-flat"><i class="material-icons left">grid_on</i>Tabla dinámica</a>
-          <div class="input-field" style="margin:0;max-width:380px">
-            <input id="invSearch" type="text" placeholder="Buscar (mes, proveedor, centro, comuna)…">
-          </div>
+    <div class="card-soft" style="padding:14px;margin-bottom:12px">
+      <div class="toolbar">
+        <div class="input-field">
+          <select id="rowDim">
+            <option value="Mes" selected>Mes</option>
+            <option value="Proveedor">Proveedor</option>
+            <option value="Centro">Centro</option>
+            <option value="Área">Área</option>
+            <option value="Comuna">Comuna</option>
+            <option value="Fuente">Fuente</option>
+          </select>
+          <label>Fila</label>
+        </div>
+
+        <div class="input-field">
+          <select id="colDim">
+            <option value="Proveedor" selected>Proveedor</option>
+            <option value="Mes">Mes</option>
+            <option value="Centro">Centro</option>
+            <option value="Área">Área</option>
+            <option value="Comuna">Comuna</option>
+            <option value="Fuente">Fuente</option>
+          </select>
+          <label>Columna</label>
+        </div>
+
+        <div class="input-field">
+          <select id="metric">
+            <option value="Tons" selected>Tons</option>
+            <option value="Asignado">Asignado</option>
+            <option value="Saldo">Saldo</option>
+          </select>
+          <label>Métrica</label>
+        </div>
+
+        <div class="input-field">
+          <select id="agg">
+            <option value="sum" selected>Suma</option>
+            <option value="avg">Promedio</option>
+            <option value="count">Conteo</option>
+            <option value="min">Mín</option>
+            <option value="max">Máx</option>
+          </select>
+          <label>Agregador</label>
+        </div>
+
+        <a class="btn teal" id="btnApply"><i class="material-icons left">refresh</i>Aplicar</a>
+
+        <div class="right-actions" style="margin-left:auto">
+          <span class="pill" id="badgeReg">0 registros</span>
+          <a class="btn grey darken-2" id="btnCSV"><i class="material-icons left">download</i>CSV</a>
+          <a class="btn grey darken-2" id="btnXLSX"><i class="material-icons left">file_download</i>XLSX</a>
         </div>
       </div>
-
-      <div class="col s12 m4 right-align" style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
-        <a class="btn teal" id="btnReload"><i class="material-icons left">refresh</i>ACTUALIZAR</a>
-        <a class="btn grey darken-2" href="./asignacion.html"><i class="material-icons left">assignment</i>IR A ASIGNACIÓN</a>
-      </div>
     </div>
 
-    <div class="row" id="kpis" style="margin-bottom:10px">
-      <div class="col s12 m3"><div class="kpi-card"><div class="kpi-title">Total tons</div><p class="kpi-value" id="kpiTons">0</p></div></div>
-      <div class="col s12 m3"><div class="kpi-card"><div class="kpi-title">Proveedores</div><p class="kpi-value" id="kpiProv">0</p></div></div>
-      <div class="col s12 m3"><div class="kpi-card"><div class="kpi-title">Centros</div><p class="kpi-value" id="kpiCentros">0</p></div></div>
-      <div class="col s12 m3"><div class="kpi-card"><div class="kpi-title">Meses</div><p class="kpi-value" id="kpiMeses">0</p></div></div>
-    </div>
+    <div id="pivotTable"></div>
 
-    <div id="invGrouped"></div>
-
-    <div class="row" style="margin-top:8px" id="flatWrapper">
-      <div class="col s12">
-        <table id="tablaInv" class="highlight display" style="width:100%">
-          <thead>
-            <tr>
-              <th>Mes</th><th>Proveedor</th><th>Código centro</th><th>Código área</th>
-              <th>Comuna</th><th>Tons</th><th>Asignado (mes)</th><th>Saldo (mes)</th><th>Fuente</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="pivotWrapper" style="display:none">
-      <div id="pivotUI" style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:10px"></div>
-      <div id="pivotDiag" class="grey-text" style="font-size:.85rem;margin-top:6px"></div>
-    </div>
-  </div>
-
-  <!-- Modal -->
-  <div id="modalAsignar" class="modal">
-    <div class="modal-content">
-      <h5>Asignar MMPP</h5>
-      <div class="row">
-        <div class="input-field col s6">
-          <input id="asig_mes" type="month"><label for="asig_mes" class="active">Mes de asignación</label>
-        </div>
-        <div class="input-field col s6">
-          <input id="asig_tons" type="number" step="0.01" min="0"><label for="asig_tons" class="active">Tons a asignar</label>
-        </div>
-      </div>
-      <p id="asig_info" class="grey-text"></p>
-    </div>
-    <div class="modal-footer">
-      <a href="#!" class="modal-close btn-flat">Cancelar</a>
-      <a href="#!" id="btnDoAssign" class="btn teal">Asignar</a>
+    <div style="margin:10px 0" class="footer-note">
+      Tip: puedes reordenar columnas arrastrando, y hacer <em>click</em> en los encabezados para ordenar. Doble click para auto-ajustar ancho.
     </div>
   </div>
 
   <!-- Libs -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-
-  <!-- PivotTable core JS (solo core, SIN locale) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.23.0/pivot.min.js"></script>
+  <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
+  <!-- SheetJS para exportar XLSX desde Tabulator -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <script>
     /* ================== CONFIG ================== */
@@ -137,49 +108,46 @@
 
     /* ================== HELPERS ================== */
     const $id = (x) => document.getElementById(x);
-    const $ = (s) => document.querySelector(s);
     const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-    const esc = (s='') => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
     const fmt = (n) => (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:2});
-    const qp = (name)=>{const u=new URL(location.href);return u.searchParams.get(name)||'';}
 
     function parseDateOrNull(d){ if(d===0||d==null||d==='') return null; const x=new Date(d); return (!Number.isNaN(x.getTime())&&x.getTime()!==0)?x:null; }
     function monthKey(d){ const x=parseDateOrNull(d); if(!x) return 's/fecha'; return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`; }
     function monthLabel(k){ if(!k||k==='s/fecha') return 's/FECHA'; const [y,m]=k.split('-'); return `${MES[+m-1]} ${y}`; }
 
     async function checkResponse(resp){
-      if(!resp.ok){const text=await resp.text().catch(()=> ''); throw new Error(`HTTP ${resp.status} - ${text}`)}
+      if(!resp.ok){const text=await resp.text().catch(()=> ''); throw new Error(\`HTTP \${resp.status} - \${text}\`)}
       if(resp.status===204) return null; return await resp.json().catch(()=> null);
     }
-    async function apiGet(path){ const r=await fetch(`${API_URL}${path}`); return checkResponse(r); }
+    async function apiGet(path){ const r=await fetch(\`\${API_URL}\${path}\`); return checkResponse(r); }
 
-    /* ================== FUENTES ================== */
+    /* ================== DATA SOURCES ================== */
     async function getOfertas(){
       const raw = await apiGet('/planificacion/ofertas');
       const arr = Array.isArray(raw?.items) ? raw.items : (Array.isArray(raw) ? raw : []);
       return arr.map(it=>{
         const mes = monthKey(it.mes || it.fecha || it.mesKey || '');
         return {
-          mes,
-          proveedor: it.proveedorNombre || it.proveedor || '',
-          centroCodigo: it.centroCodigo || '',
-          areaCodigo: it.areaCodigo || it.area || '',
-          comuna: it.comuna || it.centroComuna || '',
-          tons: Number(it.tons)||0,
-          fuente: it.fuente ? it.fuente[0].toUpperCase()+it.fuente.slice(1) : 'Disponibilidad'
+          Mes: mes,
+          Proveedor: it.proveedorNombre || it.proveedor || '',
+          Centro: it.centroCodigo || '',
+          Área: it.areaCodigo || it.area || '',
+          Comuna: it.comuna || it.centroComuna || '',
+          Tons: Number(it.tons)||0,
+          Fuente: it.fuente ? it.fuente[0].toUpperCase()+it.fuente.slice(1) : 'Disponibilidad'
         };
-      }).filter(r=>r.tons>0);
+      }).filter(r=>r.Tons>0);
     }
 
     async function getAsignacionesMap(){
-      const endpoint = (window.INV_ASIG_ENDPOINT || qp('asig') || '').trim();
+      const endpoint = (window.INV_ASIG_ENDPOINT || '').trim();
       if(!endpoint) return new Map();
       try{
         const raw=await apiGet(endpoint);
         const arr=Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
         const map=new Map();
         for(const it of arr){
-          const key = it.key || it.mesKey || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : monthKey(it.fecha || it.fechaPlan || it.fch));
+          const key = it.key || it.mesKey || (it.anio && it.mes ? \`\${it.anio}-\${String(it.mes).padStart(2,'0')}\` : monthKey(it.fecha || it.fechaPlan || it.fch));
           const val = Number(it.asignado ?? it.tons ?? it.total ?? it.valor ?? 0);
           if(key && Number.isFinite(val)) map.set(key, (map.get(key)||0) + val);
         }
@@ -187,270 +155,155 @@
       }catch(_e){ return new Map(); }
     }
 
-    /* ================== KPI ================== */
-    function renderKPIs(rows){
-      const total = rows.reduce((s,r)=>s+(Number(r.tons)||0),0);
-      const prov = new Set(rows.map(r=>r.proveedor||'').filter(Boolean)).size;
-      const centros = new Set(rows.map(r=>r.centroCodigo||'').filter(Boolean)).size;
-      const meses = new Set(rows.map(r=>r.mes||'s/fecha')).size;
-      $id('kpiTons').textContent = fmt(total);
-      $id('kpiProv').textContent = prov;
-      $id('kpiCentros').textContent = centros;
-      $id('kpiMeses').textContent = meses;
-    }
-
-    /* ================== TABLA ================== */
-    let dt=null;
-    function ensureDataTable(){
-      const jq=window.jQuery || window.$; if(!jq) return;
-      if(dt){ try{dt.destroy();}catch{} dt=null; }
-      dt = jq('#tablaInv').DataTable({
-        dom:'Bfrtip',
-        buttons:[{extend:'excelHtml5', title:'Inventario_MMPP'},{extend:'pdfHtml5', title:'Inventario_MMPP', orientation:'landscape', pageSize:'A4'}],
-        order:[[0,'asc'],[1,'asc']], pageLength:10, autoWidth:false,
-        language:{url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'},
-        columnDefs:[{targets:0,width:'110px'},{targets:[5,6,7],className:'right-align'}]
-      });
-    }
-    function calcMonthTotals(rows){
+    /* ================== PIVOT PREP ================== */
+    function monthTotals(rows){
       const m=new Map();
-      for(const r of rows){ const k=r.mes||'s/fecha'; m.set(k,(m.get(k)||0)+(Number(r.tons)||0)); }
+      for(const r of rows){ const k=r.Mes||'s/fecha'; m.set(k,(m.get(k)||0)+(Number(r.Tons)||0)); }
       return m;
     }
-    function fillDataTable(rows, asigMap, monthTotals){
-      const jq=window.jQuery || window.$; if(!jq) return;
-      const data = rows.map(r=>{
-        const asig = Number(asigMap.get(r.mes)||0);
-        const totalMes = Number(monthTotals.get(r.mes)||0);
-        const saldo = totalMes - asig;
-        return [esc(monthLabel(r.mes)), esc(r.proveedor||''), esc(r.centroCodigo||''), esc(r.areaCodigo||''), esc(r.comuna||''), fmt(r.tons), fmt(asig), fmt(saldo), esc(r.fuente||'')];
-      });
-      ensureDataTable(); dt.clear(); dt.rows.add(data).draw();
-    }
 
-    function filterRows(rows,q){
-      const s=String(q||'').trim().toLowerCase();
-      if(!s) return rows;
-      return rows.filter(r =>
-        (monthLabel(r.mes)).toLowerCase().includes(s) ||
-        (r.proveedor||'').toLowerCase().includes(s) ||
-        String(r.centroCodigo||'').toLowerCase().includes(s) ||
-        String(r.areaCodigo||'').toLowerCase().includes(s) ||
-        (r.comuna||'').toLowerCase().includes(s) ||
-        String(r.tons??'').toLowerCase().includes(s) ||
-        (r.fuente||'').toLowerCase().includes(s)
-      );
-    }
-
-    let assignCtx=null;
-
-    function renderGrouped(rows, asigMap){
-      const cont=$id('invGrouped');
-      const q=$id('invSearch')?.value || '';
-      const filtered=filterRows(rows,q);
-
-      const groups=new Map();
-      for(const r of filtered){ const k=r.mes||'s/fecha'; if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(r); }
-
-      const keys=[...groups.keys()].sort((a,b)=>{ if(a==='s/fecha') return 1; if(b==='s/fecha') return -1; return a.localeCompare(b); });
-
-      let html='';
-      for(const k of keys){
-        const items=groups.get(k).slice().sort((a,b)=>(a.proveedor||'').localeCompare(b.proveedor||'') || String(a.centroCodigo||'').localeCompare(String(b.centroCodigo||'')));
-        const subtotal=items.reduce((s,x)=>s+(Number(x.tons)||0),0);
-        const asig=Number(asigMap.get(k)||0);
-        const saldo=subtotal - asig;
-
-        html += `
-          <details>
-            <summary>
-              <div class="left-part"><div class="sign">+</div><div><strong>${esc(monthLabel(k))}</strong> • ${items.length} registros</div></div>
-              <div class="group-tags">
-                <span class="tag tag-sub" title="Subtotal disponible">${fmt(subtotal)} t</span>
-                <span class="tag tag-asig" title="Asignado en planificación">${fmt(asig)} t</span>
-                <span class="tag tag-saldo" title="Saldo (disp. - asignado)">${fmt(saldo)} t</span>
-              </div>
-            </summary>
-            <div class="group-table">
-              <div class="responsive-table">
-                <table class="striped highlight">
-                  <thead>
-                    <tr>
-                      <th>Proveedor</th><th>Código centro</th><th>Código área</th><th>Comuna</th><th class="right-align">Tons</th><th>Fuente</th><th class="right-align">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${items.map((r)=>`
-                      <tr>
-                        <td title="${esc(r.proveedor||'')}">${esc(r.proveedor||'')}</td>
-                        <td title="${esc(r.centroCodigo||'')}">${esc(r.centroCodigo||'')}</td>
-                        <td title="${esc(r.areaCodigo||'')}">${esc(r.areaCodigo||'')}</td>
-                        <td title="${esc(r.comuna||'')}">${esc(r.comuna||'')}</td>
-                        <td class="right-align" title="${fmt(r.tons)}">${fmt(r.tons)}</td>
-                        <td>${esc(r.fuente||'')}</td>
-                        <td class="right-align">
-                          <a href="#!" class="btn teal btn-assign" data-mes="${esc(k)}" data-proveedor="${esc(r.proveedor||'')}" data-tons="${Number(r.tons)||0}">
-                            <i class="material-icons">add</i> ASIGNAR
-                          </a>
-                        </td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                  <tfoot>
-                    <tr class="group-total-row"><td colspan="4" class="right-align">Subtotal</td><td class="right-align">${fmt(subtotal)}</td><td></td><td></td></tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-          </details>`;
-      }
-      cont.innerHTML = html || `<div class="grey-text">Sin registros para mostrar.</div>`;
-
-      cont.querySelectorAll('details').forEach(d=>{ const sign=d.querySelector('.sign'); const set=()=>sign.textContent=d.open?'−':'+'; d.addEventListener('toggle',set); set(); });
-
-      cont.querySelectorAll('.btn-assign').forEach(btn=>{
-        btn.addEventListener('click',(e)=>{
-          e.preventDefault();
-          const mesKey=btn.dataset.mes||'s/fecha';
-          assignCtx={mesKey, proveedor:btn.dataset.proveedor||'', tons:Number(btn.dataset.tons)||0};
-          $id('asig_info').textContent=`Proveedor: ${assignCtx.proveedor} • Mes: ${monthLabel(mesKey)} • Oferta: ${fmt(assignCtx.tons)} t`;
-          const parts=(mesKey && mesKey!=='s/fecha')?mesKey.split('-'):[];
-          $id('asig_mes').value=(parts.length===2)?`${parts[0]}-${parts[1]}`:'';
-          $id('asig_tons').value='';
-          (M.Modal.getInstance($id('modalAsignar'))||M.Modal.init($id('modalAsignar'))).open();
-        });
+    // Inserta Asignado y Saldo prorrateando por participación dentro del mes
+    function enrichMetrics(rows, asigMap, mTotals){
+      return rows.map(r=>{
+        const Tm = Number(mTotals.get(r.Mes)||0);
+        const Am = Number(asigMap.get(r.Mes)||0);
+        const Sm = Tm - Am;
+        const factor = Tm>0 ? ((Number(r.Tons)||0)/Tm) : 0;
+        const Asignado = Am*factor;
+        const Saldo = Sm*factor;
+        return {...r, Asignado, Saldo};
       });
     }
 
-    function setGroupedView(on){
-      const grouped=$id('invGrouped');
-      const flatWrap=$id('flatWrapper');
-      $id('btnExpandAll').style.display = on ? '' : 'none';
-      $id('btnCollapseAll').style.display = on ? '' : 'none';
-      $id('btnToggleGroup').classList.toggle('teal-text', on);
-      grouped.style.display = on ? 'block' : 'none';
-      flatWrap.style.display = on ? 'none' : 'block';
-    }
+    // Pivot simple: rowDim, colDim, metric, agg
+    function pivotData(rows, rowDim, colDim, metric, agg){
+      const rowKeys = [...new Set(rows.map(r=>r[rowDim] || '(vacío)'))];
+      const colKeys = [...new Set(rows.map(r=>r[colDim] || '(vacío)'))];
 
-    function setPivotView(on){
-      const g=$id('invGrouped'), f=$id('flatWrapper'), p=$id('pivotWrapper');
-      if(on){ g.style.display='none'; f.style.display='none'; p.style.display='block';
-              $id('btnExpandAll').style.display='none'; $id('btnCollapseAll').style.display='none'; }
-      else  { p.style.display='none';
-              if(__grouped){ g.style.display='block'; f.style.display='none'; $id('btnExpandAll').style.display=''; $id('btnCollapseAll').style.display=''; }
-              else{ g.style.display='none'; f.style.display='block'; $id('btnExpandAll').style.display='none'; $id('btnCollapseAll').style.display='none'; } }
-    }
-
-    /* ================== LOAD ================== */
-    let __rows=[], __asigMap=new Map(), __monthTotals=new Map(), __grouped=true, __pivotOn=false;
-
-    async function loadData(){
-      try{
-        const [rows, asigMap] = await Promise.all([ getOfertas(), getAsignacionesMap() ]);
-        __rows = rows; __asigMap = asigMap; __monthTotals = calcMonthTotals(__rows);
-        renderKPIs(__rows); fillDataTable(__rows, __asigMap, __monthTotals); renderGrouped(__rows, __asigMap);
-        if (__pivotOn) renderPivot(__rows, __asigMap, __monthTotals);
-      }catch(e){ console.error(e); M.toast?.({html:'No se pudo cargar el inventario',classes:'red'}); }
-    }
-
-    function buildPivotRecords(rows, asigMap, monthTotals){
-      const recs=[];
-      for(const r of rows){
-        const mes=r.mes, t=Number(r.tons)||0;
-        const Tm=Number(monthTotals.get(mes)||0), Am=Number(asigMap.get(mes)||0), Sm=Tm-Am;
-        const factor = Tm>0 ? (t/Tm) : 0;
-        const asigProp = Am*factor, saldoProp = Sm*factor;
-        const base={Mes:mes, Proveedor:r.proveedor||'(sin proveedor)', Centro:r.centroCodigo||'', Área:r.areaCodigo||'', Comuna:r.comuna||'', Fuente:r.fuente||''};
-        recs.push({...base, Métrica:'Tons', Valor:t});
-        recs.push({...base, Métrica:'Asignado', Valor:asigProp});
-        recs.push({...base, Métrica:'Saldo', Valor:saldoProp});
-      }
-      return recs;
-    }
-
-    // ======== PIVOT (core, sin locale) ========
-    function renderPivot(rows, asigMap, monthTotals){
-      const jq = window.jQuery || window.$;
-      if (!jq || !jq.fn) return;
-
-      const u = jq.pivotUtilities || {};
-      const data = buildPivotRecords(rows, asigMap, monthTotals);
-
-      const coreStrings = { rowSymbol:'→', colSymbol:'↓', uiRenderError:'Ocurrió un error durante el dibujado de la tabla dinámica.' };
-
-      const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-      const fmtMes = (k)=> (/^\d{4}-\d{2}$/.test(k) ? `${MESES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
-
-      const afterRender = ()=>{
-        document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
-          .forEach(cell=>{const t=cell.textContent.trim(); if(/^\d{4}-\d{2}$/.test(t)) cell.textContent=fmtMes(t);});
+      // helpers
+      const aggFns = {
+        sum: arr => arr.reduce((s,n)=>s+(Number(n)||0),0),
+        avg: arr => arr.length? (arr.reduce((s,n)=>s+(Number(n)||0),0)/arr.length):0,
+        count: arr => arr.length,
+        min: arr => arr.length? Math.min(...arr.map(n=>Number(n)||0)) : 0,
+        max: arr => arr.length? Math.max(...arr.map(n=>Number(n)||0)) : 0,
       };
+      const fn = aggFns[agg] || aggFns.sum;
 
-      const opts = {
-        rows:['Mes'], cols:['Métrica','Proveedor'], vals:['Valor'],
-        aggregatorName:'Sum', rendererName:'Table',
-        renderers:(u.renderers||{}), aggregators:(u.aggregators||{}),
-        localeStrings:coreStrings, rowOrder:'value_z-a', colOrder:'value_z-a', onRefresh:afterRender
-      };
-
-      const $el = jq('#pivotUI').empty();
-      try{
-        $el.pivotUI(data, opts, true); // <- sin pasar locale
-        const diagDiv=$id('pivotDiag'); if(diagDiv) diagDiv.textContent='Pivot renderizado OK';
-        console.info('PIVOT: render OK (core renderers)');
-      }catch(e){
-        console.error('PIVOT: fallo', e);
-        const wrap=$id('pivotWrapper');
-        if (wrap && !wrap.querySelector('.pivot-error')) {
-          const div=document.createElement('div');
-          div.className='pivot-error card-panel';
-          div.textContent=coreStrings.uiRenderError;
-          wrap.prepend(div);
+      const matrix = rowKeys.map(rk=>{
+        const rowObj = {[rowDim]: rk};
+        for(const ck of colKeys){
+          const slice = rows.filter(x => (x[rowDim]||'(vacío)')===rk && (x[colDim]||'(vacío)')===ck)
+                            .map(x => x[metric]);
+          rowObj[ck] = fn(slice);
         }
+        // total por fila
+        rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
+        return rowObj;
+      });
+
+      // total por columna (fila "Total")
+      const totalRow = {[rowDim]:'Total'};
+      for(const ck of colKeys){
+        totalRow[ck] = fn(matrix.map(r => r[ck]));
+      }
+      totalRow['Total'] = fn(matrix.map(r => r['Total']));
+      matrix.push(totalRow);
+
+      return {matrix, rowKeys, colKeys};
+    }
+
+    function makeColumns(rowDim, colKeys){
+      const cols = [
+        {title: rowDim, field: rowDim, frozen:true, headerSort:true, width: 190, formatter:(cell)=>{
+          const v = cell.getValue();
+          if(rowDim==='Mes' && /^\d{4}-\d{2}$/.test(v)) return monthLabel(v);
+          return v;
+        }}
+      ];
+      for(const ck of colKeys){
+        cols.push({
+          title: ck, field: ck, hozAlign:"right", headerHozAlign:"right",
+          headerSort:true, formatter:(cell)=> fmt(cell.getValue())
+        });
+      }
+      cols.push({title:'Total', field:'Total', hozAlign:"right", headerHozAlign:"right", headerSort:true, bottomCalc:"sum",
+                 formatter:(cell)=> fmt(cell.getValue())});
+      return cols;
+    }
+
+    /* ================== UI / TABULATOR ================== */
+    let table = null;
+    let __rowsRaw = []; // con Tons
+    let __rowsFull = []; // con Asignado/Saldo
+
+    function populateSelects(){
+      // nada especial, Materialize ya lo arma
+      const elems = document.querySelectorAll('select');
+      M.FormSelect.init(elems);
+    }
+
+    function applyPivot(){
+      const rowDim = $id('rowDim').value;
+      const colDim = $id('colDim').value;
+      const metric = $id('metric').value;
+      const agg = $id('agg').value;
+
+      // construir data
+      const {matrix, colKeys} = pivotData(__rowsFull, rowDim, colDim, metric, agg);
+      const columns = makeColumns(rowDim, colKeys);
+
+      if(table){
+        table.setColumns(columns);
+        table.setData(matrix);
+      }else{
+        table = new Tabulator("#pivotTable", {
+          data: matrix,
+          columns,
+          height: "70vh",
+          layout: "fitDataStretch",
+          resizableColumnFit: true,
+          movableColumns: true,
+          selectable: false,
+          columnDefaults:{ headerFilter:false },
+          index: rowDim,
+        });
+      }
+
+      // badge
+      const registros = __rowsRaw.length;
+      $id('badgeReg').textContent = `${registros.toLocaleString('es-CL')} registros`;
+    }
+
+    async function loadAll(){
+      try{
+        const [ofertas, asigMap] = await Promise.all([ getOfertas(), getAsignacionesMap() ]);
+        __rowsRaw = ofertas;
+        const mTotals = monthTotals(ofertas);
+        __rowsFull = enrichMetrics(ofertas, asigMap, mTotals);
+        applyPivot();
+      }catch(e){
+        console.error(e);
+        M.toast?.({html:'No se pudo cargar el inventario',classes:'red'});
       }
     }
 
-    /* ================== UI ================== */
+    /* ================== EVENTS ================== */
     document.addEventListener('DOMContentLoaded', ()=>{
-      M.Modal.init(document.querySelectorAll('.modal'));
-      setGroupedView(true);
+      populateSelects();
+      $id('btnApply').addEventListener('click', applyPivot);
 
-      $id('btnReload')?.addEventListener('click', loadData);
-
-      $id('btnToggleGroup')?.addEventListener('click', ()=>{
-        __grouped=!__grouped; setGroupedView(__grouped);
-        if(__grouped) renderGrouped(__rows, __asigMap);
+      $id('btnCSV').addEventListener('click', ()=>{
+        if(!table) return;
+        table.download("csv", "inventario_pivot.csv");
       });
 
-      $id('btnTogglePivot')?.addEventListener('click', ()=>{
-        __pivotOn=!__pivotOn; setPivotView(__pivotOn);
-        if (__pivotOn) renderPivot(__rows, __asigMap, __monthTotals);
+      $id('btnXLSX').addEventListener('click', ()=>{
+        if(!table) return;
+        table.download("xlsx", "inventario_pivot.xlsx", {sheetName:"Pivot"});
       });
 
-      $id('invSearch')?.addEventListener('input', ()=>{
-        if(__pivotOn) return;
-        if(__grouped) renderGrouped(__rows, __asigMap);
-        else { const jq=window.jQuery||window.$; if(jq && dt) dt.search($id('invSearch').value).draw(); }
-      });
-
-      $id('btnExpandAll')?.addEventListener('click', ()=>{ document.querySelectorAll('#invGrouped details').forEach(d=>d.open=true); });
-      $id('btnCollapseAll')?.addEventListener('click', ()=>{ document.querySelectorAll('#invGrouped details').forEach(d=>d.open=false); });
-
-      $id('btnDoAssign')?.addEventListener('click', async ()=>{
-        const mesVal=$id('asig_mes').value; const tonsVal=Number($id('asig_tons').value||0);
-        if(!mesVal || !Number.isFinite(tonsVal) || tonsVal<=0){ M.toast?.({html:'Completa mes y toneladas válidas',classes:'red'}); return; }
-        if(!assignCtx || !assignCtx.proveedor){ M.toast?.({html:'Proveedor inválido',classes:'red'}); return; }
-        const btn=$id('btnDoAssign'); btn.disabled=true;
-        try{
-          const resp=await fetch(`${API_URL}/asignaciones`, {method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({mesKey:mesVal, proveedorNombre:assignCtx.proveedor, tons:tonsVal, fuente:'ui-inventario'})});
-          if(!resp.ok){ const t=await resp.text().catch(()=> ''); throw new Error(`HTTP ${resp.status} - ${t}`); }
-          M.toast?.({html:'Asignación registrada',classes:'teal'}); M.Modal.getInstance($id('modalAsignar'))?.close(); await loadData();
-        }catch(e){ console.error(e); M.toast?.({html:'Error guardando asignación',classes:'red'}); }
-        finally{ btn.disabled=false; }
-      });
-
-      loadData();
+      loadAll();
     });
   </script>
 </body>
