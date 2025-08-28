@@ -1,10 +1,11 @@
 // /js/abastecimiento/contactos/form-contacto.js
-import { apiCreateContacto, apiUpdateContacto, apiDeleteContacto } from '../../core/api.js';
+import { apiCreateContacto, apiUpdateContacto, apiDeleteContacto, apiGetVisitasByContacto } from '../../core/api.js';
 import { state, $, getVal, setVal, slug } from './state.js';
 import { cargarContactosGuardados } from './data.js';
 import { syncHiddenFromSelect, mostrarCentrosDeProveedor, resetSelectCentros } from './proveedores.js';
-import { comunaPorCodigo } from './normalizers.js';
+import { comunaPorCodigo, centroCodigoById } from './normalizers.js';
 import { renderTablaContactos } from './tabla.js';
+import { abrirModalVisita } from '../visitas/ui.js';
 
 const isValidObjectId = (s) => typeof s === 'string' && /^[0-9a-fA-F]{24}$/.test(s);
 
@@ -14,8 +15,37 @@ const MES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto
 const pad2 = (n)=>String(n).padStart(2,'0');
 const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
 
-/* ---------- Helpers ---------- */
-const findContacto = (id) => (state.contactosGuardados||[]).find(x => String(x._id) === String(id)) || null;
+/* ---------- CSS para mini acciones en la grilla de disponibilidades ---------- */
+(function injectMiniStyles () {
+  const css = `
+    #asigHist .mini-actions a { display:inline-block; margin:0 6px; cursor:pointer; }
+    #asigHist .mini-actions i { font-size:18px; vertical-align:middle; }
+    #asigHist table td, #asigHist table th { padding:10px 12px; }
+    #asigHist .num { text-align:right; }
+  `;
+  if (!document.getElementById('disp-mini-styles')) {
+    const s = document.createElement('style');
+    s.id = 'disp-mini-styles';
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+})();
+
+/* ---------- helpers comunes ---------- */
+const esc = (s='') => String(s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+
+const fmtISOfechaHora = (d) => {
+  const x = (d instanceof Date) ? d : new Date(d);
+  if (Number.isNaN(x.getTime())) return '';
+  const y = x.getFullYear();
+  const m = String(x.getMonth() + 1).padStart(2, '0');
+  const dd = String(x.getDate()).padStart(2, '0');
+  const hh = String(x.getHours()).padStart(2, '0');
+  const mm = String(x.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${dd} ${hh}:${mm}`;
+};
 
 /* ---------- API helpers para DISPONIBILIDADES ---------- */
 // aplanar cualquier formato de _id
@@ -42,7 +72,7 @@ async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio, m
   if (from)         q.set('from', from);
   if (to)           q.set('to', to);
   if (anio)         q.set('anio', anio);
-  if (mesKey)       q.set('mesKey', mesKey); // ← resolver por mesKey
+  if (mesKey)       q.set('mesKey', mesKey); // <- soporte para resolver por mesKey
 
   try {
     const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
@@ -176,85 +206,130 @@ async function pintarHistorialEdicion(contacto){
   }
 }
 
-function hookDetalleHistorial(){
-  const body = document.getElementById('detalleContactoBody');
-  if(!body) return;
-  const obs = new MutationObserver(async ()=>{
-    const c = state.contactoActual; if(!c) return;
-    if(body.querySelector('#detalleAsignaciones')) return;
-
-    const wrap = document.createElement('div');
-    wrap.id='detalleAsignaciones';
-    wrap.innerHTML = `
-      <h6 class="grey-text text-darken-2" style="margin-top:12px">Disponibilidad registrada</h6>
-      <div id="detalleAsignacionesTable" class="card-panel grey lighten-4" style="padding:8px 12px">
-        <span class="grey-text">Cargando disponibilidad...</span>
-      </div>`;
-    body.appendChild(wrap);
-
-    try {
-      const proveedorKey = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
-      const centroId = c.centroId || null;
-
-      if (!proveedorKey && !centroId) {
-        body.querySelector('#detalleAsignacionesTable').innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
-        return;
-      }
-
-      const lista = await fetchDisponibilidades({ proveedorKey, centroId });
-      const html = renderAsignaciones(lista)
-        .replace(/<th[^>]*>Opciones<\/th>/,'<th></th>')
-        .replace(/<td class="mini-actions">[\s\S]*?<\/td>/g,'<td></td>');
-      body.querySelector('#detalleAsignacionesTable').innerHTML = html;
-    } catch(e) {
-      console.error(e);
-      body.querySelector('#detalleAsignacionesTable').innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
-    }
-  });
-  obs.observe(body, {childList:true, subtree:true});
-}
-
 /* ---------- Utilidades de formulario ---------- */
 function clearCentroHidden(){ setVal(['centroId'],''); setVal(['centroCodigo'],''); setVal(['centroComuna'],''); setVal(['centroHectareas'],''); }
 function clearProveedorHidden(){ setVal(['proveedorKey'],''); setVal(['proveedorId'],''); setVal(['proveedorNombre'],''); }
 
-/* ---------- Puente de eventos (una sola vez, sin imports de Visitas) ---------- */
-function wireContactEventsOnce(){
-  if (window.__contactos_form_events) return;
-  window.__contactos_form_events = true;
-
-  // Ver detalle → solo setear el contacto actual (Visitas abre el modal)
-  document.addEventListener('contacto:view', (e)=>{
-    const c = e.detail?.contacto || findContacto(e.detail?.id);
-    if (!c) return M.toast?.({ html:'Contacto no encontrado', classes:'red' });
-    state.contactoActual = c;
-  });
-
-  // Registrar visita → opcionalmente guarda el contacto actual
-  document.addEventListener('contacto:visita', (e)=>{
-    const c = e.detail?.contacto || findContacto(e.detail?.id);
-    if (c) state.contactoActual = c;
-  });
-
-  // Editar → abre este formulario
-  document.addEventListener('contacto:edit', (e)=>{
-    const c = e.detail?.contacto || findContacto(e.detail?.id);
-    if (!c) return M.toast?.({ html:'Contacto no encontrado', classes:'red' });
-    abrirEdicion(c);
-  });
-
-  // Eliminar → confirma y borra
-  document.addEventListener('contacto:delete', async (e)=>{
-    const id = e.detail?.id || e.detail?.contacto?._id;
-    if (!id) return M.toast?.({ html:'ID inválido', classes:'red' });
-    if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
-    try {
-      await eliminarContacto(id);
-    } catch (err) {
-      console.error(err);
-      M.toast?.({ html:'No se pudo eliminar', classes:'red' });
+/* ================== Detalle (modal del ojo) ================== */
+function comunasDelProveedor(proveedorKey) {
+  const key = proveedorKey?.length ? proveedorKey : null;
+  const comunas = new Set();
+  for (const c of state.listaCentros || []) {
+    const k = c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '');
+    if (!key || k === key) {
+      const comuna = (c.comuna || '').trim();
+      if (comuna) comunas.add(comuna);
     }
-  });
+  }
+  return Array.from(comunas);
+}
+
+function miniTimelineHTML(visitas = []) {
+  const arr = Array.isArray(visitas) ? visitas : (visitas?.items || []);
+  if (!arr.length) return '<div class="text-soft">Sin visitas registradas</div>';
+  const filas = arr.slice(0, 3).map((v) => {
+    const code = v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '') || '-';
+    const fechaStr = (v.fecha ? String(v.fecha).slice(0,10) : '');
+    return `
+      <div class="row" style="margin-bottom:.35rem">
+        <div class="col s4"><strong>${fechaStr || '-'}</strong></div>
+        <div class="col s4">${esc(code)}</div>
+        <div class="col s4">${esc(v.estado || '-')}</div>
+        <div class="col s12"><span class="text-soft">${v.tonsComprometidas ? (v.tonsComprometidas + ' t • ') : ''}${esc(v.observaciones || '')}</span></div>
+      </div>
+    `;
+  }).join('');
+  return filas + `<a class="btn btn--ghost" id="btnVerVisitas">Ver todas</a>`;
+}
+
+function renderAsignacionesSimple(list){
+  if(!list?.length) return '<span class="grey-text">Sin disponibilidades registradas.</span>';
+  const rows = list.map(a => `
+    <tr>
+      <td>${MES[a.mes]||a.mes} ${a.anio||''}</td>
+      <td class="right-align">${Number(a.tons||0).toLocaleString('es-CL',{maximumFractionDigits:2})}</td>
+      <td>${esc(a.estado||'')}</td>
+      <td class="right-align"></td>
+    </tr>
+  `).join('');
+  return `
+    <table class="striped highlight" style="margin:6px 0">
+      <thead>
+        <tr><th>Mes</th><th class="right-align">Tons</th><th>Estado</th><th class="right-align" style="width:100px">Opciones</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+export async function abrirDetalleContacto(c) {
+  const body = $('#detalleContactoBody'); if (!body) return;
+
+  const fechaFmt = fmtISOfechaHora(c.createdAt || c.fecha || Date.now());
+  const comunas = comunasDelProveedor(c.proveedorKey || slug(c.proveedorNombre||''));
+  const chips = comunas.length
+    ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${esc(x)}</span>`).join('')
+    : '<span class="text-soft">Sin centros asociados</span>';
+
+  // últimas visitas (para el timeline)
+  let visitas = [];
+  try { visitas = await apiGetVisitasByContacto(c._id) || []; } catch {}
+
+  // estructura principal del modal
+  body.innerHTML = `
+    <div class="mb-4">
+      <h6 class="text-soft" style="margin:0 0 .5rem">Comunas con centros del proveedor</h6>
+      ${chips}
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+      <div><strong>Fecha:</strong> ${esc(fechaFmt)}</div>
+      <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
+      <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
+      <div><strong>Disposición:</strong> ${esc(c.dispuestoVender || '-')}</div>
+      <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
+      <div style="grid-column:1/-1;"><strong>Notas:</strong> ${c.notas ? esc(c.notas) : '<span class="text-soft">Sin notas</span>'}</div>
+      <div style="grid-column:1/-1;"><strong>Contacto:</strong> ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).map(esc).join(' • ') || '-'}</div>
+    </div>
+
+    <div class="mb-4" style="margin-top:1rem;">
+      <h6 class="text-soft" style="margin:0 0 .5rem">Disponibilidad registrada</h6>
+      <div id="detalleAsignacionesTable" class="card-panel grey lighten-4" style="padding:8px 12px">
+        <span class="grey-text">Cargando disponibilidad...</span>
+      </div>
+    </div>
+
+    <div class="mb-4" style="margin-top:1rem;">
+      <h6 class="text-soft" style="margin:0 0 .5rem">Últimas visitas</h6>
+      ${miniTimelineHTML(visitas)}
+    </div>
+
+    <div class="right-align">
+      <button class="btn teal" id="btnNuevaVisita" data-id="${c._id}">
+        <i class="material-icons left">event_available</i>Registrar visita
+      </button>
+    </div>
+  `;
+
+  // cargar disponibilidades usando TU helper fetchDisponibilidades()
+  try {
+    const proveedorKey = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
+    const centroId = c.centroId || null;
+    const lista = await fetchDisponibilidades({ proveedorKey, centroId });
+    const mapped = (lista||[]).map(x => ({
+      anio: x.anio, mes: x.mes, tons: Number(x.tons||0), estado: x.estado || 'disponible'
+    }));
+    const cont = document.getElementById('detalleAsignacionesTable');
+    if (cont) cont.innerHTML = renderAsignacionesSimple(mapped);
+  } catch (e) {
+    const cont = document.getElementById('detalleAsignacionesTable');
+    if (cont) cont.innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
+  }
+
+  // botón registrar visita
+  $('#btnNuevaVisita')?.addEventListener('click', () => abrirModalVisita(c));
+
+  // abrir modal
+  (M.Modal.getInstance(document.getElementById('modalDetalleContacto')) || M.Modal.init(document.getElementById('modalDetalleContacto'))).open();
 }
 
 /* ---------- Setup ---------- */
@@ -263,8 +338,12 @@ export function setupFormulario() {
   state.editId = null;
   state.dispEditId = null; // para PATCH
 
-  wireContactEventsOnce(); // <- conecta eventos contacto:* una sola vez
-  hookDetalleHistorial();
+  // setear contactoActual al pulsar "ver" (útil para detalle)
+  document.addEventListener('click', (e)=>{
+    const a = e.target.closest?.('a.icon-action.ver'); if(!a) return;
+    const id = a.dataset.id;
+    state.contactoActual = (state.contactosGuardados||[]).find(x=>String(x._id)===String(id)) || null;
+  }, true);
 
   const selCentro = $('#selectCentro');
   selCentro?.addEventListener('change', () => syncHiddenFromSelect(selCentro));
