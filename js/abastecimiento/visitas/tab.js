@@ -3,7 +3,6 @@ export {
   initVisitasTab,
   renderTablaVisitas,
   forceAdjustVisitas,
-  abrirDetalleContacto,
   abrirModalVisita,
   setupFormularioVisita,
 } from './ui.js';
