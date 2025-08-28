@@ -148,7 +148,6 @@
 
       const u = $.pivotUtilities;
 
-      // Asegura symbols en cualquier objeto localeStrings que exista
       function ensureLocaleStrings(obj){
         if(!obj) obj = {};
         if(!obj.rowSymbol) obj.rowSymbol = '→';
@@ -156,7 +155,6 @@
         return obj;
       }
 
-      // Parchea defaults usados por la lib
       if(!u.options) u.options = {};
       u.options.localeStrings = ensureLocaleStrings(u.options.localeStrings);
 
@@ -167,22 +165,16 @@
         });
       }
 
-      // --- WRAP global $.fn.pivotUI ---
       if ($.fn && typeof $.fn.pivotUI === 'function') {
         const _orig = $.fn.pivotUI;
         $.fn.pivotUI = function(input, opts, overwrite, locale){
           opts = opts || {};
           opts.localeStrings = ensureLocaleStrings(opts.localeStrings);
-          try {
-            return _orig.call(this, input, opts, overwrite, locale);
-          } catch (e) {
-            console.error('PIVOT wrapper (global) capturó excepción:', e);
-            throw e;
-          }
+          try { return _orig.call(this, input, opts, overwrite, locale); }
+          catch (e) { console.error('PIVOT wrapper (global) capturó excepción:', e); throw e; }
         };
       }
 
-      // --- WRAP los binders por locale (u.locales.*.pivotUI) ---
       if (u.locales) {
         Object.keys(u.locales).forEach(k=>{
           const L = u.locales[k];
@@ -191,12 +183,8 @@
             L.pivotUI = function($el, input, opts, overwrite){
               opts = opts || {};
               opts.localeStrings = ensureLocaleStrings(opts.localeStrings);
-              try {
-                return _lp($el, input, opts, overwrite);
-              } catch (e) {
-                console.error(`PIVOT wrapper (locale ${k}) capturó excepción:`, e);
-                throw e;
-              }
+              try { return _lp($el, input, opts, overwrite); }
+              catch (e) { console.error(`PIVOT wrapper (locale ${k}) capturó excepción:`, e); throw e; }
             };
           }
         });
@@ -435,6 +423,17 @@
       });
     }
 
+    /* ======= VISTAS ======= */
+    function setGroupedView(on){
+      const grouped=$id('invGrouped');
+      const flatWrap=$id('flatWrapper');
+      $id('btnExpandAll').style.display = on ? '' : 'none';
+      $id('btnCollapseAll').style.display = on ? '' : 'none';
+      $id('btnToggleGroup').classList.toggle('teal-text', on);
+      grouped.style.display = on ? 'block' : 'none';
+      flatWrap.style.display = on ? 'none' : 'block';
+    }
+
     function setPivotView(on){
       const g=$id('invGrouped'), f=$id('flatWrapper'), p=$id('pivotWrapper');
       if(on){ g.style.display='none'; f.style.display='none'; p.style.display='block';
@@ -479,7 +478,6 @@
 
       const data = buildPivotRecords(rows, asigMap, monthTotals);
 
-      // strings seguros
       const safeStrings = Object.assign(
         {rowSymbol:'→', colSymbol:'↓', uiRenderError:'Ocurrió un error durante el dibujado de la tabla dinámica.'},
         (loc && loc.localeStrings) ? loc.localeStrings : (u.options && u.options.localeStrings ? u.options.localeStrings : {})
@@ -504,15 +502,16 @@
 
       const $el = jq('#pivotUI').empty();
       const diagDiv=$id('pivotDiag');
+      console.groupCollapsed('PIVOT: carga de librerías');
+      console.log('jQuery?', !!window.jQuery, 'ver', window.jQuery?.fn?.jquery);
+      console.log('pivotUtilities?', !!(window.jQuery?.pivotUtilities));
+      console.log('locales.es?', !!(window.jQuery?.pivotUtilities?.locales?.es));
+      console.groupEnd();
       console.log('PIVOT: options finales', opts);
 
       try{
-        // podemos usar el binder localizado, ya está envuelto por el wrapper de arriba
-        if (loc && typeof loc.pivotUI === 'function') {
-          loc.pivotUI($el, data, opts, true);
-        } else {
-          $el.pivotUI(data, opts, true);
-        }
+        if (loc && typeof loc.pivotUI === 'function') loc.pivotUI($el, data, opts, true);
+        else $el.pivotUI(data, opts, true);
         diagDiv.textContent='Pivot renderizado OK';
         console.info('PIVOT: render OK');
       }catch(e){
@@ -528,15 +527,6 @@
       }
     }
 
-    function setPivotView(on){
-      const g=$id('invGrouped'), f=$id('flatWrapper'), p=$id('pivotWrapper');
-      if(on){ g.style.display='none'; f.style.display='none'; p.style.display='block';
-              $id('btnExpandAll').style.display='none'; $id('btnCollapseAll').style.display='none'; }
-      else  { p.style.display='none';
-              if(__grouped){ g.style.display='block'; f.style.display='none'; $id('btnExpandAll').style.display=''; $id('btnCollapseAll').style.display=''; }
-              else{ g.style.display='none'; f.style.display='block'; $id('btnExpandAll').style.display='none'; $id('btnCollapseAll').style.display='none'; } }
-    }
-
     /* ================== UI ================== */
     document.addEventListener('DOMContentLoaded', ()=>{
       console.groupCollapsed('PIVOT: carga de librerías');
@@ -546,7 +536,7 @@
       console.groupEnd();
 
       M.Modal.init(document.querySelectorAll('.modal'));
-      setGroupedView(true);
+      setGroupedView(true);   // << ya existe
 
       $id('btnReload')?.addEventListener('click', loadData);
 
@@ -558,7 +548,7 @@
       $id('btnTogglePivot')?.addEventListener('click', ()=>{
         __pivotOn=!__pivotOn; console.log('PIVOT: toggle ->', __pivotOn);
         setPivotView(__pivotOn);
-        if(__pivotOn) renderPivot(__rows, __asigMap, __monthTotals);
+        if (__pivotOn) renderPivot(__rows, __asigMap, __monthTotals);
       });
 
       $id('invSearch')?.addEventListener('input', ()=>{
