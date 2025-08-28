@@ -12,6 +12,9 @@
   <!-- DataTables + Buttons -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+  <!-- Extras para “tabla dinámica” -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.7.0/css/colReorder.dataTables.min.css">
 
   <style>
     body{background:#fafafa}
@@ -42,6 +45,12 @@
 
     /* Botón asignar en fila */
     .btn-assign { display:inline-flex; align-items:center; gap:6px; }
+
+    /* Fila de filtros DataTables */
+    #tablaInv thead tr.filters th { padding: 6px 8px; }
+    #tablaInv thead tr.filters input {
+      width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 6px 8px; font-size: .9rem;
+    }
   </style>
 </head>
 <body>
@@ -89,7 +98,7 @@
     <!-- TABLA PLANA -->
     <div class="row" style="margin-top:8px; display:none" id="flatWrapper">
       <div class="col s12">
-        <table id="tablaInv" class="highlight display" style="width:100%">
+        <table id="tablaInv" class="display" style="width:100%">
           <thead>
             <tr>
               <th>Mes</th>
@@ -101,6 +110,17 @@
               <th>Asignado (mes)</th>
               <th>Saldo (mes)</th>
               <th>Fuente</th>
+            </tr>
+            <tr class="filters">
+              <th><input type="text" placeholder="Filtrar mes" /></th>
+              <th><input type="text" placeholder="Filtrar proveedor" /></th>
+              <th><input type="text" placeholder="Filtrar centro" /></th>
+              <th><input type="text" placeholder="Filtrar área" /></th>
+              <th><input type="text" placeholder="Filtrar comuna" /></th>
+              <th><input type="text" placeholder="≥ tons" /></th>
+              <th><input type="text" placeholder="≥ asig." /></th>
+              <th><input type="text" placeholder="≥ saldo" /></th>
+              <th><input type="text" placeholder="Filtrar fuente" /></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -139,11 +159,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
+  <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
+  <script src="https://cdn.datatables.net/colreorder/1.7.0/js/dataTables.colReorder.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
   <script>
     /* ================== CONFIG ================== */
-    // Backend activo en Vercel
     const API_URL = 'https://backend-appmitylus.vercel.app/api';
     // endpoint asignado (mesKey → total asignado)
     window.INV_ASIG_ENDPOINT = '/asignaciones/map';
@@ -151,25 +173,35 @@
     /* ================== HELPERS ================== */
     const $id = (x) => document.getElementById(x);
     const $ = (s) => document.querySelector(s);
-    const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
     const esc = (s='') => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
     const fmt = (n) => (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:2});
     function qp(name){const u=new URL(location.href);return u.searchParams.get(name)||'';}
 
-    function parseDateOrNull(d){
-      if(d===0 || d===null || d===undefined || d==='') return null;
-      const x = new Date(d);
-      return (!Number.isNaN(x.getTime()) && x.getTime() !== 0) ? x : null;
-    }
-    function monthKey(d){
-      const x = parseDateOrNull(d);
-      if(!x) return 's/fecha';
-      return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`;
-    }
+    const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const pad2 = (n)=>String(n).padStart(2,'0');
+
     function monthLabel(k){
       if(!k || k==='s/fecha') return 's/FECHA';
       const [y,m] = k.split('-');
       return `${MES[+m-1]} ${y}`;
+    }
+
+    // ¡No parsear 'YYYY-MM' con Date local! → usar clave directa o UTC
+    function monthKey(d){
+      if (typeof d === 'string' && /^\d{4}-\d{2}$/.test(d)) return d;
+      const x = (d instanceof Date) ? d : new Date(d);
+      if (Number.isNaN(x.getTime())) return 's/fecha';
+      return `${x.getUTCFullYear()}-${pad2(x.getUTCMonth()+1)}`;
+    }
+
+    function resolveMesKey(it){
+      if (it.mesKey && /^\d{4}-\d{2}$/.test(it.mesKey)) return it.mesKey;
+      if (Number.isInteger(it.anio) && Number.isInteger(it.mes) && it.mes>=1 && it.mes<=12) {
+        return `${it.anio}-${pad2(it.mes)}`;
+      }
+      if (typeof it.mes === 'string' && /^\d{4}-\d{2}$/.test(it.mes)) return it.mes;
+      if (it.fecha || it.fch || it.fechaPlan) return monthKey(it.fecha || it.fch || it.fechaPlan);
+      return 's/fecha';
     }
 
     async function checkResponse(resp){
@@ -180,27 +212,37 @@
 
     /* ================== FUENTES ================== */
 
-    // 1) Ofertas (exclusivo: vienen de disponibilidades)
+    // 1) Ofertas (inventario base)
     async function getOfertas(){
-      // puedes agregar filtros si quieres: ?minTons=1&from=YYYY-MM&to=YYYY-MM
       const raw = await apiGet('/planificacion/ofertas');
       const arr = Array.isArray(raw?.items) ? raw.items : (Array.isArray(raw) ? raw : []);
-      // Normalizar a filas de inventario
       return arr.map(it=>{
-        const mes = monthKey(it.mes || it.fecha || it.mesKey || '');
+        const mes = resolveMesKey(it); // FIX mes
         return {
           mes,
           proveedor: it.proveedorNombre || it.proveedor || '',
           centroCodigo: it.centroCodigo || '',
           areaCodigo: it.areaCodigo || it.area || '',
           comuna: it.comuna || it.centroComuna || '',
-          tons: Number(it.tons)||0,
+          tons: Number(it.tonsDisponible ?? it.tons ?? 0) || 0,
           fuente: it.fuente ? it.fuente[0].toUpperCase()+it.fuente.slice(1) : 'Disponibilidad'
         };
       }).filter(r=>r.tons>0);
     }
 
-    // 2) Asignación por mes (lee /asignaciones/map)
+    // (Opcional pero recomendado) Agregar por clave compuesta para evitar duplicados
+    function aggregateRows(rows){
+      const map = new Map();
+      for(const r of rows){
+        const key = [r.mes, r.proveedor, r.centroCodigo, r.areaCodigo, r.comuna].join('|');
+        const prev = map.get(key) || { ...r, tons: 0 };
+        prev.tons += Number(r.tons)||0;
+        map.set(key, prev);
+      }
+      return [...map.values()];
+    }
+
+    // 2) Asignación por mes
     async function getAsignacionesMap(){
       const endpoint = (window.INV_ASIG_ENDPOINT || qp('asig') || '').trim();
       if(!endpoint) return new Map();
@@ -209,7 +251,7 @@
         const arr=Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
         const map=new Map();
         for(const it of arr){
-          const key = it.key || it.mesKey || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : monthKey(it.fecha || it.fechaPlan || it.fch));
+          const key = resolveMesKey(it);
           const val = Number(it.asignado ?? it.tons ?? it.total ?? it.valor ?? 0);
           if(key && Number.isFinite(val)) map.set(key, (map.get(key)||0) + val);
         }
@@ -231,18 +273,74 @@
 
     /* ================== TABLA ================== */
     let dt=null;
+
+    // custom filter para columnas numéricas (≥ mínimo)
+    function registerNumericFilters(){
+      const jq = window.jQuery || window.$;
+      if (!jq) return;
+      const getMin = (idx) => {
+        const input = document.querySelector(`#tablaInv thead tr.filters th:nth-child(${idx+1}) input`);
+        if (!input) return NaN;
+        const v = String(input.value||'').trim().replace(/\./g,'').replace(',', '.');
+        const n = Number(v);
+        return Number.isFinite(n) ? n : NaN;
+      };
+      jq.fn.dataTable.ext.search = jq.fn.dataTable.ext.search || [];
+      // Evitar duplicar el filtro si se reinicia la tabla
+      jq.fn.dataTable.ext.search = jq.fn.dataTable.ext.search.filter(fn => !fn.__invNumericFilter);
+      const fn = function(settings, data){
+        // data[5]=tons, data[6]=asig, data[7]=saldo (formateados)
+        const parse = (s)=> Number(String(s).replace(/<[^>]+>/g,'').replace(/\./g,'').replace(',', '.')) || 0;
+        const mins = [5,6,7].map(getMin);
+        const vals = [ parse(data[5]), parse(data[6]), parse(data[7]) ];
+        for (let i=0;i<3;i++){
+          if (Number.isFinite(mins[i]) && vals[i] < mins[i]) return false;
+        }
+        return true;
+      };
+      fn.__invNumericFilter = true;
+      jq.fn.dataTable.ext.search.push(fn);
+
+      // redibujar al cambiar inputs numéricos
+      [6,7,8].forEach((n)=>{ // nth-child index 6..8 → cols 5..7
+        const input = document.querySelector(`#tablaInv thead tr.filters th:nth-child(${n}) input`);
+        input?.addEventListener('keyup', ()=> dt?.draw());
+        input?.addEventListener('change', ()=> dt?.draw());
+      });
+    }
+
     function ensureDataTable(){
       const jq=window.jQuery || window.$; if(!jq) return;
       if(dt){ try{dt.destroy();}catch{} dt=null; }
+
+      // Filtros de texto por columna
+      jq('#tablaInv thead tr.filters th').each(function(i){
+        const input = jq(this).find('input');
+        if (!input.length) return;
+        // para las numéricas usamos filtro custom; aquí solo texto
+        if (![5,6,7].includes(i)) {
+          jq(input).off('keyup change').on('keyup change', function(){
+            dt.column(i).search(this.value).draw();
+          });
+        }
+      });
+
+      registerNumericFilters();
+
       dt = jq('#tablaInv').DataTable({
         dom:'Bfrtip',
         buttons:[
           {extend:'excelHtml5', title:'Inventario_MMPP'},
-          {extend:'pdfHtml5', title:'Inventario_MMPP', orientation:'landscape', pageSize:'A4'}
+          {extend:'pdfHtml5',   title:'Inventario_MMPP', orientation:'landscape', pageSize:'A4'},
+          {extend:'colvis',     text:'Columnas'}
         ],
         order:[[0,'asc'],[1,'asc']],
-        pageLength:10,
+        pageLength:25,
+        lengthMenu:[[10,25,50,100,-1],[10,25,50,100,'Todos']],
+        stateSave:true,
         autoWidth:false,
+        fixedHeader:true,
+        colReorder:true,
         language:{url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'},
         columnDefs:[
           {targets:0, width:'110px'},
@@ -250,15 +348,16 @@
         ]
       });
     }
+
     function fillDataTable(rows, asigMap, monthTotals){
       const jq=window.jQuery || window.$; if(!jq) return;
 
       const data = rows.map(r=>{
-        const asig = Number(asigMap.get(r.mes)||0);
-        const totalMes = Number(monthTotals.get(r.mes)||0);
-        const saldo = totalMes - asig;
+        const asig   = Number(asigMap.get(r.mes)||0);
+        const totalM = Number(monthTotals.get(r.mes)||0);
+        const saldo  = totalM - asig;
         return [
-          esc(monthLabel(r.mes)),
+          `<span data-order="${r.mes}">${esc(monthLabel(r.mes))}</span>`,
           esc(r.proveedor||''),
           esc(r.centroCodigo||''),
           esc(r.areaCodigo||''),
@@ -445,7 +544,7 @@
           getAsignacionesMap()
         ]);
 
-        __rows = rows;
+        __rows = aggregateRows(rows); // ← evita duplicados
         __asigMap = asigMap;
         __monthTotals = calcMonthTotals(__rows);
 
