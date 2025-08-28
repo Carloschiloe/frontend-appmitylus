@@ -2,7 +2,8 @@
 import { state, $ } from './state.js';
 import { centroCodigoById, comunaPorCodigo } from './normalizers.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
-import { abrirDetalleContacto, abrirModalVisita } from '../visitas/tab.js';
+import { abrirDetalleContacto } from './form-contacto.js';
+import { abrirModalVisita } from '../visitas/ui.js';
 
 /* ---------- Config local ---------- */
 const API_BASE = window.API_URL || '/api';
@@ -343,3 +344,4 @@ document.addEventListener('reload-tabla-contactos', () => {
   console.debug('[tablaContactos] reload-tabla-contactos recibido');
   renderTablaContactos();
 });
+
