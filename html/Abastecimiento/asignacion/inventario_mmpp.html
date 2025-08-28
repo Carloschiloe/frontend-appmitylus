@@ -495,44 +495,21 @@
     }
 
 function renderPivot(rows, asigMap, monthTotals){
-  const $ = window.jQuery || window.$;
-  if (!$ || !$.fn) { console.warn('jQuery no disponible'); return; }
+  const jq = window.jQuery || window.$;
+  if (!jq || !jq.fn) {
+    console.warn('jQuery / PivotTable no disponible');
+    return;
+  }
 
-  // dataset "largo": Tons / Asignado / Saldo por fila
   const data = buildPivotRecords(rows, asigMap, monthTotals);
 
-  // Utilidades / locale
-  const pu    = $.pivotUtilities || {};
-  const locES = (pu.locales && pu.locales.es) ? pu.locales.es : null;
+  const u   = jq.pivotUtilities || {};
+  const loc = (u.locales && u.locales.es) ? u.locales.es : null;
 
-  // Asegura localeStrings con símbolos para no volver a romperse
-  const safeLocaleStrings = (base) => {
-    const ls = Object.assign(
-      {
-        renderError: "Error al renderizar tabla.",
-        computeError: "Error calculando los datos.",
-        uiRenderError: "Error al renderizar la UI.",
-        cancel: "Cancelar",
-        apply: "Aplicar",
-        totals: "Totales",
-        vs: "vs",
-        by: "por",
-        row: "Fila",
-        col: "Columna",
-        value: "Valor",
-        rowLabel: "Filas",
-        colLabel: "Columnas",
-        rowSymbol: "▸",   // << clave
-        colSymbol: "▾"    // << clave
-      },
-      base || {}
-    );
-    return ls;
-  };
+  // etiqueta MES AAAA desde YYYY-MM
+  const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  const fmtMes = (k) => (/^\d{4}-\d{2}$/.test(k) ? `${MESES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
 
-  // Etiqueta Mes bonita
-  const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-  const fmtMes = (k) => (/^\d{4}-\d{2}$/.test(k) ? `${MES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
   const afterRender = () => {
     document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
       .forEach(cell => {
@@ -541,28 +518,24 @@ function renderPivot(rows, asigMap, monthTotals){
       });
   };
 
-  // Opciones con inyección de renderers/aggregators/localeStrings
   const opts = {
     rows: ['Mes'],
     cols: ['Métrica', 'Proveedor'],
     vals: ['Valor'],
-    aggregatorName: (locES && locES.aggregators && locES.aggregators['Suma']) ? 'Suma' : 'Sum',
-    rendererName:  (locES && locES.renderers  && locES.renderers['Tabla'])    ? 'Tabla' : 'Table',
-    renderers:     (locES && locES.renderers)   || (pu.renderers   || {}),
-    aggregators:   (locES && locES.aggregators) || (pu.aggregators || {}),
-    localeStrings: safeLocaleStrings(locES && locES.localeStrings),
+    aggregatorName: (loc && loc.aggregators && loc.aggregators['Suma']) ? 'Suma' : 'Sum',
+    rendererName:  (loc && loc.renderers  && loc.renderers['Tabla'])    ? 'Tabla' : 'Table',
+    renderers:     (loc && loc.renderers)     || (u.renderers || {}),
+    aggregators:   (loc && loc.aggregators)   || (u.aggregators || {}),
+    localeStrings: (loc && loc.localeStrings) || ((u.locales && u.locales.en && u.locales.en.localeStrings) || {}),
     rowOrder: 'value_z-a',
     colOrder: 'value_z-a',
     onRefresh: afterRender
   };
 
-  const $el = $('#pivotUI').empty();
-
-  // Si existe el binder de la locale ES, úsalo. Si no, fallback a plugin base.
-  if (locES && typeof locES.pivotUI === 'function') {
-    locES.pivotUI($el, data, opts, true);
-  } else if (typeof $el.pivotUI === 'function') {
-    $el.pivotUI(data, opts, true);
+  // Limpia y renderiza (¡pasando la locale "es" como 4º argumento!)
+  const $el = jq('#pivotUI').empty();
+  if (typeof $el.pivotUI === 'function') {
+    $el.pivotUI(data, opts, true, loc ? 'es' : undefined);
   } else {
     console.warn('pivotUI no está disponible en este entorno.');
   }
