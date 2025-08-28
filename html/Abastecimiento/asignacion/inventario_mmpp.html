@@ -15,13 +15,14 @@
   <style>
     body{background:#fafafa}
     nav.teal .brand-logo{font-size:1.1rem}
-    .toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-    .toolbar .input-field{margin:0;width:220px}
+    .toolbar{display:grid;grid-template-columns:repeat(6,minmax(180px,1fr)) auto;gap:12px;align-items:end}
+    .toolbar .input-field{margin:0}
     .tabulator{border-radius:12px;border:1px solid #e0e0e0}
     .card-soft{border-radius:14px;background:#fff;border:1px solid #eaeaea}
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#e0f2f1;color:#00695c;font-size:.8rem}
-    .right-actions{display:flex;gap:8px;align-items:center}
+    .right-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end}
     .footer-note{font-size:.85rem;color:#666}
+    @media(max-width:960px){.toolbar{grid-template-columns:repeat(2,minmax(180px,1fr)) auto}}
   </style>
 </head>
 <body>
@@ -36,23 +37,39 @@
       <div class="toolbar">
         <div class="input-field">
           <select id="rowDim">
-            <option value="Mes" selected>Mes</option>
+            <option value="Mes">Mes</option>
+            <option value="Semana">Semana</option>
+            <option value="Comuna" selected>Comuna</option>
             <option value="Proveedor">Proveedor</option>
             <option value="Centro">Centro</option>
             <option value="Área">Área</option>
-            <option value="Comuna">Comuna</option>
             <option value="Fuente">Fuente</option>
           </select>
           <label>Fila</label>
         </div>
 
         <div class="input-field">
-          <select id="colDim">
+          <select id="subRowDim">
+            <option value="">— Ninguna —</option>
             <option value="Proveedor" selected>Proveedor</option>
-            <option value="Mes">Mes</option>
             <option value="Centro">Centro</option>
             <option value="Área">Área</option>
             <option value="Comuna">Comuna</option>
+            <option value="Mes">Mes</option>
+            <option value="Semana">Semana</option>
+            <option value="Fuente">Fuente</option>
+          </select>
+          <label>Subfila (expandible)</label>
+        </div>
+
+        <div class="input-field">
+          <select id="colDim">
+            <option value="Mes" selected>Mes</option>
+            <option value="Semana">Semana</option>
+            <option value="Proveedor">Proveedor</option>
+            <option value="Comuna">Comuna</option>
+            <option value="Centro">Centro</option>
+            <option value="Área">Área</option>
             <option value="Fuente">Fuente</option>
           </select>
           <label>Columna</label>
@@ -68,6 +85,14 @@
         </div>
 
         <div class="input-field">
+          <select id="unit">
+            <option value="tons" selected>Toneladas</option>
+            <option value="trucks">Camiones (10 t)</option>
+          </select>
+          <label>Unidad</label>
+        </div>
+
+        <div class="input-field">
           <select id="agg">
             <option value="sum" selected>Suma</option>
             <option value="avg">Promedio</option>
@@ -78,9 +103,8 @@
           <label>Agregador</label>
         </div>
 
-        <a class="btn teal" id="btnApply"><i class="material-icons left">refresh</i>Aplicar</a>
-
-        <div class="right-actions" style="margin-left:auto">
+        <div class="right-actions">
+          <a class="btn teal" id="btnApply"><i class="material-icons left">refresh</i>Aplicar</a>
           <span class="pill" id="badgeReg">0 registros</span>
           <a class="btn grey darken-2" id="btnCSV"><i class="material-icons left">download</i>CSV</a>
           <a class="btn grey darken-2" id="btnXLSX"><i class="material-icons left">file_download</i>XLSX</a>
@@ -90,8 +114,8 @@
 
     <div id="pivotTable"></div>
 
-    <div style="margin:10px 0" class="footer-note">
-      Tip: reordena columnas arrastrando y ordena con click en encabezados. Doble click para auto-ajustar ancho.
+    <div style="margin:10px 0" class="footer-note" id="unitNote">
+      Unidad actual: Toneladas.
     </div>
   </div>
 
@@ -99,7 +123,6 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
-  <!-- SheetJS para exportar XLSX desde Tabulator -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <script>
@@ -112,9 +135,34 @@
     const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
     const fmt = (n) => (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:2});
 
-    function parseDateOrNull(d){ if(d===0||d==null||d==='') return null; const x=new Date(d); return (!Number.isNaN(x.getTime())&&x.getTime()!==0)?x:null; }
-    function monthKey(d){ const x=parseDateOrNull(d); if(!x) return 's/fecha'; return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`; }
-    function monthLabel(k){ if(!k||k==='s/fecha') return 's/FECHA'; const [y,m]=k.split('-'); return `${MES[+m-1]} ${y}`; }
+    function parseDateOrNull(d){
+      if(!d && d!==0) return null;
+      const s = (typeof d === 'string' && /^\d{4}-\d{2}$/.test(d)) ? (d+'-01') : d;
+      const x = new Date(s);
+      return (!Number.isNaN(x.getTime()) && x.getTime()!==0) ? x : null;
+    }
+    function monthKey(d){
+      const x=parseDateOrNull(d); if(!x) return 's/fecha';
+      return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`;
+    }
+    function monthLabel(k){
+      if(!k||k==='s/fecha') return 's/FECHA';
+      const [y,m]=k.split('-'); return `${MES[+m-1]} ${y}`;
+    }
+    function isoWeekKey(d){
+      const x=parseDateOrNull(d); if(!x) return 's/semana';
+      const dt = new Date(Date.UTC(x.getFullYear(), x.getMonth(), x.getDate()));
+      const dayNum = dt.getUTCDay() || 7;
+      dt.setUTCDate(dt.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(dt.getUTCFullYear(),0,1));
+      const weekNo = Math.ceil((((dt - yearStart)/86400000)+1)/7);
+      return `${dt.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
+    }
+    function weekLabel(k){
+      if(!k || !/^(\d{4})-W(\d{2})$/.test(k)) return 's/SEM';
+      const [,y,w]=k.match(/^(\d{4})-W(\d{2})$/);
+      return `Sem ${w} ${y}`;
+    }
 
     async function checkResponse(resp){
       if(!resp.ok){const text=await resp.text().catch(()=> ''); throw new Error(`HTTP ${resp.status} - ${text}`)}
@@ -127,9 +175,13 @@
       const raw = await apiGet('/planificacion/ofertas');
       const arr = Array.isArray(raw?.items) ? raw.items : (Array.isArray(raw) ? raw : []);
       return arr.map(it=>{
-        const mes = monthKey(it.mes || it.fecha || it.mesKey || '');
+        const fechaBase = it.fecha || it.fechaPlan || it.fch || it.mes || it.mesKey || '';
+        const mes = monthKey(fechaBase);
+        const semana = isoWeekKey(fechaBase);
         return {
+          FechaBase: fechaBase,
           Mes: mes,
+          Semana: semana,
           Proveedor: it.proveedorNombre || it.proveedor || '',
           Centro: it.centroCodigo || '',
           Área: it.areaCodigo || it.area || '',
@@ -175,10 +227,14 @@
       });
     }
 
-    // Pivot simple: rowDim, colDim, metric, agg
-    function pivotData(rows, rowDim, colDim, metric, agg){
-      const rowKeys = [...new Set(rows.map(r=>r[rowDim] || '(vacío)'))];
-      const colKeys = [...new Set(rows.map(r=>r[colDim] || '(vacío)'))];
+    /* ================== PIVOT ================== */
+    function unique(arr){ return [...new Set(arr)]; }
+
+    // rows: data enriquecida; dims: rowDim, subRowDim?, colDim; metric: Tons/Asignado/Saldo; agg: sum/avg/count/min/max; unit: tons/trucks
+    function pivotData(rows, rowDim, subRowDim, colDim, metric, agg, unit){
+      const factor = (unit === 'trucks' && agg !== 'count') ? (1/10) : 1; // 10 t por camión
+      const rowPrimaryKeys = unique(rows.map(r => r[rowDim] || '(vacío)'));
+      const colKeys = unique(rows.map(r => r[colDim] || '(vacío)'));
 
       const aggFns = {
         sum: arr => arr.reduce((s,n)=>s+(Number(n)||0),0),
@@ -189,37 +245,71 @@
       };
       const fn = aggFns[agg] || aggFns.sum;
 
-      const matrix = rowKeys.map(rk=>{
-        const rowObj = {[rowDim]: rk};
-        for(const ck of colKeys){
-          const slice = rows.filter(x => (x[rowDim]||'(vacío)')===rk && (x[colDim]||'(vacío)')===ck)
-                            .map(x => x[metric]);
-          rowObj[ck] = fn(slice);
-        }
-        rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck])); // total por fila
-        return rowObj;
-      });
+      const rowLabelField = subRowDim || rowDim;
+      const matrix = [];
 
-      const totalRow = {[rowDim]:'Total'};
+      for(const rk of rowPrimaryKeys){
+        if(subRowDim){
+          const subs = unique(rows.filter(r => (r[rowDim]||'(vacío)')===rk).map(r => r[subRowDim] || '(vacío)'));
+          for(const sk of subs){
+            const rowObj = {[rowDim]: rk, [rowLabelField]: sk};
+            for(const ck of colKeys){
+              const sliceVals = rows
+                .filter(x =>
+                  (x[rowDim]||'(vacío)')===rk &&
+                  (x[subRowDim]||'(vacío)')===sk &&
+                  (x[colDim]||'(vacío)')===ck
+                )
+                .map(x => (agg==='count' ? 1 : (Number(x[metric])||0)*factor));
+              rowObj[ck] = fn(sliceVals);
+            }
+            rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
+            matrix.push(rowObj);
+          }
+        }else{
+          const rowObj = {[rowDim]: rk, [rowLabelField]: rk};
+          for(const ck of colKeys){
+            const sliceVals = rows
+              .filter(x => (x[rowDim]||'(vacío)')===rk && (x[colDim]||'(vacío)')===ck)
+              .map(x => (agg==='count' ? 1 : (Number(x[metric])||0)*factor));
+            rowObj[ck] = fn(sliceVals);
+          }
+          rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
+          matrix.push(rowObj);
+        }
+      }
+
+      // fila total
+      const totalRow = {[rowDim]:'Total', [rowLabelField]:'Total'};
       for(const ck of colKeys){ totalRow[ck] = fn(matrix.map(r => r[ck])); }
       totalRow['Total'] = fn(matrix.map(r => r['Total']));
       matrix.push(totalRow);
 
-      return {matrix, rowKeys, colKeys};
+      return {matrix, colKeys, rowLabelField};
     }
 
-    function makeColumns(rowDim, colKeys){
+    function prettyColTitle(colDim, key){
+      if(colDim==='Mes') return monthLabel(key);
+      if(colDim==='Semana') return weekLabel(key);
+      return key;
+    }
+
+    function makeColumns(rowLabelField, colKeys, colDim){
       const cols = [
-        {title: rowDim, field: rowDim, frozen:true, headerSort:true, width: 190, formatter:(cell)=>{
-          const v = cell.getValue();
-          if(rowDim==='Mes' && /^\d{4}-\d{2}$/.test(v)) return monthLabel(v);
-          return v;
-        }}
+        {title: rowLabelField || 'Fila', field: rowLabelField || 'Fila', frozen:true, headerSort:true, width: 220,
+          formatter:(cell)=>{
+            const v = cell.getValue();
+            if(rowLabelField==='Mes' && /^\d{4}-\d{2}$/.test(v)) return monthLabel(v);
+            if(rowLabelField==='Semana' && /^\d{4}-W\d{2}$/.test(v)) return weekLabel(v);
+            return v;
+          }
+        }
       ];
       for(const ck of colKeys){
         cols.push({
-          title: ck, field: ck, hozAlign:"right", headerHozAlign:"right",
-          headerSort:true, formatter:(cell)=> (ck==='Total'? fmt(cell.getValue()): fmt(cell.getValue()))
+          title: prettyColTitle(colDim, ck),
+          field: ck, hozAlign:"right", headerHozAlign:"right",
+          headerSort:true, formatter:(cell)=> fmt(cell.getValue())
         });
       }
       cols.push({title:'Total', field:'Total', hozAlign:"right", headerHozAlign:"right", headerSort:true,
@@ -232,40 +322,47 @@
     let __rowsRaw = [];  // con Tons
     let __rowsFull = []; // con Asignado/Saldo
 
-    function populateSelects(){
-      M.FormSelect.init(document.querySelectorAll('select'));
-    }
-
+    function populateSelects(){ M.FormSelect.init(document.querySelectorAll('select')); }
     function savePrefs(){
       const prefs = {
         rowDim: $id('rowDim').value,
+        subRowDim: $id('subRowDim').value,
         colDim: $id('colDim').value,
         metric: $id('metric').value,
+        unit: $id('unit').value,
         agg: $id('agg').value,
       };
-      localStorage.setItem('pivot_prefs', JSON.stringify(prefs));
+      localStorage.setItem('pivot_prefs_v2', JSON.stringify(prefs));
     }
     function loadPrefs(){
       try{
-        const p = JSON.parse(localStorage.getItem('pivot_prefs')||'{}');
+        const p = JSON.parse(localStorage.getItem('pivot_prefs_v2')||'{}');
         if(p.rowDim) $id('rowDim').value = p.rowDim;
+        if(p.subRowDim !== undefined) $id('subRowDim').value = p.subRowDim;
         if(p.colDim) $id('colDim').value = p.colDim;
         if(p.metric) $id('metric').value = p.metric;
-        if(p.agg)    $id('agg').value    = p.agg;
+        if(p.unit) $id('unit').value = p.unit;
+        if(p.agg) $id('agg').value = p.agg;
       }catch(_e){}
     }
 
     function applyPivot(){
       savePrefs();
-      const rowDim = $id('rowDim').value;
-      const colDim = $id('colDim').value;
-      const metric = $id('metric').value;
-      const agg = $id('agg').value;
 
-      const {matrix, colKeys} = pivotData(__rowsFull, rowDim, colDim, metric, agg);
-      const columns = makeColumns(rowDim, colKeys);
+      const rowDim   = $id('rowDim').value;
+      const subRowDim= $id('subRowDim').value || '';
+      const colDim   = $id('colDim').value;
+      const metric   = $id('metric').value;
+      const unit     = $id('unit').value;
+      const agg      = $id('agg').value;
+
+      const {matrix, colKeys, rowLabelField} = pivotData(__rowsFull, rowDim, subRowDim, colDim, metric, agg, unit);
+      const columns = makeColumns(rowLabelField, colKeys, colDim);
+
+      const groupBy = subRowDim ? rowDim : false;
 
       if(table){
+        table.setGroupBy(groupBy || []);
         table.setColumns(columns);
         table.setData(matrix);
       }else{
@@ -277,12 +374,16 @@
           resizableColumnFit: true,
           movableColumns: true,
           selectable: false,
+          groupBy: groupBy || [],
+          groupStartOpen: false,
+          groupToggleElement: "header",
           columnDefaults:{ headerFilter:false },
-          index: rowDim,
+          index: rowLabelField,
         });
       }
 
       $id('badgeReg').textContent = `${__rowsRaw.length.toLocaleString('es-CL')} registros`;
+      $id('unitNote').textContent = `Unidad actual: ${unit==='trucks' ? 'Camiones (10 t)' : 'Toneladas'}.`;
     }
 
     async function loadAll(){
@@ -302,8 +403,7 @@
     document.addEventListener('DOMContentLoaded', ()=>{
       loadPrefs();
       populateSelects();
-      // Re-inicializa selects después de setear valores
-      setTimeout(()=> populateSelects(), 0);
+      setTimeout(populateSelects, 0);
 
       $id('btnApply').addEventListener('click', applyPivot);
 
