@@ -471,61 +471,69 @@
       return recs;
     }
 
-    function renderPivot(rows, asigMap, monthTotals){
-      const jq=window.jQuery||window.$; if(!jq||!jq.fn) return;
-      const u = jq.pivotUtilities||{};
-      const loc = (u.locales && u.locales.es) ? u.locales.es : null;
+    <script>
+  function renderPivot(rows, asigMap, monthTotals){
+    const jq = window.jQuery || window.$;
+    if (!jq || !jq.fn) return;
 
-      const data = buildPivotRecords(rows, asigMap, monthTotals);
+    const u = jq.pivotUtilities || {};
+    const data = buildPivotRecords(rows, asigMap, monthTotals);
 
-      const safeStrings = Object.assign(
-        {rowSymbol:'→', colSymbol:'↓', uiRenderError:'Ocurrió un error durante el dibujado de la tabla dinámica.'},
-        (loc && loc.localeStrings) ? loc.localeStrings : (u.options && u.options.localeStrings ? u.options.localeStrings : {})
-      );
+    // Asegurar que existan símbolos por si algo los usa
+    const coreStrings = Object.assign(
+      { rowSymbol: '→', colSymbol: '↓', uiRenderError: 'Ocurrió un error durante el dibujado de la tabla dinámica.' },
+      (u.options && u.options.localeStrings) ? u.options.localeStrings : {}
+    );
+    if (u.options) u.options.localeStrings = coreStrings;
 
-      const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-      const fmtMes = (k)=> (/^\d{4}-\d{2}$/.test(k) ? `${MESES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
+    // Etiqueta MES AAAA desde YYYY-MM
+    const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const fmtMes = (k) => (/^\d{4}-\d{2}$/.test(k) ? `${MESES[+k.split('-')[1]-1]} ${k.split('-')[0]}` : 's/FECHA');
 
-      const afterRender = ()=>{
-        document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
-          .forEach(cell=>{const t=cell.textContent.trim(); if(/^\d{4}-\d{2}$/.test(t)) cell.textContent=fmtMes(t);});
-      };
+    const afterRender = () => {
+      document.querySelectorAll('#pivotUI table.pvtTable th, #pivotUI table.pvtTable td.pvtRowLabel, #pivotUI table.pvtTable td.pvtColLabel')
+        .forEach(cell => {
+          const t = cell.textContent.trim();
+          if (/^\d{4}-\d{2}$/.test(t)) cell.textContent = fmtMes(t);
+        });
+    };
 
-      const opts = {
-        rows:['Mes'], cols:['Métrica','Proveedor'], vals:['Valor'],
-        aggregatorName:(loc && loc.aggregators && loc.aggregators['Suma'])?'Suma':'Sum',
-        rendererName:(loc && loc.renderers && loc.renderers['Tabla'])?'Tabla':'Table',
-        renderers:(loc && loc.renderers)?loc.renderers:(u.renderers||{}),
-        aggregators:(loc && loc.aggregators)?loc.aggregators:(u.aggregators||{}),
-        localeStrings:safeStrings, rowOrder:'value_z-a', colOrder:'value_z-a', onRefresh:afterRender
-      };
+    // ⚠️ Fuerzo SIEMPRE los renderers/aggregators del core (inglés)
+    //    y nombres 'Table'/'Sum' para evitar involucrar el "locale es"
+    const opts = {
+      rows: ['Mes'],
+      cols: ['Métrica', 'Proveedor'],
+      vals: ['Valor'],
+      aggregatorName: 'Sum',        // core
+      rendererName:  'Table',       // core
+      renderers:     (u.renderers || {}),
+      aggregators:   (u.aggregators || {}),
+      localeStrings: coreStrings,   // por si la lib los mira desde opts
+      rowOrder: 'value_z-a',
+      colOrder: 'value_z-a',
+      onRefresh: afterRender
+    };
 
-      const $el = jq('#pivotUI').empty();
-      const diagDiv=$id('pivotDiag');
-      console.groupCollapsed('PIVOT: carga de librerías');
-      console.log('jQuery?', !!window.jQuery, 'ver', window.jQuery?.fn?.jquery);
-      console.log('pivotUtilities?', !!(window.jQuery?.pivotUtilities));
-      console.log('locales.es?', !!(window.jQuery?.pivotUtilities?.locales?.es));
-      console.groupEnd();
-      console.log('PIVOT: options finales', opts);
-
-      try{
-        if (loc && typeof loc.pivotUI === 'function') loc.pivotUI($el, data, opts, true);
-        else $el.pivotUI(data, opts, true);
-        diagDiv.textContent='Pivot renderizado OK';
-        console.info('PIVOT: render OK');
-      }catch(e){
-        console.error('PIVOT: fallo', e);
-        diagDiv.textContent = opts.localeStrings.uiRenderError || 'Error al dibujar la tabla dinámica.';
-        const wrap=$id('pivotWrapper');
-        if (wrap && !wrap.querySelector('.pivot-error')) {
-          const div=document.createElement('div');
-          div.className='pivot-error card-panel';
-          div.textContent=diagDiv.textContent;
-          wrap.prepend(div);
-        }
+    const $el = jq('#pivotUI').empty();
+    try {
+      // No pasar locale alguno (4º parámetro) -> core puro
+      $el.pivotUI(data, opts, true);
+      const diagDiv = document.getElementById('pivotDiag');
+      if (diagDiv) diagDiv.textContent = 'Pivot renderizado OK';
+      console.info('PIVOT: render OK (core renderers)');
+    } catch (e) {
+      console.error('PIVOT: fallo', e);
+      const wrap = document.getElementById('pivotWrapper');
+      if (wrap && !wrap.querySelector('.pivot-error')) {
+        const div = document.createElement('div');
+        div.className = 'pivot-error card-panel';
+        div.textContent = coreStrings.uiRenderError || 'Error al dibujar la tabla dinámica.';
+        wrap.prepend(div);
       }
     }
+  }
+</script>
+
 
     /* ================== UI ================== */
     document.addEventListener('DOMContentLoaded', ()=>{
