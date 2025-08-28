@@ -18,8 +18,8 @@ import { initAsociacionContactos } from './asociar-empresa.js';
 // Personas
 import { initPersonasTab, renderTablaPersonas } from './personas.js';
 
-// Visitas (expuesto a window al final)
-import { setupFormularioVisita, initVisitasTab, abrirDetalleContacto, abrirModalVisita } from '../visitas/tab.js';
+import { setupFormularioVisita, initVisitasTab, abrirModalVisita } from '../visitas/tab.js';
+import { abrirDetalleContacto } from './form-contacto.js';
 
 /* ======================= Estado ======================= */
 let booted = false;
@@ -257,3 +257,4 @@ window.abrirModalVisita = abrirModalVisita;
 
 // Por si quieres forzar la limpieza desde consola
 window.nukeStuckOverlays = nukeStuckOverlays;
+
