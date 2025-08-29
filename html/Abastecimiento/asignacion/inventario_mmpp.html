@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Inventario de MMPP – Pivot & Asignación</title>
+  <title>Inventarios y Stock MMPP – Pivot & Asignación</title>
 
   <!-- Materialize -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
@@ -13,23 +13,46 @@
   <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css">
 
   <style>
+    :root{
+      --compact-h: 36px;
+      --compact-fs: .92rem;
+      --compact-label: .82rem;
+    }
     body{background:#fafafa}
     nav.teal .brand-logo{font-size:1.1rem}
     .card-soft{border-radius:14px;background:#fff;border:1px solid #eaeaea}
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#e0f2f1;color:#00695c;font-size:.8rem}
-    .toolbar{display:grid;grid-template-columns:repeat(7,minmax(170px,1fr)) auto;gap:10px;align-items:end}
+
+    /* Toolbar más compacta y angosta */
+    .toolbar{
+      display:grid;
+      grid-template-columns:repeat(8, minmax(130px,1fr)) auto;
+      gap:8px; align-items:end
+    }
     .toolbar .input-field{margin:0}
+    .toolbar .select-wrapper input.select-dropdown{
+      height:var(--compact-h); line-height:var(--compact-h); font-size:var(--compact-fs)
+    }
+    .toolbar .dropdown-content li>a, 
+    .toolbar .dropdown-content li>span{font-size:.9rem}
+    .toolbar .input-field>label{font-size:var(--compact-label)}
+    .toolbar .select-wrapper+label{top:-12px} /* sube etiqueta de select */
+
+    /* Contenedor tabla: sin scroll horizontal en filtros; la tabla sí puede desplazarse si es muy ancha */
     #pivotWrap{overflow-x:auto}
     .tabulator{border-radius:12px;border:1px solid #e0e0e0}
+    .tabulator .tabulator-col{min-width:110px}
+
+    /* KPIs / Asignación */
     .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
     .kpi .card-soft{padding:12px}
     .kpi h6{margin:0 0 4px;font-size:.9rem;color:#666}
     .kpi p{margin:0;font-weight:700}
     .assign-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
     .assign-actions .btn{width:100%}
-    .tabulator .tabulator-col{min-width:110px}
+
     @media(max-width:1100px){
-      .toolbar{grid-template-columns:repeat(2,minmax(170px,1fr)) auto}
+      .toolbar{grid-template-columns:repeat(2, minmax(130px,1fr)) auto}
       .assign-grid{grid-template-columns:1fr}
     }
   </style>
@@ -37,7 +60,7 @@
 <body>
   <nav class="teal">
     <div class="nav-wrapper container">
-      <a class="brand-logo center">Tabla Dinámica & Asignación</a>
+      <a class="brand-logo center">Inventarios y Stock MMPP</a>
     </div>
   </nav>
 
@@ -45,12 +68,12 @@
     <!-- TABS -->
     <div class="card-soft" style="padding:0;margin-bottom:12px">
       <ul class="tabs tabs-fixed-width teal lighten-5">
-        <li class="tab"><a class="active" href="#tabPivot"><i class="material-icons left">grid_on</i>Tabla Dinámica</a></li>
+        <li class="tab"><a class="active" href="#tabPivot"><i class="material-icons left">grid_on</i>Inventarios y Stock MMPP</a></li>
         <li class="tab"><a href="#tabAsignacion"><i class="material-icons left">assignment_add</i>Asignación</a></li>
       </ul>
     </div>
 
-    <!-- ============== TAB 1: PIVOT ============== -->
+    <!-- ============== TAB 1: INVENTARIOS (Pivot) ============== -->
     <div id="tabPivot">
       <div class="card-soft" style="padding:14px;margin-bottom:12px">
         <div class="toolbar">
@@ -110,7 +133,7 @@
               <option value="Asignado">Asignado</option>
               <option value="Saldo">Saldo</option>
             </select>
-            <label>Métrica</label>
+            <label>Métrica (celdas)</label>
           </div>
           <div class="input-field">
             <select id="unit">
@@ -229,8 +252,7 @@
         <div class="card-soft" style="padding:12px">
           <a class="btn teal" id="btnAsignar"><i class="material-icons left">playlist_add</i>Asignar</a>
           <p class="grey-text" style="margin-top:8px">
-            Se asigna **proporcional** a los proveedores de las filas seleccionadas.  
-            (1 camión = 10 t)
+            Se asigna <b>proporcional</b> a los proveedores de las filas seleccionadas. (1 camión = 10 t)
           </p>
         </div>
       </div>
@@ -328,7 +350,7 @@
       return m;
     }
 
-    // Añade Asignado y Saldo prorrateando por participación dentro del mes (para Pivot)
+    // Métricas prorrateadas por participación en el mes (para Pivot)
     function enrichMetrics(rows, asigMap, mTotals){
       return rows.map(r=>{
         const Tm = Number(mTotals.get(r.Mes)||0);
@@ -347,8 +369,11 @@
       if(dim==='Semana') return `Sem ${key}`;
       return key;
     }
+
+    // Devuelve matrix + columnas; agrega columnas fijas de totales (Tons/Asignado/Saldo)
     function pivotData(rows, rowDim, sub1, sub2, colDim, metric, agg, unit){
-      const factor = (unit === 'trucks' && agg !== 'count') ? (1/10) : 1; // 10 t por camión
+      const cellsFactor = (unit === 'trucks' && agg !== 'count') ? (1/10) : 1; // celdas
+      const totalsFactor = (unit === 'trucks') ? (1/10) : 1;                   // totales fijos SIEMPRE en suma
       const rowKeys = uniq(rows.map(r => r[rowDim] || '(vacío)'));
       const colKeys = uniq(rows.map(r => r[colDim] || '(vacío)'));
 
@@ -366,6 +391,26 @@
 
       for(const rk of rowKeys){
         const subsetR = rows.filter(r => (r[rowDim]||'(vacío)')===rk);
+
+        const emitRow = (scopeObj, scopeArr) => {
+          const rowObj = scopeObj;
+          // columnas dinámicas
+          for(const ck of colKeys){
+            const slice = scopeArr.filter(x => (x[colDim]||'(vacío)')===ck)
+                                  .map(x => (agg==='count'?1:(Number(x[metric])||0)*cellsFactor));
+            rowObj[ck] = fn(slice);
+          }
+          // total de la MÉTRICA elegida
+          rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
+          // TOTALES FIJOS (suma), independientes de la métrica elegida
+          const sum = (arr, field)=>arr.reduce((s,x)=>s+(Number(x[field])||0),0);
+          rowObj['TonsTotal']      = sum(scopeArr,'Tons')      * totalsFactor;
+          rowObj['AsignadoTotal']  = sum(scopeArr,'Asignado')  * totalsFactor;
+          rowObj['SaldoTotal']     = sum(scopeArr,'Saldo')     * totalsFactor;
+
+          matrix.push(rowObj);
+        };
+
         if(sub1){
           const sub1Keys = uniq(subsetR.map(r => r[sub1] || '(vacío)'));
           for(const s1 of sub1Keys){
@@ -373,51 +418,48 @@
             if(sub2){
               const sub2Keys = uniq(subsetS1.map(r => r[sub2] || '(vacío)'));
               for(const s2 of sub2Keys){
-                const rowObj = {[rowDim]: rk, [sub1]: s1, [labelField]: s2};
-                for(const ck of colKeys){
-                  const slice = subsetS1.filter(x => (x[sub2]||'(vacío)')===s2 && (x[colDim]||'(vacío)')===ck)
-                                        .map(x => (agg==='count'?1:(Number(x[metric])||0)*factor));
-                  rowObj[ck] = fn(slice);
-                }
-                rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
-                matrix.push(rowObj);
+                emitRow({[rowDim]: rk, [sub1]: s1, [labelField]: s2}, 
+                        subsetS1.filter(r => (r[sub2]||'(vacío)')===s2));
               }
             }else{
-              const rowObj = {[rowDim]: rk, [labelField]: s1};
-              for(const ck of colKeys){
-                const slice = subsetS1.filter(x => (x[colDim]||'(vacío)')===ck)
-                                      .map(x => (agg==='count'?1:(Number(x[metric])||0)*factor));
-                rowObj[ck] = fn(slice);
-              }
-              rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
-              matrix.push(rowObj);
+              emitRow({[rowDim]: rk, [labelField]: s1}, subsetS1);
             }
           }
         }else{
-          const rowObj = {[rowDim]: rk, [labelField]: rk};
-          for(const ck of colKeys){
-            const slice = subsetR.filter(x => (x[colDim]||'(vacío)')===ck)
-                                 .map(x => (agg==='count'?1:(Number(x[metric])||0)*factor));
-            rowObj[ck] = fn(slice);
-          }
-          rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
-          matrix.push(rowObj);
+          emitRow({[rowDim]: rk, [labelField]: rk}, subsetR);
         }
       }
 
+      // fila total general
+      const sumField = (arr, field)=>arr.reduce((s,x)=>s+(Number(x[field])||0),0);
       const totalRow = {[rowDim]:'Total', [labelField]:'Total'};
       for(const ck of colKeys){ totalRow[ck] = fn(matrix.map(r => r[ck])); }
-      totalRow['Total'] = fn(matrix.map(r => r['Total']));
+      totalRow['Total']         = fn(matrix.map(r => r['Total']));
+      totalRow['TonsTotal']     = sumField(matrix,'TonsTotal');
+      totalRow['AsignadoTotal'] = sumField(matrix,'AsignadoTotal');
+      totalRow['SaldoTotal']    = sumField(matrix,'SaldoTotal');
       matrix.push(totalRow);
 
       return {matrix, colKeys, labelField};
     }
+
     function makeColumns(labelField, colKeys, colDim){
-      const cols = [{title: labelField, field: labelField, frozen:true, headerSort:true, width: 220}];
+      const cols = [
+        {title: labelField, field: labelField, frozen:true, headerSort:true, width: 210, minWidth:160}
+      ];
       for(const ck of colKeys){
-        cols.push({ title: prettyColTitle(colDim, ck), field: ck, hozAlign:"right", headerHozAlign:"right", headerSort:true, formatter:(c)=>fmt(c.getValue()) });
+        cols.push({
+          title: prettyColTitle(colDim, ck),
+          field: ck, hozAlign:"right", headerHozAlign:"right",
+          headerSort:true, formatter:(c)=>fmt(c.getValue()), width:120
+        });
       }
-      cols.push({title:'Total', field:'Total', hozAlign:"right", headerHozAlign:"right", headerSort:true, formatter:(c)=>fmt(c.getValue())});
+      // Total de la métrica elegida
+      cols.push({title:'Total (métrica)', field:'Total', hozAlign:"right", headerHozAlign:"right", headerSort:true, formatter:(c)=>fmt(c.getValue()), width:130});
+      // Tres columnas fijas de totales
+      cols.push({title:'Disponibles (Total Tons)', field:'TonsTotal', hozAlign:"right", headerHozAlign:"right", headerSort:true, formatter:(c)=>fmt(c.getValue()), width:160});
+      cols.push({title:'Asignado (Total)', field:'AsignadoTotal', hozAlign:"right", headerHozAlign:"right", headerSort:true, formatter:(c)=>fmt(c.getValue()), width:150});
+      cols.push({title:'Saldo (Total)', field:'SaldoTotal', hozAlign:"right", headerHozAlign:"right", headerSort:true, formatter:(c)=>fmt(c.getValue()), width:130});
       return cols;
     }
 
@@ -504,7 +546,7 @@
       const mesKey = $id('asig_mes').value;
       if(!mesKey){ M.toast({html:'Elige un mes a asignar', classes:'red'}); return; }
 
-      const {sel, totalTons} = selTotals();
+      const {sel} = selTotals();
       if(sel.length===0){ M.toast({html:'Selecciona al menos una fila', classes:'red'}); return; }
 
       // monto solicitado
@@ -531,11 +573,9 @@
       const provs = [...byProv.keys()];
       provs.forEach((prov, idx)=>{
         let parte = asignable * (byProv.get(prov)/totalSel);
-        // redondeo bonito a 2 decimales
         parte = Math.round(parte*100)/100;
         if(idx===provs.length-1){
-          // ajusta residuo
-          parte = Math.round((asignable - acumulado)*100)/100;
+          parte = Math.round((asignable - acumulado)*100)/100; // ajusta residuo
         }else{
           acumulado += parte;
         }
@@ -546,7 +586,6 @@
 
       $id('btnAsignar').disabled = true;
       try{
-        // envía en paralelo
         const reqs = payload.map(p =>
           fetch(`${API_URL}/asignaciones`, {
             method:'POST',
@@ -556,8 +595,7 @@
         );
         await Promise.all(reqs);
         M.toast({html:'Asignación registrada', classes:'teal'});
-        await loadAll(); // recargar mapas y tablas
-        // limpia monto y mantiene selección
+        await loadAll();
       }catch(e){
         console.error(e);
         M.toast({html:'Error guardando asignación', classes:'red'});
@@ -567,12 +605,10 @@
     }
 
     function applyAsignTable(){
-      // filtros / grupos
       const g1 = $id('grp1').value;
       const g2 = $id('grp2').value || null;
       const search = ($id('asigSearch').value||'').toLowerCase();
 
-      // filtro manual usando Tabulator setFilter para que cuente KPI de visibles
       const filters = [];
       if(search){
         filters.push([
@@ -587,7 +623,6 @@
       tableAsign.clearFilter(true);
       if(filters.length) tableAsign.setFilter([filters[0]], "or");
 
-      // agrupación
       if(g1 && g2){
         tableAsign.setGroupBy([g1, g2]);
       }else if(g1){
@@ -627,12 +662,12 @@
           groupToggleElement: "header",
           groupHeader: (value, count, data, group)=>{
             const total = data.reduce((s,r)=>s+(Number(r.Tons)||0),0);
-            const field = group.getField(); // nombre del grupo
+            const field = group.getField();
             const label = (field==='Mes')?monthLabel(value):value;
             return `<span><strong>${field}:</strong> ${label} <span class="grey-text">(${count} ítem)</span> — <strong>Total:</strong> ${fmt(total)} t</span>`;
           },
           columns: [
-            {formatter:"rowSelection", title:"Sel", hozAlign:"center", width:60, headerSort:false, cellClick:function(e, cell){ cell.getRow().toggleSelect(); }},
+            {formatter:"rowSelection", title:"Sel", hozAlign:"center", width:60, headerSort:false, cellClick:(e, cell)=>cell.getRow().toggleSelect()},
             {title:"Mes", field:"MesLabel", width:120, headerSort:true},
             {title:"Proveedor", field:"Proveedor", headerSort:true},
             {title:"Comuna", field:"Comuna"},
@@ -643,20 +678,17 @@
             {title:"Fuente", field:"Fuente", width:120},
           ],
           rowSelectionChanged: selTotals,
-          dataFiltered: function(filters, rows){
-            // KPIs con visibles
+          dataFiltered: (_, rows)=>{
             const visibles = rows.map(r=>r.getData());
             refreshAsignKPIs(visibles);
           }
         });
       }
 
-      // KPIs & saldos
       refreshAsignKPIs();
       updateMesSaldo();
     }
 
-    /* ================== EVENTS ================== */
     document.addEventListener('DOMContentLoaded', ()=>{
       M.Tabs.init(document.querySelectorAll('.tabs'));
       M.FormSelect.init(document.querySelectorAll('select'));
@@ -671,23 +703,14 @@
       $id('grp1').addEventListener('change', applyAsignTable);
       $id('grp2').addEventListener('change', applyAsignTable);
       $id('asig_mes').addEventListener('change', updateMesSaldo);
-
       $id('btnUsarSeleccion').addEventListener('click', ()=>{
         const {totalTons} = selTotals();
-        if($id('unidadMonto').value==='trucks'){
-          $id('montoAsignar').value = Math.round((totalTons/10)*100)/100;
-        }else{
-          $id('montoAsignar').value = Math.round(totalTons*100)/100;
-        }
+        $id('montoAsignar').value = Math.round( ( ($id('unidadMonto').value==='trucks' ? totalTons/10 : totalTons) ) *100)/100;
         M.updateTextFields();
       });
       $id('btnUsarSaldo').addEventListener('click', ()=>{
         const {saldo} = updateMesSaldo();
-        if($id('unidadMonto').value==='trucks'){
-          $id('montoAsignar').value = Math.max(0, Math.round((saldo/10)*100)/100);
-        }else{
-          $id('montoAsignar').value = Math.max(0, Math.round(saldo*100)/100);
-        }
+        $id('montoAsignar').value = Math.max(0, Math.round( ( ($id('unidadMonto').value==='trucks' ? saldo/10 : saldo) ) *100)/100);
         M.updateTextFields();
       });
       $id('btnAsignar').addEventListener('click', doAsignar);
