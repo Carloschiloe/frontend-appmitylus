@@ -23,10 +23,10 @@
     .card-soft{border-radius:14px;background:#fff;border:1px solid #eaeaea}
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#e0f2f1;color:#00695c;font-size:.8rem}
 
-    /* Toolbar más compacta y angosta */
+    /* Toolbar compacta */
     .toolbar{
       display:grid;
-      grid-template-columns:repeat(8, minmax(130px,1fr)) auto;
+      grid-template-columns:repeat(5,minmax(130px,1fr)) auto;
       gap:8px; align-items:end
     }
     .toolbar .input-field{margin:0}
@@ -36,9 +36,8 @@
     .toolbar .dropdown-content li>a, 
     .toolbar .dropdown-content li>span{font-size:.9rem}
     .toolbar .input-field>label{font-size:var(--compact-label)}
-    .toolbar .select-wrapper+label{top:-12px} /* sube etiqueta de select */
+    .toolbar .select-wrapper+label{top:-12px}
 
-    /* Contenedor tabla: sin scroll horizontal en filtros; la tabla sí puede desplazarse si es muy ancha */
     #pivotWrap{overflow-x:auto}
     .tabulator{border-radius:12px;border:1px solid #e0e0e0}
     .tabulator .tabulator-col{min-width:110px}
@@ -52,7 +51,7 @@
     .assign-actions .btn{width:100%}
 
     @media(max-width:1100px){
-      .toolbar{grid-template-columns:repeat(2, minmax(130px,1fr)) auto}
+      .toolbar{grid-template-columns:repeat(2,minmax(130px,1fr)) auto}
       .assign-grid{grid-template-columns:1fr}
     }
   </style>
@@ -73,50 +72,12 @@
       </ul>
     </div>
 
-    <!-- ============== TAB 1: INVENTARIOS (Pivot) ============== -->
+    <!-- ============== TAB 1: INVENTARIOS (solo 3 columnas fijas) ============== -->
     <div id="tabPivot">
       <div class="card-soft" style="padding:14px;margin-bottom:12px">
         <div class="toolbar">
           <div class="input-field">
             <select id="rowDim">
-              <option value="Comuna" selected>Comuna</option>
-              <option value="Proveedor">Proveedor</option>
-              <option value="Centro">Centro</option>
-              <option value="Área">Área</option>
-              <option value="Mes">Mes</option>
-              <option value="Semana">Semana</option>
-              <option value="Fuente">Fuente</option>
-            </select>
-            <label>Fila (nivel 1)</label>
-          </div>
-          <div class="input-field">
-            <select id="subRowDim1">
-              <option value="">— Ninguna —</option>
-              <option value="Proveedor" selected>Proveedor</option>
-              <option value="Centro">Centro</option>
-              <option value="Área">Área</option>
-              <option value="Comuna">Comuna</option>
-              <option value="Mes">Mes</option>
-              <option value="Semana">Semana</option>
-              <option value="Fuente">Fuente</option>
-            </select>
-            <label>Subfila 1</label>
-          </div>
-          <div class="input-field">
-            <select id="subRowDim2">
-              <option value="">— Ninguna —</option>
-              <option value="Semana">Semana</option>
-              <option value="Mes">Mes</option>
-              <option value="Centro">Centro</option>
-              <option value="Área">Área</option>
-              <option value="Proveedor">Proveedor</option>
-              <option value="Comuna">Comuna</option>
-              <option value="Fuente">Fuente</option>
-            </select>
-            <label>Subfila 2</label>
-          </div>
-          <div class="input-field">
-            <select id="colDim">
               <option value="Mes" selected>Mes</option>
               <option value="Semana">Semana</option>
               <option value="Proveedor">Proveedor</option>
@@ -125,16 +86,37 @@
               <option value="Área">Área</option>
               <option value="Fuente">Fuente</option>
             </select>
-            <label>Columna</label>
+            <label>Fila (nivel 1)</label>
           </div>
+
           <div class="input-field">
-            <select id="metric">
-              <option value="Tons" selected>Tons</option>
-              <option value="Asignado">Asignado</option>
-              <option value="Saldo">Saldo</option>
+            <select id="subRowDim1">
+              <option value="">— Ninguna —</option>
+              <option value="Semana">Semana</option>
+              <option value="Proveedor" selected>Proveedor</option>
+              <option value="Comuna">Comuna</option>
+              <option value="Centro">Centro</option>
+              <option value="Área">Área</option>
+              <option value="Mes">Mes</option>
+              <option value="Fuente">Fuente</option>
             </select>
-            <label>Métrica (celdas)</label>
+            <label>Subfila 1</label>
           </div>
+
+          <div class="input-field">
+            <select id="subRowDim2">
+              <option value="">— Ninguna —</option>
+              <option value="Semana">Semana</option>
+              <option value="Proveedor">Proveedor</option>
+              <option value="Comuna">Comuna</option>
+              <option value="Centro">Centro</option>
+              <option value="Área">Área</option>
+              <option value="Mes">Mes</option>
+              <option value="Fuente">Fuente</option>
+            </select>
+            <label>Subfila 2</label>
+          </div>
+
           <div class="input-field">
             <select id="unit">
               <option value="tons" selected>Toneladas</option>
@@ -142,16 +124,7 @@
             </select>
             <label>Unidad</label>
           </div>
-          <div class="input-field">
-            <select id="agg">
-              <option value="sum" selected>Suma</option>
-              <option value="avg">Promedio</option>
-              <option value="count">Conteo</option>
-              <option value="min">Mín</option>
-              <option value="max">Máx</option>
-            </select>
-            <label>Agregador</label>
-          </div>
+
           <div class="right-actions" style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
             <a class="btn teal" id="btnApply"><i class="material-icons left">refresh</i>Aplicar</a>
             <span class="pill" id="badgeReg">0 registros</span>
@@ -168,7 +141,7 @@
       <div style="margin:10px 0" class="grey-text" id="unitNote">Unidad actual: Toneladas.</div>
     </div>
 
-    <!-- ============== TAB 2: ASIGNACIÓN ============== -->
+    <!-- ============== TAB 2: ASIGNACIÓN (igual que antes) ============== -->
     <div id="tabAsignacion" class="assign-grid" style="margin-top:12px">
       <!-- IZQ: INVENTARIO SELECCIONABLE -->
       <div>
@@ -350,7 +323,7 @@
       return m;
     }
 
-    // Métricas prorrateadas por participación en el mes (para Pivot)
+    // Prorratea Asignado/Saldo por participación mensual
     function enrichMetrics(rows, asigMap, mTotals){
       return rows.map(r=>{
         const Tm = Number(mTotals.get(r.Mes)||0);
@@ -363,104 +336,77 @@
       });
     }
 
-    /* ================== PIVOT (TAB 1) ================== */
-    function prettyColTitle(dim, key){
-      if(dim==='Mes') return monthLabel(key);
-      if(dim==='Semana') return `Sem ${key}`;
-      return key;
+    /* ================== INVENTARIO = Árbol con 3 columnas ================== */
+    function labelFor(dim, val){
+      if(dim==='Mes') return monthLabel(val);
+      if(dim==='Semana') return `Sem ${val}`;
+      return (val==null || val==='')? '(vacío)' : String(val);
     }
-
-    // Devuelve matrix + columnas; agrega columnas fijas de totales (Tons/Asignado/Saldo)
-    function pivotData(rows, rowDim, sub1, sub2, colDim, metric, agg, unit){
-      const cellsFactor = (unit === 'trucks' && agg !== 'count') ? (1/10) : 1; // celdas
-      const totalsFactor = (unit === 'trucks') ? (1/10) : 1;                   // totales fijos SIEMPRE en suma
-      const rowKeys = uniq(rows.map(r => r[rowDim] || '(vacío)'));
-      const colKeys = uniq(rows.map(r => r[colDim] || '(vacío)'));
-
-      const aggFns = {
-        sum: a => a.reduce((s,n)=>s+(Number(n)||0),0),
-        avg: a => a.length? (a.reduce((s,n)=>s+(Number(n)||0),0)/a.length):0,
-        count: a => a.length,
-        min: a => a.length? Math.min(...a.map(n=>Number(n)||0)) : 0,
-        max: a => a.length? Math.max(...a.map(n=>Number(n)||0)) : 0,
+    function sortKeys(dim, keys){
+      if(dim==='Mes'){
+        return keys.sort((a,b)=>String(a).localeCompare(String(b)));
+      }
+      if(dim==='Semana'){
+        const toN = (v)=>{ const [y,w]=String(v).split('-'); return (+y)*100 + (+w); };
+        return keys.sort((a,b)=>toN(a)-toN(b));
+      }
+      return keys.sort((a,b)=>String(a).localeCompare(String(b)));
+    }
+    function totalsOf(arr){
+      return {
+        disp: arr.reduce((s,r)=>s+(Number(r.Tons)||0),0),
+        asig: arr.reduce((s,r)=>s+(Number(r.Asignado)||0),0),
+        saldo: arr.reduce((s,r)=>s+(Number(r.Saldo)||0),0),
       };
-      const fn = aggFns[agg] || aggFns.sum;
-
-      const matrix = [];
-      const labelField = sub2 || sub1 || rowDim;
-
-      for(const rk of rowKeys){
-        const subsetR = rows.filter(r => (r[rowDim]||'(vacío)')===rk);
-
-        const emitRow = (scopeObj, scopeArr) => {
-          const rowObj = scopeObj;
-          // columnas dinámicas
-          for(const ck of colKeys){
-            const slice = scopeArr.filter(x => (x[colDim]||'(vacío)')===ck)
-                                  .map(x => (agg==='count'?1:(Number(x[metric])||0)*cellsFactor));
-            rowObj[ck] = fn(slice);
-          }
-          // total de la MÉTRICA elegida
-          rowObj['Total'] = fn(colKeys.map(ck => rowObj[ck]));
-          // TOTALES FIJOS (suma), independientes de la métrica elegida
-          const sum = (arr, field)=>arr.reduce((s,x)=>s+(Number(x[field])||0),0);
-          rowObj['TonsTotal']      = sum(scopeArr,'Tons')      * totalsFactor;
-          rowObj['AsignadoTotal']  = sum(scopeArr,'Asignado')  * totalsFactor;
-          rowObj['SaldoTotal']     = sum(scopeArr,'Saldo')     * totalsFactor;
-
-          matrix.push(rowObj);
-        };
-
-        if(sub1){
-          const sub1Keys = uniq(subsetR.map(r => r[sub1] || '(vacío)'));
-          for(const s1 of sub1Keys){
-            const subsetS1 = subsetR.filter(r => (r[sub1]||'(vacío)')===s1);
-            if(sub2){
-              const sub2Keys = uniq(subsetS1.map(r => r[sub2] || '(vacío)'));
-              for(const s2 of sub2Keys){
-                emitRow({[rowDim]: rk, [sub1]: s1, [labelField]: s2}, 
-                        subsetS1.filter(r => (r[sub2]||'(vacío)')===s2));
-              }
-            }else{
-              emitRow({[rowDim]: rk, [labelField]: s1}, subsetS1);
-            }
-          }
-        }else{
-          emitRow({[rowDim]: rk, [labelField]: rk}, subsetR);
-        }
-      }
-
-      // fila total general
-      const sumField = (arr, field)=>arr.reduce((s,x)=>s+(Number(x[field])||0),0);
-      const totalRow = {[rowDim]:'Total', [labelField]:'Total'};
-      for(const ck of colKeys){ totalRow[ck] = fn(matrix.map(r => r[ck])); }
-      totalRow['Total']         = fn(matrix.map(r => r['Total']));
-      totalRow['TonsTotal']     = sumField(matrix,'TonsTotal');
-      totalRow['AsignadoTotal'] = sumField(matrix,'AsignadoTotal');
-      totalRow['SaldoTotal']    = sumField(matrix,'SaldoTotal');
-      matrix.push(totalRow);
-
-      return {matrix, colKeys, labelField};
     }
+    function buildTree(rows, dims, unit){
+      const factor = (unit==='trucks') ? (1/10) : 1;
+      const [d1,d2,d3] = dims;
 
-    function makeColumns(labelField, colKeys, colDim){
-      const cols = [
-        {title: labelField, field: labelField, frozen:true, headerSort:true, width: 210, minWidth:160}
-      ];
-      for(const ck of colKeys){
-        cols.push({
-          title: prettyColTitle(colDim, ck),
-          field: ck, hozAlign:"right", headerHozAlign:"right",
-          headerSort:true, formatter:(c)=>fmt(c.getValue()), width:120
-        });
-      }
-      // Total de la métrica elegida
-      cols.push({title:'Total (métrica)', field:'Total', hozAlign:"right", headerHozAlign:"right", headerSort:true, formatter:(c)=>fmt(c.getValue()), width:130});
-      // Tres columnas fijas de totales
-      cols.push({title:'Disponibles (Total Tons)', field:'TonsTotal', hozAlign:"right", headerHozAlign:"right", headerSort:true, formatter:(c)=>fmt(c.getValue()), width:160});
-      cols.push({title:'Asignado (Total)', field:'AsignadoTotal', hozAlign:"right", headerHozAlign:"right", headerSort:true, formatter:(c)=>fmt(c.getValue()), width:150});
-      cols.push({title:'Saldo (Total)', field:'SaldoTotal', hozAlign:"right", headerHozAlign:"right", headerSort:true, formatter:(c)=>fmt(c.getValue()), width:130});
-      return cols;
+      const groupBy = (arr, key)=> {
+        const m=new Map();
+        for(const r of arr){
+          const k = r[key] ?? '(vacío)';
+          if(!m.has(k)) m.set(k, []);
+          m.get(k).push(r);
+        }
+        return m;
+      };
+
+      const makeLevel = (arr, dimIdx) => {
+        if(dimIdx>=dims.length || !dims[dimIdx]) {
+          const t=totalsOf(arr);
+          return [{ label:'(total)', Disp:t.disp*factor, Asig:t.asig*factor, Saldo:t.saldo*factor }];
+        }
+        const dim = dims[dimIdx];
+        const map = groupBy(arr, dim);
+        const ordered = sortKeys(dim, [...map.keys()]);
+        const nodes=[];
+        for(const k of ordered){
+          const subset = map.get(k);
+          const t = totalsOf(subset);
+          const node = {
+            label: labelFor(dim, k),
+            Disp: t.disp*factor,
+            Asig: t.asig*factor,
+            Saldo: t.saldo*factor,
+          };
+          const children = makeLevel(subset, dimIdx+1);
+          if(dims.slice(dimIdx+1).filter(Boolean).length){ // si hay subniveles reales, no metas un (total) como único
+            node.children = children
+              .filter(c=>c.label!=='(total)'); // solo hijos reales
+          }
+          nodes.push(node);
+        }
+        return nodes;
+      };
+
+      const tree = makeLevel(rows, 0);
+
+      // Agrega fila Total general al final (sin hijos)
+      const tg = totalsOf(rows);
+      tree.push({label:'Total', Disp:tg.disp*factor, Asig:tg.asig*factor, Saldo:tg.saldo*factor});
+      return tree;
     }
 
     let tablePivot=null, tableAsign=null;
@@ -470,27 +416,32 @@
       const rowDim   = $id('rowDim').value;
       const sub1     = $id('subRowDim1').value || '';
       const sub2     = $id('subRowDim2').value || '';
-      const colDim   = $id('colDim').value;
-      const metric   = $id('metric').value;
       const unit     = $id('unit').value;
-      const agg      = $id('agg').value;
 
-      const {matrix, colKeys, labelField} = pivotData(__rowsFull, rowDim, sub1, sub2, colDim, metric, agg, unit);
-      const columns = makeColumns(labelField, colKeys, colDim);
+      const dims = [rowDim, sub1, sub2].filter(Boolean);
+      const treeData = buildTree(__rowsFull, dims, unit);
+
+      const columns = [
+        {title:'Elemento', field:'label', width:280, headerSort:true},
+        {title:'Disponibles', field:'Disp', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:130},
+        {title:'Asignado',   field:'Asig', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:120},
+        {title:'Saldo',      field:'Saldo', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:110},
+      ];
 
       if(tablePivot){
         tablePivot.setColumns(columns);
-        tablePivot.setData(matrix);
+        tablePivot.setData(treeData);
       }else{
         tablePivot = new Tabulator("#pivotTable", {
-          data: matrix,
+          data: treeData,
           columns,
           height: "68vh",
           layout: "fitColumns",
-          columnMinWidth: 110,
-          resizableColumnFit: true,
           movableColumns: true,
-          selectable: false,
+          dataTree: true,
+          dataTreeChildField: "children",
+          dataTreeStartExpanded: false,
+          columnMinWidth: 110,
         });
       }
 
@@ -498,9 +449,8 @@
       $id('badgeReg').textContent = `${__rowsRaw.length.toLocaleString('es-CL')} registros`;
     }
 
-    /* ================== ASIGNACIÓN (TAB 2) ================== */
+    /* ================== ASIGNACIÓN (igual) ================== */
     function buildAsignTable(rows){
-      // fila plana para seleccionar
       return rows.map(r=>({
         sel:false,
         Mes: r.Mes,
@@ -549,17 +499,15 @@
       const {sel} = selTotals();
       if(sel.length===0){ M.toast({html:'Selecciona al menos una fila', classes:'red'}); return; }
 
-      // monto solicitado
       const unit = $id('unidadMonto').value;
       let monto = Number($id('montoAsignar').value||0);
       if(monto<=0){ M.toast({html:'Monto a asignar inválido', classes:'red'}); return; }
-      if(unit==='trucks') monto = monto*10; // a toneladas
+      if(unit==='trucks') monto = monto*10;
 
       const {saldo} = updateMesSaldo();
       const asignable = Math.max(0, Math.min(monto, saldo));
       if(asignable<=0){ M.toast({html:'No hay saldo disponible en ese mes', classes:'red'}); return; }
 
-      // distribuir proporcional por proveedor dentro de la selección
       const byProv = new Map();
       for(const r of sel){
         const p = r.Proveedor || '(sin proveedor)';
@@ -575,7 +523,7 @@
         let parte = asignable * (byProv.get(prov)/totalSel);
         parte = Math.round(parte*100)/100;
         if(idx===provs.length-1){
-          parte = Math.round((asignable - acumulado)*100)/100; // ajusta residuo
+          parte = Math.round((asignable - acumulado)*100)/100;
         }else{
           acumulado += parte;
         }
@@ -631,7 +579,6 @@
         tableAsign.setGroupBy([]);
       }
 
-      // KPIs visibles
       refreshAsignKPIs(tableAsign.getData("active"));
     }
 
@@ -643,7 +590,7 @@
       __asigMap = asigMap;
       __rowsFull = enrichMetrics(ofertas, asigMap, __monthTotals);
 
-      // Pivot
+      // Inventario (árbol)
       applyPivot();
 
       // Asignación
@@ -693,12 +640,12 @@
       M.Tabs.init(document.querySelectorAll('.tabs'));
       M.FormSelect.init(document.querySelectorAll('select'));
 
-      // Pivot tab
+      // Inventario
       $id('btnApply').addEventListener('click', applyPivot);
-      $id('btnCSV').addEventListener('click', ()=>{ if(tablePivot) tablePivot.download("csv","inventario_pivot.csv"); });
-      $id('btnXLSX').addEventListener('click', ()=>{ if(tablePivot) tablePivot.download("xlsx","inventario_pivot.xlsx",{sheetName:"Pivot"}); });
+      $id('btnCSV').addEventListener('click', ()=>{ if(tablePivot) tablePivot.download("csv","inventario_resumen.csv"); });
+      $id('btnXLSX').addEventListener('click', ()=>{ if(tablePivot) tablePivot.download("xlsx","inventario_resumen.xlsx",{sheetName:"Inventario"}); });
 
-      // Asignación tab
+      // Asignación
       $id('asigSearch').addEventListener('input', applyAsignTable);
       $id('grp1').addEventListener('change', applyAsignTable);
       $id('grp2').addEventListener('change', applyAsignTable);
@@ -720,4 +667,3 @@
   </script>
 </body>
 </html>
-
