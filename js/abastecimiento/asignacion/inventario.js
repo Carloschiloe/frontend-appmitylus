@@ -1,20 +1,76 @@
-// inventario.js
-import { fmt, altoDisponible, etiquetaMes } from './utilidades.js';
-import * as estado from './estado.js';
+// js/abastecimiento/asignacion/inventarios.js
+import {apiGet, endpoints} from "./api.js";
+import {fmt, monthKey, monthLabel, isoWeekKey, safeGroupBy, calcAlturaDisponible} from "./utilidades.js";
 
-let tabla = null;
+let _table = null;
+let _raw = [], _full = [], _asigMap = new Map(), _monthTotals = new Map();
+let _unit = "tons"; // tons | trucks
 
-function construirToolbar({onAplicar}){
-  const wrap = document.getElementById('invToolbar');
-  wrap.innerHTML = `
+export function getTablaInventario(){ return _table; }
+
+/* --------- Data --------- */
+async function getOfertas(){
+  const raw = await apiGet(endpoints.ofertas);
+  const arr = Array.isArray(raw?.items) ? raw.items : (Array.isArray(raw) ? raw : []);
+  return arr.map(it=>{
+    const fechaBase = it.fecha || it.fechaPlan || it.fch || it.mes || it.mesKey || '';
+    return {
+      Mes: monthKey(fechaBase),
+      Semana: isoWeekKey(fechaBase),
+      Proveedor: it.proveedorNombre || it.proveedor || '',
+      Centro: it.centroCodigo || '',
+      Área: it.areaCodigo || it.area || '',
+      Comuna: it.comuna || it.centroComuna || '',
+      Tons: Number(it.tons)||0,
+      Tipo: (String(it.tipo||"").toUpperCase()==="BAP" ? "BAP" : "NORMAL"),
+      Fuente: it.fuente ? it.fuente[0].toUpperCase()+it.fuente.slice(1) : 'Disponibilidad'
+    };
+  }).filter(r=>r.Tons>0);
+}
+async function getAsignacionesMap(){
+  try{
+    const raw=await apiGet(endpoints.asignacionesMap);
+    const arr=Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
+    const map=new Map();
+    for(const it of arr){
+      const key = it.key || it.mesKey || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : monthKey(it.fecha || it.fechaPlan || it.fch));
+      const val = Number(it.asignado ?? it.tons ?? it.total ?? it.valor ?? 0);
+      if(key && Number.isFinite(val)) map.set(key, (map.get(key)||0) + val);
+    }
+    return map;
+  }catch{ return new Map(); }
+}
+function monthTotals(rows){
+  const m=new Map();
+  for(const r of rows){ const k=r.Mes||'s/fecha'; m.set(k,(m.get(k)||0)+(Number(r.Tons)||0)); }
+  return m;
+}
+// prorrateo por participación del mes
+function enrichMetrics(rows, asigMap, mTotals){
+  return rows.map(r=>{
+    const Tm = Number(mTotals.get(r.Mes)||0);
+    const Am = Number(asigMap.get(r.Mes)||0);
+    const Sm = Tm - Am;
+    const f = Tm>0 ? ((Number(r.Tons)||0)/Tm) : 0;
+    const Asignado = Am*f;
+    const Saldo = Sm*f;
+    return {...r, Asignado, Saldo};
+  });
+}
+function factor(){ return _unit==='trucks' ? 1/10 : 1; }
+
+/* --------- UI --------- */
+function buildToolbar(){
+  const el = document.getElementById("invToolbar");
+  el.innerHTML = `
     <div class="input-field">
       <select id="inv_row">
         <option value="Mes" selected>Mes</option>
         <option value="Semana">Semana</option>
         <option value="Proveedor">Proveedor</option>
-        <option value="Comuna">Comuna</option>
         <option value="Centro">Centro</option>
         <option value="Área">Área</option>
+        <option value="Comuna">Comuna</option>
         <option value="Fuente">Fuente</option>
       </select>
       <label>Fila (nivel 1)</label>
@@ -24,95 +80,127 @@ function construirToolbar({onAplicar}){
         <option value="">— Ninguna —</option>
         <option value="Semana">Semana</option>
         <option value="Proveedor" selected>Proveedor</option>
-        <option value="Comuna">Comuna</option>
         <option value="Centro">Centro</option>
         <option value="Área">Área</option>
+        <option value="Comuna">Comuna</option>
+        <option value="Mes">Mes</option>
+        <option value="Fuente">Fuente</option>
       </select>
       <label>Subfila 1</label>
     </div>
     <div class="input-field">
       <select id="inv_sub2">
         <option value="">— Ninguna —</option>
-        <option value="Semana">Semana</option>
         <option value="Proveedor">Proveedor</option>
-        <option value="Comuna">Comuna</option>
         <option value="Centro">Centro</option>
         <option value="Área">Área</option>
+        <option value="Comuna">Comuna</option>
+        <option value="Semana">Semana</option>
+        <option value="Mes">Mes</option>
+        <option value="Fuente">Fuente</option>
       </select>
       <label>Subfila 2</label>
     </div>
     <div class="input-field">
-      <select id="inv_unidad">
+      <select id="inv_unit">
         <option value="tons" selected>Toneladas</option>
         <option value="trucks">Camiones (10 t)</option>
       </select>
       <label>Unidad</label>
     </div>
     <div class="right-actions" style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
-      <a class="btn teal" id="inv_apply"><i class="material-icons left">refresh</i>Actualizar</a>
+      <a class="btn teal" id="inv_btnApply"><i class="material-icons left">refresh</i>Actualizar</a>
       <span class="pill" id="inv_badge">0 registros</span>
-      <a class="btn grey darken-2" id="inv_csv"><i class="material-icons left">download</i>CSV</a>
-      <a class="btn grey darken-2" id="inv_xlsx"><i class="material-icons left">file_download</i>XLSX</a>
+      <a class="btn grey darken-2" id="inv_btnCSV"><i class="material-icons left">download</i>CSV</a>
+      <a class="btn grey darken-2" id="inv_btnXLSX"><i class="material-icons left">file_download</i>XLSX</a>
     </div>
   `;
-  M.FormSelect.init(wrap.querySelectorAll('select'));
-  const btn = document.getElementById('inv_apply');
-  btn.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); onAplicar(); });
-  document.getElementById('inv_csv').addEventListener('click', ()=>{ if(tabla) tabla.download("csv","inventario_resumen.csv"); });
-  document.getElementById('inv_xlsx').addEventListener('click', ()=>{ if(tabla) tabla.download("xlsx","inventario_resumen.xlsx",{sheetName:"Inventario"}); });
+  M.FormSelect.init(el.querySelectorAll("select"));
+  document.getElementById("inv_btnApply").addEventListener("click", apply);
+  document.getElementById("inv_btnCSV").addEventListener("click", ()=>{ _table?.download("csv","inventario.csv"); });
+  document.getElementById("inv_btnXLSX").addEventListener("click", ()=>{ _table?.download("xlsx","inventario.xlsx",{sheetName:"Inventario"}); });
 }
-
-function ordenarClaves(dim, keys){
-  if(dim==='Mes') return keys.sort((a,b)=>String(a).localeCompare(String(b)));
-  if(dim==='Semana'){ const toN=v=>{const [y,w]=String(v).split('-');return (+y)*100+(+w)}; return keys.sort((a,b)=>toN(a)-toN(b)); }
-  return keys.sort((a,b)=>String(a).localeCompare(String(b)));
-}
-function etiquetaPara(dim, key){ if(dim==='Mes') return etiquetaMes(key); if(dim==='Semana') return `Sem ${key}`; return key ?? '(vacío)'; }
-
-function construirArbol(rows, dims, unidad='tons'){
-  const factor = (unidad==='trucks') ? (1/10) : 1;
-  const group = (arr, dim)=>{ const m=new Map(); for(const r of arr){ const k=r[dim]??'(vacío)'; if(!m.has(k)) m.set(k,[]); m.get(k).push(r);} return m; };
-  const tot = (arr)=>({ disp: arr.reduce((s,x)=>s+(+x.Tons||0),0), asig: arr.reduce((s,x)=>s+(+x.Asignado||0),0), saldo: arr.reduce((s,x)=>s+(+x.Saldo||0),0) });
-  const make=(arr,idx)=>{
-    if(idx>=dims.length || !dims[idx]){ const t=tot(arr); return [{label:'(total)', Disp:t.disp*factor, Asig:t.asig*factor, Saldo:t.saldo*factor}]; }
-    const dim=dims[idx], map=group(arr,dim), ordered=ordenarClaves(dim,[...map.keys()]); const out=[];
-    for(const k of ordered){ const sub=map.get(k); const t=tot(sub);
-      const node={label:etiquetaPara(dim,k), Disp:t.disp*factor, Asig:t.asig*factor, Saldo:t.saldo*factor};
-      const children=make(sub,idx+1); if(dims.slice(idx+1).filter(Boolean).length) node.children=children.filter(c=>c.label!=='(total)'); out.push(node);
-    } return out;
-  };
-  const tree=make(rows,0); const tg=tot(rows); tree.push({label:'Total', Disp:tg.disp*factor, Asig:tg.asig*factor, Saldo:tg.saldo*factor}); return tree;
-}
-
-function aplicar(){
-  const unidad = document.getElementById('inv_unidad').value;
-  const rowDim = document.getElementById('inv_row').value;
-  const sub1   = document.getElementById('inv_sub1').value || '';
-  const sub2   = document.getElementById('inv_sub2').value || '';
-
-  const filas = estado.filasEnriquecidas({tipo:'ALL'});
-  const dims = [rowDim, sub1, sub2].filter(Boolean);
-  const data = construirArbol(filas, dims, unidad);
-
-  const cols = [
-    {title:'Elemento', field:'label', width:280, headerSort:true},
-    {title:'Disponibles', field:'Disp', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:130},
-    {title:'Asignado',   field:'Asig', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:120},
-    {title:'Saldo',      field:'Saldo', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:110},
-  ];
-
-  const h = altoDisponible(document.getElementById('invTableWrap'));
-  if(tabla){ tabla.setColumns(cols); tabla.setData(data); tabla.setHeight(h + 'px'); }
-  else{
-    tabla = new Tabulator('#invTable', { data, columns: cols, height: h + 'px', layout:'fitColumns', dataTree:true, dataTreeChildField:'children', dataTreeStartExpanded:false, columnMinWidth:110, movableColumns:true });
+function aggregate(dims){
+  const map = new Map();
+  for(const r of _full){
+    const keyObj = {}; dims.forEach(k=> keyObj[k] = r[k] || '(vacío)');
+    const key = JSON.stringify(keyObj);
+    if(!map.has(key)) map.set(key, { ...keyObj, Disponibles:0, Asignado:0, Saldo:0 });
+    const t = map.get(key);
+    t.Disponibles += (Number(r.Tons)||0);
+    t.Asignado   += (Number(r.Asignado)||0);
+    t.Saldo      += (Number(r.Saldo)||0);
   }
-  document.getElementById('inv_badge').textContent = `${estado.datos.ofertas.length} registros`;
-  document.getElementById('invNote').textContent = `Unidad actual: ${unidad==='trucks'?'Camiones (10 t)':'Toneladas'}.`;
+  const f = factor();
+  return [...map.values()].map(x=>({
+    ...x,
+    Disponibles: x.Disponibles*f,
+    Asignado: x.Asignado*f,
+    Saldo: x.Saldo*f
+  }));
 }
+function makeColumns(){
+  return [
+    {title:"Elemento", field:"Elemento", width:220, formatter:(c)=>{
+      const d=c.getData(); // mostrar lo más específico disponible
+      return d.Elemento || d.Proveedor || d.Comuna || d.Centro || d.Área || d.Semana || (d.Mes?monthLabel(d.Mes):"(grupo)");
+    }},
+    {title:"Disponibles", field:"Disponibles", hozAlign:"right", headerHozAlign:"right", formatter:(c)=>fmt(c.getValue())},
+    {title:"Asignado",   field:"Asignado",   hozAlign:"right", headerHozAlign:"right", formatter:(c)=>fmt(c.getValue())},
+    {title:"Saldo",      field:"Saldo",      hozAlign:"right", headerHozAlign:"right", formatter:(c)=>fmt(c.getValue())},
+  ];
+}
+function groupHeader(field){
+  return function(value, count, data, group){
+    const sum = (arr,f)=>arr.reduce((s,r)=>s+(Number(r[f])||0),0);
+    const totDisp = sum(data,"Disponibles");
+    const totAsig = sum(data,"Asignado");
+    const totSaldo= sum(data,"Saldo");
+    const label   = (field==='Mes')?monthLabel(value):value;
+    return `<span><strong>${field}:</strong> ${label} <span class="grey-text">(${count} ítem)</span> — <strong>Disp:</strong> ${fmt(totDisp)} · <strong>Asig:</strong> ${fmt(totAsig)} · <strong>Saldo:</strong> ${fmt(totSaldo)}</span>`;
+  }
+}
+function apply(){
+  if(!_table) return; // aún no creada (loadAll la creará y luego setea datos)
+  _unit = document.getElementById("inv_unit").value;
+  const row = document.getElementById("inv_row").value;
+  const s1  = document.getElementById("inv_sub1").value;
+  const s2  = document.getElementById("inv_sub2").value;
+  const dims = [row, ...(s1? [s1]:[]), ...(s2? [s2]:[])];
 
-export function montar(){
-  construirToolbar({onAplicar: aplicar});
-  aplicar();
-  window.addEventListener('resize', ()=>{ const h=altoDisponible(document.getElementById('invTableWrap')); if(tabla) tabla.setHeight(h + 'px'); });
-  estado.on('actualizado', aplicar);
+  const data = aggregate(dims).map(x=>{
+    const last = dims[dims.length-1] || row;
+    return { ...x, Elemento: x[last] };
+  });
+
+  _table.setData(data);
+  _table.setColumns(makeColumns());
+  // agrupación segura
+  safeGroupBy(_table, dims);
+  document.getElementById("invNote").textContent = `Unidad actual: ${_unit==='trucks'?'Camiones (10 t)':'Toneladas'}.`;
+  document.getElementById("inv_badge").textContent = `${_raw.length.toLocaleString('es-CL')} registros`;
+}
+export async function cargarInventario(){
+  const [ofertas, asigMap] = await Promise.all([ getOfertas(), getAsignacionesMap() ]);
+  _raw = ofertas;
+  _asigMap = asigMap;
+  _monthTotals = monthTotals(ofertas);
+  _full = enrichMetrics(ofertas, asigMap, _monthTotals);
+
+  // si no existe tabla, créala
+  if(!_table){
+    _table = new Tabulator("#invTable", {
+      data: [],
+      columns: makeColumns(),
+      height: calcAlturaDisponible(260),
+      layout: "fitColumns",
+      columnMinWidth: 110,
+      movableColumns: true,
+      groupBy: [], // se actualizará en apply()
+      groupStartOpen: false,
+      groupToggleElement: "header",
+      groupHeader: group => groupHeader(group.getField()),
+    });
+  }
+  apply(); // pinta según selecciones actuales
 }
