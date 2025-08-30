@@ -275,5 +275,42 @@ body.viewer-open { overflow: hidden; }
 .table-ellipsis td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .table-actions a { margin-right: 6px; display: inline-flex; align-items: center; }
 
+/* ===========================
+   ABSTECIMIENTO – UTILIDADES
+   (compartidas entre pantallas)
+   =========================== */
+
+:root{
+  --shadow-card: 0 1px 2px rgba(0,0,0,.04), 0 4px 14px rgba(0,0,0,.06);
+}
+
+/* Helpers genéricos */
+.hidden{ display:none !important; }
+.text-right{ text-align:right !important; }
+.text-muted{ color:#757575 !important; }
+.w-100{ width:100% !important; }
+
+/* Realce de títulos dentro de tarjetas */
+.section-title{
+  font-size:1rem;
+  font-weight:600;
+  color:#455a64;
+  margin:0 0 8px;
+}
+
+/* Cards con sombra opcional */
+.card-soft.elevated{ box-shadow:var(--shadow-card); }
+
+/* Tablas (Materialize) ajustes suaves */
+table.striped > tbody > tr:nth-child(odd){ background:#fafafa; }
+table.highlight > tbody > tr:hover{ background:#f1f1f1; }
+
+/* Inputs compactos opcionales */
+.input-field input[type="text"].compact,
+.input-field input[type="number"].compact{
+  height:34px; margin:0;
+}
+
 /* ===== Fotos de visitas (extra) ===== */
 @import url('/js/abastecimiento/visitas/fotos/styles.css');
+
