@@ -1,17 +1,37 @@
-// principal.js
-import * as api from './api.js';
-import * as estado from './estado.js';
-import * as inventario from './inventario.js';
-import * as asignacion from './asignacion.js';
-import * as programaSemanal from './programa_semanal.js';
+// js/abastecimiento/asignacion/principal.js
+import {cargarInventario, getTablaInventario} from "./inventarios.js";
+import {initAsignacionUI, cargarAsignacion} from "./asignacion.js";
+import {initProgramaSemanalUI, getTablaPrograma} from "./programa_semanal.js";
+import {calcAlturaDisponible} from "./utilidades.js";
 
-document.addEventListener('DOMContentLoaded', async () => {
-  M.Tabs.init(document.querySelectorAll('.tabs'));
-  M.FormSelect.init(document.querySelectorAll('select'));
-  try{ await estado.cargarTodo(api); }
-  catch(e){ console.error(e); M.toast({html:'No se pudo cargar datos iniciales', classes:'red'}); }
-  inventario.montar();
-  asignacion.montar();
-  programaSemanal.montar();
-  window.__api = api; window.__estado = estado;
+function redimensionar(){
+  const h = calcAlturaDisponible(260);
+  getTablaInventario()?.setHeight(h);
+  getTablaInventario()?.redraw(true);
+  getTablaPrograma()?.setHeight(h);
+  getTablaPrograma()?.redraw(true);
+  // la tabla de asignación la construye el módulo en su contenedor y usa el mismo alto
+  // si quieres: window.tableAsign?.setHeight(h); window.tableAsign?.redraw(true);
+}
+
+document.addEventListener("DOMContentLoaded", async ()=>{
+  // Materialize
+  M.Tabs.init(document.querySelectorAll(".tabs"));
+  M.Modal.init(document.querySelectorAll(".modal"));
+  M.FormSelect.init(document.querySelectorAll("select"));
+
+  // UIs
+  await cargarInventario();
+  initAsignacionUI();
+  await cargarAsignacion();
+  initProgramaSemanalUI();
+
+  // resize
+  window.addEventListener("resize", redimensionar);
+
+  // cuando cambie la asignación, refresca inventario
+  document.addEventListener("asignacion:cambio", async ()=> {
+    await cargarInventario();
+  });
 });
+
