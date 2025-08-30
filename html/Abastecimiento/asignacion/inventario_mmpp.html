@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Inventarios y Stock MMPP – Pivot & Asignación</title>
+  <title>Inventarios y Stock MMPP</title>
 
-  <!-- Materialize -->
+  <!-- Materialize & Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
 
@@ -23,31 +23,21 @@
     .card-soft{border-radius:14px;background:#fff;border:1px solid #eaeaea}
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#e0f2f1;color:#00695c;font-size:.8rem}
 
-    /* Toolbar compacta */
     .toolbar{
       display:grid;
-      grid-template-columns:repeat(4,minmax(130px,1fr)) auto; /* 4 selects + acciones */
+      grid-template-columns:repeat(4,minmax(160px,1fr)) auto;
       gap:8px; align-items:end
     }
     .toolbar .input-field{margin:0}
     .toolbar .select-wrapper input.select-dropdown{
       height:var(--compact-h); line-height:var(--compact-h); font-size:var(--compact-fs)
     }
-    .toolbar .dropdown-content li>a, 
-    .toolbar .dropdown-content li>span{font-size:.9rem}
+    .toolbar .dropdown-content li>a,.toolbar .dropdown-content li>span{font-size:.9rem}
     .toolbar .input-field>label{font-size:var(--compact-label)}
     .toolbar .select-wrapper+label{top:-12px}
-
-    /* Fix: botón por encima de los selects para evitar clic fantasma */
-    .toolbar .select-wrapper{position:relative; z-index:1}
     .toolbar .right-actions{position:relative; z-index:5}
+    .toolbar .select-wrapper{position:relative; z-index:1}
 
-    /* Contenedor de la tabla con alto dinámico */
-    #pivotWrap{overflow-x:auto}
-    .tabulator{border-radius:12px;border:1px solid #e0e0e0}
-    .tabulator .tabulator-col{min-width:110px}
-
-    /* KPIs / Asignación */
     .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
     .kpi .card-soft{padding:12px}
     .kpi h6{margin:0 0 4px;font-size:.9rem;color:#666}
@@ -55,8 +45,17 @@
     .assign-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
     .assign-actions .btn{width:100%}
 
+    #invTableWrap, #progTableWrap{overflow-x:auto}
+    .tabulator{border-radius:12px;border:1px solid #e0e0e0}
+    .tabulator .tabulator-col{min-width:110px}
+
+    .col-noop .tabulator-col-content{
+      background: repeating-linear-gradient(-45deg,#f5f5f5,#f5f5f5 10px,#ededed 10px,#ededed 20px);
+    }
+    .badge-noop{background:#bdbdbd;color:#333;border-radius:999px;padding:2px 8px;font-size:.75rem;margin-left:6px}
+
     @media(max-width:1100px){
-      .toolbar{grid-template-columns:repeat(2,minmax(130px,1fr)) auto}
+      .toolbar{grid-template-columns:repeat(2,minmax(160px,1fr)) auto}
       .assign-grid{grid-template-columns:1fr}
     }
   </style>
@@ -69,634 +68,123 @@
   </nav>
 
   <div class="container" style="margin-top:14px">
-    <!-- TABS -->
     <div class="card-soft" style="padding:0;margin-bottom:12px">
       <ul class="tabs tabs-fixed-width teal lighten-5">
-        <li class="tab"><a class="active" href="#tabPivot"><i class="material-icons left">grid_on</i>Inventarios y Stock MMPP</a></li>
+        <li class="tab"><a class="active" href="#tabInventario"><i class="material-icons left">grid_on</i>Inventarios & Stock</a></li>
         <li class="tab"><a href="#tabAsignacion"><i class="material-icons left">assignment_add</i>Asignación</a></li>
+        <li class="tab"><a href="#tabPrograma"><i class="material-icons left">calendar_today</i>Programa semanal</a></li>
       </ul>
     </div>
 
-    <!-- ============== TAB 1: INVENTARIOS (árbol + 3 columnas fijas) ============== -->
-    <div id="tabPivot">
+    <!-- INVENTARIO -->
+    <div id="tabInventario">
       <div class="card-soft" style="padding:14px;margin-bottom:12px">
-        <div class="toolbar">
-          <div class="input-field">
-            <select id="rowDim">
-              <option value="Mes" selected>Mes</option>
-              <option value="Semana">Semana</option>
-              <option value="Proveedor">Proveedor</option>
-              <option value="Comuna">Comuna</option>
-              <option value="Centro">Centro</option>
-              <option value="Área">Área</option>
-              <option value="Fuente">Fuente</option>
-            </select>
-            <label>Fila (nivel 1)</label>
-          </div>
-
-          <div class="input-field">
-            <select id="subRowDim1">
-              <option value="">— Ninguna —</option>
-              <option value="Semana">Semana</option>
-              <option value="Proveedor" selected>Proveedor</option>
-              <option value="Comuna">Comuna</option>
-              <option value="Centro">Centro</option>
-              <option value="Área">Área</option>
-              <option value="Mes">Mes</option>
-              <option value="Fuente">Fuente</option>
-            </select>
-            <label>Subfila 1</label>
-          </div>
-
-          <div class="input-field">
-            <select id="subRowDim2">
-              <option value="">— Ninguna —</option>
-              <option value="Semana">Semana</option>
-              <option value="Proveedor">Proveedor</option>
-              <option value="Comuna">Comuna</option>
-              <option value="Centro">Centro</option>
-              <option value="Área">Área</option>
-              <option value="Mes">Mes</option>
-              <option value="Fuente">Fuente</option>
-            </select>
-            <label>Subfila 2</label>
-          </div>
-
-          <div class="input-field">
-            <select id="unit">
-              <option value="tons" selected>Toneladas</option>
-              <option value="trucks">Camiones (10 t)</option>
-            </select>
-            <label>Unidad</label>
-          </div>
-
-          <div class="right-actions" style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
-            <a class="btn teal" id="btnApply"><i class="material-icons left">refresh</i>Actualizar</a>
-            <span class="pill" id="badgeReg">0 registros</span>
-            <a class="btn grey darken-2" id="btnCSV"><i class="material-icons left">download</i>CSV</a>
-            <a class="btn grey darken-2" id="btnXLSX"><i class="material-icons left">file_download</i>XLSX</a>
-          </div>
-        </div>
+        <div id="invToolbar" class="toolbar"></div>
       </div>
-
-      <div id="pivotWrap">
-        <div id="pivotTable"></div>
-      </div>
-
-      <div style="margin:10px 0" class="grey-text" id="unitNote">Unidad actual: Toneladas.</div>
+      <div id="invTableWrap"><div id="invTable"></div></div>
+      <div id="invNote" class="grey-text" style="margin:10px 0">Unidad actual: Toneladas.</div>
     </div>
 
-    <!-- ============== TAB 2: ASIGNACIÓN (sin cambios funcionales) ============== -->
+    <!-- ASIGNACIÓN -->
     <div id="tabAsignacion" class="assign-grid" style="margin-top:12px">
-      <!-- IZQ: INVENTARIO SELECCIONABLE -->
       <div>
         <div class="card-soft" style="padding:12px;margin-bottom:8px">
-          <div class="row" style="margin:0;align-items:flex-end">
-            <div class="input-field col s12 m6">
-              <i class="material-icons prefix">search</i>
-              <input id="asigSearch" type="text" placeholder="Busca por mes, proveedor, comuna, centro..." />
-              <label for="asigSearch">Buscar</label>
-            </div>
-            <div class="input-field col s6 m3">
-              <select id="grp1">
-                <option value="Mes" selected>Mes</option>
-                <option value="Comuna">Comuna</option>
-                <option value="Proveedor">Proveedor</option>
-              </select>
-              <label>Agrupar por</label>
-            </div>
-            <div class="input-field col s6 m3">
-              <select id="grp2">
-                <option value="">— Ninguno —</option>
-                <option value="Comuna" selected>Comuna</option>
-                <option value="Proveedor">Proveedor</option>
-              </select>
-              <label>Subgrupo</label>
-            </div>
-          </div>
+          <div id="asiToolbar"></div>
           <div class="kpi">
-            <div class="card-soft"><h6>Filas</h6><p id="asigKpiRows">0</p></div>
-            <div class="card-soft"><h6>Tons visibles</h6><p id="asigKpiTons">0</p></div>
-            <div class="card-soft"><h6>Camiones visibles</h6><p id="asigKpiTrucks">0</p></div>
+            <div class="card-soft"><h6>Filas</h6><p id="asiKpiFilas">0</p></div>
+            <div class="card-soft"><h6>Tons visibles</h6><p id="asiKpiTons">0</p></div>
+            <div class="card-soft"><h6>Camiones visibles</h6><p id="asiKpiCam">0</p></div>
           </div>
         </div>
-
         <div class="card-soft" style="padding:10px">
-          <div id="tableAsignable"></div>
-          <div class="grey-text" style="margin-top:6px" id="selNote">Selecciona filas (click en el checkbox) para armar la asignación.</div>
+          <div id="asiTable"></div>
+          <div class="grey-text" style="margin-top:6px">Selecciona filas para armar la asignación.</div>
         </div>
       </div>
+      <div id="asiPanel" class="assign-actions"></div>
+    </div>
 
-      <!-- DER: RESUMEN Y ACCIONES -->
-      <div class="assign-actions">
-        <div class="card-soft" style="padding:12px;margin-bottom:12px">
-          <div class="row" style="margin:0">
-            <div class="input-field col s12">
-              <input id="asig_mes" type="month">
-              <label class="active" for="asig_mes">Mes a asignar</label>
-            </div>
-          </div>
+    <!-- PROGRAMA SEMANAL -->
+    <div id="tabPrograma">
+      <div class="card-soft" style="padding:14px;margin-bottom:12px">
+        <div id="progToolbar" class="toolbar"></div>
+      </div>
+      <div id="progTableWrap"><div id="progTable"></div></div>
+      <div id="progNote" class="grey-text" style="margin:10px 0"></div>
+    </div>
+  </div>
 
-          <div class="kpi" style="grid-template-columns:repeat(1,1fr)">
-            <div class="card-soft">
-              <h6>Saldo del mes elegido</h6>
-              <p><span id="kpiMesDisp">Disp: 0 t</span> · <span id="kpiMesAsig">Asig: 0 t</span> · <span id="kpiMesSaldo">Saldo: 0 t</span></p>
-            </div>
-          </div>
+  <!-- Modales -->
+  <div id="modalProgramar" class="modal">
+    <div class="modal-content">
+      <h5>Programar camiones / toneladas</h5>
+      <div class="row" style="margin:0">
+        <div class="input-field col s12 m6">
+          <input id="prog_fecha" type="date"><label class="active" for="prog_fecha">Fecha</label>
         </div>
-
-        <div class="card-soft" style="padding:12px;margin-bottom:12px">
-          <h6 style="margin:0 0 8px">Selección actual</h6>
-          <p class="grey-text" id="selResumen">0 filas · 0,00 t (0 cam)</p>
-          <div class="row" style="margin:0">
-            <div class="input-field col s7">
-              <input id="montoAsignar" type="number" min="0" step="0.01" />
-              <label class="active" for="montoAsignar">Monto a asignar</label>
-            </div>
-            <div class="input-field col s5">
-              <select id="unidadMonto">
-                <option value="tons" selected>Toneladas</option>
-                <option value="trucks">Camiones (10 t)</option>
-              </select>
-              <label>Unidad</label>
-            </div>
-          </div>
-          <div class="row" style="margin:0;gap:8px">
-            <a class="btn-flat teal-text" id="btnUsarSeleccion"><i class="material-icons left">done_all</i>Usar total seleccionado</a>
-            <a class="btn-flat teal-text" id="btnUsarSaldo"><i class="material-icons left">equalizer</i>Usar saldo del mes</a>
-          </div>
+        <div class="input-field col s12 m6">
+          <select id="prog_tipo">
+            <option value="NORMAL" selected>Normal</option>
+            <option value="BAP">BAP</option>
+          </select>
+          <label>Tipo MMPP</label>
         </div>
-
-        <div class="card-soft" style="padding:12px">
-          <a class="btn teal" id="btnAsignar"><i class="material-icons left">playlist_add</i>Asignar</a>
-          <p class="grey-text" style="margin-top:8px">
-            Se asigna <b>proporcional</b> a los proveedores de las filas seleccionadas. (1 camión = 10 t)
-          </p>
+        <div class="input-field col s12 m6">
+          <input id="prog_proveedor" type="text"><label class="active" for="prog_proveedor">Proveedor</label>
+        </div>
+        <div class="input-field col s12 m6">
+          <input id="prog_comuna" type="text"><label class="active" for="prog_comuna">Comuna</label>
+        </div>
+        <div class="input-field col s6">
+          <input id="prog_camiones" type="number" min="0" step="1"><label class="active" for="prog_camiones">Camiones</label>
+        </div>
+        <div class="input-field col s6">
+          <input id="prog_tons" type="number" min="0" step="0.01"><label class="active" for="prog_tons">Toneladas</label>
+        </div>
+        <div class="input-field col s12">
+          <textarea id="prog_notas" class="materialize-textarea"></textarea>
+          <label class="active" for="prog_notas">Notas</label>
         </div>
       </div>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" class="modal-close btn-flat">Cancelar</a>
+      <a href="#!" id="btnGuardarPrograma" class="btn teal">Guardar</a>
+    </div>
+  </div>
+
+  <div id="modalNoOp" class="modal">
+    <div class="modal-content">
+      <h5>Marcar día como "No operación"</h5>
+      <div class="row" style="margin:0">
+        <div class="input-field col s12 m6">
+          <input id="noop_fecha" type="date"><label class="active" for="noop_fecha">Fecha</label>
+        </div>
+        <div class="input-field col s12 m6">
+          <select id="noop_estado">
+            <option value="OPEN" selected>Reabrir día</option>
+            <option value="NO_OP">No operación</option>
+            <option value="HOLIDAY">Feriado</option>
+          </select>
+          <label>Estado</label>
+        </div>
+        <div class="input-field col s12">
+          <textarea id="noop_motivo" class="materialize-textarea"></textarea>
+          <label class="active" for="noop_motivo">Motivo</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" class="modal-close btn-flat">Cancelar</a>
+      <a href="#!" id="btnGuardarNoOp" class="btn teal">Guardar</a>
     </div>
   </div>
 
   <!-- Libs -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <script>
-    /* ================== CONFIG ================== */
-    const API_URL = 'https://backend-appmitylus.vercel.app/api';
-    window.INV_ASIG_ENDPOINT = '/asignaciones/map';
-
-    /* ================== HELPERS ================== */
-    const $id = (x) => document.getElementById(x);
-    const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-    const fmt = (n) => (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:2});
-    const uniq = (a)=>[...new Set(a)];
-    const debounce = (fn,ms=120)=>{let t;return(...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),ms)};}
-
-    function parseDateOrNull(d){
-      if(!d && d!==0) return null;
-      const s = (typeof d === 'string' && /^\d{4}-\d{2}$/.test(d)) ? (d+'-01') : d;
-      const x = new Date(s);
-      return (!Number.isNaN(x.getTime()) && x.getTime()!==0) ? x : null;
-    }
-    function monthKey(d){
-      const x=parseDateOrNull(d); if(!x) return 's/fecha';
-      return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`;
-    }
-    function monthLabel(k){
-      if(!k||k==='s/fecha') return 's/FECHA';
-      const [y,m]=k.split('-'); return `${MES[+m-1]} ${y}`;
-    }
-    function isoWeekKey(d){
-      const x=parseDateOrNull(d); if(!x) return 's/semana';
-      const dt = new Date(Date.UTC(x.getFullYear(), x.getMonth(), x.getDate()));
-      const dayNum = dt.getUTCDay() || 7;
-      dt.setUTCDate(dt.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(dt.getUTCFullYear(),0,1));
-      const weekNo = Math.ceil((((dt - yearStart)/86400000)+1)/7);
-      return `${dt.getUTCFullYear()}-${String(weekNo).padStart(2,'0')}`;
-    }
-
-    async function checkResponse(resp){
-      if(!resp.ok){const text=await resp.text().catch(()=> ''); throw new Error(`HTTP ${resp.status} - ${text}`)}
-      if(resp.status===204) return null; return await resp.json().catch(()=> null);
-    }
-    async function apiGet(path){ const r=await fetch(`${API_URL}${path}`); return checkResponse(r); }
-
-    /* ================== DATA ================== */
-    async function getOfertas(){
-      const raw = await apiGet('/planificacion/ofertas');
-      const arr = Array.isArray(raw?.items) ? raw.items : (Array.isArray(raw) ? raw : []);
-      return arr.map(it=>{
-        const fechaBase = it.fecha || it.fechaPlan || it.fch || it.mes || it.mesKey || '';
-        const mes = monthKey(fechaBase);
-        const semana = isoWeekKey(fechaBase);
-        return {
-          FechaBase: fechaBase,
-          Mes: mes,
-          Semana: semana,
-          Proveedor: it.proveedorNombre || it.proveedor || '',
-          Centro: it.centroCodigo || '',
-          Área: it.areaCodigo || it.area || '',
-          Comuna: it.comuna || it.centroComuna || '',
-          Tons: Number(it.tons)||0,
-          Fuente: it.fuente ? it.fuente[0].toUpperCase()+it.fuente.slice(1) : 'Disponibilidad'
-        };
-      }).filter(r=>r.Tons>0);
-    }
-
-    async function getAsignacionesMap(){
-      const endpoint = (window.INV_ASIG_ENDPOINT || '').trim();
-      if(!endpoint) return new Map();
-      try{
-        const raw=await apiGet(endpoint);
-        const arr=Array.isArray(raw)?raw:(Array.isArray(raw?.items)?raw.items:[]);
-        const map=new Map();
-        for(const it of arr){
-          const key = it.key || it.mesKey || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : monthKey(it.fecha || it.fechaPlan || it.fch));
-          const val = Number(it.asignado ?? it.tons ?? it.total ?? it.valor ?? 0);
-          if(key && Number.isFinite(val)) map.set(key, (map.get(key)||0) + val);
-        }
-        return map;
-      }catch(_e){ return new Map(); }
-    }
-
-    function monthTotals(rows){
-      const m=new Map();
-      for(const r of rows){ const k=r.Mes||'s/fecha'; m.set(k,(m.get(k)||0)+(Number(r.Tons)||0)); }
-      return m;
-    }
-
-    function enrichMetrics(rows, asigMap, mTotals){
-      return rows.map(r=>{
-        const Tm = Number(mTotals.get(r.Mes)||0);
-        const Am = Number(asigMap.get(r.Mes)||0);
-        const Sm = Tm - Am;
-        const factor = Tm>0 ? ((Number(r.Tons)||0)/Tm) : 0;
-        const Asignado = Am*factor;
-        const Saldo = Sm*factor;
-        return {...r, Asignado, Saldo};
-      });
-    }
-
-    /* ================== INVENTARIO = Árbol con 3 columnas ================== */
-    function labelFor(dim, val){
-      if(dim==='Mes') return monthLabel(val);
-      if(dim==='Semana') return `Sem ${val}`;
-      return (val==null || val==='')? '(vacío)' : String(val);
-    }
-    function sortKeys(dim, keys){
-      if(dim==='Mes'){
-        return keys.sort((a,b)=>String(a).localeCompare(String(b)));
-      }
-      if(dim==='Semana'){
-        const toN = (v)=>{ const [y,w]=String(v).split('-'); return (+y)*100 + (+w); };
-        return keys.sort((a,b)=>toN(a)-toN(b));
-      }
-      return keys.sort((a,b)=>String(a).localeCompare(String(b)));
-    }
-    function totalsOf(arr){
-      return {
-        disp: arr.reduce((s,r)=>s+(Number(r.Tons)||0),0),
-        asig: arr.reduce((s,r)=>s+(Number(r.Asignado)||0),0),
-        saldo: arr.reduce((s,r)=>s+(Number(r.Saldo)||0),0),
-      };
-    }
-    function buildTree(rows, dims, unit){
-      const factor = (unit==='trucks') ? (1/10) : 1;
-      const groupBy = (arr, key)=> {
-        const m=new Map();
-        for(const r of arr){
-          const k = r[key] ?? '(vacío)';
-          if(!m.has(k)) m.set(k, []);
-          m.get(k).push(r);
-        }
-        return m;
-      };
-      const makeLevel = (arr, dimIdx) => {
-        if(dimIdx>=dims.length || !dims[dimIdx]) {
-          const t=totalsOf(arr);
-          return [{ label:'(total)', Disp:t.disp*factor, Asig:t.asig*factor, Saldo:t.saldo*factor }];
-        }
-        const dim = dims[dimIdx];
-        const map = groupBy(arr, dim);
-        const ordered = sortKeys(dim, [...map.keys()]);
-        const nodes=[];
-        for(const k of ordered){
-          const subset = map.get(k);
-          const t = totalsOf(subset);
-          const node = {
-            label: labelFor(dim, k),
-            Disp: t.disp*factor,
-            Asig: t.asig*factor,
-            Saldo: t.saldo*factor,
-          };
-          const children = makeLevel(subset, dimIdx+1);
-          if(dims.slice(dimIdx+1).filter(Boolean).length){
-            node.children = children.filter(c=>c.label!=='(total)');
-          }
-          nodes.push(node);
-        }
-        return nodes;
-      };
-      const tree = makeLevel(rows, 0);
-      const tg = totalsOf(rows);
-      tree.push({label:'Total', Disp:tg.disp*factor, Asig:tg.asig*factor, Saldo:tg.saldo*factor});
-      return tree;
-    }
-
-    let tablePivot=null, tableAsign=null;
-    let __rowsRaw=[], __rowsFull=[], __asigMap=new Map(), __monthTotals=new Map();
-
-    function applyPivot(){
-      const rowDim   = $id('rowDim').value;
-      const sub1     = $id('subRowDim1').value || '';
-      const sub2     = $id('subRowDim2').value || '';
-      const unit     = $id('unit').value;
-
-      const dims = [rowDim, sub1, sub2].filter(Boolean);
-      const treeData = buildTree(__rowsFull, dims, unit);
-
-      const columns = [
-        {title:'Elemento', field:'label', width:280, headerSort:true},
-        {title:'Disponibles', field:'Disp', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:130},
-        {title:'Asignado',   field:'Asig', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:120},
-        {title:'Saldo',      field:'Saldo', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:110},
-      ];
-
-      const h = computeAvailHeight($id('pivotWrap'));
-      if(tablePivot){
-        tablePivot.setColumns(columns);
-        tablePivot.setData(treeData);
-        tablePivot.setHeight(h + "px");
-      }else{
-        tablePivot = new Tabulator("#pivotTable", {
-          data: treeData,
-          columns,
-          height: h + "px",
-          layout: "fitColumns",
-          movableColumns: true,
-          dataTree: true,
-          dataTreeChildField: "children",
-          dataTreeStartExpanded: false,
-          columnMinWidth: 110,
-        });
-      }
-
-      $id('unitNote').textContent = `Unidad actual: ${unit==='trucks' ? 'Camiones (10 t)' : 'Toneladas'}.`;
-      $id('badgeReg').textContent = `${__rowsRaw.length.toLocaleString('es-CL')} registros`;
-    }
-
-    /* ================== ASIGNACIÓN ================== */
-    function buildAsignTable(rows){
-      return rows.map(r=>({
-        sel:false,
-        Mes: r.Mes,
-        MesLabel: monthLabel(r.Mes),
-        Proveedor: r.Proveedor||'(sin proveedor)',
-        Comuna: r.Comuna||'',
-        Centro: r.Centro||'',
-        Área: r.Área||'',
-        Tons: Number(r.Tons)||0,
-        Trucks: (Number(r.Tons)||0)/10,
-        Fuente: r.Fuente||'',
-      }));
-    }
-
-    function refreshAsignKPIs(currentData){
-      const rows = currentData || tableAsign.getData();
-      const t = rows.reduce((s,x)=>s+(Number(x.Tons)||0),0);
-      $id('asigKpiRows').textContent = rows.length.toLocaleString('es-CL');
-      $id('asigKpiTons').textContent = fmt(t);
-      $id('asigKpiTrucks').textContent = fmt(t/10);
-    }
-
-    function selTotals(){
-      const sel = tableAsign.getSelectedData();
-      const totalTons = sel.reduce((s,x)=>s+(Number(x.Tons)||0),0);
-      const cam = totalTons/10;
-      $id('selResumen').textContent = `${sel.length} filas · ${fmt(totalTons)} t (${fmt(cam)} cam)`;
-      return {sel, totalTons, cam};
-    }
-
-    function updateMesSaldo(){
-      const key = $id('asig_mes').value;
-      const disp = Number(__monthTotals.get(key)||0);
-      const asig = Number(__asigMap.get(key)||0);
-      const saldo = disp - asig;
-      $id('kpiMesDisp').textContent = `Disp: ${fmt(disp)} t`;
-      $id('kpiMesAsig').textContent = `Asig: ${fmt(asig)} t`;
-      $id('kpiMesSaldo').textContent = `Saldo: ${fmt(saldo)} t`;
-      return {disp, asig, saldo};
-    }
-
-    async function doAsignar(){
-      const mesKey = $id('asig_mes').value;
-      if(!mesKey){ M.toast({html:'Elige un mes a asignar', classes:'red'}); return; }
-
-      const {sel} = selTotals();
-      if(sel.length===0){ M.toast({html:'Selecciona al menos una fila', classes:'red'}); return; }
-
-      const unit = $id('unidadMonto').value;
-      let monto = Number($id('montoAsignar').value||0);
-      if(monto<=0){ M.toast({html:'Monto a asignar inválido', classes:'red'}); return; }
-      if(unit==='trucks') monto = monto*10;
-
-      const {saldo} = updateMesSaldo();
-      const asignable = Math.max(0, Math.min(monto, saldo));
-      if(asignable<=0){ M.toast({html:'No hay saldo disponible en ese mes', classes:'red'}); return; }
-
-      const byProv = new Map();
-      for(const r of sel){
-        const p = r.Proveedor || '(sin proveedor)';
-        byProv.set(p, (byProv.get(p)||0) + (Number(r.Tons)||0));
-      }
-      const totalSel = [...byProv.values()].reduce((s,n)=>s+n,0);
-      if(totalSel<=0){ M.toast({html:'Selección sin toneladas', classes:'red'}); return; }
-
-      const payload = [];
-      let acumulado = 0;
-      const provs = [...byProv.keys()];
-      provs.forEach((prov, idx)=>{
-        let parte = asignable * (byProv.get(prov)/totalSel);
-        parte = Math.round(parte*100)/100;
-        if(idx===provs.length-1){
-          parte = Math.round((asignable - acumulado)*100)/100;
-        }else{
-          acumulado += parte;
-        }
-        if(parte>0) payload.push({mesKey: mesKey, proveedorNombre: prov, tons: parte, fuente:'ui-asignador'});
-      });
-
-      if(payload.length===0){ M.toast({html:'Nada que asignar', classes:'red'}); return; }
-
-      $id('btnAsignar').disabled = true;
-      try{
-        const reqs = payload.map(p =>
-          fetch(`${API_URL}/asignaciones`, {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify(p)
-          }).then(checkResponse)
-        );
-        await Promise.all(reqs);
-        M.toast({html:'Asignación registrada', classes:'teal'});
-        await loadAll();
-      }catch(e){
-        console.error(e);
-        M.toast({html:'Error guardando asignación', classes:'red'});
-      }finally{
-        $id('btnAsignar').disabled = false;
-      }
-    }
-
-    function applyAsignTable(){
-      const g1 = $id('grp1').value;
-      const g2 = $id('grp2').value || null;
-      const search = ($id('asigSearch').value||'').toLowerCase();
-
-      const filters = [];
-      if(search){
-        filters.push([
-          {field:"MesLabel", type:"like", value:search},
-          {field:"Proveedor", type:"like", value:search},
-          {field:"Comuna", type:"like", value:search},
-          {field:"Centro", type:"like", value:search},
-          {field:"Área", type:"like", value:search},
-          {field:"Fuente", type:"like", value:search},
-        ]);
-      }
-      tableAsign.clearFilter(true);
-      if(filters.length) tableAsign.setFilter([filters[0]], "or");
-
-      if(g1 && g2){
-        tableAsign.setGroupBy([g1, g2]);
-      }else if(g1){
-        tableAsign.setGroupBy([g1]);
-      }else{
-        tableAsign.setGroupBy([]);
-      }
-
-      refreshAsignKPIs(tableAsign.getData("active"));
-      fitHeights(); // por si cambia el alto visible
-    }
-
-    /* ================== CALCULO DE ALTOS DINÁMICOS ================== */
-    function computeAvailHeight(container){
-      const rect = container.getBoundingClientRect();
-      const vh = window.innerHeight || document.documentElement.clientHeight;
-      // margen inferior de 24px
-      return Math.max(260, Math.floor(vh - rect.top - 24));
-    }
-    const fitHeights = debounce(()=>{
-      // Pivot
-      const pw = $id('pivotWrap');
-      if(pw){
-        const h = computeAvailHeight(pw);
-        pw.style.height = h + 'px';
-        if(tablePivot) tablePivot.setHeight(h + 'px');
-      }
-      // Asignación
-      const taWrap = document.querySelector('#tableAsignable');
-      if(taWrap){
-        const h2 = computeAvailHeight(taWrap);
-        taWrap.style.height = h2 + 'px';
-        if(tableAsign) tableAsign.setHeight(h2 + 'px');
-      }
-    },120);
-
-    /* ================== LOAD & INIT ================== */
-    async function loadAll(){
-      const [ofertas, asigMap] = await Promise.all([ getOfertas(), getAsignacionesMap() ]);
-      __rowsRaw = ofertas;
-      __monthTotals = monthTotals(ofertas);
-      __asigMap = asigMap;
-      __rowsFull = enrichMetrics(ofertas, asigMap, __monthTotals);
-
-      applyPivot(); // pinta inventario
-      // Asignación
-      const asignRows = buildAsignTable(ofertas);
-      const h2 = computeAvailHeight(document.querySelector('#tableAsignable') || document.body);
-      if(tableAsign){
-        tableAsign.setData(asignRows);
-        tableAsign.setHeight(h2 + 'px');
-      }else{
-        tableAsign = new Tabulator("#tableAsignable", {
-          data: asignRows,
-          height: h2 + "px",
-          layout: "fitColumns",
-          columnMinWidth: 110,
-          selectable: true,
-          selectableRangeMode: "click",
-          groupStartOpen: false,
-          groupToggleElement: "header",
-          groupHeader: (value, count, data, group)=>{
-            const total = data.reduce((s,r)=>s+(Number(r.Tons)||0),0);
-            const field = group.getField();
-            const label = (field==='Mes')?monthLabel(value):value;
-            return `<span><strong>${field}:</strong> ${label} <span class="grey-text">(${count} ítem)</span> — <strong>Total:</strong> ${fmt(total)} t</span>`;
-          },
-          columns: [
-            {formatter:"rowSelection", title:"Sel", hozAlign:"center", width:60, headerSort:false, cellClick:(e, cell)=>cell.getRow().toggleSelect()},
-            {title:"Mes", field:"MesLabel", width:120, headerSort:true},
-            {title:"Proveedor", field:"Proveedor", headerSort:true},
-            {title:"Comuna", field:"Comuna"},
-            {title:"Centro", field:"Centro"},
-            {title:"Área", field:"Área"},
-            {title:"Tons", field:"Tons", hozAlign:"right", headerHozAlign:"right", formatter:(c)=>fmt(c.getValue())},
-            {title:"Camiones", field:"Trucks", hozAlign:"right", headerHozAlign:"right", formatter:(c)=>fmt(c.getValue())},
-            {title:"Fuente", field:"Fuente", width:120},
-          ],
-          rowSelectionChanged: selTotals,
-          dataFiltered: (_, rows)=>{
-            const visibles = rows.map(r=>r.getData());
-            refreshAsignKPIs(visibles);
-          }
-        });
-      }
-
-      refreshAsignKPIs();
-      updateMesSaldo();
-      fitHeights();
-      setTimeout(fitHeights, 50); // ajuste final tras render
-    }
-
-    document.addEventListener('DOMContentLoaded', ()=>{
-      M.Tabs.init(document.querySelectorAll('.tabs'));
-      M.FormSelect.init(document.querySelectorAll('select'));
-
-      // Inventario
-      $id('btnApply').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); applyPivot(); fitHeights(); });
-      $id('btnCSV').addEventListener('click', ()=>{ if(tablePivot) tablePivot.download("csv","inventario_resumen.csv"); });
-      $id('btnXLSX').addEventListener('click', ()=>{ if(tablePivot) tablePivot.download("xlsx","inventario_resumen.xlsx",{sheetName:"Inventario"}); });
-
-      // Asignación
-      $id('asigSearch').addEventListener('input', applyAsignTable);
-      $id('grp1').addEventListener('change', applyAsignTable);
-      $id('grp2').addEventListener('change', applyAsignTable);
-      $id('asig_mes').addEventListener('change', updateMesSaldo);
-      $id('btnUsarSeleccion').addEventListener('click', ()=>{
-        const {totalTons} = selTotals();
-        $id('montoAsignar').value = Math.round( ( ($id('unidadMonto').value==='trucks' ? totalTons/10 : totalTons) ) *100)/100;
-        M.updateTextFields();
-      });
-      $id('btnUsarSaldo').addEventListener('click', ()=>{
-        const {saldo} = updateMesSaldo();
-        $id('montoAsignar').value = Math.max(0, Math.round( ( ($id('unidadMonto').value==='trucks' ? saldo/10 : saldo) ) *100)/100);
-        M.updateTextFields();
-      });
-      $id('btnAsignar').addEventListener('click', doAsignar);
-
-      // Ajuste de altura al cambiar tamaño y al cambiar de tab
-      window.addEventListener('resize', fitHeights);
-      document.querySelectorAll('.tabs a').forEach(a=>{
-        a.addEventListener('click', ()=> setTimeout(fitHeights, 180));
-      });
-
-      loadAll();
-    });
-  </script>
+  <!-- App (rutas relativas desde /html/Abastecimiento/asignacion/) -->
+  <script type="module" src="../../../js/abastecimiento/asignacion/principal.js"></script>
 </body>
 </html>
