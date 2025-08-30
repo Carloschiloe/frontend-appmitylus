@@ -1,114 +1,97 @@
-// programa_semanal.js
-import { fmt, altoDisponible, fechasDeSemanaISO, aToneladas } from './utilidades.js';
-import * as estado from './estado.js';
-import * as api from './api.js';
+// js/abastecimiento/asignacion/programa_semanal.js
+import {fmt, calcAlturaDisponible} from "./utilidades.js";
 
-let tabla=null, weekKeyActual=null, fechasSemana=[];
+let table = null;
+export function getTablaPrograma(){ return table; }
 
-function construirToolbar(){
-  const wrap = document.getElementById('progToolbar');
-  wrap.innerHTML = `
-    <div class="input-field"><input id="prog_semana" type="week"><label class="active" for="prog_semana">Semana (ISO)</label></div>
-    <div class="input-field"><select id="prog_unidad"><option value="tons" selected>Toneladas</option><option value="trucks">Camiones (10 t)</option></select><label>Unidad</label></div>
-    <div class="input-field"><select id="prog_tipo"><option value="ALL" selected>Todos</option><option value="NORMAL">Normal</option><option value="BAP">BAP</option></select><label>Tipo MMPP</label></div>
+function semanaISOActual(){
+  // devuelve "2025-W36" etc (input type week)
+  const d = new Date();
+  const jan4 = new Date(d.getFullYear(),0,4);
+  const day = (d - jan4 + ((jan4.getDay()+6)%7)*86400000)/86400000;
+  const week = 1 + Math.floor(day/7);
+  return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
+}
+
+function buildToolbar(){
+  const el = document.getElementById("progToolbar");
+  el.innerHTML = `
+    <div class="input-field">
+      <input id="prog_week" type="week" value="${semanaISOActual()}">
+      <label class="active" for="prog_week">Semana (ISO)</label>
+    </div>
+    <div class="input-field">
+      <select id="prog_unit">
+        <option value="tons" selected>Toneladas</option>
+        <option value="trucks">Camiones (10 t)</option>
+      </select>
+      <label>Unidad</label>
+    </div>
+    <div class="input-field">
+      <select id="prog_tipo">
+        <option value="ALL" selected>Todos</option>
+        <option value="NORMAL">Normal</option>
+        <option value="BAP">BAP</option>
+      </select>
+      <label>Tipo MMPP</label>
+    </div>
     <div class="right-actions" style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
-      <a class="btn teal" id="prog_noop"><i class="material-icons left">event_busy</i>No operación…</a>
+      <a class="btn teal" id="prog_refresh"><i class="material-icons left">refresh</i>Actualizar</a>
       <a class="btn grey darken-2" id="prog_csv"><i class="material-icons left">download</i>CSV</a>
       <a class="btn grey darken-2" id="prog_xlsx"><i class="material-icons left">file_download</i>XLSX</a>
     </div>
   `;
-  M.FormSelect.init(wrap.querySelectorAll('select'));
+  M.FormSelect.init(el.querySelectorAll("select"));
 
-  // semana actual simplificada
-  const now=new Date(); const y=now.getFullYear(); const jan1=new Date(y,0,1);
-  const d=Math.ceil((((now - jan1) / 86400000) + jan1.getDay()+1)/7);
-  wrap.querySelector('#prog_semana').value = `${y}-W${String(d).padStart(2,'0')}`;
+  document.getElementById("prog_refresh").addEventListener("click", ()=>render());
+  document.getElementById("prog_csv").addEventListener("click", ()=> table?.download("csv","programa_semanal.csv"));
+  document.getElementById("prog_xlsx").addEventListener("click", ()=> table?.download("xlsx","programa_semanal.xlsx",{sheetName:"Programa"}));
+}
 
-  wrap.querySelector('#prog_csv').addEventListener('click', ()=>{ if(tabla) tabla.download("csv","programa_semanal.csv"); });
-  wrap.querySelector('#prog_xlsx').addEventListener('click', ()=>{ if(tabla) tabla.download("xlsx","programa_semanal.xlsx",{sheetName:"Programa"}); });
-  wrap.querySelector('#prog_noop').addEventListener('click', ()=>{
-    const modal=document.getElementById('modalNoOp'); (M.Modal.getInstance(modal)||M.Modal.init(modal)).open();
-    document.getElementById('noop_fecha').value = fechasSemana[0]||''; M.FormSelect.init(document.querySelectorAll('#modalNoOp select')); M.updateTextFields();
+function buildTable(){
+  table = new Tabulator("#progTable", {
+    data: [],
+    height: calcAlturaDisponible(260),
+    layout: "fitColumns",
+    columnMinWidth: 110,
+    columns: [
+      {title:"Proveedor", field:"Proveedor", width:220},
+      {title:"Lun", field:"L", hozAlign:"right", formatter:(c)=>fmt(c.getValue())},
+      {title:"Mar", field:"M",  hozAlign:"right", formatter:(c)=>fmt(c.getValue())},
+      {title:"Mié", field:"X",  hozAlign:"right", formatter:(c)=>fmt(c.getValue())},
+      {title:"Jue", field:"J",  hozAlign:"right", formatter:(c)=>fmt(c.getValue())},
+      {title:"Vie", field:"V",  hozAlign:"right", formatter:(c)=>fmt(c.getValue())},
+      {title:"Sáb", field:"S",  hozAlign:"right", formatter:(c)=>fmt(c.getValue())},
+      {title:"Dom", field:"D",  hozAlign:"right", formatter:(c)=>fmt(c.getValue())},
+      {title:"Total", field:"Total", hozAlign:"right", formatter:(c)=>fmt(c.getValue())},
+    ],
   });
-
-  wrap.querySelector('#prog_semana').addEventListener('change', cargarSemana);
-  wrap.querySelector('#prog_unidad').addEventListener('change', renderTabla);
-  wrap.querySelector('#prog_tipo').addEventListener('change', renderTabla);
-
-  // acciones modales
-  document.getElementById('btnGuardarPrograma').addEventListener('click', guardarProgramaDesdeModal);
-  document.getElementById('btnGuardarNoOp').addEventListener('click', guardarNoOpDesdeModal);
 }
-async function cargarSemana(){
-  const weekInput=document.getElementById('prog_semana').value; if(!weekInput) return;
-  weekKeyActual = weekInput.replace('W','-'); // YYYY-WW
-  fechasSemana = fechasDeSemanaISO(weekKeyActual);
-  await estado.cargarProgramaSemana(api, weekKeyActual, fechasSemana);
-  renderTabla();
-}
-function renderTabla(){
-  if(!fechasSemana.length) return;
-  const unidad=document.getElementById('prog_unidad').value;
-  const tipo=document.getElementById('prog_tipo').value;
 
-  const dayNames=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
-  const cols=[{title:'Proveedor', field:'Proveedor', width:260}];
-  fechasSemana.forEach((f,idx)=>{
-    const noop=estado.esNoOperacion(f);
-    cols.push({
-      title: `${dayNames[idx]} ${f.slice(5)}` + (noop?` <span class="badge-noop">${noop.status==='HOLIDAY'?'Feriado':'No operación'}</span>`:''),
-      field:`d${idx}`, hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()||0), cssClass: noop ? 'col-noop' : '',
-      cellClick:(e,cell)=>{
-        if(noop) return M.toast({html:`Día bloqueado (${noop.reason||'sin motivo'})`, classes:'orange'});
-        const modal=document.getElementById('modalProgramar'); (M.Modal.getInstance(modal)||M.Modal.init(modal)).open();
-        document.getElementById('prog_fecha').value=f;
-        document.getElementById('prog_camiones').value=''; document.getElementById('prog_tons').value=''; document.getElementById('prog_notas').value='';
-        document.getElementById('prog_proveedor').value = cell.getRow().getData().Proveedor || ''; document.getElementById('prog_comuna').value='';
-        M.FormSelect.init(document.querySelectorAll('#modalProgramar select')); M.updateTextFields();
-      }
-    });
-  });
-  cols.push({title:'Total', field:'total', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()||0), width:110});
+function ejemploDatos(){
+  // datos mock para que puedas ver el layout (reemplázalo cuando tengas backend)
+  return [
+    {Proveedor:"(vacío)", L:0,M:0,X:0,J:0,V:0,S:0,D:0},
+    {Proveedor:"Proveedor A", L:100,M:0,X:0,J:0,V:100,S:0,D:0},
+    {Proveedor:"Proveedor B", L:0,M:50,X:0,J:0,V:0,S:0,D:0},
+  ].map(r=>({...r, Total:(r.L+r.M+r.X+r.J+r.V+r.S+r.D)}));
+}
 
-  const porProv=new Map();
-  const entries=estado.datos.programaSemana.filter(e=> tipo==='ALL' ? true : (e.tipo||'NORMAL').toUpperCase()===tipo);
-  for(const e of entries){
-    const key=e.proveedorNombre||'(sin proveedor)'; if(!porProv.has(key)) porProv.set(key,{Proveedor:key,total:0});
-    const row=porProv.get(key); const idx=fechasSemana.indexOf(e.fecha);
-    if(idx>=0){ const value=(unidad==='trucks')?e.camiones:e.tons; row[`d${idx}`]=(row[`d${idx}`]||0)+(Number(value)||0); row.total=(row.total||0)+(Number(value)||0); }
-  }
-  const data=[...porProv.values()].sort((a,b)=>String(a.Proveedor).localeCompare(String(b.Proveedor)));
-  const h=altoDisponible(document.getElementById('progTableWrap'));
-  if(tabla){ tabla.setColumns(cols); tabla.setData(data); tabla.setHeight(h + 'px'); }
-  else{ tabla=new Tabulator('#progTable', {data, columns:cols, height:h + 'px', layout:'fitColumns', columnMinWidth:110, movableColumns:true}); }
+function render(){
+  const unit = document.getElementById("prog_unit").value;
+  let data = ejemploDatos();
+  const f = unit==='trucks' ? 1/10 : 1;
+  data = data.map(r=>({
+    ...r,
+    L:r.L*f, M:r.M*f, X:r.X*f, J:r.J*f, V:r.V*f, S:r.S*f, D:r.D*f, Total:r.Total*f
+  }));
+  if(!table) buildTable();
+  table.setData(data);
+  document.getElementById("progNote").textContent = `Unidad actual: ${unit==='trucks'?'Camiones (10 t)':'Toneladas'}.`;
+}
 
-  const resumenDias = fechasSemana.map(f=>{ const st=estado.esNoOperacion(f); return st?`${f} (${st.status})`:''; }).filter(Boolean).join(' · ');
-  document.getElementById('progNote').textContent = `Semana ${weekKeyActual} — ${fechasSemana[0]} a ${fechasSemana[6]}${resumenDias? ' — ' + resumenDias : ''}`;
-}
-async function guardarProgramaDesdeModal(){
-  const fecha=document.getElementById('prog_fecha').value;
-  const tipo=document.getElementById('prog_tipo').value;
-  const prov=document.getElementById('prog_proveedor').value.trim();
-  const comuna=document.getElementById('prog_comuna').value.trim();
-  let camiones=Number(document.getElementById('prog_camiones').value||0);
-  let tons=Number(document.getElementById('prog_tons').value||0);
-  const notas=document.getElementById('prog_notas').value||'';
-  if(!fecha || !prov || (!camiones && !tons)) return M.toast({html:'Completa fecha, proveedor y cantidad', classes:'red'});
-  if(!tons && camiones) tons = aToneladas(camiones);
-  const mesKey=fecha.slice(0,7); const saldo=estado.saldoMes({mesKey, tipo}); if(tons>saldo) return M.toast({html:`Excede el saldo del mes (${fmt(saldo)} t)`, classes:'red'});
-  try{ await api.guardarPrograma({fecha, proveedorNombre:prov, comuna, tipo, camiones, tons, notas, estado:'BORRADOR'}); M.toast({html:'Programa guardado', classes:'teal'}); M.Modal.getInstance(document.getElementById('modalProgramar'))?.close(); await estado.cargarProgramaSemana(api, weekKeyActual, fechasSemana); renderTabla(); }
-  catch(e){ console.error(e); M.toast({html:'Error guardando programa', classes:'red'}); }
-}
-async function guardarNoOpDesdeModal(){
-  const date=document.getElementById('noop_fecha').value; const status=document.getElementById('noop_estado').value; const reason=document.getElementById('noop_motivo').value||'';
-  if(!date) return;
-  try{ await api.guardarEstadoDia({date, status, reason}); M.toast({html:'Estado del día guardado', classes:'teal'}); M.Modal.getInstance(document.getElementById('modalNoOp'))?.close(); await estado.cargarProgramaSemana(api, weekKeyActual, fechasSemana); renderTabla(); }
-  catch(e){ console.error(e); M.toast({html:'Error guardando estado de día', classes:'red'}); }
-}
-export async function montar(){
-  construirToolbar();
-  M.Modal.init(document.querySelectorAll('.modal'));
-  await cargarSemana();
-  window.addEventListener('resize', ()=>{ const h=altoDisponible(document.getElementById('progTableWrap')); if(tabla) tabla.setHeight(h + 'px'); });
-  estado.on('actualizado-programa', renderTabla);
+export function initProgramaSemanalUI(){
+  buildToolbar();
+  buildTable();
+  render();
 }
