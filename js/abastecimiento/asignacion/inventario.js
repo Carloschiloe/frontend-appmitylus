@@ -1,0 +1,118 @@
+// inventario.js
+import { fmt, altoDisponible, etiquetaMes } from './utilidades.js';
+import * as estado from './estado.js';
+
+let tabla = null;
+
+function construirToolbar({onAplicar}){
+  const wrap = document.getElementById('invToolbar');
+  wrap.innerHTML = `
+    <div class="input-field">
+      <select id="inv_row">
+        <option value="Mes" selected>Mes</option>
+        <option value="Semana">Semana</option>
+        <option value="Proveedor">Proveedor</option>
+        <option value="Comuna">Comuna</option>
+        <option value="Centro">Centro</option>
+        <option value="Área">Área</option>
+        <option value="Fuente">Fuente</option>
+      </select>
+      <label>Fila (nivel 1)</label>
+    </div>
+    <div class="input-field">
+      <select id="inv_sub1">
+        <option value="">— Ninguna —</option>
+        <option value="Semana">Semana</option>
+        <option value="Proveedor" selected>Proveedor</option>
+        <option value="Comuna">Comuna</option>
+        <option value="Centro">Centro</option>
+        <option value="Área">Área</option>
+      </select>
+      <label>Subfila 1</label>
+    </div>
+    <div class="input-field">
+      <select id="inv_sub2">
+        <option value="">— Ninguna —</option>
+        <option value="Semana">Semana</option>
+        <option value="Proveedor">Proveedor</option>
+        <option value="Comuna">Comuna</option>
+        <option value="Centro">Centro</option>
+        <option value="Área">Área</option>
+      </select>
+      <label>Subfila 2</label>
+    </div>
+    <div class="input-field">
+      <select id="inv_unidad">
+        <option value="tons" selected>Toneladas</option>
+        <option value="trucks">Camiones (10 t)</option>
+      </select>
+      <label>Unidad</label>
+    </div>
+    <div class="right-actions" style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
+      <a class="btn teal" id="inv_apply"><i class="material-icons left">refresh</i>Actualizar</a>
+      <span class="pill" id="inv_badge">0 registros</span>
+      <a class="btn grey darken-2" id="inv_csv"><i class="material-icons left">download</i>CSV</a>
+      <a class="btn grey darken-2" id="inv_xlsx"><i class="material-icons left">file_download</i>XLSX</a>
+    </div>
+  `;
+  M.FormSelect.init(wrap.querySelectorAll('select'));
+  const btn = document.getElementById('inv_apply');
+  btn.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); onAplicar(); });
+  document.getElementById('inv_csv').addEventListener('click', ()=>{ if(tabla) tabla.download("csv","inventario_resumen.csv"); });
+  document.getElementById('inv_xlsx').addEventListener('click', ()=>{ if(tabla) tabla.download("xlsx","inventario_resumen.xlsx",{sheetName:"Inventario"}); });
+}
+
+function ordenarClaves(dim, keys){
+  if(dim==='Mes') return keys.sort((a,b)=>String(a).localeCompare(String(b)));
+  if(dim==='Semana'){ const toN=v=>{const [y,w]=String(v).split('-');return (+y)*100+(+w)}; return keys.sort((a,b)=>toN(a)-toN(b)); }
+  return keys.sort((a,b)=>String(a).localeCompare(String(b)));
+}
+function etiquetaPara(dim, key){ if(dim==='Mes') return etiquetaMes(key); if(dim==='Semana') return `Sem ${key}`; return key ?? '(vacío)'; }
+
+function construirArbol(rows, dims, unidad='tons'){
+  const factor = (unidad==='trucks') ? (1/10) : 1;
+  const group = (arr, dim)=>{ const m=new Map(); for(const r of arr){ const k=r[dim]??'(vacío)'; if(!m.has(k)) m.set(k,[]); m.get(k).push(r);} return m; };
+  const tot = (arr)=>({ disp: arr.reduce((s,x)=>s+(+x.Tons||0),0), asig: arr.reduce((s,x)=>s+(+x.Asignado||0),0), saldo: arr.reduce((s,x)=>s+(+x.Saldo||0),0) });
+  const make=(arr,idx)=>{
+    if(idx>=dims.length || !dims[idx]){ const t=tot(arr); return [{label:'(total)', Disp:t.disp*factor, Asig:t.asig*factor, Saldo:t.saldo*factor}]; }
+    const dim=dims[idx], map=group(arr,dim), ordered=ordenarClaves(dim,[...map.keys()]); const out=[];
+    for(const k of ordered){ const sub=map.get(k); const t=tot(sub);
+      const node={label:etiquetaPara(dim,k), Disp:t.disp*factor, Asig:t.asig*factor, Saldo:t.saldo*factor};
+      const children=make(sub,idx+1); if(dims.slice(idx+1).filter(Boolean).length) node.children=children.filter(c=>c.label!=='(total)'); out.push(node);
+    } return out;
+  };
+  const tree=make(rows,0); const tg=tot(rows); tree.push({label:'Total', Disp:tg.disp*factor, Asig:tg.asig*factor, Saldo:tg.saldo*factor}); return tree;
+}
+
+function aplicar(){
+  const unidad = document.getElementById('inv_unidad').value;
+  const rowDim = document.getElementById('inv_row').value;
+  const sub1   = document.getElementById('inv_sub1').value || '';
+  const sub2   = document.getElementById('inv_sub2').value || '';
+
+  const filas = estado.filasEnriquecidas({tipo:'ALL'});
+  const dims = [rowDim, sub1, sub2].filter(Boolean);
+  const data = construirArbol(filas, dims, unidad);
+
+  const cols = [
+    {title:'Elemento', field:'label', width:280, headerSort:true},
+    {title:'Disponibles', field:'Disp', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:130},
+    {title:'Asignado',   field:'Asig', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:120},
+    {title:'Saldo',      field:'Saldo', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:110},
+  ];
+
+  const h = altoDisponible(document.getElementById('invTableWrap'));
+  if(tabla){ tabla.setColumns(cols); tabla.setData(data); tabla.setHeight(h + 'px'); }
+  else{
+    tabla = new Tabulator('#invTable', { data, columns: cols, height: h + 'px', layout:'fitColumns', dataTree:true, dataTreeChildField:'children', dataTreeStartExpanded:false, columnMinWidth:110, movableColumns:true });
+  }
+  document.getElementById('inv_badge').textContent = `${estado.datos.ofertas.length} registros`;
+  document.getElementById('invNote').textContent = `Unidad actual: ${unidad==='trucks'?'Camiones (10 t)':'Toneladas'}.`;
+}
+
+export function montar(){
+  construirToolbar({onAplicar: aplicar});
+  aplicar();
+  window.addEventListener('resize', ()=>{ const h=altoDisponible(document.getElementById('invTableWrap')); if(tabla) tabla.setHeight(h + 'px'); });
+  estado.on('actualizado', aplicar);
+}
