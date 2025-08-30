@@ -26,7 +26,7 @@
     /* Toolbar compacta */
     .toolbar{
       display:grid;
-      grid-template-columns:repeat(5,minmax(130px,1fr)) auto;
+      grid-template-columns:repeat(4,minmax(130px,1fr)) auto; /* 4 selects + acciones */
       gap:8px; align-items:end
     }
     .toolbar .input-field{margin:0}
@@ -38,6 +38,11 @@
     .toolbar .input-field>label{font-size:var(--compact-label)}
     .toolbar .select-wrapper+label{top:-12px}
 
+    /* Fix: botón por encima de los selects para evitar clic fantasma */
+    .toolbar .select-wrapper{position:relative; z-index:1}
+    .toolbar .right-actions{position:relative; z-index:5}
+
+    /* Contenedor de la tabla con alto dinámico */
     #pivotWrap{overflow-x:auto}
     .tabulator{border-radius:12px;border:1px solid #e0e0e0}
     .tabulator .tabulator-col{min-width:110px}
@@ -72,7 +77,7 @@
       </ul>
     </div>
 
-    <!-- ============== TAB 1: INVENTARIOS (solo 3 columnas fijas) ============== -->
+    <!-- ============== TAB 1: INVENTARIOS (árbol + 3 columnas fijas) ============== -->
     <div id="tabPivot">
       <div class="card-soft" style="padding:14px;margin-bottom:12px">
         <div class="toolbar">
@@ -126,7 +131,7 @@
           </div>
 
           <div class="right-actions" style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
-            <a class="btn teal" id="btnApply"><i class="material-icons left">refresh</i>Aplicar</a>
+            <a class="btn teal" id="btnApply"><i class="material-icons left">refresh</i>Actualizar</a>
             <span class="pill" id="badgeReg">0 registros</span>
             <a class="btn grey darken-2" id="btnCSV"><i class="material-icons left">download</i>CSV</a>
             <a class="btn grey darken-2" id="btnXLSX"><i class="material-icons left">file_download</i>XLSX</a>
@@ -141,7 +146,7 @@
       <div style="margin:10px 0" class="grey-text" id="unitNote">Unidad actual: Toneladas.</div>
     </div>
 
-    <!-- ============== TAB 2: ASIGNACIÓN (igual que antes) ============== -->
+    <!-- ============== TAB 2: ASIGNACIÓN (sin cambios funcionales) ============== -->
     <div id="tabAsignacion" class="assign-grid" style="margin-top:12px">
       <!-- IZQ: INVENTARIO SELECCIONABLE -->
       <div>
@@ -248,6 +253,7 @@
     const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
     const fmt = (n) => (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:2});
     const uniq = (a)=>[...new Set(a)];
+    const debounce = (fn,ms=120)=>{let t;return(...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),ms)};}
 
     function parseDateOrNull(d){
       if(!d && d!==0) return null;
@@ -323,7 +329,6 @@
       return m;
     }
 
-    // Prorratea Asignado/Saldo por participación mensual
     function enrichMetrics(rows, asigMap, mTotals){
       return rows.map(r=>{
         const Tm = Number(mTotals.get(r.Mes)||0);
@@ -361,8 +366,6 @@
     }
     function buildTree(rows, dims, unit){
       const factor = (unit==='trucks') ? (1/10) : 1;
-      const [d1,d2,d3] = dims;
-
       const groupBy = (arr, key)=> {
         const m=new Map();
         for(const r of arr){
@@ -372,7 +375,6 @@
         }
         return m;
       };
-
       const makeLevel = (arr, dimIdx) => {
         if(dimIdx>=dims.length || !dims[dimIdx]) {
           const t=totalsOf(arr);
@@ -392,18 +394,14 @@
             Saldo: t.saldo*factor,
           };
           const children = makeLevel(subset, dimIdx+1);
-          if(dims.slice(dimIdx+1).filter(Boolean).length){ // si hay subniveles reales, no metas un (total) como único
-            node.children = children
-              .filter(c=>c.label!=='(total)'); // solo hijos reales
+          if(dims.slice(dimIdx+1).filter(Boolean).length){
+            node.children = children.filter(c=>c.label!=='(total)');
           }
           nodes.push(node);
         }
         return nodes;
       };
-
       const tree = makeLevel(rows, 0);
-
-      // Agrega fila Total general al final (sin hijos)
       const tg = totalsOf(rows);
       tree.push({label:'Total', Disp:tg.disp*factor, Asig:tg.asig*factor, Saldo:tg.saldo*factor});
       return tree;
@@ -428,14 +426,16 @@
         {title:'Saldo',      field:'Saldo', hozAlign:'right', headerHozAlign:'right', formatter:(c)=>fmt(c.getValue()), width:110},
       ];
 
+      const h = computeAvailHeight($id('pivotWrap'));
       if(tablePivot){
         tablePivot.setColumns(columns);
         tablePivot.setData(treeData);
+        tablePivot.setHeight(h + "px");
       }else{
         tablePivot = new Tabulator("#pivotTable", {
           data: treeData,
           columns,
-          height: "68vh",
+          height: h + "px",
           layout: "fitColumns",
           movableColumns: true,
           dataTree: true,
@@ -449,7 +449,7 @@
       $id('badgeReg').textContent = `${__rowsRaw.length.toLocaleString('es-CL')} registros`;
     }
 
-    /* ================== ASIGNACIÓN (igual) ================== */
+    /* ================== ASIGNACIÓN ================== */
     function buildAsignTable(rows){
       return rows.map(r=>({
         sel:false,
@@ -580,7 +580,32 @@
       }
 
       refreshAsignKPIs(tableAsign.getData("active"));
+      fitHeights(); // por si cambia el alto visible
     }
+
+    /* ================== CALCULO DE ALTOS DINÁMICOS ================== */
+    function computeAvailHeight(container){
+      const rect = container.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      // margen inferior de 24px
+      return Math.max(260, Math.floor(vh - rect.top - 24));
+    }
+    const fitHeights = debounce(()=>{
+      // Pivot
+      const pw = $id('pivotWrap');
+      if(pw){
+        const h = computeAvailHeight(pw);
+        pw.style.height = h + 'px';
+        if(tablePivot) tablePivot.setHeight(h + 'px');
+      }
+      // Asignación
+      const taWrap = document.querySelector('#tableAsignable');
+      if(taWrap){
+        const h2 = computeAvailHeight(taWrap);
+        taWrap.style.height = h2 + 'px';
+        if(tableAsign) tableAsign.setHeight(h2 + 'px');
+      }
+    },120);
 
     /* ================== LOAD & INIT ================== */
     async function loadAll(){
@@ -590,17 +615,17 @@
       __asigMap = asigMap;
       __rowsFull = enrichMetrics(ofertas, asigMap, __monthTotals);
 
-      // Inventario (árbol)
-      applyPivot();
-
+      applyPivot(); // pinta inventario
       // Asignación
       const asignRows = buildAsignTable(ofertas);
+      const h2 = computeAvailHeight(document.querySelector('#tableAsignable') || document.body);
       if(tableAsign){
         tableAsign.setData(asignRows);
+        tableAsign.setHeight(h2 + 'px');
       }else{
         tableAsign = new Tabulator("#tableAsignable", {
           data: asignRows,
-          height: "68vh",
+          height: h2 + "px",
           layout: "fitColumns",
           columnMinWidth: 110,
           selectable: true,
@@ -634,6 +659,8 @@
 
       refreshAsignKPIs();
       updateMesSaldo();
+      fitHeights();
+      setTimeout(fitHeights, 50); // ajuste final tras render
     }
 
     document.addEventListener('DOMContentLoaded', ()=>{
@@ -641,7 +668,7 @@
       M.FormSelect.init(document.querySelectorAll('select'));
 
       // Inventario
-      $id('btnApply').addEventListener('click', applyPivot);
+      $id('btnApply').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); applyPivot(); fitHeights(); });
       $id('btnCSV').addEventListener('click', ()=>{ if(tablePivot) tablePivot.download("csv","inventario_resumen.csv"); });
       $id('btnXLSX').addEventListener('click', ()=>{ if(tablePivot) tablePivot.download("xlsx","inventario_resumen.xlsx",{sheetName:"Inventario"}); });
 
@@ -661,6 +688,12 @@
         M.updateTextFields();
       });
       $id('btnAsignar').addEventListener('click', doAsignar);
+
+      // Ajuste de altura al cambiar tamaño y al cambiar de tab
+      window.addEventListener('resize', fitHeights);
+      document.querySelectorAll('.tabs a').forEach(a=>{
+        a.addEventListener('click', ()=> setTimeout(fitHeights, 180));
+      });
 
       loadAll();
     });
