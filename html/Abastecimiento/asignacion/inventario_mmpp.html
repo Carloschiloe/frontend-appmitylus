@@ -8,68 +8,22 @@
   <!-- Materialize & Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-  <link rel="stylesheet" href="../../../css/asignacion.css">
+  <link rel="stylesheet" href="../../../css/asignacion.css" />
 
   <!-- Tabulator -->
-  <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css">
-
-  <style>
-    :root{
-      --compact-h: 36px;
-      --compact-fs: .92rem;
-      --compact-label: .82rem;
-    }
-    body{background:#fafafa}
-    nav.teal .brand-logo{font-size:1.1rem}
-    .card-soft{border-radius:14px;background:#fff;border:1px solid #eaeaea}
-    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#e0f2f1;color:#00695c;font-size:.8rem}
-
-    .toolbar{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(160px,1fr)) auto;
-      gap:8px; align-items:end
-    }
-    .toolbar .input-field{margin:0}
-    .toolbar .select-wrapper input.select-dropdown{
-      height:var(--compact-h); line-height:var(--compact-h); font-size:var(--compact-fs)
-    }
-    .toolbar .dropdown-content li>a,.toolbar .dropdown-content li>span{font-size:.9rem}
-    .toolbar .input-field>label{font-size:var(--compact-label)}
-    .toolbar .select-wrapper+label{top:-12px}
-    .toolbar .right-actions{position:relative; z-index:5}
-    .toolbar .select-wrapper{position:relative; z-index:1}
-
-    .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-    .kpi .card-soft{padding:12px}
-    .kpi h6{margin:0 0 4px;font-size:.9rem;color:#666}
-    .kpi p{margin:0;font-weight:700}
-    .assign-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
-    .assign-actions .btn{width:100%}
-
-    #invTableWrap, #progTableWrap{overflow-x:auto}
-    .tabulator{border-radius:12px;border:1px solid #e0e0e0}
-    .tabulator .tabulator-col{min-width:110px}
-
-    .col-noop .tabulator-col-content{
-      background: repeating-linear-gradient(-45deg,#f5f5f5,#f5f5f5 10px,#ededed 10px,#ededed 20px);
-    }
-    .badge-noop{background:#bdbdbd;color:#333;border-radius:999px;padding:2px 8px;font-size:.75rem;margin-left:6px}
-
-    @media(max-width:1100px){
-      .toolbar{grid-template-columns:repeat(2,minmax(160px,1fr)) auto}
-      .assign-grid{grid-template-columns:1fr}
-    }
-  </style>
+  <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css" />
 </head>
 <body>
+  <!-- Barra superior -->
   <nav class="teal">
     <div class="nav-wrapper container">
       <a class="brand-logo center">Inventarios y Stock MMPP</a>
     </div>
   </nav>
 
-  <div class="container" style="margin-top:14px">
-    <div class="card-soft" style="padding:0;margin-bottom:12px">
+  <div class="container">
+    <!-- TABS -->
+    <div class="card-soft">
       <ul class="tabs tabs-fixed-width teal lighten-5">
         <li class="tab"><a class="active" href="#tabInventario"><i class="material-icons left">grid_on</i>Inventarios & Stock</a></li>
         <li class="tab"><a href="#tabAsignacion"><i class="material-icons left">assignment_add</i>Asignación</a></li>
@@ -77,19 +31,23 @@
       </ul>
     </div>
 
-    <!-- INVENTARIO -->
+    <!-- ============== TAB: INVENTARIO ============== -->
     <div id="tabInventario">
-      <div class="card-soft" style="padding:14px;margin-bottom:12px">
+      <div class="card-soft">
         <div id="invToolbar" class="toolbar"></div>
       </div>
-      <div id="invTableWrap"><div id="invTable"></div></div>
-      <div id="invNote" class="grey-text" style="margin:10px 0">Unidad actual: Toneladas.</div>
+
+      <div id="invTableWrap">
+        <div id="invTable"></div>
+      </div>
+
+      <div id="invNote" class="grey-text">Unidad actual: Toneladas.</div>
     </div>
 
-    <!-- ASIGNACIÓN -->
-    <div id="tabAsignacion" class="assign-grid" style="margin-top:12px">
+    <!-- ============== TAB: ASIGNACIÓN ============== -->
+    <div id="tabAsignacion" class="assign-grid">
       <div>
-        <div class="card-soft" style="padding:12px;margin-bottom:8px">
+        <div class="card-soft">
           <div id="asiToolbar"></div>
           <div class="kpi">
             <div class="card-soft"><h6>Filas</h6><p id="asiKpiFilas">0</p></div>
@@ -97,31 +55,38 @@
             <div class="card-soft"><h6>Camiones visibles</h6><p id="asiKpiCam">0</p></div>
           </div>
         </div>
-        <div class="card-soft" style="padding:10px">
+
+        <div class="card-soft">
           <div id="asiTable"></div>
-          <div class="grey-text" style="margin-top:6px">Selecciona filas para armar la asignación.</div>
+          <div class="grey-text">Selecciona filas para armar la asignación.</div>
         </div>
       </div>
+
       <div id="asiPanel" class="assign-actions"></div>
     </div>
 
-    <!-- PROGRAMA SEMANAL -->
+    <!-- ============== TAB: PROGRAMA SEMANAL ============== -->
     <div id="tabPrograma">
-      <div class="card-soft" style="padding:14px;margin-bottom:12px">
+      <div class="card-soft">
         <div id="progToolbar" class="toolbar"></div>
       </div>
-      <div id="progTableWrap"><div id="progTable"></div></div>
-      <div id="progNote" class="grey-text" style="margin:10px 0"></div>
+
+      <div id="progTableWrap">
+        <div id="progTable"></div>
+      </div>
+
+      <div id="progNote" class="grey-text"></div>
     </div>
   </div>
 
-  <!-- Modales -->
+  <!-- ============== MODALES ============== -->
   <div id="modalProgramar" class="modal">
     <div class="modal-content">
       <h5>Programar camiones / toneladas</h5>
-      <div class="row" style="margin:0">
+      <div class="row">
         <div class="input-field col s12 m6">
-          <input id="prog_fecha" type="date"><label class="active" for="prog_fecha">Fecha</label>
+          <input id="prog_fecha" type="date" />
+          <label class="active" for="prog_fecha">Fecha</label>
         </div>
         <div class="input-field col s12 m6">
           <select id="prog_tipo">
@@ -131,16 +96,20 @@
           <label>Tipo MMPP</label>
         </div>
         <div class="input-field col s12 m6">
-          <input id="prog_proveedor" type="text"><label class="active" for="prog_proveedor">Proveedor</label>
+          <input id="prog_proveedor" type="text" />
+          <label class="active" for="prog_proveedor">Proveedor</label>
         </div>
         <div class="input-field col s12 m6">
-          <input id="prog_comuna" type="text"><label class="active" for="prog_comuna">Comuna</label>
+          <input id="prog_comuna" type="text" />
+          <label class="active" for="prog_comuna">Comuna</label>
         </div>
         <div class="input-field col s6">
-          <input id="prog_camiones" type="number" min="0" step="1"><label class="active" for="prog_camiones">Camiones</label>
+          <input id="prog_camiones" type="number" min="0" step="1" />
+          <label class="active" for="prog_camiones">Camiones</label>
         </div>
         <div class="input-field col s6">
-          <input id="prog_tons" type="number" min="0" step="0.01"><label class="active" for="prog_tons">Toneladas</label>
+          <input id="prog_tons" type="number" min="0" step="0.01" />
+          <label class="active" for="prog_tons">Toneladas</label>
         </div>
         <div class="input-field col s12">
           <textarea id="prog_notas" class="materialize-textarea"></textarea>
@@ -157,9 +126,10 @@
   <div id="modalNoOp" class="modal">
     <div class="modal-content">
       <h5>Marcar día como "No operación"</h5>
-      <div class="row" style="margin:0">
+      <div class="row">
         <div class="input-field col s12 m6">
-          <input id="noop_fecha" type="date"><label class="active" for="noop_fecha">Fecha</label>
+          <input id="noop_fecha" type="date" />
+          <label class="active" for="noop_fecha">Fecha</label>
         </div>
         <div class="input-field col s12 m6">
           <select id="noop_estado">
@@ -185,8 +155,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
 
-  <!-- App (rutas relativas desde /html/Abastecimiento/asignacion/) -->
- <!-- al final del body -->
-<script type="module" src="/js/abastecimiento/asignacion/principal.js"></script>
+  <!-- Export libs -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- App -->
+  <script type="module" src="/js/abastecimiento/asignacion/principal.js"></script>
 </body>
 </html>
