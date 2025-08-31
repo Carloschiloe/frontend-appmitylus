@@ -13,32 +13,20 @@
   <!-- Tabulator -->
   <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css" />
 
-  <!-- Fixes de layout (no invasivos) -->
   <style>
     /* toolbars responsivas */
-    .toolbar{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
-    .toolbar .input-field{ min-width:200px; flex:1 1 240px; margin:0; }
-    .toolbar .right-actions{ margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:nowrap; }
+    .toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+    .toolbar .input-field { min-width:200px; flex:1 1 240px; margin:0; }
+    .toolbar .right-actions { margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:nowrap; }
 
     /* tarjetas suaves */
-    .card-soft{ background:#fff; border-radius:10px; padding:10px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .card-soft { background:#fff; border-radius:10px; padding:10px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
 
     /* KPI grid */
-    .kpi{ display:grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap:8px; }
-    .kpi .k{ padding:10px; border-radius:10px; background:#fafafa; }
-    .kpi .k h6{ margin:0 0 4px; font-weight:600; }
-    .kpi .k p{ margin:0; font-size:18px; }
-
-    /* grid de Asignación: dos columnas */
-    .assign-grid{ display:grid; grid-template-columns: 1fr 340px; gap:12px; }
-    @media (max-width: 992px){
-      .assign-grid{ grid-template-columns: 1fr; }
-      #asiPanel{ order: -1; }
-    }
-
-    /* chips de modo */
-    .chip-group .chip{ cursor:pointer; }
-    .chip-group .chip.active{ background:#009688; color:#fff; }
+    .kpi { display:grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap:8px; }
+    .kpi .k { padding:10px; border-radius:10px; background:#fafafa; }
+    .kpi .k h6 { margin:0 0 4px; font-weight:600; }
+    .kpi .k p { margin:0; font-size:18px; }
   </style>
 </head>
 <body>
@@ -54,14 +42,13 @@
     <div class="card-soft">
       <ul class="tabs tabs-fixed-width teal lighten-5">
         <li class="tab"><a class="active" href="#tabInventario"><i class="material-icons left">grid_on</i>Inventarios & Stock</a></li>
-        <li class="tab"><a href="#tabAsignacion"><i class="material-icons left">assignment_add</i>Asignación</a></li>
-        <li class="tab"><a href="#tabPrograma"><i class="material-icons left">calendar_today</i>Programa semanal</a></li>
+        <li class="tab"><a href="#tabPrograma"><i class="material-icons left">calendar_today</i>Programa Semanal</a></li>
       </ul>
     </div>
 
     <!-- ============== TAB: INVENTARIO ============== -->
     <div id="tabInventario" class="col s12">
-      <!-- Bloque NUEVO: Gestión Mensual (macro) -->
+      <!-- Gestión mensual -->
       <div class="card-soft">
         <h6 style="margin:0 0 8px; display:flex; align-items:center; gap:8px">
           <i class="material-icons">assessment</i> Gestión mensual (macro)
@@ -92,7 +79,7 @@
         <div class="kpi" id="mesKPIs">
           <div class="k"><h6>Disponible</h6><p id="kpiDisp">0 t</p></div>
           <div class="k"><h6>Requerimiento</h6><p id="kpiReq">0 t</p></div>
-          <div class="k"><h6>Asignado (mensual+semanal)</h6><p id="kpiAsig">0 t</p></div>
+          <div class="k"><h6>Asignado</h6><p id="kpiAsig">0 t</p></div>
           <div class="k"><h6>Saldo</h6><p id="kpiSaldo">0 t</p></div>
         </div>
 
@@ -106,21 +93,20 @@
             <label class="active" for="mes_asigTons">Asignar macro (t)</label>
           </div>
           <div class="input-field">
-            <input id="mes_asigProv" type="text" placeholder="Proveedor (opcional p/ macro por proveedor)"/>
+            <input id="mes_asigProv" type="text" placeholder="Proveedor (opcional)"/>
             <label class="active" for="mes_asigProv">Proveedor</label>
           </div>
           <div class="right-actions">
             <a id="mes_btnGuardarReq" class="btn grey darken-2"><i class="material-icons left">save</i>Guardar requerimiento</a>
             <a id="mes_btnAsignar" class="btn teal"><i class="material-icons left">playlist_add</i>Asignar</a>
-            <a id="mes_btnBorrarAsig" class="btn red lighten-1"><i class="material-icons left">delete</i>Borrar asignaciones (mes)</a>
+            <a id="mes_btnBorrarAsig" class="btn red lighten-1"><i class="material-icons left">delete</i>Borrar asignaciones</a>
           </div>
         </div>
       </div>
 
-      <!-- Tabla de “Inventario & Stock” (tu árbol resumido) -->
+      <!-- Inventario -->
       <div class="card-soft">
         <div id="invToolbar" class="toolbar">
-          <!-- Se inyectan tus selects (Fila/Subfila/Unidad) desde JS -->
           <div class="right-actions"></div>
         </div>
         <div id="invTableWrap" class="card-soft" style="margin-bottom:0">
@@ -128,76 +114,6 @@
         </div>
         <div id="invNote" class="grey-text">Unidad actual: Toneladas.</div>
       </div>
-    </div>
-
-    <!-- ============== TAB: ASIGNACIÓN ============== -->
-    <div id="tabAsignacion" class="col s12 assign-grid">
-      <!-- Columna izquierda -->
-      <div>
-        <!-- Conmutador de modo -->
-        <div id="asiMode" class="chip-group" style="display:flex;gap:8px;margin:8px 0 0">
-          <a class="chip active" data-mode="asignar">Asignar</a>
-          <a class="chip" data-mode="revisar">Revisar</a>
-        </div>
-
-        <!-- PANE ASIGNAR -->
-        <div id="paneAsignar">
-          <div class="card-soft">
-            <div id="asiToolbar" class="toolbar"></div>
-            <div class="kpi">
-              <div class="k"><h6>Filas</h6><p id="asiKpiFilas">0</p></div>
-              <div class="k"><h6>Tons visibles</h6><p id="asiKpiTons">0</p></div>
-              <div class="k"><h6>Camiones visibles</h6><p id="asiKpiCam">0</p></div>
-            </div>
-          </div>
-
-          <div class="card-soft">
-            <div id="asiTable"></div>
-            <div class="grey-text">Selecciona filas para armar la asignación.</div>
-          </div>
-        </div>
-
-        <!-- PANE REVISAR -->
-        <div id="paneRevisar" style="display:none">
-          <div class="card-soft" style="padding:12px;margin-bottom:8px">
-            <div class="row" style="margin:0;align-items:flex-end">
-              <div class="input-field col s12 m4">
-                <input id="rev_mes" type="month" />
-                <label class="active" for="rev_mes">Mes</label>
-              </div>
-              <div class="input-field col s6 m3">
-                <select id="rev_tipo">
-                  <option value="ALL" selected>Todos</option>
-                  <option value="NORMAL">Normal</option>
-                  <option value="BAP">BAP</option>
-                </select>
-                <label>Tipo</label>
-              </div>
-              <div class="input-field col s6 m3">
-                <input id="rev_buscar" type="text" placeholder="Buscar proveedor…" />
-                <label class="active" for="rev_buscar">Buscar</label>
-              </div>
-              <div class="input-field col s12 m2">
-                <a class="btn grey darken-2" id="rev_actualizar" style="width:100%">
-                  <i class="material-icons left" style="margin:0">refresh</i> Actualizar
-                </a>
-              </div>
-            </div>
-            <div class="row" style="margin:0">
-              <div class="col s12">
-                <span id="rev_saldo" class="badge" style="font-size:13px"></span>
-              </div>
-            </div>
-          </div>
-
-          <div id="asiRevisarWrap" class="card-soft">
-            <div id="asiRevisarTable"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Columna derecha: panel -->
-      <div id="asiPanel" class="assign-actions"></div>
     </div>
 
     <!-- ============== TAB: PROGRAMA SEMANAL ============== -->
@@ -213,78 +129,6 @@
       </div>
 
       <div id="progNote" class="grey-text"></div>
-    </div>
-  </div>
-
-  <!-- ============== MODALES ============== -->
-  <div id="modalProgramar" class="modal">
-    <div class="modal-content">
-      <h5>Programar camiones / toneladas</h5>
-      <div class="row">
-        <div class="input-field col s12 m6">
-          <input id="prog_fecha" type="date" />
-          <label class="active" for="prog_fecha">Fecha</label>
-        </div>
-        <div class="input-field col s12 m6">
-          <select id="prog_tipo">
-            <option value="NORMAL" selected>Normal</option>
-            <option value="BAP">BAP</option>
-          </select>
-          <label>Tipo MMPP</label>
-        </div>
-        <div class="input-field col s12 m6">
-          <input id="prog_proveedor" type="text" />
-          <label class="active" for="prog_proveedor">Proveedor</label>
-        </div>
-        <div class="input-field col s12 m6">
-          <input id="prog_comuna" type="text" />
-          <label class="active" for="prog_comuna">Comuna</label>
-        </div>
-        <div class="input-field col s6">
-          <input id="prog_camiones" type="number" min="0" step="1" />
-          <label class="active" for="prog_camiones">Camiones</label>
-        </div>
-        <div class="input-field col s6">
-          <input id="prog_tons" type="number" min="0" step="0.01" />
-          <label class="active" for="prog_tons">Toneladas</label>
-        </div>
-        <div class="input-field col s12">
-          <textarea id="prog_notas" class="materialize-textarea"></textarea>
-          <label class="active" for="prog_notas">Notas</label>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <a href="#!" class="modal-close btn-flat">Cancelar</a>
-      <a href="#!" id="btnGuardarPrograma" class="btn teal">Guardar</a>
-    </div>
-  </div>
-
-  <div id="modalNoOp" class="modal">
-    <div class="modal-content">
-      <h5>Marcar día como "No operación"</h5>
-      <div class="row">
-        <div class="input-field col s12 m6">
-          <input id="noop_fecha" type="date" />
-          <label class="active" for="noop_fecha">Fecha</label>
-        </div>
-        <div class="input-field col s12 m6">
-          <select id="noop_estado">
-            <option value="OPEN" selected>Reabrir día</option>
-            <option value="NO_OP">No operación</option>
-            <option value="HOLIDAY">Feriado</option>
-          </select>
-          <label>Estado</label>
-        </div>
-        <div class="input-field col s12">
-          <textarea id="noop_motivo" class="materialize-textarea"></textarea>
-          <label class="active" for="noop_motivo">Motivo</label>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <a href="#!" class="modal-close btn-flat">Cancelar</a>
-      <a href="#!" id="btnGuardarNoOp" class="btn teal">Guardar</a>
     </div>
   </div>
 
