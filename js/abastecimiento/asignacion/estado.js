@@ -1,5 +1,5 @@
 // estado.js
-import { claveSemana } from './utilidades.js'; // OJO: no usamos claveMes acá
+import { claveSemana } from './utilidades.js'; // no usamos claveMes acá
 
 const listeners = new Map();
 export const datos = { ofertas: [], asignadoPorMes: new Map(), programaSemana: [], estadosDia: [] };
@@ -16,14 +16,6 @@ function DBGend(){ if (window.DEBUG_INV) console.groupEnd(); }
 const MES_RE = /^\d{4}-\d{2}$/;
 const pad2 = (n) => String(n).padStart(2,'0');
 
-/**
- * Deriva la clave de mes (YYYY-MM) respetando SIEMPRE:
- * 1) r.mesKey
- * 2) r.anio + r.mes
- * 3) r.Mes (si ya vino como YYYY-MM)
- * 4) fallback: r.FechaBase (solo si no hay nada anterior)
- * Devuelve {mes, source}
- */
 function pickMes(r) {
   if (MES_RE.test(r?.mesKey ?? '')) return { mes: r.mesKey, source: 'mesKey' };
   if (r?.anio && r?.mes)            return { mes: `${r.anio}-${pad2(r.mes)}`, source: 'anio+mes' };
@@ -33,20 +25,17 @@ function pickMes(r) {
   return { mes: '', source: 'none' };
 }
 
-/** Semana: conserva r.Semana si viene; si no, calcula desde FechaBase */
 function pickSemana(r){
   if (typeof r?.Semana === 'string' && /^\d{4}-\d{2}$/.test(r.Semana)) return r.Semana;
   return claveSemana(r?.FechaBase);
 }
 
 /* ========= Core ========= */
-
 export function ofertasConClaves(){
   const out = datos.ofertas.map(r => {
     const { mes, source } = pickMes(r);
     const Semana = pickSemana(r);
-    const row = { ...r, Mes: mes, Semana, __mesSource: source };
-    return row;
+    return { ...r, Mes: mes, Semana, __mesSource: source };
   });
 
   if (window.DEBUG_INV) {
@@ -137,7 +126,7 @@ export function saldoMes({mesKey, tipo='ALL'}){
     return inv - asig;
   } else {
     const inv  = invPorTipo.get(`${mesKey}|${tipo}`) || 0;
-    const asig = asigPorTipo.get(`${mesKey}|`${tipo}`) || 0;
+    const asig = asigPorTipo.get(`${mesKey}|${tipo}`) || 0; // <- FIX AQUÍ
     return inv - asig;
   }
 }
