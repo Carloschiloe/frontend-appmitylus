@@ -19,40 +19,37 @@ const toMesKey = (val /* "YYYY-MM" o Date o "" */) => {
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
 /* ========= Requerimientos (con fallback) =========
-   Si tu backend expone:
-   - api.getRequerimientoMes(mesKey, tipo) -> { tons: number }
-   - api.guardarRequerimientoMes({mesKey, tipo, tons})
-   - api.borrarAsignacionesMes({mesKey, tipo})   // opcional
-   los usamos. Si no existen, guardamos en localStorage como fallback.
+   Intenta backend:
+   - api.getPlanMes(mesKey, tipo)     -> { mesKey, tons, ... }
+   - api.guardarPlanMes({mesKey, tipo, tons})
+   Si no existen, usa localStorage como fallback.
 */
 const REQ_LS_PREFIX = 'reqmes:'; // clave localStorage: reqmes:YYYY-MM|TIPO
+const reqKey = (mesKey, tipo) => `${REQ_LS_PREFIX}${mesKey}|${(tipo || 'ALL').toUpperCase()}`;
 
-function keyReq(mesKey, tipo) {
-  return `${REQ_LS_PREFIX}${mesKey}|${(tipo || 'ALL').toUpperCase()}`;
-}
 async function getRequerimiento(mesKey, tipo) {
   try {
-    if (typeof api.getRequerimientoMes === 'function') {
-      const r = await api.getRequerimientoMes(mesKey, tipo);
+    if (typeof api.getPlanMes === 'function') {
+      const r = await api.getPlanMes(mesKey, tipo);
       return Number(r?.tons) || 0;
     }
   } catch (e) {
-    console.warn('[mensual] getRequerimientoMes backend falló, uso fallback localStorage', e);
+    console.warn('[mensual] getPlanMes falló, uso fallback localStorage', e);
   }
-  // fallback
-  const raw = localStorage.getItem(keyReq(mesKey, tipo));
+  const raw = localStorage.getItem(reqKey(mesKey, tipo));
   return raw ? Number(raw) || 0 : 0;
 }
+
 async function guardarRequerimiento(mesKey, tipo, tons) {
   try {
-    if (typeof api.guardarRequerimientoMes === 'function') {
-      await api.guardarRequerimientoMes({ mesKey, tipo, tons });
+    if (typeof api.guardarPlanMes === 'function') {
+      await api.guardarPlanMes({ mesKey, tons, tipo });
       return 'server';
     }
   } catch (e) {
-    console.warn('[mensual] guardarRequerimientoMes backend falló, guardo local', e);
+    console.warn('[mensual] guardarPlanMes falló, guardo local', e);
   }
-  localStorage.setItem(keyReq(mesKey, tipo), String(tons));
+  localStorage.setItem(reqKey(mesKey, tipo), String(tons));
   return 'local';
 }
 
@@ -60,15 +57,11 @@ async function borrarAsignacionesMes(mesKey, tipo) {
   if (typeof api.borrarAsignacionesMes === 'function') {
     return api.borrarAsignacionesMes({ mesKey, tipo });
   }
-  // Si no hay endpoint de borrado, avisamos.
-  throw new Error(
-    'No existe endpoint api.borrarAsignacionesMes(). Implementa el backend o borra manualmente.'
-  );
+  throw new Error('No existe endpoint api.borrarAsignacionesMes().');
 }
 
 /* ========= Lectura de totales ========= */
 async function calcularKPIs(mesKey, tipo) {
-  // Requiere que estado.cargarTodo(api) ya haya corrido en principal.js
   const invPorTipo = estado.totalesMesPorTipo();   // Map "YYYY-MM|TIPO" -> tons
   const asigPorTipo = estado.asignadoMesPorTipo(); // Map "YYYY-MM|TIPO" -> tons
 
@@ -76,21 +69,15 @@ async function calcularKPIs(mesKey, tipo) {
   let asignado = 0;
 
   if (tipo === 'ALL') {
-    // sumar por todos los tipos del mes
-    for (const [k, v] of invPorTipo.entries()) {
-      if (k.startsWith(`${mesKey}|`)) disponible += v;
-    }
-    // asignado mensual (map por tipo) + asignado sin tipo (map consolidado del estado)
-    const asigMesConsolidado = estado.datos.asignadoPorMes.get(mesKey) || 0;
-    let asigPorTipos = 0;
-    for (const [k, v] of asigPorTipo.entries()) {
-      if (k.startsWith(`${mesKey}|`)) asigPorTipos += v;
-    }
-    // priorizamos mapa por tipos; si está vacío, usamos consolidado
-    asignado = asigPorTipos > 0 ? asigPorTipos : asigMesConsolidado;
+    for (const [k, v] of invPorTipo.entries()) if (k.startsWith(`${mesKey}|`)) disponible += v;
+
+    const asigConsolidado = estado.datos.asignadoPorMes.get(mesKey) || 0;
+    let asigTipos = 0;
+    for (const [k, v] of asigPorTipo.entries()) if (k.startsWith(`${mesKey}|`)) asigTipos += v;
+    asignado = asigTipos > 0 ? asigTipos : asigConsolidado;
   } else {
     disponible = invPorTipo.get(`${mesKey}|${tipo}`) || 0;
-    asignado = asigPorTipo.get(`${mesKey}|${tipo}`) || 0;
+    asignado   = asigPorTipo.get(`${mesKey}|${tipo}`) || 0;
   }
 
   const requerimiento = await getRequerimiento(mesKey, tipo);
@@ -107,16 +94,15 @@ async function actualizarKPIs() {
 
   const { disponible, requerimiento, asignado, saldo } = await calcularKPIs(mesKey, tipo);
 
-  setText('kpiDisp', `${fmt(disponible)} t`);
-  setText('kpiReq', `${fmt(requerimiento)} t`);
-  setText('kpiAsig', `${fmt(asignado)} t`);
+  setText('kpiDisp',  `${fmt(disponible)} t`);
+  setText('kpiReq',   `${fmt(requerimiento)} t`);
+  setText('kpiAsig',  `${fmt(asignado)} t`);
   setText('kpiSaldo', `${fmt(saldo)} t`);
 
-  // Deja requerimiento y sugerencia de asignar en los inputs
-  const reqInput = $('#mes_reqTons');
+  const reqInput  = $('#mes_reqTons');
   const asigInput = $('#mes_asigTons');
   if (reqInput && !reqInput.value) reqInput.value = requerimiento || '';
-  if (asigInput && !asigInput.value) asigInput.placeholder = `máx ${fmt(Math.max(0, saldo))} t`;
+  if (asigInput)  asigInput.placeholder = `máx ${fmt(Math.max(0, saldo))} t`;
   M.updateTextFields?.();
 }
 
@@ -128,50 +114,42 @@ function hoyMesKey() {
 /* ========= Acciones ========= */
 async function onGuardarRequerimiento() {
   const mesKey = toMesKey($('#mes_mes')?.value);
-  const tipo = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
-  const tons = Number($('#mes_reqTons')?.value || 0);
-  if (!mesKey || tons < 0) {
-    return M.toast?.({ html: 'Mes y valor válidos', classes: 'red' });
-  }
+  const tipo   = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
+  const tons   = Number($('#mes_reqTons')?.value || 0);
+  if (!mesKey || tons < 0) return M.toast?.({ html: 'Mes y valor válidos', classes: 'red' });
+
   const where = await guardarRequerimiento(mesKey, tipo, tons);
   M.toast?.({ html: where === 'server' ? 'Requerimiento guardado' : 'Requerimiento guardado localmente (sin backend)', classes: 'teal' });
   actualizarKPIs();
 }
 
 async function onAsignarMacro() {
-  const mesKey = toMesKey($('#mes_mes')?.value);
-  const tipo = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
-  let tons = Number($('#mes_asigTons')?.value || 0);
+  const mesKey    = toMesKey($('#mes_mes')?.value);
+  const tipoSel   = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
+  let   tons      = Number($('#mes_asigTons')?.value || 0);
   const proveedor = ($('#mes_asigProv')?.value || '').trim();
 
-  if (!mesKey || tons <= 0) {
-    return M.toast?.({ html: 'Ingresa mes y toneladas > 0', classes: 'red' });
-  }
+  if (!mesKey || tons <= 0) return M.toast?.({ html: 'Ingresa mes y toneladas > 0', classes: 'red' });
 
-  // Valida contra saldo mensual
-  const saldo = estado.saldoMes({ mesKey, tipo });
+  const saldo = estado.saldoMes({ mesKey, tipo: tipoSel });
   const asignable = clamp(tons, 0, Math.max(0, saldo));
-  if (asignable <= 0) {
-    return M.toast?.({ html: 'No hay saldo disponible en el mes/tipo seleccionado', classes: 'orange' });
-  }
+  if (asignable <= 0) return M.toast?.({ html: 'No hay saldo disponible en el mes/tipo seleccionado', classes: 'orange' });
   if (asignable < tons) {
     M.toast?.({ html: `Se ajustó a ${fmt(asignable)} t por saldo`, classes: 'orange' });
     tons = asignable;
   }
 
-  // Creamos 1 asignación mensual (opcional con proveedor)
   try {
     await api.crearAsignacion({
       mesKey,
       proveedorNombre: proveedor || '(macro mensual)',
       tons,
-      tipo: tipo === 'ALL' ? 'NORMAL' : tipo, // si ALL, tratamos como NORMAL
+      tipo: tipoSel === 'ALL' ? 'NORMAL' : tipoSel,
       fuente: 'ui-mensual'
     });
 
     M.toast?.({ html: 'Asignación registrada', classes: 'teal' });
     await estado.refrescar(api);
-    // limpiar monto y refrescar KPIs
     const asigInput = $('#mes_asigTons'); if (asigInput) asigInput.value = '';
     actualizarKPIs();
   } catch (e) {
@@ -182,9 +160,8 @@ async function onAsignarMacro() {
 
 async function onBorrarAsignacionesMes() {
   const mesKey = toMesKey($('#mes_mes')?.value);
-  const tipo = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
+  const tipo   = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
   if (!mesKey) return;
-
   if (!confirm(`Borrar asignaciones del mes ${mesKey}${tipo !== 'ALL' ? ' (' + tipo + ')' : ''}?`)) return;
 
   try {
@@ -202,11 +179,7 @@ async function onBorrarAsignacionesMes() {
 }
 
 async function onActualizar() {
-  try {
-    await estado.refrescar(api);
-  } catch (e) {
-    console.error(e);
-  }
+  try { await estado.refrescar(api); } catch (e) { console.error(e); }
   actualizarKPIs();
 }
 
@@ -219,15 +192,11 @@ function onReset() {
 
 /* ========= Montaje ========= */
 export function montar() {
-  // Inicializa selects Materialize
   M.FormSelect.init(document.querySelectorAll('select'));
-
-  // Defaults
   const mesInp = $('#mes_mes');
   if (mesInp) mesInp.value = hoyMesKey();
   M.updateTextFields?.();
 
-  // Listeners
   $('#mes_mes')?.addEventListener('change', actualizarKPIs);
   $('#mes_tipo')?.addEventListener('change', actualizarKPIs);
   $('#mes_btnActualizar')?.addEventListener('click', onActualizar);
@@ -236,6 +205,6 @@ export function montar() {
   $('#mes_btnAsignar')?.addEventListener('click', onAsignarMacro);
   $('#mes_btnBorrarAsig')?.addEventListener('click', onBorrarAsignacionesMes);
 
-  // Primer render
   actualizarKPIs();
 }
+
