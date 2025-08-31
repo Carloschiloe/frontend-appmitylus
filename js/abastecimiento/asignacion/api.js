@@ -80,14 +80,14 @@ export async function getOfertas(){
         it.tonsDisponible ?? it.tons ?? it.total ?? it.valor ?? 0
       ) || 0;
 
-      // --- objeto normalizado (¡propaga mesKey, anio, mes!) ---
+      // --- objeto normalizado ---
       const row = {
         // claves tiempo
         Mes        : mesKeyVal,         // YYYY-MM para agrupar
         Semana     : semanaKey,         // YYYY-WW
         FechaBase  : fechaBase || '',   // referencia/depuración
 
-        // también dejamos los originales, por si los usa estado/inventario en debug
+        // también dejamos los originales
         mesKey     : rawMesKey || mesKeyVal,
         anio       : it.anio ?? (mesKeyVal ? Number(mesKeyVal.slice(0,4)) : null),
         mes        : it.mes  ?? (mesKeyVal ? Number(mesKeyVal.slice(5,7)) : null),
@@ -103,14 +103,11 @@ export async function getOfertas(){
         Fuente     : it.fuente ? (it.fuente[0].toUpperCase()+it.fuente.slice(1)) : 'Disponibilidad',
       };
 
-      // ---- LOGS por fila problemática ----
       if (DEBUG) {
-        // fila que cayó al fallback (sin mesKey ni anio/mes)
         if (!rawMesKey && !ymFromNums) {
           console.warn('[getOfertas] Fila sin mesKey/anio+mes; usando fallback por fecha.',
             { idx, proveedor: row.Proveedor.slice(0,60), mes: row.Mes, fechaBase: row.FechaBase });
         }
-        // si hay mesKey y no coincide con el Mes calculado (no debería ocurrir)
         if (rawMesKey && rawMesKey !== mesKeyVal) {
           console.warn('[getOfertas] Inconsistencia mesKey vs Mes calculado',
             { idx, mesKey: rawMesKey, mesCalc: mesKeyVal, fechaBase: row.FechaBase, proveedor: row.Proveedor.slice(0,60) });
@@ -121,14 +118,12 @@ export async function getOfertas(){
     })
     .filter(r => r.Tons > 0);
 
-  // ---- resumenes para detectar el caso de AGO con 100 t ----
   if (DEBUG) {
     DBGg('[getOfertas] resumen');
     const dist = out.reduce((acc,x)=> (acc[x.Mes]=(acc[x.Mes]||0)+1, acc), {});
     console.log('Distribución por Mes (conteo):', dist);
     const porMes = out.reduce((acc,x)=> (acc[x.Mes]=(acc[x.Mes]||0)+x.Tons, acc), {});
     console.table(Object.entries(porMes).map(([k,v])=>({Mes:k, Tons:v})));
-    // Lista la(s) fila(s) que quedaron en 2025-08 (tu caso)
     const ago = out.filter(x => x.Mes === '2025-08');
     if (ago.length) {
       console.warn('[getOfertas] Filas en 2025-08:', ago.length);
@@ -166,6 +161,51 @@ export async function crearAsignacion({mesKey, proveedorNombre, tons, tipo='NORM
     method : 'POST',
     headers: {'Content-Type':'application/json', 'Accept':'application/json'},
     body   : JSON.stringify({mesKey, proveedorNombre, tons, tipo, fuente})
+  });
+  return checkResponse(r);
+}
+
+/* ======= NUEVO: listado/edición/anulación de asignaciones ======= */
+
+// GET /asignaciones?mesKey=YYYY-MM&q=texto
+export async function getAsignacionesListado({ mesKey, q='' } = {}){
+  const url = new URL(`${API_URL}/asignaciones`);
+  if (mesKey) url.searchParams.set('mesKey', mesKey);
+  if (q)      url.searchParams.set('q', q);
+  const r = await fetch(url.toString(), { headers:{'Accept':'application/json'} });
+  const json = await checkResponse(r);
+  const arr = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
+  // normaliza campos comunes por si te sirven directo en Tabulator
+  return arr.map(x => ({
+    _id: x._id || x.id,
+    mesKey: x.mesKey,
+    proveedorNombre: x.proveedorNombre || x.proveedor || '',
+    plantaNombre: x.plantaNombre || x.planta || '',
+    comuna: x.comuna || '',
+    tipo: (x.tipo || 'NORMAL').toUpperCase(),
+    tonsAsignadas: Number(x.tonsAsignadas ?? x.tons ?? 0) || 0,
+    estado: x.estado || 'planificada',
+    fecha: x.fecha || x.createdAt || null,
+    notas: x.notas || '',
+  }));
+}
+
+// PATCH /asignaciones/:id  (edición inline)
+export async function updateAsignacion(id, payload){
+  const r = await fetch(`${API_URL}/asignaciones/${encodeURIComponent(id)}`, {
+    method:'PATCH',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  return checkResponse(r);
+}
+
+// PATCH /asignaciones/:id  (anular)
+export async function anularAsignacion(id){
+  const r = await fetch(`${API_URL}/asignaciones/${encodeURIComponent(id)}`, {
+    method:'PATCH',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body: JSON.stringify({ estado:'anulado' })
   });
   return checkResponse(r);
 }
@@ -214,3 +254,4 @@ export async function guardarEstadoDia({date, status, reason}){
   });
   return checkResponse(r);
 }
+
