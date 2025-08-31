@@ -8,10 +8,48 @@
   <!-- Materialize & Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-  <link rel="stylesheet" href="../../../css/asignacion.css">
+  <link rel="stylesheet" href="/css/asignacion.css">
 
   <!-- Tabulator -->
   <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css">
+
+  <style>
+    :root{ --compact-h:36px; --compact-fs:.92rem; --compact-label:.82rem; }
+    body{background:#fafafa}
+    nav.teal .brand-logo{font-size:1.1rem}
+    .card-soft{border-radius:14px;background:#fff;border:1px solid #eaeaea}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#e0f2f1;color:#00695c;font-size:.8rem}
+
+    .toolbar{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr)) auto;gap:8px;align-items:end}
+    .toolbar .input-field{margin:0}
+    .toolbar .select-wrapper input.select-dropdown{height:var(--compact-h);line-height:var(--compact-h);font-size:var(--compact-fs)}
+    .toolbar .dropdown-content li>a,.toolbar .dropdown-content li>span{font-size:.9rem}
+    .toolbar .input-field>label{font-size:var(--compact-label)}
+    .toolbar .select-wrapper+label{top:-12px}
+    .toolbar .right-actions{position:relative;z-index:5}
+    .toolbar .select-wrapper{position:relative;z-index:1}
+
+    .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi .card-soft{padding:12px}
+    .kpi h6{margin:0 0 4px;font-size:.9rem;color:#666}
+    .kpi p{margin:0;font-weight:700}
+    .assign-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+    .assign-actions .btn{width:100%}
+
+    #invTableWrap,#progTableWrap{overflow-x:auto}
+    .tabulator{border-radius:12px;border:1px solid #e0e0e0}
+    .tabulator .tabulator-col{min-width:110px}
+
+    .col-noop .tabulator-col-content{
+      background:repeating-linear-gradient(-45deg,#f5f5f5,#f5f5f5 10px,#ededed 10px,#ededed 20px);
+    }
+    .badge-noop{background:#bdbdbd;color:#333;border-radius:999px;padding:2px 8px;font-size:.75rem;margin-left:6px}
+
+    @media(max-width:1100px){
+      .toolbar{grid-template-columns:repeat(2,minmax(160px,1fr)) auto}
+      .assign-grid{grid-template-columns:1fr}
+    }
+  </style>
 </head>
 <body>
   <nav class="teal">
@@ -137,7 +175,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
 
- <!-- App (módulo de entrada) -->
-<script type="module" src="/js/abastecimiento/asignacion/principal.js"></script>
+  <!-- Módulo de entrada (ruta absoluta para evitar 404) -->
+  <script type="module" src="/js/abastecimiento/asignacion/principal.js"></script>
 </body>
 </html>
