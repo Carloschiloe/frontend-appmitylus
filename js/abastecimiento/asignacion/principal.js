@@ -72,35 +72,10 @@ function inyectarVolverNavbar(){
   leftSlot.prepend(a);
 }
 
-/* ================== Helpers de toolbar ================== */
-function quitarBotonesDescarga(toolbar){
-  const actions = toolbar.querySelector('.right-actions') || toolbar;
-  [...actions.querySelectorAll('a.btn, button.btn')].forEach(b=>{
-    const t=(b.textContent||'').trim().toUpperCase();
-    const html=(b.innerHTML||'').toLowerCase();
-    const id=(b.id||'').toLowerCase();
-
-    const esExcelPdf     = /excel|pdf/.test(t) || /grid_on|picture_as_pdf/.test(html) ||
-                           id==='btnexceljuntochip' || id==='btnpdfjuntochip';
-    const esCsvXlsx      = /(csv|xlsx)/.test(t) || /(inv_)?(csv|xlsx)/.test(id);
-    const esIconoDesc    = /download|file_download/.test(html) && t==='';
-    const esDuplicadoOld = id==='btncsv' || id==='btnxlsx' || id==='inv_csv' || id==='inv_xlsx';
-
-    if(!esExcelPdf && (esCsvXlsx || esIconoDesc || esDuplicadoOld)) b.remove();
-  });
-}
-
-function encontrarChipRegistros(toolbar){
-  // ids conocidos
-  let chip = toolbar.querySelector('#badgeReg') || toolbar.querySelector('#inv_badge');
-  if(chip) return chip;
-  // heurística
-  chip = [...toolbar.querySelectorAll('span,div')].find(x=>(x.textContent||'').toLowerCase().includes('registros'));
-  return chip || null;
-}
-
-function crearBotonClase(icono, label){
+/* ========== Botones de exportación: estables y sin “migraciones” ========== */
+function crearBoton(icono, label, id){
   const a=document.createElement('a');
+  a.id=id;
   a.className='btn grey darken-2';
   a.style.display='inline-flex';
   a.style.alignItems='center';
@@ -110,43 +85,32 @@ function crearBotonClase(icono, label){
   return a;
 }
 
-function colocarExportesEnToolbar(tabRoot){
+function colocarExportes(tabRoot){
   if(!tabRoot) return;
-  const toolbar = tabRoot.querySelector('.toolbar') || tabRoot.querySelector('[id*="Toolbar"]') || tabRoot;
+  const toolbar = tabRoot.querySelector('.toolbar') || tabRoot.querySelector('[id*="Toolbar"]');
   if(!toolbar) return;
 
-  // Borra los dos botoncitos grises con ícono de "download" y cualquier CSV/XLSX viejo
-  quitarBotonesDescarga(toolbar);
-
-  const chip = encontrarChipRegistros(toolbar);
+  // contenedor estable
   const actions = toolbar.querySelector('.right-actions') || toolbar;
+  actions.style.display = 'flex';
+  actions.style.alignItems = 'center';
+  actions.style.gap = '8px';
+  actions.style.flexWrap = 'nowrap';
 
-  // evita duplicar
-  const prevX = toolbar.querySelector('#btnExcelJuntoChip');
-  const prevP = toolbar.querySelector('#btnPdfJuntoChip');
-  prevX?.remove(); prevP?.remove();
+  // quitar SOLO los viejos conocidos (para evitar borrar “Actualizar”)
+  ['inv_csv','inv_xlsx','btnCSV','btnXLSX'].forEach(id=>{
+    const el=actions.querySelector('#'+id);
+    if(el) el.remove();
+  });
 
-  // punto de inserción (idealmente después del chip; si no existe, al final del contenedor de acciones)
-  const insertAfter = chip || actions;
+  // evitar duplicados
+  if(actions.querySelector('#btnExcelJuntoChip') || actions.querySelector('#btnPdfJuntoChip')) return;
 
-  const btnX = crearBotonClase('grid_on','EXCEL');
-  btnX.id='btnExcelJuntoChip';
-  const btnP = crearBotonClase('picture_as_pdf','PDF');
-  btnP.id='btnPdfJuntoChip';
+  const btnX = crearBoton('grid_on','EXCEL','btnExcelJuntoChip');
+  const btnP = crearBoton('picture_as_pdf','PDF','btnPdfJuntoChip');
 
-  // inserta
-  if(chip){
-    const wrap=document.createElement('span');
-    wrap.style.display='inline-flex';
-    wrap.style.gap='8px';
-    wrap.style.marginLeft='8px';
-    wrap.append(btnX, btnP);
-    chip.after(wrap);
-  }else{
-    actions.append(btnX, btnP);
-  }
+  actions.append(btnX, btnP);
 
-  // wiring export
   btnX.addEventListener('click', async ()=>{
     const table = tablaActiva();
     if(!table){ M.toast({html:'No hay tabla para exportar', classes:'orange'}); return; }
@@ -168,11 +132,10 @@ function colocarExportesEnToolbar(tabRoot){
   });
 }
 
-function reubicarExportesSegunPestaña(){
-  const id = activeTabId();
-  if(id==='#tabInventario')  colocarExportesEnToolbar(document.querySelector('#tabInventario'));
-  if(id==='#tabAsignacion')  colocarExportesEnToolbar(document.querySelector('#tabAsignacion'));
-  if(id==='#tabPrograma')    colocarExportesEnToolbar(document.querySelector('#tabPrograma'));
+function colocarExportesTodas(){
+  colocarExportes(document.querySelector('#tabInventario'));
+  colocarExportes(document.querySelector('#tabAsignacion'));
+  colocarExportes(document.querySelector('#tabPrograma'));
 }
 
 /* =============== bootstrap =============== */
@@ -192,17 +155,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   asignacion.montar();
   programaSemanal.montar();
 
-  // Colocar exportes y mantenerlos al cambiar pestaña
-  setTimeout(reubicarExportesSegunPestaña, 150);
-  document.querySelectorAll('.tabs .tab a').forEach(a=>{
-    a.addEventListener('click', ()=> setTimeout(reubicarExportesSegunPestaña, 120));
-  });
+  // Colocar exportes una sola vez por pestaña
+  setTimeout(colocarExportesTodas, 120);
 
-  // Reaccionar a redibujos de toolbars/tablas
-  const obs = new MutationObserver(()=> setTimeout(reubicarExportesSegunPestaña, 60));
-  ['#tabInventario','#tabAsignacion','#tabPrograma'].forEach(sel=>{
-    const el=document.querySelector(sel);
-    if(el) obs.observe(el, {childList:true, subtree:true});
+  // Recolocar al cambiar de pestaña (sin observer, sin “migrar” nodos)
+  document.querySelectorAll('.tabs .tab a').forEach(a=>{
+    a.addEventListener('click', ()=> setTimeout(colocarExportesTodas, 120));
   });
 
   // Debug
