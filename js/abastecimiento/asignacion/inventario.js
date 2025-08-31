@@ -1,8 +1,19 @@
 // js/abastecimiento/asignacion/inventario.js
-import { fmt, altoDisponible, etiquetaMes } from './utilidades.js';
+import { fmt, altoDisponible } from './utilidades.js'; // <- saqué etiquetaMes
 import * as estado from './estado.js';
 
 let tabla = null;
+
+/* === Etiqueta de mes SIN usar Date (evita desfases por TZ) === */
+const MES_TXT = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+function etiquetaMesKey(k){
+  if (!k || typeof k !== 'string') return '(vacío)';
+  const parts = k.split('-');
+  if (parts.length < 2) return k;
+  const y = parts[0];
+  const m = Math.max(1, Math.min(12, parseInt(parts[1],10) || 0));
+  return `${MES_TXT[m-1]} ${y}`;
+}
 
 function construirToolbar({ onAplicar }) {
   const wrap = document.getElementById('invToolbar');
@@ -53,7 +64,6 @@ function construirToolbar({ onAplicar }) {
       <label>Unidad</label>
     </div>
 
-    <!-- Solo Actualizar + badge. EXCEL/PDF los inserta principal.js aquí -->
     <div class="right-actions"
          style="display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-left:auto">
       <a id="inv_apply"
@@ -66,7 +76,6 @@ function construirToolbar({ onAplicar }) {
     </div>
   `;
 
-  // IMPORTANTÍSIMO: montar dropdown del select en <body> para que no lo tape la tabla
   const selectOpts = {
     dropdownOptions: {
       container: document.body,
@@ -77,7 +86,6 @@ function construirToolbar({ onAplicar }) {
   };
   M.FormSelect.init(wrap.querySelectorAll('select'), selectOpts);
 
-  // Botón aplicar
   const btn = document.getElementById('inv_apply');
   btn.addEventListener('click', (e) => {
     e.preventDefault();
@@ -87,7 +95,7 @@ function construirToolbar({ onAplicar }) {
 }
 
 function ordenarClaves(dim, keys) {
-  if (dim === 'Mes') return keys.sort((a, b) => String(a).localeCompare(String(b)));
+  if (dim === 'Mes') return keys.sort((a, b) => String(a).localeCompare(String(b))); // YYYY-MM OK
   if (dim === 'Semana') {
     const toN = (v) => { const [y, w] = String(v).split('-'); return (+y) * 100 + (+w); };
     return keys.sort((a, b) => toN(a) - toN(b));
@@ -96,7 +104,7 @@ function ordenarClaves(dim, keys) {
 }
 
 function etiquetaPara(dim, key) {
-  if (dim === 'Mes') return etiquetaMes(key);
+  if (dim === 'Mes')   return etiquetaMesKey(key); // <- ya NO usamos Date
   if (dim === 'Semana') return `Sem ${key}`;
   return key ?? '(vacío)';
 }
@@ -107,7 +115,7 @@ function construirArbol(rows, dims, unidad = 'tons') {
   const group = (arr, dim) => {
     const m = new Map();
     for (const r of arr) {
-      const k = r[dim] ?? '(vacío)';
+      const k = r[dim] ?? '(vacío)'; // Mes debe venir como "YYYY-MM"
       if (!m.has(k)) m.set(k, []);
       m.get(k).push(r);
     }
@@ -163,6 +171,12 @@ function aplicar() {
   const sub2 = document.getElementById('inv_sub2').value || '';
 
   const filas = estado.filasEnriquecidas({ tipo: 'ALL' });
+
+  // DEBUG rápido para confirmar que Mes viene como "YYYY-MM"
+  console.log('[INV] primeras filas:', filas.slice(0, 5).map(f => ({
+    Mes: f.Mes, Semana: f.Semana, Proveedor: f.Proveedor, Tons: f.Tons
+  })));
+
   const dims = [rowDim, sub1, sub2].filter(Boolean);
   const data = construirArbol(filas, dims, unidad);
 
@@ -191,7 +205,6 @@ function aplicar() {
       columnMinWidth: 110,
       movableColumns: true,
     });
-    // Exponer para exportación desde principal.js
     window.getTablaInventario = () => tabla;
   }
 
@@ -204,12 +217,10 @@ export function montar() {
   construirToolbar({ onAplicar: aplicar });
   aplicar();
 
-  // Ajusta alto al redimensionar
   window.addEventListener('resize', () => {
     const h = altoDisponible(document.getElementById('invTableWrap'));
     if (tabla) tabla.setHeight(h + 'px');
   });
 
-  // Reaplicar cuando cambian datos globales
   estado.on('actualizado', aplicar);
 }
