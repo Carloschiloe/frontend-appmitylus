@@ -107,3 +107,34 @@ nav.teal .brand-logo{ font-size:1.1rem; }
   .toolbar{ grid-template-columns:repeat(2, minmax(160px,1fr)) auto; }
   .assign-grid{ grid-template-columns:1fr; }
 }
+
+/* Evitar que los dropdown/modales queden tapados por la card o la tabla */
+.card-soft,
+.toolbar {
+  overflow: visible !important;
+}
+
+/* Asegurar que todo lo "flotante" de Materialize quede por encima */
+ul.dropdown-content,
+.select-dropdown,
+.datepicker-modal,
+.timepicker-modal {
+  z-index: 10050 !important;
+}
+.modal {
+  z-index: 10040 !important;
+}
+.modal-overlay {
+  z-index: 10030 !important;
+}
+
+/* La Tabulator no debe ganar la pelea de z-index */
+.tabulator {
+  z-index: 10;
+}
+
+/* Por si el botón 'Actualizar' pisaba el dropdown */
+.toolbar .right-actions {
+  position: relative;
+  z-index: 15; /* mucho menor que 10050 de los dropdowns, pero suficiente para su propio layout */
+}
