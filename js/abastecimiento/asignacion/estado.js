@@ -1,5 +1,5 @@
 // estado.js
-import { claveSemana } from './utilidades.js'; // <- OJO: ya no importamos claveMes
+import { claveSemana } from './utilidades.js'; // OJO: ya no usamos claveMes
 
 const listeners = new Map();
 export const datos = { ofertas: [], asignadoPorMes: new Map(), programaSemana: [], estadosDia: [] };
@@ -7,7 +7,7 @@ export const datos = { ofertas: [], asignadoPorMes: new Map(), programaSemana: [
 export function on(evt, fn){ if(!listeners.has(evt)) listeners.set(evt,new Set()); listeners.get(evt).add(fn); }
 function emit(evt){ (listeners.get(evt)||[]).forEach(fn=>{ try{fn();}catch{} }); }
 
-/* ========= Helpers locales sin TZ para derivar YYYY-MM ========= */
+/* ========= Helpers locales: YYYY-MM sin TZ ========= */
 const MES_RE = /^\d{4}-\d{2}$/;
 const pad2 = (n) => String(n).padStart(2,'0');
 
@@ -15,42 +15,64 @@ const pad2 = (n) => String(n).padStart(2,'0');
  * Deriva la clave de mes (YYYY-MM) respetando SIEMPRE:
  * 1) r.mesKey
  * 2) r.anio + r.mes
- * 3) r.Mes si ya vino como YYYY-MM
- * 4) fallback: FechaBase (solo si no hay nada anterior)
+ * 3) r.Mes (si ya vino como YYYY-MM)
+ * 4) fallback: r.FechaBase (solo si no hay nada anterior)
+ * Devuelve {mes, source} para debug.
  */
-function mesFromRecord(r) {
-  if (MES_RE.test(r?.mesKey ?? '')) return r.mesKey;
-  if (r?.anio && r?.mes) return `${r.anio}-${pad2(r.mes)}`;
-  if (MES_RE.test(r?.Mes ?? '')) return r.Mes;
-  if (typeof r?.FechaBase === 'string' && /^\d{4}-\d{2}/.test(r.FechaBase)) return r.FechaBase.slice(0,7);
-  return '';
+function pickMes(r) {
+  if (MES_RE.test(r?.mesKey ?? '')) return { mes: r.mesKey, source: 'mesKey' };
+  if (r?.anio && r?.mes)            return { mes: `${r.anio}-${pad2(r.mes)}`, source: 'anio+mes' };
+  if (MES_RE.test(r?.Mes ?? ''))    return { mes: r.Mes, source: 'Mes(ya venía)' };
+  if (typeof r?.FechaBase === 'string' && /^\d{4}-\d{2}/.test(r.FechaBase))
+    return { mes: r.FechaBase.slice(0,7), source: 'FechaBase(fallback)' };
+  return { mes: '', source: 'none' };
 }
 
-/**
- * Semana: mantenemos la lógica previa, pero sin tocar el mes.
- * Usa r.Semana si ya viene; si no, la calcula desde FechaBase.
- */
-function semanaFromRecord(r){
+/** Semana: conserva r.Semana si viene; si no, calcula desde FechaBase */
+function pickSemana(r){
   if (typeof r?.Semana === 'string' && /^\d{4}-\d{2}$/.test(r.Semana)) return r.Semana;
   return claveSemana(r?.FechaBase);
 }
 
 /* ========= Core ========= */
 
+/**
+ * Normaliza las ofertas poniendo Mes y Semana SIN recalcular el mes desde createdAt.
+ * Además deja trazas si detecta inconsistencias con mesKey.
+ */
 export function ofertasConClaves(){
   const out = datos.ofertas.map(r => {
-    const Mes = mesFromRecord(r);              // <- FIX: ya no usamos claveMes(FechaBase)
-    const Semana = semanaFromRecord(r);
-    return { ...r, Mes, Semana };
+    const { mes, source } = pickMes(r);
+    const Semana = pickSemana(r);
+
+    const row = { ...r, Mes: mes, Semana };
+
+    // Debug: adjunta la fuente usada para Mes (no se usa en cálculos, solo inspección)
+    row.__mesSource = source;
+
+    return row;
   });
 
-  // DEBUG: alerta si algún registro trae mesKey pero terminó con Mes distinto
-  const malos = out.filter(x => MES_RE.test(x?.mesKey ?? '') && x.Mes !== x.mesKey);
-  if (malos.length) {
-    console.warn('[estado.ofertasConClaves] Mes corregido (respetando mesKey). Ejemplos:',
-      malos.slice(0, 5).map(x => ({ mesKey: x.mesKey, Mes: x.Mes, anio: x.anio, mes: x.mes, FechaBase: x.FechaBase }))
+  // Advertir si viene mesKey pero Mes final difiere (no debería ocurrir ya)
+  const inconsistentes = out.filter(x => MES_RE.test(x?.mesKey ?? '') && x.Mes !== x.mesKey);
+  if (inconsistentes.length) {
+    console.warn('[estado.ofertasConClaves] Mes != mesKey (se forzó Mes desde mesKey). Ejemplos:',
+      inconsistentes.slice(0, 5).map(x => ({
+        Proveedor: (x.Proveedor || x.proveedorNombre || '').slice(0,40),
+        mesKey: x.mesKey, Mes: x.Mes, src: x.__mesSource, anio: x.anio, mes: x.mes, FechaBase: x.FechaBase
+      }))
     );
   }
+
+  // Muestra un resumen de fuentes utilizadas (para ver si alguien está pisando datos)
+  try {
+    const resumen = out.reduce((acc, x) => {
+      acc[x.__mesSource] = (acc[x.__mesSource] || 0) + 1;
+      return acc;
+    }, {});
+    console.info('[estado.ofertasConClaves] Fuente Mes -> conteo:', resumen);
+  } catch {}
+
   return out;
 }
 
@@ -125,8 +147,23 @@ export async function cargarTodo(api){
     api.getOfertas(),
     api.getAsignacionesMapa()
   ]);
+
+  // Guardamos EXACTAMENTE lo que viene del API (sin tocar Mes aquí).
   datos.ofertas = ofertas;
   datos.asignadoPorMes = asignMap;
+
+  // Debug rápido: muestra 5 filas crudas tal como llegan del API
+  try {
+    console.table((datos.ofertas || []).slice(0,5).map(o => ({
+      Proveedor: (o.Proveedor || o.proveedorNombre || '').slice(0,40),
+      mesKey: o.mesKey || '',
+      anio: o.anio || '',
+      mes: o.mes || '',
+      Mes_api: o.Mes || '',
+      FechaBase: o.FechaBase || o.fecha || o.createdAt || ''
+    })));
+  } catch {}
+
   emit('actualizado');
 }
 
