@@ -1,5 +1,5 @@
 // js/abastecimiento/asignacion/principal.js
-import {cargarInventario, getTablaInventario} from "./inventarios.js";
+import {cargarInventario, getTablaInventario} from "./inventario.js";
 import {initAsignacionUI, cargarAsignacion} from "./asignacion.js";
 import {initProgramaSemanalUI, getTablaPrograma} from "./programa_semanal.js";
 import {calcAlturaDisponible} from "./utilidades.js";
@@ -34,4 +34,5 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     await cargarInventario();
   });
 });
+
 
