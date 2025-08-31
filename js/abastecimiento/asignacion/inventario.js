@@ -1,33 +1,8 @@
 // js/abastecimiento/asignacion/inventario.js
-import { fmt, altoDisponible /*, etiquetaMes*/ } from './utilidades.js';
+import { fmt, altoDisponible, etiquetaMes } from './utilidades.js';
 import * as estado from './estado.js';
 
 let tabla = null;
-
-/* ================= helpers ================= */
-
-// Asegura que "YYYY-MM" se muestre correcto y sin desfases
-function renderMes(mesLike) {
-  const nombres = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-
-  // Caso ideal: ya viene como "YYYY-MM"
-  if (typeof mesLike === 'string' && /^\d{4}-\d{2}$/.test(mesLike)) {
-    const [y, mm] = mesLike.split('-');
-    const idx = Math.min(12, Math.max(1, parseInt(mm, 10))) - 1; // 0..11
-    return `${nombres[idx]} ${y}`;
-  }
-
-  // Si viene un Date o un ISO date: usar SIEMPRE UTC
-  const d = new Date(mesLike);
-  if (!isNaN(d.getTime())) {
-    const y = d.getUTCFullYear();
-    const m = d.getUTCMonth(); // 0..11
-    return `${nombres[m]} ${y}`;
-  }
-
-  // Fallback
-  return String(mesLike ?? '');
-}
 
 function construirToolbar({ onAplicar }) {
   const wrap = document.getElementById('invToolbar');
@@ -81,13 +56,26 @@ function construirToolbar({ onAplicar }) {
     <!-- Solo Actualizar + badge. EXCEL/PDF los inserta principal.js aquí -->
     <div class="right-actions"
          style="display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-left:auto">
-      <a class="btn teal" id="inv_apply"><i class="material-icons left" style="margin-right:6px">refresh</i><span>ACTUALIZAR</span></a>
+      <a id="inv_apply"
+         class="btn teal waves-effect"
+         style="display:inline-flex;align-items:center;gap:6px">
+        <i class="material-icons" style="margin:0">refresh</i>
+        <span>Actualizar</span>
+      </a>
       <span class="pill" id="inv_badge">0 registros</span>
     </div>
   `;
 
-  // Materialize selects
-  M.FormSelect.init(wrap.querySelectorAll('select'));
+  // IMPORTANTÍSIMO: montar dropdown del select en <body> para que no lo tape la tabla
+  const selectOpts = {
+    dropdownOptions: {
+      container: document.body,
+      coverTrigger: false,
+      constrainWidth: false,
+      alignment: 'left',
+    },
+  };
+  M.FormSelect.init(wrap.querySelectorAll('select'), selectOpts);
 
   // Botón aplicar
   const btn = document.getElementById('inv_apply');
@@ -99,10 +87,7 @@ function construirToolbar({ onAplicar }) {
 }
 
 function ordenarClaves(dim, keys) {
-  if (dim === 'Mes') {
-    // Esperamos "YYYY-MM": ordena bien lexicográficamente
-    return keys.sort((a, b) => String(a).localeCompare(String(b)));
-  }
+  if (dim === 'Mes') return keys.sort((a, b) => String(a).localeCompare(String(b)));
   if (dim === 'Semana') {
     const toN = (v) => { const [y, w] = String(v).split('-'); return (+y) * 100 + (+w); };
     return keys.sort((a, b) => toN(a) - toN(b));
@@ -111,7 +96,7 @@ function ordenarClaves(dim, keys) {
 }
 
 function etiquetaPara(dim, key) {
-  if (dim === 'Mes') return renderMes(key);        // <- uso robusto
+  if (dim === 'Mes') return etiquetaMes(key);
   if (dim === 'Semana') return `Sem ${key}`;
   return key ?? '(vacío)';
 }
@@ -122,21 +107,7 @@ function construirArbol(rows, dims, unidad = 'tons') {
   const group = (arr, dim) => {
     const m = new Map();
     for (const r of arr) {
-      // si viene Mes vacío, intenta reconstruir desde FechaBase en UTC
-      let k = r[dim];
-      if (dim === 'Mes' && (!k || k === '(vacío)')) {
-        if (r.mesKey && /^\d{4}-\d{2}$/.test(r.mesKey)) {
-          k = r.mesKey;
-        } else if (r.FechaBase) {
-          const d = new Date(r.FechaBase);
-          if (!isNaN(d.getTime())) {
-            const y = d.getUTCFullYear();
-            const m0 = d.getUTCMonth() + 1;
-            k = `${y}-${String(m0).padStart(2, '0')}`;
-          }
-        }
-      }
-      if (k == null || k === '') k = '(vacío)';
+      const k = r[dim] ?? '(vacío)';
       if (!m.has(k)) m.set(k, []);
       m.get(k).push(r);
     }
@@ -220,7 +191,7 @@ function aplicar() {
       columnMinWidth: 110,
       movableColumns: true,
     });
-    // para exportar desde principal.js
+    // Exponer para exportación desde principal.js
     window.getTablaInventario = () => tabla;
   }
 
@@ -233,12 +204,12 @@ export function montar() {
   construirToolbar({ onAplicar: aplicar });
   aplicar();
 
-  // Ajuste de alto en resize
+  // Ajusta alto al redimensionar
   window.addEventListener('resize', () => {
     const h = altoDisponible(document.getElementById('invTableWrap'));
     if (tabla) tabla.setHeight(h + 'px');
   });
 
-  // Recalcular cuando cambie el estado global
+  // Reaplicar cuando cambian datos globales
   estado.on('actualizado', aplicar);
 }
