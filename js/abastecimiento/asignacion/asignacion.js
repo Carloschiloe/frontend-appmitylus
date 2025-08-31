@@ -100,9 +100,15 @@ function buildToolbar() {
 
 function setKPIs(rows){
   const total = rows.reduce((s,x)=> s + (Number(x.Tons)||0), 0);
-  document.getElementById("asiKpiFilas")?.innerText  = rows.length.toLocaleString("es-CL");
-  document.getElementById("asiKpiTons")?.innerText   = fmt(total);
-  document.getElementById("asiKpiCam")?.innerText    = fmt(total/10);
+
+  const elFilas = document.getElementById("asiKpiFilas");
+  if (elFilas) elFilas.innerText = rows.length.toLocaleString("es-CL");
+
+  const elTons = document.getElementById("asiKpiTons");
+  if (elTons) elTons.innerText = fmt(total);
+
+  const elCam = document.getElementById("asiKpiCam");
+  if (elCam) elCam.innerText = fmt(total/10);
 }
 
 function aplicarFiltrosAgrupacion(){
@@ -135,7 +141,10 @@ function actualizarResumenSel(){
   const sel = tableAsign?.getSelectedData() || [];
   const t = sel.reduce((s,x)=> s + (Number(x.Tons)||0), 0);
   const cam = t/10;
-  document.getElementById("asiResumenSel")?.innerText = `${sel.length} filas · ${fmt(t)} t (${fmt(cam)} cam)`;
+
+  const el = document.getElementById("asiResumenSel");
+  if (el) el.innerText = `${sel.length} filas · ${fmt(t)} t (${fmt(cam)} cam)`;
+
   return { sel, totalTons: t, cam };
 }
 
@@ -144,24 +153,35 @@ function actualizarSaldoMes(){
   const disp = Number(estado.monthTotals.get(key)||0);
   const asig = Number(estado.asigMap.get(key)||0);
   const saldo = disp - asig;
-  document.getElementById("asiDisp")?.innerText  = `Disp: ${fmt(disp)} t`;
-  document.getElementById("asiAsig")?.innerText  = `Asig: ${fmt(asig)} t`;
-  document.getElementById("asiSaldo")?.innerText = `Saldo: ${fmt(saldo)} t`;
+
+  const d = document.getElementById("asiDisp");
+  if (d) d.innerText = `Disp: ${fmt(disp)} t`;
+  const a = document.getElementById("asiAsig");
+  if (a) a.innerText = `Asig: ${fmt(asig)} t`;
+  const s = document.getElementById("asiSaldo");
+  if (s) s.innerText = `Saldo: ${fmt(saldo)} t`;
+
   return { disp, asig, saldo };
 }
 
 function usarSeleccion(){
   const { totalTons } = actualizarResumenSel();
   const unidad = document.getElementById("unidadMonto")?.value || "tons";
-  document.getElementById("montoAsignar").value = Math.round((unidad==="trucks" ? totalTons/10 : totalTons)*100)/100;
-  M.updateTextFields();
+  const input = document.getElementById("montoAsignar");
+  if (input) {
+    input.value = Math.round((unidad==="trucks" ? totalTons/10 : totalTons)*100)/100;
+    M.updateTextFields();
+  }
 }
 
 function usarSaldo(){
   const { saldo } = actualizarSaldoMes();
   const unidad = document.getElementById("unidadMonto")?.value || "tons";
-  document.getElementById("montoAsignar").value = Math.max(0, Math.round((unidad==="trucks" ? saldo/10 : saldo)*100)/100);
-  M.updateTextFields();
+  const input = document.getElementById("montoAsignar");
+  if (input) {
+    input.value = Math.max(0, Math.round((unidad==="trucks" ? saldo/10 : saldo)*100)/100);
+    M.updateTextFields();
+  }
 }
 
 async function realizarAsignacion(){
