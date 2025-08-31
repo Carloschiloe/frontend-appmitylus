@@ -22,7 +22,18 @@ async function safeGet(url, fallback){
   }
 }
 
-// Normalizaciones de fecha -> Mes (YYYY-MM) y Semana ISO (YYYY-WW)
+/* ===== Meses y etiquetas sin depender de Date (evita TZ shift) ===== */
+const MES_TXT = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+function etiquetaMesKey(k){
+  if (!k || typeof k !== 'string') return '';
+  const parts = k.split('-');
+  if (parts.length < 2) return '';
+  const y = parts[0];
+  const m = Math.max(1, Math.min(12, parseInt(parts[1],10) || 0));
+  return `${MES_TXT[m-1]} ${y}`;
+}
+
+/* ==== Normalizaciones que sí pueden usar Date cuando haga falta ==== */
 function parseDateOrNull(d){
   if (!d && d!==0) return null;
   const s = (typeof d === 'string' && /^\d{4}-\d{2}$/.test(d)) ? (d+'-01') : d;
@@ -54,32 +65,39 @@ export async function getOfertas(){
 
   return arr
     .map(it=>{
-      // Si viene mesKey, úsalo SIEMPRE como base.
-// Si viene anio+mes (numérico), constrúyelo como YYYY-MM.
-// Solo si no existen, cae a otras fechas sueltas.
-const fechaBase =
-  it.mesKey
-  || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2, '0')}` : null)
-  || it.fecha
-  || it.fechaPlan
-  || it.fch
-  || it.mes
-  || '';
+      // *** REGLA: mesKey manda. Si no hay, usa anio+mes. Solo si no hay nada, cae a fechas. ***
+      const fechaBase =
+        (it.mesKey && typeof it.mesKey === 'string' && /^\d{4}-\d{2}$/.test(it.mesKey))
+          ? it.mesKey
+          : (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : null)
+          || it.fecha
+          || it.fechaPlan
+          || it.fch
+          || it.mes
+          || '';
 
-const mesKey   = it.mesKey || monthKey(fechaBase);
-const semanaKey = isoWeekKey(fechaBase);
+      const mesKeyValor = (it.mesKey && /^\d{4}-\d{2}$/.test(it.mesKey))
+        ? it.mesKey
+        : ( (it.anio && it.mes) ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : monthKey(fechaBase) );
 
+      const semanaKey = isoWeekKey(fechaBase || (mesKeyValor ? (mesKeyValor+'-01') : ''));
+
+      // soporta distintos nombres de campo para toneladas
+      const tons = Number(
+        it.tonsDisponible ?? it.tons ?? it.total ?? it.valor ?? 0
+      ) || 0;
 
       return {
-        FechaBase : fechaBase,
-        Mes       : mesKey,                 // p.ej. "2025-08"
-        Semana    : semanaKey,              // p.ej. "2025-36"
+        FechaBase : fechaBase,                 // solo referencia
+        Mes       : mesKeyValor,               // SIEMPRE YYYY-MM correcto (p.ej. "2025-09")
+        MesEtiqueta: etiquetaMesKey(mesKeyValor), // "SEP 2025" sin TZ issues
+        Semana    : semanaKey,                 // p.ej. "2025-36"
         proveedorId: it.proveedorId ?? null,
         Proveedor : it.proveedorNombre || it.proveedor || '',
         Centro    : it.centroCodigo || '',
         Área      : it.areaCodigo || it.area || '',
         Comuna    : it.comuna || it.centroComuna || '',
-        Tons      : Number(it.tons) || 0,
+        Tons      : tons,
         Tipo      : (it.tipo || 'NORMAL').toUpperCase(), // NORMAL / BAP
         Fuente    : it.fuente ? (it.fuente[0].toUpperCase()+it.fuente.slice(1)) : 'Disponibilidad'
       };
@@ -153,4 +171,5 @@ export async function guardarEstadoDia({date, status, reason}){
   });
   return checkResponse(r);
 }
+
 
