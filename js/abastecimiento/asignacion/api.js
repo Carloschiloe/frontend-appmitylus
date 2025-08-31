@@ -254,4 +254,37 @@ export async function guardarEstadoDia({date, status, reason}){
   });
   return checkResponse(r);
 }
+// --- REQUERIMIENTO MENSUAL (planificacionmes) -----------------------------
+
+// Opción A (recomendada): /planificacion/mes?mesKey=YYYY-MM&tipo=NORMAL
+export async function getPlanMes(mesKey, tipo='NORMAL'){
+  // Si tu backend usa /planificacionmes en vez de /planificacion/mes,
+  // cambia la línea de abajo por la opción B.
+  const url = `${API_URL}/planificacion/mes?mesKey=${encodeURIComponent(mesKey)}&tipo=${encodeURIComponent(tipo)}`;
+  const r = await fetch(url, { headers:{'Accept':'application/json'} });
+  if (r.status === 404) return null;
+  const data = await checkResponse(r);
+  // normalizo: devolver {mesKey, tons}
+  if (!data) return null;
+  if (Array.isArray(data)) return data[0] || null;   // si viene como array
+  return data;                                       // si viene como objeto
+}
+
+/* // Opción B (si tu backend expone /planificacionmes)
+export async function getPlanMes(mesKey, tipo='NORMAL'){
+  const url = `${API_URL}/planificacionmes?mesKey=${encodeURIComponent(mesKey)}&tipo=${encodeURIComponent(tipo)}`;
+  const r = await fetch(url, { headers:{'Accept':'application/json'} });
+  if (r.status === 404) return null;
+  return await checkResponse(r);
+}
+*/
+
+export async function guardarPlanMes({mesKey, tons, tipo='NORMAL'}){
+  const r = await fetch(`${API_URL}/planificacion/mes`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body: JSON.stringify({ mesKey, tons, tipo })
+  });
+  return checkResponse(r);
+}
 
