@@ -1,5 +1,5 @@
 // mensual.js — versión simple y legible
-// KPI arriba + 2 tablas: Resumen por proveedor y Detalle (editable)
+// KPI arriba + 2 tablas: Resumen por proveedor y Detalle (editable + saldo después)
 
 import * as api from './api.js';
 import * as estado from './estado.js';
@@ -9,6 +9,7 @@ import { fmt } from './utilidades.js';
 const $  = (s, r=document)=>r.querySelector(s);
 const pad2 = (n)=>String(n).padStart(2,'0');
 const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
+const nz = (v)=>Number(v||0);
 
 function toMesKey(v){
   if(!v) return '';
@@ -19,44 +20,42 @@ function toMesKey(v){
 function hoyMesKey(){
   const d=new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
 }
+function fechaISO(x){
+  // usa x.fecha | x.dia | x.createdAt | mesKey-01
+  const f = x?.fecha || x?.dia || x?.createdAt;
+  const d = f ? new Date(f) : null;
+  if(d && !isNaN(d)) return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  const mk = x?.mesKey || '';
+  return /^\d{4}-\d{2}$/.test(mk) ? `${mk}-01` : '';
+}
 
 /* ------------------ requerimiento planta ------------------ */
-// buscamos primero api.getRequerimientoMes; si no existe, usamos /planificacion/mes; si falla, localStorage
+// 1) api.getRequerimientoMes; 2) /planificacion/mes; 3) localStorage
 async function getRequerimientoMes(mesKey, tipo){
-  // 1) endpoint explícito
   if(typeof api.getRequerimientoMes==='function'){
-    try{ const r=await api.getRequerimientoMes(mesKey, tipo); return Number(r?.tons)||0; }catch{}
+    try{ const r=await api.getRequerimientoMes(mesKey, tipo); return nz(r?.tons); }catch{}
   }
-  // 2) router agregado (/planificacion/mes GET agregado)
   try{
     const qs=new URLSearchParams({ from:mesKey, to:mesKey });
     const res=await fetch(`${api.API_URL}/planificacion/mes?${qs}`);
     const j=await res.json().catch(()=>({}));
-    const items=Array.isArray(j?.items)?j.items:[];
-    const row=items.find(x=>x.mesKey===mesKey);
-    if(row) return Number(row?.tons)||0;
+    const row=(Array.isArray(j?.items)?j.items:[]).find(x=>x.mesKey===mesKey);
+    return nz(row?.tons);
   }catch{}
-  // 3) fallback local
   const raw = localStorage.getItem(`reqmes:${mesKey}|${(tipo||'ALL').toUpperCase()}`);
   return raw? Number(raw)||0 : 0;
 }
-
 async function guardarRequerimientoMes(mesKey, tipo, tons){
-  // 1) endpoint explícito
   if(typeof api.guardarRequerimientoMes==='function'){
-    await api.guardarRequerimientoMes({ mesKey, tipo, tons });
-    return;
+    await api.guardarRequerimientoMes({ mesKey, tipo, tons }); return;
   }
-  // 2) router agregado (/planificacion/mes POST)
   try{
     await fetch(`${api.API_URL}/planificacion/mes`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify({ mesKey, tons })
     });
     return;
   }catch{}
-  // 3) fallback simple: guardo local
   localStorage.setItem(`reqmes:${mesKey}|${(tipo||'ALL').toUpperCase()}`, String(tons));
 }
 
@@ -64,7 +63,6 @@ async function guardarRequerimientoMes(mesKey, tipo, tons){
 async function calcularKPIs(mesKey, tipo){
   const invPT  = estado.totalesMesPorTipo();   // Map "YYYY-MM|TIPO"
   const asigPT = estado.asignadoMesPorTipo();  // Map "YYYY-MM|TIPO"
-
   let disponible=0, asignado=0;
 
   if((tipo||'ALL').toUpperCase()==='ALL'){
@@ -78,15 +76,14 @@ async function calcularKPIs(mesKey, tipo){
   }
 
   const requerimiento = await getRequerimientoMes(mesKey, tipo);
-  const saldo = disponible - asignado;
-
-  return { disponible, asignado, requerimiento, saldo };
+  return { disponible, asignado, requerimiento, saldo: disponible - asignado };
 }
 
 async function pintarKPIs(){
   const mesKey = toMesKey($('#mes_mes')?.value || hoyMesKey());
   const tipo   = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
   if(!mesKey) return;
+
   const { disponible, asignado, requerimiento, saldo } = await calcularKPIs(mesKey, tipo);
   ($('#mes_mes')||{}).value = mesKey;
 
@@ -101,15 +98,13 @@ async function pintarKPIs(){
   const asigInput = $('#mes_asigTons');
   if(asigInput) asigInput.placeholder = `máx ${fmt(Math.max(0, saldo))} t`;
 
-  // refresco tablas
   await cargarResumenProveedor();
   await cargarDetalleAsignaciones();
 }
 
-/* ------------------ RESUMEN POR PROVEEDOR (lectura) ------------------ */
+/* ------------------ RESUMEN POR PROVEEDOR ------------------ */
 let tablaProv=null;
 
-// intenta usar tu endpoint /planificacion/saldos?from=mk&to=mk
 async function fetchSaldosMes(mesKey){
   try{
     const qs = new URLSearchParams({ from:mesKey, to:mesKey });
@@ -121,27 +116,24 @@ async function fetchSaldosMes(mesKey){
 
 async function cargarResumenProveedor(){
   const mesKey=toMesKey($('#mes_mes')?.value||hoyMesKey());
-  const data = await fetchSaldosMes(mesKey);
+  const data  = await fetchSaldosMes(mesKey);
 
-  // shape: {mesKey, proveedorNombre, disponible, asignado, saldo}
   const rows = data
     .filter(r=>r.mesKey===mesKey)
-    .map(r=>({
-      Proveedor: r.proveedorNombre||'',
-      Disponible: Number(r.disponible)||0,
-      Asignado:   Number(r.asignado)||0,
-      Saldo:      Number(r.saldo)||0
-    }))
+    .map(r=>({ Proveedor:r.proveedorNombre||'', Disponible:nz(r.disponible), Asignado:nz(r.asignado), Saldo:nz(r.saldo) }))
     .sort((a,b)=> a.Saldo-b.Saldo || a.Proveedor.localeCompare(b.Proveedor));
 
-  // contenedor: creo una sola vez, simple
+  // crea card una vez
   let wrap = $('#mesProvWrap');
   if(!wrap){
     wrap = document.createElement('div');
     wrap.id='mesProvWrap';
     wrap.className='card-soft';
     wrap.innerHTML = `
-      <h6 style="margin:6px 0 10px">Resumen por proveedor (mes actual)</h6>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <h6 style="margin:6px 0">Resumen por proveedor (mes actual)</h6>
+        <small class="grey-text">Clic en un proveedor para filtrar el detalle</small>
+      </div>
       <div id="mesProvTable"></div>
     `;
     const host = $('#tabInventario');
@@ -155,30 +147,33 @@ async function cargarResumenProveedor(){
     { title:'Disponible', field:'Disponible', hozAlign:'right', formatter:c=>fmt(c.getValue()||0) },
     { title:'Asignado',   field:'Asignado',   hozAlign:'right', formatter:c=>fmt(c.getValue()||0) },
     { title:'Saldo',      field:'Saldo',      hozAlign:'right',
-      formatter:c=>{
-        const v=Number(c.getValue()||0), s=fmt(v);
-        return v<0?`<span style="color:#c62828;font-weight:600">${s}</span>`:s;
-      }
-    },
+      formatter:c=>{ const v=nz(c.getValue()); const s=fmt(v); return v<0?`<span style="color:#c62828;font-weight:600">${s}</span>`:s; } },
   ];
 
-  if(tablaProv){ tablaProv.setColumns(cols); tablaProv.setData(rows); }
-  else{
+  if(tablaProv){
+    tablaProv.setColumns(cols);
+    tablaProv.setData(rows);
+  }else{
     tablaProv = new Tabulator(el, {
-      data: rows, layout:'fitColumns', columnMinWidth:120, height:'320px', columns: cols
+      data: rows, layout:'fitColumns', columnMinWidth:120, height:'320px', columns: cols,
+      rowClick: (_e, row)=>{
+        const prov = row?.getData()?.Proveedor || '';
+        filtroProveedor = prov || null;
+        cargarDetalleAsignaciones();
+      }
     });
   }
 }
 
-/* ------------------ DETALLE ASIGNACIONES (editable) ------------------ */
+/* ------------------ DETALLE ASIGNACIONES ------------------ */
 let tablaDet=null;
+let filtroProveedor = null; // se setea clickeando en el resumen
 
 async function listAsignMes(mesKey, tipo){
   if(typeof api.getAsignacionesMes==='function'){
     const r=await api.getAsignacionesMes(mesKey,tipo);
     return Array.isArray(r?.items)?r.items:(Array.isArray(r)?r:[]);
   }
-  // fallback GET genérico
   const qs=new URLSearchParams({ mesKey, tipo });
   const res=await fetch(`${api.API_URL}/asignaciones?${qs}`);
   const j=await res.json().catch(()=> ({}));
@@ -197,6 +192,25 @@ async function delAsign(id){
   if(!r.ok) throw new Error('DELETE asignación falló');
 }
 
+// disponibilidad por proveedor en el mes (para saldo después)
+async function fetchDisponiblesPorProveedor(mesKey){
+  try{
+    const qs = new URLSearchParams({ from:mesKey, to:mesKey });
+    const res = await fetch(`${api.API_URL}/planificacion/disponibilidad?${qs}`);
+    const j = await res.json().catch(()=>({}));
+    const items = Array.isArray(j?.items)?j.items:[]; // puede venir como {items} o array
+    const arr = Array.isArray(items)?items:(Array.isArray(j)?j:[]);
+    const map=new Map();
+    for(const it of arr){
+      if((it?.mesKey||'')!==mesKey) continue;
+      const prov = it.proveedorNombre || '';
+      const tons = nz(it.tonsDisponible ?? it.tons);
+      map.set(prov, nz(map.get(prov))+tons);
+    }
+    return map;
+  }catch{ return new Map(); }
+}
+
 async function cargarDetalleAsignaciones(){
   const mesKey=toMesKey($('#mes_mes')?.value||hoyMesKey());
   const tipo  =($('#mes_tipo')?.value||'ALL').toUpperCase();
@@ -208,18 +222,39 @@ async function cargarDetalleAsignaciones(){
       _id: x._id||x.id||`${mesKey}-${x.proveedorNombre||''}-${x.tipo||'NORMAL'}`,
       Proveedor: x.proveedorNombre||'',
       Tipo: (x.tipo||'NORMAL').toUpperCase(),
-      Toneladas: Number(x.tons ?? x.asignado ?? x.total ?? 0) || 0,
-      Camiones: Number(x.camiones||0)||0,
-      Notas: x.notas||''
+      Toneladas: nz(x.tons ?? x.asignado ?? x.total),
+      Camiones: nz(x.camiones),
+      Notas: x.notas||'',
+      Fecha: fechaISO(x)
     }));
 
+  // filtro por proveedor (si viene del resumen)
+  if(filtroProveedor) rows = rows.filter(r=> (r.Proveedor||'')===filtroProveedor);
+
+  // saldo después (por proveedor, a partir de disponibilidad mensual)
+  const dispMap = await fetchDisponiblesPorProveedor(mesKey);
+  const groups = new Map();
+  // ordenar por proveedor + fecha asc para saldo correcto
+  rows.sort((a,b)=> (a.Proveedor||'').localeCompare(b.Proveedor||'') || (a.Fecha||'').localeCompare(b.Fecha||''));
+  for(const r of rows){
+    const key = r.Proveedor||'';
+    if(!groups.has(key)) groups.set(key, { saldo: nz(dispMap.get(key)) });
+    const g = groups.get(key);
+    g.saldo -= nz(r.Toneladas);
+    r.SaldoDespues = g.saldo;
+  }
+
+  // crea card una vez
   let wrap=$('#mesDetWrap');
   if(!wrap){
     wrap=document.createElement('div');
     wrap.id='mesDetWrap';
     wrap.className='card-soft';
     wrap.innerHTML=`
-      <h6 style="margin:6px 0 10px">Detalle de asignaciones del mes</h6>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <h6 style="margin:6px 0">Detalle de asignaciones del mes</h6>
+        <div id="mesDetFiltroInfo" class="grey-text" style="display:flex;align-items:center;gap:8px"></div>
+      </div>
       <div id="mesDetTable"></div>
       <div class="grey-text" style="margin-top:6px">Doble clic para editar. 🗑 borra.</div>
     `;
@@ -228,14 +263,30 @@ async function cargarDetalleAsignaciones(){
     (anchor?.nextSibling ? host.insertBefore(wrap, anchor.nextSibling) : host.appendChild(wrap));
   }
 
+  // pinta chip de filtro
+  const info = $('#mesDetFiltroInfo');
+  if(info){
+    if(filtroProveedor){
+      info.innerHTML = `
+        <span>Filtrando por: <b>${filtroProveedor}</b></span>
+        <a class="chip" id="btnQuitarFiltro">Quitar filtro</a>
+      `;
+      $('#btnQuitarFiltro')?.addEventListener('click', ()=>{ filtroProveedor=null; cargarDetalleAsignaciones(); });
+    }else{
+      info.innerHTML = '';
+    }
+  }
+
   const el = $('#mesDetTable');
   const cols = [
+    { title:'Fecha',     field:'Fecha', width:120 },
     { title:'Proveedor', field:'Proveedor', editor:'input', width:300 },
     { title:'Tipo',      field:'Tipo', editor:'select', editorParams:{values:['NORMAL','BAP']}, width:110, hozAlign:'center' },
-    { title:'Toneladas', field:'Toneladas', editor:'number', validator:['min:0'],
-      hozAlign:'right', formatter:c=>fmt(c.getValue()||0), width:130 },
-    { title:'Camiones',  field:'Camiones', editor:'number', validator:['min:0'],
-      hozAlign:'right', width:120 },
+    { title:'Toneladas', field:'Toneladas', editor:'number', validator:['min:0'], hozAlign:'right', formatter:c=>fmt(c.getValue()||0), width:130 },
+    { title:'Camiones',  field:'Camiones', editor:'number', validator:['min:0'], hozAlign:'right', width:120 },
+    { title:'Saldo después', field:'SaldoDespues', hozAlign:'right',
+      formatter:c=>{ const v=nz(c.getValue()); const s=fmt(v); return v<0?`<span style="color:#c62828;font-weight:600">${s}</span>`:s; },
+      width:140 },
     { title:'Notas',     field:'Notas', editor:'input' },
     { title:'', field:'__a', width:70, hozAlign:'center', headerSort:false,
       formatter:()=> '🗑',
@@ -260,12 +311,11 @@ async function cargarDetalleAsignaciones(){
     tablaDet.setColumns(cols); tablaDet.setData(rows);
   }else{
     tablaDet=new Tabulator(el,{
-      data:rows, layout:'fitColumns', columnMinWidth:110, height:'330px', columns:cols,
+      data:rows, layout:'fitColumns', columnMinWidth:110, height:'360px', columns:cols,
       cellEdited: async (cell)=>{
         const r=cell.getRow()?.getData(); if(!r?._id) return;
         const field=cell.getField();
         const patch={};
-        // map campos UI -> backend
         if(field==='Proveedor') patch.proveedorNombre=r.Proveedor;
         else if(field==='Tipo') patch.tipo=r.Tipo;
         else if(field==='Toneladas') patch.tons=r.Toneladas;
@@ -276,6 +326,7 @@ async function cargarDetalleAsignaciones(){
           M.toast?.({html:'Actualizado', classes:'teal'});
           await estado.refrescar(api);
           await cargarResumenProveedor();
+          await cargarDetalleAsignaciones();
           await pintarKPIs();
         }catch(e){
           console.error(e); M.toast?.({html:'No se pudo actualizar', classes:'orange'});
@@ -337,20 +388,20 @@ async function onBorrarTodas(){
 
 /* ------------------ montaje ------------------ */
 export function montar(){
-  // defaults
   const mesInp=$('#mes_mes'); if(mesInp && !mesInp.value) mesInp.value=hoyMesKey();
   M.FormSelect.init(document.querySelectorAll('select')); M.updateTextFields?.();
 
-  // listeners
-  $('#mes_mes')?.addEventListener('change', pintarKPIs);
-  $('#mes_tipo')?.addEventListener('change', pintarKPIs);
-  $('#mes_btnActualizar')?.addEventListener('click', async ()=>{ try{ await estado.refrescar(api);}catch{} pintarKPIs(); });
-  $('#mes_btnReset')?.addEventListener('click', ()=>{ const b=$('#mes_buscar'); if(b) b.value=''; const a=$('#mes_asigTons'); if(a) a.value=''; M.updateTextFields?.(); pintarKPIs(); });
+  $('#mes_mes')?.addEventListener('change', ()=>{ filtroProveedor=null; pintarKPIs(); });
+  $('#mes_tipo')?.addEventListener('change', ()=>{ filtroProveedor=null; pintarKPIs(); });
+  $('#mes_btnActualizar')?.addEventListener('click', async ()=>{ try{ await estado.refrescar(api);}catch{} filtroProveedor=null; pintarKPIs(); });
+  $('#mes_btnReset')?.addEventListener('click', ()=>{
+    const b=$('#mes_buscar'); if(b) b.value='';
+    const a=$('#mes_asigTons'); if(a) a.value='';
+    filtroProveedor=null; M.updateTextFields?.(); pintarKPIs();
+  });
   $('#mes_btnGuardarReq')?.addEventListener('click', onGuardarReq);
   $('#mes_btnAsignar')?.addEventListener('click', onAsignarMacro);
   $('#mes_btnBorrarAsig')?.addEventListener('click', onBorrarTodas);
 
-  // primer render
   pintarKPIs();
 }
-
