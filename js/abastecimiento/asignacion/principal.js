@@ -147,7 +147,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   inventario.montar();
   asignacion.montar();
-  programaSemanal.montar();
+  // DESPUÉS
+inventario.montar();
+asignacion.montar(); // Programa semanal en lazy-load
+
+// Montar Programa sólo cuando el usuario abra la pestaña
+let progBooted = false;
+document.querySelectorAll('.tabs .tab a').forEach(a=>{
+  a.addEventListener('click', ()=>{
+    if (a.getAttribute('href') === '#tabPrograma' && !progBooted){
+      try { programaSemanal.montar(); } catch (e) { console.error(e); }
+      progBooted = true;
+    }
+  });
+});
+
 
   // coloca exportes una vez y al cambiar de pestaña
   setTimeout(colocarExportesTodas, 120);
@@ -157,3 +171,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window.__api = api; window.__estado = estado;
 });
+
