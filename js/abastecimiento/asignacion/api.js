@@ -1,29 +1,27 @@
 // js/abastecimiento/asignacion/api.js
-export const API_BASE = "https://backend-appmitylus.vercel.app/api";
+export const API_URL = "https://backend-appmitylus.vercel.app/api";
 
-async function _check(r){
-  if(!r.ok){
-    const t = await r.text().catch(()=> "");
-    throw new Error(`HTTP ${r.status} - ${t}`);
+// Puedes sobreescribir este endpoint desde window.INV_ASIG_ENDPOINT si lo defines en el HTML
+export const INV_ASIG_ENDPOINT = (window.INV_ASIG_ENDPOINT || "/asignaciones/map");
+
+async function checkResponse(resp){
+  if(!resp.ok){
+    const text = await resp.text().catch(()=> "");
+    throw new Error(`HTTP ${resp.status} - ${text}`);
   }
-  return r.status===204 ? null : await r.json().catch(()=> null);
+  if(resp.status === 204) return null;
+  try { return await resp.json(); } catch { return null; }
 }
 
 export async function apiGet(path){
-  return _check(await fetch(API_BASE + path));
+  const r = await fetch(`${API_URL}${path}`);
+  return checkResponse(r);
 }
-
 export async function apiPost(path, body){
-  return _check(await fetch(API_BASE + path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  }));
+  const r = await fetch(`${API_URL}${path}`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(body||{})
+  });
+  return checkResponse(r);
 }
-
-export const endpoints = {
-  ofertas: "/planificacion/ofertas",
-  asignacionesMap: "/asignaciones/map",
-  asignaciones: "/asignaciones",
-  // futuros: programa semanal / no-op / etc.
-};
