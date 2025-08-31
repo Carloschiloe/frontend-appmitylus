@@ -2,7 +2,7 @@
 import * as api from './api.js';
 import * as estado from './estado.js';
 import * as inventario from './inventario.js';
-import * as asignacion from './asignacion.js';
+import * as mensual from './mensual.js';              // <-- nuevo
 import * as programaSemanal from './programa_semanal.js';
 
 /* =============== utilidades =============== */
@@ -36,12 +36,11 @@ function activeTabId(){
 function tablaActiva(){
   const id=activeTabId();
   if(id==='#tabInventario') return (window.getTablaInventario?.()) || null;
-  if(id==='#tabAsignacion') return (window.getTablaAsignacion?.()) || null;
   if(id==='#tabPrograma')   return (window.getTablaPrograma?.())   || null;
   return null;
 }
 function nombreActivo(){
-  const m={'#tabInventario':'inventarios_stock','#tabAsignacion':'asignacion','#tabPrograma':'programa_semanal'};
+  const m={'#tabInventario':'inventarios_stock','#tabPrograma':'programa_semanal'};
   return m[activeTabId()] || 'export';
 }
 
@@ -98,6 +97,7 @@ function colocarExportes(tabRoot){
   actions.style.marginLeft = 'auto';
   actions.style.justifyContent = 'flex-end';
 
+  // evita duplicados
   ['inv_csv','inv_xlsx','btnCSV','btnXLSX','btnExcelJuntoChip','btnPdfJuntoChip']
     .forEach(id=>{ const el=actions.querySelector('#'+id); if(el) el.remove(); });
 
@@ -129,7 +129,6 @@ function colocarExportes(tabRoot){
 
 function colocarExportesTodas(){
   colocarExportes(document.querySelector('#tabInventario'));
-  colocarExportes(document.querySelector('#tabAsignacion'));
   colocarExportes(document.querySelector('#tabPrograma'));
 }
 
@@ -147,17 +146,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     M.toast({html:'No se pudo cargar datos iniciales', classes:'red'});
   }
 
-  // Lazy-boot por pestaña (evita construir Tabulator con el tab oculto)
-  let invBooted=false, asiBooted=false, progBooted=false;
+  // Lazy-boot por pestaña
+  let invBooted=false, progBooted=false;
 
-  const bootInv = ()=>{ if(!invBooted){ try{ inventario.montar(); }catch(e){console.error(e);} invBooted=true; } };
-  const bootAsi = ()=>{ if(!asiBooted){ try{ asignacion.montar(); }catch(e){console.error(e);} asiBooted=true; } };
-  const bootProg = ()=>{ if(!progBooted){ try{ programaSemanal.montar(); }catch(e){console.error(e);} progBooted=true; } };
+  const bootInv = ()=>{
+    if(invBooted) return;
+    try{
+      inventario.montar();   // tabla de inventario
+      mensual.montar();      // KPIs y acciones de gestión mensual
+    }catch(e){ console.error(e); }
+    invBooted=true;
+  };
+  const bootProg = ()=>{
+    if(progBooted) return;
+    try{ programaSemanal.montar(); }catch(e){ console.error(e); }
+    progBooted=true;
+  };
 
   // Arranca solo el tab activo
   const href = document.querySelector('.tabs .tab a.active')?.getAttribute('href');
   if (href === '#tabInventario') bootInv();
-  else if (href === '#tabAsignacion') bootAsi();
   else if (href === '#tabPrograma') bootProg();
 
   // Montar cuando el usuario abra cada pestaña, una sola vez
@@ -165,7 +173,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     a.addEventListener('click', ()=>{
       const dest = a.getAttribute('href');
       if (dest === '#tabInventario') bootInv();
-      else if (dest === '#tabAsignacion') bootAsi();
       else if (dest === '#tabPrograma') bootProg();
       setTimeout(colocarExportesTodas, 120);
     });
@@ -175,6 +182,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setTimeout(colocarExportesTodas, 120);
 
   // Exponer helpers para debug
-  window.__api = api; 
+  window.__api = api;
   window.__estado = estado;
 });
