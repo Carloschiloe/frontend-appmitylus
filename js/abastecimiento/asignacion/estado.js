@@ -1,11 +1,16 @@
 // estado.js
-import { claveSemana } from './utilidades.js'; // OJO: ya no usamos claveMes
+import { claveSemana } from './utilidades.js'; // OJO: no usamos claveMes acá
 
 const listeners = new Map();
 export const datos = { ofertas: [], asignadoPorMes: new Map(), programaSemana: [], estadosDia: [] };
 
 export function on(evt, fn){ if(!listeners.has(evt)) listeners.set(evt,new Set()); listeners.get(evt).add(fn); }
 function emit(evt){ (listeners.get(evt)||[]).forEach(fn=>{ try{fn();}catch{} }); }
+
+// ===== Debug helper =====
+function DBG(...a){ if (window.DEBUG_INV) console.log(...a); }
+function DBGg(name){ if (window.DEBUG_INV) console.groupCollapsed(name); }
+function DBGend(){ if (window.DEBUG_INV) console.groupEnd(); }
 
 /* ========= Helpers locales: YYYY-MM sin TZ ========= */
 const MES_RE = /^\d{4}-\d{2}$/;
@@ -17,7 +22,7 @@ const pad2 = (n) => String(n).padStart(2,'0');
  * 2) r.anio + r.mes
  * 3) r.Mes (si ya vino como YYYY-MM)
  * 4) fallback: r.FechaBase (solo si no hay nada anterior)
- * Devuelve {mes, source} para debug.
+ * Devuelve {mes, source}
  */
 function pickMes(r) {
   if (MES_RE.test(r?.mesKey ?? '')) return { mes: r.mesKey, source: 'mesKey' };
@@ -36,43 +41,32 @@ function pickSemana(r){
 
 /* ========= Core ========= */
 
-/**
- * Normaliza las ofertas poniendo Mes y Semana SIN recalcular el mes desde createdAt.
- * Además deja trazas si detecta inconsistencias con mesKey.
- */
 export function ofertasConClaves(){
   const out = datos.ofertas.map(r => {
     const { mes, source } = pickMes(r);
     const Semana = pickSemana(r);
-
-    const row = { ...r, Mes: mes, Semana };
-
-    // Debug: adjunta la fuente usada para Mes (no se usa en cálculos, solo inspección)
-    row.__mesSource = source;
-
+    const row = { ...r, Mes: mes, Semana, __mesSource: source };
     return row;
   });
 
-  // Advertir si viene mesKey pero Mes final difiere (no debería ocurrir ya)
-  const inconsistentes = out.filter(x => MES_RE.test(x?.mesKey ?? '') && x.Mes !== x.mesKey);
-  if (inconsistentes.length) {
-    console.warn('[estado.ofertasConClaves] Mes != mesKey (se forzó Mes desde mesKey). Ejemplos:',
-      inconsistentes.slice(0, 5).map(x => ({
-        Proveedor: (x.Proveedor || x.proveedorNombre || '').slice(0,40),
-        mesKey: x.mesKey, Mes: x.Mes, src: x.__mesSource, anio: x.anio, mes: x.mes, FechaBase: x.FechaBase
-      }))
-    );
+  if (window.DEBUG_INV) {
+    DBGg('[estado.ofertasConClaves] resumen');
+    const resumenFuente = out.reduce((acc, x) => (acc[x.__mesSource]=(acc[x.__mesSource]||0)+1, acc), {});
+    const resumenMes = out.reduce((acc, x) => (acc[x.Mes]=(acc[x.Mes]||0)+1, acc), {});
+    DBG('Fuente Mes -> conteo:', resumenFuente);
+    DBG('Distribución Mes -> conteo:', resumenMes);
+    const inconsistentes = out.filter(x => MES_RE.test(x?.mesKey ?? '') && x.Mes !== x.mesKey);
+    if (inconsistentes.length) {
+      DBG('⚠️ Inconsistentes Mes vs mesKey (primeros 10):',
+        inconsistentes.slice(0,10).map(x => ({
+          Proveedor: (x.Proveedor || x.proveedorNombre || '').slice(0,40),
+          mesKey: x.mesKey, Mes: x.Mes, src: x.__mesSource, anio: x.anio, mes: x.mes,
+          FechaBase: x.FechaBase || x.fecha || x.createdAt || ''
+        }))
+      );
+    }
+    DBGend();
   }
-
-  // Muestra un resumen de fuentes utilizadas (para ver si alguien está pisando datos)
-  try {
-    const resumen = out.reduce((acc, x) => {
-      acc[x.__mesSource] = (acc[x.__mesSource] || 0) + 1;
-      return acc;
-    }, {});
-    console.info('[estado.ofertasConClaves] Fuente Mes -> conteo:', resumen);
-  } catch {}
-
   return out;
 }
 
@@ -103,9 +97,9 @@ export function asignadoMesPorTipo(){
 
 export function filasEnriquecidas({tipo='ALL'} = {}){
   const asigT = asignadoMesPorTipo();
-  const invPorTipo = totalesMesPorTipo(); // evitar recomputar dentro del map
+  const invPorTipo = totalesMesPorTipo();
 
-  return ofertasConClaves()
+  const filas = ofertasConClaves()
     .map(r => {
       const t = (r.Tipo || 'NORMAL').toUpperCase();
       const tons = +r.Tons || 0;
@@ -120,6 +114,17 @@ export function filasEnriquecidas({tipo='ALL'} = {}){
       return { ...r, Asignado, Saldo };
     })
     .filter(r => tipo==='ALL' ? true : (r.Tipo||'NORMAL').toUpperCase() === tipo);
+
+  if (window.DEBUG_INV) {
+    DBGg('[estado.filasEnriquecidas] verificación Mes');
+    const dist = filas.reduce((a,x)=> (a[x.Mes]=(a[x.Mes]||0)+1, a), {});
+    DBG('Distribución Mes post-enriquecido:', dist);
+    DBG('Primeras 10:', filas.slice(0,10).map(x => ({
+      Mes:x.Mes, src:x.__mesSource, Proveedor:(x.Proveedor||'').slice(0,35), Tons:x.Tons
+    })));
+    DBGend();
+  }
+  return filas;
 }
 
 export function saldoMes({mesKey, tipo='ALL'}){
@@ -132,7 +137,7 @@ export function saldoMes({mesKey, tipo='ALL'}){
     return inv - asig;
   } else {
     const inv  = invPorTipo.get(`${mesKey}|${tipo}`) || 0;
-    const asig = asigPorTipo.get(`${mesKey}|${tipo}`) || 0;
+    const asig = asigPorTipo.get(`${mesKey}|`${tipo}`) || 0;
     return inv - asig;
   }
 }
@@ -148,13 +153,12 @@ export async function cargarTodo(api){
     api.getAsignacionesMapa()
   ]);
 
-  // Guardamos EXACTAMENTE lo que viene del API (sin tocar Mes aquí).
   datos.ofertas = ofertas;
   datos.asignadoPorMes = asignMap;
 
-  // Debug rápido: muestra 5 filas crudas tal como llegan del API
-  try {
-    console.table((datos.ofertas || []).slice(0,5).map(o => ({
+  if (window.DEBUG_INV) {
+    DBGg('[estado.cargarTodo] RAW del API (primeros 10)');
+    console.table((datos.ofertas || []).slice(0,10).map(o => ({
       Proveedor: (o.Proveedor || o.proveedorNombre || '').slice(0,40),
       mesKey: o.mesKey || '',
       anio: o.anio || '',
@@ -162,7 +166,8 @@ export async function cargarTodo(api){
       Mes_api: o.Mes || '',
       FechaBase: o.FechaBase || o.fecha || o.createdAt || ''
     })));
-  } catch {}
+    DBGend();
+  }
 
   emit('actualizado');
 }
