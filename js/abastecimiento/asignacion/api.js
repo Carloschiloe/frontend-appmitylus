@@ -171,5 +171,3 @@ export async function guardarEstadoDia({date, status, reason}){
   });
   return checkResponse(r);
 }
-
-
