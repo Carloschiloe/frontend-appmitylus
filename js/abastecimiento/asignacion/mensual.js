@@ -1,111 +1,72 @@
-// Gestión mensual (macro): KPIs + detalle editable + resumen anual
-// Requiere: Materialize, Tabulator, api.js, estado.js, utilidades.js
+// js/abastecimiento/asignacion/mensual.js
+// Gestión mensual (macro) + detalle del mes con edición y borrado
 
 import * as api from './api.js';
 import * as estado from './estado.js';
 import { fmt } from './utilidades.js';
 
-/* ========= Helpers DOM ========= */
+/* ========= Helpers ========= */
 const $ = (sel, root = document) => root.querySelector(sel);
 const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+const pad2 = (n) => String(n).padStart(2, '0');
 
-const toMesKey = (val /* "YYYY-MM" o Date o "" */) => {
+const toMesKey = (val) => {
   if (!val) return '';
   if (/^\d{4}-\d{2}$/.test(val)) return val;
   const d = new Date(val);
-  if (isNaN(d)) return '';
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  if (Number.isNaN(d)) return '';
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
 };
+
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
-/* ========= Contenedores creados dinámicamente ========= */
-function ensureCards() {
-  const host = $('#tabInventario');
-  if (!host) return {};
-
-  // 1) Card de detalle asignaciones
-  let detalleWrap = $('#mesDetalleWrap');
-  if (!detalleWrap) {
-    detalleWrap = document.createElement('div');
-    detalleWrap.id = 'mesDetalleWrap';
-    detalleWrap.className = 'card-soft';
-    detalleWrap.innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap">
-        <h6 style="margin:6px 0">Detalle de asignaciones del mes</h6>
-        <div style="display:flex;gap:8px">
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px">
-            <input type="checkbox" id="mes_soloMacro" class="filled-in"/><span>Mostrar solo “macro mensual”</span>
-          </label>
-        </div>
-      </div>
-      <div id="mesDetalle"></div>
-      <div class="grey-text" style="margin-top:6px">Haz doble clic en <b>Proveedor</b> o <b>Toneladas</b> para editar. Usa el ícono 🗑 para borrar una asignación.</div>
-    `;
-    // Insertar inmediatamente DESPUÉS del primer card (el de KPI)
-    const firstCard = host.querySelector('.card-soft');
-    (firstCard?.nextSibling ? host.insertBefore(detalleWrap, firstCard.nextSibling) : host.appendChild(detalleWrap));
-  }
-
-  // 2) Card de resumen anual
-  let anualWrap = $('#mesAnualWrap');
-  if (!anualWrap) {
-    anualWrap = document.createElement('div');
-    anualWrap.id = 'mesAnualWrap';
-    anualWrap.className = 'card-soft';
-    anualWrap.innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap">
-        <h6 style="margin:6px 0">Resumen anual</h6>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input id="mes_anio" type="number" min="2000" max="2100" style="max-width:120px" />
-          <a id="mes_btnAnio" class="btn grey darken-2"><i class="material-icons left" style="margin:0">refresh</i>Ver año</a>
-        </div>
-      </div>
-      <div id="mesAnual"></div>
-      <div class="grey-text" style="margin-top:6px">Clic en un mes del resumen para saltar al KPI y detalle de ese mes.</div>
-    `;
-    host.appendChild(anualWrap);
-  }
-
-  return { detalleWrap, anualWrap };
-}
-
-/* ========= Requerimientos (con fallback) =========
-   Usa endpoints si existen:
-   - api.getRequerimientoMes(mesKey, tipo?) -> { tons }
-   - api.guardarRequerimientoMes({mesKey, tipo, tons})
-   Fallback a localStorage si no están implementados.
-*/
-const REQ_LS_PREFIX = 'reqmes:'; // clave localStorage: reqmes:YYYY-MM|TIPO
-const keyReq = (mesKey, tipo) => `${REQ_LS_PREFIX}${mesKey}|${(tipo || 'ALL').toUpperCase()}`;
+/* ========= Requerimiento (server con fallback local) ========= */
+const REQ_LS_PREFIX = 'reqmes:'; // reqmes:YYYY-MM|TIPO
+const reqKey = (mesKey, tipo) => `${REQ_LS_PREFIX}${mesKey}|${(tipo || 'ALL').toUpperCase()}`;
 
 async function getRequerimiento(mesKey, tipo) {
   try {
+    if (typeof api.getPlanMes === 'function') {
+      // getPlanMes(mesKey) -> {mesKey, tons, ...}
+      const r = await api.getPlanMes(mesKey);
+      return Number(r?.tons) || 0;
+    }
     if (typeof api.getRequerimientoMes === 'function') {
       const r = await api.getRequerimientoMes(mesKey, tipo);
       return Number(r?.tons) || 0;
     }
   } catch (e) {
-    console.warn('[mensual] getRequerimientoMes backend falló; uso localStorage', e);
+    console.warn('[mensual] get requerimiento (server) falló, uso localStorage', e);
   }
-  const raw = localStorage.getItem(keyReq(mesKey, tipo));
+  const raw = localStorage.getItem(reqKey(mesKey, tipo));
   return raw ? Number(raw) || 0 : 0;
 }
 async function guardarRequerimiento(mesKey, tipo, tons) {
   try {
+    if (typeof api.guardarPlanMes === 'function') {
+      const r = await api.guardarPlanMes({ mesKey, tons });
+      return r?.ok ? 'server' : 'local';
+    }
     if (typeof api.guardarRequerimientoMes === 'function') {
       await api.guardarRequerimientoMes({ mesKey, tipo, tons });
       return 'server';
     }
   } catch (e) {
-    console.warn('[mensual] guardarRequerimientoMes backend falló; guardo local', e);
+    console.warn('[mensual] guardar requerimiento (server) falló, guardo local', e);
   }
-  localStorage.setItem(keyReq(mesKey, tipo), String(tons));
+  localStorage.setItem(reqKey(mesKey, tipo), String(tons));
   return 'local';
+}
+
+async function borrarAsignacionesMes(mesKey, tipo) {
+  if (typeof api.borrarAsignacionesMes === 'function') {
+    return api.borrarAsignacionesMes({ mesKey, tipo });
+  }
+  throw new Error('No existe api.borrarAsignacionesMes() en backend.');
 }
 
 /* ========= KPIs ========= */
 async function calcularKPIs(mesKey, tipo) {
-  // Requiere estado.cargarTodo(api) antes (se hace en principal.js)
   const invPorTipo = estado.totalesMesPorTipo();   // Map "YYYY-MM|TIPO" -> tons
   const asigPorTipo = estado.asignadoMesPorTipo(); // Map "YYYY-MM|TIPO" -> tons
 
@@ -113,12 +74,12 @@ async function calcularKPIs(mesKey, tipo) {
   let asignado = 0;
 
   if (tipo === 'ALL') {
-    // Sumar por todos los tipos para ese mes
     for (const [k, v] of invPorTipo.entries()) if (k.startsWith(`${mesKey}|`)) disponible += v;
-    let asigPorTipos = 0;
-    for (const [k, v] of asigPorTipo.entries()) if (k.startsWith(`${mesKey}|`)) asigPorTipos += v;
-    const asigMesConsolidado = estado.datos.asignadoPorMes.get(mesKey) || 0;
-    asignado = asigPorTipos > 0 ? asigPorTipos : asigMesConsolidado;
+    const totPorTipos = [...asigPorTipo.entries()]
+      .filter(([k]) => k.startsWith(`${mesKey}|`))
+      .reduce((s, [, v]) => s + v, 0);
+    const consolidado = estado.datos.asignadoPorMes.get(mesKey) || 0;
+    asignado = totPorTipos > 0 ? totPorTipos : consolidado;
   } else {
     disponible = invPorTipo.get(`${mesKey}|${tipo}`) || 0;
     asignado   = asigPorTipo.get(`${mesKey}|${tipo}`) || 0;
@@ -126,16 +87,198 @@ async function calcularKPIs(mesKey, tipo) {
 
   const requerimiento = await getRequerimiento(mesKey, tipo);
   const saldo = disponible - asignado;
-
   return { disponible, requerimiento, asignado, saldo };
 }
 
+/* ========= Detalle (lista de asignaciones del mes) ========= */
+let tablaDetalle = null;
+
+async function fetchAsignacionesMes(mesKey) {
+  // Orígenes posibles (usamos el primero que exista):
+  // - api.getAsignacionesMes(mesKey)
+  // - estado.datos.asignaciones (array crudo)
+  // - estado.getAsignaciones?()
+  try {
+    if (typeof api.getAsignacionesMes === 'function') {
+      const arr = await api.getAsignacionesMes(mesKey);
+      return Array.isArray(arr) ? arr : (Array.isArray(arr?.items) ? arr.items : []);
+    }
+  } catch (e) {
+    console.warn('[mensual] getAsignacionesMes() falló', e);
+  }
+  const arr1 = Array.isArray(estado?.datos?.asignaciones) ? estado.datos.asignaciones : null;
+  const arr2 = typeof estado.getAsignaciones === 'function' ? estado.getAsignaciones() : null;
+  return (arr1 || arr2 || []).filter(r => r?.mesKey === mesKey);
+}
+
+function normalizarAsignacion(r) {
+  const tons = Number(r?.tons ?? r?.asignado ?? r?.total ?? 0) || 0;
+  const tipo = (r?.tipo || 'NORMAL').toUpperCase();
+  return {
+    id: r?.id || r?._id || `${r?.mesKey}-${r?.proveedorNombre}-${r?.createdAt || ''}`,
+    mesKey: r?.mesKey || '',
+    proveedor: r?.proveedorNombre || r?.proveedor || '',
+    tipo,
+    tons,
+    camiones: tons / 10,
+    fuente: r?.fuente || '',
+    notas: r?.notas || '',
+    createdAt: r?.createdAt || r?.fecha || r?._createdAt || null,
+  };
+}
+
+function saldoAcumulado(datos, disponibleInicial) {
+  // Orden por fecha de creación si existe, si no, por inserción
+  const ordenados = [...datos].sort((a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return ta - tb;
+  });
+  let restante = Number(disponibleInicial) || 0;
+  const mapa = new Map();
+  for (const row of ordenados) {
+    restante -= Number(row.tons) || 0;
+    mapa.set(row.id, restante);
+  }
+  return mapa; // id -> saldo post
+}
+
+async function renderDetalle() {
+  const mesKey = toMesKey($('#mes_mes')?.value);
+  const tipo   = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
+  if (!mesKey) return;
+
+  // trae y normaliza
+  const crudo = await fetchAsignacionesMes(mesKey);
+  let data = crudo.map(normalizarAsignacion)
+    .filter(r => (tipo === 'ALL') ? true : r.tipo === tipo);
+
+  // filtro por texto (opcional)
+  const q = ($('#mes_buscar')?.value || '').toLowerCase().trim();
+  if (q) {
+    data = data.filter(r =>
+      r.proveedor.toLowerCase().includes(q) ||
+      r.notas.toLowerCase().includes(q)
+    );
+  }
+
+  // toggle "solo macro mensual" (fuente === 'ui-mensual')
+  const chkMacro = $('#mes_onlyMacro');
+  if (chkMacro && chkMacro.checked) {
+    data = data.filter(r => String(r.fuente).toLowerCase().includes('ui-mensual'));
+  }
+
+  // KPIs para saldo inicial
+  const { disponible } = await calcularKPIs(mesKey, tipo);
+  const saldoPorId = saldoAcumulado(data, disponible);
+  data = data.map(r => ({ ...r, saldoPost: saldoPorId.get(r.id) }));
+
+  // columnas
+  const cols = [
+    { title: 'Proveedor', field: 'proveedor', editor: 'input', width: 320 },
+    { title: 'Tipo', field: 'tipo', width: 110, hozAlign: 'center' },
+    { title: 'Toneladas', field: 'tons', hozAlign: 'right', headerHozAlign: 'right',
+      editor: 'number', mutatorEdit: (v) => Number(v) || 0, formatter: c => fmt(c.getValue()) },
+    { title: 'Camiones', field: 'camiones', hozAlign: 'right', headerHozAlign: 'right',
+      formatter: c => fmt(c.getValue()), bottomCalc: 'sum', bottomCalcFormatter: c => fmt(c) },
+    // columna nueva: saldo después de esta asignación
+    { title: 'Saldo post', field: 'saldoPost', hozAlign: 'right', headerHozAlign: 'right',
+      formatter: c => fmt(c.getValue()) },
+    // ocultamos "fuente" (quedó para filtro opcional)
+    // { title: 'Fuente', field: 'fuente', width: 110 },
+    { title: 'Notas', field: 'notas', editor: 'input', width: 160 },
+    {
+      title: 'Acciones', field: 'acciones', width: 80, hozAlign: 'center', headerSort: false,
+      formatter: () => `<i class="material-icons" style="cursor:pointer">delete</i>`,
+      cellClick: async (_e, cell) => {
+        const row = cell.getRow().getData();
+        if (!confirm(`Eliminar asignación de "${row.proveedor}" por ${fmt(row.tons)} t?`)) return;
+        try {
+          if (typeof api.eliminarAsignacion === 'function') {
+            await api.eliminarAsignacion(row.id);
+          } else if (typeof api.deleteAsignacion === 'function') {
+            await api.deleteAsignacion(row.id);
+          } else {
+            M.toast?.({ html: 'Falta endpoint de borrado en api.*', classes: 'orange' });
+            return;
+          }
+          M.toast?.({ html: 'Asignación eliminada', classes: 'teal' });
+          await estado.refrescar(api);
+          renderDetalle(); // recarga
+          actualizarKPIs(); // refresca kpis
+        } catch (e) {
+          console.error(e);
+          M.toast?.({ html: 'Error al eliminar', classes: 'red' });
+        }
+      }
+    },
+  ];
+
+  const wrap = document.getElementById('mesDetalleTable') || document.getElementById('asiRevisarTable');
+  if (!wrap) return;
+
+  if (tablaDetalle) {
+    tablaDetalle.setColumns(cols);
+    tablaDetalle.replaceData(data);
+  } else {
+    tablaDetalle = new Tabulator(wrap, {
+      data,
+      columns: cols,
+      height: '420px',
+      layout: 'fitColumns',
+      columnMinWidth: 110,
+      reactiveData: false,
+      movableColumns: true,
+      initialSort: [{ column: 'createdAt', dir: 'asc' }, { column: 'proveedor', dir: 'asc' }],
+      rowDblClick: (_e, row) => {
+        // toggle editor rápido en toneladas
+        const c = row.getCell('tons');
+        if (c) { try { row.getTable().navigateToCell(row, c.getColumn()); } catch {} }
+      },
+      cellEdited: async (cell) => {
+        const row = cell.getRow().getData();
+        const patch = {};
+        if (cell.getField() === 'proveedor') patch.proveedorNombre = row.proveedor;
+        if (cell.getField() === 'tons') {
+          patch.tons = Number(row.tons) || 0;
+          patch.camiones = patch.tons / 10;
+        }
+        if (cell.getField() === 'notas') patch.notas = row.notas;
+
+        if (Object.keys(patch).length === 0) return;
+
+        try {
+          if (typeof api.actualizarAsignacion === 'function') {
+            await api.actualizarAsignacion(row.id, patch);
+          } else if (typeof api.updateAsignacion === 'function') {
+            await api.updateAsignacion(row.id, patch);
+          } else if (typeof api.patchAsignacion === 'function') {
+            await api.patchAsignacion(row.id, patch);
+          } else {
+            M.toast?.({ html: 'Falta endpoint de actualización en api.*', classes: 'orange' });
+            return;
+          }
+          await estado.refrescar(api);
+          renderDetalle();
+          actualizarKPIs();
+          M.toast?.({ html: 'Asignación actualizada', classes: 'teal' });
+        } catch (e) {
+          console.error(e);
+          M.toast?.({ html: 'Error al actualizar', classes: 'red' });
+        }
+      },
+    });
+  }
+}
+
+/* ========= UI: KPIs ========= */
 async function actualizarKPIs() {
   const mesKey = toMesKey($('#mes_mes')?.value);
   const tipo   = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
   if (!mesKey) return;
 
   const { disponible, requerimiento, asignado, saldo } = await calcularKPIs(mesKey, tipo);
+
   setText('kpiDisp',  `${fmt(disponible)} t`);
   setText('kpiReq',   `${fmt(requerimiento)} t`);
   setText('kpiAsig',  `${fmt(asignado)} t`);
@@ -144,23 +287,30 @@ async function actualizarKPIs() {
   const reqInput  = $('#mes_reqTons');
   const asigInput = $('#mes_asigTons');
   if (reqInput && !reqInput.value) reqInput.value = requerimiento || '';
-  if (asigInput) asigInput.placeholder = `máx ${fmt(Math.max(0, saldo))} t`;
+  if (asigInput)  asigInput.placeholder = `máx ${fmt(Math.max(0, saldo))} t`;
 
-  // refrescar tablas
-  await cargarDetalleAsignaciones();
-  await cargarResumenAnual();
-  M.updateTextFields?.();
+  // Cuando cambian KPIs, refrescamos el detalle (para recalcular saldo post)
+  renderDetalle();
 }
 
-/* ========= Acciones KPI ========= */
+function hoyMesKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+}
+
+/* ========= Acciones principales ========= */
 async function onGuardarRequerimiento() {
   const mesKey = toMesKey($('#mes_mes')?.value);
   const tipo   = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
   const tons   = Number($('#mes_reqTons')?.value || 0);
-  if (!mesKey || tons < 0) return M.toast?.({ html: 'Mes y valor válidos', classes: 'red' });
-
+  if (!mesKey || tons < 0) {
+    return M.toast?.({ html: 'Mes y valor válidos', classes: 'red' });
+  }
   const where = await guardarRequerimiento(mesKey, tipo, tons);
-  M.toast?.({ html: where === 'server' ? 'Requerimiento guardado' : 'Requerimiento guardado localmente (sin backend)', classes: 'teal' });
+  M.toast?.({
+    html: where === 'server' ? 'Requerimiento guardado' : 'Requerimiento guardado localmente',
+    classes: 'teal'
+  });
   actualizarKPIs();
 }
 
@@ -168,28 +318,28 @@ async function onAsignarMacro() {
   const mesKey = toMesKey($('#mes_mes')?.value);
   const tipo   = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
   let tons     = Number($('#mes_asigTons')?.value || 0);
-  const proveedor = ($('#mes_asigProv')?.value || '').trim();
-
-  if (!mesKey || tons <= 0) return M.toast?.({ html: 'Ingresa mes y toneladas > 0', classes: 'red' });
-
-  // Valida contra saldo mensual (por tipo)
+  const prov   = ($('#mes_asigProv')?.value || '').trim();
+  if (!mesKey || tons <= 0) {
+    return M.toast?.({ html: 'Ingresa mes y toneladas > 0', classes: 'red' });
+  }
   const saldo = estado.saldoMes({ mesKey, tipo });
   const asignable = clamp(tons, 0, Math.max(0, saldo));
-  if (asignable <= 0) return M.toast?.({ html: 'No hay saldo disponible en el mes/tipo seleccionado', classes: 'orange' });
-  if (asignable < tons) { M.toast?.({ html: `Se ajustó a ${fmt(asignable)} t por saldo`, classes: 'orange' }); tons = asignable; }
-
+  if (asignable <= 0) return M.toast?.({ html: 'No hay saldo disponible', classes: 'orange' });
+  if (asignable < tons) {
+    M.toast?.({ html: `Se ajustó a ${fmt(asignable)} t por saldo`, classes: 'orange' });
+    tons = asignable;
+  }
   try {
     await api.crearAsignacion({
       mesKey,
-      proveedorNombre: proveedor || '(macro mensual)',
+      proveedorNombre: prov || '(macro mensual)',
       tons,
       tipo: tipo === 'ALL' ? 'NORMAL' : tipo,
-      fuente: 'ui-mensual'
+      fuente: 'ui-mensual',
     });
-
     M.toast?.({ html: 'Asignación registrada', classes: 'teal' });
+    $('#mes_asigTons') && ($('#mes_asigTons').value = '');
     await estado.refrescar(api);
-    const asigInput = $('#mes_asigTons'); if (asigInput) asigInput.value = '';
     actualizarKPIs();
   } catch (e) {
     console.error(e);
@@ -201,270 +351,43 @@ async function onBorrarAsignacionesMes() {
   const mesKey = toMesKey($('#mes_mes')?.value);
   const tipo   = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
   if (!mesKey) return;
-
-  if (!confirm(`Borrar asignaciones del mes ${mesKey}${tipo !== 'ALL' ? ' (' + tipo + ')' : ''}?`)) return;
-
+  if (!confirm(`Borrar TODAS las asignaciones de ${mesKey}${tipo !== 'ALL' ? ' (' + tipo + ')' : ''}?`)) return;
   try {
-    if (typeof api.borrarAsignacionesMes === 'function') {
-      await api.borrarAsignacionesMes({ mesKey, tipo });
-    } else {
-      // fallback: endpoint genérico si existe
-      await fetch(`${api.API_URL}/asignaciones?mesKey=${encodeURIComponent(mesKey)}&tipo=${encodeURIComponent(tipo)}`, { method: 'DELETE' });
-    }
+    await borrarAsignacionesMes(mesKey, tipo);
     M.toast?.({ html: 'Asignaciones del mes borradas', classes: 'teal' });
     await estado.refrescar(api);
     actualizarKPIs();
   } catch (e) {
     console.warn(e);
-    M.toast?.({ html: 'No hay endpoint de borrado masivo en backend.', classes: 'orange' });
+    M.toast?.({ html: 'Falta endpoint de borrado en backend', classes: 'orange' });
   }
 }
 
-/* ========= DETALLE DE ASIGNACIONES (tabla editable) ========= */
-let tablaDetalle = null;
-
-// Helpers de backend genéricos para detalle
-async function backendListAsignaciones(mesKey, tipo) {
-  // Prioriza api.getAsignacionesMes si existe
-  if (typeof api.getAsignacionesMes === 'function') {
-    const r = await api.getAsignacionesMes(mesKey, tipo);
-    return Array.isArray(r?.items) ? r.items : (Array.isArray(r) ? r : []);
-  }
-  // fallback GET
-  const qs = new URLSearchParams({ mesKey, tipo });
-  const resp = await fetch(`${api.API_URL}/asignaciones?${qs}`);
-  if (!resp.ok) return [];
-  const json = await resp.json().catch(()=> ({}));
-  return Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
-}
-async function backendPatchAsignacion(id, patch) {
-  if (typeof api.actualizarAsignacion === 'function') return api.actualizarAsignacion(id, patch);
-  const resp = await fetch(`${api.API_URL}/asignaciones/${encodeURIComponent(id)}`, {
-    method: 'PATCH', headers: {'Content-Type':'application/json','Accept':'application/json'},
-    body: JSON.stringify(patch)
-  });
-  if (!resp.ok) throw new Error('PATCH asignación falló');
-  return resp.json().catch(()=> ({}));
-}
-async function backendDeleteAsignacion(id) {
-  if (typeof api.borrarAsignacion === 'function') return api.borrarAsignacion(id);
-  const resp = await fetch(`${api.API_URL}/asignaciones/${encodeURIComponent(id)}`, { method: 'DELETE' });
-  if (!resp.ok) throw new Error('DELETE asignación falló');
-  return resp.json().catch(()=> ({}));
-}
-
-async function cargarDetalleAsignaciones() {
-  const mesKey = toMesKey($('#mes_mes')?.value);
-  const tipo   = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
-  if (!mesKey) return;
-
-  let rows = await backendListAsignaciones(mesKey, tipo);
-  // Normaliza campos mínimos
-  rows = rows.map(x => ({
-    _id:            x._id || x.id || `${mesKey}-${x.proveedorNombre||''}-${x.tipo||'NORMAL'}`,
-    mesKey:         x.mesKey || mesKey,
-    proveedorNombre:x.proveedorNombre || '',
-    tipo:           (x.tipo || 'NORMAL').toUpperCase(),
-    tons:           Number(x.tons ?? x.asignado ?? x.total ?? 0) || 0,
-    camiones:       Number(x.camiones || 0) || 0,
-    fuente:         x.fuente || '',
-    notas:          x.notas || ''
-  }));
-
-  // filtro “solo macro”
-  const soloMacro = $('#mes_soloMacro')?.checked;
-  if (soloMacro) rows = rows.filter(r => r.fuente === 'ui-mensual' || r.proveedorNombre === '(macro mensual)');
-
-  // Construcción/actualización de Tabulator
-  const el = $('#mesDetalle');
-  if (!el) return;
-
-  const cols = [
-    { title: 'Proveedor', field:'proveedorNombre', editor:'input', width:280, headerSort:true },
-    { title: 'Tipo', field:'tipo', width:100, hozAlign:'center',
-      editor: 'select', editorParams:{ values:['NORMAL','BAP'] } },
-    { title: 'Toneladas', field:'tons', width:130, hozAlign:'right',
-      formatter: c => fmt(Number(c.getValue()||0)), editor: 'number', validator: ['min:0'] },
-    { title: 'Camiones', field:'camiones', width:120, hozAlign:'right', editor:'number', validator:['min:0'] },
-    { title: 'Fuente', field:'fuente', width:140, hozAlign:'left' },
-    { title: 'Notas', field:'notas', editor:'input' },
-    { title: 'Acciones', field:'_actions', width:110, hozAlign:'center', headerSort:false,
-      formatter: () => '🗑',
-      cellClick: async (_e, cell) => {
-        const row = cell.getRow()?.getData();
-        if (!row?._id) return;
-        if (!confirm('¿Borrar esta asignación?')) return;
-        try {
-          await backendDeleteAsignacion(row._id);
-          M.toast?.({ html:'Asignación borrada', classes:'teal' });
-          await estado.refrescar(api);
-          actualizarKPIs();
-        } catch (e) {
-          console.error(e);
-          M.toast?.({ html:'Error al borrar', classes:'red' });
-        }
-      }
-    }
-  ];
-
-  if (tablaDetalle) {
-    tablaDetalle.setColumns(cols);
-    tablaDetalle.setData(rows);
-  } else {
-    tablaDetalle = new Tabulator(el, {
-      data: rows,
-      layout: 'fitColumns',
-      reactiveData: true,
-      columnMinWidth: 110,
-      height: '330px',
-      columns: cols,
-      // actualiza en backend al editar
-      cellEdited: async (cell) => {
-        const row = cell.getRow()?.getData();
-        if (!row?._id) return;
-        const patch = {};
-        const field = cell.getField();
-        patch[field] = row[field];
-        try {
-          await backendPatchAsignacion(row._id, patch);
-          M.toast?.({ html:'Asignación actualizada', classes:'teal' });
-          await estado.refrescar(api);
-          actualizarKPIs();
-        } catch (e) {
-          console.error(e);
-          M.toast?.({ html:'No se pudo actualizar (ver backend)', classes:'orange' });
-        }
-      }
-    });
-    // re-render al togglear filtro macro
-    $('#mes_soloMacro')?.addEventListener('change', cargarDetalleAsignaciones);
-  }
-}
-
-/* ========= RESUMEN ANUAL ========= */
-let tablaAnual = null;
-
-async function cargarResumenAnual() {
-  const mesKeySel = toMesKey($('#mes_mes')?.value);
-  if (!mesKeySel) return;
-  const anio = Number(mesKeySel.slice(0,4));
-  const tipo = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
-
-  // 1) Requerido del backend para todo el año
-  let reqByMes = new Map();
-  try {
-    if (typeof api.getRequerimientoRango === 'function') {
-      const items = await api.getRequerimientoRango({ from:`${anio}-01`, to:`${anio}-12` });
-      for (const it of (items?.items || items || [])) reqByMes.set(it.mesKey, Number(it.tons)||0);
-    } else {
-      // fallback: endpoint general del router /planificacion/mes?anio=YYYY
-      const resp = await fetch(`${api.API_URL}/planificacion/mes?anio=${anio}`);
-      const json = await resp.json().catch(()=> ({}));
-      const arr = Array.isArray(json?.items) ? json.items : [];
-      for (const it of arr) reqByMes.set(it.mesKey, Number(it.tons)||0);
-    }
-  } catch (e) {
-    console.warn('[mensual] No pude leer plan anual', e);
-  }
-
-  // 2) Disponible y Asignado desde estado.* (por tipo o ALL)
-  const invPorTipo  = estado.totalesMesPorTipo();   // Map "YYYY-MM|TIPO"
-  const asigPorTipo = estado.asignadoMesPorTipo();  // Map "YYYY-MM|TIPO"
-  const months = Array.from({length:12}, (_,i)=> `${anio}-${String(i+1).padStart(2,'0')}`);
-
-  const rows = months.map(mk=>{
-    let disp = 0, asig = 0;
-    if (tipo === 'ALL') {
-      for (const [k,v] of invPorTipo.entries())  if (k.startsWith(`${mk}|`)) disp += v;
-      let aPT=0; for (const [k,v] of asigPorTipo.entries()) if (k.startsWith(`${mk}|`)) aPT += v;
-      const aCons = estado.datos.asignadoPorMes.get(mk) || 0;
-      asig = aPT>0?aPT:aCons;
-    } else {
-      disp = invPorTipo.get(`${mk}|${tipo}`) || 0;
-      asig = asigPorTipo.get(`${mk}|${tipo}`) || 0;
-    }
-    const req  = reqByMes.get(mk) || 0;
-    const saldo= disp - asig;
-    return { Mes: mk, Requerido: req, Disponible: disp, Asignado: asig, Saldo: saldo };
-  });
-
-  const el = $('#mesAnual');
-  if (!el) return;
-
-  const cols = [
-    { title:'Mes', field:'Mes', width:110 },
-    { title:'Requerido', field:'Requerido', hozAlign:'right', formatter:c=>fmt(c.getValue()||0) },
-    { title:'Disponible', field:'Disponible', hozAlign:'right', formatter:c=>fmt(c.getValue()||0) },
-    { title:'Asignado', field:'Asignado', hozAlign:'right', formatter:c=>fmt(c.getValue()||0) },
-    { title:'Saldo', field:'Saldo', hozAlign:'right',
-      formatter:c=>{
-        const v = Number(c.getValue()||0);
-        const s = fmt(v);
-        return v<0 ? `<span style="color:#c62828;font-weight:600">${s}</span>` : s;
-      }
-    }
-  ];
-
-  if (tablaAnual) {
-    tablaAnual.setColumns(cols);
-    tablaAnual.setData(rows);
-  } else {
-    tablaAnual = new Tabulator(el, {
-      data: rows,
-      layout: 'fitColumns',
-      columnMinWidth: 110,
-      height: '380px',
-      columns: cols,
-      rowClick: (_e, row) => {
-        const mk = row.getData()?.Mes;
-        const inp = $('#mes_mes');
-        if (mk && inp) {
-          inp.value = mk;
-          M.updateTextFields?.();
-          actualizarKPIs();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      }
-    });
-    // Año actual por defecto en el input
-    const anioInp = $('#mes_anio');
-    if (anioInp) anioInp.value = anio;
-    $('#mes_btnAnio')?.addEventListener('click', ()=>{
-      const y = Number($('#mes_anio')?.value || anio);
-      if (!Number.isFinite(y) || y<2000 || y>2100) return;
-      const setMonth = `${y}-${String(Math.min(12, Math.max(1, Number(toMesKey($('#mes_mes')?.value).slice(5,7))||1))).padStart(2,'0')}`;
-      if ($('#mes_mes')) { $('#mes_mes').value = setMonth; M.updateTextFields?.(); }
-      actualizarKPIs();
-    });
-  }
+async function onActualizar() {
+  try { await estado.refrescar(api); } catch (e) { console.error(e); }
+  actualizarKPIs();
 }
 
 /* ========= Montaje ========= */
 export function montar() {
-  // Asegurar tarjetas nuevas (detalle + anual)
-  ensureCards();
-
-  // Inicializa selects Materialize
+  // Selects Materialize
   M.FormSelect.init(document.querySelectorAll('select'));
 
-  // Defaults (si falta valor de mes)
+  // Defaults
   const mesInp = $('#mes_mes');
-  if (mesInp && !mesInp.value) {
-    const d = new Date();
-    mesInp.value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-  }
+  if (mesInp) mesInp.value = hoyMesKey();
   M.updateTextFields?.();
 
-  // Listeners KPI
+  // Listeners
   $('#mes_mes')?.addEventListener('change', actualizarKPIs);
   $('#mes_tipo')?.addEventListener('change', actualizarKPIs);
-  $('#mes_btnActualizar')?.addEventListener('click', async ()=>{
-    try{ await estado.refrescar(api); }catch(e){ console.error(e); }
-    actualizarKPIs();
-  });
-  $('#mes_btnReset')?.addEventListener('click', ()=>{
-    const buscar = $('#mes_buscar'); if (buscar) buscar.value = '';
-    const asig = $('#mes_asigTons'); if (asig) asig.value = '';
+  $('#mes_buscar')?.addEventListener('input', () => renderDetalle());
+  $('#mes_onlyMacro')?.addEventListener('change', () => renderDetalle());
+
+  $('#mes_btnActualizar')?.addEventListener('click', onActualizar);
+  $('#mes_btnReset')?.addEventListener('click', () => {
+    $('#mes_buscar') && ($('#mes_buscar').value = '');
+    $('#mes_asigTons') && ($('#mes_asigTons').value = '');
     M.updateTextFields?.();
     actualizarKPIs();
   });
@@ -474,4 +397,11 @@ export function montar() {
 
   // Primer render
   actualizarKPIs();
+
+  // Altura responsiva del detalle
+  window.addEventListener('resize', () => {
+    if (!tablaDetalle) return;
+    const h = Math.max(360, window.innerHeight * 0.45);
+    tablaDetalle.setHeight(h + 'px');
+  });
 }
