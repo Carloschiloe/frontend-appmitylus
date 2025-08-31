@@ -1,33 +1,29 @@
-// js/abastecimiento/asignacion/inventarios.js
+// js/abastecimiento/asignacion/inventario.js
 import { apiGet, INV_ASIG_ENDPOINT } from "./api.js";
-import { fmt, monthKey, monthLabel, isoWeekKey, calcularAlturaDisponible, prettyGroupLabel } from "./utilidades.js";
+import { fmt, monthKey, isoWeekKey, calcularAlturaDisponible, prettyGroupLabel } from "./utilidades.js";
 
 let tableInv = null;
 let estado = {
-  unidad: "tons",                // "tons" | "trucks"
-  filas:   "Mes",
-  sub1:    "Semana",
-  sub2:    "Proveedor",
+  unidad: "tons",
+  filas:  "Mes",
+  sub1:   "Semana",
+  sub2:   "Proveedor",
 
-  rowsRaw: [],                   // ofertas crudas
-  rowsFull: [],                  // con métricas prorrateadas
+  rowsRaw: [],
+  rowsFull: [],
   monthTotals: new Map(),
   asigMap: new Map(),
 };
 
 export function getTablaInventario(){ return tableInv; }
 
-function factorUnidad(){
-  return (estado.unidad === "trucks") ? (1/10) : 1;
-}
-function fmtUnidad(v){
-  return fmt(v * factorUnidad());
-}
+function factorUnidad(){ return (estado.unidad === "trucks") ? (1/10) : 1; }
+function fmtUnidad(v){ return fmt(v * factorUnidad()); }
 
 function calcularMesTotals(rows){
   const m=new Map();
   for(const r of rows){
-    const k=r.Mes || 's/fecha';
+    const k=r.Mes || "s/fecha";
     m.set(k, (m.get(k)||0) + (Number(r.Tons)||0));
   }
   return m;
@@ -47,6 +43,7 @@ function enriquecerMétricas(rows, asigMap, mTotals){
 
 function buildToolbar(){
   const root = document.getElementById("invToolbar");
+  if(!root) return;
   root.innerHTML = `
     <div class="input-field">
       <select id="invFila">
@@ -125,7 +122,6 @@ function aplicarAgrupación(){
   if(estado.sub2) groups.push(estado.sub2);
   if(!tableInv) return;
 
-  // setGroupBy después de tableBuilt
   if(tableInv.modules?.groupRows){
     tableInv.setGroupBy(groups);
   }else{
@@ -158,7 +154,6 @@ function construirTabla(){
     groupToggleElement: "header",
     groupHeader,
     columns: [
-      // SOLO 3 COLUMNAS FIJAS
       { title:"Disponibles", field:"Disp", hozAlign:"right", headerHozAlign:"right",
         formatter:(c)=> fmtUnidad(c.getValue()), width:140 },
       { title:"Asignado",   field:"Asignado", hozAlign:"right", headerHozAlign:"right",
@@ -210,11 +205,14 @@ async function getAsignacionesMap(){
 
 export async function cargarInventario(){
   try{
+    if(!document.getElementById("invToolbar")) return;
+    buildToolbar();
+
     const [ofertas, asigMap] = await Promise.all([ getOfertas(), getAsignacionesMap() ]);
-    estado.rowsRaw    = ofertas;
-    estado.asigMap    = asigMap;
-    estado.monthTotals= calcularMesTotals(ofertas);
-    estado.rowsFull   = enriquecerMétricas(ofertas, asigMap, estado.monthTotals);
+    estado.rowsRaw     = ofertas;
+    estado.asigMap     = asigMap;
+    estado.monthTotals = calcularMesTotals(ofertas);
+    estado.rowsFull    = enriquecerMétricas(ofertas, asigMap, estado.monthTotals);
     construirTabla();
   }catch(e){
     console.error(e);
