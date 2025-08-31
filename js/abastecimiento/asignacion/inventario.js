@@ -56,13 +56,20 @@ function construirToolbar({ onAplicar }) {
     <!-- Solo Actualizar + badge. EXCEL/PDF los inserta principal.js aquí -->
     <div class="right-actions"
          style="display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-left:auto">
-      <a class="btn teal" id="inv_apply"><i class="material-icons left">refresh</i>Actualizar</a>
+      <a id="inv_apply"
+         class="btn teal waves-effect"
+         style="display:inline-flex;align-items:center;gap:6px">
+        <i class="material-icons" style="margin:0">refresh</i>
+        <span>Actualizar</span>
+      </a>
       <span class="pill" id="inv_badge">0 registros</span>
     </div>
   `;
 
+  // Materialize selects
   M.FormSelect.init(wrap.querySelectorAll('select'));
 
+  // Botón aplicar
   const btn = document.getElementById('inv_apply');
   btn.addEventListener('click', (e) => {
     e.preventDefault();
@@ -74,7 +81,10 @@ function construirToolbar({ onAplicar }) {
 function ordenarClaves(dim, keys) {
   if (dim === 'Mes') return keys.sort((a, b) => String(a).localeCompare(String(b)));
   if (dim === 'Semana') {
-    const toN = (v) => { const [y, w] = String(v).split('-'); return (+y) * 100 + (+w); };
+    const toN = (v) => {
+      const [y, w] = String(v).split('-');
+      return (+y) * 100 + (+w);
+    };
     return keys.sort((a, b) => toN(a) - toN(b));
   }
   return keys.sort((a, b) => String(a).localeCompare(String(b)));
@@ -176,7 +186,7 @@ function aplicar() {
       columnMinWidth: 110,
       movableColumns: true,
     });
-    // => para exportar desde principal.js
+    // Exponer para exportación desde principal.js
     window.getTablaInventario = () => tabla;
   }
 
@@ -189,10 +199,12 @@ export function montar() {
   construirToolbar({ onAplicar: aplicar });
   aplicar();
 
+  // Ajusta alto al redimensionar
   window.addEventListener('resize', () => {
     const h = altoDisponible(document.getElementById('invTableWrap'));
     if (tabla) tabla.setHeight(h + 'px');
   });
 
+  // Reaplicar cuando cambian datos globales
   estado.on('actualizado', aplicar);
 }
