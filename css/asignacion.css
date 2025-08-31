@@ -136,5 +136,22 @@ ul.dropdown-content,
 /* Por si el botón 'Actualizar' pisaba el dropdown */
 .toolbar .right-actions {
   position: relative;
-  z-index: 15; /* mucho menor que 10050 de los dropdowns, pero suficiente para su propio layout */
+  z-index: 15;
+}
+
+/* ===================================================== */
+/*  🔻 Ocultar los botones antiguos (CSV y XLSX)         */
+/*  Mantén visibles SOLO “EXCEL” y “PDF”.                */
+/*  Estos ids existen en tu JS anterior.                 */
+/* ===================================================== */
+#btnCSV,
+#btnXLSX{
+  display: none !important;
+}
+
+/* (opcional) si esos dos tenían ancho reservado en el grid,
+   permite que EXCEL/PDF se peguen al contador de registros */
+#invToolbar .btn,
+#invToolbar .pill{
+  margin-right: 8px;
 }
