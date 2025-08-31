@@ -27,11 +27,20 @@ const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 const REQ_LS_PREFIX = 'reqmes:'; // clave localStorage: reqmes:YYYY-MM|TIPO
 const reqKey = (mesKey, tipo) => `${REQ_LS_PREFIX}${mesKey}|${(tipo || 'ALL').toUpperCase()}`;
 
+// Reemplaza completamente estas funciones en mensual.js
+
 async function getRequerimiento(mesKey, tipo) {
   try {
     if (typeof api.getPlanMes === 'function') {
       const r = await api.getPlanMes(mesKey, tipo);
-      return Number(r?.tons) || 0;
+      // acepta múltiples formas de respuesta del backend
+      const val =
+        r?.tons ??
+        r?.item?.tons ??
+        r?.data?.tons ??
+        r?.result?.tons ??
+        null;
+      if (val != null) return Number(val) || 0;
     }
   } catch (e) {
     console.warn('[mensual] getPlanMes falló, uso fallback localStorage', e);
@@ -43,7 +52,8 @@ async function getRequerimiento(mesKey, tipo) {
 async function guardarRequerimiento(mesKey, tipo, tons) {
   try {
     if (typeof api.guardarPlanMes === 'function') {
-      await api.guardarPlanMes({ mesKey, tons, tipo });
+      const r = await api.guardarPlanMes({ mesKey, tons, tipo });
+      // si la API devuelve ok/item, lo aceptamos; no necesitamos el valor
       return 'server';
     }
   } catch (e) {
@@ -52,6 +62,7 @@ async function guardarRequerimiento(mesKey, tipo, tons) {
   localStorage.setItem(reqKey(mesKey, tipo), String(tons));
   return 'local';
 }
+
 
 async function borrarAsignacionesMes(mesKey, tipo) {
   if (typeof api.borrarAsignacionesMes === 'function') {
