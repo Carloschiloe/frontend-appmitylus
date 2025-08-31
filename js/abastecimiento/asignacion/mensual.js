@@ -17,6 +17,7 @@ const toMesKey = (val /* "YYYY-MM" o Date o "" */) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+const pad2 = (n) => String(n).padStart(2, '0');
 
 /* ========= Contenedores creados dinámicamente ========= */
 function ensureCards() {
@@ -41,7 +42,6 @@ function ensureCards() {
       <div id="mesDetalle"></div>
       <div class="grey-text" style="margin-top:6px">Haz doble clic en <b>Proveedor</b> o <b>Toneladas</b> para editar. Usa el ícono 🗑 para borrar una asignación.</div>
     `;
-    // Insertar inmediatamente DESPUÉS del primer card (el de KPI)
     const firstCard = host.querySelector('.card-soft');
     (firstCard?.nextSibling ? host.insertBefore(detalleWrap, firstCard.nextSibling) : host.appendChild(detalleWrap));
   }
@@ -113,7 +113,6 @@ async function calcularKPIs(mesKey, tipo) {
   let asignado = 0;
 
   if (tipo === 'ALL') {
-    // Sumar por todos los tipos para ese mes
     for (const [k, v] of invPorTipo.entries()) if (k.startsWith(`${mesKey}|`)) disponible += v;
     let asigPorTipos = 0;
     for (const [k, v] of asigPorTipo.entries()) if (k.startsWith(`${mesKey}|`)) asigPorTipos += v;
@@ -208,7 +207,6 @@ async function onBorrarAsignacionesMes() {
     if (typeof api.borrarAsignacionesMes === 'function') {
       await api.borrarAsignacionesMes({ mesKey, tipo });
     } else {
-      // fallback: endpoint genérico si existe
       await fetch(`${api.API_URL}/asignaciones?mesKey=${encodeURIComponent(mesKey)}&tipo=${encodeURIComponent(tipo)}`, { method: 'DELETE' });
     }
     M.toast?.({ html: 'Asignaciones del mes borradas', classes: 'teal' });
@@ -225,12 +223,10 @@ let tablaDetalle = null;
 
 // Helpers de backend genéricos para detalle
 async function backendListAsignaciones(mesKey, tipo) {
-  // Prioriza api.getAsignacionesMes si existe
   if (typeof api.getAsignacionesMes === 'function') {
     const r = await api.getAsignacionesMes(mesKey, tipo);
     return Array.isArray(r?.items) ? r.items : (Array.isArray(r) ? r : []);
   }
-  // fallback GET
   const qs = new URLSearchParams({ mesKey, tipo });
   const resp = await fetch(`${api.API_URL}/asignaciones?${qs}`);
   if (!resp.ok) return [];
@@ -253,29 +249,66 @@ async function backendDeleteAsignacion(id) {
   return resp.json().catch(()=> ({}));
 }
 
+// Disponible por proveedor en el mes (para “saldo post”)
+function disponibilidadPorProveedor(mesKey){
+  // Preferimos filas enriquecidas si tu estado las expone
+  if (typeof estado.filasEnriquecidas === 'function') {
+    const rows = estado.filasEnriquecidas({ tipo: 'ALL' }).filter(r => r.Mes === mesKey);
+    const map = new Map();
+    for (const r of rows){
+      const prov = r.Proveedor || '';
+      map.set(prov, (map.get(prov)||0) + (Number(r.Tons)||0));
+    }
+    return map;
+  }
+  // Fallback: si no hay helper, devolvemos mapa vacío (saldo post será parcial)
+  return new Map();
+}
+
 async function cargarDetalleAsignaciones() {
   const mesKey = toMesKey($('#mes_mes')?.value);
   const tipo   = ($('#mes_tipo')?.value || 'ALL').toUpperCase();
   if (!mesKey) return;
 
   let rows = await backendListAsignaciones(mesKey, tipo);
-  // Normaliza campos mínimos
-  rows = rows.map(x => ({
-    _id:            x._id || x.id || `${mesKey}-${x.proveedorNombre||''}-${x.tipo||'NORMAL'}`,
-    mesKey:         x.mesKey || mesKey,
-    proveedorNombre:x.proveedorNombre || '',
-    tipo:           (x.tipo || 'NORMAL').toUpperCase(),
-    tons:           Number(x.tons ?? x.asignado ?? x.total ?? 0) || 0,
-    camiones:       Number(x.camiones || 0) || 0,
-    fuente:         x.fuente || '',
-    notas:          x.notas || ''
-  }));
 
-  // filtro “solo macro”
+  // Normaliza campos mínimos y fuerza filtro por mes/tipo
+  rows = rows
+    .filter(x => (x.mesKey||mesKey) === mesKey && (tipo==='ALL' || (String(x.tipo||'NORMAL').toUpperCase()===tipo)))
+    .map(x => ({
+      _id:            x._id || x.id || `${mesKey}-${x.proveedorNombre||''}-${x.tipo||'NORMAL'}`,
+      mesKey:         x.mesKey || mesKey,
+      proveedorNombre:x.proveedorNombre || '',
+      tipo:           (x.tipo || 'NORMAL').toUpperCase(),
+      tons:           Number(x.tons ?? x.asignado ?? x.total ?? 0) || 0,
+      camiones:       Number(x.camiones || 0) || 0,
+      notas:          x.notas || '',
+      fuente:         x.fuente || '',
+      createdAt:      x.createdAt ? new Date(x.createdAt) : null
+    }));
+
+  // “solo macro” (aunque quitamos la columna, mantiene el filtro si quieres)
   const soloMacro = $('#mes_soloMacro')?.checked;
-  if (soloMacro) rows = rows.filter(r => r.fuente === 'ui-mensual' || r.proveedorNombre === '(macro mensual)');
+  if (soloMacro) {
+    rows = rows.filter(r => {
+      const s = String(r.fuente||'').toLowerCase();
+      return s.includes('mensual') || s.includes('macro') || r.proveedorNombre === '(macro mensual)';
+    });
+  }
 
-  // Construcción/actualización de Tabulator
+  // Saldo post por proveedor (disponible del mes por proveedor – acumulado en orden)
+  const dispMap = disponibilidadPorProveedor(mesKey);
+  rows.sort((a,b)=> (a.proveedorNombre||'').localeCompare(b.proveedorNombre||'') ||
+                    ((a.createdAt?.getTime()||0) - (b.createdAt?.getTime()||0)));
+  const running = new Map(); // prov -> saldo corriente
+  for (const r of rows){
+    const prov = r.proveedorNombre||'';
+    if (!running.has(prov)) running.set(prov, dispMap.get(prov)||0);
+    const nuevo = (running.get(prov)||0) - (Number(r.tons)||0);
+    r.saldoPost = nuevo;
+    running.set(prov, nuevo);
+  }
+
   const el = $('#mesDetalle');
   if (!el) return;
 
@@ -286,9 +319,10 @@ async function cargarDetalleAsignaciones() {
     { title: 'Toneladas', field:'tons', width:130, hozAlign:'right',
       formatter: c => fmt(Number(c.getValue()||0)), editor: 'number', validator: ['min:0'] },
     { title: 'Camiones', field:'camiones', width:120, hozAlign:'right', editor:'number', validator:['min:0'] },
-    { title: 'Fuente', field:'fuente', width:140, hozAlign:'left' },
-    { title: 'Notas', field:'notas', editor:'input' },
-    { title: 'Acciones', field:'_actions', width:110, hozAlign:'center', headerSort:false,
+    { title: 'Notas', field:'notas', editor:'input', width:220 },
+    { title: 'Saldo post', field:'saldoPost', width:130, hozAlign:'right', headerHozAlign:'right',
+      formatter: c => fmt(Number(c.getValue()||0)) },
+    { title: 'Acciones', field:'_actions', width:90, hozAlign:'center', headerSort:false,
       formatter: () => '🗑',
       cellClick: async (_e, cell) => {
         const row = cell.getRow()?.getData();
@@ -298,7 +332,8 @@ async function cargarDetalleAsignaciones() {
           await backendDeleteAsignacion(row._id);
           M.toast?.({ html:'Asignación borrada', classes:'teal' });
           await estado.refrescar(api);
-          actualizarKPIs();
+          await cargarDetalleAsignaciones();
+          await actualizarKPIs();
         } catch (e) {
           console.error(e);
           M.toast?.({ html:'Error al borrar', classes:'red' });
@@ -318,7 +353,6 @@ async function cargarDetalleAsignaciones() {
       columnMinWidth: 110,
       height: '330px',
       columns: cols,
-      // actualiza en backend al editar
       cellEdited: async (cell) => {
         const row = cell.getRow()?.getData();
         if (!row?._id) return;
@@ -329,14 +363,14 @@ async function cargarDetalleAsignaciones() {
           await backendPatchAsignacion(row._id, patch);
           M.toast?.({ html:'Asignación actualizada', classes:'teal' });
           await estado.refrescar(api);
-          actualizarKPIs();
+          await cargarDetalleAsignaciones(); // recalcula saldoPost
+          await actualizarKPIs();
         } catch (e) {
           console.error(e);
           M.toast?.({ html:'No se pudo actualizar (ver backend)', classes:'orange' });
         }
       }
     });
-    // re-render al togglear filtro macro
     $('#mes_soloMacro')?.addEventListener('change', cargarDetalleAsignaciones);
   }
 }
@@ -357,7 +391,6 @@ async function cargarResumenAnual() {
       const items = await api.getRequerimientoRango({ from:`${anio}-01`, to:`${anio}-12` });
       for (const it of (items?.items || items || [])) reqByMes.set(it.mesKey, Number(it.tons)||0);
     } else {
-      // fallback: endpoint general del router /planificacion/mes?anio=YYYY
       const resp = await fetch(`${api.API_URL}/planificacion/mes?anio=${anio}`);
       const json = await resp.json().catch(()=> ({}));
       const arr = Array.isArray(json?.items) ? json.items : [];
@@ -370,7 +403,7 @@ async function cargarResumenAnual() {
   // 2) Disponible y Asignado desde estado.* (por tipo o ALL)
   const invPorTipo  = estado.totalesMesPorTipo();   // Map "YYYY-MM|TIPO"
   const asigPorTipo = estado.asignadoMesPorTipo();  // Map "YYYY-MM|TIPO"
-  const months = Array.from({length:12}, (_,i)=> `${anio}-${String(i+1).padStart(2,'0')}`);
+  const months = Array.from({length:12}, (_,i)=> `${anio}-${pad2(i+1)}`);
 
   const rows = months.map(mk=>{
     let disp = 0, asig = 0;
@@ -426,13 +459,14 @@ async function cargarResumenAnual() {
         }
       }
     });
-    // Año actual por defecto en el input
     const anioInp = $('#mes_anio');
     if (anioInp) anioInp.value = anio;
     $('#mes_btnAnio')?.addEventListener('click', ()=>{
       const y = Number($('#mes_anio')?.value || anio);
       if (!Number.isFinite(y) || y<2000 || y>2100) return;
-      const setMonth = `${y}-${String(Math.min(12, Math.max(1, Number(toMesKey($('#mes_mes')?.value).slice(5,7))||1))).padStart(2,'0')}`;
+      const cur = toMesKey($('#mes_mes')?.value);
+      const m = cur ? Number(cur.slice(5,7)) : 1;
+      const setMonth = `${y}-${pad2(Math.min(12, Math.max(1, m||1)))}`;
       if ($('#mes_mes')) { $('#mes_mes').value = setMonth; M.updateTextFields?.(); }
       actualizarKPIs();
     });
