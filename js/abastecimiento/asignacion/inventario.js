@@ -1,8 +1,15 @@
 // js/abastecimiento/asignacion/inventario.js
-import { fmt, altoDisponible } from './utilidades.js'; // <- saqué etiquetaMes
+import { fmt, altoDisponible } from './utilidades.js'; // <- sin etiquetaMes
 import * as estado from './estado.js';
 
 let tabla = null;
+
+// === DEBUG helpers (deja true para ver todo) ===
+const DEBUG = true;
+const DBG  = (...a) => { if (DEBUG) console.log(...a); };
+const DBGw = (...a) => { if (DEBUG) console.warn(...a); };
+const DBGg = (t)     => { if (DEBUG) console.groupCollapsed(t); };
+const DBGend = ()    => { if (DEBUG) console.groupEnd(); };
 
 /* === Etiqueta de mes SIN usar Date (evita desfases por TZ) === */
 const MES_TXT = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
@@ -129,6 +136,20 @@ function construirArbol(rows, dims, unidad = 'tons') {
   });
 
   const make = (arr, idx) => {
+    if (DEBUG && idx === 0) {
+      // Log de primer nivel de agrupación (dim 0)
+      const dim0 = dims[0];
+      const m0 = new Map();
+      for (const r of arr) {
+        const k = r[dim0] ?? '(vacío)';
+        m0.set(k, (m0.get(k) || 0) + (Number(r.Tons) || 0));
+      }
+      DBGg('[INV] Primer nivel de agrupación');
+      DBG('Dim0:', dim0);
+      console.table([...m0.entries()].map(([k, v]) => ({ key: k, tons: v, etiqueta: etiquetaPara(dim0, k) })));
+      DBGend();
+    }
+
     if (idx >= dims.length || !dims[idx]) {
       const t = tot(arr);
       return [{ label: '(total)', Disp: t.disp * factor, Asig: t.asig * factor, Saldo: t.saldo * factor }];
@@ -161,6 +182,15 @@ function construirArbol(rows, dims, unidad = 'tons') {
   const tree = make(rows, 0);
   const tg = tot(rows);
   tree.push({ label: 'Total', Disp: tg.disp * factor, Asig: tg.asig * factor, Saldo: tg.saldo * factor });
+
+  if (DEBUG) {
+    DBGg('[INV] Top-level labels que verá Tabulator');
+    console.table(tree.filter(n => n.label !== '(total)').map(n => ({
+      label: n.label, Disp: n.Disp, Asig: n.Asig, Saldo: n.Saldo
+    })));
+    DBGend();
+  }
+
   return tree;
 }
 
@@ -172,10 +202,42 @@ function aplicar() {
 
   const filas = estado.filasEnriquecidas({ tipo: 'ALL' });
 
-  // DEBUG rápido para confirmar que Mes viene como "YYYY-MM"
-  console.log('[INV] primeras filas:', filas.slice(0, 5).map(f => ({
-    Mes: f.Mes, Semana: f.Semana, Proveedor: f.Proveedor, Tons: f.Tons
+  // ===== DEBUG fuerte para confirmar de dónde sale el Mes =====
+  DBGg('[INV] Chequeo de filas antes de construir árbol');
+  DBG('Dims:', { rowDim, sub1, sub2, unidad });
+
+  // Muestra 15 filas incluyendo posibles campos de origen
+  console.table(filas.slice(0, 15).map(f => ({
+    Mes: f.Mes,
+    Semana: f.Semana,
+    mesKey: f.mesKey || '',
+    anio: f.anio || '',
+    mes: f.mes || '',
+    FechaBase: f.FechaBase || '',
+    __mesSource: f.__mesSource || '',
+    Proveedor: (f.Proveedor || '').slice(0, 40),
+    Tons: f.Tons
   })));
+
+  // Distribución por Mes
+  const distMes = filas.reduce((acc, x) => (acc[x.Mes] = (acc[x.Mes] || 0) + 1, acc), {});
+  DBG('Distribución por Mes (conteo de filas):', distMes);
+
+  // Sospechosos comunes: vienen como SEP por metadata, pero Mes terminó en AGO
+  const sospechosos = filas.filter(f => (
+    (f.mesKey === '2025-09' || (f.anio === 2025 && (f.mes === 9 || f.mes === '9' || f.mes === '09')))
+    && f.Mes === '2025-08'
+  ));
+  if (sospechosos.length) {
+    DBGw('⚠️ Sospechosos: metadata dice SEP (2025-09) pero Mes quedó 2025-08');
+    console.table(sospechosos.map(f => ({
+      Mes: f.Mes, mesKey: f.mesKey, anio: f.anio, mes: f.mes, FechaBase: f.FechaBase, __mesSource: f.__mesSource,
+      Proveedor: (f.Proveedor || '').slice(0, 40), Tons: f.Tons
+    })));
+  } else {
+    DBG('No se detectaron filas con mesKey=2025-09 pero Mes=2025-08.');
+  }
+  DBGend();
 
   const dims = [rowDim, sub1, sub2].filter(Boolean);
   const data = construirArbol(filas, dims, unidad);
