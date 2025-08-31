@@ -1,11 +1,10 @@
-// mensual.js — versión simple y legible
-// KPI arriba + 2 tablas: Resumen por proveedor y Detalle (editable + saldo después)
+// mensual.js — KPI + Resumen mes + Detalle editable + MATRIZ anual editable por proveedor
 
 import * as api from './api.js';
 import * as estado from './estado.js';
 import { fmt } from './utilidades.js';
 
-/* ------------------ helpers básicos ------------------ */
+/* ------------------ helpers ------------------ */
 const $  = (s, r=document)=>r.querySelector(s);
 const pad2 = (n)=>String(n).padStart(2,'0');
 const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
@@ -21,7 +20,6 @@ function hoyMesKey(){
   const d=new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
 }
 function fechaISO(x){
-  // usa x.fecha | x.dia | x.createdAt | mesKey-01
   const f = x?.fecha || x?.dia || x?.createdAt;
   const d = f ? new Date(f) : null;
   if(d && !isNaN(d)) return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
@@ -29,8 +27,7 @@ function fechaISO(x){
   return /^\d{4}-\d{2}$/.test(mk) ? `${mk}-01` : '';
 }
 
-/* ------------------ requerimiento planta ------------------ */
-// 1) api.getRequerimientoMes; 2) /planificacion/mes; 3) localStorage
+/* ------------------ requerimiento (planificacionmes) ------------------ */
 async function getRequerimientoMes(mesKey, tipo){
   if(typeof api.getRequerimientoMes==='function'){
     try{ const r=await api.getRequerimientoMes(mesKey, tipo); return nz(r?.tons); }catch{}
@@ -59,7 +56,7 @@ async function guardarRequerimientoMes(mesKey, tipo, tons){
   localStorage.setItem(`reqmes:${mesKey}|${(tipo||'ALL').toUpperCase()}`, String(tons));
 }
 
-/* ------------------ KPIs (usa estado.*) ------------------ */
+/* ------------------ KPIs ------------------ */
 async function calcularKPIs(mesKey, tipo){
   const invPT  = estado.totalesMesPorTipo();   // Map "YYYY-MM|TIPO"
   const asigPT = estado.asignadoMesPorTipo();  // Map "YYYY-MM|TIPO"
@@ -100,9 +97,10 @@ async function pintarKPIs(){
 
   await cargarResumenProveedor();
   await cargarDetalleAsignaciones();
+  await cargarMatrizAnual(); // nueva
 }
 
-/* ------------------ RESUMEN POR PROVEEDOR ------------------ */
+/* ------------------ Resumen por proveedor (mes actual) ------------------ */
 let tablaProv=null;
 
 async function fetchSaldosMes(mesKey){
@@ -123,7 +121,6 @@ async function cargarResumenProveedor(){
     .map(r=>({ Proveedor:r.proveedorNombre||'', Disponible:nz(r.disponible), Asignado:nz(r.asignado), Saldo:nz(r.saldo) }))
     .sort((a,b)=> a.Saldo-b.Saldo || a.Proveedor.localeCompare(b.Proveedor));
 
-  // crea card una vez
   let wrap = $('#mesProvWrap');
   if(!wrap){
     wrap = document.createElement('div');
@@ -137,7 +134,7 @@ async function cargarResumenProveedor(){
       <div id="mesProvTable"></div>
     `;
     const host = $('#tabInventario');
-    const first = host.querySelector('.card-soft'); // KPI card
+    const first = host.querySelector('.card-soft');
     (first?.nextSibling ? host.insertBefore(wrap, first.nextSibling) : host.appendChild(wrap));
   }
 
@@ -165,9 +162,9 @@ async function cargarResumenProveedor(){
   }
 }
 
-/* ------------------ DETALLE ASIGNACIONES ------------------ */
+/* ------------------ Detalle de asignaciones (mes) ------------------ */
 let tablaDet=null;
-let filtroProveedor = null; // se setea clickeando en el resumen
+let filtroProveedor = null;
 
 async function listAsignMes(mesKey, tipo){
   if(typeof api.getAsignacionesMes==='function'){
@@ -191,14 +188,12 @@ async function delAsign(id){
   const r=await fetch(`${api.API_URL}/asignaciones/${encodeURIComponent(id)}`,{method:'DELETE'});
   if(!r.ok) throw new Error('DELETE asignación falló');
 }
-
-// disponibilidad por proveedor en el mes (para saldo después)
 async function fetchDisponiblesPorProveedor(mesKey){
   try{
     const qs = new URLSearchParams({ from:mesKey, to:mesKey });
     const res = await fetch(`${api.API_URL}/planificacion/disponibilidad?${qs}`);
     const j = await res.json().catch(()=>({}));
-    const items = Array.isArray(j?.items)?j.items:[]; // puede venir como {items} o array
+    const items = Array.isArray(j?.items)?j.items:[]; 
     const arr = Array.isArray(items)?items:(Array.isArray(j)?j:[]);
     const map=new Map();
     for(const it of arr){
@@ -228,13 +223,10 @@ async function cargarDetalleAsignaciones(){
       Fecha: fechaISO(x)
     }));
 
-  // filtro por proveedor (si viene del resumen)
   if(filtroProveedor) rows = rows.filter(r=> (r.Proveedor||'')===filtroProveedor);
 
-  // saldo después (por proveedor, a partir de disponibilidad mensual)
   const dispMap = await fetchDisponiblesPorProveedor(mesKey);
   const groups = new Map();
-  // ordenar por proveedor + fecha asc para saldo correcto
   rows.sort((a,b)=> (a.Proveedor||'').localeCompare(b.Proveedor||'') || (a.Fecha||'').localeCompare(b.Fecha||''));
   for(const r of rows){
     const key = r.Proveedor||'';
@@ -244,7 +236,6 @@ async function cargarDetalleAsignaciones(){
     r.SaldoDespues = g.saldo;
   }
 
-  // crea card una vez
   let wrap=$('#mesDetWrap');
   if(!wrap){
     wrap=document.createElement('div');
@@ -263,7 +254,6 @@ async function cargarDetalleAsignaciones(){
     (anchor?.nextSibling ? host.insertBefore(wrap, anchor.nextSibling) : host.appendChild(wrap));
   }
 
-  // pinta chip de filtro
   const info = $('#mesDetFiltroInfo');
   if(info){
     if(filtroProveedor){
@@ -336,7 +326,162 @@ async function cargarDetalleAsignaciones(){
   }
 }
 
-/* ------------------ acciones de los botones KPI ------------------ */
+/* ------------------ MATRIZ ANUAL (TOTAL por proveedor, editable) ------------------ */
+let tablaMatriz=null;
+let matrizYear=null;
+
+function monthsOf(year){ return Array.from({length:12},(_,i)=>`${year}-${pad2(i+1)}`); }
+
+async function fetchSaldosRango(year){
+  try{
+    const qs = new URLSearchParams({ from:`${year}-01`, to:`${year}-12` });
+    const res = await fetch(`${api.API_URL}/planificacion/saldos?${qs}`);
+    const j = await res.json().catch(()=>({}));
+    return Array.isArray(j?.items)?j.items:[];
+  }catch{return [];}
+}
+
+async function aplicarAjusteAsignado(proveedor, mesKey, delta){
+  // +delta => creo asignación; -delta => reduzco/borró asignaciones existentes
+  if(delta>0){
+    await api.crearAsignacion({ mesKey, proveedorNombre: proveedor, tons: delta, tipo:'NORMAL', fuente:'ajuste-matriz' });
+    return;
+  }
+  // reducir
+  let restante = Math.abs(delta);
+  const lista = await listAsignMes(mesKey,'ALL');
+  const filas = lista
+    .filter(a => (a.proveedorNombre||'')===proveedor)
+    .sort((a,b)=> new Date(b.updatedAt||b.createdAt||0) - new Date(a.updatedAt||a.createdAt||0));
+  for(const a of filas){
+    let t = nz(a.tons ?? a.asignado ?? a.total);
+    if(t<=0) continue;
+    const reducible = Math.min(t, restante);
+    const nuevo = t - reducible;
+    if(nuevo>0){ await patchAsign(a._id, { tons: nuevo }); }
+    else { await delAsign(a._id); }
+    restante -= reducible;
+    if(restante<=0) break;
+  }
+  if(restante>0) throw new Error('No hay suficientes asignaciones para bajar ese monto. Ajusta en el detalle.');
+}
+
+async function cargarMatrizAnual(){
+  const mkSel = toMesKey($('#mes_mes')?.value||hoyMesKey());
+  const y = Number(mkSel.slice(0,4));
+  matrizYear = y;
+
+  // card UI
+  let wrap=$('#mesMatrizWrap');
+  if(!wrap){
+    wrap=document.createElement('div');
+    wrap.id='mesMatrizWrap';
+    wrap.className='card-soft';
+    wrap.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+        <h6 style="margin:6px 0">Total por proveedor (año) — editable</h6>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input id="mat_year" type="number" min="2000" max="2100" style="max-width:110px" />
+          <a id="mat_btn" class="btn grey darken-2"><i class="material-icons left" style="margin:0">refresh</i>Ver año</a>
+        </div>
+      </div>
+      <div id="mesMatrizTable"></div>
+      <div class="grey-text" style="margin-top:6px">Edita un mes para subir/bajar el total asignado del proveedor en ese mes.</div>
+    `;
+    $('#tabInventario').appendChild(wrap);
+    $('#mat_btn')?.addEventListener('click', ()=>{ 
+      const y2=Number($('#mat_year')?.value||matrizYear);
+      if(y2 && y2>=2000 && y2<=2100){
+        // fijamos mes seleccionado al mismo mes numérico pero año y2
+        const m = Number(toMesKey($('#mes_mes')?.value||hoyMesKey()).slice(5,7));
+        const setMonth = `${y2}-${pad2(m)}`;
+        const inp=$('#mes_mes'); if(inp){ inp.value=setMonth; M.updateTextFields?.(); }
+        pintarKPIs();
+      }
+    });
+  }
+  const inYear = $('#mat_year'); if(inYear) inYear.value = y;
+
+  // datos
+  const items = await fetchSaldosRango(y); // {mesKey, proveedorNombre, asignado}
+  const months = monthsOf(y);
+  const byProv = new Map();
+  for(const it of items){
+    const p = it.proveedorNombre || '';
+    const mk = it.mesKey || '';
+    const as = nz(it.asignado);
+    if(!months.includes(mk)) continue;
+    const key = `m_${mk.slice(5,7)}`; // m_01..m_12
+    const row = byProv.get(p) || { Proveedor:p, Total:0 };
+    row[key] = nz(row[key]) + as;
+    row.Total += as;
+    byProv.set(p, row);
+  }
+  const rows = Array.from(byProv.values())
+    .map(r=>({ 
+      Proveedor:r.Proveedor,
+      m_01:nz(r.m_01), m_02:nz(r.m_02), m_03:nz(r.m_03), m_04:nz(r.m_04), m_05:nz(r.m_05), m_06:nz(r.m_06),
+      m_07:nz(r.m_07), m_08:nz(r.m_08), m_09:nz(r.m_09), m_10:nz(r.m_10), m_11:nz(r.m_11), m_12:nz(r.m_12),
+      Total:nz(r.Total)
+    }))
+    .sort((a,b)=> b.Total-a.Total || a.Proveedor.localeCompare(b.Proveedor));
+
+  const el = $('#mesMatrizTable');
+  const monthCol = (label, idx)=>({
+    title:label, field:`m_${pad2(idx)}`, width:110, hozAlign:'right',
+    editor:'number', validator:['min:0'], formatter:c=>fmt(c.getValue()||0)
+  });
+  const cols = [
+    { title:'Proveedor', field:'Proveedor', width:300, headerSort:true },
+    monthCol('Ene',1), monthCol('Feb',2), monthCol('Mar',3), monthCol('Abr',4), monthCol('May',5), monthCol('Jun',6),
+    monthCol('Jul',7), monthCol('Ago',8), monthCol('Sep',9), monthCol('Oct',10), monthCol('Nov',11), monthCol('Dic',12),
+    { title:'Total', field:'Total', hozAlign:'right', formatter:c=>fmt(c.getValue()||0), width:120 }
+  ];
+
+  const recalcTotal = (row)=>{
+    const d=row.getData();
+    let t=0; for(let i=1;i<=12;i++) t+= nz(d[`m_${pad2(i)}`]);
+    row.update({ Total:t }, true);
+  };
+
+  if(tablaMatriz){
+    tablaMatriz.setColumns(cols);
+    tablaMatriz.setData(rows);
+  }else{
+    tablaMatriz = new Tabulator(el,{
+      data:rows, layout:'fitColumns', columnMinWidth:90, height:'420px', columns:cols,
+      cellEdited: async (cell)=>{
+        const field = cell.getField();
+        if(!/^m_\d{2}$/.test(field)) return;
+        const row = cell.getRow();
+        const prov = row.getData()?.Proveedor || '';
+        const oldVal = nz(cell.getOldValue());
+        const newVal = nz(cell.getValue());
+        if(newVal===oldVal) return;
+
+        const mesNum = field.slice(2); // '01'..'12'
+        const mk = `${matrizYear}-${mesNum}`;
+        const delta = newVal - oldVal;
+
+        try{
+          await aplicarAjusteAsignado(prov, mk, delta);
+          M.toast?.({html:'Ajuste aplicado', classes:'teal'});
+          await estado.refrescar(api);
+          await cargarResumenProveedor();
+          await cargarDetalleAsignaciones();
+          recalcTotal(row);
+        }catch(e){
+          console.error(e);
+          M.toast?.({html:'No se pudo aplicar el ajuste. Corrige en el detalle.', classes:'orange'});
+          // revertir valor
+          cell.setValue(oldVal, true);
+        }
+      }
+    });
+  }
+}
+
+/* ------------------ acciones KPI ------------------ */
 async function onGuardarReq(){
   const mesKey=toMesKey($('#mes_mes')?.value||hoyMesKey());
   const tipo  =($('#mes_tipo')?.value||'ALL').toUpperCase();
@@ -364,6 +509,7 @@ async function onAsignarMacro(){
   await estado.refrescar(api);
   await cargarResumenProveedor();
   await cargarDetalleAsignaciones();
+  await cargarMatrizAnual();
   await pintarKPIs();
 }
 async function onBorrarTodas(){
@@ -380,6 +526,7 @@ async function onBorrarTodas(){
     await estado.refrescar(api);
     await cargarResumenProveedor();
     await cargarDetalleAsignaciones();
+    await cargarMatrizAnual();
     await pintarKPIs();
   }catch(e){
     console.warn(e); M.toast?.({html:'Falta endpoint de borrado masivo', classes:'orange'});
