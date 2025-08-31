@@ -12,6 +12,28 @@
 
   <!-- Tabulator -->
   <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css" />
+
+  <!-- Fixes de layout (no invasivos) -->
+  <style>
+    /* toolbars responsivas */
+    .toolbar{
+      display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;
+    }
+    .toolbar .input-field{ min-width:200px; flex:1 1 240px; margin:0; }
+    .toolbar .right-actions{ margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:nowrap; }
+    /* tarjetas suaves */
+    .card-soft{ background:#fff; border-radius:10px; padding:10px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    /* KPI grid */
+    .kpi{ display:grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap:8px; }
+    /* grid de Asignación: dos columnas */
+    .assign-grid{
+      display:grid; grid-template-columns: 1fr 340px; gap:12px;
+    }
+    @media (max-width: 992px){
+      .assign-grid{ grid-template-columns: 1fr; }
+      #asiPanel{ order: -1; }
+    }
+  </style>
 </head>
 <body>
   <!-- Barra superior -->
@@ -34,44 +56,98 @@
     <!-- ============== TAB: INVENTARIO ============== -->
     <div id="tabInventario" class="col s12">
       <div class="card-soft">
-        <div id="invToolbar" class="toolbar"></div>
+        <div id="invToolbar" class="toolbar">
+          <!-- los selects y botones se inyectan por JS -->
+          <div class="right-actions"></div>
+        </div>
       </div>
 
-      <div id="invTableWrap">
+      <div id="invTableWrap" class="card-soft">
         <div id="invTable"></div>
       </div>
 
       <div id="invNote" class="grey-text">Unidad actual: Toneladas.</div>
     </div>
 
-    <!-- ============== TAB: ASIGNACIÓN ============== -->
+    <!-- ============== TAB: ASIGNACIÓN (estructura nueva) ============== -->
     <div id="tabAsignacion" class="col s12 assign-grid">
+      <!-- Columna izquierda -->
       <div>
-        <div class="card-soft">
-          <div id="asiToolbar"></div>
-          <div class="kpi">
-            <div class="card-soft"><h6>Filas</h6><p id="asiKpiFilas">0</p></div>
-            <div class="card-soft"><h6>Tons visibles</h6><p id="asiKpiTons">0</p></div>
-            <div class="card-soft"><h6>Camiones visibles</h6><p id="asiKpiCam">0</p></div>
+        <!-- Conmutador de modo -->
+        <div id="asiMode" class="chip-group" style="display:flex;gap:8px;margin:8px 0 0">
+          <a class="chip teal white-text" data-mode="asignar">Asignar</a>
+          <a class="chip" data-mode="revisar">Revisar</a>
+        </div>
+
+        <!-- PANE ASIGNAR (tu vista original) -->
+        <div id="paneAsignar">
+          <div class="card-soft">
+            <div id="asiToolbar" class="toolbar"></div>
+            <div class="kpi">
+              <div class="card-soft"><h6>Filas</h6><p id="asiKpiFilas">0</p></div>
+              <div class="card-soft"><h6>Tons visibles</h6><p id="asiKpiTons">0</p></div>
+              <div class="card-soft"><h6>Camiones visibles</h6><p id="asiKpiCam">0</p></div>
+            </div>
+          </div>
+
+          <div class="card-soft">
+            <div id="asiTable"></div>
+            <div class="grey-text">Selecciona filas para armar la asignación.</div>
           </div>
         </div>
 
-        <div class="card-soft">
-          <div id="asiTable"></div>
-          <div class="grey-text">Selecciona filas para armar la asignación.</div>
+        <!-- PANE REVISAR (bandeja de asignaciones) -->
+        <div id="paneRevisar" style="display:none">
+          <div class="card-soft" style="padding:12px;margin-bottom:8px">
+            <div class="row" style="margin:0;align-items:flex-end">
+              <div class="input-field col s12 m4">
+                <input id="rev_mes" type="month" />
+                <label class="active" for="rev_mes">Mes</label>
+              </div>
+              <div class="input-field col s6 m3">
+                <select id="rev_tipo">
+                  <option value="ALL" selected>Todos</option>
+                  <option value="NORMAL">Normal</option>
+                  <option value="BAP">BAP</option>
+                </select>
+                <label>Tipo</label>
+              </div>
+              <div class="input-field col s6 m3">
+                <input id="rev_buscar" type="text" placeholder="Buscar proveedor, planta, comuna..." />
+                <label class="active" for="rev_buscar">Buscar</label>
+              </div>
+              <div class="input-field col s12 m2">
+                <a class="btn grey darken-2" id="rev_actualizar" style="width:100%">
+                  <i class="material-icons left" style="margin:0">refresh</i> Actualizar
+                </a>
+              </div>
+            </div>
+            <div class="row" style="margin:0">
+              <div class="col s12">
+                <span id="rev_saldo" class="badge" style="font-size:13px"></span>
+              </div>
+            </div>
+          </div>
+
+          <div id="asiRevisarWrap" class="card-soft">
+            <div id="asiRevisarTable"></div>
+          </div>
         </div>
       </div>
 
+      <!-- Columna derecha: panel -->
       <div id="asiPanel" class="assign-actions"></div>
     </div>
 
     <!-- ============== TAB: PROGRAMA SEMANAL ============== -->
     <div id="tabPrograma" class="col s12">
       <div class="card-soft">
-        <div id="progToolbar" class="toolbar"></div>
+        <div id="progToolbar" class="toolbar">
+          <div class="right-actions"></div>
+        </div>
       </div>
 
-      <div id="progTableWrap">
+      <div id="progTableWrap" class="card-soft">
         <div id="progTable"></div>
       </div>
 
