@@ -1,4 +1,4 @@
-// inventario.js
+// js/abastecimiento/asignacion/inventario.js
 import { fmt, altoDisponible, etiquetaMes } from './utilidades.js';
 import * as estado from './estado.js';
 
@@ -53,18 +53,16 @@ function construirToolbar({ onAplicar }) {
       <label>Unidad</label>
     </div>
 
-    <!-- Contenedor de acciones: aquí SOLO van Actualizar + badge.
-         principal.js insertará los botones EXCEL y PDF en este mismo contenedor. -->
-    <div class="right-actions" style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
+    <!-- Solo Actualizar + badge. EXCEL/PDF los inserta principal.js aquí -->
+    <div class="right-actions"
+         style="display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-left:auto">
       <a class="btn teal" id="inv_apply"><i class="material-icons left">refresh</i>Actualizar</a>
       <span class="pill" id="inv_badge">0 registros</span>
     </div>
   `;
 
-  // Materialize selects
   M.FormSelect.init(wrap.querySelectorAll('select'));
 
-  // Botón aplicar
   const btn = document.getElementById('inv_apply');
   btn.addEventListener('click', (e) => {
     e.preventDefault();
@@ -74,15 +72,9 @@ function construirToolbar({ onAplicar }) {
 }
 
 function ordenarClaves(dim, keys) {
-  if (dim === 'Mes') {
-    // Orden lexicográfico YYYY-MM
-    return keys.sort((a, b) => String(a).localeCompare(String(b)));
-  }
+  if (dim === 'Mes') return keys.sort((a, b) => String(a).localeCompare(String(b)));
   if (dim === 'Semana') {
-    const toN = (v) => {
-      const [y, w] = String(v).split('-');
-      return (+y) * 100 + (+w);
-    };
+    const toN = (v) => { const [y, w] = String(v).split('-'); return (+y) * 100 + (+w); };
     return keys.sort((a, b) => toN(a) - toN(b));
   }
   return keys.sort((a, b) => String(a).localeCompare(String(b)));
@@ -116,14 +108,7 @@ function construirArbol(rows, dims, unidad = 'tons') {
   const make = (arr, idx) => {
     if (idx >= dims.length || !dims[idx]) {
       const t = tot(arr);
-      return [
-        {
-          label: '(total)',
-          Disp: t.disp * factor,
-          Asig: t.asig * factor,
-          Saldo: t.saldo * factor,
-        },
-      ];
+      return [{ label: '(total)', Disp: t.disp * factor, Asig: t.asig * factor, Saldo: t.saldo * factor }];
     }
 
     const dim = dims[idx];
@@ -152,12 +137,7 @@ function construirArbol(rows, dims, unidad = 'tons') {
 
   const tree = make(rows, 0);
   const tg = tot(rows);
-  tree.push({
-    label: 'Total',
-    Disp: tg.disp * factor,
-    Asig: tg.asig * factor,
-    Saldo: tg.saldo * factor,
-  });
+  tree.push({ label: 'Total', Disp: tg.disp * factor, Asig: tg.asig * factor, Saldo: tg.saldo * factor });
   return tree;
 }
 
@@ -173,30 +153,9 @@ function aplicar() {
 
   const cols = [
     { title: 'Elemento', field: 'label', width: 280, headerSort: true },
-    {
-      title: 'Disponibles',
-      field: 'Disp',
-      hozAlign: 'right',
-      headerHozAlign: 'right',
-      formatter: (c) => fmt(c.getValue()),
-      width: 130,
-    },
-    {
-      title: 'Asignado',
-      field: 'Asig',
-      hozAlign: 'right',
-      headerHozAlign: 'right',
-      formatter: (c) => fmt(c.getValue()),
-      width: 120,
-    },
-    {
-      title: 'Saldo',
-      field: 'Saldo',
-      hozAlign: 'right',
-      headerHozAlign: 'right',
-      formatter: (c) => fmt(c.getValue()),
-      width: 110,
-    },
+    { title: 'Disponibles', field: 'Disp', hozAlign: 'right', headerHozAlign: 'right', formatter: (c) => fmt(c.getValue()), width: 130 },
+    { title: 'Asignado',   field: 'Asig', hozAlign: 'right', headerHozAlign: 'right', formatter: (c) => fmt(c.getValue()), width: 120 },
+    { title: 'Saldo',      field: 'Saldo', hozAlign: 'right', headerHozAlign: 'right', formatter: (c) => fmt(c.getValue()), width: 110 },
   ];
 
   const h = altoDisponible(document.getElementById('invTableWrap'));
@@ -217,6 +176,8 @@ function aplicar() {
       columnMinWidth: 110,
       movableColumns: true,
     });
+    // => para exportar desde principal.js
+    window.getTablaInventario = () => tabla;
   }
 
   document.getElementById('inv_badge').textContent = `${estado.datos.ofertas.length} registros`;
@@ -228,12 +189,10 @@ export function montar() {
   construirToolbar({ onAplicar: aplicar });
   aplicar();
 
-  // Ajusta alto al redimensionar
   window.addEventListener('resize', () => {
     const h = altoDisponible(document.getElementById('invTableWrap'));
     if (tabla) tabla.setHeight(h + 'px');
   });
 
-  // Reaplicar cuando cambian datos globales
   estado.on('actualizado', aplicar);
 }
