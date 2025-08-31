@@ -1,7 +1,6 @@
 // js/abastecimiento/asignacion/utilidades.js
 export const MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-
-export const fmt = (n) => (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:2});
+export const fmt = (n)=> (Number(n)||0).toLocaleString('es-CL',{maximumFractionDigits:2});
 
 export function parseDateOrNull(d){
   if(!d && d!==0) return null;
@@ -10,15 +9,16 @@ export function parseDateOrNull(d){
   return (!Number.isNaN(x.getTime()) && x.getTime()!==0) ? x : null;
 }
 export function monthKey(d){
-  const x=parseDateOrNull(d); if(!x) return 's/fecha';
+  const x=parseDateOrNull(d); if(!x) return "s/fecha";
   return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`;
 }
 export function monthLabel(k){
-  if(!k||k==='s/fecha') return 's/FECHA';
-  const [y,m]=k.split('-'); return `${MES[+m-1]} ${y}`;
+  if(!k || k==="s/fecha") return "s/FECHA";
+  const [y,m]=k.split('-');
+  return `${MES[+m-1]} ${y}`;
 }
 export function isoWeekKey(d){
-  const x=parseDateOrNull(d); if(!x) return 's/semana';
+  const x=parseDateOrNull(d); if(!x) return "s/semana";
   const dt = new Date(Date.UTC(x.getFullYear(), x.getMonth(), x.getDate()));
   const dayNum = dt.getUTCDay() || 7;
   dt.setUTCDate(dt.getUTCDate() + 4 - dayNum);
@@ -27,12 +27,14 @@ export function isoWeekKey(d){
   return `${dt.getUTCFullYear()}-${String(weekNo).padStart(2,'0')}`;
 }
 
-export function safeGroupBy(table, arr){
-  if(!table) return;
-  if(table.modules?.group){ table.setGroupBy(arr); }
-  else { table.once("tableBuilt", ()=> table.setGroupBy(arr)); }
+export function calcularAlturaDisponible(resta=260){
+  const h = Math.max(400, window.innerHeight - resta);
+  return `${h}px`;
 }
 
-export function calcAlturaDisponible(offsetPx=260){
-  return `calc(100vh - ${offsetPx}px)`;
+export function prettyGroupLabel(field, value){
+  if(value==null) return "(vacío)";
+  if(field==="Mes")     return monthLabel(value);
+  if(field==="Semana")  return `Sem ${value}`;
+  return String(value);
 }
