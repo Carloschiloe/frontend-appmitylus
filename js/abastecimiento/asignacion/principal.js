@@ -90,7 +90,6 @@ function colocarExportes(tabRoot){
   const toolbar = tabRoot.querySelector('.toolbar') || tabRoot.querySelector('[id*="Toolbar"]');
   if(!toolbar) return;
 
-  // contenedor estable (lo empujamos a la derecha)
   const actions = toolbar.querySelector('.right-actions') || toolbar;
   actions.style.display = 'flex';
   actions.style.alignItems = 'center';
@@ -99,7 +98,6 @@ function colocarExportes(tabRoot){
   actions.style.marginLeft = 'auto';
   actions.style.justifyContent = 'flex-end';
 
-  // quitar botones viejos conocidos para no duplicar
   ['inv_csv','inv_xlsx','btnCSV','btnXLSX','btnExcelJuntoChip','btnPdfJuntoChip']
     .forEach(id=>{ const el=actions.querySelector('#'+id); if(el) el.remove(); });
 
@@ -142,33 +140,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   inyectarVolverNavbar();
 
-  try{ await estado.cargarTodo(api); }
-  catch(e){ console.error(e); M.toast({html:'No se pudo cargar datos iniciales', classes:'red'}); }
+  try{
+    await estado.cargarTodo(api);
+  }catch(e){
+    console.error(e);
+    M.toast({html:'No se pudo cargar datos iniciales', classes:'red'});
+  }
 
-  inventario.montar();
-  asignacion.montar();
-  // DESPUÉS
-inventario.montar();
-asignacion.montar(); // Programa semanal en lazy-load
+  // Lazy-boot por pestaña (evita construir Tabulator con el tab oculto)
+  let invBooted=false, asiBooted=false, progBooted=false;
 
-// Montar Programa sólo cuando el usuario abra la pestaña
-let progBooted = false;
-document.querySelectorAll('.tabs .tab a').forEach(a=>{
-  a.addEventListener('click', ()=>{
-    if (a.getAttribute('href') === '#tabPrograma' && !progBooted){
-      try { programaSemanal.montar(); } catch (e) { console.error(e); }
-      progBooted = true;
-    }
-  });
-});
+  const bootInv = ()=>{ if(!invBooted){ try{ inventario.montar(); }catch(e){console.error(e);} invBooted=true; } };
+  const bootAsi = ()=>{ if(!asiBooted){ try{ asignacion.montar(); }catch(e){console.error(e);} asiBooted=true; } };
+  const bootProg = ()=>{ if(!progBooted){ try{ programaSemanal.montar(); }catch(e){console.error(e);} progBooted=true; } };
 
+  // Arranca solo el tab activo
+  const href = document.querySelector('.tabs .tab a.active')?.getAttribute('href');
+  if (href === '#tabInventario') bootInv();
+  else if (href === '#tabAsignacion') bootAsi();
+  else if (href === '#tabPrograma') bootProg();
 
-  // coloca exportes una vez y al cambiar de pestaña
-  setTimeout(colocarExportesTodas, 120);
+  // Montar cuando el usuario abra cada pestaña, una sola vez
   document.querySelectorAll('.tabs .tab a').forEach(a=>{
-    a.addEventListener('click', ()=> setTimeout(colocarExportesTodas, 120));
+    a.addEventListener('click', ()=>{
+      const dest = a.getAttribute('href');
+      if (dest === '#tabInventario') bootInv();
+      else if (dest === '#tabAsignacion') bootAsi();
+      else if (dest === '#tabPrograma') bootProg();
+      setTimeout(colocarExportesTodas, 120);
+    });
   });
 
-  window.__api = api; window.__estado = estado;
-});
+  // Exportes iniciales
+  setTimeout(colocarExportesTodas, 120);
 
+  // Exponer helpers para debug
+  window.__api = api; 
+  window.__estado = estado;
+});
