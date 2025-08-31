@@ -4,12 +4,12 @@ import * as estado from './estado.js';
 
 let tabla = null;
 
-// === DEBUG helpers (deja true para ver todo) ===
-const DEBUG = true;
-const DBG  = (...a) => { if (DEBUG) console.log(...a); };
-const DBGw = (...a) => { if (DEBUG) console.warn(...a); };
-const DBGg = (t)     => { if (DEBUG) console.groupCollapsed(t); };
-const DBGend = ()    => { if (DEBUG) console.groupEnd(); };
+// === DEBUG helpers ===
+const DEBUG = false;
+const DBG  = (...a) => { if (DEBUG) console.log(...a) };
+const DBGw = (...a) => { if (DEBUG) console.warn(...a) };
+const DBGg = (t)     => { if (DEBUG) console.groupCollapsed(t) };
+const DBGend = ()    => { if (DEBUG) console.groupEnd() };
 
 /* === Etiqueta de mes SIN usar Date (evita desfases por TZ) === */
 const MES_TXT = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
@@ -24,6 +24,7 @@ function etiquetaMesKey(k){
 
 function construirToolbar({ onAplicar }) {
   const wrap = document.getElementById('invToolbar');
+  if (!wrap) return;
 
   wrap.innerHTML = `
     <div class="input-field">
@@ -83,22 +84,28 @@ function construirToolbar({ onAplicar }) {
     </div>
   `;
 
-  const selectOpts = {
-    dropdownOptions: {
-      container: document.body,
-      coverTrigger: false,
-      constrainWidth: false,
-      alignment: 'left',
-    },
-  };
-  M.FormSelect.init(wrap.querySelectorAll('select'), selectOpts);
+  try {
+    const selectOpts = {
+      dropdownOptions: {
+        container: document.body,
+        coverTrigger: false,
+        constrainWidth: false,
+        alignment: 'left',
+      },
+    };
+    M.FormSelect.init(wrap.querySelectorAll('select'), selectOpts);
+  } catch(e) {
+    DBGw('[INV] FormSelect init falló:', e);
+  }
 
   const btn = document.getElementById('inv_apply');
-  btn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onAplicar();
-  });
+  if (btn) {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onAplicar();
+    });
+  }
 }
 
 function ordenarClaves(dim, keys) {
@@ -111,7 +118,7 @@ function ordenarClaves(dim, keys) {
 }
 
 function etiquetaPara(dim, key) {
-  if (dim === 'Mes')   return etiquetaMesKey(key); // <- ya NO usamos Date
+  if (dim === 'Mes')   return etiquetaMesKey(key);
   if (dim === 'Semana') return `Sem ${key}`;
   return key ?? '(vacío)';
 }
@@ -137,7 +144,6 @@ function construirArbol(rows, dims, unidad = 'tons') {
 
   const make = (arr, idx) => {
     if (DEBUG && idx === 0) {
-      // Log de primer nivel de agrupación (dim 0)
       const dim0 = dims[0];
       const m0 = new Map();
       for (const r of arr) {
@@ -195,49 +201,35 @@ function construirArbol(rows, dims, unidad = 'tons') {
 }
 
 function aplicar() {
-  const unidad = document.getElementById('inv_unidad').value;
-  const rowDim = document.getElementById('inv_row').value;
-  const sub1 = document.getElementById('inv_sub1').value || '';
-  const sub2 = document.getElementById('inv_sub2').value || '';
+  const wrap = document.getElementById('invTableWrap');
+  const tableEl = document.getElementById('invTable');
+  if (!wrap || !tableEl) return;
+
+  const unidad = document.getElementById('inv_unidad')?.value || 'tons';
+  const rowDim = document.getElementById('inv_row')?.value || 'Mes';
+  const sub1 = document.getElementById('inv_sub1')?.value || '';
+  const sub2 = document.getElementById('inv_sub2')?.value || '';
 
   const filas = estado.filasEnriquecidas({ tipo: 'ALL' });
 
-  // ===== DEBUG fuerte para confirmar de dónde sale el Mes =====
-  DBGg('[INV] Chequeo de filas antes de construir árbol');
-  DBG('Dims:', { rowDim, sub1, sub2, unidad });
-
-  // Muestra 15 filas incluyendo posibles campos de origen
-  console.table(filas.slice(0, 15).map(f => ({
-    Mes: f.Mes,
-    Semana: f.Semana,
-    mesKey: f.mesKey || '',
-    anio: f.anio || '',
-    mes: f.mes || '',
-    FechaBase: f.FechaBase || '',
-    __mesSource: f.__mesSource || '',
-    Proveedor: (f.Proveedor || '').slice(0, 40),
-    Tons: f.Tons
-  })));
-
-  // Distribución por Mes
-  const distMes = filas.reduce((acc, x) => (acc[x.Mes] = (acc[x.Mes] || 0) + 1, acc), {});
-  DBG('Distribución por Mes (conteo de filas):', distMes);
-
-  // Sospechosos comunes: vienen como SEP por metadata, pero Mes terminó en AGO
-  const sospechosos = filas.filter(f => (
-    (f.mesKey === '2025-09' || (f.anio === 2025 && (f.mes === 9 || f.mes === '9' || f.mes === '09')))
-    && f.Mes === '2025-08'
-  ));
-  if (sospechosos.length) {
-    DBGw('⚠️ Sospechosos: metadata dice SEP (2025-09) pero Mes quedó 2025-08');
-    console.table(sospechosos.map(f => ({
-      Mes: f.Mes, mesKey: f.mesKey, anio: f.anio, mes: f.mes, FechaBase: f.FechaBase, __mesSource: f.__mesSource,
-      Proveedor: (f.Proveedor || '').slice(0, 40), Tons: f.Tons
+  if (DEBUG) {
+    DBGg('[INV] Chequeo de filas antes de construir árbol');
+    DBG('Dims:', { rowDim, sub1, sub2, unidad });
+    console.table(filas.slice(0, 15).map(f => ({
+      Mes: f.Mes,
+      Semana: f.Semana,
+      mesKey: f.mesKey || '',
+      anio: f.anio || '',
+      mes: f.mes || '',
+      FechaBase: f.FechaBase || '',
+      __mesSource: f.__mesSource || '',
+      Proveedor: (f.Proveedor || '').slice(0, 40),
+      Tons: f.Tons
     })));
-  } else {
-    DBG('No se detectaron filas con mesKey=2025-09 pero Mes=2025-08.');
+    const distMes = filas.reduce((acc, x) => (acc[x.Mes] = (acc[x.Mes] || 0) + 1, acc), {});
+    DBG('Distribución por Mes (conteo de filas):', distMes);
+    DBGend();
   }
-  DBGend();
 
   const dims = [rowDim, sub1, sub2].filter(Boolean);
   const data = construirArbol(filas, dims, unidad);
@@ -249,40 +241,79 @@ function aplicar() {
     { title: 'Saldo',      field: 'Saldo', hozAlign: 'right', headerHozAlign: 'right', formatter: (c) => fmt(c.getValue()), width: 110 },
   ];
 
-  const h = altoDisponible(document.getElementById('invTableWrap'));
+  // Altura robusta (si el tab está oculto, alto=0 -> usa fallback)
+  let h = altoDisponible(wrap);
+  if (!h || h < 160) h = Math.max(420, wrap.clientHeight || 420);
 
-  if (tabla) {
-    tabla.setColumns(cols);
-    tabla.setData(data);
-    tabla.setHeight(h + 'px');
-  } else {
-    tabla = new Tabulator('#invTable', {
-      data,
-      columns: cols,
-      height: h + 'px',
-      layout: 'fitColumns',
-      dataTree: true,
-      dataTreeChildField: 'children',
-      dataTreeStartExpanded: false,
-      columnMinWidth: 110,
-      movableColumns: true,
+  // Primera construcción
+  if (!tabla) {
+    // Si el contenedor aún no se midió (p. ej. tab oculto), esperamos al frame
+    requestAnimationFrame(() => {
+      tabla = new Tabulator(tableEl, {
+        data,
+        columns: cols,
+        height: h + 'px',
+        layout: 'fitColumns',
+        dataTree: true,
+        dataTreeChildField: 'children',
+        dataTreeStartExpanded: false,
+        columnMinWidth: 110,
+        movableColumns: true,
+      });
+      window.getTablaInventario = () => tabla;
+
+      // Si necesitas operaciones post-build, hazlas aquí
+      tabla.on('tableBuilt', () => {
+        try {
+          // post-initial tweaks (si los agregas en el futuro)
+        } catch(e) {
+          DBGw('[INV] postBuild error', e);
+        }
+      });
     });
-    window.getTablaInventario = () => tabla;
+  } else {
+    // Reemplazo de datos/columnas en tabla ya construida
+    try{
+      tabla.setColumns(cols);
+      tabla.replaceData(data);
+      tabla.setHeight(h + 'px');
+    }catch(e){
+      DBGw('[INV] update error, rehaciendo tabla:', e);
+      try{
+        tabla.destroy();
+      }catch{}
+      tabla = null;
+      requestAnimationFrame(aplicar);
+      return;
+    }
   }
 
-  document.getElementById('inv_badge').textContent = `${estado.datos.ofertas.length} registros`;
-  document.getElementById('invNote').textContent =
+  const badge = document.getElementById('inv_badge');
+  if (badge) badge.textContent = `${estado.datos.ofertas.length} registros`;
+
+  const note = document.getElementById('invNote');
+  if (note) note.textContent =
     `Unidad actual: ${unidad === 'trucks' ? 'Camiones (10 t)' : 'Toneladas'}.`;
 }
 
 export function montar() {
   construirToolbar({ onAplicar: aplicar });
-  aplicar();
 
+  // Monta con un pequeño defer para asegurar layout listo
+  requestAnimationFrame(() => aplicar());
+
+  // Resize responsivo
   window.addEventListener('resize', () => {
-    const h = altoDisponible(document.getElementById('invTableWrap'));
-    if (tabla) tabla.setHeight(h + 'px');
+    const wrap = document.getElementById('invTableWrap');
+    if (!wrap || !tabla) return;
+    let h = altoDisponible(wrap);
+    if (!h || h < 160) h = Math.max(420, wrap.clientHeight || 420);
+    tabla.setHeight(h + 'px');
   });
 
-  estado.on('actualizado', aplicar);
+  // Cuando llegan nuevos datos
+  estado.on('actualizado', () => {
+    // reemplazar data/altura sin reconstruir completamente
+    aplicar();
+  });
 }
