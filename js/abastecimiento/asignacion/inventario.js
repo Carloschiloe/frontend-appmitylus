@@ -66,8 +66,16 @@ function construirToolbar({ onAplicar }) {
     </div>
   `;
 
-  // Materialize selects
-  M.FormSelect.init(wrap.querySelectorAll('select'));
+  // IMPORTANTÍSIMO: montar dropdown del select en <body> para que no lo tape la tabla
+  const selectOpts = {
+    dropdownOptions: {
+      container: document.body,
+      coverTrigger: false,
+      constrainWidth: false,
+      alignment: 'left',
+    },
+  };
+  M.FormSelect.init(wrap.querySelectorAll('select'), selectOpts);
 
   // Botón aplicar
   const btn = document.getElementById('inv_apply');
@@ -81,10 +89,7 @@ function construirToolbar({ onAplicar }) {
 function ordenarClaves(dim, keys) {
   if (dim === 'Mes') return keys.sort((a, b) => String(a).localeCompare(String(b)));
   if (dim === 'Semana') {
-    const toN = (v) => {
-      const [y, w] = String(v).split('-');
-      return (+y) * 100 + (+w);
-    };
+    const toN = (v) => { const [y, w] = String(v).split('-'); return (+y) * 100 + (+w); };
     return keys.sort((a, b) => toN(a) - toN(b));
   }
   return keys.sort((a, b) => String(a).localeCompare(String(b)));
@@ -208,3 +213,4 @@ export function montar() {
   // Reaplicar cuando cambian datos globales
   estado.on('actualizado', aplicar);
 }
+
