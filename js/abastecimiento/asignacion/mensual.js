@@ -21,28 +21,42 @@ function hoyMesKey(){
 }
 
 /* ------------------ requerimiento planta ------------------ */
-// buscamos primero api.getRequerimientoMes; si no existe, usamos /planificacion/mes
+// buscamos primero api.getRequerimientoMes; si no existe, usamos /planificacion/mes; si falla, localStorage
 async function getRequerimientoMes(mesKey, tipo){
+  // 1) endpoint explícito
   if(typeof api.getRequerimientoMes==='function'){
     try{ const r=await api.getRequerimientoMes(mesKey, tipo); return Number(r?.tons)||0; }catch{}
   }
-  // fallback al router que me mostraste
+  // 2) router agregado (/planificacion/mes GET agregado)
   try{
     const qs=new URLSearchParams({ from:mesKey, to:mesKey });
     const res=await fetch(`${api.API_URL}/planificacion/mes?${qs}`);
     const j=await res.json().catch(()=>({}));
     const items=Array.isArray(j?.items)?j.items:[];
     const row=items.find(x=>x.mesKey===mesKey);
-    return Number(row?.tons)||0;
-  }catch{ return 0; }
+    if(row) return Number(row?.tons)||0;
+  }catch{}
+  // 3) fallback local
+  const raw = localStorage.getItem(`reqmes:${mesKey}|${(tipo||'ALL').toUpperCase()}`);
+  return raw? Number(raw)||0 : 0;
 }
 
 async function guardarRequerimientoMes(mesKey, tipo, tons){
+  // 1) endpoint explícito
   if(typeof api.guardarRequerimientoMes==='function'){
     await api.guardarRequerimientoMes({ mesKey, tipo, tons });
     return;
   }
-  // fallback simple para no reventar: guardo local
+  // 2) router agregado (/planificacion/mes POST)
+  try{
+    await fetch(`${api.API_URL}/planificacion/mes`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({ mesKey, tons })
+    });
+    return;
+  }catch{}
+  // 3) fallback simple: guardo local
   localStorage.setItem(`reqmes:${mesKey}|${(tipo||'ALL').toUpperCase()}`, String(tons));
 }
 
@@ -339,3 +353,4 @@ export function montar(){
   // primer render
   pintarKPIs();
 }
+
