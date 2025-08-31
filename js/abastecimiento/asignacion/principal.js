@@ -35,10 +35,10 @@ function activeTabId(){
 }
 function tablaActiva(){
   const id=activeTabId();
-  if(id==='#tabInventario') return (window.getTablaInventario?.()) || window.tableInv || window.tablePivot || null;
-  if(id==='#tabAsignacion') return (window.getTablaAsignacion?.()) || window.tableAsign || null;
-  if(id==='#tabPrograma')   return (window.getTablaPrograma?.())   || window.tableProg  || null;
-  return window.tableInv || window.tableAsign || window.tableProg || null;
+  if(id==='#tabInventario') return (window.getTablaInventario?.()) || null;
+  if(id==='#tabAsignacion') return (window.getTablaAsignacion?.()) || null;
+  if(id==='#tabPrograma')   return (window.getTablaPrograma?.())   || null;
+  return null;
 }
 function nombreActivo(){
   const m={'#tabInventario':'inventarios_stock','#tabAsignacion':'asignacion','#tabPrograma':'programa_semanal'};
@@ -72,7 +72,7 @@ function inyectarVolverNavbar(){
   leftSlot.prepend(a);
 }
 
-/* ========== Botones de exportación: estables y sin “migraciones” ========== */
+/* ========== Botones de exportación: fijos a la derecha ========== */
 function crearBoton(icono, label, id){
   const a=document.createElement('a');
   a.id=id;
@@ -90,21 +90,18 @@ function colocarExportes(tabRoot){
   const toolbar = tabRoot.querySelector('.toolbar') || tabRoot.querySelector('[id*="Toolbar"]');
   if(!toolbar) return;
 
-  // contenedor estable
+  // contenedor estable (lo empujamos a la derecha)
   const actions = toolbar.querySelector('.right-actions') || toolbar;
   actions.style.display = 'flex';
   actions.style.alignItems = 'center';
   actions.style.gap = '8px';
   actions.style.flexWrap = 'nowrap';
+  actions.style.marginLeft = 'auto';
+  actions.style.justifyContent = 'flex-end';
 
-  // quitar SOLO los viejos conocidos (para evitar borrar “Actualizar”)
-  ['inv_csv','inv_xlsx','btnCSV','btnXLSX'].forEach(id=>{
-    const el=actions.querySelector('#'+id);
-    if(el) el.remove();
-  });
-
-  // evitar duplicados
-  if(actions.querySelector('#btnExcelJuntoChip') || actions.querySelector('#btnPdfJuntoChip')) return;
+  // quitar botones viejos conocidos para no duplicar
+  ['inv_csv','inv_xlsx','btnCSV','btnXLSX','btnExcelJuntoChip','btnPdfJuntoChip']
+    .forEach(id=>{ const el=actions.querySelector('#'+id); if(el) el.remove(); });
 
   const btnX = crearBoton('grid_on','EXCEL','btnExcelJuntoChip');
   const btnP = crearBoton('picture_as_pdf','PDF','btnPdfJuntoChip');
@@ -143,26 +140,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   M.Tabs.init(document.querySelectorAll('.tabs'));
   M.FormSelect.init(document.querySelectorAll('select'));
 
-  // Back dentro de la barra verde
   inyectarVolverNavbar();
 
-  // Datos iniciales
   try{ await estado.cargarTodo(api); }
   catch(e){ console.error(e); M.toast({html:'No se pudo cargar datos iniciales', classes:'red'}); }
 
-  // Montar vistas
   inventario.montar();
   asignacion.montar();
   programaSemanal.montar();
 
-  // Colocar exportes una sola vez por pestaña
+  // coloca exportes una vez y al cambiar de pestaña
   setTimeout(colocarExportesTodas, 120);
-
-  // Recolocar al cambiar de pestaña (sin observer, sin “migrar” nodos)
   document.querySelectorAll('.tabs .tab a').forEach(a=>{
     a.addEventListener('click', ()=> setTimeout(colocarExportesTodas, 120));
   });
 
-  // Debug
   window.__api = api; window.__estado = estado;
 });
