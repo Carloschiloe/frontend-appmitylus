@@ -161,17 +161,25 @@ export async function cargarTodo(api){
   emit('actualizado');
 }
 
+// ANTES (llamaba a api.getProgramaSemana y api.getEstadosDia)
+// export async function cargarProgramaSemana(api, weekKey, rangoFechas){
+//   const [entries, estados] = await Promise.all([
+//     api.getProgramaSemana(weekKey),
+//     api.getEstadosDia(rangoFechas[0], rangoFechas.at(-1))
+//   ]);
+//   datos.programaSemana = entries; datos.estadosDia = estados; emit('actualizado-programa');
+// }
+
+// DESPUÉS (stub temporal para no romper)
 export async function cargarProgramaSemana(api, weekKey, rangoFechas){
-  const [entries, estados] = await Promise.all([
-    api.getProgramaSemana(weekKey),
-    api.getEstadosDia(rangoFechas[0], rangoFechas.at(-1))
-  ]);
-  datos.programaSemana = entries;
-  datos.estadosDia = estados;
+  datos.programaSemana = [];
+  datos.estadosDia = [];
   emit('actualizado-programa');
 }
+
 
 export async function refrescar(api){
   await cargarTodo(api);
   emit('actualizado');
 }
+
