@@ -54,9 +54,21 @@ export async function getOfertas(){
 
   return arr
     .map(it=>{
-      const fechaBase = it.fecha || it.fechaPlan || it.fch || it.mes || it.mesKey || '';
-      const mesKey = it.mesKey || monthKey(fechaBase);
-      const semanaKey = isoWeekKey(fechaBase);
+      // Si viene mesKey, úsalo SIEMPRE como base.
+// Si viene anio+mes (numérico), constrúyelo como YYYY-MM.
+// Solo si no existen, cae a otras fechas sueltas.
+const fechaBase =
+  it.mesKey
+  || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2, '0')}` : null)
+  || it.fecha
+  || it.fechaPlan
+  || it.fch
+  || it.mes
+  || '';
+
+const mesKey   = it.mesKey || monthKey(fechaBase);
+const semanaKey = isoWeekKey(fechaBase);
+
 
       return {
         FechaBase : fechaBase,
@@ -141,3 +153,4 @@ export async function guardarEstadoDia({date, status, reason}){
   });
   return checkResponse(r);
 }
+
