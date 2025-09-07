@@ -1,6 +1,13 @@
-// almacenamiento.js
+// almacenamiento.js — versión alineada a Vercel y tolerante a window.API_URL
 
-const BASE_URL = 'https://backend-appmitylus-production.up.railway.app/api/centros';
+// Base API: toma window.API_URL si existe; si no, usa Vercel por defecto
+const API_BASE =
+  (typeof window !== 'undefined' && window.API_URL)
+    ? `${window.API_URL}`
+    : 'https://backend-appmitylus.vercel.app/api';
+
+// Endpoint de centros
+const BASE_URL = `${API_BASE}/centros`;
 
 // Obtener todos los centros (GET)
 export async function getCentros() {
@@ -22,6 +29,7 @@ export async function saveCentro(centro) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(centro)
     });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     return await resp.json();
   } catch (e) {
     console.error('Error al guardar centro:', e);
@@ -37,6 +45,7 @@ export async function updateCentro(id, centro) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(centro)
     });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     return await resp.json();
   } catch (e) {
     console.error('Error al actualizar centro:', e);
@@ -48,9 +57,11 @@ export async function updateCentro(id, centro) {
 export async function deleteCentro(id) {
   try {
     const resp = await fetch(`${BASE_URL}/${id}`, { method: 'DELETE' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     return await resp.json();
   } catch (e) {
     console.error('Error al eliminar centro:', e);
     return null;
   }
 }
+
