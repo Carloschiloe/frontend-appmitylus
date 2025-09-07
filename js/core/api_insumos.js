@@ -1,4 +1,13 @@
-const API_URL = 'https://backend-appmitylus-production.up.railway.app/api/insumos'; // Cambiado a Railway
+// api_insumos.js — versión alineada a Vercel y tolerante a window.API_URL
+
+// Base API: toma window.API_URL si existe; si no, usa Vercel por defecto
+const API_BASE =
+  (typeof window !== 'undefined' && window.API_URL)
+    ? `${window.API_URL}`
+    : 'https://backend-appmitylus.vercel.app/api';
+
+// Endpoint de insumos
+const API_URL = `${API_BASE}/insumos`;
 
 export async function apiGetMovimientos() {
   const resp = await fetch(API_URL);
