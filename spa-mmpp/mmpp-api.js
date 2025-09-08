@@ -4,6 +4,7 @@
      Disponibilidad: {id, proveedorNombre, proveedorKey, comuna, centroCodigo, areaCodigo, tons, fecha, mesKey, anio, mes, estado}
      Asignación:     {id, disponibilidadId, cantidad, destMes, destAnio, proveedorNombre, originalTons, originalFecha, createdAt}
 */
+const API_BASE = 'https://backend-appmitylus.vercel.app';
 
 (function (global) {
   var BASE_CANDIDATES = [];
