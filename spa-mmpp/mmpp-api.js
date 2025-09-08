@@ -184,13 +184,38 @@
     },
 
     // ------- Asignaciones -------
-    getAsignaciones: function (params) {
-      params = params || {};
-      var url = API_BASE.replace(/\/+$/, "") + "/api/asignaciones" + qs(params);
-      return jfetch(url)
-        .then(function (json) { return normalizeAsign(json); })
-        .catch(function () { return []; }); // si no existe la ruta aún, devolvemos vacío
-    },
+getAsignaciones: function (params) {
+  params = params || {};
+  var url = API_BASE.replace(/\/+$/, "") + "/api/asignaciones" + qs(params);
+
+  return jfetch(url)
+    .then(function (json) {
+      // Soporta array directo o {items}/{data}/{results}
+      var list = Array.isArray(json)
+        ? json
+        : (json && (json.items || json.data || json.results)) || [];
+
+      var norm = normalizeAsign(list);
+
+      // Filtra asignaciones “reales”: cantidad > 0
+      var clean = norm.filter(function (a) {
+        return a && Number(a.cantidad) > 0 && (a.id || a.disponibilidadId);
+      });
+
+      // Ordena por fecha (desc) si existe
+      clean.sort(function (a, b) {
+        var ta = a.createdAt ? Date.parse(a.createdAt) : 0;
+        var tb = b.createdAt ? Date.parse(b.createdAt) : 0;
+        return tb - ta;
+      });
+
+      return clean;
+    })
+    .catch(function () {
+      // si no existe la ruta aún o falla, devolvemos vacío
+      return [];
+    });
+},
 
     crearAsignacion: function (payload) {
       var url = API_BASE.replace(/\/+$/, "") + "/api/asignaciones";
