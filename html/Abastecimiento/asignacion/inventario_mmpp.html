@@ -1,21 +1,23 @@
 <!doctype html>
 <html lang="es">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Abastecimiento MMPP</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Inventario MMPP</title>
 
     <!-- React + Babel -->
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
-    <link rel="stylesheet" href="/styles.css" />
+    <!-- tu css global si lo usas -->
+    <link rel="stylesheet" href="/styles.css"/>
   </head>
   <body style="margin:0; background:#f6f8ff">
     <div id="root"></div>
 
-    <script src="/spa-mmpp/mmpp-api.js?v=11"></script>
-    <script type="text/babel" data-presets="react" src="/spa-mmpp/mmpp-inventario.jsx?v=11"></script>
+    <!-- Módulo MMPP -->
+    <script src="/spa-mmpp/mmpp-api.js?v=12"></script>
+    <script type="text/babel" data-presets="react" src="/spa-mmpp/mmpp-inventario.jsx?v=12"></script>
   </body>
 </html>
