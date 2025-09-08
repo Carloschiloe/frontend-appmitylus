@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import InventoryMMPP from "./modules/mmpp/InventoryMMPP";
 
 const UI = { bg:"#f5f7fb", bgPanel:"#ffffff", text:"#111827", textSoft:"#6b7280", brand:"#2155ff", border:"#e5e7eb", shadow:"0 10px 30px rgba(17,24,39,.06)", radius:18 };
@@ -27,7 +27,11 @@ const ICON = {
 
 function Sidebar({ page, setPage }) {
   const link = (id, icon, label) => (
-    <a href="#" className={page === id ? "active" : ""} onClick={(e) => { e.preventDefault(); setPage(id); }}>
+    <a
+      href="#"
+      className={page === id ? "active" : ""}
+      onClick={(e) => { e.preventDefault(); setPage(id); }}
+    >
       {icon} <span>{label}</span>
     </a>
   );
@@ -39,18 +43,38 @@ function Sidebar({ page, setPage }) {
         {link("calendario", <ICON.cal/>, "Calendario")}
       </nav>
     </aside>
-  )
+  );
 }
 
 export default function App(){
-  const [page,setPage]=useState('inventario');
+  // --- Lee query y hash que envía el HTML puente ---
+  const initialPage = (() => {
+    const q = new URLSearchParams(window.location.search);
+    const h = (window.location.hash || "").toLowerCase();
+    if (q.get("view") === "inventario-mmpp") return "inventario";
+    if (h.includes("inventario-mmpp") || h.includes("inventario")) return "inventario";
+    return "inventario"; // por defecto puedes dejar 'inventario'
+  })();
+
+  const [page, setPage] = useState(initialPage);
+
+  // Mantén el hash sincronizado para enlaces directos
+  useEffect(() => {
+    if (page === "inventario" && window.location.hash.toLowerCase() !== "#inventario-mmpp") {
+      window.location.hash = "inventario-mmpp";
+    }
+    if (page === "calendario" && window.location.hash.toLowerCase() !== "#calendario") {
+      window.location.hash = "calendario";
+    }
+  }, [page]);
+
   return (
     <div className="app">
       <GlobalStyles/>
       <Sidebar page={page} setPage={setPage}/>
       <main className="content">
-        {page==='inventario' && <InventoryMMPP/>}
-        {page==='calendario' && (
+        {page === "inventario" && <InventoryMMPP/>}
+        {page === "calendario" && (
           <div className="card pad">
             <div className="header">📅 <div>Calendario (se integra después)</div></div>
           </div>
