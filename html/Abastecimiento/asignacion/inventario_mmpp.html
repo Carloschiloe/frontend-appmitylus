@@ -10,9 +10,8 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
-    <!-- Si tienes un CSS global en la raíz, déjalo así; si no existe, borra esta línea -->
+    <!-- Si tienes un CSS global en la raíz, déjalo; si no existe, borra esta línea -->
     <link rel="stylesheet" href="/styles.css"/>
-
     <style>
       :root{ --border:#e5e7eb }
       .btn{height:34px;padding:0 12px;border:1px solid var(--border);border-radius:10px;background:#f3f4f6;cursor:pointer}
@@ -28,8 +27,8 @@
     </div>
 
     <!-- Módulo Inventario MMPP (separado en /spa-mmpp) -->
-    <script src="/spa-mmpp/mmpp-api.js"></script>
-    <!-- IMPORTANTE: usa solo preset "react" -->
-    <script type="text/babel" data-presets="react" src="/spa-mmpp/mmpp-inventario.jsx"></script>
+    <script src="/spa-mmpp/mmpp-api.js?v=4"></script>
+    <!-- IMPORTANTE: usa solo preset "react" y cache-buster -->
+    <script type="text/babel" data-presets="react" src="/spa-mmpp/mmpp-inventario.jsx?v=4"></script>
   </body>
 </html>
