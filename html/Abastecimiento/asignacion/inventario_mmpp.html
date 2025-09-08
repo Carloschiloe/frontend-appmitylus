@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <title>Inventario MMPP</title>
 
-    <!-- React 18 + Babel para ejecutar JSX del archivo externo -->
+    <!-- React + Babel (para ejecutar JSX del archivo externo) -->
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
-    <!-- (opcional) tu CSS global si lo usas -->
-    <link rel="stylesheet" href="../../styles.css"/>
+    <!-- Tu CSS global (si EXISTE en la raíz). Si no existe, elimina esta línea. -->
+    <link rel="stylesheet" href="/styles.css"/>
 
     <style>
       :root{ --border:#e5e7eb }
@@ -29,6 +29,6 @@
 
     <!-- Módulo Inventario MMPP separado en su propia carpeta -->
     <script src="/spa-mmpp/mmpp-api.js"></script>
-    <script type="text/babel" src="/spa-mmpp/mmpp-inventario.jsx"></script>
+    <script type="text/babel" data-presets="env,react" src="/spa-mmpp/mmpp-inventario.jsx"></script>
   </body>
 </html>
