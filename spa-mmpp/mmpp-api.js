@@ -1,81 +1,59 @@
-
-// /spa-mmpp/mmpp-api.js (v4: mapea a /planificacion/ofertas)
+// /spa-mmpp/mmpp-api.js  (NerdUI version)
 (function(global){
   var API_BASE = (global.API_URL) ? global.API_URL : 'https://backend-appmitylus.vercel.app/api';
 
-  function get(path){
-    return fetch(API_BASE + path, { headers: { 'Accept':'application/json' } })
-      .then(function(r){ if(!r.ok) throw new Error('GET '+path+' → '+r.status); return r.json(); });
+  function check(r){ if(!r.ok){ return r.text().then(function(t){ throw new Error(r.status+' '+t); }); } return r.json().catch(function(){return null;}); }
+
+  function get(path, params){
+    params = params || {};
+    var entries = Object.entries(params).filter(function(p){ return p[1] !== '' && p[1] != null; });
+    var qs = new URLSearchParams(Object.fromEntries(entries)).toString();
+    var url = API_BASE + path + (qs ? ('?' + qs) : '');
+    return fetch(url, { headers:{'Accept':'application/json'} }).then(check);
   }
 
-  function pad2(n){ return String(n).padStart(2,'0'); }
-  function monthKey(d){
-    if(!d) return '';
-    try{
-      var dt = (d instanceof Date) ? d : new Date(d);
-      if (isNaN(dt.getTime())) return '';
-      return dt.getFullYear() + '-' + pad2(dt.getMonth()+1);
-    }catch(e){ return ''; }
+  function send(method, path, body){
+    return fetch(API_BASE + path, {
+      method: method,
+      headers: { 'Content-Type':'application/json','Accept':'application/json' },
+      body: JSON.stringify(body || {})
+    }).then(check);
   }
 
-  function normalizeOferta(it, idx){
-    var rawMes = (typeof it.mesKey === 'string' && /^\d{4}-\d{2}$/.test(it.mesKey)) ? it.mesKey : null;
-    var ym     = (it.anio && it.mes) ? (it.anio + '-' + pad2(it.mes)) : null;
-    var baseF  = rawMes || ym || it.fecha || it.fechaPlan || it.fch || it.createdAt || null;
-    var mesVal = rawMes || ym || monthKey(baseF);
-    var tons   = Number(it.tonsDisponible != null ? it.tonsDisponible
-                   : it.tons != null ? it.tons
-                   : it.total != null ? it.total
-                   : it.valor != null ? it.valor : 0) || 0;
-    var saldo  = Number(it.saldo != null ? it.saldo : tons) || 0;
-    var pName  = it.proveedorNombre || it.proveedor || it.Proveedor || '';
-    var pKey   = it.proveedorId || it.proveedorKey || pName;
-    var tipo   = (it.tipo || 'normal').toString().toLowerCase();
+  // Normaliza items de /planificacion/ofertas a un formato estable
+  function normalizeOferta(it){
+    var tons = Number(it.tons || it.cantidad || it.cant || 0) || 0;
+    var mesKey = (typeof it.mesKey === 'string' ? it.mesKey : null);
+    if(!mesKey){
+      var d = it.fecha || it.fechaPlan || it.fch || it.createdAt || null;
+      if(d){ try{ var dd = new Date(d); mesKey = dd.getFullYear() + '-' + String(dd.getMonth()+1).padStart(2,'0'); }catch(e){} }
+    }
     return {
-      _id: it._id || it.id || (pKey + '-' + mesVal + '-' + (idx||0)),
-      proveedorKey: pKey,
-      proveedorNombre: pName,
-      mesKey: mesVal,
+      id: it.id || it._id || null,
+      proveedorNombre: it.proveedorNombre || it.proveedor || it.Proveedor || '',
+      comuna: it.comuna || it.centroComuna || '',
+      centroCodigo: it.centroCodigo || it.Centro || '',
+      areaCodigo: it.areaCodigo || it.Area || '',
+      tipo: (it.tipo || 'NORMAL').toUpperCase(),
+      mesKey: mesKey || '',
+      fecha: it.fecha || null,
       tons: tons,
-      saldo: saldo,
-      tipo: tipo,
-      notas: it.notas || ''
+      saldo: (typeof it.saldo !== 'undefined' ? Number(it.saldo) : tons)
     };
   }
 
-  // Devuelve disponibilidades normalizadas desde /planificacion/ofertas
-  function getDisponibilidades(opts){
-    opts = opts || {};
-    return get('/planificacion/ofertas').then(function(data){
-      var arr = Array.isArray(data && data.items) ? data.items : (Array.isArray(data) ? data : []);
-      var norm = arr.map(normalizeOferta);
-      if (opts.mesKey) norm = norm.filter(function(r){ return r.mesKey === opts.mesKey; });
-      if (opts.proveedorKey) {
-        var q = String(opts.proveedorKey).toLowerCase();
-        norm = norm.filter(function(r){
-          return (r.proveedorKey||'').toLowerCase().includes(q) || (r.proveedorNombre||'').toLowerCase().includes(q);
-        });
-      }
-      return norm;
-    });
-  }
-
-  function getResumenMensual(opts){
-    opts = opts || {};
-    return getDisponibilidades({ mesKey: opts.mesKey }).then(function(rows){
-      var totalDisp = rows.reduce(function(a,r){ return a + (Number(r.tons)||0); }, 0);
-      var totalSaldo = rows.reduce(function(a,r){ return a + (Number(r.saldo!=null?r.saldo:r.tons)||0); }, 0);
-      return { totalDisponible: totalDisp, totalAsignado: 0, saldo: totalSaldo };
-    });
-  }
-
-  function notImpl(){ return Promise.reject(new Error('No implementado en esta versión')); }
-
   global.MMppApi = {
-    getDisponibilidades: getDisponibilidades,
-    getResumenMensual:   getResumenMensual,
-    crearDisponibilidad: notImpl,
-    editarDisponibilidad: notImpl,
-    borrarDisponibilidad: notImpl
+    // Lee disponibilidades desde /planificacion/ofertas
+    getDisponibilidades: function(){ 
+      return get('/planificacion/ofertas').then(function(raw){
+        var arr = Array.isArray(raw && raw.items) ? raw.items : (Array.isArray(raw) ? raw : []);
+        return arr.map(normalizeOferta);
+      });
+    },
+    // Crea una "oferta" (disponibilidad) básica; payload flexible
+    crearDisponibilidad: function(payload){ return send('POST', '/planificacion/ofertas', payload); },
+    // (placeholders para futura edición / borrado)
+    editarDisponibilidad: function(id, payload){ return send('PATCH', '/planificacion/ofertas/' + encodeURIComponent(id), payload); },
+    borrarDisponibilidad: function(id){ return send('DELETE', '/planificacion/ofertas/' + encodeURIComponent(id)); }
   };
 })(window);
