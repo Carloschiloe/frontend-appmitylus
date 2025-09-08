@@ -30,7 +30,13 @@ function Sidebar({ page, setPage }) {
     <a
       href="#"
       className={page === id ? "active" : ""}
-      onClick={(e) => { e.preventDefault(); setPage(id); }}
+      onClick={(e) => {
+        e.preventDefault();
+        // Cambia hash para que se pueda compartir/enlazar
+        if (id === "inventario") window.location.hash = "inventario-mmpp";
+        if (id === "calendario") window.location.hash = "calendario";
+        setPage(id);
+      }}
     >
       {icon} <span>{label}</span>
     </a>
@@ -47,18 +53,19 @@ function Sidebar({ page, setPage }) {
 }
 
 export default function App(){
-  // --- Lee query y hash que envía el HTML puente ---
+  // --- Determina la página inicial según query/hash (HTML puente) ---
   const initialPage = (() => {
     const q = new URLSearchParams(window.location.search);
     const h = (window.location.hash || "").toLowerCase();
     if (q.get("view") === "inventario-mmpp") return "inventario";
     if (h.includes("inventario-mmpp") || h.includes("inventario")) return "inventario";
-    return "inventario"; // por defecto puedes dejar 'inventario'
+    if (h.includes("calendario")) return "calendario";
+    return "inventario";
   })();
 
   const [page, setPage] = useState(initialPage);
 
-  // Mantén el hash sincronizado para enlaces directos
+  // Sincroniza el hash cuando se cambia de pestaña desde el propio SPA
   useEffect(() => {
     if (page === "inventario" && window.location.hash.toLowerCase() !== "#inventario-mmpp") {
       window.location.hash = "inventario-mmpp";
@@ -67,6 +74,28 @@ export default function App(){
       window.location.hash = "calendario";
     }
   }, [page]);
+
+  // Responde a cambios de hash / navegación atrás-adelante
+  useEffect(() => {
+    const handleLocChange = () => {
+      const q = new URLSearchParams(window.location.search);
+      const h = (window.location.hash || "").toLowerCase();
+      if (q.get("view") === "inventario-mmpp" || h.includes("inventario-mmpp") || h.includes("inventario")) {
+        setPage("inventario");
+        return;
+      }
+      if (h.includes("calendario")) {
+        setPage("calendario");
+        return;
+      }
+    };
+    window.addEventListener("hashchange", handleLocChange);
+    window.addEventListener("popstate", handleLocChange);
+    return () => {
+      window.removeEventListener("hashchange", handleLocChange);
+      window.removeEventListener("popstate", handleLocChange);
+    };
+  }, []);
 
   return (
     <div className="app">
