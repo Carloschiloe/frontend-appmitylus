@@ -1,170 +1,301 @@
+/* MMppApi – adaptador robusto para disponibilidades y asignaciones
+   - Sin optional chaining para que funcione con Babel Standalone 6.
+   - Normaliza campos a:
+     Disponibilidad: {id, proveedorNombre, proveedorKey, comuna, centroCodigo, areaCodigo, tons, fecha, mesKey, anio, mes, estado}
+     Asignación:     {id, disponibilidadId, cantidad, destMes, destAnio, proveedorNombre, originalTons, originalFecha, createdAt}
+*/
 
-// /spa-mmpp/mmpp-api.js  (NerdUI v3 – disponibilidades + asignaciones)
-(function(global){
-  var API_BASE = (global.API_URL) ? global.API_URL : 'https://backend-appmitylus.vercel.app/api';
-
-  function check(r){
-    if(!r.ok){
-      return r.text().then(function(t){ throw new Error(r.status+' '+t); });
-    }
-    return r.json().catch(function(){return null;});
+(function (global) {
+  var BASE_CANDIDATES = [];
+  // 1) Si el backend está mapeado a /api en el mismo dominio
+  BASE_CANDIDATES.push(location.origin + "/api");
+  BASE_CANDIDATES.push("/api");
+  // 2) Fallback conocido (cámbialo si usas otro)
+  BASE_CANDIDATES.push("https://backend-appmitylus.vercel.app/api");
+  // 3) Permite override con window.__MMPP_API_BASE__
+  if (typeof global.__MMPP_API_BASE__ === "string") {
+    BASE_CANDIDATES.unshift(global.__MMPP_API_BASE__.replace(/\/+$/, ""));
   }
 
-  function tryGet(paths, params){
-    var i = 0;
-    function _next(){
-      if(i >= paths.length) return Promise.reject(new Error('Todos los GET fallaron: '+paths.join(', ')));
-      var p = paths[i++];
-      var url = API_BASE + p + (params ? ('?' + new URLSearchParams(params).toString()) : '');
-      return fetch(url, { headers:{'Accept':'application/json'} }).then(function(r){
-        if(!r.ok) throw new Error('GET ' + p + ' -> ' + r.status);
-        return r.json();
-      }).catch(function(){ return _next(); });
-    }
-    return _next();
+  var _resolved = {
+    dispo: null,
+    asig: null,
+  };
+
+  function slug(val) {
+    val = (val || "").toString().toLowerCase();
+    val = val.replace(/[^a-z0-9]+/g, "-");
+    val = val.replace(/(^-|-$)/g, "");
+    return val || "sin-proveedor";
   }
 
-  function trySend(method, paths, body){
-    var i = 0;
-    function _next(){
-      if(i >= paths.length) return Promise.reject(new Error('Todos los '+method+' fallaron: '+paths.join(', ')));
-      var p = paths[i++];
-      return fetch(API_BASE + p, {
-        method: method,
-        headers: { 'Content-Type':'application/json','Accept':'application/json' },
-        body: JSON.stringify(body || {})
-      }).then(function(r){
-        if(!r.ok) throw new Error(method + ' ' + p + ' -> ' + r.status);
-        return r.json().catch(function(){return {ok:true}});
-      }).catch(function(){ return _next(); });
-    }
-    return _next();
+  function pad2(n) {
+    n = Number(n) || 0;
+    return (n < 10 ? "0" : "") + n;
   }
 
-  // ---------- Disponibilidades ----------
-  function normalizeDisponibilidad(it){
-    var tons = Number(it.tonsDisponible || it.tons || it.cantidad || 0) || 0;
-    var mesKey = (typeof it.mesKey === 'string' ? it.mesKey : null);
-    if(!mesKey){
-      var d = it.fecha || it.createdAt || null;
-      if(d){ try{ var dd = new Date(d); mesKey = dd.getFullYear() + '-' + String(dd.getMonth()+1).padStart(2,'0'); }catch(e){} }
+  function toMesKey(d) {
+    if (!d) return null;
+    try {
+      var dt = new Date(d);
+      if (isNaN(dt.getTime())) return null;
+      return dt.getFullYear() + "-" + pad2(dt.getMonth() + 1);
+    } catch (e) {
+      return null;
     }
-    return {
-      id: it.id || it._id || it.disponibilidadId || null,
-      proveedorKey: it.proveedorKey || '',
-      proveedorNombre: it.proveedorNombre || it.proveedor || '',
-      comuna: it.comuna || '',
-      centroCodigo: it.centroCodigo || '',
-      areaCodigo: it.areaCodigo || '',
-      tipo: (it.tipo || 'NORMAL').toUpperCase(),
-      mesKey: mesKey || '',
-      fecha: it.fecha || it.createdAt || null,
-      tons: tons,
-      estado: it.estado || 'disponible',
-    };
   }
 
-  function buildCreateDisponPayload(form){
-    return form.disponibilidades.map(function(x){
-      var d = new Date(x.fecha);
-      var mk = isNaN(d) ? (String(x.fecha).slice(0,7)) : (d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'));
+  function fromMesKey(mk) {
+    if (!mk || mk.indexOf("-") < 0) return null;
+    var p = mk.split("-");
+    var y = Number(p[0]) || 0;
+    var m = Number(p[1]) || 1;
+    return new Date(y, m - 1, 1).toISOString();
+  }
+
+  function jfetch(url, opts) {
+    opts = opts || {};
+    var headers = opts.headers || {};
+    headers["Accept"] = "application/json";
+    if (opts.body && !headers["Content-Type"]) {
+      headers["Content-Type"] = "application/json";
+    }
+    opts.headers = headers;
+    return fetch(url, opts).then(function (res) {
+      if (res.status === 404) {
+        var e = new Error("404");
+        e.status = 404;
+        throw e;
+      }
+      if (res.status === 204) return null;
+      return res.json();
+    });
+  }
+
+  // Probar una lista de rutas para encontrar la primera válida
+  function resolveEndpoint(candidates, memoKey) {
+    if (memoKey && _resolved[memoKey]) return Promise.resolve(_resolved[memoKey]);
+
+    var bases = BASE_CANDIDATES.slice(0);
+    function tryNextBase() {
+      if (!bases.length) throw new Error("No endpoints available");
+      var base = bases.shift();
+
+      var idx = 0;
+      function tryNextPath() {
+        if (idx >= candidates.length) return tryNextBase();
+        var path = candidates[idx++];
+        var url = base.replace(/\/+$/, "") + "/" + path.replace(/^\/+/, "");
+        // Hacemos un GET "ligero" y si no es 404 nos sirve
+        return jfetch(url)
+          .then(function () {
+            if (memoKey) _resolved[memoKey] = url;
+            return url;
+          })
+          .catch(function (err) {
+            if (err && err.status === 404) return tryNextPath();
+            // Si falla por CORS u otro, probamos siguiente base
+            return tryNextBase();
+          });
+      }
+      return tryNextPath();
+    }
+
+    return tryNextBase();
+  }
+
+  function normalizeDispon(list) {
+    list = Array.isArray(list) ? list : [];
+    return list.map(function (r) {
+      var id = r.id || r._id || r._docId || r.uuid || null;
+      var tons =
+        (r.tonsDisponible != null ? r.tonsDisponible : null) != null
+          ? Number(r.tonsDisponible)
+          : Number(r.tons || 0);
+
+      var mk =
+        r.mesKey ||
+        (r.anio && r.mes ? (r.anio + "-" + pad2(r.mes)) : null) ||
+        (r.fecha ? toMesKey(r.fecha) : null);
+
+      var fecha = r.fecha || (mk ? fromMesKey(mk) : null);
+
       return {
+        id: id,
+        proveedorNombre: r.proveedorNombre || r.proveedor || "",
+        proveedorKey: r.proveedorKey || slug(r.proveedorNombre || r.proveedor),
+        comuna: r.comuna || "",
+        centroCodigo: r.centroCodigo || "",
+        areaCodigo: r.areaCodigo || "",
+        tons: Number(tons || 0),
+        fecha: fecha,
         mesKey: mk,
-        anio: Number(mk.split('-')[0])||null,
-        mes: Number(mk.split('-')[1])||null,
-        proveedorKey: form.proveedorKey || '',
-        proveedorNombre: form.proveedor || form.proveedorNombre || '',
-        centroId: form.centroId || null,
-        centroCodigo: form.centroCodigo || '',
-        comuna: form.comuna || '',
-        areaCodigo: form.areaCodigo || '',
-        tonsDisponible: Number(x.tons)||0,
-        estado: 'disponible'
+        anio: r.anio || (mk ? Number(mk.split("-")[0]) : null),
+        mes: r.mes || (mk ? Number(mk.split("-")[1]) : null),
+        estado: r.estado || "disponible",
       };
     });
   }
 
-  // ---------- Asignaciones ----------
-  function normalizeAsignacion(a){
-    // campos tolerantes
-    var id = a.id || a._id || null;
-    var dispoId = a.disponibilidadId || a.dispoId || a.origenId || a.disponibilidad || null;
-    var cantidad = Number(a.cantidad || a.tons || a.toneladas || 0) || 0;
-    var destMes = a.destMes || a.mesDestino || a.mes || null;
-    var destAnio = a.destAnio || a.anioDestino || a.anio || null;
-    var proveedor = a.proveedorNombre || a.proveedor || '';
-    var proveedorKey = a.proveedorKey || '';
-    return {
-      id: id,
-      disponibilidadId: dispoId,
-      cantidad: cantidad,
-      destMes: destMes,
-      destAnio: destAnio,
-      proveedorNombre: proveedor,
-      proveedorKey: proveedorKey,
-      createdAt: a.createdAt || null,
-      updatedAt: a.updatedAt || null,
-      // extras que ayudan a UI
-      originalTons: Number(a.originalTons || 0) || null,
-      originalFecha: a.originalFecha || null,
-    };
+  function normalizeAsign(list) {
+    list = Array.isArray(list) ? list : [];
+    return list.map(function (a) {
+      return {
+        id: a.id || a._id || a.uuid || null,
+        disponibilidadId: a.disponibilidadId || a.disponibilidad || a.dispoId || null,
+        cantidad: Number(a.cantidad || 0),
+        destMes: Number(a.destMes || a.mes || 0) || null,
+        destAnio: Number(a.destAnio || a.anio || 0) || null,
+        proveedorNombre: a.proveedorNombre || a.proveedor || "",
+        originalTons: Number(a.originalTons || a.original || 0) || null,
+        originalFecha: a.originalFecha || a.fechaOriginal || null,
+        createdAt: a.createdAt || a.fecha || null,
+      };
+    });
   }
 
-  function buildCreateAsignPayload(input){
-    return {
-      disponibilidadId: input.disponibilidadId,
-      cantidad: Number(input.cantidad)||0,
-      destMes: Number(input.destMes)||null,
-      destAnio: Number(input.destAnio)||null,
-      proveedorNombre: input.proveedorNombre || '',
-      proveedorKey: input.proveedorKey || '',
-      originalTons: Number(input.originalTons)||null,
-      originalFecha: input.originalFecha || null,
-    };
-  }
+  var API = {
+    // ------- Disponibilidades -------
+    getDisponibilidades: function () {
+      var candidates = [
+        "/planificacion/disponibilidades",
+        "/disponibilidades",
+        "/planificacion/ofertas",
+      ];
+      return resolveEndpoint(candidates, "dispo")
+        .then(function (url) {
+          return jfetch(url);
+        })
+        .then(function (json) {
+          return normalizeDispon(json);
+        })
+        .catch(function () {
+          // 404 u otra falla ⇒ devolvemos lista vacía
+          return [];
+        });
+    },
 
-  var pathsDispon = ['/disponibilidades','/planificacion/disponibilidades','/planificacion/ofertas'];
-  var pathsAsig = ['/asignaciones','/planificacion/asignaciones','/asignacion'];
+    crearDisponibilidades: function (form) {
+      // form: { proveedor, proveedorKey, comuna, centroCodigo, areaCodigo, contacto, disponibilidades:[{tons,fecha}] }
+      var rows = Array.isArray(form.disponibilidades) ? form.disponibilidades : [];
+      var body = rows
+        .filter(function (d) {
+          return d && d.tons && d.fecha;
+        })
+        .map(function (d) {
+          var dt = new Date(d.fecha);
+          var anio = dt.getFullYear();
+          var mes = dt.getMonth() + 1;
+          return {
+            mesKey: anio + "-" + pad2(mes),
+            anio: anio,
+            mes: mes,
+            proveedorKey: form.proveedorKey || slug(form.proveedor),
+            proveedorNombre: form.proveedor || "",
+            centroCodigo: form.centroCodigo || "",
+            comuna: form.comuna || "",
+            areaCodigo: form.areaCodigo || "",
+            tonsDisponible: Number(d.tons || 0),
+            fecha: dt.toISOString(),
+            estado: "disponible",
+          };
+        });
 
-  global.MMppApi = {
-    // Disponibilidades
-    getDisponibilidades: function(params){
-      return tryGet(pathsDispon, params).then(function(raw){
-        var arr = Array.isArray(raw && raw.items) ? raw.items : (Array.isArray(raw) ? raw : []);
-        return arr.map(normalizeDisponibilidad);
+      if (!body.length) return Promise.resolve();
+
+      var candidates = [
+        "/planificacion/disponibilidades",
+        "/disponibilidades",
+        "/planificacion/ofertas",
+      ];
+
+      return resolveEndpoint(candidates, "dispo").then(function (url) {
+        return jfetch(url, {
+          method: "POST",
+          body: JSON.stringify(body),
+        }).catch(function () {
+          // si falla, al menos no romper el flujo del front
+          return null;
+        });
       });
     },
-    crearDisponibilidades: function(form){
-      var payloads = buildCreateDisponPayload(form);
-      return payloads.reduce(function(p,pay){ return p.then(function(){ return trySend('POST', pathsDispon, pay); }); }, Promise.resolve());
-    },
-    editarDisponibilidad: function(id, patch){
-      var ps = pathsDispon.map(function(p){return p+'/'+encodeURIComponent(id);});
-      return trySend('PATCH', ps, patch);
-    },
-    borrarDisponibilidad: function(id){
-      var ps = pathsDispon.map(function(p){return p+'/'+encodeURIComponent(id);});
-      return trySend('DELETE', ps, {});
+
+    // ------- Asignaciones -------
+    getAsignaciones: function () {
+      var candidates = [
+        "/planificacion/asignaciones",
+        "/asignaciones",
+        "/asignacion",
+      ];
+      return resolveEndpoint(candidates, "asig")
+        .then(function (url) {
+          return jfetch(url);
+        })
+        .then(function (json) {
+          return normalizeAsign(json);
+        })
+        .catch(function () {
+          return [];
+        });
     },
 
-    // Asignaciones
-    getAsignaciones: function(params){
-      return tryGet(pathsAsig, params).then(function(raw){
-        var arr = Array.isArray(raw && raw.items) ? raw.items : (Array.isArray(raw) ? raw : []);
-        return arr.map(normalizeAsignacion);
+    crearAsignacion: function (payload) {
+      var candidates = [
+        "/planificacion/asignaciones",
+        "/asignaciones",
+        "/asignacion",
+      ];
+      return resolveEndpoint(candidates, "asig").then(function (url) {
+        var body = {
+          disponibilidadId: payload.disponibilidadId,
+          cantidad: Number(payload.cantidad || 0),
+          destMes: Number(payload.destMes || 0) || null,
+          destAnio: Number(payload.destAnio || 0) || null,
+          proveedorNombre: payload.proveedorNombre || "",
+          originalTons: Number(payload.originalTons || 0) || null,
+          originalFecha: payload.originalFecha || null,
+          createdAt: new Date().toISOString(),
+        };
+        return jfetch(url, {
+          method: "POST",
+          body: JSON.stringify(body),
+        }).catch(function () {
+          return null;
+        });
       });
     },
-    crearAsignacion: function(input){
-      var body = buildCreateAsignPayload(input);
-      return trySend('POST', pathsAsig, body);
+
+    editarAsignacion: function (id, patch) {
+      var candidates = [
+        "/planificacion/asignaciones",
+        "/asignaciones",
+        "/asignacion",
+      ];
+      return resolveEndpoint(candidates, "asig").then(function (base) {
+        var url = base.replace(/\/+$/, "") + "/" + encodeURIComponent(id);
+        return jfetch(url, {
+          method: "PATCH",
+          body: JSON.stringify(patch || {}),
+        }).catch(function () {
+          return null;
+        });
+      });
     },
-    editarAsignacion: function(id, patch){
-      var ps = pathsAsig.map(function(p){return p+'/'+encodeURIComponent(id);});
-      return trySend('PATCH', ps, patch);
+
+    borrarAsignacion: function (id) {
+      var candidates = [
+        "/planificacion/asignaciones",
+        "/asignaciones",
+        "/asignacion",
+      ];
+      return resolveEndpoint(candidates, "asig").then(function (base) {
+        var url = base.replace(/\/+$/, "") + "/" + encodeURIComponent(id);
+        return jfetch(url, { method: "DELETE" }).catch(function () {
+          return null;
+        });
+      });
     },
-    borrarAsignacion: function(id){
-      var ps = pathsAsig.map(function(p){return p+'/'+encodeURIComponent(id);});
-      return trySend('DELETE', ps, {});
-    }
   };
+
+  global.MMppApi = API;
 })(window);
