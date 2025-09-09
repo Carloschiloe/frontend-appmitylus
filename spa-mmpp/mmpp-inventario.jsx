@@ -567,95 +567,100 @@ function AbastecimientoMMPP() {
         </div>
       )}
 
-      {/* MODAL: editar LOTES (disponibilidades) */}
-{editLotes && (
-  <div className="modalBG" onClick={function(){ setEditLotes(null); }}>
-    <div className="modal" onClick={function(e){ e.stopPropagation(); }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <h2 style={{ margin:0, fontWeight:800 }}>Editar Lotes</h2>
-        <button className="mmpp-ghostbtn" onClick={function(){ setEditLotes(null); }}>✕</button>
-      </div>
+         {/* MODAL: editar LOTES (disponibilidades) */}
+      {editLotes && (
+        <div className="modalBG" onClick={function(){ setEditLotes(null); }}>
+          <div className="modal" onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <h2 style={{ margin:0, fontWeight:800 }}>Editar Lotes</h2>
+              <button className="mmpp-ghostbtn" onClick={function(){ setEditLotes(null); }}>✕</button>
+            </div>
 
-      <div style={{ marginTop:8, color:"#374151" }}>
-        <div><strong>Proveedor:</strong> {editLotes.proveedor}</div>
-        <div><strong>Comuna:</strong> {editLotes.comuna || "—"}</div>
-      </div>
+            <div style={{ marginTop:8, color:"#374151" }}>
+              <div><strong>Proveedor:</strong> {editLotes.proveedor}</div>
+              <div><strong>Comuna:</strong> {editLotes.comuna || "—"}</div>
+            </div>
 
-      <div className="mmpp-card" style={{ marginTop:12 }}>
-        <div style={{ fontWeight:800, marginBottom:10 }}>Lotes:</div>
-        <table className="mmpp" style={{ width:"100%" }}>
-          <thead>
-            <tr>
-              <th>Mes</th>
-              <th>Fecha</th>
-              <th>Tons</th>
-              <th>Acciones</th>{/* NUEVO */}
-            </tr>
-          </thead>
-          <tbody>
-            {editLotes.lots.map(function(L, i){
-              return (
-                <tr key={L.id || i}>
-                  <td>{chipLabelFromMesKey(L.mesKey)}</td>
-                  <td>
-                    <input
-                      className="mmpp-input"
-                      type="date"
-                      value={L.fecha ? String(L.fecha).slice(0,10) : ""}
-                      onChange={function(e){
-                        var v = e.target.value;
-                        setEditLotes(function(m){
-                          var nx = Object.assign({}, m);
-                          var arr = nx.lots.slice();
-                          var row = Object.assign({}, arr[i], { fecha: v });
-                          arr[i] = row; nx.lots = arr; return nx;
-                        });
-                      }}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      className="mmpp-input"
-                      type="number"
-                      inputMode="numeric"
-                      value={L.tons}
-                      onChange={function(e){
-                        var v = e.target.value;
-                        setEditLotes(function(m){
-                          var nx = Object.assign({}, m);
-                          var arr = nx.lots.slice();
-                          var row = Object.assign({}, arr[i], { tons: v });
-                          arr[i] = row; nx.lots = arr; return nx;
-                        });
-                      }}
-                    />
-                  </td>
-                  <td>
-                    <button
-                      className="mmpp-ghostbtn mmpp-danger"
-                      title="Eliminar lote"
-                      onClick={function(){
-                        borrarLote(i, L);
-                      }}
-                    >
-                      🗑️ Eliminar
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+            <div className="mmpp-card" style={{ marginTop:12 }}>
+              <div style={{ fontWeight:800, marginBottom:10 }}>Lotes:</div>
+              <table className="mmpp" style={{ width:"100%" }}>
+                <thead>
+                  <tr>
+                    <th>Mes</th>
+                    <th>Fecha</th>
+                    <th>Tons</th>
+                    <th>Acciones</th>{/* NUEVO */}
+                  </tr>
+                </thead>
+                <tbody>
+                  {editLotes.lots.map(function(L, i){
+                    return (
+                      <tr key={L.id || i}>
+                        <td>{chipLabelFromMesKey(L.mesKey)}</td>
+                        <td>
+                          <input
+                            className="mmpp-input"
+                            type="date"
+                            value={L.fecha ? String(L.fecha).slice(0,10) : ""}
+                            onChange={function(e){
+                              var v = e.target.value;
+                              setEditLotes(function(m){
+                                var nx = Object.assign({}, m);
+                                var arr = nx.lots.slice();
+                                var row = Object.assign({}, arr[i], { fecha: v });
+                                arr[i] = row; nx.lots = arr; return nx;
+                              });
+                            }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="mmpp-input"
+                            type="number"
+                            inputMode="numeric"
+                            value={L.tons}
+                            onChange={function(e){
+                              var v = e.target.value;
+                              setEditLotes(function(m){
+                                var nx = Object.assign({}, m);
+                                var arr = nx.lots.slice();
+                                var row = Object.assign({}, arr[i], { tons: v });
+                                arr[i] = row; nx.lots = arr; return nx;
+                              });
+                            }}
+                          />
+                        </td>
+                        <td>
+                          <button
+                            className="mmpp-ghostbtn mmpp-danger"
+                            title="Eliminar lote"
+                            onClick={function(){ borrarLote(i, L); }}
+                          >
+                            🗑️ Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
 
-        <div style={{ marginTop:12, display:"flex", gap:10, justifyContent:"flex-end" }}>
-          <button className="mmpp-ghostbtn" onClick={function(){ setEditLotes(null); }}>Cancelar</button>
-          <button className="mmpp-button" onClick={guardarEditarLotes}>💾 Guardar cambios</button>
+              <div style={{ marginTop:12, display:"flex", gap:10, justifyContent:"flex-end" }}>
+                <button className="mmpp-ghostbtn" onClick={function(){ setEditLotes(null); }}>
+                  Cancelar
+                </button>
+                <button className="mmpp-button" onClick={guardarEditarLotes}>
+                  💾 Guardar cambios
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
+    </div> {/* <- cierre de .mmpp-wrap */}
+  );       {/* <- cierre del return */}
+}          {/* <- cierre de la función AbastecimientoMMPP */}
 
 var mountNode = document.getElementById("root");
 ReactDOM.createRoot(mountNode).render(<AbastecimientoMMPP />);
