@@ -279,7 +279,7 @@ function AbastecimientoMMPP() {
     });
   }
 
-  // Funcion borrar lotes (defensiva: soporta varios nombres de método)
+ // Funcion borrar lotes (defensiva: soporta varios nombres de método)
 function borrarLote(idx, L){
   if(!confirm("¿Eliminar esta disponibilidad/lote?")) return;
 
@@ -330,6 +330,7 @@ function borrarLote(idx, L){
       alert("No se pudo eliminar el lote. Reintenta.");
     });
 }
+
 
   // NUEVO: guardar cambios de lotes
   function guardarEditarLotes() {
