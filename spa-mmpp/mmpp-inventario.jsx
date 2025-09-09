@@ -279,16 +279,42 @@ function AbastecimientoMMPP() {
     });
   }
 
-  //Funcion borrar lotes
-  function borrarLote(idx, L){
+  // Funcion borrar lotes (defensiva: soporta varios nombres de método)
+function borrarLote(idx, L){
   if(!confirm("¿Eliminar esta disponibilidad/lote?")) return;
-  MMppApi.eliminarDisponibilidad(L.id)
-    .catch(function(err){
-      console.error(err);
-      alert("No se pudo eliminar el lote. Reintenta.");
-    })
+
+  var api = (typeof MMppApi !== "undefined" && MMppApi) ? MMppApi : null;
+  if(!api){
+    alert("MMppApi no está disponible.");
+    return;
+  }
+
+  // id tolerante
+  var id = (L && (L.id != null ? L.id : L.disponibilidadId));
+  if(id == null){
+    alert("No se encontró el id del lote.");
+    return;
+  }
+  // algunos backends esperan número
+  if(!isNaN(Number(id))) id = Number(id);
+
+  // elegir la función correcta si cambia el nombre en tu API
+  var eliminarFn =
+      api.eliminarDisponibilidad ||
+      api.borrarDisponibilidad ||
+      api.deleteDisponibilidad ||
+      api.removeDisponibilidad ||
+      api.eliminar;
+
+  if(typeof eliminarFn !== "function"){
+    console.error("No existe método de eliminación en MMppApi");
+    alert("No existe MMppApi.eliminarDisponibilidad/borrarDisponibilidad (revisa la API).");
+    return;
+  }
+
+  Promise.resolve(eliminarFn.call(api, id))
     .then(function(){
-      // Quitar de la lista local; si queda vacío, cerramos el modal
+      // quitar de la lista local; si queda vacío, cerramos el modal
       setEditLotes(function(m){
         if(!m) return m;
         var nx = Object.assign({}, m);
@@ -298,6 +324,10 @@ function AbastecimientoMMPP() {
         return arr.length ? nx : null;
       });
       return reload();
+    })
+    .catch(function(err){
+      console.error(err);
+      alert("No se pudo eliminar el lote. Reintenta.");
     });
 }
 
