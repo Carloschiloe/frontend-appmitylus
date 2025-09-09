@@ -1,178 +1,100 @@
-/* ========================== */
-/*  Inventario MMPP – estilos */
-/*  Archivo: inventario.css   */
-/* ========================== */
-
+/* inventario.css — tipografía Inter + tamaños compactos */
 :root{
-  --mmpp-bg:#f5f7fb;
-  --mmpp-panel:#ffffff;
-  --mmpp-border:#e6e8ef;
-  --mmpp-muted:#667085;
-  --mmpp-ink:#111827;
-  --mmpp-brand:#2155ff;
-  --mmpp-brand-2:#6a5cff;
-  --mmpp-shadow:0 10px 30px rgba(17,24,39,.06);
-  --mmpp-r:16px;
-
-  --mmpp-chip-bg:#ede9fe;
-  --mmpp-chip-fg:#6d28d9;
-
-  --mmpp-badge-bg:#eef2ff;
-  --mmpp-badge-fg:#3730a3;
+  --font: 'Inter', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  --text: #111827;
+  --muted:#6b7280;
+  --panel:#ffffff;
+  --bg:#f6f8ff;
+  --border:#e5e7eb;
+  --brand1:#4f46e5;
+  --brand2:#9333ea;
+  --chipBg:#ede9fe;
+  --chipFg:#6d28d9;
 }
 
-/* Contenedor opcional para limitar fugas de estilos */
-.mmpp-scope{ color:var(--mmpp-ink); }
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.45}
+*{box-sizing:border-box}
 
-/* --------- Tipografía / layout base (solo dentro del scope) --------- */
-.mmpp-scope .mmpp-h1{font-size:22px;font-weight:800;margin:2px 0 14px}
-.mmpp-scope .mmpp-h2{font-size:16px;font-weight:700;margin:8px 0 10px}
-.mmpp-scope .mmpp-muted{color:var(--mmpp-muted)}
-.mmpp-scope .mmpp-panel{
-  background:var(--mmpp-panel);
-  border:1px solid var(--mmpp-border);
-  border-radius:var(--mmpp-r);
-  box-shadow:var(--mmpp-shadow);
-  padding:18px 16px;
-}
+.mmpp-wrap{max-width:1200px;margin:0 auto;padding:18px}
 
-/* --------- Controles --------- */
-.mmpp-scope .mmpp-input,
-.mmpp-scope .mmpp-select{
-  height:36px; padding:0 12px;
-  border:1px solid var(--mmpp-border);
-  border-radius:10px; background:#fff; width:100%;
-  font-size:14px;
+/* Hero */
+.mmpp-hero{
+  background:linear-gradient(180deg,#f3f6ff 0, transparent 100%);
+  border:1px solid var(--border); border-radius:20px; padding:22px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 10px 30px rgba(17,24,39,.06)
 }
-.mmpp-scope .mmpp-btn{
-  height:36px; padding:0 14px; cursor:pointer; user-select:none;
-  border:1px solid var(--mmpp-border); background:#f3f4f8; border-radius:12px;
-  font-size:13px; font-weight:600;
-}
-.mmpp-scope .mmpp-btn:hover{ filter:brightness(.98); }
-.mmpp-scope .mmpp-btn--primary{
-  height:44px; border:none; color:#fff; font-weight:700; font-size:15px;
-  background:linear-gradient(90deg,var(--mmpp-brand) 0%, var(--mmpp-brand-2) 100%);
-  border-radius:16px;
-}
-.mmpp-scope .mmpp-btn--ghost{
-  background:#f3f4f8; border:1px solid var(--mmpp-border);
+.mmpp-hero h1{margin:0;font-weight:800;font-size:22px;color:#2b3440}
+.mmpp-hero p{margin:4px 0 0;color:var(--muted);font-weight:600;font-size:12.5px}
+.mmpp-badge{
+  background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;
+  padding:8px 12px;border-radius:12px;font-weight:700;font-size:12.5px;
+  display:inline-flex;align-items:center;gap:8px
 }
 
-/* --------- KPI chips (superior) --------- */
-.mmpp-scope .mmpp-kpis{display:flex; gap:10px; flex-wrap:wrap}
-.mmpp-scope .mmpp-kpi{
-  background:#f3f4f6; border:1px solid var(--mmpp-border);
-  border-radius:10px; padding:8px 12px; font-weight:700; font-size:13px;
+/* Tarjetas y formularios */
+.mmpp-card{
+  background:var(--panel); border:1px solid var(--border); border-radius:18px;
+  padding:18px; box-shadow:0 10px 30px rgba(17,24,39,.06)
+}
+.mmpp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mmpp-input{
+  height:42px;border:1px solid var(--border);border-radius:12px;
+  padding:0 12px;background:#fafafa;font-size:14px
 }
 
-/* --------- Fila de disponibilidades (tabla “Inventario Actual”) --------- */
-.mmpp-scope .mmpp-table{width:100%; border-collapse:separate; border-spacing:0 10px}
-.mmpp-scope .mmpp-head{
-  color:var(--mmpp-muted); font-size:12.5px; letter-spacing:.3px; text-transform:uppercase;
-  padding:0 6px 6px;
+/* Botones */
+.mmpp-button{
+  height:48px;border-radius:14px;border:0;
+  background:linear-gradient(90deg,var(--brand1),var(--brand2));
+  color:#fff;font-weight:800;font-size:15px;cursor:pointer;
+  box-shadow:0 8px 20px rgba(79,70,229,.25)
 }
-.mmpp-scope .mmpp-row{
-  display:grid;
-  grid-template-columns:2fr 1.2fr 1.2fr 2fr .9fr;
-  align-items:center; gap:12px;
-  padding:14px; background:#fff; border:1px solid var(--mmpp-border);
-  border-radius:14px;
+.mmpp-add{
+  background:#eef2ff;color:#1e40af;border:1px solid #c7d2fe;
+  height:40px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer
 }
-.mmpp-scope .mmpp-col{font-size:14px}
-.mmpp-scope .mmpp-col--supplier{font-weight:500}    /* Nombre proveedor SIN negrita */
-.mmpp-scope .mmpp-col--tons b{font-weight:800}      /* SOLO las tons en negrita */
-.mmpp-scope .mmpp-col--muted{color:var(--mmpp-muted); font-size:12.5px}
-.mmpp-scope .mmpp-actions{display:flex; gap:10px; justify-content:flex-end}
+.mmpp-ghostbtn{
+  background:#eef2ff;border:1px solid #c7d2fe;color:#1e40af;
+  height:34px;border-radius:10px;padding:0 10px;cursor:pointer;font-weight:600
+}
+.mmpp-danger{background:#fee2e2;border-color:#fecaca;color:#b91c1c}
 
-/* Chips de meses “Sept.25 300t” etc. */
-.mmpp-scope .mmpp-chips{display:flex; flex-wrap:wrap; gap:8px}
-.mmpp-scope .mmpp-chip{
-  background:var(--mmpp-chip-bg); color:var(--mmpp-chip-fg);
-  padding:6px 10px; border-radius:999px; font-size:12.5px; font-weight:600;
+/* Tabla */
+table.mmpp{width:100%;border-collapse:separate;border-spacing:0 8px}
+table.mmpp th, table.mmpp td{padding:12px 10px}
+table.mmpp tr{background:#fff;border:1px solid var(--border)}
+table.mmpp thead th{
+  font-size:12px;letter-spacing:.03em;color:var(--muted);text-transform:uppercase;font-weight:700
 }
+table.mmpp td{font-size:14px}
 
-/* Botones circulares de acción */
-.mmpp-scope .mmpp-icon-btn{
-  width:36px; height:36px; display:grid; place-items:center;
-  border-radius:12px; background:#f3f4f8; border:1px solid var(--mmpp-border);
-}
+/* Solo las “tons” en negrita; el nombre del proveedor normal */
+table.mmpp td:first-child > strong{font-weight:500}   /* neutraliza el <strong> si quedó en el nombre */
+.mmpp-tons strong{font-weight:800}
 
-/* --------- Formulario “Registrar Materia Prima” --------- */
-.mmpp-scope .mmpp-form-grid{
-  display:grid; grid-template-columns:1fr 1fr; gap:12px;
-}
-.mmpp-scope .mmpp-form-row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-.mmpp-scope .mmpp-availability-list{display:flex; flex-direction:column; gap:10px}
-.mmpp-scope .mmpp-availability-item{
-  display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:center;
-}
-.mmpp-scope .mmpp-remove{
-  background:#ffe4e4; color:#b91c1c; border:1px solid #f9caca;
-  padding:6px 10px; border-radius:12px; font-size:12.5px; font-weight:700; cursor:pointer;
+/* Chips por mes */
+.mmpp-chip{
+  display:inline-block; padding:6px 10px; background:var(--chipBg); color:var(--chipFg);
+  border-radius:999px; margin-right:8px; font-weight:700; font-size:12px
 }
 
-/* --------- Historial de Asignaciones --------- */
-.mmpp-scope .mmpp-hist-row{
-  display:grid;
-  grid-template-columns:1.1fr 1.8fr .9fr 1.2fr 1.4fr .9fr;
-  gap:12px; align-items:center;
-  padding:14px; background:#fff; border:1px solid var(--mmpp-border); border-radius:14px;
+/* KPIs / utilidades */
+.mmpp-kpis{display:flex;gap:10px;flex-wrap:wrap}
+.mmpp-kpi{background:#f3f4f6;border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-weight:800}
+
+/* Modales */
+.modalBG{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:999}
+.modal{width:min(860px,96vw);background:var(--panel);border:1px solid var(--border);
+  border-radius:16px;box-shadow:0 30px 60px rgba(0,0,0,.2);padding:18px}
+
+/* Selección de disponibilidad en modal */
+.row-hover{border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:#f9fafb}
+.row-hover.sel{background:#e0e7ff;border-color:#c7d2fe}
+
+/* Responsivo */
+@media (max-width: 960px){
+  .mmpp-grid{grid-template-columns:1fr;gap:10px}
+  table.mmpp{display:block;overflow-x:auto}
+  .mmpp-hero h1{font-size:20px}
 }
-.mmpp-scope .mmpp-hist-head{color:var(--mmpp-muted); font-size:12.5px; text-transform:uppercase; letter-spacing:.3px; padding:0 6px 6px}
-.mmpp-scope .mmpp-hist-col{font-size:14px}
-.mmpp-scope .mmpp-hist-col--tons b{font-weight:800}
-.mmpp-scope .mmpp-hist-actions{display:flex; gap:10px; justify-content:flex-end}
-
-/* Badges secundarios (por ejemplo “(2 lotes)”) */
-.mmpp-scope .mmpp-badge{
-  background:var(--mmpp-badge-bg); color:var(--mmpp-badge-fg);
-  padding:4px 8px; border-radius:999px; font-size:12px; font-weight:600;
-}
-
-/* --------- Modales --------- */
-.mmpp-scope .mmpp-modal-bg{
-  position:fixed; inset:0; background:rgba(0,0,0,.25); display:grid; place-items:center; z-index:50;
-}
-.mmpp-scope .mmpp-modal{
-  width:min(760px, 96vw); background:#fff; border:1px solid var(--mmpp-border);
-  border-radius:14px; box-shadow:var(--mmpp-shadow); padding:18px;
-}
-
-/* --------- Responsivo --------- */
-@media (max-width: 920px){
-  .mmpp-scope .mmpp-row{
-    grid-template-columns:1.7fr 1fr 1fr 1.6fr .9fr;
-  }
-  .mmpp-scope .mmpp-hist-row{
-    grid-template-columns:1.1fr 1.4fr .8fr 1.2fr 1.3fr .9fr;
-  }
-}
-
-@media (max-width: 720px){
-  .mmpp-scope .mmpp-head,
-  .mmpp-scope .mmpp-hist-head{display:none}
-
-  .mmpp-scope .mmpp-row,
-  .mmpp-scope .mmpp-hist-row{
-    grid-template-columns:1fr;
-    gap:10px; padding:12px;
-  }
-
-  .mmpp-scope .mmpp-col,
-  .mmpp-scope .mmpp-hist-col{font-size:13.5px}
-  .mmpp-scope .mmpp-chip{font-size:12px; padding:5px 9px}
-  .mmpp-scope .mmpp-actions,
-  .mmpp-scope .mmpp-hist-actions{justify-content:flex-start}
-
-  .mmpp-scope .mmpp-form-grid,
-  .mmpp-scope .mmpp-form-row{grid-template-columns:1fr}
-  .mmpp-scope .mmpp-availability-item{grid-template-columns:1fr 1fr auto}
-}
-
-/* --------- Utilidades ligeras --------- */
-.mmpp-scope .mt-8{margin-top:8px} .mmpp-scope .mt-12{margin-top:12px}
-.mmpp-scope .mt-16{margin-top:16px} .mmpp-scope .gap-8{gap:8px}
-.mmpp-scope .flex{display:flex} .mmpp-scope .items-center{align-items:center}
-.mmpp-scope .justify-between{justify-content:space-between}
-.mmpp-scope .justify-end{justify-content:flex-end}
