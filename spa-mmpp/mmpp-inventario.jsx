@@ -40,7 +40,6 @@ var mesesEs = [
   "Enero","Febrero","Marzo","Abril","Mayo","Junio",
   "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
 ];
-// NUEVO: abreviaturas para chips
 var mesesShort = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
 function chipLabelFromMesKey(mk){
   if(!mk || mk.indexOf("-")<0) return mk || "—";
@@ -96,6 +95,9 @@ function AbastecimientoMMPP() {
   var _i = React.useState(null), assignModal = _i[0], setAssignModal = _i[1];
   var _j = React.useState(null), editAsig = _j[0], setEditAsig = _j[1];
 
+  // NUEVO: modal para editar lotes (disponibilidades)
+  var _el = React.useState(null), editLotes = _el[0], setEditLotes = _el[1];
+
   React.useEffect(function () { cssInject(); }, []);
 
   function addDisp() {
@@ -150,6 +152,7 @@ function AbastecimientoMMPP() {
     return Math.max(0, (Number(r.tons) || 0) - usadas);
   }
 
+  // ---- INVENTARIO (filas) ----
   var invRows = React.useMemo(function () {
     var rows = dispon.map(function (d) { return Object.assign({}, d, { saldo: saldoDe(d) }); });
     var g = GroupBy(rows, function (r) { return (r.proveedorNombre || "Sin Proveedor") + "|" + (r.comuna || ""); });
@@ -158,13 +161,19 @@ function AbastecimientoMMPP() {
       var parts = k.split("|");
       var prov = parts[0], com = parts[1];
       var total = arr.reduce(function (a, r) { return a + r.saldo; }, 0);
-      var porMes = GroupBy(arr, function (r) { return r.mesKey || "—"; });
-      var chips = Object.keys(porMes)
-        .map(function (m) {
-          var xx = porMes[m];
-          return { mesKey: m, tons: xx.reduce(function (a, t) { return a + t.saldo; }, 0) };
-        })
-        .sort(function (a, b) { return a.mesKey.localeCompare(b.mesKey); });
+
+      // NUEVO: chips por LOTE (no agrupado por mes)
+      var chips = arr
+        .slice()
+        .sort(function (a,b){ return String(a.mesKey||"").localeCompare(String(b.mesKey||"")); })
+        .map(function (it) {
+          return {
+            id: it.id,
+            mesKey: it.mesKey || "—",
+            tons: (it.saldo != null ? it.saldo : it.tons) || 0
+          };
+        });
+
       return { proveedor: prov, comuna: com, items: arr, total: total, chips: chips };
     }).filter(function (r) {
       return (!filterProv || r.proveedor === filterProv) && (!filterComuna || r.comuna === filterComuna);
@@ -253,6 +262,33 @@ function AbastecimientoMMPP() {
     MMppApi.borrarAsignacion(a.id).then(function () { return reload(); });
   }
 
+  // NUEVO: abrir modal para editar lotes (disponibilidades)
+  function abrirEditarLotes(row) {
+    var lots = row.items.map(function (r) {
+      return {
+        id: r.id,
+        tons: String((r.tons != null ? r.tons : (r.saldo != null ? r.saldo : 0)) || 0),
+        fecha: r.fecha || "",
+        mesKey: r.mesKey || ""
+      };
+    });
+    setEditLotes({
+      proveedor: row.proveedor,
+      comuna: row.comuna || "",
+      lots: lots
+    });
+  }
+  // NUEVO: guardar cambios de lotes
+  function guardarEditarLotes() {
+    var m = editLotes;
+    if (!m) return;
+    var prom = (m.lots || []).map(function (L) {
+      var payload = { tons: Number(L.tons) || 0, fecha: L.fecha || null };
+      return MMppApi.editarDisponibilidad(L.id, payload);
+    });
+    Promise.all(prom).then(function(){ return reload(); }).finally(function(){ setEditLotes(null); });
+  }
+
   return (
     <div className="mmpp-wrap">
       <div className="mmpp-hero">
@@ -325,7 +361,6 @@ function AbastecimientoMMPP() {
             {invRows.map(function (r, idx) {
               return (
                 <tr key={idx}>
-                  {/* CAMBIO: nombre SIN negrita */}
                   <td>{r.proveedor}</td>
                   <td>{r.comuna || "—"}</td>
                   <td>
@@ -336,13 +371,17 @@ function AbastecimientoMMPP() {
                   </td>
                   <td>
                     {r.chips.map(function (c) {
-                      // CAMBIO: usar abreviado
-                      return <span key={c.mesKey} className="mmpp-chip">{chipLabelFromMesKey(c.mesKey)} {numeroCL(c.tons)}t</span>;
+                      return (
+                        <span key={c.id || (c.mesKey + "-" + c.tons)} className="mmpp-chip">
+                          {chipLabelFromMesKey(c.mesKey)} {numeroCL(c.tons)}t
+                        </span>
+                      );
                     })}
                   </td>
                   <td>
                     <div className="mmpp-actions">
                       <button className="mmpp-ghostbtn" onClick={function () { abrirAsignacion(r); }}>Asignar</button>
+                      <button className="mmpp-ghostbtn" title="Editar" onClick={function(){ abrirEditarLotes(r); }}>✏️</button>
                     </div>
                   </td>
                 </tr>
@@ -393,7 +432,6 @@ function AbastecimientoMMPP() {
               return (
                 <tr key={a.id || idx}>
                   <td>{fechaTxt}</td>
-                  {/* CAMBIO: nombre SIN negrita */}
                   <td>{a.proveedorNombre || "—"}</td>
                   <td><strong>{numeroCL(a.cantidad)} tons</strong></td>
                   <td>{dest}</td>
@@ -409,6 +447,7 @@ function AbastecimientoMMPP() {
         </table>
       </div>
 
+      {/* MODAL: asignar */}
       {assignModal && (
         <div className="modalBG" onClick={function () { setAssignModal(null); }}>
           <div className="modal" onClick={function (e) { e.stopPropagation(); }}>
@@ -430,7 +469,6 @@ function AbastecimientoMMPP() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                       <div><div>Saldo: <strong>{numeroCL(l.saldo)}</strong> tons</div><small>Original: {numeroCL(l.original)} tons</small></div>
                       <div><small>desde {l.fecha ? new Date(l.fecha).toLocaleDateString("es-CL") : "—"}</small></div>
-                      {/* CAMBIO: abreviado en el modal */}
                       <div style={{ textAlign: "right" }}>{l.mesKey ? chipLabelFromMesKey(l.mesKey) : "—"}</div>
                     </div>
                   </div>
@@ -466,6 +504,7 @@ function AbastecimientoMMPP() {
         </div>
       )}
 
+      {/* MODAL: editar asignación existente */}
       {editAsig && (
         <div className="modalBG" onClick={function () { setEditAsig(null); }}>
           <div className="modal" onClick={function (e) { e.stopPropagation(); }}>
@@ -504,10 +543,79 @@ function AbastecimientoMMPP() {
           </div>
         </div>
       )}
+
+      {/* MODAL: editar LOTES (disponibilidades) */}
+      {editLotes && (
+        <div className="modalBG" onClick={function(){ setEditLotes(null); }}>
+          <div className="modal" onClick={function(e){ e.stopPropagation(); }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <h2 style={{ margin:0, fontWeight:800 }}>Editar Lotes</h2>
+              <button className="mmpp-ghostbtn" onClick={function(){ setEditLotes(null); }}>✕</button>
+            </div>
+
+            <div style={{ marginTop:8, color:"#374151" }}>
+              <div><strong>Proveedor:</strong> {editLotes.proveedor}</div>
+              <div><strong>Comuna:</strong> {editLotes.comuna || "—"}</div>
+            </div>
+
+            <div className="mmpp-card" style={{ marginTop:12 }}>
+              <div style={{ fontWeight:800, marginBottom:10 }}>Lotes:</div>
+              <table className="mmpp" style={{ width:"100%" }}>
+                <thead>
+                  <tr>
+                    <th>Mes</th>
+                    <th>Fecha</th>
+                    <th>Tons</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {editLotes.lots.map(function(L, i){
+                    return (
+                      <tr key={L.id || i}>
+                        <td>{chipLabelFromMesKey(L.mesKey)}</td>
+                        <td>
+                          <input className="mmpp-input" type="date"
+                            value={L.fecha ? String(L.fecha).slice(0,10) : ""}
+                            onChange={function(e){
+                              var v = e.target.value;
+                              setEditLotes(function(m){
+                                var nx = Object.assign({}, m);
+                                var arr = nx.lots.slice();
+                                var row = Object.assign({}, arr[i], { fecha: v });
+                                arr[i] = row; nx.lots = arr; return nx;
+                              });
+                            }} />
+                        </td>
+                        <td>
+                          <input className="mmpp-input" type="number" inputMode="numeric"
+                            value={L.tons}
+                            onChange={function(e){
+                              var v = e.target.value;
+                              setEditLotes(function(m){
+                                var nx = Object.assign({}, m);
+                                var arr = nx.lots.slice();
+                                var row = Object.assign({}, arr[i], { tons: v });
+                                arr[i] = row; nx.lots = arr; return nx;
+                              });
+                            }} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              <div style={{ marginTop:12, display:"flex", gap:10, justifyContent:"flex-end" }}>
+                <button className="mmpp-ghostbtn" onClick={function(){ setEditLotes(null); }}>Cancelar</button>
+                <button className="mmpp-button" onClick={guardarEditarLotes}>💾 Guardar cambios</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 var mountNode = document.getElementById("root");
 ReactDOM.createRoot(mountNode).render(<AbastecimientoMMPP />);
-
