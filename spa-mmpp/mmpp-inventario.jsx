@@ -34,17 +34,25 @@ function cssInject() {
   document.head.appendChild(el);
 }
 
-function numeroCL(n) {
-  return (Number(n) || 0).toLocaleString("es-CL");
-}
+function numeroCL(n) { return (Number(n) || 0).toLocaleString("es-CL"); }
+
 var mesesEs = [
   "Enero","Febrero","Marzo","Abril","Mayo","Junio",
   "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
 ];
+// NUEVO: abreviaturas para chips
+var mesesShort = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
+function chipLabelFromMesKey(mk){
+  if(!mk || mk.indexOf("-")<0) return mk || "—";
+  var p = mk.split("-");
+  var y = String(p[0]).slice(-2);
+  var m = Math.max(1, Math.min(12, Number(p[1])||1));
+  return mesesShort[m-1] + y; // ej: "Sept.25"
+}
 
 function GroupBy(arr, keyFn) {
   var m = {};
-  arr.forEach(function (r) {
+  (arr||[]).forEach(function (r) {
     var k = keyFn(r);
     m[k] = (m[k] || []).concat([r]);
   });
@@ -66,9 +74,7 @@ function useData() {
         setDispon(res[0]);
         setAsig(res[1]);
       })
-      .finally(function () {
-        setLoading(false);
-      });
+      .finally(function () { setLoading(false); });
   }
   React.useEffect(function () { load(); }, []);
 
@@ -213,12 +219,15 @@ function AbastecimientoMMPP() {
   var _hm = React.useState(""), histMes = _hm[0], setHistMes = _hm[1];
   var _hy = React.useState(""), histAnio = _hy[0], setHistAnio = _hy[1];
 
+  // CAMBIO: sin filas con cantidad 0
   var hist = React.useMemo(function () {
-    return asig.filter(function (a) {
-      return (!histProv || a.proveedorNombre === histProv) &&
-             (!histMes || String(a.destMes) === String(histMes)) &&
-             (!histAnio || String(a.destAnio) === String(histAnio));
-    });
+    return asig
+      .filter(function (a) { return Number(a.cantidad) > 0; })
+      .filter(function (a) {
+        return (!histProv || a.proveedorNombre === histProv) &&
+               (!histMes || String(a.destMes) === String(histMes)) &&
+               (!histAnio || String(a.destAnio) === String(histAnio));
+      });
   }, [asig, histProv, histMes, histAnio]);
 
   function onEditAsign(a) {
@@ -316,10 +325,21 @@ function AbastecimientoMMPP() {
             {invRows.map(function (r, idx) {
               return (
                 <tr key={idx}>
-                  <td><strong>{r.proveedor}</strong></td>
+                  {/* CAMBIO: nombre SIN negrita */}
+                  <td>{r.proveedor}</td>
                   <td>{r.comuna || "—"}</td>
-                  <td><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><span>📦</span><strong>{numeroCL(r.total)} tons</strong> <small>({r.items.length} lotes)</small></span></td>
-                  <td>{r.chips.map(function (c) { return <span key={c.mesKey} className="mmpp-chip">{c.mesKey} {numeroCL(c.tons)}t</span>; })}</td>
+                  <td>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                      <span>📦</span>
+                      <strong>{numeroCL(r.total)} tons</strong> <small>({r.items.length} lotes)</small>
+                    </span>
+                  </td>
+                  <td>
+                    {r.chips.map(function (c) {
+                      // CAMBIO: usar abreviado
+                      return <span key={c.mesKey} className="mmpp-chip">{chipLabelFromMesKey(c.mesKey)} {numeroCL(c.tons)}t</span>;
+                    })}
+                  </td>
                   <td>
                     <div className="mmpp-actions">
                       <button className="mmpp-ghostbtn" onClick={function () { abrirAsignacion(r); }}>Asignar</button>
@@ -373,8 +393,9 @@ function AbastecimientoMMPP() {
               return (
                 <tr key={a.id || idx}>
                   <td>{fechaTxt}</td>
-                  <td><strong>{a.proveedorNombre || "—"}</strong></td>
-                  <td>{numeroCL(a.cantidad)} tons</td>
+                  {/* CAMBIO: nombre SIN negrita */}
+                  <td>{a.proveedorNombre || "—"}</td>
+                  <td><strong>{numeroCL(a.cantidad)} tons</strong></td>
                   <td>{dest}</td>
                   <td>{orig || "—"}</td>
                   <td className="mmpp-actions">
@@ -409,7 +430,8 @@ function AbastecimientoMMPP() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                       <div><div>Saldo: <strong>{numeroCL(l.saldo)}</strong> tons</div><small>Original: {numeroCL(l.original)} tons</small></div>
                       <div><small>desde {l.fecha ? new Date(l.fecha).toLocaleDateString("es-CL") : "—"}</small></div>
-                      <div style={{ textAlign: "right" }}>{l.mesKey || "—"}</div>
+                      {/* CAMBIO: abreviado en el modal */}
+                      <div style={{ textAlign: "right" }}>{l.mesKey ? chipLabelFromMesKey(l.mesKey) : "—"}</div>
                     </div>
                   </div>
                 );
