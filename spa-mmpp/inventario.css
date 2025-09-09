@@ -1,0 +1,178 @@
+/* ========================== */
+/*  Inventario MMPP – estilos */
+/*  Archivo: inventario.css   */
+/* ========================== */
+
+:root{
+  --mmpp-bg:#f5f7fb;
+  --mmpp-panel:#ffffff;
+  --mmpp-border:#e6e8ef;
+  --mmpp-muted:#667085;
+  --mmpp-ink:#111827;
+  --mmpp-brand:#2155ff;
+  --mmpp-brand-2:#6a5cff;
+  --mmpp-shadow:0 10px 30px rgba(17,24,39,.06);
+  --mmpp-r:16px;
+
+  --mmpp-chip-bg:#ede9fe;
+  --mmpp-chip-fg:#6d28d9;
+
+  --mmpp-badge-bg:#eef2ff;
+  --mmpp-badge-fg:#3730a3;
+}
+
+/* Contenedor opcional para limitar fugas de estilos */
+.mmpp-scope{ color:var(--mmpp-ink); }
+
+/* --------- Tipografía / layout base (solo dentro del scope) --------- */
+.mmpp-scope .mmpp-h1{font-size:22px;font-weight:800;margin:2px 0 14px}
+.mmpp-scope .mmpp-h2{font-size:16px;font-weight:700;margin:8px 0 10px}
+.mmpp-scope .mmpp-muted{color:var(--mmpp-muted)}
+.mmpp-scope .mmpp-panel{
+  background:var(--mmpp-panel);
+  border:1px solid var(--mmpp-border);
+  border-radius:var(--mmpp-r);
+  box-shadow:var(--mmpp-shadow);
+  padding:18px 16px;
+}
+
+/* --------- Controles --------- */
+.mmpp-scope .mmpp-input,
+.mmpp-scope .mmpp-select{
+  height:36px; padding:0 12px;
+  border:1px solid var(--mmpp-border);
+  border-radius:10px; background:#fff; width:100%;
+  font-size:14px;
+}
+.mmpp-scope .mmpp-btn{
+  height:36px; padding:0 14px; cursor:pointer; user-select:none;
+  border:1px solid var(--mmpp-border); background:#f3f4f8; border-radius:12px;
+  font-size:13px; font-weight:600;
+}
+.mmpp-scope .mmpp-btn:hover{ filter:brightness(.98); }
+.mmpp-scope .mmpp-btn--primary{
+  height:44px; border:none; color:#fff; font-weight:700; font-size:15px;
+  background:linear-gradient(90deg,var(--mmpp-brand) 0%, var(--mmpp-brand-2) 100%);
+  border-radius:16px;
+}
+.mmpp-scope .mmpp-btn--ghost{
+  background:#f3f4f8; border:1px solid var(--mmpp-border);
+}
+
+/* --------- KPI chips (superior) --------- */
+.mmpp-scope .mmpp-kpis{display:flex; gap:10px; flex-wrap:wrap}
+.mmpp-scope .mmpp-kpi{
+  background:#f3f4f6; border:1px solid var(--mmpp-border);
+  border-radius:10px; padding:8px 12px; font-weight:700; font-size:13px;
+}
+
+/* --------- Fila de disponibilidades (tabla “Inventario Actual”) --------- */
+.mmpp-scope .mmpp-table{width:100%; border-collapse:separate; border-spacing:0 10px}
+.mmpp-scope .mmpp-head{
+  color:var(--mmpp-muted); font-size:12.5px; letter-spacing:.3px; text-transform:uppercase;
+  padding:0 6px 6px;
+}
+.mmpp-scope .mmpp-row{
+  display:grid;
+  grid-template-columns:2fr 1.2fr 1.2fr 2fr .9fr;
+  align-items:center; gap:12px;
+  padding:14px; background:#fff; border:1px solid var(--mmpp-border);
+  border-radius:14px;
+}
+.mmpp-scope .mmpp-col{font-size:14px}
+.mmpp-scope .mmpp-col--supplier{font-weight:500}    /* Nombre proveedor SIN negrita */
+.mmpp-scope .mmpp-col--tons b{font-weight:800}      /* SOLO las tons en negrita */
+.mmpp-scope .mmpp-col--muted{color:var(--mmpp-muted); font-size:12.5px}
+.mmpp-scope .mmpp-actions{display:flex; gap:10px; justify-content:flex-end}
+
+/* Chips de meses “Sept.25 300t” etc. */
+.mmpp-scope .mmpp-chips{display:flex; flex-wrap:wrap; gap:8px}
+.mmpp-scope .mmpp-chip{
+  background:var(--mmpp-chip-bg); color:var(--mmpp-chip-fg);
+  padding:6px 10px; border-radius:999px; font-size:12.5px; font-weight:600;
+}
+
+/* Botones circulares de acción */
+.mmpp-scope .mmpp-icon-btn{
+  width:36px; height:36px; display:grid; place-items:center;
+  border-radius:12px; background:#f3f4f8; border:1px solid var(--mmpp-border);
+}
+
+/* --------- Formulario “Registrar Materia Prima” --------- */
+.mmpp-scope .mmpp-form-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:12px;
+}
+.mmpp-scope .mmpp-form-row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.mmpp-scope .mmpp-availability-list{display:flex; flex-direction:column; gap:10px}
+.mmpp-scope .mmpp-availability-item{
+  display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:center;
+}
+.mmpp-scope .mmpp-remove{
+  background:#ffe4e4; color:#b91c1c; border:1px solid #f9caca;
+  padding:6px 10px; border-radius:12px; font-size:12.5px; font-weight:700; cursor:pointer;
+}
+
+/* --------- Historial de Asignaciones --------- */
+.mmpp-scope .mmpp-hist-row{
+  display:grid;
+  grid-template-columns:1.1fr 1.8fr .9fr 1.2fr 1.4fr .9fr;
+  gap:12px; align-items:center;
+  padding:14px; background:#fff; border:1px solid var(--mmpp-border); border-radius:14px;
+}
+.mmpp-scope .mmpp-hist-head{color:var(--mmpp-muted); font-size:12.5px; text-transform:uppercase; letter-spacing:.3px; padding:0 6px 6px}
+.mmpp-scope .mmpp-hist-col{font-size:14px}
+.mmpp-scope .mmpp-hist-col--tons b{font-weight:800}
+.mmpp-scope .mmpp-hist-actions{display:flex; gap:10px; justify-content:flex-end}
+
+/* Badges secundarios (por ejemplo “(2 lotes)”) */
+.mmpp-scope .mmpp-badge{
+  background:var(--mmpp-badge-bg); color:var(--mmpp-badge-fg);
+  padding:4px 8px; border-radius:999px; font-size:12px; font-weight:600;
+}
+
+/* --------- Modales --------- */
+.mmpp-scope .mmpp-modal-bg{
+  position:fixed; inset:0; background:rgba(0,0,0,.25); display:grid; place-items:center; z-index:50;
+}
+.mmpp-scope .mmpp-modal{
+  width:min(760px, 96vw); background:#fff; border:1px solid var(--mmpp-border);
+  border-radius:14px; box-shadow:var(--mmpp-shadow); padding:18px;
+}
+
+/* --------- Responsivo --------- */
+@media (max-width: 920px){
+  .mmpp-scope .mmpp-row{
+    grid-template-columns:1.7fr 1fr 1fr 1.6fr .9fr;
+  }
+  .mmpp-scope .mmpp-hist-row{
+    grid-template-columns:1.1fr 1.4fr .8fr 1.2fr 1.3fr .9fr;
+  }
+}
+
+@media (max-width: 720px){
+  .mmpp-scope .mmpp-head,
+  .mmpp-scope .mmpp-hist-head{display:none}
+
+  .mmpp-scope .mmpp-row,
+  .mmpp-scope .mmpp-hist-row{
+    grid-template-columns:1fr;
+    gap:10px; padding:12px;
+  }
+
+  .mmpp-scope .mmpp-col,
+  .mmpp-scope .mmpp-hist-col{font-size:13.5px}
+  .mmpp-scope .mmpp-chip{font-size:12px; padding:5px 9px}
+  .mmpp-scope .mmpp-actions,
+  .mmpp-scope .mmpp-hist-actions{justify-content:flex-start}
+
+  .mmpp-scope .mmpp-form-grid,
+  .mmpp-scope .mmpp-form-row{grid-template-columns:1fr}
+  .mmpp-scope .mmpp-availability-item{grid-template-columns:1fr 1fr auto}
+}
+
+/* --------- Utilidades ligeras --------- */
+.mmpp-scope .mt-8{margin-top:8px} .mmpp-scope .mt-12{margin-top:12px}
+.mmpp-scope .mt-16{margin-top:16px} .mmpp-scope .gap-8{gap:8px}
+.mmpp-scope .flex{display:flex} .mmpp-scope .items-center{align-items:center}
+.mmpp-scope .justify-between{justify-content:space-between}
+.mmpp-scope .justify-end{justify-content:flex-end}
