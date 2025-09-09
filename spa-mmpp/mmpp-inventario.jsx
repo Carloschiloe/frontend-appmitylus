@@ -567,7 +567,7 @@ function AbastecimientoMMPP() {
         </div>
       )}
 
-         {/* MODAL: editar LOTES (disponibilidades) */}
+              {/* MODAL: editar LOTES (disponibilidades) */}
       {editLotes && (
         <div className="modalBG" onClick={function(){ setEditLotes(null); }}>
           <div className="modal" onClick={function(e){ e.stopPropagation(); }}>
@@ -589,7 +589,7 @@ function AbastecimientoMMPP() {
                     <th>Mes</th>
                     <th>Fecha</th>
                     <th>Tons</th>
-                    <th>Acciones</th>{/* NUEVO */}
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -658,9 +658,9 @@ function AbastecimientoMMPP() {
         </div>
       )}
 
-    </div> {/* <- cierre de .mmpp-wrap */}
-  );       {/* <- cierre del return */}
-}          {/* <- cierre de la función AbastecimientoMMPP */}
+    </div>
+  );
+}
 
 var mountNode = document.getElementById("root");
 ReactDOM.createRoot(mountNode).render(<AbastecimientoMMPP />);
