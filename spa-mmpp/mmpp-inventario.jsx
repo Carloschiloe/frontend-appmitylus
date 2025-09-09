@@ -1,5 +1,5 @@
 // Abastecimiento MMPP (standalone React 18 + Babel)
-// Usa estilos desde /spa-mmpp/inventario.css
+// Usa estilos desde /spa-mmpp/inventario.css (clases existentes)
 
 const { useEffect, useMemo, useState } = React;
 
@@ -189,20 +189,23 @@ function AbastecimientoMMPP(){
   }
 
   return (
-    <div className="mmpp-scope">
+    <div className="mmpp-wrap">
       {/* Hero */}
-      <div className="mmpp-panel">
-        <div className="mmpp-h1">Abastecimiento MMPP</div>
+      <div className="mmpp-hero">
+        <div>
+          <h1>Abastecimiento MMPP</h1>
+          <p>Disponibilidades mensuales y asignaciones</p>
+        </div>
         <div className="mmpp-badge">▦ Panel de Control</div>
       </div>
 
       <div style={{height:18}}/>
 
       {/* Formulario */}
-      <form onSubmit={submit} className="mmpp-panel">
-        <div className="mmpp-h2">Registrar Nueva Materia Prima</div>
+      <form onSubmit={submit} className="mmpp-card">
+        <h2 style={{margin:"0 0 14px", fontWeight:800}}>Registrar Nueva Materia Prima</h2>
 
-        <div className="mmpp-form-grid">
+        <div className="mmpp-grid">
           <input className="mmpp-input" placeholder="Proveedor (Obligatorio)"
                  value={form.proveedor} onChange={function(e){upd("proveedor", e.target.value)}}/>
           <input className="mmpp-input" placeholder="Comuna (Obligatorio)"
@@ -217,38 +220,38 @@ function AbastecimientoMMPP(){
                  value={form.proveedorKey} onChange={function(e){upd("proveedorKey", e.target.value)}}/>
         </div>
 
-        <div className="mmpp-h2" style={{marginTop:12}}>Disponibilidad (Cantidad y Fecha)</div>
+        <div style={{marginTop:12, fontWeight:800}}>Disponibilidad (Cantidad y Fecha)</div>
 
-        <div className="mmpp-availability-list">
-          {form.disponibilidades.map(function(d,i){
-            return (
-              <div key={i} className="mmpp-availability-item">
-                <input className="mmpp-input" type="number" placeholder="Cantidad (tons) (Obligatorio)"
-                       value={d.tons} onChange={function(e){updDisp(i,"tons",e.target.value)}}/>
-                <input className="mmpp-input" type="date" placeholder="dd-mm-aaaa"
+        {form.disponibilidades.map(function(d,i){
+          return (
+            <div key={i} className="mmpp-grid" style={{alignItems:"center"}}>
+              <input className="mmpp-input" type="number" placeholder="Cantidad (tons) (Obligatorio)"
+                     value={d.tons} onChange={function(e){updDisp(i,"tons",e.target.value)}}/>
+              <div style={{display:"flex", gap:10, alignItems:"center"}}>
+                <input className="mmpp-input" type="date" placeholder="dd-mm-aaaa" style={{flex:1}}
                        value={d.fecha} onChange={function(e){updDisp(i,"fecha",e.target.value)}}/>
-                <button type="button" className="mmpp-remove" onClick={function(){delDisp(i)}}>Eliminar</button>
+                <button type="button" className="mmpp-ghostbtn mmpp-danger" onClick={function(){delDisp(i)}}>Eliminar</button>
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
+
+        <div style={{marginTop:10}}>
+          <button type="button" className="mmpp-add" onClick={addDisp}>+ Agregar Otra Disponibilidad</button>
         </div>
 
-        <div className="mt-12">
-          <button type="button" className="mmpp-btn" onClick={addDisp}>+ Agregar Otra Disponibilidad</button>
-        </div>
-
-        <div className="mt-12">
-          <button className="mmpp-btn mmpp-btn--primary" type="submit">+ Registrar Materia Prima</button>
+        <div style={{marginTop:12}}>
+          <button className="mmpp-button" type="submit">+ Registrar Materia Prima</button>
         </div>
       </form>
 
       <div style={{height:18}}/>
 
       {/* Inventario Actual */}
-      <div className="mmpp-panel">
-        <div className="mmpp-h2">Inventario Actual</div>
+      <div className="mmpp-card">
+        <h2 style={{margin:"0 0 14px", fontWeight:800}}>Inventario Actual</h2>
 
-        <div className="mmpp-form-grid" style={{marginBottom:12}}>
+        <div className="mmpp-grid" style={{marginBottom:12}}>
           <select className="mmpp-input" value={filterProv} onChange={function(e){setFilterProv(e.target.value)}}>
             <option value="">Todos los Proveedores</option>
             {proveedores.map(function(p){return <option key={p} value={p}>{p}</option>})}
@@ -259,50 +262,58 @@ function AbastecimientoMMPP(){
           </select>
         </div>
 
-        {/* Cabecera */}
-        <div className="mmpp-row mmpp-head">
-          <div>PROVEEDOR</div>
-          <div>COMUNA</div>
-          <div>DISPONIBILIDAD TOTAL</div>
-          <div>DISPONIBILIDAD POR MES</div>
-          <div className="justify-end">ACCIONES</div>
-        </div>
-
-        {invRows.map(function(r,idx){
-          return (
-            <div key={idx} className="mmpp-row">
-              <div className="mmpp-col mmpp-col--supplier">{r.proveedor}</div>
-              <div className="mmpp-col">{r.comuna || "—"}</div>
-              <div className="mmpp-col mmpp-col--tons">
-                <span style={{marginRight:8}}>📦</span>
-                <b>{numeroCL(r.total)} tons</b>
-                <span className="mmpp-badge" style={{marginLeft:8}}>({r.items.length} lotes)</span>
-              </div>
-              <div className="mmpp-chips">
-                {r.chips.map(function(c){
-                  return <span key={c.mesKey} className="mmpp-chip">{chipLabelFromMesKey(c.mesKey)} {numeroCL(c.tons)}t</span>;
-                })}
-              </div>
-              <div className="mmpp-actions">
-                <button className="mmpp-btn mmpp-btn--ghost" onClick={function(){abrirAsignacion(r)}}>Asignar</button>
-              </div>
-            </div>
-          );
-        })}
+        <table className="mmpp">
+          <thead>
+            <tr>
+              <th>PROVEEDOR</th>
+              <th>COMUNA</th>
+              <th>DISPONIBILIDAD TOTAL</th>
+              <th>DISPONIBILIDAD POR MES</th>
+              <th>ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invRows.map(function(r,idx){
+              return (
+                <tr key={idx}>
+                  <td>{r.proveedor}</td>
+                  <td>{r.comuna || "—"}</td>
+                  <td className="mmpp-tons">
+                    <span style={{display:"inline-flex",alignItems:"center",gap:8}}>
+                      <span>📦</span>
+                      <strong>{numeroCL(r.total)} tons</strong>
+                      <small>({r.items.length} lotes)</small>
+                    </span>
+                  </td>
+                  <td>
+                    {r.chips.map(function(c){
+                      return <span key={c.mesKey} className="mmpp-chip">{chipLabelFromMesKey(c.mesKey)} {numeroCL(c.tons)}t</span>;
+                    })}
+                  </td>
+                  <td>
+                    <div className="mmpp-actions">
+                      <button className="mmpp-ghostbtn" onClick={function(){abrirAsignacion(r)}}>Asignar</button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       <div style={{height:18}}/>
 
       {/* Historial */}
-      <div className="mmpp-panel">
-        <div className="mmpp-h2">Historial de Asignaciones</div>
+      <div className="mmpp-card">
+        <h2 style={{margin:"0 0 14px", fontWeight:800}}>Historial de Asignaciones</h2>
 
-        <div className="mmpp-form-grid" style={{marginBottom:12}}>
+        <div className="mmpp-grid" style={{marginBottom:12}}>
           <select className="mmpp-input" value={histProv} onChange={function(e){setHistProv(e.target.value)}}>
             <option value="">Todos los Proveedores</option>
             {proveedores.map(function(p){return <option key={p} value={p}>{p}</option>})}
           </select>
-          <div className="mmpp-form-row">
+          <div style={{display:"flex", gap:10}}>
             <select className="mmpp-input" value={histMes} onChange={function(e){setHistMes(e.target.value)}}>
               <option value="">Todos los Meses</option>
               {mesesEs.map(function(m,i){return <option key={i+1} value={i+1}>{m}</option>})}
@@ -314,57 +325,69 @@ function AbastecimientoMMPP(){
           </div>
         </div>
 
-        {/* Cabecera historial */}
-        <div className="mmpp-hist-row mmpp-hist-head">
-          <div>FECHA ASIGNACIÓN</div>
-          <div>PROVEEDOR</div>
-          <div>CANTIDAD ASIGNADA</div>
-          <div>DESTINO (MES/AÑO)</div>
-          <div>DISPONIBILIDAD ORIGINAL</div>
-          <div className="justify-end">ACCIONES</div>
-        </div>
-
-        {hist.map(function(a,idx){
-          var fecha = a.createdAt ? new Date(a.createdAt) : null;
-          var fechaTxt = fecha ? fecha.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}) : "—";
-          var dest = (a.destMes && a.destAnio) ? (mesesEs[(a.destMes-1)||0] + " " + a.destAnio) : "—";
-          var orig = (a.originalTons ? (numeroCL(a.originalTons) + " tons") : "") +
-                     (a.originalFecha ? (" (desde " + new Date(a.originalFecha).toLocaleDateString("es-CL") + ")") : "");
-          return (
-            <div key={a.id||idx} className="mmpp-hist-row">
-              <div className="mmpp-hist-col">{fechaTxt}</div>
-              <div className="mmpp-hist-col">{a.proveedorNombre || "—"}</div>
-              <div className="mmpp-hist-col mmpp-hist-col--tons"><b>{numeroCL(a.cantidad)} tons</b></div>
-              <div className="mmpp-hist-col">{dest}</div>
-              <div className="mmpp-hist-col">{orig || "—"}</div>
-              <div className="mmpp-hist-actions">
-                <button className="mmpp-btn mmpp-btn--ghost" onClick={function(){onEditAsign(a)}}>✏️ Editar</button>
-                <button className="mmpp-remove" onClick={function(){borrarAsig(a)}}>🗑️ Eliminar</button>
-              </div>
-            </div>
-          );
-        })}
+        <table className="mmpp">
+          <thead>
+            <tr>
+              <th>FECHA ASIGNACIÓN</th>
+              <th>PROVEEDOR</th>
+              <th>CANTIDAD ASIGNADA</th>
+              <th>DESTINO (MES/AÑO)</th>
+              <th>DISPONIBILIDAD ORIGINAL</th>
+              <th>ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody>
+            {hist.map(function(a,idx){
+              var fecha = a.createdAt ? new Date(a.createdAt) : null;
+              var fechaTxt = fecha ? fecha.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}) : "—";
+              var dest = (a.destMes && a.destAnio) ? (mesesEs[(a.destMes-1)||0] + " " + a.destAnio) : "—";
+              var orig = (a.originalTons ? (numeroCL(a.originalTons) + " tons") : "") +
+                         (a.originalFecha ? (" (desde " + new Date(a.originalFecha).toLocaleDateString("es-CL") + ")") : "");
+              return (
+                <tr key={a.id||idx}>
+                  <td>{fechaTxt}</td>
+                  <td>{a.proveedorNombre || "—"}</td>
+                  <td className="mmpp-tons"><strong>{numeroCL(a.cantidad)} tons</strong></td>
+                  <td>{dest}</td>
+                  <td>{orig || "—"}</td>
+                  <td className="mmpp-actions">
+                    <button className="mmpp-ghostbtn" onClick={function(){onEditAsign(a)}}>✏️ Editar</button>
+                    <button className="mmpp-ghostbtn mmpp-danger" onClick={function(){borrarAsig(a)}}>🗑️ Eliminar</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       {/* Modal Asignar */}
       {assignModal && (
-        <div className="mmpp-modal-bg" onClick={function(){setAssignModal(null)}}>
-          <div className="mmpp-modal" onClick={function(e){e.stopPropagation()}}>
-            <div className="mmpp-h2">Asignar Materia Prima</div>
-            <div className="mmpp-muted">
-              <div><b>Proveedor:</b> {assignModal.proveedor}</div>
-              <div><b>Comuna:</b> {assignModal.comuna || "—"}</div>
+        <div className="modalBG" onClick={function(){setAssignModal(null)}}>
+          <div className="modal" onClick={function(e){e.stopPropagation()}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <h2 style={{margin:0,fontWeight:800}}>Asignar Materia Prima</h2>
+              <button className="mmpp-ghostbtn" onClick={function(){setAssignModal(null)}}>✕</button>
             </div>
 
-            <div className="mt-12">
-              <div className="mmpp-h2">Disponibilidades:</div>
+            <div style={{marginTop:8, color:"#374151"}}>
+              <div><strong>Proveedor:</strong> {assignModal.proveedor}</div>
+              <div><strong>Comuna:</strong> {assignModal.comuna || "—"}</div>
+            </div>
+
+            <div style={{marginTop:12}}>
+              <div style={{fontWeight:800, marginBottom:8}}>Disponibilidades:</div>
               {assignModal.lots.map(function(l){
                 var sel = assignModal.selectedId === l.id;
                 return (
-                  <div key={l.id} className={"mmpp-panel"} style={{padding:"12px", borderColor: sel?"#c7d2fe":""}}
+                  <div key={l.id}
+                       className={"row-hover"+(sel?" sel":"")}
                        onClick={function(){ setAssignModal(function(m){return Object.assign({}, m, {selectedId:l.id});}); }}>
-                    <div className="mmpp-form-row">
-                      <div>Saldo: <b>{numeroCL(l.saldo)}</b> tons<br/><small>Original: {numeroCL(l.original)} tons</small></div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr", gap:10}}>
+                      <div>
+                        <div>Saldo: <strong>{numeroCL(l.saldo)}</strong> tons</div>
+                        <small>Original: {numeroCL(l.original)} tons</small>
+                      </div>
                       <div><small>desde {l.fecha ? new Date(l.fecha).toLocaleDateString("es-CL") : "—"}</small></div>
                       <div style={{textAlign:"right"}}>{l.mesKey ? chipLabelFromMesKey(l.mesKey) : "—"}</div>
                     </div>
@@ -373,13 +396,13 @@ function AbastecimientoMMPP(){
               })}
             </div>
 
-            <div className="mmpp-panel mt-12">
-              <div className="mmpp-h2">Detalles de Asignación:</div>
-              <div className="mmpp-form-grid">
+            <div className="mmpp-card" style={{marginTop:12}}>
+              <div style={{fontWeight:800, marginBottom:10}}>Detalles de Asignación:</div>
+              <div className="mmpp-grid">
                 <input className="mmpp-input" type="number" placeholder="Ej: 150"
                        value={assignModal.cantidad}
                        onChange={function(e){ setAssignModal(function(m){return Object.assign({}, m, {cantidad:e.target.value});}); }}/>
-                <div className="mmpp-form-row">
+                <div style={{display:"flex", gap:10}}>
                   <select className="mmpp-input" value={assignModal.destMes||""}
                           onChange={function(e){ setAssignModal(function(m){return Object.assign({}, m, {destMes:e.target.value});}); }}>
                     <option value="">Mes de Destino</option>
@@ -395,8 +418,8 @@ function AbastecimientoMMPP(){
                   </select>
                 </div>
               </div>
-              <div className="mt-12">
-                <button className="mmpp-btn mmpp-btn--primary" onClick={confirmarAsignacion}>✔ Confirmar Asignación</button>
+              <div style={{marginTop:12}}>
+                <button className="mmpp-button" onClick={confirmarAsignacion}>✔ Confirmar Asignación</button>
               </div>
             </div>
           </div>
@@ -405,20 +428,24 @@ function AbastecimientoMMPP(){
 
       {/* Modal Editar */}
       {editAsig && (
-        <div className="mmpp-modal-bg" onClick={function(){setEditAsig(null)}}>
-          <div className="mmpp-modal" onClick={function(e){e.stopPropagation()}}>
-            <div className="mmpp-h2">Editar Asignación</div>
-            <div className="mmpp-muted">
-              <div><b>Proveedor:</b> {editAsig.proveedorNombre || "—"}</div>
-              <div><b>Fecha de Disponibilidad Original:</b> {editAsig.originalFecha ? new Date(editAsig.originalFecha).toLocaleDateString("es-CL") : "—"}</div>
+        <div className="modalBG" onClick={function(){setEditAsig(null)}}>
+          <div className="modal" onClick={function(e){e.stopPropagation()}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <h2 style={{margin:0,fontWeight:800}}>Editar Asignación</h2>
+              <button className="mmpp-ghostbtn" onClick={function(){setEditAsig(null)}}>✕</button>
             </div>
 
-            <div className="mmpp-panel mt-12">
-              <div className="mmpp-h2">Nuevos Detalles:</div>
-              <div className="mmpp-form-grid">
+            <div style={{marginTop:8, color:"#374151"}}>
+              <div><strong>Proveedor:</strong> {editAsig.proveedorNombre || "—"}</div>
+              <div><strong>Fecha de Disponibilidad Original:</strong> {editAsig.originalFecha ? new Date(editAsig.originalFecha).toLocaleDateString("es-CL") : "—"}</div>
+            </div>
+
+            <div className="mmpp-card" style={{marginTop:12}}>
+              <div style={{fontWeight:800, marginBottom:10}}>Nuevos Detalles:</div>
+              <div className="mmpp-grid">
                 <input className="mmpp-input" type="number" value={editAsig.cantidad}
                        onChange={function(e){ setEditAsig(function(s){return Object.assign({}, s, {cantidad:e.target.value});}); }}/>
-                <div className="mmpp-form-row">
+                <div style={{display:"flex", gap:10}}>
                   <select className="mmpp-input" value={editAsig.destMes}
                           onChange={function(e){ setEditAsig(function(s){return Object.assign({}, s, {destMes:e.target.value});}); }}>
                     {mesesEs.map(function(m,i){return <option key={i+1} value={String(i+1)}>{m}</option>})}
@@ -431,8 +458,8 @@ function AbastecimientoMMPP(){
                   </select>
                 </div>
               </div>
-              <div className="mt-12">
-                <button className="mmpp-btn mmpp-btn--primary" onClick={guardarEditAsig}>💾 Guardar Cambios</button>
+              <div style={{marginTop:12}}>
+                <button className="mmpp-button" onClick={guardarEditAsig}>💾 Guardar Cambios</button>
               </div>
             </div>
           </div>
