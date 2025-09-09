@@ -567,7 +567,7 @@ function AbastecimientoMMPP() {
         </div>
       )}
 
-              {/* MODAL: editar LOTES (disponibilidades) */}
+                   {/* MODAL: editar LOTES (disponibilidades) */}
       {editLotes && (
         <div className="modalBG" onClick={function(){ setEditLotes(null); }}>
           <div className="modal" onClick={function(e){ e.stopPropagation(); }}>
