@@ -5,21 +5,29 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Inventario MMPP</title>
 
+    <!-- Fuente Inter (para que respete tu diseño) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
     <!-- CSS de esta vista -->
-   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
+    <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=2" />
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Fijar backend (evita 404 cuando no existe /api local) -->
+    <script>
+      window.__MMPP_API_BASE__ = "https://backend-appmitylus.vercel.app/api";
+    </script>
 
     <!-- React + Babel (solo preset react) -->
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-  </head>
-  <body>
-    <div id="root"></div>
 
-    <!-- API helper -->
-    <script src="/spa-mmpp/mmpp-api.js?v=12"></script>
-
-    <!-- App (JSX) -->
-    <script type="text/babel" data-presets="react" src="/spa-mmpp/mmpp-inventario.jsx?v=12"></script>
+    <!-- API helper + App (JSX) -->
+    <script src="/spa-mmpp/mmpp-api.js?v=13"></script>
+    <script type="text/babel" data-presets="react" src="/spa-mmpp/mmpp-inventario.jsx?v=13"></script>
   </body>
 </html>
