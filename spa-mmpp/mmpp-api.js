@@ -143,17 +143,27 @@
   var API = {
     // ------- Disponibilidades -------
     // params: { anio, from, to, mesKey, proveedorKey, centroId }
-    getDisponibilidades: function (params) {
-      params = params || {};
-      // tu backend no lista TODO sin filtro; por defecto ponemos el año actual
-      if (!params.anio && !params.from && !params.to && !params.mesKey) {
-        params.anio = new Date().getFullYear();
-      }
-      var url = API_BASE.replace(/\/+$/, "") + "/api/disponibilidades" + qs(params);
-      return jfetch(url)
-        .then(function (json) { return normalizeDispon(json); })
-        .catch(function () { return []; });
-    },
+   // mmpp-api.js
+getDisponibilidades: function (params) {
+  params = params || {};
+
+  // ❌ antes: sólo el año actual
+  // if (!params.anio && !params.from && !params.to && !params.mesKey) {
+  //   params.anio = new Date().getFullYear();
+  // }
+
+  // ✅ ahora: desde (año-1)-01 hasta (año+1)-12
+  if (!params.anio && !params.from && !params.to && !params.mesKey) {
+    var y = new Date().getFullYear();
+    params.from = (y - 1) + "-01";
+    params.to   = (y + 1) + "-12";
+  }
+
+  var url = API_BASE.replace(/\/+$/, "") + "/api/disponibilidades" + qs(params);
+  return jfetch(url)
+    .then(function (json) { return normalizeDispon(json); })
+    .catch(function () { return []; });
+},
 
     crearDisponibilidades: function (form) {
       // form: { proveedor, proveedorKey, comuna, centroCodigo, areaCodigo, disponibilidades:[{tons,fecha}] }
