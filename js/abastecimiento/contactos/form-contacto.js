@@ -47,6 +47,17 @@ const fmtISOfechaHora = (d) => {
   return `${y}-${m}-${dd} ${hh}:${mm}`;
 };
 
+/* ---------- helpers de contacto → snapshot ---------- */
+function buildContactoSnapshot({ tel='', email='', empresaNombre='' } = {}) {
+  const empresaKey = slug(empresaNombre || '');
+  return {
+    telefono: (tel || '').trim(),
+    email: (email || '').trim(),
+    empresaKey,
+    empresaNombre: empresaNombre || ''
+  };
+}
+
 /* ---------- API helpers para DISPONIBILIDADES ---------- */
 // aplanar cualquier formato de _id
 const normId = (x) => {
@@ -72,7 +83,7 @@ async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio, m
   if (from)         q.set('from', from);
   if (to)           q.set('to', to);
   if (anio)         q.set('anio', anio);
-  if (mesKey)       q.set('mesKey', mesKey); // <- soporte para resolver por mesKey
+  if (mesKey)       q.set('mesKey', mesKey);
 
   try {
     const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
@@ -112,19 +123,35 @@ async function resolverDispIdPorMesKey({ proveedorKey, centroId, mesKey }) {
 
 // POST /disponibilidades
 async function postDisponibilidad(d){
+  const empresaNombre = d.empresaNombre || d.proveedorNombre || '';
   const payload = {
-    proveedorKey: d.proveedorKey || '',
-    proveedorNombre: d.proveedorNombre || '',
+    proveedorKey: d.proveedorKey || slug(empresaNombre),
+    proveedorNombre: empresaNombre,
+    empresaNombre, // ← para filtros en Inventario
+
+    contactoId: d.contactoId || null,
+    contactoNombre: d.contactoNombre || '',
+    contactoSnapshot: buildContactoSnapshot({
+      tel: d.contactoTelefono || '',
+      email: d.contactoEmail || '',
+      empresaNombre
+    }),
+
     centroId: d.centroId || null,
     centroCodigo: d.centroCodigo || '',
     comuna: d.comuna || '',
     areaCodigo: d.areaCodigo || '',
+
     mesKey: d.mesKey || mesKeyFrom(d.anio, d.mes),
-    anio: d.anio,
-    mes: d.mes,
-    tonsDisponible: d.tons,
+    anio: Number(d.anio),
+    mes: Number(d.mes),
+    // fecha opcional, por compatibilidad con otros módulos
+    fecha: new Date(Number(d.anio), Number(d.mes) - 1, 1).toISOString(),
+
+    tonsDisponible: Number(d.tons),
     estado: d.estado || 'disponible'
   };
+
   const r = await fetch(`${API_BASE}/disponibilidades`, {
     method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
   });
@@ -134,13 +161,36 @@ async function postDisponibilidad(d){
 
 // PATCH /disponibilidades/:id
 async function patchDisponibilidad(id, d){
-  const payload = {};
-  if (d.anio && d.mes) payload.mesKey = mesKeyFrom(d.anio, d.mes);
-  if ('tons' in d) payload.tonsDisponible = d.tons;
-  if (d.estado) payload.estado = d.estado;
+  const empresaNombre = d.empresaNombre || d.proveedorNombre || '';
+  const patch = {};
+
+  if (d.anio && d.mes) {
+    patch.mesKey = mesKeyFrom(d.anio, d.mes);
+    patch.anio = Number(d.anio);
+    patch.mes  = Number(d.mes);
+    patch.fecha = new Date(Number(d.anio), Number(d.mes) - 1, 1).toISOString();
+  }
+  if ('tons' in d) patch.tonsDisponible = Number(d.tons);
+  if (d.estado) patch.estado = d.estado;
+
+  // actualizar datos de contacto/empresa si vienen
+  if (empresaNombre) {
+    patch.empresaNombre = empresaNombre;
+    patch.proveedorNombre = empresaNombre;
+    patch.proveedorKey = slug(empresaNombre);
+  }
+  if ('contactoId' in d) patch.contactoId = d.contactoId || null;
+  if ('contactoNombre' in d) patch.contactoNombre = d.contactoNombre || '';
+  if ('contactoTelefono' in d || 'contactoEmail' in d || empresaNombre) {
+    patch.contactoSnapshot = buildContactoSnapshot({
+      tel: d.contactoTelefono || '',
+      email: d.contactoEmail || '',
+      empresaNombre
+    });
+  }
 
   const r = await fetch(`${API_BASE}/disponibilidades/${id}`, {
-    method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+    method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(patch)
   });
   if(!r.ok) throw new Error('disponibilidades PATCH '+r.status);
   return r.json();
@@ -447,19 +497,38 @@ export function setupFormulario() {
     const tieneDispCampos = Number.isInteger(asigAnio) && Number.isInteger(asigMes) && Number.isFinite(asigTonsNum) && asigTonsNum>0;
 
     try {
-      const editId = state.editId, esUpdate = isValidObjectId(editId);
-      if (esUpdate) await apiUpdateContacto(editId, payload);
-      else          await apiCreateContacto(payload);
+      const editId = state.editId;
+      const esUpdate = isValidObjectId(editId);
 
-      // Crear o actualizar disponibilidad (sólo si hay filtros válidos)
+      let created = null;
+      if (esUpdate) {
+        await apiUpdateContacto(editId, payload);
+      } else {
+        created = await apiCreateContacto(payload); // ← intentamos obtener el _id creado
+      }
+      const contactoIdDoc = esUpdate ? editId : (created && (created._id || created.id)) || null;
+
+      // Crear o actualizar disponibilidad (sólo si hay datos válidos)
       if (tieneDispCampos && hasEmpresa && centroId) {
+        const dispCommon = {
+          proveedorKey, proveedorNombre,
+          empresaNombre: proveedorNombre || '',
+          contactoId: contactoIdDoc,
+          contactoNombre,
+          contactoTelefono,
+          contactoEmail
+        };
+
         if (state.dispEditId) {
-          await patchDisponibilidad(state.dispEditId, { anio: asigAnio, mes: asigMes, tons: asigTonsNum, estado:'disponible' });
+          await patchDisponibilidad(state.dispEditId, {
+            ...dispCommon,
+            anio: asigAnio, mes: asigMes, tons: asigTonsNum, estado:'disponible'
+          });
           state.dispEditId = null;
           M.toast?.({ html:'Disponibilidad actualizada', classes:'teal' });
         } else {
           await postDisponibilidad({
-            proveedorKey, proveedorNombre,
+            ...dispCommon,
             centroId, centroCodigo: centroCodigo||'', comuna: centroComuna||'',
             anio: asigAnio, mes: asigMes, tons: asigTonsNum, estado:'disponible'
           });
@@ -552,3 +621,4 @@ export function prepararNuevo() {
   const box = document.getElementById('asigHist');
   if (box) box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
 }
+
