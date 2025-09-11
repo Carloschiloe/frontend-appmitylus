@@ -90,8 +90,12 @@ function AbastecimientoMMPP() {
   }),
     form = _f[0], setForm = _f[1];
 
-  var _g = React.useState(""), filterProv = _g[0], setFilterProv = _g[1];
+  // Filtros
+  var _g = React.useState(""), filterProv = _g[0], setFilterProv = _g[1];       // ahora es "Contacto"
   var _h = React.useState(""), filterComuna = _h[0], setFilterComuna = _h[1];
+  var _e = React.useState(""), filterEmpresa = _e[0], setFilterEmpresa = _e[1]; // NUEVO
+  var _q = React.useState(""), searchContacto = _q[0], setSearchContacto = _q[1]; // NUEVO buscador
+
   var _i = React.useState(null), assignModal = _i[0], setAssignModal = _i[1];
   var _j = React.useState(null), editAsig = _j[0], setEditAsig = _j[1];
 
@@ -152,37 +156,66 @@ function AbastecimientoMMPP() {
     return Math.max(0, (Number(r.tons) || 0) - usadas);
   }
 
-  // ---- INVENTARIO (filas) ----
+  // ---- INVENTARIO (agrupación por Contacto → Empresa → Comuna) ----
   var invRows = React.useMemo(function () {
     var rows = dispon.map(function (d) { return Object.assign({}, d, { saldo: saldoDe(d) }); });
-    var g = GroupBy(rows, function (r) { return (r.proveedorNombre || "Sin Proveedor") + "|" + (r.comuna || ""); });
+    var g = GroupBy(rows, function (r) {
+      var c = (r.contactoNombre || r.proveedorNombre || "Sin contacto");
+      var e = (r.empresaNombre || "");
+      var co = (r.comuna || "");
+      return c + "|" + e + "|" + co;
+    });
+
     return Object.keys(g).map(function (k) {
       var arr = g[k];
       var parts = k.split("|");
-      var prov = parts[0], com = parts[1];
+      var contacto = parts[0], empresa = parts[1], com = parts[2];
       var total = arr.reduce(function (a, r) { return a + r.saldo; }, 0);
 
-      // NUEVO: chips por LOTE (no agrupado por mes)
       var chips = arr
         .slice()
         .sort(function (a,b){ return String(a.mesKey||"").localeCompare(String(b.mesKey||"")); })
         .map(function (it) {
-          return {
-            id: it.id,
-            mesKey: it.mesKey || "—",
-            tons: (it.saldo != null ? it.saldo : it.tons) || 0
-          };
+          return { id: it.id, mesKey: it.mesKey || "—", tons: (it.saldo != null ? it.saldo : it.tons) || 0 };
         });
 
-      return { proveedor: prov, comuna: com, items: arr, total: total, chips: chips };
-    }).filter(function (r) {
-      return (!filterProv || r.proveedor === filterProv) && (!filterComuna || r.comuna === filterComuna);
-    });
-  }, [dispon, filterProv, filterComuna, asig]);
+      // primer teléfono disponible
+      var tel = "";
+      for (var i=0;i<arr.length;i++){
+        var t = (arr[i].contactoSnapshot && arr[i].contactoSnapshot.telefono) || "";
+        if (t){ tel = t; break; }
+      }
 
+      return {
+        proveedor: contacto,            // compat: usamos este campo para mostrar "Contacto"
+        contactoNombre: contacto,
+        empresaNombre: empresa,
+        comuna: com,
+        items: arr,
+        total: total,
+        chips: chips,
+        telefono: tel
+      };
+    }).filter(function (r) {
+      var okProv   = (!filterProv    || (r.contactoNombre === filterProv));
+      var okComuna = (!filterComuna  || r.comuna === filterComuna);
+      var okEmp    = (!filterEmpresa || r.empresaNombre === filterEmpresa);
+      var okSearch = (!searchContacto || (r.contactoNombre.toLowerCase().indexOf(searchContacto.toLowerCase()) >= 0));
+      return okProv && okComuna && okEmp && okSearch;
+    });
+  }, [dispon, filterProv, filterComuna, filterEmpresa, searchContacto, asig]);
+
+  // Listas para selects
   var proveedores = React.useMemo(function () {
-    return Array.from(new Set(dispon.map(function (x) { return x.proveedorNombre; }).filter(Boolean))).sort();
+    return Array.from(new Set(
+      dispon.map(function (x) { return (x.contactoNombre || x.proveedorNombre); }).filter(Boolean)
+    )).sort();
   }, [dispon]);
+
+  var empresas = React.useMemo(function () {
+    return Array.from(new Set(dispon.map(function (x) { return x.empresaNombre; }).filter(Boolean))).sort();
+  }, [dispon]);
+
   var comunas = React.useMemo(function () {
     return Array.from(new Set(dispon.map(function (x) { return x.comuna; }).filter(Boolean))).sort();
   }, [dispon]);
@@ -193,7 +226,7 @@ function AbastecimientoMMPP() {
     });
     var selected = row.items[0] ? row.items[0].id : null;
     setAssignModal({
-      proveedor: row.proveedor,
+      proveedor: row.proveedor, // ahora es el contacto
       comuna: row.comuna,
       contacto: form.contacto || "",
       lots: lots,
@@ -228,7 +261,7 @@ function AbastecimientoMMPP() {
   var _hm = React.useState(""), histMes = _hm[0], setHistMes = _hm[1];
   var _hy = React.useState(""), histAnio = _hy[0], setHistAnio = _hy[1];
 
-  // CAMBIO: sin filas con cantidad 0
+  // Historial sin cantidad 0
   var hist = React.useMemo(function () {
     return asig
       .filter(function (a) { return Number(a.cantidad) > 0; })
@@ -279,60 +312,54 @@ function AbastecimientoMMPP() {
     });
   }
 
- // Funcion borrar lotes (defensiva: soporta varios nombres de método)
-function borrarLote(idx, L){
-  if(!confirm("¿Eliminar esta disponibilidad/lote?")) return;
+  // Funcion borrar lotes (defensiva)
+  function borrarLote(idx, L){
+    if(!confirm("¿Eliminar esta disponibilidad/lote?")) return;
 
-  var api = (typeof MMppApi !== "undefined" && MMppApi) ? MMppApi : null;
-  if(!api){
-    alert("MMppApi no está disponible.");
-    return;
-  }
+    var api = (typeof MMppApi !== "undefined" && MMppApi) ? MMppApi : null;
+    if(!api){
+      alert("MMppApi no está disponible.");
+      return;
+    }
+    var id = (L && (L.id != null ? L.id : L.disponibilidadId));
+    if(id == null){
+      alert("No se encontró el id del lote.");
+      return;
+    }
+    if(!isNaN(Number(id))) id = Number(id);
 
-  // id tolerante
-  var id = (L && (L.id != null ? L.id : L.disponibilidadId));
-  if(id == null){
-    alert("No se encontró el id del lote.");
-    return;
-  }
-  // algunos backends esperan número
-  if(!isNaN(Number(id))) id = Number(id);
+    var eliminarFn =
+        api.eliminarDisponibilidad ||
+        api.borrarDisponibilidad ||
+        api.deleteDisponibilidad ||
+        api.removeDisponibilidad ||
+        api.eliminar;
 
-  // elegir la función correcta si cambia el nombre en tu API
-  var eliminarFn =
-      api.eliminarDisponibilidad ||
-      api.borrarDisponibilidad ||
-      api.deleteDisponibilidad ||
-      api.removeDisponibilidad ||
-      api.eliminar;
+    if(typeof eliminarFn !== "function"){
+      console.error("No existe método de eliminación en MMppApi");
+      alert("No existe MMppApi.eliminarDisponibilidad/borrarDisponibilidad (revisa la API).");
+      return;
+    }
 
-  if(typeof eliminarFn !== "function"){
-    console.error("No existe método de eliminación en MMppApi");
-    alert("No existe MMppApi.eliminarDisponibilidad/borrarDisponibilidad (revisa la API).");
-    return;
-  }
-
-  Promise.resolve(eliminarFn.call(api, id))
-    .then(function(){
-      // quitar de la lista local; si queda vacío, cerramos el modal
-      setEditLotes(function(m){
-        if(!m) return m;
-        var nx = Object.assign({}, m);
-        var arr = (nx.lots || []).slice();
-        arr.splice(idx, 1);
-        nx.lots = arr;
-        return arr.length ? nx : null;
+    Promise.resolve(eliminarFn.call(api, id))
+      .then(function(){
+        setEditLotes(function(m){
+          if(!m) return m;
+          var nx = Object.assign({}, m);
+          var arr = (nx.lots || []).slice();
+          arr.splice(idx, 1);
+          nx.lots = arr;
+          return arr.length ? nx : null;
+        });
+        return reload();
+      })
+      .catch(function(err){
+        console.error(err);
+        alert("No se pudo eliminar el lote. Reintenta.");
       });
-      return reload();
-    })
-    .catch(function(err){
-      console.error(err);
-      alert("No se pudo eliminar el lote. Reintenta.");
-    });
-}
+  }
 
-
-  // NUEVO: guardar cambios de lotes
+  // Guardar cambios de lotes
   function guardarEditarLotes() {
     var m = editLotes;
     if (!m) return;
@@ -390,9 +417,11 @@ function borrarLote(idx, L){
 
       <div className="mmpp-card">
         <h2 style={{ margin: "0 0 14px", fontWeight: 800 }}>Inventario Actual</h2>
+
+        {/* Filtros: Contacto y Comuna */}
         <div className="mmpp-grid" style={{ marginBottom: 12 }}>
           <select className="mmpp-input" value={filterProv} onChange={function (e) { setFilterProv(e.target.value); }}>
-            <option value="">Todos los Proveedores</option>
+            <option value="">Todos los Contactos</option>
             {proveedores.map(function (p) { return <option key={p} value={p}>{p}</option>; })}
           </select>
           <select className="mmpp-input" value={filterComuna} onChange={function (e) { setFilterComuna(e.target.value); }}>
@@ -401,10 +430,20 @@ function borrarLote(idx, L){
           </select>
         </div>
 
+        {/* Filtros: Empresa y buscador por contacto */}
+        <div className="mmpp-grid" style={{ marginBottom: 12 }}>
+          <select className="mmpp-input" value={filterEmpresa} onChange={function (e) { setFilterEmpresa(e.target.value); }}>
+            <option value="">Todas las Empresas</option>
+            {empresas.map(function (emp) { return <option key={emp} value={emp}>{emp}</option>; })}
+          </select>
+          <input className="mmpp-input" placeholder="Buscar contacto..." value={searchContacto} onChange={function(e){ setSearchContacto(e.target.value); }} />
+        </div>
+
         <table className="mmpp">
           <thead>
             <tr>
-              <th>PROVEEDOR</th>
+              <th>CONTACTO</th>
+              <th>EMPRESA</th>
               <th>COMUNA</th>
               <th>DISPONIBILIDAD TOTAL</th>
               <th>DISPONIBILIDAD POR MES</th>
@@ -415,7 +454,11 @@ function borrarLote(idx, L){
             {invRows.map(function (r, idx) {
               return (
                 <tr key={idx}>
-                  <td>{r.proveedor}</td>
+                  <td>
+                    <div>{r.proveedor}</div>
+                    {r.telefono ? <div style={{fontSize:12,color:"#6b7280"}}>{r.telefono}</div> : null}
+                  </td>
+                  <td>{r.empresaNombre || "—"}</td>
                   <td>{r.comuna || "—"}</td>
                   <td>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -451,7 +494,7 @@ function borrarLote(idx, L){
         <h2 style={{ margin: "0 0 14px", fontWeight: 800 }}>Historial de Asignaciones</h2>
         <div className="mmpp-grid" style={{ marginBottom: 12 }}>
           <select className="mmpp-input" value={histProv} onChange={function (e) { setHistProv(e.target.value); }}>
-            <option value="">Todos los Proveedores</option>
+            <option value="">Todos los Contactos</option>
             {proveedores.map(function (p) { return <option key={p} value={p}>{p}</option>; })}
           </select>
           <div style={{ display: "flex", gap: 10 }}>
@@ -470,7 +513,7 @@ function borrarLote(idx, L){
           <thead>
             <tr>
               <th>FECHA ASIGNACIÓN</th>
-              <th>PROVEEDOR</th>
+              <th>CONTACTO</th>
               <th>CANTIDAD ASIGNADA</th>
               <th>DESTINO (MES/AÑO)</th>
               <th>DISPONIBILIDAD ORIGINAL</th>
@@ -510,7 +553,7 @@ function borrarLote(idx, L){
               <button className="mmpp-ghostbtn" onClick={function () { setAssignModal(null); }}>✕</button>
             </div>
             <div style={{ marginTop: 8, color: "#374151" }}>
-              <div><strong>Proveedor:</strong> {assignModal.proveedor}</div>
+              <div><strong>Contacto:</strong> {assignModal.proveedor}</div>
               <div><strong>Comuna:</strong> {assignModal.comuna || "—"}</div>
             </div>
 
@@ -567,7 +610,7 @@ function borrarLote(idx, L){
               <button className="mmpp-ghostbtn" onClick={function () { setEditAsig(null); }}>✕</button>
             </div>
             <div style={{ marginTop: 8, color: "#374151" }}>
-              <div><strong>Proveedor:</strong> {editAsig.proveedorNombre || "—"}</div>
+              <div><strong>Contacto:</strong> {editAsig.proveedorNombre || "—"}</div>
               <div><strong>Fecha de Disponibilidad Original:</strong> {editAsig.originalFecha ? new Date(editAsig.originalFecha).toLocaleDateString("es-CL") : "—"}</div>
             </div>
 
@@ -598,7 +641,7 @@ function borrarLote(idx, L){
         </div>
       )}
 
-                   {/* MODAL: editar LOTES (disponibilidades) */}
+      {/* MODAL: editar LOTES (disponibilidades) */}
       {editLotes && (
         <div className="modalBG" onClick={function(){ setEditLotes(null); }}>
           <div className="modal" onClick={function(e){ e.stopPropagation(); }}>
@@ -608,7 +651,7 @@ function borrarLote(idx, L){
             </div>
 
             <div style={{ marginTop:8, color:"#374151" }}>
-              <div><strong>Proveedor:</strong> {editLotes.proveedor}</div>
+              <div><strong>Contacto:</strong> {editLotes.proveedor}</div>
               <div><strong>Comuna:</strong> {editLotes.comuna || "—"}</div>
             </div>
 
