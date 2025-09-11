@@ -71,35 +71,53 @@
 
   // --- Normalizadores ---
   function normalizeDispon(payload) {
-    // backend responde { items: [...] }
-    var list = [];
-    if (Array.isArray(payload)) list = payload;
-    else if (payload && Array.isArray(payload.items)) list = payload.items;
+  var list = [];
+  if (Array.isArray(payload)) list = payload;
+  else if (payload && Array.isArray(payload.items)) list = payload.items;
 
-    return list.map(function (r) {
-      var id = r.id || r._id || r._docId || r.uuid || null;
-      var tons = (r.tonsDisponible != null ? Number(r.tonsDisponible) : Number(r.tons || 0));
-      var mk = r.mesKey ||
-               (r.anio && r.mes ? (r.anio + "-" + pad2(r.mes)) : null) ||
-               (r.fecha ? toMesKey(r.fecha) : null);
-      var fecha = r.fecha || (mk ? fromMesKey(mk) : null);
+  return list.map(function (r) {
+    var id = r.id || r._id || r._docId || r.uuid || null;
+    var tons = (r.tonsDisponible != null ? Number(r.tonsDisponible) : Number(r.tons || 0));
 
-      return {
-        id: id,
-        proveedorNombre: r.proveedorNombre || r.proveedor || "",
-        proveedorKey: r.proveedorKey || slug(r.proveedorNombre || r.proveedor),
-        comuna: r.comuna || "",
-        centroCodigo: r.centroCodigo || "",
-        areaCodigo: r.areaCodigo || "",
-        tons: Number(tons || 0),
-        fecha: fecha,
-        mesKey: mk,
-        anio: r.anio || (mk ? Number(mk.split("-")[0]) : null),
-        mes: r.mes  || (mk ? Number(mk.split("-")[1]) : null),
-        estado: r.estado || "disponible"
-      };
-    });
-  }
+    var mk = r.mesKey ||
+      (r.anio && r.mes ? (r.anio + "-" + pad2(r.mes)) : null) ||
+      (r.fecha ? toMesKey(r.fecha) : null);
+
+    var fecha = r.fecha || (mk ? fromMesKey(mk) : null);
+
+    // snapshot de contacto
+    var tel = (r.contactoSnapshot && (r.contactoSnapshot.telefono || r.contactoSnapshot.phone)) || r.contactoTelefono || "";
+    var email = (r.contactoSnapshot && r.contactoSnapshot.email) || r.contactoEmail || "";
+
+    return {
+      id: id,
+
+      // nombres/keys
+      contactoNombre: r.contactoNombre || r.contacto || "",
+      empresaNombre : r.empresaNombre  || r.empresa  || "",
+      proveedorNombre: r.proveedorNombre || r.proveedor || "",
+      proveedorKey   : r.proveedorKey || slug(r.proveedorNombre || r.proveedor || ""),
+
+      // contacto visible
+      telefono: tel,
+      email: email,
+
+      // ubicación/base
+      comuna: r.comuna || "",
+      centroCodigo: r.centroCodigo || "",
+      areaCodigo: r.areaCodigo || "",
+
+      // cantidades/fechas
+      tons: Number(tons || 0),
+      fecha: fecha,
+      mesKey: mk,
+      anio: r.anio || (mk ? Number(mk.split("-")[0]) : null),
+      mes : r.mes  || (mk ? Number(mk.split("-")[1]) : null),
+
+      estado: r.estado || "disponible"
+    };
+  });
+}
 
   function normalizeAsign(payload) {
     var list = [];
