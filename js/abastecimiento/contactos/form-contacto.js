@@ -33,7 +33,7 @@ const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
 
 /* ---------- helpers comunes ---------- */
 const esc = (s='') => String(s)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/&/g,'&amp;').replace(/<//g,'&lt;')
   .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
 const fmtISOfechaHora = (d) => {
@@ -127,7 +127,7 @@ async function postDisponibilidad(d){
   const payload = {
     proveedorKey: d.proveedorKey || slug(empresaNombre),
     proveedorNombre: empresaNombre,
-    empresaNombre, // ← para filtros en Inventario
+    empresaNombre, // para filtros en Inventario
 
     contactoId: d.contactoId || null,
     contactoNombre: d.contactoNombre || '',
@@ -145,7 +145,7 @@ async function postDisponibilidad(d){
     mesKey: d.mesKey || mesKeyFrom(d.anio, d.mes),
     anio: Number(d.anio),
     mes: Number(d.mes),
-    // fecha opcional, por compatibilidad con otros módulos
+    // fecha opcional, por compatibilidad
     fecha: new Date(Number(d.anio), Number(d.mes) - 1, 1).toISOString(),
 
     tonsDisponible: Number(d.tons),
@@ -360,7 +360,7 @@ export async function abrirDetalleContacto(c) {
     </div>
   `;
 
-  // cargar disponibilidades usando TU helper fetchDisponibilidades()
+  // cargar disponibilidades
   try {
     const proveedorKey = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
     const centroId = c.centroId || null;
@@ -388,7 +388,7 @@ export function setupFormulario() {
   state.editId = null;
   state.dispEditId = null; // para PATCH
 
-  // setear contactoActual al pulsar "ver" (útil para detalle)
+  // setear contactoActual al pulsar "ver"
   document.addEventListener('click', (e)=>{
     const a = e.target.closest?.('a.icon-action.ver'); if(!a) return;
     const id = a.dataset.id;
@@ -502,10 +502,41 @@ export function setupFormulario() {
 
       let created = null;
       if (esUpdate) {
+        // Guardamos contacto
         await apiUpdateContacto(editId, payload);
+
+        // SYNC: propaga cambios a disponibilidades existentes del contacto
+        try {
+          const oldKey =
+            (state.editingContacto &&
+             (state.editingContacto.proveedorKey ||
+              (state.editingContacto.proveedorNombre ? slug(state.editingContacto.proveedorNombre) : ''))) || '';
+          await fetch(`${API_BASE}/disponibilidades/sync-by-contacto/${encodeURIComponent(editId)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ oldProveedorKey: oldKey })
+          });
+        } catch (syncErr) {
+          console.warn('sync-by-contacto falló (no crítico):', syncErr);
+        }
       } else {
-        created = await apiCreateContacto(payload); // ← intentamos obtener el _id creado
+        // Creamos contacto (intentamos obtener el _id)
+        created = await apiCreateContacto(payload);
+        // opcional: sincronizar si ya existieran disponibilidades previas relacionadas
+        try {
+          const nuevoId = created && (created._id || created.id);
+          if (nuevoId) {
+            await fetch(`${API_BASE}/disponibilidades/sync-by-contacto/${encodeURIComponent(nuevoId)}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({})
+            });
+          }
+        } catch (syncErr) {
+          console.warn('sync-by-contacto (post-create) falló (no crítico):', syncErr);
+        }
       }
+
       const contactoIdDoc = esUpdate ? editId : (created && (created._id || created.id)) || null;
 
       // Crear o actualizar disponibilidad (sólo si hay datos válidos)
