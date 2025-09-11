@@ -440,48 +440,53 @@ function AbastecimientoMMPP() {
         </div>
 
         <table className="mmpp">
-          <thead>
-            <tr>
-              <th>CONTACTO</th>
-              <th>EMPRESA</th>
-              <th>COMUNA</th>
-              <th>DISPONIBILIDAD TOTAL</th>
-              <th>DISPONIBILIDAD POR MES</th>
-              <th>ACCIONES</th>
-            </tr>
-          </thead>
+         <thead>
+  <tr>
+    <th>CONTACTO</th>
+    <th>COMUNA</th>
+    <th>DISPONIBILIDAD TOTAL</th>
+    <th>DISPONIBILIDAD POR MES</th>
+    <th>ACCIONES</th>
+  </tr>
+</thead>
           <tbody>
             {invRows.map(function (r, idx) {
               return (
                 <tr key={idx}>
-                  <td>
-                    <div>{r.proveedor}</div>
-                    {r.telefono ? <div style={{fontSize:12,color:"#6b7280"}}>{r.telefono}</div> : null}
-                  </td>
-                  <td>{r.empresaNombre || "—"}</td>
-                  <td>{r.comuna || "—"}</td>
-                  <td>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                      <span>📦</span>
-                      <strong>{numeroCL(r.total)} tons</strong> <small>({r.items.length} lotes)</small>
-                    </span>
-                  </td>
-                  <td>
-                    {r.chips.map(function (c) {
-                      return (
-                        <span key={c.id || (c.mesKey + "-" + c.tons)} className="mmpp-chip">
-                          {chipLabelFromMesKey(c.mesKey)} {numeroCL(c.tons)}t
-                        </span>
-                      );
-                    })}
-                  </td>
-                  <td>
-                    <div className="mmpp-actions">
-                      <button className="mmpp-ghostbtn" onClick={function () { abrirAsignacion(r); }}>Asignar</button>
-                      <button className="mmpp-ghostbtn" title="Editar" onClick={function(){ abrirEditarLotes(r); }}>✏️</button>
-                    </div>
-                  </td>
-                </tr>
+  <td>
+    <div style={{fontWeight:800}}>{r.proveedor}</div>
+    <div style={{fontSize:12, color:"#6b7280"}}>
+      {r.empresaNombre || "—"}
+      {r.telefono ? (" · " + r.telefono) : ""}
+    </div>
+  </td>
+
+  <td>{r.comuna || "—"}</td>
+
+  <td>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <span>📦</span>
+      <strong>{numeroCL(r.total)} tons</strong> <small>({r.items.length} lotes)</small>
+    </span>
+  </td>
+
+  <td>
+    {r.chips.map(function (c) {
+      return (
+        <span key={c.id || (c.mesKey + "-" + c.tons)} className="mmpp-chip">
+          {chipLabelFromMesKey(c.mesKey)} {numeroCL(c.tons)}t
+        </span>
+      );
+    })}
+  </td>
+
+  <td>
+    <div className="mmpp-actions">
+      <button className="mmpp-ghostbtn" onClick={function () { abrirAsignacion(r); }}>Asignar</button>
+      <button className="mmpp-ghostbtn" title="Editar" onClick={function(){ abrirEditarLotes(r); }}>✏️</button>
+    </div>
+  </td>
+</tr>
               );
             })}
           </tbody>
