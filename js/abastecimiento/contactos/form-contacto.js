@@ -73,14 +73,10 @@ const normId = (x) => {
   return null;
 };
 
-// GET a /disponibilidades (colección real con tus datos)
-// ✅ ahora puede filtrar por contactoId; si el backend lo ignora, filtramos en cliente
-// GET a /disponibilidades (colección real con tus datos)
 // ✅ soporta filtro por contactoId y aplica un rango por defecto (y-1..y+1)
 async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from, to, anio, mesKey } = {}) {
   if (!proveedorKey && !centroId && !contactoId) return [];
 
-  // rango por defecto amplio para que entren años futuros (p.ej. 2026)
   if (!from && !to && !anio && !mesKey) {
     const y = new Date().getFullYear();
     from = `${y - 1}-01`;
@@ -102,7 +98,6 @@ async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from,
     const data = await r.json();
     let list = Array.isArray(data) ? data : (data.items || []);
 
-    // map
     let mapped = list.map(x => {
       const id = normId(x);
       const mk = x.mesKey || (x.anio && x.mes ? mesKeyFrom(x.anio, x.mes) : null);
@@ -130,14 +125,38 @@ async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from,
   }
 }
 
-
-// Resolver _id haciendo una query específica por mesKey (fallback)
-async function resolverDispIdPorMesKey({ proveedorKey, centroId, mesKey, contactoId }) {
-  if (!proveedorKey && !centroId && !contactoId) return null;
+// Resolver _id por mesKey con estrategia de fallbacks
+async function resolverDispIdPorMesKey({ contactoId, proveedorKey, centroId, mesKey }) {
   if (!mesKey) return null;
-  const lista = await fetchDisponibilidades({ proveedorKey, centroId, contactoId, mesKey });
-  const item = (lista || []).find(x => x.mesKey === mesKey && (x._id || x.id));
-  return item ? (item._id || item.id || null) : null;
+
+  // 1) intentar sólo por contactoId
+  if (contactoId) {
+    try {
+      const l1 = await fetchDisponibilidades({ contactoId, mesKey });
+      const i1 = (l1 || []).find(x => x.mesKey === mesKey && (x._id || x.id));
+      if (i1) return (i1._id || i1.id || null);
+    } catch {}
+  }
+
+  // 2) intentar por proveedorKey + centroId
+  if (proveedorKey || centroId) {
+    try {
+      const l2 = await fetchDisponibilidades({ proveedorKey, centroId, mesKey });
+      const i2 = (l2 || []).find(x => x.mesKey === mesKey && (x._id || x.id));
+      if (i2) return (i2._id || i2.id || null);
+    } catch {}
+  }
+
+  // 3) intentar por sólo proveedorKey
+  if (proveedorKey) {
+    try {
+      const l3 = await fetchDisponibilidades({ proveedorKey, mesKey });
+      const i3 = (l3 || []).find(x => x.mesKey === mesKey && (x._id || x.id));
+      if (i3) return (i3._id || i3.id || null);
+    } catch {}
+  }
+
+  return null;
 }
 
 // POST /disponibilidades
@@ -164,7 +183,6 @@ async function postDisponibilidad(d){
     mesKey: d.mesKey || mesKeyFrom(d.anio, d.mes),
     anio: Number(d.anio),
     mes: Number(d.mes),
-    // fecha opcional, por compatibilidad
     fecha: new Date(Number(d.anio), Number(d.mes) - 1, 1).toISOString(),
 
     tonsDisponible: Number(d.tons),
@@ -192,7 +210,6 @@ async function patchDisponibilidad(id, d){
   if ('tons' in d) patch.tonsDisponible = Number(d.tons);
   if (d.estado) patch.estado = d.estado;
 
-  // actualizar datos de contacto/empresa si vienen
   if (empresaNombre) {
     patch.empresaNombre = empresaNombre;
     patch.proveedorNombre = empresaNombre;
@@ -254,6 +271,7 @@ function renderAsignaciones(list){
 
 async function pintarHistorialEdicion(contacto){
   const box = document.getElementById('asigHist'); if(!box) return;
+
   const proveedorKey = contacto?.proveedorKey || (contacto?.proveedorNombre ? slug(contacto.proveedorNombre) : '');
   const centroId = contacto?.centroId || null;
   const contactoId = contacto?._id || contacto?.contactoId || null;
@@ -266,8 +284,18 @@ async function pintarHistorialEdicion(contacto){
 
   box.innerHTML = '<span class="grey-text">Cargando disponibilidad...</span>';
   try {
-    const lista = await fetchDisponibilidades({ proveedorKey, centroId, contactoId });
-    state._ultimaDispLista = lista; // cache para acciones
+    // 1) por contactoId
+    let lista = contactoId ? await fetchDisponibilidades({ contactoId }) : [];
+    // 2) fallback prov+centro
+    if (!lista.length && (proveedorKey || centroId)) {
+      lista = await fetchDisponibilidades({ proveedorKey, centroId });
+    }
+    // 3) fallback sólo proveedorKey
+    if (!lista.length && proveedorKey) {
+      lista = await fetchDisponibilidades({ proveedorKey });
+    }
+
+    state._ultimaDispLista = lista;
     box.innerHTML = renderAsignaciones(lista);
   } catch(e){
     console.error(e);
@@ -323,7 +351,7 @@ function renderAsignacionesSimple(list){
     </tr>
   `).join('');
   return `
-    <table class="striped highlight" style="margin:6px 0">
+    <table className="striped highlight" style="margin:6px 0">
       <thead>
         <tr><th>Mes</th><th class="right-align">Tons</th><th>Estado</th><th class="right-align" style="width:100px">Opciones</th></tr>
       </thead>
@@ -380,12 +408,20 @@ export async function abrirDetalleContacto(c) {
     </div>
   `;
 
-  // cargar disponibilidades
+  // cargar disponibilidades (contactoId → prov+centro → prov)
   try {
     const proveedorKey = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
     const centroId = c.centroId || null;
     const contactoId = c._id || null;
-    const lista = await fetchDisponibilidades({ proveedorKey, centroId, contactoId });
+
+    let lista = contactoId ? await fetchDisponibilidades({ contactoId }) : [];
+    if (!lista.length && (proveedorKey || centroId)) {
+      lista = await fetchDisponibilidades({ proveedorKey, centroId });
+    }
+    if (!lista.length && proveedorKey) {
+      lista = await fetchDisponibilidades({ proveedorKey });
+    }
+
     const mapped = (lista||[]).map(x => ({
       anio: x.anio, mes: x.mes, tons: Number(x.tons||0), estado: x.estado || 'disponible'
     }));
@@ -426,7 +462,7 @@ export function setupFormulario() {
 
     let id = btn.dataset.id?.trim() || '';
     if (!id || !isValidObjectId(id)) {
-      // intentar resolver por mesKey con API si el id no vino en la lista
+      // intentar resolver por mesKey con fallbacks
       const mk = btn.dataset.meskey || '';
       const contacto = state.editingContacto || state.contactoActual || {};
       const proveedorKey = contacto?.proveedorKey || (contacto?.proveedorNombre ? slug(contacto.proveedorNombre) : '');
@@ -434,7 +470,7 @@ export function setupFormulario() {
       const contactoId = contacto?._id || contacto?.contactoId || null;
       if (mk) {
         try {
-          const resolved = await resolverDispIdPorMesKey({ proveedorKey, centroId, mesKey: mk, contactoId });
+          const resolved = await resolverDispIdPorMesKey({ contactoId, proveedorKey, centroId, mesKey: mk });
           if (resolved) id = resolved;
         } catch {}
       }
@@ -540,7 +576,7 @@ export function setupFormulario() {
         created = await apiCreateContacto(payload);
       }
 
-      // Id del contacto recién creado (robusto ante distintas formas de respuesta)
+      // Id del contacto recién creado
       const contactoIdDoc = esUpdate
         ? editId
         : (created?.item?._id || created?.item?.id || created?._id || created?.id || null);
