@@ -11,7 +11,7 @@ function cssInject() {
   .mmpp-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}
   .mmpp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .mmpp-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}
-  .mmpp-grid4 > *{min-width:0} /* evita que un hijo empuje columnas */
+  .mmpp-grid4 > *{min-width:0}
   .mmpp-input{height:48px;border:1px solid #e5e7eb;border-radius:14px;padding:0 14px;background:#fafafa;width:100%}
   .mmpp-button{height:54px;border-radius:18px;border:0;background:linear-gradient(90deg,#4f46e5,#9333ea);color:#fff;font-weight:800;font-size:18px;box-shadow:0 8px 20px rgba(79,70,229,.25); cursor:pointer}
   .mmpp-add{background:#eef2ff;color:#1e40af;border:1px solid #c7d2fe;height:44px;border-radius:12px;font-weight:800}
@@ -65,6 +65,18 @@ function useData(){
   return {dispon, asig, loading, reload: load};
 }
 
+/* carga perezosa del módulo de resumen (si no está en el HTML) */
+function ensureResumenModule(){
+  if (window.MMPPResumen && window.MMPPResumen.ResumenProveedorMes) return;
+  var already = document.querySelector('script[data-mmpp-resumen="1"]');
+  if (already) return;
+  var s = document.createElement("script");
+  s.src = "/spa-mmpp/mmpp-resumen.js";
+  s.async = true;
+  s.setAttribute("data-mmpp-resumen","1");
+  document.head.appendChild(s);
+}
+
 function AbastecimientoMMPP(){
   var data=useData();
   var dispon=data.dispon, asig=data.asig, reload=data.reload;
@@ -74,8 +86,9 @@ function AbastecimientoMMPP(){
 
   // Filtros
   var _y=React.useState(""), filterYear=_y[0], setFilterYear=_y[1];
+  var _m=React.useState(""), filterMes=_m[0], setFilterMes=_m[1];                 // 👈 NUEVO (mes)
   var _c=React.useState(""), filterComuna=_c[0], setFilterComuna=_c[1];
-  var _p=React.useState(""), filterProv=_p[0], setFilterProv=_p[1];        // contacto
+  var _p=React.useState(""), filterProv=_p[0], setFilterProv=_p[1];               // contacto
   var _e=React.useState(""), filterEmpresa=_e[0], setFilterEmpresa=_e[1];
   var _s=React.useState(""), searchContacto=_s[0], setSearchContacto=_s[1];
 
@@ -84,11 +97,13 @@ function AbastecimientoMMPP(){
   var _editL=React.useState(null), editLotes=_editL[0], setEditLotes=_editL[1];
 
   React.useEffect(function(){ cssInject(); }, []);
+  React.useEffect(function(){ ensureResumenModule(); }, []); // intenta cargar el resumen externo
 
   /* ---------- helpers de filtrado dependiente ---------- */
   function filteredBaseExcluding(excludeKey){
     var base = (dispon||[]).slice();
     if(excludeKey!=="year"   && filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
+    if(excludeKey!=="mes"    && filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); }); // 👈 NUEVO
     if(excludeKey!=="comuna" && filterComuna) base = base.filter(function(d){ return d.comuna===filterComuna; });
     if(excludeKey!=="prov"   && filterProv)   base = base.filter(function(d){ return (d.contactoNombre||d.proveedorNombre)===filterProv; });
     if(excludeKey!=="emp"    && filterEmpresa)base = base.filter(function(d){ return d.empresaNombre===filterEmpresa; });
@@ -102,16 +117,16 @@ function AbastecimientoMMPP(){
   // opciones dependientes
   var yearOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("year").map(function(d){return d.anio;}).filter(Boolean));
-  }, [dispon, filterComuna, filterProv, filterEmpresa]);
+  }, [dispon, filterMes, filterComuna, filterProv, filterEmpresa]); // 👈 incluye mes
   var comunaOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("comuna").map(function(d){return d.comuna;}).filter(Boolean));
-  }, [dispon, filterYear, filterProv, filterEmpresa]);
+  }, [dispon, filterYear, filterMes, filterProv, filterEmpresa]);   // 👈 incluye mes
   var provOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("prov").map(function(d){return (d.contactoNombre||d.proveedorNombre);}).filter(Boolean));
-  }, [dispon, filterYear, filterComuna, filterEmpresa]);
+  }, [dispon, filterYear, filterMes, filterComuna, filterEmpresa]); // 👈 incluye mes
   var empresaOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("emp").map(function(d){return d.empresaNombre;}).filter(Boolean));
-  }, [dispon, filterYear, filterComuna, filterProv]);
+  }, [dispon, filterYear, filterMes, filterComuna, filterProv]);    // 👈 incluye mes
 
   // si una selección queda inválida, la limpiamos
   useEffect(function(){ if(filterYear && yearOptions.indexOf(Number(filterYear))<0 && yearOptions.indexOf(String(filterYear))<0) setFilterYear(""); }, [yearOptions]);
@@ -142,6 +157,7 @@ function AbastecimientoMMPP(){
   var invRows = React.useMemo(function(){
     var base = (dispon||[]).slice();
     if(filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
+    if(filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); });   // 👈 NUEVO
     if(filterComuna) base = base.filter(function(d){ return d.comuna===filterComuna; });
     if(filterProv)   base = base.filter(function(d){ return (d.contactoNombre||d.proveedorNombre)===filterProv; });
     if(filterEmpresa)base = base.filter(function(d){ return d.empresaNombre===filterEmpresa; });
@@ -169,18 +185,19 @@ function AbastecimientoMMPP(){
       var okSearch = (!searchContacto || (r.contactoNombre.toLowerCase().indexOf(searchContacto.toLowerCase())>=0));
       return okSearch;
     });
-  }, [dispon, asig, filterYear, filterComuna, filterProv, filterEmpresa, searchContacto]);
+  }, [dispon, asig, filterYear, filterMes, filterComuna, filterProv, filterEmpresa, searchContacto]);
 
-  // Total bajo Comuna: considera TODOS los filtros (año/comuna/contacto/empresa)
+  // Total bajo Comuna: considera TODOS los filtros (incluye mes)
   var totalsFiltro = React.useMemo(function(){
     var base = (dispon||[]).slice();
     if(filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
+    if(filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); });   // 👈 NUEVO
     if(filterComuna) base = base.filter(function(d){ return d.comuna===filterComuna; });
     if(filterProv)   base = base.filter(function(d){ return (d.contactoNombre||d.proveedorNombre)===filterProv; });
     if(filterEmpresa)base = base.filter(function(d){ return d.empresaNombre===filterEmpresa; });
     var tons=0; for(var i=0;i<base.length;i++){ tons += saldoDe(base[i]); }
     return {tons:tons, lotes:base.length};
-  }, [dispon, asig, filterYear, filterComuna, filterProv, filterEmpresa]);
+  }, [dispon, asig, filterYear, filterMes, filterComuna, filterProv, filterEmpresa]);
 
   /* -------------- acciones -------------- */
   function abrirAsignacion(row){
@@ -239,9 +256,12 @@ function AbastecimientoMMPP(){
     Promise.all(prom).then(function(){return reload();}).finally(function(){ setEditLotes(null); });
   }
 
-  function limpiarFiltros(){ setFilterYear(""); setFilterComuna(""); setFilterProv(""); setFilterEmpresa(""); setSearchContacto(""); }
+  function limpiarFiltros(){ setFilterYear(""); setFilterMes(""); setFilterComuna(""); setFilterProv(""); setFilterEmpresa(""); setSearchContacto(""); } // 👈 incluye mes
 
   /* ----------------- UI ----------------- */
+  // Referencia al componente global del resumen (si está cargado)
+  var ResumenProveedorMes = (window.MMPPResumen && window.MMPPResumen.ResumenProveedorMes) || null;
+
   return (
     <div className="mmpp-wrap">
       <div className="mmpp-hero">
@@ -288,12 +308,18 @@ function AbastecimientoMMPP(){
       <div className="mmpp-card">
         <h2 style={{margin:"0 0 14px", fontWeight:800}}>Inventario Actual</h2>
 
-        {/* Filtros en una sola fila */}
+        {/* Fila 1: Año, Mes, Comuna, Contacto */}
         <div className="mmpp-grid4" style={{marginBottom:6}}>
           <div>
             <select className="mmpp-input" value={filterYear} onChange={function(e){ setFilterYear(e.target.value); }}>
               <option value="">Todos los Años</option>
               {yearOptions.map(function(y){ return <option key={y} value={y}>{y}</option>; })}
+            </select>
+          </div>
+          <div>
+            <select className="mmpp-input" value={filterMes} onChange={function(e){ setFilterMes(e.target.value); }}>
+              <option value="">Todos los Meses</option>
+              {mesesEs.map(function(m,i){ return <option key={i+1} value={i+1}>{m}</option>; })}
             </select>
           </div>
           <div>
@@ -311,17 +337,17 @@ function AbastecimientoMMPP(){
               {provOptions.map(function(p){ return <option key={p} value={p}>{p}</option>; })}
             </select>
           </div>
+        </div>
+
+        {/* Fila 2: Empresa, buscador, limpiar */}
+        <div className="mmpp-grid4" style={{alignItems:"center", marginBottom:12}}>
           <div>
             <select className="mmpp-input" value={filterEmpresa} onChange={function(e){ setFilterEmpresa(e.target.value); }}>
               <option value="">Todas las Empresas</option>
               {empresaOptions.map(function(emp){ return <option key={emp} value={emp}>{emp}</option>; })}
             </select>
           </div>
-        </div>
-
-        {/* Buscador + limpiar */}
-        <div className="mmpp-grid4" style={{alignItems:"center", marginBottom:12}}>
-          <div style={{gridColumn:"span 3"}}>
+          <div style={{gridColumn:"span 2"}}>
             <input className="mmpp-input" placeholder="Buscar contacto..." value={searchContacto} onChange={function(e){ setSearchContacto(e.target.value); }} />
           </div>
           <div style={{textAlign:"right"}}>
@@ -370,6 +396,18 @@ function AbastecimientoMMPP(){
           </tbody>
         </table>
       </div>
+
+      {/* Resumen Proveedor × Mes + gráfico (se carga sólo si existe el módulo externo) */}
+      <div style={{height:18}} />
+      {ResumenProveedorMes && (
+        <ResumenProveedorMes
+          dispon={dispon}
+          asig={asig}
+          defaultYear={filterYear}
+          filterComuna={filterComuna}
+          filterEmpresa={filterEmpresa}
+        />
+      )}
 
       <div style={{height:18}} />
 
