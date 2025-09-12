@@ -77,29 +77,72 @@ function _clickAccContacto(aEl){
 }
 window._clickAccContacto = _clickAccContacto;
 
-/* ---------- Cache de totales de disponibilidad por proveedor/centro ---------- */
-state.dispTotalCache = state.dispTotalCache || new Map(); // key: `${proveedorKey}|${centroId}` -> number
+/* ---------- Cache de totales de disponibilidad (incluye contactoId) ---------- */
+// key: `${contactoId}|${proveedorKey}|${centroId}`
+state.dispTotalCache = state.dispTotalCache || new Map();
 
-async function fetchTotalDisponibilidad({ proveedorKey='', centroId='' }){
-  const key = `${proveedorKey}|${centroId||''}`;
-  if (state.dispTotalCache.has(key)) return state.dispTotalCache.get(key);
-
+/* Pequeno helper para GET con rango por defecto (y-1 .. y+1) */
+async function getDisponibilidades(params){
+  const y = new Date().getFullYear();
   const q = new URLSearchParams();
-  if (proveedorKey) q.set('proveedorKey', proveedorKey);
-  if (centroId)     q.set('centroId', centroId);
+  // rango amplio por defecto para incluir años futuros
+  q.set('from', params?.from || `${y-1}-01`);
+  q.set('to',   params?.to   || `${y+1}-12`);
+
+  if (params?.contactoId) q.set('contactoId', params.contactoId);
+  if (params?.proveedorKey) q.set('proveedorKey', params.proveedorKey);
+  if (params?.centroId) q.set('centroId', params.centroId);
+
+  const url = `${API_BASE}/disponibilidades?${q.toString()}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('GET /disponibilidades '+res.status);
+  const json = await res.json();
+  return Array.isArray(json) ? json : (json.items || []);
+}
+
+/* Suma robusta con estrategia de fallbacks:
+   1) por contactoId
+   2) por proveedorKey + centroId
+   3) por proveedorKey */
+async function fetchTotalDisponibilidad({ contactoId='', proveedorKey='', centroId='' }){
+  const cacheKey = `${contactoId||''}|${proveedorKey||''}|${centroId||''}`;
+  if (state.dispTotalCache.has(cacheKey)) return state.dispTotalCache.get(cacheKey);
+
+  function sum(list, filterByContactoId){
+    let arr = Array.isArray(list) ? list : [];
+    if (filterByContactoId) {
+      arr = arr.filter(it => String(it.contactoId || '') === String(filterByContactoId));
+    }
+    return arr.reduce((acc, it)=> acc + Number(it.tonsDisponible ?? it.tons ?? 0), 0);
+  }
+
+  let total = 0;
+
   try{
-    const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
-    if (!r.ok) throw new Error('GET /disponibilidades '+r.status);
-    const data = await r.json();
-    const list = Array.isArray(data) ? data : (data.items || []);
-    const total = list.reduce((acc, it)=> acc + Number(it.tons ?? it.tonsDisponible ?? 0), 0);
-    state.dispTotalCache.set(key, total);
-    return total;
+    // 1) Intento por contactoId
+    if (contactoId) {
+      const list1 = await getDisponibilidades({ contactoId });
+      // si el backend no filtró, hacemos filtro en cliente:
+      total = sum(list1, contactoId);
+    }
+
+    // 2) Fallback por proveedorKey+centroId
+    if (total === 0 && (proveedorKey || centroId)) {
+      const list2 = await getDisponibilidades({ proveedorKey, centroId });
+      total = sum(list2);
+    }
+
+    // 3) Fallback por solo proveedorKey
+    if (total === 0 && proveedorKey) {
+      const list3 = await getDisponibilidades({ proveedorKey });
+      total = sum(list3);
+    }
   }catch(e){
     console.error('[tablaContactos] fetchTotalDisponibilidad error', e);
-    state.dispTotalCache.set(key, 0);
-    return 0;
   }
+
+  state.dispTotalCache.set(cacheKey, total);
+  return total;
 }
 
 /* ---------- Footer total (solo registros visibles/página actual/filtrados) ---------- */
@@ -184,6 +227,7 @@ async function actualizarTonsVisiblesYFooter(){
 
     const proveedorKey = span.dataset.provkey || '';
     const centroId     = span.dataset.centroid || '';
+    const contactoId   = span.dataset.contactoid || '';
 
     // Si ya está cargado, sólo recalcular footer
     const cached = span.dataset.value;
@@ -194,7 +238,7 @@ async function actualizarTonsVisiblesYFooter(){
     span.textContent = '…';
 
     // Fetch + cache + escribir valor
-    fetchTotalDisponibilidad({ proveedorKey, centroId }).then(total => {
+    fetchTotalDisponibilidad({ contactoId, proveedorKey, centroId }).then(total => {
       span.dataset.value = String(total);
       span.textContent = fmtCL(total);
       span.classList.remove('loading');
@@ -232,6 +276,11 @@ export function renderTablaContactos() {
   const base = Array.isArray(state.contactosGuardados) ? state.contactosGuardados : [];
   console.debug('[tablaContactos] render → items:', base.length, base[0]);
 
+  // limpiar cache de totales para no mostrar datos viejos
+  if (state.dispTotalCache && typeof state.dispTotalCache.clear === 'function') {
+    state.dispTotalCache.clear();
+  }
+
   const filas = base
     .slice()
     .sort((a,b)=>{
@@ -266,9 +315,8 @@ export function renderTablaContactos() {
       // MMPP (tieneMMPP)
       const mmpp = c.tieneMMPP || '';
 
-      // Tons: YA NO usamos el valor antiguo guardado en el contacto.
-      // Ponemos un span "tons-cell" con data para que luego se llene con el total real.
-      const tonsCell = `<span class="tons-cell" data-provkey="${esc(c.proveedorKey || '')}" data-centroid="${esc(c.centroId || '')}" data-value=""></span>`;
+      // Tons: span con data para sumar por contactoId → prov+centro → prov
+      const tonsCell = `<span class="tons-cell" data-contactoid="${esc(c._id || '')}" data-provkey="${esc(c.proveedorKey || '')}" data-centroid="${esc(c.centroId || '')}" data-value=""></span>`;
 
       // Acciones (con data-action explícito)
       const acciones = `
@@ -325,6 +373,7 @@ export function renderTablaContactos() {
     for (const sp of spans) {
       sp.classList.add('loading'); sp.textContent = '…';
       const total = await fetchTotalDisponibilidad({
+        contactoId: sp.dataset.contactoid || '',
         proveedorKey: sp.dataset.provkey || '',
         centroId: sp.dataset.centroid || ''
       });
@@ -344,4 +393,3 @@ document.addEventListener('reload-tabla-contactos', () => {
   console.debug('[tablaContactos] reload-tabla-contactos recibido');
   renderTablaContactos();
 });
-
