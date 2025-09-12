@@ -14,11 +14,6 @@ const API_BASE = window.API_URL || '/api';
 const MES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const pad2 = (n)=>String(n).padStart(2,'0');
 const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
-// slug seguro cuando no hay empresa
-const slugSafe = (v) => {
-  const s = slug(v || '');
-  return s || 'sin-proveedor';
-};
 
 /* ---------- CSS para mini acciones en la grilla de disponibilidades ---------- */
 (function injectMiniStyles () {
@@ -79,6 +74,7 @@ const normId = (x) => {
 };
 
 // GET a /disponibilidades (colección real con tus datos)
+// ✅ ahora puede filtrar por contactoId; si el backend lo ignora, filtramos en cliente
 async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from, to, anio, mesKey } = {}) {
   if (!proveedorKey && !centroId && !contactoId) return [];
 
@@ -95,9 +91,10 @@ async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from,
     const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
     if (!r.ok) return [];
     const data = await r.json();
-    const list = Array.isArray(data) ? data : (data.items || []);
+    let list = Array.isArray(data) ? data : (data.items || []);
 
-    const mapped = list.map(x => {
+    // mapeo
+    let mapped = list.map(x => {
       const id = normId(x);
       const mk = x.mesKey || (x.anio && x.mes ? mesKeyFrom(x.anio, x.mes) : null);
       return {
@@ -108,9 +105,15 @@ async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from,
         estado: x.estado || 'disponible',
         mesKey: mk,
         proveedorKey: x.proveedorKey || '',
-        centroId: x.centroId || null
+        centroId: x.centroId || null,
+        contactoId: x.contactoId || null
       };
     });
+
+    // si pedimos por contactoId pero el server no filtró, filtramos aquí
+    if (contactoId) {
+      mapped = mapped.filter(it => String(it.contactoId || '') === String(contactoId));
+    }
 
     return mapped;
   } catch {
@@ -119,7 +122,7 @@ async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from,
 }
 
 // Resolver _id haciendo una query específica por mesKey (fallback)
-async function resolverDispIdPorMesKey({ proveedorKey, centroId, contactoId, mesKey }) {
+async function resolverDispIdPorMesKey({ proveedorKey, centroId, mesKey, contactoId }) {
   if (!proveedorKey && !centroId && !contactoId) return null;
   if (!mesKey) return null;
   const lista = await fetchDisponibilidades({ proveedorKey, centroId, contactoId, mesKey });
@@ -131,7 +134,7 @@ async function resolverDispIdPorMesKey({ proveedorKey, centroId, contactoId, mes
 async function postDisponibilidad(d){
   const empresaNombre = d.empresaNombre || d.proveedorNombre || '';
   const payload = {
-    proveedorKey: d.proveedorKey || slugSafe(empresaNombre),
+    proveedorKey: d.proveedorKey || slug(empresaNombre),
     proveedorNombre: empresaNombre,
     empresaNombre, // para filtros en Inventario
 
@@ -183,7 +186,7 @@ async function patchDisponibilidad(id, d){
   if (empresaNombre) {
     patch.empresaNombre = empresaNombre;
     patch.proveedorNombre = empresaNombre;
-    patch.proveedorKey = slugSafe(empresaNombre);
+    patch.proveedorKey = slug(empresaNombre);
   }
   if ('contactoId' in d) patch.contactoId = d.contactoId || null;
   if ('contactoNombre' in d) patch.contactoNombre = d.contactoNombre || '';
@@ -243,7 +246,7 @@ async function pintarHistorialEdicion(contacto){
   const box = document.getElementById('asigHist'); if(!box) return;
   const proveedorKey = contacto?.proveedorKey || (contacto?.proveedorNombre ? slug(contacto.proveedorNombre) : '');
   const centroId = contacto?.centroId || null;
-  const contactoId = contacto?._id || null;
+  const contactoId = contacto?._id || contacto?.contactoId || null;
 
   if (!proveedorKey && !centroId && !contactoId) {
     box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
@@ -418,10 +421,10 @@ export function setupFormulario() {
       const contacto = state.editingContacto || state.contactoActual || {};
       const proveedorKey = contacto?.proveedorKey || (contacto?.proveedorNombre ? slug(contacto.proveedorNombre) : '');
       const centroId = contacto?.centroId || null;
-      const contactoId = contacto?._id || null;
+      const contactoId = contacto?._id || contacto?.contactoId || null;
       if (mk) {
         try {
-          const resolved = await resolverDispIdPorMesKey({ proveedorKey, centroId, contactoId, mesKey: mk });
+          const resolved = await resolverDispIdPorMesKey({ proveedorKey, centroId, mesKey: mk, contactoId });
           if (resolved) id = resolved;
         } catch {}
       }
@@ -532,7 +535,7 @@ export function setupFormulario() {
         ? editId
         : (created?.item?._id || created?.item?.id || created?._id || created?.id || null);
 
-      // Crear o actualizar disponibilidad (centro es OPCIONAL, empresa OPCIONAL)
+      // Crear o actualizar disponibilidad (centro es OPCIONAL)
       if (tieneDispCampos) {
         const dispCommon = {
           proveedorKey,
@@ -557,9 +560,9 @@ export function setupFormulario() {
         } else {
           await postDisponibilidad({
             ...dispCommon,
-            centroId: centroId || null,
-            centroCodigo: centroCodigo || '',
-            comuna: centroComuna || '',
+            centroId: hasEmpresa ? (centroId || null) : null,
+            centroCodigo: hasEmpresa ? (centroCodigo || '') : '',
+            comuna: hasEmpresa ? (centroComuna || '') : '',
             anio: asigAnio,
             mes: asigMes,
             tons: asigTonsNum,
@@ -575,8 +578,10 @@ export function setupFormulario() {
       document.dispatchEvent(new Event('reload-tabla-contactos'));
 
       // refresca el panel de historial en edición
-      const c = state.editId ? { _id: state.editId, proveedorKey, proveedorNombre, centroId } : (state.contactoActual || {});
-      await pintarHistorialEdicion(c);
+      const c = state.editId
+        ? { _id: state.editId, proveedorKey, proveedorNombre, centroId }
+        : (state.contactoActual || {});
+      await pintarHistorialEdicion({ ...c, _id: (state.editId || contactoIdDoc) });
 
       M.toast?.({ html: state.editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
 
