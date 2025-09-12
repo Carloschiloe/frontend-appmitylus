@@ -553,15 +553,7 @@ export function setupFormulario() {
       // Guardar/actualizar contacto
       let created = null;
       if (esUpdate) {
-        await apiUpdateContacto(editId, 
-      // Sincroniza disponibilidades que apuntan a este contacto (client-side hasta que hagamos backend)
-      await syncDisponibilidadesTrasContacto({
-        _id: contactoIdDoc,
-        nombre: contactoNombre,
-        telefono: contactoTelefono,
-        email: contactoEmail
-      });
-payload);
+        await apiUpdateContacto(editId, payload);
       } else {
         created = await apiCreateContacto(payload);
       }
@@ -570,6 +562,17 @@ payload);
       const contactoIdDoc = esUpdate
         ? editId
         : (created?.item?._id || created?.item?.id || created?._id || created?.id || null);
+
+      // Sincroniza disponibilidades que apuntan a este contacto (client-side hasta que hagamos backend)
+      try {
+        await syncDisponibilidadesTrasContacto({
+          _id: contactoIdDoc,
+          nombre: contactoNombre,
+          telefono: contactoTelefono,
+          email: contactoEmail
+        });
+      } catch (e) { console.warn('[syncDisponibilidadesTrasContacto] error', e); }
+
 
       // Crear o actualizar disponibilidad (centro es OPCIONAL)
       if (tieneDispCampos && hasEmpresa) {
