@@ -75,8 +75,17 @@ const normId = (x) => {
 
 // GET a /disponibilidades (colección real con tus datos)
 // ✅ ahora puede filtrar por contactoId; si el backend lo ignora, filtramos en cliente
+// GET a /disponibilidades (colección real con tus datos)
+// ✅ soporta filtro por contactoId y aplica un rango por defecto (y-1..y+1)
 async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from, to, anio, mesKey } = {}) {
   if (!proveedorKey && !centroId && !contactoId) return [];
+
+  // rango por defecto amplio para que entren años futuros (p.ej. 2026)
+  if (!from && !to && !anio && !mesKey) {
+    const y = new Date().getFullYear();
+    from = `${y - 1}-01`;
+    to   = `${y + 1}-12`;
+  }
 
   const q = new URLSearchParams();
   if (proveedorKey) q.set('proveedorKey', proveedorKey);
@@ -93,7 +102,7 @@ async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from,
     const data = await r.json();
     let list = Array.isArray(data) ? data : (data.items || []);
 
-    // mapeo
+    // map
     let mapped = list.map(x => {
       const id = normId(x);
       const mk = x.mesKey || (x.anio && x.mes ? mesKeyFrom(x.anio, x.mes) : null);
@@ -110,7 +119,7 @@ async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from,
       };
     });
 
-    // si pedimos por contactoId pero el server no filtró, filtramos aquí
+    // si pedimos por contactoId pero el server no filtró, filtramos en cliente
     if (contactoId) {
       mapped = mapped.filter(it => String(it.contactoId || '') === String(contactoId));
     }
@@ -120,6 +129,7 @@ async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from,
     return [];
   }
 }
+
 
 // Resolver _id haciendo una query específica por mesKey (fallback)
 async function resolverDispIdPorMesKey({ proveedorKey, centroId, mesKey, contactoId }) {
