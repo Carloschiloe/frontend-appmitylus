@@ -14,6 +14,11 @@ const API_BASE = window.API_URL || '/api';
 const MES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const pad2 = (n)=>String(n).padStart(2,'0');
 const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
+// slug seguro cuando no hay empresa
+const slugSafe = (v) => {
+  const s = slug(v || '');
+  return s || 'sin-proveedor';
+};
 
 /* ---------- CSS para mini acciones en la grilla de disponibilidades ---------- */
 (function injectMiniStyles () {
@@ -74,12 +79,13 @@ const normId = (x) => {
 };
 
 // GET a /disponibilidades (colección real con tus datos)
-async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio, mesKey } = {}) {
-  if (!proveedorKey && !centroId) return [];
+async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from, to, anio, mesKey } = {}) {
+  if (!proveedorKey && !centroId && !contactoId) return [];
 
   const q = new URLSearchParams();
   if (proveedorKey) q.set('proveedorKey', proveedorKey);
   if (centroId)     q.set('centroId', centroId);
+  if (contactoId)   q.set('contactoId', contactoId);
   if (from)         q.set('from', from);
   if (to)           q.set('to', to);
   if (anio)         q.set('anio', anio);
@@ -113,10 +119,10 @@ async function fetchDisponibilidades({ proveedorKey, centroId, from, to, anio, m
 }
 
 // Resolver _id haciendo una query específica por mesKey (fallback)
-async function resolverDispIdPorMesKey({ proveedorKey, centroId, mesKey }) {
-  if (!proveedorKey && !centroId) return null;
+async function resolverDispIdPorMesKey({ proveedorKey, centroId, contactoId, mesKey }) {
+  if (!proveedorKey && !centroId && !contactoId) return null;
   if (!mesKey) return null;
-  const lista = await fetchDisponibilidades({ proveedorKey, centroId, mesKey });
+  const lista = await fetchDisponibilidades({ proveedorKey, centroId, contactoId, mesKey });
   const item = (lista || []).find(x => x.mesKey === mesKey && (x._id || x.id));
   return item ? (item._id || item.id || null) : null;
 }
@@ -125,7 +131,7 @@ async function resolverDispIdPorMesKey({ proveedorKey, centroId, mesKey }) {
 async function postDisponibilidad(d){
   const empresaNombre = d.empresaNombre || d.proveedorNombre || '';
   const payload = {
-    proveedorKey: d.proveedorKey || slug(empresaNombre),
+    proveedorKey: d.proveedorKey || slugSafe(empresaNombre),
     proveedorNombre: empresaNombre,
     empresaNombre, // para filtros en Inventario
 
@@ -177,7 +183,7 @@ async function patchDisponibilidad(id, d){
   if (empresaNombre) {
     patch.empresaNombre = empresaNombre;
     patch.proveedorNombre = empresaNombre;
-    patch.proveedorKey = slug(empresaNombre);
+    patch.proveedorKey = slugSafe(empresaNombre);
   }
   if ('contactoId' in d) patch.contactoId = d.contactoId || null;
   if ('contactoNombre' in d) patch.contactoNombre = d.contactoNombre || '';
@@ -237,8 +243,9 @@ async function pintarHistorialEdicion(contacto){
   const box = document.getElementById('asigHist'); if(!box) return;
   const proveedorKey = contacto?.proveedorKey || (contacto?.proveedorNombre ? slug(contacto.proveedorNombre) : '');
   const centroId = contacto?.centroId || null;
+  const contactoId = contacto?._id || null;
 
-  if (!proveedorKey && !centroId) {
+  if (!proveedorKey && !centroId && !contactoId) {
     box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
     state._ultimaDispLista = [];
     return;
@@ -246,7 +253,7 @@ async function pintarHistorialEdicion(contacto){
 
   box.innerHTML = '<span class="grey-text">Cargando disponibilidad...</span>';
   try {
-    const lista = await fetchDisponibilidades({ proveedorKey, centroId });
+    const lista = await fetchDisponibilidades({ proveedorKey, centroId, contactoId });
     state._ultimaDispLista = lista; // cache para acciones
     box.innerHTML = renderAsignaciones(lista);
   } catch(e){
@@ -364,7 +371,8 @@ export async function abrirDetalleContacto(c) {
   try {
     const proveedorKey = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
     const centroId = c.centroId || null;
-    const lista = await fetchDisponibilidades({ proveedorKey, centroId });
+    const contactoId = c._id || null;
+    const lista = await fetchDisponibilidades({ proveedorKey, centroId, contactoId });
     const mapped = (lista||[]).map(x => ({
       anio: x.anio, mes: x.mes, tons: Number(x.tons||0), estado: x.estado || 'disponible'
     }));
@@ -410,9 +418,10 @@ export function setupFormulario() {
       const contacto = state.editingContacto || state.contactoActual || {};
       const proveedorKey = contacto?.proveedorKey || (contacto?.proveedorNombre ? slug(contacto.proveedorNombre) : '');
       const centroId = contacto?.centroId || null;
+      const contactoId = contacto?._id || null;
       if (mk) {
         try {
-          const resolved = await resolverDispIdPorMesKey({ proveedorKey, centroId, mesKey: mk });
+          const resolved = await resolverDispIdPorMesKey({ proveedorKey, centroId, contactoId, mesKey: mk });
           if (resolved) id = resolved;
         } catch {}
       }
@@ -523,8 +532,8 @@ export function setupFormulario() {
         ? editId
         : (created?.item?._id || created?.item?.id || created?._id || created?.id || null);
 
-      // Crear o actualizar disponibilidad (centro es OPCIONAL)
-      if (tieneDispCampos && hasEmpresa) {
+      // Crear o actualizar disponibilidad (centro es OPCIONAL, empresa OPCIONAL)
+      if (tieneDispCampos) {
         const dispCommon = {
           proveedorKey,
           proveedorNombre,
