@@ -7,6 +7,46 @@ import { comunaPorCodigo, centroCodigoById } from './normalizers.js';
 import { renderTablaContactos } from './tabla.js';
 import { abrirModalVisita } from '../visitas/ui.js';
 
+
+// === Nuevo: sincronizar disponibilidades vinculadas al contacto (client-side) ===
+async function syncDisponibilidadesTrasContacto(contacto){
+  try{
+    if(!contacto?._id) return;
+    const q = new URLSearchParams({ contactoId: contacto._id });
+    const r = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
+    if(!r.ok) return;
+    const data = await r.json();
+    const list = Array.isArray(data) ? data : (data.items || []);
+    if (!list.length) return;
+
+    const nombre = contacto.nombre || '';
+    const telefono = contacto.telefono || '';
+    const email = contacto.email || '';
+    // Parchear en paralelo con límite simple
+    const limit = 5;
+    let i = 0;
+    async function worker(items){
+      for(const it of items){
+        try{
+          await patchDisponibilidad(it._id || it.id, {
+            contactoId: contacto._id,
+            contactoNombre: nombre,
+            contactoTelefono: telefono,
+            contactoEmail: email,
+            proveedorKey: it.proveedorKey,
+            proveedorNombre: it.empresaNombre || it.proveedorNombre || ''
+          });
+        }catch(e){ console.warn('patchDisponibilidad contacto sync err', e); }
+      }
+    }
+    const chunks = Array.from({length: limit}, (_,k)=> list.filter((_,idx)=> idx % limit === k));
+    await Promise.all(chunks.map(worker));
+    console.log('[syncDisponibilidades] actualizado', list.length);
+  }catch(e){
+    console.warn('syncDisponibilidadesTrasContacto error', e);
+  }
+}
+
 const isValidObjectId = (s) => typeof s === 'string' && /^[0-9a-fA-F]{24}$/.test(s);
 
 /* ---------- Constantes ---------- */
@@ -513,7 +553,15 @@ export function setupFormulario() {
       // Guardar/actualizar contacto
       let created = null;
       if (esUpdate) {
-        await apiUpdateContacto(editId, payload);
+        await apiUpdateContacto(editId, 
+      // Sincroniza disponibilidades que apuntan a este contacto (client-side hasta que hagamos backend)
+      await syncDisponibilidadesTrasContacto({
+        _id: contactoIdDoc,
+        nombre: contactoNombre,
+        telefono: contactoTelefono,
+        email: contactoEmail
+      });
+payload);
       } else {
         created = await apiCreateContacto(payload);
       }
