@@ -33,7 +33,7 @@ const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
 
 /* ---------- helpers comunes ---------- */
 const esc = (s='') => String(s)
-  .replace(/&/g,'&amp;').replace(/<//g,'&lt;')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
   .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
 const fmtISOfechaHora = (d) => {
@@ -52,7 +52,7 @@ function buildContactoSnapshot({ tel='', email='', empresaNombre='' } = {}) {
   const empresaKey = slug(empresaNombre || '');
   return {
     telefono: (tel || '').trim(),
-    email: (email || '').trim(),
+    email: (email || '').trim().toLowerCase(),
     empresaKey,
     empresaNombre: empresaNombre || ''
   };
@@ -451,141 +451,139 @@ export function setupFormulario() {
   });
 
   form.addEventListener('submit', async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  // Empresa / proveedor
-  const proveedorKeyRaw    = (getVal(['proveedorKey','proveedorId']) || '').trim();
-  const proveedorNombreRaw = (getVal(['proveedorNombre']) || '').trim();
-  const proveedorKey    = proveedorKeyRaw || null;
-  const proveedorNombre = proveedorNombreRaw || null;
-  const hasEmpresa      = !!(proveedorKey && proveedorNombre);
+    // Empresa / proveedor
+    const proveedorKeyRaw    = (getVal(['proveedorKey','proveedorId']) || '').trim();
+    const proveedorNombreRaw = (getVal(['proveedorNombre']) || '').trim();
+    const proveedorKey    = proveedorKeyRaw || null;
+    const proveedorNombre = proveedorNombreRaw || null;
+    const hasEmpresa      = !!(proveedorKey && proveedorNombre);
 
-  // Persona de contacto
-  const contactoNombre   = $('#contactoNombre')?.value?.trim() || '';
-  const contactoTelefono = $('#contactoTelefono')?.value?.trim() || '';
-  const contactoEmail    = $('#contactoEmail')?.value?.trim() || '';
-  const hasPersona       = !!contactoNombre && (!!contactoTelefono || !!contactoEmail);
+    // Persona de contacto
+    const contactoNombre   = $('#contactoNombre')?.value?.trim() || '';
+    const contactoTelefono = $('#contactoTelefono')?.value?.trim() || '';
+    const contactoEmail    = $('#contactoEmail')?.value?.trim() || '';
+    const hasPersona       = !!contactoNombre && (!!contactoTelefono || !!contactoEmail);
 
-  if (!hasEmpresa && !hasPersona) {
-    M.toast?.({ html: 'Ingresa una empresa o una persona (nombre + teléfono o email).', displayLength: 2800 });
-    ($('#contactoNombre')?.focus?.());
-    return;
-  }
-
-  // Si no hay empresa, limpia centro
-  if (!hasEmpresa) { clearCentroHidden(); resetSelectCentros(); }
-
-  // Otros campos
-  const tieneMMPP         = $('#tieneMMPP')?.value || '';
-  const dispuestoVender   = $('#dispuestoVender')?.value || '';
-  const vendeActualmenteA = $('#vendeActualmenteA')?.value?.trim() || '';
-  const notas             = $('#notasContacto')?.value?.trim() || '';
-
-  // Centro (opcional si no hay)
-  const selCentro = $('#selectCentro');
-  syncHiddenFromSelect(selCentro);
-  const centroId        = hasEmpresa ? (getVal(['centroId']) || null) : null;
-  const centroCodigo    = hasEmpresa ? (getVal(['centroCodigo']) || null) : null;
-  const centroComuna    = hasEmpresa ? (getVal(['centroComuna']) || comunaPorCodigo(centroCodigo) || null) : null;
-  const centroHectareas = hasEmpresa ? (getVal(['centroHectareas']) || null) : null;
-
-  let resultado = '';
-  if (tieneMMPP === 'Sí') resultado = 'Disponible';
-  else if (tieneMMPP === 'No') resultado = 'No disponible';
-
-  const payload = {
-    proveedorKey, proveedorNombre,
-    resultado, tieneMMPP, dispuestoVender, vendeActualmenteA, notas,
-    centroId, centroCodigo, centroComuna, centroHectareas,
-    contactoNombre, contactoTelefono, contactoEmail
-  };
-
-  // Campos de disponibilidad (crear o patch)
-  const asigAnio    = parseInt(document.getElementById('asigAnio')?.value || '', 10);
-  const asigMes     = parseInt(document.getElementById('asigMes')?.value  || '', 10);
-  const asigTonsNum = Number(document.getElementById('asigTons')?.value  || NaN);
-  const tieneDispCampos = Number.isInteger(asigAnio) && Number.isInteger(asigMes) &&
-                          Number.isFinite(asigTonsNum) && asigTonsNum > 0;
-
-  try {
-    const editId   = state.editId;
-    const esUpdate = isValidObjectId(editId);
-
-    // Guardar/actualizar contacto
-    let created = null;
-    if (esUpdate) {
-      await apiUpdateContacto(editId, payload);
-    } else {
-      created = await apiCreateContacto(payload);
+    if (!hasEmpresa && !hasPersona) {
+      M.toast?.({ html: 'Ingresa una empresa o una persona (nombre + teléfono o email).', displayLength: 2800 });
+      ($('#contactoNombre')?.focus?.());
+      return;
     }
 
-    // Id del contacto recién creado (robusto ante distintas formas de respuesta)
-    const contactoIdDoc = esUpdate
-      ? editId
-      : (created?.item?._id || created?.item?.id || created?._id || created?.id || null);
+    // Si no hay empresa, limpia centro
+    if (!hasEmpresa) { clearCentroHidden(); resetSelectCentros(); }
 
-    // Crear o actualizar disponibilidad
-    // IMPORTANTE: centroId es OPCIONAL (ya no bloquea el guardado)
-    if (tieneDispCampos && hasEmpresa) {
-      const dispCommon = {
-        proveedorKey,
-        proveedorNombre,
-        empresaNombre: proveedorNombre || '',
-        contactoId: contactoIdDoc,
-        contactoNombre,
-        contactoTelefono,
-        contactoEmail
-      };
+    // Otros campos
+    const tieneMMPP         = $('#tieneMMPP')?.value || '';
+    const dispuestoVender   = $('#dispuestoVender')?.value || '';
+    const vendeActualmenteA = $('#vendeActualmenteA')?.value?.trim() || '';
+    const notas             = $('#notasContacto')?.value?.trim() || '';
 
-      if (state.dispEditId) {
-        await patchDisponibilidad(state.dispEditId, {
-          ...dispCommon,
-          anio: asigAnio,
-          mes: asigMes,
-          tons: asigTonsNum,
-          estado: 'disponible'
-        });
-        state.dispEditId = null;
-        M.toast?.({ html: 'Disponibilidad actualizada', classes: 'teal' });
+    // Centro (opcional)
+    syncHiddenFromSelect(selCentro);
+    const centroId        = hasEmpresa ? (getVal(['centroId']) || null) : null;
+    const centroCodigo    = hasEmpresa ? (getVal(['centroCodigo']) || null) : null;
+    const centroComuna    = hasEmpresa ? (getVal(['centroComuna']) || comunaPorCodigo(centroCodigo) || null) : null;
+    const centroHectareas = hasEmpresa ? (getVal(['centroHectareas']) || null) : null;
+
+    let resultado = '';
+    if (tieneMMPP === 'Sí') resultado = 'Disponible';
+    else if (tieneMMPP === 'No') resultado = 'No disponible';
+
+    const payload = {
+      proveedorKey, proveedorNombre,
+      resultado, tieneMMPP, dispuestoVender, vendeActualmenteA, notas,
+      centroId, centroCodigo, centroComuna, centroHectareas,
+      contactoNombre, contactoTelefono, contactoEmail
+    };
+
+    // Campos de disponibilidad (crear o patch)
+    const asigAnio    = parseInt(document.getElementById('asigAnio')?.value || '', 10);
+    const asigMes     = parseInt(document.getElementById('asigMes')?.value  || '', 10);
+    const asigTonsNum = Number(document.getElementById('asigTons')?.value  || NaN);
+    const tieneDispCampos = Number.isInteger(asigAnio) && Number.isInteger(asigMes) &&
+                            Number.isFinite(asigTonsNum) && asigTonsNum > 0;
+
+    try {
+      const editId   = state.editId;
+      const esUpdate = isValidObjectId(editId);
+
+      // Guardar/actualizar contacto
+      let created = null;
+      if (esUpdate) {
+        await apiUpdateContacto(editId, payload);
       } else {
-        await postDisponibilidad({
-          ...dispCommon,
-          centroId: centroId || null,
-          centroCodigo: centroCodigo || '',
-          comuna: centroComuna || '',
-          anio: asigAnio,
-          mes: asigMes,
-          tons: asigTonsNum,
-          estado: 'disponible'
-        });
-        M.toast?.({ html: 'Disponibilidad registrada', classes: 'teal' });
+        created = await apiCreateContacto(payload);
       }
+
+      // Id del contacto recién creado (robusto ante distintas formas de respuesta)
+      const contactoIdDoc = esUpdate
+        ? editId
+        : (created?.item?._id || created?.item?.id || created?._id || created?.id || null);
+
+      // Crear o actualizar disponibilidad (centro es OPCIONAL)
+      if (tieneDispCampos && hasEmpresa) {
+        const dispCommon = {
+          proveedorKey,
+          proveedorNombre,
+          empresaNombre: proveedorNombre || '',
+          contactoId: contactoIdDoc,
+          contactoNombre,
+          contactoTelefono,
+          contactoEmail
+        };
+
+        if (state.dispEditId) {
+          await patchDisponibilidad(state.dispEditId, {
+            ...dispCommon,
+            anio: asigAnio,
+            mes: asigMes,
+            tons: asigTonsNum,
+            estado: 'disponible'
+          });
+          state.dispEditId = null;
+          M.toast?.({ html: 'Disponibilidad actualizada', classes: 'teal' });
+        } else {
+          await postDisponibilidad({
+            ...dispCommon,
+            centroId: centroId || null,
+            centroCodigo: centroCodigo || '',
+            comuna: centroComuna || '',
+            anio: asigAnio,
+            mes: asigMes,
+            tons: asigTonsNum,
+            estado: 'disponible'
+          });
+          M.toast?.({ html: 'Disponibilidad registrada', classes: 'teal' });
+        }
+      }
+
+      // Refrescos
+      await cargarContactosGuardados();
+      renderTablaContactos();
+      document.dispatchEvent(new Event('reload-tabla-contactos'));
+
+      // refresca el panel de historial en edición
+      const c = state.editId ? { _id: state.editId, proveedorKey, proveedorNombre, centroId } : (state.contactoActual || {});
+      await pintarHistorialEdicion(c);
+
+      M.toast?.({ html: state.editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
+
+      // Cerrar modal y limpiar
+      const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
+      form.reset();
+      clearCentroHidden();
+      clearProveedorHidden();
+      state.editId = null;
+      modalInst?.close();
+    } catch (err) {
+      console.error('[form-contacto] ERROR:', err?.message || err);
+      M.toast?.({ html: 'Error al guardar contacto', displayLength: 2500 });
     }
-
-    // Refrescos
-    await cargarContactosGuardados();
-    renderTablaContactos();
-    document.dispatchEvent(new Event('reload-tabla-contactos'));
-
-    // refresca el panel de historial en edición
-    const c = state.editId ? { _id: state.editId, proveedorKey, proveedorNombre, centroId } : (state.contactoActual || {});
-    await pintarHistorialEdicion(c);
-
-    M.toast?.({ html: state.editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
-
-    // Cerrar modal y limpiar
-    const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
-    const form = $('#formContacto');
-    form?.reset();
-    clearCentroHidden();
-    clearProveedorHidden();
-    state.editId = null;
-    modalInst?.close();
-  } catch (err) {
-    console.error('[form-contacto] ERROR:', err?.message || err);
-    M.toast?.({ html: 'Error al guardar contacto', displayLength: 2500 });
-  }
-});
+  });
+}
 
 /* ---------- Acciones ---------- */
 export function abrirEdicion(c) {
@@ -653,4 +651,3 @@ export function prepararNuevo() {
   const box = document.getElementById('asigHist');
   if (box) box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
 }
-
