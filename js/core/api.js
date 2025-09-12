@@ -34,30 +34,47 @@ function buildQS(params = {}) {
 
 /**
  * Wrapper de fetch con:
+ *  - Evita preflight en GET (no manda headers en GET)
  *  - Fallback PATCH→PUT si el server no soporta PATCH (405/404/501)
  *  - Reintento 1 vez si hay error de red/DNS/timeout (en PATCH reintenta como PUT)
  */
 async function request(path, { method = 'GET', json, headers = {}, retry = true } = {}) {
   const url = `${API_URL}${path}`;
-  const opts = { method, headers: { 'Content-Type': 'application/json', ...headers } };
-  if (json !== undefined) opts.body = JSON.stringify(json);
+  const upper = String(method).toUpperCase();
+
+  // Construye opciones SIN disparar preflight en GET
+  const makeOpts = (m) => {
+    const mm = String(m).toUpperCase();
+    const opts = { method: mm };
+
+    // ⚠️ Importante: NO headers en GET (ni en DELETE) para evitar preflight
+    if (mm !== 'GET' && mm !== 'DELETE') {
+      const baseHeaders = {};
+      if (json !== undefined) baseHeaders['Content-Type'] = 'application/json';
+      // headers extra solo si no es GET/DELETE
+      opts.headers = { ...baseHeaders, ...headers };
+      if (json !== undefined) opts.body = JSON.stringify(json);
+    }
+    return opts;
+  };
 
   let resp;
   try {
-    resp = await fetch(url, opts);
+    resp = await fetch(url, makeOpts(upper));
   } catch (e) {
     if (!retry) throw e;
-    const fallbackMethod = method === 'PATCH' ? 'PUT' : method;
-    const resp2 = await fetch(url, { ...opts, method: fallbackMethod });
+    const fallbackMethod = upper === 'PATCH' ? 'PUT' : upper;
+    const resp2 = await fetch(url, makeOpts(fallbackMethod));
     return checkResponse(resp2);
   }
 
+  // Fallback PATCH -> PUT si el server no soporta PATCH
   if (
     retry &&
-    method === 'PATCH' &&
+    upper === 'PATCH' &&
     (!resp.ok && (resp.status === 404 || resp.status === 405 || resp.status === 501))
   ) {
-    const resp2 = await fetch(url, { ...opts, method: 'PUT' });
+    const resp2 = await fetch(url, makeOpts('PUT'));
     return checkResponse(resp2);
   }
 
