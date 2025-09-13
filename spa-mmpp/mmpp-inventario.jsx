@@ -45,6 +45,13 @@ function ensureResumenScript(){
 
 function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
 
+// === Helpers de validación (NUEVO)
+function clamp(n, min, max){ n = Number(n)||0; return Math.max(min, Math.min(max, n)); }
+function getLotById(lots, id){
+  for (var i=0;i<(lots||[]).length;i++){ if(lots[i].id===id) return lots[i]; }
+  return null;
+}
+
 var mesesEs = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 var mesesShort = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
 function chipLabelFromMesKey(mk){
@@ -115,9 +122,9 @@ function AbastecimientoMMPP(){
     return uniqSorted(filteredBaseExcluding("year").map(function(d){return d.anio;}).filter(Boolean));
   }, [dispon, filterMes, filterComuna, filterProv, filterEmpresa]);
 
-  // ⚠️ NUEVO: meses dinámicos según año/filtros (solo meses presentes)
+  // Meses dinámicos por año/filtros (solo meses presentes)
   var mesOptions = React.useMemo(function(){
-    var base = filteredBaseExcluding("mes"); // aplica año/comuna/prov/empresa
+    var base = filteredBaseExcluding("mes");
     var set={}, out=[];
     for(var i=0;i<base.length;i++){
       var m = Number(base[i] && base[i].mes);
@@ -139,7 +146,7 @@ function AbastecimientoMMPP(){
 
   // limpiar selecciones inválidas
   useEffect(function(){ if(filterYear && yearOptions.indexOf(Number(filterYear))<0 && yearOptions.indexOf(String(filterYear))<0) setFilterYear(""); }, [yearOptions]);
-  useEffect(function(){ if(filterMes && mesOptions.indexOf(Number(filterMes))<0) setFilterMes(""); }, [mesOptions]); // ← NUEVO
+  useEffect(function(){ if(filterMes && mesOptions.indexOf(Number(filterMes))<0) setFilterMes(""); }, [mesOptions]); // ← invalida mes si no existe para ese año/filtros
   useEffect(function(){ if(filterComuna && comunaOptions.indexOf(filterComuna)<0) setFilterComuna(""); }, [comunaOptions]);
   useEffect(function(){ if(filterProv && provOptions.indexOf(filterProv)<0) setFilterProv(""); }, [provOptions]);
   useEffect(function(){ if(filterEmpresa && empresaOptions.indexOf(filterEmpresa)<0) setFilterEmpresa(""); }, [empresaOptions]);
@@ -215,10 +222,27 @@ function AbastecimientoMMPP(){
     var selected=row.items[0]?row.items[0].id:null;
     setAssignModal({ proveedor:row.proveedor, comuna:row.comuna, contacto:form.contacto||"", lots:lots, selectedId:selected, cantidad:"", destMes:null, destAnio:null });
   }
+
+  // Validación definitiva en confirmar + clamp en onChange / al cambiar lote
   function confirmarAsignacion(){
-    var m=assignModal; if(!m.selectedId || !m.cantidad || !m.destMes || !m.destAnio){ alert("Completa cantidad, mes y año"); return; }
-    var lot=m.lots.filter(function(l){return l.id===m.selectedId;})[0]; if(!lot){ alert("Selecciona disponibilidad"); return; }
-    var payload={ disponibilidadId:lot.id, cantidad:Number(m.cantidad), destMes:Number(m.destMes), destAnio:Number(m.destAnio), proveedorNombre:assignModal.proveedor, originalTons:lot.original, originalFecha:lot.fecha };
+    var m=assignModal; if(!m){ return; }
+
+    if(!m.selectedId){ alert("Selecciona una disponibilidad."); return; }
+    var lot = getLotById(m.lots, m.selectedId);
+    if(!lot){ alert("No se encontró la disponibilidad seleccionada."); return; }
+
+    var cantidad = Number(m.cantidad||0);
+    var saldo    = Number(lot.saldo||0);
+
+    if (!m.destMes || !m.destAnio){ alert("Selecciona mes y año de destino."); return; }
+    if (cantidad <= 0){ alert("Ingresa una cantidad mayor a 0."); return; }
+    if (cantidad > saldo){
+      alert("La cantidad ("+numeroCL(cantidad)+") supera el saldo disponible ("+numeroCL(saldo)+").");
+      setAssignModal(function(mm){ return Object.assign({}, mm, { cantidad: String(clamp(cantidad,0,saldo)) }); });
+      return;
+    }
+
+    var payload={ disponibilidadId:lot.id, cantidad:cantidad, destMes:Number(m.destMes), destAnio:Number(m.destAnio), proveedorNombre:assignModal.proveedor, originalTons:lot.original, originalFecha:lot.fecha };
     MMppApi.crearAsignacion(payload).then(function(){return reload();}).finally(function(){ setAssignModal(null); });
   }
 
@@ -342,7 +366,7 @@ function AbastecimientoMMPP(){
           <div>
             <select className="mmpp-input" value={filterMes} onChange={function(e){ setFilterMes(e.target.value); }}>
               <option value="">Todos los Meses</option>
-              {mesOptions.map(function(m){ return <option key={m} value={m}>{mesesEs[m-1]}</option>; })} {/* ← dinámico */}
+              {mesOptions.map(function(m){ return <option key={m} value={m}>{mesesEs[m-1]}</option>; })}
             </select>
           </div>
           <div>
@@ -481,7 +505,7 @@ function AbastecimientoMMPP(){
         </table>
       </div>
 
-      {/* MODALES (sin cambios) */}
+      {/* MODALES */}
       {assignModal && (
         <div className="modalBG" onClick={function(){setAssignModal(null);}}>
           <div className="modal" onClick={function(e){e.stopPropagation();}}>
@@ -497,7 +521,17 @@ function AbastecimientoMMPP(){
               <div style={{fontWeight:800,marginBottom:8}}>Disponibilidades:</div>
               {assignModal.lots.map(function(l){
                 return (
-                  <div key={l.id} className={"row-hover"+(assignModal.selectedId===l.id?" sel":"")} onClick={function(){setAssignModal(function(m){return Object.assign({},m,{selectedId:l.id});});}}>
+                  <div
+                    key={l.id}
+                    className={"row-hover"+(assignModal.selectedId===l.id?" sel":"")}
+                    onClick={function(){
+                      setAssignModal(function(m){
+                        var max = Number(l.saldo||0);
+                        var next = clamp(Number(m.cantidad||0), 0, max);
+                        return Object.assign({},m,{selectedId:l.id, cantidad:String(next)});
+                      });
+                    }}
+                  >
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
                       <div><div>Saldo: <strong>{numeroCL(l.saldo)}</strong> tons</div><small>Original: {numeroCL(l.original)} tons</small></div>
                       <div><small>desde {l.fecha?new Date(l.fecha).toLocaleDateString("es-CL"):"—"}</small></div>
@@ -510,7 +544,31 @@ function AbastecimientoMMPP(){
             <div className="mmpp-card" style={{marginTop:12}}>
               <div style={{fontWeight:800,marginBottom:10}}>Detalles de Asignación:</div>
               <div className="mmpp-grid">
-                <input className="mmpp-input" type="number" placeholder="Ej: 150" value={assignModal.cantidad} onChange={function(e){setAssignModal(function(m){return Object.assign({},m,{cantidad:e.target.value});});}} />
+                <div>
+                  <input
+                    className="mmpp-input"
+                    type="number"
+                    placeholder="Ej: 150"
+                    value={assignModal.cantidad}
+                    onChange={function(e){
+                      var v = Number(e.target.value||0);
+                      var lot = getLotById(assignModal.lots, assignModal.selectedId);
+                      var saldo = lot ? Number(lot.saldo||0) : 0;
+                      var next = clamp(v, 0, saldo);
+                      setAssignModal(function(m){ return Object.assign({}, m, { cantidad: String(next) }); });
+                    }}
+                  />
+                  <div className="mmpp-help">
+                    {(function(){
+                      var lot = getLotById(assignModal.lots, assignModal.selectedId);
+                      var saldo = lot ? Number(lot.saldo||0) : 0;
+                      var cant  = Number(assignModal.cantidad||0);
+                      if (!lot) return "Selecciona una disponibilidad.";
+                      if (cant>saldo) return "La cantidad supera el saldo disponible.";
+                      return "Saldo disponible: " + numeroCL(saldo) + " tons";
+                    })()}
+                  </div>
+                </div>
                 <div style={{display:"flex",gap:10}}>
                   <select className="mmpp-input" value={assignModal.destMes||""} onChange={function(e){setAssignModal(function(m){return Object.assign({},m,{destMes:e.target.value});});}}>
                     <option value="">Mes de Destino</option>
@@ -523,7 +581,18 @@ function AbastecimientoMMPP(){
                 </div>
               </div>
               <div style={{marginTop:12}}>
-                <button className="mmpp-button" onClick={confirmarAsignacion}>✔ Confirmar Asignación</button>
+                <button
+                  className="mmpp-button"
+                  onClick={confirmarAsignacion}
+                  disabled={
+                    !assignModal.selectedId ||
+                    !assignModal.destMes ||
+                    !assignModal.destAnio ||
+                    !(Number(assignModal.cantidad)>0)
+                  }
+                >
+                  ✔ Confirmar Asignación
+                </button>
               </div>
             </div>
           </div>
