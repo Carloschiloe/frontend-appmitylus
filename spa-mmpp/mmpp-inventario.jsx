@@ -114,6 +114,19 @@ function AbastecimientoMMPP(){
   var yearOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("year").map(function(d){return d.anio;}).filter(Boolean));
   }, [dispon, filterMes, filterComuna, filterProv, filterEmpresa]);
+
+  // ⚠️ NUEVO: meses dinámicos según año/filtros (solo meses presentes)
+  var mesOptions = React.useMemo(function(){
+    var base = filteredBaseExcluding("mes"); // aplica año/comuna/prov/empresa
+    var set={}, out=[];
+    for(var i=0;i<base.length;i++){
+      var m = Number(base[i] && base[i].mes);
+      if(m && !set[m]){ set[m]=1; out.push(m); }
+    }
+    out.sort(function(a,b){ return a-b; });
+    return out;
+  }, [dispon, filterYear, filterComuna, filterProv, filterEmpresa]);
+
   var comunaOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("comuna").map(function(d){return d.comuna;}).filter(Boolean));
   }, [dispon, filterYear, filterMes, filterProv, filterEmpresa]);
@@ -126,6 +139,7 @@ function AbastecimientoMMPP(){
 
   // limpiar selecciones inválidas
   useEffect(function(){ if(filterYear && yearOptions.indexOf(Number(filterYear))<0 && yearOptions.indexOf(String(filterYear))<0) setFilterYear(""); }, [yearOptions]);
+  useEffect(function(){ if(filterMes && mesOptions.indexOf(Number(filterMes))<0) setFilterMes(""); }, [mesOptions]); // ← NUEVO
   useEffect(function(){ if(filterComuna && comunaOptions.indexOf(filterComuna)<0) setFilterComuna(""); }, [comunaOptions]);
   useEffect(function(){ if(filterProv && provOptions.indexOf(filterProv)<0) setFilterProv(""); }, [provOptions]);
   useEffect(function(){ if(filterEmpresa && empresaOptions.indexOf(filterEmpresa)<0) setFilterEmpresa(""); }, [empresaOptions]);
@@ -258,7 +272,7 @@ function AbastecimientoMMPP(){
   React.useEffect(function(){
     function tryMount(){
       var host = document.getElementById('mmppResumen');
-      if (!host) return true; // todavía no en DOM
+      if (!host) return true;
       if (window.MMppResumen && typeof window.MMppResumen.mount === 'function'){
         window.MMppResumen.mount({ dispon: dispon });
         return true;
@@ -328,7 +342,7 @@ function AbastecimientoMMPP(){
           <div>
             <select className="mmpp-input" value={filterMes} onChange={function(e){ setFilterMes(e.target.value); }}>
               <option value="">Todos los Meses</option>
-              {mesesEs.map(function(m,i){ return <option key={i+1} value={i+1}>{m}</option>; })}
+              {mesOptions.map(function(m){ return <option key={m} value={m}>{mesesEs[m-1]}</option>; })} {/* ← dinámico */}
             </select>
           </div>
           <div>
