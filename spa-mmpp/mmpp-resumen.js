@@ -1,6 +1,6 @@
 /* /spa-mmpp/mmpp-resumen.js
    Resumen Proveedor × Mes con:
-   - Meses en chips horizontales (una sola fila)
+   - Meses en UNA FILA debajo de los filtros (línea de tiempo)
    - Ocultar meses sin datos / Meses con datos / Limpiar meses
    - Alternar eje del gráfico (Proveedor ↔ Mes)
    - Tooltip por tramo con COMUNAS
@@ -10,6 +10,7 @@
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
+  var MMESES_LARGO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
   /* ---------- CSS ---------- */
   function injectCSS(){
@@ -19,7 +20,7 @@
     +'.res-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}'
     +'.res-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}'
     +'.res-title{margin:0;font-weight:800;color:#2b3440}'
-    +'.res-filters{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr)) 1fr;gap:10px;align-items:center}'
+    +'.res-filters{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:10px;align-items:center}'
     +'.res-select{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}'
     +'.res-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
     +'.res-btn{background:#eef2ff;border:1px solid #c7d2fe;color:#1e40af;height:38px;border-radius:10px;padding:0 12px;cursor:pointer;font-weight:700}'
@@ -34,10 +35,12 @@
     +'.res-chart-canvas{display:block;width:980px !important;height:360px !important}'
     +'.res-chart-scroll{overflow-x:auto}'
     +'.res-note{color:#64748b;font-size:12px;margin-top:6px}'
-    /* chips meses: UNA SOLA FILA (12 columnas) */
-    +'.res-months{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px;align-items:center}'
+    /* Línea de tiempo de MESES debajo de los filtros (1 fila, 12 columnas) */
+    +'.res-monthsbar{width:100%;margin:10px 0 6px 0;overflow-x:auto}'
+    +'.res-months-line{width:100%;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px}'
     +'.res-chip{width:100%;height:34px;display:inline-flex;align-items:center;justify-content:center;'
-      +'border:1px solid #c7d2fe;background:#eef2ff;color:#1e40af;border-radius:999px;font-weight:700;cursor:pointer;user-select:none;font-size:13px;padding:0 8px}'
+      +'border:1px solid #c7d2fe;background:#eef2ff;color:#1e40af;border-radius:999px;font-weight:700;cursor:pointer;user-select:none;'
+      +'font-size:13px;white-space:nowrap;padding:0 10px}'
     +'.res-chip.is-on{background:#1e40af;color:#fff;border-color:#1e40af}'
     ;
     var s = document.createElement('style');
@@ -112,12 +115,15 @@
           +'</div>'
         +'</div>'
 
-        +'<div class="res-filters" style="margin-bottom:10px">'
+        <!-- Filtros (3 selects) -->
+        +'<div class="res-filters">'
           +'<select id="resYear" class="res-select"></select>'
           +'<select id="resProv" class="res-select"><option value="">Todos los contactos</option></select>'
           +'<select id="resComuna" class="res-select"><option value="">Todas las comunas</option></select>'
-          +'<div id="resMonths" class="res-months"></div>'
         +'</div>'
+
+        <!-- Línea de tiempo de MESES: una sola fila ocupando todo el ancho -->
+        +'<div class="res-monthsbar"><div id="resMonths" class="res-months-line"></div></div>'
 
         +'<div id="resContent">'
           +'<div id="resTableWrap" class="res-sticky-head"></div>'
@@ -155,8 +161,9 @@
     comSel.innerHTML = '<option value="">Todas las comunas</option>' +
       byCom.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
 
+    // Meses: SOLO nombre del mes, una sola fila
     monthsDiv.innerHTML = range12().map(function(m){
-      return '<span class="res-chip" data-m="'+m+'">'+pad2(m)+' · '+MMESES[m-1]+'</span>';
+      return '<button type="button" class="res-chip" data-m="'+m+'">'+MMESES_LARGO[m-1]+'</button>';
     }).join('');
   }
 
@@ -185,7 +192,6 @@
     }
     thead += '<th class="res-right">TOTAL '+year+'</th></tr></thead>';
 
-    // Totales por mes (fila superior)
     var sumByM = {}; for (var i2=0;i2<monthsToShow.length;i2++) sumByM[monthsToShow[i2]]=0;
     for (var r=0;r<rows.length;r++){
       for (var j=0;j<monthsToShow.length;j++){
@@ -202,7 +208,7 @@
         var mm = monthsToShow[j2];
         total += Number(rr.meses[mm]||0);
       }
-      if (total<=0) continue; // oculta filas 0
+      if (total<=0) continue;
       body += '<tr><td><strong>'+rr.proveedor+'</strong></td>';
       for (var j3=0;j3<monthsToShow.length;j3++){
         var m3 = monthsToShow[j3];
@@ -215,7 +221,6 @@
     }
     body += '</tbody>';
 
-    // Fila total por mes
     var foot = '<tfoot><tr><td><strong>Total por mes</strong></td>';
     var grand=0;
     for (var j4=0;j4<monthsToShow.length;j4++){
@@ -231,19 +236,13 @@
   /* ---------- GRÁFICO ---------- */
   var chartRef = null;
 
-  // Plugin para escribir el total encima de cada barra apilada
   var stackTotalPlugin = {
     id: 'stackTotals',
     afterDatasetsDraw: function(chart, args, opts){
       if (!opts || opts.enabled===false) return;
-      var ctx = chart.ctx;
-      var xScale = chart.scales.x;
-      var yScale = chart.scales.y;
-      var area = chart.chartArea;
+      var ctx = chart.ctx, xScale = chart.scales.x, yScale = chart.scales.y, area = chart.chartArea;
       if (!xScale || !yScale || !area) return;
-
-      var meta0 = chart.getDatasetMeta(0);
-      var n = (meta0 && meta0.data) ? meta0.data.length : 0;
+      var meta0 = chart.getDatasetMeta(0), n = (meta0 && meta0.data) ? meta0.data.length : 0;
 
       ctx.save();
       ctx.font = (opts.fontSize||12)+'px sans-serif';
@@ -252,13 +251,10 @@
 
       for (var i=0;i<n;i++){
         var total = 0;
-        for (var d=0; d<chart.data.datasets.length; d++){
-          total += Number(chart.data.datasets[d].data[i]||0);
-        }
+        for (var d=0; d<chart.data.datasets.length; d++) total += Number(chart.data.datasets[d].data[i]||0);
         if (total<=0) continue;
         var x = (meta0.data[i] && meta0.data[i].x) || 0;
         var y = yScale.getPixelForValue(total);
-        // clamp para que NO se corte arriba
         var yClamped = Math.max(y, area.top + 12);
         ctx.fillText(numeroCL(total), x, yClamped - 6);
       }
@@ -270,7 +266,6 @@
     var canvas = document.getElementById('resChart');
     if (!canvas) return;
 
-    // Si no hay Chart.js, limpiar canvas y salir
     if (!global.Chart){
       var ctx0 = canvas.getContext('2d');
       ctx0.clearRect(0,0,canvas.width,canvas.height);
@@ -279,16 +274,10 @@
     }
     document.getElementById('resChartNote').textContent = '';
 
-    // Construir datasets según eje
-    var labels=[], datasets=[];
-    var maxProvidersLegend = 12;
-
-    // Mapa proveedor → comunas (para tooltips)
-    var provComunas = {};
+    var labels=[], datasets=[], maxProvidersLegend = 12, provComunas = {};
     rows.forEach(function(r){ provComunas[r.proveedor] = r.comunas || ''; });
 
     if (axisMode==='proveedor'){
-      // x = proveedores, datasets = meses seleccionados
       var provs = [];
       for (var r=0;r<rows.length;r++){
         var sum=0; for (var j=0;j<monthsToShow.length;j++){ sum += Number(rows[r].meses[monthsToShow[j]]||0); }
@@ -298,42 +287,24 @@
       labels = provs.map(function(p){ return p.name; });
 
       for (var j2=0;j2<monthsToShow.length;j2++){
-        var m = monthsToShow[j2];
-        var data = [];
-        var totalM=0;
+        var m = monthsToShow[j2], data = [], totalM=0;
         for (var p=0;p<provs.length;p++){
           var v = Number(provs[p].meses[m]||0); data.push(v); totalM+=v;
         }
-        datasets.push({
-          label: pad2(m)+' '+MMESES[m-1]+' · '+numeroCL(totalM)+'t',
-          data: data,
-          borderWidth: 1
-        });
+        datasets.push({ label: pad2(m)+' '+MMESES[m-1]+' · '+numeroCL(totalM)+'t', data: data, borderWidth: 1 });
       }
     } else {
-      // axisMode === 'mes'  → x = meses, datasets = top proveedores
       labels = monthsToShow.map(function(m){return pad2(m)+' '+MMESES[m-1];});
-
       var rank = [];
       for (var r2=0;r2<rows.length;r2++){
-        var sum2=0;
-        for (var j3=0;j3<monthsToShow.length;j3++){ var mm=monthsToShow[j3]; sum2 += Number(rows[r2].meses[mm]||0); }
+        var sum2=0; for (var j3=0;j3<monthsToShow.length;j3++){ var mm=monthsToShow[j3]; sum2 += Number(rows[r2].meses[mm]||0); }
         if (sum2>0) rank.push({name:rows[r2].proveedor, total:sum2, meses:rows[r2].meses});
       }
       rank.sort(function(a,b){ return (b.total||0)-(a.total||0); });
       var top = rank.slice(0, maxProvidersLegend);
-
       for (var t=0;t<top.length;t++){
-        var data2=[];
-        for (var j4=0;j4<monthsToShow.length;j4++){
-          var m2 = monthsToShow[j4];
-          data2.push(Number(top[t].meses[m2]||0));
-        }
-        datasets.push({
-          label: top[t].name+' · '+numeroCL(top[t].total)+'t',
-          data: data2,
-          borderWidth: 1
-        });
+        var data2=[]; for (var j4=0;j4<monthsToShow.length;j4++){ var m2=monthsToShow[j4]; data2.push(Number(top[t].meses[m2]||0)); }
+        datasets.push({ label: top[t].name+' · '+numeroCL(top[t].total)+'t', data: data2, borderWidth: 1 });
       }
     }
 
@@ -346,32 +317,26 @@
         responsive: false,
         maintainAspectRatio: false,
         animation: false,
-        interaction: { mode: 'nearest', intersect: true }, // tooltip por tramo
-        layout: { padding: { top: 12 } }, // aire arriba
+        interaction: { mode: 'nearest', intersect: true },
+        layout: { padding: { top: 12 } },
         plugins: {
           legend: { position: 'right' },
           tooltip: {
             callbacks: {
-              // título (x): con comunas cuando x=proveedor
               title: function(ctx){
                 var xLabel = ctx[0] && ctx[0].label ? ctx[0].label : '';
                 if (axisMode==='proveedor'){
                   var comunas = provComunas[xLabel] ? (' ('+provComunas[xLabel]+')') : '';
                   return xLabel + comunas;
-                } else {
-                  return xLabel; // "MM Mes"
-                }
+                } else { return xLabel; }
               },
-              // etiqueta (dataset actual)
               label: function(ctx){
                 var val = numeroCL(ctx.parsed.y || ctx.raw || 0)+'t';
                 if (axisMode==='proveedor'){
-                  // dataset es el MES
-                  var dsl = ctx.dataset.label||''; // "MM Mes · total"
-                  var mesNom = dsl.split(' · ')[0]; // tomar "MM Mes"
+                  var dsl = ctx.dataset.label||'';
+                  var mesNom = dsl.split(' · ')[0];
                   return mesNom+' · '+val;
                 } else {
-                  // dataset es el PROVEEDOR
                   var prov = (ctx.dataset.label||'').split(' · ')[0];
                   var comunas = provComunas[prov] ? (' ('+provComunas[prov]+')') : '';
                   return prov + comunas + ' · ' + val;
@@ -388,7 +353,6 @@
       plugins: [stackTotalPlugin]
     });
 
-    // activar plugin totales
     chartRef.options.plugins.stackTotals = { enabled:true, color:'#111827', fontSize:12 };
     chartRef.update();
   }
@@ -398,7 +362,7 @@
     dispon: [],
     filters: { year:null, proveedor:'', comuna:'', months:[] },
     hideEmpty: true,
-    axisMode: 'proveedor' // 'proveedor' | 'mes'
+    axisMode: 'proveedor'
   };
 
   function getFiltersFromUI(){
@@ -411,7 +375,6 @@
   }
 
   function monthsToUse(){
-    // Si no hay selección, usamos todos o los que tienen datos (según hideEmpty)
     var sel = STATE.filters.months || [];
     if (sel.length) return sel.slice().sort(function(a,b){return a-b;});
     var base = STATE.hideEmpty ? mesesConDatos(STATE.dispon, STATE.filters) : range12();
@@ -437,13 +400,12 @@
       refresh();
     }
 
-    var ids = ['resYear','resProv','resComuna','resHideEmptyMonths'];
-    for (var i=0;i<ids.length;i++){
-      var el = document.getElementById(ids[i]);
+    ['resYear','resProv','resComuna','resHideEmptyMonths'].forEach(function(id){
+      var el = document.getElementById(id);
       if (el) el.addEventListener('change', updateFromUI);
-    }
+    });
 
-    // chips meses: toggle
+    // chips meses
     var monthsDiv = document.getElementById('resMonths');
     if (monthsDiv){
       monthsDiv.addEventListener('click', function(ev){
@@ -456,7 +418,6 @@
       });
     }
 
-    // botones
     var btnDatos = document.getElementById('resBtnMesesConDatos');
     if (btnDatos){
       btnDatos.addEventListener('click', function(){
@@ -503,14 +464,13 @@
       STATE.dispon = Array.isArray(data) ? data : [];
       fillFilters(STATE.dispon);
 
-      // valores iniciales
       var ui = getFiltersFromUI();
       STATE.filters.year = ui.year;
       STATE.filters.proveedor = ui.proveedor;
       STATE.filters.comuna = ui.comuna;
-      STATE.filters.months = []; // sin selección → usa hideEmpty
+      STATE.filters.months = [];
       STATE.hideEmpty = true;
-      setSelectedMonths([]); // limpio
+      setSelectedMonths([]);
 
       attachEvents();
       refresh();
