@@ -6,7 +6,6 @@
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
 
-  /* ---------- CSS: fija tamaño del gráfico y estilos del resumen ---------- */
   function injectCSS(){
     if (document.getElementById('mmpp-resumen-css')) return;
     var css = `
@@ -26,11 +25,10 @@
     .res-right{text-align:right}
     .res-sticky-head thead th{position:sticky;top:0;background:#f8fafc;z-index:1}
     .res-muted{opacity:.45}
-    /* Gráfico fijo */
     .res-chart-wrap{margin-top:14px}
     .res-chart-frame{display:block;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;background:#fff}
     .res-chart-canvas{display:block;width:980px !important;height:360px !important} /* tamaño fijo */
-    .res-chart-scroll{overflow-x:auto} /* por si la pantalla es menor a 980px */
+    .res-chart-scroll{overflow-x:auto}
     `;
     var s = document.createElement('style');
     s.id = 'mmpp-resumen-css';
@@ -41,7 +39,6 @@
   function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
   function pad2(n){ n=Number(n)||0; return (n<10?'0':'')+n; }
 
-  /* ---------- util: agrupar proveedor×mes y calcular totales ---------- */
   function groupProvMes(rows, filters){
     filters = filters||{};
     var y = filters.year||null;
@@ -49,7 +46,7 @@
     var provSel = (filters.proveedor||'').trim();
     var comunaSel = (filters.comuna||'').trim();
 
-    var mapProv = {}; // { provName: { m1:tons, ..., total: X, comunaSet:Set }}
+    var mapProv = {}; // { provName: { m[1..12], comunaSet } }
     (rows||[]).forEach(function(r){
       if (y && String(r.anio)!==String(y)) return;
       if (provSel && (r.contactoNombre||r.proveedorNombre)!==provSel) return;
@@ -64,7 +61,6 @@
       if (r.comuna) mapProv[prov].comunaSet.add(r.comuna);
     });
 
-    // construir salida ordenada por total desc
     var out = Object.keys(mapProv).map(function(k){
       var obj = mapProv[k];
       var total = 0;
@@ -78,37 +74,32 @@
     return out;
   }
 
-  /* ---------- UI: build filtros y eventos ---------- */
   function buildUI(root){
-    root.innerHTML = `
-      <div class="res-wrap">
-        <div class="res-card">
-          <div class="res-head" style="margin-bottom:10px">
-            <h2 class="res-title">Resumen por mes (Proveedor × Mes)</h2>
-            <div class="res-actions">
-              <button id="resToggle" class="res-btn">Ocultar</button>
-            </div>
-          </div>
-
-          <div class="res-filters" style="margin-bottom:10px">
-            <select id="resYear" class="res-select"></select>
-            <select id="resProv" class="res-select"><option value="">Todos los contactos</option></select>
-            <select id="resComuna" class="res-select"><option value="">Todas las comunas</option></select>
-            <select id="resMeses" class="res-multi" multiple size="4"></select>
-          </div>
-
-          <div id="resTableWrap" class="res-sticky-head"></div>
-
-          <div class="res-chart-wrap">
-            <div class="res-chart-scroll">
-              <div class="res-chart-frame">
-                <canvas id="resChart" class="res-chart-canvas" width="980" height="360"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+    root.innerHTML = '\
+      <div class="res-wrap">\
+        <div class="res-card">\
+          <div class="res-head" style="margin-bottom:10px">\
+            <h2 class="res-title">Resumen por mes (Proveedor × Mes)</h2>\
+            <div class="res-actions">\
+              <button id="resToggle" class="res-btn">Ocultar</button>\
+            </div>\
+          </div>\
+          <div class="res-filters" style="margin-bottom:10px">\
+            <select id="resYear" class="res-select"></select>\
+            <select id="resProv" class="res-select"><option value="">Todos los contactos</option></select>\
+            <select id="resComuna" class="res-select"><option value="">Todas las comunas</option></select>\
+            <select id="resMeses" class="res-multi" multiple size="4"></select>\
+          </div>\
+          <div id="resTableWrap" class="res-sticky-head"></div>\
+          <div class="res-chart-wrap">\
+            <div class="res-chart-scroll">\
+              <div class="res-chart-frame">\
+                <canvas id="resChart" class="res-chart-canvas" width="980" height="360"></canvas>\
+              </div>\
+            </div>\
+          </div>\
+        </div>\
+      </div>';
   }
 
   function uniqSorted(arr){
@@ -128,26 +119,21 @@
     var comSel  = document.getElementById('resComuna');
     var mesesSel= document.getElementById('resMeses');
 
-    // Año: prioriza el actual si existe; sino, el último
     var yNow = (new Date()).getFullYear();
     yearSel.innerHTML = byYears.map(function(y){return '<option value="'+y+'" '+(String(y)===String(yNow)?'selected':'')+'>'+y+'</option>';}).join('');
 
-    // Proveedor
     provSel.innerHTML = '<option value="">Todos los contactos</option>' +
       byProv.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
 
-    // Comuna
     comSel.innerHTML = '<option value="">Todas las comunas</option>' +
       byCom.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
 
-    // Meses (multi)
     mesesSel.innerHTML = MMESES.map(function(nom, i){
       var m = i+1;
-      return '<option value="'+m+'" '+(m===1?'':'')+'>'+pad2(m)+' · '+nom+'</option>';
+      return '<option value="'+m+'">'+pad2(m)+' · '+nom+'</option>';
     }).join('');
   }
 
-  /* ---------- Tabla ---------- */
   function renderTable(rows, filters){
     var mesesSel = (filters.months && filters.months.length) ? filters.months.slice() : null;
     var mutedCol = function(mi){ return mesesSel && mesesSel.indexOf(mi)<0 ? ' res-muted' : ''; };
@@ -175,25 +161,22 @@
     document.getElementById('resTableWrap').innerHTML = html;
   }
 
-  /* ---------- Gráfico (fijo). Usa Chart.js si está; si no, no falla ---------- */
   var chartRef = null;
   function renderChart(rows, filters){
     var canvas = document.getElementById('resChart');
     if (!canvas) return;
 
-    // si no hay Chart.js, simplemente limpia el canvas y salimos
     if (!global.Chart){
       var ctx = canvas.getContext('2d');
       ctx.clearRect(0,0,canvas.width,canvas.height);
       return;
     }
 
-    // Top 8 proveedores por total en rango de filtros
     var top = rows.slice(0, 8);
     var labels = top.map(function(r){ return r.proveedor; });
     var datasets = [];
     for (var mi=1; mi<=12; mi++){
-      if (filters.months && filters.months.length && filters.months.indexOf(mi)<0) continue; // sólo meses filtrados
+      if (filters.months && filters.months.length && filters.months.indexOf(mi)<0) continue;
       datasets.push({
         label: pad2(mi)+' '+MMESES[mi-1],
         data: top.map(function(r){ return r.meses[mi]||0; }),
@@ -208,8 +191,8 @@
       type: 'bar',
       data: { labels: labels, datasets: datasets },
       options: {
-        responsive: false,                // 👈 fijo
-        maintainAspectRatio: false,       // 👈 fijo
+        responsive: false,                // fijo
+        maintainAspectRatio: false,       // fijo
         animation: false,
         plugins: {
           legend: { position: 'right' },
@@ -223,7 +206,6 @@
     });
   }
 
-  /* ---------- Estado + montaje ---------- */
   var STATE = { dispon: [], filters:{year:null, months:[], proveedor:"", comuna:""} };
 
   function getFiltersFromUI(){
@@ -247,7 +229,7 @@
     var toggle = document.getElementById('resToggle');
     if (toggle){
       toggle.addEventListener('click', function(){
-        var wrap = document.getElementById('resTableWrap').parentNode;
+        var wrap = document.getElementById('resTableWrap'); // oculta SOLO la tabla
         var hidden = wrap.style.display==='none';
         wrap.style.display = hidden ? '' : 'none';
         toggle.textContent = hidden ? 'Ocultar' : 'Mostrar';
@@ -256,7 +238,6 @@
   }
 
   function refresh(){
-    // Aplicar agrupación + render
     var rows = groupProvMes(STATE.dispon, STATE.filters);
     renderTable(rows, STATE.filters);
     renderChart(rows, STATE.filters);
