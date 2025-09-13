@@ -56,9 +56,9 @@ function useData(){
     setLoading(true);
     return Promise.all([
       MMppApi.getDisponibilidades(),
-      MMppApi.getAsignaciones().catch(function(){return[];})
+      (MMppApi.getAsignaciones ? MMppApi.getAsignaciones() : Promise.resolve([])).catch(function(){return[];})
     ]).then(function(res){
-      setDispon(res[0]); setAsig(res[1]);
+      setDispon(res[0]||[]); setAsig(res[1]||[]);
     }).finally(function(){ setLoading(false); });
   }
   React.useEffect(function(){ load(); }, []);
@@ -86,9 +86,9 @@ function AbastecimientoMMPP(){
 
   // Filtros
   var _y=React.useState(""), filterYear=_y[0], setFilterYear=_y[1];
-  var _m=React.useState(""), filterMes=_m[0], setFilterMes=_m[1];                 // 👈 NUEVO (mes)
+  var _m=React.useState(""), filterMes=_m[0], setFilterMes=_m[1];                 // NUEVO (mes)
   var _c=React.useState(""), filterComuna=_c[0], setFilterComuna=_c[1];
-  var _p=React.useState(""), filterProv=_p[0], setFilterProv=_p[1];               // contacto
+  var _p=React.useState(""), filterProv=_p[0], setFilterProv=_p[1];
   var _e=React.useState(""), filterEmpresa=_e[0], setFilterEmpresa=_e[1];
   var _s=React.useState(""), searchContacto=_s[0], setSearchContacto=_s[1];
 
@@ -97,13 +97,13 @@ function AbastecimientoMMPP(){
   var _editL=React.useState(null), editLotes=_editL[0], setEditLotes=_editL[1];
 
   React.useEffect(function(){ cssInject(); }, []);
-  React.useEffect(function(){ ensureResumenModule(); }, []); // intenta cargar el resumen externo
+  React.useEffect(function(){ ensureResumenModule(); }, []);
 
   /* ---------- helpers de filtrado dependiente ---------- */
   function filteredBaseExcluding(excludeKey){
     var base = (dispon||[]).slice();
     if(excludeKey!=="year"   && filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
-    if(excludeKey!=="mes"    && filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); }); // 👈 NUEVO
+    if(excludeKey!=="mes"    && filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); }); // NUEVO
     if(excludeKey!=="comuna" && filterComuna) base = base.filter(function(d){ return d.comuna===filterComuna; });
     if(excludeKey!=="prov"   && filterProv)   base = base.filter(function(d){ return (d.contactoNombre||d.proveedorNombre)===filterProv; });
     if(excludeKey!=="emp"    && filterEmpresa)base = base.filter(function(d){ return d.empresaNombre===filterEmpresa; });
@@ -117,18 +117,18 @@ function AbastecimientoMMPP(){
   // opciones dependientes
   var yearOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("year").map(function(d){return d.anio;}).filter(Boolean));
-  }, [dispon, filterMes, filterComuna, filterProv, filterEmpresa]); // 👈 incluye mes
+  }, [dispon, filterMes, filterComuna, filterProv, filterEmpresa]); // incluye mes
   var comunaOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("comuna").map(function(d){return d.comuna;}).filter(Boolean));
-  }, [dispon, filterYear, filterMes, filterProv, filterEmpresa]);   // 👈 incluye mes
+  }, [dispon, filterYear, filterMes, filterProv, filterEmpresa]);   // incluye mes
   var provOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("prov").map(function(d){return (d.contactoNombre||d.proveedorNombre);}).filter(Boolean));
-  }, [dispon, filterYear, filterMes, filterComuna, filterEmpresa]); // 👈 incluye mes
+  }, [dispon, filterYear, filterMes, filterComuna, filterEmpresa]); // incluye mes
   var empresaOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("emp").map(function(d){return d.empresaNombre;}).filter(Boolean));
-  }, [dispon, filterYear, filterMes, filterComuna, filterProv]);    // 👈 incluye mes
+  }, [dispon, filterYear, filterMes, filterComuna, filterProv]);    // incluye mes
 
-  // si una selección queda inválida, la limpiamos
+  // limpiar selecciones inválidas
   useEffect(function(){ if(filterYear && yearOptions.indexOf(Number(filterYear))<0 && yearOptions.indexOf(String(filterYear))<0) setFilterYear(""); }, [yearOptions]);
   useEffect(function(){ if(filterComuna && comunaOptions.indexOf(filterComuna)<0) setFilterComuna(""); }, [comunaOptions]);
   useEffect(function(){ if(filterProv && provOptions.indexOf(filterProv)<0) setFilterProv(""); }, [provOptions]);
@@ -157,7 +157,7 @@ function AbastecimientoMMPP(){
   var invRows = React.useMemo(function(){
     var base = (dispon||[]).slice();
     if(filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
-    if(filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); });   // 👈 NUEVO
+    if(filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); });   // NUEVO
     if(filterComuna) base = base.filter(function(d){ return d.comuna===filterComuna; });
     if(filterProv)   base = base.filter(function(d){ return (d.contactoNombre||d.proveedorNombre)===filterProv; });
     if(filterEmpresa)base = base.filter(function(d){ return d.empresaNombre===filterEmpresa; });
@@ -187,11 +187,11 @@ function AbastecimientoMMPP(){
     });
   }, [dispon, asig, filterYear, filterMes, filterComuna, filterProv, filterEmpresa, searchContacto]);
 
-  // Total bajo Comuna: considera TODOS los filtros (incluye mes)
+  // Total bajo Comuna
   var totalsFiltro = React.useMemo(function(){
     var base = (dispon||[]).slice();
     if(filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
-    if(filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); });   // 👈 NUEVO
+    if(filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); });   // NUEVO
     if(filterComuna) base = base.filter(function(d){ return d.comuna===filterComuna; });
     if(filterProv)   base = base.filter(function(d){ return (d.contactoNombre||d.proveedorNombre)===filterProv; });
     if(filterEmpresa)base = base.filter(function(d){ return d.empresaNombre===filterEmpresa; });
@@ -256,7 +256,7 @@ function AbastecimientoMMPP(){
     Promise.all(prom).then(function(){return reload();}).finally(function(){ setEditLotes(null); });
   }
 
-  function limpiarFiltros(){ setFilterYear(""); setFilterMes(""); setFilterComuna(""); setFilterProv(""); setFilterEmpresa(""); setSearchContacto(""); } // 👈 incluye mes
+  function limpiarFiltros(){ setFilterYear(""); setFilterMes(""); setFilterComuna(""); setFilterProv(""); setFilterEmpresa(""); setSearchContacto(""); }
 
   /* ----------------- UI ----------------- */
   // Referencia al componente global del resumen (si está cargado)
@@ -397,7 +397,7 @@ function AbastecimientoMMPP(){
         </table>
       </div>
 
-      {/* Resumen Proveedor × Mes + gráfico (se carga sólo si existe el módulo externo) */}
+      {/* Resumen Proveedor × Mes (si el módulo existe) */}
       <div style={{height:18}} />
       {ResumenProveedorMes && (
         <ResumenProveedorMes
@@ -573,5 +573,25 @@ function AbastecimientoMMPP(){
   );
 }
 
-var mountNode=document.getElementById("root");
-ReactDOM.createRoot(mountNode).render(<AbastecimientoMMPP />);
+/* ---- MONTAJE SEGURO (mismo archivo, sólo más robusto) ---- */
+(function mountSafely(){
+  function doMount(){
+    var mountNode = document.getElementById("root");
+    if (!mountNode){ console.error("[MMPP] Falta <div id='root'>"); return; }
+    if (!window.ReactDOM){ console.error("[MMPP] ReactDOM no está disponible"); return; }
+    try{
+      if (ReactDOM.createRoot){
+        ReactDOM.createRoot(mountNode).render(<AbastecimientoMMPP />);
+      } else {
+        ReactDOM.render(<AbastecimientoMMPP />, mountNode);
+      }
+    }catch(e){
+      console.error("[MMPP] Error al montar:", e);
+    }
+  }
+  if (document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", doMount);
+  } else {
+    doMount();
+  }
+})();
