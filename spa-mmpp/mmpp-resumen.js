@@ -7,6 +7,8 @@
    - Etiquetas de total sobre barras apiladas (sin corte arriba)
    - Leyenda con volúmenes por dataset
    - Tabla con fila de "Total por mes" y ocultando filas en cero
+   - Filtros dinámicos (contactos y comunas) según AÑO seleccionado
+   - Botón “Limpiar filtros”
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
@@ -95,6 +97,43 @@
     return out;
   }
 
+  /* ---------- helpers de opciones dinámicas ---------- */
+  function optionsByYear(rows, year){
+    var base = (rows||[]).filter(function(r){
+      return !year || String(r.anio)===String(year);
+    });
+    var prov = uniqSorted(base.map(function(d){ return d.contactoNombre || d.proveedorNombre; }).filter(Boolean));
+    var com  = uniqSorted(base.map(function(d){ return d.comuna; }).filter(Boolean));
+    return {prov:prov, com:com};
+  }
+  function repoblarProvComSegunAnio(rows){
+    var yearSel = document.getElementById('resYear');
+    var provSel = document.getElementById('resProv');
+    var comSel  = document.getElementById('resComuna');
+    var yearVal = yearSel ? yearSel.value : '';
+
+    var keepProv = provSel ? provSel.value : '';
+    var keepCom  = comSel  ? comSel.value  : '';
+
+    var opts = optionsByYear(rows, yearVal);
+
+    // Proveedores
+    if (provSel){
+      var htmlP = '<option value="">Todos los contactos</option>' +
+        opts.prov.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
+      provSel.innerHTML = htmlP;
+      // re-seleccionar si existe
+      if (keepProv && opts.prov.indexOf(keepProv)>=0) provSel.value = keepProv;
+    }
+    // Comunas
+    if (comSel){
+      var htmlC = '<option value="">Todas las comunas</option>' +
+        opts.com.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+      comSel.innerHTML = htmlC;
+      if (keepCom && opts.com.indexOf(keepCom)>=0) comSel.value = keepCom;
+    }
+  }
+
   /* ---------- UI ---------- */
   function buildUI(root){
     root.innerHTML = ''
@@ -109,16 +148,22 @@
             +'</label>'
             +'<button id="resBtnMesesConDatos" class="res-btn">Meses con datos</button>'
             +'<button id="resBtnLimpiarMeses" class="res-btn">Limpiar meses</button>'
+            +'<button id="resBtnLimpiarFiltros" class="res-btn">Limpiar filtros</button>'
             +'<button id="resAxisBtn" class="res-btn">Eje: Proveedor</button>'
             +'<button id="resToggle" class="res-btn">Ocultar</button>'
           +'</div>'
         +'</div>'
+
+        <!-- Filtros -->
         +'<div class="res-filters">'
           +'<select id="resYear" class="res-select"></select>'
           +'<select id="resProv" class="res-select"><option value="">Todos los contactos</option></select>'
           +'<select id="resComuna" class="res-select"><option value="">Todas las comunas</option></select>'
         +'</div>'
+
+        <!-- Meses en una fila -->
         +'<div class="res-monthsbar"><div id="resMonths" class="res-months-line"></div></div>'
+
         +'<div id="resContent">'
           +'<div id="resTableWrap" class="res-sticky-head"></div>'
           +'<div class="res-chart-wrap">'
@@ -136,8 +181,6 @@
 
   function fillFilters(data){
     var byYears = uniqSorted((data||[]).map(function(d){return d.anio;}).filter(Boolean));
-    var byProv  = uniqSorted((data||[]).map(function(d){return d.contactoNombre||d.proveedorNombre;}).filter(Boolean));
-    var byCom   = uniqSorted((data||[]).map(function(d){return d.comuna;}).filter(Boolean));
 
     var yearSel = document.getElementById('resYear');
     var provSel = document.getElementById('resProv');
@@ -149,13 +192,14 @@
     var yDefault = byYears.indexOf(yNow)>=0 ? yNow : byYears[byYears.length-1];
     yearSel.innerHTML = byYears.map(function(y){return '<option value="'+y+'" '+(String(y)===String(yDefault)?'selected':'')+'>'+y+'</option>';}).join('');
 
+    // Proveedores/Comunas dinámicos por año
+    var opts = optionsByYear(data, yDefault);
     provSel.innerHTML = '<option value="">Todos los contactos</option>' +
-      byProv.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
-
+      opts.prov.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
     comSel.innerHTML = '<option value="">Todas las comunas</option>' +
-      byCom.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+      opts.com.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
 
-    // Meses: SOLO nombre del mes, una sola fila
+    // Meses: SOLO nombre, una sola fila
     monthsDiv.innerHTML = range12().map(function(m){
       return '<button type="button" class="res-chip" data-m="'+m+'">'+MMESES_LARGO[m-1]+'</button>';
     }).join('');
@@ -230,7 +274,6 @@
   /* ---------- GRÁFICO ---------- */
   var chartRef = null;
 
-  // Etiqueta del total encima del apilado (evita corte superior)
   var stackTotalPlugin = {
     id: 'stackTotals',
     afterDatasetsDraw: function(chart, args, opts){
@@ -273,7 +316,6 @@
     rows.forEach(function(r){ provComunas[r.proveedor] = r.comunas || ''; });
 
     if (axisMode==='proveedor'){
-      // x = proveedores, datasets = meses seleccionados
       var provs = [];
       for (var r=0;r<rows.length;r++){
         var sum=0; for (var j=0;j<monthsToShow.length;j++){ sum += Number(rows[r].meses[monthsToShow[j]]||0); }
@@ -287,27 +329,27 @@
         for (var p=0;p<provs.length;p++){
           var v = Number(provs[p].meses[m]||0); data.push(v); totalM+=v;
         }
-        datasets.push({ label: pad2(m)+' '+MMESES[m-1]+' · '+numeroCL(totalM)+'t', data: data, borderWidth: 1 });
+        // ← Solo nombre del mes en la leyenda
+        datasets.push({ label: MMESES[m-1]+' · '+numeroCL(totalM)+'t', data: data, borderWidth: 1 });
       }
     } else {
-      // axisMode === 'mes' → x = meses, datasets = TODOS los proveedores con datos en esos meses
-      labels = monthsToShow.map(function(m){return pad2(m)+' '+MMESES[m-1];});
+      // axisMode === 'mes' → x = meses (SOLO nombre)
+      labels = monthsToShow.map(function(m){return MMESES[m-1];});
 
-      // lista completa de proveedores que tengan valor > 0 en cualquiera de los meses visibles
+      // incluir TODOS los proveedores con datos en los meses visibles
       var proveedoresConDatos = [];
       for (var r2=0;r2<rows.length;r2++){
-        var tiene=false;
+        var tiene=false, totalProv=0;
         for (var j3=0;j3<monthsToShow.length;j3++){
           var mm = monthsToShow[j3];
-          if (Number(rows[r2].meses[mm]||0)>0){ tiene=true; break; }
+          var val = Number(rows[r2].meses[mm]||0);
+          if (val>0) tiene=true;
+          totalProv += val;
         }
         if (tiene){
-          var totalProv=0;
-          for (var j4=0;j4<monthsToShow.length;j4++){ totalProv += Number(rows[r2].meses[monthsToShow[j4]]||0); }
           proveedoresConDatos.push({name:rows[r2].proveedor, total:totalProv, meses:rows[r2].meses});
         }
       }
-      // ordenamos por total desc (pero NO recortamos: van todos)
       proveedoresConDatos.sort(function(a,b){ return (b.total||0)-(a.total||0); });
 
       for (var t=0;t<proveedoresConDatos.length;t++){
@@ -345,14 +387,14 @@
                   var comunas = provComunas[xLabel] ? (' ('+provComunas[xLabel]+')') : '';
                   return xLabel + comunas;
                 } else {
-                  return xLabel; // mes
+                  return xLabel; // solo nombre del mes
                 }
               },
               label: function(ctx){
                 var val = numeroCL(ctx.parsed.y || ctx.raw || 0)+'t';
                 if (axisMode==='proveedor'){
                   var dsl = ctx.dataset.label||'';
-                  var mesNom = dsl.split(' · ')[0];
+                  var mesNom = dsl.split(' · ')[0]; // ya viene solo nombre
                   return mesNom+' · '+val;
                 } else {
                   var prov = (ctx.dataset.label||'').split(' · ')[0];
@@ -418,7 +460,16 @@
       refresh();
     }
 
-    ['resYear','resProv','resComuna','resHideEmptyMonths'].forEach(function(id){
+    // Year: además de refrescar, repoblar selects dinámicos
+    var yearEl = document.getElementById('resYear');
+    if (yearEl){
+      yearEl.addEventListener('change', function(){
+        repoblarProvComSegunAnio(STATE.dispon);
+        updateFromUI();
+      });
+    }
+
+    ['resProv','resComuna','resHideEmptyMonths'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.addEventListener('change', updateFromUI);
     });
@@ -453,6 +504,21 @@
         refresh();
       });
     }
+
+    // NUEVO: Limpiar filtros (proveedor, comuna, meses)
+    var btnLimpiarFiltros = document.getElementById('resBtnLimpiarFiltros');
+    if (btnLimpiarFiltros){
+      btnLimpiarFiltros.addEventListener('click', function(){
+        var provSel = document.getElementById('resProv');
+        var comSel  = document.getElementById('resComuna');
+        if (provSel) provSel.value = '';
+        if (comSel)  comSel.value  = '';
+        setSelectedMonths([]);
+        STATE.filters.months = [];
+        updateFromUI();
+      });
+    }
+
     var axisBtn = document.getElementById('resAxisBtn');
     if (axisBtn){
       axisBtn.addEventListener('click', function(){
