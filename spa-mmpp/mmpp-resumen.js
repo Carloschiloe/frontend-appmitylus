@@ -1,191 +1,288 @@
-/* spa-mmpp/mmpp-resumen.js
-   Componente reutilizable: ResumenProveedorMes
-   - Recibe: dispon (array), asig (array), defaultYear (número u string),
-             filterComuna (string), filterEmpresa (string)
-   - Muestra: Tabla pivote Proveedor × Mes (saldo) y Gráfico apilado (Top 5)
-   - Sin bundler: expone en window.MMPPResumen.ResumenProveedorMes
+/* /spa-mmpp/mmpp-resumen.js
+   Resumen Proveedor × Mes con filtros (Año, Mes, Proveedor, Comuna) y gráfico fijo
+   - Usa MMppApi.getDisponibilidades() si no se le pasan datos
+   - Si window.Chart existe, pinta barras apiladas; si no, sólo tabla
 */
 (function (global) {
-  var React = global.React;
+  var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
 
-  if (!global.MMPPResumen) global.MMPPResumen = {};
-
-  var mesesEs = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  var mesesShort = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
-
-  function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
-
-  function ensureChartJS(cb){
-    if (global.Chart) return cb();
-    var s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/chart.js";
-    s.onload = cb;
+  /* ---------- CSS: fija tamaño del gráfico y estilos del resumen ---------- */
+  function injectCSS(){
+    if (document.getElementById('mmpp-resumen-css')) return;
+    var css = `
+    .res-wrap{max-width:1200px;margin:0 auto}
+    .res-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}
+    .res-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .res-title{margin:0;font-weight:800;color:#2b3440}
+    .res-filters{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:10px}
+    .res-select,.res-multi{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}
+    .res-multi{height:auto;min-height:44px;padding:8px}
+    .res-actions{display:flex;gap:8px}
+    .res-btn{background:#eef2ff;border:1px solid #c7d2fe;color:#1e40af;height:38px;border-radius:10px;padding:0 12px;cursor:pointer;font-weight:700}
+    .res-table{width:100%;border-collapse:separate;border-spacing:0 8px}
+    .res-table th,.res-table td{padding:10px 8px}
+    .res-table tr{background:#fff;border:1px solid #e5e7eb}
+    .res-table th{font-weight:800;color:#475569}
+    .res-right{text-align:right}
+    .res-sticky-head thead th{position:sticky;top:0;background:#f8fafc;z-index:1}
+    .res-muted{opacity:.45}
+    /* Gráfico fijo */
+    .res-chart-wrap{margin-top:14px}
+    .res-chart-frame{display:block;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;background:#fff}
+    .res-chart-canvas{display:block;width:980px !important;height:360px !important} /* tamaño fijo */
+    .res-chart-scroll{overflow-x:auto} /* por si la pantalla es menor a 980px */
+    `;
+    var s = document.createElement('style');
+    s.id = 'mmpp-resumen-css';
+    s.textContent = css;
     document.head.appendChild(s);
   }
 
-  function GroupBy(arr, keyFn){
-    var m={}; (arr||[]).forEach(function(r){ var k=keyFn(r); m[k]=(m[k]||[]).concat([r]); }); return m;
+  function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
+  function pad2(n){ n=Number(n)||0; return (n<10?'0':'')+n; }
+
+  /* ---------- util: agrupar proveedor×mes y calcular totales ---------- */
+  function groupProvMes(rows, filters){
+    filters = filters||{};
+    var y = filters.year||null;
+    var mesesSel = (filters.months && filters.months.length) ? filters.months.slice() : null; // [1..12] ó null= todos
+    var provSel = (filters.proveedor||'').trim();
+    var comunaSel = (filters.comuna||'').trim();
+
+    var mapProv = {}; // { provName: { m1:tons, ..., total: X, comunaSet:Set }}
+    (rows||[]).forEach(function(r){
+      if (y && String(r.anio)!==String(y)) return;
+      if (provSel && (r.contactoNombre||r.proveedorNombre)!==provSel) return;
+      if (comunaSel && (r.comuna||'')!==comunaSel) return;
+
+      var prov = r.contactoNombre || r.proveedorNombre || '—';
+      var m = Number(r.mes)||0;
+      var tons = Number(r.tons||0)||0;
+
+      if (!mapProv[prov]) mapProv[prov] = {prov:prov, m: Array(13).fill(0), comunaSet:new Set()};
+      mapProv[prov].m[m] += tons;
+      if (r.comuna) mapProv[prov].comunaSet.add(r.comuna);
+    });
+
+    // construir salida ordenada por total desc
+    var out = Object.keys(mapProv).map(function(k){
+      var obj = mapProv[k];
+      var total = 0;
+      for (var mi=1; mi<=12; mi++){
+        var v = obj.m[mi];
+        if (!mesesSel || mesesSel.indexOf(mi)>=0) total += v;
+      }
+      return { proveedor: obj.prov, meses: obj.m, total: total, comunas: Array.from(obj.comunaSet).join(', ') };
+    }).sort(function(a,b){ return (b.total||0)-(a.total||0); });
+
+    return out;
   }
 
-  function ResumenProveedorMes(props){
-    var dispon = props.dispon || [];
-    var asig = props.asig || [];
-    var defaultYear = props.defaultYear;
-    var filterComuna = props.filterComuna || "";
-    var filterEmpresa = props.filterEmpresa || "";
+  /* ---------- UI: build filtros y eventos ---------- */
+  function buildUI(root){
+    root.innerHTML = `
+      <div class="res-wrap">
+        <div class="res-card">
+          <div class="res-head" style="margin-bottom:10px">
+            <h2 class="res-title">Resumen por mes (Proveedor × Mes)</h2>
+            <div class="res-actions">
+              <button id="resToggle" class="res-btn">Ocultar</button>
+            </div>
+          </div>
 
-    var _ry = React.useState(defaultYear || (new Date()).getFullYear());
-    var year = _ry[0], setYear = _ry[1];
+          <div class="res-filters" style="margin-bottom:10px">
+            <select id="resYear" class="res-select"></select>
+            <select id="resProv" class="res-select"><option value="">Todos los contactos</option></select>
+            <select id="resComuna" class="res-select"><option value="">Todas las comunas</option></select>
+            <select id="resMeses" class="res-multi" multiple size="4"></select>
+          </div>
 
-    var _show = React.useState(false);
-    var show = _show[0], setShow = _show[1];
+          <div id="resTableWrap" class="res-sticky-head"></div>
 
-    // Asignaciones por disponibilidadId
-    var asigByDispo = React.useMemo(function(){
-      var m = {};
-      (asig||[]).forEach(function(a){
-        var id = a.disponibilidadId || a.disponibilidad || a.dispoId || a.id || null;
-        if(!id) return;
-        var cant = Number(a.cantidad||0);
-        if (cant>0) m[id] = (m[id]||0) + cant;
-      });
-      return m;
-    }, [asig]);
+          <div class="res-chart-wrap">
+            <div class="res-chart-scroll">
+              <div class="res-chart-frame">
+                <canvas id="resChart" class="res-chart-canvas" width="980" height="360"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
-    function saldoDe(r){
-      var id = r.id || r._id || r.uuid || r._docId || null;
-      var used = id ? (asigByDispo[id] || 0) : 0;
-      var tons = (r.tonsDisponible != null ? Number(r.tonsDisponible) : Number(r.tons || 0));
-      return Math.max(0, Number(tons||0) - Number(used||0));
+  function uniqSorted(arr){
+    var set = {}, out=[];
+    (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v); } });
+    out.sort();
+    return out;
+  }
+
+  function fillFilters(data){
+    var byYears = uniqSorted((data||[]).map(function(d){return d.anio;}).filter(Boolean));
+    var byProv  = uniqSorted((data||[]).map(function(d){return d.contactoNombre||d.proveedorNombre;}).filter(Boolean));
+    var byCom   = uniqSorted((data||[]).map(function(d){return d.comuna;}).filter(Boolean));
+
+    var yearSel = document.getElementById('resYear');
+    var provSel = document.getElementById('resProv');
+    var comSel  = document.getElementById('resComuna');
+    var mesesSel= document.getElementById('resMeses');
+
+    // Año: prioriza el actual si existe; sino, el último
+    var yNow = (new Date()).getFullYear();
+    yearSel.innerHTML = byYears.map(function(y){return '<option value="'+y+'" '+(String(y)===String(yNow)?'selected':'')+'>'+y+'</option>';}).join('');
+
+    // Proveedor
+    provSel.innerHTML = '<option value="">Todos los contactos</option>' +
+      byProv.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
+
+    // Comuna
+    comSel.innerHTML = '<option value="">Todas las comunas</option>' +
+      byCom.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+
+    // Meses (multi)
+    mesesSel.innerHTML = MMESES.map(function(nom, i){
+      var m = i+1;
+      return '<option value="'+m+'" '+(m===1?'':'')+'>'+pad2(m)+' · '+nom+'</option>';
+    }).join('');
+  }
+
+  /* ---------- Tabla ---------- */
+  function renderTable(rows, filters){
+    var mesesSel = (filters.months && filters.months.length) ? filters.months.slice() : null;
+    var mutedCol = function(mi){ return mesesSel && mesesSel.indexOf(mi)<0 ? ' res-muted' : ''; };
+
+    var html = '<table class="res-table"><thead><tr>' +
+               '<th>PROVEEDOR / CONTACTO</th>' +
+               MMESES.map(function(n, i){ return '<th class="res-right'+mutedCol(i+1)+'">'+n.toUpperCase()+'</th>'; }).join('') +
+               '<th class="res-right">TOTAL '+filters.year+'</th></tr></thead><tbody>';
+
+    rows.forEach(function(r){
+      html += '<tr><td><strong>'+r.proveedor+'</strong></td>';
+      for (var mi=1; mi<=12; mi++){
+        var v = r.meses[mi]||0;
+        var show = (!mesesSel || mesesSel.indexOf(mi)>=0) ? v : 0;
+        html += '<td class="res-right'+mutedCol(mi)+'">'+numeroCL(show)+'</td>';
+      }
+      html += '<td class="res-right"><strong>'+numeroCL(r.total)+'</strong></td></tr>';
+    });
+
+    if (!rows.length){
+      html += '<tr><td colspan="14" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
     }
 
-    // Pivote proveedor × mes (saldo)
-    var resumen = React.useMemo(function(){
-      var y = Number(year)||new Date().getFullYear();
-      var base = (dispon||[]).filter(function(d){ return Number(d.anio)===y; });
-
-      if(filterComuna) base = base.filter(function(d){ return (d.comuna||"")===filterComuna; });
-      if(filterEmpresa) base = base.filter(function(d){ return (d.empresaNombre||"")===filterEmpresa; });
-
-      function zeros(){ var a=[],i; for(i=0;i<12;i++) a.push(0); return a; }
-      var map = {};
-      base.forEach(function(d){
-        var prov = (d.contactoNombre||d.proveedorNombre||"Sin contacto");
-        var row = map[prov] || (map[prov] = { proveedor: prov, meses: zeros(), total:0 });
-        var m = (Number(d.mes)||0)-1;
-        var s = saldoDe(d);
-        if(m>=0 && m<12){ row.meses[m]+=s; row.total+=s; }
-      });
-
-      var rows = Object.keys(map).map(function(k){ return map[k]; });
-      rows.sort(function(a,b){ return b.total - a.total; });
-      return { year:y, rows:rows };
-    }, [dispon, asig, asigByDispo, year, filterComuna, filterEmpresa]);
-
-    // Gráfico apilado Top 5
-    React.useEffect(function(){
-      if(!show) return;
-      ensureChartJS(function(){
-        try{
-          var el = document.getElementById("chartResumen");
-          if(!el) return;
-
-          if (global.__mmppChart) { try{ global.__mmppChart.destroy(); }catch(e){} }
-
-          var rows = (resumen.rows||[]).slice(0, 5);
-          var labels = mesesShort.slice();
-          var datasets = rows.map(function(r){
-            return {
-              label: r.proveedor,
-              data: r.meses.map(function(v){ return Math.round(v); }),
-              borderWidth: 1
-            };
-          });
-
-          var ctx = el.getContext("2d");
-          global.__mmppChart = new global.Chart(ctx, {
-            type: 'bar',
-            data: { labels: labels, datasets: datasets },
-            options: {
-              responsive: true,
-              plugins: { legend: { position: 'top' }, title: { display: false } },
-              scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
-            }
-          });
-        }catch(e){ console.error(e); }
-      });
-    }, [show, resumen]);
-
-    return React.createElement(
-      "div",
-      { className: "mmpp-card" },
-      React.createElement(
-        "div",
-        { style:{display:"flex",justifyContent:"space-between",alignItems:"center"} },
-        React.createElement("h2",{style:{margin:"0 0 14px",fontWeight:800}}, "Resumen por mes (Proveedor × Mes)"),
-        React.createElement("div",{style:{display:"flex",gap:10,alignItems:"center"}},
-          React.createElement("select",{
-            className:"mmpp-input",
-            value:String(year),
-            onChange:function(e){ setYear(e.target.value); },
-            style:{width:160}
-          },
-            (function(){
-              var ys = {}; (dispon||[]).forEach(function(d){ if(d.anio) ys[d.anio]=1; });
-              var all = Object.keys(ys).map(Number);
-              if (all.indexOf(new Date().getFullYear())<0) all.push(new Date().getFullYear());
-              return all.sort().map(function(y){
-                return React.createElement("option",{key:y,value:String(y)}, String(y));
-              });
-            })()
-          ),
-          React.createElement("button",
-            { type:"button", className:"mmpp-ghostbtn", onClick:function(){ setShow(!show); } },
-            show ? "Ocultar" : "Mostrar"
-          )
-        )
-      ),
-      show && React.createElement(React.Fragment, null,
-        React.createElement("div",{style:{overflowX:"auto"}},
-          React.createElement("table",{className:"mmpp", style:{minWidth:"900px"}},
-            React.createElement("thead",null,
-              React.createElement("tr",null,
-                React.createElement("th",null,"PROVEEDOR / CONTACTO"),
-                mesesShort.map(function(m,i){
-                  return React.createElement("th",{key:i, className:"right-align"}, m);
-                }),
-                React.createElement("th",{className:"right-align"},"TOTAL ", resumen.year)
-              )
-            ),
-            React.createElement("tbody",null,
-              (resumen.rows||[]).length
-                ? resumen.rows.map(function(r,idx){
-                    return React.createElement("tr",{key:idx},
-                      React.createElement("td",{style:{fontWeight:700}}, r.proveedor),
-                      r.meses.map(function(v,mi){
-                        return React.createElement("td",{key:mi,className:"right-align"}, numeroCL(v));
-                      }),
-                      React.createElement("td",{className:"right-align"},
-                        React.createElement("strong",null, numeroCL(r.total))
-                      )
-                    );
-                  })
-                : React.createElement("tr",null,
-                    React.createElement("td",{colSpan:14,style:{color:"#6b7280"}}, "No hay datos para el año seleccionado.")
-                  )
-            )
-          )
-        ),
-        React.createElement("div",{style:{marginTop:14}},
-          React.createElement("h3",{style:{margin:"8px 0",fontWeight:800}}, "Gráfico apilado (Top 5 proveedores del año)"),
-          React.createElement("div",{id:"chartWrap",style:{background:"#fff",border:"1px solid #e5e7eb",borderRadius:16,padding:12}},
-            React.createElement("canvas",{id:"chartResumen",height:"140"})
-          )
-        )
-      )
-    );
+    html += '</tbody></table>';
+    document.getElementById('resTableWrap').innerHTML = html;
   }
 
-  global.MMPPResumen.ResumenProveedorMes = ResumenProveedorMes;
+  /* ---------- Gráfico (fijo). Usa Chart.js si está; si no, no falla ---------- */
+  var chartRef = null;
+  function renderChart(rows, filters){
+    var canvas = document.getElementById('resChart');
+    if (!canvas) return;
 
+    // si no hay Chart.js, simplemente limpia el canvas y salimos
+    if (!global.Chart){
+      var ctx = canvas.getContext('2d');
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      return;
+    }
+
+    // Top 8 proveedores por total en rango de filtros
+    var top = rows.slice(0, 8);
+    var labels = top.map(function(r){ return r.proveedor; });
+    var datasets = [];
+    for (var mi=1; mi<=12; mi++){
+      if (filters.months && filters.months.length && filters.months.indexOf(mi)<0) continue; // sólo meses filtrados
+      datasets.push({
+        label: pad2(mi)+' '+MMESES[mi-1],
+        data: top.map(function(r){ return r.meses[mi]||0; }),
+        borderWidth: 1
+      });
+    }
+
+    if (chartRef && chartRef.destroy) chartRef.destroy();
+
+    var ctx2 = canvas.getContext('2d');
+    chartRef = new Chart(ctx2, {
+      type: 'bar',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: false,                // 👈 fijo
+        maintainAspectRatio: false,       // 👈 fijo
+        animation: false,
+        plugins: {
+          legend: { position: 'right' },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  /* ---------- Estado + montaje ---------- */
+  var STATE = { dispon: [], filters:{year:null, months:[], proveedor:"", comuna:""} };
+
+  function getFiltersFromUI(){
+    var year   = document.getElementById('resYear').value;
+    var prov   = document.getElementById('resProv').value;
+    var comuna = document.getElementById('resComuna').value;
+    var msEl   = document.getElementById('resMeses');
+    var months = Array.prototype.slice.call(msEl.selectedOptions||[]).map(function(o){return Number(o.value)||0;});
+    return { year: year, months: months, proveedor: prov, comuna: comuna };
+  }
+
+  function attachEvents(){
+    var els = ['resYear','resProv','resComuna','resMeses'].map(function(id){return document.getElementById(id);});
+    els.forEach(function(el){
+      if (!el) return;
+      el.addEventListener('change', function(){
+        STATE.filters = getFiltersFromUI();
+        refresh();
+      });
+    });
+    var toggle = document.getElementById('resToggle');
+    if (toggle){
+      toggle.addEventListener('click', function(){
+        var wrap = document.getElementById('resTableWrap').parentNode;
+        var hidden = wrap.style.display==='none';
+        wrap.style.display = hidden ? '' : 'none';
+        toggle.textContent = hidden ? 'Ocultar' : 'Mostrar';
+      });
+    }
+  }
+
+  function refresh(){
+    // Aplicar agrupación + render
+    var rows = groupProvMes(STATE.dispon, STATE.filters);
+    renderTable(rows, STATE.filters);
+    renderChart(rows, STATE.filters);
+  }
+
+  function mount(opts){
+    injectCSS();
+    var root = document.getElementById('mmppResumen');
+    if (!root){ console.warn('[mmpp-resumen] No existe #mmppResumen'); return; }
+    buildUI(root);
+
+    function go(data){
+      STATE.dispon = Array.isArray(data) ? data : [];
+      fillFilters(STATE.dispon);
+      STATE.filters = getFiltersFromUI();
+      attachEvents();
+      refresh();
+    }
+
+    if (opts && Array.isArray(opts.dispon)) return go(opts.dispon);
+    if (global.MMppApi && typeof global.MMppApi.getDisponibilidades==='function'){
+      global.MMppApi.getDisponibilidades().then(go).catch(function(){ go([]); });
+    } else {
+      go([]);
+    }
+  }
+
+  global.MMppResumen = { mount: mount, refresh: refresh };
 })(window);
