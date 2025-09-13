@@ -1,14 +1,16 @@
 /* /spa-mmpp/mmpp-resumen.js
    Resumen Proveedor × Mes con filtros y gráfico fijo.
-   - No muestra proveedores con total 0 (sobre meses visibles)
+   - Botón para alternar eje del gráfico: Proveedor ↔ Mes
+   - Leyenda con volúmenes (totales por dataset)
+   - No muestra proveedores con total 0 (según meses visibles)
    - Fila de "Total por mes"
    - Ocultar meses sin datos / selección rápida
-   - Si window.Chart existe, pinta barras apiladas; si no, sólo tabla.
+   - Si window.Chart no existe, sólo muestra la tabla.
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
 
-  /* ---------- CSS: fija tamaño del gráfico y estilos del resumen ---------- */
+  /* ---------- CSS ---------- */
   function injectCSS(){
     if (document.getElementById('mmpp-resumen-css')) return;
     var css = '\
@@ -27,7 +29,6 @@
     .res-table th{font-weight:800;color:#475569}\
     .res-right{text-align:right}\
     .res-sticky-head thead th{position:sticky;top:0;background:#f8fafc;z-index:1}\
-    .res-muted{opacity:.45}\
     .res-chart-wrap{margin-top:14px}\
     .res-chart-frame{display:block;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;background:#fff}\
     .res-chart-canvas{display:block;width:980px !important;height:360px !important}\
@@ -52,9 +53,7 @@
 
   /* ---------- util: meses con datos según filtros ---------- */
   function mesesConDatos(rows, filters){
-    var sumByM = {};
-    for (var i=1;i<=12;i++) sumByM[i]=0;
-
+    var sumByM = {}; for (var i=1;i<=12;i++) sumByM[i]=0;
     (rows||[]).forEach(function(r){
       if (filters.year && String(r.anio)!==String(filters.year)) return;
       if (filters.proveedor && (r.contactoNombre||r.proveedorNombre)!==filters.proveedor) return;
@@ -62,29 +61,24 @@
       var m = Number(r.mes)||0;
       sumByM[m] += Number(r.tons||0)||0;
     });
-
-    var out=[];
-    for (var mi=1; mi<=12; mi++) if (sumByM[mi]>0) out.push(mi);
+    var out=[]; for (var mi=1; mi<=12; mi++) if (sumByM[mi]>0) out.push(mi);
     return out;
   }
 
-  /* ---------- util: agrupar proveedor×mes ---------- */
+  /* ---------- agrupar proveedor×mes ---------- */
   function groupProvMes(rows, filters, monthsToShow){
-    var mapProv = {}; // { provName: { m[1..12], totalVisible } }
+    var mapProv = {}; // { provName: { meses[1..12] } }
     (rows||[]).forEach(function(r){
       if (filters.year && String(r.anio)!==String(filters.year)) return;
       if (filters.proveedor && (r.contactoNombre||r.proveedorNombre)!==filters.proveedor) return;
       if (filters.comuna && (r.comuna||"")!==filters.comuna) return;
-
       var prov = r.contactoNombre || r.proveedorNombre || '—';
       var m = Number(r.mes)||0;
       var tons = Number(r.tons||0)||0;
-
       if (!mapProv[prov]) mapProv[prov] = {prov:prov, meses:Array(13).fill(0)};
       mapProv[prov].meses[m] += tons;
     });
 
-    // salida ordenada por total visible desc y SIN filas con total 0
     var out = [];
     var keys = Object.keys(mapProv);
     for (var k=0; k<keys.length; k++){
@@ -97,11 +91,10 @@
       if (total>0) out.push({ proveedor: obj.prov, meses: obj.meses, total: total });
     }
     out.sort(function(a,b){ return (b.total||0)-(a.total||0); });
-
     return out;
   }
 
-  /* ---------- UI: build ---------- */
+  /* ---------- UI ---------- */
   function buildUI(root){
     root.innerHTML = '\
       <div class="res-wrap">\
@@ -115,6 +108,7 @@
               </label>\
               <button id="resBtnMesesConDatos" class="res-btn">Meses con datos</button>\
               <button id="resBtnLimpiarMeses" class="res-btn">Limpiar meses</button>\
+              <button id="resAxisBtn" class="res-btn">Eje: Proveedor</button>\
               <button id="resToggle" class="res-btn">Ocultar</button>\
             </div>\
           </div>\
@@ -124,14 +118,16 @@
             <select id="resComuna" class="res-select"><option value="">Todas las comunas</option></select>\
             <select id="resMeses" class="res-multi" multiple size="6"></select>\
           </div>\
-          <div id="resTableWrap" class="res-sticky-head"></div>\
-          <div class="res-chart-wrap">\
-            <div class="res-chart-scroll">\
-              <div class="res-chart-frame">\
-                <canvas id="resChart" class="res-chart-canvas" width="980" height="360"></canvas>\
+          <div id="resContent">\
+            <div id="resTableWrap" class="res-sticky-head"></div>\
+            <div class="res-chart-wrap">\
+              <div class="res-chart-scroll">\
+                <div class="res-chart-frame">\
+                  <canvas id="resChart" class="res-chart-canvas" width="980" height="360"></canvas>\
+                </div>\
               </div>\
+              <div id="resChartNote" class="res-note"></div>\
             </div>\
-            <div id="resChartNote" class="res-note"></div>\
           </div>\
         </div>\
       </div>';
@@ -147,21 +143,17 @@
     var comSel  = document.getElementById('resComuna');
     var mesesSel= document.getElementById('resMeses');
 
-    // Año (elige actual si existe; si no, el último)
     var yNow = (new Date()).getFullYear();
     if (byYears.length===0) byYears = [yNow];
     var yDefault = byYears.indexOf(yNow)>=0 ? yNow : byYears[byYears.length-1];
     yearSel.innerHTML = byYears.map(function(y){return '<option value="'+y+'" '+(String(y)===String(yDefault)?'selected':'')+'>'+y+'</option>';}).join('');
 
-    // Proveedor
     provSel.innerHTML = '<option value="">Todos los contactos</option>' +
       byProv.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
 
-    // Comuna
     comSel.innerHTML = '<option value="">Todas las comunas</option>' +
       byCom.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
 
-    // Meses (multi)
     mesesSel.innerHTML = range12().map(function(m){
       return '<option value="'+m+'">'+pad2(m)+' · '+MMESES[m-1]+'</option>';
     }).join('');
@@ -187,21 +179,17 @@
 
   /* ---------- Tabla (con fila de totales) ---------- */
   function renderTable(rows, filters, monthsToShow){
-    var totalMes = {};
-    for (var i=0;i<monthsToShow.length;i++) totalMes[monthsToShow[i]]=0;
-
+    var totalMes = {}; for (var i=0;i<monthsToShow.length;i++) totalMes[monthsToShow[i]]=0;
     rows.forEach(function(r){
       for (var i=0;i<monthsToShow.length;i++){
         var mi = monthsToShow[i];
         totalMes[mi] += Number(r.meses[mi]||0);
       }
     });
-
     var totalVisible = rows.reduce(function(acc, r){ return acc + (Number(r.total)||0); }, 0);
 
     var html = '<table class="res-table"><thead><tr>' +
                '<th>PROVEEDOR / CONTACTO</th>';
-
     for (var i=0;i<monthsToShow.length;i++){
       var mi = monthsToShow[i];
       html += '<th class="res-right">'+MMESES[mi-1].toUpperCase()+'</th>';
@@ -218,12 +206,10 @@
       html += '<td class="res-right"><strong>'+numeroCL(r.total)+'</strong></td></tr>';
     });
 
-    // totales
     html += '<tr style="background:#f8fafc;border-top:2px solid #e5e7eb">' +
             '<td><strong>💠 TOTAL POR MES</strong></td>';
     for (var i=0;i<monthsToShow.length;i++){
-      var mi = monthsToShow[i];
-      var v = totalMes[mi]||0;
+      var mi = monthsToShow[i], v = totalMes[mi]||0;
       html += '<td class="res-right"><strong>'+(v ? numeroCL(v) : '')+'</strong></td>';
     }
     html += '<td class="res-right"><strong>'+numeroCL(totalVisible)+'</strong></td></tr>';
@@ -236,54 +222,81 @@
     document.getElementById('resTableWrap').innerHTML = html;
   }
 
-  /* ---------- Gráfico (fijo). Usa Chart.js si está; si no, limpia canvas ---------- */
+  /* ---------- Gráfico ---------- */
   var chartRef = null;
-  function renderChart(rows, filters, monthsToShow){
+
+  function buildDatasets_ProvAxis(rows, monthsToShow){
+    // datasets = meses; labels = proveedores
+    var labels = rows.map(function(r){ return r.proveedor; });
+    var datasets = [];
+    for (var i=0;i<monthsToShow.length;i++){
+      var mi = monthsToShow[i];
+      var data = rows.map(function(r){ return r.meses[mi]||0; });
+      var sum = data.reduce(function(a,b){return a + (Number(b)||0);},0);
+      datasets.push({
+        label: pad2(mi)+' '+MMESES[mi-1]+' · '+numeroCL(sum)+'t',
+        data: data,
+        borderWidth: 1
+      });
+    }
+    return { labels: labels, datasets: datasets };
+  }
+
+  function buildDatasets_MesAxis(rows, monthsToShow){
+    // datasets = proveedores; labels = meses
+    var labels = monthsToShow.map(function(mi){ return pad2(mi)+' '+MMESES[mi-1]; });
+
+    // top 12 por total visible
+    var top = rows.slice(0, 12);
+    var datasets = top.map(function(r){
+      var data = monthsToShow.map(function(mi){ return r.meses[mi]||0; });
+      var sum = data.reduce(function(a,b){return a + (Number(b)||0);},0);
+      return {
+        label: r.proveedor+' · '+numeroCL(sum)+'t',
+        data: data,
+        borderWidth: 1
+      };
+    });
+    return { labels: labels, datasets: datasets };
+  }
+
+  function renderChart(rows, filters, monthsToShow, mode){
     var canvas = document.getElementById('resChart');
     var noteEl = document.getElementById('resChartNote');
     if (!canvas) return;
 
-    // si no hay Chart.js, sólo limpiamos
+    // sin Chart.js -> limpiar
     if (!global.Chart){
       var ctx = canvas.getContext('2d');
       ctx.clearRect(0,0,canvas.width,canvas.height);
-      if (noteEl) noteEl.textContent = 'Cargando gráfico deshabilitado (Chart.js no presente).';
+      if (noteEl) noteEl.textContent = 'Gráfico deshabilitado (Chart.js no presente).';
       return;
     }
 
-    // Top N proveedores (por total visible)
-    var top = rows.slice(0, 12);
-    // ¿hay datos?
-    var totalAll = top.reduce(function(a,r){ return a + (r.total||0); }, 0);
+    var cfg = (mode==='mes')
+      ? buildDatasets_MesAxis(rows, monthsToShow)
+      : buildDatasets_ProvAxis(rows, monthsToShow);
+
+    var totalAll = (cfg.datasets||[]).reduce(function(acc, ds){
+      return acc + (ds.data||[]).reduce(function(a,b){return a+(+b||0);},0);
+    }, 0);
 
     if (chartRef && chartRef.destroy) chartRef.destroy();
 
-    if (!top.length || totalAll<=0){
+    if (!cfg.labels.length || totalAll<=0){
       var ctx2 = canvas.getContext('2d');
       ctx2.clearRect(0,0,canvas.width,canvas.height);
       if (noteEl) noteEl.textContent = 'No hay datos para graficar con los filtros/meses actuales.';
       return;
     }
 
-    var labels = top.map(function(r){ return r.proveedor; });
-    var datasets = [];
-    for (var i=0;i<monthsToShow.length;i++){
-      var mi = monthsToShow[i];
-      datasets.push({
-        label: pad2(mi)+' '+MMESES[mi-1],
-        data: top.map(function(r){ return r.meses[mi]||0; }),
-        borderWidth: 1,
-        // sin colores fijos: Chart.js asigna por defecto
-      });
-    }
-
     var ctx = canvas.getContext('2d');
     chartRef = new Chart(ctx, {
       type: 'bar',
-      data: { labels: labels, datasets: datasets },
+      data: { labels: cfg.labels, datasets: cfg.datasets },
       options: {
-        responsive: false,          // fijo
-        maintainAspectRatio: false, // fijo
+        responsive: false,
+        maintainAspectRatio: false,
         animation: false,
         plugins: {
           legend: { position: 'right' },
@@ -302,47 +315,46 @@
   var STATE = {
     dispon: [],
     filters:{year:null, months:[], proveedor:"", comuna:""},
-    hideZeroMonths: true
+    hideZeroMonths: true,
+    chartMode: 'prov' // 'prov' | 'mes'
   };
 
   function getMonthsToShow(){
-    // 1) si el usuario seleccionó meses → esos
-    if (STATE.filters.months && STATE.filters.months.length) {
-      return STATE.filters.months.slice();
-    }
-    // 2) si "ocultar meses sin datos" → sólo los que tienen datos
+    if (STATE.filters.months && STATE.filters.months.length) return STATE.filters.months.slice();
     if (STATE.hideZeroMonths){
       var withData = mesesConDatos(STATE.dispon, STATE.filters);
       if (withData.length) return withData;
     }
-    // 3) todos
     return range12();
   }
 
   function refresh(){
     var monthsToShow = getMonthsToShow();
-
     var rows = groupProvMes(STATE.dispon, STATE.filters, monthsToShow);
     renderTable(rows, STATE.filters, monthsToShow);
-    renderChart(rows, STATE.filters, monthsToShow);
+    renderChart(rows, STATE.filters, monthsToShow, STATE.chartMode);
+  }
+
+  function updateAxisBtnLabel(){
+    var btn = document.getElementById('resAxisBtn');
+    if (!btn) return;
+    btn.textContent = (STATE.chartMode==='prov') ? 'Eje: Proveedor' : 'Eje: Mes';
   }
 
   function attachEvents(){
-    var ids = ['resYear','resProv','resComuna','resMeses'];
-    for (var i=0;i<ids.length;i++){
-      var el = document.getElementById(ids[i]);
-      if (!el) continue;
+    ['resYear','resProv','resComuna','resMeses'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
       el.addEventListener('change', function(){
         STATE.filters = getFiltersFromUI();
         refresh();
       });
-    }
+    });
 
     var chk = document.getElementById('resHideEmptyMonths');
     if (chk){
       chk.addEventListener('change', function(){
         STATE.hideZeroMonths = !!chk.checked;
-        // si no hay meses seleccionados manualmente, se recalcula meses visibles
         refresh();
       });
     }
@@ -367,14 +379,21 @@
       });
     }
 
+    var axisBtn = document.getElementById('resAxisBtn');
+    if (axisBtn){
+      axisBtn.addEventListener('click', function(){
+        STATE.chartMode = (STATE.chartMode==='prov') ? 'mes' : 'prov';
+        updateAxisBtnLabel();
+        refresh();
+      });
+    }
+
     var toggle = document.getElementById('resToggle');
     if (toggle){
       toggle.addEventListener('click', function(){
-        var chartWrap = document.querySelector('.res-chart-wrap');
-        var tableWrap = document.getElementById('resTableWrap').parentNode; // card intern
-        var hidden = tableWrap.style.display==='none';
-        tableWrap.style.display = hidden ? '' : 'none';
-        if (chartWrap) chartWrap.style.display = hidden ? '' : 'none';
+        var content = document.getElementById('resContent');
+        var hidden = content.style.display==='none';
+        content.style.display = hidden ? '' : 'none';
         toggle.textContent = hidden ? 'Ocultar' : 'Mostrar';
       });
     }
@@ -389,12 +408,12 @@
     function go(data){
       STATE.dispon = Array.isArray(data) ? data : [];
       fillFilters(STATE.dispon);
-      STATE.filters = getFiltersFromUI();         // con año por defecto
+      STATE.filters = getFiltersFromUI();
+      updateAxisBtnLabel();
       attachEvents();
       refresh();
     }
 
-    // fuente de datos
     if (opts && Array.isArray(opts.dispon)) return go(opts.dispon);
     if (global.MMppApi && typeof global.MMppApi.getDisponibilidades==='function'){
       global.MMppApi.getDisponibilidades().then(go).catch(function(){ go([]); });
@@ -403,6 +422,5 @@
     }
   }
 
-  // API pública
   global.MMppResumen = { mount: mount, refresh: refresh };
 })(window);
