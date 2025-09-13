@@ -41,8 +41,7 @@
     +'.res-chip{width:100%;height:34px;display:inline-flex;align-items:center;justify-content:center;'
       +'border:1px solid #c7d2fe;background:#eef2ff;color:#1e40af;border-radius:999px;font-weight:700;cursor:pointer;user-select:none;'
       +'font-size:13px;white-space:nowrap;padding:0 10px}'
-    +'.res-chip.is-on{background:#1e40af;color:#fff;border-color:#1e40af}'
-    ;
+    +'.res-chip.is-on{background:#1e40af;color:#fff;border-color:#1e40af}';
     var s = document.createElement('style');
     s.id = 'mmpp-resumen-css';
     s.textContent = css;
@@ -114,17 +113,12 @@
             +'<button id="resToggle" class="res-btn">Ocultar</button>'
           +'</div>'
         +'</div>'
-
-        <!-- Filtros (3 selects) -->
         +'<div class="res-filters">'
           +'<select id="resYear" class="res-select"></select>'
           +'<select id="resProv" class="res-select"><option value="">Todos los contactos</option></select>'
           +'<select id="resComuna" class="res-select"><option value="">Todas las comunas</option></select>'
         +'</div>'
-
-        <!-- Línea de tiempo de MESES: una sola fila ocupando todo el ancho -->
         +'<div class="res-monthsbar"><div id="resMonths" class="res-months-line"></div></div>'
-
         +'<div id="resContent">'
           +'<div id="resTableWrap" class="res-sticky-head"></div>'
           +'<div class="res-chart-wrap">'
@@ -236,6 +230,7 @@
   /* ---------- GRÁFICO ---------- */
   var chartRef = null;
 
+  // Etiqueta del total encima del apilado (evita corte superior)
   var stackTotalPlugin = {
     id: 'stackTotals',
     afterDatasetsDraw: function(chart, args, opts){
@@ -274,10 +269,11 @@
     }
     document.getElementById('resChartNote').textContent = '';
 
-    var labels=[], datasets=[], maxProvidersLegend = 12, provComunas = {};
+    var labels=[], datasets=[], provComunas = {};
     rows.forEach(function(r){ provComunas[r.proveedor] = r.comunas || ''; });
 
     if (axisMode==='proveedor'){
+      // x = proveedores, datasets = meses seleccionados
       var provs = [];
       for (var r=0;r<rows.length;r++){
         var sum=0; for (var j=0;j<monthsToShow.length;j++){ sum += Number(rows[r].meses[monthsToShow[j]]||0); }
@@ -294,17 +290,37 @@
         datasets.push({ label: pad2(m)+' '+MMESES[m-1]+' · '+numeroCL(totalM)+'t', data: data, borderWidth: 1 });
       }
     } else {
+      // axisMode === 'mes' → x = meses, datasets = TODOS los proveedores con datos en esos meses
       labels = monthsToShow.map(function(m){return pad2(m)+' '+MMESES[m-1];});
-      var rank = [];
+
+      // lista completa de proveedores que tengan valor > 0 en cualquiera de los meses visibles
+      var proveedoresConDatos = [];
       for (var r2=0;r2<rows.length;r2++){
-        var sum2=0; for (var j3=0;j3<monthsToShow.length;j3++){ var mm=monthsToShow[j3]; sum2 += Number(rows[r2].meses[mm]||0); }
-        if (sum2>0) rank.push({name:rows[r2].proveedor, total:sum2, meses:rows[r2].meses});
+        var tiene=false;
+        for (var j3=0;j3<monthsToShow.length;j3++){
+          var mm = monthsToShow[j3];
+          if (Number(rows[r2].meses[mm]||0)>0){ tiene=true; break; }
+        }
+        if (tiene){
+          var totalProv=0;
+          for (var j4=0;j4<monthsToShow.length;j4++){ totalProv += Number(rows[r2].meses[monthsToShow[j4]]||0); }
+          proveedoresConDatos.push({name:rows[r2].proveedor, total:totalProv, meses:rows[r2].meses});
+        }
       }
-      rank.sort(function(a,b){ return (b.total||0)-(a.total||0); });
-      var top = rank.slice(0, maxProvidersLegend);
-      for (var t=0;t<top.length;t++){
-        var data2=[]; for (var j4=0;j4<monthsToShow.length;j4++){ var m2=monthsToShow[j4]; data2.push(Number(top[t].meses[m2]||0)); }
-        datasets.push({ label: top[t].name+' · '+numeroCL(top[t].total)+'t', data: data2, borderWidth: 1 });
+      // ordenamos por total desc (pero NO recortamos: van todos)
+      proveedoresConDatos.sort(function(a,b){ return (b.total||0)-(a.total||0); });
+
+      for (var t=0;t<proveedoresConDatos.length;t++){
+        var data2=[];
+        for (var j5=0;j5<monthsToShow.length;j5++){
+          var m2=monthsToShow[j5];
+          data2.push(Number(proveedoresConDatos[t].meses[m2]||0));
+        }
+        datasets.push({
+          label: proveedoresConDatos[t].name+' · '+numeroCL(proveedoresConDatos[t].total)+'t',
+          data: data2,
+          borderWidth: 1
+        });
       }
     }
 
@@ -328,7 +344,9 @@
                 if (axisMode==='proveedor'){
                   var comunas = provComunas[xLabel] ? (' ('+provComunas[xLabel]+')') : '';
                   return xLabel + comunas;
-                } else { return xLabel; }
+                } else {
+                  return xLabel; // mes
+                }
               },
               label: function(ctx){
                 var val = numeroCL(ctx.parsed.y || ctx.raw || 0)+'t';
