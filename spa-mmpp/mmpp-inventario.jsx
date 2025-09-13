@@ -98,6 +98,9 @@ function AbastecimientoMMPP(){
   var _e=React.useState(""), filterEmpresa=_e[0], setFilterEmpresa=_e[1];
   var _s=React.useState(""), searchContacto=_s[0], setSearchContacto=_s[1];
 
+  // Toggle “Ocultar/Mostrar” de la tabla de inventario (NUEVO)
+  var _ih=React.useState(false), invHidden=_ih[0], setInvHidden=_ih[1];
+
   var _assign=React.useState(null), assignModal=_assign[0], setAssignModal=_assign[1];
   var _editA=React.useState(null), editAsig=_editA[0], setEditAsig=_editA[1];
   var _editL=React.useState(null), editLotes=_editL[0], setEditLotes=_editL[1];
@@ -386,7 +389,7 @@ function AbastecimientoMMPP(){
           </div>
         </div>
 
-        {/* Fila 2: Empresa, buscador, limpiar */}
+        {/* Fila 2: Empresa, buscador, limpiar + Ocultar/Mostrar (NUEVO) */}
         <div className="mmpp-grid4" style={{alignItems:"center", marginBottom:12}}>
           <div>
             <select className="mmpp-input" value={filterEmpresa} onChange={function(e){ setFilterEmpresa(e.target.value); }}>
@@ -397,51 +400,56 @@ function AbastecimientoMMPP(){
           <div style={{gridColumn:"span 2"}}>
             <input className="mmpp-input" placeholder="Buscar contacto..." value={searchContacto} onChange={function(e){ setSearchContacto(e.target.value); }} />
           </div>
-          <div style={{textAlign:"right"}}>
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+            <button type="button" className="mmpp-ghostbtn" onClick={function(){ setInvHidden(function(v){return !v;}); }}>
+              {invHidden ? "Mostrar" : "Ocultar"}
+            </button>
             <button type="button" className="mmpp-ghostbtn" onClick={limpiarFiltros}>Limpiar filtros</button>
           </div>
         </div>
 
-        <table className="mmpp">
-          <thead>
-            <tr>
-              <th>CONTACTO</th>
-              <th>COMUNA</th>
-              <th>DISPONIBILIDAD TOTAL</th>
-              <th>DISPONIBILIDAD POR MES</th>
-              <th>ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invRows.map(function(r,idx){
-              return (
-                <tr key={idx}>
-                  <td>
-                    <div style={{fontWeight:800}}>{r.proveedor}</div>
-                    <div style={{fontSize:12,color:"#6b7280"}}>{r.empresaNombre||"—"}{r.telefono?(" · "+r.telefono):""}</div>
-                  </td>
-                  <td>{r.comuna||"—"}</td>
-                  <td>
-                    <span style={{display:"inline-flex",alignItems:"center",gap:8}}>
-                      <span>📦</span><strong>{numeroCL(r.total)} tons</strong> <small>({r.items.length} lotes)</small>
-                    </span>
-                  </td>
-                  <td>
-                    {r.chips.map(function(c){
-                      return <span key={c.id||(c.mesKey+"-"+c.tons)} className="mmpp-chip">{chipLabelFromMesKey(c.mesKey)} {numeroCL(c.tons)}t</span>;
-                    })}
-                  </td>
-                  <td>
-                    <div className="mmpp-actions">
-                      <button className="mmpp-ghostbtn" onClick={function(){abrirAsignacion(r);}}>Asignar</button>
-                      <button className="mmpp-ghostbtn" title="Editar" onClick={function(){abrirEditarLotes(r);}}>✏️</button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        {!invHidden && (
+          <table className="mmpp">
+            <thead>
+              <tr>
+                <th>CONTACTO</th>
+                <th>COMUNA</th>
+                <th>DISPONIBILIDAD TOTAL</th>
+                <th>DISPONIBILIDAD POR MES</th>
+                <th>ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invRows.map(function(r,idx){
+                return (
+                  <tr key={idx}>
+                    <td>
+                      <div style={{fontWeight:800}}>{r.proveedor}</div>
+                      <div style={{fontSize:12,color:"#6b7280"}}>{r.empresaNombre||"—"}{r.telefono?(" · "+r.telefono):""}</div>
+                    </td>
+                    <td>{r.comuna||"—"}</td>
+                    <td>
+                      <span style={{display:"inline-flex",alignItems:"center",gap:8}}>
+                        <span>📦</span><strong>{numeroCL(r.total)} tons</strong> <small>({r.items.length} lotes)</small>
+                      </span>
+                    </td>
+                    <td>
+                      {r.chips.map(function(c){
+                        return <span key={c.id||(c.mesKey+"-"+c.tons)} className="mmpp-chip">{chipLabelFromMesKey(c.mesKey)} {numeroCL(c.tons)}t</span>;
+                      })}
+                    </td>
+                    <td>
+                      <div className="mmpp-actions">
+                        <button className="mmpp-ghostbtn" onClick={function(){abrirAsignacion(r);}}>Asignar</button>
+                        <button className="mmpp-ghostbtn" title="Editar" onClick={function(){abrirEditarLotes(r);}}>✏️</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Resumen Proveedor × Mes (vanilla, montado con mount) */}
