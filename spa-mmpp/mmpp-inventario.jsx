@@ -33,6 +33,16 @@ function cssInject() {
   document.head.appendChild(el);
 }
 
+function ensureResumenScript(){
+  if (window.MMppResumen) return;
+  if (document.querySelector('script[data-mmpp-resumen="1"]')) return;
+  var s = document.createElement('script');
+  s.src = '/spa-mmpp/mmpp-resumen.js';
+  s.async = true;
+  s.setAttribute('data-mmpp-resumen','1');
+  document.head.appendChild(s);
+}
+
 function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
 
 var mesesEs = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -61,6 +71,7 @@ function useData(){
       setDispon(res[0]||[]); setAsig(res[1]||[]);
     }).finally(function(){ setLoading(false); });
   }
+  React.useEffect(function(){ cssInject(); ensureResumenScript(); }, []);
   React.useEffect(function(){ load(); }, []);
   return {dispon, asig, loading, reload: load};
 }
@@ -74,7 +85,7 @@ function AbastecimientoMMPP(){
 
   // Filtros
   var _y=React.useState(""), filterYear=_y[0], setFilterYear=_y[1];
-  var _m=React.useState(""), filterMes=_m[0], setFilterMes=_m[1]; // ← NUEVO
+  var _m=React.useState(""), filterMes=_m[0], setFilterMes=_m[1]; // ← mes
   var _c=React.useState(""), filterComuna=_c[0], setFilterComuna=_c[1];
   var _p=React.useState(""), filterProv=_p[0], setFilterProv=_p[1];
   var _e=React.useState(""), filterEmpresa=_e[0], setFilterEmpresa=_e[1];
@@ -83,8 +94,6 @@ function AbastecimientoMMPP(){
   var _assign=React.useState(null), assignModal=_assign[0], setAssignModal=_assign[1];
   var _editA=React.useState(null), editAsig=_editA[0], setEditAsig=_editA[1];
   var _editL=React.useState(null), editLotes=_editL[0], setEditLotes=_editL[1];
-
-  React.useEffect(function(){ cssInject(); }, []);
 
   /* ---------- helpers de filtrado dependiente ---------- */
   function filteredBaseExcluding(excludeKey){
@@ -245,10 +254,23 @@ function AbastecimientoMMPP(){
 
   function limpiarFiltros(){ setFilterYear(""); setFilterMes(""); setFilterComuna(""); setFilterProv(""); setFilterEmpresa(""); setSearchContacto(""); }
 
-  /* ----------------- UI ----------------- */
-  // Si existe el módulo de resumen en window, lo usamos (si no, no renderiza nada)
-  var ResumenProveedorMes = (window.MMPPResumen && window.MMPPResumen.ResumenProveedorMes) || null;
+  /* ---------- montar/actualizar RESUMEN vanilla ---------- */
+  React.useEffect(function(){
+    function tryMount(){
+      var host = document.getElementById('mmppResumen');
+      if (!host) return true; // todavía no en DOM
+      if (window.MMppResumen && typeof window.MMppResumen.mount === 'function'){
+        window.MMppResumen.mount({ dispon: dispon });
+        return true;
+      }
+      return false;
+    }
+    if (tryMount()) return;
+    var t = setInterval(function(){ if (tryMount()) clearInterval(t); }, 200);
+    return function(){ clearInterval(t); };
+  }, [dispon]);
 
+  /* ----------------- UI ----------------- */
   return (
     <div className="mmpp-wrap">
       <div className="mmpp-hero">
@@ -384,17 +406,9 @@ function AbastecimientoMMPP(){
         </table>
       </div>
 
-      {/* Resumen Proveedor × Mes (opcional) */}
+      {/* Resumen Proveedor × Mes (vanilla, montado con mount) */}
       <div style={{height:18}} />
-      {ResumenProveedorMes && (
-        <ResumenProveedorMes
-          dispon={dispon}
-          asig={asig}
-          defaultYear={filterYear}
-          filterComuna={filterComuna}
-          filterEmpresa={filterEmpresa}
-        />
-      )}
+      <div id="mmppResumen"></div>
 
       <div style={{height:18}} />
 
@@ -453,7 +467,7 @@ function AbastecimientoMMPP(){
         </table>
       </div>
 
-      {/* MODALES ... (sin cambios, iguales a tu versión previa) */}
+      {/* MODALES (sin cambios) */}
       {assignModal && (
         <div className="modalBG" onClick={function(){setAssignModal(null);}}>
           <div className="modal" onClick={function(e){e.stopPropagation();}}>
@@ -560,6 +574,6 @@ function AbastecimientoMMPP(){
   );
 }
 
-// ⬇️ Montaje clásico (como lo tenías)
+// Montaje
 var mountNode = document.getElementById("root");
 ReactDOM.createRoot(mountNode).render(<AbastecimientoMMPP />);
