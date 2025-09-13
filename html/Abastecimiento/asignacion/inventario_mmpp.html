@@ -1,1 +1,34 @@
-<!doctype html> <html lang="es"> <head> <meta charset="utf-8" /> <meta name="viewport" content="width=device-width,initial-scale=1" /> <title>Inventario MMPP</title> <!-- CSS de esta vista --> <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" /> <!-- React + Babel (solo preset react) --> <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script> <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script> <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script> </head> <body> <div id="root"></div> <!-- API helper --> <script src="/spa-mmpp/mmpp-api.js?v=12"></script> <!-- App (JSX) --> <script type="text/babel" data-presets="react" src="/spa-mmpp/mmpp-inventario.jsx?v=12"></script> </body> </html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Inventario MMPP</title>
+
+  <!-- CSS de esta vista -->
+  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+  <!-- Chart.js (opcional, pero recomendado para el gráfico del resumen) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- (Opcional) Forzar base del backend si quieres sobreescribir la default -->
+  <!-- <script>window.__MMPP_API_BASE__="https://backend-appmitylus.vercel.app";</script> -->
+
+  <!-- API helper (debe ir antes de la app) -->
+  <script src="/spa-mmpp/mmpp-api.js?v=12"></script>
+
+  <!-- Módulo del resumen (si lo cargas aquí, la app no lo descargará de forma perezosa) -->
+  <script src="/spa-mmpp/mmpp-resumen.js?v=12" data-mmpp-resumen="1"></script>
+
+  <!-- App (JSX) — IMPORTANTE: usar presets "es2015,react" -->
+  <script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/mmpp-inventario.jsx?v=12"></script>
+</body>
+</html>
