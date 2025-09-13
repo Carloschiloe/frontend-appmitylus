@@ -65,18 +65,6 @@ function useData(){
   return {dispon, asig, loading, reload: load};
 }
 
-/* carga perezosa del módulo de resumen (si no está en el HTML) */
-function ensureResumenModule(){
-  if (window.MMPPResumen && window.MMPPResumen.ResumenProveedorMes) return;
-  var already = document.querySelector('script[data-mmpp-resumen="1"]');
-  if (already) return;
-  var s = document.createElement("script");
-  s.src = "/spa-mmpp/mmpp-resumen.js";
-  s.async = true;
-  s.setAttribute("data-mmpp-resumen","1");
-  document.head.appendChild(s);
-}
-
 function AbastecimientoMMPP(){
   var data=useData();
   var dispon=data.dispon, asig=data.asig, reload=data.reload;
@@ -86,7 +74,7 @@ function AbastecimientoMMPP(){
 
   // Filtros
   var _y=React.useState(""), filterYear=_y[0], setFilterYear=_y[1];
-  var _m=React.useState(""), filterMes=_m[0], setFilterMes=_m[1];                 // NUEVO (mes)
+  var _m=React.useState(""), filterMes=_m[0], setFilterMes=_m[1]; // ← NUEVO
   var _c=React.useState(""), filterComuna=_c[0], setFilterComuna=_c[1];
   var _p=React.useState(""), filterProv=_p[0], setFilterProv=_p[1];
   var _e=React.useState(""), filterEmpresa=_e[0], setFilterEmpresa=_e[1];
@@ -97,13 +85,12 @@ function AbastecimientoMMPP(){
   var _editL=React.useState(null), editLotes=_editL[0], setEditLotes=_editL[1];
 
   React.useEffect(function(){ cssInject(); }, []);
-  React.useEffect(function(){ ensureResumenModule(); }, []);
 
   /* ---------- helpers de filtrado dependiente ---------- */
   function filteredBaseExcluding(excludeKey){
     var base = (dispon||[]).slice();
     if(excludeKey!=="year"   && filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
-    if(excludeKey!=="mes"    && filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); }); // NUEVO
+    if(excludeKey!=="mes"    && filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); });
     if(excludeKey!=="comuna" && filterComuna) base = base.filter(function(d){ return d.comuna===filterComuna; });
     if(excludeKey!=="prov"   && filterProv)   base = base.filter(function(d){ return (d.contactoNombre||d.proveedorNombre)===filterProv; });
     if(excludeKey!=="emp"    && filterEmpresa)base = base.filter(function(d){ return d.empresaNombre===filterEmpresa; });
@@ -117,16 +104,16 @@ function AbastecimientoMMPP(){
   // opciones dependientes
   var yearOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("year").map(function(d){return d.anio;}).filter(Boolean));
-  }, [dispon, filterMes, filterComuna, filterProv, filterEmpresa]); // incluye mes
+  }, [dispon, filterMes, filterComuna, filterProv, filterEmpresa]);
   var comunaOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("comuna").map(function(d){return d.comuna;}).filter(Boolean));
-  }, [dispon, filterYear, filterMes, filterProv, filterEmpresa]);   // incluye mes
+  }, [dispon, filterYear, filterMes, filterProv, filterEmpresa]);
   var provOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("prov").map(function(d){return (d.contactoNombre||d.proveedorNombre);}).filter(Boolean));
-  }, [dispon, filterYear, filterMes, filterComuna, filterEmpresa]); // incluye mes
+  }, [dispon, filterYear, filterMes, filterComuna, filterEmpresa]);
   var empresaOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("emp").map(function(d){return d.empresaNombre;}).filter(Boolean));
-  }, [dispon, filterYear, filterMes, filterComuna, filterProv]);    // incluye mes
+  }, [dispon, filterYear, filterMes, filterComuna, filterProv]);
 
   // limpiar selecciones inválidas
   useEffect(function(){ if(filterYear && yearOptions.indexOf(Number(filterYear))<0 && yearOptions.indexOf(String(filterYear))<0) setFilterYear(""); }, [yearOptions]);
@@ -157,7 +144,7 @@ function AbastecimientoMMPP(){
   var invRows = React.useMemo(function(){
     var base = (dispon||[]).slice();
     if(filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
-    if(filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); });   // NUEVO
+    if(filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); });
     if(filterComuna) base = base.filter(function(d){ return d.comuna===filterComuna; });
     if(filterProv)   base = base.filter(function(d){ return (d.contactoNombre||d.proveedorNombre)===filterProv; });
     if(filterEmpresa)base = base.filter(function(d){ return d.empresaNombre===filterEmpresa; });
@@ -191,7 +178,7 @@ function AbastecimientoMMPP(){
   var totalsFiltro = React.useMemo(function(){
     var base = (dispon||[]).slice();
     if(filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
-    if(filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); });   // NUEVO
+    if(filterMes)    base = base.filter(function(d){ return String(d.mes)===String(filterMes); });
     if(filterComuna) base = base.filter(function(d){ return d.comuna===filterComuna; });
     if(filterProv)   base = base.filter(function(d){ return (d.contactoNombre||d.proveedorNombre)===filterProv; });
     if(filterEmpresa)base = base.filter(function(d){ return d.empresaNombre===filterEmpresa; });
@@ -259,7 +246,7 @@ function AbastecimientoMMPP(){
   function limpiarFiltros(){ setFilterYear(""); setFilterMes(""); setFilterComuna(""); setFilterProv(""); setFilterEmpresa(""); setSearchContacto(""); }
 
   /* ----------------- UI ----------------- */
-  // Referencia al componente global del resumen (si está cargado)
+  // Si existe el módulo de resumen en window, lo usamos (si no, no renderiza nada)
   var ResumenProveedorMes = (window.MMPPResumen && window.MMPPResumen.ResumenProveedorMes) || null;
 
   return (
@@ -397,7 +384,7 @@ function AbastecimientoMMPP(){
         </table>
       </div>
 
-      {/* Resumen Proveedor × Mes (si el módulo existe) */}
+      {/* Resumen Proveedor × Mes (opcional) */}
       <div style={{height:18}} />
       {ResumenProveedorMes && (
         <ResumenProveedorMes
@@ -466,7 +453,7 @@ function AbastecimientoMMPP(){
         </table>
       </div>
 
-      {/* MODALES (asignar / editar / lotes) */}
+      {/* MODALES ... (sin cambios, iguales a tu versión previa) */}
       {assignModal && (
         <div className="modalBG" onClick={function(){setAssignModal(null);}}>
           <div className="modal" onClick={function(e){e.stopPropagation();}}>
@@ -573,25 +560,6 @@ function AbastecimientoMMPP(){
   );
 }
 
-/* ---- MONTAJE SEGURO (mismo archivo, sólo más robusto) ---- */
-(function mountSafely(){
-  function doMount(){
-    var mountNode = document.getElementById("root");
-    if (!mountNode){ console.error("[MMPP] Falta <div id='root'>"); return; }
-    if (!window.ReactDOM){ console.error("[MMPP] ReactDOM no está disponible"); return; }
-    try{
-      if (ReactDOM.createRoot){
-        ReactDOM.createRoot(mountNode).render(<AbastecimientoMMPP />);
-      } else {
-        ReactDOM.render(<AbastecimientoMMPP />, mountNode);
-      }
-    }catch(e){
-      console.error("[MMPP] Error al montar:", e);
-    }
-  }
-  if (document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", doMount);
-  } else {
-    doMount();
-  }
-})();
+// ⬇️ Montaje clásico (como lo tenías)
+var mountNode = document.getElementById("root");
+ReactDOM.createRoot(mountNode).render(<AbastecimientoMMPP />);
