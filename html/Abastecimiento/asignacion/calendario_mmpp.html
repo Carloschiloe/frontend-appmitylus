@@ -5,23 +5,45 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Calendario MMPP</title>
 
-  <!-- (opcional) estilo base de tu app -->
+  <!-- Layout común (sidebar + main) -->
+  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
+  <!-- (Opcional) estilos propios del calendario -->
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
+  
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 </head>
 <body>
-  <div id="mmppCalendario"></div>
+  <div class="mmpp-layout">
+    <div id="mmppNavMount"></div>
+    <main class="mmpp-main">
+      <div id="calRoot"></div>
+    </main>
+  </div>
 
-  <!-- (Opcional) sobreescribir base del backend -->
+  <!-- (Opcional) Forzar base del backend -->
   <!-- <script>window.__MMPP_API_BASE__="https://backend-appmitylus.vercel.app";</script> -->
 
-  <!-- Adaptador API (el de arriba, actualizado) -->
-  <script src="/spa-mmpp/mmpp-api.js?v=13"></script>
+  <!-- API (debe ir antes de la app) -->
+  <script src="/spa-mmpp/mmpp-api.js?v=12"></script>
 
-  <!-- Calendario -->
-  <script src="/spa-mmpp/mmpp-calendario.js?v=1"></script>
-  <script>
-    // Montaje (puedes ajustar capacidadCamion si quieres)
-    MMppCalendario.mount({ capacidadCamion: 25 });
+  <!-- Sidebar -->
+  <script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
+
+  <!-- Tu calendario (JSX) -->
+  <script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/calendario.jsx?v=1"></script>
+
+  <!-- Auto-montaje del calendario si exportas CalendarioMMPP en calendario.jsx -->
+  <script type="text/babel" data-presets="es2015,react">
+    if (window.CalendarioMMPP) {
+      ReactDOM.createRoot(document.getElementById('calRoot')).render(<CalendarioMMPP />);
+    } else {
+      // placeholder por si aún no montas dentro del propio archivo
+      function Placeholder(){ return <div className="mmpp-card"><h2>Calendario</h2><p>Cargando…</p></div>; }
+      ReactDOM.createRoot(document.getElementById('calRoot')).render(<Placeholder />);
+    }
   </script>
 </body>
 </html>
