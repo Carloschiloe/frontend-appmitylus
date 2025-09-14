@@ -9,6 +9,7 @@
    - Tabla con fila de "Total por mes" y ocultando filas en cero
    - Filtros dinámicos (contactos y comunas) según AÑO seleccionado
    - Botón “Limpiar filtros”
+   - NUEVO: Selección de leyenda por aislamiento (click = mostrar solo; multi-selección; botón “Limpiar selección”)
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
@@ -57,6 +58,10 @@
     var set = {}, out=[];
     (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v); } });
     out.sort(); return out;
+  }
+  function baseLegendKey(label){
+    // Normaliza etiqueta de dataset para compararla (quita " · 123t")
+    return String(label||'').split(' · ')[0];
   }
 
   /* ---------- meses con datos según filtros ---------- */
@@ -122,7 +127,6 @@
       var htmlP = '<option value="">Todos los contactos</option>' +
         opts.prov.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
       provSel.innerHTML = htmlP;
-      // re-seleccionar si existe
       if (keepProv && opts.prov.indexOf(keepProv)>=0) provSel.value = keepProv;
     }
     // Comunas
@@ -149,6 +153,7 @@
             +'<button id="resBtnMesesConDatos" class="res-btn">Meses con datos</button>'
             +'<button id="resBtnLimpiarMeses" class="res-btn">Limpiar meses</button>'
             +'<button id="resBtnLimpiarFiltros" class="res-btn">Limpiar filtros</button>'
+            +'<button id="resBtnLimpiarSeleccion" class="res-btn">Limpiar selección</button>'
             +'<button id="resAxisBtn" class="res-btn">Eje: Proveedor</button>'
             +'<button id="resToggle" class="res-btn">Ocultar</button>'
           +'</div>'
@@ -262,7 +267,7 @@
     var foot = '<tfoot><tr><td><strong>Total por mes</strong></td>';
     var grand=0;
     for (var j4=0;j4<monthsToShow.length;j4++){
-      var m4 = monthsToShow[j4]; grand += sumByM[m4];
+      var m4=monthsToShow[j4]; grand += sumByM[m4];
       foot += '<td class="res-right"><strong>'+numeroCL(sumByM[m4])+'</strong></td>';
     }
     foot += '<td class="res-right"><strong>'+numeroCL(grand)+'</strong></td></tr></tfoot>';
@@ -300,6 +305,19 @@
     }
   };
 
+  // --- NUEVO: selección de leyenda por aislamiento ---
+  // Guardamos las etiquetas base (sin " · 123t") de los datasets seleccionados.
+  // Si el set está vacío -> se muestran todos; si tiene items -> solo esos.
+  function applyLegendSelection(chart, selectedSet){
+    if (!chart) return;
+    var anySelected = selectedSet && selectedSet.size>0;
+    chart.data.datasets.forEach(function(ds){
+      var key = baseLegendKey(ds.label);
+      ds.hidden = anySelected ? !selectedSet.has(key) : false;
+    });
+    chart.update();
+  }
+
   function renderChart(rows, monthsToShow, axisMode){
     var canvas = document.getElementById('resChart');
     if (!canvas) return;
@@ -329,7 +347,6 @@
         for (var p=0;p<provs.length;p++){
           var v = Number(provs[p].meses[m]||0); data.push(v); totalM+=v;
         }
-        // ← Solo nombre del mes en la leyenda
         datasets.push({ label: MMESES[m-1]+' · '+numeroCL(totalM)+'t', data: data, borderWidth: 1 });
       }
     } else {
@@ -378,7 +395,33 @@
         interaction: { mode: 'nearest', intersect: true },
         layout: { padding: { top: 12 } },
         plugins: {
-          legend: { position: 'right' },
+          legend: {
+            position: 'right',
+            // --- NUEVO: onClick personalizado para "aislar" en vez de ocultar ---
+            onClick: function(e, legendItem, legend){
+              var dsLabel = legendItem.text || legendItem.dataset.label || '';
+              var key = baseLegendKey(dsLabel);
+              // Toggle en el set
+              if (STATE.legendSelected.has(key)) {
+                STATE.legendSelected.delete(key);
+              } else {
+                STATE.legendSelected.add(key);
+              }
+              applyLegendSelection(legend.chart, STATE.legendSelected);
+            },
+            labels: {
+              // Actualizamos "hidden" para que el estilo de la leyenda refleje la selección
+              generateLabels: function(chart){
+                var labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                var anySelected = STATE.legendSelected && STATE.legendSelected.size>0;
+                labels.forEach(function(lab){
+                  var key = baseLegendKey(lab.text);
+                  lab.hidden = anySelected ? !STATE.legendSelected.has(key) : false;
+                });
+                return labels;
+              }
+            }
+          },
           tooltip: {
             callbacks: {
               title: function(ctx){
@@ -394,7 +437,7 @@
                 var val = numeroCL(ctx.parsed.y || ctx.raw || 0)+'t';
                 if (axisMode==='proveedor'){
                   var dsl = ctx.dataset.label||'';
-                  var mesNom = dsl.split(' · ')[0]; // ya viene solo nombre
+                  var mesNom = dsl.split(' · ')[0];
                   return mesNom+' · '+val;
                 } else {
                   var prov = (ctx.dataset.label||'').split(' · ')[0];
@@ -413,6 +456,9 @@
       plugins: [stackTotalPlugin]
     });
 
+    // Aplicar selección actual (si hay) al reconstruir el gráfico
+    applyLegendSelection(chartRef, STATE.legendSelected);
+
     chartRef.options.plugins.stackTotals = { enabled:true, color:'#111827', fontSize:12 };
     chartRef.update();
   }
@@ -422,7 +468,8 @@
     dispon: [],
     filters: { year:null, proveedor:'', comuna:'', months:[] },
     hideEmpty: true,
-    axisMode: 'proveedor'
+    axisMode: 'proveedor',
+    legendSelected: new Set() // ← NUEVO
   };
 
   function getFiltersFromUI(){
@@ -457,6 +504,8 @@
       STATE.filters.comuna = f.comuna;
       STATE.filters.months = f.months;
       STATE.hideEmpty = f.hideEmpty;
+      // Si cambian filtros “fuertes”, limpiamos la selección de leyenda (evita etiquetas desfasadas)
+      STATE.legendSelected.clear();
       refresh();
     }
 
@@ -493,6 +542,7 @@
         var m = mesesConDatos(STATE.dispon, STATE.filters);
         setSelectedMonths(m);
         STATE.filters.months = m;
+        STATE.legendSelected.clear(); // reset selección
         refresh();
       });
     }
@@ -501,6 +551,7 @@
       btnLimpiar.addEventListener('click', function(){
         setSelectedMonths([]);
         STATE.filters.months = [];
+        STATE.legendSelected.clear(); // reset selección
         refresh();
       });
     }
@@ -515,7 +566,17 @@
         if (comSel)  comSel.value  = '';
         setSelectedMonths([]);
         STATE.filters.months = [];
+        STATE.legendSelected.clear(); // reset selección
         updateFromUI();
+      });
+    }
+
+    // NUEVO: Limpiar selección de leyenda (mostrar todos)
+    var btnLimpiarSel = document.getElementById('resBtnLimpiarSeleccion');
+    if (btnLimpiarSel){
+      btnLimpiarSel.addEventListener('click', function(){
+        STATE.legendSelected.clear();
+        if (chartRef){ applyLegendSelection(chartRef, STATE.legendSelected); }
       });
     }
 
@@ -524,6 +585,7 @@
       axisBtn.addEventListener('click', function(){
         STATE.axisMode = (STATE.axisMode==='proveedor' ? 'mes' : 'proveedor');
         axisBtn.textContent = 'Eje: ' + (STATE.axisMode==='proveedor' ? 'Proveedor' : 'Mes');
+        STATE.legendSelected.clear(); // al cambiar el eje, cambia el tipo de etiquetas
         refresh();
       });
     }
@@ -554,6 +616,7 @@
       STATE.filters.comuna = ui.comuna;
       STATE.filters.months = [];
       STATE.hideEmpty = true;
+      STATE.legendSelected.clear();
       setSelectedMonths([]);
 
       attachEvents();
