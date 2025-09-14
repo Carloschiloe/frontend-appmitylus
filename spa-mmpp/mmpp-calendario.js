@@ -1,76 +1,403 @@
 /* /spa-mmpp/mmpp-calendario.js
    Calendario de Cosechas y Entregas (asignaciones) para MMPP
+   - 10 t = 1 camión (configurable en mount)
    - Navegación por mes
-   - Totales por día (Toneladas / Camiones)
-   - Click en día -> modal para asignar desde disponibilidades con saldo
-   - Filtros dinámicos (Contacto y Comuna) + Limpiar filtros
-   - Compatible con MMppApi.getDisponibilidades / getAsignaciones / crearAsignacion
-   - Back-compat: si una asignación no trae destDia, se coloca en el día 1 (marcado "sin día")
+   - KPI: Requerido (Mes) editable + Asignado + Brecha (persiste por mes en localStorage)
+   - Vista Toneladas/Camiones
+   - Agrupar por: Proveedor / Comuna / Transportista (contacto)
+   - Filtros: Comuna / Transportista / Proveedor + Limpiar
+   - Totales por día + chips por grupo + resumen semanal en domingos
+   - Domingos y feriados (CL) en rojo
+   - Doble-click en un día abre modal para asignar (usa MMppApi)
 */
 
 (function (global) {
-  // === CAMBIO CLAVE: 10 t = 1 camión
-  var CAPACIDAD_CAMION_DEF = 10; // t/camión por defecto (cambia con mount({capacidadCamion}))
+  // ===== Config =====
+  var CAPACIDAD_CAMION_DEF = 10; // t por camión
+  var CL_HOLIDAYS_2025 = { "2025-09-18":1, "2025-09-19":1 }; // ejemplo mínimo
 
+  // ===== Utiles =====
+  function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
+  function pad2(n){ n = Number(n)||0; return (n<10?"0":"")+n; }
+  function monthKeyFromDate(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1); }
+  function mondayIndex(jsWeekday){ return (jsWeekday+6)%7; } // 0..6 (0 = Lunes)
+  function colorFromString(str){
+    if(!str) return "#9ca3af";
+    var h=0; for(var i=0;i<str.length;i++){ h=(h*31 + str.charCodeAt(i))>>>0; }
+    return "hsl("+(h%360)+",70%,45%)";
+  }
+
+  var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  var DIAS  = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+
+  // ===== CSS =====
   function injectCSS(){
     if (document.getElementById('mmpp-cal-css')) return;
     var css = ''
     +'.cal-wrap{max-width:1200px;margin:0 auto;padding:18px}'
     +'.cal-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}'
     +'.cal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}'
-    +'.cal-title{margin:0;font-weight:800;color:#2b3440}'
+    +'.cal-title{margin:0;font-weight:800;color:#2b3440;font-size:26px;display:flex;gap:10px;align-items:center}'
     +'.cal-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}'
     +'.cal-btn{background:#eef2ff;border:1px solid #c7d2fe;color:#1e40af;height:38px;border-radius:10px;padding:0 12px;cursor:pointer;font-weight:700}'
-    +'.cal-tabs{display:flex;gap:6px}'
-    +'.cal-tab{background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:8px 12px;cursor:pointer;font-weight:800;color:#374151}'
-    +'.cal-tab.on{background:#1e40af;color:#fff;border-color:#1e40af}'
-    +'.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}'
-    +'.cal-dayname{font-weight:800;color:#64748b;text-align:center}'
-    +'.cal-cell{background:#fff;border:1px solid #e5e7eb;border-radius:14px;min-height:120px;padding:10px;display:flex;flex-direction:column;gap:6px}'
-    +'.cal-cell.off{background:#f9fafb;color:#9ca3af}'
-    +'.cal-date{display:flex;align-items:center;justify-content:space-between;font-weight:800;color:#374151}'
-    +'.cal-pill{display:inline-flex;align-items:center;gap:6px;background:#ede9fe;color:#6d28d9;border-radius:999px;padding:2px 8px;font-weight:700;font-size:12px}'
-    +'.cal-tag{display:inline-flex;gap:6px;align-items:center;background:#ecfeff;border:1px solid #a5f3fc;color:#155e75;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700}'
-    +'.cal-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap}'
-    +'.cal-filterrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px}'
+    +'.seg{display:inline-flex;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}'
+    +'.seg button{height:34px;padding:0 12px;background:#f3f4f6;border:0;cursor:pointer;font-weight:700}'
+    +'.seg button.on{background:#2155ff;color:#fff}'
+    +'.cal-kpis{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 12px}'
+    +'.kpi{background:#f3f4f6;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;font-weight:700}'
+    +'.kpi .lbl{font-size:12px;color:#6b7280;font-weight:600}'
+    +'.kpi input{height:32px;border:1px solid #e5e7eb;border-radius:10px;padding:0 10px;background:#fff;width:110px;margin-left:6px}'
+    +'.cal-filterrow{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-bottom:10px}'
     +'.cal-input{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}'
     +'.cal-small{font-size:12px;color:#6b7280}'
+    +'.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}'
+    +'.cal-dayname{font-weight:800;color:#64748b;text-align:center;padding:8px;border:1px solid #e5e7eb;border-radius:10px;background:#f3f4f6}'
+    +'.cal-cell{background:#fcfdff;border:1px solid #e5e7eb;border-radius:14px;min-height:120px;padding:8px;display:flex;flex-direction:column;gap:6px;position:relative}'
+    +'.cal-cell.off{background:#f9fafb;color:#9ca3af}'
+    +'.cal-cell.hol{background:#fff1f2;border-color:#fecaca}'
+    +'.cal-date{display:flex;align-items:center;justify-content:space-between;font-weight:800;color:#374151}'
+    +'.badge{margin-left:6px;font-size:11px;padding:2px 6px;border:1px solid #e5e7eb;border-radius:999px;background:#fff}'
+    +'.badge.red{background:#fee2e2;border-color:#fecaca;color:#991b1b}'
+    +'.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 6px;border-radius:8px;background:#eef2ff;color:#1e40af;border:1px solid #c7d2fe;font-size:11px}'
+    +'.total{position:absolute;top:6px;right:6px}'
+    +'.chip{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 6px;border-radius:8px;border:1px solid #e5e7eb;background:#f9fafb}'
+    +'.chip .left{display:flex;align-items:center;gap:6px;min-width:0;flex:1}'
+    +'.chip .prov{font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}'
+    +'.chip .qty{font-weight:700;white-space:nowrap;font-size:11px}'
+    +'.dot{width:8px;height:8px;border-radius:999px}'
+    +'.weeksum{font-size:12px;font-weight:700;margin-top:auto}'
+    +'.cal-tabs{display:flex;gap:6px}'
+    +'.cal-tab{background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:8px 12px;cursor:pointer;font-weight:800;color:#374151}'
+    +'.cal-tab.on{background:#2155ff;color:#fff;border-color:#2155ff}'
     +'.modalBG{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:999}'
     +'.modal{width:min(900px,96vw);background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 30px 60px rgba(0,0,0,.2);padding:18px}'
     +'.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}'
     +'.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}'
     +'.cal-list{display:flex;flex-direction:column;gap:10px;max-height:360px;overflow:auto;padding-right:4px}'
     +'.lot{border:1px solid #e5e7eb;border-radius:12px;padding:10px;background:#f9fafb;cursor:pointer}'
-    +'.lot.sel{background:#e0e7ff;border-color:#c7d2fe}'
-    ;
+    +'.lot.sel{background:#e0e7ff;border-color:#c7d2fe}';
     var s = document.createElement('style');
     s.id = 'mmpp-cal-css';
     s.textContent = css;
     document.head.appendChild(s);
   }
 
-  var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  var MESES_CORTO = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
-  var DIAS = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]; // lunes primero
+  // ===== Estado =====
+  var STATE = {
+    capacidadCamion: CAPACIDAD_CAMION_DEF,
+    current: new Date(),
+    view: 't',                 // 't' toneladas | 'c' camiones
+    group: 'prov',             // 'prov' | 'com' | 'trans'
+    filters: { comuna:'', transportista:'', proveedor:'' },
+    reqByMonth: {},            // { 'YYYY-MM': number en t }
+    dispon: [],
+    asig: []
+  };
 
-  function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
-  function pad2(n){ n=Number(n)||0; return (n<10?'0':'')+n; }
-
-  function firstDayOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
-  function daysInMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); }
-  function mondayIndex(jsWeekday){ return (jsWeekday+6)%7; } // 0..6 donde 0=Lunes
-
-  function uniqSorted(arr){
-    var set={}, out=[];
-    (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v); } });
-    out.sort(); return out;
+  // ===== Helpers de datos =====
+  function asigKeyMonth(a){
+    var y = Number(a.destAnio||0), m = Number(a.destMes||0);
+    if(!y || !m) return null;
+    return y+'-'+pad2(m);
+  }
+  function asigDay(a){
+    var d = Number(a.destDia||0);
+    if (!d) d = 1;
+    return d;
   }
 
-  function groupBy(arr, keyFn){
-    var m={}; (arr||[]).forEach(function(r){ var k=keyFn(r); m[k]=(m[k]||[]).concat([r]); }); return m;
+  function buildIndexes(){
+    // Map de disponibilidad por id para "enriquecer" asignaciones
+    var m = {};
+    for (var i=0;i<STATE.dispon.length;i++){
+      var d = STATE.dispon[i];
+      if (d && d.id!=null) m[String(d.id)] = d;
+    }
+    return m;
   }
 
-  // === Helper: YYYYMM de una disponibilidad (anio/mes, mesKey o fecha) ===
+  function enrichAssignmentsForMonth(monthDate){
+    var mk = monthKeyFromDate(monthDate);
+    var all = STATE.asig.filter(function(a){ return asigKeyMonth(a)===mk; });
+    var byId = buildIndexes();
+
+    // Enriquecemos con comuna / contacto (transportista?) / proveedor visible
+    return all.map(function(a){
+      var d = byId[String(a.disponibilidadId)] || {};
+      var prov = a.proveedorNombre || d.proveedorNombre || d.contactoNombre || '—';
+      var trans = d.contactoNombre || d.empresaNombre || '—';
+      var comuna = d.comuna || '—';
+      return {
+        id: a.id || null,
+        day: asigDay(a),
+        tons: Number(a.cantidad||0),
+        prov: prov,
+        trans: trans,
+        comuna: comuna
+      };
+    });
+  }
+
+  function applyFilters(rows){
+    var f = STATE.filters;
+    return rows.filter(function(r){
+      if (f.comuna && r.comuna!==f.comuna) return false;
+      if (f.transportista && r.trans!==f.transportista) return false;
+      if (f.proveedor && r.prov!==f.proveedor) return false;
+      return true;
+    });
+  }
+
+  function groupForDay(rows, groupKey){
+    var map = {}; // key -> {label, tons, trucks}
+    for (var i=0;i<rows.length;i++){
+      var r = rows[i];
+      var label = (groupKey==='prov'? r.prov : (groupKey==='com'? r.comuna : r.trans)) || '—';
+      if (!map[label]) map[label] = { label: label, tons:0, trucks:0 };
+      map[label].tons += r.tons||0;
+    }
+    // calcula camiones por grupo (ceil por grupo para que cuadre con chips)
+    var keys = Object.keys(map);
+    for (var k=0;k<keys.length;k++){
+      var g = map[keys[k]];
+      g.trucks = Math.ceil(g.tons / STATE.capacidadCamion);
+    }
+    // ord por toneladas desc
+    var arr = keys.map(function(k){return map[k];});
+    arr.sort(function(a,b){ return (b.tons||0)-(a.tons||0); });
+    return arr;
+  }
+
+  function totalsByDayEnriched(monthDate, rowsFiltered){
+    // devuelve { byDay: {d: {tons, trucks, groups[]} }, monthTotals:{tons, trucks} }
+    var dim = new Date(monthDate.getFullYear(), monthDate.getMonth()+1, 0).getDate();
+    var byDay = {};
+    for (var d=1; d<=dim; d++) byDay[d] = { tons:0, trucks:0, groups:[] };
+
+    for (var i=0;i<rowsFiltered.length;i++){
+      var r = rowsFiltered[i];
+      var bucket = byDay[r.day] || (byDay[r.day]={tons:0,trucks:0,groups:[]});
+      bucket.tons += r.tons||0;
+    }
+    // trucks por día = ceil(tons día / cap)
+    var monthTons=0, monthTrucks=0;
+    for (var dd=1; dd<=dim; dd++){
+      var b = byDay[dd];
+      monthTons += b.tons;
+      b.trucks = Math.ceil(b.tons / STATE.capacidadCamion);
+      monthTrucks += b.trucks;
+    }
+    return { byDay: byDay, monthTotals:{ tons: monthTons, trucks: monthTrucks } };
+  }
+
+  // ===== UI =====
+  function buildUI(root){
+    root.innerHTML = ''
+    +'<div class="cal-wrap">'
+      +'<div class="cal-card">'
+        +'<div class="cal-head">'
+          +'<h2 class="cal-title">📅 Calendario de Cosechas y Entregas</h2>'
+          +'<div class="cal-actions">'
+            +'<div class="seg" id="segView">'
+              +'<button data-v="t" class="on">Ver en Toneladas</button>'
+              +'<button data-v="c">Ver en Camiones</button>'
+            +'</div>'
+            +'<div class="cal-tabs" id="calGroup">'
+              +'<button class="cal-tab on" data-g="prov">Proveedor</button>'
+              +'<button class="cal-tab" data-g="com">Comuna</button>'
+              +'<button class="cal-tab" data-g="trans">Transportista</button>'
+            +'</div>'
+            +'<button id="calPrev" class="cal-btn">←</button>'
+            +'<div id="calMonth" class="cal-btn" style="pointer-events:none;opacity:.9"></div>'
+            +'<button id="calNext" class="cal-btn">→</button>'
+          +'</div>'
+        +'</div>'
+
+        +'<div class="cal-kpis">'
+          +'<div class="kpi"><div class="lbl">Requerido (Mes)</div>'
+            +'<div style="display:flex;align-items:center;gap:6px">'
+              +'<input id="kpiReq" type="number" value="0"/>'
+              +'<span id="kpiReqUnit" class="cal-small">t</span>'
+            +'</div>'
+          +'</div>'
+          +'<div class="kpi"><div class="lbl">Asignado (Mes)</div><div id="kpiAsign">0 t</div></div>'
+          +'<div class="kpi"><div class="lbl">Brecha</div><div id="kpiGap">0 t</div></div>'
+        +'</div>'
+
+        +'<div class="cal-filterrow">'
+          +'<select id="calComuna" class="cal-input"></select>'
+          +'<select id="calTrans" class="cal-input"></select>'
+          +'<select id="calProv" class="cal-input"></select>'
+          +'<div style="text-align:right"><button id="calClear" class="cal-btn">Limpiar filtros</button></div>'
+        +'</div>'
+
+        +'<div class="cal-grid" id="calDaysHead"></div>'
+        +'<div class="cal-grid" id="calDays"></div>'
+        +'<div class="cal-small" id="calFootNote" style="margin-top:8px">'
+          +'Doble-click en un día para asignar. 1 camión = '+STATE.capacidadCamion+' t.'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }
+
+  function renderMonthLabel(){
+    var m = STATE.current.getMonth(), y = STATE.current.getFullYear();
+    document.getElementById('calMonth').textContent = MESES[m]+' de '+y;
+  }
+
+  function fillFilterSelects(){
+    var byId = buildIndexes();
+    // derivar opciones desde disponibilidades
+    var provSet = {}, comSet = {}, transSet = {};
+    for (var k in byId){
+      var d = byId[k];
+      if (d.proveedorNombre) provSet[d.proveedorNombre]=1;
+      if (d.comuna) comSet[d.comuna]=1;
+      if (d.contactoNombre || d.empresaNombre) transSet[d.contactoNombre||d.empresaNombre]=1;
+    }
+    function toSortedKeys(set){ return Object.keys(set).sort(); }
+
+    var cSel = document.getElementById('calComuna');
+    var tSel = document.getElementById('calTrans');
+    var pSel = document.getElementById('calProv');
+
+    cSel.innerHTML = '<option value="">Todas las comunas</option>' + toSortedKeys(comSet).map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+    tSel.innerHTML = '<option value="">Todos los transportistas</option>' + toSortedKeys(transSet).map(function(t){ return '<option value="'+t+'">'+t+'</option>'; }).join('');
+    pSel.innerHTML = '<option value="">Todos los proveedores</option>' + toSortedKeys(provSet).map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
+
+    if (STATE.filters.comuna) cSel.value = STATE.filters.comuna;
+    if (STATE.filters.transportista) tSel.value = STATE.filters.transportista;
+    if (STATE.filters.proveedor) pSel.value = STATE.filters.proveedor;
+  }
+
+  function renderHead(){
+    var h = document.getElementById('calDaysHead');
+    h.innerHTML = DIAS.map(function(n){ return '<div class="cal-dayname">'+n+'</div>'; }).join('');
+  }
+
+  function renderGrid(){
+    var cont = document.getElementById('calDays');
+    var y = STATE.current.getFullYear(), mIdx = STATE.current.getMonth();
+    var first = new Date(y, mIdx, 1);
+    var startOffset = mondayIndex(first.getDay());
+    var dim = new Date(y, mIdx+1, 0).getDate();
+
+    // datos
+    var enrichedAll = enrichAssignmentsForMonth(STATE.current);
+    var filtered = applyFilters(enrichedAll);
+    var calc = totalsByDayEnriched(STATE.current, filtered);
+    var byDay = calc.byDay;
+
+    // KPI mes (con filtros)
+    var kpiAsign = (STATE.view==='t' ? calc.monthTotals.tons : calc.monthTotals.trucks);
+    var reqMap = STATE.reqByMonth || {};
+    var mk = monthKeyFromDate(STATE.current);
+    var reqTons = Number(reqMap[mk]||0);
+    var reqDisplay = (STATE.view==='t' ? reqTons : Math.round(reqTons/STATE.capacidadCamion));
+    var gap = Math.max(0, (reqDisplay||0) - (kpiAsign||0));
+
+    // pinta KPI
+    var inp = document.getElementById('kpiReq');
+    var unit = document.getElementById('kpiReqUnit');
+    var asignEl = document.getElementById('kpiAsign');
+    var gapEl = document.getElementById('kpiGap');
+    if (inp){
+      inp.value = reqDisplay||0;
+      inp.oninput = function(){
+        var v = Math.max(0, Number(inp.value||0));
+        // siempre almacenamos en toneladas
+        var toStore = (STATE.view==='t' ? v : v*STATE.capacidadCamion);
+        STATE.reqByMonth[mk] = toStore;
+        try{ localStorage.setItem('mmpp-cal-req', JSON.stringify(STATE.reqByMonth)); }catch(e){}
+        // re-calcular gap en vivo
+        var gd = Math.max(0, (STATE.view==='t'?toStore:Math.round(toStore/STATE.capacidadCamion)) - kpiAsign);
+        gapEl.textContent = numeroCL(gd)+' '+(STATE.view==='t'?'t':'c');
+      };
+    }
+    if (unit) unit.textContent = (STATE.view==='t'?'t':'c');
+    if (asignEl) asignEl.textContent = numeroCL(kpiAsign)+' '+(STATE.view==='t'?'t':'c');
+    if (gapEl) gapEl.textContent = numeroCL(gap)+' '+(STATE.view==='t'?'t':'c');
+
+    // celdas
+    var boxes = [];
+    for (var i=0; i<startOffset; i++) boxes.push('<div class="cal-cell off"></div>');
+
+    for (var d=1; d<=dim; d++){
+      var idx = startOffset + (d-1);
+      var isSunday = (idx % 7)===6;
+      var keyDate = y+'-'+pad2(mIdx+1)+'-'+pad2(d);
+      var isHoliday = isSunday || !!CL_HOLIDAYS_2025[keyDate];
+
+      // grupos del día
+      var itemsToday = filtered.filter(function(r){ return r.day===d; });
+      var groups = groupForDay(itemsToday, STATE.group);
+      var totalT = byDay[d].tons;
+      var totalC = byDay[d].trucks;
+      var label = (STATE.view==='t' ? (numeroCL(totalT)+' t') : (numeroCL(totalC)+' c'));
+
+      // week sum (solo en domingo)
+      var weekSumHtml = '';
+      if (isSunday){
+        var weekT=0, weekC=0;
+        for (var dd=d-6; dd<=d; dd++){
+          if (dd>=1 && dd<=dim){
+            weekT += byDay[dd].tons;
+            weekC += byDay[dd].trucks;
+          }
+        }
+        weekSumHtml = '<div class="weeksum">Σ Sem: '+(STATE.view==='t'
+          ? (numeroCL(weekT)+' t · '+numeroCL(weekC)+' c')
+          : (numeroCL(weekC)+' c · '+numeroCL(weekT)+' t'))+'</div>';
+      }
+
+      // badges
+      var badge = '';
+      if (isHoliday){
+        var tag = isSunday && !CL_HOLIDAYS_2025[keyDate] ? 'domingo' : 'feriado';
+        badge = '<span class="badge red">'+tag+'</span>';
+      } else {
+        var today = new Date();
+        if (today.getFullYear()===y && today.getMonth()===mIdx && today.getDate()===d){
+          badge = '<span class="badge">hoy</span>';
+        }
+      }
+
+      // chips (máx 4)
+      var chips = '';
+      var maxChips = 4;
+      for (var g=0; g<groups.length && g<maxChips; g++){
+        var gg = groups[g];
+        var qty = (STATE.view==='t' ? (numeroCL(gg.tons)+' t') : (numeroCL(gg.trucks)+' c'));
+        var name = (STATE.group==='prov' ? (gg.label||'—') : gg.label||'—');
+        chips += '<div class="chip" title="'+name+' '+qty+'">'
+                +'<div class="left"><span class="dot" style="background:'+colorFromString(gg.label)+'"></span>'
+                +'<span class="prov">'+name+'</span></div>'
+                +'<span class="qty">'+qty+'</span></div>';
+      }
+      if (groups.length>maxChips) chips += '<span class="cal-small">+'+(groups.length-maxChips)+' más…</span>';
+
+      boxes.push(
+        '<div class="cal-cell'+(isHoliday?' hol':'')+'" data-day="'+d+'">'
+          +'<div class="cal-date"><span>'+d+badge+'</span></div>'
+          +(totalT>0?('<span class="pill total">Total '+label+'</span>'):'')
+          +'<div style="display:grid;gap:6px">'+chips+'</div>'
+          +weekSumHtml
+        +'</div>'
+      );
+    }
+    cont.innerHTML = boxes.join('');
+
+    // Delegado: doble-click para abrir modal + botón “Asignar” desde menú contextual
+    cont.addEventListener('dblclick', function(ev){
+      var t = ev.target;
+      while (t && t!==cont && !t.getAttribute('data-day')) t = t.parentNode;
+      if (!t) return;
+      var day = Number(t.getAttribute('data-day'))||0;
+      if (day>0) abrirModalAsignar(day);
+    }, { once:true });
+  }
+
+  // ===== Modal Asignar =====
   function recMonthKey(rec){
     var y = Number(rec.anio || 0), m = Number(rec.mes || 0);
     if (y && m) return y * 100 + m;
@@ -84,175 +411,21 @@
     }
     return 0;
   }
-
-  // --- Estado ---
-  var STATE = {
-    capacidadCamion: CAPACIDAD_CAMION_DEF,
-    current: new Date(),           // mes actual
-    view: 't',                     // 't' toneladas | 'c' camiones
-    filters: { comuna:'', proveedor:'' },
-    dispon: [],
-    asig: [],
-    modal: null
-  };
-
-  // --- Helpers de datos ---
-  function asigKeyMonth(a){
-    var y = Number(a.destAnio||0), m = Number(a.destMes||0);
-    if(!y || !m) return null;
-    return y+'-'+pad2(m);
+  function groupBy(arr, keyFn){
+    var m={}; (arr||[]).forEach(function(r){ var k=keyFn(r); m[k]=(m[k]||[]).concat([r]); }); return m;
   }
-  function asigDay(a){
-    var d = Number(a.destDia||0);
-    if (!d) d = 1;
-    return d;
-  }
-
-  function totalsByDay(monthDate){
-    var y = monthDate.getFullYear(), m = monthDate.getMonth()+1;
-    var mmKey = y+'-'+pad2(m);
-    var filtered = STATE.asig.filter(function(a){
-      return asigKeyMonth(a)===mmKey &&
-        (!STATE.filters.proveedor || a.proveedorNombre===STATE.filters.proveedor);
-    });
-    var out = {};
-    for (var i=0;i<filtered.length;i++){
-      var d = asigDay(filtered[i]);
-      out[d] = (out[d]||0) + Number(filtered[i].cantidad||0);
-    }
-    return out; // { dia -> tons }
-  }
-
-  function asigByDispo(){
-    return groupBy(STATE.asig, function(a){ return a.disponibilidadId||'__none__'; });
-  }
+  function asigByDispo(){ return groupBy(STATE.asig, function(a){ return a.disponibilidadId||'__none__'; }); }
   function saldoDe(dispo){
     var g = asigByDispo();
     var usadas = (g[dispo.id]||[]).reduce(function(acc,a){ return acc + (Number(a.cantidad)||0); },0);
     return Math.max(0, (Number(dispo.tons)||0) - usadas);
   }
 
-  function dynOptions(){
-    var base = STATE.dispon.slice();
-    var prov = uniqSorted(base.map(function(d){return d.contactoNombre||d.proveedorNombre;}).filter(Boolean));
-    var com  = uniqSorted(base.map(function(d){return d.comuna;}).filter(Boolean));
-    return {prov:prov, com:com};
-  }
-
-  // --- UI ---
-  function buildUI(root){
-    root.innerHTML = ''
-    +'<div class="cal-wrap">'
-      +'<div class="cal-card">'
-        +'<div class="cal-head">'
-          +'<h2 class="cal-title">Calendario de Cosechas y Entregas</h2>'
-          +'<div class="cal-actions">'
-            +'<div class="cal-tabs" id="calUnits">'
-              +'<button class="cal-tab on" data-u="t">Ver en Toneladas</button>'
-              +'<button class="cal-tab" data-u="c">Ver en Camiones</button>'
-            +'</div>'
-            +'<div class="cal-tabs" id="calGroup">'
-              +'<button class="cal-tab on" data-g="prov">Proveedor</button>'
-              +'<button class="cal-tab" data-g="com">Comuna</button>'
-            +'</div>'
-            +'<button id="calPrev" class="cal-btn">←</button>'
-            +'<div id="calMonth" class="cal-btn" style="pointer-events:none;opacity:.9"></div>'
-            +'<button id="calNext" class="cal-btn">→</button>'
-          +'</div>'
-        +'</div>'
-
-        +'<div class="cal-filterrow">'
-          +'<select id="calComuna" class="cal-input"></select>'
-          +'<select id="calProv" class="cal-input"></select>'
-          +'<div style="text-align:right"><button id="calClear" class="cal-btn">Limpiar filtros</button></div>'
-        +'</div>'
-
-        +'<div class="cal-grid" id="calDaysHead"></div>'
-        +'<div class="cal-grid" id="calDays"></div>'
-        +'<div class="cal-small" id="calFootNote" style="margin-top:8px"></div>'
-      +'</div>'
-    +'</div>';
-  }
-
-  function fillFilterSelects(){
-    var opts = dynOptions();
-    var cSel = document.getElementById('calComuna');
-    var pSel = document.getElementById('calProv');
-
-    cSel.innerHTML = '<option value="">Todas las comunas</option>' +
-      opts.com.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
-    pSel.innerHTML = '<option value="">Todos los contactos</option>' +
-      opts.prov.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
-
-    if (STATE.filters.comuna) cSel.value = STATE.filters.comuna;
-    if (STATE.filters.proveedor) pSel.value = STATE.filters.proveedor;
-  }
-
-  function renderMonthLabel(){
-    var m = STATE.current.getMonth(), y = STATE.current.getFullYear();
-    document.getElementById('calMonth').textContent = MESES[m]+' de '+y;
-  }
-
-  function renderHead(){
-    var h = document.getElementById('calDaysHead');
-    h.innerHTML = DIAS.map(function(n){ return '<div class="cal-dayname">'+n+'</div>'; }).join('');
-  }
-
-  function renderGrid(){
-    var cont = document.getElementById('calDays');
-    var first = firstDayOfMonth(STATE.current);
-    var dim = daysInMonth(STATE.current);
-    var startOffset = mondayIndex(first.getDay()); // 0..6
-
-    var boxes = [];
-    for (var i=0; i<startOffset; i++){
-      boxes.push('<div class="cal-cell off"></div>');
-    }
-
-    var totals = totalsByDay(STATE.current); // {dia->tons}
-
-    for (var d=1; d<=dim; d++){
-      var tonsDia = totals[d] || 0;
-
-      // === CAMBIO: mostrar camiones necesarios con ceil
-      var camionesNecesarios = Math.ceil(tonsDia / STATE.capacidadCamion);
-
-      var label = (STATE.view==='t')
-        ? numeroCL(tonsDia)+' t'
-        : numeroCL(camionesNecesarios)+' c';
-
-      boxes.push(
-        '<div class="cal-cell" data-day="'+d+'">'
-          +'<div class="cal-date">'
-            +'<span>'+d+'</span>'
-            +'<span class="cal-pill">Total '+label+'</span>'
-          +'</div>'
-          +'<div class="cal-meta">'
-            +(tonsDia>0?('<span class="cal-tag">Asignado</span>'):'')
-            +'<button class="cal-btn" data-assign="'+d+'" style="margin-left:auto">Asignar</button>'
-          +'</div>'
-        +'</div>'
-      );
-    }
-    cont.innerHTML = boxes.join('');
-    document.getElementById('calFootNote').textContent =
-      'Tip: haz clic en “Asignar” para cargar disponibilidades con saldo y crear una asignación para ese día.';
-
-    // eventos de asignación (delegado)
-    cont.addEventListener('click', function(ev){
-      var t = ev.target;
-      if (t && t.getAttribute && t.getAttribute('data-assign')){
-        var day = Number(t.getAttribute('data-assign'));
-        abrirModalAsignar(day);
-      }
-    }, { once:true });
-  }
-
-  // --- Modal Asignar ---
   function abrirModalAsignar(day){
     var base = STATE.dispon.slice();
-    if (STATE.filters.proveedor) base = base.filter(function(d){ return (d.contactoNombre||d.proveedorNombre)===STATE.filters.proveedor; });
+    if (STATE.filters.proveedor) base = base.filter(function(d){ return (d.proveedorNombre||d.contactoNombre)===STATE.filters.proveedor; });
     if (STATE.filters.comuna) base = base.filter(function(d){ return (d.comuna||'')===STATE.filters.comuna; });
+    if (STATE.filters.transportista) base = base.filter(function(d){ return (d.contactoNombre||d.empresaNombre||'')===STATE.filters.transportista; });
 
     var y = STATE.current.getFullYear(), m = STATE.current.getMonth()+1;
     var cutoff = y * 100 + m;
@@ -262,12 +435,13 @@
         var saldo = saldoDe(d);
         if (saldo <= 0) return false;
         var key = recMonthKey(d);
-        return key <= cutoff;
+        return key <= cutoff; // no mostrar futuros
       })
       .map(function(d){
         return {
           id: d.id,
-          prov: (d.contactoNombre||d.proveedorNombre||'—'),
+          prov: (d.proveedorNombre||d.contactoNombre||'—'),
+          trans: (d.contactoNombre||d.empresaNombre||'—'),
           comuna: (d.comuna||'—'),
           mesKey: (d.mesKey||''),
           fecha: d.fecha||'',
@@ -284,11 +458,9 @@
           +'<h3 style="margin:0;font-weight:800">Asignar para el '+day+' de '+MESES[m-1]+' de '+y+'</h3>'
           +'<button class="cal-btn" id="calClose">✕</button>'
         +'</div>'
-        +'<div class="cal-small" style="margin-top:4px">Se muestran solo disponibilidades con <strong>saldo &gt; 0</strong> hasta <strong>'+MESES[m-1]+' '+y+'</strong>, respetando los filtros de la parte superior.</div>'
+        +'<div class="cal-small" style="margin-top:4px">Se muestran solo disponibilidades con <strong>saldo &gt; 0</strong> hasta <strong>'+MESES[m-1]+' '+y+'</strong>. 1 camión = '+STATE.capacidadCamion+' t.</div>'
         +'<div class="row" style="margin-top:10px">'
-          +'<div style="min-height:320px">'
-            +'<div class="cal-list" id="calLots"></div>'
-          +'</div>'
+          +'<div style="min-height:320px"><div class="cal-list" id="calLots"></div></div>'
           +'<div>'
             +'<div class="row3">'
               +'<div><label class="cal-small">Cantidad (t)</label><input id="calQty" class="cal-input" type="number" min="0" step="1" placeholder="Ej: 30" /></div>'
@@ -300,7 +472,6 @@
           +'</div>'
         +'</div>'
       +'</div>';
-
     document.body.appendChild(host);
 
     var lotsWrap = host.querySelector('#calLots');
@@ -339,7 +510,6 @@
       selectedSaldo = Number(L.saldo||0);
       [].slice.call(lotsWrap.querySelectorAll('.lot')).forEach(function(n){n.classList.remove('sel');});
       t.classList.add('sel');
-      // Info: saldo en t y camiones necesarios
       var cam = Math.ceil(selectedSaldo / STATE.capacidadCamion);
       tip.textContent = 'Saldo disponible: '+numeroCL(selectedSaldo)+' t  ·  ~'+numeroCL(cam)+' camiones (a '+STATE.capacidadCamion+' t/camión)';
       doBtn.disabled = !(selectedId && Number(qtyInp.value||0)>0);
@@ -359,13 +529,16 @@
     doBtn.addEventListener('click', function(){
       var cant = Number(qtyInp.value||0);
       if (!selectedId || !(cant>0)) return;
+      var m = STATE.current.getMonth()+1, y = STATE.current.getFullYear();
       var payload = {
         disponibilidadId: selectedId,
         cantidad: cant,
         destMes: m,
         destAnio: y,
         destDia: day,
-        destFecha: new Date(y, m-1, day).toISOString()
+        destFecha: new Date(y, m-1, day).toISOString(),
+        // opcional: fuente para trazabilidad
+        fuente: 'ui-calendario'
       };
       global.MMppApi.crearAsignacion(payload).then(function(){
         return loadData().then(function(){
@@ -376,8 +549,9 @@
     });
   }
 
-  // --- Eventos top ---
+  // ===== Eventos top =====
   function attachEvents(root){
+    // Navegación
     root.querySelector('#calPrev').addEventListener('click', function(){
       STATE.current = new Date(STATE.current.getFullYear(), STATE.current.getMonth()-1, 1);
       refresh();
@@ -387,28 +561,35 @@
       refresh();
     });
 
-    var tabsU = root.querySelector('#calUnits');
-    tabsU.addEventListener('click', function(ev){
-      var t = ev.target;
-      if (!t || !t.getAttribute) return;
-      var u = t.getAttribute('data-u');
-      if (!u) return;
-      STATE.view = u;
-      [].slice.call(tabsU.querySelectorAll('.cal-tab')).forEach(function(n){n.classList.remove('on');});
-      t.classList.add('on');
+    // Vista tons/camiones
+    var seg = root.querySelector('#segView');
+    seg.addEventListener('click', function(ev){
+      var b = ev.target && ev.target.getAttribute && ev.target.getAttribute('data-v');
+      if (!b) return;
+      STATE.view = b;
+      [].slice.call(seg.querySelectorAll('button')).forEach(function(x){ x.classList.remove('on'); });
+      ev.target.classList.add('on');
       refresh();
     });
 
+    // Agrupar por
     var tabsG = root.querySelector('#calGroup');
     tabsG.addEventListener('click', function(ev){
-      var t = ev.target, g = t && t.getAttribute('data-g');
+      var g = ev.target && ev.target.getAttribute && ev.target.getAttribute('data-g');
       if (!g) return;
+      STATE.group = g;
       [].slice.call(tabsG.querySelectorAll('.cal-tab')).forEach(function(n){n.classList.remove('on');});
-      t.classList.add('on');
+      ev.target.classList.add('on');
+      refresh();
     });
 
+    // Filtros
     root.querySelector('#calComuna').addEventListener('change', function(e){
       STATE.filters.comuna = e.target.value || '';
+      refresh();
+    });
+    root.querySelector('#calTrans').addEventListener('change', function(e){
+      STATE.filters.transportista = e.target.value || '';
       refresh();
     });
     root.querySelector('#calProv').addEventListener('change', function(e){
@@ -417,16 +598,22 @@
     });
     root.querySelector('#calClear').addEventListener('click', function(){
       STATE.filters.comuna = '';
+      STATE.filters.transportista = '';
       STATE.filters.proveedor = '';
       fillFilterSelects();
       refresh();
     });
   }
 
-  // --- Carga de datos ---
+  // ===== Carga =====
   function loadData(){
     var api = global.MMppApi || null;
     if (!api) return Promise.resolve();
+
+    // cargar KPI requeridos guardados
+    try{
+      STATE.reqByMonth = JSON.parse(localStorage.getItem('mmpp-cal-req')||'{}');
+    }catch(e){ STATE.reqByMonth = {}; }
 
     return Promise.all([
       api.getDisponibilidades().then(function(d){ STATE.dispon = Array.isArray(d)?d:[]; }),
@@ -434,7 +621,7 @@
     ]);
   }
 
-  // --- render principal ---
+  // ===== Render principal =====
   function refresh(){
     renderMonthLabel();
     fillFilterSelects();
