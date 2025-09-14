@@ -1,8 +1,9 @@
-/* MMppApi – adaptador para disponibilidades y asignaciones (backend AppMitylus)
+/* MMppApi – adaptador tolerante para disponibilidades y asignaciones (backend AppMitylus)
    Backend base: https://backend-appmitylus.vercel.app
-   Rutas usadas:
-     - /api/disponibilidades  (GET, POST, PATCH, DELETE)
-     - /api/asignaciones      (GET, POST, PATCH, DELETE)
+   Intenta múltiples variantes de ruta:
+     - /api/asignaciones/:id        /api/asignaciones?id=ID
+     - /api/asignacion/:id          /api/asignacion?id=ID
+     - POST /api/asignaciones/delete|update  (body {id,...})
    Normaliza:
      Disponibilidad: {id, proveedorNombre, proveedorKey, contactoNombre, empresaNombre, telefono, email,
                       comuna, centroCodigo, areaCodigo, tons, fecha, mesKey, anio, mes, estado}
@@ -42,16 +43,45 @@
       }
     } return parts.length?("?"+parts.join("&")):"";
   }
-  function jfetch(url, opts){
-    opts=opts||{}; var headers=opts.headers||{};
-    headers["Accept"]="application/json";
-    if(opts.body && !headers["Content-Type"]) headers["Content-Type"]="application/json";
-    opts.headers=headers;
+
+  // --- fetch helpers (con fallback de rutas) ---
+  function doFetch(url, opts){
+    opts = opts || {};
+    var headers = opts.headers || {};
+    headers["Accept"] = "application/json";
+    if (opts.body && !headers["Content-Type"]) headers["Content-Type"]="application/json";
+    opts.headers = headers;
+
     return fetch(url, opts).then(function(res){
-      if(res.status===204) return null;
-      if(res.status===404){ var e=new Error("404"); e.status=404; throw e; }
-      return res.json().then(function(j){ j.__status=res.status; return j; });
+      var ct = (res.headers.get("content-type")||"").toLowerCase();
+      var parse = ct.indexOf("application/json")>=0 ? res.json() : res.text().then(function(t){ return { message: t }; });
+      return parse.then(function(body){
+        return { ok: res.ok, status: res.status, body: body };
+      });
+    }).catch(function(err){
+      return { ok:false, status:0, body:{ message: err && err.message || "network error" } };
     });
+  }
+
+  // intenta varias combinaciones hasta que alguna devuelva ok=true (2xx)
+  function tryRoutes(method, routes, bodyObj){
+    var i=0;
+    function next(){
+      if (i>=routes.length) return Promise.resolve({ ok:false, status:404, body:{ message:"No matching route" }});
+      var path = routes[i++], url = API_BASE.replace(/\/+$/,"")+path;
+      var opts = { method: method };
+      if (bodyObj && (method!=="GET" && method!=="DELETE")) opts.body = JSON.stringify(bodyObj);
+      if (method==="DELETE" && bodyObj && path.toLowerCase().indexOf("/delete")>-1){
+        opts.body = JSON.stringify(bodyObj);
+      }
+      return doFetch(url, opts).then(function(res){
+        if (res.ok) return res;
+        // seguir probando si 404/405/400
+        if (res.status===404 || res.status===405 || res.status===400) return next();
+        return res; // otro error (e.g., 500) => devolvemos
+      });
+    }
+    return next();
   }
 
   // --- cache simple de disponibilidades para enriquecer asignaciones ---
@@ -122,7 +152,6 @@
         centroCodigo: a.centroCodigo || "",
         areaCodigo: a.areaCodigo || "",
 
-        // 👇 NUEVO: transportista
         transportistaId: a.transportistaId || null,
         transportistaNombre: a.transportistaNombre || "",
 
@@ -145,52 +174,24 @@
         var y=new Date().getFullYear();
         params.from=(y-1)+"-01"; params.to=(y+1)+"-12";
       }
-      var url = API_BASE.replace(/\/+$/,"")+"/api/disponibilidades"+qs(params);
-      return jfetch(url).then(function(json){
+      var url = "/api/disponibilidades"+qs(params);
+      return tryRoutes("GET",[url]).then(function(res){
+        var json = (res && res.body) || [];
         var norm = normalizeDispon(json);
-        _cacheDispon = norm; // cache
+        _cacheDispon = norm;
         return norm;
       }).catch(function(){ return []; });
-    },
-
-    crearDisponibilidades: function(form){
-      var rows = Array.isArray(form.disponibilidades) ? form.disponibilidades : [];
-      var payloads = rows.filter(function(d){return d&&d.tons&&d.fecha;}).map(function(d){
-        var dt=new Date(d.fecha), anio=dt.getFullYear(), mes=dt.getMonth()+1;
-        return {
-          mesKey: anio+"-"+pad2(mes), anio: anio, mes: mes,
-          proveedorKey: form.proveedorKey || slug(form.proveedor),
-          proveedorNombre: form.proveedor || "",
-          centroCodigo: form.centroCodigo || "",
-          comuna: form.comuna || "",
-          areaCodigo: form.areaCodigo || "",
-          tonsDisponible: Number(d.tons||0),
-          fecha: dt.toISOString(),
-          estado: "disponible"
-        };
-      });
-      if(!payloads.length) return Promise.resolve(null);
-      var base = API_BASE.replace(/\/+$/,"")+"/api/disponibilidades";
-      return Promise.all(payloads.map(function(body){
-        return jfetch(base,{method:"POST",body:JSON.stringify(body)}).catch(function(){return null;});
-      }));
-    },
-
-    editarDisponibilidad: function(id,patch){
-      var url = API_BASE.replace(/\/+$/,"")+"/api/disponibilidades/"+encodeURIComponent(id);
-      return jfetch(url,{method:"PATCH",body:JSON.stringify(patch||{})}).catch(function(){return null;});
-    },
-
-    borrarDisponibilidad: function(id){
-      var url = API_BASE.replace(/\/+$/,"")+"/api/disponibilidades/"+encodeURIComponent(id);
-      return jfetch(url,{method:"DELETE"}).catch(function(){return null;});
     },
 
     // ------- Asignaciones -------
     getAsignaciones: function(params){
       params=params||{};
-      var url = API_BASE.replace(/\/+$/,"")+"/api/asignaciones"+qs(params);
-      return jfetch(url).then(function(json){
+      var paths = [
+        "/api/asignaciones"+qs(params),
+        "/api/asignacion"+qs(params)
+      ];
+      return tryRoutes("GET", paths).then(function(res){
+        var json = (res && res.body) || [];
         var list = Array.isArray(json) ? json : (json && (json.items||json.data||json.results)) || [];
         var norm = normalizeAsign(list);
         var clean = norm.filter(function(a){ return a && Number(a.cantidad)>0 && (a.id || a.disponibilidadId); });
@@ -201,16 +202,12 @@
       }).catch(function(){ return []; });
     },
 
-    // >>> CREA ASIGNACIÓN ENRIQUECIDA <<<
     crearAsignacion: function(payload){
-      var url = API_BASE.replace(/\/+$/,"")+"/api/asignaciones";
-
       var y = Number(payload.destAnio||payload.anio||0);
       var m = Number(payload.destMes ||payload.mes ||0);
       var d = Number(payload.destDia ||0);
       var mk = (y && m) ? (y+"-"+pad2(m)) : null;
 
-      // capacidadCamion: del payload o default 10 (1 camión = 10 t)
       var cap = Number(payload.capacidadCamion||10);
       var tons = Number(payload.cantidad||payload.tons||0);
       var cam = cap>0 ? Math.ceil(tons/cap) : null;
@@ -231,22 +228,18 @@
         var proveedorKey    = (dispo && dispo.proveedorKey) || slug(proveedorNombre);
 
         var body = {
-          // claves de referencia
           disponibilidadId: payload.disponibilidadId,
 
-          // cantidades
           tons: tons,
-          cantidad: tons,             // alias por compatibilidad
+          cantidad: tons,
           camiones: cam,
           capacidadCamion: cap,
 
-          // tiempo
           anio: y, mes: m, mesKey: mk,
           destAnio: y, destMes: m,
           destDia: d || null,
           destFecha: payload.destFecha || (y&&m&&(new Date(y,m-1,d||1)).toISOString()),
 
-          // snapshot proveedor/ubicación/contacto
           proveedorNombre: proveedorNombre,
           proveedorKey: proveedorKey,
           contactoNombre: (dispo && dispo.contactoNombre) || "",
@@ -257,33 +250,87 @@
           contactoTelefono: (dispo && dispo.telefono)     || "",
           contactoEmail:    (dispo && dispo.email)        || "",
 
-          // 👇 NUEVO: transportista (si viene desde el UI)
           transportistaId: payload.transportistaId || null,
           transportistaNombre: payload.transportistaNombre || "",
 
-          // snapshot origen
           originalTons:  (payload.originalTons!=null ? Number(payload.originalTons) : (dispo?Number(dispo.tons||0):null)),
           originalFecha: payload.originalFecha || (dispo?dispo.fecha:null),
 
-          // control
           fuente: "ui-calendario",
           estado: "confirmado",
 
           createdAt: new Date().toISOString()
         };
 
-        return jfetch(url,{ method:"POST", body: JSON.stringify(body) });
+        var paths = ["/api/asignaciones"];
+        return tryRoutes("POST", paths, body).then(function(res){
+          var j = res && res.body; j = j && j.body ? j.body : j;
+          if (!res || !res.ok) {
+            var err = new Error((j && j.message) || "Error creando asignación");
+            err.status = res && res.status; throw err;
+          }
+          return j;
+        });
       });
     },
 
     editarAsignacion: function(id, patch){
-      var url = API_BASE.replace(/\/+$/,"")+"/api/asignaciones/"+encodeURIComponent(id);
-      return jfetch(url,{ method:"PATCH", body: JSON.stringify(patch||{}) }).catch(function(){ return null; });
+      // asegurar alias / normalizar campos
+      var cap = Number(patch.capacidadCamion || patch.cap_camion || 10);
+      var qty = (patch.cantidad!=null ? Number(patch.cantidad) :
+                (patch.tons!=null ? Number(patch.tons) : null));
+      var body = Object.assign({}, patch);
+      if (qty!=null){ body.tons = qty; body.cantidad = qty; body.camiones = Math.ceil(qty/(cap||10)); }
+
+      var paths = [
+        "/api/asignaciones/"+encodeURIComponent(id),
+        "/api/asignaciones?id="+encodeURIComponent(id),
+        "/api/asignacion/"+encodeURIComponent(id),
+        "/api/asignacion?id="+encodeURIComponent(id),
+        "/api/asignaciones/update"
+      ];
+      return tryRoutes("PATCH", paths, body).then(function(res){
+        if (!res.ok) {
+          // probar PUT o POST /update si PATCH falla
+          return tryRoutes("PUT", paths, body);
+        }
+        return res;
+      }).then(function(res){
+        if (!res.ok) {
+          // último intento: POST update con body {id,...}
+          return tryRoutes("POST", ["/api/asignaciones/update","/api/asignacion/update"], Object.assign({ id:id }, body));
+        }
+        return res;
+      }).then(function(res){
+        var j = res && res.body; j = j && j.body ? j.body : j;
+        if (!res || !res.ok) {
+          var err = new Error((j && j.message) || "Error editando asignación"); err.status=res&&res.status; throw err;
+        }
+        return j;
+      });
     },
 
     borrarAsignacion: function(id){
-      var url = API_BASE.replace(/\/+$/,"")+"/api/asignaciones/"+encodeURIComponent(id);
-      return jfetch(url,{ method:"DELETE" }).catch(function(){ return null; });
+      var q = "?id="+encodeURIComponent(id);
+      var paths = [
+        "/api/asignaciones/"+encodeURIComponent(id),
+        "/api/asignaciones"+q,
+        "/api/asignacion/"+encodeURIComponent(id),
+        "/api/asignacion"+q,
+        "/api/asignaciones/delete",
+        "/api/asignacion/delete"
+      ];
+      // intenta DELETE en varias rutas; si no, intenta POST /delete {id}
+      return tryRoutes("DELETE", paths).then(function(res){
+        if (!res.ok) return tryRoutes("POST", ["/api/asignaciones/delete","/api/asignacion/delete"], { id:id });
+        return res;
+      }).then(function(res){
+        var j = res && res.body; j = j && j.body ? j.body : j;
+        if (!res || !res.ok) {
+          var err = new Error((j && j.message) || "Error eliminando asignación"); err.status=res&&res.status; throw err;
+        }
+        return j || null;
+      });
     }
   };
 
