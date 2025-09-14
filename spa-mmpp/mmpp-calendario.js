@@ -27,6 +27,31 @@
     return "hsl("+(h%360)+",70%,45%)";
   }
 
+  // --- Compactadores/abreviadores para las chips ---
+  function cleanName(s){
+    return String(s||'')
+      .replace(/\b(Soc(?:iedad)?\.?|Comercial(?:izacion|ización)?|Transporte|Importaciones?|Exportaciones?|y|de|del|la|los)\b/gi,'')
+      .replace(/\b(Ltda\.?|S\.A\.?|SpA|EIRL)\b/gi,'')
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+  function initials2(s){
+    s = cleanName(s);
+    var p = s.split(/\s+/).filter(Boolean);
+    var a = (p[0]||'').charAt(0);
+    var b = (p[p.length-1]||'').charAt(0);
+    return (a+b).toUpperCase();
+  }
+  function shortLabel(name){
+    var s = cleanName(name);
+    if (!s) return '—';
+    var parts = s.split(/\s+/);
+    var last = parts[parts.length-1] || s;
+    if (last.length >= 5) return last; // “marca” legible
+    var ac = parts.slice(0,3).map(function(w){return w[0]||'';}).join('').toUpperCase();
+    return (ac.length>=2 ? ac : last.toUpperCase());
+  }
+
   var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   var DIAS  = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
 
@@ -62,9 +87,10 @@
     +'.total{position:absolute;top:6px;right:6px}'
     +'.chip{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 6px;border-radius:8px;border:1px solid #e5e7eb;background:#f9fafb}'
     +'.chip .left{display:flex;align-items:center;gap:6px;min-width:0;flex:1}'
-    +'.chip .prov{font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}'
+    +'.chip .prov{font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;max-width:160px}'
     +'.chip .qty{font-weight:700;white-space:nowrap;font-size:11px}'
     +'.dot{width:8px;height:8px;border-radius:999px}'
+    +'.tag{font-size:10px;font-weight:800;padding:1px 5px;border:1px solid #e5e7eb;background:#fff;border-radius:6px;color:#374151}'
     +'.weeksum{font-size:12px;font-weight:700;margin-top:auto}'
     +'.cal-tabs{display:flex;gap:6px}'
     +'.cal-tab{background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:8px 12px;cursor:pointer;font-weight:800;color:#374151}'
@@ -89,7 +115,7 @@
     view: 't',                 // 't' toneladas | 'c' camiones
     group: 'prov',             // 'prov' | 'com' | 'trans'
     filters: { comuna:'', transportista:'', proveedor:'' },
-    reqByMonth: {},            // { 'YYYY-MM': number en t }
+    reqByMonth: {},            // { 'YYYY-MM': número en toneladas }
     dispon: [],
     asig: []
   };
@@ -149,21 +175,31 @@
     });
   }
 
+  // Devuelve grupos con etiquetas compactas + micro-tag y data para tooltip
   function groupForDay(rows, groupKey){
-    var map = {}; // key -> {label, tons, trucks}
+    var map = {}; // key -> {label, labelShort, tag, tons, trucks, provFull, transFull, comuna}
     for (var i=0;i<rows.length;i++){
       var r = rows[i];
-      var label = (groupKey==='prov'? r.prov : (groupKey==='com'? r.comuna : r.trans)) || '—';
-      if (!map[label]) map[label] = { label: label, tons:0, trucks:0 };
-      map[label].tons += r.tons||0;
+      var baseKey = (groupKey==='prov'? r.prov : (groupKey==='com'? r.comuna : r.trans)) || '—';
+      if (!map[baseKey]) {
+        map[baseKey] = {
+          label: baseKey,
+          labelShort: shortLabel(baseKey),
+          tag: initials2(r.prov || baseKey),   // micro-tag del proveedor
+          tons: 0, trucks: 0,
+          provFull: r.prov || '—',
+          transFull: r.trans || '—',
+          comuna: r.comuna || '—'
+        };
+      }
+      map[baseKey].tons += r.tons||0;
     }
-    // calcula camiones por grupo (ceil por grupo)
-    var keys = Object.keys(map), arr = [];
-    for (var k=0;k<keys.length;k++){
-      var g = map[keys[k]];
-      g.trucks = Math.ceil(g.tons / STATE.capacidadCamion);
-      arr.push(g);
+    // camiones por grupo
+    var arr = Object.keys(map).map(function(k){ return map[k]; });
+    for (var j=0;j<arr.length;j++){
+      arr[j].trucks = Math.ceil(arr[j].tons / STATE.capacidadCamion);
     }
+    // ordenar por toneladas desc
     arr.sort(function(a,b){ return (b.tons||0)-(a.tons||0); });
     return arr;
   }
@@ -381,11 +417,22 @@
       for (var g=0; g<groups.length && g<maxChips; g++){
         var gg = groups[g];
         var qty = (STATE.view==='t' ? (numeroCL(gg.tons)+' t') : (numeroCL(gg.trucks)+' c'));
-        var name = gg.label || '—';
-        chips += '<div class="chip" title="'+name+' '+qty+'">'
-                +'<div class="left"><span class="dot" style="background:'+colorFromString(gg.label)+'"></span>'
-                +'<span class="prov">'+name+'</span></div>'
-                +'<span class="qty">'+qty+'</span></div>';
+        // Texto principal compacto: si agrupas por proveedor, mostrar contacto; si no, el label reducido
+        var display = (STATE.group==='prov' ? shortLabel(gg.transFull) : gg.labelShort) || gg.labelShort;
+        var titleFull = (
+          'Proveedor: ' + gg.provFull + ' · ' +
+          'Contacto: '  + gg.transFull + ' · ' +
+          'Comuna: '    + gg.comuna    + ' · ' + qty
+        );
+
+        chips += '<div class="chip" title="'+titleFull+'">'
+               +   '<div class="left">'
+               +     '<span class="dot" style="background:'+colorFromString(gg.provFull||gg.label)+'"></span>'
+               +     '<span class="tag">'+gg.tag+'</span>'
+               +     '<span class="prov">'+display+'</span>'
+               +   '</div>'
+               +   '<span class="qty">'+qty+'</span>'
+               + '</div>';
       }
       if (groups.length>maxChips) chips += '<span class="cal-small">+'+(groups.length-maxChips)+' más…</span>';
 
