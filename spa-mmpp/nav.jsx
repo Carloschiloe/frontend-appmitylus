@@ -4,8 +4,8 @@ const { useMemo } = React;
 function Sidebar(){
   const here = (typeof location!=="undefined" ? location.pathname.toLowerCase() : "");
   const itemsMain = [
-    { href: "/html/asignacion/inventario_mmpp.html", label:"Inventario", icon:"📦" },
-    { href: "/html/asignacion/calendario_mmpp.html", label:"Calendario", icon:"📅" },
+    { href: "/html/Abastecimiento/asignacion/inventario_mmpp.html", label:"Inventario", icon:"📦" },
+    { href: "/html/Abastecimiento/asignacion/calendario_mmpp.html", label:"Calendario", icon:"📅" },
   ];
   // Si más módulos luego:
   const itemsOther = [
