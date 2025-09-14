@@ -7,7 +7,7 @@
      - Sin optional chaining (Babel Standalone 6).
      - Normaliza:
          Disponibilidad: {id, proveedorNombre, proveedorKey, comuna, centroCodigo, areaCodigo, tons, fecha, mesKey, anio, mes, estado}
-         Asignación:     {id, disponibilidadId, cantidad, destMes, destAnio, proveedorNombre, originalTons, originalFecha, createdAt}
+         Asignación:     {id, disponibilidadId, cantidad, destMes, destAnio, destDia?, destFecha?, proveedorNombre, originalTons, originalFecha, createdAt}
 */
 
 (function (global) {
@@ -71,53 +71,53 @@
 
   // --- Normalizadores ---
   function normalizeDispon(payload) {
-  var list = [];
-  if (Array.isArray(payload)) list = payload;
-  else if (payload && Array.isArray(payload.items)) list = payload.items;
+    var list = [];
+    if (Array.isArray(payload)) list = payload;
+    else if (payload && Array.isArray(payload.items)) list = payload.items;
 
-  return list.map(function (r) {
-    var id = r.id || r._id || r._docId || r.uuid || null;
-    var tons = (r.tonsDisponible != null ? Number(r.tonsDisponible) : Number(r.tons || 0));
+    return list.map(function (r) {
+      var id = r.id || r._id || r._docId || r.uuid || null;
+      var tons = (r.tonsDisponible != null ? Number(r.tonsDisponible) : Number(r.tons || 0));
 
-    var mk = r.mesKey ||
-      (r.anio && r.mes ? (r.anio + "-" + pad2(r.mes)) : null) ||
-      (r.fecha ? toMesKey(r.fecha) : null);
+      var mk = r.mesKey ||
+        (r.anio && r.mes ? (r.anio + "-" + pad2(r.mes)) : null) ||
+        (r.fecha ? toMesKey(r.fecha) : null);
 
-    var fecha = r.fecha || (mk ? fromMesKey(mk) : null);
+      var fecha = r.fecha || (mk ? fromMesKey(mk) : null);
 
-    // snapshot de contacto
-    var tel = (r.contactoSnapshot && (r.contactoSnapshot.telefono || r.contactoSnapshot.phone)) || r.contactoTelefono || "";
-    var email = (r.contactoSnapshot && r.contactoSnapshot.email) || r.contactoEmail || "";
+      // snapshot de contacto
+      var tel = (r.contactoSnapshot && (r.contactoSnapshot.telefono || r.contactoSnapshot.phone)) || r.contactoTelefono || "";
+      var email = (r.contactoSnapshot && r.contactoSnapshot.email) || r.contactoEmail || "";
 
-    return {
-      id: id,
+      return {
+        id: id,
 
-      // nombres/keys
-      contactoNombre: r.contactoNombre || r.contacto || "",
-      empresaNombre : r.empresaNombre  || r.empresa  || "",
-      proveedorNombre: r.proveedorNombre || r.proveedor || "",
-      proveedorKey   : r.proveedorKey || slug(r.proveedorNombre || r.proveedor || ""),
+        // nombres/keys
+        contactoNombre: r.contactoNombre || r.contacto || "",
+        empresaNombre : r.empresaNombre  || r.empresa  || "",
+        proveedorNombre: r.proveedorNombre || r.proveedor || "",
+        proveedorKey   : r.proveedorKey || slug(r.proveedorNombre || r.proveedor || ""),
 
-      // contacto visible
-      telefono: tel,
-      email: email,
+        // contacto visible
+        telefono: tel,
+        email: email,
 
-      // ubicación/base
-      comuna: r.comuna || "",
-      centroCodigo: r.centroCodigo || "",
-      areaCodigo: r.areaCodigo || "",
+        // ubicación/base
+        comuna: r.comuna || "",
+        centroCodigo: r.centroCodigo || "",
+        areaCodigo: r.areaCodigo || "",
 
-      // cantidades/fechas
-      tons: Number(tons || 0),
-      fecha: fecha,
-      mesKey: mk,
-      anio: r.anio || (mk ? Number(mk.split("-")[0]) : null),
-      mes : r.mes  || (mk ? Number(mk.split("-")[1]) : null),
+        // cantidades/fechas
+        tons: Number(tons || 0),
+        fecha: fecha,
+        mesKey: mk,
+        anio: r.anio || (mk ? Number(mk.split("-")[0]) : null),
+        mes : r.mes  || (mk ? Number(mk.split("-")[1]) : null),
 
-      estado: r.estado || "disponible"
-    };
-  });
-}
+        estado: r.estado || "disponible"
+      };
+    });
+  }
 
   function normalizeAsign(payload) {
     var list = [];
@@ -131,6 +131,9 @@
         cantidad: Number(a.cantidad || 0),
         destMes: Number(a.destMes || a.mes || 0) || null,
         destAnio: Number(a.destAnio || a.anio || 0) || null,
+        // ← NUEVO soporte opcional para calendario
+        destDia: (a.destDia != null ? Number(a.destDia) : null) || null,
+        destFecha: a.destFecha || null,
         proveedorNombre: a.proveedorNombre || a.proveedor || "",
         originalTons: Number(a.originalTons || a.original || 0) || null,
         originalFecha: a.originalFecha || a.fechaOriginal || null,
@@ -143,27 +146,22 @@
   var API = {
     // ------- Disponibilidades -------
     // params: { anio, from, to, mesKey, proveedorKey, centroId }
-   // mmpp-api.js
-getDisponibilidades: function (params) {
-  params = params || {};
+    // mmpp-api.js
+    getDisponibilidades: function (params) {
+      params = params || {};
 
-  // ❌ antes: sólo el año actual
-  // if (!params.anio && !params.from && !params.to && !params.mesKey) {
-  //   params.anio = new Date().getFullYear();
-  // }
+      // ✅ por defecto: desde (año-1)-01 hasta (año+1)-12 (más flexible para reportes/calendario)
+      if (!params.anio && !params.from && !params.to && !params.mesKey) {
+        var y = new Date().getFullYear();
+        params.from = (y - 1) + "-01";
+        params.to   = (y + 1) + "-12";
+      }
 
-  // ✅ ahora: desde (año-1)-01 hasta (año+1)-12
-  if (!params.anio && !params.from && !params.to && !params.mesKey) {
-    var y = new Date().getFullYear();
-    params.from = (y - 1) + "-01";
-    params.to   = (y + 1) + "-12";
-  }
-
-  var url = API_BASE.replace(/\/+$/, "") + "/api/disponibilidades" + qs(params);
-  return jfetch(url)
-    .then(function (json) { return normalizeDispon(json); })
-    .catch(function () { return []; });
-},
+      var url = API_BASE.replace(/\/+$/, "") + "/api/disponibilidades" + qs(params);
+      return jfetch(url)
+        .then(function (json) { return normalizeDispon(json); })
+        .catch(function () { return []; });
+    },
 
     crearDisponibilidades: function (form) {
       // form: { proveedor, proveedorKey, comuna, centroCodigo, areaCodigo, disponibilidades:[{tons,fecha}] }
@@ -212,57 +210,72 @@ getDisponibilidades: function (params) {
     },
 
     // ------- Asignaciones -------
-getAsignaciones: function (params) {
-  params = params || {};
-  var url = API_BASE.replace(/\/+$/, "") + "/api/asignaciones" + qs(params);
+    getAsignaciones: function (params) {
+      params = params || {};
+      var url = API_BASE.replace(/\/+$/, "") + "/api/asignaciones" + qs(params);
 
-  return jfetch(url)
-    .then(function (json) {
-      // Soporta array directo o {items}/{data}/{results}
-      var list = Array.isArray(json)
-        ? json
-        : (json && (json.items || json.data || json.results)) || [];
+      return jfetch(url)
+        .then(function (json) {
+          // Soporta array directo o {items}/{data}/{results}
+          var list = Array.isArray(json)
+            ? json
+            : (json && (json.items || json.data || json.results)) || [];
 
-      var norm = normalizeAsign(list);
+          var norm = normalizeAsign(list);
 
-      // Filtra asignaciones “reales”: cantidad > 0
-      var clean = norm.filter(function (a) {
-        return a && Number(a.cantidad) > 0 && (a.id || a.disponibilidadId);
-      });
+          // Filtra asignaciones “reales”: cantidad > 0
+          var clean = norm.filter(function (a) {
+            return a && Number(a.cantidad) > 0 && (a.id || a.disponibilidadId);
+          });
 
-      // Ordena por fecha (desc) si existe
-      clean.sort(function (a, b) {
-        var ta = a.createdAt ? Date.parse(a.createdAt) : 0;
-        var tb = b.createdAt ? Date.parse(b.createdAt) : 0;
-        return tb - ta;
-      });
+          // Ordena por fecha (desc) si existe
+          clean.sort(function (a, b) {
+            var ta = a.createdAt ? Date.parse(a.createdAt) : 0;
+            var tb = b.createdAt ? Date.parse(b.createdAt) : 0;
+            return tb - ta;
+          });
 
-      return clean;
-    })
-    .catch(function () {
-      // si no existe la ruta aún o falla, devolvemos vacío
-      return [];
-    });
-},
+          return clean;
+        })
+        .catch(function () {
+          // si no existe la ruta aún o falla, devolvemos vacío
+          return [];
+        });
+    },
 
     crearAsignacion: function (payload) {
       var url = API_BASE.replace(/\/+$/, "") + "/api/asignaciones";
+
+      var y = Number(payload.destAnio || 0);
+      var m = Number(payload.destMes || 0);
+      var d = Number(payload.destDia || 0);
+
       var body = {
         disponibilidadId: payload.disponibilidadId,
         cantidad: Number(payload.cantidad || 0),
-        destMes: Number(payload.destMes || 0) || null,
-        destAnio: Number(payload.destAnio || 0) || null,
+        destMes: m || null,
+        destAnio: y || null,
         proveedorNombre: payload.proveedorNombre || "",
         originalTons: Number(payload.originalTons || 0) || null,
         originalFecha: payload.originalFecha || null,
         createdAt: new Date().toISOString()
       };
+
+      // NUEVO: si viene día/fecha, los incluimos (el backend puede ignorarlos sin romper nada)
+      if (d) body.destDia = d;
+      if (payload.destFecha) {
+        body.destFecha = payload.destFecha;
+      } else if (y && m && d) {
+        try { body.destFecha = new Date(y, m - 1, d).toISOString(); } catch (e) {}
+      }
+
       return jfetch(url, { method: "POST", body: JSON.stringify(body) })
         .catch(function () { return null; });
     },
 
     editarAsignacion: function (id, patch) {
       var url = API_BASE.replace(/\/+$/, "") + "/api/asignaciones/" + encodeURIComponent(id);
+      // patch puede traer destDia/destFecha además de lo de siempre
       return jfetch(url, { method: "PATCH", body: JSON.stringify(patch || {}) })
         .catch(function () { return null; });
     },
