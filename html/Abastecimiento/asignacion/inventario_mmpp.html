@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Inventario MMPP</title>
 
+  <!-- Layout común (sidebar + main) -->
+  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
   <!-- CSS de esta vista -->
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
 
@@ -17,7 +19,15 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div id="root"></div>
+  <div class="mmpp-layout">
+    <!-- Barra lateral -->
+    <div id="mmppNavMount"></div>
+
+    <!-- Contenido principal -->
+    <main class="mmpp-main">
+      <div id="root"></div>
+    </main>
+  </div>
 
   <!-- (Opcional) Forzar base del backend si quieres sobreescribir la default -->
   <!-- <script>window.__MMPP_API_BASE__="https://backend-appmitylus.vercel.app";</script> -->
@@ -27,6 +37,9 @@
 
   <!-- Módulo del resumen (si lo cargas aquí, la app no lo descargará de forma perezosa) -->
   <script src="/spa-mmpp/mmpp-resumen.js?v=12" data-mmpp-resumen="1"></script>
+
+  <!-- Sidebar (JSX) -->
+  <script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
 
   <!-- App (JSX) — IMPORTANTE: usar presets "es2015,react" -->
   <script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/mmpp-inventario.jsx?v=12"></script>
