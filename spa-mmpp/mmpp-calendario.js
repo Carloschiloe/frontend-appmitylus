@@ -69,6 +69,22 @@
     var m={}; (arr||[]).forEach(function(r){ var k=keyFn(r); m[k]=(m[k]||[]).concat([r]); }); return m;
   }
 
+  // === Helper: YYYYMM de una disponibilidad (anio/mes, mesKey o fecha) ===
+  function recMonthKey(rec){
+    var y = Number(rec.anio || 0), m = Number(rec.mes || 0);
+    if (y && m) return y * 100 + m;
+    if (rec.mesKey && rec.mesKey.indexOf('-') > 0) {
+      var p = rec.mesKey.split('-');
+      return (Number(p[0])||0) * 100 + (Number(p[1])||0);
+    }
+    if (rec.fecha) {
+      var dt = new Date(rec.fecha);
+      return dt.getFullYear() * 100 + (dt.getMonth()+1);
+    }
+    // si no hay información de fecha, lo tratamos como pasado (permitido)
+    return 0;
+  }
+
   // --- Estado ---
   var STATE = {
     capacidadCamion: CAPACIDAD_CAMION_DEF,
@@ -239,13 +255,30 @@
     if (STATE.filters.proveedor) base = base.filter(function(d){ return (d.contactoNombre||d.proveedorNombre)===STATE.filters.proveedor; });
     if (STATE.filters.comuna) base = base.filter(function(d){ return (d.comuna||'')===STATE.filters.comuna; });
 
-    // lots con saldo
-    var lots = base.map(function(d){
-      return { id:d.id, prov:(d.contactoNombre||d.proveedorNombre||'—'), comuna:(d.comuna||'—'),
-               mesKey:(d.mesKey||''), fecha:d.fecha||'', saldo: saldoDe(d), original: Number(d.tons||0) };
-    }).filter(function(L){ return L.saldo>0; });
-
+    // Mes visible (YYYYMM) y corte: solo <= mes visible
     var y = STATE.current.getFullYear(), m = STATE.current.getMonth()+1;
+    var cutoff = y * 100 + m;
+
+    // lots con saldo, solo hasta el mes actual del calendario
+    var lots = base
+      .filter(function(d){
+        var saldo = saldoDe(d);
+        if (saldo <= 0) return false;
+        var key = recMonthKey(d);
+        return key <= cutoff; // no mostrar futuros
+      })
+      .map(function(d){
+        return {
+          id: d.id,
+          prov: (d.contactoNombre||d.proveedorNombre||'—'),
+          comuna: (d.comuna||'—'),
+          mesKey: (d.mesKey||''),
+          fecha: d.fecha||'',
+          saldo: saldoDe(d),
+          original: Number(d.tons||0)
+        };
+      });
+
     var host = document.createElement('div');
     host.className = 'modalBG';
     host.innerHTML =
@@ -254,7 +287,7 @@
           +'<h3 style="margin:0;font-weight:800">Asignar para el '+day+' de '+MESES[m-1]+' de '+y+'</h3>'
           +'<button class="cal-btn" id="calClose">✕</button>'
         +'</div>'
-        +'<div class="cal-small" style="margin-top:4px">Se muestran solo disponibilidades con <strong>saldo &gt; 0</strong> respetando los filtros de la parte superior.</div>'
+        +'<div class="cal-small" style="margin-top:4px">Se muestran solo disponibilidades con <strong>saldo &gt; 0</strong> hasta <strong>'+MESES[m-1]+' '+y+'</strong>, respetando los filtros de la parte superior.</div>'
         +'<div class="row" style="margin-top:10px">'
           +'<div style="min-height:320px">'
             +'<div class="cal-list" id="calLots"></div>'
