@@ -72,8 +72,10 @@
     +'.kpi{background:#f3f4f6;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;font-weight:700}'
     +'.kpi .lbl{font-size:12px;color:#6b7280;font-weight:600}'
     +'.kpi input{height:32px;border:1px solid #e5e7eb;border-radius:10px;padding:0 10px;background:#fff;width:110px;margin-left:6px}'
-    +'.cal-filterrow{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-bottom:10px}'
+    +'.cal-filterrow{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-bottom:6px}'
     +'.cal-input{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}'
+    +'.cal-fltstats{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}'
+    +'.fltstat{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:8px 12px;font-weight:800;color:#374151}'
     +'.cal-small{font-size:12px;color:#6b7280}'
     +'.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}'
     +'.cal-dayname{font-weight:800;color:#64748b;text-align:center;padding:8px;border:1px solid #e5e7eb;border-radius:10px;background:#f3f4f6}'
@@ -266,6 +268,8 @@
           +'<div style="text-align:right"><button id="calClear" class="cal-btn">Limpiar filtros</button></div>'
         +'</div>'
 
+        +'<div class="cal-fltstats" id="calFilterStats"></div>'
+
         +'<div class="cal-grid" id="calDaysHead"></div>'
         +'<div class="cal-grid" id="calDays"></div>'
         +'<div class="cal-small" id="calFootNote" style="margin-top:8px">'
@@ -280,28 +284,16 @@
     document.getElementById('calMonth').textContent = MESES[m]+' de '+y;
   }
 
+  // FILTROS: ahora SOLO desde asignaciones del MES visible
   function fillFilterSelects(){
-    var byId = buildIndexes();
-
-    // Derivar opciones combinadas: disponibilidades + asignaciones del mes
+    var enrichedMonth = enrichAssignmentsForMonth(STATE.current);
     var provSet = {}, comSet = {}, transSet = {};
 
-    // Disponibilidades (universo)
-    for (var k in byId){
-      var d = byId[k];
-      if (d.proveedorNombre) provSet[d.proveedorNombre]=1;
-      if (d.comuna) comSet[d.comuna]=1;
-      if (d.contactoNombre || d.empresaNombre) transSet[d.contactoNombre||d.empresaNombre]=1;
-    }
-
-    // Asignaciones del mes (preferencia a nombres snapshot de asignación)
-    var mk = monthKeyFromDate(STATE.current);
-    for (var i=0;i<STATE.asig.length;i++){
-      var a = STATE.asig[i];
-      if (asigKeyMonth(a)!==mk) continue;
-      if (a.proveedorNombre) provSet[a.proveedorNombre]=1;
-      if (a.comuna) comSet[a.comuna]=1;
-      if (a.transportistaNombre) transSet[a.transportistaNombre]=1;
+    for (var i=0;i<enrichedMonth.length;i++){
+      var r = enrichedMonth[i];
+      if (r.prov) provSet[r.prov]=1;
+      if (r.comuna) comSet[r.comuna]=1;
+      if (r.trans) transSet[r.trans]=1;
     }
 
     function toSortedKeys(set){ return Object.keys(set).sort(); }
@@ -314,9 +306,51 @@
     tSel.innerHTML = '<option value="">Todos los transportistas</option>' + toSortedKeys(transSet).map(function(t){ return '<option value="'+t+'">'+t+'</option>'; }).join('');
     pSel.innerHTML = '<option value="">Todos los proveedores</option>' + toSortedKeys(provSet).map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
 
-    if (STATE.filters.comuna) cSel.value = STATE.filters.comuna;
-    if (STATE.filters.transportista) tSel.value = STATE.filters.transportista;
-    if (STATE.filters.proveedor) pSel.value = STATE.filters.proveedor;
+    if (STATE.filters.comuna && comSet[STATE.filters.comuna]) cSel.value = STATE.filters.comuna; else cSel.value='';
+    if (STATE.filters.transportista && transSet[STATE.filters.transportista]) tSel.value = STATE.filters.transportista; else tSel.value='';
+    if (STATE.filters.proveedor && provSet[STATE.filters.proveedor]) pSel.value = STATE.filters.proveedor; else pSel.value='';
+  }
+
+  // Muestra tarjetitas con total del mes para cada filtro activo (en la unidad actual)
+  function renderFilterStats(){
+    var host = document.getElementById('calFilterStats');
+    if (!host) return;
+
+    var monthRows = enrichAssignmentsForMonth(STATE.current);
+    if (!monthRows.length){
+      host.innerHTML = '';
+      return;
+    }
+
+    function totalFor(predicate){
+      var t = 0;
+      for (var i=0;i<monthRows.length;i++){
+        if (predicate(monthRows[i])) t += Number(monthRows[i].tons||0);
+      }
+      return (STATE.view==='t')
+        ? t
+        : Math.ceil(t / STATE.capacidadCamion);
+    }
+
+    var boxes = [];
+
+    if (STATE.filters.comuna){
+      var val = STATE.filters.comuna;
+      var tot = totalFor(function(r){ return r.comuna===val; });
+      boxes.push('<div class="fltstat" title="'+val+'">Comuna '+numeroCL(tot)+' '+(STATE.view==='t'?'t':'c')+'</div>');
+    }
+    if (STATE.filters.transportista){
+      var v2 = STATE.filters.transportista;
+      var tot2 = totalFor(function(r){ return r.trans===v2; });
+      boxes.push('<div class="fltstat" title="'+v2+'">Transportista '+numeroCL(tot2)+' '+(STATE.view==='t'?'t':'c')+'</div>');
+    }
+    if (STATE.filters.proveedor){
+      var v3 = STATE.filters.proveedor;
+      var tot3 = totalFor(function(r){ return r.prov===v3; });
+      boxes.push('<div class="fltstat" title="'+v3+'">Proveedor '+numeroCL(tot3)+' '+(STATE.view==='t'?'t':'c')+'</div>');
+    }
+
+    host.innerHTML = boxes.join('');
   }
 
   function renderHead(){
@@ -687,6 +721,7 @@
   function refresh(){
     renderMonthLabel();
     fillFilterSelects();
+    renderFilterStats();
     renderHead();
     renderGrid();
   }
