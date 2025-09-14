@@ -7,10 +7,10 @@
 
   <!-- Layout común (sidebar + main) -->
   <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
-  <!-- (Opcional) estilos propios del calendario -->
+  <!-- (Opcional) estilos ya usados en inventario -->
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
-  
-  <!-- React + Babel -->
+
+  <!-- React + Babel (solo para el sidebar nav.jsx) -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
@@ -19,7 +19,8 @@
   <div class="mmpp-layout">
     <div id="mmppNavMount"></div>
     <main class="mmpp-main">
-      <div id="calRoot"></div>
+      <!-- Contenedor REAL del calendario JS -->
+      <div id="mmppCalendario"></div>
     </main>
   </div>
 
@@ -29,25 +30,21 @@
   <!-- API (debe ir antes de la app) -->
   <script src="/spa-mmpp/mmpp-api.js?v=12"></script>
 
-  <!-- Sidebar -->
+  <!-- Sidebar (usa JSX, por eso va con Babel) -->
   <script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
 
-<!-- Si el archivo tiene JSX -->
-<script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/mmpp-calendario.js?v=2"></script>
+  <!-- Calendario: JS puro (NO Babel) -->
+  <script src="/spa-mmpp/mmpp-calendario.js?v=2"></script>
 
-<!-- Si el archivo NO tiene JSX (JS puro), usa esta otra en vez de la de arriba) -->
-<!-- <script type="text/javascript" src="/spa-mmpp/mmpp-calendario.js?v=2"></script> -->
-
-
-  <!-- Auto-montaje del calendario si exportas CalendarioMMPP en calendario.jsx -->
-  <script type="text/babel" data-presets="es2015,react">
-    if (window.CalendarioMMPP) {
-      ReactDOM.createRoot(document.getElementById('calRoot')).render(<CalendarioMMPP />);
-    } else {
-      // placeholder por si aún no montas dentro del propio archivo
-      function Placeholder(){ return <div className="mmpp-card"><h2>Calendario</h2><p>Cargando…</p></div>; }
-      ReactDOM.createRoot(document.getElementById('calRoot')).render(<Placeholder />);
-    }
+  <!-- Montaje del calendario JS -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.MMppCalendario && document.getElementById('mmppCalendario')) {
+        MMppCalendario.mount({ capacidadCamion: 25 }); // ajusta si quieres otra capacidad
+      } else {
+        console.warn('No se encontró MMppCalendario o el contenedor #mmppCalendario.');
+      }
+    });
   </script>
 </body>
 </html>
