@@ -8,7 +8,9 @@
                       comuna, centroCodigo, areaCodigo, tons, fecha, mesKey, anio, mes, estado}
      Asignación:     {id, disponibilidadId, cantidad/tons, camiones, capacidadCamion,
                       destDia?, destMes, destAnio, destFecha, anio, mes, mesKey,
-                      proveedorNombre, proveedorKey, contactoNombre, comuna, centroCodigo, areaCodigo,
+                      proveedorNombre, proveedorKey, contactoNombre, empresaNombre,
+                      comuna, centroCodigo, areaCodigo,
+                      transportistaId, transportistaNombre,
                       originalTons, originalFecha, fuente, estado, createdAt}
 */
 (function (global) {
@@ -48,7 +50,6 @@
     return fetch(url, opts).then(function(res){
       if(res.status===204) return null;
       if(res.status===404){ var e=new Error("404"); e.status=404; throw e; }
-      // Devolvemos JSON incluso si es 4xx, para que el caller pueda mostrar mensaje del backend
       return res.json().then(function(j){ j.__status=res.status; return j; });
     });
   }
@@ -98,6 +99,7 @@
       return {
         id: a.id || a._id || a.uuid || null,
         disponibilidadId: a.disponibilidadId || a.disponibilidad || a.dispoId || null,
+
         cantidad: tons,
         tons: tons,
         camiones: a.camiones!=null ? Number(a.camiones) : null,
@@ -115,9 +117,14 @@
         proveedorNombre: a.proveedorNombre || a.proveedor || "",
         proveedorKey: a.proveedorKey || (a.proveedorNombre?slug(a.proveedorNombre):""),
         contactoNombre: a.contactoNombre || "",
+        empresaNombre: a.empresaNombre || "",
         comuna: a.comuna || "",
         centroCodigo: a.centroCodigo || "",
         areaCodigo: a.areaCodigo || "",
+
+        // 👇 NUEVO: transportista
+        transportistaId: a.transportistaId || null,
+        transportistaNombre: a.transportistaNombre || "",
 
         originalTons: a.originalTons!=null ? Number(a.originalTons) : null,
         originalFecha: a.originalFecha || null,
@@ -186,7 +193,6 @@
       return jfetch(url).then(function(json){
         var list = Array.isArray(json) ? json : (json && (json.items||json.data||json.results)) || [];
         var norm = normalizeAsign(list);
-        // filtro básico
         var clean = norm.filter(function(a){ return a && Number(a.cantidad)>0 && (a.id || a.disponibilidadId); });
         clean.sort(function(a,b){
           var ta=a.createdAt?Date.parse(a.createdAt):0, tb=b.createdAt?Date.parse(b.createdAt):0; return tb-ta;
@@ -204,12 +210,11 @@
       var d = Number(payload.destDia ||0);
       var mk = (y && m) ? (y+"-"+pad2(m)) : null;
 
-      // capacidadCamion: del payload o default 10
+      // capacidadCamion: del payload o default 10 (1 camión = 10 t)
       var cap = Number(payload.capacidadCamion||10);
       var tons = Number(payload.cantidad||payload.tons||0);
       var cam = cap>0 ? Math.ceil(tons/cap) : null;
 
-      // buscamos la disponibilidad para snapshot de proveedor/ubicación
       function pickDispo(list){
         for(var i=0;i<list.length;i++){
           if(String(list[i].id)===String(payload.disponibilidadId)) return list[i];
@@ -230,8 +235,8 @@
           disponibilidadId: payload.disponibilidadId,
 
           // cantidades
-          tons: tons,                 // <- nombre habitual en tu colección
-          cantidad: tons,             // <- alias por compatibilidad
+          tons: tons,
+          cantidad: tons,             // alias por compatibilidad
           camiones: cam,
           capacidadCamion: cap,
 
@@ -251,6 +256,10 @@
           areaCodigo:     (dispo && dispo.areaCodigo)     || "",
           contactoTelefono: (dispo && dispo.telefono)     || "",
           contactoEmail:    (dispo && dispo.email)        || "",
+
+          // 👇 NUEVO: transportista (si viene desde el UI)
+          transportistaId: payload.transportistaId || null,
+          transportistaNombre: payload.transportistaNombre || "",
 
           // snapshot origen
           originalTons:  (payload.originalTons!=null ? Number(payload.originalTons) : (dispo?Number(dispo.tons||0):null)),
