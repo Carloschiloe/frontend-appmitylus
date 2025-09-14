@@ -9,7 +9,8 @@
 */
 
 (function (global) {
-  var CAPACIDAD_CAMION_DEF = 25; // t/camión por defecto (cambia con mount({capacidadCamion}))
+  // === CAMBIO CLAVE: 10 t = 1 camión
+  var CAPACIDAD_CAMION_DEF = 10; // t/camión por defecto (cambia con mount({capacidadCamion}))
 
   function injectCSS(){
     if (document.getElementById('mmpp-cal-css')) return;
@@ -81,7 +82,6 @@
       var dt = new Date(rec.fecha);
       return dt.getFullYear() * 100 + (dt.getMonth()+1);
     }
-    // si no hay información de fecha, lo tratamos como pasado (permitido)
     return 0;
   }
 
@@ -103,7 +103,6 @@
     return y+'-'+pad2(m);
   }
   function asigDay(a){
-    // Si no vino día, lo ubico en 1 (y marco flag)
     var d = Number(a.destDia||0);
     if (!d) d = 1;
     return d;
@@ -116,7 +115,6 @@
       return asigKeyMonth(a)===mmKey &&
         (!STATE.filters.proveedor || a.proveedorNombre===STATE.filters.proveedor);
     });
-    // por día
     var out = {};
     for (var i=0;i<filtered.length;i++){
       var d = asigDay(filtered[i]);
@@ -125,7 +123,6 @@
     return out; // { dia -> tons }
   }
 
-  // saldo por disponibilidad
   function asigByDispo(){
     return groupBy(STATE.asig, function(a){ return a.disponibilidadId||'__none__'; });
   }
@@ -135,7 +132,6 @@
     return Math.max(0, (Number(dispo.tons)||0) - usadas);
   }
 
-  // Filtros dinámicos
   function dynOptions(){
     var base = STATE.dispon.slice();
     var prov = uniqSorted(base.map(function(d){return d.contactoNombre||d.proveedorNombre;}).filter(Boolean));
@@ -217,9 +213,13 @@
 
     for (var d=1; d<=dim; d++){
       var tonsDia = totals[d] || 0;
+
+      // === CAMBIO: mostrar camiones necesarios con ceil
+      var camionesNecesarios = Math.ceil(tonsDia / STATE.capacidadCamion);
+
       var label = (STATE.view==='t')
         ? numeroCL(tonsDia)+' t'
-        : numeroCL(tonsDia/STATE.capacidadCamion)+' c';
+        : numeroCL(camionesNecesarios)+' c';
 
       boxes.push(
         '<div class="cal-cell" data-day="'+d+'">'
@@ -245,27 +245,24 @@
         var day = Number(t.getAttribute('data-assign'));
         abrirModalAsignar(day);
       }
-    }, { once:true }); // una vez por render; se re-atacha en cada refresh
+    }, { once:true });
   }
 
   // --- Modal Asignar ---
   function abrirModalAsignar(day){
-    // filtro base aplicado: proveedor / comuna
     var base = STATE.dispon.slice();
     if (STATE.filters.proveedor) base = base.filter(function(d){ return (d.contactoNombre||d.proveedorNombre)===STATE.filters.proveedor; });
     if (STATE.filters.comuna) base = base.filter(function(d){ return (d.comuna||'')===STATE.filters.comuna; });
 
-    // Mes visible (YYYYMM) y corte: solo <= mes visible
     var y = STATE.current.getFullYear(), m = STATE.current.getMonth()+1;
     var cutoff = y * 100 + m;
 
-    // lots con saldo, solo hasta el mes actual del calendario
     var lots = base
       .filter(function(d){
         var saldo = saldoDe(d);
         if (saldo <= 0) return false;
         var key = recMonthKey(d);
-        return key <= cutoff; // no mostrar futuros
+        return key <= cutoff;
       })
       .map(function(d){
         return {
@@ -340,10 +337,11 @@
       if (!L) return;
       selectedId = L.id;
       selectedSaldo = Number(L.saldo||0);
-      // marcar selección
       [].slice.call(lotsWrap.querySelectorAll('.lot')).forEach(function(n){n.classList.remove('sel');});
       t.classList.add('sel');
-      tip.textContent = 'Saldo disponible: '+numeroCL(selectedSaldo)+' t';
+      // Info: saldo en t y camiones necesarios
+      var cam = Math.ceil(selectedSaldo / STATE.capacidadCamion);
+      tip.textContent = 'Saldo disponible: '+numeroCL(selectedSaldo)+' t  ·  ~'+numeroCL(cam)+' camiones (a '+STATE.capacidadCamion+' t/camión)';
       doBtn.disabled = !(selectedId && Number(qtyInp.value||0)>0);
     });
 
@@ -366,12 +364,10 @@
         cantidad: cant,
         destMes: m,
         destAnio: y,
-        // Extensión opcional para vista calendario:
         destDia: day,
         destFecha: new Date(y, m-1, day).toISOString()
       };
       global.MMppApi.crearAsignacion(payload).then(function(){
-        // recargar datos y redibujar
         return loadData().then(function(){
           document.body.removeChild(host);
           refresh();
@@ -391,7 +387,6 @@
       refresh();
     });
 
-    // Ton / Camiones
     var tabsU = root.querySelector('#calUnits');
     tabsU.addEventListener('click', function(ev){
       var t = ev.target;
@@ -404,7 +399,6 @@
       refresh();
     });
 
-    // Proveedor/Comuna (grupo visual – hoy no cambia el grid; se deja para extender)
     var tabsG = root.querySelector('#calGroup');
     tabsG.addEventListener('click', function(ev){
       var t = ev.target, g = t && t.getAttribute('data-g');
@@ -434,7 +428,6 @@
     var api = global.MMppApi || null;
     if (!api) return Promise.resolve();
 
-    // pedimos un rango amplio (tu MMppApi ya lo hace por defecto)
     return Promise.all([
       api.getDisponibilidades().then(function(d){ STATE.dispon = Array.isArray(d)?d:[]; }),
       api.getAsignaciones().then(function(a){ STATE.asig = Array.isArray(a)?a:[]; })
