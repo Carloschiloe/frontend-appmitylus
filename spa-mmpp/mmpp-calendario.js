@@ -540,7 +540,7 @@
       '<div class="modal" role="dialog" aria-modal="true">'
         +'<div style="display:flex;justify-content:space-between;align-items:center">'
           +'<h3 style="margin:0;font-weight:800">Asignar para el '+day+' de '+MESES[m-1]+' de '+y+'</h3>'
-          +'<button class="cal-btn" id="calClose">✕</button>'
+          +'<button class="cal-btn" id="calClose" type="button">✕</button>'
         +'</div>'
         +'<div class="cal-small" style="margin-top:4px">Disponibilidades con <strong>saldo &gt; 0</strong> hasta <strong>'+MESES[m-1]+' '+y+'</strong>. 1 camión = '+STATE.capacidadCamion+' t.</div>'
         +'<div class="row" style="margin-top:10px">'
@@ -556,8 +556,8 @@
             +'<div class="cal-small" id="calLotTip" style="margin-top:8px">Selecciona un lote a la izquierda para crear, o usa la lista de abajo para editar.</div>'
             +'<div class="cal-small" id="calErr" style="margin-top:6px;color:#b91c1c"></div>'
             +'<div style="margin-top:12px;display:flex;gap:8px;align-items:center">'
-              +'<button id="calDoAssign" class="cal-btn" disabled>✔ Confirmar Asignación</button>'
-              +'<button id="calCancelEdit" class="cal-btn s" style="display:none">Cancelar edición</button>'
+              +'<button id="calDoAssign" type="button" class="cal-btn" disabled>✔ Confirmar Asignación</button>'
+              +'<button id="calCancelEdit" type="button" class="cal-btn s" style="display:none">Cancelar edición</button>'
             +'</div>'
             +'<div class="dayasigs" id="dayAsigsWrap"></div>'
           +'</div>'
@@ -585,6 +585,7 @@
 
     var selectedLot = null, selectedSaldo = 0;
     var editCtx = null; // { id, oldTons, dispo, max }
+    var saving = false; // evita dobles envíos
 
     function renderLots(){
       if (!lots.length){
@@ -600,6 +601,12 @@
           +'<div class="cal-small">'+(L.mesKey?('mes '+L.mesKey):'')+(L.fecha?(' · desde '+new Date(L.fecha).toLocaleDateString('es-CL')):'')+'</div>'
         +'</div>';
       }).join('');
+
+      // UX: si hay 1 solo lote, selecciónalo automáticamente
+      if (lots.length === 1) {
+        var only = lotsWrap.querySelector('.lot');
+        if (only) { only.click(); }
+      }
     }
     function renderDayAsigs(){
       if (!dayAsigs.length){
@@ -617,8 +624,8 @@
           +  '</div>'
           +  '<div class="meta">'+qty+'</div>'
           +  '<div style="display:flex;gap:6px">'
-          +    '<button class="cal-btn s" data-edit="'+(r.id||'')+'">Editar</button>'
-          +    '<button class="cal-btn s" data-del="'+(r.id||'')+'">Eliminar</button>'
+          +    '<button class="cal-btn s" type="button" data-edit="'+(r.id||'')+'">Editar</button>'
+          +    '<button class="cal-btn s" type="button" data-del="'+(r.id||'')+'">Eliminar</button>'
           +  '</div>'
           +'</div>';
       }).join('');
@@ -653,6 +660,7 @@
       var cam = Math.ceil(selectedSaldo / STATE.capacidadCamion);
       tip.textContent = 'Saldo disponible: '+numeroCL(selectedSaldo)+' t  ·  ~'+numeroCL(cam)+' camiones (a '+STATE.capacidadCamion+' t/camión)';
       doBtn.disabled = !(selectedLot && Number(qtyInp.value||0)>0);
+      errEl.textContent = '';
     });
 
     qtyInp.addEventListener('input', function(){
@@ -663,6 +671,7 @@
         if (selectedSaldo>0 && v>selectedSaldo){ v = selectedSaldo; qtyInp.value = String(v); }
       }
       doBtn.disabled = !((editCtx || selectedLot) && v>0);
+      errEl.textContent = '';
     });
 
     asigsWrap.addEventListener('click', function(ev){
@@ -718,15 +727,25 @@
     closeBtn.addEventListener('click', closeModal);
 
     doBtn.addEventListener('click', function(){
+      if (saving) return; // ya estamos guardando
       var cant = Number(qtyInp.value||0);
-      if (!(cant>0)) return;
+
+      // Validaciones visibles (antes eran silenciosas)
+      if (!(cant > 0)) {
+        errEl.textContent = 'Ingresa una cantidad mayor a 0.';
+        return;
+      }
 
       // Crear
       if (!editCtx){
-        if (!selectedLot) return;
+        if (!selectedLot) {
+          errEl.textContent = 'Selecciona un lote con saldo en la lista de la izquierda.';
+          return;
+        }
         var confMsg = '¿Confirmas crear asignación de '+numeroCL(cant)+' t para "'+(selectedLot.trans||selectedLot.prov||'—')+'" el '+day+' de '+MESES[m-1]+'?';
         if (!confirm(confMsg)) return;
 
+        saving = true;
         doBtn.disabled = true; doBtn.textContent = 'Guardando…'; errEl.textContent = '';
         var payload = {
           disponibilidadId: selectedLot.id,
@@ -750,6 +769,7 @@
             errEl.textContent = (e && e.message) ? e.message : 'Error al crear asignación';
           })
           .finally(function(){
+            saving = false;
             if (STATE.modalOpen){ doBtn.disabled = false; doBtn.textContent = '✔ Confirmar Asignación'; }
           });
         return;
@@ -759,6 +779,7 @@
       var msg = '¿Guardar cambios? Nueva cantidad: '+numeroCL(cant)+' t (antes '+numeroCL(editCtx.oldTons)+' t).';
       if (!confirm(msg)) return;
 
+      saving = true;
       doBtn.disabled = true; doBtn.textContent = 'Guardando…'; errEl.textContent = '';
       var patch = {
         tons: cant, cantidad: cant,
@@ -777,6 +798,7 @@
           errEl.textContent = (e && e.message) ? e.message : 'Error al actualizar asignación';
         })
         .finally(function(){
+          saving = false;
           if (STATE.modalOpen){ doBtn.disabled = false; doBtn.textContent = '💾 Guardar cambios'; }
         });
     });
