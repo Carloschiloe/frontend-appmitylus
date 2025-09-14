@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calendario MMPP</title>
+
+  <!-- (opcional) estilo base de tu app -->
+  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
+</head>
+<body>
+  <div id="mmppCalendario"></div>
+
+  <!-- (Opcional) sobreescribir base del backend -->
+  <!-- <script>window.__MMPP_API_BASE__="https://backend-appmitylus.vercel.app";</script> -->
+
+  <!-- Adaptador API (el de arriba, actualizado) -->
+  <script src="/spa-mmpp/mmpp-api.js?v=13"></script>
+
+  <!-- Calendario -->
+  <script src="/spa-mmpp/mmpp-calendario.js?v=1"></script>
+  <script>
+    // Montaje (puedes ajustar capacidadCamion si quieres)
+    MMppCalendario.mount({ capacidadCamion: 25 });
+  </script>
+</body>
+</html>
