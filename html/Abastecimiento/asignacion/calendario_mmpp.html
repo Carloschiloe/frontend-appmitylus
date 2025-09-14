@@ -40,7 +40,8 @@
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       if (window.MMppCalendario && document.getElementById('mmppCalendario')) {
-        MMppCalendario.mount({ capacidadCamion: 25 }); // ajusta si quieres otra capacidad
+        // ✅ 10 t = 1 camión
+        MMppCalendario.mount({ capacidadCamion: 10 });
       } else {
         console.warn('No se encontró MMppCalendario o el contenedor #mmppCalendario.');
       }
