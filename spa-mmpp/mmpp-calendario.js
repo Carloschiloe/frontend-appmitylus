@@ -5,7 +5,7 @@
    - KPI: Requerido (Mes) editable + Asignado + Brecha (persiste por mes en localStorage)
    - Vista Toneladas/Camiones
    - Tabs: Proveedor / Comuna / Transportista
-   - Barra de chips para filtrar por la pestaña activa (en lugar de selects)
+   - Tarjetas para filtrar por la pestaña activa (en lugar de selects/chips)
    - Totales por día + chips por grupo + resumen semanal en domingos
    - Domingos y feriados (CL) en rojo
    - Doble-click en un día abre modal para asignar (usa MMppApi)
@@ -32,7 +32,7 @@
     });
   }
 
-  // --- Compactadores/abreviadores para chips ---
+  // --- Utiles de nombres (para chips internos del calendario) ---
   function cleanName(s){
     return String(s||'')
       .replace(/\b(Soc(?:iedad)?\.?|Comercial(?:izacion|ización)?|Transporte|Importaciones?|Exportaciones?|y|de|del|la|los)\b/gi,'')
@@ -90,17 +90,18 @@
 
     +'.cal-small{font-size:12px;color:#6b7280}'
 
-    /* Chips de filtros */
-    +'.cal-chiprow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 10px}'
-    +'#chipBar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}'
-    +'.chip{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 6px;border-radius:8px;border:1px solid #e5e7eb;background:#f9fafb}'
-    +'.chip .left{display:flex;align-items:center;gap:6px;min-width:0;flex:1}'
-    +'.chip .prov{font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;max-width:160px}'
-    +'.chip .qty{font-weight:700;white-space:nowrap;font-size:11px}'
-    +'.dot{width:8px;height:8px;border-radius:999px}'
-    +'.tag{font-size:10px;font-weight:800;padding:1px 5px;border:1px solid #e5e7eb;background:#fff;border-radius:6px;color:#374151}'
-    +'.fchip{cursor:pointer}'
-    +'.fchip.active{background:#e0e7ff;border-color:#c7d2fe}'
+    /* ---- Tarjetas (contenedor y card) ---- */
+    +'.cal-cardrow{margin:6px 0 10px}'
+    +'#cardDeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}'
+    +'.fcard{background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;transition:box-shadow .15s,border-color .15s,transform .05s}'
+    +'.fcard:hover{box-shadow:0 6px 18px rgba(17,24,39,.08)}'
+    +'.fcard.active{background:#e0e7ff;border-color:#c7d2fe}'
+    +'.fcard .meta{display:flex;align-items:center;gap:8px;min-width:0}'
+    +'.fcard .title{font-weight:800;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px}'
+    +'.fcard .sub{font-size:11px;color:#6b7280}'
+    +'.fcard .qty{font-weight:800;font-size:18px;color:#1f2937;white-space:nowrap}'
+    +'.fcard .unit{font-size:12px;color:#6b7280;margin-left:4px}'
+    +'.fcard .dot{width:10px;height:10px;border-radius:999px}'
 
     /* Calendario */
     +'.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}'
@@ -114,6 +115,14 @@
     +'.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 6px;border-radius:8px;background:#eef2ff;color:#1e40af;border:1px solid #c7d2fe;font-size:11px}'
     +'.total{position:absolute;top:6px;right:6px}'
     +'.weeksum{font-size:12px;font-weight:700;margin-top:auto}'
+
+    /* Chips internos para cada día (se mantienen) */
+    +'.chip{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 6px;border-radius:8px;border:1px solid #e5e7eb;background:#f9fafb}'
+    +'.chip .left{display:flex;align-items:center;gap:6px;min-width:0;flex:1}'
+    +'.chip .prov{font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;max-width:160px}'
+    +'.chip .qty{font-weight:700;white-space:nowrap;font-size:11px}'
+    +'.dot{width:8px;height:8px;border-radius:999px}'
+    +'.tag{font-size:10px;font-weight:800;padding:1px 5px;border:1px solid #e5e7eb;background:#fff;border-radius:6px;color:#374151}'
 
     /* Modal */
     +'.modalBG{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:999}'
@@ -299,9 +308,8 @@
           +'<div class="kpi"><div class="lbl">Brecha</div><div id="kpiGap">0 t</div></div>'
         +'</div>'
 
-        +'<div class="cal-chiprow">'
-          +'<div id="chipBar"></div>'
-        +'</div>'
+        <!-- Contenedor de tarjetas -->
+        +'<div class="cal-cardrow"><div id="cardDeck"></div></div>'
 
         +'<div class="cal-grid" id="calDaysHead"></div>'
         +'<div class="cal-grid" id="calDays"></div>'
@@ -318,15 +326,14 @@
     if (el) el.textContent = MESES[m]+' de '+y;
   }
 
-  // Chips por pestaña (Proveedor/Comuna/Transportista)
-  function renderChipBar(){
-    var bar = document.getElementById('chipBar');
-    if (!bar) return;
+  // === Tarjetas por pestaña (Proveedor/Comuna/Transportista) ===
+  function renderCardDeck(){
+    var deck = document.getElementById('cardDeck');
+    if (!deck) return;
 
-    // Partimos de las asignaciones del mes
     var rows = enrichAssignmentsForMonth(STATE.current);
 
-    // Mantener filtros de las otras dimensiones para que los chips muestren "involucrados"
+    // Mantener filtros de las otras dimensiones
     if (STATE.group !== 'prov'  && STATE.filters.proveedor)     rows = rows.filter(function(r){ return r.prov  === STATE.filters.proveedor; });
     if (STATE.group !== 'com'   && STATE.filters.comuna)        rows = rows.filter(function(r){ return r.comuna=== STATE.filters.comuna; });
     if (STATE.group !== 'trans' && STATE.filters.transportista) rows = rows.filter(function(r){ return r.trans === STATE.filters.transportista; });
@@ -343,23 +350,25 @@
       .sort(function(a,b){ return (b.tons||0)-(a.tons||0); });
 
     var active = getCurrentFilter();
+    var labelMap = { prov:'Proveedor', com:'Comuna', trans:'Transportista' };
     var html = list.map(function(item){
       var trucks = Math.ceil(item.tons / STATE.capacidadCamion);
-      var qty = (STATE.view==='t') ? (numeroCL(item.tons)+' t') : (numeroCL(trucks)+' c');
-      var labShort = shortLabel(item.key);
-      var tag = initials2(item.key);
+      var val = (STATE.view==='t') ? item.tons : trucks;
+      var unit = (STATE.view==='t' ? 't' : 'c');
       var act = (active && active===item.key) ? ' active' : '';
-      return '<button class="chip fchip'+act+'" data-key="'+escapeHtml(item.key)+'" title="'+escapeHtml(item.key)+'">'
-           +   '<div class="left">'
+      return '<div class="fcard'+act+'" data-key="'+escapeHtml(item.key)+'">'
+           +   '<div class="meta">'
            +     '<span class="dot" style="background:'+colorFromString(item.key)+'"></span>'
-           +     '<span class="tag">'+tag+'</span>'
-           +     '<span class="prov">'+escapeHtml(labShort)+'</span>'
+           +     '<div style="display:flex;flex-direction:column;min-width:0">'
+           +       '<div class="title" title="'+escapeHtml(item.key)+'">'+escapeHtml(item.key)+'</div>'
+           +       '<div class="sub">'+labelMap[STATE.group]+'</div>'
+           +     '</div>'
            +   '</div>'
-           +   '<span class="qty">'+qty+'</span>'
-           + '</button>';
+           +   '<div class="qty">'+numeroCL(val)+' <span class="unit">'+unit+'</span></div>'
+           + '</div>';
     }).join('');
 
-    bar.innerHTML = html || '<div class="cal-small">No hay datos para el mes.</div>';
+    deck.innerHTML = html || '<div class="cal-small">No hay datos para el mes.</div>';
   }
 
   function renderHead(){
@@ -886,19 +895,19 @@
       STATE.group = g;
       [].slice.call(tabsG.querySelectorAll('.cal-tab')).forEach(function(n){n.classList.remove('on');});
       ev.target.classList.add('on');
-      renderChipBar(); // actualizar chips al cambiar pestaña
+      renderCardDeck(); // actualizar tarjetas al cambiar pestaña
       renderGrid();
     });
 
-    var chipBar = root.querySelector('#chipBar');
-    if (chipBar) chipBar.addEventListener('click', function(ev){
+    var deck = root.querySelector('#cardDeck');
+    if (deck) deck.addEventListener('click', function(ev){
       var t = ev.target;
-      while (t && t!==chipBar && !t.getAttribute('data-key')) t = t.parentNode;
-      if (!t || t===chipBar) return;
+      while (t && t!==deck && !t.getAttribute('data-key')) t = t.parentNode;
+      if (!t || t===deck) return;
       var key = t.getAttribute('data-key');
       var curr = getCurrentFilter();
       setCurrentFilter(curr===key ? '' : key);
-      renderChipBar();
+      renderCardDeck();
       renderGrid();
     });
 
@@ -907,7 +916,7 @@
       STATE.filters.comuna = '';
       STATE.filters.transportista = '';
       STATE.filters.proveedor = '';
-      renderChipBar();
+      renderCardDeck();
       refresh();
     });
   }
@@ -930,7 +939,7 @@
   // ===== Render principal =====
   function refresh(){
     renderMonthLabel();
-    renderChipBar();      // << chips de filtros
+    renderCardDeck();   // << tarjetas de filtros
     renderHead();
     renderGrid();
   }
