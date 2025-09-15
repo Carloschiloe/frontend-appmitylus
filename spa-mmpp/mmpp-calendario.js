@@ -110,6 +110,7 @@
     +'.aRow .who{display:flex;gap:8px;align-items:center;min-width:0}'
     +'.aRow .who .name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px}'
     +'.aRow .meta{font-size:12px;color:#6b7280}'
+    +'.errGlow{box-shadow:0 0 0 2px #ef4444 inset;border-radius:12px}' /* highlight para lista de lotes */
     ;
     var s = document.createElement('style');
     s.id = 'mmpp-cal-css';
@@ -586,6 +587,17 @@
     var selectedLot = null, selectedSaldo = 0;
     var editCtx = null; // { id, oldTons, dispo, max }
     var saving = false; // evita dobles envíos
+    var warnedNoLot = false;
+
+    function warnNoLot(){
+      errEl.textContent = 'Selecciona un lote con saldo a la izquierda para continuar.';
+      lotsWrap.classList.add('errGlow');
+      setTimeout(function(){ lotsWrap.classList.remove('errGlow'); }, 1000);
+      if (!warnedNoLot) {
+        warnedNoLot = true;
+        try { alert('Debes seleccionar un lote con saldo para crear la asignación.'); } catch(_){}
+      }
+    }
 
     function renderLots(){
       if (!lots.length){
@@ -602,10 +614,10 @@
         +'</div>';
       }).join('');
 
-      // UX: si hay 1 solo lote, selecciónalo automáticamente
+      // UX: autoselección si hay 1 lote
       if (lots.length === 1) {
         var only = lotsWrap.querySelector('.lot');
-        if (only) { only.click(); }
+        if (only) only.click();
       }
     }
     function renderDayAsigs(){
@@ -641,6 +653,8 @@
       qtyInp.value = '';
       errEl.textContent = '';
       selectedLot = null; selectedSaldo = 0;
+      warnedNoLot = false;
+      lotsWrap.classList.remove('errGlow');
       [].slice.call(lotsWrap.querySelectorAll('.lot')).forEach(function(n){n.classList.remove('sel');});
       doBtn.disabled = true;
     }
@@ -652,26 +666,47 @@
       var id = t.getAttribute('data-id');
       var L = lots.find(function(x){return String(x.id)===String(id);});
       if (!L) return;
-      editCtx = null; cancelBtn.style.display = 'none'; doBtn.textContent='✔ Confirmar Asignación';
+
+      editCtx = null;
+      cancelBtn.style.display = 'none';
+      doBtn.textContent='✔ Confirmar Asignación';
+
       selectedLot = L;
       selectedSaldo = Number(L.saldo||0);
+
       [].slice.call(lotsWrap.querySelectorAll('.lot')).forEach(function(n){n.classList.remove('sel');});
       t.classList.add('sel');
+
+      warnedNoLot = false;
+      lotsWrap.classList.remove('errGlow');
+      errEl.textContent = '';
+
       var cam = Math.ceil(selectedSaldo / STATE.capacidadCamion);
       tip.textContent = 'Saldo disponible: '+numeroCL(selectedSaldo)+' t  ·  ~'+numeroCL(cam)+' camiones (a '+STATE.capacidadCamion+' t/camión)';
-      doBtn.disabled = !(selectedLot && Number(qtyInp.value||0)>0);
-      errEl.textContent = '';
+
+      // habilitamos si hay cantidad ingresada
+      doBtn.disabled = !(Number(qtyInp.value||0) > 0);
     });
 
     qtyInp.addEventListener('input', function(){
       var v = Math.max(0, Number(qtyInp.value||0));
       if (editCtx){
         if (v > editCtx.max){ v = editCtx.max; qtyInp.value = String(v); }
-      } else {
-        if (selectedSaldo>0 && v>selectedSaldo){ v = selectedSaldo; qtyInp.value = String(v); }
+        errEl.textContent = '';
+        doBtn.disabled = !(v>0);
+        return;
       }
-      doBtn.disabled = !((editCtx || selectedLot) && v>0);
-      errEl.textContent = '';
+      if (selectedSaldo>0 && v>selectedSaldo){ v = selectedSaldo; qtyInp.value = String(v); }
+      // En creación no deshabilitamos por no tener lote; preferimos avisar en el click
+      doBtn.disabled = !(v>0);
+
+      if (v > 0 && !selectedLot) {
+        warnNoLot();
+      } else {
+        errEl.textContent = '';
+        warnedNoLot = false;
+        lotsWrap.classList.remove('errGlow');
+      }
     });
 
     asigsWrap.addEventListener('click', function(ev){
@@ -730,7 +765,7 @@
       if (saving) return; // ya estamos guardando
       var cant = Number(qtyInp.value||0);
 
-      // Validaciones visibles (antes eran silenciosas)
+      // Validaciones visibles
       if (!(cant > 0)) {
         errEl.textContent = 'Ingresa una cantidad mayor a 0.';
         return;
@@ -739,7 +774,7 @@
       // Crear
       if (!editCtx){
         if (!selectedLot) {
-          errEl.textContent = 'Selecciona un lote con saldo en la lista de la izquierda.';
+          warnNoLot();
           return;
         }
         var confMsg = '¿Confirmas crear asignación de '+numeroCL(cant)+' t para "'+(selectedLot.trans||selectedLot.prov||'—')+'" el '+day+' de '+MESES[m-1]+'?';
