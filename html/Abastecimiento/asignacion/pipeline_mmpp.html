@@ -6,22 +6,24 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Pipeline MMPP</title>
 
-  <!-- 1) Importa el MISMO layout del sidebar -->
+  <!-- Layout del sidebar -->
   <link rel="stylesheet" href="/spa-mmpp/layout.css" />
 
-  <!-- (lo demás que ya tenías) React, Chart.js, etc. -->
+  <!-- React + Chart.js -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Sidebar (nav.jsx compilado o en runtime, igual que en las otras páginas) -->
-  <script src="/spa-mmpp/nav.jsx"></script>
+  <!-- Babel para compilar JSX en runtime -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Sidebar (JSX) -->
+  <script type="text/babel" data-presets="env,react" src="/spa-mmpp/nav.jsx"></script>
 
   <!-- Lógica de la página Pipeline -->
   <script src="/spa-mmpp/mmpp-pipeline.js"></script>
 </head>
 <body>
-  <!-- 2) Usa SIEMPRE el mismo esqueleto de layout -->
   <div class="mmpp-layout">
     <!-- Sidebar -->
     <aside id="mmppNavMount" class="mmpp-nav"></aside>
@@ -33,7 +35,6 @@
   </div>
 
   <script>
-    // Monta Pipeline cuando cargue la página
     (function(){
       function go(){
         if (window.MMppPipeline && typeof window.MMppPipeline.mount === 'function') {
