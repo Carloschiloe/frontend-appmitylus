@@ -1,20 +1,18 @@
 /* /spa-mmpp/mmpp-calendario.js
    Calendario de Cosechas y Entregas (asignaciones) para MMPP
    - 10 t = 1 camión (configurable en mount)
-   - Navegación por mes
    - KPI: Requerido (Mes) editable + Asignado + Brecha (persiste por mes en localStorage)
    - Vista Toneladas/Camiones
    - Agrupar por: Proveedor / Comuna / Transportista
-   - Filtros: Comuna / Transportista / Proveedor + Limpiar (solo asignaciones del mes)
+   - Barra de CHIPS por grupo (reemplaza los selects). Click = aplicar/quitar filtro.
    - Totales por día + chips por grupo + resumen semanal en domingos
    - Domingos y feriados (CL) en rojo
    - Doble-click en un día abre modal para asignar (usa MMppApi)
-   - En el modal se puede CREAR, EDITAR y ELIMINAR asignaciones (con confirmación)
 */
 (function (global) {
   // ===== Config =====
   var CAPACIDAD_CAMION_DEF = 10; // t por camión
-  var CL_HOLIDAYS_2025 = { "2025-09-18":1, "2025-09-19":1 }; // ejemplo mínimo
+  var CL_HOLIDAYS_2025 = { "2025-09-18":1, "2025-09-19":1 };
 
   // ===== Utiles =====
   function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
@@ -26,8 +24,6 @@
     var h=0; for(var i=0;i<str.length;i++){ h=(h*31 + str.charCodeAt(i))>>>0; }
     return "hsl("+(h%360)+",70%,45%)";
   }
-
-  // --- Compactadores/abreviadores para las chips ---
   function cleanName(s){
     return String(s||'')
       .replace(/\b(Soc(?:iedad)?\.?|Comercial(?:izacion|ización)?|Transporte|Importaciones?|Exportaciones?|y|de|del|la|los)\b/gi,'')
@@ -47,7 +43,7 @@
     if (!s) return '—';
     var parts = s.split(/\s+/);
     var last = parts[parts.length-1] || s;
-    if (last.length >= 5) return last; // “marca” legible
+    if (last.length >= 5) return last;
     var ac = parts.slice(0,3).map(function(w){return w[0]||'';}).join('').toUpperCase();
     return (ac.length>=2 ? ac : last.toUpperCase());
   }
@@ -73,10 +69,13 @@
     +'.kpi{background:#f3f4f6;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;font-weight:700}'
     +'.kpi .lbl{font-size:12px;color:#6b7280;font-weight:600}'
     +'.kpi input{height:32px;border:1px solid #e5e7eb;border-radius:10px;padding:0 10px;background:#fff;width:110px;margin-left:6px}'
-    +'.cal-filterrow{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-bottom:6px}'
-    +'.cal-input{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}'
-    +'.cal-fltstats{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}'
-    +'.fltstat{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:8px 12px;font-weight:800;color:#374151}'
+    +'.cal-chiprow{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0 10px}'
+    +'#chipBar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}'
+    +'.chipbtn{display:inline-flex;align-items:center;gap:8px;border:1px solid #e5e7eb;background:#f8fafc;padding:6px 10px;border-radius:999px;font-weight:800;color:#374151;cursor:pointer}'
+    +'.chipbtn .dot{width:8px;height:8px;border-radius:999px}'
+    +'.chipbtn .tag{font-size:10px;font-weight:800;padding:1px 5px;border:1px solid #e5e7eb;background:#fff;border-radius:6px;color:#374151}'
+    +'.chipbtn.on{background:#2155ff;color:#fff;border-color:#2155ff}'
+    +'.chipbtn .count{font-size:12px;opacity:.9}'
     +'.cal-small{font-size:12px;color:#6b7280}'
     +'.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}'
     +'.cal-dayname{font-weight:800;color:#64748b;text-align:center;padding:8px;border:1px solid #e5e7eb;border-radius:10px;background:#f3f4f6}'
@@ -92,7 +91,6 @@
     +'.chip .left{display:flex;align-items:center;gap:6px;min-width:0;flex:1}'
     +'.chip .prov{font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;max-width:160px}'
     +'.chip .qty{font-weight:700;white-space:nowrap;font-size:11px}'
-    +'.dot{width:8px;height:8px;border-radius:999px}'
     +'.tag{font-size:10px;font-weight:800;padding:1px 5px;border:1px solid #e5e7eb;background:#fff;border-radius:6px;color:#374151}'
     +'.weeksum{font-size:12px;font-weight:700;margin-top:auto}'
     +'.cal-tabs{display:flex;gap:6px}'
@@ -110,7 +108,6 @@
     +'.aRow .who{display:flex;gap:8px;align-items:center;min-width:0}'
     +'.aRow .who .name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px}'
     +'.aRow .meta{font-size:12px;color:#6b7280}'
-    +'.errGlow{box-shadow:0 0 0 2px #ef4444 inset;border-radius:12px}' /* highlight para lista de lotes */
     ;
     var s = document.createElement('style');
     s.id = 'mmpp-cal-css';
@@ -162,7 +159,7 @@
       var tons   = Number(a.tons != null ? a.tons : a.cantidad || 0);
       return {
         id: a.id || null,
-        a: a, // referencia original (para editar/eliminar)
+        a: a,
         day: asigDay(a),
         tons: tons,
         prov: prov,
@@ -177,6 +174,15 @@
       if (f.comuna && r.comuna!==f.comuna) return false;
       if (f.transportista && r.trans!==f.transportista) return false;
       if (f.proveedor && r.prov!==f.proveedor) return false;
+      return true;
+    });
+  }
+  function applyFiltersExcept(rows, exceptKey){
+    var f = STATE.filters;
+    return rows.filter(function(r){
+      if (exceptKey!=='comuna'        && f.comuna        && r.comuna!==f.comuna) return false;
+      if (exceptKey!=='transportista' && f.transportista && r.trans!==f.transportista) return false;
+      if (exceptKey!=='proveedor'     && f.proveedor     && r.prov!==f.proveedor) return false;
       return true;
     });
   }
@@ -259,14 +265,10 @@
           +'<div class="kpi"><div class="lbl">Brecha</div><div id="kpiGap">0 t</div></div>'
         +'</div>'
 
-        +'<div class="cal-filterrow">'
-          +'<select id="calComuna" class="cal-input"></select>'
-          +'<select id="calTrans" class="cal-input"></select>'
-          +'<select id="calProv" class="cal-input"></select>'
-          +'<div style="text-align:right"><button id="calClear" class="cal-btn">Limpiar filtros</button></div>'
+        +'<div class="cal-chiprow">'
+          +'<div id="chipBar"></div>'
+          +'<button id="calClear" class="cal-btn s">Limpiar filtros</button>'
         +'</div>'
-
-        +'<div class="cal-fltstats" id="calFilterStats"></div>'
 
         +'<div class="cal-grid" id="calDaysHead"></div>'
         +'<div class="cal-grid" id="calDays"></div>'
@@ -281,66 +283,61 @@
     document.getElementById('calMonth').textContent = MESES[m]+' de '+y;
   }
 
-  // FILTROS: solo desde asignaciones del MES visible
-  function fillFilterSelects(){
-    var enrichedMonth = enrichAssignmentsForMonth(STATE.current);
-    var provSet = {}, comSet = {}, transSet = {};
-    for (var i=0;i<enrichedMonth.length;i++){
-      var r = enrichedMonth[i];
-      if (r.prov) provSet[r.prov]=1;
-      if (r.comuna) comSet[r.comuna]=1;
-      if (r.trans) transSet[r.trans]=1;
-    }
-    function toSortedKeys(set){ return Object.keys(set).sort(); }
+  // ===== CHIP BAR =====
+  function computeChipTotals(){
+    var monthRows = enrichAssignmentsForMonth(STATE.current);
+    // Aplica otros filtros, pero ignora el de la dimensión actual
+    var dimKey = (STATE.group==='prov' ? 'proveedor' : STATE.group==='com' ? 'comuna' : 'transportista');
+    var rows = applyFiltersExcept(monthRows, dimKey);
 
-    var cSel = document.getElementById('calComuna');
-    var tSel = document.getElementById('calTrans');
-    var pSel = document.getElementById('calProv');
+    var map = {};
+    rows.forEach(function(r){
+      var key = (STATE.group==='prov' ? r.prov : STATE.group==='com' ? r.comuna : r.trans) || '—';
+      if (!map[key]) map[key] = { key:key, tons:0 };
+      map[key].tons += Number(r.tons||0);
+    });
 
-    cSel.innerHTML = '<option value="">Todas las comunas</option>' + toSortedKeys(comSet).map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
-    tSel.innerHTML = '<option value="">Todos los transportistas</option>' + toSortedKeys(transSet).map(function(t){ return '<option value="'+t+'">'+t+'</option>'; }).join('');
-    pSel.innerHTML = '<option value="">Todos los proveedores</option>' + toSortedKeys(provSet).map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
-
-    if (STATE.filters.comuna && comSet[STATE.filters.comuna]) cSel.value = STATE.filters.comuna; else cSel.value='';
-    if (STATE.filters.transportista && transSet[STATE.filters.transportista]) tSel.value = STATE.filters.transportista; else tSel.value='';
-    if (STATE.filters.proveedor && provSet[STATE.filters.proveedor]) pSel.value = STATE.filters.proveedor; else pSel.value='';
+    var arr = Object.keys(map).map(function(k){ 
+      var t = map[k].tons;
+      return {
+        key: k,
+        label: k,
+        tag: initials2(k),
+        dot: colorFromString(k),
+        tons: t,
+        trucks: Math.ceil(t / STATE.capacidadCamion)
+      };
+    });
+    // orden: por total desc, luego alfabético
+    arr.sort(function(a,b){ 
+      var d = (b[(STATE.view==='t'?'tons':'trucks')]|0) - (a[(STATE.view==='t'?'tons':'trucks')]|0);
+      return d!==0 ? d : a.label.localeCompare(b.label);
+    });
+    return arr;
   }
 
-  // Tarjetitas con total del mes para cada filtro activo (en la unidad actual)
-  function renderFilterStats(){
-    var host = document.getElementById('calFilterStats');
+  function renderChipBar(){
+    var host = document.getElementById('chipBar');
     if (!host) return;
+    var chips = computeChipTotals();
+    var unit = (STATE.view==='t'?'t':'c');
+    var active = (STATE.group==='prov'? STATE.filters.proveedor
+                 :STATE.group==='com'? STATE.filters.comuna
+                 :STATE.filters.transportista);
 
-    var monthRows = enrichAssignmentsForMonth(STATE.current);
-    if (!monthRows.length){
-      host.innerHTML = '';
+    if (!chips.length){
+      host.innerHTML = '<div class="cal-small">No hay registros para este mes con los filtros actuales.</div>';
       return;
     }
-    function totalFor(predicate){
-      var t = 0;
-      for (var i=0;i<monthRows.length;i++){
-        if (predicate(monthRows[i])) t += Number(monthRows[i].tons||0);
-      }
-      return (STATE.view==='t') ? t : Math.ceil(t / STATE.capacidadCamion);
-    }
-
-    var boxes = [];
-    if (STATE.filters.comuna){
-      var val = STATE.filters.comuna;
-      var tot = totalFor(function(r){ return r.comuna===val; });
-      boxes.push('<div class="fltstat" title="'+val+'">Comuna '+numeroCL(tot)+' '+(STATE.view==='t'?'t':'c')+'</div>');
-    }
-    if (STATE.filters.transportista){
-      var v2 = STATE.filters.transportista;
-      var tot2 = totalFor(function(r){ return r.trans===v2; });
-      boxes.push('<div class="fltstat" title="'+v2+'">Transportista '+numeroCL(tot2)+' '+(STATE.view==='t'?'t':'c')+'</div>');
-    }
-    if (STATE.filters.proveedor){
-      var v3 = STATE.filters.proveedor;
-      var tot3 = totalFor(function(r){ return r.prov===v3; });
-      boxes.push('<div class="fltstat" title="'+v3+'">Proveedor '+numeroCL(tot3)+' '+(STATE.view==='t'?'t':'c')+'</div>');
-    }
-    host.innerHTML = boxes.join('');
+    host.innerHTML = chips.map(function(c){
+      var count = (STATE.view==='t' ? numeroCL(c.tons)+' t' : numeroCL(c.trucks)+' c');
+      var on = (c.key===active) ? ' on' : '';
+      return '<button class="chipbtn'+on+'" data-chip="'+encodeURIComponent(c.key)+'">'
+           +   '<span class="dot" style="background:'+c.dot+'"></span>'
+           +   '<span>'+shortLabel(c.label)+'</span>'
+           +   '<span class="count">· '+count+'</span>'
+           + '</button>';
+    }).join('');
   }
 
   function renderHead(){
@@ -531,7 +528,6 @@
         };
       });
 
-    // Asignaciones del día (para editar/eliminar)
     var monthRows = enrichAssignmentsForMonth(STATE.current);
     var dayAsigs = monthRows.filter(function(r){ return r.day===day; });
 
@@ -585,19 +581,8 @@
     var errEl    = host.querySelector('#calErr');
 
     var selectedLot = null, selectedSaldo = 0;
-    var editCtx = null; // { id, oldTons, dispo, max }
-    var saving = false; // evita dobles envíos
-    var warnedNoLot = false;
-
-    function warnNoLot(){
-      errEl.textContent = 'Selecciona un lote con saldo a la izquierda para continuar.';
-      lotsWrap.classList.add('errGlow');
-      setTimeout(function(){ lotsWrap.classList.remove('errGlow'); }, 1000);
-      if (!warnedNoLot) {
-        warnedNoLot = true;
-        try { alert('Debes seleccionar un lote con saldo para crear la asignación.'); } catch(_){}
-      }
-    }
+    var editCtx = null;
+    var saving = false;
 
     function renderLots(){
       if (!lots.length){
@@ -613,11 +598,9 @@
           +'<div class="cal-small">'+(L.mesKey?('mes '+L.mesKey):'')+(L.fecha?(' · desde '+new Date(L.fecha).toLocaleDateString('es-CL')):'')+'</div>'
         +'</div>';
       }).join('');
-
-      // UX: autoselección si hay 1 lote
       if (lots.length === 1) {
         var only = lotsWrap.querySelector('.lot');
-        if (only) only.click();
+        if (only) { only.click(); }
       }
     }
     function renderDayAsigs(){
@@ -653,8 +636,6 @@
       qtyInp.value = '';
       errEl.textContent = '';
       selectedLot = null; selectedSaldo = 0;
-      warnedNoLot = false;
-      lotsWrap.classList.remove('errGlow');
       [].slice.call(lotsWrap.querySelectorAll('.lot')).forEach(function(n){n.classList.remove('sel');});
       doBtn.disabled = true;
     }
@@ -666,47 +647,26 @@
       var id = t.getAttribute('data-id');
       var L = lots.find(function(x){return String(x.id)===String(id);});
       if (!L) return;
-
-      editCtx = null;
-      cancelBtn.style.display = 'none';
-      doBtn.textContent='✔ Confirmar Asignación';
-
+      editCtx = null; cancelBtn.style.display = 'none'; doBtn.textContent='✔ Confirmar Asignación';
       selectedLot = L;
       selectedSaldo = Number(L.saldo||0);
-
       [].slice.call(lotsWrap.querySelectorAll('.lot')).forEach(function(n){n.classList.remove('sel');});
       t.classList.add('sel');
-
-      warnedNoLot = false;
-      lotsWrap.classList.remove('errGlow');
-      errEl.textContent = '';
-
       var cam = Math.ceil(selectedSaldo / STATE.capacidadCamion);
       tip.textContent = 'Saldo disponible: '+numeroCL(selectedSaldo)+' t  ·  ~'+numeroCL(cam)+' camiones (a '+STATE.capacidadCamion+' t/camión)';
-
-      // habilitamos si hay cantidad ingresada
-      doBtn.disabled = !(Number(qtyInp.value||0) > 0);
+      doBtn.disabled = !(selectedLot && Number(qtyInp.value||0)>0);
+      errEl.textContent = '';
     });
 
     qtyInp.addEventListener('input', function(){
       var v = Math.max(0, Number(qtyInp.value||0));
       if (editCtx){
         if (v > editCtx.max){ v = editCtx.max; qtyInp.value = String(v); }
-        errEl.textContent = '';
-        doBtn.disabled = !(v>0);
-        return;
-      }
-      if (selectedSaldo>0 && v>selectedSaldo){ v = selectedSaldo; qtyInp.value = String(v); }
-      // En creación no deshabilitamos por no tener lote; preferimos avisar en el click
-      doBtn.disabled = !(v>0);
-
-      if (v > 0 && !selectedLot) {
-        warnNoLot();
       } else {
-        errEl.textContent = '';
-        warnedNoLot = false;
-        lotsWrap.classList.remove('errGlow');
+        if (selectedSaldo>0 && v>selectedSaldo){ v = selectedSaldo; qtyInp.value = String(v); }
       }
+      doBtn.disabled = !((editCtx || selectedLot) && v>0);
+      errEl.textContent = '';
     });
 
     asigsWrap.addEventListener('click', function(ev){
@@ -716,13 +676,12 @@
       var idDel  = t.getAttribute('data-del');
 
       if (idEdit){
-        // Entrar a modo edición
         var row = dayAsigs.find(function(r){ return String(r.id)===String(idEdit); });
         if (!row) return;
         var a = row.a || {};
         var dpo = dispoPorId(a.disponibilidadId);
         var saldoExtra = dpo ? saldoDe(dpo) : 0;
-        var max = Number(row.tons || 0) + Number(saldoExtra || 0); // puedes subir hasta saldo + lo que ya tenías
+        var max = Number(row.tons || 0) + Number(saldoExtra || 0);
         editCtx = { id: row.id, oldTons: Number(row.tons||0), dispo: dpo, max: max };
         cancelBtn.style.display = 'inline-block';
         doBtn.textContent = '💾 Guardar cambios';
@@ -730,7 +689,7 @@
         qtyInp.value = String(row.tons||0);
         doBtn.disabled = false;
         errEl.textContent = '';
-        selectedLot = null; selectedSaldo = 0; // deselecciona creación
+        selectedLot = null; selectedSaldo = 0;
         [].slice.call(lotsWrap.querySelectorAll('.lot')).forEach(function(n){n.classList.remove('sel');});
         return;
       }
@@ -746,11 +705,11 @@
           .then(function(resp){
             if (resp && resp.__status && resp.__status>=400) throw new Error(resp.error||'No se pudo eliminar');
             return loadData().then(function(){
-              // recargar listas
               var freshMonth = enrichAssignmentsForMonth(STATE.current);
               dayAsigs = freshMonth.filter(function(r){ return r.day===day; });
               renderDayAsigs();
-              renderGrid(); // refresca calendario por si cambió totals
+              renderGrid();
+              renderChipBar();
             });
           })
           .catch(function(e){ errEl.textContent = (e && e.message) ? e.message : 'Error al eliminar asignación'; })
@@ -762,10 +721,9 @@
     closeBtn.addEventListener('click', closeModal);
 
     doBtn.addEventListener('click', function(){
-      if (saving) return; // ya estamos guardando
+      if (saving) return;
       var cant = Number(qtyInp.value||0);
 
-      // Validaciones visibles
       if (!(cant > 0)) {
         errEl.textContent = 'Ingresa una cantidad mayor a 0.';
         return;
@@ -774,7 +732,7 @@
       // Crear
       if (!editCtx){
         if (!selectedLot) {
-          warnNoLot();
+          errEl.textContent = 'Selecciona un lote con saldo en la lista de la izquierda.';
           return;
         }
         var confMsg = '¿Confirmas crear asignación de '+numeroCL(cant)+' t para "'+(selectedLot.trans||selectedLot.prov||'—')+'" el '+day+' de '+MESES[m-1]+'?';
@@ -797,6 +755,7 @@
             if (resp && resp.__status && resp.__status>=400) throw new Error(resp.error||'No se pudo crear');
             return loadData().then(function(){
               renderGrid();
+              renderChipBar();
               closeModal();
             });
           })
@@ -826,6 +785,7 @@
           if (resp && resp.__status && resp.__status>=400) throw new Error(resp.error||'No se pudo actualizar');
           return loadData().then(function(){
             renderGrid();
+            renderChipBar();
             closeModal();
           });
         })
@@ -870,23 +830,22 @@
       refresh();
     });
 
-    root.querySelector('#calComuna').addEventListener('change', function(e){
-      STATE.filters.comuna = e.target.value || '';
-      refresh();
-    });
-    root.querySelector('#calTrans').addEventListener('change', function(e){
-      STATE.filters.transportista = e.target.value || '';
-      refresh();
-    });
-    root.querySelector('#calProv').addEventListener('change', function(e){
-      STATE.filters.proveedor = e.target.value || '';
-      refresh();
-    });
     root.querySelector('#calClear').addEventListener('click', function(){
       STATE.filters.comuna = '';
       STATE.filters.transportista = '';
       STATE.filters.proveedor = '';
-      fillFilterSelects();
+      refresh();
+    });
+
+    // click en chips
+    root.addEventListener('click', function(ev){
+      var t = ev.target;
+      while (t && t!==root && !t.getAttribute('data-chip')) t = t.parentNode;
+      if (!t) return;
+      var val = decodeURIComponent(t.getAttribute('data-chip')||'');
+      var key = (STATE.group==='prov'?'proveedor':STATE.group==='com'?'comuna':'transportista');
+      var cur = STATE.filters[key] || '';
+      STATE.filters[key] = (cur===val ? '' : val);
       refresh();
     });
   }
@@ -909,8 +868,7 @@
   // ===== Render principal =====
   function refresh(){
     renderMonthLabel();
-    fillFilterSelects();
-    renderFilterStats();
+    renderChipBar();
     renderHead();
     renderGrid();
   }
