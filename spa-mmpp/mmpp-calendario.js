@@ -74,6 +74,15 @@
   var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   var DIAS  = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
 
+// Abreviaturas de meses para "07.sept.25"
+var MESES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sept','oct','nov','dic'];
+function fechaCorta(y, m1, d){
+  // m1 es 1..12
+  var yy = String(y).slice(-2);
+  var mon = MESES_ABBR[(m1-1)|0] || '';
+  return pad2(d) + '.' + mon + '.' + yy;
+}
+
   // ===== CSS =====
   function injectCSS(){
     if (document.getElementById('mmpp-cal-css')) return;
@@ -345,59 +354,70 @@
   }
 
   // === Tarjetas por pestaña (Proveedor/Comuna/Transportista) ===
-  function renderCardDeck(){
-    var deck = document.getElementById('cardDeck');
-    if (!deck) return;
+ function renderCardDeck(){
+  var deck = document.getElementById('cardDeck');
+  if (!deck) return;
 
-    var rows = enrichAssignmentsForMonth(STATE.current);
+  var rows = enrichAssignmentsForMonth(STATE.current);
 
-    // Mantener filtros de las otras dimensiones
-    if (STATE.group !== 'prov'  && STATE.filters.proveedor)     rows = rows.filter(function(r){ return r.prov  === STATE.filters.proveedor; });
-    if (STATE.group !== 'com'   && STATE.filters.comuna)        rows = rows.filter(function(r){ return r.comuna=== STATE.filters.comuna; });
-    if (STATE.group !== 'trans' && STATE.filters.transportista) rows = rows.filter(function(r){ return r.trans === STATE.filters.transportista; });
+  // Mantener filtros de las otras dimensiones
+  if (STATE.group !== 'prov'  && STATE.filters.proveedor)     rows = rows.filter(function(r){ return r.prov  === STATE.filters.proveedor; });
+  if (STATE.group !== 'com'   && STATE.filters.comuna)        rows = rows.filter(function(r){ return r.comuna=== STATE.filters.comuna; });
+  if (STATE.group !== 'trans' && STATE.filters.transportista) rows = rows.filter(function(r){ return r.trans === STATE.filters.transportista; });
 
-    var totalT = rows.reduce(function(acc,r){ return acc + (Number(r.tons)||0); }, 0) || 0;
+  var totalT = rows.reduce(function(acc,r){ return acc + (Number(r.tons)||0); }, 0) || 0;
 
-    var map = {};
-    rows.forEach(function(r){
-      var key = (STATE.group==='prov'? r.prov : (STATE.group==='com'? r.comuna : r.trans)) || '—';
-      var tons = Number(r.tons||0);
-      if (!map[key]) map[key] = { key:key, tons:0 };
-      map[key].tons += tons;
-    });
+  // Año/mes actual para armar la fecha corta
+  var y = STATE.current.getFullYear();
+  var m1 = STATE.current.getMonth() + 1;
 
-    var list = Object.keys(map).map(function(k){ return map[k]; })
-      .sort(function(a,b){ return (b.tons||0)-(a.tons||0); });
+  // Sumar por entidad y guardar primer día en el mes
+  var map = {};
+  rows.forEach(function(r){
+    var key = (STATE.group==='prov'? r.prov : (STATE.group==='com'? r.comuna : r.trans)) || '—';
+    var tons = Number(r.tons||0);
+    if (!map[key]) map[key] = { key:key, tons:0, firstDay:null };
+    map[key].tons += tons;
+    if (!map[key].firstDay || r.day < map[key].firstDay) map[key].firstDay = r.day;
+  });
 
-    var active = getCurrentFilter();
-    var labelMap = { prov:'Proveedor', com:'Comuna', trans:'Transportista' };
-    var html = list.map(function(item){
-      var trucks = Math.ceil(item.tons / STATE.capacidadCamion);
-      var val = (STATE.view==='t') ? item.tons : trucks;
-      var unit = (STATE.view==='t' ? 't' : 'c');
-      var pct = totalT>0 ? Math.round((item.tons/totalT)*100) : 0;
-      var pal = paletteFor(item.key);
-      var act = (active && active===item.key) ? ' active' : '';
-      return '<div class="fcard'+act+'" data-key="'+escapeHtml(item.key)+'"'
-           + ' style="border-color:'+pal.border+';background:'+pal.bg+'">'
-           +   '<span class="swatch" style="background:'+pal.main+'"></span>'
-           +   '<div class="meta">'
-           +     '<span class="dot" style="background:'+pal.main+'"></span>'
-           +     '<div style="display:flex;flex-direction:column;min-width:0">'
-           +       '<div class="title" title="'+escapeHtml(item.key)+'">'+escapeHtml(item.key)+'</div>'
-           +       '<div class="sub">'+labelMap[STATE.group]+'</div>'
-           +     '</div>'
-           +   '</div>'
-           +   '<div class="qtyBlk">'
-           +     '<div class="qty">'+numeroCL(val)+' <span class="unit">'+unit+'</span></div>'
-           +     '<div class="pct">'+pct+'% del mes</div>'
-           +     '<div class="pctbar"><span style="width:'+pct+'%;background:'+pal.main+';opacity:.45"></span></div>'
-           +   '</div>'
-           + '</div>';
-    }).join('');
+  var list = Object.keys(map).map(function(k){ return map[k]; })
+    .sort(function(a,b){ return (b.tons||0)-(a.tons||0); });
 
-    deck.innerHTML = html || '<div class="cal-small">No hay datos para el mes.</div>';
-  }
+  var active = getCurrentFilter();
+  var labelMap = { prov:'Proveedor', com:'Comuna', trans:'Transportista' };
+
+  var html = list.map(function(item){
+    var trucks = Math.ceil(item.tons / STATE.capacidadCamion);
+    var val = (STATE.view==='t') ? item.tons : trucks;
+    var unit = (STATE.view==='t' ? 't' : 'c');
+    var pct = totalT>0 ? Math.round((item.tons/totalT)*100) : 0;
+    var pal = paletteFor(item.key);
+    var act = (active && active===item.key) ? ' active' : '';
+    var inicioStr = item.firstDay ? ('Inicio: ' + fechaCorta(y, m1, item.firstDay)) : 'Inicio: —';
+
+    return '<div class="fcard'+act+'" data-key="'+escapeHtml(item.key)+'"'
+         + ' style="border-color:'+pal.border+';background:'+pal.bg+'">'
+         +   '<span class="swatch" style="background:'+pal.main+'"></span>'
+         +   '<div class="meta">'
+         +     '<span class="dot" style="background:'+pal.main+'"></span>'
+         +     '<div style="display:flex;flex-direction:column;min-width:0">'
+         +       '<div class="title" title="'+escapeHtml(item.key)+'">'+escapeHtml(item.key)+'</div>'
+         +       '<div class="sub">'+labelMap[STATE.group]+'</div>'
+         +       '<div class="sub" title="Primer día con asignación en el mes">'+inicioStr+'</div>'
+         +     '</div>'
+         +   '</div>'
+         +   '<div class="qtyBlk">'
+         +     '<div class="qty">'+numeroCL(val)+' <span class="unit">'+unit+'</span></div>'
+         +     '<div class="pct">'+pct+'% del mes</div>'
+         +     '<div class="pctbar"><span style="width:'+pct+'%;background:'+pal.main+';opacity:.45"></span></div>'
+         +   '</div>'
+         + '</div>';
+  }).join('');
+
+  deck.innerHTML = html || '<div class="cal-small">No hay datos para el mes.</div>';
+}
+
 
   function renderHead(){
     var h = document.getElementById('calDaysHead');
