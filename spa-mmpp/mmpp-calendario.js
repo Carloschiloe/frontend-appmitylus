@@ -6,7 +6,7 @@
    - Vista Toneladas/Camiones
    - Tabs: Proveedor / Comuna / Transportista
    - Tarjetas (click para filtrar) con % del mes y color por entidad
-   - Totales por día + chips por grupo (ahora tintados) + resumen semanal en domingos
+   - Totales por día + chips por grupo (tintados) + resumen semanal en domingos
    - Domingos y feriados (CL) en rojo
    - Doble-click en un día abre modal para asignar (usa MMppApi)
    - En el modal se puede CREAR, EDITAR y ELIMINAR asignaciones (con confirmación)
@@ -14,7 +14,7 @@
 (function (global) {
   // ===== Config =====
   var CAPACIDAD_CAMION_DEF = 10; // t por camión
-  var CL_HOLIDAYS_2025 = { "2025-09-18":1, "2025-09-19":1 }; // ejemplo mínimo
+  var CL_HOLIDAYS_2025 = { "2025-09-18":1, "2025-09-19":1 };
 
   // ===== Utiles =====
   function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
@@ -27,23 +27,26 @@
     });
   }
 
-  // Colores consistentes por entidad (mismo algoritmo que antes pero con paleta)
-  function _hashHue(str){
-    if(!str) return 210;
-    var h=0; for(var i=0;i<str.length;i++){ h=(h*31 + str.charCodeAt(i))>>>0; }
-    return h%360;
+  // ===== Paleta con colores BIEN separados =====
+  function _hash(str){
+    var h=2166136261>>>0; str=String(str||'');
+    for (var i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=(h+((h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24)))>>>0; }
+    return h>>>0;
   }
+  // 12 tonos espaciados (evita “todos azules”)
+  var HUES = [210, 12, 140, 48, 280, 110, 330, 190, 24, 160, 300, 80];
   function paletteFor(key){
-    var h=_hashHue(String(key||''));
+    var idx = _hash(key)%HUES.length;
+    var h = HUES[idx];
     return {
-      main:   "hsl("+h+",70%,45%)",
+      main:   "hsl("+h+",75%,45%)",
       border: "hsl("+h+",70%,78%)",
       bg:     "hsl("+h+",90%,96%)",
       faint:  "hsl("+h+",85%,92%)"
     };
   }
 
-  // --- Utiles de nombres (para chips internos del calendario) ---
+  // --- Utiles de nombres (para chips/tarjetas) ---
   function cleanName(s){
     return String(s||'')
       .replace(/\b(Soc(?:iedad)?\.?|Comercial(?:izacion|ización)?|Transporte|Importaciones?|Exportaciones?|y|de|del|la|los)\b/gi,'')
@@ -101,17 +104,18 @@
 
     +'.cal-small{font-size:12px;color:#6b7280}'
 
-     /* ---- Tarjetas ---- */
+    /* ---- Tarjetas: UNA SOLA FILA, sin wrap ---- */
     +'.cal-cardrow{margin:6px 0 10px}'
-    +'#cardDeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}'
+    +'#cardDeck{display:flex;gap:10px;align-items:stretch;width:100%;overflow:hidden}'
+    +'#cardDeck .fcard{flex:1 1 0;min-width:0}'
     +'.fcard{position:relative;background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:12px 12px 12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;transition:box-shadow .15s,border-color .15s}'
     +'.fcard:hover{box-shadow:0 6px 18px rgba(17,24,39,.08)}'
     +'.fcard.active{outline:2px solid rgba(37,99,235,.25)}'
     +'.fcard .swatch{position:absolute;left:0;top:0;bottom:0;width:6px;border-radius:14px 0 0 14px}'
     +'.fcard .meta{display:flex;align-items:center;gap:10px;min-width:0}'
-    +'.fcard .title{font-weight:800;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px}'
+    +'.fcard .title{font-weight:800;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
     +'.fcard .sub{font-size:11px;color:#6b7280}'
-    +'.qtyBlk{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:110px}'
+    +'.qtyBlk{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:88px;flex:0 0 auto}'
     +'.fcard .qty{font-weight:800;font-size:18px;color:#1f2937;white-space:nowrap}'
     +'.fcard .unit{font-size:12px;color:#6b7280;margin-left:4px}'
     +'.pct{font-size:12px;color:#6b7280}'
@@ -340,7 +344,7 @@
     if (el) el.textContent = MESES[m]+' de '+y;
   }
 
-  // === Tarjetas por pestaña (Proveedor/Comuna/Transportista) con % y color ===
+  // === Tarjetas por pestaña (Proveedor/Comuna/Transportista) ===
   function renderCardDeck(){
     var deck = document.getElementById('cardDeck');
     if (!deck) return;
@@ -481,19 +485,16 @@
         }
       }
 
-      // Chips del día (tintados y con color consistente por entidad según pestaña)
+      // Chips del día (tintados con paleta estable)
       var chips = '';
       var maxChips = 4;
       for (var g=0; g<groups.length && g<maxChips; g++){
         var gg = groups[g];
         var qty = (STATE.view==='t' ? (numeroCL(gg.tons)+' t') : (numeroCL(gg.trucks)+' c'));
-
-        // Color se basa en la entidad de la pestaña activa
         var colorKey = (STATE.group==='prov' ? (gg.provFull||gg.label)
                         : STATE.group==='com' ? (gg.comuna||gg.label)
                         : (gg.transFull||gg.label));
         var pal = paletteFor(colorKey);
-
         var display = (STATE.group==='prov' ? shortLabel(gg.transFull) : gg.labelShort) || gg.labelShort;
         var titleFull = (
           'Proveedor: ' + gg.provFull + ' · ' +
@@ -522,15 +523,6 @@
       );
     }
     cont.innerHTML = boxes.join('');
-
-    // ✅ Doble click para abrir modal de asignación
-    cont.addEventListener('dblclick', function(ev){
-      var t = ev.target;
-      while (t && t!==cont && !t.getAttribute('data-day')) t = t.parentNode;
-      if (!t) return;
-      var day = Number(t.getAttribute('data-day'))||0;
-      if (day>0) abrirModalAsignar(day);
-    }, { once:true });
   }
 
   // ===== Modal Asignar / Editar / Eliminar =====
@@ -855,7 +847,9 @@
             if (resp && resp.__status && resp.__status>=400) throw new Error(resp.error||'No se pudo crear');
             return loadData().then(function(){ renderGrid(); closeModal(); });
           })
-          .catch(function(e){ errEl.textContent = (e && e.message) ? e.message : 'Error al crear asignación'; })
+          .catch(function(e){
+            errEl.textContent = (e && e.message) ? e.message : 'Error al crear asignación';
+          })
           .finally(function(){
             saving = false;
             if (STATE.modalOpen){ doBtn.disabled = false; doBtn.textContent = '✔ Confirmar Asignación'; }
@@ -934,6 +928,19 @@
       renderCardDeck();
       renderGrid();
     });
+
+    var cont = root.querySelector('#calDays');
+    // Doble-click permanente (no se desactiva al cerrar modal)
+    if (cont && !cont._dblAttached){
+      cont.addEventListener('dblclick', function(ev){
+        var t = ev.target;
+        while (t && t!==cont && !t.getAttribute('data-day')) t = t.parentNode;
+        if (!t) return;
+        var day = Number(t.getAttribute('data-day'))||0;
+        if (day>0) abrirModalAsignar(day);
+      });
+      cont._dblAttached = true;
+    }
 
     var clearBtn = root.querySelector('#calClear');
     if (clearBtn) clearBtn.addEventListener('click', function(){
