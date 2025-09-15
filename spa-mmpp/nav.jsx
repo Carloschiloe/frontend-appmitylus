@@ -10,7 +10,7 @@ function Sidebar(){
   const itemsMain = [
     { href: "/html/Abastecimiento/asignacion/inventario_mmpp.html", label:"Inventario", icon:"📦" },
     { href: "/html/Abastecimiento/asignacion/calendario_mmpp.html", label:"Calendario", icon:"📅" },
-    { href: "/html/Abastecimiento/asignacion/resumen_mmpp.html",   label:"Resumen Disp.",   icon:"📊" }, // ← NUEVO
+    { href: "/html/Abastecimiento/asignacion/resumen_mmpp.html",   label:"Resumen Stock",   icon:"📊" }, // ← NUEVO
   ];
 
   // Si más módulos luego:
