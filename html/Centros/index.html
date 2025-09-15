@@ -8,13 +8,16 @@
   <!-- Materialize / Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
+
   <!-- DataTables -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.7.0/css/colReorder.dataTables.min.css"/>
+
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.css" />
+
   <!-- App CSS -->
   <link rel="stylesheet" href="/css/centros.rev.css" />
 </head>
@@ -112,7 +115,7 @@
     </section>
   </main>
 
-  <!-- Modales mínimos (plantillas) -->
+  <!-- Modales mínimos -->
   <div id="centroModal" class="modal">
     <div class="modal-content"><h5 id="formTitle">Agregar Centro</h5><p>Formulario en desarrollo.</p></div>
     <div class="modal-footer"><a class="modal-close btn-flat">Cerrar</a></div>
@@ -124,6 +127,7 @@
 
   <!-- Vendor JS -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
@@ -137,6 +141,7 @@
   <script>
     window.API_URL = window.API_URL || '/api';
   </script>
-  <script type="module" src="/js/centros.page.js"></script>
+  <!-- OJO: la ruta correcta (carpeta /js/centros/) -->
+  <script type="module" src="/js/centros/centros.page.js"></script>
 </body>
 </html>
