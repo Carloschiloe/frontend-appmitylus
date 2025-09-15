@@ -982,4 +982,3 @@
 
   global.MMppCalendario = { mount: mount, refresh: refresh };
 })(window);
-
