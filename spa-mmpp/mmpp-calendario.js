@@ -5,8 +5,8 @@
    - KPI: Requerido (Mes) editable + Asignado + Brecha (persiste por mes en localStorage)
    - Vista Toneladas/Camiones
    - Tabs: Proveedor / Comuna / Transportista
-   - Tarjetas para filtrar por la pestaña activa (en lugar de selects/chips)
-   - Totales por día + chips por grupo + resumen semanal en domingos
+   - Tarjetas (click para filtrar) con % del mes y color por entidad
+   - Totales por día + chips por grupo (ahora tintados) + resumen semanal en domingos
    - Domingos y feriados (CL) en rojo
    - Doble-click en un día abre modal para asignar (usa MMppApi)
    - En el modal se puede CREAR, EDITAR y ELIMINAR asignaciones (con confirmación)
@@ -21,15 +21,26 @@
   function pad2(n){ n = Number(n)||0; return (n<10?"0":"")+n; }
   function monthKeyFromDate(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1); }
   function mondayIndex(jsWeekday){ return (jsWeekday+6)%7; } // 0..6 (0 = Lunes)
-  function colorFromString(str){
-    if(!str) return "#9ca3af";
-    var h=0; for(var i=0;i<str.length;i++){ h=(h*31 + str.charCodeAt(i))>>>0; }
-    return "hsl("+(h%360)+",70%,45%)";
-  }
   function escapeHtml(s){
     return String(s||'').replace(/[&<>"']/g, function(c){
       return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);
     });
+  }
+
+  // Colores consistentes por entidad (mismo algoritmo que antes pero con paleta)
+  function _hashHue(str){
+    if(!str) return 210;
+    var h=0; for(var i=0;i<str.length;i++){ h=(h*31 + str.charCodeAt(i))>>>0; }
+    return h%360;
+  }
+  function paletteFor(key){
+    var h=_hashHue(String(key||''));
+    return {
+      main:   "hsl("+h+",70%,45%)",
+      border: "hsl("+h+",70%,78%)",
+      bg:     "hsl("+h+",90%,96%)",
+      faint:  "hsl("+h+",85%,92%)"
+    };
   }
 
   // --- Utiles de nombres (para chips internos del calendario) ---
@@ -52,7 +63,7 @@
     if (!s) return '—';
     var parts = s.split(/\s+/);
     var last = parts[parts.length-1] || s;
-    if (last.length >= 5) return last; // “marca” legible
+    if (last.length >= 5) return last;
     var ac = parts.slice(0,3).map(function(w){return w[0]||'';}).join('').toUpperCase();
     return (ac.length>=2 ? ac : last.toUpperCase());
   }
@@ -77,7 +88,7 @@
     +'.cal-tab{background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:8px 12px;cursor:pointer;font-weight:800;color:#374151}'
     +'.cal-tab.on{background:#2155ff;color:#fff;border-color:#2155ff}'
 
-    /* Cabecera en 3 filas */
+    /* Cabecera */
     +'.titleRow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}'
     +'.controlRow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px}'
     +'.monthgrp{display:inline-flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:4px 8px}'
@@ -90,18 +101,22 @@
 
     +'.cal-small{font-size:12px;color:#6b7280}'
 
-    /* ---- Tarjetas (contenedor y card) ---- */
+    /* ---- Tarjetas ---- */
     +'.cal-cardrow{margin:6px 0 10px}'
-    +'#cardDeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}'
-    +'.fcard{background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;transition:box-shadow .15s,border-color .15s,transform .05s}'
+    +'#cardDeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}'
+    +'.fcard{position:relative;background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:12px 12px 12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;transition:box-shadow .15s,border-color .15s}'
     +'.fcard:hover{box-shadow:0 6px 18px rgba(17,24,39,.08)}'
-    +'.fcard.active{background:#e0e7ff;border-color:#c7d2fe}'
-    +'.fcard .meta{display:flex;align-items:center;gap:8px;min-width:0}'
+    +'.fcard.active{outline:2px solid rgba(37,99,235,.25)}'
+    +'.fcard .swatch{position:absolute;left:0;top:0;bottom:0;width:6px;border-radius:14px 0 0 14px}'
+    +'.fcard .meta{display:flex;align-items:center;gap:10px;min-width:0}'
     +'.fcard .title{font-weight:800;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px}'
     +'.fcard .sub{font-size:11px;color:#6b7280}'
+    +'.qtyBlk{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:110px}'
     +'.fcard .qty{font-weight:800;font-size:18px;color:#1f2937;white-space:nowrap}'
     +'.fcard .unit{font-size:12px;color:#6b7280;margin-left:4px}'
-    +'.fcard .dot{width:10px;height:10px;border-radius:999px}'
+    +'.pct{font-size:12px;color:#6b7280}'
+    +'.pctbar{width:110px;height:6px;border-radius:999px;background:#e5e7eb;overflow:hidden}'
+    +'.pctbar span{display:block;height:100%}'
 
     /* Calendario */
     +'.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}'
@@ -116,7 +131,7 @@
     +'.total{position:absolute;top:6px;right:6px}'
     +'.weeksum{font-size:12px;font-weight:700;margin-top:auto}'
 
-    /* Chips internos para cada día (se mantienen) */
+    /* Chips del día (tintados) */
     +'.chip{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 6px;border-radius:8px;border:1px solid #e5e7eb;background:#f9fafb}'
     +'.chip .left{display:flex;align-items:center;gap:6px;min-width:0;flex:1}'
     +'.chip .prov{font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;max-width:160px}'
@@ -157,7 +172,7 @@
     view: 't',                 // 't' toneladas | 'c' camiones
     group: 'prov',             // 'prov' | 'com' | 'trans'
     filters: { comuna:'', transportista:'', proveedor:'' },
-    reqByMonth: {},            // { 'YYYY-MM': número en toneladas }
+    reqByMonth: {},
     dispon: [],
     asig: [],
     modalOpen: false
@@ -206,7 +221,7 @@
       var tons   = Number(a.tons != null ? a.tons : a.cantidad || 0);
       return {
         id: a.id || null,
-        a: a, // referencia original (para editar/eliminar)
+        a: a,
         day: asigDay(a),
         tons: tons,
         prov: prov,
@@ -308,7 +323,6 @@
           +'<div class="kpi"><div class="lbl">Brecha</div><div id="kpiGap">0 t</div></div>'
         +'</div>'
 
-        <!-- Contenedor de tarjetas -->
         +'<div class="cal-cardrow"><div id="cardDeck"></div></div>'
 
         +'<div class="cal-grid" id="calDaysHead"></div>'
@@ -326,7 +340,7 @@
     if (el) el.textContent = MESES[m]+' de '+y;
   }
 
-  // === Tarjetas por pestaña (Proveedor/Comuna/Transportista) ===
+  // === Tarjetas por pestaña (Proveedor/Comuna/Transportista) con % y color ===
   function renderCardDeck(){
     var deck = document.getElementById('cardDeck');
     if (!deck) return;
@@ -337,6 +351,8 @@
     if (STATE.group !== 'prov'  && STATE.filters.proveedor)     rows = rows.filter(function(r){ return r.prov  === STATE.filters.proveedor; });
     if (STATE.group !== 'com'   && STATE.filters.comuna)        rows = rows.filter(function(r){ return r.comuna=== STATE.filters.comuna; });
     if (STATE.group !== 'trans' && STATE.filters.transportista) rows = rows.filter(function(r){ return r.trans === STATE.filters.transportista; });
+
+    var totalT = rows.reduce(function(acc,r){ return acc + (Number(r.tons)||0); }, 0) || 0;
 
     var map = {};
     rows.forEach(function(r){
@@ -355,16 +371,24 @@
       var trucks = Math.ceil(item.tons / STATE.capacidadCamion);
       var val = (STATE.view==='t') ? item.tons : trucks;
       var unit = (STATE.view==='t' ? 't' : 'c');
+      var pct = totalT>0 ? Math.round((item.tons/totalT)*100) : 0;
+      var pal = paletteFor(item.key);
       var act = (active && active===item.key) ? ' active' : '';
-      return '<div class="fcard'+act+'" data-key="'+escapeHtml(item.key)+'">'
+      return '<div class="fcard'+act+'" data-key="'+escapeHtml(item.key)+'"'
+           + ' style="border-color:'+pal.border+';background:'+pal.bg+'">'
+           +   '<span class="swatch" style="background:'+pal.main+'"></span>'
            +   '<div class="meta">'
-           +     '<span class="dot" style="background:'+colorFromString(item.key)+'"></span>'
+           +     '<span class="dot" style="background:'+pal.main+'"></span>'
            +     '<div style="display:flex;flex-direction:column;min-width:0">'
            +       '<div class="title" title="'+escapeHtml(item.key)+'">'+escapeHtml(item.key)+'</div>'
            +       '<div class="sub">'+labelMap[STATE.group]+'</div>'
            +     '</div>'
            +   '</div>'
-           +   '<div class="qty">'+numeroCL(val)+' <span class="unit">'+unit+'</span></div>'
+           +   '<div class="qtyBlk">'
+           +     '<div class="qty">'+numeroCL(val)+' <span class="unit">'+unit+'</span></div>'
+           +     '<div class="pct">'+pct+'% del mes</div>'
+           +     '<div class="pctbar"><span style="width:'+pct+'%;background:'+pal.main+';opacity:.45"></span></div>'
+           +   '</div>'
            + '</div>';
     }).join('');
 
@@ -457,21 +481,30 @@
         }
       }
 
+      // Chips del día (tintados y con color consistente por entidad según pestaña)
       var chips = '';
       var maxChips = 4;
       for (var g=0; g<groups.length && g<maxChips; g++){
         var gg = groups[g];
         var qty = (STATE.view==='t' ? (numeroCL(gg.tons)+' t') : (numeroCL(gg.trucks)+' c'));
+
+        // Color se basa en la entidad de la pestaña activa
+        var colorKey = (STATE.group==='prov' ? (gg.provFull||gg.label)
+                        : STATE.group==='com' ? (gg.comuna||gg.label)
+                        : (gg.transFull||gg.label));
+        var pal = paletteFor(colorKey);
+
         var display = (STATE.group==='prov' ? shortLabel(gg.transFull) : gg.labelShort) || gg.labelShort;
         var titleFull = (
           'Proveedor: ' + gg.provFull + ' · ' +
           'Contacto: '  + gg.transFull + ' · ' +
           'Comuna: '    + gg.comuna    + ' · ' + qty
         );
-        chips += '<div class="chip" title="'+escapeHtml(titleFull)+'">'
+        chips += '<div class="chip" title="'+escapeHtml(titleFull)+'"'
+               + ' style="background:'+pal.bg+';border-color:'+pal.border+'">'
                +   '<div class="left">'
-               +     '<span class="dot" style="background:'+colorFromString(gg.provFull||gg.label)+'"></span>'
-               +     '<span class="tag">'+gg.tag+'</span>'
+               +     '<span class="dot" style="background:'+pal.main+'"></span>'
+               +     '<span class="tag" style="border-color:'+pal.border+'">'+initials2(colorKey)+'</span>'
                +     '<span class="prov">'+escapeHtml(display)+'</span>'
                +   '</div>'
                +   '<span class="qty">'+qty+'</span>'
@@ -563,7 +596,7 @@
         };
       });
 
-    // Asignaciones del día (para editar/eliminar)
+    // Asignaciones del día
     var monthRows = enrichAssignmentsForMonth(STATE.current);
     var dayAsigs = monthRows.filter(function(r){ return r.day===day; });
 
@@ -615,8 +648,8 @@
     var errEl    = host.querySelector('#calErr');
 
     var selectedLot = null, selectedSaldo = 0;
-    var editCtx = null; // { id, oldTons, dispo, max }
-    var saving = false; // evita dobles envíos
+    var editCtx = null;
+    var saving = false;
     var warnedNoLot = false;
 
     function warnNoLot(){
@@ -630,21 +663,22 @@
     }
 
     function renderLots(){
+      var html;
       if (!lots.length){
-        lotsWrap.innerHTML = '<div class="cal-small">No hay disponibilidades con saldo para los filtros actuales.</div>';
-        return;
+        html = '<div class="cal-small">No hay disponibilidades con saldo para los filtros actuales.</div>';
+      } else {
+        html = lots.map(function(L){
+          return '<div class="lot" data-id="'+L.id+'">'
+            +'<div style="display:flex;justify-content:space-between;gap:8px">'
+            +  '<div><strong>'+escapeHtml(L.prov)+'</strong><div class="cal-small">'+escapeHtml(L.comuna||"—")+'</div></div>'
+            +  '<div style="text-align:right"><div>Saldo: <strong>'+numeroCL(L.saldo)+'</strong> t</div><div class="cal-small">Original: '+numeroCL(L.original)+' t</div></div>'
+            +'</div>'
+            +'<div class="cal-small">'+(L.mesKey?('mes '+L.mesKey):'')+(L.fecha?(' · desde '+new Date(L.fecha).toLocaleDateString('es-CL')):'')+'</div>'
+          +'</div>';
+        }).join('');
       }
-      lotsWrap.innerHTML = lots.map(function(L){
-        return '<div class="lot" data-id="'+L.id+'">'
-          +'<div style="display:flex;justify-content:space-between;gap:8px">'
-            +'<div><strong>'+escapeHtml(L.prov)+'</strong><div class="cal-small">'+escapeHtml(L.comuna||"—")+'</div></div>'
-            +'<div style="text-align:right"><div>Saldo: <strong>'+numeroCL(L.saldo)+'</strong> t</div><div class="cal-small">Original: '+numeroCL(L.original)+' t</div></div>'
-          +'</div>'
-          +'<div class="cal-small">'+(L.mesKey?('mes '+L.mesKey):'')+(L.fecha?(' · desde '+new Date(L.fecha).toLocaleDateString('es-CL')):'')+'</div>'
-        +'</div>';
-      }).join('');
+      lotsWrap.innerHTML = html;
 
-      // UX: autoselección si hay 1 lote
       if (lots.length === 1) {
         var only = lotsWrap.querySelector('.lot');
         if (only) only.click();
@@ -661,7 +695,7 @@
         var trans = r.trans || '—';
         return '<div class="aRow" data-aid="'+(r.id||'')+'">'
           +  '<div class="who">'
-          +    '<span class="dot" style="background:'+colorFromString(prov)+'"></span>'
+          +    '<span class="dot" style="background:'+paletteFor(prov).main+'"></span>'
           +    '<span class="name" title="'+escapeHtml(prov)+' · '+escapeHtml(trans)+'">'+escapeHtml(shortLabel(trans))+' <span class="cal-small">· '+escapeHtml(shortLabel(prov))+'</span></span>'
           +  '</div>'
           +  '<div class="meta">'+qty+'</div>'
@@ -744,13 +778,12 @@
       var idDel  = t.getAttribute('data-del');
 
       if (idEdit){
-        // Modo edición
         var row = dayAsigs.find(function(r){ return String(r.id)===String(idEdit); });
         if (!row) return;
         var a = row.a || {};
         var dpo = dispoPorId(a.disponibilidadId);
         var saldoExtra = dpo ? saldoDe(dpo) : 0;
-        var max = Number(row.tons || 0) + Number(saldoExtra || 0); // puedes subir hasta saldo + lo que ya tenías
+        var max = Number(row.tons || 0) + Number(saldoExtra || 0);
         editCtx = { id: row.id, oldTons: Number(row.tons||0), dispo: dpo, max: max };
         cancelBtn.style.display = 'inline-block';
         doBtn.textContent = '💾 Guardar cambios';
@@ -758,7 +791,7 @@
         qtyInp.value = String(row.tons||0);
         doBtn.disabled = false;
         errEl.textContent = '';
-        selectedLot = null; selectedSaldo = 0; // deselecciona creación
+        selectedLot = null; selectedSaldo = 0;
         [].slice.call(lotsWrap.querySelectorAll('.lot')).forEach(function(n){n.classList.remove('sel');});
         return;
       }
@@ -785,6 +818,8 @@
       }
     });
 
+    function closeModalAndRefresh(){ closeModal(); renderGrid(); }
+
     cancelBtn.addEventListener('click', resetCreateMode);
     closeBtn.addEventListener('click', closeModal);
 
@@ -799,10 +834,7 @@
 
       // Crear
       if (!editCtx){
-        if (!selectedLot) {
-          warnNoLot();
-          return;
-        }
+        if (!selectedLot) { warnNoLot(); return; }
         var confMsg = '¿Confirmas crear asignación de '+numeroCL(cant)+' t para "'+(selectedLot.trans||selectedLot.prov||'—')+'" el '+day+' de '+MESES[m-1]+'?';
         if (!confirm(confMsg)) return;
 
@@ -821,14 +853,9 @@
         global.MMppApi.crearAsignacion(payload)
           .then(function(resp){
             if (resp && resp.__status && resp.__status>=400) throw new Error(resp.error||'No se pudo crear');
-            return loadData().then(function(){
-              renderGrid();
-              closeModal();
-            });
+            return loadData().then(function(){ renderGrid(); closeModal(); });
           })
-          .catch(function(e){
-            errEl.textContent = (e && e.message) ? e.message : 'Error al crear asignación';
-          })
+          .catch(function(e){ errEl.textContent = (e && e.message) ? e.message : 'Error al crear asignación'; })
           .finally(function(){
             saving = false;
             if (STATE.modalOpen){ doBtn.disabled = false; doBtn.textContent = '✔ Confirmar Asignación'; }
@@ -850,10 +877,7 @@
       global.MMppApi.editarAsignacion(editCtx.id, patch)
         .then(function(resp){
           if (resp && resp.__status && resp.__status>=400) throw new Error(resp.error||'No se pudo actualizar');
-          return loadData().then(function(){
-            renderGrid();
-            closeModal();
-          });
+          return loadData().then(function(){ renderGrid(); closeModal(); });
         })
         .catch(function(e){
           errEl.textContent = (e && e.message) ? e.message : 'Error al actualizar asignación';
@@ -895,7 +919,7 @@
       STATE.group = g;
       [].slice.call(tabsG.querySelectorAll('.cal-tab')).forEach(function(n){n.classList.remove('on');});
       ev.target.classList.add('on');
-      renderCardDeck(); // actualizar tarjetas al cambiar pestaña
+      renderCardDeck();
       renderGrid();
     });
 
@@ -939,7 +963,7 @@
   // ===== Render principal =====
   function refresh(){
     renderMonthLabel();
-    renderCardDeck();   // << tarjetas de filtros
+    renderCardDeck();
     renderHead();
     renderGrid();
   }
@@ -958,3 +982,4 @@
 
   global.MMppCalendario = { mount: mount, refresh: refresh };
 })(window);
+
