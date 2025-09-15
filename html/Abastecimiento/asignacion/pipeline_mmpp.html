@@ -1,3 +1,4 @@
+<!-- /html/Abastecimiento/asignacion/pipeline_mmpp.html -->
 <!doctype html>
 <html lang="es">
 <head>
@@ -5,38 +6,43 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Pipeline MMPP</title>
 
-  <!-- (opcional) estilos de layout que ya usas -->
-  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
+  <!-- 1) Importa el MISMO layout del sidebar -->
+  <link rel="stylesheet" href="/spa-mmpp/layout.css" />
 
-  <!-- React solo para el sidebar -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-
-  <!-- Chart.js para el gráfico -->
+  <!-- (lo demás que ya tenías) React, Chart.js, etc. -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Sidebar (nav.jsx compilado o en runtime, igual que en las otras páginas) -->
+  <script src="/spa-mmpp/nav.jsx"></script>
+
+  <!-- Lógica de la página Pipeline -->
+  <script src="/spa-mmpp/mmpp-pipeline.js"></script>
 </head>
 <body>
+  <!-- 2) Usa SIEMPRE el mismo esqueleto de layout -->
   <div class="mmpp-layout">
-    <div id="mmppNavMount"></div>
+    <!-- Sidebar -->
+    <aside id="mmppNavMount" class="mmpp-nav"></aside>
+
+    <!-- Contenido -->
     <main class="mmpp-main">
       <div id="mmppPipeline"></div>
     </main>
   </div>
 
-  <!-- API helper -->
-  <script defer src="/spa-mmpp/mmpp-api.js?v=12"></script>
-
-  <!-- Módulo Pipeline (nuevo) -->
-  <script defer src="/spa-mmpp/mmpp-pipeline.js?v=1"></script>
-
-  <!-- Sidebar (tu nav.jsx) -->
-  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=2"></script>
-
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      if (window.MMppPipeline) MMppPipeline.mount();
-    });
+    // Monta Pipeline cuando cargue la página
+    (function(){
+      function go(){
+        if (window.MMppPipeline && typeof window.MMppPipeline.mount === 'function') {
+          window.MMppPipeline.mount();
+        }
+      }
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go);
+      else go();
+    })();
   </script>
 </body>
 </html>
