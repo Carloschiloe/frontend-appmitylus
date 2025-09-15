@@ -7,7 +7,6 @@
 
   <!-- Layout común (sidebar + main) -->
   <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
-  <!-- (Opcional) estilos ya usados en inventario -->
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
 
   <!-- React + Babel (solo para el sidebar nav.jsx) -->
@@ -19,7 +18,6 @@
   <div class="mmpp-layout">
     <div id="mmppNavMount"></div>
     <main class="mmpp-main">
-      <!-- Contenedor REAL del calendario JS -->
       <div id="mmppCalendario"></div>
     </main>
   </div>
@@ -27,20 +25,19 @@
   <!-- (Opcional) Forzar base del backend -->
   <!-- <script>window.__MMPP_API_BASE__="https://backend-appmitylus.vercel.app";</script> -->
 
-  <!-- API (debe ir antes de la app) -->
-  <script src="/spa-mmpp/mmpp-api.js?v=12"></script>
+  <!-- API (antes de la app) -->
+  <script defer src="/spa-mmpp/mmpp-api.js?v=12"></script>
 
   <!-- Sidebar (usa JSX, por eso va con Babel) -->
-  <script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
+  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
 
-  <!-- Calendario: JS puro (NO Babel) -->
-  <script src="/spa-mmpp/mmpp-calendario.js?v=2"></script>
+  <!-- Calendario NUEVO: barra de chips (romper caché con v=chips-1) -->
+  <script defer src="/spa-mmpp/mmpp-calendario.js?v=chips-1"></script>
 
-  <!-- Montaje del calendario JS -->
+  <!-- Montaje -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       if (window.MMppCalendario && document.getElementById('mmppCalendario')) {
-        // ✅ 10 t = 1 camión
         MMppCalendario.mount({ capacidadCamion: 10 });
       } else {
         console.warn('No se encontró MMppCalendario o el contenedor #mmppCalendario.');
