@@ -101,7 +101,7 @@
 
     +'.cal-small{font-size:12px;color:#6b7280}'
 
-    /* ---- Tarjetas ---- */
+     /* ---- Tarjetas ---- */
     +'.cal-cardrow{margin:6px 0 10px}'
     +'#cardDeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}'
     +'.fcard{position:relative;background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:12px 12px 12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;transition:box-shadow .15s,border-color .15s}'
