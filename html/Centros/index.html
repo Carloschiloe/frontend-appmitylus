@@ -20,12 +20,19 @@
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/css/centros.css" />
 
-  <!-- Full-bleed helper (solo para el mapa fuera del .container) -->
+  <!-- Full-bleed + FIX de stacking (el mapa por ENCIMA del container) -->
   <style>
     .full-bleed{
-      position:relative; left:50%; right:50%;
-      margin-left:-50vw; margin-right:-50vw; width:100vw;
+      position: relative;
+      left: 50%; right: 50%;
+      margin-left: -50vw; margin-right: -50vw;
+      width: 100vw;
+      z-index: 3; /* <- clave: este bloque va sobre el container */
     }
+    .container{ position: relative; z-index: 1; }
+    #tab-mapa{ position: relative; z-index: 4; }
+    #mapShell{ position: relative; z-index: 5; }
+    #map, #map.leaflet-container{ position: relative; z-index: 6; }
   </style>
 
   <!-- Config + utils (no módulos) -->
