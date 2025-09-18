@@ -2,13 +2,18 @@
    CENTROS – Overrides sobre global
    ============================== */
 
-/* Cabezal de la tabla Centros con color institucional */
+/* Fallbacks de variables */
+:root{
+  --primary:#00695c;
+  --primary-acc:#009688;
+}
+
+/* ---------- TABLA PRINCIPAL ---------- */
 #centrosTable.dataTable thead th{
-  background: var(--primary) !important; /* teal oscuro */
+  background: var(--primary) !important;
   color:#fff !important;
 }
 
-/* Densidad un pelo más compacta (opcional) */
 #centrosTable,
 #centrosTable th,
 #centrosTable td{
@@ -16,7 +21,7 @@
   padding: 0.26em 0.48em !important;
 }
 
-/* Columna Proveedor (1ª): permite salto de línea + límites */
+/* Columna Proveedor (1ª) */
 #centrosTable th:first-child,
 #centrosTable td:first-child{
   white-space: normal !important;
@@ -25,19 +30,18 @@
   min-width: 100px !important;
 }
 
-/* Segunda columna: capitalizar (si tu data viene en minúsculas) */
+/* Columna Comuna (2ª) */
 #centrosTable th:nth-child(2),
 #centrosTable td:nth-child(2){
   text-transform: capitalize !important;
 }
 
-/* Columna de acciones al final sin quiebre */
+/* Acciones */
 #centrosTable td:last-child{
   white-space: nowrap !important;
   text-align: left;
 }
 
-/* Íconos en tabla principal y filas hijas */
 #centrosTable td .material-icons,
 .child-row-lineas td .material-icons{
   font-size: 1.1em;
@@ -49,7 +53,7 @@
   transform: translateY(-1px);
 }
 
-/* ----------- CHILD-ROW: LÍNEAS (solo estilos propios) ----------- */
+/* ---------- CHILD-ROW: LÍNEAS ---------- */
 .child-row-lineas{
   width: 100% !important;
   padding: 14px 12px 10px 20px !important;
@@ -60,7 +64,7 @@
 }
 .child-table-lineas{
   width:100% !important;
-  background: transparent !important; /* deja ver el fondo verdoso */
+  background: transparent !important;
   border-collapse: collapse !important;
   table-layout: auto !important;
 }
@@ -86,15 +90,32 @@
   border:1px solid #bdbdbd; border-radius:3px;
 }
 
-/* ----------- MAPA (shell + fullscreen + sidebar propia) ----------- */
+/* =========================
+   MAPA (shell + fullscreen)
+   ========================= */
+
+/* Título del mapa más discreto */
+.map-title{ margin: .6rem 0 .2rem; }
+
+/* El shell ocupa casi todo el alto de ventana
+   (resta algo para nav + tabs + márgenes del container) */
+#tab-mapa{ padding: .4rem 0 0 0; }
 #mapShell{
-  flex:1; position:relative;
+  position:relative;
   border:1px solid #ddd; border-radius:7px;
   background:#d8d8d8; overflow:hidden;
+
+  /* Alto principal */
+  height: calc(100vh - 170px);
+  min-height: 520px;
 }
+
+/* El canvas del mapa llena el shell */
 #map, #map.leaflet-container{
-  width:100% !important; height:100% !important;
-  min-height:400px; background:#d8d8d8;
+  width:100% !important;
+  height:100% !important;
+  min-height: inherit;
+  background:#d8d8d8;
 }
 #map:focus-visible{
   outline:2px solid #26a69a; outline-offset:2px;
@@ -109,55 +130,91 @@
 }
 body:has(#mapShell:fullscreen){ overflow:hidden; }
 
-/* Sidebar de centros (si la usas) */
-.sidebar-centros{
-  position:absolute; top:28px; left:28px; width:260px;
-  background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.14);
-  border-radius:10px; z-index:800; padding:12px 12px 8px;
+/* ---------- Overlay de Búsqueda sobre el mapa ---------- */
+.map-search{
+  position:absolute;
+  top:12px; left:50%;
+  transform: translateX(-50%);
+  width:min(720px, 92vw);
+  z-index: 905; /* sobre Leaflet controls y sidebar */
+  display:flex; gap:6px; flex-direction:column;
 }
-.sidebar-centros.minimized{ left:-230px; width:30px; }
+.map-search input[type="search"]{
+  width:100%;
+  height:44px;
+  border-radius:10px;
+  border:1px solid #e5e7eb;
+  background:#fff;
+  padding:0 14px;
+  font-size:15px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+}
+.map-search input[type="search"]:focus{
+  outline:none; border-color:#26a69a; box-shadow:0 0 0 3px rgba(38,166,154,.15);
+}
+.map-search-results{
+  list-style:none; margin:0; padding:6px 0;
+  background:#fff; border:1px solid #e5e7eb; border-radius:10px;
+  box-shadow:0 10px 24px rgba(0,0,0,.10);
+  max-height: 52vh; overflow-y:auto; display:none;
+}
+.map-search-results.show{ display:block; }
+.map-search-results li{
+  padding:8px 12px; cursor:pointer; line-height:1.25;
+  border-bottom:1px solid #f3f4f6;
+}
+.map-search-results li:last-child{ border-bottom:none; }
+.map-search-results li:hover{ background:#f9fafb; }
+
+/* ---------- Sidebar de centros compacta ---------- */
+.sidebar-centros{
+  position:absolute; top:82px; left:28px; width:260px;
+  background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.14);
+  border-radius:10px; z-index:900; padding:12px 12px 8px;
+  transition: transform .28s ease, opacity .28s ease;
+}
+.sidebar-centros.minimized{
+  transform: translateX(-230px);
+  opacity:.85;
+}
+.toggle-btn{
+  position:absolute; right:-16px; top:10px;
+  width:32px; height:32px; border-radius:50%;
+  background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.18);
+  display:grid; place-items:center; border:none; cursor:pointer;
+}
 .sidebar-list{ margin:0; padding:0; list-style:none; max-height:250px; overflow-y:auto; }
 .sidebar-list li{ cursor:pointer; padding:7px 0; border-bottom:1px solid #eee; font-size:15px; }
 .sidebar-list li.selected{ background:#e0f2f1; font-weight:700; }
 
-/* Responsive específicos de esta vista */
-@media (max-width: 900px){
-  #centrosTable, #centrosTable_wrapper{ display:block !important; min-width:360px !important; }
-  .dataTables_paginate{ justify-content:center; }
-  #mapShell{ min-height:220px !important; height:54vh; }
-  #map{ min-height:220px !important; height:52vh !important; }
-}
-@media (max-width: 700px){
-  .sidebar-centros{ top:12px; left:12px; width:92vw; }
-  .sidebar-centros.minimized{ left:-90vw; width:35px; }
-}
-@media (max-width: 600px){
-  #mapShell, #map{ min-height:160px !important; height:41vh !important; }
-}
-
-/* Etiquetas centradas dentro del polígono */
+/* ---------- Etiquetas dentro del polígono (se muestran en zoom alto por JS) ---------- */
 .leaflet-tooltip.centro-label {
   background: rgba(255,255,255,.88);
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 4px 8px;
   box-shadow: 0 2px 10px rgba(0,0,0,.08);
-  pointer-events: none; /* no bloquea clic al polígono */
+  pointer-events: none;
 }
-.centro-label .leaflet-tooltip-content {
-  margin: 0;
+.centro-label .leaflet-tooltip-content { margin: 0; }
+.centro-label .centro-label-inner { text-align: center; line-height: 1.2; }
+.centro-label .titular { font-weight: 800; color: #111827; font-size: 12px; }
+.centro-label .codigo  { font-weight: 600; color: #374151; font-size: 11px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1000px){
+  #mapShell{ height: calc(100vh - 180px); }
 }
-.centro-label .centro-label-inner {
-  text-align: center;
-  line-height: 1.2;
+@media (max-width: 900px){
+  #centrosTable, #centrosTable_wrapper{ display:block !important; min-width:360px !important; }
+  .dataTables_paginate{ justify-content:center; }
+  #mapShell{ height: calc(100vh - 190px); min-height: 420px; }
 }
-.centro-label .titular {
-  font-weight: 800;
-  color: #111827;
-  font-size: 12px;
+@media (max-width: 700px){
+  .sidebar-centros{ top:86px; left:12px; width:92vw; }
+  .sidebar-centros.minimized{ transform: translateX(-90vw); }
+  .map-search{ width:94vw; }
 }
-.centro-label .codigo {
-  font-weight: 600;
-  color: #374151;
-  font-size: 11px;
+@media (max-width: 600px){
+  #mapShell{ height: calc(100vh - 200px); min-height: 360px; }
 }
