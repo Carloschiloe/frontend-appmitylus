@@ -7,9 +7,6 @@ import {
   crearMapa,
   initSidebarFiltro,
   cargarYRenderizarCentros,
-  clearMapPoints,
-  addPointMarker,
-  redrawPolygon,
   drawCentrosInMap,
   updateLabelVisibility,
 } from './mapas/mapa.js';
@@ -23,10 +20,10 @@ import { openNewForm, openEditForm, renderPointsTable } from './centros/form_cen
 // === API ===
 import { getCentrosAll, createCentro, updateCentro } from './core/centros_repo.js';
 
-// === Utils app (faltaba) ===
+// === Utils app ===
 import { tabMapaActiva } from './core/utilidades_app.js';
 
-// === Utils (usar el global de /js/utils.js)
+// === Utils (global de /js/utils.js)
 const parseDMS = (s) => {
   const fn = (window.u && window.u.parseOneDMS) || window.parseOneDMS;
   return typeof fn === 'function' ? fn(s) : NaN;
@@ -35,8 +32,7 @@ const parseDMS = (s) => {
 // jQuery (solo para workaround de Materialize + DataTables)
 const $ = window.$ || window.jQuery;
 
-// ¡Importante!: si el módulo se carga al final del <body>, DOMContentLoaded ya pasó.
-// Aseguramos ejecutar init() igual.
+// Arranque
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
@@ -49,17 +45,12 @@ async function init() {
   if (tabsEl) {
     M.Tabs.init(tabsEl, {
       onShow: (tabElem) => {
-        if (tabElem.id === 'tab-mapa') {
-          try {
-            Estado.map = crearMapa(); // idempotente
-            setTimeout(() => {
-              Estado.map?.invalidateSize();
-              updateLabelVisibility();
-            }, 40);
-            if (Estado.centros?.length) drawCentrosInMap(Estado.centros);
-          } catch (err) {
-            console.error('[APP] Error al crear mapa en cambio de pestaña:', err);
-          }
+        if (tabElem?.id === 'tab-mapa' && Estado.map) {
+          // Solo ajusta tamaño y etiquetas; no redibujes todo
+          setTimeout(() => {
+            Estado.map.invalidateSize();
+            updateLabelVisibility();
+          }, 50);
         }
       },
     });
@@ -68,7 +59,7 @@ async function init() {
   M.Modal.init(document.querySelectorAll('.modal'));
   M.Tooltip.init(document.querySelectorAll('.tooltipped'));
 
-  // ===== Importador (si existe en DOM) =====
+  // ===== Importador (si existe) =====
   const importCont = document.getElementById('importarCentrosContainer');
   if (importCont && importCont.dataset.inited !== '1') {
     importCont.dataset.inited = '1';
@@ -76,10 +67,12 @@ async function init() {
     renderImportadorCentros('importarCentrosContainer');
   }
 
-  // ===== Tabla y Mapa =====
+  // ===== Tabla =====
   initTablaCentros();
+
+  // ===== Mapa: crea UNA vez e inicializa sidebar =====
   try {
-    Estado.map = crearMapa(); // instancia Leaflet y deja overlay de búsqueda
+    Estado.map = crearMapa();                  // idempotente; usa OSM por defecto desde mapa.js
     initSidebarFiltro();
   } catch (err) {
     console.error('[APP] Error inicializando el mapa:', err);
@@ -101,14 +94,15 @@ async function recargarCentros() {
     // Tabla
     loadTablaCentros(Estado.centros);
 
-    // Mapa (polígonos + labels + sidebar)
+    // Mapa: pinta centros + lista lateral (una sola ruta de render)
     cargarYRenderizarCentros(Estado.centros);
 
-    // Si la pestaña MAPA está activa, asegura render correcto
-    if (tabMapaActiva()) {
-      Estado.map?.invalidateSize();
-      updateLabelVisibility();
-      drawCentrosInMap(Estado.centros);
+    // Si el tab de mapa está visible, asegura un invalidate (sin redibujar)
+    if (tabMapaActiva() && Estado.map) {
+      setTimeout(() => {
+        Estado.map.invalidateSize();
+        updateLabelVisibility();
+      }, 50);
     }
   } catch (e) {
     console.error('[APP] Error cargando centros:', e);
@@ -156,8 +150,7 @@ function wireFormCentros() {
       return;
     }
     Estado.currentPoints.push({ lat, lng });
-    addPointMarker(lat, lng);
-    redrawPolygon(Estado.currentPoints);
+    // El propio form pinta marker/polígono con helpers exportados
     renderPointsTable(els.pointsBody, Estado.currentPoints);
     if (els.inputLat) els.inputLat.value = '';
     if (els.inputLng) els.inputLng.value = '';
@@ -167,7 +160,6 @@ function wireFormCentros() {
   // Limpiar puntos
   els.btnClearPoints?.addEventListener('click', () => {
     Estado.currentPoints.length = 0;
-    clearMapPoints();
     renderPointsTable(els.pointsBody, Estado.currentPoints);
   });
 
