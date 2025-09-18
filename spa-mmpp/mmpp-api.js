@@ -6,7 +6,8 @@
    Intenta múltiples variantes de ruta:
      - /asignaciones/:id        /asignaciones?id=ID
      - /asignacion/:id          /asignacion?id=ID
-     - POST /asignaciones/delete|update  (body {id,...})
+     - /mmpp/asignaciones*      /mmpp/asignacion*
+     - POST /asignaciones|asignacion/delete|update  (body {id,...})
 
    Normaliza:
      Disponibilidad: {id, proveedorNombre, proveedorKey, contactoNombre, empresaNombre, telefono, email,
@@ -20,16 +21,16 @@
 */
 (function (global) {
   // ===== BASE =====
-  // Prioriza window.API_BASE (de js/config.js). Permite override con __MMPP_API_BASE__ si lo quieres.
   var API_BASE =
     (typeof global.API_BASE === "string" && global.API_BASE) ||
     (typeof global.__MMPP_API_BASE__ === "string" && global.__MMPP_API_BASE__) ||
     "/api";
 
-  // asegura "https://host/api" + "/path" (o "/api" + "/path")
+  var DEBUG = !!global.DEBUG;
   function join(base, path) {
     return String(base).replace(/\/+$/,"") + "/" + String(path).replace(/^\/+/, "");
   }
+  function log(){ if (DEBUG) try{ console.log.apply(console, ["[MMppApi]"].concat([].slice.call(arguments))); }catch(_){} }
 
   // --- utils ---
   function pad2(n){ n=Number(n)||0; return (n<10?"0":"")+n; }
@@ -64,14 +65,18 @@
     headers["Accept"] = "application/json";
     if (opts.body && !headers["Content-Type"]) headers["Content-Type"]="application/json";
     opts.headers = headers;
+    opts.cache = 'no-store';
 
+    log(opts.method || "GET", url);
     return fetch(url, opts).then(function(res){
       var ct = (res.headers.get("content-type")||"").toLowerCase();
       var parse = ct.indexOf("application/json")>=0 ? res.json() : res.text().then(function(t){ return { message: t }; });
       return parse.then(function(body){
+        if (!res.ok) log("HTTP", res.status, url, body && body.message);
         return { ok: res.ok, status: res.status, body: body };
       });
     }).catch(function(err){
+      log("FETCH ERROR", err && err.message);
       return { ok:false, status:0, body:{ message: (err && err.message) || "network error" } };
     });
   }
@@ -184,9 +189,14 @@
         var y=new Date().getFullYear();
         params.from=(y-1)+"-01"; params.to=(y+1)+"-12";
       }
-      // OJO: paths SIN '/api' (API_BASE ya lo trae)
-      var url = "/disponibilidades"+qs(params);
-      return tryRoutes("GET",[url]).then(function(res){
+      // paths SIN '/api' (API_BASE ya lo trae)
+      var q = qs(params);
+      var paths = [
+        "/disponibilidades"+q,
+        "/mmpp/disponibilidades"+q,
+        "/disponibilidad"+q
+      ];
+      return tryRoutes("GET", paths).then(function(res){
         var json = (res && res.body) || [];
         var norm = normalizeDispon(json);
         _cacheDispon = norm;
@@ -197,9 +207,11 @@
     // ------- Asignaciones -------
     getAsignaciones: function(params){
       params=params||{};
+      var q = qs(params);
       var paths = [
-        "/asignaciones"+qs(params),
-        "/asignacion"+qs(params)
+        "/asignaciones"+q,
+        "/asignacion"+q,
+        "/mmpp/asignaciones"+q
       ];
       return tryRoutes("GET", paths).then(function(res){
         var json = (res && res.body) || [];
@@ -273,7 +285,7 @@
           createdAt: new Date().toISOString()
         };
 
-        var paths = ["/asignaciones"];
+        var paths = ["/asignaciones", "/asignacion", "/mmpp/asignaciones"];
         return tryRoutes("POST", paths, body).then(function(res){
           var j = res && res.body; j = j && j.body ? j.body : j;
           if (!res || !res.ok) {
@@ -297,13 +309,19 @@
         "/asignaciones?id="+encodeURIComponent(id),
         "/asignacion/"+encodeURIComponent(id),
         "/asignacion?id="+encodeURIComponent(id),
-        "/asignaciones/update"
+        "/asignaciones/update",
+        "/mmpp/asignaciones/"+encodeURIComponent(id),
+        "/mmpp/asignacion/"+encodeURIComponent(id),
+        "/mmpp/asignaciones/update"
       ];
       return tryRoutes("PATCH", paths, body).then(function(res){
         if (!res.ok) return tryRoutes("PUT", paths, body);   // fallback PUT
         return res;
       }).then(function(res){
-        if (!res.ok) return tryRoutes("POST", ["/asignaciones/update","/asignacion/update"], Object.assign({ id:id }, body)); // último intento
+        if (!res.ok) return tryRoutes("POST",
+          ["/asignaciones/update","/asignacion/update","/mmpp/asignaciones/update","/mmpp/asignacion/update"],
+          Object.assign({ id:id }, body)
+        );
         return res;
       }).then(function(res){
         var j = res && res.body; j = j && j.body ? j.body : j;
@@ -322,10 +340,17 @@
         "/asignacion/"+encodeURIComponent(id),
         "/asignacion"+q,
         "/asignaciones/delete",
-        "/asignacion/delete"
+        "/asignacion/delete",
+        "/mmpp/asignaciones/"+encodeURIComponent(id),
+        "/mmpp/asignacion/"+encodeURIComponent(id),
+        "/mmpp/asignaciones/delete",
+        "/mmpp/asignacion/delete"
       ];
       return tryRoutes("DELETE", paths).then(function(res){
-        if (!res.ok) return tryRoutes("POST", ["/asignaciones/delete","/asignacion/delete"], { id:id });
+        if (!res.ok) return tryRoutes("POST",
+          ["/asignaciones/delete","/asignacion/delete","/mmpp/asignaciones/delete","/mmpp/asignacion/delete"],
+          { id:id }
+        );
         return res;
       }).then(function(res){
         var j = res && res.body; j = j && j.body ? j.body : j;
