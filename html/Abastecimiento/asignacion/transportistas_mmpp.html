@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Transportistas – MMPP</title>
 
-  <!-- Estilos existentes -->
+  <!-- Usa los mismos estilos globales -->
   <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
 </head>
@@ -13,34 +13,16 @@
   <div class="mmpp-layout">
     <div id="mmppNavMount"></div>
     <main class="mmpp-main">
-      <!-- Fallback: si no se abre el panel, acá se podría renderizar algo -->
-      <div id="mmppTransportistas" class="card pad" style="display:none"></div>
+      <div class="card pad">
+        <h2 style="margin:0 0 16px;font-weight:800">🚚 Transportistas</h2>
+        <div id="mmppTransportistas"></div>
+      </div>
     </main>
   </div>
 
-  <!-- API común -->
+  <!-- API y componentes -->
   <script src="/spa-mmpp/mmpp-api.js?v=12"></script>
-
-  <!-- Panel integrado + interceptor de clic del sidebar -->
-  <script src="/spa-mmpp/transportistas.js?v=4" defer></script>
-
-  <!-- Sidebar (JSX con Babel) -->
   <script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=3"></script>
-
-  <!-- Autoabrir el panel al cargar esta página -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      if (window.openTransportistasPanel) {
-        window.openTransportistasPanel();
-      } else {
-        // Si por alguna razón no está disponible, muestra un aviso mínimo
-        var host = document.getElementById('mmppTransportistas');
-        if (host) {
-          host.style.display = 'block';
-          host.innerHTML = '<h3 style="margin:0">Transportistas</h3><p>Cargando…</p>';
-        }
-      }
-    });
-  </script>
+  <script src="/spa-mmpp/transportistas.js?v=5"></script>
 </body>
 </html>
