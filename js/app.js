@@ -1,4 +1,4 @@
-// js/app.js
+// js/app.js (refactor)
 
 import { Estado } from './core/estado.js';
 import {
@@ -23,8 +23,12 @@ import {
   updateCentro
 } from './core/centros_repo.js';
 import { tabMapaActiva } from './core/utilidades_app.js';
-import { parseOneDMS } from './core/utilidades.js';
-import { renderImportadorCentros } from './centros/importar_centros.js';
+
+// Unificamos: usamos el parseOneDMS de utils.js (cargado global como window.u)
+const parseOneDMS = (window.u && window.u.parseOneDMS) || window.parseOneDMS;
+
+// Evita reventar si no hay jQuery en algún momento
+const $ = (window.$ || window.jQuery);
 
 document.addEventListener('DOMContentLoaded', async () => {
   // ==== Materialize UI ====
@@ -33,6 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     M.Tabs.init(tabsEl, {
       onShow: (tabElem) => {
         if (tabElem.id === 'tab-mapa' && Estado.map) {
+          // Recalcula tamaño/tiles al cambiar a la pestaña del mapa
           Estado.map.invalidateSize();
           renderMapaAlways();
         }
@@ -43,11 +48,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   M.Modal.init(document.querySelectorAll('.modal'));
   M.Tooltip.init(document.querySelectorAll('.tooltipped'));
 
-  // ==== Importador (evita doble inicialización) ====
+  // ==== Importador (una sola vez) ====
   const importCont = document.getElementById('importarCentrosContainer');
   if (importCont && importCont.dataset.inited !== '1') {
-    // Marca el contenedor para que si alguien lo llama de nuevo, no se duplique
     importCont.dataset.inited = '1';
+    const { renderImportadorCentros } = await import('./centros/importar_centros.js');
     renderImportadorCentros('importarCentrosContainer');
   }
 
@@ -56,8 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initMapa();
 
   // ==== Carga inicial ====
-  await cargarCentros();
-  if (tabMapaActiva()) renderMapaAlways(true);
+  await cargarCentros(); // cargar tabla y, si corresponde, render mapa (adentro decide)
 
   // ==== Modal "Nuevo/Editar Centro" ====
   const btnNuevoCentro  = document.getElementById('btnOpenCentroModal');
@@ -91,40 +95,42 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Edición desde la tabla
-  const $t2 = window.$('#centrosTable');
-  $t2.off('click', '.editar-centro').on('click', '.editar-centro', function () {
-    const idx = +this.dataset.idx;
-    Estado.currentCentroIdx = idx;
+  if ($) {
+    const $t2 = $('#centrosTable');
+    $t2.off('click', '.editar-centro').on('click', '.editar-centro', function () {
+      const idx = +this.dataset.idx;
+      Estado.currentCentroIdx = idx;
 
-    const modalElem = document.getElementById('centroModal');
-    const modal = modalElem ? (M.Modal.getInstance(modalElem) || M.Modal.init(modalElem)) : null;
+      const modalElem = document.getElementById('centroModal');
+      const modal = modalElem ? (M.Modal.getInstance(modalElem) || M.Modal.init(modalElem)) : null;
 
-    const elsEdit = {
-      formTitle:      document.getElementById('formTitle'),
-      inputCentroId:  document.getElementById('inputCentroId'),
-      inputProveedor: document.getElementById('inputProveedor'),
-      inputComuna:    document.getElementById('inputComuna'),
-      inputCode:      document.getElementById('inputCode'),
-      inputHectareas: document.getElementById('inputHectareas'),
-      inputLat:       document.getElementById('inputLat'),
-      inputLng:       document.getElementById('inputLng'),
-      pointsBody:     document.getElementById('pointsBody')
-    };
+      const elsEdit = {
+        formTitle:      document.getElementById('formTitle'),
+        inputCentroId:  document.getElementById('inputCentroId'),
+        inputProveedor: document.getElementById('inputProveedor'),
+        inputComuna:    document.getElementById('inputComuna'),
+        inputCode:      document.getElementById('inputCode'),
+        inputHectareas: document.getElementById('inputHectareas'),
+        inputLat:       document.getElementById('inputLat'),
+        inputLng:       document.getElementById('inputLng'),
+        pointsBody:     document.getElementById('pointsBody')
+      };
 
-    openEditForm(
-      elsEdit,
-      Estado.map,
-      Estado.currentPoints,
-      v => (Estado.currentCentroIdx = v),
-      idx
-    );
-    modal?.open();
-  });
+      openEditForm(
+        elsEdit,
+        Estado.map,
+        Estado.currentPoints,
+        v => (Estado.currentCentroIdx = v),
+        idx
+      );
+      modal?.open();
+    });
+  }
 
   // Agregar punto desde el formulario (DMS → decimal)
   els.btnAddPoint?.addEventListener('click', () => {
-    const lat = parseOneDMS(els.inputLat.value.trim());
-    const lng = parseOneDMS(els.inputLng.value.trim());
+    const lat = parseOneDMS?.(els.inputLat.value.trim());
+    const lng = parseOneDMS?.(els.inputLng.value.trim());
     if (lat === null || lng === null || isNaN(lat) || isNaN(lng)) {
       M.toast({ html: 'Formato DMS inválido', classes: 'red' });
       return;
@@ -189,8 +195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         Estado.centros[Estado.currentCentroIdx] = actualizado;
         M.toast({ html: 'Centro actualizado', classes: 'green' });
       }
-      await cargarCentros();
-      if (tabMapaActiva()) renderMapaAlways(true);
+      await cargarCentros();     // refresca tabla y (si pestaña mapa está activa) redibuja mapa
       centroModal?.close();
     } catch (err) {
       M.toast({ html: err.message || 'Error al guardar centro', classes: 'red' });
@@ -211,9 +216,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Cargar centros desde API y refrescar UI
 async function cargarCentros() {
   try {
-    Estado.centros = await getCentrosAll();
+    const data = await getCentrosAll();
+    Estado.centros = Array.isArray(data) ? data : [];
     loadTablaCentros(Estado.centros);
-    renderMapaAlways(true);
+    if (tabMapaActiva()) renderMapaAlways(true);
   } catch (e) {
     console.error('Error cargando centros:', e);
     M.toast({ html: 'Error cargando centros', classes: 'red' });
