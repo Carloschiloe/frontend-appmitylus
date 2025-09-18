@@ -8,12 +8,25 @@
   <!-- Estilos compartidos -->
   <link rel="stylesheet" href="/spa-mmpp/mmpp-unificado.css?v=1"/>
 
-  <!-- Botón compartir (estilo simple) -->
+  <!-- Botón compartir (estilo simple) + fixes visuales mínimos -->
   <style>
     .share-bar{display:flex;justify-content:flex-end;margin:10px 0}
     .btn-share{height:36px;border:1px solid var(--border);border-radius:12px;padding:0 12px;background:#eef2ff;color:#1e40af;font-weight:700}
     .btn-share:active{transform:translateY(1px)}
     #mmppCalendario{width:100%}
+
+    /* --- FIX de desborde: scroller interno solo para la grilla --- */
+    #mmppCalendario .cal-scroll{
+      overflow-x:auto; overflow-y:visible;
+      -webkit-overflow-scrolling:touch;
+      padding-bottom:6px; /* para que no tape la sombra del panel */
+    }
+    /* ocultar/estilizar un poco la barra en iOS/Android */
+    #mmppCalendario .cal-scroll::-webkit-scrollbar{height:6px}
+    #mmppCalendario .cal-scroll::-webkit-scrollbar-thumb{background:#e5e7eb;border-radius:4px}
+
+    /* evita que elementos absolutos (ej. Σ Sem) se salgan visualmente */
+    #mmppCalendario .cal-scroll{position:relative}
   </style>
 
   <!-- ===== CONFIG (antes de cualquier JS tuyo) ===== -->
@@ -51,7 +64,7 @@
   <!-- Calendario -->
   <script defer src="/spa-mmpp/mmpp-calendario.js?v=chips-3"></script>
 
-  <!-- Montaje + Compartir (igual que lo tenías apuntando a #mmppCalendario) -->
+  <!-- Montaje + Compartir -->
   <script>
   document.addEventListener('DOMContentLoaded', function () {
     // Montaje calendario
@@ -64,6 +77,7 @@
     const CAPTURE_SEL = '#mmppCalendario';
     const btn = document.getElementById('btnCompartirCalendario');
 
+    // ---- Compartir (igual que tenías) ----
     function dataURLtoBlob(dataurl) {
       const [header, data] = dataurl.split(',');
       const mime = header.match(/:(.*?);/)[1];
@@ -85,7 +99,6 @@
       document.body.appendChild(a); a.click();
       a.remove(); URL.revokeObjectURL(url);
     }
-
     async function capturarPNG() {
       const nodo = document.querySelector(CAPTURE_SEL);
       if (!nodo) throw new Error('No se encontró el contenedor a capturar');
@@ -98,7 +111,6 @@
       });
       return canvasToBlobSafe(canvas);
     }
-
     async function compartirCalendario() {
       try {
         const blob = await capturarPNG();
@@ -126,52 +138,43 @@
         alert('No se pudo generar la captura. Revisa la consola.');
       }
     }
-
     if (btn) btn.addEventListener('click', compartirCalendario);
+
+    // ================== FIX DE DESCUADRE EN MÓVIL ==================
+    // Envuelve la grilla del mes en un scroller interno para que
+    // NUNCA se salga del panel blanco. No altera escritorio.
+    function wrapCalendarGrid(){
+      const root = document.getElementById('mmppCalendario');
+      if (!root) return;
+
+      // 1) encuentra la grilla (7 columnas) — ajusta si tu markup cambia
+      const sel = '.cal-grid, .calendar-grid, .cal-month, .cal-days, [role="grid"]';
+      let grid = root.querySelector(sel);
+      if (!grid) return;
+
+      // 2) si ya está envuelta, listo
+      if (grid.parentElement && grid.parentElement.classList.contains('cal-scroll')) return;
+
+      // 3) crea wrapper con scroll horizontal
+      const wrap = document.createElement('div');
+      wrap.className = 'cal-scroll';
+      grid.parentNode.insertBefore(wrap, grid);
+      wrap.appendChild(grid);
+
+      // 4) si la grilla es más ancha que el panel, se scrollea dentro del panel
+      //    si no, no pasa nada visual.
+    }
+
+    // corre al montar y cuando cambie el mes (DOM cambia)
+    setTimeout(wrapCalendarGrid, 0);
+    const root = document.getElementById('mmppCalendario');
+    if (root){
+      const obs = new MutationObserver(() => wrapCalendarGrid());
+      obs.observe(root, { childList:true, subtree:true });
+    }
+    // ==============================================================
   });
   </script>
-
-  <!-- ================= HOOKS MÓVIL PARA ARREGLAR DESCUDRE ================= -->
-  <!-- (1) Etiquetar la grilla del mes con data-cal-grid -->
-  <!-- (2) Re-layout cuando cargan las fuentes para que no se achique ni se rompa -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function(){
-      function tagCalendarGrid(){
-        const root = document.getElementById('mmppCalendario');
-        if (!root) return;
-        // Ajusta aquí si tus clases reales son distintas
-        const sel = '.cal-grid, .calendar-grid, .cal-month, .cal-days, [role="grid"]';
-        const grid = root.querySelector(sel);
-        if (grid && !grid.hasAttribute('data-cal-grid')) {
-          grid.setAttribute('data-cal-grid','');
-        }
-      }
-
-      function relayoutAfterFonts(){
-        if (document.fonts && document.fonts.ready) {
-          document.fonts.ready.then(() => {
-            // Fuerza reflow para que las columnas queden alineadas en móvil
-            window.dispatchEvent(new Event('resize'));
-            if (window.MMppCalendario && typeof MMppCalendario.refresh === 'function') {
-              try { MMppCalendario.refresh(); } catch(e){}
-            }
-          });
-        }
-      }
-
-      // Ejecuta ahora
-      tagCalendarGrid();
-      relayoutAfterFonts();
-
-      // Si el DOM del calendario cambia (paginar/mes siguiente), vuelve a etiquetar
-      const root = document.getElementById('mmppCalendario');
-      if (root) {
-        const obs = new MutationObserver(() => tagCalendarGrid());
-        obs.observe(root, { childList:true, subtree:true });
-      }
-    });
-  </script>
-  <!-- ===================================================================== -->
 
   <noscript>Esta página requiere JavaScript.</noscript>
 </body>
