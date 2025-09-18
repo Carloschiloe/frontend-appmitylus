@@ -2,67 +2,59 @@
 
 import { Estado } from './core/estado.js';
 
-// --- Mapa (toda la lógica vive en mapas/mapa.js) ---
+// === Mapa (usa las exports reales de mapas/mapa.js) ===
 import {
   crearMapa,
   initSidebarFiltro,
-  setupMapSearchOverlay,   // buscador overlay (código/titular/área)
   cargarYRenderizarCentros,
-  renderMapaAlways,
   clearMapPoints,
   addPointMarker,
-  redrawPolygon
+  redrawPolygon,
+  drawCentrosInMap,
+  updateLabelVisibility
 } from './mapas/mapa.js';
 
-// --- Tabla (config + eventos están encapsulados en el módulo) ---
-import {
-  initTablaCentros,
-  loadCentros as loadTablaCentros
-} from './centros/tabla_centros.js';
+// === Tabla ===
+import { initTablaCentros, loadCentros as loadTablaCentros } from './centros/tabla_centros.js';
 
-// --- Formularios (nuevo/editar centro) ---
-import {
-  openNewForm,
-  openEditForm,
-  renderPointsTable
-} from './centros/form_centros.js';
+// === Formularios ===
+import { openNewForm, openEditForm, renderPointsTable } from './centros/form_centros.js';
 
-// --- API ---
-import {
-  getCentrosAll,
-  createCentro,
-  updateCentro
-} from './core/centros_repo.js';
+// === API ===
+import { getCentrosAll, createCentro, updateCentro } from './core/centros_repo.js';
 
-// --- Utils ---
+// === Utils ===
 import { tabMapaActiva } from './core/utilidades_app.js';
 
-// Preferir módulo; si no existe, usar fallback global expuesto por /js/utils.js
+// Intentar import de util como módulo; si no, usar el global expuesto por /js/utils.js
 let parseOneDMSFn = null;
 try {
-  const mod = await import('./core/utilidades.js');      // si tienes este módulo
+  const mod = await import('./core/utilidades.js');
   parseOneDMSFn = mod.parseOneDMS;
 } catch (_e) {
-  // fallback a globals ya cargados por /js/utils.js
   parseOneDMSFn = (window.u && window.u.parseOneDMS) || window.parseOneDMS;
 }
-// guard para no reventar si el util no está
 const parseDMS = (s) => (typeof parseOneDMSFn === 'function' ? parseOneDMSFn(s) : NaN);
 
-// jQuery (DataTables lo usa)
+// jQuery (solo para workaround de Materialize + DataTables)
 const $ = (window.$ || window.jQuery);
 
 document.addEventListener('DOMContentLoaded', init);
 
 async function init () {
-  // ===== Materialize UI =====
+  // ===== Materialize =====
   const tabsEl = document.querySelector('#tabs');
   if (tabsEl) {
     M.Tabs.init(tabsEl, {
       onShow: (tabElem) => {
-        if (tabElem.id === 'tab-mapa' && Estado.map) {
-          Estado.map.invalidateSize();
-          renderMapaAlways();
+        if (tabElem.id === 'tab-mapa') {
+          // Asegura tamaño correcto del mapa al cambiar de pestaña
+          Estado.map = crearMapa();          // devuelve el mismo mapa si ya existe
+          setTimeout(() => {
+            Estado.map?.invalidateSize();
+            updateLabelVisibility();
+          }, 40);
+          if (Estado.centros?.length) drawCentrosInMap(Estado.centros);
         }
       }
     });
@@ -80,14 +72,14 @@ async function init () {
   }
 
   // ===== Tabla y Mapa =====
-  initTablaCentros();       // configura DataTable y registra eventos en eventos_centros.js
-  crearMapa();              // instancia Leaflet (centrado en Chiloé y con labels por zoom)
-  initSidebarFiltro();      // sidebar minimal (si lo usas)
+  initTablaCentros();
+  Estado.map = crearMapa();          // instancia Leaflet y deja el overlay de búsqueda listo
+  initSidebarFiltro();
 
   // ===== Carga inicial =====
-  await recargarCentros();  // llena tabla + dibuja mapa + conecta buscador
+  await recargarCentros();
 
-  // ===== Modal “Nuevo/Editar Centro” =====
+  // ===== Formularios =====
   wireFormCentros();
 }
 
@@ -99,11 +91,15 @@ async function recargarCentros () {
     // Tabla
     loadTablaCentros(Estado.centros);
 
-    // Mapa + buscador overlay
-    cargarYRenderizarCentros(Estado.centros);  // dibuja polígonos y gestiona labels por zoom
-    setupMapSearchOverlay(Estado.centros);     // activa búsqueda (código / titular / código de área)
+    // Mapa (polígonos + labels por zoom + sidebar mini)
+    cargarYRenderizarCentros(Estado.centros);
 
-    if (tabMapaActiva()) renderMapaAlways(true);
+    // Si la pestaña MAPA está activa, asegúrate de ver algo
+    if (tabMapaActiva()) {
+      Estado.map?.invalidateSize();
+      updateLabelVisibility();
+      drawCentrosInMap(Estado.centros);
+    }
   } catch (e) {
     console.error('Error cargando centros:', e);
     M.toast({ html: 'Error cargando centros', classes: 'red' });
@@ -141,9 +137,9 @@ function wireFormCentros () {
     centroModal?.open();
   });
 
-  // NOTA: El handler para “.editar-centro” ya está en eventos_centros.js → no lo duplicamos aquí
+  // OJO: handler de ".editar-centro" vive en eventos_centros.js; no lo duplicamos aquí.
 
-  // Agregar punto (DMS → decimal) en el formulario
+  // Agregar punto (DMS → decimal)
   els.btnAddPoint?.addEventListener('click', () => {
     const lat = parseDMS(els.inputLat.value.trim());
     const lng = parseDMS(els.inputLng.value.trim());
@@ -159,14 +155,14 @@ function wireFormCentros () {
     M.updateTextFields();
   });
 
-  // Limpiar puntos del formulario
+  // Limpiar puntos
   els.btnClearPoints?.addEventListener('click', () => {
     Estado.currentPoints.length = 0;
     clearMapPoints();
     renderPointsTable(els.pointsBody, Estado.currentPoints);
   });
 
-  // Guardar (crear o actualizar)
+  // Guardar (crear/actualizar)
   document.getElementById('formCentro')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const proveedor = els.inputProveedor.value.trim();
@@ -178,7 +174,6 @@ function wireFormCentros () {
       M.toast({ html: 'Proveedor, comuna y código son obligatorios', classes: 'red' });
       return;
     }
-
     const hect = hectStr ? Number(hectStr) : null;
     if (hectStr && Number.isNaN(hect)) {
       M.toast({ html: 'Hectáreas inválidas', classes: 'red' });
@@ -211,8 +206,7 @@ function wireFormCentros () {
         Estado.centros[Estado.currentCentroIdx] = actualizado;
         M.toast({ html: 'Centro actualizado', classes: 'green' });
       }
-
-      await recargarCentros(); // tabla + mapa + buscador
+      await recargarCentros();
       centroModal?.close();
     } catch (err) {
       M.toast({ html: err.message || 'Error al guardar centro', classes: 'red' });
@@ -221,7 +215,7 @@ function wireFormCentros () {
     }
   });
 
-  // Cerrar cualquier modal con botones .modal-close
+  // Cerrar modales
   document.querySelectorAll('.modal .modal-close').forEach((btn) => {
     btn.addEventListener('click', () => {
       const inst = M.Modal.getInstance(btn.closest('.modal'));
@@ -230,7 +224,7 @@ function wireFormCentros () {
   });
 }
 
-// ===== Workaround para selects de Materialize dentro de DataTables =====
+// ===== Workaround selects Materialize dentro de DataTables =====
 if ($) {
   $(document).on('mousedown focusin', '.select-wrapper input.select-dropdown', function () {
     $(this).closest('tr').addClass('editando-select');
