@@ -1,9 +1,13 @@
 /* MMppApi – adaptador tolerante para disponibilidades y asignaciones (backend AppMitylus)
-   Backend base: https://backend-appmitylus.vercel.app
+   Usa window.API_BASE (definido en /js/config.js):
+     - En dev:  '/api'  (proxy o mismo host)
+     - En prod: 'https://TU-BACKEND/api' (si pones window.API_URL en el HTML)
+
    Intenta múltiples variantes de ruta:
-     - /api/asignaciones/:id        /api/asignaciones?id=ID
-     - /api/asignacion/:id          /api/asignacion?id=ID
-     - POST /api/asignaciones/delete|update  (body {id,...})
+     - /asignaciones/:id        /asignaciones?id=ID
+     - /asignacion/:id          /asignacion?id=ID
+     - POST /asignaciones/delete|update  (body {id,...})
+
    Normaliza:
      Disponibilidad: {id, proveedorNombre, proveedorKey, contactoNombre, empresaNombre, telefono, email,
                       comuna, centroCodigo, areaCodigo, tons, fecha, mesKey, anio, mes, estado}
@@ -15,8 +19,17 @@
                       originalTons, originalFecha, fuente, estado, createdAt}
 */
 (function (global) {
-  var API_BASE = (typeof global.__MMPP_API_BASE__ === "string" && global.__MMPP_API_BASE__) ||
-                 "https://backend-appmitylus.vercel.app";
+  // ===== BASE =====
+  // Prioriza window.API_BASE (de js/config.js). Permite override con __MMPP_API_BASE__ si lo quieres.
+  var API_BASE =
+    (typeof global.API_BASE === "string" && global.API_BASE) ||
+    (typeof global.__MMPP_API_BASE__ === "string" && global.__MMPP_API_BASE__) ||
+    "/api";
+
+  // asegura "https://host/api" + "/path" (o "/api" + "/path")
+  function join(base, path) {
+    return String(base).replace(/\/+$/,"") + "/" + String(path).replace(/^\/+/, "");
+  }
 
   // --- utils ---
   function pad2(n){ n=Number(n)||0; return (n<10?"0":"")+n; }
@@ -37,7 +50,7 @@
     return new Date(y, m-1, 1).toISOString();
   }
   function qs(params){
-    var parts=[]; for(var k in params) if(params.hasOwnProperty(k)){
+    var parts=[]; for(var k in params) if(Object.prototype.hasOwnProperty.call(params,k)){
       var v=params[k]; if(v!==null && v!==undefined && v!==""){
         parts.push(encodeURIComponent(k)+"="+encodeURIComponent(String(v)));
       }
@@ -59,7 +72,7 @@
         return { ok: res.ok, status: res.status, body: body };
       });
     }).catch(function(err){
-      return { ok:false, status:0, body:{ message: err && err.message || "network error" } };
+      return { ok:false, status:0, body:{ message: (err && err.message) || "network error" } };
     });
   }
 
@@ -68,17 +81,14 @@
     var i=0;
     function next(){
       if (i>=routes.length) return Promise.resolve({ ok:false, status:404, body:{ message:"No matching route" }});
-      var path = routes[i++], url = API_BASE.replace(/\/+$/,"")+path;
+      var path = routes[i++], url = join(API_BASE, path);
       var opts = { method: method };
       if (bodyObj && (method!=="GET" && method!=="DELETE")) opts.body = JSON.stringify(bodyObj);
-      if (method==="DELETE" && bodyObj && path.toLowerCase().indexOf("/delete")>-1){
-        opts.body = JSON.stringify(bodyObj);
-      }
+      if (method==="DELETE" && bodyObj && /\/delete/i.test(path)){ opts.body = JSON.stringify(bodyObj); }
       return doFetch(url, opts).then(function(res){
         if (res.ok) return res;
-        // seguir probando si 404/405/400
-        if (res.status===404 || res.status===405 || res.status===400) return next();
-        return res; // otro error (e.g., 500) => devolvemos
+        if (res.status===404 || res.status===405 || res.status===400) return next(); // probar siguiente variante
+        return res; // otros errores (500, etc): devolver
       });
     }
     return next();
@@ -174,7 +184,8 @@
         var y=new Date().getFullYear();
         params.from=(y-1)+"-01"; params.to=(y+1)+"-12";
       }
-      var url = "/api/disponibilidades"+qs(params);
+      // OJO: paths SIN '/api' (API_BASE ya lo trae)
+      var url = "/disponibilidades"+qs(params);
       return tryRoutes("GET",[url]).then(function(res){
         var json = (res && res.body) || [];
         var norm = normalizeDispon(json);
@@ -187,8 +198,8 @@
     getAsignaciones: function(params){
       params=params||{};
       var paths = [
-        "/api/asignaciones"+qs(params),
-        "/api/asignacion"+qs(params)
+        "/asignaciones"+qs(params),
+        "/asignacion"+qs(params)
       ];
       return tryRoutes("GET", paths).then(function(res){
         var json = (res && res.body) || [];
@@ -213,7 +224,7 @@
       var cam = cap>0 ? Math.ceil(tons/cap) : null;
 
       function pickDispo(list){
-        for(var i=0;i<list.length;i++){
+        for (var i=0;i<list.length;i++){
           if(String(list[i].id)===String(payload.disponibilidadId)) return list[i];
         }
         return null;
@@ -262,7 +273,7 @@
           createdAt: new Date().toISOString()
         };
 
-        var paths = ["/api/asignaciones"];
+        var paths = ["/asignaciones"];
         return tryRoutes("POST", paths, body).then(function(res){
           var j = res && res.body; j = j && j.body ? j.body : j;
           if (!res || !res.ok) {
@@ -275,7 +286,6 @@
     },
 
     editarAsignacion: function(id, patch){
-      // asegurar alias / normalizar campos
       var cap = Number(patch.capacidadCamion || patch.cap_camion || 10);
       var qty = (patch.cantidad!=null ? Number(patch.cantidad) :
                 (patch.tons!=null ? Number(patch.tons) : null));
@@ -283,23 +293,17 @@
       if (qty!=null){ body.tons = qty; body.cantidad = qty; body.camiones = Math.ceil(qty/(cap||10)); }
 
       var paths = [
-        "/api/asignaciones/"+encodeURIComponent(id),
-        "/api/asignaciones?id="+encodeURIComponent(id),
-        "/api/asignacion/"+encodeURIComponent(id),
-        "/api/asignacion?id="+encodeURIComponent(id),
-        "/api/asignaciones/update"
+        "/asignaciones/"+encodeURIComponent(id),
+        "/asignaciones?id="+encodeURIComponent(id),
+        "/asignacion/"+encodeURIComponent(id),
+        "/asignacion?id="+encodeURIComponent(id),
+        "/asignaciones/update"
       ];
       return tryRoutes("PATCH", paths, body).then(function(res){
-        if (!res.ok) {
-          // probar PUT o POST /update si PATCH falla
-          return tryRoutes("PUT", paths, body);
-        }
+        if (!res.ok) return tryRoutes("PUT", paths, body);   // fallback PUT
         return res;
       }).then(function(res){
-        if (!res.ok) {
-          // último intento: POST update con body {id,...}
-          return tryRoutes("POST", ["/api/asignaciones/update","/api/asignacion/update"], Object.assign({ id:id }, body));
-        }
+        if (!res.ok) return tryRoutes("POST", ["/asignaciones/update","/asignacion/update"], Object.assign({ id:id }, body)); // último intento
         return res;
       }).then(function(res){
         var j = res && res.body; j = j && j.body ? j.body : j;
@@ -313,16 +317,15 @@
     borrarAsignacion: function(id){
       var q = "?id="+encodeURIComponent(id);
       var paths = [
-        "/api/asignaciones/"+encodeURIComponent(id),
-        "/api/asignaciones"+q,
-        "/api/asignacion/"+encodeURIComponent(id),
-        "/api/asignacion"+q,
-        "/api/asignaciones/delete",
-        "/api/asignacion/delete"
+        "/asignaciones/"+encodeURIComponent(id),
+        "/asignaciones"+q,
+        "/asignacion/"+encodeURIComponent(id),
+        "/asignacion"+q,
+        "/asignaciones/delete",
+        "/asignacion/delete"
       ];
-      // intenta DELETE en varias rutas; si no, intenta POST /delete {id}
       return tryRoutes("DELETE", paths).then(function(res){
-        if (!res.ok) return tryRoutes("POST", ["/api/asignaciones/delete","/api/asignacion/delete"], { id:id });
+        if (!res.ok) return tryRoutes("POST", ["/asignaciones/delete","/asignacion/delete"], { id:id });
         return res;
       }).then(function(res){
         var j = res && res.body; j = j && j.body ? j.body : j;
