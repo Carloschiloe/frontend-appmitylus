@@ -14,20 +14,20 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
 
-  <!-- Tus estilos (rutas absolutas) -->
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/css/centros.css" />
+  <!-- Tus estilos (rutas relativas) -->
+  <link rel="stylesheet" href="../../styles.css" />
+  <link rel="stylesheet" href="../../css/centros.css" />
 
-  <!-- Config + utils -->
+  <!-- Config + utils (rutas relativas) -->
   <script>window.DEBUG = true;</script>
-  <script src="/js/config.js"></script>
-  <script src="/js/utils.js"></script>
+  <script src="../../js/config.js"></script>
+  <script src="../../js/utils.js"></script>
 </head>
 <body>
   <!-- NAV -->
   <nav class="teal">
     <div class="nav-wrapper">
-      <a href="/index.html" class="btn-flat left" title="Volver" aria-label="Volver">
+      <a href="../../index.html" class="btn-flat left" title="Volver" aria-label="Volver">
         <i class="material-icons">arrow_back</i>
       </a>
       <a href="#" class="brand-logo center">Directorio de Centros Mitílidos</a>
@@ -82,42 +82,42 @@
       </div>
     </section>
 
-  <!-- TAB MAPA -->
-<section id="tab-mapa" class="col s12" style="padding:0;">
-  <!-- Full-bleed: lleva el mapa al ancho completo del viewport aun dentro del .container -->
-  <div class="full-bleed-shell">
-    <h5 class="map-title" style="padding:12px 16px 6px;">Mapa de Centros</h5>
+    <!-- TAB MAPA -->
+    <section id="tab-mapa" class="col s12" style="padding:0;">
+      <div class="full-bleed-shell">
+        <h5 class="map-title" style="padding:12px 16px 6px;">Mapa de Centros</h5>
 
-    <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
-      <!-- Overlay: BUSCADOR sobre el mapa -->
-      <div class="map-search" id="mapSearchBox">
-        <input
-          type="search"
-          id="mapSearch"
-          placeholder="Buscar por Código, Titular o Código de Área…"
-          autocomplete="off"
-          aria-label="Buscar por Código, Titular o Código de Área"
-        />
-        <ul id="mapSearchResults" class="map-search-results" role="listbox"></ul>
+        <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
+          <!-- BUSCADOR sobre el mapa -->
+          <div class="map-search" id="mapSearchBox">
+            <input
+              type="search"
+              id="mapSearch"
+              placeholder="Buscar por Código, Titular o Código de Área…"
+              autocomplete="off"
+              aria-label="Buscar por Código, Titular o Código de Área"
+            />
+            <ul id="mapSearchResults" class="map-search-results" role="listbox"></ul>
+          </div>
+
+          <!-- Sidebar mini -->
+          <aside id="sidebarCentros" class="sidebar-centros">
+            <button id="toggleSidebar" class="toggle-btn" aria-label="Colapsar/Expandir Sidebar">
+              <span id="toggleSidebarIcon" class="material-icons">chevron_left</span>
+            </button>
+            <input id="filtroSidebar" type="text" placeholder="🔍 Buscar comuna o proveedor…" aria-label="Buscar comuna o proveedor" autocomplete="off" />
+            <ul id="listaCentrosSidebar" class="sidebar-list"></ul>
+          </aside>
+
+          <!-- El mapa -->
+          <div id="map"></div>
+        </section>
       </div>
-
-      <!-- (Opcional) Sidebar mini (puedes dejarla o quitarla) -->
-      <aside id="sidebarCentros" class="sidebar-centros">
-        <button id="toggleSidebar" class="toggle-btn" aria-label="Colapsar/Expandir Sidebar">
-          <span id="toggleSidebarIcon" class="material-icons">chevron_left</span>
-        </button>
-        <input id="filtroSidebar" type="text" placeholder="🔍 Buscar comuna o proveedor…" aria-label="Buscar comuna o proveedor" autocomplete="off" />
-        <ul id="listaCentrosSidebar" class="sidebar-list"></ul>
-      </aside>
-
-      <!-- El mapa -->
-      <div id="map"></div>
     </section>
-  </div>
-</section>
 
-    <!-- MODALES (contenido como ya lo tienes) -->
+    <!-- MODALES -->
     <div id="centroModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="formTitle" tabindex="-1"></div>
+
     <div id="modalDetallesCentro" class="modal" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle" tabindex="-1">
       <div class="modal-content">
         <h5 id="detallesCentroTitle">Detalles del Centro</h5>
@@ -127,6 +127,7 @@
         <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
       </div>
     </div>
+
     <div id="modalCoordenadas" class="modal" role="dialog" aria-modal="true" aria-labelledby="coordenadasTitle" tabindex="-1"></div>
     <div id="modalImportarCentros" class="modal" tabindex="-1"></div>
   </div>
@@ -157,8 +158,8 @@
   <!-- XLSX pinneado -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <!-- Tu bundle principal -->
-  <script type="module" src="/js/app.js"></script>
+  <!-- Tu bundle principal (ruta relativa correcta) -->
+  <script type="module" src="../../js/app.js"></script>
 
   <!-- Inicialización Materialize -->
   <script>
