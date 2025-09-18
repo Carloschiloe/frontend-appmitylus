@@ -53,7 +53,7 @@ const baseLayersDefs = {
 };
 
 // 👉 Arranca con OSM (evita el gris si Mapbox falla)
-let currentBaseKey = 'osm';
+let currentBaseKey = 'mapboxSat';
 
 // -------- Datos para sidebar y búsqueda
 let centrosDataGlobal = [];
@@ -481,3 +481,4 @@ function initMapSearchUI() {
     diag: diagMap
   };
 }
+
