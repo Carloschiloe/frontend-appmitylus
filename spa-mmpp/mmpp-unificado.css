@@ -6,7 +6,7 @@
    - Componentes comunes: hero, chips, cards, tablas, kpis
    - Modales y utilidades
    - Responsive
-   - ¡OJO! No define estilos .pl-* (Pipeline) para no romper layout
+   - ¡OJO! NO pisa clases genéricas del calendario
    ===================================================== */
 
 /* ---------- Variables ---------- */
@@ -144,8 +144,13 @@ a{ color:inherit; text-decoration:none; }
 table.mmpp{ width:100%; border-collapse:separate; border-spacing:0 8px; }
 table.mmpp th{ text-align:left; font-weight:700; color:#374151; font-size:12px; padding:8px 10px; }
 table.mmpp td{ background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:12px; }
-.row{ display:flex; gap:10px; }
-.row > * { flex:1; }
+
+/* ⚠️ IMPORTANTE: NO usaremos .row global para no romper el calendario */
+/* Si necesitas filas flex en otras pantallas, usa una clase nueva .mmpp-row */
+.mmpp-row{ display:flex; gap:10px; }
+.mmpp-row > * { flex:1; }
+
+/* inputs */
 .input, select{
   height:44px; border:1px solid var(--border); border-radius:12px; padding:0 12px; background:#fff; width:100%;
 }
@@ -176,57 +181,7 @@ table.mmpp td{ background:var(--panel); border:1px solid var(--border); padding:
   .mmpp-nav{ position:static; height:auto; }
   .mmpp-hero h1{ font-size:20px; }
   table.mmpp{ display:block; overflow-x:auto; }
+  /* El contenedor del calendario ocupa su ancho y deja que su propio CSS responda */
+  #mmppCalendario{ width:100%; overflow-x:visible; }
 }
-
-/* =========================================================
-   FIX MÓVIL — Calendario sin descuadres (iPhone/Android)
-   ---------------------------------------------------------
-   - La grilla del mes mantiene celdas legibles.
-   - Si no cabe, se habilita scroll horizontal SOLO en móvil.
-   - No afecta escritorio.
-   ========================================================= */
-@media (max-width: 960px){
-  /* El contenedor del calendario ocupa ancho completo y puede scrollear en X */
-  #mmppCalendario{
-    width:100%;
-    overflow-x:auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* La grilla del mes NO se aplasta: 7 columnas con ancho mínimo.
-     Ajusto varios selectores comunes para cubrir tu HTML actual. */
-  #mmppCalendario .cal-grid,
-  #mmppCalendario .calendar-grid,
-  #mmppCalendario .cal-month,
-  #mmppCalendario .cal-days,
-  #mmppCalendario [data-cal-grid]{
-    display:grid !important;
-    grid-template-columns: repeat(7, minmax(120px, 1fr)) !important; /* mínimo 120px por día */
-    gap: 8px;
-    min-width: 980px;             /* ancho total mínimo para mantener proporciones */
-  }
-
-  /* Cabeceras de días (Lun, Mar, ...) alineadas con la grilla */
-  #mmppCalendario .cal-weekdays{
-    display:grid !important;
-    grid-template-columns: repeat(7, minmax(120px, 1fr)) !important;
-    gap: 8px;
-    min-width: 980px;
-  }
-
-  /* Chips / tabs / KPIs que no caben: scroll horizontal en móvil */
-  #mmppCalendario .chips,
-  #mmppCalendario .tabs,
-  #mmppCalendario .kpis,
-  #mmppCalendario .cards{
-    overflow-x:auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Evita zoom de Safari al enfocar */
-  #mmppCalendario input,
-  #mmppCalendario select,
-  #mmppCalendario textarea{
-    font-size:16px;
-  }
-}
+/* ===== FIN ===== */
