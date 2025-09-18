@@ -12,7 +12,11 @@
    - En el modal se puede CREAR, EDITAR y ELIMINAR asignaciones (con confirmación)
 */
 (function (global) {
-  // ===== Config =====
+  // ===== Config (nuevo: API y log desde config global) =====
+  var API = (global.API_BASE || '/api'); // por si más adelante conectas endpoints directos
+  var LOG = function(){ if (global.DEBUG === true) console.log.apply(console, ['[Calendario]'].concat([].slice.call(arguments))); };
+
+  // ===== Config fija =====
   var CAPACIDAD_CAMION_DEF = 10; // t por camión
   var CL_HOLIDAYS_2025 = { "2025-09-18":1, "2025-09-19":1 };
 
@@ -33,7 +37,6 @@
     for (var i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=(h+((h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24)))>>>0; }
     return h>>>0;
   }
-  // 12 tonos espaciados (evita “todos azules”)
   var HUES = [210, 12, 140, 48, 280, 110, 330, 190, 24, 160, 300, 80];
   function paletteFor(key){
     var idx = _hash(key)%HUES.length;
@@ -74,14 +77,13 @@
   var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   var DIAS  = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
 
-// Abreviaturas de meses para "07.sept.25"
-var MESES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sept','oct','nov','dic'];
-function fechaCorta(y, m1, d){
-  // m1 es 1..12
-  var yy = String(y).slice(-2);
-  var mon = MESES_ABBR[(m1-1)|0] || '';
-  return pad2(d) + '.' + mon + '.' + yy;
-}
+  // Abreviaturas de meses para "07.sept.25"
+  var MESES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sept','oct','nov','dic'];
+  function fechaCorta(y, m1, d){
+    var yy = String(y).slice(-2);
+    var mon = MESES_ABBR[(m1-1)|0] || '';
+    return pad2(d) + '.' + mon + '.' + yy;
+  }
 
   // ===== CSS =====
   function injectCSS(){
@@ -113,7 +115,7 @@ function fechaCorta(y, m1, d){
 
     +'.cal-small{font-size:12px;color:#6b7280}'
 
-    /* ---- Tarjetas: UNA SOLA FILA, sin wrap ---- */
+    /* ---- Tarjetas ---- */
     +'.cal-cardrow{margin:6px 0 10px}'
     +'#cardDeck{display:flex;gap:10px;align-items:stretch;width:100%;overflow:hidden}'
     +'#cardDeck .fcard{flex:1 1 0;min-width:0}'
@@ -144,7 +146,7 @@ function fechaCorta(y, m1, d){
     +'.total{position:absolute;top:6px;right:6px}'
     +'.weeksum{font-size:12px;font-weight:700;margin-top:auto}'
 
-    /* Chips del día (tintados) */
+    /* Chips del día */
     +'.chip{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 6px;border-radius:8px;border:1px solid #e5e7eb;background:#f9fafb}'
     +'.chip .left{display:flex;align-items:center;gap:6px;min-width:0;flex:1}'
     +'.chip .prov{font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;max-width:160px}'
@@ -191,7 +193,6 @@ function fechaCorta(y, m1, d){
     modalOpen: false
   };
 
-  // Helpers para leer/escribir el filtro según pestaña
   function getCurrentFilter(){
     if (STATE.group==='prov')  return STATE.filters.proveedor;
     if (STATE.group==='com')   return STATE.filters.comuna;
@@ -248,7 +249,7 @@ function fechaCorta(y, m1, d){
     return rows.filter(function(r){
       if (f.comuna && r.comuna!==f.comuna) return false;
       if (f.transportista && r.trans!==f.transportista) return false;
-      if (f.proveedor && r.prov!==f.proveedor) return false;
+      if (f.proveedor && r.prov!==f.prov) return false;
       return true;
     });
   }
@@ -353,71 +354,70 @@ function fechaCorta(y, m1, d){
     if (el) el.textContent = MESES[m]+' de '+y;
   }
 
-  // === Tarjetas por pestaña (Proveedor/Comuna/Transportista) ===
- function renderCardDeck(){
-  var deck = document.getElementById('cardDeck');
-  if (!deck) return;
+  // === Tarjetas por pestaña ===
+  function renderCardDeck(){
+    var deck = document.getElementById('cardDeck');
+    if (!deck) return;
 
-  var rows = enrichAssignmentsForMonth(STATE.current);
+    var rows = enrichAssignmentsForMonth(STATE.current);
 
-  // Mantener filtros de las otras dimensiones
-  if (STATE.group !== 'prov'  && STATE.filters.proveedor)     rows = rows.filter(function(r){ return r.prov  === STATE.filters.proveedor; });
-  if (STATE.group !== 'com'   && STATE.filters.comuna)        rows = rows.filter(function(r){ return r.comuna=== STATE.filters.comuna; });
-  if (STATE.group !== 'trans' && STATE.filters.transportista) rows = rows.filter(function(r){ return r.trans === STATE.filters.transportista; });
+    // Mantener filtros de otras dimensiones
+    if (STATE.group !== 'prov'  && STATE.filters.proveedor)     rows = rows.filter(function(r){ return r.prov  === STATE.filters.proveedor; });
+    if (STATE.group !== 'com'   && STATE.filters.comuna)        rows = rows.filter(function(r){ return r.comuna=== STATE.filters.comuna; });
+    if (STATE.group !== 'trans' && STATE.filters.transportista) rows = rows.filter(function(r){ return r.trans === STATE.filters.transportista; });
 
-  var totalT = rows.reduce(function(acc,r){ return acc + (Number(r.tons)||0); }, 0) || 0;
+    var totalT = rows.reduce(function(acc,r){ return acc + (Number(r.tons)||0); }, 0) || 0;
 
-  // Año/mes actual para armar la fecha corta
-  var y = STATE.current.getFullYear();
-  var m1 = STATE.current.getMonth() + 1;
+    // Año/mes actual para fecha corta
+    var y = STATE.current.getFullYear();
+    var m1 = STATE.current.getMonth() + 1;
 
-  // Sumar por entidad y guardar primer día en el mes
-  var map = {};
-  rows.forEach(function(r){
-    var key = (STATE.group==='prov'? r.prov : (STATE.group==='com'? r.comuna : r.trans)) || '—';
-    var tons = Number(r.tons||0);
-    if (!map[key]) map[key] = { key:key, tons:0, firstDay:null };
-    map[key].tons += tons;
-    if (!map[key].firstDay || r.day < map[key].firstDay) map[key].firstDay = r.day;
-  });
+    // Sumar por entidad y guardar primer día
+    var map = {};
+    rows.forEach(function(r){
+      var key = (STATE.group==='prov'? r.prov : (STATE.group==='com'? r.comuna : r.trans)) || '—';
+      var tons = Number(r.tons||0);
+      if (!map[key]) map[key] = { key:key, tons:0, firstDay:null };
+      map[key].tons += tons;
+      if (!map[key].firstDay || r.day < map[key].firstDay) map[key].firstDay = r.day;
+    });
 
-  var list = Object.keys(map).map(function(k){ return map[k]; })
-    .sort(function(a,b){ return (b.tons||0)-(a.tons||0); });
+    var list = Object.keys(map).map(function(k){ return map[k]; })
+      .sort(function(a,b){ return (b.tons||0)-(a.tons||0); });
 
-  var active = getCurrentFilter();
-  var labelMap = { prov:'Proveedor', com:'Comuna', trans:'Transportista' };
+    var active = getCurrentFilter();
+    var labelMap = { prov:'Proveedor', com:'Comuna', trans:'Transportista' };
 
-  var html = list.map(function(item){
-    var trucks = Math.ceil(item.tons / STATE.capacidadCamion);
-    var val = (STATE.view==='t') ? item.tons : trucks;
-    var unit = (STATE.view==='t' ? 't' : 'c');
-    var pct = totalT>0 ? Math.round((item.tons/totalT)*100) : 0;
-    var pal = paletteFor(item.key);
-    var act = (active && active===item.key) ? ' active' : '';
-    var inicioStr = item.firstDay ? ('Inicio: ' + fechaCorta(y, m1, item.firstDay)) : 'Inicio: —';
+    var html = list.map(function(item){
+      var trucks = Math.ceil(item.tons / STATE.capacidadCamion);
+      var val = (STATE.view==='t') ? item.tons : trucks;
+      var unit = (STATE.view==='t' ? 't' : 'c');
+      var pct = totalT>0 ? Math.round((item.tons/totalT)*100) : 0;
+      var pal = paletteFor(item.key);
+      var act = (active && active===item.key) ? ' active' : '';
+      var inicioStr = item.firstDay ? ('Inicio: ' + fechaCorta(y, m1, item.firstDay)) : 'Inicio: —';
 
-    return '<div class="fcard'+act+'" data-key="'+escapeHtml(item.key)+'"'
-         + ' style="border-color:'+pal.border+';background:'+pal.bg+'">'
-         +   '<span class="swatch" style="background:'+pal.main+'"></span>'
-         +   '<div class="meta">'
-         +     '<span class="dot" style="background:'+pal.main+'"></span>'
-         +     '<div style="display:flex;flex-direction:column;min-width:0">'
-         +       '<div class="title" title="'+escapeHtml(item.key)+'">'+escapeHtml(item.key)+'</div>'
-         +       '<div class="sub">'+labelMap[STATE.group]+'</div>'
-         +       '<div class="sub" title="Primer día con asignación en el mes">'+inicioStr+'</div>'
-         +     '</div>'
-         +   '</div>'
-         +   '<div class="qtyBlk">'
-         +     '<div class="qty">'+numeroCL(val)+' <span class="unit">'+unit+'</span></div>'
-         +     '<div class="pct">'+pct+'% del mes</div>'
-         +     '<div class="pctbar"><span style="width:'+pct+'%;background:'+pal.main+';opacity:.45"></span></div>'
-         +   '</div>'
-         + '</div>';
-  }).join('');
+      return '<div class="fcard'+act+'" data-key="'+escapeHtml(item.key)+'"'
+           + ' style="border-color:'+pal.border+';background:'+pal.bg+'">'
+           +   '<span class="swatch" style="background:'+pal.main+'"></span>'
+           +   '<div class="meta">'
+           +     '<span class="dot" style="background:'+pal.main+'"></span>'
+           +     '<div style="display:flex;flex-direction:column;min-width:0">'
+           +       '<div class="title" title="'+escapeHtml(item.key)+'">'+escapeHtml(item.key)+'</div>'
+           +       '<div class="sub">'+labelMap[STATE.group]+'</div>'
+           +       '<div class="sub" title="Primer día con asignación en el mes">'+inicioStr+'</div>'
+           +     '</div>'
+           +   '</div>'
+           +   '<div class="qtyBlk">'
+           +     '<div class="qty">'+numeroCL(val)+' <span class="unit">'+unit+'</span></div>'
+           +     '<div class="pct">'+pct+'% del mes</div>'
+           +     '<div class="pctbar"><span style="width:'+pct+'%;background:'+pal.main+';opacity:.45"></span></div>'
+           +   '</div>'
+           + '</div>';
+    }).join('');
 
-  deck.innerHTML = html || '<div class="cal-small">No hay datos para el mes.</div>';
-}
-
+    deck.innerHTML = html || '<div class="cal-small">No hay datos para el mes.</div>';
+  }
 
   function renderHead(){
     var h = document.getElementById('calDaysHead');
@@ -505,7 +505,7 @@ function fechaCorta(y, m1, d){
         }
       }
 
-      // Chips del día (tintados con paleta estable)
+      // Chips del día
       var chips = '';
       var maxChips = 4;
       for (var g=0; g<groups.length && g<maxChips; g++){
@@ -815,6 +815,13 @@ function fechaCorta(y, m1, d){
         if (!confirm(msg)) return;
         errEl.textContent = '';
         t.disabled = true;
+
+        if (!global.MMppApi || !global.MMppApi.borrarAsignacion) {
+          errEl.textContent = 'MMppApi.borrarAsignacion no disponible';
+          t.disabled = false;
+          return;
+        }
+
         global.MMppApi.borrarAsignacion(idDel)
           .then(function(resp){
             if (resp && resp.__status && resp.__status>=400) throw new Error(resp.error||'No se pudo eliminar');
@@ -850,6 +857,11 @@ function fechaCorta(y, m1, d){
         var confMsg = '¿Confirmas crear asignación de '+numeroCL(cant)+' t para "'+(selectedLot.trans||selectedLot.prov||'—')+'" el '+day+' de '+MESES[m-1]+'?';
         if (!confirm(confMsg)) return;
 
+        if (!global.MMppApi || !global.MMppApi.crearAsignacion) {
+          errEl.textContent = 'MMppApi.crearAsignacion no disponible';
+          return;
+        }
+
         saving = true;
         doBtn.disabled = true; doBtn.textContent = 'Guardando…'; errEl.textContent = '';
         var payload = {
@@ -880,6 +892,11 @@ function fechaCorta(y, m1, d){
       // Editar
       var msg = '¿Guardar cambios? Nueva cantidad: '+numeroCL(cant)+' t (antes '+numeroCL(editCtx.oldTons)+' t).';
       if (!confirm(msg)) return;
+
+      if (!global.MMppApi || !global.MMppApi.editarAsignacion) {
+        errEl.textContent = 'MMppApi.editarAsignacion no disponible';
+        return;
+      }
 
       saving = true;
       doBtn.disabled = true; doBtn.textContent = 'Guardando…'; errEl.textContent = '';
@@ -950,7 +967,6 @@ function fechaCorta(y, m1, d){
     });
 
     var cont = root.querySelector('#calDays');
-    // Doble-click permanente (no se desactiva al cerrar modal)
     if (cont && !cont._dblAttached){
       cont.addEventListener('dblclick', function(ev){
         var t = ev.target;
@@ -975,16 +991,32 @@ function fechaCorta(y, m1, d){
   // ===== Carga =====
   function loadData(){
     var api = global.MMppApi || null;
-    if (!api) return Promise.resolve();
+    if (!api) {
+      LOG('MMppApi no definido. No se cargarán datos.');
+      return Promise.resolve();
+    }
 
     try{
       STATE.reqByMonth = JSON.parse(localStorage.getItem('mmpp-cal-req')||'{}');
     }catch(e){ STATE.reqByMonth = {}; }
 
+    var safe = function (p, fallback){
+      return Promise.resolve()
+        .then(function(){ return p; })
+        .catch(function(err){
+          console.error(err);
+          return (typeof fallback === 'function') ? fallback(err) : fallback;
+        });
+    };
+
     return Promise.all([
-      api.getDisponibilidades().then(function(d){ STATE.dispon = Array.isArray(d)?d:[]; }),
-      api.getAsignaciones().then(function(a){ STATE.asig = Array.isArray(a)?a:[]; })
-    ]);
+      api.getDisponibilidades ? safe(api.getDisponibilidades(), []) : Promise.resolve([]),
+      api.getAsignaciones ? safe(api.getAsignaciones(), []) : Promise.resolve([])
+    ]).then(function(results){
+      STATE.dispon = Array.isArray(results[0]) ? results[0] : [];
+      STATE.asig   = Array.isArray(results[1]) ? results[1] : [];
+      LOG('Datos cargados', {dispon: STATE.dispon.length, asig: STATE.asig.length});
+    });
   }
 
   // ===== Render principal =====
@@ -1004,7 +1036,12 @@ function fechaCorta(y, m1, d){
     buildUI(root);
     attachEvents(root);
 
-    loadData().then(refresh);
+    loadData()
+      .then(refresh)
+      .catch(function(err){
+        console.error(err);
+        try { alert('Error al cargar datos del calendario: ' + (err && err.message ? err.message : err)); } catch(_){}
+      });
   }
 
   global.MMppCalendario = { mount: mount, refresh: refresh };
