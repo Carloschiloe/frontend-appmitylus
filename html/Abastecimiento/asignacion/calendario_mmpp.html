@@ -54,119 +54,93 @@
   <script defer src="/spa-mmpp/mmpp-calendario.js?v=chips-3"></script>
 
   <!-- Montaje + Captura/Compartir -->
-  <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // ---- Montaje calendario
-    if (window.MMppCalendario && document.getElementById('mmppCalendario')) {
-      MMppCalendario.mount({ capacidadCamion: 10 });
-    } else {
-      console.warn('No se encontró MMppCalendario o el contenedor #mmppCalendario.');
-    }
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Montaje calendario (igual que antes)
+  if (window.MMppCalendario && document.getElementById('mmppCalendario')) {
+    MMppCalendario.mount({ capacidadCamion: 10 });
+  }
 
-    // ======== Captura y compartir (iOS-safe) =========
-    const CAPTURE_SEL = '#calendarioCapture';
-    const btn = document.getElementById('btnCompartirCalendario');
+  const CAPTURE_SEL = '#calendarioCapture';
+  const btn = document.getElementById('btnCompartirCalendario');
 
-    // 1) helpers
-    function dataURLtoBlob(dataurl) {
-      const arr = dataurl.split(',');
-      const mime = arr[0].match(/:(.*?);/)[1];
-      const bstr = atob(arr[1]);
-      let n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      while (n--) u8arr[n] = bstr.charCodeAt(n);
-      return new Blob([u8arr], { type: mime });
-    }
+  // toBlob fallback (iOS antiguos)
+  function dataURLtoBlob(dataurl) {
+    const [header, data] = dataurl.split(',');
+    const mime = header.match(/:(.*?);/)[1];
+    const bin = atob(data);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+  function canvasToBlobSafe(canvas) {
+    return new Promise((resolve) => {
+      if (canvas.toBlob) canvas.toBlob(b => resolve(b), 'image/png', 0.95);
+      else resolve(dataURLtoBlob(canvas.toDataURL('image/png', 0.95)));
+    });
+  }
 
-    function canvasToBlobSafe(canvas) {
-      return new Promise((resolve) => {
-        if (canvas.toBlob) {
-          canvas.toBlob(b => resolve(b), 'image/png', 0.95);
-        } else {
-          // iOS fallback
-          const dataURL = canvas.toDataURL('image/png', 0.95);
-          resolve(dataURLtoBlob(dataURL));
+  function descargarBlob(blob, nombre) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nombre;
+    document.body.appendChild(a); a.click();
+    a.remove(); URL.revokeObjectURL(url);
+  }
+
+  async function capturarPNG() {
+    const nodo = document.querySelector(CAPTURE_SEL);
+    if (!nodo) throw new Error('No se encontró el contenedor a capturar');
+
+    // escala moderada (no toca estilos, solo la rasterización)
+    const scale = Math.min(2, Math.max(1.5, window.devicePixelRatio || 1));
+
+    const canvas = await html2canvas(nodo, {
+      scale,
+      useCORS: true,          // por si hay recursos externos con CORS permitido
+      backgroundColor: '#ffffff',
+      logging: false
+    });
+    return canvasToBlobSafe(canvas);
+  }
+
+  async function compartirCalendario() {
+    try {
+      const blob = await capturarPNG();
+      const nombre = `Calendario_MMPP_${new Date().toISOString().slice(0,10)}.png`;
+
+      // Web Share API con archivo (móvil moderno)
+      if (navigator.canShare) {
+        const file = new File([blob], nombre, { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Calendario MMPP',
+            text: 'Te comparto el calendario con la vista filtrada.'
+          });
+          return;
         }
-      });
-    }
-
-    function descargarBlob(blob, nombre) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = nombre;
-      document.body.appendChild(a); a.click();
-      a.remove(); URL.revokeObjectURL(url);
-    }
-
-    // 2) captura robusta
-    async function capturarPNG() {
-      const nodo = document.querySelector(CAPTURE_SEL);
-      if (!nodo) throw new Error('No se encontró el contenedor a capturar');
-
-      // “modo foto” para evitar bugs de iOS (sticky/animaciones/sombras)
-      document.body.classList.add('is-capturing');
-      const prevScrollY = window.scrollY;
-      window.scrollTo(0, 0); // asegura cabeza visible
-
-      // escala controlada (evita canvases gigantes que rompen en iOS)
-      const scale = Math.min(2, Math.max(1.5, (window.devicePixelRatio || 1)));
-
-      try {
-        const canvas = await html2canvas(nodo, {
-          scale,
-          useCORS: true,
-          backgroundColor: '#ffffff', // mejor que null en iOS
-          logging: false,
-          scrollX: 0,
-          scrollY: -window.scrollY,  // corrige offset en iOS
-          removeContainer: true
-        });
-        const blob = await canvasToBlobSafe(canvas);
-        return blob;
-      } finally {
-        // restaurar estado UI
-        window.scrollTo(0, prevScrollY);
-        document.body.classList.remove('is-capturing');
       }
+
+      // Fallback: descarga + abre canal de texto
+      descargarBlob(blob, nombre);
+      const texto = 'Te comparto el calendario con la vista filtrada. (Adjunta la imagen descargada)';
+      const whatsURL = 'https://wa.me/?text=' + encodeURIComponent(texto);
+      const mailURL  = 'mailto:?subject=' + encodeURIComponent('Calendario MMPP')
+                     + '&body=' + encodeURIComponent(texto);
+      const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      window.open(esMovil ? whatsURL : mailURL, '_blank');
+
+    } catch (err) {
+      console.error('[captura] error:', err);
+      alert('No se pudo generar la captura. Revisa la consola.');
     }
+  }
 
-    // 3) compartir con fallback
-    async function compartirCalendario() {
-      try {
-        const blob = await capturarPNG();
-        const nombre = `Calendario_MMPP_${new Date().toISOString().slice(0,10)}.png`;
-
-        // Web Share API (móviles modernos)
-        if (navigator.canShare) {
-          const file = new File([blob], nombre, { type: 'image/png' });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: 'Calendario MMPP',
-              text: 'Te comparto el calendario con la vista filtrada.'
-            });
-            return;
-          }
-        }
-
-        // Fallback: descarga + abre WhatsApp/Correo con texto
-        descargarBlob(blob, nombre);
-        const texto = 'Te comparto el calendario con la vista filtrada. (Adjunto la imagen descargada)';
-        const whatsURL = 'https://wa.me/?text=' + encodeURIComponent(texto);
-        const mailURL  = 'mailto:?subject=' + encodeURIComponent('Calendario MMPP')
-                       + '&body=' + encodeURIComponent(texto);
-        const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        window.open(esMovil ? whatsURL : mailURL, '_blank');
-
-      } catch (err) {
-        console.error('[captura] error:', err);
-        alert('No se pudo generar la captura. Revisa la consola.');
-      }
-    }
-
-    if (btn) btn.addEventListener('click', compartirCalendario);
-  });
+  if (btn) btn.addEventListener('click', compartirCalendario);
+});
 </script>
+
 
 
   <noscript>Esta página requiere JavaScript.</noscript>
