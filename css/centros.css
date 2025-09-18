@@ -13,14 +13,12 @@
   background: var(--primary) !important;
   color:#fff !important;
 }
-
 #centrosTable,
 #centrosTable th,
 #centrosTable td{
   font-size: 0.92em !important;
   padding: 0.26em 0.48em !important;
 }
-
 /* Columna Proveedor (1ª) */
 #centrosTable th:first-child,
 #centrosTable td:first-child{
@@ -29,19 +27,16 @@
   max-width: 420px !important;
   min-width: 100px !important;
 }
-
 /* Columna Comuna (2ª) */
 #centrosTable th:nth-child(2),
 #centrosTable td:nth-child(2){
   text-transform: capitalize !important;
 }
-
 /* Acciones */
 #centrosTable td:last-child{
   white-space: nowrap !important;
   text-align: left;
 }
-
 #centrosTable td .material-icons,
 .child-row-lineas td .material-icons{
   font-size: 1.1em;
@@ -91,22 +86,32 @@
 }
 
 /* =========================
-   MAPA (shell + fullscreen)
+   MAPA (full-bleed + shell)
    ========================= */
+
+/* Lleva el bloque del mapa a todo el ancho del viewport */
+.full-bleed-shell{
+  width:100vw;
+  position:relative;
+  left:50%;
+  right:50%;
+  margin-left:-50vw;
+  margin-right:-50vw;
+  padding: 0 0 24px 0;
+}
 
 /* Título del mapa más discreto */
 .map-title{ margin: .6rem 0 .2rem; }
 
 /* El shell ocupa casi todo el alto de ventana
-   (resta algo para nav + tabs + márgenes del container) */
+   Ajusta el 120px si tu header/tabs ocupan más/menos */
 #tab-mapa{ padding: .4rem 0 0 0; }
 #mapShell{
   position:relative;
   border:1px solid #ddd; border-radius:7px;
   background:#d8d8d8; overflow:hidden;
 
-  /* Alto principal */
-  height: calc(100vh - 170px);
+  height: calc(100vh - 120px);
   min-height: 520px;
 }
 
@@ -136,7 +141,7 @@ body:has(#mapShell:fullscreen){ overflow:hidden; }
   top:12px; left:50%;
   transform: translateX(-50%);
   width:min(720px, 92vw);
-  z-index: 905; /* sobre Leaflet controls y sidebar */
+  z-index: 1001; /* sobre popups y controles */
   display:flex; gap:6px; flex-direction:column;
 }
 .map-search input[type="search"]{
@@ -203,12 +208,12 @@ body:has(#mapShell:fullscreen){ overflow:hidden; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1000px){
-  #mapShell{ height: calc(100vh - 180px); }
+  #mapShell{ height: calc(100vh - 140px); }
 }
 @media (max-width: 900px){
   #centrosTable, #centrosTable_wrapper{ display:block !important; min-width:360px !important; }
   .dataTables_paginate{ justify-content:center; }
-  #mapShell{ height: calc(100vh - 190px); min-height: 420px; }
+  #mapShell{ height: calc(100vh - 150px); min-height: 420px; }
 }
 @media (max-width: 700px){
   .sidebar-centros{ top:86px; left:12px; width:92vw; }
@@ -216,5 +221,5 @@ body:has(#mapShell:fullscreen){ overflow:hidden; }
   .map-search{ width:94vw; }
 }
 @media (max-width: 600px){
-  #mapShell{ height: calc(100vh - 200px); min-height: 360px; }
+  #mapShell{ height: calc(100vh - 160px); min-height: 360px; }
 }
