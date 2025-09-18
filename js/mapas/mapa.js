@@ -257,9 +257,8 @@ export function focusCentroInMap(idx) {
 
 // ===== Buscador flotante (code, titular/name/proveedor, codigoArea)
 function initMapSearchUI() {
-  // En tu HTML el input se llama "mapSearch" y NO hay form
-  const input = document.getElementById('mapSearch') 
-             || document.getElementById('mapSearchInput');
+  // No hay <form>, solo input + ul
+  const input = document.getElementById('mapSearch');
   const list  = document.getElementById('mapSearchResults');
   if (!input || !list) return;
 
@@ -271,12 +270,10 @@ function initMapSearchUI() {
 
     const hits = centrosDataGlobal
       .map((c, idx) => ({ c, idx }))
-      .filter(({ c }) => {
-        const area = (c.codigoArea || c?.detalles?.codigoArea || '')
-          .toString().toLowerCase();
+      .filter(({c}) => {
+        const area = (c.codigoArea || c?.detalles?.codigoArea || '').toString().toLowerCase();
         return (c.code || '').toString().toLowerCase().includes(q) ||
-               (c.name || c.proveedor || '')
-                 .toString().toLowerCase().includes(q) ||
+               (c.name || c.proveedor || '').toString().toLowerCase().includes(q) ||
                area.includes(q);
       })
       .slice(0, 20);
@@ -284,32 +281,33 @@ function initMapSearchUI() {
     if (hits.length === 1) {
       focusCentroInMap(hits[0].idx);
       input.blur();
-      return;
-    }
-
-    if (hits.length > 0) {
-      list.innerHTML = hits.map(({ c, idx }) => `
+    } else if (hits.length > 0) {
+      list.innerHTML = hits.map(({c, idx}) => `
         <li data-idx="${idx}" tabindex="0">
-          <b>${esc(c.name || c.proveedor || '-')}</b>
+          <b>${(c.name || c.proveedor || '-')}</b>
           <div style="font-size:12px;color:#374151">
-            Código: ${esc(c.code || '—')} · Área: ${esc(c.codigoArea || c?.detalles?.codigoArea || '—')}
+            Código: ${(c.code || '—')} · Área: ${(c.codigoArea || c?.detalles?.codigoArea || '—')}
           </div>
-        </li>`).join('');
+        </li>
+      `).join('');
       list.style.display = 'block';
 
       Array.from(list.querySelectorAll('li')).forEach(li => {
-        const go = () => { focusCentroInMap(+li.dataset.idx); list.style.display = 'none'; };
-        li.onclick = go;
-        li.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') go(); };
+        li.onclick = li.onkeydown = (e) => {
+          if (e.type === 'click' || e.key === 'Enter' || e.key === ' ') {
+            const idx = +li.getAttribute('data-idx');
+            focusCentroInMap(idx);
+            list.style.display = 'none';
+          }
+        };
       });
-      return;
+    } else {
+      list.innerHTML = `<li style="color:#6b7280;">Sin resultados</li>`;
+      list.style.display = 'block';
     }
-
-    list.innerHTML = `<li style="color:#6b7280;">Sin resultados</li>`;
-    list.style.display = 'block';
   };
 
-  // Buscar al presionar Enter
+  // Enter para buscar
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -317,16 +315,8 @@ function initMapSearchUI() {
     }
   });
 
-  // Limpiar resultados al borrar texto
+  // Limpiar lista si borran
   input.addEventListener('input', () => {
-    if (!input.value) {
-      list.style.display = 'none';
-      list.innerHTML = '';
-    }
+    if (!input.value) { list.style.display = 'none'; list.innerHTML = ''; }
   });
-
-  // Ocultar la lista cuando se pierde foco (con un pequeño delay para permitir click)
-  input.addEventListener('blur', () => setTimeout(() => {
-    list.style.display = 'none';
-  }, 150));
 }
