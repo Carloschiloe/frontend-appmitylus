@@ -4,12 +4,19 @@ import { getCentrosAll } from '../core/centros_repo.js';
 import { calcularTotalesTabla } from './helpers_centros.js';
 import { registerTablaCentrosEventos } from './eventos_centros.js';
 
+/* ===== Utiles ===== */
+const fmt0 = new Intl.NumberFormat('es-CL', { maximumFractionDigits: 0 });
+const fmt2 = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const num  = (v) => (v === '' || v === null || v === undefined) ? 0 : Number(v) || 0;
+const pct  = (v, d = 1) => `${(Number(v) || 0).toFixed(d)}%`;
+const esc  = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
 // Helper para capitalizar tipo título
 function toTitleCase(str) {
   return (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// Inicializa la tabla y la configura
+/* ===== Inicializa DataTable ===== */
 export function initTablaCentros() {
   const $t = window.$('#centrosTable');
   if (!$t.length) {
@@ -28,7 +35,13 @@ export function initTablaCentros() {
     ],
     searching: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
-    footerCallback: calcularTotalesTabla
+    footerCallback: calcularTotalesTabla,
+    columnDefs: [
+      // Alinear numéricos a la derecha
+      { targets: [3,4,5,6,7,8], className: 'dt-right' },
+      // Coords y Acciones: sin orden/búsqueda
+      { targets: [9,10], orderable: false, searchable: false }
+    ]
   });
 
   Estado.table.draw();
@@ -47,67 +60,52 @@ export async function loadCentros(data) {
   }
 
   try {
-    if (Array.isArray(data)) {
-      Estado.centros = data;
-    } else {
-      Estado.centros = await getCentrosAll();
-    }
+    Estado.centros = Array.isArray(data) ? data : await getCentrosAll();
 
     const rows = (Estado.centros || []).map((c, i) => {
-      const cantLineas = Array.isArray(c.lines) ? c.lines.length : 0;
-      const hect = parseFloat(c.hectareas) || 0;
+      const lines = Array.isArray(c.lines) ? c.lines : [];
+      const cantLineas = lines.length;
+      const hect = num(c.hectareas);
 
-      // SUMA de toneladas (todas las líneas)
-      const tonsDisponibles = Array.isArray(c.lines)
-        ? c.lines.reduce((sum, l) => sum + (+l.tons || 0), 0)
-        : 0;
+      // SUMAS
+      const tonsDisponibles = lines.reduce((s, l) => s + num(l.tons), 0);
 
-      // PROMEDIOS
-      let sumUnKg = 0, countUnKg = 0;
-      let sumRechazo = 0, countRechazo = 0;
-      let sumRdmto = 0, countRdmto = 0;
+      // PROMEDIOS (solo valores presentes)
+      let sumUnKg = 0, nUnKg = 0;
+      let sumRech = 0, nRech = 0;
+      let sumRdm  = 0, nRdm  = 0;
 
-      if (Array.isArray(c.lines)) {
-        c.lines.forEach(l => {
-          if (l.unKg !== undefined && l.unKg !== null && l.unKg !== '') {
-            sumUnKg += parseFloat(l.unKg) || 0;
-            countUnKg++;
-          }
-          if (l.porcRechazo !== undefined && l.porcRechazo !== null && l.porcRechazo !== '') {
-            sumRechazo += parseFloat(l.porcRechazo) || 0;
-            countRechazo++;
-          }
-          if (l.rendimiento !== undefined && l.rendimiento !== null && l.rendimiento !== '') {
-            sumRdmto += parseFloat(l.rendimiento) || 0;
-            countRdmto++;
-          }
-        });
+      for (const l of lines) {
+        if (l.unKg !== '' && l.unKg !== null && l.unKg !== undefined) { sumUnKg += num(l.unKg); nUnKg++; }
+        if (l.porcRechazo !== '' && l.porcRechazo !== null && l.porcRechazo !== undefined) { sumRech += num(l.porcRechazo); nRech++; }
+        if (l.rendimiento !== '' && l.rendimiento !== null && l.rendimiento !== undefined) { sumRdm  += num(l.rendimiento); nRdm++; }
       }
 
-      const avgUnKg    = countUnKg    ? (sumUnKg / countUnKg)       : 0;
-      const avgRechazo = countRechazo ? (sumRechazo / countRechazo) : 0;
-      const avgRdmto   = countRdmto   ? (sumRdmto / countRdmto)     : 0;
+      const avgUnKg    = nUnKg  ? (sumUnKg / nUnKg) : 0;
+      const avgRechazo = nRech  ? (sumRech / nRech) : 0;
+      const avgRdmto   = nRdm   ? (sumRdm  / nRdm ) : 0;
 
       const proveedor = toTitleCase(c.proveedor) || '-';
       const comuna    = toTitleCase(c.comuna)    || '-';
 
-      const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer">visibility</i>`;
+      // Celdas con acciones
+      const coordsCell = `<i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer" title="Ver coordenadas" aria-label="Ver coordenadas">visibility</i>`;
       const accionesCell = `
-        <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer">visibility</i>
-        <i class="material-icons editar-centro" data-idx="${i}" style="cursor:pointer">edit</i>
-        <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer">delete</i>
+        <i class="material-icons btn-toggle-lineas" data-idx="${i}" style="cursor:pointer" title="Ver líneas" aria-label="Ver líneas">visibility</i>
+        <i class="material-icons editar-centro" data-idx="${i}" style="cursor:pointer" title="Editar centro" aria-label="Editar centro">edit</i>
+        <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer" title="Eliminar centro" aria-label="Eliminar centro">delete</i>
       `;
 
       return [
-        proveedor,
-        comuna,
-        c.code || '-',
-        hect.toFixed(2),
-        cantLineas,
-        tonsDisponibles.toLocaleString('es-CL', { minimumFractionDigits: 0 }),
-        avgUnKg.toFixed(2),
-        avgRechazo.toFixed(1) + '%',
-        avgRdmto.toFixed(1) + '%',
+        esc(proveedor),
+        esc(comuna),
+        esc(c.code || '-'),
+        fmt2.format(hect),
+        fmt0.format(cantLineas),
+        fmt0.format(tonsDisponibles),
+        fmt2.format(avgUnKg),
+        pct(avgRechazo, 1),
+        pct(avgRdmto, 1),
         coordsCell,
         accionesCell
       ];
@@ -115,10 +113,10 @@ export async function loadCentros(data) {
 
     Estado.table.clear().rows.add(rows).draw();
 
-    // Reabrir acordeón si estaba abierto
-    if (Estado.lineAcordionOpen !== null && Estado.centros[Estado.lineAcordionOpen]) {
-      const tr = window.$('#centrosTable tbody tr').eq(Estado.lineAcordionOpen);
-      tr.find('.btn-toggle-lineas').trigger('click');
+    // Reabrir acordeón si estaba abierto (by data-idx, independiente del orden)
+    if (Estado.lineAcordionOpen !== null) {
+      const $btn = window.$(`#centrosTable .btn-toggle-lineas[data-idx="${Estado.lineAcordionOpen}"]`);
+      if ($btn.length) $btn.first().trigger('click');
     }
   } catch (e) {
     console.error('Error cargando centros:', e);
