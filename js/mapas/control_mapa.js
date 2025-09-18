@@ -49,7 +49,6 @@ export function renderMapaAlways(force = false) {
   Estado.centrosHashRender = h;
 
   drawCentrosInMap(Estado.centros, Estado.defaultLatLng);
-  // El sidebar se actualiza solo desde cargarYRenderizarCentros o el filtro, no aquí.
   Estado.map.invalidateSize();
 }
 
