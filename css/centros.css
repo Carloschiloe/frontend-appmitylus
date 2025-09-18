@@ -223,3 +223,29 @@ body:has(#mapShell:fullscreen){ overflow:hidden; }
 @media (max-width: 600px){
   #mapShell{ height: calc(100vh - 160px); min-height: 360px; }
 }
+
+/* el shell ocupa el alto de ventana – ajusta si tu navbar es más alta */
+#mapShell{
+  position: relative;
+  height: calc(100vh - 170px);
+  min-height: 520px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  background: #d8d8d8;
+  overflow: hidden;
+}
+
+/* el canvas del mapa llena el shell */
+#map, #map.leaflet-container{
+  width: 100% !important;
+  height: 100% !important;
+  min-height: inherit;
+  background: #d8d8d8;
+}
+
+@media (max-width: 900px){
+  #mapShell{ height: calc(100vh - 190px); min-height: 420px; }
+}
+@media (max-width: 600px){
+  #mapShell{ height: calc(100vh - 200px); min-height: 360px; }
+}
