@@ -9,7 +9,8 @@
   <!-- CSS de terceros -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <!-- Leaflet actualizado -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.css" />
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"/>
@@ -101,12 +102,10 @@
         </button>
       </div>
 
-      <!-- Fallback de altura en línea + el CSS (doble seguro) -->
       <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros"
                style="height:calc(100vh - 160px);min-height:520px;">
-        <!-- ÚNICO BUSCADOR (coincide con mapa.js) -->
+        <!-- Buscador (coincide con mapa.js) -->
         <div class="map-search" id="mapSearchBox">
-          <!-- ojo: el JS usa #mapSearch y #mapSearchResults -->
           <input
             type="search"
             id="mapSearch"
@@ -157,7 +156,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <!-- Leaflet actualizado -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
@@ -178,7 +178,6 @@
             }
           }
         });
-        // abrir mapa si viene por hash o query
         if (location.hash === '#tab-mapa' || new URLSearchParams(location.search).get('tab') === 'mapa') {
           inst.select('tab-mapa');
           setTimeout(() => window.__mapLeaflet && window.__mapLeaflet.invalidateSize(), 60);
