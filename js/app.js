@@ -7,6 +7,9 @@ import {
   crearMapa,
   initSidebarFiltro,
   cargarYRenderizarCentros,
+  clearMapPoints,
+  addPointMarker,
+  redrawPolygon,
   drawCentrosInMap,
   updateLabelVisibility,
 } from './mapas/mapa.js';
@@ -23,7 +26,7 @@ import { getCentrosAll, createCentro, updateCentro } from './core/centros_repo.j
 // === Utils app ===
 import { tabMapaActiva } from './core/utilidades_app.js';
 
-// === Utils (global de /js/utils.js)
+// === Utils (usar el global de /js/utils.js)
 const parseDMS = (s) => {
   const fn = (window.u && window.u.parseOneDMS) || window.parseOneDMS;
   return typeof fn === 'function' ? fn(s) : NaN;
@@ -32,7 +35,10 @@ const parseDMS = (s) => {
 // jQuery (solo para workaround de Materialize + DataTables)
 const $ = window.$ || window.jQuery;
 
-// Arranque
+const APPLOG = (...a) => console.log('[APP]', ...a);
+const APPWARN = (...a) => console.warn('[APP]', ...a);
+const APPERR = (...a) => console.error('[APP]', ...a);
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
@@ -40,17 +46,29 @@ if (document.readyState === 'loading') {
 }
 
 async function init() {
+  APPLOG('Init start. readyState=', document.readyState);
+
   // ===== Materialize =====
   const tabsEl = document.querySelector('#tabs');
   if (tabsEl) {
     M.Tabs.init(tabsEl, {
       onShow: (tabElem) => {
-        if (tabElem?.id === 'tab-mapa' && Estado.map) {
-          // Solo ajusta tamaño y etiquetas; no redibujes todo
-          setTimeout(() => {
-            Estado.map.invalidateSize();
-            updateLabelVisibility();
-          }, 50);
+        APPLOG('Tabs onShow:', tabElem?.id);
+        if (tabElem.id === 'tab-mapa') {
+          try {
+            Estado.map = crearMapa(); // idempotente
+            setTimeout(() => {
+              APPLOG('Tabs→map invalidate + labels');
+              Estado.map?.invalidateSize();
+              updateLabelVisibility();
+            }, 40);
+            if (Estado.centros?.length) {
+              APPLOG('Tabs→ drawCentrosInMap con', Estado.centros.length);
+              drawCentrosInMap(Estado.centros);
+            }
+          } catch (err) {
+            APPERR('Error al crear mapa en cambio de pestaña:', err);
+          }
         }
       },
     });
@@ -59,23 +77,23 @@ async function init() {
   M.Modal.init(document.querySelectorAll('.modal'));
   M.Tooltip.init(document.querySelectorAll('.tooltipped'));
 
-  // ===== Importador (si existe) =====
+  // ===== Importador (si existe en DOM) =====
   const importCont = document.getElementById('importarCentrosContainer');
   if (importCont && importCont.dataset.inited !== '1') {
     importCont.dataset.inited = '1';
     const { renderImportadorCentros } = await import('./centros/importar_centros.js');
     renderImportadorCentros('importarCentrosContainer');
+    APPLOG('Importador inicializado');
   }
 
-  // ===== Tabla =====
+  // ===== Tabla y Mapa =====
   initTablaCentros();
-
-  // ===== Mapa: crea UNA vez e inicializa sidebar =====
   try {
-    Estado.map = crearMapa();                  // idempotente; usa OSM por defecto desde mapa.js
+    APPLOG('Creando mapa (fase inicial)…');
+    Estado.map = crearMapa(); // instancia Leaflet y deja overlay de búsqueda
     initSidebarFiltro();
   } catch (err) {
-    console.error('[APP] Error inicializando el mapa:', err);
+    APPERR('Error inicializando el mapa:', err);
   }
 
   // ===== Carga inicial =====
@@ -83,34 +101,39 @@ async function init() {
 
   // ===== Formularios =====
   wireFormCentros();
+
+  APPLOG('Init done.');
 }
 
 async function recargarCentros() {
   try {
+    APPLOG('recargarCentros(): solicitando API…');
     const data = await getCentrosAll();
     Estado.centros = Array.isArray(data) ? data : [];
-    console.log('[APP] Centros recibidos:', Estado.centros.length, Estado.centros[0] || '(sin items)');
+    APPLOG('Centros recibidos:', Estado.centros.length, Estado.centros[0] || '(sin items)');
 
     // Tabla
     loadTablaCentros(Estado.centros);
 
-    // Mapa: pinta centros + lista lateral (una sola ruta de render)
+    // Mapa (polígonos + labels + sidebar)
     cargarYRenderizarCentros(Estado.centros);
 
-    // Si el tab de mapa está visible, asegura un invalidate (sin redibujar)
-    if (tabMapaActiva() && Estado.map) {
-      setTimeout(() => {
-        Estado.map.invalidateSize();
-        updateLabelVisibility();
-      }, 50);
+    // Si la pestaña MAPA está activa, asegura render correcto
+    if (tabMapaActiva()) {
+      APPLOG('tabMapaActiva() → invalidate + draw');
+      Estado.map?.invalidateSize();
+      updateLabelVisibility();
+      drawCentrosInMap(Estado.centros);
     }
   } catch (e) {
-    console.error('[APP] Error cargando centros:', e);
+    APPERR('Error cargando centros:', e);
     M.toast({ html: 'Error cargando centros', classes: 'red' });
   }
 }
 
 function wireFormCentros() {
+  APPLOG('wireFormCentros()');
+
   const btnNuevoCentro = document.getElementById('btnOpenCentroModal');
   const centroModalElem = document.getElementById('centroModal');
   const centroModal = centroModalElem
@@ -134,6 +157,7 @@ function wireFormCentros() {
 
   // Nuevo centro
   btnNuevoCentro?.addEventListener('click', () => {
+    APPLOG('Nuevo centro → abrir modal');
     Estado.currentCentroIdx = null;
     Estado.currentPoints = [];
     openNewForm(els, Estado.map, Estado.currentPoints, (v) => (Estado.currentCentroIdx = v));
@@ -145,12 +169,14 @@ function wireFormCentros() {
   els.btnAddPoint?.addEventListener('click', () => {
     const lat = parseDMS(els.inputLat?.value?.trim());
     const lng = parseDMS(els.inputLng?.value?.trim());
+    APPLOG('AddPoint:', els.inputLat?.value, els.inputLng?.value, '→', lat, lng);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       M.toast({ html: 'Formato DMS inválido', classes: 'red' });
       return;
     }
     Estado.currentPoints.push({ lat, lng });
-    // El propio form pinta marker/polígono con helpers exportados
+    addPointMarker(lat, lng);
+    redrawPolygon(Estado.currentPoints);
     renderPointsTable(els.pointsBody, Estado.currentPoints);
     if (els.inputLat) els.inputLat.value = '';
     if (els.inputLng) els.inputLng.value = '';
@@ -159,7 +185,9 @@ function wireFormCentros() {
 
   // Limpiar puntos
   els.btnClearPoints?.addEventListener('click', () => {
+    APPLOG('ClearPoints');
     Estado.currentPoints.length = 0;
+    clearMapPoints();
     renderPointsTable(els.pointsBody, Estado.currentPoints);
   });
 
@@ -196,12 +224,14 @@ function wireFormCentros() {
     els.btnSaveCentro && (els.btnSaveCentro.disabled = true);
     try {
       if (Estado.currentCentroIdx === null) {
+        APPLOG('Crear centro →', centroData);
         const creado = await createCentro(centroData);
         if (!creado?._id) throw new Error('Error al crear centro');
         Estado.centros.push(creado);
         M.toast({ html: 'Centro creado', classes: 'green' });
       } else {
         const id = Estado.centros[Estado.currentCentroIdx]._id;
+        APPLOG('Actualizar centro', id, '→', centroData);
         const actualizado = await updateCentro(id, centroData);
         if (!actualizado?._id) throw new Error('Error al actualizar centro');
         Estado.centros[Estado.currentCentroIdx] = actualizado;
@@ -210,7 +240,7 @@ function wireFormCentros() {
       await recargarCentros();
       centroModal?.close();
     } catch (err) {
-      console.error('[APP] Error guardando centro:', err);
+      APPERR('Error guardando centro:', err);
       M.toast({ html: err.message || 'Error al guardar centro', classes: 'red' });
     } finally {
       els.btnSaveCentro && (els.btnSaveCentro.disabled = false);
