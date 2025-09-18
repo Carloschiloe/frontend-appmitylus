@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Directorio de Centros Mitílidos</title>
+  <base href="/" /> <!-- asegura que /js/... /css/... resuelvan igual desde /html/Centros/ -->
 
   <!-- CSS de terceros -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
@@ -14,20 +15,20 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
 
-  <!-- Tus estilos (rutas relativas) -->
-  <link rel="stylesheet" href="../../styles.css" />
-  <link rel="stylesheet" href="../../css/centros.css" />
+  <!-- Tus estilos (rutas ABSOLUTAS) -->
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/css/centros.css" />
 
-  <!-- Config + utils (rutas relativas) -->
+  <!-- Config + utils (clásicos, no módulos) -->
   <script>window.DEBUG = true;</script>
-  <script src="../../js/config.js"></script>
-  <script src="../../js/utils.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/utils.js"></script>
 </head>
 <body>
   <!-- NAV -->
   <nav class="teal">
     <div class="nav-wrapper">
-      <a href="../../index.html" class="btn-flat left" title="Volver" aria-label="Volver">
+      <a href="/index.html" class="btn-flat left" title="Volver" aria-label="Volver">
         <i class="material-icons">arrow_back</i>
       </a>
       <a href="#" class="brand-logo center">Directorio de Centros Mitílidos</a>
@@ -47,8 +48,7 @@
       <div class="row">
         <div class="col s12">
           <h5>Centros Registrados</h5>
-          <table id="centrosTable" class="striped display responsive-table" style="width:100%" aria-describedby="tablaCentrosDescripcion" role="grid" aria-live="polite">
-            <caption id="tablaCentrosDescripcion" class="sr-only">Tabla con centros registrados</caption>
+          <table id="centrosTable" class="striped display responsive-table" style="width:100%">
             <thead>
               <tr>
                 <th style="min-width:130px;">Proveedor</th>
@@ -85,27 +85,34 @@
     <!-- TAB MAPA -->
     <section id="tab-mapa" class="col s12" style="padding:0;">
       <div class="full-bleed-shell">
-        <h5 class="map-title" style="padding:12px 16px 6px;">Mapa de Centros</h5>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px;">
+          <h5 class="map-title" style="margin:0;">Mapa de Centros</h5>
+          <button id="btnFullscreenMapa" class="btn-small teal waves-effect" aria-label="Pantalla completa">
+            <i class="material-icons left" style="line-height: inherit;">fullscreen</i>
+            Pantalla completa
+          </button>
+        </div>
 
         <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
-          <!-- BUSCADOR sobre el mapa -->
+          <!-- Overlay: BUSCADOR sobre el mapa (IDs que espera mapa.js) -->
           <div class="map-search" id="mapSearchBox">
-            <input
-              type="search"
-              id="mapSearch"
-              placeholder="Buscar por Código, Titular o Código de Área…"
-              autocomplete="off"
-              aria-label="Buscar por Código, Titular o Código de Área"
-            />
+            <form id="mapSearchForm" autocomplete="off">
+              <input
+                type="search"
+                id="mapSearchInput"
+                placeholder="Buscar por Código, Titular o Código de Área…"
+                aria-label="Buscar por Código, Titular o Código de Área"
+              />
+            </form>
             <ul id="mapSearchResults" class="map-search-results" role="listbox"></ul>
           </div>
 
-          <!-- Sidebar mini -->
+          <!-- Sidebar compacto -->
           <aside id="sidebarCentros" class="sidebar-centros">
             <button id="toggleSidebar" class="toggle-btn" aria-label="Colapsar/Expandir Sidebar">
               <span id="toggleSidebarIcon" class="material-icons">chevron_left</span>
             </button>
-            <input id="filtroSidebar" type="text" placeholder="🔍 Buscar comuna o proveedor…" aria-label="Buscar comuna o proveedor" autocomplete="off" />
+            <input id="filtroSidebar" type="text" placeholder="🔍 Buscar comuna o proveedor…" aria-label="Buscar comuna o proveedor" />
             <ul id="listaCentrosSidebar" class="sidebar-list"></ul>
           </aside>
 
@@ -115,8 +122,8 @@
       </div>
     </section>
 
-    <!-- MODALES -->
-    <div id="centroModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="formTitle" tabindex="-1"></div>
+    <!-- MODALES mínimos -->
+    <div id="centroModal" class="modal"></div>
 
     <div id="modalDetallesCentro" class="modal" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle" tabindex="-1">
       <div class="modal-content">
@@ -124,20 +131,20 @@
         <div id="detallesCentroBody"></div>
       </div>
       <div class="modal-footer">
-        <button class="modal-close btn grey lighten-1" aria-label="Cerrar modal">Cerrar</button>
+        <button class="modal-close btn grey lighten-1">Cerrar</button>
       </div>
     </div>
 
-    <div id="modalCoordenadas" class="modal" role="dialog" aria-modal="true" aria-labelledby="coordenadasTitle" tabindex="-1"></div>
-    <div id="modalImportarCentros" class="modal" tabindex="-1"></div>
+    <div id="modalCoordenadas" class="modal"></div>
+    <div id="modalImportarCentros" class="modal"></div>
   </div>
 
   <!-- FABs -->
   <div style="position: fixed; bottom: 34px; right: 30px; z-index: 1030; display: flex; flex-direction: column; gap: 16px;">
-    <a id="btnOpenCentroModal" class="btn-floating btn-large teal tooltipped" data-tooltip="Agregar Centro" aria-label="Agregar Centro">
+    <a id="btnOpenCentroModal" class="btn-floating btn-large teal tooltipped" data-tooltip="Agregar Centro">
       <i class="material-icons">add</i>
     </a>
-    <a id="btnOpenImportarModal" class="btn-floating btn-large orange darken-2 tooltipped" data-tooltip="Importar desde Excel/CSV" aria-label="Importar Centros">
+    <a id="btnOpenImportarModal" class="btn-floating btn-large orange darken-2 tooltipped" data-tooltip="Importar desde Excel/CSV">
       <i class="material-icons">file_upload</i>
     </a>
   </div>
@@ -154,29 +161,18 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.js"></script>
-
-  <!-- XLSX pinneado -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <!-- Tu bundle principal (ruta relativa correcta) -->
-  <script type="module" src="../../js/app.js"></script>
+  <!-- Tu bundle principal (módulo) -->
+  <script type="module" src="/js/app.js"></script>
 
-  <!-- Inicialización Materialize -->
+  <!-- Init básico Materialize (no toca tu app.js) -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       M.Modal.init(document.querySelectorAll('.modal'));
       M.Tooltip.init(document.querySelectorAll('.tooltipped'));
       const tabsEl = document.getElementById('tabs');
       if (tabsEl) M.Tabs.init(tabsEl);
-
-      document.getElementById('btnOpenImportarModal')
-        ?.addEventListener('click', () =>
-          M.Modal.getInstance(document.getElementById('modalImportarCentros')).open()
-        );
-      document.getElementById('btnOpenCentroModal')
-        ?.addEventListener('click', () =>
-          M.Modal.getInstance(document.getElementById('centroModal')).open()
-        );
     });
   </script>
 
