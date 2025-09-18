@@ -177,25 +177,14 @@
 
   <!-- Init básico Materialize -->
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      M.Modal.init(document.querySelectorAll('.modal'));
-      M.Tooltip.init(document.querySelectorAll('.tooltipped'));
-      const tabsEl = document.getElementById('tabs');
-      if (tabsEl) {
-        const inst = M.Tabs.init(tabsEl);
-        // Mostrar/ocultar contenido manual cuando cambie de tab (por si el full-bleed está fuera del container)
-        tabsEl.addEventListener('click', (e) => {
-          const a = e.target.closest('a');
-          if (!a) return;
-          const target = a.getAttribute('href');
-          requestAnimationFrame(() => {
-            document.getElementById('tab-centros').style.display = (target === '#tab-centros') ? '' : 'none';
-            document.getElementById('tab-mapa').style.display    = (target === '#tab-mapa')    ? '' : 'none';
-          });
-        });
-      }
-    });
-  </script>
+  document.addEventListener('DOMContentLoaded', function () {
+    M.Modal.init(document.querySelectorAll('.modal'));
+    M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+    const tabsEl = document.getElementById('tabs');
+    if (tabsEl) M.Tabs.init(tabsEl);
+  });
+</script>
+
 
   <noscript>Esta página requiere JavaScript habilitado.</noscript>
 </body>
