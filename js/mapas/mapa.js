@@ -11,8 +11,16 @@ const CHILOE_COORDS = [-42.65, -73.99];
 const CHILOE_ZOOM = 10;
 const LABEL_ZOOM = 13; // mostrar etiquetas solo desde este zoom
 
+// ===== Logging =====
 const LOG = true;
 const log = (...a) => LOG && console.log('[MAP]', ...a);
+const logWarn = (...a) => LOG && console.warn('[MAP]', ...a);
+const logErr = (...a) => LOG && console.error('[MAP]', ...a);
+const group = (title, fn) => {
+  if (!LOG) return fn();
+  console.group('[MAP]', title);
+  try { fn(); } finally { console.groupEnd(); }
+};
 
 const parseNum = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -21,7 +29,6 @@ const toTitle = s => (s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase
 // -------- Bases de tiles
 const MAPBOX_TOKEN = 'pk.eyJ1IjoiY2FybG9zY2hpbG9lIiwiYSI6ImNtZTB3OTZmODA5Mm0ya24zaTQ1bGd3aW4ifQ.XElNIT02jDuetHpo4r_-3g';
 const baseLayersDefs = {
-  // Ajuste correcto para estilos de Mapbox (512 px + zoomOffset -1)
   mapboxSat: L.tileLayer(
     `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`,
     {
@@ -53,6 +60,24 @@ let centrosDataGlobal = [];
 let filtroSidebar = '';
 let selectedCentroIdx = null;
 
+// ===== Utils de diagnóstico
+function diagMap() {
+  const tab = document.getElementById('tab-mapa');
+  const shell = document.getElementById('mapShell');
+  const mapDiv = document.getElementById('map');
+  const tilesOk = !!document.querySelector('#map .leaflet-tile');
+  const d = {
+    leaflet_version: L?.version || '(?)',
+    currentBaseKey,
+    tab_display: tab ? getComputedStyle(tab).display : '(no-tab)',
+    shell_wh: shell ? [shell.clientWidth, shell.clientHeight] : '(no-shell)',
+    map_wh: mapDiv ? [mapDiv.clientWidth, mapDiv.clientHeight] : '(no-map)',
+    tilesOk
+  };
+  log('diag →', d);
+  return d;
+}
+
 // ===== Sidebar mini
 export function initSidebarFiltro() {
   const filtroInput = document.getElementById('filtroSidebar');
@@ -60,7 +85,10 @@ export function initSidebarFiltro() {
   const sidebar = document.getElementById('sidebarCentros');
   const toggleBtn = document.getElementById('toggleSidebar');
   const icon = document.getElementById('toggleSidebarIcon');
-  if (!filtroInput || !listaSidebar || !sidebar || !toggleBtn || !icon) return;
+  if (!filtroInput || !listaSidebar || !sidebar || !toggleBtn || !icon) {
+    logWarn('Sidebar no encontrada (ok si no la usas en móvil).');
+    return;
+  }
 
   filtroInput.addEventListener('input', () => { filtroSidebar = filtroInput.value.trim().toLowerCase(); renderListaSidebar(); });
   toggleBtn.onclick = () => {
@@ -71,6 +99,7 @@ export function initSidebarFiltro() {
   };
 
   renderListaSidebar();
+  log('Sidebar filtro inicializada.');
 }
 function renderListaSidebar() {
   const lista = document.getElementById('listaCentrosSidebar');
@@ -100,8 +129,9 @@ function renderListaSidebar() {
 }
 
 export function cargarYRenderizarCentros(centros) {
-  centrosDataGlobal = centros;
-  drawCentrosInMap(centros);
+  centrosDataGlobal = centros || [];
+  log('cargarYRenderizarCentros →', { total: centrosDataGlobal.length });
+  drawCentrosInMap(centrosDataGlobal);
   renderListaSidebar();
   updateLabelVisibility(); // visibilidad inicial
 }
@@ -160,12 +190,15 @@ function openCentroModal(c) {
 
 // ===== Crear mapa + observadores de tamaño/visibilidad
 export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZOOM) {
-  if (map) return map;
+  if (map) { log('crearMapa(): ya existe, reuse.'); return map; }
   const el = document.getElementById('map');
-  if (!el) return null;
+  if (!el) { logErr('crearMapa(): #map no existe'); return null; }
 
-  // Crea mapa con la base seleccionada (o con OSM si por algún motivo no existe)
   const baseInicial = baseLayersDefs[currentBaseKey] || baseLayersDefs.osm;
+
+  group('crearMapa()', () => {
+    log('baseInicial:', currentBaseKey);
+  });
 
   map = L.map(el, {
     preferCanvas: true,
@@ -176,26 +209,39 @@ export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZO
   });
   window.__mapLeaflet = map;
 
+  // Eventos útiles
+  map.on('layeradd', e => log('layeradd:', e?.layer?.options?.attribution || e?.layer?.options));
+  map.on('layerremove', e => log('layerremove:', e?.layer?.options?.attribution || e?.layer?.options));
+  map.on('zoomend', () => {
+    log('zoomend → zoom:', map.getZoom());
+    updateLabelVisibility();
+  });
+
+  // Listeners de tiles (todas las bases)
+  Object.entries(baseLayersDefs).forEach(([key, layer]) => {
+    layer?.on?.('tileloadstart', ev => log('tileloadstart', key, ev?.tile?.src?.slice(0,80) || ''));
+    layer?.on?.('tileload', () => log('tileload OK', key));
+    layer?.on?.('tileerror', ev => logWarn('tileerror', key, ev?.tile?.src?.slice(0,80) || ''));
+  });
+
   // Si por X razón la capa no quedó, fuerza OSM
   if (!map.hasLayer(baseInicial)) {
-    log('Base inicial no montada, forzando OSM…');
+    logWarn('Base inicial no montada, forzando OSM…');
     baseLayersDefs.osm.addTo(map);
     currentBaseKey = 'osm';
   }
 
-  // Fallback automático si la base tira errores de tiles (pasa una vez y queda OSM)
+  // Fallback automático si la base tira errores (una sola vez)
   let _baseFailedOnce = false;
   Object.entries(baseLayersDefs).forEach(([key, layer]) => {
     layer?.on?.('tileerror', () => {
       if (!_baseFailedOnce && map) {
         _baseFailedOnce = true;
-        try {
-          Object.values(baseLayersDefs).forEach(l => { try { map.removeLayer(l); } catch {} });
-        } catch {}
+        try { Object.values(baseLayersDefs).forEach(l => { try { map.removeLayer(l); } catch {} }); } catch {}
         baseLayersDefs.osm.addTo(map);
         currentBaseKey = 'osm';
         setTimeout(() => map.invalidateSize(), 50);
-        log(`tileerror en base "${key}" → fallback a OSM`);
+        logWarn(`tileerror en base "${key}" → fallback a OSM`);
       }
     });
   });
@@ -203,15 +249,13 @@ export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZO
   puntosIngresoGroup = L.layerGroup().addTo(map);
   centrosGroup = L.layerGroup().addTo(map);
 
-  // Etiquetas según zoom
-  map.on('zoomend', updateLabelVisibility);
-
   // Observadores para tamaño/visibilidad
   (function attachObservers(){
     const mapEl = document.getElementById('map');
     if (!mapEl) return;
 
     const ro = new ResizeObserver(() => {
+      log('ResizeObserver → mapEl:', [mapEl.clientWidth, mapEl.clientHeight]);
       if (mapEl.clientHeight > 0) map.invalidateSize();
     });
     ro.observe(mapEl);
@@ -220,37 +264,53 @@ export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZO
     if (tab) {
       const mo = new MutationObserver(() => {
         const visible = getComputedStyle(tab).display !== 'none' && tab.offsetParent !== null;
+        log('MutationObserver(tab) visible=', visible);
         if (visible) setTimeout(() => map.invalidateSize(), 60);
       });
       mo.observe(tab, { attributes:true, attributeFilter:['style','class'] });
     }
 
-    if (location.hash === '#tab-mapa') setTimeout(() => map.invalidateSize(), 80);
+    if (location.hash === '#tab-mapa') {
+      log('Hash abre tab-mapa → invalidateSize()');
+      setTimeout(() => map.invalidateSize(), 80);
+    }
 
-    window.addEventListener('resize', () => map.invalidateSize());
+    window.addEventListener('resize', () => {
+      log('window.resize → invalidateSize()');
+      map.invalidateSize();
+    });
     document.querySelectorAll('a[href="#tab-mapa"]').forEach(a =>
-      a.addEventListener('click', () => setTimeout(() => map.invalidateSize(), 80))
+      a.addEventListener('click', () => {
+        log('<a #tab-mapa> click → invalidateSize()');
+        setTimeout(() => map.invalidateSize(), 80);
+      })
     );
   })();
 
-  initMapSearchUI();
+  diagMap();
   log('Mapa creado');
   return map;
 }
 
 export function setBaseLayer(key) {
-  if (!map || !baseLayersDefs[key] || currentBaseKey === key) return;
-  try {
-    // Saca cualquier tile layer previo y pone la nueva base
-    Object.values(baseLayersDefs).forEach(l => { try { map.removeLayer(l); } catch {} });
-    baseLayersDefs[key].addTo(map);
-    currentBaseKey = key;
-    setTimeout(() => map.invalidateSize(), 30);
-  } catch (e) {
-    console.error('[MAP] setBaseLayer error, fallback OSM:', e);
-    baseLayersDefs.osm.addTo(map);
-    currentBaseKey = 'osm';
+  if (!map || !baseLayersDefs[key] || currentBaseKey === key) {
+    logWarn('setBaseLayer skip', { hasMap: !!map, key, currentBaseKey });
+    return;
   }
+  group('setBaseLayer', () => {
+    log('from →', currentBaseKey, 'to →', key);
+    try {
+      Object.values(baseLayersDefs).forEach(l => { try { map.removeLayer(l); } catch {} });
+      baseLayersDefs[key].addTo(map);
+      currentBaseKey = key;
+      setTimeout(() => map.invalidateSize(), 30);
+      diagMap();
+    } catch (e) {
+      logErr('setBaseLayer error → fallback OSM:', e);
+      baseLayersDefs.osm.addTo(map);
+      currentBaseKey = 'osm';
+    }
+  });
 }
 
 // ===== Puntos manuales
@@ -266,29 +326,40 @@ export function drawCentrosInMap(centros=[], defaultLatLng=CHILOE_COORDS, onPoly
   if (!map) crearMapa(defaultLatLng);
   if (!centrosGroup) return;
 
+  centros = Array.isArray(centros) ? centros : [];
   windowCentrosDebug = centros.slice();
   centrosGroup.clearLayers();
   centroPolys = {};
   centroTooltips = {};
 
   let dib = 0;
-  centros.forEach((c, idx) => {
-    const coords = (c.coords||[]).map(p=>[parseNum(p.lat), parseNum(p.lng)]).filter(([la,ln])=>la!==null && ln!==null);
-    if (coords.length<3) return;
+  let filtrados = 0;
 
-    const poly = L.polygon(coords, { color:'#1976d2', weight:3, fillOpacity:.28 }).addTo(centrosGroup);
+  group('drawCentrosInMap()', () => {
+    log('total recibidos:', centros.length);
+    centros.forEach((c, idx) => {
+      const coords = (c.coords||[])
+        .map(p=>[parseNum(p.lat), parseNum(p.lng)])
+        .filter(([la,ln])=>la!==null && ln!==null);
 
-    const titular = c.name || c.proveedor || '—';
-    const codigo  = c.code || '—';
-    const labelHtml = `<div class="centro-label-inner"><div class="titular">${esc(titular)}</div><div class="codigo">Código: ${esc(codigo)}</div></div>`;
-    poly.bindTooltip(labelHtml, { permanent:true, direction:'center', opacity:0.95, className:'centro-label' });
+      if (coords.length<3) { filtrados++; return; }
 
-    centroTooltips[idx] = poly.getTooltip();
+      const poly = L.polygon(coords, { color:'#1976d2', weight:3, fillOpacity:.28 }).addTo(centrosGroup);
 
-    poly.on('click', (ev) => { ev?.originalEvent && L.DomEvent.stopPropagation(ev); openCentroModal(c); onPolyClick && onPolyClick(idx); });
+      const titular = c.name || c.proveedor || '—';
+      const codigo  = c.code || '—';
+      const labelHtml = `<div class="centro-label-inner"><div class="titular">${esc(titular)}</div><div class="codigo">Código: ${esc(codigo)}</div></div>`;
+      poly.bindTooltip(labelHtml, { permanent:true, direction:'center', opacity:0.95, className:'centro-label' });
 
-    centroPolys[idx] = poly;
-    dib++;
+      centroTooltips[idx] = poly.getTooltip();
+
+      poly.on('click', (ev) => { ev?.originalEvent && L.DomEvent.stopPropagation(ev); openCentroModal(c); onPolyClick && onPolyClick(idx); });
+
+      centroPolys[idx] = poly;
+      dib++;
+    });
+
+    log('dibujados:', dib, 'filtrados(sin 3 pts):', filtrados);
   });
 
   centrarMapaEnPoligonos(centros, defaultLatLng);
@@ -302,17 +373,33 @@ export function drawCentrosInMap(centros=[], defaultLatLng=CHILOE_COORDS, onPoly
 export function updateLabelVisibility() {
   if (!map) return;
   const show = map.getZoom() >= LABEL_ZOOM;
+  const total = Object.values(centroTooltips).length;
   Object.values(centroTooltips).forEach(t => {
     const el = t?.getElement?.();
     if (el) el.style.display = show ? 'block' : 'none';
   });
+  log('updateLabelVisibility → zoom:', map.getZoom(), 'showLabels:', show, 'tooltips:', total);
 }
 
 export function centrarMapaEnPoligonos(centros=[], defaultLatLng=CHILOE_COORDS) {
   if (!map) return;
-  const all=[]; centros.forEach(c => (c.coords||[]).forEach(p => { const la=parseNum(p.lat), ln=parseNum(p.lng); if(la!==null && ln!==null) all.push([la,ln]); }));
-  if (all.length) map.fitBounds(all, { padding:[20,20], maxZoom:CHILOE_ZOOM });
-  else map.setView(defaultLatLng, CHILOE_ZOOM);
+  const all=[];
+  centros.forEach(c => (c.coords||[]).forEach(p => {
+    const la=parseNum(p.lat), ln=parseNum(p.lng);
+    if(la!==null && ln!==null) all.push([la,ln]);
+  }));
+  if (all.length) {
+    try {
+      map.fitBounds(all, { padding:[20,20], maxZoom:CHILOE_ZOOM });
+      log('fitBounds con puntos:', all.length);
+    } catch (e) {
+      logErr('fitBounds error:', e);
+      map.setView(defaultLatLng, CHILOE_ZOOM);
+    }
+  } else {
+    logWarn('Sin puntos → setView default');
+    map.setView(defaultLatLng, CHILOE_ZOOM);
+  }
 }
 
 export function focusCentroInMap(idx) {
@@ -326,7 +413,8 @@ export function focusCentroInMap(idx) {
 function initMapSearchUI() {
   const input = document.getElementById('mapSearch');
   const list  = document.getElementById('mapSearchResults');
-  if (!input || !list) return;
+  if (!input || !list) { logWarn('mapSearch UI no encontrado'); return; }
+  log('mapSearch UI OK');
 
   const doSearch = (q) => {
     q = (q || '').trim().toLowerCase();
@@ -343,6 +431,8 @@ function initMapSearchUI() {
                area.includes(q);
       })
       .slice(0, 20);
+
+    log('search:', q, 'hits:', hits.length);
 
     if (hits.length === 1) {
       focusCentroInMap(hits[0].idx);
@@ -383,4 +473,11 @@ function initMapSearchUI() {
   input.addEventListener('input', () => {
     if (!input.value) { list.style.display = 'none'; list.innerHTML = ''; }
   });
+
+  // Exponer helpers para inspección rápida
+  window.__MAPDBG = {
+    L, map, baseLayersDefs, setBaseLayer,
+    centrosDataGlobal: () => centrosDataGlobal.slice(0,3),
+    diag: diagMap
+  };
 }
