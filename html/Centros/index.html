@@ -21,13 +21,9 @@
 
   <!-- Full-bleed helper (solo para el mapa fuera del .container) -->
   <style>
-    .full-bleed {
-      position: relative;
-      left: 50%;
-      right: 50%;
-      margin-left: -50vw;
-      margin-right: -50vw;
-      width: 100vw;
+    .full-bleed{
+      position:relative; left:50%; right:50%;
+      margin-left:-50vw; margin-right:-50vw; width:100vw;
     }
   </style>
 
@@ -47,8 +43,8 @@
     </div>
   </nav>
 
-  <!-- CONTENIDO (tabla dentro de container) -->
-  <div class="container" style="margin-top: 1rem;">
+  <!-- CONTENIDO -->
+  <div class="container" style="margin-top:1rem;">
     <ul id="tabs" class="tabs">
       <li class="tab col s6"><a href="#tab-centros">Directorio</a></li>
       <li class="tab col s6"><a class="active" href="#tab-mapa">Mapa</a></li>
@@ -105,17 +101,19 @@
         </button>
       </div>
 
-      <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
-        <!-- ÚNICO BUSCADOR (el que usa mapa.js) -->
+      <!-- Fallback de altura en línea + el CSS (doble seguro) -->
+      <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros"
+               style="height:calc(100vh - 160px);min-height:520px;">
+        <!-- ÚNICO BUSCADOR (coincide con mapa.js) -->
         <div class="map-search" id="mapSearchBox">
-          <form id="mapSearchForm" autocomplete="off">
-            <input
-              type="search"
-              id="mapSearchInput"
-              placeholder="Buscar por Código, Titular o Código de Área…"
-              aria-label="Buscar por Código, Titular o Código de Área"
-            />
-          </form>
+          <!-- ojo: el JS usa #mapSearch y #mapSearchResults -->
+          <input
+            type="search"
+            id="mapSearch"
+            placeholder="Buscar por Código, Titular o Código de Área…"
+            aria-label="Buscar por Código, Titular o Código de Área"
+            autocomplete="off"
+          />
           <ul id="mapSearchResults" class="map-search-results" role="listbox"></ul>
         </div>
 
@@ -125,7 +123,7 @@
     </div>
   </section>
 
-  <!-- MODALES esenciales -->
+  <!-- MODALES -->
   <div id="centroModal" class="modal"></div>
   <div id="modalDetallesCentro" class="modal" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle" tabindex="-1">
     <div class="modal-content">
@@ -166,15 +164,21 @@
   <!-- App -->
   <script type="module" src="/js/app.js"></script>
 
-  <!-- Init Materialize (tabs/tooltip/modals) -->
+  <!-- Init Materialize + fix de visibilidad del tab del mapa -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       M.Modal.init(document.querySelectorAll('.modal'));
       M.Tooltip.init(document.querySelectorAll('.tooltipped'));
       const tabsEl = document.getElementById('tabs');
       if (tabsEl) {
-        const inst = M.Tabs.init(tabsEl);
-        // abre el mapa si vienes con hash ?tab=mapa o #tab-mapa
+        const inst = M.Tabs.init(tabsEl, {
+          onShow: (el) => {
+            if (el && el.id === 'tab-mapa') {
+              setTimeout(() => window.__mapLeaflet && window.__mapLeaflet.invalidateSize(), 60);
+            }
+          }
+        });
+        // abrir mapa si viene por hash o query
         if (location.hash === '#tab-mapa' || new URLSearchParams(location.search).get('tab') === 'mapa') {
           inst.select('tab-mapa');
           setTimeout(() => window.__mapLeaflet && window.__mapLeaflet.invalidateSize(), 60);
