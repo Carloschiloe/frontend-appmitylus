@@ -82,35 +82,39 @@
       </div>
     </section>
 
-    <!-- TAB MAPA -->
-    <section id="tab-mapa" class="col s12">
-      <h5 class="map-title">Mapa de Centros</h5>
+  <!-- TAB MAPA -->
+<section id="tab-mapa" class="col s12" style="padding:0;">
+  <!-- Full-bleed: lleva el mapa al ancho completo del viewport aun dentro del .container -->
+  <div class="full-bleed-shell">
+    <h5 class="map-title" style="padding:12px 16px 6px;">Mapa de Centros</h5>
 
-      <!-- Contenedor mapa + sidebar -->
-      <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
-        <!-- Overlay de búsqueda -->
-        <div id="mapSearchOverlay" class="map-search">
-          <form id="mapSearchForm" autocomplete="off">
-            <input id="mapSearchInput" type="search"
-                   placeholder="Buscar por Código, Titular o Código de Área…"
-                   aria-label="Buscar centro" />
-          </form>
-          <ul id="mapSearchResults" class="map-search-results" role="listbox"></ul>
-        </div>
+    <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
+      <!-- Overlay: BUSCADOR sobre el mapa -->
+      <div class="map-search" id="mapSearchBox">
+        <input
+          type="search"
+          id="mapSearch"
+          placeholder="Buscar por Código, Titular o Código de Área…"
+          autocomplete="off"
+          aria-label="Buscar por Código, Titular o Código de Área"
+        />
+        <ul id="mapSearchResults" class="map-search-results" role="listbox"></ul>
+      </div>
 
-        <!-- Sidebar mini -->
-        <aside id="sidebarCentros" class="sidebar-centros">
-          <button id="toggleSidebar" class="toggle-btn" aria-label="Colapsar/Expandir Sidebar">
-            <span id="toggleSidebarIcon" class="material-icons">chevron_left</span>
-          </button>
-          <input id="filtroSidebar" type="text" placeholder="🔍 Buscar comuna o proveedor…" aria-label="Buscar comuna o proveedor" autocomplete="off" />
-          <ul id="listaCentrosSidebar" class="sidebar-list"></ul>
-        </aside>
+      <!-- (Opcional) Sidebar mini (puedes dejarla o quitarla) -->
+      <aside id="sidebarCentros" class="sidebar-centros">
+        <button id="toggleSidebar" class="toggle-btn" aria-label="Colapsar/Expandir Sidebar">
+          <span id="toggleSidebarIcon" class="material-icons">chevron_left</span>
+        </button>
+        <input id="filtroSidebar" type="text" placeholder="🔍 Buscar comuna o proveedor…" aria-label="Buscar comuna o proveedor" autocomplete="off" />
+        <ul id="listaCentrosSidebar" class="sidebar-list"></ul>
+      </aside>
 
-        <!-- Mapa (altura se maneja por CSS) -->
-        <div id="map"></div>
-      </section>
+      <!-- El mapa -->
+      <div id="map"></div>
     </section>
+  </div>
+</section>
 
     <!-- MODALES (contenido como ya lo tienes) -->
     <div id="centroModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="formTitle" tabindex="-1"></div>
