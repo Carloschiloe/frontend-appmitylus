@@ -9,7 +9,7 @@ let windowCentrosDebug = [];
 
 const CHILOE_COORDS = [-42.65, -73.99];
 const CHILOE_ZOOM = 10;
-const LABEL_ZOOM = 13; // ← mostrar etiquetas solo desde este zoom
+const LABEL_ZOOM = 13; // mostrar etiquetas solo desde este zoom
 
 const LOG = true;
 const log = (...a) => LOG && console.log('[MAP]', ...a);
@@ -27,7 +27,7 @@ const baseLayersDefs = {
   ),
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap contributors' }),
   esri: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '© Esri' }),
-  carto: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '&copy; CARTO' })
+  carto: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© CARTO' })
 };
 let currentBaseKey = 'mapboxSat';
 
@@ -36,7 +36,7 @@ let centrosDataGlobal = [];
 let filtroSidebar = '';
 let selectedCentroIdx = null;
 
-// ===== Sidebar mini (sin cambios relevantes)
+// ===== Sidebar mini
 export function initSidebarFiltro() {
   const filtroInput = document.getElementById('filtroSidebar');
   const listaSidebar = document.getElementById('listaCentrosSidebar');
@@ -86,10 +86,10 @@ export function cargarYRenderizarCentros(centros) {
   centrosDataGlobal = centros;
   drawCentrosInMap(centros);
   renderListaSidebar();
-  updateLabelVisibility(); // ajusta visibilidad inicial
+  updateLabelVisibility(); // visibilidad inicial
 }
 
-// ===== Modal desde mapa (reusa tu modal existente)
+// ===== Modal desde mapa
 function buildCentroDetallesHtml(c) {
   const d = (c.detalles && typeof c.detalles === 'object') ? c.detalles : {};
   const flatten = { ...d };
@@ -141,38 +141,61 @@ function openCentroModal(c) {
   (window.M?.Modal.getInstance(modal) || window.M?.Modal.init(modal))?.open();
 }
 
-// ===== Crear mapa + auto-resize
+// ===== Crear mapa + observadores de tamaño/visibilidad
 export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZOOM) {
   if (map) return map;
   const el = document.getElementById('map');
   if (!el) return null;
 
-  map = L.map(el, { zoomControl: true, center: CHILOE_COORDS, zoom: CHILOE_ZOOM, layers: [baseLayersDefs[currentBaseKey]] });
+  map = L.map(el, {
+    preferCanvas: true,
+    zoomControl: true,
+    center: defaultLatLng,
+    zoom: defaultZoom,
+    layers: [baseLayersDefs[currentBaseKey]]
+  });
   window.__mapLeaflet = map;
 
   puntosIngresoGroup = L.layerGroup().addTo(map);
   centrosGroup = L.layerGroup().addTo(map);
 
-  // recalcular tamaño visual
-  const resizeMapToViewport = () => {
-    const shell = document.getElementById('mapShell');
-    if (shell) { shell.style.height = `calc(100vh - 130px)`; }
-    setTimeout(() => map.invalidateSize(), 50);
-  };
-  window.addEventListener('resize', resizeMapToViewport);
-  resizeMapToViewport();
-
-  // etiquetas según zoom
+  // Etiquetas según zoom
   map.on('zoomend', updateLabelVisibility);
 
-  // re-invalidate cuando cambias de tab
-  document.querySelectorAll('a[href="#tab-mapa"]').forEach(a =>
-    a.addEventListener('click', () => { setTimeout(()=>map.invalidateSize(), 120); setTimeout(()=>map.invalidateSize(), 400); })
-  );
-  if (location.hash === '#tab-mapa') {
-    setTimeout(()=>map.invalidateSize(), 150);
-    setTimeout(()=>map.invalidateSize(), 450);
-  }
+  // Observador: cuando #map gana altura (>0) o cambia el layout, corrige tamaño
+  (function attachObservers(){
+    const mapEl = document.getElementById('map');
+    if (!mapEl) return;
+
+    // 1) ResizeObserver en el propio #map
+    const ro = new ResizeObserver(() => {
+      if (mapEl.clientHeight > 0) map.invalidateSize();
+    });
+    ro.observe(mapEl);
+
+    // 2) MutationObserver en el tab para detectar display:none -> block
+    const tab = document.getElementById('tab-mapa');
+    if (tab) {
+      const mo = new MutationObserver(() => {
+        const visible = getComputedStyle(tab).display !== 'none' && tab.offsetParent !== null;
+        if (visible) setTimeout(() => map.invalidateSize(), 60);
+      });
+      mo.observe(tab, { attributes:true, attributeFilter:['style','class'] });
+    }
+
+    // 3) Por si entras directo al hash del mapa
+    if (location.hash === '#tab-mapa') {
+      setTimeout(() => map.invalidateSize(), 80);
+    }
+
+    // 4) En cada resize de ventana
+    window.addEventListener('resize', () => map.invalidateSize());
+
+    // 5) Si usas tabs con <a href="#tab-mapa">
+    document.querySelectorAll('a[href="#tab-mapa"]').forEach(a =>
+      a.addEventListener('click', () => setTimeout(() => map.invalidateSize(), 80))
+    );
+  })();
 
   initMapSearchUI();
   log('Mapa creado');
@@ -196,7 +219,7 @@ export function redrawPolygon(currentPoints=[]){
 
 // ===== Dibujar centros (con etiquetas condicionadas por zoom)
 export function drawCentrosInMap(centros=[], defaultLatLng=CHILOE_COORDS, onPolyClick=null) {
-  if (!map) crearMapa();
+  if (!map) crearMapa(defaultLatLng);
   if (!centrosGroup) return;
 
   windowCentrosDebug = centros.slice();
@@ -216,7 +239,7 @@ export function drawCentrosInMap(centros=[], defaultLatLng=CHILOE_COORDS, onPoly
     const labelHtml = `<div class="centro-label-inner"><div class="titular">${esc(titular)}</div><div class="codigo">Código: ${esc(codigo)}</div></div>`;
     poly.bindTooltip(labelHtml, { permanent:true, direction:'center', opacity:0.95, className:'centro-label' });
 
-    centroTooltips[idx] = poly.getTooltip(); // guardar referencia
+    centroTooltips[idx] = poly.getTooltip(); // guardar ref
 
     poly.on('click', (ev) => { ev?.originalEvent && L.DomEvent.stopPropagation(ev); openCentroModal(c); onPolyClick && onPolyClick(idx); });
 
@@ -224,10 +247,10 @@ export function drawCentrosInMap(centros=[], defaultLatLng=CHILOE_COORDS, onPoly
     dib++;
   });
 
-  centrarMapaEnPoligonos(centros, CHILOE_COORDS);
+  centrarMapaEnPoligonos(centros, defaultLatLng);
   setTimeout(()=>map.invalidateSize(), 60);
   setTimeout(()=>map.invalidateSize(), 300);
-  updateLabelVisibility(); // ← aplicar visibilidad con zoom actual
+  updateLabelVisibility(); // aplicar visibilidad con zoom actual
 
   log('Redibujados centros =', dib);
 }
@@ -251,13 +274,12 @@ export function centrarMapaEnPoligonos(centros=[], defaultLatLng=CHILOE_COORDS) 
 export function focusCentroInMap(idx) {
   const poly = centroPolys[idx]; if (!poly) return;
   map.fitBounds(poly.getBounds(), { maxZoom: 16 });
-  const t = centroTooltips[idx]?.getElement?.(); if (t) t.style.display = 'block'; // asegurar visible al acercar
+  const t = centroTooltips[idx]?.getElement?.(); if (t) t.style.display = 'block';
   poly.setStyle({ color:'#ff9800', weight:5 }); setTimeout(()=>poly.setStyle({color:'#1976d2', weight:3}),1000);
 }
 
-// ===== Buscador flotante (code, titular/name/proveedor, codigoArea)
+// ===== Buscador flotante
 function initMapSearchUI() {
-  // No hay <form>, solo input + ul
   const input = document.getElementById('mapSearch');
   const list  = document.getElementById('mapSearchResults');
   if (!input || !list) return;
@@ -307,7 +329,6 @@ function initMapSearchUI() {
     }
   };
 
-  // Enter para buscar
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -315,7 +336,6 @@ function initMapSearchUI() {
     }
   });
 
-  // Limpiar lista si borran
   input.addEventListener('input', () => {
     if (!input.value) { list.style.display = 'none'; list.innerHTML = ''; }
   });
