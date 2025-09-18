@@ -2,7 +2,6 @@
 const { useMemo } = React;
 
 function Sidebar(){
-  // normaliza path (sin query ni hash)
   const here = (typeof location!=="undefined"
     ? (location.pathname || "").toLowerCase()
     : "");
@@ -10,20 +9,23 @@ function Sidebar(){
   const itemsMain = [
     { href: "/html/Abastecimiento/asignacion/inventario_mmpp.html",       label:"Inventario",      icon:"📦" },
     { href: "/html/Abastecimiento/asignacion/calendario_mmpp.html",       label:"Calendario",      icon:"📅" },
-    { href: "/html/Abastecimiento/asignacion/transportistas_mmpp.html",   label:"Transportistas",  icon:"🚚" }, // ← NUEVO
+    // OJO: mantenemos el href “normal” pero capturamos el click para abrir panel
+    { href: "/html/Abastecimiento/asignacion/transportistas_mmpp.html",   label:"Transportistas",  icon:"🚚", panel:"transportistas" },
     { href: "/html/Abastecimiento/asignacion/resumen_mmpp.html",          label:"Resumen Stock",   icon:"📊" },
     { href: "/html/Abastecimiento/asignacion/pipeline_mmpp.html",         label:"Pipeline",        icon:"🧭" },
   ];
 
-  // Si más módulos luego:
-  const itemsOther = [
-    // { href: "/html/reportes_mmpp.html", label:"Reportes", icon:"📈" },
-  ];
-
   function isActive(href){
-    // activa por nombre de archivo
     const f = href.split("/").pop().toLowerCase();
     return here.indexOf(f) >= 0 ? "is-active" : "";
+  }
+
+  function onClickItem(e, it){
+    // Si el item tiene "panel", no navegamos: abrimos el panel in-page
+    if (it.panel === "transportistas" && window.openTransportistasPanel) {
+      e.preventDefault();
+      window.openTransportistasPanel(); // ← abre el panel lateral
+    }
   }
 
   return (
@@ -35,14 +37,10 @@ function Sidebar(){
 
       <div className="section">Principal</div>
       {itemsMain.map(it =>
-        <a key={it.href} className={isActive(it.href)} href={it.href}>
-          <span className="i">{it.icon}</span>{it.label}
-        </a>
-      )}
-
-      {itemsOther.length > 0 && (<div className="section">Más</div>)}
-      {itemsOther.map(it =>
-        <a key={it.href} className={isActive(it.href)} href={it.href}>
+        <a key={it.href}
+           className={isActive(it.href)}
+           href={it.href}
+           onClick={(e)=>onClickItem(e,it)}>
           <span className="i">{it.icon}</span>{it.label}
         </a>
       )}
@@ -50,7 +48,6 @@ function Sidebar(){
   );
 }
 
-// Auto-mount si existe el contenedor
 (function autoMount(){
   function go(){
     const host = document.getElementById("mmppNavMount");
