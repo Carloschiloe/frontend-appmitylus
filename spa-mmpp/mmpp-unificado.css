@@ -1,4 +1,3 @@
-
 /* =====================================================
    MMPP — CSS UNIFICADO (reemplaza layout.css + inventario.css)
    -----------------------------------------------------
@@ -173,8 +172,61 @@ table.mmpp td{ background:var(--panel); border:1px solid var(--border); padding:
   .mmpp-grid{ grid-template-columns: 1fr; gap:10px; }
 }
 @media (max-width: 960px){
-  .mmpp-layout{ grid-template-columns: 1fr; }
+  .mmpp-layout{ grid-template-columns: 1fr; padding:12px; gap:12px; }
   .mmpp-nav{ position:static; height:auto; }
   .mmpp-hero h1{ font-size:20px; }
   table.mmpp{ display:block; overflow-x:auto; }
+}
+
+/* =========================================================
+   FIX MÓVIL — Calendario sin descuadres (iPhone/Android)
+   ---------------------------------------------------------
+   - La grilla del mes mantiene celdas legibles.
+   - Si no cabe, se habilita scroll horizontal SOLO en móvil.
+   - No afecta escritorio.
+   ========================================================= */
+@media (max-width: 960px){
+  /* El contenedor del calendario ocupa ancho completo y puede scrollear en X */
+  #mmppCalendario{
+    width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* La grilla del mes NO se aplasta: 7 columnas con ancho mínimo.
+     Ajusto varios selectores comunes para cubrir tu HTML actual. */
+  #mmppCalendario .cal-grid,
+  #mmppCalendario .calendar-grid,
+  #mmppCalendario .cal-month,
+  #mmppCalendario .cal-days,
+  #mmppCalendario [data-cal-grid]{
+    display:grid !important;
+    grid-template-columns: repeat(7, minmax(120px, 1fr)) !important; /* mínimo 120px por día */
+    gap: 8px;
+    min-width: 980px;             /* ancho total mínimo para mantener proporciones */
+  }
+
+  /* Cabeceras de días (Lun, Mar, ...) alineadas con la grilla */
+  #mmppCalendario .cal-weekdays{
+    display:grid !important;
+    grid-template-columns: repeat(7, minmax(120px, 1fr)) !important;
+    gap: 8px;
+    min-width: 980px;
+  }
+
+  /* Chips / tabs / KPIs que no caben: scroll horizontal en móvil */
+  #mmppCalendario .chips,
+  #mmppCalendario .tabs,
+  #mmppCalendario .kpis,
+  #mmppCalendario .cards{
+    overflow-x:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Evita zoom de Safari al enfocar */
+  #mmppCalendario input,
+  #mmppCalendario select,
+  #mmppCalendario textarea{
+    font-size:16px;
+  }
 }
