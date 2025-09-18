@@ -8,10 +8,11 @@ function Sidebar(){
     : "");
 
   const itemsMain = [
-    { href: "/html/Abastecimiento/asignacion/inventario_mmpp.html", label:"Inventario",     icon:"📦" },
-    { href: "/html/Abastecimiento/asignacion/calendario_mmpp.html", label:"Calendario",     icon:"📅" },
-    { href: "/html/Abastecimiento/asignacion/resumen_mmpp.html",    label:"Resumen Stock",  icon:"📊" },
-    { href: "/html/Abastecimiento/asignacion/pipeline_mmpp.html",   label:"Pipeline",       icon:"🧭" }, // ← NUEVO
+    { href: "/html/Abastecimiento/asignacion/inventario_mmpp.html",       label:"Inventario",      icon:"📦" },
+    { href: "/html/Abastecimiento/asignacion/calendario_mmpp.html",       label:"Calendario",      icon:"📅" },
+    { href: "/html/Abastecimiento/asignacion/transportistas_mmpp.html",   label:"Transportistas",  icon:"🚚" }, // ← NUEVO
+    { href: "/html/Abastecimiento/asignacion/resumen_mmpp.html",          label:"Resumen Stock",   icon:"📊" },
+    { href: "/html/Abastecimiento/asignacion/pipeline_mmpp.html",         label:"Pipeline",        icon:"🧭" },
   ];
 
   // Si más módulos luego:
