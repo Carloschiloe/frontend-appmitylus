@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calendario MMPP</title>
+
+  <!-- Estilos compartidos -->
+  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
+  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
+
+  <!-- ===== CONFIG (antes de cualquier JS tuyo) ===== -->
+  <script>window.DEBUG = true;</script>
+  <!-- IMPORTANTE: no fuerces dominios; usamos /api y vercel.json hace el proxy -->
+  <!-- (si alguna vez quieres forzar otro backend, agrega window.API_URL aquí arriba) -->
+  <script src="/js/config.js"></script>
+  <!-- ============================================= -->
+
+  <!-- React + Babel para el sidebar nav.jsx -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+</head>
+<body>
+  <div class="mmpp-layout">
+    <div id="mmppNavMount"></div>
+    <main class="mmpp-main">
+      <div id="mmppCalendario"></div>
+    </main>
+  </div>
+
+  <!-- API (antes del calendario) -->
+  <script defer src="/spa-mmpp/mmpp-api.js?v=12"></script>
+
+  <!-- Sidebar (JSX via Babel) -->
+  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
+
+  <!-- Calendario -->
+  <script defer src="/spa-mmpp/mmpp-calendario.js?v=chips-3"></script>
+
+  <!-- Montaje -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.MMppCalendario && document.getElementById('mmppCalendario')) {
+        MMppCalendario.mount({ capacidadCamion: 10 });
+      } else {
+        console.warn('No se encontró MMppCalendario o el contenedor #mmppCalendario.');
+      }
+    });
+  </script>
+
+  <noscript>Esta página requiere JavaScript.</noscript>
+</body>
+</html>
