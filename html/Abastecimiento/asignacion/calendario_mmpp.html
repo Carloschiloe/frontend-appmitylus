@@ -6,8 +6,15 @@
   <title>Calendario MMPP</title>
 
   <!-- Layout común (sidebar + main) -->
-  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
-  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
+  <link rel="stylesheet" href="../../spa-mmpp/layout.css?v=1" />
+  <link rel="stylesheet" href="../../spa-mmpp/inventario.css?v=1" />
+
+  <!-- ====== CONFIG GLOBAL (debe ir antes que todo tu JS) ====== -->
+  <script>window.DEBUG = true;</script>
+  <!-- (Opcional) Fuerza tu backend en producción o pruebas -->
+  <!-- <script>window.API_URL = 'https://backend-appmitylus-production.up.railway.app/api';</script> -->
+  <script src="../../js/config.js"></script>
+  <!-- ========================================================== -->
 
   <!-- React + Babel (solo para el sidebar nav.jsx) -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
@@ -22,17 +29,14 @@
     </main>
   </div>
 
-  <!-- (Opcional) Forzar base del backend -->
-  <!-- <script>window.__MMPP_API_BASE__="https://backend-appmitylus.vercel.app";</script> -->
-
-  <!-- API (antes de la app) -->
-  <script defer src="/spa-mmpp/mmpp-api.js?v=12"></script>
+  <!-- API (debe ir antes del calendario) -->
+  <script defer src="../../spa-mmpp/mmpp-api.js?v=12"></script>
 
   <!-- Sidebar (usa JSX, por eso va con Babel) -->
-  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
+  <script defer type="text/babel" data-presets="es2015,react" src="../../spa-mmpp/nav.jsx?v=1"></script>
 
-  <!-- Calendario NUEVO: barra de chips (romper caché con v=chips-1) -->
-  <script defer src="/spa-mmpp/mmpp-calendario.js?v=chips-1"></script>
+  <!-- Calendario -->
+  <script defer src="../../spa-mmpp/mmpp-calendario.js?v=chips-2"></script>
 
   <!-- Montaje -->
   <script>
@@ -44,5 +48,7 @@
       }
     });
   </script>
+
+  <noscript>Esta página requiere JavaScript.</noscript>
 </body>
 </html>
