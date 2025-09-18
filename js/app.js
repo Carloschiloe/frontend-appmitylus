@@ -1,8 +1,8 @@
-// js/app.js — bootstrap/orquestador
+// /js/app.js — bootstrap/orquestador
 
 import { Estado } from './core/estado.js';
 
-// === Mapa (usa las exports reales de mapas/mapa.js) ===
+// === Mapa ===
 import {
   crearMapa,
   initSidebarFiltro,
@@ -11,7 +11,7 @@ import {
   addPointMarker,
   redrawPolygon,
   drawCentrosInMap,
-  updateLabelVisibility
+  updateLabelVisibility,
 } from './mapas/mapa.js';
 
 // === Tabla ===
@@ -23,25 +23,18 @@ import { openNewForm, openEditForm, renderPointsTable } from './centros/form_cen
 // === API ===
 import { getCentrosAll, createCentro, updateCentro } from './core/centros_repo.js';
 
-// === Utils ===
-import { tabMapaActiva } from './core/utilidades_app.js';
-
-// Intentar import de util como módulo; si no, usar el global expuesto por /js/utils.js
-let parseOneDMSFn = null;
-try {
-  const mod = await import('./core/utilidades.js');
-  parseOneDMSFn = mod.parseOneDMS;
-} catch (_e) {
-  parseOneDMSFn = (window.u && window.u.parseOneDMS) || window.parseOneDMS;
-}
-const parseDMS = (s) => (typeof parseOneDMSFn === 'function' ? parseOneDMSFn(s) : NaN);
+// === Utils (usar el global de /js/utils.js, no cargues módulos inventados) ===
+const parseDMS = (s) => {
+  const fn = (window.u && window.u.parseOneDMS) || window.parseOneDMS;
+  return typeof fn === 'function' ? fn(s) : NaN;
+};
 
 // jQuery (solo para workaround de Materialize + DataTables)
-const $ = (window.$ || window.jQuery);
+const $ = window.$ || window.jQuery;
 
 document.addEventListener('DOMContentLoaded', init);
 
-async function init () {
+async function init() {
   // ===== Materialize =====
   const tabsEl = document.querySelector('#tabs');
   if (tabsEl) {
@@ -49,21 +42,25 @@ async function init () {
       onShow: (tabElem) => {
         if (tabElem.id === 'tab-mapa') {
           // Asegura tamaño correcto del mapa al cambiar de pestaña
-          Estado.map = crearMapa();          // devuelve el mismo mapa si ya existe
-          setTimeout(() => {
-            Estado.map?.invalidateSize();
-            updateLabelVisibility();
-          }, 40);
-          if (Estado.centros?.length) drawCentrosInMap(Estado.centros);
+          try {
+            Estado.map = crearMapa(); // idempotente
+            setTimeout(() => {
+              Estado.map?.invalidateSize();
+              updateLabelVisibility();
+            }, 40);
+            if (Estado.centros?.length) drawCentrosInMap(Estado.centros);
+          } catch (err) {
+            console.error('[APP] Error al crear mapa en cambio de pestaña:', err);
+          }
         }
-      }
+      },
     });
   }
   M.FormSelect.init(document.querySelectorAll('select'));
   M.Modal.init(document.querySelectorAll('.modal'));
   M.Tooltip.init(document.querySelectorAll('.tooltipped'));
 
-  // ===== Importador (una sola vez) =====
+  // ===== Importador (una sola vez si está presente en el DOM) =====
   const importCont = document.getElementById('importarCentrosContainer');
   if (importCont && importCont.dataset.inited !== '1') {
     importCont.dataset.inited = '1';
@@ -73,8 +70,13 @@ async function init () {
 
   // ===== Tabla y Mapa =====
   initTablaCentros();
-  Estado.map = crearMapa();          // instancia Leaflet y deja el overlay de búsqueda listo
-  initSidebarFiltro();
+
+  try {
+    Estado.map = crearMapa(); // instancia Leaflet y deja el overlay de búsqueda listo
+    initSidebarFiltro();
+  } catch (err) {
+    console.error('[APP] Error inicializando el mapa:', err);
+  }
 
   // ===== Carga inicial =====
   await recargarCentros();
@@ -83,10 +85,15 @@ async function init () {
   wireFormCentros();
 }
 
-async function recargarCentros () {
+async function recargarCentros() {
   try {
     const data = await getCentrosAll();
+    if (!Array.isArray(data)) {
+      console.warn('[APP] getCentrosAll no devolvió un array:', data);
+    }
     Estado.centros = Array.isArray(data) ? data : [];
+
+    console.log('[APP] Centros recibidos:', Estado.centros.length, Estado.centros[0] || '(sin items)');
 
     // Tabla
     loadTablaCentros(Estado.centros);
@@ -101,48 +108,46 @@ async function recargarCentros () {
       drawCentrosInMap(Estado.centros);
     }
   } catch (e) {
-    console.error('Error cargando centros:', e);
+    console.error('[APP] Error cargando centros:', e);
     M.toast({ html: 'Error cargando centros', classes: 'red' });
   }
 }
 
-function wireFormCentros () {
-  const btnNuevoCentro  = document.getElementById('btnOpenCentroModal');
+function wireFormCentros() {
+  const btnNuevoCentro = document.getElementById('btnOpenCentroModal');
   const centroModalElem = document.getElementById('centroModal');
-  const centroModal     = centroModalElem
-    ? (M.Modal.getInstance(centroModalElem) || M.Modal.init(centroModalElem))
+  const centroModal = centroModalElem
+    ? M.Modal.getInstance(centroModalElem) || M.Modal.init(centroModalElem)
     : null;
 
   const els = {
-    formTitle:      document.getElementById('formTitle'),
-    inputCentroId:  document.getElementById('inputCentroId'),
+    formTitle: document.getElementById('formTitle'),
+    inputCentroId: document.getElementById('inputCentroId'),
     inputProveedor: document.getElementById('inputProveedor'),
-    inputComuna:    document.getElementById('inputComuna'),
-    inputCode:      document.getElementById('inputCode'),
+    inputComuna: document.getElementById('inputComuna'),
+    inputCode: document.getElementById('inputCode'),
     inputHectareas: document.getElementById('inputHectareas'),
-    inputLat:       document.getElementById('inputLat'),
-    inputLng:       document.getElementById('inputLng'),
-    btnAddPoint:    document.getElementById('btnAddPoint'),
+    inputLat: document.getElementById('inputLat'),
+    inputLng: document.getElementById('inputLng'),
+    btnAddPoint: document.getElementById('btnAddPoint'),
     btnClearPoints: document.getElementById('btnClearPoints'),
-    btnSaveCentro:  document.getElementById('btnSaveCentro'),
-    pointsBody:     document.getElementById('pointsBody')
+    btnSaveCentro: document.getElementById('btnSaveCentro'),
+    pointsBody: document.getElementById('pointsBody'),
   };
 
   // Nuevo centro
   btnNuevoCentro?.addEventListener('click', () => {
     Estado.currentCentroIdx = null;
     Estado.currentPoints = [];
-    openNewForm(els, Estado.map, Estado.currentPoints, v => (Estado.currentCentroIdx = v));
+    openNewForm(els, Estado.map, Estado.currentPoints, (v) => (Estado.currentCentroIdx = v));
     renderPointsTable(els.pointsBody, Estado.currentPoints);
     centroModal?.open();
   });
 
-  // OJO: handler de ".editar-centro" vive en eventos_centros.js; no lo duplicamos aquí.
-
   // Agregar punto (DMS → decimal)
   els.btnAddPoint?.addEventListener('click', () => {
-    const lat = parseDMS(els.inputLat.value.trim());
-    const lng = parseDMS(els.inputLng.value.trim());
+    const lat = parseDMS(els.inputLat?.value?.trim());
+    const lng = parseDMS(els.inputLng?.value?.trim());
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       M.toast({ html: 'Formato DMS inválido', classes: 'red' });
       return;
@@ -151,7 +156,8 @@ function wireFormCentros () {
     addPointMarker(lat, lng);
     redrawPolygon(Estado.currentPoints);
     renderPointsTable(els.pointsBody, Estado.currentPoints);
-    els.inputLat.value = els.inputLng.value = '';
+    if (els.inputLat) els.inputLat.value = '';
+    if (els.inputLng) els.inputLng.value = '';
     M.updateTextFields();
   });
 
@@ -165,10 +171,10 @@ function wireFormCentros () {
   // Guardar (crear/actualizar)
   document.getElementById('formCentro')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const proveedor = els.inputProveedor.value.trim();
-    const comuna    = els.inputComuna.value.trim();
-    const code      = els.inputCode.value.trim();
-    const hectStr   = els.inputHectareas.value.trim();
+    const proveedor = els.inputProveedor?.value?.trim();
+    const comuna = els.inputComuna?.value?.trim();
+    const code = els.inputCode?.value?.trim();
+    const hectStr = els.inputHectareas?.value?.trim();
 
     if (!proveedor || !comuna || !code) {
       M.toast({ html: 'Proveedor, comuna y código son obligatorios', classes: 'red' });
@@ -188,11 +194,11 @@ function wireFormCentros () {
       coords: Estado.currentPoints,
       lines:
         Estado.currentCentroIdx !== null
-          ? (Estado.centros[Estado.currentCentroIdx]?.lines || [])
-          : []
+          ? Estado.centros[Estado.currentCentroIdx]?.lines || []
+          : [],
     };
 
-    els.btnSaveCentro.disabled = true;
+    els.btnSaveCentro && (els.btnSaveCentro.disabled = true);
     try {
       if (Estado.currentCentroIdx === null) {
         const creado = await createCentro(centroData);
@@ -209,9 +215,10 @@ function wireFormCentros () {
       await recargarCentros();
       centroModal?.close();
     } catch (err) {
+      console.error('[APP] Error guardando centro:', err);
       M.toast({ html: err.message || 'Error al guardar centro', classes: 'red' });
     } finally {
-      els.btnSaveCentro.disabled = false;
+      els.btnSaveCentro && (els.btnSaveCentro.disabled = false);
     }
   });
 
