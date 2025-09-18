@@ -1,8 +1,7 @@
-/* js/config.js — versión para <script> normal */
-(function () {
-  // Si defines window.API_URL en el HTML, se usa; si no, cae a /api
-  window.API_BASE = window.API_URL || window.API_BASE || '/api';
-
-  // Logger controlado por flag
-  window.log = (...a) => (window.DEBUG === true) && console.log('[Mitylus]', ...a);
-})();
+// /js/config.js
+(function (w) {
+  // Si defines window.API_URL antes, la usamos; si no, por defecto '/api'
+  var base = (typeof w.API_URL === 'string' && w.API_URL.trim()) || '/api';
+  w.API_BASE = String(base).replace(/\/+$/,''); // sin slash final
+  // deja DEBUG como esté (true/false); no tocamos nada más
+})(window);
