@@ -1,59 +1,81 @@
 // js/centros/helpers_centros.js
 import { Estado } from '../core/estado.js';
 
-// Suma y promedios para el footer de la tabla
+/**
+ * Calcula totales y promedios robustos (NaN-safe) para la tabla de centros
+ * y actualiza el footer. Devuelve además un objeto con los valores.
+ *
+ * NOTA: los totales se calculan desde Estado.centros (dataset completo),
+ * no desde las filas visibles/paginadas de DataTables.
+ */
 export function calcularTotalesTabla(row, data, start, end, display) {
-  // DataTables pasa this = instancia; si la necesitas:
-  // const api = this.api ? this.api() : row;
-
-  let sumH = 0, sumL = 0, sumTons = 0;
-  let sumUnKg = 0, sumRechazo = 0, sumRdmto = 0;
-  let countUnKg = 0, countRechazo = 0, countRdmto = 0;
+  // Helpers
+  const toNum = (v) => {
+    if (v === '' || v === null || v === undefined) return 0;
+    const n = Number.parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const avg = (sum, count) => (count > 0 ? sum / count : 0);
+  const fmt0 = (n) => Number(n || 0).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
   const centros = Array.isArray(Estado.centros) ? Estado.centros : [];
 
-  centros.forEach(c => {
-    sumH += parseFloat(c.hectareas) || 0;
-    sumL += Array.isArray(c.lines) ? c.lines.length : 0;
+  let sumH = 0;
+  let sumL = 0;
+  let sumTons = 0;
 
-    if (Array.isArray(c.lines)) {
-      c.lines.forEach(l => {
-        sumTons += +l.tons || 0;
+  let sumUnKg = 0, countUnKg = 0;
+  let sumRechazo = 0, countRechazo = 0;
+  let sumRdmto = 0, countRdmto = 0;
 
-        if (l.unKg !== undefined && l.unKg !== null && l.unKg !== '') {
-          sumUnKg += parseFloat(l.unKg) || 0;
-          countUnKg++;
-        }
-        if (l.porcRechazo !== undefined && l.porcRechazo !== null && l.porcRechazo !== '') {
-          sumRechazo += parseFloat(l.porcRechazo) || 0;
-          countRechazo++;
-        }
-        if (l.rendimiento !== undefined && l.rendimiento !== null && l.rendimiento !== '') {
-          sumRdmto += parseFloat(l.rendimiento) || 0;
-          countRdmto++;
-        }
-      });
+  for (const c of centros) {
+    sumH += toNum(c?.hectareas);
+    const lines = Array.isArray(c?.lines) ? c.lines : [];
+    sumL += lines.length;
+
+    for (const l of lines) {
+      sumTons += toNum(l?.tons);
+
+      if (l?.unKg !== '' && l?.unKg !== null && l?.unKg !== undefined) {
+        sumUnKg += toNum(l.unKg);
+        countUnKg++;
+      }
+      if (l?.porcRechazo !== '' && l?.porcRechazo !== null && l?.porcRechazo !== undefined) {
+        sumRechazo += toNum(l.porcRechazo);
+        countRechazo++;
+      }
+      if (l?.rendimiento !== '' && l?.rendimiento !== null && l?.rendimiento !== undefined) {
+        sumRdmto += toNum(l.rendimiento);
+        countRdmto++;
+      }
     }
-  });
+  }
 
-  const avgUnKg    = countUnKg    ? (sumUnKg    / countUnKg)    : 0;
-  const avgRechazo = countRechazo ? (sumRechazo / countRechazo) : 0;
-  const avgRdmto   = countRdmto   ? (sumRdmto   / countRdmto)   : 0;
+  const avgUnKg    = avg(sumUnKg, countUnKg);
+  const avgRechazo = avg(sumRechazo, countRechazo);
+  const avgRdmto   = avg(sumRdmto, countRdmto);
 
-  // Actualiza footer de la tabla
-  const h       = document.getElementById('totalHect');
-  const l       = document.getElementById('totalLineas');
-  const tons    = document.getElementById('totalTons');
-  const unKg    = document.getElementById('totalUnKg');
-  const rechazo = document.getElementById('totalRechazo');
-  const rdmto   = document.getElementById('totalRdmto');
+  // Actualiza footer si existe
+  const setText = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
 
-  if (h)       h.textContent       = sumH.toFixed(2);
-  if (l)       l.textContent       = sumL;
-  if (tons)    tons.textContent    = Number(sumTons).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  if (unKg)    unKg.textContent    = avgUnKg.toFixed(2);
-  if (rechazo) rechazo.textContent = avgRechazo.toFixed(1) + '%';
-  if (rdmto)   rdmto.textContent   = avgRdmto.toFixed(1) + '%';
+  setText('totalHect',    sumH.toFixed(2));
+  setText('totalLineas',  String(sumL));
+  setText('totalTons',    fmt0(sumTons));
+  setText('totalUnKg',    avgUnKg.toFixed(2));
+  setText('totalRechazo', avgRechazo.toFixed(1) + '%');
+  setText('totalRdmto',   avgRdmto.toFixed(1) + '%');
+
+  return {
+    hectareas: sumH,
+    lineas: sumL,
+    tons: sumTons,
+    unKgProm: avgUnKg,
+    rechazoProm: avgRechazo,
+    rdmtoProm: avgRdmto,
+  };
 }
 
 // Helper universal para mostrar valores, nunca null/undefined
