@@ -5,18 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Calendario MMPP</title>
 
-  <!-- Layout común (sidebar + main) -->
-  <link rel="stylesheet" href="../../spa-mmpp/layout.css?v=1" />
-  <link rel="stylesheet" href="../../spa-mmpp/inventario.css?v=1" />
+  <!-- Estilos compartidos -->
+  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
+  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
 
-  <!-- ====== CONFIG GLOBAL (debe ir antes que todo tu JS) ====== -->
+  <!-- ===== CONFIG GLOBAL (debe ir antes de tus scripts) ===== -->
   <script>window.DEBUG = true;</script>
-  <!-- (Opcional) Fuerza tu backend en producción o pruebas -->
-  <!-- <script>window.API_URL = 'https://backend-appmitylus-production.up.railway.app/api';</script> -->
-  <script src="../../js/config.js"></script>
-  <!-- ========================================================== -->
+  <!-- Fuerza backend en prod (ajústalo si cambias tu dominio del backend) -->
+  <script>window.API_URL = 'https://backend-appmitylus-production.up.railway.app/api';</script>
+  <script src="/js/config.js"></script>
+  <!-- ======================================================== -->
 
-  <!-- React + Babel (solo para el sidebar nav.jsx) -->
+  <!-- React + Babel para el sidebar nav.jsx -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
@@ -29,14 +29,14 @@
     </main>
   </div>
 
-  <!-- API (debe ir antes del calendario) -->
-  <script defer src="../../spa-mmpp/mmpp-api.js?v=12"></script>
+  <!-- API (cárgala antes del calendario) -->
+  <script defer src="/spa-mmpp/mmpp-api.js?v=12"></script>
 
-  <!-- Sidebar (usa JSX, por eso va con Babel) -->
-  <script defer type="text/babel" data-presets="es2015,react" src="../../spa-mmpp/nav.jsx?v=1"></script>
+  <!-- Sidebar (JSX via Babel) -->
+  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
 
   <!-- Calendario -->
-  <script defer src="../../spa-mmpp/mmpp-calendario.js?v=chips-2"></script>
+  <script defer src="/spa-mmpp/mmpp-calendario.js?v=chips-3"></script>
 
   <!-- Montaje -->
   <script>
