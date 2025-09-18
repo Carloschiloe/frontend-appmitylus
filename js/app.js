@@ -23,7 +23,10 @@ import { openNewForm, openEditForm, renderPointsTable } from './centros/form_cen
 // === API ===
 import { getCentrosAll, createCentro, updateCentro } from './core/centros_repo.js';
 
-// === Utils (usar el global de /js/utils.js, no cargues módulos inventados) ===
+// === Utils app (faltaba) ===
+import { tabMapaActiva } from './core/utilidades_app.js';
+
+// === Utils (usar el global de /js/utils.js)
 const parseDMS = (s) => {
   const fn = (window.u && window.u.parseOneDMS) || window.parseOneDMS;
   return typeof fn === 'function' ? fn(s) : NaN;
@@ -32,7 +35,13 @@ const parseDMS = (s) => {
 // jQuery (solo para workaround de Materialize + DataTables)
 const $ = window.$ || window.jQuery;
 
-document.addEventListener('DOMContentLoaded', init);
+// ¡Importante!: si el módulo se carga al final del <body>, DOMContentLoaded ya pasó.
+// Aseguramos ejecutar init() igual.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 
 async function init() {
   // ===== Materialize =====
@@ -41,7 +50,6 @@ async function init() {
     M.Tabs.init(tabsEl, {
       onShow: (tabElem) => {
         if (tabElem.id === 'tab-mapa') {
-          // Asegura tamaño correcto del mapa al cambiar de pestaña
           try {
             Estado.map = crearMapa(); // idempotente
             setTimeout(() => {
@@ -60,7 +68,7 @@ async function init() {
   M.Modal.init(document.querySelectorAll('.modal'));
   M.Tooltip.init(document.querySelectorAll('.tooltipped'));
 
-  // ===== Importador (una sola vez si está presente en el DOM) =====
+  // ===== Importador (si existe en DOM) =====
   const importCont = document.getElementById('importarCentrosContainer');
   if (importCont && importCont.dataset.inited !== '1') {
     importCont.dataset.inited = '1';
@@ -70,9 +78,8 @@ async function init() {
 
   // ===== Tabla y Mapa =====
   initTablaCentros();
-
   try {
-    Estado.map = crearMapa(); // instancia Leaflet y deja el overlay de búsqueda listo
+    Estado.map = crearMapa(); // instancia Leaflet y deja overlay de búsqueda
     initSidebarFiltro();
   } catch (err) {
     console.error('[APP] Error inicializando el mapa:', err);
@@ -88,20 +95,16 @@ async function init() {
 async function recargarCentros() {
   try {
     const data = await getCentrosAll();
-    if (!Array.isArray(data)) {
-      console.warn('[APP] getCentrosAll no devolvió un array:', data);
-    }
     Estado.centros = Array.isArray(data) ? data : [];
-
     console.log('[APP] Centros recibidos:', Estado.centros.length, Estado.centros[0] || '(sin items)');
 
     // Tabla
     loadTablaCentros(Estado.centros);
 
-    // Mapa (polígonos + labels por zoom + sidebar mini)
+    // Mapa (polígonos + labels + sidebar)
     cargarYRenderizarCentros(Estado.centros);
 
-    // Si la pestaña MAPA está activa, asegúrate de ver algo
+    // Si la pestaña MAPA está activa, asegura render correcto
     if (tabMapaActiva()) {
       Estado.map?.invalidateSize();
       updateLabelVisibility();
