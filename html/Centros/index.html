@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/css/centros.css" />
 
-  <!-- Full-bleed helper (solo para el mapa) -->
+  <!-- Full-bleed helper (solo para el mapa fuera del .container) -->
   <style>
     .full-bleed {
       position: relative;
@@ -31,7 +31,7 @@
     }
   </style>
 
-  <!-- Config + utils -->
+  <!-- Config + utils (no módulos) -->
   <script>window.DEBUG = true;</script>
   <script src="/js/config.js"></script>
   <script src="/js/utils.js"></script>
@@ -49,92 +49,83 @@
 
   <!-- CONTENIDO (tabla dentro de container) -->
   <div class="container" style="margin-top: 1rem;">
-   <!-- Pestañas -->
-<ul id="tabs" class="tabs">
-  <li class="tab col s6"><a class="active" href="#tab-centros">Directorio</a></li>
-  <li class="tab col s6"><a href="#tab-mapa">Mapa</a></li>
-</ul>
+    <ul id="tabs" class="tabs">
+      <li class="tab col s6"><a href="#tab-centros">Directorio</a></li>
+      <li class="tab col s6"><a class="active" href="#tab-mapa">Mapa</a></li>
+    </ul>
 
-<!-- TAB CENTROS -->
-<section id="tab-centros" class="col s12">
-  <div class="row">
-    <div class="col s12">
-      <h5>Centros Registrados</h5>
-      <table id="centrosTable" class="striped display responsive-table" style="width:100%">
-        <thead>
-          <tr>
-            <th style="min-width:130px;">Proveedor</th>
-            <th style="min-width:105px;">Comuna</th>
-            <th style="min-width:70px;">Código</th>
-            <th style="min-width:60px; max-width:80px;">Hectáreas</th>
-            <th style="width:54px;">Líneas</th>
-            <th style="width:60px;">Tons</th>
-            <th style="width:54px;">Un/Kg</th>
-            <th style="width:70px;">% Rechazo</th>
-            <th style="width:56px;">Rdmto</th>
-            <th style="width:48px;">Detalle</th>
-            <th style="width:72px;">Acciones</th>
-          </tr>
-        </thead>
-        <tfoot>
-          <tr>
-            <th colspan="3" style="text-align:right">Totales:</th>
-            <th id="totalHect">0.00</th>
-            <th id="totalLineas">0</th>
-            <th id="totalTons">0</th>
-            <th id="totalUnKg">0</th>
-            <th id="totalRechazo">0</th>
-            <th id="totalRdmto">0</th>
-            <th colspan="2"></th>
-          </tr>
-        </tfoot>
-      </table>
-      <div id="acordeonLineas"></div>
-    </div>
-  </div>
-</section>
-
-<!-- TAB MAPA (ahora ES hermano de #tab-centros) -->
-<section id="tab-mapa" class="col s12">
-  <div class="full-bleed">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px;">
-      <h5 class="map-title" style="margin:0;">Mapa de Centros</h5>
-      <button id="btnFullscreenMapa" class="btn-small teal waves-effect" aria-label="Pantalla completa">
-        <i class="material-icons left" style="line-height: inherit;">fullscreen</i>
-        Pantalla completa
-      </button>
-    </div>
-
-    <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
-      <!-- Buscador -->
-      <div class="map-search" id="mapSearchBox">
-        <form id="mapSearchForm" autocomplete="off">
-          <input
-            type="search"
-            id="mapSearchInput"
-            placeholder="Buscar por Código, Titular o Código de Área…"
-            aria-label="Buscar por Código, Titular o Código de Área"
-          />
-        </form>
-        <ul id="mapSearchResults" class="map-search-results" role="listbox"></ul>
+    <!-- TAB CENTROS -->
+    <section id="tab-centros" class="col s12">
+      <div class="row">
+        <div class="col s12">
+          <h5>Centros Registrados</h5>
+          <table id="centrosTable" class="striped display responsive-table" style="width:100%">
+            <thead>
+              <tr>
+                <th style="min-width:130px;">Proveedor</th>
+                <th style="min-width:105px;">Comuna</th>
+                <th style="min-width:70px;">Código</th>
+                <th style="min-width:60px; max-width:80px;">Hectáreas</th>
+                <th style="width:54px;">Líneas</th>
+                <th style="width:60px;">Tons</th>
+                <th style="width:54px;">Un/Kg</th>
+                <th style="width:70px;">% Rechazo</th>
+                <th style="width:56px;">Rdmto</th>
+                <th style="width:48px;">Detalle</th>
+                <th style="width:72px;">Acciones</th>
+              </tr>
+            </thead>
+            <tfoot>
+              <tr>
+                <th colspan="3" style="text-align:right">Totales:</th>
+                <th id="totalHect">0.00</th>
+                <th id="totalLineas">0</th>
+                <th id="totalTons">0</th>
+                <th id="totalUnKg">0</th>
+                <th id="totalRechazo">0</th>
+                <th id="totalRdmto">0</th>
+                <th colspan="2"></th>
+              </tr>
+            </tfoot>
+          </table>
+          <div id="acordeonLineas"></div>
+        </div>
       </div>
-
-      <!-- Sidebar -->
-      <aside id="sidebarCentros" class="sidebar-centros">
-        <button id="toggleSidebar" class="toggle-btn" aria-label="Colapsar/Expandir Sidebar">
-          <span id="toggleSidebarIcon" class="material-icons">chevron_left</span>
-        </button>
-        <input id="filtroSidebar" type="text" placeholder="🔍 Buscar comuna o proveedor…" aria-label="Buscar comuna o proveedor" />
-        <ul id="listaCentrosSidebar" class="sidebar-list"></ul>
-      </aside>
-
-      <!-- Mapa -->
-      <div id="map"></div>
     </section>
   </div>
-</section>
 
-  <!-- MODALES -->
+  <!-- TAB MAPA (full-bleed fuera del .container) -->
+  <section id="tab-mapa" class="col s12 full-bleed" style="padding:0;">
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px;">
+        <h5 class="map-title" style="margin:0;">Mapa de Centros</h5>
+        <button id="btnFullscreenMapa" class="btn-small teal waves-effect" aria-label="Pantalla completa">
+          <i class="material-icons left" style="line-height: inherit;">fullscreen</i>
+          Pantalla completa
+        </button>
+      </div>
+
+      <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
+        <!-- ÚNICO BUSCADOR (el que usa mapa.js) -->
+        <div class="map-search" id="mapSearchBox">
+          <form id="mapSearchForm" autocomplete="off">
+            <input
+              type="search"
+              id="mapSearchInput"
+              placeholder="Buscar por Código, Titular o Código de Área…"
+              aria-label="Buscar por Código, Titular o Código de Área"
+            />
+          </form>
+          <ul id="mapSearchResults" class="map-search-results" role="listbox"></ul>
+        </div>
+
+        <!-- Mapa -->
+        <div id="map"></div>
+      </section>
+    </div>
+  </section>
+
+  <!-- MODALES esenciales -->
   <div id="centroModal" class="modal"></div>
   <div id="modalDetallesCentro" class="modal" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle" tabindex="-1">
     <div class="modal-content">
@@ -175,16 +166,22 @@
   <!-- App -->
   <script type="module" src="/js/app.js"></script>
 
-  <!-- Init básico Materialize -->
+  <!-- Init Materialize (tabs/tooltip/modals) -->
   <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    M.Modal.init(document.querySelectorAll('.modal'));
-    M.Tooltip.init(document.querySelectorAll('.tooltipped'));
-    const tabsEl = document.getElementById('tabs');
-    if (tabsEl) M.Tabs.init(tabsEl);
-  });
-</script>
-
+    document.addEventListener('DOMContentLoaded', function () {
+      M.Modal.init(document.querySelectorAll('.modal'));
+      M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+      const tabsEl = document.getElementById('tabs');
+      if (tabsEl) {
+        const inst = M.Tabs.init(tabsEl);
+        // abre el mapa si vienes con hash ?tab=mapa o #tab-mapa
+        if (location.hash === '#tab-mapa' || new URLSearchParams(location.search).get('tab') === 'mapa') {
+          inst.select('tab-mapa');
+          setTimeout(() => window.__mapLeaflet && window.__mapLeaflet.invalidateSize(), 60);
+        }
+      }
+    });
+  </script>
 
   <noscript>Esta página requiere JavaScript habilitado.</noscript>
 </body>
