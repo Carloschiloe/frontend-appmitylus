@@ -18,26 +18,34 @@ const parseNum = v => { const n = parseFloat(v); return Number.isFinite(n) ? n :
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toTitle = s => (s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 
-// -------- Tiles
+// -------- Bases de tiles
 const MAPBOX_TOKEN = 'pk.eyJ1IjoiY2FybG9zY2hpbG9lIiwiYSI6ImNtZTB3OTZmODA5Mm0ya24zaTQ1bGd3aW4ifQ.XElNIT02jDuetHpo4r_-3g';
 const baseLayersDefs = {
+  // Ajuste correcto para estilos de Mapbox (512 px + zoomOffset -1)
   mapboxSat: L.tileLayer(
     `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`,
-    { maxZoom: 19, attribution: '© Mapbox, © OpenStreetMap, © Maxar' }
+    {
+      maxZoom: 19,
+      tileSize: 512,
+      zoomOffset: -1,
+      attribution: '© Mapbox, © OpenStreetMap, © Maxar'
+    }
   ),
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '© OpenStreetMap contributors'
   }),
   esri: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 19, attribution: '© Esri'
+    maxZoom: 19,
+    attribution: '© Esri'
   }),
   carto: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19, attribution: '© CARTO'
+    maxZoom: 19,
+    attribution: '© CARTO'
   })
 };
 
-// 👉 Arranca con OSM (evita errores/cortes de Mapbox)
+// 👉 Arranca con OSM (evita el gris si Mapbox falla)
 let currentBaseKey = 'osm';
 
 // -------- Datos para sidebar y búsqueda
@@ -156,14 +164,41 @@ export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZO
   const el = document.getElementById('map');
   if (!el) return null;
 
+  // Crea mapa con la base seleccionada (o con OSM si por algún motivo no existe)
+  const baseInicial = baseLayersDefs[currentBaseKey] || baseLayersDefs.osm;
+
   map = L.map(el, {
     preferCanvas: true,
     zoomControl: true,
     center: defaultLatLng,
     zoom: defaultZoom,
-    layers: [baseLayersDefs[currentBaseKey]]
+    layers: [baseInicial]
   });
   window.__mapLeaflet = map;
+
+  // Si por X razón la capa no quedó, fuerza OSM
+  if (!map.hasLayer(baseInicial)) {
+    log('Base inicial no montada, forzando OSM…');
+    baseLayersDefs.osm.addTo(map);
+    currentBaseKey = 'osm';
+  }
+
+  // Fallback automático si la base tira errores de tiles (pasa una vez y queda OSM)
+  let _baseFailedOnce = false;
+  Object.entries(baseLayersDefs).forEach(([key, layer]) => {
+    layer?.on?.('tileerror', () => {
+      if (!_baseFailedOnce && map) {
+        _baseFailedOnce = true;
+        try {
+          Object.values(baseLayersDefs).forEach(l => { try { map.removeLayer(l); } catch {} });
+        } catch {}
+        baseLayersDefs.osm.addTo(map);
+        currentBaseKey = 'osm';
+        setTimeout(() => map.invalidateSize(), 50);
+        log(`tileerror en base "${key}" → fallback a OSM`);
+      }
+    });
+  });
 
   puntosIngresoGroup = L.layerGroup().addTo(map);
   centrosGroup = L.layerGroup().addTo(map);
@@ -190,9 +225,7 @@ export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZO
       mo.observe(tab, { attributes:true, attributeFilter:['style','class'] });
     }
 
-    if (location.hash === '#tab-mapa') {
-      setTimeout(() => map.invalidateSize(), 80);
-    }
+    if (location.hash === '#tab-mapa') setTimeout(() => map.invalidateSize(), 80);
 
     window.addEventListener('resize', () => map.invalidateSize());
     document.querySelectorAll('a[href="#tab-mapa"]').forEach(a =>
@@ -207,9 +240,17 @@ export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZO
 
 export function setBaseLayer(key) {
   if (!map || !baseLayersDefs[key] || currentBaseKey === key) return;
-  map.removeLayer(baseLayersDefs[currentBaseKey]);
-  map.addLayer(baseLayersDefs[key]);
-  currentBaseKey = key;
+  try {
+    // Saca cualquier tile layer previo y pone la nueva base
+    Object.values(baseLayersDefs).forEach(l => { try { map.removeLayer(l); } catch {} });
+    baseLayersDefs[key].addTo(map);
+    currentBaseKey = key;
+    setTimeout(() => map.invalidateSize(), 30);
+  } catch (e) {
+    console.error('[MAP] setBaseLayer error, fallback OSM:', e);
+    baseLayersDefs.osm.addTo(map);
+    currentBaseKey = 'osm';
+  }
 }
 
 // ===== Puntos manuales
