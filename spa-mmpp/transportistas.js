@@ -4,44 +4,69 @@
    - Área de operación: Chiloé / Calbuco
    - Capacidades: camión simple / con carro
    - Tarifas por origen (simple / carro)
+   - Interceptor global de click para abrir panel sin navegar
 */
 (function (global) {
   "use strict";
 
   // ====== Utils/DOM ======
-  const $ = (s, c) => (c||document).querySelector(s);
-  const $$ = (s, c) => Array.from((c||document).querySelectorAll(s));
-  const esc = (s) => String(s||"").replace(/[&<>]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
-  const escA = (s) => String(s||"").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  const numeroCL = (n) => (Number(n)||0).toLocaleString("es-CL");
-  const money = (n) => "$"+numeroCL(n);
-  const AREAS = ["Chiloé","Calbuco"];
+  const $ = (s, c) => (c || document).querySelector(s);
+  const $$ = (s, c) => Array.from((c || document).querySelectorAll(s));
+  const esc = (s) => String(s || "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const escA = (s) => String(s || "").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const numeroCL = (n) => (Number(n) || 0).toLocaleString("es-CL");
+  const money = (n) => "$" + numeroCL(n);
+  const AREAS = ["Chiloé", "Calbuco"];
   const empty = () => ({
-    _id:null, nombre:"", rut:"", contactoNombre:"", telefono:"", email:"",
-    areaOperacion:"Chiloé", soportaSimple:true, soportaCarro:false, tarifas:[]
+    _id: null,
+    nombre: "",
+    rut: "",
+    contactoNombre: "",
+    telefono: "",
+    email: "",
+    areaOperacion: "Chiloé",
+    soportaSimple: true,
+    soportaCarro: false,
+    tarifas: [], // [{origen, precioSimple, precioCarro}]
   });
 
   // ====== API (usa MMppApi si existe, si no, REST plano) ======
-  const api = (function(){
+  const api = (function () {
     const a = global.MMppApi || {};
-    const has = (k)=>typeof a[k]==="function";
+    const has = (k) => typeof a[k] === "function";
     const BASE = "/api/transportistas";
 
-    const get = async()=> has("getTransportistas") ? a.getTransportistas() :
-      (await fetch(BASE)).json().catch(()=>[]);
-    const create = async(p)=> has("createTransportista") ? a.createTransportista(p) :
-      (await fetch(BASE,{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})).json();
-    const update = async(id,p)=> has("updateTransportista") ? a.updateTransportista(id,p) :
-      (await fetch(`${BASE}/${id}`,{method:"PUT",headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})).json();
-    const del = async(id)=> has("deleteTransportista") ? a.deleteTransportista(id) :
-      (await fetch(`${BASE}/${id}`,{method:"DELETE"})).ok ? {ok:true}:{ok:false};
+    const get = async () =>
+      has("getTransportistas")
+        ? a.getTransportistas()
+        : (await fetch(BASE).catch(() => ({ ok: false }))).json?.().catch?.(() => []) || [];
+
+    const create = async (p) =>
+      has("createTransportista")
+        ? a.createTransportista(p)
+        : (await fetch(BASE, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(p) }))
+            .json();
+
+    const update = async (id, p) =>
+      has("updateTransportista")
+        ? a.updateTransportista(id, p)
+        : (await fetch(`${BASE}/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(p) }))
+            .json();
+
+    const del = async (id) =>
+      has("deleteTransportista")
+        ? a.deleteTransportista(id)
+        : (await fetch(`${BASE}/${id}`, { method: "DELETE" })).ok
+        ? { ok: true }
+        : { ok: false };
+
     return { get, create, update, del };
   })();
 
   // ====== Estado ======
-  const state = { all:[], q:"", editing:null };
+  const state = { all: [], q: "", editing: null };
 
-  // ====== Shell del panel (drawer) ======
+  // ====== Estilos del panel (drawer) ======
   const style = document.createElement("style");
   style.textContent = `
   .mmpp-drawer-mask{position:fixed;inset:0;background:rgba(0,0,0,.25);backdrop-filter:blur(1px);z-index:980}
@@ -56,7 +81,8 @@
   `;
   document.head.appendChild(style);
 
-  function drawerShell(){
+  // ====== Shell del panel ======
+  function drawerShell() {
     const shell = document.createElement("div");
     shell.id = "transportistasDrawerShell";
     shell.innerHTML = `
@@ -76,12 +102,12 @@
     return shell;
   }
 
-  function close(){
+  function close() {
     $("#transportistasDrawerShell")?.remove();
   }
 
   // ====== Vistas ======
-  function viewHeader(){
+  function viewHeader() {
     return `
       <div class="card pad" style="margin-bottom:12px">
         <div class="row between center" style="gap:12px">
@@ -91,7 +117,7 @@
       </div>`;
   }
 
-  function viewTable(list){
+  function viewTable(list) {
     return `
       <div class="card pad">
         <table class="table">
@@ -108,37 +134,50 @@
           </thead>
           <tbody>
             ${
-              list.length ? list.map(t=>{
-                const caps = [t.soportaSimple?"Simple":null, t.soportaCarro?"Con carro":null].filter(Boolean).join(" / ")||"—";
-                const tarifas =
-                  (t.tarifas||[]).slice(0,2).map(x=>`${esc(x.origen)}: ${
-                    t.soportaCarro ? `${money(x.precioSimple||0)} / ${money(x.precioCarro||0)}`
-                                   : `${money(x.precioSimple||0)}`
-                  }`).join("<br>") + ((t.tarifas||[]).length>2?"<br><em>…</em>":"") || "—";
-                return `
-                  <tr class="tr">
-                    <td class="td"><strong>${esc(t.nombre)}</strong><br><small>${esc(t.email||"")}</small></td>
-                    <td class="td">${esc(t.rut||"—")}</td>
-                    <td class="td">${esc(t.contactoNombre||"—")}<br><small>${esc(t.telefono||"—")}</small></td>
-                    <td class="td">${esc(t.areaOperacion||"—")}</td>
-                    <td class="td">${caps}</td>
-                    <td class="td">${tarifas}</td>
-                    <td class="td">
-                      <div class="row" style="gap:6px">
-                        <button class="btn btn-light" data-act="edit" data-id="${t._id}">Editar</button>
-                        <button class="btn btn-danger" data-act="del" data-id="${t._id}">Eliminar</button>
-                      </div>
-                    </td>
-                  </tr>`;
-              }).join("") : `<tr class="tr"><td class="td" colspan="7">Sin transportistas</td></tr>`
+              list.length
+                ? list
+                    .map((t) => {
+                      const caps =
+                        [t.soportaSimple ? "Simple" : null, t.soportaCarro ? "Con carro" : null]
+                          .filter(Boolean)
+                          .join(" / ") || "—";
+                      const tarifas =
+                        (t.tarifas || [])
+                          .slice(0, 2)
+                          .map((x) =>
+                            `${esc(x.origen)}: ${
+                              t.soportaCarro
+                                ? `${money(x.precioSimple || 0)} / ${money(x.precioCarro || 0)}`
+                                : `${money(x.precioSimple || 0)}`
+                            }`
+                          )
+                          .join("<br>") + ((t.tarifas || []).length > 2 ? "<br><em>…</em>" : "") || "—";
+                      return `
+                        <tr class="tr">
+                          <td class="td"><strong>${esc(t.nombre)}</strong><br><small>${esc(t.email || "")}</small></td>
+                          <td class="td">${esc(t.rut || "—")}</td>
+                          <td class="td">${esc(t.contactoNombre || "—")}<br><small>${esc(t.telefono || "—")}</small></td>
+                          <td class="td">${esc(t.areaOperacion || "—")}</td>
+                          <td class="td">${caps}</td>
+                          <td class="td">${tarifas}</td>
+                          <td class="td">
+                            <div class="row" style="gap:6px">
+                              <button class="btn btn-light" data-act="edit" data-id="${t._id}">Editar</button>
+                              <button class="btn btn-danger" data-act="del" data-id="${t._id}">Eliminar</button>
+                            </div>
+                          </td>
+                        </tr>`;
+                    })
+                    .join("")
+                : `<tr class="tr"><td class="td" colspan="7">Sin transportistas</td></tr>`
             }
           </tbody>
         </table>
       </div>`;
   }
 
-  function viewForm(m){
-    const filas = (m.tarifas||[]).map((x,i)=>filaTarifa(x,i)).join("");
+  function viewForm(m) {
+    const filas = (m.tarifas || []).map((x) => filaTarifa(x)).join("");
     return `
       <div class="card pad" id="tForm">
         <div class="grid-2">
@@ -165,12 +204,12 @@
           <div>
             <label class="label">Área de operación</label>
             <select id="fArea" class="input">
-              ${AREAS.map(a=>`<option value="${escA(a)}" ${a===m.areaOperacion?"selected":""}>${esc(a)}</option>`).join("")}
+              ${AREAS.map((a) => `<option value="${escA(a)}" ${a === m.areaOperacion ? "selected" : ""}>${esc(a)}</option>`).join("")}
             </select>
           </div>
           <div class="row center" style="gap:12px">
-            <label class="checkbox"><input type="checkbox" id="fSimple" ${m.soportaSimple?"checked":""}> Camión simple</label>
-            <label class="checkbox"><input type="checkbox" id="fCarro" ${m.soportaCarro?"checked":""}> Con carro</label>
+            <label class="checkbox"><input type="checkbox" id="fSimple" ${m.soportaSimple ? "checked" : ""}> Camión simple</label>
+            <label class="checkbox"><input type="checkbox" id="fCarro" ${m.soportaCarro ? "checked" : ""}> Con carro</label>
           </div>
         </div>
 
@@ -190,95 +229,108 @@
               <th class="th" style="width:80px"></th>
             </tr>
           </thead>
-          <tbody id="tTarifasBody">
-            ${filas || `<tr class="tr empty"><td class="td" colspan="4">Sin tarifas</td></tr>`}
-          </tbody>
+        <tbody id="tTarifasBody">
+          ${filas || `<tr class="tr empty"><td class="td" colspan="4">Sin tarifas</td></tr>`}
+        </tbody>
         </table>
 
         <div class="row end" style="gap:8px;margin-top:12px">
           <button class="btn btn-light" id="tCancel">Cancelar</button>
-          <button class="btn" id="tSave">${m._id?"Guardar cambios":"Crear transportista"}</button>
+          <button class="btn" id="tSave">${m._id ? "Guardar cambios" : "Crear transportista"}</button>
         </div>
       </div>`;
   }
 
-  function filaTarifa(x){
+  function filaTarifa(x) {
     return `
       <tr class="tr">
-        <td class="td"><input class="input tOrigen" value="${escA(x.origen||"")}" placeholder="Ancud, Calbuco…"></td>
-        <td class="td"><input class="input tPS" type="number" min="0" step="1000" value="${escA(x.precioSimple||0)}"></td>
-        <td class="td"><input class="input tPC" type="number" min="0" step="1000" value="${escA(x.precioCarro||0)}"></td>
+        <td class="td"><input class="input tOrigen" value="${escA(x.origen || "")}" placeholder="Ancud, Calbuco…"></td>
+        <td class="td"><input class="input tPS" type="number" min="0" step="1000" value="${escA(x.precioSimple || 0)}"></td>
+        <td class="td"><input class="input tPC" type="number" min="0" step="1000" value="${escA(x.precioCarro || 0)}"></td>
         <td class="td"><button class="btn btn-danger tDel">Eliminar</button></td>
       </tr>`;
   }
 
-  // ====== Render principal ======
-  function renderList(){
+  // ====== Render listado ======
+  function renderList() {
     const body = $("#tBody");
     const rows = filter(state.all, state.q);
     body.innerHTML = viewHeader() + viewTable(rows);
 
     $("#tSearch").value = state.q;
-    $("#tSearch").addEventListener("input", (e)=>{ state.q = e.target.value||""; renderList(); });
-    $("#tNew").addEventListener("click", ()=> openForm(empty()));
+    $("#tSearch").addEventListener("input", (e) => {
+      state.q = e.target.value || "";
+      renderList();
+    });
+    $("#tNew").addEventListener("click", () => openForm(empty()));
 
-    $$("#tBody [data-act='edit']").forEach(b=> b.addEventListener("click", (e)=>{
-      const id = e.currentTarget.getAttribute("data-id");
-      const m = state.all.find(x=>String(x._id)===String(id));
-      if (m) openForm(JSON.parse(JSON.stringify(m)));
-    }));
-    $$("#tBody [data-act='del']").forEach(b=> b.addEventListener("click", async (e)=>{
-      const id = e.currentTarget.getAttribute("data-id");
-      const m = state.all.find(x=>String(x._id)===String(id));
-      if (!m) return;
-      if(!confirm(`Eliminar transportista "${m.nombre}"?`)) return;
-      await api.del(id);
-      await reload();
-    }));
+    $$("#tBody [data-act='edit']").forEach((b) =>
+      b.addEventListener("click", (e) => {
+        const id = e.currentTarget.getAttribute("data-id");
+        const m = state.all.find((x) => String(x._id) === String(id));
+        if (m) openForm(JSON.parse(JSON.stringify(m)));
+      })
+    );
+    $$("#tBody [data-act='del']").forEach((b) =>
+      b.addEventListener("click", async (e) => {
+        const id = e.currentTarget.getAttribute("data-id");
+        const m = state.all.find((x) => String(x._id) === String(id));
+        if (!m) return;
+        if (!confirm(`Eliminar transportista "${m.nombre}"?`)) return;
+        await api.del(id);
+        await reload();
+      })
+    );
   }
 
-  function filter(list, q){
-    q = (q||"").toLowerCase().trim();
-    if(!q) return list;
-    return list.filter(t =>
-      String(t.nombre||"").toLowerCase().includes(q) ||
-      String(t.rut||"").toLowerCase().includes(q) ||
-      (t.tarifas||[]).some(x=> String(x.origen||"").toLowerCase().includes(q))
+  function filter(list, q) {
+    q = (q || "").toLowerCase().trim();
+    if (!q) return list;
+    return list.filter(
+      (t) =>
+        String(t.nombre || "").toLowerCase().includes(q) ||
+        String(t.rut || "").toLowerCase().includes(q) ||
+        (t.tarifas || []).some((x) => String(x.origen || "").toLowerCase().includes(q))
     );
   }
 
   // ====== Form ======
-  function openForm(m){
+  function openForm(m) {
     const body = $("#tBody");
     body.innerHTML = viewForm(m);
 
     $("#tCancel").addEventListener("click", renderList);
-    $("#tAddTarifa").addEventListener("click", ()=>{
+    $("#tAddTarifa").addEventListener("click", () => {
       const tb = $("#tTarifasBody");
       if ($(".empty", tb)) tb.innerHTML = "";
       const tmp = document.createElement("tbody");
-      tmp.innerHTML = filaTarifa({origen:"",precioSimple:0,precioCarro:0});
+      tmp.innerHTML = filaTarifa({ origen: "", precioSimple: 0, precioCarro: 0 });
       tb.appendChild(tmp.firstElementChild);
     });
-    $("#tTarifasBody").addEventListener("click",(e)=>{
-      const btn = e.target.closest(".tDel"); if(!btn) return;
+    $("#tTarifasBody").addEventListener("click", (e) => {
+      const btn = e.target.closest(".tDel");
+      if (!btn) return;
       btn.closest("tr")?.remove();
       const tb = $("#tTarifasBody");
       if (!tb.querySelector("tr")) tb.innerHTML = `<tr class="tr empty"><td class="td" colspan="4">Sin tarifas</td></tr>`;
     });
 
-    $("#tSave").addEventListener("click", async ()=>{
+    $("#tSave").addEventListener("click", async () => {
       const model = collect();
-      if(!model.nombre || !model.rut){ alert("Nombre y RUT son obligatorios."); return; }
-      if(!model.soportaCarro){
-        model.tarifas = (model.tarifas||[]).map(x=>({...x, precioCarro:0}));
+      if (!model.nombre || !model.rut) {
+        alert("Nombre y RUT son obligatorios.");
+        return;
       }
-      if(model._id) await api.update(model._id, model); else await api.create(model);
+      if (!model.soportaCarro) {
+        model.tarifas = (model.tarifas || []).map((x) => ({ ...x, precioCarro: 0 }));
+      }
+      if (model._id) await api.update(model._id, model);
+      else await api.create(model);
       await reload();
     });
 
-    function collect(){
-      const out = m._id ? {...m} : empty();
+    function collect() {
+      const out = m._id ? { ...m } : empty();
       out.nombre = $("#fNombre").value.trim();
       out.rut = $("#fRUT").value.trim();
       out.contactoNombre = $("#fContacto").value.trim();
@@ -287,30 +339,46 @@
       out.areaOperacion = $("#fArea").value;
       out.soportaSimple = $("#fSimple").checked;
       out.soportaCarro = $("#fCarro").checked;
-      const tarifas=[];
-      $$("#tTarifasBody tr").forEach(tr=>{
-        const origen = $(".tOrigen",tr)?.value.trim();
-        const precioSimple = Number($(".tPS",tr)?.value||0);
-        const precioCarro  = Number($(".tPC",tr)?.value||0);
-        if(origen) tarifas.push({origen, precioSimple, precioCarro});
+      const tarifas = [];
+      $$("#tTarifasBody tr").forEach((tr) => {
+        const origen = $(".tOrigen", tr)?.value.trim();
+        const precioSimple = Number($(".tPS", tr)?.value || 0);
+        const precioCarro = Number($(".tPC", tr)?.value || 0);
+        if (origen) tarifas.push({ origen, precioSimple, precioCarro });
       });
       out.tarifas = tarifas;
       return out;
     }
   }
 
-  // ====== Carga ======
-  async function reload(){
+  // ====== Carga y API global ======
+  async function reload() {
     const data = await api.get();
     state.all = Array.isArray(data) ? data : [];
     renderList();
   }
 
-  // ====== API global: abrir panel desde nav.jsx ======
-  global.openTransportistasPanel = async function(){
+  // Abre el panel (llamado desde nav o interceptor)
+  global.openTransportistasPanel = async function () {
     close();
-    const shell = drawerShell();
+    drawerShell();
     await reload();
   };
 
 })(window);
+
+/* === Interceptor GLOBAL de click ===
+   Evita la navegación hacia transportistas_mmpp.html y abre el panel.
+   Cárgalo en TODAS las vistas donde exista el sidebar. */
+(function () {
+  function handler(e) {
+    const a = e.target.closest("a");
+    if (!a) return;
+    const href = (a.getAttribute("href") || "").toLowerCase();
+    if (href.includes("transportistas_mmpp.html")) {
+      e.preventDefault();
+      if (window.openTransportistasPanel) window.openTransportistasPanel();
+    }
+  }
+  document.addEventListener("click", handler, true); // capture=true para ganarle a otros manejadores
+})();
