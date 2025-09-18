@@ -6,13 +6,17 @@
   <title>Calendario MMPP</title>
 
   <!-- Estilos compartidos -->
-<link rel="stylesheet" href="/spa-mmpp/mmpp-unificado.css?v=1"/>
+  <link rel="stylesheet" href="/spa-mmpp/mmpp-unificado.css?v=1"/>
 
+  <!-- Botón compartir (estilo simple) -->
+  <style>
+    .share-bar{display:flex;justify-content:flex-end;margin:10px 0}
+    .btn-share{height:36px;border:1px solid var(--border);border-radius:12px;padding:0 12px;background:#eef2ff;color:#1e40af;font-weight:700}
+    .btn-share:active{transform:translateY(1px)}
+  </style>
 
   <!-- ===== CONFIG (antes de cualquier JS tuyo) ===== -->
   <script>window.DEBUG = true;</script>
-  <!-- IMPORTANTE: no fuerces dominios; usamos /api y vercel.json hace el proxy -->
-  <!-- (si alguna vez quieres forzar otro backend, agrega window.API_URL aquí arriba) -->
   <script src="/js/config.js"></script>
   <!-- ============================================= -->
 
@@ -20,12 +24,23 @@
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+  <!-- html2canvas para la captura -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
   <div class="mmpp-layout">
     <div id="mmppNavMount"></div>
     <main class="mmpp-main">
-      <div id="mmppCalendario"></div>
+      <!-- Barra con botón Compartir -->
+      <div class="share-bar">
+        <button id="btnCompartirCalendario" class="btn-share">📤 Compartir</button>
+      </div>
+
+      <!-- 🔶 Todo lo que quieras que salga en la imagen debe ir dentro de este contenedor -->
+      <div id="calendarioCapture">
+        <div id="mmppCalendario"></div>
+      </div>
     </main>
   </div>
 
@@ -38,14 +53,81 @@
   <!-- Calendario -->
   <script defer src="/spa-mmpp/mmpp-calendario.js?v=chips-3"></script>
 
-  <!-- Montaje -->
+  <!-- Montaje + Captura/Compartir -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
+      // Montaje calendario
       if (window.MMppCalendario && document.getElementById('mmppCalendario')) {
         MMppCalendario.mount({ capacidadCamion: 10 });
       } else {
         console.warn('No se encontró MMppCalendario o el contenedor #mmppCalendario.');
       }
+
+      // ---- Captura y compartir
+      const CAPTURE_SEL = '#calendarioCapture';
+      const btn = document.getElementById('btnCompartirCalendario');
+
+      async function capturarPNG() {
+        const nodo = document.querySelector(CAPTURE_SEL);
+        if (!nodo) throw new Error('No se encontró el contenedor a capturar');
+
+        const scale = Math.max(2, Math.min(3, window.devicePixelRatio || 1));
+        const canvas = await html2canvas(nodo, {
+          backgroundColor: null,
+          scale,
+          useCORS: true,
+          logging: false,
+          windowWidth: document.documentElement.scrollWidth,
+          windowHeight: document.documentElement.scrollHeight
+        });
+
+        return new Promise((resolve) => {
+          canvas.toBlob((blob) => resolve(blob), 'image/png', 0.95);
+        });
+      }
+
+      function descargarBlob(blob, nombre) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = nombre;
+        document.body.appendChild(a); a.click();
+        a.remove(); URL.revokeObjectURL(url);
+      }
+
+      async function compartirCalendario() {
+        try {
+          const blob = await capturarPNG();
+          const nombre = `Calendario_MMPP_${new Date().toISOString().slice(0,10)}.png`;
+
+          // Web Share API con archivo (móviles modernos)
+          if (navigator.canShare) {
+            const file = new File([blob], nombre, { type: 'image/png' });
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: 'Calendario MMPP',
+                text: 'Te comparto el calendario con la vista filtrada.'
+              });
+              return;
+            }
+          }
+
+          // Fallback: descarga el PNG y abre WhatsApp o Correo con texto
+          descargarBlob(blob, nombre);
+          const texto = 'Te comparto el calendario con la vista filtrada. (Adjunto la imagen descargada)';
+          const whatsURL = 'https://wa.me/?text=' + encodeURIComponent(texto);
+          const mailURL  = 'mailto:?subject=' + encodeURIComponent('Calendario MMPP')
+                         + '&body=' + encodeURIComponent(texto);
+          const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+          window.open(esMovil ? whatsURL : mailURL, '_blank');
+
+        } catch (err) {
+          console.error(err);
+          alert('No se pudo generar la captura. Revisa la consola.');
+        }
+      }
+
+      if (btn) btn.addEventListener('click', compartirCalendario);
     });
   </script>
 
