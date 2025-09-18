@@ -121,3 +121,10 @@ body:has(#mapShell:fullscreen){ overflow:hidden; }
                            .sidebar-centros.minimized{ transform:translateX(-90vw); }
                            .map-search{ width:94vw; } }
 @media (max-width:600px){  #mapShell{ height:calc(100vh - 200px); min-height:360px; } }
+
+/* ===== FIX: que el mapa no quede tapado por el container ===== */
+.container{ position:relative; z-index:1; }
+#tab-mapa{ position:relative; z-index:4; }
+#mapShell{ position:relative; z-index:5; }
+#map, #map.leaflet-container{ position:relative; z-index:6; }
+
