@@ -1,8 +1,10 @@
-// js/core/centros_repo.js
+// js/core/centros_repo.js — versión sin “líneas”
 
 import {
-  apiGetCentros, apiCreateCentro, apiUpdateCentro, apiDeleteCentro,
-  apiAddLinea, apiUpdateLinea, apiDeleteLinea, apiAddInventarioLinea,
+  apiGetCentros,
+  apiCreateCentro,
+  apiUpdateCentro,
+  apiDeleteCentro,
   apiBulkUpsertCentros
 } from './api.js';
 
@@ -29,23 +31,7 @@ export async function deleteCentro(id) {
   return USE_API ? await apiDeleteCentro(id) : localDeleteCentro(id);
 }
 
-/* --------- CRUD Líneas --------- */
-export async function addLinea(centroId, data) {
-  return USE_API ? await apiAddLinea(centroId, data) : localAddLinea(centroId, data);
-}
-export async function updateLinea(centroId, lineaId, data) {
-  return USE_API ? await apiUpdateLinea(centroId, lineaId, data) : localUpdateLinea(centroId, lineaId, data);
-}
-export async function deleteLinea(centroId, lineaId) {
-  return USE_API ? await apiDeleteLinea(centroId, lineaId) : localDeleteLinea(centroId, lineaId);
-}
-
-/* --------- Inventario Línea --------- */
-export async function addInventarioLinea(centroId, lineaId, data) {
-  return USE_API ? await apiAddInventarioLinea(centroId, lineaId, data) : localAddInventarioLinea(centroId, lineaId, data);
-}
-
-/* --------- BULK UPSERT (nuevo) --------- */
+/* --------- BULK UPSERT (centros) --------- */
 export async function bulkUpsertCentros(arr) {
   if (USE_API) return apiBulkUpsertCentros(arr);
   return localBulkUpsertCentros(arr);
@@ -74,37 +60,6 @@ async function localUpdateCentro(id,data){
 }
 async function localDeleteCentro(id){
   const list = (await getCentros()).filter(c=>c._id!==id);
-  return persist(list);
-}
-async function localAddLinea(centroId, data){
-  const list = await getCentros();
-  const c = list.find(c=>c._id===centroId);
-  if(!c) throw new Error('Centro no encontrado');
-  c.lines ||= [];
-  c.lines.push({ ...data, _id: crypto.randomUUID(), inventarios: [] });
-  return persist(list);
-}
-async function localUpdateLinea(centroId, lineaId, data){
-  const list = await getCentros();
-  const c = list.find(c=>c._id===centroId);
-  const l = c?.lines?.find(l=>l._id===lineaId);
-  if(!l) throw new Error('Línea no encontrada');
-  Object.assign(l, data);
-  return persist(list);
-}
-async function localDeleteLinea(centroId, lineaId){
-  const list = await getCentros();
-  const c = list.find(c=>c._id===centroId);
-  c.lines = c.lines.filter(l=>l._id!==lineaId);
-  return persist(list);
-}
-async function localAddInventarioLinea(centroId,lineaId,data){
-  const list = await getCentros();
-  const c = list.find(c=>c._id===centroId);
-  const l = c?.lines?.find(l=>l._id===lineaId);
-  if(!l) throw new Error('Línea no encontrada');
-  l.inventarios ||= [];
-  l.inventarios.push({ ...data, _id: crypto.randomUUID() });
   return persist(list);
 }
 async function localBulkUpsertCentros(arr){
