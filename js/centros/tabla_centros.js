@@ -4,61 +4,99 @@ import { registerTablaCentrosEventos } from './eventos_centros.js';
 import { tabMapaActiva } from '../core/utilidades_app.js';
 import { renderMapaAlways } from '../mapas/control_mapa.js';
 
-/* ===== Utiles ===== */
+/* ===== Utils ===== */
 const fmt2 = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc  = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const toTitle = (s) => (s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-const parseHa = (v) => {
-  if (v === '' || v == null) return 0;
-  // acepta "12.345,67" o "12345.67" o número
-  if (typeof v === 'number') return v;
-  const n = parseFloat(String(v).replace(/\./g, '').replace(',', '.'));
+const toTitleCase = (str) => (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+const num = (v) => (v === '' || v == null) ? 0 : Number(v) || 0;
+const parseHaStr = (s) => { // "1.234,56" -> 1234.56
+  if (s == null) return 0;
+  const n = parseFloat(String(s).replace(/\./g, '').replace(',', '.'));
   return Number.isFinite(n) ? n : 0;
 };
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/* === Rellena <select id="filtroComuna"> con comunas únicas === */
-function fillFiltroComuna(centros) {
-  const sel = document.getElementById('filtroComuna');
-  if (!sel) return;
-  const comunas = [...new Set((centros || [])
-                  .map(c => (c.comuna || '').trim())
-                  .filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
-  sel.innerHTML = `<option value="">Todas las comunas</option>` +
-    comunas.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-}
+/* ===== Estado de la vista ===== */
+let $t;               // instancia jQuery del #centrosTable
+let api;              // DataTables API
+let $comunaSelect;    // <select id="filtroComuna">
+let $buscador;        // <input id="buscarProveedor">
 
-/* === Actualiza KPIs superiores y footer según filas filtradas === */
-function updateKpisAndFooter(dt) {
-  const rows = dt.rows({ search: 'applied' }).data();
+/* ===== KPIs + Footer con filas filtradas ===== */
+function updateKpisYFooter() {
+  if (!api) return;
+
+  const rows = api.rows({ search: 'applied' }).data();
   let totalHa = 0;
-  const comunasSet = new Set();
+  const comunas = new Set();
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    // row[1] = Comuna, row[3] = Hectáreas (string formateado)
-    comunasSet.add((row[1] || '').toString().toLowerCase());
-    totalHa += parseHa(row[3]);
-  }
+  rows.each(row => {
+    // row = [ proveedor, comuna, codigo, hect_fmt, ... ]
+    totalHa += parseHaStr(row[3]);
+    const c = (row[1] || '').toString().trim().toLowerCase();
+    if (c) comunas.add(c);
+  });
 
-  // KPIs
+  // KPIs superiores
   const kCent = document.getElementById('kpiCentros');
   const kHa   = document.getElementById('kpiHect');
   const kCom  = document.getElementById('kpiComunas');
   if (kCent) kCent.textContent = String(rows.length);
   if (kHa)   kHa.textContent   = fmt2.format(totalHa);
-  if (kCom)  kCom.textContent  = String([...comunasSet].filter(Boolean).length);
+  if (kCom)  kCom.textContent  = String(comunas.size);
 
-  // Footer
-  const fCent = document.getElementById('totalCentros');
-  const fHa   = document.getElementById('totalHect');
-  if (fCent) fCent.textContent = String(rows.length);
-  if (fHa)   fHa.textContent   = fmt2.format(totalHa);
+  // Footer tabla
+  const totalCentrosEl = document.getElementById('totalCentros');
+  const totalHectEl    = document.getElementById('totalHect');
+  if (totalCentrosEl) totalCentrosEl.textContent = String(rows.length);
+  if (totalHectEl)    totalHectEl.textContent    = fmt2.format(totalHa);
+}
+
+/* ===== Poblar <select> comunas y enlazar filtro ===== */
+function populateComunasYWireFilter() {
+  $comunaSelect = document.getElementById('filtroComuna');
+  if (!$comunaSelect) return;
+
+  // Construimos set con todas las comunas del dataset
+  const comunas = Array.from(
+    new Set((Estado.centros || []).map(c => (c.comuna || '').trim()).filter(Boolean))
+  ).sort((a,b) => a.localeCompare(b, 'es'));
+
+  // Rellenamos opciones
+  $comunaSelect.innerHTML = `<option value="">Todas las comunas</option>` +
+    comunas.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+
+  // Inicializa Materialize (si está presente), sino queda nativo
+  try { window.M && window.M.FormSelect && window.M.FormSelect.init($comunaSelect); } catch {}
+
+  // Filtro por comuna (columna 1)
+  $comunaSelect.addEventListener('change', () => {
+    const val = ($comunaSelect.value || '').trim();
+    if (!api) return;
+    if (!val) {
+      api.column(1).search('', true, false).draw();
+    } else {
+      // regex exacta, case-insensitive
+      api.column(1).search(`^${escapeRegex(val)}$`, true, false).draw();
+    }
+  });
+}
+
+/* ===== Buscador global externo ===== */
+function wireExternalSearch() {
+  $buscador = document.getElementById('buscarProveedor'); // ← este es tu input del HTML
+  if (!$buscador) return;
+
+  $buscador.addEventListener('input', () => {
+    const q = ($buscador.value || '').trim();
+    api.search(q).draw(); // busca en todas las columnas visibles
+  });
 }
 
 /* ===== Inicializa DataTable ===== */
 export function initTablaCentros() {
-  const $t = window.$('#centrosTable');
+  const jq = window.$;
+  $t = jq('#centrosTable');
   if (!$t.length) {
     console.error('No se encontró #centrosTable');
     return;
@@ -66,7 +104,7 @@ export function initTablaCentros() {
 
   Estado.table = $t.DataTable({
     colReorder: true,
-    // Quitamos 'f' para eliminar el buscador nativo (derecha)
+    // Quitamos el buscador nativo (no ponemos 'f' en dom)
     dom: 'Brtip',
     buttons: [
       { extend: 'copyHtml5',  footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
@@ -81,50 +119,25 @@ export function initTablaCentros() {
     ]
   });
 
-  // Por si el tema/plantilla inyecta el filtro, lo forzamos oculto.
-  window.$('#centrosTable_filter').hide();
+  api = Estado.table;
 
-  // Recalcular KPIs + footer al dibujar/filtrar/paginar
-  Estado.table.on('draw', () => updateKpisAndFooter(Estado.table));
+  // Recalcular KPIs y footer en cada draw (filtrado/paginado/orden)
+  $t.on('draw.dt', updateKpisYFooter);
 
   registerTablaCentrosEventos();
+  wireExternalSearch();
 
-  // ---- Filtros externos ----
-  const inputBuscar = document.getElementById('buscarProveedor'); // proveedor o código
-  if (inputBuscar) {
-    inputBuscar.addEventListener('input', () => {
-      const q = (inputBuscar.value || '').trim();
-      Estado.table.search(q).draw();
-    });
-  }
-
-  const selComuna = document.getElementById('filtroComuna');
-  if (selComuna) {
-    selComuna.addEventListener('change', () => {
-      const v = selComuna.value.trim();
-      // Columna 1 = "Comuna". Si hay comuna, filtramos exacto (regex anclado).
-      if (v) Estado.table.column(1).search(`^${escapeRegex(v)}$`, true, false).draw();
-      else   Estado.table.column(1).search('').draw();
-    });
-  }
-
-  const btnClear = document.getElementById('btnLimpiarFiltros');
-  if (btnClear) {
-    btnClear.addEventListener('click', () => {
-      if (selComuna) { selComuna.value = ''; Estado.table.column(1).search(''); }
-      if (inputBuscar) inputBuscar.value = '';
-      Estado.table.search('').draw();
-    });
-  }
+  // Por si algún tema/estilo igual llegara a pintar el filtro nativo:
+  window.$('#centrosTable_filter').hide();
 }
 
 /**
- * Carga/recarga los centros en la tabla.
- * - Si recibes `data` (array), la usa.
+ * Carga/recarga centros en la tabla (y re-puebla comunas).
+ * - Si recibes `data` (array), se usa.
  * - Si no, consulta al API (getCentrosAll()).
  */
 export async function loadCentros(data) {
-  if (!Estado.table) {
+  if (!api) {
     console.warn('DataTable no inicializada aún');
     return;
   }
@@ -133,9 +146,9 @@ export async function loadCentros(data) {
     Estado.centros = Array.isArray(data) ? data : await getCentrosAll();
 
     const rows = (Estado.centros || []).map((c, i) => {
-      const proveedor = toTitle(c.proveedor) || '-';
-      const comuna    = toTitle(c.comuna)    || '-';
-      const hect      = parseHa(c.hectareas);
+      const proveedor = toTitleCase(c.proveedor) || '-';
+      const comuna    = toTitleCase(c.comuna)    || '-';
+      const hect      = num(c.hectareas);
 
       const coordsCell = `
         <i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer" title="Ver detalles" aria-label="Ver detalles">visibility</i>`;
@@ -155,10 +168,27 @@ export async function loadCentros(data) {
       ];
     });
 
-    Estado.table.clear().rows.add(rows).draw();    // 'draw' dispara updateKpisAndFooter
-    fillFiltroComuna(Estado.centros);              // desplegable de comunas
+    api.clear().rows.add(rows).draw(); // draw() dispare updateKpisYFooter
 
-    // Si el tab MAPA está activo, actualizamos el mapa
+    // Poblamos comunas (después de tener el dataset)
+    populateComunasYWireFilter();
+
+    // Botón limpiar filtros
+    const btnLimpiar = document.getElementById('btnLimpiarFiltros');
+    if (btnLimpiar) {
+      btnLimpiar.onclick = () => {
+        // Limpia select comuna y buscador
+        if ($comunaSelect) {
+          $comunaSelect.value = '';
+          try { window.M && window.M.FormSelect && window.M.FormSelect.init($comunaSelect); } catch {}
+          api.column(1).search('', true, false);
+        }
+        if ($buscador) $buscador.value = '';
+        api.search('').draw();
+      };
+    }
+
+    // Si el tab MAPA está activo, actualizamos
     if (tabMapaActiva?.()) await renderMapaAlways(true);
 
   } catch (e) {
