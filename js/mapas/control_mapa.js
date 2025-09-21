@@ -9,9 +9,10 @@ import {
   clearMapPoints,
   redrawPolygon,
   addPointMarker,
-  drawCentrosInMap,
+  // drawCentrosInMap,   // <- ya no lo usamos aquí
   focusCentroInMap,
-  initSidebarFiltro
+  initSidebarFiltro,
+  cargarYRenderizarCentros       // <- NUEVO: alimenta dataset del buscador y dibuja
 } from './mapa.js';
 
 let _mapInitStarted = false;
@@ -165,7 +166,10 @@ export async function renderMapaAlways(force = false) {
   }
   Estado.centrosHashRender = h;
 
-  drawCentrosInMap(Estado.centros, Estado.defaultLatLng);
+  // Antes se llamaba drawCentrosInMap(). Usamos la versión que también
+  // alimenta el buscador flotante del mapa.
+  cargarYRenderizarCentros(Estado.centros);
+
   invalidateSoon(60);
 }
 
