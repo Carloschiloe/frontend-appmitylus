@@ -29,7 +29,7 @@
     #tab-mapa{ position: relative; z-index: 4; }
     #mapShell{ position: relative; z-index: 5; }
     #map, #map.leaflet-container{ position: relative; z-index: 6; }
-    /* un poquito de aire para la tabla de puntos */
+    /* tabla de puntos */
     #pointsTable td, #pointsTable th { padding: 4px 8px; }
     #pointsTable tbody { max-height: 200px; overflow-y: auto; display: block; }
     #pointsTable thead, #pointsTable tbody tr { display: table; width: 100%; table-layout: fixed; }
@@ -70,29 +70,21 @@
                 <th style="min-width:105px;">Comuna</th>
                 <th style="min-width:70px;">Código</th>
                 <th style="min-width:60px; max-width:80px;">Hectáreas</th>
-                <th style="width:54px;">Líneas</th>
-                <th style="width:60px;">Tons</th>
-                <th style="width:54px;">Un/Kg</th>
-                <th style="width:70px;">% Rechazo</th>
-                <th style="width:56px;">Rdmto</th>
                 <th style="width:48px;">Detalle</th>
                 <th style="width:72px;">Acciones</th>
               </tr>
             </thead>
             <tfoot>
               <tr>
-                <th colspan="3" style="text-align:right">Totales:</th>
+                <th colspan="1" style="text-align:right">Centros:</th>
+                <th id="totalCentros">0</th>
+                <th style="text-align:right">Hectáreas:</th>
                 <th id="totalHect">0.00</th>
-                <th id="totalLineas">0</th>
-                <th id="totalTons">0</th>
-                <th id="totalUnKg">0</th>
-                <th id="totalRechazo">0</th>
-                <th id="totalRdmto">0</th>
                 <th colspan="2"></th>
               </tr>
             </tfoot>
           </table>
-          <div id="acordeonLineas"></div>
+          <!-- (acordeón de líneas eliminado) -->
         </div>
       </div>
     </section>
@@ -191,7 +183,6 @@
   <div id="modalImportarCentros" class="modal modal-fixed-footer">
     <div class="modal-content">
       <h5>Importar Centros (Excel / CSV)</h5>
-      <!-- el importador se monta aquí desde importar_centros.js -->
       <div id="importarCentrosContainer"></div>
     </div>
     <div class="modal-footer">
@@ -212,11 +203,9 @@
 
   <!-- FABs -->
   <div style="position: fixed; bottom: 34px; right: 30px; z-index: 1030; display: flex; flex-direction: column; gap: 16px;">
-    <!-- Nuevo centro: lo abre app.js porque hace pre-setup -->
     <a id="btnOpenCentroModal" class="btn-floating btn-large teal tooltipped" data-tooltip="Agregar Centro">
       <i class="material-icons">add</i>
     </a>
-    <!-- Importar: abrimos con modal-trigger directo -->
     <a id="btnOpenImportarModal" class="btn-floating btn-large orange darken-2 tooltipped modal-trigger" data-tooltip="Importar desde Excel/CSV" href="#modalImportarCentros">
       <i class="material-icons">file_upload</i>
     </a>
@@ -244,7 +233,6 @@
     document.addEventListener('DOMContentLoaded', function () {
       M.Modal.init(document.querySelectorAll('.modal'));
       M.Tooltip.init(document.querySelectorAll('.tooltipped'));
-
       const tabsEl = document.getElementById('tabs');
       if (tabsEl) {
         M.Tabs.init(tabsEl, {
@@ -261,3 +249,4 @@
   <noscript>Esta página requiere JavaScript habilitado.</noscript>
 </body>
 </html>
+
