@@ -62,16 +62,30 @@
 
       <!-- ========= SECCIÓN: DIRECTORIO ========= -->
       <section id="tab-centros" class="col s12">
-        <!-- HERO + KPIs -->
+        <!-- HERO -->
         <div class="mmpp-hero" style="margin:16px 0 12px;">
           <div><h1 style="margin:0;font-weight:800">Directorio de Centros</h1></div>
           <div class="mmpp-badge">▦ Panel</div>
         </div>
 
-        <div class="mmpp-kpis" style="margin:10px 0 12px;">
-          <div class="mmpp-kpi"><strong id="kpiCentros">0</strong>&nbsp;centros</div>
-          <div class="mmpp-kpi"><strong id="kpiHect">0,00</strong>&nbsp;ha</div>
-          <div class="mmpp-kpi"><strong id="kpiComunas">0</strong>&nbsp;comunas</div>
+        <!-- KPI CARDS (se actualizan con el filtro) -->
+        <div class="kpi-cards" id="kpiCards">
+          <article class="kpi-card">
+            <header class="kpi-title">Centros</header>
+            <div class="kpi-value" id="kpiCentros">0</div>
+          </article>
+
+          <article class="kpi-card">
+            <header class="kpi-title">Hectáreas</header>
+            <div class="kpi-value">
+              <span id="kpiHect">0,00</span> <small class="kpi-suffix">ha</small>
+            </div>
+          </article>
+
+          <article class="kpi-card">
+            <header class="kpi-title">Comunas</header>
+            <div class="kpi-value" id="kpiComunas">0</div>
+          </article>
         </div>
 
         <!-- FILTROS -->
@@ -98,26 +112,25 @@
           <div class="col s12">
             <table id="centrosTable" class="striped display responsive-table" style="width:100%">
               <thead>
-  <tr>
-    <th style="min-width:130px;">Proveedor</th>
-    <th style="min-width:105px;">Comuna</th>
-    <th style="min-width:70px;">Código de Centro</th>
-    <th style="min-width:110px;">Código de Área</th> <!-- NUEVA -->
-    <th style="min-width:60px;max-width:80px;">Hectáreas</th>
-    <th style="width:48px;">Detalle</th>
-    <th style="width:72px;">Acciones</th>
-  </tr>
-</thead>
-<tfoot>
-  <tr>
-    <th colspan="2" style="text-align:right">Totales:</th>
-    <th id="totalCentros">0</th>
-    <th></th> <!-- espacio para "Código de Área" (sin total) -->
-    <th id="totalHect">0,00</th>
-    <th colspan="2"></th>
-  </tr>
-</tfoot>
-
+                <tr>
+                  <th style="min-width:130px;">Proveedor</th>
+                  <th style="min-width:105px;">Comuna</th>
+                  <th style="min-width:90px;">Código de Centro</th>
+                  <th style="min-width:110px;">Código de Área</th>
+                  <th style="min-width:60px;max-width:80px;">Hectáreas</th>
+                  <th style="width:48px;">Detalle</th>
+                  <th style="width:72px;">Acciones</th>
+                </tr>
+              </thead>
+              <tfoot>
+                <tr>
+                  <th colspan="2" style="text-align:right">Totales:</th>
+                  <th id="totalCentros">0</th>
+                  <th></th> <!-- no aplica total para Código de Área -->
+                  <th id="totalHect">0,00</th>
+                  <th colspan="2"></th>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
