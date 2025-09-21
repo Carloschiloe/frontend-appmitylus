@@ -1,4 +1,4 @@
-//js/centros/tabla_centros.js
+// js/centros/tabla_centros.js
 import { Estado } from '../core/estado.js';
 import { getCentrosAll } from '../core/centros_repo.js';
 import { registerTablaCentrosEventos } from './eventos_centros.js';
@@ -6,10 +6,16 @@ import { tabMapaActiva } from '../core/utilidades_app.js';
 import { renderMapaAlways } from '../mapas/control_mapa.js';
 
 /* ===== Utils ===== */
+const fmt0 = new Intl.NumberFormat('es-CL', { maximumFractionDigits: 0 });
 const fmt2 = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc  = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toTitleCase = (str) => (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 const num = (v) => (v === '' || v == null) ? 0 : Number(v) || 0;
+const toNum = (v) => { // seguro para strings tipo "1.234,56"
+  if (v === '' || v == null) return 0;
+  const n = parseFloat(String(v).replace(/\./g, '').replace(',', '.'));
+  return Number.isFinite(n) ? n : 0;
+};
 const parseHaStr = (s) => { // "1.234,56" -> 1234.56
   if (s == null) return 0;
   const n = parseFloat(String(s).replace(/\./g, '').replace(',', '.'));
@@ -27,29 +33,40 @@ let $buscador;        // <input id="buscarProveedor"> o <input id="filtroProveed
 function updateKpisYFooter() {
   if (!api) return;
 
-  const rows = api.rows({ search: 'applied' }).data();
+  // Usamos índices para cruzar con Estado.centros (acceso a tonsMax, etc.)
+  const idxs = api.rows({ search: 'applied' }).indexes().toArray();
+
   let totalHa = 0;
+  let totalTonsMax = 0;
   const comunas = new Set();
 
-  rows.each(row => {
-    // con la nueva columna: [0 prov, 1 comuna, 2 codigo, 3 codArea, 4 hect_fmt, ...]
-    totalHa += parseHaStr(row[4]);
-    const c = (row[1] || '').toString().trim().toLowerCase();
-    if (c) comunas.add(c);
+  idxs.forEach(i => {
+    // row renderizada (para hectáreas formateadas)
+    const row = api.row(i).data();           // [0 prov, 1 comuna, 2 código, 3 codArea, 4 hect_fmt, ...]
+    totalHa += parseHaStr(row?.[4]);
+
+    // dataset original (para tonsMax y comuna real)
+    const c = Estado.centros?.[i];
+    totalTonsMax += toNum(c?.tonsMax ?? c?.detalles?.tonsMax);
+    const comuna = (c?.comuna || '').toString().trim().toLowerCase();
+    if (comuna) comunas.add(comuna);
   });
 
   // KPIs superiores
   const kCent = document.getElementById('kpiCentros');
   const kHa   = document.getElementById('kpiHect');
   const kCom  = document.getElementById('kpiComunas');
-  if (kCent) kCent.textContent = String(rows.length);
+  const kTons = document.getElementById('kpiTonsMax'); // opcional en HTML
+
+  if (kCent) kCent.textContent = String(idxs.length);
   if (kHa)   kHa.textContent   = fmt2.format(totalHa);
   if (kCom)  kCom.textContent  = String(comunas.size);
+  if (kTons) kTons.textContent = fmt0.format(totalTonsMax);
 
   // Footer tabla
   const totalCentrosEl = document.getElementById('totalCentros');
   const totalHectEl    = document.getElementById('totalHect');
-  if (totalCentrosEl) totalCentrosEl.textContent = String(rows.length);
+  if (totalCentrosEl) totalCentrosEl.textContent = String(idxs.length);
   if (totalHectEl)    totalHectEl.textContent    = fmt2.format(totalHa);
 }
 
@@ -145,7 +162,7 @@ export async function loadCentros(data) {
       const proveedor = toTitleCase(c.proveedor) || '-';
       const comuna    = toTitleCase(c.comuna)    || '-';
       const codigo    = c.code || '-';
-      const codArea   = c.codigoArea || c?.detalles?.codigoArea || '-'; // ← NUEVO
+      const codArea   = c.codigoArea || c?.detalles?.codigoArea || '-'; // NUEVO
       const hect      = num(c.hectareas);
 
       const coordsCell = `
@@ -163,8 +180,8 @@ export async function loadCentros(data) {
       return [
         esc(proveedor),        // 0 Proveedor
         esc(comuna),           // 1 Comuna
-        esc(codigo),           // 2 Código
-        esc(codArea),          // 3 Código de Área  ← NUEVA COLUMNA
+        esc(codigo),           // 2 Código de Centro
+        esc(codArea),          // 3 Código de Área
         fmt2.format(hect),     // 4 Hectáreas (formateado)
         coordsCell,            // 5 Detalle
         accionesCell           // 6 Acciones
