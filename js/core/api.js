@@ -1,6 +1,6 @@
-// /js/core/api.js
+// /js/core/api.js — versión sin “líneas”
 
-// 👉 Opción simple: detecta local vs producción
+// 👉 Opción simple: detecta local vs producción (por ahora fijo a prod)
 const API_URL = 'https://backend-appmitylus.vercel.app/api';
 
 /* ===================== Helpers comunes ===================== */
@@ -42,16 +42,13 @@ async function request(path, { method = 'GET', json, headers = {}, retry = true 
   const url = `${API_URL}${path}`;
   const upper = String(method).toUpperCase();
 
-  // Construye opciones SIN disparar preflight en GET
   const makeOpts = (m) => {
     const mm = String(m).toUpperCase();
     const opts = { method: mm };
-
-    // ⚠️ Importante: NO headers en GET (ni en DELETE) para evitar preflight
+    // ⚠️ No headers en GET/DELETE para evitar preflight
     if (mm !== 'GET' && mm !== 'DELETE') {
       const baseHeaders = {};
       if (json !== undefined) baseHeaders['Content-Type'] = 'application/json';
-      // headers extra solo si no es GET/DELETE
       opts.headers = { ...baseHeaders, ...headers };
       if (json !== undefined) opts.body = JSON.stringify(json);
     }
@@ -69,11 +66,7 @@ async function request(path, { method = 'GET', json, headers = {}, retry = true 
   }
 
   // Fallback PATCH -> PUT si el server no soporta PATCH
-  if (
-    retry &&
-    upper === 'PATCH' &&
-    (!resp.ok && (resp.status === 404 || resp.status === 405 || resp.status === 501))
-  ) {
+  if (retry && upper === 'PATCH' && (!resp.ok && (resp.status === 404 || resp.status === 405 || resp.status === 501))) {
     const resp2 = await fetch(url, makeOpts('PUT'));
     return checkResponse(resp2);
   }
@@ -87,23 +80,9 @@ export async function apiCreateCentro(data) { return request('/centros', { metho
 export async function apiUpdateCentro(id, data) { return request(`/centros/${id}`, { method: 'PUT', json: data }); }
 export async function apiDeleteCentro(id) { return request(`/centros/${id}`, { method: 'DELETE' }); }
 
-/* LÍNEAS */
-export async function apiAddLinea(centroId, data) {
-  return request(`/centros/${centroId}/lines`, { method: 'POST', json: data });
-}
-export async function apiUpdateLinea(centroId, lineaId, data) {
-  return request(`/centros/${centroId}/lines/${lineaId}`, { method: 'PUT', json: data });
-}
-export async function apiDeleteLinea(centroId, lineaId) {
-  return request(`/centros/${centroId}/lines/${lineaId}`, { method: 'DELETE' });
-}
+/* (ENDPOINTS DE LÍNEAS ELIMINADOS) */
 
-/* INVENTARIO LÍNEA */
-export async function apiAddInventarioLinea(centroId, lineaId, data) {
-  return request(`/centros/${centroId}/lines/${lineaId}/inventarios`, { method: 'POST', json: data });
-}
-
-/* BULK CENTROS */
+/* ==================== BULK CENTROS ==================== */
 export async function apiBulkUpsertCentros(arr) {
   return request('/centros/bulk-upsert', { method: 'PUT', json: arr });
 }
