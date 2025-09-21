@@ -2,80 +2,86 @@
 import { Estado } from '../core/estado.js';
 
 /**
- * Calcula totales y promedios (NaN-safe) para la tabla de centros
- * y actualiza el footer. Devuelve además un objeto con los valores.
+ * Footer de totales para la tabla de centros.
+ * - Cuenta filas filtradas (no solo página)
+ * - Suma hectáreas de las filas filtradas
+ * - Tolerante a formatos CL/INT (11.495,73 / 11,08 / 11.08)
  *
- * NOTA: se calcula desde Estado.centros (dataset completo),
- * no desde las filas visibles/paginadas.
+ * Se usa como footerCallback de DataTables: (row, data, start, end, display) => calcularTotalesTabla(...)
  */
 export function calcularTotalesTabla(row, data, start, end, display) {
+  // Normaliza número con , o . como separador decimal
   const toNum = (v) => {
     if (v === '' || v === null || v === undefined) return 0;
-    const n = Number.parseFloat(v);
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+
+    let s = String(v).trim();
+    // quita espacios y etiquetas si llegan valores renderizados
+    s = s.replace(/<[^>]*>/g, '').replace(/\s+/g, '');
+
+    const hasComma = s.includes(',');
+    const hasDot   = s.includes('.');
+
+    if (hasComma && hasDot) {
+      // típico CL: 11.495,73  -> 11495.73
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else if (hasComma) {
+      // 11,08 -> 11.08
+      s = s.replace(',', '.');
+    }
+    const n = Number.parseFloat(s);
     return Number.isFinite(n) ? n : 0;
   };
-  const avg = (sum, count) => (count > 0 ? sum / count : 0);
-  const fmt0 = (n) =>
-    Number(n || 0).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-  const centros = Array.isArray(Estado.centros) ? Estado.centros : [];
+  const fmtHa = (n) =>
+    Number(n || 0).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  let sumH = 0;
-  let sumL = 0;
-  let sumTons = 0;
+  // Si existe la instancia de DataTables, usamos sus APIs para tomar
+  // TODAS las filas filtradas (no solo la página visible).
+  let countFiltradas = 0;
+  let sumHectFiltradas = 0;
 
-  let sumUnKg = 0, countUnKg = 0;
-  let sumRechazo = 0, countRechazo = 0;
-  let sumRdmto = 0, countRdmto = 0;
-
-  for (const c of centros) {
-    sumH += toNum(c?.hectareas);
-    const lines = Array.isArray(c?.lines) ? c.lines : [];
-    sumL += lines.length;
-
-    for (const l of lines) {
-      sumTons += toNum(l?.tons);
-
-      if (l?.unKg !== '' && l?.unKg !== null && l?.unKg !== undefined) {
-        sumUnKg += toNum(l.unKg);
-        countUnKg++;
-      }
-      if (l?.porcRechazo !== '' && l?.porcRechazo !== null && l?.porcRechazo !== undefined) {
-        sumRechazo += toNum(l.porcRechazo);
-        countRechazo++;
-      }
-      if (l?.rendimiento !== '' && l?.rendimiento !== null && l?.rendimiento !== undefined) {
-        sumRdmto += toNum(l.rendimiento);
-        countRdmto++;
-      }
+  const dt = Estado.table;
+  if (dt && typeof dt.rows === 'function') {
+    try {
+      countFiltradas = dt.rows({ search: 'applied' }).count();
+      const colData = dt.column(3, { search: 'applied' }).data(); // 3 = col "Hectáreas"
+      const arr = colData && typeof colData.toArray === 'function' ? colData.toArray() : Array.from(colData || []);
+      sumHectFiltradas = arr.reduce((acc, v) => acc + toNum(v), 0);
+    } catch {
+      // Fallback robusto si algo cambia en DT
+      const all = Array.isArray(Estado.centros) ? Estado.centros : [];
+      const query = (dt?.search && dt.search()) ? String(dt.search()).toLowerCase() : '';
+      const filtradas = query
+        ? all.filter(c =>
+            String(c.code || '').toLowerCase().includes(query) ||
+            String(c.proveedor || c.name || '').toLowerCase().includes(query) ||
+            String(c.comuna || '').toLowerCase().includes(query) ||
+            String(c.codigoArea || c?.detalles?.codigoArea || '').toLowerCase().includes(query)
+          )
+        : all;
+      countFiltradas = filtradas.length;
+      sumHectFiltradas = filtradas.reduce((a, c) => a + toNum(c?.hectareas), 0);
     }
+  } else {
+    // Fallback sin DataTables (suma dataset completo)
+    const centros = Array.isArray(Estado.centros) ? Estado.centros : [];
+    countFiltradas = centros.length;
+    sumHectFiltradas = centros.reduce((a, c) => a + toNum(c?.hectareas), 0);
   }
 
-  const avgUnKg    = avg(sumUnKg, countUnKg);
-  const avgRechazo = avg(sumRechazo, countRechazo);
-  const avgRdmto   = avg(sumRdmto, countRdmto);
-
-  // Actualiza footer si existe
+  // Actualiza footer si existe (IDs en <tfoot>)
   const setText = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   };
 
-  // estos IDs deben existir en el <tfoot> de la tabla
-  setText('totalCentros', String(centros.length));
-  setText('totalHect',    (Number(sumH).toFixed(2)));
-  setText('totalTons',    fmt0(sumTons));
-  setText('totalUnKg',    avgUnKg.toFixed(2));
-  setText('totalRechazo', avgRechazo.toFixed(1) + '%');
-  setText('totalRdmto',   avgRdmto.toFixed(1) + '%');
+  setText('totalCentros', String(countFiltradas));
+  setText('totalHect', fmtHa(sumHectFiltradas));
 
   return {
-    hectareas: sumH,
-    lineas: sumL,
-    tons: sumTons,
-    unKgProm: avgUnKg,
-    rechazoProm: avgRechazo,
-    rdmtoProm: avgRdmto,
+    centrosFiltrados: countFiltradas,
+    hectareasFiltradas: sumHectFiltradas
   };
 }
 
