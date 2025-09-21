@@ -4,7 +4,7 @@ import { deleteCentro, getCentrosAll } from '../core/centros_repo.js';
 import { openEditForm } from './form_centros.js';
 import { loadCentros } from './tabla_centros.js';
 import { tabMapaActiva } from '../core/utilidades_app.js';
-import { renderMapaAlways } from '../mapas/control_mapa.js';
+import { renderMapaAlways, focusCentroInMap } from '../mapas/control_mapa.js'; // <- añade focusCentroInMap
 
 /* ===== Utils locales ===== */
 const $  = (sel, ctx = document) => (ctx.querySelector ? ctx.querySelector(sel) : null);
@@ -140,6 +140,28 @@ export function registerTablaCentrosEventos() {
 
   /* Accesibilidad para .btn-coords */
   $t.off('keydown', '.btn-coords').on('keydown', '.btn-coords', keyActivatesClick);
+
+  /* --- Ver en mapa --- */
+  $t.off('click', '.btn-ver-mapa').on('click', '.btn-ver-mapa', async function () {
+    const idx = Number(this.dataset.idx);
+    const c = Estado.centros?.[idx];
+    if (!c) return;
+
+    // Abre el modal de detalles (reutiliza el handler anterior)
+    const $btnCoords = window.$(`#centrosTable .btn-coords[data-idx="${idx}"]`);
+    if ($btnCoords.length) $btnCoords.first().trigger('click');
+
+    // Cambia a la pestaña "Mapa"
+    const a = document.querySelector('a[href="#tab-mapa"]');
+    if (a) a.click();
+
+    // Asegura render de mapa y enfoca el centro
+    await renderMapaAlways(false);
+    focusCentroInMap(idx);
+  });
+
+  /* Accesibilidad para .btn-ver-mapa */
+  $t.off('keydown', '.btn-ver-mapa').on('keydown', '.btn-ver-mapa', keyActivatesClick);
 
   /* --- Editar centro --- */
   $t.off('click', '.editar-centro').on('click', '.editar-centro', function () {
