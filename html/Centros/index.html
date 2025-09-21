@@ -98,23 +98,26 @@
           <div class="col s12">
             <table id="centrosTable" class="striped display responsive-table" style="width:100%">
               <thead>
-                <tr>
-                  <th style="min-width:130px;">Proveedor</th>
-                  <th style="min-width:105px;">Comuna</th>
-                  <th style="min-width:70px;">Código</th>
-                  <th style="min-width:60px;max-width:80px;">Hectáreas</th>
-                  <th style="width:48px;">Detalle</th>
-                  <th style="width:72px;">Acciones</th>
-                </tr>
-              </thead>
-              <tfoot>
-                <tr>
-                  <th colspan="2" style="text-align:right">Totales:</th>
-                  <th id="totalCentros">0</th>
-                  <th id="totalHect">0,00</th>
-                  <th colspan="2"></th>
-                </tr>
-              </tfoot>
+  <tr>
+    <th style="min-width:130px;">Proveedor</th>
+    <th style="min-width:105px;">Comuna</th>
+    <th style="min-width:70px;">Código</th>
+    <th style="min-width:110px;">Código de Área</th> <!-- NUEVA -->
+    <th style="min-width:60px;max-width:80px;">Hectáreas</th>
+    <th style="width:48px;">Detalle</th>
+    <th style="width:72px;">Acciones</th>
+  </tr>
+</thead>
+<tfoot>
+  <tr>
+    <th colspan="2" style="text-align:right">Totales:</th>
+    <th id="totalCentros">0</th>
+    <th></th> <!-- espacio para "Código de Área" (sin total) -->
+    <th id="totalHect">0,00</th>
+    <th colspan="2"></th>
+  </tr>
+</tfoot>
+
             </table>
           </div>
         </div>
