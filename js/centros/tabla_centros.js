@@ -6,67 +6,72 @@ import { tabMapaActiva } from '../core/utilidades_app.js';
 import { renderMapaAlways } from '../mapas/control_mapa.js';
 
 /* ===== Utils ===== */
-const fmt0 = new Intl.NumberFormat('es-CL', { maximumFractionDigits: 0 });
 const fmt2 = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc  = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toTitleCase = (str) => (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-const num = (v) => (v === '' || v == null) ? 0 : Number(v) || 0;
-const toNum = (v) => { // seguro para strings tipo "1.234,56"
+
+/** Número seguro que entiende 413.25, 413,25, 1.234,56, 1,234.56 */
+const toNum = (v) => {
   if (v === '' || v == null) return 0;
-  const n = parseFloat(String(v).replace(/\./g, '').replace(',', '.'));
-  return Number.isFinite(n) ? n : 0;
-};
-const parseHaStr = (s) => { // "1.234,56" -> 1234.56
-  if (s == null) return 0;
-  const n = parseFloat(String(s).replace(/\./g, '').replace(',', '.'));
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+  let s = String(v).trim().replace(/\s/g, '');
+  const hasDot = s.includes('.'), hasComma = s.includes(',');
+  if (hasDot && hasComma) {
+    // último separador = decimal
+    const lastDot = s.lastIndexOf('.'), lastComma = s.lastIndexOf(',');
+    if (lastComma > lastDot) { s = s.replace(/\./g, '').replace(',', '.'); } // 1.234,56
+    else { s = s.replace(/,/g, ''); }                                        // 1,234.56
+  } else if (hasComma) {
+    s = s.replace(',', '.'); // 413,25
+  }
+  const n = parseFloat(s);
   return Number.isFinite(n) ? n : 0;
 };
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /* ===== Estado de la vista ===== */
-let $t;               // instancia jQuery del #centrosTable
-let api;              // DataTables API
-let $comunaSelect;    // <select id="filtroComuna">
-let $buscador;        // <input id="buscarProveedor"> o <input id="filtroProveedor">
+let $t;            // instancia jQuery del #centrosTable
+let api;           // DataTables API
+let $comunaSelect; // <select id="filtroComuna">
+let $buscador;     // <input id="buscarProveedor"> o <input id="filtroProveedor">
+
+/* ===== Índices de columnas (incluye columnas ocultas raw) =====
+   0 Proveedor | 1 Comuna | 2 Código | 3 Código Área | 4 Hectáreas (fmt)
+   5 Detalle | 6 Acciones | 7 hectRaw (hidden) | 8 tonsRaw (hidden)
+================================================================== */
+const COL = { PROV:0, COMUNA:1, CODE:2, CODAREA:3, HECT_FMT:4, DET:5, ACC:6, HECT_RAW:7, TONS_RAW:8 };
 
 /* ===== KPIs + Footer con filas filtradas ===== */
 function updateKpisYFooter() {
   if (!api) return;
 
-  // Usamos índices para cruzar con Estado.centros (acceso a tonsMax, etc.)
-  const idxs = api.rows({ search: 'applied' }).indexes().toArray();
-
+  const rows = api.rows({ search: 'applied' }).data();
   let totalHa = 0;
-  let totalTonsMax = 0;
+  let totalTons = 0;
   const comunas = new Set();
 
-  idxs.forEach(i => {
-    // row renderizada (para hectáreas formateadas)
-    const row = api.row(i).data();           // [0 prov, 1 comuna, 2 código, 3 codArea, 4 hect_fmt, ...]
-    totalHa += parseHaStr(row?.[4]);
-
-    // dataset original (para tonsMax y comuna real)
-    const c = Estado.centros?.[i];
-    totalTonsMax += toNum(c?.tonsMax ?? c?.detalles?.tonsMax);
-    const comuna = (c?.comuna || '').toString().trim().toLowerCase();
-    if (comuna) comunas.add(comuna);
+  rows.each(row => {
+    totalHa   += Number(row[COL.HECT_RAW]) || 0;
+    totalTons += Number(row[COL.TONS_RAW]) || 0;
+    const c = (row[COL.COMUNA] || '').toString().trim().toLowerCase();
+    if (c) comunas.add(c);
   });
 
   // KPIs superiores
   const kCent = document.getElementById('kpiCentros');
   const kHa   = document.getElementById('kpiHect');
   const kCom  = document.getElementById('kpiComunas');
-  const kTons = document.getElementById('kpiTonsMax'); // opcional en HTML
+  const kTons = document.getElementById('kpiTonsMax'); // opcional (si existe la card)
 
-  if (kCent) kCent.textContent = String(idxs.length);
+  if (kCent) kCent.textContent = String(rows.length);
   if (kHa)   kHa.textContent   = fmt2.format(totalHa);
   if (kCom)  kCom.textContent  = String(comunas.size);
-  if (kTons) kTons.textContent = fmt0.format(totalTonsMax);
+  if (kTons) kTons.textContent = fmt2.format(totalTons);
 
   // Footer tabla
   const totalCentrosEl = document.getElementById('totalCentros');
   const totalHectEl    = document.getElementById('totalHect');
-  if (totalCentrosEl) totalCentrosEl.textContent = String(idxs.length);
+  if (totalCentrosEl) totalCentrosEl.textContent = String(rows.length);
   if (totalHectEl)    totalHectEl.textContent    = fmt2.format(totalHa);
 }
 
@@ -88,11 +93,8 @@ function populateComunasYWireFilter() {
   $comunaSelect.addEventListener('change', () => {
     const val = ($comunaSelect.value || '').trim();
     if (!api) return;
-    if (!val) {
-      api.column(1).search('', true, false).draw();
-    } else {
-      api.column(1).search(`^${escapeRegex(val)}$`, true, false).draw();
-    }
+    if (!val) api.column(COL.COMUNA).search('', true, false).draw();
+    else api.column(COL.COMUNA).search(`^${escapeRegex(val)}$`, true, false).draw();
   });
 }
 
@@ -100,10 +102,9 @@ function populateComunasYWireFilter() {
 function wireExternalSearch() {
   $buscador = document.getElementById('buscarProveedor') || document.getElementById('filtroProveedor');
   if (!$buscador) return;
-
   $buscador.addEventListener('input', () => {
     const q = ($buscador.value || '').trim();
-    api.search(q).draw(); // busca en todas las columnas visibles (incluye Código y Código de Área)
+    api.search(q).draw(); // busca en todas las columnas visibles
   });
 }
 
@@ -111,10 +112,7 @@ function wireExternalSearch() {
 export function initTablaCentros() {
   const jq = window.$;
   $t = jq('#centrosTable');
-  if (!$t.length) {
-    console.error('No se encontró #centrosTable');
-    return;
-  }
+  if (!$t.length) { console.error('No se encontró #centrosTable'); return; }
 
   Estado.table = $t.DataTable({
     colReorder: true,
@@ -127,8 +125,10 @@ export function initTablaCentros() {
     ],
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
     columnDefs: [
-      { targets: [4], className: 'dt-right' },                // Hectáreas (índice 4 con la nueva columna)
-      { targets: [5,6], orderable: false, searchable: false } // Detalle / Acciones
+      { targets: [COL.HECT_FMT], className: 'dt-right' },
+      { targets: [COL.DET, COL.ACC], orderable: false, searchable: false },
+      // columnas crudas ocultas (para KPIs correctos)
+      { targets: [COL.HECT_RAW, COL.TONS_RAW], visible: false, searchable: false }
     ]
   });
 
@@ -150,10 +150,7 @@ export function initTablaCentros() {
  * - Si no, consulta al API (getCentrosAll()).
  */
 export async function loadCentros(data) {
-  if (!api) {
-    console.warn('DataTable no inicializada aún');
-    return;
-  }
+  if (!api) { console.warn('DataTable no inicializada aún'); return; }
 
   try {
     Estado.centros = Array.isArray(data) ? data : await getCentrosAll();
@@ -162,8 +159,10 @@ export async function loadCentros(data) {
       const proveedor = toTitleCase(c.proveedor) || '-';
       const comuna    = toTitleCase(c.comuna)    || '-';
       const codigo    = c.code || '-';
-      const codArea   = c.codigoArea || c?.detalles?.codigoArea || '-'; // NUEVO
-      const hect      = num(c.hectareas);
+      const codArea   = c.codigoArea || c?.detalles?.codigoArea || '-';
+
+      const hectRaw   = toNum(c.hectareas);
+      const tonsRaw   = toNum(c.tonsMax ?? c.tons ?? c?.detalles?.tonsMax);
 
       const coordsCell = `
         <i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer"
@@ -180,11 +179,13 @@ export async function loadCentros(data) {
       return [
         esc(proveedor),        // 0 Proveedor
         esc(comuna),           // 1 Comuna
-        esc(codigo),           // 2 Código de Centro
+        esc(codigo),           // 2 Código
         esc(codArea),          // 3 Código de Área
-        fmt2.format(hect),     // 4 Hectáreas (formateado)
+        fmt2.format(hectRaw),  // 4 Hectáreas (formateado)
         coordsCell,            // 5 Detalle
-        accionesCell           // 6 Acciones
+        accionesCell,          // 6 Acciones
+        hectRaw,               // 7 Hectáreas RAW (oculta)
+        tonsRaw                // 8 Tons Máx RAW (oculta)
       ];
     });
 
@@ -200,7 +201,7 @@ export async function loadCentros(data) {
         if ($comunaSelect) {
           $comunaSelect.value = '';
           try { window.M?.FormSelect?.init($comunaSelect); } catch {}
-          api.column(1).search('', true, false);
+          api.column(COL.COMUNA).search('', true, false);
         }
         if ($buscador) $buscador.value = '';
         api.search('').draw();
