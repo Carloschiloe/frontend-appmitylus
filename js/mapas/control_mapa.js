@@ -9,10 +9,9 @@ import {
   clearMapPoints,
   redrawPolygon,
   addPointMarker,
-  // drawCentrosInMap,   // <- ya no lo usamos aquí
   focusCentroInMap,
   initSidebarFiltro,
-  cargarYRenderizarCentros       // <- NUEVO: alimenta dataset del buscador y dibuja
+  cargarYRenderizarCentros
 } from './mapa.js';
 
 let _mapInitStarted = false;
@@ -20,9 +19,8 @@ let _wiredEvents = false;
 let _sidebarInit = false;
 
 function invalidateSoon(delay = 60) {
-  // Dos tiros para cubrir animaciones/visibilidad de pestañas
-  setTimeout(() => Estado.map?.invalidateSize(), delay);
-  setTimeout(() => Estado.map?.invalidateSize(), delay + 240);
+  setTimeout(() => Estado.map?.invalidateSize?.(), delay);
+  setTimeout(() => Estado.map?.invalidateSize?.(), delay + 240);
 }
 
 function onTabShowInvalidate() {
@@ -73,22 +71,64 @@ function wireGlobalEventsOnce() {
   );
 }
 
+/* ============================
+   Fullscreen robusto para el mapa
+   ============================ */
 function wireFullscreenOnce() {
   const fsBtn = document.getElementById('btnFullscreenMapa');
   const shell = document.getElementById('mapShell');
   if (!fsBtn || !shell) return;
 
+  // helpers con prefijos
+  const fsElement = () =>
+    document.fullscreenElement ||
+    document.webkitFullscreenElement ||
+    document.msFullscreenElement;
+
+  const isFSFor = (el) => fsElement() === el;
+
+  const requestFS = async (el) => {
+    try {
+      if (el.requestFullscreen) return await el.requestFullscreen();
+      if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+      if (el.msRequestFullscreen) return el.msRequestFullscreen();
+    } catch (e) { console.warn('Fullscreen error:', e); }
+  };
+
+  const exitFS = async () => {
+    try {
+      if (document.exitFullscreen) return await document.exitFullscreen();
+      if (document.webkitExitFullscreen) return document.webkitExitFullscreen();
+      if (document.msExitFullscreen) return document.msExitFullscreen();
+    } catch (e) { console.warn('Exit FS error:', e); }
+  };
+
+  const onFSChange = () => {
+    try { actualizarTextoFullscreen(fsBtn, shell); } catch {}
+    invalidateSoon(50);   // Leaflet reflow
+    invalidateSoon(350);  // segundo “golpecito”
+  };
+
   if (!fsBtn.dataset._wired) {
     fsBtn.dataset._wired = '1';
     fsBtn.addEventListener('click', () => {
-      try {
-        if (!document.fullscreenElement) shell.requestFullscreen?.();
-        else document.exitFullscreen?.();
-      } catch { /* noop */ }
+      // Si ya estamos en fullscreen pero de otro elemento, pedimos FS para 'shell'
+      if (!fsElement()) {
+        requestFS(shell);
+      } else if (isFSFor(shell)) {
+        exitFS();
+      } else {
+        requestFS(shell);
+      }
     });
-    document.addEventListener('fullscreenchange', () => actualizarTextoFullscreen(fsBtn, shell));
+
+    document.addEventListener('fullscreenchange', onFSChange);
+    document.addEventListener('webkitfullscreenchange', onFSChange);
+    document.addEventListener('MSFullscreenChange', onFSChange);
   }
-  actualizarTextoFullscreen(fsBtn, shell);
+
+  // Estado inicial del icono
+  try { actualizarTextoFullscreen(fsBtn, shell); } catch {}
 
   // Atajo teclado "f" solo si está activa la pestaña y no escribes en inputs
   if (!document.body.dataset._mapKeyWired) {
@@ -111,7 +151,6 @@ async function ensureMapCreated() {
   // Crear mapa (idempotente en crearMapa)
   Estado.map = crearMapa(Estado.defaultLatLng);
   if (!Estado.map) {
-    // Último intento con pequeño delay por si el DOM apareció recién
     await new Promise(r => setTimeout(r, 60));
     Estado.map = crearMapa(Estado.defaultLatLng);
   }
@@ -122,9 +161,7 @@ async function ensureMapCreated() {
     Estado.map._nerdClickWired = true;
     Estado.map.on('click', (e) => {
       try {
-        // En algunos navegadores SVGPathElement puede no existir
-        // Si no clickeaste un path (polígono), cierra popups
-        // @ts-ignore
+        // @ts-ignore (SVGPathElement puede no existir en algunos navegadores)
         if (!(e?.originalEvent?.target instanceof SVGPathElement)) {
           Estado.map.closePopup();
         }
@@ -166,8 +203,7 @@ export async function renderMapaAlways(force = false) {
   }
   Estado.centrosHashRender = h;
 
-  // Antes se llamaba drawCentrosInMap(). Usamos la versión que también
-  // alimenta el buscador flotante del mapa.
+  // Render + alimentar buscador flotante
   cargarYRenderizarCentros(Estado.centros);
 
   invalidateSoon(60);
