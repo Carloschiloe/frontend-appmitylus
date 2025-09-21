@@ -458,7 +458,6 @@ function initMapSearchUI() {
   document.addEventListener('click', (e) => {
     if (!list.contains(e.target) && e.target !== input) hideList();
   });
-}
 
   // Helpers debug
   window.__MAPDBG = {
@@ -467,4 +466,5 @@ function initMapSearchUI() {
     centrosSample: () => centrosDataGlobal.slice(0, 3)
   };
 }
+
 
