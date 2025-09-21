@@ -17,7 +17,8 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.css" />
+  <!-- ✂️ Eliminado leaflet.fullscreen (CSS) para evitar conflicto -->
+
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
@@ -88,11 +89,11 @@
           </article>
 
           <article class="kpi-card">
-  <header class="kpi-title">Tons Máx</header>
-  <div class="kpi-value">
-    <span id="kpiTonsMax">0</span> <small class="kpi-suffix">t</small>
-  </div>
-</article>
+            <header class="kpi-title">Tons Máx</header>
+            <div class="kpi-value">
+              <span id="kpiTonsMax">0</span> <small class="kpi-suffix">t</small>
+            </div>
+          </article>
         </div>
 
         <!-- FILTROS -->
@@ -148,7 +149,7 @@
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px;">
             <h5 class="map-title" style="margin:0;">Mapa de Centros</h5>
-            <button id="btnFullscreenMapa" class="btn-small teal waves-effect" aria-label="Pantalla completa">
+            <button id="btnFullscreenMapa" type="button" class="btn-small teal waves-effect" aria-label="Pantalla completa">
               <i class="material-icons left" style="line-height:inherit;">fullscreen</i>
               Pantalla completa
             </button>
@@ -273,7 +274,7 @@
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.js"></script>
+  <!-- ✂️ Eliminado leaflet.fullscreen (JS) para evitar doble control de fullscreen -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- Utils + Config -->
@@ -314,3 +315,4 @@
   </script>
 </body>
 </html>
+
