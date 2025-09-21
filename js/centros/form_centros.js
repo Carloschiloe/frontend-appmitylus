@@ -9,12 +9,13 @@ export function openNewForm(els, map, currentPoints, setIdxCb) {
   els.inputProveedor.value  = '';
   els.inputComuna.value     = '';
   els.inputCode.value       = '';
+  if (els.inputCodigoArea) els.inputCodigoArea.value = '';   // NUEVO
   els.inputHectareas.value  = '';
   els.inputLat.value        = '';
   els.inputLng.value        = '';
 
   // Materialize labels
-  window.M?.updateTextFields?.();
+  try { window.M?.updateTextFields?.(); } catch {}
 
   // Reset puntos
   currentPoints.length = 0;
@@ -44,10 +45,16 @@ export function openEditForm(els, map, currentPoints, setIdxCb, idx) {
   els.inputComuna.value     = c.comuna   || '';
   // compat: algunos registros antiguos traían "codigo_centro"
   els.inputCode.value       = c.code || c.codigo_centro || '';
+
+  // ► Código de Área (raíz o dentro de detalles)
+  const codigoArea = (c.codigoArea ?? c?.detalles?.codigoArea ?? '');
+  if (els.inputCodigoArea) els.inputCodigoArea.value = codigoArea;
+
+  // Hectáreas
   els.inputHectareas.value  = (c.hectareas ?? '') === null ? '' : c.hectareas;
 
   // Materialize labels
-  window.M?.updateTextFields?.();
+  try { window.M?.updateTextFields?.(); } catch {}
 
   // Cargar puntos actuales
   currentPoints.length = 0;
