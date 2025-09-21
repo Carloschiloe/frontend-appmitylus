@@ -109,6 +109,31 @@ nav .btn-flat:hover{ background:rgba(255,255,255,.06) !important; border-radius:
 #centrosTable_wrapper .dt-buttons .btn{ height:36px; border-radius:10px; }
 .dataTables_wrapper .dataTables_paginate .paginate_button{ border-radius:8px !important; }
 
+/* NEW: oculta SIEMPRE el buscador nativo de DataTables */
+#centrosTable_filter,
+#centrosTable_wrapper .dataTables_filter{ display:none !important; }
+
+/* ==============================
+   FILTROS / INPUTS SUPERIORES
+   ============================== */
+.mmpp-help{ font-size:.85rem; color:#6b7280; margin-top:4px; }
+
+/* NEW: asegúrate que los inputs/select ocupen ancho completo */
+.mmpp-input{ width:100%; }
+
+/* NEW: normaliza el select nativo para que se vea bien en todos los navegadores */
+#filtroComuna{
+  min-width:260px;
+  height:40px;
+  padding:8px 10px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:#fff;
+  color:inherit;
+  appearance:auto;
+  -webkit-appearance:menulist;
+}
+
 /* ==============================
    MAPA (full-bleed + shell)
    ============================== */
