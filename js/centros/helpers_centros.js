@@ -1,38 +1,27 @@
 // js/centros/helpers_centros.js
-import { Estado } from '../core/estado.js';
-
 /**
- * Calcula totales simples para la tabla de centros (dataset completo)
- * y actualiza el footer. Firma compatible con DataTables footerCallback,
- * pero ignora los parámetros.
+ * KPIs desde una lista (ya filtrada).
+ * - kpiCentros: cantidad de centros
+ * - kpiHect: suma de hectáreas
+ * - kpiComunas: comunas únicas
  */
-export function calcularTotalesTabla(/* row, data, start, end, display */) {
-  const toNum = (v) => {
-    if (v === '' || v === null || v === undefined) return 0;
-    const n = Number.parseFloat(v);
-    return Number.isFinite(n) ? n : 0;
-  };
+export function refreshKpisFrom(lista){
+  const centros = Array.isArray(lista) ? lista : [];
+  let sumH = 0;
+  const comunas = new Set();
+  for (const c of centros){
+    const h = Number.parseFloat(c?.hectareas);
+    if (Number.isFinite(h)) sumH += h;
+    if (c?.comuna) comunas.add((c.comuna||'').toLowerCase());
+  }
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setText('kpiCentros', String(centros.length));
+  setText('kpiHect',    sumH.toFixed(2));
+  setText('kpiComunas', String(comunas.size));
 
-  const centros = Array.isArray(Estado.centros) ? Estado.centros : [];
-
-  const totalCentros = centros.length;
-  const sumHectareas = centros.reduce((s, c) => s + toNum(c?.hectareas), 0);
-
-  // Actualiza footer si existe
-  const setText = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = val;
-  };
-  setText('totalCentros', String(totalCentros));
-  setText('totalHect', sumHectareas.toFixed(2));
-
-  return {
-    centros: totalCentros,
-    hectareas: sumHectareas,
-  };
-}
-
-// Helper universal para mostrar valores, nunca null/undefined
-export function mostrarValor(val) {
-  return (val === null || val === undefined) ? '' : val;
+  // footer de la tabla (si existe)
+  const fH = document.getElementById('totalHect');
+  const fC = document.getElementById('totalCentros');
+  if (fH) fH.textContent = sumH.toFixed(2);
+  if (fC) fC.textContent = String(centros.length);
 }
