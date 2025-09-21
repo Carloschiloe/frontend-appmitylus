@@ -5,18 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Directorio de Centros</title>
 
-  <!-- Estilos compartidos del shell MMPP -->
+  <!-- Shell MMPP -->
   <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
 
-  <!-- Tipografía Inter (opcional) -->
+  <!-- Tipografía Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Estilos de esta vista (unificados con look MMPP) -->
-  <link rel="stylesheet" href="/css/centros.css?v=2" />
-
-  <!-- Materialize + DataTables + Leaflet CSS -->
+  <!-- Vendor CSS -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -24,14 +21,17 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
+
+  <!-- Estilos de esta vista (después de vendor para poder override) -->
+  <link rel="stylesheet" href="/css/centros.css?v=2" />
 </head>
 <body>
   <div class="mmpp-layout">
-    <!-- Sidebar (opcional). Si quieres la misma del MMPP, descomenta nav.jsx más abajo -->
+    <!-- Sidebar opcional: si no usas nav.jsx, puedes quitar este <aside> -->
     <aside id="mmppNavMount" class="mmpp-nav"></aside>
 
     <main class="mmpp-main">
-      <!-- NAV superior de Centros (puedes mantenerlo o quitarlo si usas solo la sidebar) -->
+      <!-- Nav superior (puedes quitarlo si usas solo la sidebar) -->
       <nav class="teal">
         <div class="nav-wrapper">
           <a href="/index.html" class="btn-flat left" title="Volver" aria-label="Volver">
@@ -41,7 +41,7 @@
         </div>
       </nav>
 
-      <!-- CONTENIDO original (tabs + tabla + mapa + modales + fabs) -->
+      <!-- Tabs -->
       <div class="container" style="margin-top:1rem;">
         <ul id="tabs" class="tabs">
           <li class="tab col s6"><a class="active" href="#tab-centros">Directorio</a></li>
@@ -50,16 +50,47 @@
 
         <!-- TAB CENTROS -->
         <section id="tab-centros" class="col s12">
+          <!-- HERO + KPIs -->
+          <div class="mmpp-hero" style="margin-bottom:12px;">
+            <div><h1 style="margin:0;font-weight:800">Directorio de Centros</h1></div>
+            <div class="mmpp-badge">▦ Panel</div>
+          </div>
+
+          <div class="mmpp-kpis" style="margin:10px 0 12px;">
+            <div class="mmpp-kpi"><strong id="kpiCentros">0</strong>&nbsp;centros</div>
+            <div class="mmpp-kpi"><strong id="kpiHect">0.00</strong>&nbsp;ha</div>
+            <div class="mmpp-kpi"><strong id="kpiComunas">0</strong>&nbsp;comunas</div>
+          </div>
+
+          <!-- FILTROS -->
+          <div class="mmpp-card" style="margin-bottom:12px;">
+            <div class="mmpp-grid" id="filtrosCentros" style="align-items:center">
+              <div>
+                <select id="filtroComuna" class="mmpp-input">
+                  <option value="">Todas las comunas</option>
+                </select>
+                <div class="mmpp-help">Filtra por comuna. Los KPIs reflejan el filtro.</div>
+              </div>
+              <div>
+                <input id="buscarProveedor" class="mmpp-input" placeholder="Buscar proveedor…" />
+                <div class="mmpp-help">Busca por nombre del proveedor.</div>
+              </div>
+              <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button id="btnLimpiarFiltros" type="button" class="mmpp-ghostbtn">Limpiar filtros</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABLA -->
           <div class="row">
             <div class="col s12">
-              <h5>Centros Registrados</h5>
               <table id="centrosTable" class="striped display responsive-table" style="width:100%">
                 <thead>
                   <tr>
                     <th style="min-width:130px;">Proveedor</th>
                     <th style="min-width:105px;">Comuna</th>
                     <th style="min-width:70px;">Código</th>
-                    <th style="min-width:60px; max-width:80px;">Hectáreas</th>
+                    <th style="min-width:60px;max-width:80px;">Hectáreas</th>
                     <th style="width:48px;">Detalle</th>
                     <th style="width:72px;">Acciones</th>
                   </tr>
@@ -84,12 +115,12 @@
           <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px;">
             <h5 class="map-title" style="margin:0;">Mapa de Centros</h5>
             <button id="btnFullscreenMapa" class="btn-small teal waves-effect" aria-label="Pantalla completa">
-              <i class="material-icons left" style="line-height: inherit;">fullscreen</i>
+              <i class="material-icons left" style="line-height:inherit;">fullscreen</i>
               Pantalla completa
             </button>
           </div>
 
-          <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
+          <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros" style="height:calc(100vh - 160px);min-height:520px;">
             <div class="map-search" id="mapSearchBox">
               <input type="search" id="mapSearch" placeholder="Buscar por Código, Titular o Código de Área…" aria-label="Buscar por Código, Titular o Código de Área" autocomplete="off" />
               <ul id="mapSearchResults" class="map-search-results" role="listbox"></ul>
@@ -99,7 +130,7 @@
         </div>
       </section>
 
-      <!-- MODALES (iguales a tu vista original) -->
+      <!-- MODAL NUEVO/EDITAR CENTRO -->
       <div id="centroModal" class="modal modal-fixed-footer">
         <div class="modal-content">
           <h5 id="formTitle">Nuevo Centro</h5>
@@ -125,9 +156,7 @@
             </div>
 
             <div class="row">
-              <div class="col s12">
-                <h6>Puntos (polígono)</h6>
-              </div>
+              <div class="col s12"><h6>Puntos (polígono)</h6></div>
               <div class="input-field col s12 m4">
                 <input id="inputLat" type="text" placeholder="Ej: 42°38'30.5&quot;S" />
                 <label for="inputLat">Latitud (DMS o decimal)</label>
@@ -136,20 +165,16 @@
                 <input id="inputLng" type="text" placeholder="Ej: 73°45'12.3&quot;W" />
                 <label for="inputLng">Longitud (DMS o decimal)</label>
               </div>
-              <div class="col s12 m4" style="margin-top: 18px;">
+              <div class="col s12 m4" style="margin-top:18px;">
                 <button type="button" id="btnAddPoint" class="btn teal waves-effect">
                   <i class="material-icons left">add_location</i>Agregar punto
                 </button>
-                <button type="button" id="btnClearPoints" class="btn-flat waves-effect">
-                  Limpiar
-                </button>
+                <button type="button" id="btnClearPoints" class="btn-flat waves-effect">Limpiar</button>
               </div>
 
               <div class="col s12">
                 <table id="pointsTable" class="striped">
-                  <thead>
-                    <tr><th>#</th><th>Lat</th><th>Lng</th><th></th></tr>
-                  </thead>
+                  <thead><tr><th>#</th><th>Lat</th><th>Lng</th><th></th></tr></thead>
                   <tbody id="pointsBody"></tbody>
                 </table>
               </div>
@@ -164,6 +189,7 @@
         </div>
       </div>
 
+      <!-- MODAL DETALLES -->
       <div id="modalDetallesCentro" class="modal" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle" tabindex="-1">
         <div class="modal-content">
           <h5 id="detallesCentroTitle">Detalles del Centro</h5>
@@ -174,8 +200,19 @@
         </div>
       </div>
 
+      <!-- MODAL IMPORTAR (faltaba; requerido por el FAB) -->
+      <div id="modalImportarCentros" class="modal modal-fixed-footer">
+        <div class="modal-content">
+          <h5>Importar Centros (Excel / CSV)</h5>
+          <div id="importarCentrosContainer"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-close btn grey lighten-1">Cerrar</button>
+        </div>
+      </div>
+
       <!-- FABs -->
-      <div style="position: fixed; bottom: 34px; right: 30px; z-index: 1030; display: flex; flex-direction: column; gap: 16px;">
+      <div style="position:fixed; bottom:34px; right:30px; z-index:1030; display:flex; flex-direction:column; gap:16px;">
         <a id="btnOpenCentroModal" class="btn-floating btn-large teal tooltipped" data-tooltip="Agregar Centro">
           <i class="material-icons">add</i>
         </a>
@@ -193,7 +230,6 @@
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -216,4 +252,3 @@
   -->
 </body>
 </html>
-
