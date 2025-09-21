@@ -1,7 +1,6 @@
 // js/centros/tabla_centros.js
 import { Estado } from '../core/estado.js';
 import { getCentrosAll } from '../core/centros_repo.js';
-import { calcularTotalesTabla } from './helpers_centros.js';
 import { registerTablaCentrosEventos } from './eventos_centros.js';
 
 /* ===== Utiles ===== */
@@ -9,7 +8,14 @@ const fmt2 = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 2, maximumF
 const esc  = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function toTitleCase(str){ return (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); }
 
-/* ===== Inicializa DataTable ===== */
+/* Footer: suma hectáreas desde el dataset completo (Estado.centros) */
+function footerCallbackSimple() {
+  const centros = Array.isArray(Estado.centros) ? Estado.centros : [];
+  const sumH = centros.reduce((s, c) => s + (parseFloat(c?.hectareas) || 0), 0);
+  const elH = document.getElementById('totalHect');
+  if (elH) elH.textContent = sumH.toFixed(2);
+}
+
 export function initTablaCentros() {
   const $t = window.$('#centrosTable');
   if (!$t.length) {
@@ -28,12 +34,10 @@ export function initTablaCentros() {
     ],
     searching: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
-    footerCallback: calcularTotalesTabla, // setea #totalHect
+    footerCallback: footerCallbackSimple,
     columnDefs: [
-      // Hectáreas a la derecha
-      { targets: [3], className: 'dt-right' },
-      // Detalle y Acciones: sin orden/búsqueda
-      { targets: [4,5], orderable: false, searchable: false }
+      { targets: [3], className: 'dt-right' },           // Hectáreas → derecha
+      { targets: [4,5], orderable: false, searchable: false } // Detalle + Acciones
     ]
   });
 
@@ -43,8 +47,6 @@ export function initTablaCentros() {
 
 /**
  * Recarga los centros en la tabla.
- * - Si recibes `data` (array), la usa.
- * - Si no, consulta al API (getCentrosAll()).
  */
 export async function loadCentros(data) {
   if (!Estado.table) {
@@ -61,7 +63,6 @@ export async function loadCentros(data) {
       const codigo    = c.code || c.codigo_centro || '-';
       const hect      = (c.hectareas ?? '') === '' ? '' : fmt2.format(Number(c.hectareas) || 0);
 
-      // Ícono “Detalle” (abre modal)
       const coordsCell = `
         <i class="material-icons btn-coords"
            data-idx="${i}"
@@ -71,7 +72,6 @@ export async function loadCentros(data) {
            role="button"
            tabindex="0">visibility</i>`;
 
-      // Acciones: Ver en mapa / Editar / Eliminar
       const accionesCell = `
         <i class="material-icons btn-ver-mapa"
            data-idx="${i}"
@@ -95,21 +95,17 @@ export async function loadCentros(data) {
            role="button"
            tabindex="0">delete</i>`;
 
-      return [
-        esc(proveedor),
-        esc(comuna),
-        esc(codigo),
-        hect,
-        coordsCell,
-        accionesCell
-      ];
+      return [esc(proveedor), esc(comuna), esc(codigo), hect, coordsCell, accionesCell];
     });
 
     Estado.table.clear().rows.add(rows).draw();
 
-    // Totales del footer: total de centros (además del totalHect que setea calcularTotalesTabla)
+    // Totales del footer
     const elTotalCentros = document.getElementById('totalCentros');
     if (elTotalCentros) elTotalCentros.textContent = String(Estado.centros?.length || 0);
+
+    // Recalcular footer de hectáreas
+    footerCallbackSimple();
 
   } catch (e) {
     console.error('Error cargando centros:', e);
