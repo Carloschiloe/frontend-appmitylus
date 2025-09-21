@@ -1,4 +1,4 @@
-// /js/app.js — bootstrap/orquestador
+// /js/app.js — bootstrap/orquestador (versión simplificada sin “líneas”)
 
 import { Estado } from './core/estado.js';
 
@@ -26,7 +26,7 @@ import { getCentrosAll, createCentro, updateCentro } from './core/centros_repo.j
 // === Utils app ===
 import { tabMapaActiva } from './core/utilidades_app.js';
 
-// === Utils (usar el global de /js/utils.js)
+// === Utils (global de /js/utils.js)
 const parseDMS = (s) => {
   const fn = (window.u && window.u.parseOneDMS) || window.parseOneDMS;
   return typeof fn === 'function' ? fn(s) : NaN;
@@ -35,9 +35,9 @@ const parseDMS = (s) => {
 // jQuery (solo para workaround de Materialize + DataTables)
 const $ = window.$ || window.jQuery;
 
-const APPLOG = (...a) => console.log('[APP]', ...a);
+const APPLOG  = (...a) => console.log('[APP]', ...a);
 const APPWARN = (...a) => console.warn('[APP]', ...a);
-const APPERR = (...a) => console.error('[APP]', ...a);
+const APPERR  = (...a) => console.error('[APP]', ...a);
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
@@ -134,25 +134,25 @@ async function recargarCentros() {
 function wireFormCentros() {
   APPLOG('wireFormCentros()');
 
-  const btnNuevoCentro = document.getElementById('btnOpenCentroModal');
-  const centroModalElem = document.getElementById('centroModal');
+  const btnNuevoCentro   = document.getElementById('btnOpenCentroModal');
+  const centroModalElem  = document.getElementById('centroModal');
   const centroModal = centroModalElem
     ? M.Modal.getInstance(centroModalElem) || M.Modal.init(centroModalElem)
     : null;
 
   const els = {
-    formTitle: document.getElementById('formTitle'),
-    inputCentroId: document.getElementById('inputCentroId'),
-    inputProveedor: document.getElementById('inputProveedor'),
-    inputComuna: document.getElementById('inputComuna'),
-    inputCode: document.getElementById('inputCode'),
-    inputHectareas: document.getElementById('inputHectareas'),
-    inputLat: document.getElementById('inputLat'),
-    inputLng: document.getElementById('inputLng'),
-    btnAddPoint: document.getElementById('btnAddPoint'),
-    btnClearPoints: document.getElementById('btnClearPoints'),
-    btnSaveCentro: document.getElementById('btnSaveCentro'),
-    pointsBody: document.getElementById('pointsBody'),
+    formTitle:        document.getElementById('formTitle'),
+    inputCentroId:    document.getElementById('inputCentroId'),
+    inputProveedor:   document.getElementById('inputProveedor'),
+    inputComuna:      document.getElementById('inputComuna'),
+    inputCode:        document.getElementById('inputCode'),
+    inputHectareas:   document.getElementById('inputHectareas'),
+    inputLat:         document.getElementById('inputLat'),
+    inputLng:         document.getElementById('inputLng'),
+    btnAddPoint:      document.getElementById('btnAddPoint'),
+    btnClearPoints:   document.getElementById('btnClearPoints'),
+    btnSaveCentro:    document.getElementById('btnSaveCentro'),
+    pointsBody:       document.getElementById('pointsBody'),
   };
 
   // Nuevo centro
@@ -191,13 +191,13 @@ function wireFormCentros() {
     renderPointsTable(els.pointsBody, Estado.currentPoints);
   });
 
-  // Guardar (crear/actualizar)
+  // Guardar (crear/actualizar) — solo datos generales + polígono
   document.getElementById('formCentro')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const proveedor = els.inputProveedor?.value?.trim();
-    const comuna = els.inputComuna?.value?.trim();
-    const code = els.inputCode?.value?.trim();
-    const hectStr = els.inputHectareas?.value?.trim();
+    const comuna    = els.inputComuna?.value?.trim();
+    const code      = els.inputCode?.value?.trim();
+    const hectStr   = els.inputHectareas?.value?.trim();
 
     if (!proveedor || !comuna || !code) {
       M.toast({ html: 'Proveedor, comuna y código son obligatorios', classes: 'red' });
@@ -214,11 +214,7 @@ function wireFormCentros() {
       comuna,
       code,
       hectareas: hect,
-      coords: Estado.currentPoints,
-      lines:
-        Estado.currentCentroIdx !== null
-          ? Estado.centros[Estado.currentCentroIdx]?.lines || []
-          : [],
+      coords: Array.from(Estado.currentPoints || []), // polígono
     };
 
     els.btnSaveCentro && (els.btnSaveCentro.disabled = true);
