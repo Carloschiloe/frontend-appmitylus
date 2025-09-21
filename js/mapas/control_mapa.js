@@ -1,17 +1,34 @@
 // js/mapas/control_mapa.js
+// Orquestación del mapa (creación única, invalidaciones y re-render)
+// Sin dependencias de líneas/inventario.
+
 import { Estado } from '../core/estado.js';
 import { hashCentros, tabMapaActiva, actualizarTextoFullscreen } from '../core/utilidades_app.js';
 import {
-  crearMapa, clearMapPoints, redrawPolygon, addPointMarker,
-  drawCentrosInMap, focusCentroInMap, initSidebarFiltro
+  crearMapa,
+  clearMapPoints,
+  redrawPolygon,
+  addPointMarker,
+  drawCentrosInMap,
+  focusCentroInMap,
+  initSidebarFiltro
 } from './mapa.js';
 
 let _mapInitStarted = false;
+let _wiredEvents = false;
+let _sidebarInit = false;
 
-function onTabShowInvalidate() {
-  setTimeout(() => window.__mapLeaflet && window.__mapLeaflet.invalidateSize(), 60);
+function invalidateSoon(delay = 60) {
+  // Dos tiros para cubrir animaciones/visibilidad de pestañas
+  setTimeout(() => Estado.map?.invalidateSize(), delay);
+  setTimeout(() => Estado.map?.invalidateSize(), delay + 240);
 }
 
+function onTabShowInvalidate() {
+  invalidateSoon(40);
+}
+
+/** Espera a que #map/#tab-mapa tengan altura renderizada (cuando cambian las tabs) */
 function waitForMapDom() {
   return new Promise((resolve) => {
     const tryNow = () => {
@@ -33,64 +50,98 @@ function waitForMapDom() {
   });
 }
 
+function wireGlobalEventsOnce() {
+  if (_wiredEvents) return;
+  _wiredEvents = true;
+
+  const tabEl = document.getElementById('tab-mapa');
+  if (tabEl) {
+    const mo = new MutationObserver(onTabShowInvalidate);
+    mo.observe(tabEl, { attributes: true, attributeFilter: ['style', 'class'] });
+  }
+  window.addEventListener('resize', onTabShowInvalidate, { passive: true });
+
+  // Compat: si navegas con hash a la pestaña del mapa
+  window.addEventListener('hashchange', () => {
+    if (location.hash === '#tab-mapa') onTabShowInvalidate();
+  });
+
+  // Clicks a <a href="#tab-mapa">
+  document.querySelectorAll('a[href="#tab-mapa"]').forEach(a =>
+    a.addEventListener('click', onTabShowInvalidate)
+  );
+}
+
+function wireFullscreenOnce() {
+  const fsBtn = document.getElementById('btnFullscreenMapa');
+  const shell = document.getElementById('mapShell');
+  if (!fsBtn || !shell) return;
+
+  if (!fsBtn.dataset._wired) {
+    fsBtn.dataset._wired = '1';
+    fsBtn.addEventListener('click', () => {
+      try {
+        if (!document.fullscreenElement) shell.requestFullscreen?.();
+        else document.exitFullscreen?.();
+      } catch { /* noop */ }
+    });
+    document.addEventListener('fullscreenchange', () => actualizarTextoFullscreen(fsBtn, shell));
+  }
+  actualizarTextoFullscreen(fsBtn, shell);
+
+  // Atajo teclado "f" solo si está activa la pestaña y no escribes en inputs
+  if (!document.body.dataset._mapKeyWired) {
+    document.body.dataset._mapKeyWired = '1';
+    document.addEventListener('keydown', (e) => {
+      const tag = (e.target && e.target.tagName) || '';
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(tag);
+      if (typing) return;
+      if ((e.key || '').toLowerCase() === 'f' && tabMapaActiva?.()) fsBtn?.click();
+    });
+  }
+}
+
 async function ensureMapCreated() {
   if (_mapInitStarted && Estado.map) return Estado.map;
   _mapInitStarted = true;
 
   await waitForMapDom();
 
-  // Crear mapa (si aún no existe)
+  // Crear mapa (idempotente en crearMapa)
   Estado.map = crearMapa(Estado.defaultLatLng);
   if (!Estado.map) {
-    // último intento con pequeño delay por si el DOM apareció recién
+    // Último intento con pequeño delay por si el DOM apareció recién
     await new Promise(r => setTimeout(r, 60));
     Estado.map = crearMapa(Estado.defaultLatLng);
   }
+  if (!Estado.map) return null;
 
-  // Observadores de visibilidad/tamaño extra por seguridad
-  const tabEl = document.getElementById('tab-mapa');
-  if (tabEl) {
-    const mo = new MutationObserver(onTabShowInvalidate);
-    mo.observe(tabEl, { attributes: true, attributeFilter: ['style', 'class'] });
-  }
-  window.addEventListener('resize', onTabShowInvalidate);
-  window.addEventListener('hashchange', () => {
-    if (location.hash === '#tab-mapa') onTabShowInvalidate();
-  });
-  document.querySelectorAll('a[href="#tab-mapa"]').forEach(a => a.addEventListener('click', onTabShowInvalidate));
-
-  // Cerrar popup al click fuera
-  Estado.map.on('click', (e) => {
-    // En algunos navegadores SVGPathElement puede no existir; hacemos try/catch suave
-    try {
-      if (!(e.originalEvent.target instanceof SVGPathElement)) {
-        Estado.map.closePopup();
-      }
-    } catch { Estado.map.closePopup(); }
-  });
-
-  // Fullscreen
-  const fsBtn = document.getElementById('btnFullscreenMapa');
-  const shell = document.getElementById('mapShell');
-  if (fsBtn && shell) {
-    fsBtn.addEventListener('click', () => {
-      if (!document.fullscreenElement) shell.requestFullscreen?.();
-      else document.exitFullscreen?.();
+  // Cerrar popups al hacer click fuera de polígonos
+  if (!Estado.map._nerdClickWired) {
+    Estado.map._nerdClickWired = true;
+    Estado.map.on('click', (e) => {
+      try {
+        // En algunos navegadores SVGPathElement puede no existir
+        // Si no clickeaste un path (polígono), cierra popups
+        // @ts-ignore
+        if (!(e?.originalEvent?.target instanceof SVGPathElement)) {
+          Estado.map.closePopup();
+        }
+      } catch { Estado.map.closePopup(); }
     });
-    document.addEventListener('fullscreenchange', () => actualizarTextoFullscreen(fsBtn, shell));
-    actualizarTextoFullscreen(fsBtn, shell);
   }
 
-  // Atajo teclado "f"
-  document.addEventListener('keydown', (e) => {
-    if (e.key && e.key.toLowerCase() === 'f' && tabMapaActiva?.()) fsBtn?.click();
-  });
+  wireGlobalEventsOnce();
+  wireFullscreenOnce();
 
-  // Sidebar filtro (cuando ya hay DOM)
-  setTimeout(() => { initSidebarFiltro(); }, 0);
+  // Sidebar filtro (una vez, pero después del primer render)
+  if (!_sidebarInit) {
+    _sidebarInit = true;
+    setTimeout(() => { try { initSidebarFiltro(); } catch {} }, 0);
+  }
 
   // Asegurar tamaño correcto tras crear
-  onTabShowInvalidate();
+  invalidateSoon(40);
 
   return Estado.map;
 }
@@ -99,6 +150,10 @@ export async function initMapa() {
   await ensureMapCreated();
 }
 
+/**
+ * Dibuja los centros si cambiaron (o si force=true).
+ * Mantiene el mapa “sano” cuando se activa la pestaña con retardos.
+ */
 export async function renderMapaAlways(force = false) {
   await ensureMapCreated();
   if (!Estado.map) return;
@@ -111,10 +166,8 @@ export async function renderMapaAlways(force = false) {
   Estado.centrosHashRender = h;
 
   drawCentrosInMap(Estado.centros, Estado.defaultLatLng);
-  // doble tiro por si el tab se activó recién
-  setTimeout(() => Estado.map && Estado.map.invalidateSize(), 60);
-  setTimeout(() => Estado.map && Estado.map.invalidateSize(), 300);
+  invalidateSoon(60);
 }
 
-// Reexportar helpers de puntos para usarlos en el formulario
+// Reexport: helpers usados por el formulario de puntos
 export { clearMapPoints, redrawPolygon, addPointMarker, focusCentroInMap };
