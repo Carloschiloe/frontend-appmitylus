@@ -6,9 +6,8 @@ import { loadCentros } from './tabla_centros.js';
 import { tabMapaActiva } from '../core/utilidades_app.js';
 import { renderMapaAlways } from '../mapas/control_mapa.js';
 
-/* ===== Utiles ===== */
+/* ===== Utils locales ===== */
 const $  = (sel, ctx = document) => (ctx.querySelector ? ctx.querySelector(sel) : null);
-const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 const toast = (html, classes = '') => window.M?.toast?.({ html, classes });
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toTitleCase = (str) => (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
@@ -32,14 +31,23 @@ async function refreshCentros() {
   }
 }
 
+/* Accesibilidad: dispara click con Enter o Espacio en elementos “icon-button” */
+function keyActivatesClick(e) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    e.currentTarget?.click?.();
+  }
+}
+
 /* ============ Registro de eventos de la tabla ============ */
 export function registerTablaCentrosEventos() {
-  const $t = window.$('#centrosTable');
+  const $t = window.$('#centrosTable'); // jQuery (DataTables)
+  if (!$t.length) return;
 
-  // --- Modal de Detalles / Coordenadas ---
+  /* --- Detalles / Coordenadas --- */
   $t.off('click', '.btn-coords').on('click', '.btn-coords', function () {
-    const idx   = +this.dataset.idx;
-    const c     = Estado.centros[idx];
+    const idx = Number(this.dataset.idx);
+    const c   = Estado.centros?.[idx];
     const modal = $('#modalDetallesCentro');
     const body  = $('#detallesCentroBody');
     if (!c || !modal || !body) return;
@@ -70,7 +78,6 @@ export function registerTablaCentrosEventos() {
       nroPert: 'Nro. Pert',
     };
     const prettyKey = k => LABELS[k] || k.replace(/([A-Z])/g, ' $1').replace(/^./, m => m.toUpperCase());
-
     const ORDER_TOP = ['region','codigoArea','ubicacion','grupoEspecie','especies','tonsMax'];
     const ORDER_DET = ['rutTitular','nroPert','numeroResSSP','fechaResSSP','numeroResSSFFAA','fechaResSSFFAA'];
 
@@ -131,13 +138,20 @@ export function registerTablaCentrosEventos() {
     inst?.open();
   });
 
-  // --- Editar centro ---
+  /* Accesibilidad para .btn-coords */
+  $t.off('keydown', '.btn-coords').on('keydown', '.btn-coords', keyActivatesClick);
+
+  /* --- Editar centro --- */
   $t.off('click', '.editar-centro').on('click', '.editar-centro', function () {
-    const idx = +this.dataset.idx;
+    const idx = Number(this.dataset.idx);
+    if (!Number.isFinite(idx)) return;
+
     Estado.currentCentroIdx = idx;
 
     const modalElem = $('#centroModal');
-    const modal = modalElem ? (window.M?.Modal?.getInstance(modalElem) || window.M?.Modal?.init(modalElem)) : null;
+    const modal = modalElem
+      ? (window.M?.Modal?.getInstance(modalElem) || window.M?.Modal?.init(modalElem))
+      : null;
 
     const els = {
       formTitle:      $('#formTitle'),
@@ -151,15 +165,24 @@ export function registerTablaCentrosEventos() {
       pointsBody:     $('#pointsBody')
     };
 
-    openEditForm(els, Estado.map, Estado.currentPoints, v => (Estado.currentCentroIdx = v), idx);
-    modal?.open();
+    try {
+      openEditForm(els, Estado.map, Estado.currentPoints, v => (Estado.currentCentroIdx = v), idx);
+      modal?.open();
+    } catch (e) {
+      console.error('openEditForm error:', e);
+      toast('No se pudo abrir el editor', 'red');
+    }
   });
 
-  // --- Eliminar centro ---
+  /* Accesibilidad para .editar-centro */
+  $t.off('keydown', '.editar-centro').on('keydown', '.editar-centro', keyActivatesClick);
+
+  /* --- Eliminar centro --- */
   $t.off('click', '.eliminar-centro').on('click', '.eliminar-centro', async function () {
-    const idx = +this.dataset.idx;
-    const c = Estado.centros[idx];
+    const idx = Number(this.dataset.idx);
+    const c = Estado.centros?.[idx];
     if (!c) return;
+
     const nombreRef = c.proveedor || c.comuna || 'este centro';
     if (!confirm(`¿Eliminar el centro "${nombreRef}"?`)) return;
 
@@ -172,4 +195,7 @@ export function registerTablaCentrosEventos() {
       toast('No se pudo eliminar el centro', 'red');
     }
   });
+
+  /* Accesibilidad para .eliminar-centro */
+  $t.off('keydown', '.eliminar-centro').on('keydown', '.eliminar-centro', keyActivatesClick);
 }
