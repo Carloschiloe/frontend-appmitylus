@@ -1,47 +1,127 @@
+/* /css/centros.css — unificado con estilo MMPP */
+
 /* ==============================
-   CENTROS – Overrides global
+   TOKENS (compat MMPP + fallbacks)
    ============================== */
+:root{
+  /* layout.css */
+  --nav-bg: #0f172a;
+  --nav-fg: #e5e7eb;
+  --nav-fg-dim: #9ca3af;
+  --nav-accent: #6366f1;
 
-/* Fallbacks */
-:root{ --primary:#00695c; --primary-acc:#009688; }
+  /* inventario.css */
+  --font: 'Inter', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  --text:#111827;
+  --muted:#6b7280;
+  --panel:#ffffff;
+  --bg:#f6f8ff;
+  --border:#e5e7eb;
+  --brand1:#4f46e5;
+  --brand2:#9333ea;
 
-/* ---------- TABLA PRINCIPAL ---------- */
-#centrosTable.dataTable thead th{ background:var(--primary) !important; color:#fff !important; }
-#centrosTable, #centrosTable th, #centrosTable td{ font-size:.92em !important; padding:.26em .48em !important; }
+  /* compat antiguo */
+  --primary: var(--nav-accent);
+  --primary-acc: #8091ff;
+}
 
-/* Col 1: Proveedor */
+html, body { height:100%; }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* ==============================
+   NAV (Materialize)
+   ============================== */
+nav, nav.teal{ background:var(--nav-bg) !important; }
+nav .brand-logo{ font-weight:800; letter-spacing:.2px; }
+nav .btn-flat, nav a, nav i.material-icons{ color:var(--nav-fg) !important; }
+nav .btn-flat:hover{ background:rgba(255,255,255,.06) !important; border-radius:8px; }
+
+/* ==============================
+   CONTENEDOR / PANEL
+   ============================== */
+.container{ position:relative; z-index:1; }
+#tab-centros .row > .col.s12{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:0 10px 30px rgba(17,24,39,.06);
+  padding:12px 12px 6px;
+}
+
+/* ==============================
+   TABS
+   ============================== */
+.tabs .tab a{ color:var(--muted) !important; font-weight:700; }
+.tabs .tab a.active{ color:var(--text) !important; }
+.tabs .indicator{
+  background:linear-gradient(90deg,var(--brand1),var(--brand2)) !important;
+  height:3px;
+}
+
+/* ==============================
+   BOTONES (Materialize)
+   ============================== */
+.btn, .btn-small, .btn-large{
+  text-transform:none;
+  font-weight:800;
+  border-radius:12px;
+  box-shadow:0 8px 20px rgba(79,70,229,.18);
+  background:linear-gradient(90deg,var(--brand1),var(--brand2)) !important;
+}
+.btn-flat{ border-radius:10px; }
+.btn.orange.darken-2{
+  background:#eef2ff !important; color:#1e40af !important; border:1px solid #c7d2fe !important;
+  box-shadow:none;
+}
+
+/* ==============================
+   TABLA CENTROS (DataTables)
+   ============================== */
+#centrosTable.dataTable thead th{
+  background:var(--nav-bg) !important;
+  color:var(--nav-fg) !important;
+  font-weight:800;
+  border-bottom:0 !important;
+}
+#centrosTable, #centrosTable th, #centrosTable td{
+  font-size:14px !important;
+  padding:.42em .56em !important;
+}
 #centrosTable th:first-child, #centrosTable td:first-child{
-  white-space: normal !important; word-break: break-word !important;
+  white-space:normal !important; word-break:break-word !important;
   max-width:420px !important; min-width:100px !important;
 }
-/* Col 2: Comuna */
 #centrosTable th:nth-child(2), #centrosTable td:nth-child(2){ text-transform:capitalize !important; }
 
 /* Acciones */
 #centrosTable td:last-child{ white-space:nowrap !important; text-align:left; }
-#centrosTable td .material-icons{ font-size:1.1em; margin-right:6px; }
-#centrosTable td .material-icons:hover{
-  color:var(--primary-acc); transform:translateY(-1px);
-}
+#centrosTable td .material-icons{ font-size:1.1em; margin-right:6px; color:#374151; cursor:pointer; }
+#centrosTable td .material-icons:hover{ color:var(--nav-accent); transform:translateY(-1px); }
 
-/* =========================
+/* DataTables UI */
+#centrosTable_wrapper .dt-buttons .btn{ height:36px; border-radius:10px; }
+.dataTables_wrapper .dataTables_paginate .paginate_button{ border-radius:8px !important; }
+
+/* ==============================
    MAPA (full-bleed + shell)
-   ========================= */
-.full-bleed-shell{ width:100vw; position:relative; left:50%; right:50%; margin-left:-50vw; margin-right:-50vw; padding:0 0 24px; }
-.map-title{ margin:.6rem 0 .2rem; }
-
-#tab-mapa{ padding:.4rem 0 0; }
-
-/* Shell con altura REAL */
+   ============================== */
+#tab-mapa{ position:relative; z-index:4; padding:.4rem 0 0; }
 #mapShell{
-  position:relative; border:1px solid #ddd; border-radius:7px; background:#d8d8d8; overflow:hidden;
-  height:calc(100vh - 160px);
-  min-height:520px;
+  position:relative; z-index:5;
+  border:1px solid var(--border); border-radius:18px; background:#eef2ff; overflow:hidden;
+  height:calc(100vh - 160px); min-height:520px;
+  box-shadow:0 10px 30px rgba(17,24,39,.06);
 }
-
-/* Canvas llena el shell */
 #map, #map.leaflet-container{
-  width:100% !important; height:100% !important; min-height:inherit; background:#d8d8d8;
+  position:relative; z-index:6;
+  width:100% !important; height:100% !important; min-height:inherit; background:#eef2ff;
 }
 #map:focus-visible{ outline:2px solid #26a69a; outline-offset:2px; }
 
@@ -50,18 +130,19 @@
 :fullscreen #map, #map:fullscreen{ width:100vw; height:100vh; margin:0; padding:0; }
 body:has(#mapShell:fullscreen){ overflow:hidden; }
 
-/* ---------- Buscador flotante ---------- */
+/* Buscador flotante */
 .map-search{
   position:absolute; top:12px; left:50%; transform:translateX(-50%);
   width:min(720px,92vw); z-index:1001; display:flex; gap:6px; flex-direction:column;
 }
 .map-search input[type="search"]{
-  width:100%; height:44px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; padding:0 14px; font-size:15px;
+  width:100%; height:44px; border-radius:12px; border:1px solid var(--border);
+  background:#fff; padding:0 14px; font-size:15px; font-family:var(--font);
   box-shadow:0 6px 18px rgba(0,0,0,.08);
 }
 .map-search input[type="search"]:focus{ outline:none; border-color:#26a69a; box-shadow:0 0 0 3px rgba(38,166,154,.15); }
 .map-search-results{
-  list-style:none; margin:0; padding:6px 0; background:#fff; border:1px solid #e5e7eb; border-radius:10px;
+  list-style:none; margin:0; padding:6px 0; background:#fff; border:1px solid var(--border); border-radius:12px;
   box-shadow:0 10px 24px rgba(0,0,0,.10); max-height:52vh; overflow-y:auto; display:none;
 }
 .map-search-results.show{ display:block; }
@@ -69,7 +150,7 @@ body:has(#mapShell:fullscreen){ overflow:hidden; }
 .map-search-results li:last-child{ border-bottom:none; }
 .map-search-results li:hover{ background:#f9fafb; }
 
-/* ---------- Sidebar ---------- */
+/* Sidebar del mapa */
 .sidebar-centros{
   position:absolute; top:82px; left:28px; width:260px; background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.14);
   border-radius:10px; z-index:900; padding:12px 12px 8px; transition:transform .28s ease, opacity .28s ease;
@@ -83,7 +164,7 @@ body:has(#mapShell:fullscreen){ overflow:hidden; }
 .sidebar-list li{ cursor:pointer; padding:7px 0; border-bottom:1px solid #eee; font-size:15px; }
 .sidebar-list li.selected{ background:#e0f2f1; font-weight:700; }
 
-/* ---------- Etiquetas en polígonos ---------- */
+/* Etiquetas en polígonos */
 .leaflet-tooltip.centro-label{
   background:rgba(255,255,255,.88); border:1px solid #e5e7eb; border-radius:8px; padding:4px 8px; box-shadow:0 2px 10px rgba(0,0,0,.08);
   pointer-events:none;
@@ -93,7 +174,42 @@ body:has(#mapShell:fullscreen){ overflow:hidden; }
 .centro-label .titular{ font-weight:800; color:#111827; font-size:12px; }
 .centro-label .codigo{ font-weight:600; color:#374151; font-size:11px; }
 
-/* ---------- Responsive ---------- */
+/* ==============================
+   FORM / MODALES
+   ============================== */
+.modal{
+  border:1px solid var(--border);
+  border-radius:16px;
+  box-shadow:0 30px 60px rgba(0,0,0,.2);
+}
+.input-field input[type=text],
+.input-field input[type=number],
+.input-field input[type=search]{
+  height:42px !important;
+  border:1px solid var(--border) !important;
+  border-radius:12px !important;
+  padding:0 12px !important;
+  background:#fafafa !important;
+  box-shadow:none !important;
+}
+
+/* Tooltips */
+.material-tooltip{
+  background:var(--nav-bg);
+  color:var(--nav-fg);
+  border-radius:10px;
+}
+
+/* ==============================
+   TITULARES
+   ============================== */
+h5.map-title, #tab-centros h5{
+  font-weight:800; color:#2b3440;
+}
+
+/* ==============================
+   RESPONSIVE
+   ============================== */
 @media (max-width:1000px){ #mapShell{ height:calc(100vh - 170px); } }
 @media (max-width:900px){
   #centrosTable, #centrosTable_wrapper{ display:block !important; min-width:360px !important; }
@@ -106,11 +222,3 @@ body:has(#mapShell:fullscreen){ overflow:hidden; }
   .map-search{ width:94vw; }
 }
 @media (max-width:600px){ #mapShell{ height:calc(100vh - 200px); min-height:360px; } }
-
-/* ===== FIX: que el mapa no quede tapado por el container ===== */
-.container{ position:relative; z-index:1; }
-#tab-mapa{ position:relative; z-index:4; }
-#mapShell{ position:relative; z-index:5; }
-#map, #map.leaflet-container{ position:relative; z-index:6; }
-
-
