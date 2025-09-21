@@ -75,12 +75,14 @@ export function registerTablaCentrosEventos() {
       let html = `<table class="striped"><tbody>
         <tr><th>Proveedor</th><td>${esc(toTitleCase(c.proveedor || c.name || ''))}</td></tr>
         <tr><th>Comuna</th><td>${esc(toTitleCase(c.comuna || ''))}</td></tr>
-        <tr><th>Código</th><td>${esc(c.code || '')}</td></tr>
+        <tr><th>Código de Centro</th><td>${esc(c.code || '')}</td></tr>
         <tr><th>Hectáreas</th><td>${esc(c.hectareas ?? '')}</td></tr>`;
 
+      // Mostrar cabecera de valores top (con fallback a detalles)
       ORDER_TOP.forEach(k => {
-        let v = c[k];
-        if (k === 'especies' && Array.isArray(c.especies)) v = c.especies.join(', ');
+        let v = (c[k] !== undefined && c[k] !== null && String(c[k]) !== '') ? c[k] : plan[k];
+        if (k === 'especies' && !v && Array.isArray(c.especies)) v = c.especies.join(', ');
+        if (k === 'codigoArea') v = c.codigoArea ?? d.codigoArea ?? v; // fallback explícito
         if (v !== undefined && v !== null && String(v) !== '') {
           html += `<tr><th>${esc(prettyKey(k))}</th><td>${k.startsWith('fecha') ? fmtDate(v) : esc(v)}</td></tr>`;
         }
@@ -159,20 +161,27 @@ export function registerTablaCentrosEventos() {
       ? (window.M?.Modal?.getInstance(modalElem) || window.M?.Modal?.init(modalElem))
       : null;
 
+    // ▲ Incluimos inputCodigoArea para que openEditForm lo pueble/lea
     const els = {
-      formTitle:      $('#formTitle'),
-      inputCentroId:  $('#inputCentroId'),
-      inputProveedor: $('#inputProveedor'),
-      inputComuna:    $('#inputComuna'),
-      inputCode:      $('#inputCode'),
-      inputHectareas: $('#inputHectareas'),
-      inputLat:       $('#inputLat'),
-      inputLng:       $('#inputLng'),
-      pointsBody:     $('#pointsBody')
+      formTitle:       $('#formTitle'),
+      inputCentroId:   $('#inputCentroId'),
+      inputProveedor:  $('#inputProveedor'),
+      inputComuna:     $('#inputComuna'),
+      inputCode:       $('#inputCode'),
+      inputCodigoArea: $('#inputCodigoArea'),   // NUEVO
+      inputHectareas:  $('#inputHectareas'),
+      inputLat:        $('#inputLat'),
+      inputLng:        $('#inputLng'),
+      pointsBody:      $('#pointsBody')
     };
 
-    try { openEditForm(els, Estado.map, Estado.currentPoints, v => (Estado.currentCentroIdx = v), idx); modal?.open(); }
-    catch (e) { console.error('openEditForm error:', e); toast('No se pudo abrir el editor', 'red'); }
+    try {
+      openEditForm(els, Estado.map, Estado.currentPoints, v => (Estado.currentCentroIdx = v), idx);
+      modal?.open();
+    } catch (e) {
+      console.error('openEditForm error:', e);
+      toast('No se pudo abrir el editor', 'red');
+    }
   });
   $t.off('keydown', '.editar-centro').on('keydown', '.editar-centro', keyActivatesClick);
 
