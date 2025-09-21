@@ -24,14 +24,33 @@
 
   <!-- Estilos de esta vista (después de vendor para poder override) -->
   <link rel="stylesheet" href="/css/centros.css?v=2" />
+
+  <!-- Estilos mínimos para la navegación lateral -->
+  <style>
+    .mmpp-sidenav { display:flex; flex-direction:column; gap:.25rem; padding:.5rem; }
+    .mmpp-sidenav a { display:flex; gap:.6rem; align-items:center; padding:.6rem .9rem; border-radius:.5rem; color:inherit; text-decoration:none; }
+    .mmpp-sidenav a .material-icons { font-size:20px; opacity:.9; }
+    .mmpp-sidenav a.active { background: rgba(255,255,255,0.08); font-weight:600; }
+  </style>
 </head>
 <body>
   <div class="mmpp-layout">
-    <!-- Sidebar opcional -->
-    <aside id="mmppNavMount" class="mmpp-nav"></aside>
+    <!-- Sidebar con navegación a secciones -->
+    <aside id="mmppNavMount" class="mmpp-nav">
+      <nav class="mmpp-sidenav">
+        <a href="#tab-centros" data-tab-link class="active">
+          <i class="material-icons">view_list</i>
+          <span>Directorio</span>
+        </a>
+        <a href="#tab-mapa" data-tab-link>
+          <i class="material-icons">map</i>
+          <span>Mapa</span>
+        </a>
+      </nav>
+    </aside>
 
     <main class="mmpp-main">
-      <!-- Nav superior -->
+      <!-- Barra superior -->
       <nav class="teal">
         <div class="nav-wrapper">
           <a href="/index.html" class="btn-flat left" title="Volver" aria-label="Volver">
@@ -41,76 +60,68 @@
         </div>
       </nav>
 
-      <!-- Tabs -->
-      <div class="container" style="margin-top:1rem;">
-        <ul id="tabs" class="tabs">
-          <li class="tab col s6"><a class="active" href="#tab-centros">Directorio</a></li>
-          <li class="tab col s6"><a href="#tab-mapa">Mapa</a></li>
-        </ul>
+      <!-- ========= SECCIÓN: DIRECTORIO ========= -->
+      <section id="tab-centros" class="col s12">
+        <!-- HERO + KPIs -->
+        <div class="mmpp-hero" style="margin:16px 0 12px;">
+          <div><h1 style="margin:0;font-weight:800">Directorio de Centros</h1></div>
+          <div class="mmpp-badge">▦ Panel</div>
+        </div>
 
-        <!-- TAB CENTROS -->
-        <section id="tab-centros" class="col s12">
-          <!-- HERO + KPIs -->
-          <div class="mmpp-hero" style="margin-bottom:12px;">
-            <div><h1 style="margin:0;font-weight:800">Directorio de Centros</h1></div>
-            <div class="mmpp-badge">▦ Panel</div>
-          </div>
+        <div class="mmpp-kpis" style="margin:10px 0 12px;">
+          <div class="mmpp-kpi"><strong id="kpiCentros">0</strong>&nbsp;centros</div>
+          <div class="mmpp-kpi"><strong id="kpiHect">0,00</strong>&nbsp;ha</div>
+          <div class="mmpp-kpi"><strong id="kpiComunas">0</strong>&nbsp;comunas</div>
+        </div>
 
-          <div class="mmpp-kpis" style="margin:10px 0 12px;">
-            <div class="mmpp-kpi"><strong id="kpiCentros">0</strong>&nbsp;centros</div>
-            <div class="mmpp-kpi"><strong id="kpiHectareas">0.00</strong>&nbsp;ha</div>
-            <div class="mmpp-kpi"><strong id="kpiComunas">0</strong>&nbsp;comunas</div>
-          </div>
-
-          <!-- FILTROS -->
-          <div class="mmpp-card" style="margin-bottom:12px;">
-            <div class="mmpp-grid" id="filtrosCentros" style="align-items:center">
-              <div>
-                <select id="filtroComunas" class="mmpp-input">
-                  <option value="">Todas las comunas</option>
-                </select>
-                <div class="mmpp-help">Filtra por comuna. Los KPIs reflejan el filtro.</div>
-              </div>
-              <div>
-                <input id="filtroProveedor" class="mmpp-input" placeholder="Buscar proveedor…" />
-                <div class="mmpp-help">Busca por nombre del proveedor.</div>
-              </div>
-              <div style="display:flex;gap:10px;justify-content:flex-end">
-                <button id="btnLimpiarFiltros" type="button" class="mmpp-ghostbtn">Limpiar filtros</button>
-              </div>
+        <!-- FILTROS -->
+        <div class="mmpp-card" style="margin-bottom:12px;">
+          <div class="mmpp-grid" id="filtrosCentros" style="align-items:center">
+            <div>
+              <select id="filtroComuna" class="mmpp-input">
+                <option value="">Todas las comunas</option>
+              </select>
+              <div class="mmpp-help">Filtra por comuna. Los KPIs reflejan el filtro.</div>
+            </div>
+            <div>
+              <input id="filtroProveedor" class="mmpp-input" placeholder="Buscar proveedor…" />
+              <div class="mmpp-help">Busca por nombre del proveedor o código.</div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button id="btnLimpiarFiltros" type="button" class="mmpp-ghostbtn">Limpiar filtros</button>
             </div>
           </div>
+        </div>
 
-          <!-- TABLA -->
-          <div class="row">
-            <div class="col s12">
-              <table id="centrosTable" class="striped display responsive-table" style="width:100%">
-                <thead>
-                  <tr>
-                    <th style="min-width:130px;">Proveedor</th>
-                    <th style="min-width:105px;">Comuna</th>
-                    <th style="min-width:70px;">Código</th>
-                    <th style="min-width:60px;max-width:80px;">Hectáreas</th>
-                    <th style="width:48px;">Detalle</th>
-                    <th style="width:72px;">Acciones</th>
-                  </tr>
-                </thead>
-                <tfoot>
-                  <tr>
-                    <th colspan="2" style="text-align:right">Totales:</th>
-                    <th id="totalCentros">0</th>
-                    <th id="totalHect">0.00</th>
-                    <th colspan="2"></th>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+        <!-- TABLA -->
+        <div class="row">
+          <div class="col s12">
+            <table id="centrosTable" class="striped display responsive-table" style="width:100%">
+              <thead>
+                <tr>
+                  <th style="min-width:130px;">Proveedor</th>
+                  <th style="min-width:105px;">Comuna</th>
+                  <th style="min-width:70px;">Código</th>
+                  <th style="min-width:60px;max-width:80px;">Hectáreas</th>
+                  <th style="width:48px;">Detalle</th>
+                  <th style="width:72px;">Acciones</th>
+                </tr>
+              </thead>
+              <tfoot>
+                <tr>
+                  <th colspan="2" style="text-align:right">Totales:</th>
+                  <th id="totalCentros">0</th>
+                  <th id="totalHect">0,00</th>
+                  <th colspan="2"></th>
+                </tr>
+              </tfoot>
+            </table>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
-      <!-- TAB MAPA -->
-      <section id="tab-mapa" class="col s12" style="padding:0;">
+      <!-- ========= SECCIÓN: MAPA ========= -->
+      <section id="tab-mapa" class="col s12" style="padding:0; display:none;">
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px;">
             <h5 class="map-title" style="margin:0;">Mapa de Centros</h5>
@@ -122,7 +133,7 @@
 
           <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros" style="height:calc(100vh - 160px);min-height:520px;">
             <div class="map-search" id="mapSearchBox">
-              <input type="search" id="mapSearch" placeholder="Buscar por Código, Titular o Código de Área…" aria-label="Buscar por Código, Titular o Código de Área" autocomplete="off" />
+              <input type="search" id="mapSearch" placeholder="Buscar por Código, Titular, Comuna o Código de Área…" aria-label="Buscar por Código, Titular, Comuna o Código de Área" autocomplete="off" />
               <ul id="mapSearchResults" class="map-search-results" role="listbox"></ul>
             </div>
             <div id="map"></div>
@@ -243,12 +254,34 @@
   <!-- App Centros -->
   <script type="module" src="/js/app.js"></script>
 
-  <!-- Sidebar React (opcional) -->
-  <!--
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-  <script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
-  -->
+  <!-- Mini-router por hash para mostrar/ocultar secciones desde la sidebar -->
+  <script>
+  (function () {
+    const sections = {
+      '#tab-centros': document.getElementById('tab-centros'),
+      '#tab-mapa': document.getElementById('tab-mapa')
+    };
+    const links = Array.from(document.querySelectorAll('[data-tab-link]'));
+
+    function show(hash) {
+      if (!sections[hash]) hash = '#tab-centros';
+
+      Object.values(sections).forEach(el => el && (el.style.display = 'none'));
+      sections[hash].style.display = 'block';
+
+      links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === hash));
+
+      // Asegurar que Leaflet recalcule tamaño al abrir el mapa
+      if (hash === '#tab-mapa' && window.__mapLeaflet) {
+        setTimeout(() => window.__mapLeaflet.invalidateSize(), 60);
+        setTimeout(() => window.__mapLeaflet.invalidateSize(), 300);
+      }
+    }
+
+    window.addEventListener('hashchange', () => show(location.hash));
+    if (!location.hash) location.hash = '#tab-centros';
+    show(location.hash);
+  })();
+  </script>
 </body>
 </html>
