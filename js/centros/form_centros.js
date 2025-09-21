@@ -1,76 +1,72 @@
-// js/centros/form_centros.js
+// js/centros/form_centros.js — versión limpia (sin líneas)
 import { Estado } from '../core/estado.js';
-import {
-  clearMapPoints,
-  redrawPolygon,
-  addPointMarker
-} from '../mapas/control_mapa.js';
+import { clearMapPoints, redrawPolygon, addPointMarker } from '../mapas/control_mapa.js';
 
-// Maneja la apertura del form para NUEVO centro
-export async function openNewForm(els, map, currentPoints, setIdxCb) {
-  els.formTitle.textContent  = 'Nuevo centro';
-  els.inputCentroId.value    = '';
-  els.inputProveedor.value   = '';
-  els.inputComuna.value      = '';
-  els.inputCode.value        = '';
-  els.inputHectareas.value   = '';
-  els.inputLat.value         = '';
-  els.inputLng.value         = '';
+// Abre el form para NUEVO centro
+export function openNewForm(els, map, currentPoints, setIdxCb) {
+  els.formTitle.textContent = 'Nuevo centro';
+  els.inputCentroId.value   = '';
+  els.inputProveedor.value  = '';
+  els.inputComuna.value     = '';
+  els.inputCode.value       = '';
+  els.inputHectareas.value  = '';
+  els.inputLat.value        = '';
+  els.inputLng.value        = '';
 
-  // Actualiza etiquetas de Materialize
+  // Materialize labels
   window.M?.updateTextFields?.();
 
   // Reset puntos
   currentPoints.length = 0;
   clearMapPoints();
   renderPointsTable(els.pointsBody, currentPoints);
+
+  // Notifica: no hay centro seleccionado
   setIdxCb(null);
 }
 
-// Abre el form para editar un centro existente (sin refetch: usa Estado.centros)
-export async function openEditForm(els, map, currentPoints, setIdxCb, idx) {
+// Abre el form para EDITAR un centro existente (usa Estado.centros)
+export function openEditForm(els, map, currentPoints, setIdxCb, idx) {
   if (typeof idx !== 'number') {
     console.error('Falta índice centro en openEditForm');
     return;
   }
 
-  const centro = Estado.centros?.[idx];
-  if (!centro) {
+  const c = Estado.centros?.[idx];
+  if (!c) {
     console.error('Centro no encontrado en openEditForm:', idx);
     return;
   }
 
-  els.formTitle.textContent = `Editar centro: ${centro.proveedor || centro.code || centro.comuna || '-'}`;
-  els.inputCentroId.value   = idx;
-  els.inputProveedor.value  = centro.proveedor || '';
-  els.inputComuna.value     = centro.comuna   || '';
+  els.formTitle.textContent = `Editar centro: ${c.proveedor || c.code || c.comuna || '-'}`;
+  els.inputCentroId.value   = idx; // seguimos usando el índice como referencia
+  els.inputProveedor.value  = c.proveedor || '';
+  els.inputComuna.value     = c.comuna   || '';
   // compat: algunos registros antiguos traían "codigo_centro"
-  els.inputCode.value       = centro.code || centro.codigo_centro || '';
-  els.inputHectareas.value  = (centro.hectareas ?? '') === null ? '' : centro.hectareas;
+  els.inputCode.value       = c.code || c.codigo_centro || '';
+  els.inputHectareas.value  = (c.hectareas ?? '') === null ? '' : c.hectareas;
 
-  // Actualiza etiquetas de Materialize
+  // Materialize labels
   window.M?.updateTextFields?.();
 
-  // Carga puntos
+  // Cargar puntos actuales
   currentPoints.length = 0;
-  if (Array.isArray(centro.coords)) {
-    centro.coords.forEach(p => {
+  if (Array.isArray(c.coords)) {
+    c.coords.forEach(p => {
       const lat = Number(p?.lat);
       const lng = Number(p?.lng);
-      if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        currentPoints.push({ lat, lng });
-      }
+      if (Number.isFinite(lat) && Number.isFinite(lng)) currentPoints.push({ lat, lng });
     });
   }
 
-  // Dibuja en mapa
+  // Redibujar en mapa + tabla
   clearMapPoints();
   currentPoints.forEach(p => addPointMarker(p.lat, p.lng));
   redrawPolygon(currentPoints);
   renderPointsTable(els.pointsBody, currentPoints);
 
-  // Focus
-  setTimeout(() => { els.inputProveedor?.focus?.(); }, 100);
+  // Focus inicial
+  setTimeout(() => els.inputProveedor?.focus?.(), 100);
 
   // Ajusta mapa si hay puntos
   if (map && currentPoints.length) {
@@ -89,7 +85,7 @@ export async function openEditForm(els, map, currentPoints, setIdxCb, idx) {
   setIdxCb(idx);
 }
 
-// Renderiza la tabla de puntos de coordenadas (con eliminar punto)
+// Renderiza la tabla de puntos (con eliminar punto)
 export function renderPointsTable(pointsBody, currentPoints) {
   if (!pointsBody) return;
 
