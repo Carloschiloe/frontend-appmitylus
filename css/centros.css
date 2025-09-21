@@ -285,3 +285,34 @@ h5.map-title, #tab-centros h5{
 @media (max-width:800px){
   .kpi-cards{ grid-template-columns: 1fr; }
 }
+
+/* KPI cards en una sola fila en pantallas amplias */
+.kpi-cards{
+  display:grid;
+  grid-template-columns: repeat(4, minmax(240px, 1fr)); /* 4 tarjetas en línea */
+  gap: 16px;
+  align-items: stretch;
+}
+
+/* En pantallas chicas, que se acomoden automáticamente */
+@media (max-width: 1100px){
+  .kpi-cards{
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+  }
+}
+@media (max-width: 640px){
+  .kpi-cards{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* El valor dentro de la tarjeta (un poco más grande) */
+.kpi-card .kpi-value{
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 800;
+}
+.kpi-card .kpi-suffix{
+  font-weight: 700;
+  opacity: .7;
+  margin-left: .25rem;
+}
