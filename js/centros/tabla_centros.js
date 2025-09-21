@@ -1,3 +1,4 @@
+//js/centros/tabla_centros.js
 import { Estado } from '../core/estado.js';
 import { getCentrosAll } from '../core/centros_repo.js';
 import { registerTablaCentrosEventos } from './eventos_centros.js';
@@ -20,7 +21,7 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 let $t;               // instancia jQuery del #centrosTable
 let api;              // DataTables API
 let $comunaSelect;    // <select id="filtroComuna">
-let $buscador;        // <input id="buscarProveedor">
+let $buscador;        // <input id="buscarProveedor"> o <input id="filtroProveedor">
 
 /* ===== KPIs + Footer con filas filtradas ===== */
 function updateKpisYFooter() {
@@ -31,8 +32,8 @@ function updateKpisYFooter() {
   const comunas = new Set();
 
   rows.each(row => {
-    // row = [ proveedor, comuna, codigo, hect_fmt, ... ]
-    totalHa += parseHaStr(row[3]);
+    // con la nueva columna: [0 prov, 1 comuna, 2 codigo, 3 codArea, 4 hect_fmt, ...]
+    totalHa += parseHaStr(row[4]);
     const c = (row[1] || '').toString().trim().toLowerCase();
     if (c) comunas.add(c);
   });
@@ -57,17 +58,14 @@ function populateComunasYWireFilter() {
   $comunaSelect = document.getElementById('filtroComuna');
   if (!$comunaSelect) return;
 
-  // Construimos set con todas las comunas del dataset
   const comunas = Array.from(
     new Set((Estado.centros || []).map(c => (c.comuna || '').trim()).filter(Boolean))
   ).sort((a,b) => a.localeCompare(b, 'es'));
 
-  // Rellenamos opciones
   $comunaSelect.innerHTML = `<option value="">Todas las comunas</option>` +
     comunas.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
 
-  // Inicializa Materialize (si está presente), sino queda nativo
-  try { window.M && window.M.FormSelect && window.M.FormSelect.init($comunaSelect); } catch {}
+  try { window.M?.FormSelect?.init($comunaSelect); } catch {}
 
   // Filtro por comuna (columna 1)
   $comunaSelect.addEventListener('change', () => {
@@ -76,7 +74,6 @@ function populateComunasYWireFilter() {
     if (!val) {
       api.column(1).search('', true, false).draw();
     } else {
-      // regex exacta, case-insensitive
       api.column(1).search(`^${escapeRegex(val)}$`, true, false).draw();
     }
   });
@@ -84,12 +81,12 @@ function populateComunasYWireFilter() {
 
 /* ===== Buscador global externo ===== */
 function wireExternalSearch() {
-  $buscador = document.getElementById('buscarProveedor'); // ← este es tu input del HTML
+  $buscador = document.getElementById('buscarProveedor') || document.getElementById('filtroProveedor');
   if (!$buscador) return;
 
   $buscador.addEventListener('input', () => {
     const q = ($buscador.value || '').trim();
-    api.search(q).draw(); // busca en todas las columnas visibles
+    api.search(q).draw(); // busca en todas las columnas visibles (incluye Código y Código de Área)
   });
 }
 
@@ -104,8 +101,7 @@ export function initTablaCentros() {
 
   Estado.table = $t.DataTable({
     colReorder: true,
-    // Quitamos el buscador nativo (no ponemos 'f' en dom)
-    dom: 'Brtip',
+    dom: 'Brtip', // sin buscador nativo
     buttons: [
       { extend: 'copyHtml5',  footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
       { extend: 'csvHtml5',   footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
@@ -114,20 +110,20 @@ export function initTablaCentros() {
     ],
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
     columnDefs: [
-      { targets: [3], className: 'dt-right' },                 // Hectáreas
-      { targets: [4,5], orderable: false, searchable: false }  // Detalle / Acciones
+      { targets: [4], className: 'dt-right' },                // Hectáreas (índice 4 con la nueva columna)
+      { targets: [5,6], orderable: false, searchable: false } // Detalle / Acciones
     ]
   });
 
   api = Estado.table;
 
-  // Recalcular KPIs y footer en cada draw (filtrado/paginado/orden)
+  // Recalcular KPIs y footer en cada draw
   $t.on('draw.dt', updateKpisYFooter);
 
   registerTablaCentrosEventos();
   wireExternalSearch();
 
-  // Por si algún tema/estilo igual llegara a pintar el filtro nativo:
+  // Ocultar el filtro nativo por si aparece
   window.$('#centrosTable_filter').hide();
 }
 
@@ -148,27 +144,34 @@ export async function loadCentros(data) {
     const rows = (Estado.centros || []).map((c, i) => {
       const proveedor = toTitleCase(c.proveedor) || '-';
       const comuna    = toTitleCase(c.comuna)    || '-';
+      const codigo    = c.code || '-';
+      const codArea   = c.codigoArea || c?.detalles?.codigoArea || '-'; // ← NUEVO
       const hect      = num(c.hectareas);
 
       const coordsCell = `
-        <i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer" title="Ver detalles" aria-label="Ver detalles">visibility</i>`;
+        <i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer"
+           title="Ver detalles" aria-label="Ver detalles">visibility</i>`;
 
       const accionesCell = `
-        <i class="material-icons btn-view-on-map" data-idx="${i}" style="cursor:pointer" title="Ver en mapa" aria-label="Ver en mapa">place</i>
-        <i class="material-icons editar-centro"   data-idx="${i}" style="cursor:pointer" title="Editar centro" aria-label="Editar centro">edit</i>
-        <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer" title="Eliminar centro" aria-label="Eliminar centro">delete</i>`;
+        <i class="material-icons btn-view-on-map" data-idx="${i}" style="cursor:pointer"
+           title="Ver en mapa" aria-label="Ver en mapa">place</i>
+        <i class="material-icons editar-centro"   data-idx="${i}" style="cursor:pointer"
+           title="Editar centro" aria-label="Editar centro">edit</i>
+        <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer"
+           title="Eliminar centro" aria-label="Eliminar centro">delete</i>`;
 
       return [
-        esc(proveedor),
-        esc(comuna),
-        esc(c.code || '-'),
-        fmt2.format(hect),
-        coordsCell,
-        accionesCell
+        esc(proveedor),        // 0 Proveedor
+        esc(comuna),           // 1 Comuna
+        esc(codigo),           // 2 Código
+        esc(codArea),          // 3 Código de Área  ← NUEVA COLUMNA
+        fmt2.format(hect),     // 4 Hectáreas (formateado)
+        coordsCell,            // 5 Detalle
+        accionesCell           // 6 Acciones
       ];
     });
 
-    api.clear().rows.add(rows).draw(); // draw() dispare updateKpisYFooter
+    api.clear().rows.add(rows).draw(); // draw() dispara updateKpisYFooter
 
     // Poblamos comunas (después de tener el dataset)
     populateComunasYWireFilter();
@@ -177,10 +180,9 @@ export async function loadCentros(data) {
     const btnLimpiar = document.getElementById('btnLimpiarFiltros');
     if (btnLimpiar) {
       btnLimpiar.onclick = () => {
-        // Limpia select comuna y buscador
         if ($comunaSelect) {
           $comunaSelect.value = '';
-          try { window.M && window.M.FormSelect && window.M.FormSelect.init($comunaSelect); } catch {}
+          try { window.M?.FormSelect?.init($comunaSelect); } catch {}
           api.column(1).search('', true, false);
         }
         if ($buscador) $buscador.value = '';
@@ -188,7 +190,7 @@ export async function loadCentros(data) {
       };
     }
 
-    // Si el tab MAPA está activo, actualizamos
+    // Si el tab MAPA está activo, actualiza
     if (tabMapaActiva?.()) await renderMapaAlways(true);
 
   } catch (e) {
