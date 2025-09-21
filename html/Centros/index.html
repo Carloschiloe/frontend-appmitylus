@@ -27,11 +27,11 @@
 </head>
 <body>
   <div class="mmpp-layout">
-    <!-- Sidebar opcional: si no usas nav.jsx, puedes quitar este <aside> -->
+    <!-- Sidebar opcional -->
     <aside id="mmppNavMount" class="mmpp-nav"></aside>
 
     <main class="mmpp-main">
-      <!-- Nav superior (puedes quitarlo si usas solo la sidebar) -->
+      <!-- Nav superior -->
       <nav class="teal">
         <div class="nav-wrapper">
           <a href="/index.html" class="btn-flat left" title="Volver" aria-label="Volver">
@@ -58,7 +58,7 @@
 
           <div class="mmpp-kpis" style="margin:10px 0 12px;">
             <div class="mmpp-kpi"><strong id="kpiCentros">0</strong>&nbsp;centros</div>
-            <div class="mmpp-kpi"><strong id="kpiHect">0.00</strong>&nbsp;ha</div>
+            <div class="mmpp-kpi"><strong id="kpiHectareas">0.00</strong>&nbsp;ha</div>
             <div class="mmpp-kpi"><strong id="kpiComunas">0</strong>&nbsp;comunas</div>
           </div>
 
@@ -66,13 +66,13 @@
           <div class="mmpp-card" style="margin-bottom:12px;">
             <div class="mmpp-grid" id="filtrosCentros" style="align-items:center">
               <div>
-                <select id="filtroComuna" class="mmpp-input">
+                <select id="filtroComunas" class="mmpp-input">
                   <option value="">Todas las comunas</option>
                 </select>
                 <div class="mmpp-help">Filtra por comuna. Los KPIs reflejan el filtro.</div>
               </div>
               <div>
-                <input id="buscarProveedor" class="mmpp-input" placeholder="Buscar proveedor…" />
+                <input id="filtroProveedor" class="mmpp-input" placeholder="Buscar proveedor…" />
                 <div class="mmpp-help">Busca por nombre del proveedor.</div>
               </div>
               <div style="display:flex;gap:10px;justify-content:flex-end">
@@ -200,7 +200,7 @@
         </div>
       </div>
 
-      <!-- MODAL IMPORTAR (faltaba; requerido por el FAB) -->
+      <!-- MODAL IMPORTAR (requerido por el FAB) -->
       <div id="modalImportarCentros" class="modal modal-fixed-footer">
         <div class="modal-content">
           <h5>Importar Centros (Excel / CSV)</h5>
