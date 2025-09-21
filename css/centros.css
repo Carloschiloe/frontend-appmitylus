@@ -19,28 +19,9 @@
 
 /* Acciones */
 #centrosTable td:last-child{ white-space:nowrap !important; text-align:left; }
-#centrosTable td .material-icons, .child-row-lineas td .material-icons{ font-size:1.1em; margin-right:6px; }
-#centrosTable td .material-icons:hover, .child-row-lineas td .material-icons:hover{
+#centrosTable td .material-icons{ font-size:1.1em; margin-right:6px; }
+#centrosTable td .material-icons:hover{
   color:var(--primary-acc); transform:translateY(-1px);
-}
-
-/* ---------- CHILD-ROW: LÍNEAS ---------- */
-.child-row-lineas{
-  width:100% !important; padding:14px 12px 10px 20px !important;
-  background:#f7faf9; border-bottom:2px solid #b2dfdb; box-shadow:0 2px 14px rgba(0,150,136,.1);
-  border-radius:0 0 16px 16px;
-}
-.child-table-lineas{ width:100% !important; background:transparent !important; border-collapse:collapse !important; table-layout:auto !important; }
-.child-table-lineas th{
-  background:#e0f2f1 !important; color:#004d40 !important; font-weight:700 !important;
-  padding:.18rem .13rem !important; border-bottom:1px solid #b2dfdb !important; text-align:center; white-space:nowrap !important;
-}
-.child-table-lineas th, .child-table-lineas td{
-  padding:.15rem .1rem !important; font-size:.94em !important; border-bottom:1px solid #eee;
-  text-align:center; white-space:nowrap !important;
-}
-.child-table-lineas input, .child-table-lineas select{
-  width:92%; font-size:.93em; padding:2px 4px; margin:0; border:1px solid #bdbdbd; border-radius:3px;
 }
 
 /* =========================
@@ -54,7 +35,7 @@
 /* Shell con altura REAL */
 #mapShell{
   position:relative; border:1px solid #ddd; border-radius:7px; background:#d8d8d8; overflow:hidden;
-  height:calc(100vh - 160px);    /* ajusta 160px según tu header/tabs */
+  height:calc(100vh - 160px);
   min-height:520px;
 }
 
@@ -114,17 +95,22 @@ body:has(#mapShell:fullscreen){ overflow:hidden; }
 
 /* ---------- Responsive ---------- */
 @media (max-width:1000px){ #mapShell{ height:calc(100vh - 170px); } }
-@media (max-width:900px){  #centrosTable, #centrosTable_wrapper{ display:block !important; min-width:360px !important; }
-                           .dataTables_paginate{ justify-content:center; }
-                           #mapShell{ height:calc(100vh - 190px); min-height:420px; } }
-@media (max-width:700px){  .sidebar-centros{ top:86px; left:12px; width:92vw; }
-                           .sidebar-centros.minimized{ transform:translateX(-90vw); }
-                           .map-search{ width:94vw; } }
-@media (max-width:600px){  #mapShell{ height:calc(100vh - 200px); min-height:360px; } }
+@media (max-width:900px){
+  #centrosTable, #centrosTable_wrapper{ display:block !important; min-width:360px !important; }
+  .dataTables_paginate{ justify-content:center; }
+  #mapShell{ height:calc(100vh - 190px); min-height:420px; }
+}
+@media (max-width:700px){
+  .sidebar-centros{ top:86px; left:12px; width:92vw; }
+  .sidebar-centros.minimized{ transform:translateX(-90vw); }
+  .map-search{ width:94vw; }
+}
+@media (max-width:600px){ #mapShell{ height:calc(100vh - 200px); min-height:360px; } }
 
 /* ===== FIX: que el mapa no quede tapado por el container ===== */
 .container{ position:relative; z-index:1; }
 #tab-mapa{ position:relative; z-index:4; }
 #mapShell{ position:relative; z-index:5; }
 #map, #map.leaflet-container{ position:relative; z-index:6; }
+
 
