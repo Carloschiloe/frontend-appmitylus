@@ -384,6 +384,16 @@ function initMapSearchUI() {
   if (!input || !list) { logWarn('mapSearch UI no encontrado'); return; }
   log('mapSearch UI OK');
 
+  // helpers para hectáreas
+  const parseHa = (v) => {
+    if (v === '' || v == null) return null;
+    const n = parseFloat(String(v).replace(/\./g, '').replace(',', '.'));
+    return Number.isFinite(n) ? n : null;
+  };
+  const fmtHa = (n) => n == null
+    ? 'ha no informadas'
+    : `${n.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha`;
+
   function hideList() { list.style.display = 'none'; list.innerHTML = ''; }
 
   const doSearch = (q) => {
@@ -391,13 +401,14 @@ function initMapSearchUI() {
     hideList();
     if (!q) return;
 
-    const hits = centrosDataGlobal
+    const hits = (centrosDataGlobal || [])
       .map((c, idx) => ({ c, idx }))
       .filter(({ c }) => {
-        const area = (c.codigoArea || c?.detalles?.codigoArea || '').toString().toLowerCase();
-        return (c.code || '').toString().toLowerCase().includes(q) ||
-               (c.name || c.proveedor || '').toString().toLowerCase().includes(q) ||
-               area.includes(q);
+        const area   = (c.codigoArea || c?.detalles?.codigoArea || '').toString().toLowerCase();
+        const nombre = (c.name || c.proveedor || '').toString().toLowerCase();
+        const code   = (c.code || '').toString().toLowerCase();
+        const comuna = (c.comuna || '').toString().toLowerCase();
+        return code.includes(q) || nombre.includes(q) || area.includes(q) || comuna.includes(q);
       })
       .slice(0, 20);
 
@@ -413,14 +424,21 @@ function initMapSearchUI() {
       return;
     }
 
-    list.innerHTML = hits.map(({ c, idx }) => `
-      <li data-idx="${idx}" tabindex="0">
-        <b>${esc(c.name || c.proveedor || '-')}</b>
-        <div style="font-size:12px;color:#374151">
-          Código: ${esc(c.code || '—')} · Área: ${esc(c.codigoArea || c?.detalles?.codigoArea || '—')}
-        </div>
-      </li>
-    `).join('');
+    list.innerHTML = hits.map(({ c, idx }) => {
+      const comuna = toTitle(c.comuna || '—');
+      const haTxt  = fmtHa(parseHa(c.hectareas));
+      const area   = (c.codigoArea || c?.detalles?.codigoArea || '—');
+      const code   = (c.code || '—');
+      const name   = (c.name || c.proveedor || '-');
+      return `
+        <li data-idx="${idx}" tabindex="0">
+          <b>${esc(name)}</b>
+          <div style="font-size:12px;color:#374151">
+            Código: ${esc(code)} · Comuna: ${esc(comuna)} · ${esc(haTxt)} · Área: ${esc(area)}
+          </div>
+        </li>
+      `;
+    }).join('');
     list.style.display = 'block';
 
     Array.from(list.querySelectorAll('li')).forEach(li => {
@@ -435,10 +453,12 @@ function initMapSearchUI() {
     if (e.key === 'Escape') hideList();
   });
   input.addEventListener('input', () => { if (!input.value) hideList(); });
+
   // click fuera -> ocultar
   document.addEventListener('click', (e) => {
     if (!list.contains(e.target) && e.target !== input) hideList();
   });
+}
 
   // Helpers debug
   window.__MAPDBG = {
@@ -447,3 +467,4 @@ function initMapSearchUI() {
     centrosSample: () => centrosDataGlobal.slice(0, 3)
   };
 }
+
