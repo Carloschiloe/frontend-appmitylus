@@ -39,6 +39,26 @@ const throttle = (fn, ms=80) => {
   };
 };
 
+// === Normalizador y formateador de hectáreas (corrige 42.67 vs 42,67) ===
+function normalizeHa(v){
+  if (v === '' || v === null || v === undefined) return null;
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  const s = String(v).trim();
+  if (!s) return null;
+
+  // Si trae coma, asumimos latam: miles con '.' y decimales con ','
+  if (s.includes(',')) {
+    const num = Number(s.replace(/\./g, '').replace(',', '.'));
+    return Number.isFinite(num) ? num : null;
+  }
+  // Si no trae coma, respetamos '.' como decimal (formato US)
+  const num = Number(s);
+  return Number.isFinite(num) ? num : null;
+}
+const fmtHaCL = n => n == null
+  ? '—'
+  : n.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 // ====== Base tiles ======
 const MAPBOX_TOKEN =
   (window.CONFIG && window.CONFIG.MAPBOX_TOKEN) ||
@@ -89,12 +109,13 @@ function buildCentroDetallesHtml(c) {
   };
   const pk = k => LABELS[k] || k.replace(/([A-Z])/g,' $1').replace(/^./,m=>m.toUpperCase());
 
+  const haVal = normalizeHa(c.hectareas ?? d.hectareas ?? d.ha);
   let html = `<table class="striped"><tbody>
     <tr><th>Titular</th><td>${esc(toTitle(c.name || c.proveedor || ''))}</td></tr>
     <tr><th>Proveedor</th><td>${esc(toTitle(c.proveedor || ''))}</td></tr>
     <tr><th>Comuna</th><td>${esc(toTitle(c.comuna || ''))}</td></tr>
     <tr><th>Código</th><td>${esc(c.code || '')}</td></tr>
-    <tr><th>Hectáreas</th><td>${c.hectareas ?? ''}</td></tr>`;
+    <tr><th>Hectáreas</th><td>${fmtHaCL(haVal)}</td></tr>`;
 
   ['region','codigoArea','ubicacion','grupoEspecie','especies','tonsMax'].forEach(k => {
     let v = c[k];
@@ -384,16 +405,6 @@ function initMapSearchUI() {
   if (!input || !list) { logWarn('mapSearch UI no encontrado'); return; }
   log('mapSearch UI OK');
 
-  // helpers para hectáreas
-  const parseHa = (v) => {
-    if (v === '' || v == null) return null;
-    const n = parseFloat(String(v).replace(/\./g, '').replace(',', '.'));
-    return Number.isFinite(n) ? n : null;
-  };
-  const fmtHa = (n) => n == null
-    ? 'ha no informadas'
-    : `${n.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha`;
-
   function hideList() { list.style.display = 'none'; list.innerHTML = ''; }
 
   const doSearch = (q) => {
@@ -407,7 +418,7 @@ function initMapSearchUI() {
         const area   = (c.codigoArea || c?.detalles?.codigoArea || '').toString().toLowerCase();
         const nombre = (c.name || c.proveedor || '').toString().toLowerCase();
         const code   = (c.code || '').toString().toLowerCase();
-        const comuna = (c.comuna || '').toString().toLowerCase();
+        const comuna = (c.comuna || c?.detalles?.comuna || '').toString().toLowerCase();
         return code.includes(q) || nombre.includes(q) || area.includes(q) || comuna.includes(q);
       })
       .slice(0, 20);
@@ -425,11 +436,12 @@ function initMapSearchUI() {
     }
 
     list.innerHTML = hits.map(({ c, idx }) => {
-      const comuna = toTitle(c.comuna || '—');
-      const haTxt  = fmtHa(parseHa(c.hectareas));
-      const area   = (c.codigoArea || c?.detalles?.codigoArea || '—');
-      const code   = (c.code || '—');
-      const name   = (c.name || c.proveedor || '-');
+      const comuna  = toTitle(c.comuna || c?.detalles?.comuna || '—');
+      const haVal   = normalizeHa(c.hectareas ?? c?.detalles?.hectareas ?? c?.detalles?.ha);
+      const haTxt   = (haVal != null) ? `${fmtHaCL(haVal)} ha` : 'Hectáreas: —';
+      const area    = (c.codigoArea || c?.detalles?.codigoArea || '—');
+      const code    = (c.code || '—');
+      const name    = (c.name || c.proveedor || '-');
       return `
         <li data-idx="${idx}" tabindex="0">
           <b>${esc(name)}</b>
@@ -460,11 +472,5 @@ function initMapSearchUI() {
   });
 
   // Helpers debug
-  window.__MAPDBG = {
-    L, map, setBaseLayer,
-    baseLayersDefs,
-    centrosSample: () => centrosDataGlobal.slice(0, 3)
-  };
+  window.__MAPDBG = { L, map, setBaseLayer, baseLayersDefs, centrosSample: () => centrosDataGlobal.slice(0, 3) };
 }
-
-
