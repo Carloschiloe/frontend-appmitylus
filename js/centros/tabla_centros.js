@@ -1,34 +1,59 @@
-// js/centros/tabla_centros.js
 import { Estado } from '../core/estado.js';
 import { getCentrosAll } from '../core/centros_repo.js';
-import { calcularTotalesTabla } from './helpers_centros.js';
 import { registerTablaCentrosEventos } from './eventos_centros.js';
 import { tabMapaActiva } from '../core/utilidades_app.js';
 import { renderMapaAlways } from '../mapas/control_mapa.js';
 
-/* ===== Utils ===== */
+/* ===== Utiles ===== */
 const fmt2 = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc  = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const toTitleCase = (str) => (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-const $ = (sel, ctx=document) => ctx.querySelector(sel);
-
-function parseHa(v){
+const toTitle = (s) => (s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+const parseHa = (v) => {
   if (v === '' || v == null) return 0;
-  if (typeof v === 'number' && Number.isFinite(v)) return v;
-  const s = String(v).trim();
-  if (!s) return 0;
-  // soporta "1.234,56" y "1234.56"
-  return Number(s.replace(/\./g,'').replace(',','.')) || 0;
-}
-const fmtHa = n => fmt2.format(Number(n||0));
+  // acepta "12.345,67" o "12345.67" o número
+  if (typeof v === 'number') return v;
+  const n = parseFloat(String(v).replace(/\./g, '').replace(',', '.'));
+  return Number.isFinite(n) ? n : 0;
+};
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-function uniqComunas(rows){
-  const set = new Set();
-  (rows||[]).forEach(c=>{
-    const v = (c.comuna || c?.detalles?.comuna || '').trim();
-    if (v) set.add(toTitleCase(v));
-  });
-  return [...set].sort((a,b)=>a.localeCompare(b,'es'));
+/* === Rellena <select id="filtroComuna"> con comunas únicas === */
+function fillFiltroComuna(centros) {
+  const sel = document.getElementById('filtroComuna');
+  if (!sel) return;
+  const comunas = [...new Set((centros || [])
+                  .map(c => (c.comuna || '').trim())
+                  .filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  sel.innerHTML = `<option value="">Todas las comunas</option>` +
+    comunas.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+}
+
+/* === Actualiza KPIs superiores y footer según filas filtradas === */
+function updateKpisAndFooter(dt) {
+  const rows = dt.rows({ search: 'applied' }).data();
+  let totalHa = 0;
+  const comunasSet = new Set();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    // row[1] = Comuna, row[3] = Hectáreas (string formateado)
+    comunasSet.add((row[1] || '').toString().toLowerCase());
+    totalHa += parseHa(row[3]);
+  }
+
+  // KPIs
+  const kCent = document.getElementById('kpiCentros');
+  const kHa   = document.getElementById('kpiHect');
+  const kCom  = document.getElementById('kpiComunas');
+  if (kCent) kCent.textContent = String(rows.length);
+  if (kHa)   kHa.textContent   = fmt2.format(totalHa);
+  if (kCom)  kCom.textContent  = String([...comunasSet].filter(Boolean).length);
+
+  // Footer
+  const fCent = document.getElementById('totalCentros');
+  const fHa   = document.getElementById('totalHect');
+  if (fCent) fCent.textContent = String(rows.length);
+  if (fHa)   fHa.textContent   = fmt2.format(totalHa);
 }
 
 /* ===== Inicializa DataTable ===== */
@@ -41,99 +66,60 @@ export function initTablaCentros() {
 
   Estado.table = $t.DataTable({
     colReorder: true,
-    dom: 'Bfrtip',
+    // Quitamos 'f' para eliminar el buscador nativo (derecha)
+    dom: 'Brtip',
     buttons: [
       { extend: 'copyHtml5',  footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
       { extend: 'csvHtml5',   footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
       { extend: 'excelHtml5', footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } },
       { extend: 'pdfHtml5',   footer: true, exportOptions: { columns: ':visible', modifier: { page: 'all' } } }
     ],
-    searching: true,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
-    footerCallback: calcularTotalesTabla,
     columnDefs: [
       { targets: [3], className: 'dt-right' },                 // Hectáreas
       { targets: [4,5], orderable: false, searchable: false }  // Detalle / Acciones
     ]
   });
 
-  // Ocultar el buscador default de DataTables (usaremos el nuestro)
+  // Por si el tema/plantilla inyecta el filtro, lo forzamos oculto.
   window.$('#centrosTable_filter').hide();
 
-  // Conectar input de búsqueda externo (si existe)
-  const extSearch = document.querySelector('#filtroProveedor') ||
-                    document.querySelector('input[placeholder^="Buscar proveedor"]');
-  if (extSearch) {
-    extSearch.addEventListener('input', () => {
-      const q = (extSearch.value || '').trim();
-      // Busca en TODAS las columnas (proveedor, comuna y código incluidos)
+  // Recalcular KPIs + footer al dibujar/filtrar/paginar
+  Estado.table.on('draw', () => updateKpisAndFooter(Estado.table));
+
+  registerTablaCentrosEventos();
+
+  // ---- Filtros externos ----
+  const inputBuscar = document.getElementById('buscarProveedor'); // proveedor o código
+  if (inputBuscar) {
+    inputBuscar.addEventListener('input', () => {
+      const q = (inputBuscar.value || '').trim();
       Estado.table.search(q).draw();
     });
   }
 
-  // Al redibujar (paginación/filtro) recalculamos KPIs filtrados
-  Estado.table.on('draw', () => updateKpisFiltrados());
-  registerTablaCentrosEventos();
-}
-
-/* ===== KPIs + Filtro Comuna ===== */
-function renderKpisGlobales(rows){
-  const kCent = $('#kpiCentros');
-  const kHa   = $('#kpiHectareas');
-  const kCom  = $('#kpiComunas');
-
-  const totalHa = rows.reduce((s,c)=> s + parseHa(c.hectareas ?? c?.detalles?.hectareas ?? c?.detalles?.ha), 0);
-  const comunas = uniqComunas(rows);
-
-  if (kCent) kCent.textContent = rows.length.toLocaleString('es-CL');
-  if (kHa)   kHa.textContent   = fmtHa(totalHa);
-  if (kCom)  kCom.textContent  = comunas.length.toLocaleString('es-CL');
-
-  // poblar select de comunas
-  const sel = $('#filtroComunas');
-  if (sel){
-    const cur = sel.value || '';
-    sel.innerHTML = `<option value="">Todas las comunas</option>` + comunas.map(c=>`<option value="${c}">${c}</option>`).join('');
-    sel.value = cur;
-    if (window.M?.FormSelect) window.M.FormSelect.init(sel);
+  const selComuna = document.getElementById('filtroComuna');
+  if (selComuna) {
+    selComuna.addEventListener('change', () => {
+      const v = selComuna.value.trim();
+      // Columna 1 = "Comuna". Si hay comuna, filtramos exacto (regex anclado).
+      if (v) Estado.table.column(1).search(`^${escapeRegex(v)}$`, true, false).draw();
+      else   Estado.table.column(1).search('').draw();
+    });
   }
-}
 
-function wireFiltroComunas(){
-  const sel = $('#filtroComunas');
-  if (!sel || !Estado.table) return;
-
-  const escapeRx = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  sel.addEventListener('change', () => {
-    const v = sel.value || '';
-    if (!v){
-      Estado.table.column(1).search('').draw();
-    } else {
-      // match exacto de la comuna en la columna 1
-      Estado.table.column(1).search('^' + escapeRx(v) + '$', true, false).draw();
-    }
-  }, { passive:true });
-}
-
-// Suma hectáreas y cuenta centros de las filas visibles
-function updateKpisFiltrados(){
-  const kCent = $('#kpiCentros');
-  const kHa   = $('#kpiHectareas');
-  if (!Estado.table || (!kCent && !kHa)) return;
-
-  const data = Estado.table.rows({ filter: 'applied' }).data(); // arrays con strings formateados
-  let sumHa = 0;
-  for (let i=0; i<data.length; i++){
-    const row = data[i];          // [Proveedor, Comuna, Código, Hectáreas, ...]
-    sumHa += parseHa(row[3]);     // columna hectáreas formateada "42,67"
+  const btnClear = document.getElementById('btnLimpiarFiltros');
+  if (btnClear) {
+    btnClear.addEventListener('click', () => {
+      if (selComuna) { selComuna.value = ''; Estado.table.column(1).search(''); }
+      if (inputBuscar) inputBuscar.value = '';
+      Estado.table.search('').draw();
+    });
   }
-  if (kCent) kCent.textContent = data.length.toLocaleString('es-CL');
-  if (kHa)   kHa.textContent   = fmtHa(sumHa);
 }
 
 /**
- * Carga/recarga los centros en la tabla y actualiza KPIs + filtro.
+ * Carga/recarga los centros en la tabla.
  * - Si recibes `data` (array), la usa.
  * - Si no, consulta al API (getCentrosAll()).
  */
@@ -147,12 +133,13 @@ export async function loadCentros(data) {
     Estado.centros = Array.isArray(data) ? data : await getCentrosAll();
 
     const rows = (Estado.centros || []).map((c, i) => {
-      const proveedor = toTitleCase(c.proveedor) || '-';
-      const comuna    = toTitleCase(c.comuna)    || '-';
+      const proveedor = toTitle(c.proveedor) || '-';
+      const comuna    = toTitle(c.comuna)    || '-';
       const hect      = parseHa(c.hectareas);
 
       const coordsCell = `
         <i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer" title="Ver detalles" aria-label="Ver detalles">visibility</i>`;
+
       const accionesCell = `
         <i class="material-icons btn-view-on-map" data-idx="${i}" style="cursor:pointer" title="Ver en mapa" aria-label="Ver en mapa">place</i>
         <i class="material-icons editar-centro"   data-idx="${i}" style="cursor:pointer" title="Editar centro" aria-label="Editar centro">edit</i>
@@ -162,19 +149,14 @@ export async function loadCentros(data) {
         esc(proveedor),
         esc(comuna),
         esc(c.code || '-'),
-        fmtHa(hect),
+        fmt2.format(hect),
         coordsCell,
         accionesCell
       ];
     });
 
-    Estado.table.clear().rows.add(rows).draw();
-
-    // KPIs globales + filtro comunas
-    renderKpisGlobales(Estado.centros);
-    wireFiltroComunas();
-    // y también los KPIs de lo filtrado (por si había búsqueda global activa)
-    updateKpisFiltrados();
+    Estado.table.clear().rows.add(rows).draw();    // 'draw' dispara updateKpisAndFooter
+    fillFiltroComuna(Estado.centros);              // desplegable de comunas
 
     // Si el tab MAPA está activo, actualizamos el mapa
     if (tabMapaActiva?.()) await renderMapaAlways(true);
