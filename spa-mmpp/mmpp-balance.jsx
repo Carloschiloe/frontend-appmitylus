@@ -3,9 +3,8 @@
 const { useEffect, useMemo, useState } = React;
 
 (function (global) {
-  var UI = { textSoft:"#6b7280" };
+  var UI = { brand1:"#4f46e5", brand2:"#9333ea", border:"#e5e7eb" };
   var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  // Usa /api (proxy de Vercel). Si en /js/config.js seteas window.API_URL, se usa eso.
   var API_BASE = (typeof window!=="undefined" && window.API_URL) ? window.API_URL : "/api";
 
   function num(v){ var n = Number(v); return isFinite(n) ? n : 0; }
@@ -38,7 +37,7 @@ const { useEffect, useMemo, useState } = React;
       a.href = url; a.download = "balance_mmpp.csv"; a.click();
       URL.revokeObjectURL(url);
     }
-    return <button className="btn" onClick={onClick}>⬇️ Exportar CSV</button>;
+    return <button className="mmpp-ghostbtn" onClick={onClick}>⬇️ Exportar CSV</button>;
   }
 
   function MiniBars(props){
@@ -49,32 +48,34 @@ const { useEffect, useMemo, useState } = React;
       var m = Math.max(num(d.disponible), num(d.asignado));
       if (m > maxV) maxV = m;
     });
-    var barW = 24, gap = 12;
+    var barW = 22, gap = 12;
     var groupW = barW*2 + gap;
-    var width = Math.max(gap*2, data.length*(groupW+gap) + gap);
-    var h = height, pad = 20;
+    var width = Math.max(260, data.length*(groupW+gap) + gap);
+    var h = height, pad = 24;
 
     return (
-      <svg width="100%" viewBox={"0 0 " + width + " " + (h+pad*2)} preserveAspectRatio="xMidYMid meet">
-        {data.map(function(d, i){
-          var x0 = gap + i*(groupW+gap);
-          var disp = num(d.disponible);
-          var asig = num(d.asignado);
-          var hDisp = disp/maxV * h;
-          var hAsig = asig/maxV * h;
-          return (
-            <g key={i} transform={"translate(" + x0 + "," + pad + ")"}>
-              <rect x="0" y={h-hDisp} width={barW} height={hDisp} rx="5" />
-              <rect x={barW+6} y={h-hAsig} width={barW} height={hAsig} rx="5" />
-              <text x={groupW/2 - 6} y={h+14} textAnchor="middle" fontSize="10" fill="#6b7280">{d.label}</text>
-            </g>
-          );
-        })}
-        <g transform={"translate(" + gap + "," + (pad/2) + ")"}>
-          <rect x="0" y="0" width="10" height="10" rx="2"/><text x="16" y="9" fontSize="11">Disponible</text>
-          <rect x="110" y="0" width="10" height="10" rx="2"/><text x="126" y="9" fontSize="11">Asignado</text>
-        </g>
-      </svg>
+      <div className="mmpp-chart">
+        <svg width={width} height={h+pad*2}>
+          {data.map(function(d, i){
+            var x0 = gap + i*(groupW+gap);
+            var disp = num(d.disponible);
+            var asig = num(d.asignado);
+            var hDisp = disp/maxV * h;
+            var hAsig = asig/maxV * h;
+            return (
+              <g key={i} transform={"translate(" + x0 + "," + pad + ")"}>
+                <rect x="0" y={h-hDisp} width={barW} height={hDisp} rx="5" fill={UI.brand1} />
+                <rect x={barW+6} y={h-hAsig} width={barW} height={hAsig} rx="5" fill={UI.brand2} />
+                <text x={groupW/2 - 6} y={h+16} textAnchor="middle" fontSize="11" fill="#6b7280">{d.label}</text>
+              </g>
+            );
+          })}
+          <g transform={"translate(" + gap + ",8)"}>
+            <rect x="0"   y="0" width="14" height="14" rx="3" fill={UI.brand1}/><text x="20"  y="12" fontSize="13">Disponible</text>
+            <rect x="130" y="0" width="14" height="14" rx="3" fill={UI.brand2}/><text x="150" y="12" fontSize="13">Asignado</text>
+          </g>
+        </svg>
+      </div>
     );
   }
 
@@ -164,77 +165,85 @@ const { useEffect, useMemo, useState } = React;
     }, [tableRows]);
 
     return (
-      <div className="card pad">
-        <div className="header">📊 <div>Balance MMPP — Disponible vs Asignado</div></div>
+      <div className="mmpp-wrap">
+        <div className="mmpp-hero mmpp-stack">
+          <div>
+            <h1>Balance MMPP</h1>
+            <p>Disponible vs Asignado por mes y proveedor</p>
+          </div>
+          <div className="mmpp-badge"><span>🟣</span>Reporte dinámico</div>
+        </div>
 
-        <div className="toolbar">
-          <div className="row">
-            <div className="col">
+        <div className="mmpp-card mmpp-stack">
+          <div className="mmpp-grid">
+            <div>
               <label className="muted">Año</label>
-              <select value={anio} onChange={function(e){ setAnio(num(e.target.value, anio)); }}>
+              <select className="mmpp-input" value={anio}
+                      onChange={function(e){ setAnio(num(e.target.value, anio)); }}>
                 {Array.from({length:5}).map(function(_,i){
                   var y = new Date().getFullYear()-2+i;
                   return <option key={y} value={y}>{y}</option>;
                 })}
               </select>
             </div>
-            <div className="col">
+            <div>
               <label className="muted">Proveedor</label>
-              <select value={proveedor} onChange={function(e){ setProveedor(e.target.value); }}>
+              <select className="mmpp-input" value={proveedor}
+                      onChange={function(e){ setProveedor(e.target.value); }}>
                 {proveedores.map(function(p){ return <option key={p} value={p}>{p}</option>; })}
               </select>
             </div>
-            <div className="col" style={{ alignSelf:"flex-end" }}>
+            <div style={{ display:"flex", alignItems:"flex-end" }}>
               <CSVButton rows={tableRows}/>
             </div>
           </div>
-        </div>
 
-        {error && <div className="alert error">⚠️ {String(error)}</div>}
-        {loading && <div className="skeleton" style={{ height: 140, marginTop: 8 }} />}
+          {error && <div className="mmpp-alert error mmpp-stack">⚠️ {String(error)}</div>}
+          {loading && <div className="skeleton mmpp-stack" />}
 
-        {!loading && !error && (
-          <div>
-            <MiniBars data={chartData} />
-            <div style={{ overflowX:"auto", marginTop: 16 }}>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Mes</th>
-                    <th>Proveedor</th>
-                    <th style={{ textAlign:"right" }}>Disponible (t)</th>
-                    <th style={{ textAlign:"right" }}>Asignado (t)</th>
-                    <th style={{ textAlign:"right" }}>Saldo (t)</th>
-                    <th style={{ textAlign:"right" }}>% Asignado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableRows.map(function(r,idx){
-                    var warn = r.pct > 100 ? "#fee2e2" : (r.pct > 90 ? "#fffbeb" : "transparent");
-                    return (
-                      <tr key={r.mesKey + "|" + (r.proveedorNombre||"") + "|" + idx} style={{ background: warn }}>
-                        <td>{monthLabel(r.mesKey)}</td>
-                        <td>{r.proveedorNombre || "—"}</td>
-                        <td style={{ textAlign:"right" }}>{fmtTons(r.disponible)}</td>
-                        <td style={{ textAlign:"right" }}>{fmtTons(r.asignado)}</td>
-                        <td style={{ textAlign:"right" }}>{fmtTons(r.saldo)}</td>
-                        <td style={{ textAlign:"right" }}>{r.pct.toFixed(1)}%</td>
-                      </tr>
-                    );
-                  })}
-                  {tableRows.length === 0 && (
-                    <tr><td colSpan="6" style={{ color:UI.textSoft, padding:"20px" }}>Sin datos para el filtro seleccionado.</td></tr>
-                  )}
-                </tbody>
-              </table>
+          {!loading && !error && (
+            <div>
+              <MiniBars data={chartData} />
+              <div className="mmpp-table-wrap">
+                <table className="mmpp">
+                  <thead>
+                    <tr>
+                      <th>Mes</th>
+                      <th>Proveedor</th>
+                      <th className="tright">Disponible (t)</th>
+                      <th className="tright">Asignado (t)</th>
+                      <th className="tright">Saldo (t)</th>
+                      <th className="tright">% Asignado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableRows.map(function(r,idx){
+                      var warn = r.pct > 100 ? "#fee2e2" : (r.pct > 90 ? "#fffbeb" : "transparent");
+                      return (
+                        <tr key={r.mesKey + "|" + (r.proveedorNombre||"") + "|" + idx} style={{ background: warn }}>
+                          <td>{monthLabel(r.mesKey)}</td>
+                          <td>{r.proveedorNombre || "—"}</td>
+                          <td className="tright">{fmtTons(r.disponible)}</td>
+                          <td className="tright">{fmtTons(r.asignado)}</td>
+                          <td className="tright">{fmtTons(r.saldo)}</td>
+                          <td className="tright">{r.pct.toFixed(1)}%</td>
+                        </tr>
+                      );
+                    })}
+                    {tableRows.length === 0 && (
+                      <tr><td colSpan="6" style={{ color:"#6b7280", padding:"20px" }}>Sin datos para el filtro seleccionado.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   }
 
-  // API pública (igual a otras páginas: mount/unmount)
+  // API pública y auto-montaje
   var API = {
     _root: null,
     mount: function(opts){
@@ -247,8 +256,6 @@ const { useEffect, useMemo, useState } = React;
       if (this._root){ this._root.unmount(); this._root = null; }
     }
   };
-
-  // Exponer y auto-montar de forma robusta
   global.MMppBalance = API;
 
   (function autoMount(){
