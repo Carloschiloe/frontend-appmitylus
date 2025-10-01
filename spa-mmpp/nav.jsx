@@ -2,29 +2,28 @@
 const { useMemo } = React;
 
 function Sidebar(){
-  // Path + hash para marcar activo (soporta #balance-mmpp)
+  // Path + hash para marcar activo (soporta #balance-mmpp si alguna vez lo usas)
   const here = (typeof location!=="undefined"
     ? `${(location.pathname || "").toLowerCase()} ${(location.hash || "").toLowerCase()}`
     : "");
 
   const itemsMain = [
-    { href: "/html/Abastecimiento/asignacion/inventario_mmpp.html",       label:"Inventario",      icon:"📦" },
-    { href: "/html/Abastecimiento/asignacion/calendario_mmpp.html",       label:"Calendario",      icon:"📅" },
+    { href: "/html/Abastecimiento/asignacion/inventario_mmpp.html",     label:"Inventario",      icon:"📦" },
+    { href: "/html/Abastecimiento/asignacion/calendario_mmpp.html",     label:"Calendario",      icon:"📅" },
 
-    // 👉 Usa el index del root con hash (evita 404 en /spa-mmpp/index.html)
-    { href: "/#balance-mmpp",                                             label:"Balance MMPP",    icon:"📈" },
+    // ✅ Dirección correcta a la página estática
+    { href: "/html/Abastecimiento/asignacion/balance_mmpp.html",        label:"Balance MMPP",    icon:"📈" },
 
     // Mantiene panel de transportistas in-page
-    { href: "/html/Abastecimiento/asignacion/transportistas_mmpp.html",   label:"Transportistas",  icon:"🚚", panel:"transportistas" },
+    { href: "/html/Abastecimiento/asignacion/transportistas_mmpp.html", label:"Transportistas",  icon:"🚚", panel:"transportistas" },
 
-    { href: "/html/Abastecimiento/asignacion/resumen_mmpp.html",          label:"Resumen Stock",   icon:"📊" },
-    { href: "/html/Abastecimiento/asignacion/pipeline_mmpp.html",         label:"Pipeline",        icon:"🧭" },
+    { href: "/html/Abastecimiento/asignacion/resumen_mmpp.html",        label:"Resumen Stock",   icon:"📊" },
+    { href: "/html/Abastecimiento/asignacion/pipeline_mmpp.html",       label:"Pipeline",        icon:"🧭" },
   ];
 
   function isActive(href){
-    const f = href.split("/").pop().toLowerCase();     // p.ej. '#balance-mmpp' o 'inventario_mmpp.html'
+    const f = href.split("/").pop().toLowerCase(); // p.ej. 'balance_mmpp.html'
     const token = f.includes("#") ? f.split("#")[1] : "";
-    // Activo si coincide archivo o el token del hash
     return (here.indexOf(f) >= 0 || (token && here.indexOf(token) >= 0)) ? "is-active" : "";
   }
 
@@ -63,3 +62,4 @@ function Sidebar(){
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go);
   else go();
 })();
+
