@@ -5,6 +5,7 @@ const { useEffect, useMemo, useState } = React;
 (function (global) {
   var UI = { textSoft:"#6b7280" };
   var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  // Usa /api (proxy de Vercel). Si en /js/config.js seteas window.API_URL, se usa eso.
   var API_BASE = (typeof window!=="undefined" && window.API_URL) ? window.API_URL : "/api";
 
   function num(v){ var n = Number(v); return isFinite(n) ? n : 0; }
@@ -192,7 +193,6 @@ const { useEffect, useMemo, useState } = React;
         {error && <div className="alert error">⚠️ {String(error)}</div>}
         {loading && <div className="skeleton" style={{ height: 140, marginTop: 8 }} />}
 
-        {/* ⬇️ Reemplazo del fragmento <>...</> por un <div> contenedor */}
         {!loading && !error && (
           <div>
             <MiniBars data={chartData} />
@@ -234,14 +234,13 @@ const { useEffect, useMemo, useState } = React;
     );
   }
 
-  // API pública
+  // API pública (igual a otras páginas: mount/unmount)
   var API = {
     _root: null,
     mount: function(opts){
       var el = document.getElementById("mmppBalance");
       if (!el) { console.warn("No existe #mmppBalance"); return; }
       this._root = ReactDOM.createRoot(el);
-      // Evitamos spread JSX por compatibilidad: usamos createElement
       this._root.render(React.createElement(BalanceApp, opts || {}));
     },
     unmount: function(){
@@ -249,5 +248,21 @@ const { useEffect, useMemo, useState } = React;
     }
   };
 
+  // Exponer y auto-montar de forma robusta
   global.MMppBalance = API;
+
+  (function autoMount(){
+    function go(){
+      var host = document.getElementById("mmppBalance");
+      if (!host) { setTimeout(go, 60); return; }
+      if (!API._root && window.ReactDOM) {
+        API.mount({ anio: new Date().getFullYear() });
+      } else {
+        setTimeout(go, 60);
+      }
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go);
+    else go();
+  })();
+
 })(window);
