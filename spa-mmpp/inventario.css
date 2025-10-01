@@ -134,3 +134,28 @@ table.mmpp td:first-child > strong{font-weight:500}   /* neutraliza el <strong> 
   animation: shimmer 1.2s infinite;
 }
 @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ===== Balance MMPP – utilidades ===== */
+.muted{ color: var(--muted); }
+.mmpp-stack{ margin-bottom: 12px; }
+.mmpp-chart{ overflow-x:auto; background:#fff; border:1px solid var(--border); border-radius:12px; }
+.mmpp-table-wrap{ overflow-x:auto; }
+.tright{ text-align:right; }
+
+/* Estados fila por umbral */
+.row-warn{ background:#fffbeb; }   /* > umbral-10% */
+.row-over{ background:#fee2e2; }   /* > umbral */
+
+/* Sort en headers */
+th.sort{ cursor:pointer; user-select:none; white-space:nowrap; }
+th.sort .arrow{ margin-left:6px; font-size:11px; opacity:.7 }
+
+/* Alert & skeleton (reutilizables) */
+.mmpp-alert{ padding:10px 12px; border-radius:12px; border:1px solid #fecaca; }
+.mmpp-alert.error{ background:#fee2e2; color:#991b1b; }
+.skeleton{
+  height:140px; border-radius:12px;
+  background:linear-gradient(90deg, #f3f4f6, #e5e7eb, #f3f4f6);
+  background-size:200% 100%; animation:shimmer 1.2s infinite;
+}
+@keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
