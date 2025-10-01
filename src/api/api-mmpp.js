@@ -46,3 +46,13 @@ export async function getAsignaciones({ mesKey }) {
   const arr = await r.json();
   return Array.isArray(arr) ? arr : [];
 }
+
+
+export async function getSaldos({ anio, from, to } = {}) {
+  const qs = new URLSearchParams(
+    Object.fromEntries(Object.entries({ anio, from, to }).filter(([,v]) => v !== '' && v != null))
+  ).toString();
+  const r = await fetch(`${API_BASE}/planificacion/saldos${qs ? `?${qs}` : ''}`);
+  if (!r.ok) throw new Error(`Error al cargar saldos (${r.status})`);
+  return r.json();
+}
