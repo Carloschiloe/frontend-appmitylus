@@ -5,7 +5,6 @@ const { useEffect, useMemo, useState } = React;
 (function (global) {
   var UI = { textSoft:"#6b7280" };
   var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  // Usar proxy de Vercel: /api -> backend (no fuerces dominios)
   var API_BASE = (typeof window!=="undefined" && window.API_URL) ? window.API_URL : "/api";
 
   function num(v){ var n = Number(v); return isFinite(n) ? n : 0; }
@@ -29,7 +28,7 @@ const { useEffect, useMemo, useState } = React;
         var prov       = String(r.proveedorNombre||"").replace(/,/g," ");
         return [r.mesKey, prov, disponible, asignado, saldo, pct.toFixed(1)];
       });
-      return [head.join(","),].concat(lines.map(function(a){return a.join(",");})).join("\n");
+      return [head.join(",")].concat(lines.map(function(a){return a.join(",");})).join("\n");
     }
     function onClick(){
       var blob = new Blob([toCSV(props.rows||[])], { type:"text/csv;charset=utf-8" });
@@ -105,7 +104,7 @@ const { useEffect, useMemo, useState } = React;
           if (off) return;
           setError((e && e.message) ? e.message : "Error cargando saldos");
         })
-        .then(function(){ // siempre
+        .then(function(){
           if (off) return;
           setLoading(false);
         });
@@ -193,8 +192,9 @@ const { useEffect, useMemo, useState } = React;
         {error && <div className="alert error">⚠️ {String(error)}</div>}
         {loading && <div className="skeleton" style={{ height: 140, marginTop: 8 }} />}
 
+        {/* ⬇️ Reemplazo del fragmento <>...</> por un <div> contenedor */}
         {!loading && !error && (
-          <>
+          <div>
             <MiniBars data={chartData} />
             <div style={{ overflowX:"auto", marginTop: 16 }}>
               <table className="table">
@@ -228,20 +228,21 @@ const { useEffect, useMemo, useState } = React;
                 </tbody>
               </table>
             </div>
-          </>
+          </div>
         )}
       </div>
     );
   }
 
-  // API pública (igual al resto de tus páginas)
+  // API pública
   var API = {
     _root: null,
     mount: function(opts){
       var el = document.getElementById("mmppBalance");
       if (!el) { console.warn("No existe #mmppBalance"); return; }
       this._root = ReactDOM.createRoot(el);
-      this._root.render(<BalanceApp {...(opts||{})} />);
+      // Evitamos spread JSX por compatibilidad: usamos createElement
+      this._root.render(React.createElement(BalanceApp, opts || {}));
     },
     unmount: function(){
       if (this._root){ this._root.unmount(); this._root = null; }
