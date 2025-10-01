@@ -16,7 +16,7 @@
   <script src="/js/config.js"></script>
   <!-- ============================================= -->
 
-  <!-- React + Babel para el sidebar nav.jsx -->
+  <!-- React + Babel para el sidebar y este módulo JSX -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
@@ -35,15 +35,13 @@
   <!-- Sidebar (JSX via Babel) -->
   <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
 
-  <!-- Balance MMPP (TU archivo JS de esta página) -->
-  <!-- Asegúrate de publicar este archivo en /spa-mmpp/ -->
-  <script defer src="/spa-mmpp/mmpp-balance.js?v=1"></script>
+  <!-- Balance MMPP (TU archivo JSX) -->
+  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/mmpp-balance.jsx?v=1"></script>
 
   <!-- Montaje -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       if (window.MMppBalance && document.getElementById('mmppBalance')) {
-        // Puedes pasar opciones si quieres (año por defecto, etc.)
         MMppBalance.mount({ anio: new Date().getFullYear() });
       } else {
         console.warn('No se encontró MMppBalance o el contenedor #mmppBalance.');
