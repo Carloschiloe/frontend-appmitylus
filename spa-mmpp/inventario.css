@@ -98,3 +98,39 @@ table.mmpp td:first-child > strong{font-weight:500}   /* neutraliza el <strong> 
   table.mmpp{display:block;overflow-x:auto}
   .mmpp-hero h1{font-size:20px}
 }
+/* ====== Balance MMPP: utilidades y bloques ====== */
+.muted{ color: var(--muted); }
+
+.mmpp-stack{ margin-bottom: 12px; }            /* separadores verticales */
+
+.mmpp-chart{                                    /* contenedor del gráfico */
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.mmpp-table-wrap{ overflow-x: auto; }           /* scroll horizontal en tabla grande */
+
+.tright{ text-align: right; }                   /* alineación derecha para números */
+
+/* alertas (errores de carga) */
+.mmpp-alert{
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #fecaca;
+}
+.mmpp-alert.error{
+  background:#fee2e2;
+  color:#991b1b;
+}
+
+/* loader esqueleto */
+.skeleton{
+  height: 140px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f3f4f6, #e5e7eb, #f3f4f6);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
