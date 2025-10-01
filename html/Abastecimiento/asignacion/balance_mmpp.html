@@ -5,18 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Balance MMPP</title>
 
-  <!-- Estilos compartidos -->
+  <!-- Estilos compartidos (mismos que el resto) -->
   <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
 
-  <!-- ===== CONFIG (antes de cualquier JS tuyo) ===== -->
+  <!-- ===== CONFIG (antes de cualquier JS) ===== -->
   <script>window.DEBUG = true;</script>
-  <!-- IMPORTANTE: no fuerces dominios; usamos /api y vercel.json hace el proxy -->
-  <!-- (si alguna vez quieres forzar otro backend, agrega window.API_URL aquí arriba) -->
+  <!-- Usa /api con proxy de vercel.json. Si quieres forzar otro backend, define window.API_URL en /js/config.js -->
   <script src="/js/config.js"></script>
-  <!-- ============================================= -->
+  <!-- ========================================= -->
 
-  <!-- React + Babel para el sidebar y este módulo JSX -->
+  <!-- React + Babel (como en las otras páginas) -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
@@ -35,20 +34,20 @@
   <!-- Sidebar (JSX via Babel) -->
   <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
 
-  <!-- Balance MMPP (TU archivo JSX) -->
-  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/mmpp-balance.jsx?v=2"></script>
+  <!-- Balance MMPP (JSX) -->
+  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/mmpp-balance.jsx?v=4"></script>
 
-  <!-- Montaje -->
+  <!-- Fallback de montaje: por si Babel termina después -->
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      if (window.MMppBalance && document.getElementById('mmppBalance')) {
+    setTimeout(function(){
+      var host = document.getElementById('mmppBalance');
+      if (window.MMppBalance && host && !MMppBalance._root) {
         MMppBalance.mount({ anio: new Date().getFullYear() });
-      } else {
-        console.warn('No se encontró MMppBalance o el contenedor #mmppBalance.');
       }
-    });
+    }, 2000);
   </script>
 
   <noscript>Esta página requiere JavaScript.</noscript>
 </body>
 </html>
+
