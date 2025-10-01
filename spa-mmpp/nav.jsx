@@ -2,22 +2,31 @@
 const { useMemo } = React;
 
 function Sidebar(){
+  // Considera path + hash para marcar activo (#balance-mmpp)
   const here = (typeof location!=="undefined"
-    ? (location.pathname || "").toLowerCase()
+    ? `${(location.pathname || "").toLowerCase()} ${(location.hash || "").toLowerCase()}`
     : "");
 
   const itemsMain = [
     { href: "/html/Abastecimiento/asignacion/inventario_mmpp.html",       label:"Inventario",      icon:"📦" },
     { href: "/html/Abastecimiento/asignacion/calendario_mmpp.html",       label:"Calendario",      icon:"📅" },
-    // OJO: mantenemos el href “normal” pero capturamos el click para abrir panel
+
+    // NUEVO: Balance MMPP (SPA con hash). Si usas página estática, cambia a:
+    // { href: "/html/Abastecimiento/asignacion/balance_mmpp.html", label:"Balance MMPP", icon:"📈" },
+    { href: "/spa-mmpp/index.html#balance-mmpp",                          label:"Balance MMPP",    icon:"📈" },
+
+    // Mantiene panel de transportistas in-page
     { href: "/html/Abastecimiento/asignacion/transportistas_mmpp.html",   label:"Transportistas",  icon:"🚚", panel:"transportistas" },
+
     { href: "/html/Abastecimiento/asignacion/resumen_mmpp.html",          label:"Resumen Stock",   icon:"📊" },
     { href: "/html/Abastecimiento/asignacion/pipeline_mmpp.html",         label:"Pipeline",        icon:"🧭" },
   ];
 
   function isActive(href){
-    const f = href.split("/").pop().toLowerCase();
-    return here.indexOf(f) >= 0 ? "is-active" : "";
+    const f = href.split("/").pop().toLowerCase();         // e.g. 'index.html#balance-mmpp' o 'balance_mmpp.html'
+    const token = f.includes("#") ? f.split("#")[1] : "";  // e.g. 'balance-mmpp'
+    // Activo si coincide archivo O si coincide token de hash (balance-mmpp)
+    return (here.indexOf(f) >= 0 || (token && here.indexOf(token) >= 0)) ? "is-active" : "";
   }
 
   function onClickItem(e, it){
@@ -56,3 +65,4 @@ function Sidebar(){
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go);
   else go();
 })();
+
