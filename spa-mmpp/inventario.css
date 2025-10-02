@@ -159,3 +159,37 @@ th.sort .arrow{ margin-left:6px; font-size:11px; opacity:.7 }
   background-size:200% 100%; animation:shimmer 1.2s infinite;
 }
 @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ===== Balance MMPP – mejoras de gráfico dinámico ===== */
+.mmpp-controls { margin-bottom: 10px; }
+.mmpp-legend { display:flex; gap:10px; margin:8px 0 12px; flex-wrap:wrap; }
+.mmpp-legend .item {
+  display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
+  padding:6px 8px; border:1px solid var(--border); border-radius:10px; background:#fff;
+  font-weight:700; font-size:12.5px;
+}
+.mmpp-legend .item.off { opacity:.45; }
+.mmpp-legend .swatch { width:12px; height:12px; border-radius:3px; }
+.mmpp-chart { overflow-x:auto; background:#fff; border:1px solid var(--border); border-radius:12px; }
+.mmpp-chart svg { display:block; }
+.chart-label { fill:#374151; font-weight:700; font-size:11px; }
+.tright { text-align:right; }
+
+/* estados tabla por umbral (reutilizable si lo necesitas) */
+.row-warn{ background:#fffbeb; }
+.row-over{ background:#fee2e2; }
+
+/* utilidades ya usadas en otras páginas */
+.mmpp-table-wrap{ overflow-x:auto; }
+.muted{ color: var(--muted); }
+.mmpp-stack{ margin-bottom: 12px; }
+
+/* feedback */
+.mmpp-alert{ padding:10px 12px; border-radius:12px; border:1px solid #fecaca; }
+.mmpp-alert.error{ background:#fee2e2; color:#991b1b; }
+.skeleton{
+  height:140px; border-radius:12px;
+  background:linear-gradient(90deg, #f3f4f6, #e5e7eb, #f3f4f6);
+  background-size:200% 100%; animation:shimmer 1.2s infinite;
+}
+@keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
