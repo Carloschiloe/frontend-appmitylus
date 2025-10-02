@@ -21,6 +21,38 @@ const { useEffect, useMemo, useState } = React;
     var m = parseInt(String(mesKey).split("-")[1]||"1",10); return clamp(isFinite(m)?m:1,1,12);
   }
 
+  /* ---------- Proveedor mostrado (con fallback a contacto) ---------- */
+  function _str(v){
+    if (!v) return "";
+    if (typeof v === "string") return v;
+    if (typeof v === "object") {
+      if (v.nombre) return String(v.nombre);
+      if (v.name)   return String(v.name);
+      if (v.fullname) return String(v.fullname);
+    }
+    return "";
+  }
+  function proveedorDisplay(r){
+    // Primero el proveedor
+    var p = _str(r && r.proveedorNombre);
+    if (p && p.trim()) return p.trim();
+
+    // Si no hay proveedor, intentamos con posibles campos de contacto
+    var cand = [
+      _str(r && r.contactoNombre),
+      _str(r && r.nombreContacto),
+      _str(r && r.contact_name),
+      _str(r && r.contact),
+      _str(r && r.contacto),
+      _str(r && r.responsableNombre),
+      _str(r && r.solicitanteNombre)
+    ];
+    for (var i=0;i<cand.length;i++){
+      if (cand[i] && cand[i].trim()) return cand[i].trim();
+    }
+    return "—"; // último recurso
+  }
+
   /* ---------- CSV ---------- */
   function CSVButton(props){
     function toCSV(rows){
@@ -107,8 +139,8 @@ const { useEffect, useMemo, useState } = React;
             var gX = baseX;
 
             if (metric === "pct"){
-              var val = clamp(pct, 0, 100);
-              var barH = (val / maxV) * h;
+              var val = Math.max(0, Math.min(100, pct));
+              var barH = (val / 100) * h;
               return (
                 <g key={i} transform={"translate(" + baseX + "," + padTop + ")"}>
                   <rect x="0" y={h-barH} width={barW} height={barH} rx="5" fill={UI.brand2}>
@@ -122,14 +154,12 @@ const { useEffect, useMemo, useState } = React;
 
             if (metric === "saldo"){
               var v = Math.abs(saldo);
-              var barH2 = (v / maxV) * h;
+              var barH2 = (v / Math.max(1, Math.abs(saldo), v)) * h; // escala simple por fila
               var isNeg = (saldo < 0);
               var y0 = isNeg ? (h/2) : (h - barH2);
               var heightDraw = barH2;
-              // eje cero en mitad (simple)
               return (
                 <g key={i} transform={"translate(" + baseX + "," + padTop + ")"}>
-                  {/* eje cero */}
                   <line x1="-4" y1={h/2} x2={barW+4} y2={h/2} stroke="#e5e7eb" />
                   <rect x="0" y={y0} width={barW} height={heightDraw} rx="5" fill={isNeg ? "#ef4444" : "#10b981"}>
                     <title>{d.label + " · Saldo: " + (isNeg? "-":"") + fmtTons(v) + " t"}</title>
@@ -143,8 +173,8 @@ const { useEffect, useMemo, useState } = React;
             // metric === "ambos"
             if (mode === "stacked"){
               var total = disp + asig;
-              var hTotal = (total/maxV)*h;
-              var hDisp = (disp/maxV)*h;
+              var hTotal = (total/Math.max(1,total)) * h; // normalizado por fila si quisieras, pero dejamos simple
+              var hDisp = (disp/Math.max(1,total)) * hTotal;
               var yDisp = h - hDisp;
               var yAsig = h - hTotal;
               return (
@@ -161,12 +191,9 @@ const { useEffect, useMemo, useState } = React;
               );
             } else {
               // grouped
-              var hadD = showD ? 1 : 0, hadA = showA ? 1 : 0;
-              var curr = 0;
               var nodes = [];
-
               if (showD){
-                var hD = (disp/maxV)*h, yD = h-hD, xD = gX + (hadA?0: (showA?0:0)); // primer bar
+                var hD = (disp/Math.max(1,disp,asig)) * h, yD = h-hD;
                 nodes.push(
                   <g key={"d"+i} transform={"translate(" + gX + "," + padTop + ")"}>
                     <rect x="0" y={yD} width={barW} height={hD} rx="5" fill={UI.brand1}>
@@ -175,11 +202,10 @@ const { useEffect, useMemo, useState } = React;
                     {showLabels && barLabel(barW/2, yD-6, fmtTons(disp))}
                   </g>
                 );
-                curr++;
               }
               if (showA){
                 var xA = gX + (showD? (barW+6) : 0);
-                var hA = (asig/maxV)*h, yA = h-hA;
+                var hA = (asig/Math.max(1,disp,asig)) * h, yA = h-hA;
                 nodes.push(
                   <g key={"a"+i} transform={"translate(" + xA + "," + padTop + ")"}>
                     <rect x="0" y={yA} width={barW} height={hA} rx="5" fill={UI.brand2}>
@@ -189,8 +215,6 @@ const { useEffect, useMemo, useState } = React;
                   </g>
                 );
               }
-
-              // etiqueta del grupo
               nodes.push(
                 <text key={"lbl"+i} x={gX + (showD && showA ? (barW+6)/2 : barW/2)} y={labelY} textAnchor="middle" fontSize="11" fill="#6b7280">{d.label}</text>
               );
@@ -237,36 +261,48 @@ const { useEffect, useMemo, useState } = React;
       return function(){ off = true; };
     }, [anio]);
 
-    // filtros base
+    /* ========= Filtros base con NOMBRE NORMALIZADO ========= */
     const proveedores = useMemo(function(){
-      var dict = {}; rows.forEach(function(r){ var n=(r&&r.proveedorNombre)||""; if(n) dict[n]=1; });
-      var list = Object.keys(dict).sort(); list.unshift("Todos"); return list;
+      var dict = {};
+      rows.forEach(function(r){
+        var n = proveedorDisplay(r);
+        if (n && n !== "—") dict[n] = 1;
+      });
+      var list = Object.keys(dict).sort();
+      list.unshift("Todos");
+      return list;
     }, [rows]);
 
+    /* ========= Base de datos filtrada (rango meses + proveedor) ========= */
     const baseRows = useMemo(function(){
       var arr = [];
       rows.forEach(function(r){
         var mk = String((r && r.mesKey) || "");
         if (mk.indexOf(String(anio)) !== 0) return;
-        if (proveedor !== "Todos" && ((r && r.proveedorNombre) || "") !== proveedor) return;
+        var mn = monthIdx(mk);
+        if (mn < mesFrom || mn > mesTo) return;
+
+        var prov = proveedorDisplay(r);
+        if (proveedor !== "Todos" && prov !== proveedor) return;
 
         var disp = num(r && r.disponible), asig = num(r && r.asignado);
         arr.push({
           mesKey: mk,
-          mesNum: monthIdx(mk),
-          proveedorNombre: (r && r.proveedorNombre) || "",
-          disponible: disp, asignado: asig, saldo: disp - asig, pct: disp>0?(asig/disp*100):0
+          mesNum: mn,
+          proveedorNombre: prov,        // <- ya normalizado con fallback a contacto
+          disponible: disp,
+          asignado: asig,
+          saldo: disp - asig,
+          pct: disp>0?(asig/disp*100):0
         });
       });
-      // rango meses aplicado acá (también útil para agrupar por proveedor)
-      return arr.filter(function(x){ return x.mesNum >= mesFrom && x.mesNum <= mesTo; });
+      return arr;
     }, [rows, anio, proveedor, mesFrom, mesTo]);
 
-    // dataset para el chart
+    /* ========= Dataset para el gráfico (ya agrega por mes o proveedor) ========= */
     const chartData = useMemo(function(){
       var map = {};
       if (groupBy === "mes"){
-        // sumas por mes (label = '01','Feb', etc.)
         baseRows.forEach(function(r){
           var key = r.mesNum; // 1..12
           if (!map[key]) map[key] = { label: (key<10?"0"+key:key), disponible:0, asignado:0, saldo:0, pct:0, _d:0,_a:0 };
@@ -280,7 +316,6 @@ const { useEffect, useMemo, useState } = React;
         });
         return Object.keys(map).sort(function(a,b){ return parseInt(a,10)-parseInt(b,10); }).map(function(k){ return map[k]; });
       } else {
-        // sumas por proveedor en el rango
         baseRows.forEach(function(r){
           var key = r.proveedorNombre || "—";
           if (!map[key]) map[key] = { label: key, disponible:0, asignado:0, saldo:0, pct:0, _d:0,_a:0 };
@@ -296,36 +331,47 @@ const { useEffect, useMemo, useState } = React;
       }
     }, [baseRows, groupBy]);
 
-    // totales (para KPIs)
-    const totals = useMemo(function(){
-      var d=0,a=0; baseRows.forEach(function(r){ d+=r.disponible; a+=r.asignado; });
-      var s=d-a, p=d>0?(a/d*100):0; return { d:d, a:a, s:s, p:p };
-    }, [baseRows]);
-
-    // tabla (la dejamos simple: por mes y proveedor originales)
+    /* ========= TABLA: AGREGA POR (mesKey + proveedor) (NO repetidos) ========= */
     const tableRows = useMemo(function(){
-      var list = rows.filter(function(r){
-        var mk = String((r && r.mesKey) || "");
-        if (mk.indexOf(String(anio)) !== 0) return false;
-        var mn = monthIdx(mk);
-        if (mn < mesFrom || mn > mesTo) return false;
-        if (proveedor !== "Todos" && ((r && r.proveedorNombre) || "") !== proveedor) return false;
-        return true;
-      }).map(function(r){
-        var d=num(r && r.disponible), a=num(r && r.asignado);
+      var acc = {}; // key = mesKey|proveedor
+      baseRows.forEach(function(r){
+        var key = r.mesKey + "|" + (r.proveedorNombre || "—");
+        if (!acc[key]) acc[key] = {
+          mesKey: r.mesKey,
+          proveedorNombre: r.proveedorNombre || "—",
+          disponible: 0, asignado: 0
+        };
+        acc[key].disponible += r.disponible;
+        acc[key].asignado   += r.asignado;
+      });
+
+      var list = Object.keys(acc).map(function(k){
+        var o = acc[k];
+        var saldo = o.disponible - o.asignado;
+        var pct = o.disponible>0 ? (o.asignado/o.disponible*100) : 0;
         return {
-          mesKey: String(r.mesKey),
-          proveedorNombre: (r && r.proveedorNombre)||"",
-          disponible:d, asignado:a, saldo:d-a, pct: d>0?(a/d*100):0
+          mesKey: o.mesKey,
+          proveedorNombre: o.proveedorNombre,
+          disponible: o.disponible,
+          asignado: o.asignado,
+          saldo: saldo,
+          pct: pct
         };
       });
+
       list.sort(function(a,b){
         var t = String(a.mesKey).localeCompare(String(b.mesKey));
         if (t!==0) return t;
         return String(a.proveedorNombre||"").localeCompare(String(b.proveedorNombre||""));
       });
       return list;
-    }, [rows, anio, proveedor, mesFrom, mesTo]);
+    }, [baseRows]);
+
+    /* ========= Totales (para KPIs) ========= */
+    const totals = useMemo(function(){
+      var d=0,a=0; baseRows.forEach(function(r){ d+=r.disponible; a+=r.asignado; });
+      var s=d-a, p=d>0?(a/d*100):0; return { d:d, a:a, s:s, p:p };
+    }, [baseRows]);
 
     return (
       <div className="mmpp-wrap">
@@ -333,7 +379,7 @@ const { useEffect, useMemo, useState } = React;
         <div className="mmpp-hero mmpp-stack">
           <div>
             <h1>Balance MMPP</h1>
-            <p>Disponible vs Asignado por mes y proveedor</p>
+            <p>Disponible vs Asignado por mes y proveedor (agregado sin repetidos)</p>
           </div>
           <div className="mmpp-badge"><span>🟣</span>Reporte dinámico</div>
         </div>
@@ -355,38 +401,16 @@ const { useEffect, useMemo, useState } = React;
               <label className="muted">Proveedor</label>
               <select className="mmpp-input" value={proveedor}
                 onChange={function(e){ setProveedor(e.target.value); }}>
-                {["Todos"].concat((function(){
-                  var dict={}; rows.forEach(function(r){ var n=(r&&r.proveedorNombre)||""; if(n) dict[n]=1; });
-                  return Object.keys(dict).sort();
-                })()).map(function(p){ return <option key={p} value={p}>{p}</option>; })}
+                {proveedores.map(function(p){ return <option key={p} value={p}>{p}</option>; })}
               </select>
             </div>
 
             <div>
-              <label className="muted">Agrupar por</label>
+              <label className="muted">Agrupar gráfico por</label>
               <select className="mmpp-input" value={groupBy}
                 onChange={function(e){ setGroupBy(e.target.value); }}>
                 <option value="mes">Mes (rango abajo)</option>
                 <option value="proveedor">Proveedor (en rango)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="muted">Métrica</label>
-              <select className="mmpp-input" value={metric}
-                onChange={function(e){ setMetric(e.target.value); }}>
-                <option value="ambos">Disponible vs Asignado</option>
-                <option value="pct">% Asignado</option>
-                <option value="saldo">Saldo (D − A)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="muted">Modo barras</label>
-              <select className="mmpp-input" value={mode} disabled={metric!=="ambos"}
-                onChange={function(e){ setMode(e.target.value); }}>
-                <option value="grouped">Agrupadas</option>
-                <option value="stacked">Apiladas</option>
               </select>
             </div>
 
@@ -407,11 +431,6 @@ const { useEffect, useMemo, useState } = React;
             </div>
 
             <div style={{display:"flex",alignItems:"flex-end",gap:"8px"}}>
-              <label className="muted" style={{display:"flex",alignItems:"center",gap:"6px"}}>
-                <input type="checkbox" checked={showLabels}
-                  onChange={function(e){ setShowLabels(e.target.checked); }} />
-                Mostrar etiquetas
-              </label>
               <CSVButton rows={tableRows}/>
             </div>
           </div>
@@ -429,31 +448,17 @@ const { useEffect, useMemo, useState } = React;
 
           {!loading && !error && (
             <div className="mmpp-stack">
-              {/* Leyenda clickeable (sólo para 'ambos') */}
-              {metric==="ambos" && (
-                <div className="mmpp-legend">
-                  <div className={"item"+(showD?"":" off")} onClick={function(){ setShowD(!showD); }}>
-                    <span className="swatch" style={{background:UI.brand1}}></span> Disponible
-                  </div>
-                  <div className={"item"+(showA?"":" off")} onClick={function(){ setShowA(!showA); }}>
-                    <span className="swatch" style={{background:UI.brand2}}></span> Asignado
-                  </div>
-                </div>
-              )}
-
-              {/* Gráfico */}
+              {/* Gráfico (usa baseRows agregados arriba en chartData) */}
               <MiniBars
                 data={chartData}
-                metric={metric}
-                mode={mode}
-                showLabels={showLabels}
-                showD={showD}
-                showA={showA}
-                onToggleD={function(){ setShowD(!showD); }}
-                onToggleA={function(){ setShowA(!showA); }}
+                metric={"ambos"}
+                mode={"grouped"}
+                showLabels={true}
+                showD={true}
+                showA={true}
               />
 
-              {/* Tabla resumida (original) */}
+              {/* Tabla AGREGADA por Mes + Proveedor (sin repetidos) */}
               <div className="mmpp-table-wrap" style={{ marginTop: 12 }}>
                 <table className="mmpp">
                   <thead>
@@ -471,7 +476,7 @@ const { useEffect, useMemo, useState } = React;
                       return (
                         <tr key={r.mesKey + "|" + (r.proveedorNombre||"") + "|" + idx}>
                           <td>{monthLabelFromKey(r.mesKey)}</td>
-                          <td>{r.proveedorNombre || "—"}</td>
+                          <td>{r.proveedorNombre}</td>
                           <td className="tright">{fmtTons(r.disponible)}</td>
                           <td className="tright">{fmtTons(r.asignado)}</td>
                           <td className="tright">{fmtTons(r.saldo)}</td>
