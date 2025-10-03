@@ -86,12 +86,15 @@ const { useEffect, useMemo, useState } = React;
     return disp;
   }
   // clave estable de agrupación: preferimos proveedorId; si no existe, usamos nombre normalizado
-  function providerKeyFromRow(r){
-    var pid = (r && r.proveedorId != null && r.proveedorId !== "") ? String(r.proveedorId) : "";
-    if (pid) return "id:" + pid;
-    var disp = providerDisplayFromRow(r);
-    return "name:" + canonicalize(disp);
-  }
+ function providerKeyFromRow(r){
+  // backend nuevo manda r.provKey que ya es id o key unificada
+  if (r && r.provKey) return "key:" + String(r.provKey);
+  // compatibilidad con respuestas antiguas
+  var pid = (r && r.proveedorId != null) ? String(r.proveedorId) : "";
+  if (pid) return "id:" + pid;
+  var disp = providerDisplayFromRow(r);
+  return "name:" + canonicalize(disp);
+}
 
   /* ====================== CSV ====================== */
   function CSVButton(props){
