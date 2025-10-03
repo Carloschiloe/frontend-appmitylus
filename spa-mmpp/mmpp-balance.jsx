@@ -152,20 +152,28 @@ const { useEffect, useMemo, useState } = React;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    // ****** CARGA DE DATOS (usa MMppApi.getSaldos con fallback a fetch) ******
     useEffect(function(){
       var off = false;
       setLoading(true); setError("");
-      fetch(API_BASE + "/planificacion/saldos?anio=" + encodeURIComponent(anio))
-        .then(function(r){ if(!r.ok) throw new Error("Error " + r.status); return r.json(); })
-        .then(function(data){
-          if (off) return;
-          var items = (data && Array.isArray(data.items)) ? data.items : [];
-          setRows(items);
-        })
+
+      var run;
+      if (global.MMppApi && typeof global.MMppApi.getSaldos === "function") {
+        run = global.MMppApi.getSaldos({ anio });
+      } else {
+        run = fetch(API_BASE + "/planificacion/saldos?anio=" + encodeURIComponent(anio))
+          .then(function(r){ if(!r.ok) throw new Error("Error " + r.status); return r.json(); })
+          .then(function(data){ return (data && Array.isArray(data.items)) ? data.items : []; });
+      }
+
+      Promise.resolve(run)
+        .then(function(items){ if (off) return; setRows(items || []); })
         .catch(function(e){ if (off) return; setError((e && e.message) ? e.message : "Error cargando saldos"); })
-        .then(function(){ if (off) return; setLoading(false); });
+        .finally(function(){ if (off) return; setLoading(false); });
+
       return function(){ off = true; };
     }, [anio]);
+    // ***********************************************************************
 
     /* ---- construir base con clave y display de proveedor ---- */
     const normRows = useMemo(function(){
@@ -200,9 +208,6 @@ const { useEffect, useMemo, useState } = React;
       normRows.forEach(function(r){
         if (!map.has(r.proveedorKey)) map.set(r.proveedorKey, r.proveedorDisplay);
       });
-      // Si no filtraste aún (proveedorKeySel === "Todos"), también hay que considerar
-      // posibles proveedores que fueron filtrados por mes (pero igual queremos en la lista completa):
-      // Para eso repasamos 'rows' con sólo el año.
       if (proveedorKeySel === "Todos") {
         (rows || []).forEach(function(r){
           var mk = String(r.mesKey || "");
