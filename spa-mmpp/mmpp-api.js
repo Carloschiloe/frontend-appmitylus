@@ -65,6 +65,8 @@
       return { ok:false, status:0, body:{ message: (err && err.message) || "network error" } };
     });
   }
+
+  // ➜ CAMBIO CLAVE: si una ruta devuelve 500/502/503/0, seguimos probando la siguiente.
   function tryRoutes(method, routes, bodyObj){
     var i=0;
     function next(){
@@ -73,9 +75,14 @@
       var opts = { method: method };
       if (bodyObj && (method!=="GET" && method!=="DELETE")) opts.body = JSON.stringify(bodyObj);
       if (method==="DELETE" && bodyObj && /\/delete/i.test(path)){ opts.body = JSON.stringify(bodyObj); }
+
       return doFetch(url, opts).then(function(res){
         if (res.ok) return res;
-        if (res.status===404 || res.status===405 || res.status===400) return next();
+        // Antes solo saltábamos en 404/405/400; ahora saltamos también en 500/502/503/0
+        if (res.status===404 || res.status===405 || res.status===400 ||
+            res.status===500 || res.status===502 || res.status===503 || res.status===0) {
+          return next();
+        }
         return res;
       });
     }
@@ -90,7 +97,7 @@
     // tolerante a varios nombres de campo
     return obj.proveedorId || obj.proveedor_id ||
            (obj.proveedor && (obj.proveedor.id || obj.proveedor._id)) ||
-           obj.contactoProveedorId || obj.contactoId || obj.contact_id ||
+           obj.contactoProveedorId || obj.contactId || obj.contact_id ||
            null;
   }
 
@@ -99,7 +106,9 @@
               : (payload && (payload.items||payload.data||payload.results)) || [];
     var out = list.map(function(r){
       var id = r.id || r._id || r._docId || r.uuid || null;
-      var tons = (r.tonsDisponible!=null ? Number(r.tonsDisponible) : Number(r.tons||0));
+      var tons = (r.tonsDisponible!=null ? Number(r.tonsDisponible)
+                 : r.disponible!=null ? Number(r.disponible)
+                 : Number(r.tons||0));
       var mk = r.mesKey || (r.anio&&r.mes ? (r.anio+"-"+pad2(r.mes)) : (r.fecha?toMesKey(r.fecha):null));
       var fecha = r.fecha || (mk?fromMesKey(mk):null);
       var tel = (r.contactoSnapshot && (r.contactoSnapshot.telefono || r.contactoSnapshot.phone)) || r.contactoTelefono || "";
@@ -193,13 +202,16 @@
       }
       var q = qs(params);
       var paths = [
+        // ➜ agrega las rutas reales del backend
+        "/planificacion/disponibilidad"+q,
         "/disponibilidades"+q,
         "/mmpp/disponibilidades"+q,
         "/disponibilidad"+q
       ];
       return tryRoutes("GET", paths).then(function(res){
         var json = (res && res.body) || [];
-        var norm = normalizeDispon(json);
+        var list = Array.isArray(json) ? json : (json.items||json.data||json.results)||[];
+        var norm = normalizeDispon(list);
         _cacheDispon = norm;
         return norm;
       }).catch(function(){ return []; });
@@ -213,10 +225,12 @@
         "/asignaciones"+q,
         "/asignacion"+q,
         "/mmpp/asignaciones"+q
+        // si más adelante montas /planificacion/asignaciones, agrégala aquí
+        // "/planificacion/asignaciones"+q,
       ];
       return tryRoutes("GET", paths).then(function(res){
         var json = (res && res.body) || [];
-        var list = Array.isArray(json) ? json : (json && (json.items||json.data||json.results)) || [];
+        var list = Array.isArray(json) ? json : (json.items||json.data||json.results) || [];
         var norm = normalizeAsign(list);
         var clean = norm.filter(function(a){ return a && Number(a.cantidad)>0 && (a.id || a.disponibilidadId); });
         clean.sort(function(a,b){
