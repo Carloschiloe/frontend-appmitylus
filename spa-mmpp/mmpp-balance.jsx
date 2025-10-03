@@ -25,7 +25,11 @@ const { useEffect, useMemo, useState } = React;
   function canonicalize(s){
     s = (s==null?"":String(s));
     try { s = s.normalize("NFD").replace(/[\u0300-\u036f]/g,""); } catch(e){}
-    s = s.toLowerCase().replace(/[.,;:()'"`´]/g," ").replace(/\s+/g," ").trim();
+    // arreglos típicos de encoding (ñ/Ñ, &amp;, etc.)
+    s = s.replace(/&amp;/g,"&").replace(/&nbsp;/g," ");
+    s = s.replace(/ñ/gi,"n");
+    // limpiar puntuación/comillas/guiones duplicados
+    s = s.toLowerCase().replace(/[.,;:()'"`´/\\_-]/g," ").replace(/\s+/g," ").trim();
     return s;
   }
   function looksLikeName(s){
@@ -39,14 +43,27 @@ const { useEffect, useMemo, useState } = React;
   function guessContactFromRecord(r){
     if (!r || typeof r!=="object") return "";
     var keys = Object.keys(r || {});
-    var prefer = ["contactoNombre","nombreContacto","contact_name","contactName","contacto",
-                  "responsableNombre","solicitanteNombre","vendedor","encargado","persona","nombre"];
+    var prefer = [
+      "proveedorNombre","contactoNombre","nombreContacto","contact_name","contactName","contacto",
+      "responsableNombre","solicitanteNombre","vendedor","encargado","persona","nombre"
+    ];
     for (var i=0;i<prefer.length;i++){
       var k = prefer[i];
       if (r[k] && looksLikeName(r[k])) return String(r[k]).trim();
     }
-    for (var j=0;j<keys.length;j++){
-      var v = r[keys[j]];
+    // anidar objetos típicos
+    var nest = ["proveedor","contacto","responsable","persona"];
+    for (var j=0;j<nest.length;j++){
+      var o = r[nest[j]];
+      if (o && typeof o==="object"){
+        if (o.nombre && looksLikeName(o.nombre)) return String(o.nombre).trim();
+        if (o.name && looksLikeName(o.name)) return String(o.name).trim();
+        if (o.fullname && looksLikeName(o.fullname)) return String(o.fullname).trim();
+      }
+    }
+    // búsqueda laxa
+    for (var t=0;t<keys.length;t++){
+      var v = r[keys[t]];
       if (typeof v === "string" && looksLikeName(v)) return String(v).trim();
       if (v && typeof v === "object"){
         if (v.nombre && looksLikeName(v.nombre)) return String(v.nombre).trim();
@@ -57,9 +74,11 @@ const { useEffect, useMemo, useState } = React;
     return "";
   }
 
-  // display visible (proveedorNombre del backend o fallback contacto/“Sin proveedor”)
+  // display visible (preferimos proveedorNombre; si no, contacto; si no, “Sin proveedor”)
   function providerDisplayFromRow(r){
-    var disp = (r && r.proveedorNombre) ? String(r.proveedorNombre).trim() : "";
+    var disp = "";
+    if (r && r.proveedorNombre) disp = String(r.proveedorNombre).trim();
+    if (!disp && r && r.proveedor && r.proveedor.nombre) disp = String(r.proveedor.nombre).trim();
     if (!disp || disp === "-" || disp === "—" || disp.toLowerCase()==="n/a"){
       var c = guessContactFromRecord(r);
       disp = c || "Sin proveedor";
@@ -68,7 +87,7 @@ const { useEffect, useMemo, useState } = React;
   }
   // clave estable de agrupación: preferimos proveedorId; si no existe, usamos nombre normalizado
   function providerKeyFromRow(r){
-    var pid = (r && r.proveedorId != null) ? String(r.proveedorId) : "";
+    var pid = (r && r.proveedorId != null && r.proveedorId !== "") ? String(r.proveedorId) : "";
     if (pid) return "id:" + pid;
     var disp = providerDisplayFromRow(r);
     return "name:" + canonicalize(disp);
@@ -226,29 +245,38 @@ const { useEffect, useMemo, useState } = React;
     /* ---- opciones de proveedores (únicas por clave) ---- */
     const proveedorOptions = useMemo(function(){
       var map = new Map(); // key -> display
+      // opciones en rango filtrado
       rowsK.forEach(function(r){
         if (!map.has(r.proveedorKey)) map.set(r.proveedorKey, r.proveedorDisplay);
       });
-      // ampliar lista con todos los del año (para no perder opciones al cambiar rango de meses)
-      if (proveedorKeySel === "Todos") {
-        (rows || []).forEach(function(r){
-          var mk = String(r.mesKey || "");
-          if (mk.indexOf(String(anio)) !== 0) return;
-          var disp = providerDisplayFromRow(r);
-          var key = providerKeyFromRow(r);
-          // si ya existe por id, respetamos esa clave
-          if (key.startsWith("name:")) {
-            var idKey = "id:" + String(r.proveedorId || "");
-            if (r.proveedorId && !map.has(idKey)) { map.set(idKey, disp); return; }
-          }
-          if (!map.has(key)) map.set(key, disp);
-        });
-      }
+      // ampliar con todo el año, pero consolidando por id cuando exista
+      (rows || []).forEach(function(r){
+        var mk = String(r.mesKey || "");
+        if (mk.indexOf(String(anio)) !== 0) return;
+        var disp = providerDisplayFromRow(r);
+        var key = providerKeyFromRow(r);
+        if (key.startsWith("name:") && r.proveedorId != null && r.proveedorId !== ""){
+          var idKey = "id:" + String(r.proveedorId);
+          if (!map.has(idKey)) map.set(idKey, disp);
+          return;
+        }
+        if (!map.has(key)) map.set(key, disp);
+      });
+
       var arr = Array.from(map.entries()).map(function([k,v]){ return { value:k, label:v }; });
+      // evitar “Sin proveedor” como duplicado de sí mismo por mayúsculas/acentos
+      var seen = new Set();
+      arr = arr.filter(function(o){
+        var ck = canonicalize(o.label || "");
+        if (seen.has(ck)) return false;
+        seen.add(ck);
+        return true;
+      });
+
       arr.sort(function(a,b){ return String(a.label||"").localeCompare(String(b.label||"")); });
       arr.unshift({ value:"Todos", label:"Todos" });
       return arr;
-    }, [rows, rowsK, anio, proveedorKeySel]);
+    }, [rows, rowsK, anio]);
 
     /* ---- gráfico: sumas por mes (en el rango y filtro actual) ---- */
     const chartData = useMemo(function(){
@@ -262,12 +290,12 @@ const { useEffect, useMemo, useState } = React;
       return Object.keys(map).sort(function(a,b){ return parseInt(a,10)-parseInt(b,10); }).map(function(k){ return map[k]; });
     }, [rowsK]);
 
-    /* ---- TABLA agregada: por proveedor (año) o por mes+proveedor ---- */
+    /* ---- TABLA agregada: por proveedor (año) o por mes+proveedor) ---- */
     const tableRows = useMemo(function(){
       var acc = {};
       rowsK.forEach(function(r){
         var key = (tableGroupMode==="prov")
-          ? ("prov|" + r.proveedorKey)
+          ? ("prov|" + r.proveedorKey)                   // ← clave única por proveedor (id o nombre normalizado)
           : (r.mesKey + "|" + r.proveedorKey);
 
         if (!acc[key]){
