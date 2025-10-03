@@ -202,42 +202,70 @@ const { useEffect, useMemo, useState } = React;
       return list;
     }, [rows, anio, mesFrom, mesTo, proveedorKeySel]);
 
+    /* ---- FUSIÓN nombre → id (evita duplicados) ---- */
+    const rowsK = useMemo(function () {
+      // nombre canónico -> clave id:XXXX si existe
+      const name2IdKey = {};
+      normRows.forEach(r => {
+        const k = String(r.proveedorKey || "");
+        if (k.startsWith("id:")) {
+          name2IdKey[canonicalize(r.proveedorDisplay)] = k;
+        }
+      });
+      // reasignar filas con name:... al id correspondiente si lo hay
+      return normRows.map(r => {
+        const k = String(r.proveedorKey || "");
+        if (k.startsWith("name:")) {
+          const idKey = name2IdKey[canonicalize(r.proveedorDisplay)];
+          if (idKey) return Object.assign({}, r, { proveedorKey: idKey });
+        }
+        return r;
+      });
+    }, [normRows]);
+
     /* ---- opciones de proveedores (únicas por clave) ---- */
     const proveedorOptions = useMemo(function(){
       var map = new Map(); // key -> display
-      normRows.forEach(function(r){
+      rowsK.forEach(function(r){
         if (!map.has(r.proveedorKey)) map.set(r.proveedorKey, r.proveedorDisplay);
       });
+      // ampliar lista con todos los del año (para no perder opciones al cambiar rango de meses)
       if (proveedorKeySel === "Todos") {
         (rows || []).forEach(function(r){
           var mk = String(r.mesKey || "");
           if (mk.indexOf(String(anio)) !== 0) return;
+          var disp = providerDisplayFromRow(r);
           var key = providerKeyFromRow(r);
-          if (!map.has(key)) map.set(key, providerDisplayFromRow(r));
+          // si ya existe por id, respetamos esa clave
+          if (key.startsWith("name:")) {
+            var idKey = "id:" + String(r.proveedorId || "");
+            if (r.proveedorId && !map.has(idKey)) { map.set(idKey, disp); return; }
+          }
+          if (!map.has(key)) map.set(key, disp);
         });
       }
       var arr = Array.from(map.entries()).map(function([k,v]){ return { value:k, label:v }; });
       arr.sort(function(a,b){ return String(a.label||"").localeCompare(String(b.label||"")); });
       arr.unshift({ value:"Todos", label:"Todos" });
       return arr;
-    }, [rows, normRows, anio, proveedorKeySel]);
+    }, [rows, rowsK, anio, proveedorKeySel]);
 
     /* ---- gráfico: sumas por mes (en el rango y filtro actual) ---- */
     const chartData = useMemo(function(){
       var map = {};
-      normRows.forEach(function(r){
+      rowsK.forEach(function(r){
         var key = r.mesNum;
         if (!map[key]) map[key] = { label: (key<10?"0"+key:key), disponible:0, asignado:0 };
         map[key].disponible += r.disponible;
         map[key].asignado   += r.asignado;
       });
       return Object.keys(map).sort(function(a,b){ return parseInt(a,10)-parseInt(b,10); }).map(function(k){ return map[k]; });
-    }, [normRows]);
+    }, [rowsK]);
 
     /* ---- TABLA agregada: por proveedor (año) o por mes+proveedor ---- */
     const tableRows = useMemo(function(){
       var acc = {};
-      normRows.forEach(function(r){
+      rowsK.forEach(function(r){
         var key = (tableGroupMode==="prov")
           ? ("prov|" + r.proveedorKey)
           : (r.mesKey + "|" + r.proveedorKey);
@@ -278,13 +306,13 @@ const { useEffect, useMemo, useState } = React;
         }
       });
       return list;
-    }, [normRows, tableGroupMode]);
+    }, [rowsK, tableGroupMode]);
 
     /* ---- totales ---- */
     const totals = useMemo(function(){
-      var d=0,a=0; normRows.forEach(function(r){ d+=r.disponible; a+=r.asignado; });
+      var d=0,a=0; rowsK.forEach(function(r){ d+=r.disponible; a+=r.asignado; });
       var s=d-a, p=d>0?(a/d*100):0; return { d:d, a:a, s:s, p:p };
-    }, [normRows]);
+    }, [rowsK]);
 
     return (
       <div className="mmpp-wrap">
