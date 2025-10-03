@@ -1,23 +1,5 @@
-/* MMppApi – adaptador tolerante para disponibilidades y asignaciones (backend AppMitylus)
-   Usa window.API_BASE (definido en /js/config.js):
-     - En dev:  '/api'  (proxy o mismo host)
-     - En prod: 'https://TU-BACKEND/api' (si pones window.API_URL en el HTML)
-
-   Intenta múltiples variantes de ruta:
-     - /asignaciones/:id        /asignaciones?id=ID
-     - /asignacion/:id          /asignacion?id=ID
-     - /mmpp/asignaciones*      /mmpp/asignacion*
-     - POST /asignaciones|asignacion/delete|update  (body {id,...})
-
-   Normaliza:
-     Disponibilidad: {id, proveedorNombre, proveedorKey, contactoNombre, empresaNombre, telefono, email,
-                      comuna, centroCodigo, areaCodigo, tons, fecha, mesKey, anio, mes, estado}
-     Asignación:     {id, disponibilidadId, cantidad/tons, camiones, capacidadCamion,
-                      destDia?, destMes, destAnio, destFecha, anio, mes, mesKey,
-                      proveedorNombre, proveedorKey, contactoNombre, empresaNombre,
-                      comuna, centroCodigo, areaCodigo,
-                      transportistaId, transportistaNombre,
-                      originalTons, originalFecha, fuente, estado, createdAt}
+/* MMppApi – adaptador tolerante para disponibilidades, asignaciones y saldos (backend AppMitylus)
+   Usa window.API_BASE (definido en /js/config.js).
 */
 (function (global) {
   // ===== BASE =====
@@ -38,6 +20,9 @@
     val=(val||"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
       .toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
     return val || "sin-proveedor";
+  }
+  function provStableKey(id, nombre){
+    return id ? ("id:"+String(id)) : ("name:"+slug(nombre||""));
   }
   function toMesKey(d){
     if(!d) return null; try{ var dt=new Date(d);
@@ -80,8 +65,6 @@
       return { ok:false, status:0, body:{ message: (err && err.message) || "network error" } };
     });
   }
-
-  // intenta varias combinaciones hasta que alguna devuelva ok=true (2xx)
   function tryRoutes(method, routes, bodyObj){
     var i=0;
     function next(){
@@ -92,8 +75,8 @@
       if (method==="DELETE" && bodyObj && /\/delete/i.test(path)){ opts.body = JSON.stringify(bodyObj); }
       return doFetch(url, opts).then(function(res){
         if (res.ok) return res;
-        if (res.status===404 || res.status===405 || res.status===400) return next(); // probar siguiente variante
-        return res; // otros errores (500, etc): devolver
+        if (res.status===404 || res.status===405 || res.status===400) return next();
+        return res;
       });
     }
     return next();
@@ -103,6 +86,14 @@
   var _cacheDispon = [];
 
   // --- normalizadores ---
+  function pickProveedorId(obj){
+    // tolerante a varios nombres de campo
+    return obj.proveedorId || obj.proveedor_id ||
+           (obj.proveedor && (obj.proveedor.id || obj.proveedor._id)) ||
+           obj.contactoProveedorId || obj.contactoId || obj.contact_id ||
+           null;
+  }
+
   function normalizeDispon(payload){
     var list = Array.isArray(payload) ? payload
               : (payload && (payload.items||payload.data||payload.results)) || [];
@@ -114,17 +105,23 @@
       var tel = (r.contactoSnapshot && (r.contactoSnapshot.telefono || r.contactoSnapshot.phone)) || r.contactoTelefono || "";
       var email = (r.contactoSnapshot && r.contactoSnapshot.email) || r.contactoEmail || "";
 
+      // proveedor
       var proveedorNombre = r.proveedorNombre || r.proveedor || r.contactoNombre || r.contacto || "";
+      var proveedorId = pickProveedorId(r);
+
       return {
         id: id,
-        contactoNombre: r.contactoNombre || r.contacto || "",
-        empresaNombre : r.empresaNombre  || r.empresa  || "",
+        proveedorId: proveedorId,
         proveedorNombre: proveedorNombre,
         proveedorKey   : r.proveedorKey || slug(proveedorNombre),
+
+        contactoNombre: r.contactoNombre || r.contacto || "",
+        empresaNombre : r.empresaNombre  || r.empresa  || "",
         telefono: tel, email: email,
         comuna: r.comuna || "",
         centroCodigo: r.centroCodigo || "",
         areaCodigo: r.areaCodigo || "",
+
         tons: Number(tons||0),
         fecha: fecha,
         mesKey: mk,
@@ -141,9 +138,16 @@
               : (payload && (payload.items||payload.data||payload.results)) || [];
     return list.map(function(a){
       var tons = (a.tons!=null ? Number(a.tons) : Number(a.cantidad||0));
+      var proveedorId = pickProveedorId(a);
+      var provNombre = a.proveedorNombre || a.proveedor || "";
+
       return {
         id: a.id || a._id || a.uuid || null,
         disponibilidadId: a.disponibilidadId || a.disponibilidad || a.dispoId || null,
+
+        proveedorId: proveedorId,
+        proveedorNombre: provNombre,
+        proveedorKey: a.proveedorKey || (provNombre?slug(provNombre):""),
 
         cantidad: tons,
         tons: tons,
@@ -159,8 +163,6 @@
         mes : a.mes !=null ? Number(a.mes ) : (a.destMes !=null?Number(a.destMes ):null),
         mesKey: a.mesKey || (a.anio && a.mes ? (a.anio+"-"+pad2(a.mes)) : null),
 
-        proveedorNombre: a.proveedorNombre || a.proveedor || "",
-        proveedorKey: a.proveedorKey || (a.proveedorNombre?slug(a.proveedorNombre):""),
         contactoNombre: a.contactoNombre || "",
         empresaNombre: a.empresaNombre || "",
         comuna: a.comuna || "",
@@ -189,7 +191,6 @@
         var y=new Date().getFullYear();
         params.from=(y-1)+"-01"; params.to=(y+1)+"-12";
       }
-      // paths SIN '/api' (API_BASE ya lo trae)
       var q = qs(params);
       var paths = [
         "/disponibilidades"+q,
@@ -225,6 +226,55 @@
       }).catch(function(){ return []; });
     },
 
+    // ------- Saldos (servidor o cálculo local) -------
+    getSaldos: function(params){
+      params=params||{};
+      var q = qs(params);
+      // 1) Intentar endpoint del backend
+      return tryRoutes("GET", ["/planificacion/saldos"+q]).then(function(res){
+        var body = (res && res.body) || {};
+        var items = Array.isArray(body) ? body : (body.items||[]);
+        var hasDisponible = items.some(function(it){ return Number(it.disponible||0) > 0; });
+        if (res.ok && hasDisponible) return items;
+
+        // 2) Fallback local: sumar dispo + asig por proveedorId/Nombre y mesKey
+        return Promise.all([
+          API.getDisponibilidades(params),
+          API.getAsignaciones(params)
+        ]).then(function(arr){
+          var dispo = arr[0]||[], asign = arr[1]||[];
+          var map = new Map(); // key: mesKey|provKey -> {mesKey, proveedorId, proveedorNombre, disponible, asignado}
+
+          dispo.forEach(function(d){
+            var mk = d.mesKey || (d.anio && d.mes ? (d.anio+"-"+pad2(d.mes)) : null);
+            if (!mk) return;
+            var key = provStableKey(d.proveedorId, d.proveedorNombre);
+            var k = mk+"|"+key;
+            if(!map.has(k)) map.set(k, { mesKey: mk, proveedorId: d.proveedorId||null, proveedorNombre: d.proveedorNombre||"Sin proveedor", disponible:0, asignado:0 });
+            var row = map.get(k);
+            row.disponible += Number(d.tons||0);
+          });
+
+          asign.forEach(function(a){
+            var mk = a.mesKey || (a.anio && a.mes ? (a.anio+"-"+pad2(a.mes)) : null);
+            if (!mk) return;
+            var key = provStableKey(a.proveedorId, a.proveedorNombre);
+            var k = mk+"|"+key;
+            if(!map.has(k)) map.set(k, { mesKey: mk, proveedorId: a.proveedorId||null, proveedorNombre: a.proveedorNombre||"Sin proveedor", disponible:0, asignado:0 });
+            var row = map.get(k);
+            row.asignado += Number(a.tons||0);
+          });
+
+          return Array.from(map.values()).sort(function(a,b){
+            var t = String(a.mesKey).localeCompare(String(b.mesKey));
+            if (t!==0) return t;
+            return String(a.proveedorNombre||"").localeCompare(String(b.proveedorNombre||""));
+          });
+        });
+      }).catch(function(){ return []; });
+    },
+
+    // ------- Crear / Editar / Borrar asignación -------
     crearAsignacion: function(payload){
       var y = Number(payload.destAnio||payload.anio||0);
       var m = Number(payload.destMes ||payload.mes ||0);
@@ -249,6 +299,7 @@
       return ensureDispo.then(function(dispo){
         var proveedorNombre = payload.proveedorNombre || (dispo?dispo.proveedorNombre:"") || (dispo?dispo.contactoNombre:"") || "";
         var proveedorKey    = (dispo && dispo.proveedorKey) || slug(proveedorNombre);
+        var proveedorId     = payload.proveedorId || (dispo ? dispo.proveedorId : null);
 
         var body = {
           disponibilidadId: payload.disponibilidadId,
@@ -263,8 +314,11 @@
           destDia: d || null,
           destFecha: payload.destFecha || (y&&m&&(new Date(y,m-1,d||1)).toISOString()),
 
+          // proveedor (incluye ID nuevo)
+          proveedorId: proveedorId,
           proveedorNombre: proveedorNombre,
           proveedorKey: proveedorKey,
+
           contactoNombre: (dispo && dispo.contactoNombre) || "",
           empresaNombre:  (dispo && dispo.empresaNombre)  || "",
           comuna:         (dispo && dispo.comuna)         || "",
@@ -315,7 +369,7 @@
         "/mmpp/asignaciones/update"
       ];
       return tryRoutes("PATCH", paths, body).then(function(res){
-        if (!res.ok) return tryRoutes("PUT", paths, body);   // fallback PUT
+        if (!res.ok) return tryRoutes("PUT", paths, body);
         return res;
       }).then(function(res){
         if (!res.ok) return tryRoutes("POST",
