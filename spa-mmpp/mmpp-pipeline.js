@@ -535,7 +535,7 @@
 
     selP.innerHTML = '<option value="">Todos los contactos</option>' + opts.prov.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join('');
     selC.innerHTML = '<option value="">Todas las comunas</option>' + opts.com.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
-    selE.innerHTML = '<option value="">Todas las empresas</option>' + opts.emp.map(function(e){return '<option value="'+e+'">'+e+'</option>').join('') };
+    selE.innerHTML = '<option value="">Todas las empresas</option>' + opts.emp.map(function(e){return '<option value="'+e+'">'+e+'</option>'}).join('');
 
     monthsDiv.innerHTML = range12().map(function(m){
       return '<button type="button" class="pl-chip" data-m="'+m+'">'+MMESES_LARGO[m-1]+'</button>';
