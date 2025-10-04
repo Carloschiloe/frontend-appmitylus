@@ -11,7 +11,7 @@ try {
 /* ======================= Imports ======================= */
 import { cargarCentros, cargarContactosGuardados } from './data.js';
 import { setupBuscadorProveedores } from './proveedores.js';
-import { setupFormulario, prepararNuevo } from './form-contacto.js';
+import { setupFormulario, prepararNuevo, abrirDetalleContacto } from './form-contacto.js';
 import { initTablaContactos, renderTablaContactos } from './tabla.js';
 import { initAsociacionContactos } from './asociar-empresa.js';
 
@@ -19,7 +19,6 @@ import { initAsociacionContactos } from './asociar-empresa.js';
 import { initPersonasTab, renderTablaPersonas } from './personas.js';
 
 import { setupFormularioVisita, initVisitasTab, abrirModalVisita } from '../visitas/tab.js';
-import { abrirDetalleContacto } from './form-contacto.js';
 
 /* ======================= Estado ======================= */
 let booted = false;
@@ -35,7 +34,7 @@ function setDTDefaults() {
     scrollX: false,
     autoWidth: false,
     responsive: true,
-    deferRender: true
+    deferRender: true,
   });
   jq.fn.dataTable.ext.errMode = 'none';
 }
@@ -104,14 +103,34 @@ function initUIOnce() {
   const modalContactoEl = document.getElementById('modalContacto');
   if (modalContactoEl) {
     const inst = M.Modal.getInstance(modalContactoEl) || M.Modal.init(modalContactoEl, {
-      onCloseEnd: () => { document.getElementById('formContacto')?.reset(); cleanupOverlays(); }
+      onCloseEnd: () => {
+        // Seguridad adicional: dejar siempre el form en modo NUEVO al cerrar
+        try { document.getElementById('formContacto')?.reset(); } catch {}
+        try { prepararNuevo(); } catch {}
+        M.updateTextFields?.();
+        cleanupOverlays();
+      }
     });
 
+    // >>>>>>> FIX PRINCIPAL: abrir SIEMPRE en modo NUEVO <<<<<<<
     document.getElementById('btnOpenContactoModal')
-      ?.addEventListener('click', (e) => { e.preventDefault(); inst.open(); });
+      ?.addEventListener('click', (e) => {
+        e.preventDefault();
+        try { prepararNuevo(); } catch {}
+        try { document.getElementById('formContacto')?.reset(); } catch {}
+        M.updateTextFields?.();
+        inst.open();
+      });
 
+    // Mantengo también el botón de “Agregar persona” que reutiliza el mismo modal visual
     document.getElementById('btnOpenPersonaModal')
-      ?.addEventListener('click', (e) => { e.preventDefault(); try { prepararNuevo(); } catch{}; inst.open(); });
+      ?.addEventListener('click', (e) => {
+        e.preventDefault();
+        try { prepararNuevo(); } catch {}
+        try { document.getElementById('formContacto')?.reset(); } catch {}
+        M.updateTextFields?.();
+        inst.open();
+      });
 
     modalContactoEl.querySelectorAll('.modal-close').forEach(btn => {
       btn.addEventListener('click', (e) => { e.preventDefault(); inst.close(); });
@@ -234,7 +253,7 @@ function hookGlobalListeners() {
     if (personasBooted) adjustDT('#tablaPersonas');
   });
 
-  // Botón “Nuevo contacto” (si existe en tu HTML)
+  // Botón “Nuevo contacto” (si algún día lo agregas aparte del de la barra)
   document.getElementById('btnNuevoContacto')?.addEventListener('click', (e)=>{
     e.preventDefault();
     try { prepararNuevo(); } catch {}
@@ -251,10 +270,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ======================= Exponer helpers a window ======================= */
-// Para que botones externos (o llamados inline) puedan abrir los modales correctos
 window.abrirDetalleContacto = abrirDetalleContacto;
 window.abrirModalVisita = abrirModalVisita;
 
 // Por si quieres forzar la limpieza desde consola
 window.nukeStuckOverlays = nukeStuckOverlays;
-
