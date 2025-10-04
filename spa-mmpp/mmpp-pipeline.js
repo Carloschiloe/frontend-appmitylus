@@ -1,16 +1,15 @@
 /* /spa-mmpp/mmpp-pipeline.js
-   Pipeline MMPP — Contactado vs Asignado (corregido y agrupado por EMPRESA)
-
-   - Contactado: suma por mes de la disponibilidad (d.mes/d.anio)
-   - Asignado:   suma por mes de destino de la asignación (a.destMes/a.destAnio)
-   - Gráfico eje X por EMPRESA (sin duplicados). Tooltip con Contacto + Comuna.
-   - Alterna eje Empresa ↔ Mes
+   Pipeline MMPP — Contactado vs Asignado (mes de destino correcto)
+   - Contactado: por mes de la disponibilidad (d.mes/d.anio)
+   - Asignado:   por mes de destino (a.destMes/a.destAnio)
+   - Eje del gráfico: **Empresa** (con fallback “Sin empresa”)
+   - Tooltip: SOLO “Contacto — Comuna” (sin repetir textos ni cantidades)
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
   var MMESES_LARGO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
-  /* ---------- CSS (solo .pl-*) ---------- */
+  /* ---------- CSS ---------- */
   function injectCSS(){
     if (document.getElementById('mmpp-pipeline-css')) return;
     var css = ''
@@ -56,6 +55,7 @@
     (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v); } });
     out.sort(); return out;
   }
+  function cleanEmpresa(s){ s = (s||'').trim(); return s ? s : 'Sin empresa'; }
 
   /* ---------- UI skeleton ---------- */
   function buildUI(root){
@@ -101,25 +101,25 @@
     +'</div>';
   }
 
-  /* ---------- DERIVACIÓN (por mes destino y empresa) ---------- */
+  /* ---------- DERIVACIÓN DE DATOS (por mes destino) ---------- */
 
-  // Derivación mensual por (empresa, año, mes)
-  // Además, se arma un detalle para tooltip: empresa -> contacto|comuna -> {contactado, asignado}
+  // Derivado mensual por contacto+empresa
+  // salida base: [{prov, comuna, empresa, anio, mes, contactado, asignado, saldo, lotes}]
   function buildDerivMonthly(dispon, asig){
     var byId = {};
     (dispon||[]).forEach(function(d){
       if (d && (d.id!=null)) byId[String(d.id)] = d;
     });
 
-    var map = {}; // key: empresa|anio|mes
-    var detail = {}; // empresa -> contacto|comuna -> sums
-
-    function key(empresa, anio, mes){ return (empresa||'—') + '|' + (anio||'') + '|' + (mes||0); }
-    function ensure(empresa, anio, mes){
-      var k = key(empresa, anio, mes);
+    var map = {}; // key: prov|anio|mes
+    function key(prov, anio, mes){ return prov + '|' + (anio||'') + '|' + (mes||0); }
+    function ensure(prov, anio, mes, baseD){
+      var k = key(prov, anio, mes);
       if (!map[k]){
         map[k] = {
-          empresa: empresa || '—',
+          prov: prov || '—',
+          comuna: (baseD && (baseD.comuna||'')) || '',
+          empresa: cleanEmpresa(baseD && (baseD.empresaNombre||'')),
           anio: Number(anio)||null,
           mes: Number(mes)||0,
           contactado: 0,
@@ -129,47 +129,37 @@
       }
       return map[k];
     }
-    function detKey(empresa){ if(!detail[empresa||'—']) detail[empresa||'—']={}; return detail[empresa||'—']; }
-    function addDet(empresa, contacto, comuna, f, tons){
-      var dk = detKey(empresa);
-      var label = (contacto||'—') + (comuna?(' · '+comuna):'');
-      if(!dk[label]) dk[label] = {contactado:0, asignado:0};
-      dk[label][f] += (Number(tons)||0);
-    }
 
     // 1) Contactado por mes de disponibilidad
     (dispon||[]).forEach(function(d){
-      var empresa = d.empresaNombre || '—';
+      var prov = d.contactoNombre || d.proveedorNombre || '—';
       var anio = Number(d.anio)||null;
       var mes  = Number(d.mes)||0;
       var tons = Number(d.tons||0)||0;
-      var row = ensure(empresa, anio, mes);
+      var row = ensure(prov, anio, mes, d);
       row.contactado += tons;
       row._ids.add(String(d.id));
-      addDet(empresa, (d.contactoNombre||d.proveedorNombre||''), (d.comuna||''), 'contactado', tons);
     });
 
-    // 2) Asignado por mes de destino
+    // 2) Asignado por mes de destino (usando disponibilidadId)
     (asig||[]).forEach(function(a){
       var destY = Number(a.destAnio||a.anio||0)||0;
       var destM = Number(a.destMes ||a.mes ||0)||0;
       if (!destY || !destM) return;
 
       var dpo = byId[String(a.disponibilidadId||'')];
-      var empresa = (dpo && dpo.empresaNombre) || a.empresaNombre || '—';
-      var row = ensure(empresa, destY, destM);
-      var qty = Number(a.cantidad||a.tons||0)||0;
-      row.asignado += qty;
+      var prov = (a.proveedorNombre || (dpo && (dpo.proveedorNombre || dpo.contactoNombre))) || '—';
+      var baseD = dpo || {};
+      var row = ensure(prov, destY, destM, baseD);
+      row.asignado += Number(a.cantidad||a.tons||0)||0;
       if (dpo && dpo.id!=null) row._ids.add(String(dpo.id));
-      var contacto = (a.proveedorNombre || (dpo && (dpo.proveedorNombre || dpo.contactoNombre)) || '');
-      var comuna   = (dpo && dpo.comuna) || a.comuna || '';
-      addDet(empresa, contacto, comuna, 'asignado', qty);
     });
 
-    // salida
-    var out = Object.keys(map).map(function(k){
+    return Object.keys(map).map(function(k){
       var o = map[k];
       return {
+        prov: o.prov,
+        comuna: o.comuna,
         empresa: o.empresa,
         anio: o.anio,
         mes: o.mes,
@@ -179,95 +169,80 @@
         lotes: o._ids.size
       };
     });
-
-    return { rows: out, detail: detail };
   }
 
-  // meses con datos (suma contactado + asignado > 0)
-  function mesesConDatosDispon(derivRows, filters){
+  // meses con datos (contactado o asignado > 0)
+  function mesesConDatosDispon(deriv, filters){
     var sumByM = {}; for (var i=1;i<=12;i++) sumByM[i]=0;
-    (derivRows||[]).forEach(function(r){
+    (deriv||[]).forEach(function(r){
       if (filters.year && String(r.anio)!==String(filters.year)) return;
-      if (filters.empresa && r.empresa!==filters.empresa) return;
-      if (filters.months && filters.months.length && filters.months.indexOf(Number(r.mes))<0) return;
+      if (filters.proveedor && r.prov!==filters.proveedor) return;
+      if (filters.comuna && (r.comuna||"")!==filters.comuna) return;
+      if (filters.empresa && cleanEmpresa(r.empresa)!==cleanEmpresa(filters.empresa)) return;
       sumByM[r.mes] += (Number(r.contactado)||0) + (Number(r.asignado)||0);
     });
     var out=[]; for (var mi=1; mi<=12; mi++) if (sumByM[mi]>0) out.push(mi);
     return out;
   }
 
-  // Filtrado por selects (nota: el filtro de contacto/comuna se aplica al construir opciones de empresa y al tooltip)
-  function filterDeriv(derivRows, filters){
+  function filterDeriv(deriv, filters){
     var monthsSel = filters.months || [];
-    return (derivRows||[]).filter(function(r){
+    return (deriv||[]).filter(function(r){
       if (filters.year && String(r.anio)!==String(filters.year)) return false;
-      if (filters.empresa && r.empresa!==filters.empresa) return false;
+      if (filters.proveedor && r.prov!==filters.proveedor) return false;
+      if (filters.comuna && (r.comuna||"")!==filters.comuna) return false;
+      if (filters.empresa && cleanEmpresa(r.empresa)!==cleanEmpresa(filters.empresa)) return false;
       if (monthsSel.length && monthsSel.indexOf(Number(r.mes))<0) return false;
       return true;
     });
   }
 
+  /* --------- Agrupación por EMPRESA para el gráfico/tooltip --------- */
   function groupByEmpresa(rows){
-    var map={}, lotes={};
+    var map = {}; // empresa -> {empresa, contactado, asignado, contactos:Set, comunasPorContacto:{}}
     rows.forEach(function(r){
-      var k = r.empresa||'—';
-      if (!map[k]){ map[k] = {empresa:k, contactado:0, asignado:0, _ids:new Set()}; }
-      map[k].contactado += r.contactado||0;
-      map[k].asignado   += r.asignado||0;
-      map[k]._ids.add(String(r.anio)+'-'+String(r.mes));
+      var emp = cleanEmpresa(r.empresa);
+      if (!map[emp]) map[emp] = {
+        empresa: emp, contactado:0, asignado:0,
+        _contacts: {} // prov -> comuna (primera vista)
+      };
+      map[emp].contactado += Number(r.contactado)||0;
+      map[emp].asignado   += Number(r.asignado)||0;
+      if (r.prov) {
+        var key = String(r.prov);
+        if (!map[emp]._contacts[key]) map[emp]._contacts[key] = (r.comuna||'');
+      }
     });
-    var arr = Object.keys(map).map(function(k){
+    // salida ordenada por contactado desc
+    return Object.keys(map).map(function(k){
       var o = map[k];
       return {
         empresa: o.empresa,
         contactado: o.contactado,
         asignado: o.asignado,
         saldo: Math.max(0, o.contactado - o.asignado),
-        lotes: o._ids.size
+        contactos: Object.keys(o._contacts).map(function(p){ return {prov:p, comuna:o._contacts[p]}; })
       };
-    });
-    arr.sort(function(a,b){ return (b.contactado||0)-(a.contactado||0); });
-    return arr;
-  }
-
-  function groupByMes(rows){
-    var map={}; for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,_ids:new Set()};
-    rows.forEach(function(r){
-      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,_ids:new Set()};
-      map[k].contactado += r.contactado||0;
-      map[k].asignado   += r.asignado||0;
-      map[k]._ids.add(r.empresa+'|'+r.anio+'|'+r.mes);
-    });
-    var arr = range12().map(function(m){
-      var o = map[m];
-      return {
-        mes: m,
-        contactado: o.contactado,
-        asignado: o.asignado,
-        saldo: Math.max(0, o.contactado - o.asignado),
-        lotes: o._ids.size
-      };
-    });
-    return arr;
+    }).sort(function(a,b){ return (b.contactado||0)-(a.contactado||0); });
   }
 
   /* ---------- KPIs ---------- */
   function renderKPIs(rows){
-    var contact=0, asign=0, empSet=new Set();
-    rows.forEach(function(r){ contact+=r.contactado; asign+=r.asignado; empSet.add(r.empresa); });
+    var contact=0, asign=0, provSet=new Set();
+    rows.forEach(function(r){ contact+=r.contactado; asign+=r.asignado; provSet.add(r.prov); });
     var saldo = Math.max(0, contact - asign);
     var html = ''
       +kpi('Contactado', numeroCL(contact)+' tons')
       +kpi('Asignado', numeroCL(asign)+' tons')
       +kpi('% Asignación', (contact>0?Math.round(asign*100/contact)+'%':'—'))
       +kpi('Saldo', numeroCL(saldo)+' tons')
-      +kpi('# Proveedores', numeroCL(empSet.size));
+      +kpi('# Proveedores', numeroCL(provSet.size));
     document.getElementById('plKpis').innerHTML = html;
 
     function kpi(lab,val){ return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val">'+val+'</div></div>'; }
   }
 
-  /* ---------- Chart ---------- */
+  /* ---------- Chart (EJE: EMPRESA) ---------- */
   var chartRef = null;
   var stackTotalPlugin = {
     id: 'stackTotals',
@@ -288,7 +263,7 @@
     }
   };
 
-  function renderChart(rows, axisMode, detailMap){
+  function renderChart(rows){
     var canvas = document.getElementById('plChart');
     if (!canvas) return;
 
@@ -300,30 +275,20 @@
     }
     document.getElementById('plChartNote').textContent = '';
 
-    var labels=[], dataAsign=[], dataNoAsig=[];
-    var tooltipByLabel = {};
+    var gEmp = groupByEmpresa(rows);
+    var labels = gEmp.map(function(x){ return x.empresa; });
+    var dataAsign = gEmp.map(function(x){ return x.asignado; });
+    var dataNoAsig= gEmp.map(function(x){ return Math.max(0, x.contactado-x.asignado); });
 
-    if (axisMode==='empresa'){
-      var g = groupByEmpresa(rows);
-      labels = g.map(function(x){return x.empresa;});
-      dataAsign = g.map(function(x){return x.asignado;});
-      dataNoAsig= g.map(function(x){return Math.max(0, x.contactado-x.asignado);});
-
-      // armar detalle tooltip por empresa
-      labels.forEach(function(emp){
-        var det = detailMap[emp] || {};
-        // ordena por asignado desc
-        var items = Object.keys(det).map(function(k){
-          return {label:k, asig:Number(det[k].asignado||0), cont:Number(det[k].contactado||0)};
-        }).sort(function(a,b){ return b.asig - a.asig; });
-        tooltipByLabel[emp] = items;
-      });
-    } else {
-      var gm = groupByMes(rows);
-      labels = gm.map(function(x){return MMESES[x.mes-1];});
-      dataAsign = gm.map(function(x){return x.asignado;});
-      dataNoAsig= gm.map(function(x){return Math.max(0, x.contactado-x.asignado);});
-    }
+    // Preparamos líneas de tooltip SOLO “Contacto — Comuna”
+    var ttLines = gEmp.map(function(item){
+      var seen = {};
+      var lines = item.contactos
+        .filter(function(c){ if(seen[c.prov]) return false; seen[c.prov]=1; return true; })
+        .map(function(c){ return (c.prov||'—') + (c.comuna?(' — '+c.comuna):''); });
+      if (!lines.length) lines = ['(sin contactos)'];
+      return lines;
+    });
 
     if (chartRef && chartRef.destroy) chartRef.destroy();
 
@@ -347,28 +312,14 @@
           stackTotals: { enabled:true, fontSize:12 },
           tooltip: {
             callbacks: {
-              title: function(ctx){
-                return ctx && ctx[0] ? String(ctx[0].label||'') : '';
-              },
-              label: function(ctx){
-                // mostramos las series apiladas normalmente
-                var lbl = ctx.dataset.label || '';
-                var val = ctx.parsed.y || 0;
-                return lbl+': '+numeroCL(val)+' t';
-              },
+              // Título = Empresa (etiqueta del eje)
+              title: function(ctx){ return ctx[0] && ctx[0].label ? ctx[0].label : ''; },
+              // No mostramos el “label” por dataset (nada de “Asignado/No asignado”)
+              label: function(){ return ''; },
+              // Después del cuerpo: nuestras líneas de contactos
               afterBody: function(ctx){
-                // detalle solo cuando eje = empresa
-                if (axisMode !== 'empresa') return;
-                var lab = ctx && ctx[0] ? String(ctx[0].label||'') : '';
-                var items = tooltipByLabel[lab] || [];
-                if (!items.length) return;
-                var lines = ['','Detalle (Contacto · Comuna):'];
-                for (var i=0;i<Math.min(items.length,10);i++){
-                  var it = items[i];
-                  var t = (it.asig>0 ? it.asig : it.cont);
-                  lines.push('• '+it.label+': '+numeroCL(t)+' t');
-                }
-                return lines;
+                var i = ctx[0].dataIndex || 0;
+                return ttLines[i];
               }
             }
           }
@@ -382,89 +333,69 @@
     });
   }
 
-  /* ---------- Tabla ---------- */
-  function renderTable(rows, axisMode, year){
-    var html='';
-    if (axisMode==='empresa'){
-      var g = groupByEmpresa(rows);
-      var thead='<thead><tr>'
-        +'<th>EMPRESA</th>'
-        +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
-        +'<th class="pl-right">ASIGNADO</th>'
-        +'<th class="pl-right">% ASIG</th>'
-        +'<th class="pl-right">SALDO</th>'
-        +'<th class="pl-right"># LOTES</th>'
-        +'</tr></thead>';
-      var body='<tbody>';
-      var totC=0, totA=0, totL=0;
-      for (var i=0;i<g.length;i++){
-        var r=g[i]; if (r.contactado<=0 && r.asignado<=0) continue;
-        totC+=r.contactado; totA+=r.asignado; totL+=r.lotes;
-        body+='<tr>'
-           +'<td><strong>'+r.empresa+'</strong></td>'
-           +'<td class="pl-right">'+numeroCL(r.contactado)+'</td>'
-           +'<td class="pl-right">'+numeroCL(r.asignado)+'</td>'
-           +'<td class="pl-right">'+pct(r.asignado,r.contactado)+'</td>'
-           +'<td class="pl-right">'+numeroCL(Math.max(0,r.saldo))+'</td>'
-           +'<td class="pl-right">'+numeroCL(r.lotes)+'</td>'
-           +'</tr>';
-      }
-      if (body==='<tbody>') body+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
-      body+='</tbody>';
-      var foot='<tfoot><tr>'
-        +'<td><strong>Totales</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(totC)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(totA)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+(totC>0?Math.round(totA*100/totC)+'%':'—')+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,totC-totA))+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(totL)+'</strong></td>'
-        +'</tr></tfoot>';
-      html = '<table class="pl-table">'+thead+body+foot+'</table>';
-    } else {
-      var gm = groupByMes(rows);
-      var thead2='<thead><tr>'
-        +'<th>MES</th>'
-        +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
-        +'<th class="pl-right">ASIGNADO</th>'
-        +'<th class="pl-right">% ASIG</th>'
-        +'<th class="pl-right">SALDO</th>'
-        +'<th class="pl-right"># LOTES</th>'
-        +'</tr></thead>';
-      var body2='<tbody>', tc=0,ta=0,tl=0;
-      for (var j=0;j<gm.length;j++){
-        var r2=gm[j]; if (r2.contactado<=0 && r2.asignado<=0) continue;
-        tc+=r2.contactado; ta+=r2.asignado; tl+=r2.lotes;
-        body2+='<tr>'
-          +'<td>'+MMESES[r2.mes-1]+'</td>'
-          +'<td class="pl-right">'+numeroCL(r2.contactado)+'</td>'
-          +'<td class="pl-right">'+numeroCL(r2.asignado)+'</td>'
-          +'<td class="pl-right">'+pct(r2.asignado,r2.contactado)+'</td>'
-          +'<td class="pl-right">'+numeroCL(Math.max(0,r2.saldo))+'</td>'
-          +'<td class="pl-right">'+numeroCL(r2.lotes)+'</td>'
-          +'</tr>';
-      }
-      if (body2==='<tbody>') body2+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
-      body2+='</tbody>';
-      var foot2='<tfoot><tr>'
-        +'<td><strong>Totales</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(tc)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(ta)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+(tc>0?Math.round(ta*100/tc)+'%':'—')+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,tc-ta))+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(tl)+'</strong></td>'
-        +'</tr></tfoot>';
-      html = '<table class="pl-table">'+thead2+body2+foot2+'</table>';
+  /* ---------- Tabla (sigue igual; por MES) ---------- */
+  function groupByMes(rows){
+    var map={}; for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,_ids:new Set()};
+    rows.forEach(function(r){
+      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,_ids:new Set()};
+      map[k].contactado += r.contactado;
+      map[k].asignado   += r.asignado;
+      map[k]._ids.add(r.prov+'|'+r.anio+'|'+r.mes);
+    });
+    return range12().map(function(m){
+      var o = map[m];
+      return {
+        mes: m,
+        contactado: o.contactado,
+        asignado: o.asignado,
+        saldo: Math.max(0, o.contactado - o.asignado),
+        lotes: o._ids.size
+      };
+    });
+  }
+
+  function renderTable(rows, _axisMode, year){
+    // Para la tabla dejamos la vista por MES (más compacta)
+    var gm = groupByMes(rows);
+    var thead='<thead><tr>'
+      +'<th>MES</th>'
+      +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
+      +'<th class="pl-right">ASIGNADO</th>'
+      +'<th class="pl-right">% ASIG</th>'
+      +'<th class="pl-right">SALDO</th>'
+      +'<th class="pl-right"># LOTES</th>'
+      +'</tr></thead>';
+    var body='<tbody>', tc=0,ta=0,tl=0;
+    for (var j=0;j<gm.length;j++){
+      var r=gm[j]; if (r.contactado<=0 && r.asignado<=0) continue;
+      tc+=r.contactado; ta+=r.asignado; tl+=r.lotes;
+      body+='<tr>'
+        +'<td>'+MMESES[r.mes-1]+'</td>'
+        +'<td class="pl-right">'+numeroCL(r.contactado)+'</td>'
+        +'<td class="pl-right">'+numeroCL(r.asignado)+'</td>'
+        +'<td class="pl-right">'+pct(r.asignado,r.contactado)+'</td>'
+        +'<td class="pl-right">'+numeroCL(Math.max(0,r.saldo))+'</td>'
+        +'<td class="pl-right">'+numeroCL(r.lotes)+'</td>'
+        +'</tr>';
     }
-    document.getElementById('plTableWrap').innerHTML = html;
+    if (body==='<tbody>') body+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
+    body+='</tbody>';
+    var foot='<tfoot><tr>'
+      +'<td><strong>Totales</strong></td>'
+      +'<td class="pl-right"><strong>'+numeroCL(tc)+'</strong></td>'
+      +'<td class="pl-right"><strong>'+numeroCL(ta)+'</strong></td>'
+      +'<td class="pl-right"><strong>'+(tc>0?Math.round(ta*100/tc)+'%':'—')+'</strong></td>'
+      +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,tc-ta))+'</strong></td>'
+      +'<td class="pl-right"><strong>'+numeroCL(tl)+'</strong></td>'
+      +'</tr></tfoot>';
+    document.getElementById('plTableWrap').innerHTML = '<table class="pl-table">'+thead+body+foot+'</table>';
   }
 
   /* ---------- estado / montaje ---------- */
   var STATE = {
-    derivRows: [],
-    detailByEmpresa: {},
+    deriv: [],
     filters: { year:null, proveedor:'', comuna:'', empresa:'', months:[] },
-    hideEmpty: true,
-    axisMode: 'empresa'
+    hideEmpty: true
   };
 
   function getSelectedMonths(){
@@ -484,15 +415,14 @@
   }
 
   function filterRowsForRefresh(){
-    var rows = filterDeriv(STATE.derivRows, STATE.filters);
-    return rows;
+    return filterDeriv(STATE.deriv, STATE.filters);
   }
 
   function renderAll(){
     var rows = filterRowsForRefresh();
     renderKPIs(rows);
-    renderChart(rows, STATE.axisMode, STATE.detailByEmpresa);
-    renderTable(rows, STATE.axisMode, STATE.filters.year || '');
+    renderChart(rows);          // eje fijo = Empresa
+    renderTable(rows, null, STATE.filters.year || '');
   }
 
   function attachEvents(){
@@ -532,7 +462,7 @@
     var btnDatos = document.getElementById('plBtnMesesConDatos');
     if (btnDatos){
       btnDatos.addEventListener('click', function(){
-        var m = mesesConDatosDispon(STATE.derivRows, STATE.filters);
+        var m = mesesConDatosDispon(STATE.deriv, STATE.filters);
         setSelectedMonths(m); STATE.filters.months = m; renderAll();
       });
     }
@@ -553,40 +483,37 @@
 
     var axisBtn = document.getElementById('plAxisBtn');
     if (axisBtn){
+      // botón queda solo informativo; eje fijo = Empresa
       axisBtn.addEventListener('click', function(){
-        STATE.axisMode = (STATE.axisMode==='empresa' ? 'mes' : 'empresa');
-        axisBtn.textContent = 'Eje: ' + (STATE.axisMode==='empresa' ? 'Empresa' : 'Mes');
-        renderAll();
+        alert('El eje está fijo en Empresa. Usa la tabla para revisar por mes.');
       });
     }
   }
 
-  function optionsFromDeriv(derivRows){
-    var prov = []; // seguimos ofreciendo filtro por contacto si te sirve para otros usos
-    var com  = [];
-    var emp  = uniqSorted((derivRows||[]).map(function(r){return r.empresa;}).filter(Boolean));
-    // año desde rows
-    var years= uniqSorted((derivRows||[]).map(function(r){return r.anio;}).filter(Boolean));
-    return {prov:uniqSorted(prov), com:uniqSorted(com), emp:emp, years:years};
+  function optionsFromDeriv(deriv){
+    var prov = uniqSorted((deriv||[]).map(function(r){return r.prov;}).filter(Boolean));
+    var com  = uniqSorted((deriv||[]).map(function(r){return r.comuna;}).filter(Boolean));
+    var emp  = uniqSorted((deriv||[]).map(function(r){return cleanEmpresa(r.empresa);}).filter(Boolean));
+    var years= uniqSorted((deriv||[]).map(function(r){return r.anio;}).filter(Boolean));
+    return {prov:prov, com:com, emp:emp, years:years};
   }
 
-  function fillFilters(derivRows){
+  function fillFilters(deriv){
     var selY = document.getElementById('plYear');
     var selP = document.getElementById('plProv');
     var selC = document.getElementById('plComuna');
     var selE = document.getElementById('plEmpresa');
     var monthsDiv = document.getElementById('plMonths');
 
-    var opts = optionsFromDeriv(derivRows);
+    var opts = optionsFromDeriv(deriv);
     var yNow = (new Date()).getFullYear();
     var years = opts.years.length ? opts.years : [yNow];
     var yDefault = years.indexOf(yNow)>=0 ? yNow : years[years.length-1];
 
     selY.innerHTML = years.map(function(y){return '<option value="'+y+'" '+(String(y)===String(yDefault)?'selected':'')+'>'+y+'</option>';}).join('');
 
-    // Dejo “Todos los contactos” vacío para no romper flujos existentes
-    selP.innerHTML = '<option value="">Todos los contactos</option>';
-    selC.innerHTML = '<option value="">Todas las comunas</option>';
+    selP.innerHTML = '<option value="">Todos los contactos</option>' + opts.prov.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join('');
+    selC.innerHTML = '<option value="">Todas las comunas</option>' + opts.com.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
     selE.innerHTML = '<option value="">Todas las empresas</option>' + opts.emp.map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join('');
 
     monthsDiv.innerHTML = range12().map(function(m){
@@ -601,11 +528,8 @@
     buildUI(root);
 
     function go(dispon, asig){
-      var d = buildDerivMonthly(dispon, asig);
-      STATE.derivRows = d.rows;
-      STATE.detailByEmpresa = d.detail;
-
-      fillFilters(STATE.derivRows);
+      STATE.deriv = buildDerivMonthly(dispon, asig);
+      fillFilters(STATE.deriv);
 
       var ySel = document.getElementById('plYear');
       STATE.filters.year = ySel ? ySel.value : '';
@@ -624,7 +548,6 @@
       return go(opts.dispon, opts.asig);
     }
 
-    // Carga desde API
     if (global.MMppApi && typeof global.MMppApi.getDisponibilidades==='function'){
       Promise.all([
         global.MMppApi.getDisponibilidades(),
