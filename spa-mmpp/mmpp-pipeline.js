@@ -101,8 +101,7 @@
 
   /* ---------- DERIVACIÓN DE DATOS CORREGIDA ---------- */
 
-  // Devuelve array de registros por (proveedor, anio, mes):
-  // { prov, comuna, empresa, anio, mes, contactado, asignado, ids: Set() }
+  // Devuelve array de registros por (proveedor, anio, mes)
   function buildDerivMonthly(dispon, asig){
     var byId = {};
     (dispon||[]).forEach(function(d){
@@ -143,7 +142,7 @@
     (asig||[]).forEach(function(a){
       var destY = Number(a.destAnio||a.anio||0)||0;
       var destM = Number(a.destMes ||a.mes ||0)||0;
-      if (!destY || !destM) return; // sin mes/año destino, no suma
+      if (!destY || !destM) return;
 
       var dpo = byId[String(a.disponibilidadId||'')];
       var prov = (a.proveedorNombre || (dpo && (dpo.proveedorNombre || dpo.contactoNombre))) || '—';
@@ -153,7 +152,7 @@
       if (dpo && dpo.id!=null) row._ids.add(String(dpo.id));
     });
 
-    // salida como array (lotes = #ids únicos en ese mes)
+    // salida como array
     var out = Object.keys(map).map(function(k){
       var o = map[k];
       return {
@@ -204,7 +203,7 @@
       if (!map[r.prov]){ map[r.prov] = {prov:r.prov, contactado:0, asignado:0, lotes:0, _ids:new Set()}; }
       map[r.prov].contactado += r.contactado;
       map[r.prov].asignado   += r.asignado;
-      map[r.prov]._ids.add(r.prov+'|'+r.anio+'|'+r.mes); // aproximación para contar filas únicas
+      map[r.prov]._ids.add(r.prov+'|'+r.anio+'|'+r.mes);
     });
     var arr = Object.keys(map).map(function(k){
       var o = map[k];
@@ -238,6 +237,42 @@
         lotes: o._ids.size
       };
     });
+    return arr;
+  }
+
+  // NUEVO: agrupar por EMPRESA y coleccionar “Contacto — Comuna” para tooltip
+  function groupByEmpresa(rows){
+    var map = {}, lotes = {};
+    rows.forEach(function(r){
+      var emp = r.empresa || '—';
+      if (!map[emp]){
+        map[emp] = { empresa: emp, contactado:0, asignado:0, contacts:[], _seen:new Set(), _ids:new Set() };
+        lotes[emp] = new Set();
+      }
+      map[emp].contactado += Number(r.contactado)||0;
+      map[emp].asignado   += Number(r.asignado)||0;
+
+      var line = (r.prov || '—') + ' — ' + ((r.comuna||'—'));
+      if (!map[emp]._seen.has(line)){
+        map[emp]._seen.add(line);
+        map[emp].contacts.push(line);
+      }
+      lotes[emp].add(r.prov+'|'+r.anio+'|'+r.mes);
+      map[emp]._ids.add(r.prov+'|'+r.anio+'|'+r.mes);
+    });
+
+    var arr = Object.keys(map).map(function(k){
+      var o = map[k];
+      return {
+        empresa: o.empresa,
+        contactado: o.contactado,
+        asignado: o.asignado,
+        saldo: Math.max(0, o.contactado - o.asignado),
+        lotes: (lotes[k]||new Set()).size,
+        contacts: o.contacts
+      };
+    });
+    arr.sort(function(a,b){ return (b.contactado||0)-(a.contactado||0); });
     return arr;
   }
 
@@ -291,16 +326,23 @@
     document.getElementById('plChartNote').textContent = '';
 
     var labels=[], dataAsign=[], dataNoAsig=[];
+    var empGroups = null; // para tooltip cuando eje=empresa
+
     if (axisMode==='proveedor'){
       var g = groupByProveedor(rows);
       labels = g.map(function(x){return x.prov;});
       dataAsign = g.map(function(x){return x.asignado;});
       dataNoAsig= g.map(function(x){return Math.max(0, x.contactado-x.asignado);});
-    } else {
+    } else if (axisMode==='mes'){
       var gm = groupByMes(rows);
       labels = gm.map(function(x){return MMESES[x.mes-1];});
       dataAsign = gm.map(function(x){return x.asignado;});
       dataNoAsig= gm.map(function(x){return Math.max(0, x.contactado-x.asignado);});
+    } else { // empresa
+      empGroups = groupByEmpresa(rows);
+      labels = empGroups.map(function(x){return x.empresa;});
+      dataAsign = empGroups.map(function(x){return x.asignado;});
+      dataNoAsig= empGroups.map(function(x){return Math.max(0, x.contactado-x.asignado);});
     }
 
     if (chartRef && chartRef.destroy) chartRef.destroy();
@@ -322,7 +364,20 @@
         layout: { padding: { top: 12 } },
         plugins: {
           legend: { position: 'right' },
-          stackTotals: { enabled:true, fontSize:12 }
+          stackTotals: { enabled:true, fontSize:12 },
+          tooltip: {
+            callbacks: {
+              title: function(items){ return items && items.length ? items[0].label : ''; },
+              afterBody: function(items){
+                if (!items || !items.length) return;
+                if (!empGroups) return; // solo en eje empresa
+                var idx = items[0].dataIndex;
+                var lines = empGroups[idx] && empGroups[idx].contacts ? empGroups[idx].contacts.slice(0,6) : [];
+                if (!lines.length) return;
+                return [' '].concat(lines); // separador + contactos
+              }
+            }
+          }
         },
         scales: {
           x: { stacked: true, ticks: { autoSkip:false, maxRotation:45, minRotation:45 } },
@@ -371,7 +426,7 @@
         +'<td class="pl-right"><strong>'+numeroCL(totL)+'</strong></td>'
         +'</tr></tfoot>';
       html = '<table class="pl-table">'+thead+body+foot+'</table>';
-    } else {
+    } else if (axisMode==='mes') {
       var gm = groupByMes(rows);
       var thead2='<thead><tr>'
         +'<th>MES</th>'
@@ -405,6 +460,40 @@
         +'<td class="pl-right"><strong>'+numeroCL(tl)+'</strong></td>'
         +'</tr></tfoot>';
       html = '<table class="pl-table">'+thead2+body2+foot2+'</table>';
+    } else { // eje empresa
+      var ge = groupByEmpresa(rows);
+      var thead3='<thead><tr>'
+        +'<th>EMPRESA</th>'
+        +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
+        +'<th class="pl-right">ASIGNADO</th>'
+        +'<th class="pl-right">% ASIG</th>'
+        +'<th class="pl-right">SALDO</th>'
+        +'<th class="pl-right"># LOTES</th>'
+        +'</tr></thead>';
+      var body3='<tbody>', tc3=0,ta3=0,tl3=0;
+      for (var k=0;k<ge.length;k++){
+        var r3=ge[k]; if (r3.contactado<=0 && r3.asignado<=0) continue;
+        tc3+=r3.contactado; ta3+=r3.asignado; tl3+=r3.lotes;
+        body3+='<tr>'
+          +'<td><strong>'+r3.empresa+'</strong></td>'
+          +'<td class="pl-right">'+numeroCL(r3.contactado)+'</td>'
+          +'<td class="pl-right">'+numeroCL(r3.asignado)+'</td>'
+          +'<td class="pl-right">'+pct(r3.asignado,r3.contactado)+'</td>'
+          +'<td class="pl-right">'+numeroCL(Math.max(0,r3.saldo))+'</td>'
+          +'<td class="pl-right">'+numeroCL(r3.lotes)+'</td>'
+        +'</tr>';
+      }
+      if (body3==='<tbody>') body3+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
+      body3+='</tbody>';
+      var foot3='<tfoot><tr>'
+        +'<td><strong>Totales</strong></td>'
+        +'<td class="pl-right"><strong>'+numeroCL(tc3)+'</strong></td>'
+        +'<td class="pl-right"><strong>'+numeroCL(ta3)+'</strong></td>'
+        +'<td class="pl-right"><strong>'+(tc3>0?Math.round(ta3*100/tc3)+'%':'—')+'</strong></td>'
+        +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,tc3-ta3))+'</strong></td>'
+        +'<td class="pl-right"><strong>'+numeroCL(tl3)+'</strong></td>'
+        +'</tr></tfoot>';
+      html = '<table class="pl-table">'+thead3+body3+foot3+'</table>';
     }
     document.getElementById('plTableWrap').innerHTML = html;
   }
@@ -414,7 +503,7 @@
     deriv: [],
     filters: { year:null, proveedor:'', comuna:'', empresa:'', months:[] },
     hideEmpty: true,
-    axisMode: 'proveedor'
+    axisMode: 'proveedor' // 'proveedor' | 'mes' | 'empresa'
   };
 
   function getSelectedMonths(){
@@ -503,9 +592,11 @@
 
     var axisBtn = document.getElementById('plAxisBtn');
     if (axisBtn){
+      function axisLabel(mode){ return mode==='proveedor' ? 'Proveedor' : (mode==='mes' ? 'Mes' : 'Empresa'); }
+      axisBtn.textContent = 'Eje: ' + axisLabel(STATE.axisMode);
       axisBtn.addEventListener('click', function(){
-        STATE.axisMode = (STATE.axisMode==='proveedor' ? 'mes' : 'proveedor');
-        axisBtn.textContent = 'Eje: ' + (STATE.axisMode==='proveedor' ? 'Proveedor' : 'Mes');
+        STATE.axisMode = (STATE.axisMode==='proveedor' ? 'mes' : (STATE.axisMode==='mes' ? 'empresa' : 'proveedor'));
+        axisBtn.textContent = 'Eje: ' + axisLabel(STATE.axisMode);
         renderAll();
       });
     }
