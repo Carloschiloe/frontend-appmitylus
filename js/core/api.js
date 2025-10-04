@@ -94,7 +94,38 @@ export async function apiCreateContacto(data) { return request('/contactos', { m
 export async function apiUpdateContacto(id, data) {
   return request(`/contactos/${id}`, { method: 'PATCH', json: data, retry: true });
 }
-export async function apiDeleteContacto(id) { return request(`/contactos/${id}`, { method: 'DELETE' }); }
+
+/**
+ * DELETE robusto:
+ * - Evita preflight (no Content-Type)
+ * - Si el backend devuelve 404 con mensaje "Contacto no encontrado",
+ *   lo tratamos como éxito silencioso para mantener idempotencia.
+ */
+export async function apiDeleteContacto(id) {
+  const url = `${API_URL}/contactos/${encodeURIComponent(id)}`;
+
+  const resp = await fetch(url, {
+    method: 'DELETE',
+    // 'Accept' es un header simple → no dispara preflight
+    headers: { 'Accept': 'application/json' }
+  });
+
+  const ct = (resp.headers.get('content-type') || '').toLowerCase();
+  const body = ct.includes('application/json') ? await resp.json() : await safeReadText(resp);
+
+  if (resp.ok) return body;
+
+  // Tolerar 404 "Contacto no encontrado" como éxito
+  const msg = (typeof body === 'string' ? body : (body && (body.error || body.message))) || '';
+  if (resp.status === 404 && /contacto no encontrado/i.test(msg)) {
+    return { ok: true, skipped: true };
+  }
+
+  // Propagar error real
+  const text = typeof body === 'string' ? body : JSON.stringify(body);
+  throw new Error(`HTTP ${resp.status} - ${text}`);
+}
+
 // PATCH seguro sin fallback (para NO pisar otros campos)
 export async function apiPatchContactoSafe(id, data) {
   return request(`/contactos/${id}`, { method: 'PATCH', json: data, retry: false });
