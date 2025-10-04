@@ -1,15 +1,14 @@
 /* /spa-mmpp/mmpp-pipeline.js
-   Pipeline MMPP — Contactado vs Asignado
-   - KPIs: Contactado / Asignado / % / Saldo / #Proveedores
-   - Filtros: Año, Proveedor, Comuna, Empresa + Meses en una fila
-   - Gráfico apilado (Asignado + No asignado) con eje Proveedor ↔ Mes
-   - Tabla con Contactado / Asignado / % / Saldo / #Lotes
+   Pipeline MMPP — Contactado vs Asignado (corregido por mes de destino)
+   - Contactado: suma por mes de la disponibilidad (d.mes/d.anio)
+   - Asignado:   suma por mes de destino de la asignación (a.destMes/a.destAnio)
+   - KPIs/Gráfico/Tabla respetan filtros de año/meses/proveedor/comuna/empresa
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
   var MMESES_LARGO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
-  /* ---------- CSS (solo .pl-*, no pisa layout global) ---------- */
+  /* ---------- CSS ---------- */
   function injectCSS(){
     if (document.getElementById('mmpp-pipeline-css')) return;
     var css = ''
@@ -100,7 +99,80 @@
     +'</div>';
   }
 
-  /* ---------- derivación de datos ---------- */
+  /* ---------- DERIVACIÓN DE DATOS CORREGIDA ---------- */
+
+  // Devuelve array de registros por (proveedor, anio, mes):
+  // { prov, comuna, empresa, anio, mes, contactado, asignado, ids: Set() }
+  function buildDerivMonthly(dispon, asig){
+    var byId = {};
+    (dispon||[]).forEach(function(d){
+      if (d && (d.id!=null)) byId[String(d.id)] = d;
+    });
+
+    var map = {}; // key: prov|anio|mes
+    function key(prov, anio, mes){ return prov + '|' + (anio||'') + '|' + (mes||0); }
+    function ensure(prov, anio, mes, baseD){
+      var k = key(prov, anio, mes);
+      if (!map[k]){
+        map[k] = {
+          prov: prov || '—',
+          comuna: (baseD && (baseD.comuna||'')) || '',
+          empresa: (baseD && (baseD.empresaNombre||'')) || '',
+          anio: Number(anio)||null,
+          mes: Number(mes)||0,
+          contactado: 0,
+          asignado: 0,
+          _ids: new Set()
+        };
+      }
+      return map[k];
+    }
+
+    // 1) Contactado por mes de disponibilidad
+    (dispon||[]).forEach(function(d){
+      var prov = d.contactoNombre || d.proveedorNombre || '—';
+      var anio = Number(d.anio)||null;
+      var mes  = Number(d.mes)||0;
+      var tons = Number(d.tons||0)||0;
+      var row = ensure(prov, anio, mes, d);
+      row.contactado += tons;
+      row._ids.add(String(d.id));
+    });
+
+    // 2) Asignado por mes de destino (usando proveedor via disponibilidadId)
+    (asig||[]).forEach(function(a){
+      var destY = Number(a.destAnio||a.anio||0)||0;
+      var destM = Number(a.destMes ||a.mes ||0)||0;
+      if (!destY || !destM) return; // sin mes/año destino, no suma
+
+      var dpo = byId[String(a.disponibilidadId||'')];
+      var prov = (a.proveedorNombre || (dpo && (dpo.proveedorNombre || dpo.contactoNombre))) || '—';
+      var baseD = dpo || null;
+      var row = ensure(prov, destY, destM, baseD);
+      row.asignado += Number(a.cantidad||a.tons||0)||0;
+      if (dpo && dpo.id!=null) row._ids.add(String(dpo.id));
+    });
+
+    // salida como array (lotes = #ids únicos en ese mes)
+    var out = Object.keys(map).map(function(k){
+      var o = map[k];
+      return {
+        prov: o.prov,
+        comuna: o.comuna,
+        empresa: o.empresa,
+        anio: o.anio,
+        mes: o.mes,
+        contactado: o.contactado,
+        asignado: o.asignado,
+        saldo: Math.max(0, o.contactado - o.asignado),
+        lotes: o._ids.size
+      };
+    });
+
+    return out;
+  }
+
+  // meses con datos (contactado o asignado > 0)
   function mesesConDatosDispon(deriv, filters){
     var sumByM = {}; for (var i=1;i<=12;i++) sumByM[i]=0;
     (deriv||[]).forEach(function(r){
@@ -108,40 +180,9 @@
       if (filters.proveedor && r.prov!==filters.proveedor) return;
       if (filters.comuna && (r.comuna||"")!==filters.comuna) return;
       if (filters.empresa && (r.empresa||"")!==filters.empresa) return;
-      sumByM[r.mes] += r.contactado;
+      sumByM[r.mes] += (Number(r.contactado)||0) + (Number(r.asignado)||0);
     });
     var out=[]; for (var mi=1; mi<=12; mi++) if (sumByM[mi]>0) out.push(mi);
-    return out;
-  }
-
-  function buildDeriv(dispon, asig){
-    // suma asignado por disponibilidadId (normalizando id a string)
-    var byDisp = {};
-    (asig||[]).forEach(function(a){
-      var id = String(a.disponibilidadId || (a.disponibilidad && (a.disponibilidad.id || a.disponibilidad._id)) || '');
-      if (!id) return;
-      byDisp[id] = (byDisp[id]||0) + (Number(a.cantidad ?? a.tons ?? 0) || 0);
-    });
-
-    // deriva registros por disponibilidad (normaliza id y prioriza proveedorNombre)
-    var out = (dispon||[]).map(function(d){
-      var idNorm = String(d.id || d._id || (d._id && d._id.$oid) || '');
-      var prov = d.proveedorNombre || d.contactoNombre || '—';
-      var asign = byDisp[idNorm] || 0;
-      var cont  = Number(d.tonsDisponible ?? d.tons ?? 0) || 0;
-      var saldo = Math.max(0, cont - asign);
-      return {
-        id: idNorm,
-        prov: prov,
-        comuna: d.comuna || '',
-        empresa: d.empresaNombre || '',
-        anio: Number(d.anio)||null,
-        mes: Number(d.mes)||0,
-        contactado: cont,
-        asignado: asign,
-        saldo: saldo
-      };
-    });
     return out;
   }
 
@@ -160,35 +201,42 @@
   function groupByProveedor(rows){
     var map={}, lotes={};
     rows.forEach(function(r){
-      if (!map[r.prov]){ map[r.prov] = {prov:r.prov, contactado:0, asignado:0, lotes:0}; lotes[r.prov]=new Set(); }
+      if (!map[r.prov]){ map[r.prov] = {prov:r.prov, contactado:0, asignado:0, lotes:0, _ids:new Set()}; }
       map[r.prov].contactado += r.contactado;
       map[r.prov].asignado   += r.asignado;
-      lotes[r.prov].add(r.id);
+      map[r.prov]._ids.add(r.prov+'|'+r.anio+'|'+r.mes); // aproximación para contar filas únicas
     });
     var arr = Object.keys(map).map(function(k){
-      var o = map[k]; o.lotes = (lotes[k]||new Set()).size;
-      o.saldo = Math.max(0, o.contactado - o.asignado);
-      o.pct   = (o.contactado>0) ? (o.asignado/o.contactado) : 0;
-      return o;
+      var o = map[k];
+      return {
+        prov: o.prov,
+        contactado: o.contactado,
+        asignado: o.asignado,
+        saldo: Math.max(0, o.contactado - o.asignado),
+        lotes: o._ids.size
+      };
     });
     arr.sort(function(a,b){ return (b.contactado||0)-(a.contactado||0); });
     return arr;
   }
 
   function groupByMes(rows){
-    var map={}; for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,lotes:0};
-    var lotes = {}; for(var m2=1;m2<=12;m2++) lotes[m2]=new Set();
+    var map={}; for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,_ids:new Set()};
     rows.forEach(function(r){
-      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,lotes:0};
+      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,_ids:new Set()};
       map[k].contactado += r.contactado;
       map[k].asignado   += r.asignado;
-      lotes[k].add(r.id);
+      map[k]._ids.add(r.prov+'|'+r.anio+'|'+r.mes);
     });
     var arr = range12().map(function(m){
-      var o = map[m]; o.lotes = (lotes[m]||new Set()).size;
-      o.saldo = Math.max(0, o.contactado - o.asignado);
-      o.pct   = (o.contactado>0) ? (o.asignado/o.contactado) : 0;
-      return o;
+      var o = map[m];
+      return {
+        mes: m,
+        contactado: o.contactado,
+        asignado: o.asignado,
+        saldo: Math.max(0, o.contactado - o.asignado),
+        lotes: o._ids.size
+      };
     });
     return arr;
   }
@@ -301,7 +349,7 @@
       var body='<tbody>';
       var totC=0, totA=0, totL=0;
       for (var i=0;i<g.length;i++){
-        var r=g[i]; if (r.contactado<=0) continue;
+        var r=g[i]; if (r.contactado<=0 && r.asignado<=0) continue;
         totC+=r.contactado; totA+=r.asignado; totL+=r.lotes;
         body+='<tr>'
            +'<td><strong>'+r.prov+'</strong></td>'
@@ -335,7 +383,7 @@
         +'</tr></thead>';
       var body2='<tbody>', tc=0,ta=0,tl=0;
       for (var j=0;j<gm.length;j++){
-        var r2=gm[j]; if (r2.contactado<=0) continue;
+        var r2=gm[j]; if (r2.contactado<=0 && r2.asignado<=0) continue;
         tc+=r2.contactado; ta+=r2.asignado; tl+=r2.lotes;
         body2+='<tr>'
           +'<td>'+MMESES[r2.mes-1]+'</td>'
@@ -390,7 +438,7 @@
     return rows;
   }
 
-  function refresh(){
+  function renderAll(){
     var rows = filterRowsForRefresh();
     renderKPIs(rows);
     renderChart(rows, STATE.axisMode);
@@ -412,7 +460,7 @@
       STATE.filters.empresa = e;
       STATE.filters.months = ms;
       STATE.hideEmpty = hide;
-      refresh();
+      renderAll();
     }
 
     ['plYear','plProv','plComuna','plEmpresa','plHideEmptyMonths'].forEach(function(id){
@@ -435,13 +483,13 @@
     if (btnDatos){
       btnDatos.addEventListener('click', function(){
         var m = mesesConDatosDispon(STATE.deriv, STATE.filters);
-        setSelectedMonths(m); STATE.filters.months = m; refresh();
+        setSelectedMonths(m); STATE.filters.months = m; renderAll();
       });
     }
     var btnLimpiar = document.getElementById('plBtnLimpiarMeses');
     if (btnLimpiar){
       btnLimpiar.addEventListener('click', function(){
-        setSelectedMonths([]); STATE.filters.months=[]; refresh();
+        setSelectedMonths([]); STATE.filters.months=[]; renderAll();
       });
     }
     var btnLimpiarFiltros = document.getElementById('plBtnLimpiarFiltros');
@@ -449,7 +497,7 @@
       btnLimpiarFiltros.addEventListener('click', function(){
         var p=document.getElementById('plProv'), c=document.getElementById('plComuna'), e=document.getElementById('plEmpresa');
         if (p) p.value=''; if (c) c.value=''; if (e) e.value='';
-        setSelectedMonths([]); STATE.filters.months=[]; refresh();
+        setSelectedMonths([]); STATE.filters.months=[]; renderAll();
       });
     }
 
@@ -458,16 +506,15 @@
       axisBtn.addEventListener('click', function(){
         STATE.axisMode = (STATE.axisMode==='proveedor' ? 'mes' : 'proveedor');
         axisBtn.textContent = 'Eje: ' + (STATE.axisMode==='proveedor' ? 'Proveedor' : 'Mes');
-        refresh();
+        renderAll();
       });
     }
   }
 
-  function optionsFromDeriv(deriv, year){
-    var base = (deriv||[]).filter(function(r){ return !year || String(r.anio)===String(year); });
-    var prov = uniqSorted(base.map(function(r){return r.prov;}).filter(Boolean));
-    var com  = uniqSorted(base.map(function(r){return r.comuna;}).filter(Boolean));
-    var emp  = uniqSorted(base.map(function(r){return r.empresa;}).filter(Boolean));
+  function optionsFromDeriv(deriv){
+    var prov = uniqSorted((deriv||[]).map(function(r){return r.prov;}).filter(Boolean));
+    var com  = uniqSorted((deriv||[]).map(function(r){return r.comuna;}).filter(Boolean));
+    var emp  = uniqSorted((deriv||[]).map(function(r){return r.empresa;}).filter(Boolean));
     var years= uniqSorted((deriv||[]).map(function(r){return r.anio;}).filter(Boolean));
     return {prov:prov, com:com, emp:emp, years:years};
   }
@@ -479,7 +526,7 @@
     var selE = document.getElementById('plEmpresa');
     var monthsDiv = document.getElementById('plMonths');
 
-    var opts = optionsFromDeriv(deriv, null);
+    var opts = optionsFromDeriv(deriv);
     var yNow = (new Date()).getFullYear();
     var years = opts.years.length ? opts.years : [yNow];
     var yDefault = years.indexOf(yNow)>=0 ? yNow : years[years.length-1];
@@ -488,7 +535,7 @@
 
     selP.innerHTML = '<option value="">Todos los contactos</option>' + opts.prov.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join('');
     selC.innerHTML = '<option value="">Todas las comunas</option>' + opts.com.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
-    selE.innerHTML = '<option value="">Todas las empresas</option>' + opts.emp.map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join('');
+    selE.innerHTML = '<option value="">Todas las empresas</option>' + opts.emp.map(function(e){return '<option value="'+e+'">'+e+'</option>').join('') };
 
     monthsDiv.innerHTML = range12().map(function(m){
       return '<button type="button" class="pl-chip" data-m="'+m+'">'+MMESES_LARGO[m-1]+'</button>';
@@ -502,7 +549,7 @@
     buildUI(root);
 
     function go(dispon, asig){
-      STATE.deriv = buildDeriv(dispon, asig);
+      STATE.deriv = buildDerivMonthly(dispon, asig);
       fillFilters(STATE.deriv);
 
       var ySel = document.getElementById('plYear');
@@ -515,7 +562,7 @@
       setSelectedMonths([]);
 
       attachEvents();
-      refresh();
+      renderAll();
     }
 
     if (opts && Array.isArray(opts.dispon) && Array.isArray(opts.asig)){
@@ -534,5 +581,5 @@
     }
   }
 
-  global.MMppPipeline = { mount: mount, refresh: refresh };
+  global.MMppPipeline = { mount: mount, refresh: renderAll };
 })(window);
