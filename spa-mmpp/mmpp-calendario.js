@@ -244,15 +244,17 @@
       };
     });
   }
-  function applyFilters(rows){
-    var f = STATE.filters;
-    return rows.filter(function(r){
-      if (f.comuna && r.comuna!==f.comuna) return false;
-      if (f.transportista && r.trans!==f.transportista) return false;
-      if (f.proveedor && r.prov!==f.prov) return false;
-      return true;
-    });
-  }
+function norm(s){ return String(s||'').trim().toLowerCase(); }
+function applyFilters(rows){
+  const f = STATE.filters;
+  const fp = norm(f.proveedor), fc = norm(f.comuna), ft = norm(f.transportista);
+  return rows.filter(r => {
+    if (fc && norm(r.comuna) !== fc) return false;
+    if (ft && norm(r.trans) !== ft) return false;
+    if (fp && norm(r.prov) !== fp) return false;
+    return true;
+  });
+}
   function groupForDay(rows, groupKey){
     var map = {};
     for (var i=0;i<rows.length;i++){
