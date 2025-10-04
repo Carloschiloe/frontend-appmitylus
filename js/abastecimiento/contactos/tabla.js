@@ -235,7 +235,7 @@ async function actualizarTonsVisiblesYFooter(){
     if (!span) return;
 
     const proveedorKey = span.dataset.provkey || '';
-    the const centroId     = span.dataset.centroid || '';
+    const centroId     = span.dataset.centroid || '';
     const contactoId   = span.dataset.contactoid || '';
 
     // Si ya está cargado, sólo recalcular footer
@@ -406,4 +406,5 @@ document.addEventListener('reload-tabla-contactos', () => {
   console.debug('[tablaContactos] reload-tabla-contactos recibido');
   renderTablaContactos();
 });
+
 
