@@ -1,4 +1,4 @@
-// /js/contactos/tabla.js 
+// /js/contactos/tabla.js
 import { state, $ } from './state.js';
 import { centroCodigoById, comunaPorCodigo } from './normalizers.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
@@ -44,12 +44,12 @@ const esc = (s='') => String(s)
 
 const esCodigoValido = (x) => /^\d{4,7}$/.test(String(x || ''));
 
-/* ===== handler único expuesto para fallback inline ===== */
-function _clickAccContacto(aEl){
+/* ===== handler único expuesto ===== */
+async function _clickAccContacto(aEl){
   try{
     const id = aEl?.dataset?.id;
-    const action = (aEl?.dataset?.action || '').toLowerCase();   // ← acción explícita
-    const cls = (aEl?.className || '').toLowerCase();            // ← fallback por clase
+    const action = (aEl?.dataset?.action || '').toLowerCase();   // acción explícita
+    const cls = (aEl?.className || '').toLowerCase();            // fallback por clase
 
     const c = state.contactosGuardados.find(x => String(x._id) === String(id));
     if (!c) { M.toast?.({ html: 'Contacto no encontrado', classes: 'red' }); return; }
@@ -61,15 +61,24 @@ function _clickAccContacto(aEl){
                   : cls.includes('eliminar') ? 'eliminar'
                   : '');
 
-    if (act === 'ver')     return abrirDetalleContacto(c); // modal de detalle de contacto
+    if (act === 'ver')     return abrirDetalleContacto(c); // modal de detalle
     if (act === 'visita')  return abrirModalVisita(c);     // modal de REGISTRO de visita
     if (act === 'editar')  return abrirEdicion(c);
+
     if (act === 'eliminar'){
-      if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
-      return eliminarContacto(id).catch(e => {
+      // Guardia anti doble-clic
+      if (aEl.dataset.busy === '1') return;
+      aEl.dataset.busy = '1';
+      try {
+        if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
+        await eliminarContacto(id);
+      } catch (e) {
         console.error(e);
         M.toast?.({ html: 'No se pudo eliminar', classes: 'red' });
-      });
+      } finally {
+        delete aEl.dataset.busy;
+      }
+      return;
     }
   }catch(err){
     console.error('[contactos] error en _clickAccContacto', err);
@@ -201,7 +210,7 @@ export function initTablaContactos() {
     .off('click.contactos')
     .on('click.contactos', 'a.icon-action', function(e){
       e.preventDefault();
-      e.stopPropagation();              // ← evita que abra otro modal por burbujeo
+      e.stopPropagation();              // evita que abra otro modal por burbujeo
       _clickAccContacto(this);
     });
 
@@ -226,7 +235,7 @@ async function actualizarTonsVisiblesYFooter(){
     if (!span) return;
 
     const proveedorKey = span.dataset.provkey || '';
-    const centroId     = span.dataset.centroid || '';
+    the const centroId     = span.dataset.centroid || '';
     const contactoId   = span.dataset.contactoid || '';
 
     // Si ya está cargado, sólo recalcular footer
@@ -318,16 +327,20 @@ export function renderTablaContactos() {
       // Tons: span con data para sumar por contactoId → prov+centro → prov
       const tonsCell = `<span class="tons-cell" data-contactoid="${esc(c._id || '')}" data-provkey="${esc(c.proveedorKey || '')}" data-centroid="${esc(c.centroId || '')}" data-value=""></span>`;
 
-      // Acciones (con data-action explícito)
+      // Acciones (sin onclick inline; usamos el delegado)
       const acciones = `
-        <a href="#!" class="icon-action ver" data-action="ver" title="Ver detalle" data-id="${c._id}"
-           onclick="window._clickAccContacto(this)"><i class="material-icons">visibility</i></a>
-        <a href="#!" class="icon-action visita" data-action="visita" title="Registrar visita" data-id="${c._id}"
-           onclick="window._clickAccContacto(this)"><i class="material-icons">event_available</i></a>
-        <a href="#!" class="icon-action editar" data-action="editar" title="Editar" data-id="${c._id}"
-           onclick="window._clickAccContacto(this)"><i class="material-icons">edit</i></a>
-        <a href="#!" class="icon-action eliminar" data-action="eliminar" title="Eliminar" data-id="${c._id}"
-           onclick="window._clickAccContacto(this)"><i class="material-icons">delete</i></a>
+        <a href="#!" class="icon-action ver" data-action="ver" title="Ver detalle" data-id="${c._id}">
+          <i class="material-icons">visibility</i>
+        </a>
+        <a href="#!" class="icon-action visita" data-action="visita" title="Registrar visita" data-id="${c._id}">
+          <i class="material-icons">event_available</i>
+        </a>
+        <a href="#!" class="icon-action editar" data-action="editar" title="Editar" data-id="${c._id}">
+          <i class="material-icons">edit</i>
+        </a>
+        <a href="#!" class="icon-action eliminar" data-action="eliminar" title="Eliminar" data-id="${c._id}">
+          <i class="material-icons">delete</i>
+        </a>
       `;
 
       // ⬇️ 7 columnas exactas para coincidir con el THEAD del HTML
@@ -393,3 +406,4 @@ document.addEventListener('reload-tabla-contactos', () => {
   console.debug('[tablaContactos] reload-tabla-contactos recibido');
   renderTablaContactos();
 });
+
