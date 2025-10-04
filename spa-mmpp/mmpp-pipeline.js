@@ -114,53 +114,35 @@
     return out;
   }
 
-  // Disponibilidades → “contactado”
   function buildDeriv(dispon, asig){
-    // suma asignado por disponibilidadId (para saldo por disponibilidad)
+    // suma asignado por disponibilidadId (normalizando id a string)
     var byDisp = {};
     (asig||[]).forEach(function(a){
-      var id = a.disponibilidadId;
-      if (id==null) return;
-      byDisp[id] = (byDisp[id]||0) + (Number(a.cantidad)||0);
+      var id = String(a.disponibilidadId || (a.disponibilidad && (a.disponibilidad.id || a.disponibilidad._id)) || '');
+      if (!id) return;
+      byDisp[id] = (byDisp[id]||0) + (Number(a.cantidad ?? a.tons ?? 0) || 0);
     });
 
-    // deriva registros por disponibilidad (contactado por mes de la dispo)
+    // deriva registros por disponibilidad (normaliza id y prioriza proveedorNombre)
     var out = (dispon||[]).map(function(d){
-      var prov = d.contactoNombre || d.proveedorNombre || '—';
-      var asign = byDisp[d.id] || 0;
-      var cont  = Number(d.tons||0)||0;
+      var idNorm = String(d.id || d._id || (d._id && d._id.$oid) || '');
+      var prov = d.proveedorNombre || d.contactoNombre || '—';
+      var asign = byDisp[idNorm] || 0;
+      var cont  = Number(d.tonsDisponible ?? d.tons ?? 0) || 0;
       var saldo = Math.max(0, cont - asign);
       return {
-        id: d.id,
+        id: idNorm,
         prov: prov,
         comuna: d.comuna || '',
         empresa: d.empresaNombre || '',
         anio: Number(d.anio)||null,
         mes: Number(d.mes)||0,
         contactado: cont,
-        asignado: asign, // (solo informativo por dispo)
+        asignado: asign,
         saldo: saldo
       };
     });
     return out;
-  }
-
-  // Asignaciones enriquecidas con proveedor/comuna/empresa de la disponibilidad
-  // y con MES/AÑO DESTINO (lo que usa el calendario)
-  function buildAsigEnr(asig, dispon){
-    var byId = {};
-    (dispon||[]).forEach(function(d){ byId[String(d.id)] = d; });
-    return (asig||[]).map(function(a){
-      var d = byId[String(a.disponibilidadId)] || {};
-      return {
-        prov:    d.contactoNombre || d.proveedorNombre || '—',
-        comuna:  d.comuna || '',
-        empresa: d.empresaNombre || '',
-        anio: Number(a.destAnio || a.anio || 0) || null,
-        mes:  Number(a.destMes  || a.mes  || 0) || 0,
-        qty:  Number(a.cantidad || a.tons || 0) || 0
-      };
-    });
   }
 
   function filterDeriv(deriv, filters){
@@ -175,71 +157,46 @@
     });
   }
 
-  function filterAsig(asigEnr, filters){
-    var monthsSel = filters.months || [];
-    return (asigEnr||[]).filter(function(r){
-      if (filters.year && String(r.anio)!==String(filters.year)) return false;
-      if (filters.proveedor && r.prov!==filters.proveedor) return false;
-      if (filters.comuna && (r.comuna||"")!==filters.comuna) return false;
-      if (filters.empresa && (r.empresa||"")!==filters.empresa) return false;
-      if (monthsSel.length && monthsSel.indexOf(Number(r.mes))<0) return false;
-      return true;
-    });
-  }
-
-  // Contactado por mes = disponibilidades; Asignado por mes = asignaciones destino
-  function groupByMes_withAsig(rowsDeriv, asigRows){
-    var map={}; for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,lotes:0};
-    var lotes = {}; for (var m2=1;m2<=12;m2++) lotes[m2]=new Set();
-
-    rowsDeriv.forEach(function(r){
-      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,lotes:0};
-      map[k].contactado += r.contactado;
-      lotes[k].add(r.id);
-    });
-
-    (asigRows||[]).forEach(function(a){
-      var k=a.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,lotes:0};
-      map[k].asignado += a.qty;
-    });
-
-    return Array.from({length:12}, (_,i)=>{
-      var m=i+1, o=map[m]; o.lotes=(lotes[m]||new Set()).size;
-      o.saldo=Math.max(0, o.contactado-o.asignado);
-      o.pct=(o.contactado>0)?(o.asignado/o.contactado):0;
-      return o;
-    });
-  }
-
-  // Eje proveedor: contactado por dispo; asignado por destino (sumado por proveedor de la dispo)
-  function groupByProveedor_withAsig(rowsDeriv, asigRows){
+  function groupByProveedor(rows){
     var map={}, lotes={};
-
-    rowsDeriv.forEach(function(r){
-      if (!map[r.prov]){ map[r.prov]={prov:r.prov,contactado:0,asignado:0,lotes:0}; lotes[r.prov]=new Set(); }
+    rows.forEach(function(r){
+      if (!map[r.prov]){ map[r.prov] = {prov:r.prov, contactado:0, asignado:0, lotes:0}; lotes[r.prov]=new Set(); }
       map[r.prov].contactado += r.contactado;
+      map[r.prov].asignado   += r.asignado;
       lotes[r.prov].add(r.id);
     });
-
-    (asigRows||[]).forEach(function(a){
-      if (!map[a.prov]){ map[a.prov]={prov:a.prov,contactado:0,asignado:0,lotes:0}; }
-      map[a.prov].asignado += a.qty;
-    });
-
     var arr = Object.keys(map).map(function(k){
-      var o=map[k]; o.lotes=(lotes[k]||new Set()).size;
-      o.saldo=Math.max(0, o.contactado-o.asignado);
-      o.pct=(o.contactado>0)?(o.asignado/o.contactado):0;
+      var o = map[k]; o.lotes = (lotes[k]||new Set()).size;
+      o.saldo = Math.max(0, o.contactado - o.asignado);
+      o.pct   = (o.contactado>0) ? (o.asignado/o.contactado) : 0;
       return o;
     });
     arr.sort(function(a,b){ return (b.contactado||0)-(a.contactado||0); });
     return arr;
   }
 
+  function groupByMes(rows){
+    var map={}; for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,lotes:0};
+    var lotes = {}; for(var m2=1;m2<=12;m2++) lotes[m2]=new Set();
+    rows.forEach(function(r){
+      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,lotes:0};
+      map[k].contactado += r.contactado;
+      map[k].asignado   += r.asignado;
+      lotes[k].add(r.id);
+    });
+    var arr = range12().map(function(m){
+      var o = map[m]; o.lotes = (lotes[m]||new Set()).size;
+      o.saldo = Math.max(0, o.contactado - o.asignado);
+      o.pct   = (o.contactado>0) ? (o.asignado/o.contactado) : 0;
+      return o;
+    });
+    return arr;
+  }
+
   /* ---------- KPIs ---------- */
-  function renderKPIs_withAsig(rowsDeriv, asigRows){
-    var contact=0, provSet=new Set(); rowsDeriv.forEach(function(r){ contact+=r.contactado; provSet.add(r.prov); });
-    var asign=0; (asigRows||[]).forEach(function(a){ asign+=a.qty; });
+  function renderKPIs(rows){
+    var contact=0, asign=0, provSet=new Set();
+    rows.forEach(function(r){ contact+=r.contactado; asign+=r.asignado; provSet.add(r.prov); });
     var saldo = Math.max(0, contact - asign);
     var html = ''
       +kpi('Contactado', numeroCL(contact)+' tons')
@@ -273,7 +230,7 @@
     }
   };
 
-  function renderChart_withAsig(rowsDeriv, asigRows, axisMode){
+  function renderChart(rows, axisMode){
     var canvas = document.getElementById('plChart');
     if (!canvas) return;
 
@@ -287,13 +244,13 @@
 
     var labels=[], dataAsign=[], dataNoAsig=[];
     if (axisMode==='proveedor'){
-      var g = groupByProveedor_withAsig(rowsDeriv, asigRows);
-      labels    = g.map(function(x){return x.prov;});
+      var g = groupByProveedor(rows);
+      labels = g.map(function(x){return x.prov;});
       dataAsign = g.map(function(x){return x.asignado;});
       dataNoAsig= g.map(function(x){return Math.max(0, x.contactado-x.asignado);});
     } else {
-      var gm = groupByMes_withAsig(rowsDeriv, asigRows);
-      labels    = gm.map(function(x){return MMESES[x.mes-1];});
+      var gm = groupByMes(rows);
+      labels = gm.map(function(x){return MMESES[x.mes-1];});
       dataAsign = gm.map(function(x){return x.asignado;});
       dataNoAsig= gm.map(function(x){return Math.max(0, x.contactado-x.asignado);});
     }
@@ -329,10 +286,10 @@
   }
 
   /* ---------- Tabla ---------- */
-  function renderTable_withAsig(rowsDeriv, asigRows, axisMode, year){
+  function renderTable(rows, axisMode, year){
     var html='';
     if (axisMode==='proveedor'){
-      var g = groupByProveedor_withAsig(rowsDeriv, asigRows);
+      var g = groupByProveedor(rows);
       var thead='<thead><tr>'
         +'<th>PROVEEDOR / CONTACTO</th>'
         +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
@@ -367,7 +324,7 @@
         +'</tr></tfoot>';
       html = '<table class="pl-table">'+thead+body+foot+'</table>';
     } else {
-      var gm = groupByMes_withAsig(rowsDeriv, asigRows);
+      var gm = groupByMes(rows);
       var thead2='<thead><tr>'
         +'<th>MES</th>'
         +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
@@ -407,7 +364,6 @@
   /* ---------- estado / montaje ---------- */
   var STATE = {
     deriv: [],
-    asigEnr: [], // ← asignaciones enriquecidas (MES/AÑO destino)
     filters: { year:null, proveedor:'', comuna:'', empresa:'', months:[] },
     hideEmpty: true,
     axisMode: 'proveedor'
@@ -429,15 +385,16 @@
     }
   }
 
-  function filterRowsForRefresh(){ return filterDeriv(STATE.deriv, STATE.filters); }
-  function filteredAsig(){ return filterAsig(STATE.asigEnr, STATE.filters); }
+  function filterRowsForRefresh(){
+    var rows = filterDeriv(STATE.deriv, STATE.filters);
+    return rows;
+  }
 
   function refresh(){
     var rows = filterRowsForRefresh();
-    var asig = filteredAsig();
-    renderKPIs_withAsig(rows, asig);
-    renderChart_withAsig(rows, asig, STATE.axisMode);
-    renderTable_withAsig(rows, asig, STATE.axisMode, STATE.filters.year || '');
+    renderKPIs(rows);
+    renderChart(rows, STATE.axisMode);
+    renderTable(rows, STATE.axisMode, STATE.filters.year || '');
   }
 
   function attachEvents(){
@@ -477,11 +434,7 @@
     var btnDatos = document.getElementById('plBtnMesesConDatos');
     if (btnDatos){
       btnDatos.addEventListener('click', function(){
-        // meses con “contactado” o con “asignado destino”
-        var m1 = mesesConDatosDispon(STATE.deriv, STATE.filters);
-        var asigFilt = filteredAsig();
-        var m2 = Array.from(new Set(asigFilt.map(function(a){return a.mes;}))).sort(function(a,b){return a-b;});
-        var m = Array.from(new Set(m1.concat(m2))).sort(function(a,b){return a-b;});
+        var m = mesesConDatosDispon(STATE.deriv, STATE.filters);
         setSelectedMonths(m); STATE.filters.months = m; refresh();
       });
     }
@@ -549,8 +502,7 @@
     buildUI(root);
 
     function go(dispon, asig){
-      STATE.deriv   = buildDeriv(dispon, asig);
-      STATE.asigEnr = buildAsigEnr(asig, dispon);
+      STATE.deriv = buildDeriv(dispon, asig);
       fillFilters(STATE.deriv);
 
       var ySel = document.getElementById('plYear');
