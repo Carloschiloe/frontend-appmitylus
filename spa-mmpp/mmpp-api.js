@@ -78,7 +78,7 @@
 
       return doFetch(url, opts).then(function(res){
         if (res.ok) return res;
-        // Antes solo saltábamos en 404/405/400; ahora saltamos también en 500/502/503/0
+        // Saltar también en 500/502/503/0
         if (res.status===404 || res.status===405 || res.status===400 ||
             res.status===500 || res.status===502 || res.status===503 || res.status===0) {
           return next();
@@ -92,7 +92,12 @@
   // --- cache simple de disponibilidades para enriquecer asignaciones ---
   var _cacheDispon = [];
 
-  // --- normalizadores ---
+  // --- filtros/normalizadores globales ---
+  function esVigente(row){
+    var st = String(row && row.estado || '').toLowerCase();
+    return !(row && (row.deleted || row.isDeleted || st==='eliminado' || st==='borrado' || st==='anulado'));
+  }
+
   function pickProveedorId(obj){
     // tolerante a varios nombres de campo
     return obj.proveedorId || obj.proveedor_id ||
@@ -114,18 +119,28 @@
       var tel = (r.contactoSnapshot && (r.contactoSnapshot.telefono || r.contactoSnapshot.phone)) || r.contactoTelefono || "";
       var email = (r.contactoSnapshot && r.contactoSnapshot.email) || r.contactoEmail || "";
 
-      // proveedor
+      // proveedor / empresa normalizados
       var proveedorNombre = r.proveedorNombre || r.proveedor || r.contactoNombre || r.contacto || "";
       var proveedorId = pickProveedorId(r);
+      var empresaNombre = r.empresaNombre || r.empresa || null;
+      var proveedorKey = r.proveedorKey || slug(proveedorNombre);
+      var empresaKey = r.empresaKey || (empresaNombre ? slug(empresaNombre) : null);
+
+      var proveedorKeyNorm = r.proveedorKeyNorm || empresaKey || proveedorKey;
+      var proveedorNombreNorm = r.proveedorNombreNorm || empresaNombre || proveedorNombre;
 
       return {
         id: id,
         proveedorId: proveedorId,
         proveedorNombre: proveedorNombre,
-        proveedorKey   : r.proveedorKey || slug(proveedorNombre),
+        proveedorKey: proveedorKey,
+
+        // normalizados (empresa > proveedor)
+        proveedorKeyNorm: proveedorKeyNorm,
+        proveedorNombreNorm: proveedorNombreNorm,
 
         contactoNombre: r.contactoNombre || r.contacto || "",
-        empresaNombre : r.empresaNombre  || r.empresa  || "",
+        empresaNombre : empresaNombre || "",
         telefono: tel, email: email,
         comuna: r.comuna || "",
         centroCodigo: r.centroCodigo || "",
@@ -136,7 +151,9 @@
         mesKey: mk,
         anio: r.anio || (mk?Number(mk.split("-")[0]):null),
         mes : r.mes  || (mk?Number(mk.split("-")[1]):null),
-        estado: r.estado || "disponible"
+        estado: r.estado || "disponible",
+        deleted: r.deleted || false,
+        isDeleted: r.isDeleted || false
       };
     });
     return out;
@@ -149,6 +166,9 @@
       var tons = (a.tons!=null ? Number(a.tons) : Number(a.cantidad||0));
       var proveedorId = pickProveedorId(a);
       var provNombre = a.proveedorNombre || a.proveedor || "";
+      var provKey = a.proveedorKey || (provNombre?slug(provNombre):"");
+      var empresaNombre = a.empresaNombre || a.empresa || null;
+      var empresaKey = a.empresaKey || (empresaNombre ? slug(empresaNombre) : null);
 
       return {
         id: a.id || a._id || a.uuid || null,
@@ -156,7 +176,11 @@
 
         proveedorId: proveedorId,
         proveedorNombre: provNombre,
-        proveedorKey: a.proveedorKey || (provNombre?slug(provNombre):""),
+        proveedorKey: provKey,
+
+        // normalizados (empresa > proveedor)
+        proveedorKeyNorm: a.proveedorKeyNorm || empresaKey || provKey,
+        proveedorNombreNorm: a.proveedorNombreNorm || empresaNombre || provNombre,
 
         cantidad: tons,
         tons: tons,
@@ -173,7 +197,7 @@
         mesKey: a.mesKey || (a.anio && a.mes ? (a.anio+"-"+pad2(a.mes)) : null),
 
         contactoNombre: a.contactoNombre || "",
-        empresaNombre: a.empresaNombre || "",
+        empresaNombre: empresaNombre || "",
         comuna: a.comuna || "",
         centroCodigo: a.centroCodigo || "",
         areaCodigo: a.areaCodigo || "",
@@ -186,9 +210,18 @@
 
         fuente: a.fuente || "",
         estado: a.estado || "",
+        deleted: a.deleted || false,
+        isDeleted: a.isDeleted || false,
         createdAt: a.createdAt || a.fecha || null
       };
     });
+  }
+
+  function keyFrom(item){
+    // preferimos key normalizada (empresa > proveedor) para evitar duplicados por persona
+    if (item && item.proveedorKeyNorm) return "key:"+item.proveedorKeyNorm;
+    // fallback a id/nombre estable
+    return provStableKey(item && item.proveedorId, (item && (item.proveedorNombreNorm || item.proveedorNombre)) || "");
   }
 
   // --- API pública ---
@@ -211,7 +244,9 @@
       return tryRoutes("GET", paths).then(function(res){
         var json = (res && res.body) || [];
         var list = Array.isArray(json) ? json : (json.items||json.data||json.results)||[];
-        var norm = normalizeDispon(list);
+        var norm = normalizeDispon(list)
+          .filter(esVigente)
+          .filter(function(r){ return Number(r.tons||0) > 0; });
         _cacheDispon = norm;
         return norm;
       }).catch(function(){ return []; });
@@ -231,12 +266,13 @@
       return tryRoutes("GET", paths).then(function(res){
         var json = (res && res.body) || [];
         var list = Array.isArray(json) ? json : (json.items||json.data||json.results) || [];
-        var norm = normalizeAsign(list);
-        var clean = norm.filter(function(a){ return a && Number(a.cantidad)>0 && (a.id || a.disponibilidadId); });
-        clean.sort(function(a,b){
+        var norm = normalizeAsign(list)
+          .filter(esVigente)
+          .filter(function(a){ return a && Number(a.cantidad)>0 && (a.id || a.disponibilidadId); });
+        norm.sort(function(a,b){
           var ta=a.createdAt?Date.parse(a.createdAt):0, tb=b.createdAt?Date.parse(b.createdAt):0; return tb-ta;
         });
-        return clean;
+        return norm;
       }).catch(function(){ return []; });
     },
 
@@ -251,30 +287,44 @@
         var hasDisponible = items.some(function(it){ return Number(it.disponible||0) > 0; });
         if (res.ok && hasDisponible) return items;
 
-        // 2) Fallback local: sumar dispo + asig por proveedorId/Nombre y mesKey
+        // 2) Fallback local: sumar dispo + asig con normalización y filtro de vigencia
         return Promise.all([
           API.getDisponibilidades(params),
           API.getAsignaciones(params)
         ]).then(function(arr){
           var dispo = arr[0]||[], asign = arr[1]||[];
-          var map = new Map(); // key: mesKey|provKey -> {mesKey, proveedorId, proveedorNombre, disponible, asignado}
+          var map = new Map(); // key: mesKey|provKeyNorm -> {mesKey, proveedor..., disponible, asignado}
 
           dispo.forEach(function(d){
+            if (!esVigente(d)) return;
             var mk = d.mesKey || (d.anio && d.mes ? (d.anio+"-"+pad2(d.mes)) : null);
             if (!mk) return;
-            var key = provStableKey(d.proveedorId, d.proveedorNombre);
+            var key = keyFrom(d);
             var k = mk+"|"+key;
-            if(!map.has(k)) map.set(k, { mesKey: mk, proveedorId: d.proveedorId||null, proveedorNombre: d.proveedorNombre||"Sin proveedor", disponible:0, asignado:0 });
+            if(!map.has(k)) map.set(k, {
+              mesKey: mk,
+              proveedorId: d.proveedorId||null,
+              proveedorNombre: d.proveedorNombreNorm || d.proveedorNombre || "Sin proveedor",
+              proveedorKeyNorm: d.proveedorKeyNorm || null,
+              disponible:0, asignado:0
+            });
             var row = map.get(k);
             row.disponible += Number(d.tons||0);
           });
 
           asign.forEach(function(a){
+            if (!esVigente(a)) return;
             var mk = a.mesKey || (a.anio && a.mes ? (a.anio+"-"+pad2(a.mes)) : null);
             if (!mk) return;
-            var key = provStableKey(a.proveedorId, a.proveedorNombre);
+            var key = keyFrom(a);
             var k = mk+"|"+key;
-            if(!map.has(k)) map.set(k, { mesKey: mk, proveedorId: a.proveedorId||null, proveedorNombre: a.proveedorNombre||"Sin proveedor", disponible:0, asignado:0 });
+            if(!map.has(k)) map.set(k, {
+              mesKey: mk,
+              proveedorId: a.proveedorId||null,
+              proveedorNombre: a.proveedorNombreNorm || a.proveedorNombre || "Sin proveedor",
+              proveedorKeyNorm: a.proveedorKeyNorm || null,
+              disponible:0, asignado:0
+            });
             var row = map.get(k);
             row.asignado += Number(a.tons||0);
           });
@@ -312,7 +362,7 @@
 
       return ensureDispo.then(function(dispo){
         var proveedorNombre = payload.proveedorNombre || (dispo?dispo.proveedorNombre:"") || (dispo?dispo.contactoNombre:"") || "";
-        var proveedorKey    = (dispo && dispo.proveedorKey) || slug(proveedorNombre);
+        var proveedorKey    = (dispo && (dispo.proveedorKeyNorm || dispo.proveedorKey)) || slug(proveedorNombre);
         var proveedorId     = payload.proveedorId || (dispo ? dispo.proveedorId : null);
 
         var body = {
