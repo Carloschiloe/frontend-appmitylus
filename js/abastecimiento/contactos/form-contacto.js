@@ -690,8 +690,40 @@ export function abrirEdicion(c) {
   (M.Modal.getInstance(modal) || M.Modal.init(modal)).open();
 }
 
+// /js/abastecimiento/contactos/form-contacto.js
+
 export async function eliminarContacto(id) {
-  await apiDeleteContacto(id);
+  const idStr = String(id || '').trim();
+
+  // 1) ¿Ese ID está actualmente en la tabla de contactos?
+  const esContacto = (state.contactosGuardados || [])
+    .some(c => String(c._id) === idStr);
+
+  if (!esContacto) {
+    // Puede haber sido ya eliminado / o era un ID ajeno → tratamos como éxito silencioso
+    console.warn('[deleteContacto] id no corresponde a un contacto visible:', idStr);
+    await cargarContactosGuardados();
+    renderTablaContactos();
+    document.dispatchEvent(new Event('reload-tabla-contactos'));
+    M.toast?.({ html: 'Contacto ya no existe', classes: 'teal' });
+    return;
+  }
+
+  try {
+    await apiDeleteContacto(idStr);              // ← ver cambio 2
+  } catch (err) {
+    // Si el backend respondió 404 "Contacto no encontrado", lo tratamos como éxito
+    const msg = (err && err.message) || '';
+    if (/Contacto no encontrado/i.test(msg) || /404/.test(msg)) {
+      console.warn('[deleteContacto] backend devolvió 404, tratando como éxito');
+    } else {
+      console.error(err);
+      M.toast?.({ html: 'No se pudo eliminar', classes: 'red' });
+      return;
+    }
+  }
+
+  // 2) Refresco UI
   await cargarContactosGuardados();
   renderTablaContactos();
   document.dispatchEvent(new Event('reload-tabla-contactos'));
