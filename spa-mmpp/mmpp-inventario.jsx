@@ -52,6 +52,14 @@ function chipLabelFromMesKey(mk){
 }
 function GroupBy(arr, keyFn){ var m={}; (arr||[]).forEach(function(r){ var k=keyFn(r); m[k]=(m[k]||[]).concat([r]); }); return m; }
 
+/* Fechas locales seguras (evita UTC “Z”) */
+function fechaLocalDeAsignacion(a){
+  if (a && a.destAnio && a.destMes && a.destDia) {
+    return new Date(Number(a.destAnio), Number(a.destMes)-1, Number(a.destDia));
+  }
+  return a && a.destFecha ? new Date(a.destFecha) : null; // fallback
+}
+
 /* ------------------------------- data ------------------------------- */
 function useData(){
   var _a=React.useState([]), dispon=_a[0], setDispon=_a[1];
@@ -194,7 +202,7 @@ function AbastecimientoMMPP(){
   var _hm=React.useState(""), histMes=_hm[0], setHistMes=_hm[1];
   var _hy=React.useState(""), histAnio=_hy[0], setHistAnio=_hy[1];
 
-  // Año -> Mes -> Proveedor (usando Fecha Cosecha = destFecha)
+  // Año -> Mes -> Proveedor (usando Fecha Cosecha local = destAnio/destMes/destDia)
   var histAgg = React.useMemo(function(){
     var base = asig
       .filter(function(a){ return Number(a.cantidad) > 0; })
@@ -218,15 +226,15 @@ function AbastecimientoMMPP(){
         var provKeys = Object.keys(byProv).sort(function(a,b){return String(a).localeCompare(String(b));});
         var provOut = provKeys.map(function(pk){
           var items = byProv[pk]||[];
-          var sum=0, lastDest=null;
+          var sum=0, lastTS=null;
           for(var i=0;i<items.length;i++){
-            sum += Number(items[i].cantidad)||0;
-            if(items[i].destFecha){
-              var df = new Date(items[i].destFecha);
-              if (!lastDest || df > new Date(lastDest)) lastDest = items[i].destFecha;
-            }
+            var it=items[i];
+            sum += Number(it.cantidad)||0;
+            var f = fechaLocalDeAsignacion(it);
+            var ts = f ? f.getTime() : null;
+            if (ts!=null && (lastTS==null || ts>lastTS)) lastTS = ts;
           }
-          return { key: pk+'|'+yk+'|'+mk, proveedorNombre: pk, destMes: Number(mk), destAnio: Number(yk), cantidad: sum, lastDestFecha: lastDest, items: items };
+          return { key: pk+'|'+yk+'|'+mk, proveedorNombre: pk, destMes: Number(mk), destAnio: Number(yk), cantidad: sum, lastDestTS: lastTS, items: items };
         });
         var totalMes=0; for(var j=0;j<provOut.length;j++){ totalMes+=Number(provOut[j].cantidad)||0; }
         return { key: yk+'|'+mk, y: Number(yk), m: Number(mk), totalMes: totalMes, groups: provOut };
@@ -461,7 +469,7 @@ function AbastecimientoMMPP(){
                         </thead>
                         <tbody>
                           {M.groups.map(function(g){
-                            var fecha = g.lastDestFecha ? new Date(g.lastDestFecha) : null;
+                            var fecha = g.lastDestTS!=null ? new Date(g.lastDestTS) : null;
                             var fechaTxt = fecha ? fecha.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}) : "—";
                             var dest = (g.destMes && g.destAnio) ? (mesesEs[(g.destMes-1)||0]+" "+g.destAnio) : "—";
                             var openP = !!open.prov[g.key];
@@ -473,7 +481,7 @@ function AbastecimientoMMPP(){
                                 ),
                                 /* CONTACTO primero */
                                 React.createElement("td", null, g.proveedorNombre||"—"),
-                                /* FECHA COSECHA (última del grupo) */
+                                /* FECHA COSECHA (última del grupo, local) */
                                 React.createElement("td", null, fechaTxt),
                                 React.createElement("td", null, React.createElement("strong", null, numeroCL(g.cantidad)+" tons")),
                                 React.createElement("td", null, dest)
@@ -494,8 +502,8 @@ function AbastecimientoMMPP(){
                                       ),
                                       React.createElement("tbody", null,
                                         g.items.map(function(a,i){
-                                          var f=a.destFecha?new Date(a.destFecha):null;
-                                          var fTxt=f?f.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}):"—";
+                                          var f = fechaLocalDeAsignacion(a);
+                                          var fTxt = f ? f.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}) : "—";
                                           var orig=(a.originalTons?(numeroCL(a.originalTons)+" tons"):"")+(a.originalFecha?(" (desde "+new Date(a.originalFecha).toLocaleDateString("es-CL")+")"):"");
                                           return React.createElement("tr", {key:(a.id||i)},
                                             React.createElement("td", null, React.createElement("span",{className:"hist-bullet"})),
@@ -505,8 +513,7 @@ function AbastecimientoMMPP(){
                                             React.createElement("td", null,
                                               React.createElement("div",{className:"mmpp-actions"},
                                                 React.createElement("button",{className:"mmpp-ghostbtn", onClick:function(){onEditAsign(a);}}, "✏️ Editar"),
-                                                // ✅ Corregido: asignación correcta de la prop onClick
-                                                React.createElement("button",{className:"mmpp-ghostbtn mmpp-danger", onClick:function(){borrarAsig(a);}}, "🗑️ Eliminar")
+                                                React.createElement("button",{className:"mmpp-ghostbtn mmpp-danger", onClick:function(){ borrarAsig(a); }}, "🗑️ Eliminar")
                                               )
                                             )
                                           );
