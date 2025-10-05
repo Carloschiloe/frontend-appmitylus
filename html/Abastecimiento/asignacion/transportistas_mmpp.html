@@ -1,28 +1,40 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Transportistas – MMPP</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Transportistas MMPP</title>
 
-  <!-- Usa los mismos estilos globales -->
+  <!-- Estilos compartidos (los mismos que en inventario para mantener look&feel) -->
   <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 </head>
 <body>
   <div class="mmpp-layout">
+    <!-- Barra lateral -->
     <div id="mmppNavMount"></div>
+
+    <!-- Contenido principal -->
     <main class="mmpp-main">
-      <div class="card pad">
-        <h2 style="margin:0 0 16px;font-weight:800">🚚 Transportistas</h2>
-        <div id="mmppTransportistas"></div>
-      </div>
+      <div id="root"></div>
     </main>
   </div>
 
-  <!-- API y componentes -->
+  <!-- (Opcional) Forzar base de backend -->
+  <!-- <script>window.__MMPP_API_BASE__="https://backend-appmitylus.vercel.app";</script> -->
+
+  <!-- API helper (antes de la app) -->
   <script src="/spa-mmpp/mmpp-api.js?v=12"></script>
-  <script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=3"></script>
-  <script src="/spa-mmpp/transportistas.js?v=5"></script>
+
+  <!-- Sidebar (JSX) -->
+  <script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
+
+  <!-- App (JSX) -->
+  <script type="text/babel" data-presets="es2015,react" src="/spa-mmpp/mmpp-transportistas.jsx?v=1"></script>
 </body>
 </html>
