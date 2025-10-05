@@ -505,7 +505,8 @@ function AbastecimientoMMPP(){
                                             React.createElement("td", null,
                                               React.createElement("div",{className:"mmpp-actions"},
                                                 React.createElement("button",{className:"mmpp-ghostbtn", onClick:function(){onEditAsign(a);}}, "✏️ Editar"),
-                                                React.createElement("button",{className:"mmpp-ghostbtn mmpp-danger", onClick(function(){return function(){borrarAsig(a);};}())}, "🗑️ Eliminar")
+                                                // ✅ Corregido: asignación correcta de la prop onClick
+                                                React.createElement("button",{className:"mmpp-ghostbtn mmpp-danger", onClick:function(){borrarAsig(a);}}, "🗑️ Eliminar")
                                               )
                                             )
                                           );
