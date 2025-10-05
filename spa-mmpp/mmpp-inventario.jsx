@@ -1,6 +1,8 @@
-// NerdUI v3.2 — sin optional chaining ni nullish coalescing para Babel 6
+<script type="text/babel">
+/* NerdUI v3.2 — sin optional chaining ni nullish coalescing para Babel 6 */
 const { useEffect, useMemo, useState } = React;
 
+/* --------------------------- ESTILOS --------------------------- */
 function cssInject() {
   const css = `
   body{margin:0;background:#f6f8ff}
@@ -13,8 +15,6 @@ function cssInject() {
   .mmpp-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}
   .mmpp-grid4 > *{min-width:0}
   .mmpp-input{height:48px;border:1px solid #e5e7eb;border-radius:14px;padding:0 14px;background:#fafafa;width:100%}
-  .mmpp-button{height:54px;border-radius:18px;border:0;background:linear-gradient(90deg,#4f46e5,#9333ea);color:#fff;font-weight:800;font-size:18px;box-shadow:0 8px 20px rgba(79,70,229,.25); cursor:pointer}
-  .mmpp-add{background:#eef2ff;color:#1e40af;border:1px solid #c7d2fe;height:44px;border-radius:12px;font-weight:800}
   .mmpp-ghostbtn{background:#eef2ff; border:1px solid #c7d2fe; color:#1e40af; height:38px; border-radius:10px; padding:0 12px; cursor:pointer}
   .mmpp-danger{background:#fee2e2; border:1px solid #fecaca; color:#b91c1c}
   .mmpp-help{font-size:12px;color:#6b7280;margin-top:6px}
@@ -32,23 +32,24 @@ function cssInject() {
   .hist-toggle{cursor:pointer; user-select:none; font-weight:800}
   .hist-sub{background:#f9fafb; border:1px dashed #e5e7eb}
   .hist-bullet{display:inline-block; width:7px; height:7px; border-radius:999px; background:#4f46e5; margin-right:6px}
+
+  /* encabezados de sección (Año/Mes) en historial */
+  .hist-section{background:#f1f5f9; font-weight:800; color:#111827}
+  .hist-month{background:#f8fafc; font-weight:800}
   `;
   const el = document.createElement("style");
   el.textContent = css;
   document.head.appendChild(el);
 }
 
+/* --------------------------- HELPERS --------------------------- */
 function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
-
-// === Helpers de validación
 function clamp(n, min, max){ n = Number(n)||0; return Math.max(min, Math.min(max, n)); }
-function getLotById(lots, id){
-  for (var i=0;i<(lots||[]).length;i++){ if(lots[i].id===id) return lots[i]; }
-  return null;
-}
+function getLotById(lots, id){ for (var i=0;i<(lots||[]).length;i++){ if(lots[i].id===id) return lots[i]; } return null; }
 
 var mesesEs = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 var mesesShort = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
+
 function chipLabelFromMesKey(mk){
   if(!mk || mk.indexOf("-")<0) return mk || "—";
   var p = mk.split("-"); var y = String(p[0]).slice(-2); var m = Math.max(1, Math.min(12, Number(p[1])||1));
@@ -59,6 +60,7 @@ function GroupBy(arr, keyFn){
   var m={}; (arr||[]).forEach(function(r){ var k=keyFn(r); m[k]=(m[k]||[]).concat([r]); }); return m;
 }
 
+/* --------------------------- DATA --------------------------- */
 function useData(){
   var _a=React.useState([]), dispon=_a[0], setDispon=_a[1];
   var _b=React.useState([]), asig=_b[0], setAsig=_b[1];
@@ -74,20 +76,17 @@ function useData(){
     }).finally(function(){ setLoading(false); });
   }
 
-  // Solo estilos; SIN cargar ni montar Resumen acá
   React.useEffect(function(){ cssInject(); }, []);
   React.useEffect(function(){ load(); }, []);
   return {dispon, asig, loading, reload: load};
 }
 
+/* --------------------------- APP --------------------------- */
 function AbastecimientoMMPP(){
   var data=useData();
   var dispon=data.dispon, asig=data.asig, reload=data.reload;
 
-  var _f=React.useState({ proveedor:"", proveedorKey:"", comuna:"", centroCodigo:"", areaCodigo:"", contacto:"", disponibilidades:[{tons:"",fecha:""}] }),
-      form=_f[0], setForm=_f[1];
-
-  // Filtros
+  // FILTROS inventario
   var _y=React.useState(""), filterYear=_y[0], setFilterYear=_y[1];
   var _m=React.useState(""), filterMes=_m[0], setFilterMes=_m[1];
   var _c=React.useState(""), filterComuna=_c[0], setFilterComuna=_c[1];
@@ -95,14 +94,13 @@ function AbastecimientoMMPP(){
   var _e=React.useState(""), filterEmpresa=_e[0], setFilterEmpresa=_e[1];
   var _s=React.useState(""), searchContacto=_s[0], setSearchContacto=_s[1];
 
-  // Toggle de tabla inventario
   var _ih=React.useState(false), invHidden=_ih[0], setInvHidden=_ih[1];
 
   var _assign=React.useState(null), assignModal=_assign[0], setAssignModal=_assign[1];
   var _editA=React.useState(null), editAsig=_editA[0], setEditAsig=_editA[1];
   var _editL=React.useState(null), editLotes=_editL[0], setEditLotes=_editL[1];
 
-  /* ---------- helpers de filtrado dependiente ---------- */
+  /* ---------- opciones dependientes inventario ---------- */
   function filteredBaseExcluding(excludeKey){
     var base = (dispon||[]).slice();
     if(excludeKey!=="year"   && filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
@@ -117,7 +115,6 @@ function AbastecimientoMMPP(){
     out.sort(); return out;
   }
 
-  // opciones dependientes
   var yearOptions = React.useMemo(function(){
     return uniqSorted(filteredBaseExcluding("year").map(function(d){return d.anio;}).filter(Boolean));
   }, [dispon, filterMes, filterComuna, filterProv, filterEmpresa]);
@@ -143,33 +140,16 @@ function AbastecimientoMMPP(){
     return uniqSorted(filteredBaseExcluding("emp").map(function(d){return d.empresaNombre;}).filter(Boolean));
   }, [dispon, filterYear, filterMes, filterComuna, filterProv]);
 
-  // limpiar selecciones inválidas
   useEffect(function(){ if(filterYear && yearOptions.indexOf(Number(filterYear))<0 && yearOptions.indexOf(String(filterYear))<0) setFilterYear(""); }, [yearOptions]);
   useEffect(function(){ if(filterMes && mesOptions.indexOf(Number(filterMes))<0) setFilterMes(""); }, [mesOptions]);
   useEffect(function(){ if(filterComuna && comunaOptions.indexOf(filterComuna)<0) setFilterComuna(""); }, [comunaOptions]);
   useEffect(function(){ if(filterProv && provOptions.indexOf(filterProv)<0) setFilterProv(""); }, [provOptions]);
   useEffect(function(){ if(filterEmpresa && empresaOptions.indexOf(filterEmpresa)<0) setFilterEmpresa(""); }, [empresaOptions]);
 
-  /* -------------- alta --------------- */
-  function addDisp(){ setForm(function(f){ return Object.assign({}, f, {disponibilidades: f.disponibilidades.concat([{tons:"",fecha:""}])}); }); }
-  function delDisp(i){ setForm(function(f){ return Object.assign({}, f, {disponibilidades: f.disponibilidades.filter(function(_,idx){return idx!==i;})}); }); }
-  function updDisp(i,key,val){ setForm(function(f){ var next=f.disponibilidades.slice(); var row=Object.assign({}, next[i]); row[key]=val; next[i]=row; return Object.assign({}, f, {disponibilidades: next}); }); }
-  function upd(key,val){ setForm(function(f){ var o={}; o[key]=val; return Object.assign({}, f, o); }); }
-  function submit(e){
-    e.preventDefault();
-    var has = form.disponibilidades.some(function(x){return x.tons && x.fecha;});
-    if(!(form.proveedor || form.proveedorKey) || !has){ alert("Proveedor o proveedorKey y al menos una disponibilidad"); return; }
-    MMppApi.crearDisponibilidades(form).then(function(){
-      setForm({ proveedor:"", proveedorKey:"", comuna:"", centroCodigo:"", areaCodigo:"", contacto:"", disponibilidades:[{tons:"",fecha:""}] });
-      return reload();
-    });
-  }
-
-  /* -------------- saldo por dispo -------------- */
+  /* -------------- saldo por dispo / inventario -------------- */
   var asigByDispo = React.useMemo(function(){ return GroupBy(asig, function(a){ return (a.disponibilidadId||"__none__"); }); }, [asig]);
   function saldoDe(r){ var usadas=(asigByDispo[r.id]||[]).reduce(function(a,x){return a+(Number(x.cantidad)||0);},0); return Math.max(0,(Number(r.tons)||0)-usadas); }
 
-  /* -------------- inventario agrupado -------------- */
   var invRows = React.useMemo(function(){
     var base = (dispon||[]).slice();
     if(filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
@@ -203,7 +183,6 @@ function AbastecimientoMMPP(){
     });
   }, [dispon, asig, filterYear, filterMes, filterComuna, filterProv, filterEmpresa, searchContacto]);
 
-  // Total bajo Comuna
   var totalsFiltro = React.useMemo(function(){
     var base = (dispon||[]).slice();
     if(filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
@@ -215,23 +194,20 @@ function AbastecimientoMMPP(){
     return {tons:tons, lotes:base.length};
   }, [dispon, asig, filterYear, filterMes, filterComuna, filterProv, filterEmpresa]);
 
-  /* -------------- acciones -------------- */
+  /* -------------- acciones inventario -------------- */
   function abrirAsignacion(row){
     var lots=row.items.map(function(r){ return {id:r.id, saldo:saldoDe(r), original:r.tons, fecha:r.fecha, mesKey:r.mesKey}; });
     var selected=row.items[0]?row.items[0].id:null;
-    setAssignModal({ proveedor:row.proveedor, comuna:row.comuna, contacto:form.contacto||"", lots:lots, selectedId:selected, cantidad:"", destMes:null, destAnio:null });
+    setAssignModal({ proveedor:row.proveedor, comuna:row.comuna, contacto:"", lots:lots, selectedId:selected, cantidad:"", destMes:null, destAnio:null });
   }
 
   function confirmarAsignacion(){
     var m=assignModal; if(!m){ return; }
-
     if(!m.selectedId){ alert("Selecciona una disponibilidad."); return; }
     var lot = getLotById(m.lots, m.selectedId);
     if(!lot){ alert("No se encontró la disponibilidad seleccionada."); return; }
-
     var cantidad = Number(m.cantidad||0);
     var saldo    = Number(lot.saldo||0);
-
     if (!m.destMes || !m.destAnio){ alert("Selecciona mes y año de destino."); return; }
     if (cantidad <= 0){ alert("Ingresa una cantidad mayor a 0."); return; }
     if (cantidad > saldo){
@@ -239,71 +215,8 @@ function AbastecimientoMMPP(){
       setAssignModal(function(mm){ return Object.assign({}, mm, { cantidad: String(clamp(cantidad,0,saldo)) }); });
       return;
     }
-
     var payload={ disponibilidadId:lot.id, cantidad:cantidad, destMes:Number(m.destMes), destAnio:Number(m.destAnio), proveedorNombre:assignModal.proveedor, originalTons:lot.original, originalFecha:lot.fecha };
     MMppApi.crearAsignacion(payload).then(function(){return reload();}).finally(function(){ setAssignModal(null); });
-  }
-
-  var _hp=React.useState(""), histProv=_hp[0], setHistProv=_hp[1];
-  var _hm=React.useState(""), histMes=_hm[0], setHistMes=_hm[1];
-  var _hy=React.useState(""), histAnio=_hy[0], setHistAnio=_hy[1];
-
-  /* --- AGRUPADO POR (proveedor, mes/año destino) CON LISTA DE ITEMS --- */
-  var histAgg = React.useMemo(function(){
-    var base = asig
-      .filter(function(a){ return Number(a.cantidad) > 0; })
-      .filter(function(a){
-        return (!histProv || a.proveedorNombre===histProv) &&
-               (!histMes  || String(a.destMes)===String(histMes)) &&
-               (!histAnio || String(a.destAnio)===String(histAnio));
-      });
-
-    var map = {};
-    for (var i=0;i<base.length;i++){
-      var a = base[i];
-      var prov = a.proveedorNombre || '—';
-      var y = Number(a.destAnio)||0;
-      var m = Number(a.destMes)||0;
-      var k = prov + '|' + y + '|' + m;
-
-      if (!map[k]){
-        map[k] = {
-          key: k,
-          proveedorNombre: prov,
-          destMes: m,
-          destAnio: y,
-          cantidad: 0,
-          lastCreatedAt: a.createdAt || null,
-          items: []
-        };
-      }
-      map[k].cantidad += Number(a.cantidad)||0;
-      map[k].items.push(a);
-
-      if (a.createdAt){
-        if (!map[k].lastCreatedAt || new Date(a.createdAt) > new Date(map[k].lastCreatedAt)){
-          map[k].lastCreatedAt = a.createdAt;
-        }
-      }
-    }
-
-    var out = Object.keys(map).map(function(k){ return map[k]; });
-    out.sort(function(A,B){
-      if (A.destAnio !== B.destAnio) return A.destAnio - B.destAnio;
-      if (A.destMes  !== B.destMes)  return A.destMes  - B.destMes;
-      return String(A.proveedorNombre).localeCompare(String(B.proveedorNombre));
-    });
-    return out;
-  }, [asig, histProv, histMes, histAnio]);
-
-  // abrir/cerrar sub-detalle por grupo
-  var _open=React.useState({}), histOpen=_open[0], setHistOpen=_open[1];
-  function toggleHistRow(k){
-    setHistOpen(function(prev){
-      var nx = Object.assign({}, prev);
-      nx[k] = !nx[k];
-      return nx;
-    });
   }
 
   function onEditAsign(a){
@@ -339,7 +252,79 @@ function AbastecimientoMMPP(){
 
   function limpiarFiltros(){ setFilterYear(""); setFilterMes(""); setFilterComuna(""); setFilterProv(""); setFilterEmpresa(""); setSearchContacto(""); }
 
-  /* ----------------- UI ----------------- */
+  /* --------------------------- HISTORIAL AGRUPADO AÑO → MES → PROVEEDOR --------------------------- */
+  var _hp=React.useState(""), histProv=_hp[0], setHistProv=_hp[1];
+  var _hm=React.useState(""), histMes=_hm[0], setHistMes=_hm[1];
+  var _hy=React.useState(""), histAnio=_hy[0], setHistAnio=_hy[1];
+
+  // grupos por proveedor, dentro de cada (año,mes)
+  var histGroupsFlat = React.useMemo(function(){
+    var base = asig
+      .filter(function(a){ return Number(a.cantidad) > 0; })
+      .filter(function(a){
+        return (!histProv || a.proveedorNombre===histProv) &&
+               (!histMes  || String(a.destMes)===String(histMes)) &&
+               (!histAnio || String(a.destAnio)===String(histAnio));
+      });
+
+    var map = {};
+    for (var i=0;i<base.length;i++){
+      var a = base[i];
+      var prov = a.proveedorNombre || '—';
+      var y = Number(a.destAnio)||0;
+      var m = Number(a.destMes)||0;
+      var k = y + '|' + m + '|' + prov;
+
+      if (!map[k]){
+        map[k] = {
+          key: k,
+          proveedorNombre: prov,
+          destMes: m,
+          destAnio: y,
+          cantidad: 0,
+          lastCreatedAt: a.createdAt || null,
+          items: []
+        };
+      }
+      map[k].cantidad += Number(a.cantidad)||0;
+      map[k].items.push(a);
+      if (a.createdAt){
+        if (!map[k].lastCreatedAt || new Date(a.createdAt) > new Date(map[k].lastCreatedAt)){
+          map[k].lastCreatedAt = a.createdAt;
+        }
+      }
+    }
+    return Object.keys(map).map(function(k){ return map[k]; });
+  }, [asig, histProv, histMes, histAnio]);
+
+  // estructura anidada: años -> meses -> grupos (proveedor)
+  var histTree = React.useMemo(function(){
+    var byYear = GroupBy(histGroupsFlat, function(g){ return g.destAnio; });
+    var years = Object.keys(byYear).map(function(y){
+      var arrY = byYear[y];
+      var byMonth = GroupBy(arrY, function(g){ return g.destMes; });
+      var months = Object.keys(byMonth).map(function(m){
+        var groups = byMonth[m].slice().sort(function(A,B){
+          return String(A.proveedorNombre).localeCompare(String(B.proveedorNombre));
+        });
+        // ordenar grupos por proveedor; la tabla mostrará fecha/dest/total
+        return { mes: Number(m), groups: groups };
+      }).sort(function(a,b){ return a.mes - b.mes; });
+      return { anio: Number(y), months: months };
+    }).sort(function(a,b){ return a.anio - b.anio; });
+    return years;
+  }, [histGroupsFlat]);
+
+  var _open=React.useState({}), histOpen=_open[0], setHistOpen=_open[1];
+  function toggleHistRow(k){
+    setHistOpen(function(prev){
+      var nx = Object.assign({}, prev);
+      nx[k] = !nx[k];
+      return nx;
+    });
+  }
+
+  /* --------------------------- RENDER --------------------------- */
   return (
     <div className="mmpp-wrap">
       <div className="mmpp-hero">
@@ -349,44 +334,11 @@ function AbastecimientoMMPP(){
 
       <div style={{height:18}} />
 
-      <form onSubmit={submit} className="mmpp-card">
-        <h2 style={{margin:"0 0 14px", fontWeight:800}}>Registrar Nueva Materia Prima</h2>
-        <div className="mmpp-grid">
-          <input className="mmpp-input" placeholder="Proveedor (Obligatorio)" value={form.proveedor} onChange={function(e){upd("proveedor", e.target.value);}} />
-          <input className="mmpp-input" placeholder="Comuna (Obligatorio)" value={form.comuna} onChange={function(e){upd("comuna", e.target.value);}} />
-          <input className="mmpp-input" placeholder="Código Centro (Opcional)" value={form.centroCodigo} onChange={function(e){upd("centroCodigo", e.target.value);}} />
-          <input className="mmpp-input" placeholder="Código Área (Opcional)" value={form.areaCodigo} onChange={function(e){upd("areaCodigo", e.target.value);}} />
-          <input className="mmpp-input" placeholder="Contacto (Opcional)" value={form.contacto} onChange={function(e){upd("contacto", e.target.value);}} />
-          <input className="mmpp-input" placeholder="Proveedor Key (Opcional)" value={form.proveedorKey} onChange={function(e){upd("proveedorKey", e.target.value);}} />
-        </div>
-
-        <div style={{marginTop:16, fontWeight:800}}>Disponibilidad (Cantidad y Fecha)</div>
-        {form.disponibilidades.map(function(d,i){
-          return (
-            <div key={i} className="mmpp-grid" style={{alignItems:"center"}}>
-              <input className="mmpp-input" type="number" placeholder="Cantidad (tons) (Obligatorio)" value={d.tons} onChange={function(e){updDisp(i,"tons",e.target.value);}} />
-              <div style={{display:"flex", gap:10, alignItems:"center"}}>
-                <input className="mmpp-input" type="date" value={d.fecha} onChange={function(e){updDisp(i,"fecha",e.target.value);}} style={{flex:1}} />
-                <button type="button" className="mmpp-ghostbtn mmpp-danger" onClick={function(){delDisp(i);}}>Eliminar</button>
-              </div>
-            </div>
-          );
-        })}
-        <div style={{marginTop:10}}>
-          <button type="button" className="mmpp-add" onClick={addDisp}>+ Agregar Otra Disponibilidad</button>
-        </div>
-
-        <div style={{marginTop:16}}>
-          <button className="mmpp-button" type="submit">+ Registrar Materia Prima</button>
-        </div>
-      </form>
-
-      <div style={{height:18}} />
-
+      {/* INVENTARIO */}
       <div className="mmpp-card">
         <h2 style={{margin:"0 0 14px", fontWeight:800}}>Inventario Actual</h2>
 
-        {/* Fila 1: Año, Mes, Comuna, Contacto */}
+        {/* Filtros inventario */}
         <div className="mmpp-grid4" style={{marginBottom:6}}>
           <div>
             <select className="mmpp-input" value={filterYear} onChange={function(e){ setFilterYear(e.target.value); }}>
@@ -417,7 +369,6 @@ function AbastecimientoMMPP(){
           </div>
         </div>
 
-        {/* Fila 2: Empresa, buscador, limpiar + Ocultar/Mostrar */}
         <div className="mmpp-grid4" style={{alignItems:"center", marginBottom:12}}>
           <div>
             <select className="mmpp-input" value={filterEmpresa} onChange={function(e){ setFilterEmpresa(e.target.value); }}>
@@ -482,13 +433,13 @@ function AbastecimientoMMPP(){
 
       <div style={{height:18}} />
 
-      {/* HISTORIAL */}
+      {/* HISTORIAL AGRUPADO AÑO → MES → PROVEEDOR */}
       <div className="mmpp-card">
         <h2 style={{margin:"0 0 14px", fontWeight:800}}>Historial de Asignaciones</h2>
         <div className="mmpp-grid" style={{marginBottom:12}}>
           <select className="mmpp-input" value={histProv} onChange={function(e){ setHistProv(e.target.value); }}>
             <option value="">Todos los Contactos</option>
-            {uniqSorted(asig.map(function(a){return a.proveedorNombre;}).filter(Boolean)).map(function(p){return <option key={p} value={p}>{p}</option>;})}
+            {Array.from(new Set(asig.map(function(a){return a.proveedorNombre;}).filter(Boolean))).sort().map(function(p){return <option key={p} value={p}>{p}</option>;})}
           </select>
           <div style={{display:"flex",gap:10}}>
             <select className="mmpp-input" value={histMes} onChange={function(e){ setHistMes(e.target.value); }}>
@@ -497,7 +448,7 @@ function AbastecimientoMMPP(){
             </select>
             <select className="mmpp-input" value={histAnio} onChange={function(e){ setHistAnio(e.target.value); }}>
               <option value="">Todos los Años</option>
-              {uniqSorted(asig.map(function(a){return a.destAnio;}).filter(Boolean)).map(function(y){ return <option key={y} value={y}>{y}</option>; })}
+              {Array.from(new Set(asig.map(function(a){return a.destAnio;}).filter(Boolean))).sort().map(function(y){ return <option key={y} value={y}>{y}</option>; })}
             </select>
           </div>
         </div>
@@ -510,73 +461,87 @@ function AbastecimientoMMPP(){
               <th>CONTACTO</th>
               <th>CANTIDAD ASIGNADA</th>
               <th>DESTINO (MES/AÑO)</th>
-              <th>ACCIONES</th>
+              {/* SIN columna Acciones en la lista principal */}
             </tr>
           </thead>
           <tbody>
-            {histAgg.map(function(g,idx){
-              var fecha = g.lastCreatedAt ? new Date(g.lastCreatedAt) : null;
-              var fechaTxt = fecha ? fecha.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}) : "—";
-              var dest = (g.destMes && g.destAnio) ? (mesesEs[(g.destMes-1)||0]+" "+g.destAnio) : "—";
-              var open = !!histOpen[g.key];
-
+            {histTree.map(function(seccion){
               return (
-                React.createElement(React.Fragment, {key:g.key},
-                  React.createElement("tr", null,
-                    React.createElement("td", null,
-                      React.createElement("span", {className:"hist-toggle", onClick:function(){toggleHistRow(g.key);}}, open?"▾":"▸")
-                    ),
-                    React.createElement("td", null, fechaTxt),
-                    React.createElement("td", null, g.proveedorNombre||"—"),
-                    React.createElement("td", null, React.createElement("strong", null, numeroCL(g.cantidad)+" tons")),
-                    React.createElement("td", null, dest),
-                    React.createElement("td", null, React.createElement("em", null, open?"Ocultar detalle":"Ver detalle"))
-                  ),
-                  open && React.createElement("tr", {className:"hist-sub"},
-                    React.createElement("td", {colSpan:6},
-                      React.createElement("div", {style:{padding:"8px 10px"}},
-                        React.createElement("div", {style:{fontWeight:800, marginBottom:6}}, "Asignaciones del grupo"),
-                        React.createElement("table", {className:"mmpp", style:{margin:"6px 0"}},
-                          React.createElement("thead", null,
-                            React.createElement("tr", null,
-                              React.createElement("th", null, "•"),
-                              React.createElement("th", null, "Fecha"),
-                              React.createElement("th", null, "Cantidad"),
-                              React.createElement("th", null, "Disponibilidad original"),
-                              React.createElement("th", null, "Acciones")
-                            )
-                          ),
-                          React.createElement("tbody", null,
-                            g.items.map(function(a,i){
-                              var f=a.createdAt?new Date(a.createdAt):null;
-                              var fTxt=f?f.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}):"—";
-                              var orig=(a.originalTons?(numeroCL(a.originalTons)+" tons"):"")+(a.originalFecha?(" (desde "+new Date(a.originalFecha).toLocaleDateString("es-CL")+")"):"");
-                              return React.createElement("tr", {key:(a.id||i)},
-                                React.createElement("td", null, React.createElement("span",{className:"hist-bullet"})),
-                                React.createElement("td", null, fTxt),
-                                React.createElement("td", null, React.createElement("strong", null, numeroCL(a.cantidad)+" t")),
-                                React.createElement("td", null, orig||"—"),
-                                React.createElement("td", null,
-                                  React.createElement("div",{className:"mmpp-actions"},
-                                    React.createElement("button",{className:"mmpp-ghostbtn", onClick:function(){onEditAsign(a);}}, "✏️ Editar"),
-                                    React.createElement("button",{className:"mmpp-ghostbtn mmpp-danger", onClick:function(){borrarAsig(a);}}, "🗑️ Eliminar")
-                                  )
-                                )
-                              );
-                            })
-                          )
-                        )
-                      )
-                    )
-                  )
-                )
+                <React.Fragment key={"y-"+seccion.anio}>
+                  <tr className="hist-section"><td colSpan={5}>Año {seccion.anio}</td></tr>
+                  {seccion.months.map(function(mm){
+                    return (
+                      <React.Fragment key={"m-"+seccion.anio+"-"+mm.mes}>
+                        <tr className="hist-month"><td colSpan={5}>{mesesEs[mm.mes-1]}</td></tr>
+                        {mm.groups.map(function(g){
+                          var fecha = g.lastCreatedAt ? new Date(g.lastCreatedAt) : null;
+                          var fechaTxt = fecha ? fecha.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}) : "—";
+                          var dest = (g.destMes && g.destAnio) ? (mesesEs[(g.destMes-1)||0]+" "+g.destAnio) : "—";
+                          var open = !!histOpen[g.key];
+                          return (
+                            <React.Fragment key={g.key}>
+                              <tr>
+                                <td><span className="hist-toggle" onClick={function(){toggleHistRow(g.key);}}>{open?"▾":"▸"}</span></td>
+                                <td>{fechaTxt}</td>
+                                <td>{g.proveedorNombre||"—"}</td>
+                                <td><strong>{numeroCL(g.cantidad)} tons</strong></td>
+                                <td>{dest}</td>
+                              </tr>
+                              {open && (
+                                <tr className="hist-sub">
+                                  <td colSpan={5}>
+                                    <div style={{padding:"8px 10px"}}>
+                                      <div style={{fontWeight:800, marginBottom:6}}>Asignaciones del grupo</div>
+                                      <table className="mmpp" style={{margin:"6px 0"}}>
+                                        <thead>
+                                          <tr>
+                                            <th>•</th>
+                                            <th>Fecha</th>
+                                            <th>Cantidad</th>
+                                            <th>Disponibilidad original</th>
+                                            <th>Acciones</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {g.items.map(function(a,i){
+                                            var f=a.createdAt?new Date(a.createdAt):null;
+                                            var fTxt=f?f.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}):"—";
+                                            var orig=(a.originalTons?(numeroCL(a.originalTons)+" tons"):"")+(a.originalFecha?(" (desde "+new Date(a.originalFecha).toLocaleDateString("es-CL")+")"):"");
+                                            return (
+                                              <tr key={(a.id||i)}>
+                                                <td><span className="hist-bullet" /></td>
+                                                <td>{fTxt}</td>
+                                                <td><strong>{numeroCL(a.cantidad)} t</strong></td>
+                                                <td>{orig||"—"}</td>
+                                                <td>
+                                                  <div className="mmpp-actions">
+                                                    <button className="mmpp-ghostbtn" onClick={function(){onEditAsign(a);}}>✏️ Editar</button>
+                                                    <button className="mmpp-ghostbtn mmpp-danger" onClick={function(){borrarAsig(a);}}>🗑️ Eliminar</button>
+                                                  </div>
+                                                </td>
+                                              </tr>
+                                            );
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  })}
+                </React.Fragment>
               );
             })}
           </tbody>
         </table>
       </div>
 
-      {/* MODALES */}
+      {/* MODALES (Inventario / Asignación y edición) */}
       {assignModal && (
         <div className="modalBG" onClick={function(){setAssignModal(null);}}>
           <div className="modal" onClick={function(e){e.stopPropagation();}}>
@@ -653,14 +618,9 @@ function AbastecimientoMMPP(){
               </div>
               <div style={{marginTop:12}}>
                 <button
-                  className="mmpp-button"
+                  className="mmpp-ghostbtn"
                   onClick={confirmarAsignacion}
-                  disabled={
-                    !assignModal.selectedId ||
-                    !assignModal.destMes ||
-                    !assignModal.destAnio ||
-                    !(Number(assignModal.cantidad)>0)
-                  }
+                  disabled={!assignModal.selectedId || !assignModal.destMes || !assignModal.destAnio || !(Number(assignModal.cantidad)>0)}
                 >
                   ✔ Confirmar Asignación
                 </button>
@@ -688,7 +648,7 @@ function AbastecimientoMMPP(){
                   </select>
                 </div>
               </div>
-              <div style={{marginTop:12}}><button className="mmpp-button" onClick={guardarEditAsig}>💾 Guardar Cambios</button></div>
+              <div style={{marginTop:12}}><button className="mmpp-ghostbtn" onClick={guardarEditAsig}>💾 Guardar Cambios</button></div>
             </div>
           </div>
         </div>
@@ -718,7 +678,7 @@ function AbastecimientoMMPP(){
               </table>
               <div style={{marginTop:12,display:"flex",gap:10,justifyContent:"flex-end"}}>
                 <button className="mmpp-ghostbtn" onClick={function(){setEditLotes(null);}}>Cancelar</button>
-                <button className="mmpp-button" onClick={guardarEditarLotes}>💾 Guardar cambios</button>
+                <button className="mmpp-ghostbtn" onClick={guardarEditarLotes}>💾 Guardar cambios</button>
               </div>
             </div>
           </div>
@@ -728,6 +688,7 @@ function AbastecimientoMMPP(){
   );
 }
 
-// Montaje
+/* Montaje */
 var mountNode = document.getElementById("root");
 ReactDOM.createRoot(mountNode).render(<AbastecimientoMMPP />);
+</script>
