@@ -27,6 +27,11 @@ function cssInject() {
   .modal{width:min(860px,96vw);background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 30px 60px rgba(0,0,0,.2);padding:20px}
   .row-hover{border:1px solid #e5e7eb; border-radius:14px; padding:14px; margin-bottom:10px; background:#f9fafb}
   .row-hover.sel{background:#e0e7ff; border-color:#c7d2fe}
+
+  /* detalle historial */
+  .hist-toggle{cursor:pointer; user-select:none; font-weight:800}
+  .hist-sub{background:#f9fafb; border:1px dashed #e5e7eb}
+  .hist-bullet{display:inline-block; width:7px; height:7px; border-radius:999px; background:#4f46e5; margin-right:6px}
   `;
   const el = document.createElement("style");
   el.textContent = css;
@@ -243,14 +248,63 @@ function AbastecimientoMMPP(){
   var _hm=React.useState(""), histMes=_hm[0], setHistMes=_hm[1];
   var _hy=React.useState(""), histAnio=_hy[0], setHistAnio=_hy[1];
 
-  var hist = React.useMemo(function(){
-    return asig.filter(function(a){return Number(a.cantidad)>0;})
-               .filter(function(a){
-                  return (!histProv || a.proveedorNombre===histProv) &&
-                         (!histMes || String(a.destMes)===String(histMes)) &&
-                         (!histAnio || String(a.destAnio)===String(histAnio));
-               });
+  /* --- AGRUPADO POR (proveedor, mes/año destino) CON LISTA DE ITEMS --- */
+  var histAgg = React.useMemo(function(){
+    var base = asig
+      .filter(function(a){ return Number(a.cantidad) > 0; })
+      .filter(function(a){
+        return (!histProv || a.proveedorNombre===histProv) &&
+               (!histMes  || String(a.destMes)===String(histMes)) &&
+               (!histAnio || String(a.destAnio)===String(histAnio));
+      });
+
+    var map = {};
+    for (var i=0;i<base.length;i++){
+      var a = base[i];
+      var prov = a.proveedorNombre || '—';
+      var y = Number(a.destAnio)||0;
+      var m = Number(a.destMes)||0;
+      var k = prov + '|' + y + '|' + m;
+
+      if (!map[k]){
+        map[k] = {
+          key: k,
+          proveedorNombre: prov,
+          destMes: m,
+          destAnio: y,
+          cantidad: 0,
+          lastCreatedAt: a.createdAt || null,
+          items: []
+        };
+      }
+      map[k].cantidad += Number(a.cantidad)||0;
+      map[k].items.push(a);
+
+      if (a.createdAt){
+        if (!map[k].lastCreatedAt || new Date(a.createdAt) > new Date(map[k].lastCreatedAt)){
+          map[k].lastCreatedAt = a.createdAt;
+        }
+      }
+    }
+
+    var out = Object.keys(map).map(function(k){ return map[k]; });
+    out.sort(function(A,B){
+      if (A.destAnio !== B.destAnio) return A.destAnio - B.destAnio;
+      if (A.destMes  !== B.destMes)  return A.destMes  - B.destMes;
+      return String(A.proveedorNombre).localeCompare(String(B.proveedorNombre));
+    });
+    return out;
   }, [asig, histProv, histMes, histAnio]);
+
+  // abrir/cerrar sub-detalle por grupo
+  var _open=React.useState({}), histOpen=_open[0], setHistOpen=_open[1];
+  function toggleHistRow(k){
+    setHistOpen(function(prev){
+      var nx = Object.assign({}, prev);
+      nx[k] = !nx[k];
+      return nx;
+    });
+  }
 
   function onEditAsign(a){
     setEditAsig({ id:a.id, cantidad:String(a.cantidad||""), destMes:String(a.destMes||""), destAnio:String(a.destAnio||""), proveedorNombre:a.proveedorNombre, originalFecha:a.originalFecha });
@@ -451,32 +505,71 @@ function AbastecimientoMMPP(){
         <table className="mmpp">
           <thead>
             <tr>
-              <th>FECHA ASIGNACIÓN</th>
+              <th style={{width:40}}></th>
+              <th>FECHA (última)</th>
               <th>CONTACTO</th>
               <th>CANTIDAD ASIGNADA</th>
               <th>DESTINO (MES/AÑO)</th>
-              <th>DISPONIBILIDAD ORIGINAL</th>
               <th>ACCIONES</th>
             </tr>
           </thead>
           <tbody>
-            {hist.map(function(a,idx){
-              var fecha=a.createdAt?new Date(a.createdAt):null;
-              var fechaTxt=fecha?fecha.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}):"—";
-              var dest=(a.destMes && a.destAnio)?(mesesEs[(a.destMes-1)||0]+" "+a.destAnio):"—";
-              var orig=(a.originalTons?(numeroCL(a.originalTons)+" tons"):"")+(a.originalFecha?(" (desde "+new Date(a.originalFecha).toLocaleDateString("es-CL")+")"):"");
+            {histAgg.map(function(g,idx){
+              var fecha = g.lastCreatedAt ? new Date(g.lastCreatedAt) : null;
+              var fechaTxt = fecha ? fecha.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}) : "—";
+              var dest = (g.destMes && g.destAnio) ? (mesesEs[(g.destMes-1)||0]+" "+g.destAnio) : "—";
+              var open = !!histOpen[g.key];
+
               return (
-                <tr key={a.id||idx}>
-                  <td>{fechaTxt}</td>
-                  <td>{a.proveedorNombre||"—"}</td>
-                  <td><strong>{numeroCL(a.cantidad)} tons</strong></td>
-                  <td>{dest}</td>
-                  <td>{orig||"—"}</td>
-                  <td className="mmpp-actions">
-                    <button className="mmpp-ghostbtn" onClick={function(){onEditAsign(a);}}>✏️ Editar</button>
-                    <button className="mmpp-ghostbtn mmpp-danger" onClick={function(){borrarAsig(a);}}>🗑️ Eliminar</button>
-                  </td>
-                </tr>
+                React.createElement(React.Fragment, {key:g.key},
+                  React.createElement("tr", null,
+                    React.createElement("td", null,
+                      React.createElement("span", {className:"hist-toggle", onClick:function(){toggleHistRow(g.key);}}, open?"▾":"▸")
+                    ),
+                    React.createElement("td", null, fechaTxt),
+                    React.createElement("td", null, g.proveedorNombre||"—"),
+                    React.createElement("td", null, React.createElement("strong", null, numeroCL(g.cantidad)+" tons")),
+                    React.createElement("td", null, dest),
+                    React.createElement("td", null, React.createElement("em", null, open?"Ocultar detalle":"Ver detalle"))
+                  ),
+                  open && React.createElement("tr", {className:"hist-sub"},
+                    React.createElement("td", {colSpan:6},
+                      React.createElement("div", {style:{padding:"8px 10px"}},
+                        React.createElement("div", {style:{fontWeight:800, marginBottom:6}}, "Asignaciones del grupo"),
+                        React.createElement("table", {className:"mmpp", style:{margin:"6px 0"}},
+                          React.createElement("thead", null,
+                            React.createElement("tr", null,
+                              React.createElement("th", null, "•"),
+                              React.createElement("th", null, "Fecha"),
+                              React.createElement("th", null, "Cantidad"),
+                              React.createElement("th", null, "Disponibilidad original"),
+                              React.createElement("th", null, "Acciones")
+                            )
+                          ),
+                          React.createElement("tbody", null,
+                            g.items.map(function(a,i){
+                              var f=a.createdAt?new Date(a.createdAt):null;
+                              var fTxt=f?f.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}):"—";
+                              var orig=(a.originalTons?(numeroCL(a.originalTons)+" tons"):"")+(a.originalFecha?(" (desde "+new Date(a.originalFecha).toLocaleDateString("es-CL")+")"):"");
+                              return React.createElement("tr", {key:(a.id||i)},
+                                React.createElement("td", null, React.createElement("span",{className:"hist-bullet"})),
+                                React.createElement("td", null, fTxt),
+                                React.createElement("td", null, React.createElement("strong", null, numeroCL(a.cantidad)+" t")),
+                                React.createElement("td", null, orig||"—"),
+                                React.createElement("td", null,
+                                  React.createElement("div",{className:"mmpp-actions"},
+                                    React.createElement("button",{className:"mmpp-ghostbtn", onClick:function(){onEditAsign(a);}}, "✏️ Editar"),
+                                    React.createElement("button",{className:"mmpp-ghostbtn mmpp-danger", onClick:function(){borrarAsig(a);}}, "🗑️ Eliminar")
+                                  )
+                                )
+                              );
+                            })
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
               );
             })}
           </tbody>
