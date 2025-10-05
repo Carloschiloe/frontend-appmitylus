@@ -1,66 +1,57 @@
-<script type="text/babel">
-/* NerdUI v3.2 — sin optional chaining ni nullish coalescing para Babel 6 */
+// NerdUI v3.2 — compatible con Babel 6 (sin optional chaining ni nullish)
+// ========= MMPP Inventario (sin formulario) - Historial agrupado Año→Mes→Proveedor =========
 const { useEffect, useMemo, useState } = React;
 
-/* --------------------------- ESTILOS --------------------------- */
+/* ------------------------------- ESTILOS ------------------------------- */
 function cssInject() {
-  const css = `
-  body{margin:0;background:#f6f8ff}
-  .mmpp-wrap{max-width:1200px;margin:0 auto;padding:20px}
-  .mmpp-hero{background:linear-gradient(180deg,#f3f6ff,transparent); border:1px solid #e5e7eb; border-radius:20px; padding:28px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 10px 30px rgba(17,24,39,.06)}
-  .mmpp-hero h1{margin:0;font-weight:800;color:#2b3440}
-  .mmpp-badge{background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:10px 16px; border-radius:14px; font-weight:700; display:inline-flex; align-items:center; gap:10px}
-  .mmpp-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}
-  .mmpp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  .mmpp-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}
-  .mmpp-grid4 > *{min-width:0}
-  .mmpp-input{height:48px;border:1px solid #e5e7eb;border-radius:14px;padding:0 14px;background:#fafafa;width:100%}
-  .mmpp-ghostbtn{background:#eef2ff; border:1px solid #c7d2fe; color:#1e40af; height:38px; border-radius:10px; padding:0 12px; cursor:pointer}
-  .mmpp-danger{background:#fee2e2; border:1px solid #fecaca; color:#b91c1c}
-  .mmpp-help{font-size:12px;color:#6b7280;margin-top:6px}
-  table.mmpp{width:100%; border-collapse:separate; border-spacing:0 8px}
-  table.mmpp th, table.mmpp td{padding:12px 10px}
-  table.mmpp tr{background:#fff; border:1px solid #e5e7eb}
-  .mmpp-chip{display:inline-block; padding:6px 10px; background:#ede9fe; color:#6d28d9; border-radius:999px; margin-right:8px; font-weight:700; font-size:12px}
-  .mmpp-actions{display:flex; gap:10px; align-items:center}
-  .modalBG{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:999}
-  .modal{width:min(860px,96vw);background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 30px 60px rgba(0,0,0,.2);padding:20px}
-  .row-hover{border:1px solid #e5e7eb; border-radius:14px; padding:14px; margin-bottom:10px; background:#f9fafb}
-  .row-hover.sel{background:#e0e7ff; border-color:#c7d2fe}
-
-  /* detalle historial */
-  .hist-toggle{cursor:pointer; user-select:none; font-weight:800}
-  .hist-sub{background:#f9fafb; border:1px dashed #e5e7eb}
-  .hist-bullet{display:inline-block; width:7px; height:7px; border-radius:999px; background:#4f46e5; margin-right:6px}
-
-  /* encabezados de sección (Año/Mes) en historial */
-  .hist-section{background:#f1f5f9; font-weight:800; color:#111827}
-  .hist-month{background:#f8fafc; font-weight:800}
-  `;
-  const el = document.createElement("style");
+  var css = [
+    'body{margin:0;background:#f6f8ff}',
+    '.mmpp-wrap{max-width:1200px;margin:0 auto;padding:20px}',
+    '.mmpp-hero{background:linear-gradient(180deg,#f3f6ff,transparent);border:1px solid #e5e7eb;border-radius:20px;padding:28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 10px 30px rgba(17,24,39,.06)}',
+    '.mmpp-hero h1{margin:0;font-weight:800;color:#2b3440}',
+    '.mmpp-badge{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;padding:10px 16px;border-radius:14px;font-weight:700;display:inline-flex;align-items:center;gap:10px}',
+    '.mmpp-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}',
+    '.mmpp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}',
+    '.mmpp-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}',
+    '.mmpp-grid4>*{min-width:0}',
+    '.mmpp-input{height:48px;border:1px solid #e5e7eb;border-radius:14px;padding:0 14px;background:#fafafa;width:100%}',
+    '.mmpp-ghostbtn{background:#eef2ff;border:1px solid #c7d2fe;color:#1e40af;height:38px;border-radius:10px;padding:0 12px;cursor:pointer}',
+    '.mmpp-danger{background:#fee2e2;border:1px solid #fecaca;color:#b91c1c}',
+    '.mmpp-help{font-size:12px;color:#6b7280;margin-top:6px}',
+    'table.mmpp{width:100%;border-collapse:separate;border-spacing:0 8px}',
+    'table.mmpp th,table.mmpp td{padding:12px 10px}',
+    'table.mmpp tr{background:#fff;border:1px solid #e5e7eb}',
+    '.mmpp-chip{display:inline-block;padding:6px 10px;background:#ede9fe;color:#6d28d9;border-radius:999px;margin-right:8px;font-weight:700;font-size:12px}',
+    '.mmpp-actions{display:flex;gap:10px;align-items:center}',
+    '.modalBG{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:999}',
+    '.modal{width:min(860px,96vw);background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 30px 60px rgba(0,0,0,.2);padding:20px}',
+    '.row-hover{border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:10px;background:#f9fafb}',
+    '.row-hover.sel{background:#e0e7ff;border-color:#c7d2fe}',
+    /* detalle historial */
+    '.hist-month{background:#f1f5f9;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;font-weight:800;color:#334155;margin:8px 0}',
+    '.hist-toggle{cursor:pointer;user-select:none;font-weight:800}',
+    '.hist-sub{background:#f9fafb;border:1px dashed #e5e7eb}',
+    '.hist-bullet{display:inline-block;width:7px;height:7px;border-radius:999px;background:#4f46e5;margin-right:6px}'
+  ].join('');
+  var el = document.createElement('style');
   el.textContent = css;
   document.head.appendChild(el);
 }
 
-/* --------------------------- HELPERS --------------------------- */
+/* ------------------------------- helpers ------------------------------- */
 function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
 function clamp(n, min, max){ n = Number(n)||0; return Math.max(min, Math.min(max, n)); }
 function getLotById(lots, id){ for (var i=0;i<(lots||[]).length;i++){ if(lots[i].id===id) return lots[i]; } return null; }
-
 var mesesEs = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 var mesesShort = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
-
 function chipLabelFromMesKey(mk){
   if(!mk || mk.indexOf("-")<0) return mk || "—";
   var p = mk.split("-"); var y = String(p[0]).slice(-2); var m = Math.max(1, Math.min(12, Number(p[1])||1));
   return mesesShort[m-1]+y;
 }
+function GroupBy(arr, keyFn){ var m={}; (arr||[]).forEach(function(r){ var k=keyFn(r); m[k]=(m[k]||[]).concat([r]); }); return m; }
 
-function GroupBy(arr, keyFn){
-  var m={}; (arr||[]).forEach(function(r){ var k=keyFn(r); m[k]=(m[k]||[]).concat([r]); }); return m;
-}
-
-/* --------------------------- DATA --------------------------- */
+/* ------------------------------- data ------------------------------- */
 function useData(){
   var _a=React.useState([]), dispon=_a[0], setDispon=_a[1];
   var _b=React.useState([]), asig=_b[0], setAsig=_b[1];
@@ -81,12 +72,12 @@ function useData(){
   return {dispon, asig, loading, reload: load};
 }
 
-/* --------------------------- APP --------------------------- */
+/* ------------------------------- componente ------------------------------- */
 function AbastecimientoMMPP(){
   var data=useData();
   var dispon=data.dispon, asig=data.asig, reload=data.reload;
 
-  // FILTROS inventario
+  // Filtros inventario
   var _y=React.useState(""), filterYear=_y[0], setFilterYear=_y[1];
   var _m=React.useState(""), filterMes=_m[0], setFilterMes=_m[1];
   var _c=React.useState(""), filterComuna=_c[0], setFilterComuna=_c[1];
@@ -94,8 +85,10 @@ function AbastecimientoMMPP(){
   var _e=React.useState(""), filterEmpresa=_e[0], setFilterEmpresa=_e[1];
   var _s=React.useState(""), searchContacto=_s[0], setSearchContacto=_s[1];
 
+  // Toggle inventario
   var _ih=React.useState(false), invHidden=_ih[0], setInvHidden=_ih[1];
 
+  // Modales existentes (se mantienen)
   var _assign=React.useState(null), assignModal=_assign[0], setAssignModal=_assign[1];
   var _editA=React.useState(null), editAsig=_editA[0], setEditAsig=_editA[1];
   var _editL=React.useState(null), editLotes=_editL[0], setEditLotes=_editL[1];
@@ -110,35 +103,17 @@ function AbastecimientoMMPP(){
     if(excludeKey!=="emp"    && filterEmpresa)base = base.filter(function(d){ return d.empresaNombre===filterEmpresa; });
     return base;
   }
-  function uniqSorted(arr){
-    var set={}, out=[]; for(var i=0;i<arr.length;i++){ var v=arr[i]; if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v); } }
-    out.sort(); return out;
-  }
+  function uniqSorted(arr){ var set={}, out=[]; for(var i=0;i<arr.length;i++){ var v=arr[i]; if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v); } } out.sort(); return out; }
 
-  var yearOptions = React.useMemo(function(){
-    return uniqSorted(filteredBaseExcluding("year").map(function(d){return d.anio;}).filter(Boolean));
-  }, [dispon, filterMes, filterComuna, filterProv, filterEmpresa]);
-
-  var mesOptions = React.useMemo(function(){
-    var base = filteredBaseExcluding("mes");
-    var set={}, out=[];
-    for(var i=0;i<base.length;i++){
-      var m = Number(base[i] && base[i].mes);
-      if(m && !set[m]){ set[m]=1; out.push(m); }
-    }
-    out.sort(function(a,b){ return a-b; });
-    return out;
+  var yearOptions = React.useMemo(function(){ return uniqSorted(filteredBaseExcluding("year").map(function(d){return d.anio;}).filter(Boolean)); }, [dispon, filterMes, filterComuna, filterProv, filterEmpresa]);
+  var mesOptions  = React.useMemo(function(){
+    var base = filteredBaseExcluding("mes"); var set={}, out=[];
+    for(var i=0;i<base.length;i++){ var m = Number(base[i] && base[i].mes); if(m && !set[m]){ set[m]=1; out.push(m); } }
+    out.sort(function(a,b){ return a-b; }); return out;
   }, [dispon, filterYear, filterComuna, filterProv, filterEmpresa]);
-
-  var comunaOptions = React.useMemo(function(){
-    return uniqSorted(filteredBaseExcluding("comuna").map(function(d){return d.comuna;}).filter(Boolean));
-  }, [dispon, filterYear, filterMes, filterProv, filterEmpresa]);
-  var provOptions = React.useMemo(function(){
-    return uniqSorted(filteredBaseExcluding("prov").map(function(d){return (d.contactoNombre||d.proveedorNombre);}).filter(Boolean));
-  }, [dispon, filterYear, filterMes, filterComuna, filterEmpresa]);
-  var empresaOptions = React.useMemo(function(){
-    return uniqSorted(filteredBaseExcluding("emp").map(function(d){return d.empresaNombre;}).filter(Boolean));
-  }, [dispon, filterYear, filterMes, filterComuna, filterProv]);
+  var comunaOptions  = React.useMemo(function(){ return uniqSorted(filteredBaseExcluding("comuna").map(function(d){return d.comuna;}).filter(Boolean)); }, [dispon, filterYear, filterMes, filterProv, filterEmpresa]);
+  var provOptions    = React.useMemo(function(){ return uniqSorted(filteredBaseExcluding("prov").map(function(d){return (d.contactoNombre||d.proveedorNombre);}).filter(Boolean)); }, [dispon, filterYear, filterMes, filterComuna, filterEmpresa]);
+  var empresaOptions = React.useMemo(function(){ return uniqSorted(filteredBaseExcluding("emp").map(function(d){return d.empresaNombre;}).filter(Boolean)); }, [dispon, filterYear, filterMes, filterComuna, filterProv]);
 
   useEffect(function(){ if(filterYear && yearOptions.indexOf(Number(filterYear))<0 && yearOptions.indexOf(String(filterYear))<0) setFilterYear(""); }, [yearOptions]);
   useEffect(function(){ if(filterMes && mesOptions.indexOf(Number(filterMes))<0) setFilterMes(""); }, [mesOptions]);
@@ -146,10 +121,11 @@ function AbastecimientoMMPP(){
   useEffect(function(){ if(filterProv && provOptions.indexOf(filterProv)<0) setFilterProv(""); }, [provOptions]);
   useEffect(function(){ if(filterEmpresa && empresaOptions.indexOf(filterEmpresa)<0) setFilterEmpresa(""); }, [empresaOptions]);
 
-  /* -------------- saldo por dispo / inventario -------------- */
+  /* -------------- saldo por dispo -------------- */
   var asigByDispo = React.useMemo(function(){ return GroupBy(asig, function(a){ return (a.disponibilidadId||"__none__"); }); }, [asig]);
   function saldoDe(r){ var usadas=(asigByDispo[r.id]||[]).reduce(function(a,x){return a+(Number(x.cantidad)||0);},0); return Math.max(0,(Number(r.tons)||0)-usadas); }
 
+  /* -------------- inventario agrupado -------------- */
   var invRows = React.useMemo(function(){
     var base = (dispon||[]).slice();
     if(filterYear)   base = base.filter(function(d){ return String(d.anio)===String(filterYear); });
@@ -169,13 +145,9 @@ function AbastecimientoMMPP(){
     return Object.keys(g).map(function(k){
       var arr=g[k]; var parts=k.split("|"); var contacto=parts[0], empresa=parts[1], com=parts[2];
       var total = arr.reduce(function(a,r){return a+r.saldo;},0);
-
-      var chips = arr.slice()
-                     .sort(function(a,b){ return String(a.mesKey||"").localeCompare(String(b.mesKey||"")); })
-                     .map(function(it){ return {id:it.id, mesKey:it.mesKey||"—", tons:(it.saldo!=null?it.saldo:it.tons)||0}; });
-
+      var chips = arr.slice().sort(function(a,b){ return String(a.mesKey||"").localeCompare(String(b.mesKey||"")); })
+        .map(function(it){ return {id:it.id, mesKey:it.mesKey||"—", tons:(it.saldo!=null?it.saldo:it.tons)||0}; });
       var tel=""; for(var i=0;i<arr.length;i++){ var t=(arr[i].contactoSnapshot && arr[i].contactoSnapshot.telefono)||""; if(t){tel=t;break;} }
-
       return { proveedor:contacto, contactoNombre:contacto, empresaNombre:empresa, comuna:com, items:arr, total:total, chips:chips, telefono:tel };
     }).filter(function(r){
       var okSearch = (!searchContacto || (r.contactoNombre.toLowerCase().indexOf(searchContacto.toLowerCase())>=0));
@@ -194,7 +166,6 @@ function AbastecimientoMMPP(){
     return {tons:tons, lotes:base.length};
   }, [dispon, asig, filterYear, filterMes, filterComuna, filterProv, filterEmpresa]);
 
-  /* -------------- acciones inventario -------------- */
   function abrirAsignacion(row){
     var lots=row.items.map(function(r){ return {id:r.id, saldo:saldoDe(r), original:r.tons, fecha:r.fecha, mesKey:r.mesKey}; });
     var selected=row.items[0]?row.items[0].id:null;
@@ -204,10 +175,8 @@ function AbastecimientoMMPP(){
   function confirmarAsignacion(){
     var m=assignModal; if(!m){ return; }
     if(!m.selectedId){ alert("Selecciona una disponibilidad."); return; }
-    var lot = getLotById(m.lots, m.selectedId);
-    if(!lot){ alert("No se encontró la disponibilidad seleccionada."); return; }
-    var cantidad = Number(m.cantidad||0);
-    var saldo    = Number(lot.saldo||0);
+    var lot = getLotById(m.lots, m.selectedId); if(!lot){ alert("No se encontró la disponibilidad seleccionada."); return; }
+    var cantidad = Number(m.cantidad||0); var saldo = Number(lot.saldo||0);
     if (!m.destMes || !m.destAnio){ alert("Selecciona mes y año de destino."); return; }
     if (cantidad <= 0){ alert("Ingresa una cantidad mayor a 0."); return; }
     if (cantidad > saldo){
@@ -217,6 +186,88 @@ function AbastecimientoMMPP(){
     }
     var payload={ disponibilidadId:lot.id, cantidad:cantidad, destMes:Number(m.destMes), destAnio:Number(m.destAnio), proveedorNombre:assignModal.proveedor, originalTons:lot.original, originalFecha:lot.fecha };
     MMppApi.crearAsignacion(payload).then(function(){return reload();}).finally(function(){ setAssignModal(null); });
+  }
+
+  /* ----------------- HISTORIAL AGRUPADO AÑO → MES → PROVEEDOR ----------------- */
+  var _hp=React.useState(""), histProv=_hp[0], setHistProv=_hp[1];
+  var _hm=React.useState(""), histMes=_hm[0], setHistMes=_hm[1];
+  var _hy=React.useState(""), histAnio=_hy[0], setHistAnio=_hy[1];
+
+  // Agrupa en 3 niveles: año/mes → proveedor
+  var histAggYM = React.useMemo(function(){
+    var base = asig
+      .filter(function(a){ return Number(a.cantidad) > 0; })
+      .filter(function(a){
+        return (!histProv || a.proveedorNombre===histProv) &&
+               (!histMes  || String(a.destMes)===String(histMes)) &&
+               (!histAnio || String(a.destAnio)===String(histAnio));
+      });
+
+    // 1) agrupar por Y-M
+    var byYM = GroupBy(base, function(a){
+      var y = Number(a.destAnio)||0; var m = Number(a.destMes)||0;
+      return y+'|'+m;
+    });
+
+    var out = [];
+    var keysYM = Object.keys(byYM).sort(function(A,B){
+      var pa=A.split('|'), pb=B.split('|');
+      var yA=Number(pa[0]), mA=Number(pa[1]), yB=Number(pb[0]), mB=Number(pb[1]);
+      if (yA!==yB) return yA-yB; return mA-mB;
+    });
+
+    for (var i=0;i<keysYM.length;i++){
+      var kYM = keysYM[i];
+      var parts = kYM.split('|'), y = Number(parts[0]), m = Number(parts[1]);
+      var arrYM = byYM[kYM];
+
+      // 2) dentro de cada Y-M, agrupar por proveedor
+      var byProv = GroupBy(arrYM, function(a){ return a.proveedorNombre || '—'; });
+      var provGroups = [];
+      var keysProv = Object.keys(byProv).sort(function(a,b){ return String(a).localeCompare(String(b)); });
+
+      for (var j=0;j<keysProv.length;j++){
+        var prov = keysProv[j];
+        var items = byProv[prov];
+        var sum = 0, last=null;
+        for (var t=0;t<items.length;t++){
+          sum += Number(items[t].cantidad)||0;
+          if (items[t].createdAt){
+            if (!last || (new Date(items[t].createdAt) > new Date(last))) last = items[t].createdAt;
+          }
+        }
+        provGroups.push({
+          key: prov+'|'+y+'|'+m,
+          proveedorNombre: prov,
+          destMes: m,
+          destAnio: y,
+          cantidad: sum,
+          lastCreatedAt: last,
+          items: items
+        });
+      }
+
+      // total del mes
+      var totalMes = 0; for (var jj=0;jj<provGroups.length;jj++){ totalMes += Number(provGroups[jj].cantidad)||0; }
+
+      out.push({
+        ymKey: kYM,
+        y: y, m: m,
+        totalMes: totalMes,
+        groups: provGroups
+      });
+    }
+    return out;
+  }, [asig, histProv, histMes, histAnio]);
+
+  // abrir/cerrar subdetalle por grupo
+  var _open=React.useState({}), histOpen=_open[0], setHistOpen=_open[1];
+  function toggleHistRow(k){
+    setHistOpen(function(prev){
+      var nx = Object.assign({}, prev);
+      nx[k] = !nx[k];
+      return nx;
+    });
   }
 
   function onEditAsign(a){
@@ -252,79 +303,7 @@ function AbastecimientoMMPP(){
 
   function limpiarFiltros(){ setFilterYear(""); setFilterMes(""); setFilterComuna(""); setFilterProv(""); setFilterEmpresa(""); setSearchContacto(""); }
 
-  /* --------------------------- HISTORIAL AGRUPADO AÑO → MES → PROVEEDOR --------------------------- */
-  var _hp=React.useState(""), histProv=_hp[0], setHistProv=_hp[1];
-  var _hm=React.useState(""), histMes=_hm[0], setHistMes=_hm[1];
-  var _hy=React.useState(""), histAnio=_hy[0], setHistAnio=_hy[1];
-
-  // grupos por proveedor, dentro de cada (año,mes)
-  var histGroupsFlat = React.useMemo(function(){
-    var base = asig
-      .filter(function(a){ return Number(a.cantidad) > 0; })
-      .filter(function(a){
-        return (!histProv || a.proveedorNombre===histProv) &&
-               (!histMes  || String(a.destMes)===String(histMes)) &&
-               (!histAnio || String(a.destAnio)===String(histAnio));
-      });
-
-    var map = {};
-    for (var i=0;i<base.length;i++){
-      var a = base[i];
-      var prov = a.proveedorNombre || '—';
-      var y = Number(a.destAnio)||0;
-      var m = Number(a.destMes)||0;
-      var k = y + '|' + m + '|' + prov;
-
-      if (!map[k]){
-        map[k] = {
-          key: k,
-          proveedorNombre: prov,
-          destMes: m,
-          destAnio: y,
-          cantidad: 0,
-          lastCreatedAt: a.createdAt || null,
-          items: []
-        };
-      }
-      map[k].cantidad += Number(a.cantidad)||0;
-      map[k].items.push(a);
-      if (a.createdAt){
-        if (!map[k].lastCreatedAt || new Date(a.createdAt) > new Date(map[k].lastCreatedAt)){
-          map[k].lastCreatedAt = a.createdAt;
-        }
-      }
-    }
-    return Object.keys(map).map(function(k){ return map[k]; });
-  }, [asig, histProv, histMes, histAnio]);
-
-  // estructura anidada: años -> meses -> grupos (proveedor)
-  var histTree = React.useMemo(function(){
-    var byYear = GroupBy(histGroupsFlat, function(g){ return g.destAnio; });
-    var years = Object.keys(byYear).map(function(y){
-      var arrY = byYear[y];
-      var byMonth = GroupBy(arrY, function(g){ return g.destMes; });
-      var months = Object.keys(byMonth).map(function(m){
-        var groups = byMonth[m].slice().sort(function(A,B){
-          return String(A.proveedorNombre).localeCompare(String(B.proveedorNombre));
-        });
-        // ordenar grupos por proveedor; la tabla mostrará fecha/dest/total
-        return { mes: Number(m), groups: groups };
-      }).sort(function(a,b){ return a.mes - b.mes; });
-      return { anio: Number(y), months: months };
-    }).sort(function(a,b){ return a.anio - b.anio; });
-    return years;
-  }, [histGroupsFlat]);
-
-  var _open=React.useState({}), histOpen=_open[0], setHistOpen=_open[1];
-  function toggleHistRow(k){
-    setHistOpen(function(prev){
-      var nx = Object.assign({}, prev);
-      nx[k] = !nx[k];
-      return nx;
-    });
-  }
-
-  /* --------------------------- RENDER --------------------------- */
+  /* -------------------------------- UI -------------------------------- */
   return (
     <div className="mmpp-wrap">
       <div className="mmpp-hero">
@@ -334,11 +313,10 @@ function AbastecimientoMMPP(){
 
       <div style={{height:18}} />
 
-      {/* INVENTARIO */}
+      {/* INVENTARIO ACTUAL (se mantiene) */}
       <div className="mmpp-card">
         <h2 style={{margin:"0 0 14px", fontWeight:800}}>Inventario Actual</h2>
 
-        {/* Filtros inventario */}
         <div className="mmpp-grid4" style={{marginBottom:6}}>
           <div>
             <select className="mmpp-input" value={filterYear} onChange={function(e){ setFilterYear(e.target.value); }}>
@@ -439,7 +417,11 @@ function AbastecimientoMMPP(){
         <div className="mmpp-grid" style={{marginBottom:12}}>
           <select className="mmpp-input" value={histProv} onChange={function(e){ setHistProv(e.target.value); }}>
             <option value="">Todos los Contactos</option>
-            {Array.from(new Set(asig.map(function(a){return a.proveedorNombre;}).filter(Boolean))).sort().map(function(p){return <option key={p} value={p}>{p}</option>;})}
+            { (function(){
+                var set={}, out=[]; (asig||[]).forEach(function(a){ var v=a.proveedorNombre; if(v && !set[v]){ set[v]=1; out.push(v); } });
+                out.sort(); return out;
+              })().map(function(p){ return <option key={p} value={p}>{p}</option>; })
+            }
           </select>
           <div style={{display:"flex",gap:10}}>
             <select className="mmpp-input" value={histMes} onChange={function(e){ setHistMes(e.target.value); }}>
@@ -448,100 +430,92 @@ function AbastecimientoMMPP(){
             </select>
             <select className="mmpp-input" value={histAnio} onChange={function(e){ setHistAnio(e.target.value); }}>
               <option value="">Todos los Años</option>
-              {Array.from(new Set(asig.map(function(a){return a.destAnio;}).filter(Boolean))).sort().map(function(y){ return <option key={y} value={y}>{y}</option>; })}
+              {(function(){ var set={}, out=[]; (asig||[]).forEach(function(a){ var y=a.destAnio; if(y && !set[y]){ set[y]=1; out.push(y); } }); out.sort(); return out; })()
+                .map(function(y){ return <option key={y} value={y}>{y}</option>; })}
             </select>
           </div>
         </div>
 
-        <table className="mmpp">
-          <thead>
-            <tr>
-              <th style={{width:40}}></th>
-              <th>FECHA (última)</th>
-              <th>CONTACTO</th>
-              <th>CANTIDAD ASIGNADA</th>
-              <th>DESTINO (MES/AÑO)</th>
-              {/* SIN columna Acciones en la lista principal */}
-            </tr>
-          </thead>
-          <tbody>
-            {histTree.map(function(seccion){
-              return (
-                <React.Fragment key={"y-"+seccion.anio}>
-                  <tr className="hist-section"><td colSpan={5}>Año {seccion.anio}</td></tr>
-                  {seccion.months.map(function(mm){
-                    return (
-                      <React.Fragment key={"m-"+seccion.anio+"-"+mm.mes}>
-                        <tr className="hist-month"><td colSpan={5}>{mesesEs[mm.mes-1]}</td></tr>
-                        {mm.groups.map(function(g){
-                          var fecha = g.lastCreatedAt ? new Date(g.lastCreatedAt) : null;
-                          var fechaTxt = fecha ? fecha.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}) : "—";
-                          var dest = (g.destMes && g.destAnio) ? (mesesEs[(g.destMes-1)||0]+" "+g.destAnio) : "—";
-                          var open = !!histOpen[g.key];
-                          return (
-                            <React.Fragment key={g.key}>
-                              <tr>
-                                <td><span className="hist-toggle" onClick={function(){toggleHistRow(g.key);}}>{open?"▾":"▸"}</span></td>
-                                <td>{fechaTxt}</td>
-                                <td>{g.proveedorNombre||"—"}</td>
-                                <td><strong>{numeroCL(g.cantidad)} tons</strong></td>
-                                <td>{dest}</td>
-                              </tr>
-                              {open && (
-                                <tr className="hist-sub">
-                                  <td colSpan={5}>
-                                    <div style={{padding:"8px 10px"}}>
-                                      <div style={{fontWeight:800, marginBottom:6}}>Asignaciones del grupo</div>
-                                      <table className="mmpp" style={{margin:"6px 0"}}>
-                                        <thead>
-                                          <tr>
-                                            <th>•</th>
-                                            <th>Fecha</th>
-                                            <th>Cantidad</th>
-                                            <th>Disponibilidad original</th>
-                                            <th>Acciones</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {g.items.map(function(a,i){
-                                            var f=a.createdAt?new Date(a.createdAt):null;
-                                            var fTxt=f?f.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}):"—";
-                                            var orig=(a.originalTons?(numeroCL(a.originalTons)+" tons"):"")+(a.originalFecha?(" (desde "+new Date(a.originalFecha).toLocaleDateString("es-CL")+")"):"");
-                                            return (
-                                              <tr key={(a.id||i)}>
-                                                <td><span className="hist-bullet" /></td>
-                                                <td>{fTxt}</td>
-                                                <td><strong>{numeroCL(a.cantidad)} t</strong></td>
-                                                <td>{orig||"—"}</td>
-                                                <td>
-                                                  <div className="mmpp-actions">
-                                                    <button className="mmpp-ghostbtn" onClick={function(){onEditAsign(a);}}>✏️ Editar</button>
-                                                    <button className="mmpp-ghostbtn mmpp-danger" onClick={function(){borrarAsig(a);}}>🗑️ Eliminar</button>
-                                                  </div>
-                                                </td>
-                                              </tr>
-                                            );
-                                          })}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </React.Fragment>
-                          );
-                        })}
-                      </React.Fragment>
+        {histAggYM.map(function(sec){
+          var headTxt = mesesEs[(sec.m-1)||0] + ' ' + sec.y + ' — Total: ' + numeroCL(sec.totalMes) + ' tons';
+          return (
+            <div key={sec.ymKey} style={{marginBottom:12}}>
+              <div className="hist-month">{headTxt}</div>
+              <table className="mmpp">
+                <thead>
+                  <tr>
+                    <th style={{width:40}}></th>
+                    <th>FECHA (última)</th>
+                    <th>CONTACTO</th>
+                    <th>CANTIDAD ASIGNADA</th>
+                    <th>DESTINO (MES/AÑO)</th>
+                    {/* sin acciones en principal */}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sec.groups.map(function(g){
+                    var fecha = g.lastCreatedAt ? new Date(g.lastCreatedAt) : null;
+                    var fechaTxt = fecha ? fecha.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}) : "—";
+                    var dest = (g.destMes && g.destAnio) ? (mesesEs[(g.destMes-1)||0]+" "+g.destAnio) : "—";
+                    var open = !!histOpen[g.key];
+
+                    return React.createElement(React.Fragment, {key:g.key},
+                      React.createElement("tr", null,
+                        React.createElement("td", null,
+                          React.createElement("span", {className:"hist-toggle", onClick:function(){toggleHistRow(g.key);}}, open?"▾":"▸")
+                        ),
+                        React.createElement("td", null, fechaTxt),
+                        React.createElement("td", null, g.proveedorNombre||"—"),
+                        React.createElement("td", null, React.createElement("strong", null, numeroCL(g.cantidad)+" tons")),
+                        React.createElement("td", null, dest)
+                      ),
+                      open && React.createElement("tr", {className:"hist-sub"},
+                        React.createElement("td", {colSpan:5},
+                          React.createElement("div", {style:{padding:"8px 10px"}},
+                            React.createElement("div", {style:{fontWeight:800, marginBottom:6}}, "Asignaciones del grupo"),
+                            React.createElement("table", {className:"mmpp", style:{margin:"6px 0"}},
+                              React.createElement("thead", null,
+                                React.createElement("tr", null,
+                                  React.createElement("th", null, "•"),
+                                  React.createElement("th", null, "Fecha"),
+                                  React.createElement("th", null, "Cantidad"),
+                                  React.createElement("th", null, "Disponibilidad original"),
+                                  React.createElement("th", null, "Acciones")
+                                )
+                              ),
+                              React.createElement("tbody", null,
+                                g.items.map(function(a,i){
+                                  var f=a.createdAt?new Date(a.createdAt):null;
+                                  var fTxt=f?f.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}):"—";
+                                  var orig=(a.originalTons?(numeroCL(a.originalTons)+" tons"):"")+(a.originalFecha?(" (desde "+new Date(a.originalFecha).toLocaleDateString("es-CL")+")"):"");
+                                  return React.createElement("tr", {key:(a.id||i)},
+                                    React.createElement("td", null, React.createElement("span",{className:"hist-bullet"})),
+                                    React.createElement("td", null, fTxt),
+                                    React.createElement("td", null, React.createElement("strong", null, numeroCL(a.cantidad)+" t")),
+                                    React.createElement("td", null, orig||"—"),
+                                    React.createElement("td", null,
+                                      React.createElement("div",{className:"mmpp-actions"},
+                                        React.createElement("button",{className:"mmpp-ghostbtn", onClick:function(){onEditAsign(a);}}, "✏️ Editar"),
+                                        React.createElement("button",{className:"mmpp-ghostbtn mmpp-danger", onClick:function(){borrarAsig(a);}}, "🗑️ Eliminar")
+                                      )
+                                    )
+                                  );
+                                })
+                              )
+                            )
+                          )
+                        )
+                      )
                     );
                   })}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                </tbody>
+              </table>
+            </div>
+          );
+        })}
       </div>
 
-      {/* MODALES (Inventario / Asignación y edición) */}
+      {/* MODALES (se mantienen) */}
       {assignModal && (
         <div className="modalBG" onClick={function(){setAssignModal(null);}}>
           <div className="modal" onClick={function(e){e.stopPropagation();}}>
@@ -620,7 +594,13 @@ function AbastecimientoMMPP(){
                 <button
                   className="mmpp-ghostbtn"
                   onClick={confirmarAsignacion}
-                  disabled={!assignModal.selectedId || !assignModal.destMes || !assignModal.destAnio || !(Number(assignModal.cantidad)>0)}
+                  disabled={
+                    !assignModal.selectedId ||
+                    !assignModal.destMes ||
+                    !assignModal.destAnio ||
+                    !(Number(assignModal.cantidad)>0)
+                  }
+                  style={{background:'#4f46e5',color:'#fff',borderColor:'#4f46e5'}}
                 >
                   ✔ Confirmar Asignación
                 </button>
@@ -648,7 +628,7 @@ function AbastecimientoMMPP(){
                   </select>
                 </div>
               </div>
-              <div style={{marginTop:12}}><button className="mmpp-ghostbtn" onClick={guardarEditAsig}>💾 Guardar Cambios</button></div>
+              <div style={{marginTop:12}}><button className="mmpp-ghostbtn" style={{background:'#4f46e5',color:'#fff',borderColor:'#4f46e5'}} onClick={guardarEditAsig}>💾 Guardar Cambios</button></div>
             </div>
           </div>
         </div>
@@ -678,7 +658,7 @@ function AbastecimientoMMPP(){
               </table>
               <div style={{marginTop:12,display:"flex",gap:10,justifyContent:"flex-end"}}>
                 <button className="mmpp-ghostbtn" onClick={function(){setEditLotes(null);}}>Cancelar</button>
-                <button className="mmpp-ghostbtn" onClick={guardarEditarLotes}>💾 Guardar cambios</button>
+                <button className="mmpp-ghostbtn" style={{background:'#4f46e5',color:'#fff',borderColor:'#4f46e5'}} onClick={guardarEditarLotes}>💾 Guardar cambios</button>
               </div>
             </div>
           </div>
@@ -688,7 +668,6 @@ function AbastecimientoMMPP(){
   );
 }
 
-/* Montaje */
+// Montaje
 var mountNode = document.getElementById("root");
 ReactDOM.createRoot(mountNode).render(<AbastecimientoMMPP />);
-</script>
