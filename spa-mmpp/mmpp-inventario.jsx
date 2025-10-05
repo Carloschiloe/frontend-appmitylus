@@ -1,5 +1,5 @@
 // NerdUI v3.2 — compatible con Babel 6 (sin optional chaining ni nullish)
-// ========= MMPP Inventario (sin formulario) - Historial agrupado Año → Mes → Proveedor =========
+// ========= MMPP Inventario (con Inventario + Historial agrupado Año→Mes→Proveedor) =========
 const { useEffect, useMemo, useState } = React;
 
 /* ------------------------------- ESTILOS ------------------------------- */
@@ -27,9 +27,9 @@ function cssInject() {
     '.modal{width:min(860px,96vw);background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 30px 60px rgba(0,0,0,.2);padding:20px}',
     '.row-hover{border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:10px;background:#f9fafb}',
     '.row-hover.sel{background:#e0e7ff;border-color:#c7d2fe}',
-    /* agrupadores */
-    '.hist-year{background:#eef2ff;border:1px solid #c7d2fe;border-radius:12px;padding:10px 12px;font-weight:900;color:#1e3a8a;display:flex;justify-content:space-between;align-items:center;margin:10px 0}',
-    '.hist-month{background:#f1f5f9;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;font-weight:800;color:#334155;margin:8px 0}',
+    /* historial: año/mes/proveedor */
+    '.hist-year{background:#eef2ff;border:1px solid #c7d2fe;border-radius:12px;padding:10px 12px;font-weight:900;color:#1e40af;margin:10px 0;display:flex;justify-content:space-between;align-items:center}',
+    '.hist-month{background:#f1f5f9;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;font-weight:800;color:#334155;margin:8px 0;display:flex;justify-content:space-between;align-items:center}',
     '.hist-toggle{cursor:pointer;user-select:none;font-weight:800}',
     '.hist-sub{background:#f9fafb;border:1px dashed #e5e7eb}',
     '.hist-bullet{display:inline-block;width:7px;height:7px;border-radius:999px;background:#4f46e5;margin-right:6px}'
@@ -89,7 +89,7 @@ function AbastecimientoMMPP(){
   // Toggle inventario
   var _ih=React.useState(false), invHidden=_ih[0], setInvHidden=_ih[1];
 
-  // Modales
+  // Modales existentes
   var _assign=React.useState(null), assignModal=_assign[0], setAssignModal=_assign[1];
   var _editA=React.useState(null), editAsig=_editA[0], setEditAsig=_editA[1];
   var _editL=React.useState(null), editLotes=_editL[0], setEditLotes=_editL[1];
@@ -194,8 +194,8 @@ function AbastecimientoMMPP(){
   var _hm=React.useState(""), histMes=_hm[0], setHistMes=_hm[1];
   var _hy=React.useState(""), histAnio=_hy[0], setHistAnio=_hy[1];
 
-  // Agrupa: Año -> Mes -> Proveedor
-  var histAggY = React.useMemo(function(){
+  // Año -> Mes -> Proveedor
+  var histAgg = React.useMemo(function(){
     var base = asig
       .filter(function(a){ return Number(a.cantidad) > 0; })
       .filter(function(a){
@@ -205,84 +205,46 @@ function AbastecimientoMMPP(){
       });
 
     var byYear = GroupBy(base, function(a){ return String(Number(a.destAnio)||0); });
-    var years = Object.keys(byYear).filter(function(y){return y!=="0"}).sort(function(a,b){return Number(a)-Number(b);});
+    var years = Object.keys(byYear).filter(function(k){return k!=="0";}).sort(function(a,b){return Number(a)-Number(b);});
 
-    var outYears = [];
-    for (var yi=0; yi<years.length; yi++){
-      var y = Number(years[yi]);
-      var arrY = byYear[years[yi]];
-      var byYM = GroupBy(arrY, function(a){ return y+'|'+(Number(a.destMes)||0); });
+    var outYears = years.map(function(yk){
+      var arrY = byYear[yk]||[];
+      var byMonth = GroupBy(arrY, function(a){ return String(Number(a.destMes)||0); });
+      var months = Object.keys(byMonth).filter(function(k){return k!=="0";}).sort(function(a,b){return Number(a)-Number(b);});
 
-      var monthsKeys = Object.keys(byYM).sort(function(A,B){
-        var mA=Number(A.split('|')[1]), mB=Number(B.split('|')[1]);
-        return mA-mB;
-      });
-
-      var months = [];
-      var totalAnio = 0;
-
-      for (var mi=0; mi<monthsKeys.length; mi++){
-        var k = monthsKeys[mi];
-        var m = Number(k.split('|')[1]);
-        var arrM = byYM[k];
-
+      var monthsOut = months.map(function(mk){
+        var arrM = byMonth[mk]||[];
         var byProv = GroupBy(arrM, function(a){ return a.proveedorNombre || '—'; });
-        var provKeys = Object.keys(byProv).sort(function(a,b){ return String(a).localeCompare(String(b)); });
-
-        var provGroups = [];
-        var totalMes = 0;
-
-        for (var pj=0; pj<provKeys.length; pj++){
-          var prov = provKeys[pj], its = byProv[prov];
-          var sum = 0, last=null;
-          for (var t=0;t<its.length;t++){
-            sum += Number(its[t].cantidad)||0;
-            if (its[t].createdAt){
-              if (!last || (new Date(its[t].createdAt) > new Date(last))) last = its[t].createdAt;
+        var provKeys = Object.keys(byProv).sort(function(a,b){return String(a).localeCompare(String(b));});
+        var provOut = provKeys.map(function(pk){
+          var items = byProv[pk]||[];
+          var sum=0, last=null;
+          for(var i=0;i<items.length;i++){
+            sum += Number(items[i].cantidad)||0;
+            if(items[i].createdAt){
+              if(!last || (new Date(items[i].createdAt)>new Date(last))) last=items[i].createdAt;
             }
           }
-          totalMes += sum;
-          provGroups.push({
-            key: prov+'|'+y+'|'+m,
-            proveedorNombre: prov,
-            destMes: m,
-            destAnio: y,
-            cantidad: sum,
-            lastCreatedAt: last,
-            items: its
-          });
-        }
+          return { key: pk+'|'+yk+'|'+mk, proveedorNombre: pk, destMes: Number(mk), destAnio: Number(yk), cantidad: sum, lastCreatedAt: last, items: items };
+        });
+        var totalMes=0; for(var j=0;j<provOut.length;j++){ totalMes+=Number(provOut[j].cantidad)||0; }
+        return { key: yk+'|'+mk, y: Number(yk), m: Number(mk), totalMes: totalMes, groups: provOut };
+      });
 
-        totalAnio += totalMes;
-        months.push({ y:y, m:m, totalMes:totalMes, groups:provGroups, ymKey:y+'|'+m });
-      }
-
-      outYears.push({ y:y, totalAnio: totalAnio, months: months });
-    }
+      var totalYear=0; for(var k=0;k<monthsOut.length;k++){ totalYear+=Number(monthsOut[k].totalMes)||0; }
+      return { y: Number(yk), totalYear: totalYear, months: monthsOut };
+    });
 
     return outYears;
   }, [asig, histProv, histMes, histAnio]);
 
-  // estados de apertura (año / mes / proveedor)
+  // estado de apertura año/mes/proveedor
   var _open=React.useState({year:{}, month:{}, prov:{}}), open=_open[0], setOpen=_open[1];
-  function toggleYear(y){ setOpen(function(o){ var nx={year:Object.assign({},o.year), month:Object.assign({},o.month), prov:Object.assign({},o.prov)}; nx.year[y]=!nx.year[y]; return nx; }); }
-  function toggleMonth(y,m){ var k=y+'|'+m; setOpen(function(o){ var nx={year:Object.assign({},o.year), month:Object.assign({},o.month), prov:Object.assign({},o.prov)}; nx.month[k]=!nx.month[k]; return nx; }); }
-  function toggleProv(k){ setOpen(function(o){ var nx={year:Object.assign({},o.year), month:Object.assign({},o.month), prov:Object.assign({},o.prov)}; nx.prov[k]=!nx.prov[k]; return nx; }); }
-  function expandYear(y,expand){
-    setOpen(function(o){
-      var nx={year:Object.assign({},o.year), month:Object.assign({},o.month), prov:Object.assign({},o.prov)};
-      nx.year[y]=!!expand;
-      // abrir/cerrar todos los meses del año
-      for (var i=0;i<histAggY.length;i++){
-        if(histAggY[i].y===y){
-          for (var j=0;j<histAggY[i].months.length;j++){
-            nx.month[y+'|'+histAggY[i].months[j].m]=!!expand;
-          }
-        }
-      }
-      return nx;
-    });
-  }
+  function toggleYear(y){ setOpen(function(p){var n=Object.assign({year:{},month:{},prov:{}},p); n.year[y]=!n.year[y]; return n;}); }
+  function toggleMonth(k){ setOpen(function(p){var n=Object.assign({year:{},month:{},prov:{}},p); n.month[k]=!n.month[k]; return n;}); }
+  function toggleProv(k){ setOpen(function(p){var n=Object.assign({year:{},month:{},prov:{}},p); n.prov[k]=!n.prov[k]; return n;}); }
+  function expandAll(){ setOpen({year:{},month:{},prov:{}}); }
+  function collapseAll(){ setOpen({year:{},month:{},prov:{}}); }
 
   function onEditAsign(a){
     setEditAsig({ id:a.id, cantidad:String(a.cantidad||""), destMes:String(a.destMes||""), destAnio:String(a.destAnio||""), proveedorNombre:a.proveedorNombre, originalFecha:a.originalFecha });
@@ -327,7 +289,7 @@ function AbastecimientoMMPP(){
 
       <div style={{height:18}} />
 
-      {/* INVENTARIO ACTUAL (se mantiene) */}
+      {/* INVENTARIO ACTUAL */}
       <div className="mmpp-card">
         <h2 style={{margin:"0 0 14px", fontWeight:800}}>Inventario Actual</h2>
 
@@ -427,12 +389,22 @@ function AbastecimientoMMPP(){
 
       {/* HISTORIAL AGRUPADO AÑO → MES → PROVEEDOR */}
       <div className="mmpp-card">
-        <h2 style={{margin:"0 0 14px", fontWeight:800}}>Historial de Asignaciones</h2>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <h2 style={{margin:"0 0 14px", fontWeight:800}}>Historial de Asignaciones</h2>
+          <div style={{display:"flex",gap:10}}>
+            <button className="mmpp-ghostbtn" onClick={expandAll}>Expandir</button>
+            <button className="mmpp-ghostbtn" onClick={collapseAll}>Colapsar</button>
+          </div>
+        </div>
+
+        {/* filtros de historial */}
         <div className="mmpp-grid" style={{marginBottom:12}}>
           <select className="mmpp-input" value={histProv} onChange={function(e){ setHistProv(e.target.value); }}>
             <option value="">Todos los Contactos</option>
-            { (function(){ var set={}, out=[]; (asig||[]).forEach(function(a){ var v=a.proveedorNombre; if(v && !set[v]){ set[v]=1; out.push(v); } }); out.sort(); return out; })()
-              .map(function(p){ return <option key={p} value={p}>{p}</option>; })
+            { (function(){
+                var set={}, out=[]; (asig||[]).forEach(function(a){ var v=a.proveedorNombre; if(v && !set[v]){ set[v]=1; out.push(v); } });
+                out.sort(); return out;
+              })().map(function(p){ return <option key={p} value={p}>{p}</option>; })
             }
           </select>
           <div style={{display:"flex",gap:10}}>
@@ -448,28 +420,29 @@ function AbastecimientoMMPP(){
           </div>
         </div>
 
-        {histAggY.map(function(Y){
+        {/* AÑO */}
+        {histAgg.map(function(Y){
           var openY = !!open.year[Y.y];
           return (
-            <div key={'year-'+Y.y} style={{marginBottom:12}}>
+            <div key={'year-'+Y.y} style={{marginBottom:16}}>
               <div className="hist-year">
-                <span className="hist-toggle" onClick={function(){toggleYear(Y.y);}}>{openY ? '▾' : '▸'} {Y.y}</span>
-                <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                  <strong>{numeroCL(Y.totalAnio)} tons</strong>
-                  <button className="mmpp-ghostbtn" onClick={function(){expandYear(Y.y,true);}}>Expandir</button>
-                  <button className="mmpp-ghostbtn" onClick={function(){expandYear(Y.y,false);}}>Colapsar</button>
-                </div>
+                <span className="hist-toggle" onClick={function(){toggleYear(Y.y);}}>
+                  {openY?'▾':'▸'} {Y.y}
+                </span>
+                <span style={{fontWeight:800}}>{numeroCL(Y.totalYear)} tons</span>
               </div>
 
               {openY && Y.months.map(function(M){
-                var openM = !!open.month[M.y+'|'+M.m];
+                var mKey = Y.y+'|'+M.m;
+                var openM = !!open.month[mKey];
+                var headTxt = mesesEs[(M.m-1)||0] + ' ' + Y.y;
                 return (
-                  <div key={M.ymKey} style={{marginBottom:8}}>
+                  <div key={mKey} style={{marginBottom:12}}>
                     <div className="hist-month">
-                      <span className="hist-toggle" onClick={function(){toggleMonth(M.y,M.m);}}>
-                        {openM ? '▾' : '▸'} {mesesEs[(M.m-1)||0]}
+                      <span className="hist-toggle" onClick={function(){toggleMonth(mKey);}}>
+                        {openM?'▾':'▸'} {headTxt}
                       </span>
-                      <span style={{float:'right',fontWeight:900}}>{numeroCL(M.totalMes)} tons</span>
+                      <span style={{fontWeight:800}}>{numeroCL(M.totalMes)} tons</span>
                     </div>
 
                     {openM && (
@@ -477,8 +450,10 @@ function AbastecimientoMMPP(){
                         <thead>
                           <tr>
                             <th style={{width:40}}></th>
-                            <th>FECHA (última)</th>
+                            {/* CONTACTO primero */}
                             <th>CONTACTO</th>
+                            {/* FECHA después */}
+                            <th>FECHA (última)</th>
                             <th>CANTIDAD</th>
                             <th>DESTINO</th>
                           </tr>
@@ -495,8 +470,10 @@ function AbastecimientoMMPP(){
                                 React.createElement("td", null,
                                   React.createElement("span", {className:"hist-toggle", onClick:function(){toggleProv(g.key);}}, openP?"▾":"▸")
                                 ),
-                                React.createElement("td", null, fechaTxt),
+                                /* CONTACTO primero */
                                 React.createElement("td", null, g.proveedorNombre||"—"),
+                                /* FECHA después */
+                                React.createElement("td", null, fechaTxt),
                                 React.createElement("td", null, React.createElement("strong", null, numeroCL(g.cantidad)+" tons")),
                                 React.createElement("td", null, dest)
                               ),
@@ -566,14 +543,17 @@ function AbastecimientoMMPP(){
               <div style={{fontWeight:800,marginBottom:8}}>Disponibilidades:</div>
               {assignModal.lots.map(function(l){
                 return (
-                  <div key={l.id} className={"row-hover"+(assignModal.selectedId===l.id?" sel":"")}
+                  <div
+                    key={l.id}
+                    className={"row-hover"+(assignModal.selectedId===l.id?" sel":"")}
                     onClick={function(){
                       setAssignModal(function(m){
                         var max = Number(l.saldo||0);
                         var next = clamp(Number(m.cantidad||0), 0, max);
                         return Object.assign({},m,{selectedId:l.id, cantidad:String(next)});
                       });
-                    }}>
+                    }}
+                  >
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
                       <div><div>Saldo: <strong>{numeroCL(l.saldo)}</strong> tons</div><small>Original: {numeroCL(l.original)} tons</small></div>
                       <div><small>desde {l.fecha?new Date(l.fecha).toLocaleDateString("es-CL"):"—"}</small></div>
@@ -587,14 +567,19 @@ function AbastecimientoMMPP(){
               <div style={{fontWeight:800,marginBottom:10}}>Detalles de Asignación:</div>
               <div className="mmpp-grid">
                 <div>
-                  <input className="mmpp-input" type="number" placeholder="Ej: 150" value={assignModal.cantidad}
+                  <input
+                    className="mmpp-input"
+                    type="number"
+                    placeholder="Ej: 150"
+                    value={assignModal.cantidad}
                     onChange={function(e){
                       var v = Number(e.target.value||0);
                       var lot = getLotById(assignModal.lots, assignModal.selectedId);
                       var saldo = lot ? Number(lot.saldo||0) : 0;
                       var next = clamp(v, 0, saldo);
                       setAssignModal(function(m){ return Object.assign({}, m, { cantidad: String(next) }); });
-                    }} />
+                    }}
+                  />
                   <div className="mmpp-help">
                     {(function(){
                       var lot = getLotById(assignModal.lots, assignModal.selectedId);
@@ -618,9 +603,17 @@ function AbastecimientoMMPP(){
                 </div>
               </div>
               <div style={{marginTop:12}}>
-                <button className="mmpp-ghostbtn" onClick={confirmarAsignacion}
-                  disabled={!assignModal.selectedId || !assignModal.destMes || !assignModal.destAnio || !(Number(assignModal.cantidad)>0)}
-                  style={{background:'#4f46e5',color:'#fff',borderColor:'#4f46e5'}}>
+                <button
+                  className="mmpp-ghostbtn"
+                  onClick={confirmarAsignacion}
+                  disabled={
+                    !assignModal.selectedId ||
+                    !assignModal.destMes ||
+                    !assignModal.destAnio ||
+                    !(Number(assignModal.cantidad)>0)
+                  }
+                  style={{background:'#4f46e5',color:'#fff',borderColor:'#4f46e5'}}
+                >
                   ✔ Confirmar Asignación
                 </button>
               </div>
