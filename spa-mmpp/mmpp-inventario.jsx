@@ -27,7 +27,6 @@ function cssInject() {
     '.modal{width:min(860px,96vw);background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 30px 60px rgba(0,0,0,.2);padding:20px}',
     '.row-hover{border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:10px;background:#f9fafb}',
     '.row-hover.sel{background:#e0e7ff;border-color:#c7d2fe}',
-    /* historial: año/mes/proveedor */
     '.hist-year{background:#eef2ff;border:1px solid #c7d2fe;border-radius:12px;padding:10px 12px;font-weight:900;color:#1e40af;margin:10px 0;display:flex;justify-content:space-between;align-items:center}',
     '.hist-month{background:#f1f5f9;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;font-weight:800;color:#334155;margin:8px 0;display:flex;justify-content:space-between;align-items:center}',
     '.hist-toggle{cursor:pointer;user-select:none;font-weight:800}',
@@ -45,12 +44,17 @@ function clamp(n, min, max){ n = Number(n)||0; return Math.max(min, Math.min(max
 function getLotById(lots, id){ for (var i=0;i<(lots||[]).length;i++){ if(lots[i].id===id) return lots[i]; } return null; }
 var mesesEs = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 var mesesShort = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
+
 function chipLabelFromMesKey(mk){
   if(!mk || mk.indexOf("-")<0) return mk || "—";
   var p = mk.split("-"); var y = String(p[0]).slice(-2); var m = Math.max(1, Math.min(12, Number(p[1])||1));
   return mesesShort[m-1]+y;
 }
 function GroupBy(arr, keyFn){ var m={}; (arr||[]).forEach(function(r){ var k=keyFn(r); m[k]=(m[k]||[]).concat([r]); }); return m; }
+
+/* Normalización nombres (evita duplicar grupos por espacios/casos distintos) */
+function normName(s){ return String(s||'').replace(/\s+/g,' ').trim().toLowerCase(); }
+function prettyName(s){ return String(s||'').replace(/\s+/g,' ').trim() || '—'; }
 
 /* Fechas locales seguras (evita UTC “Z”) */
 function fechaLocalDeAsignacion(a){
@@ -202,10 +206,9 @@ function AbastecimientoMMPP(){
   var _hm=React.useState(""), histMes=_hm[0], setHistMes=_hm[1];
   var _hy=React.useState(""), histAnio=_hy[0], setHistAnio=_hy[1];
 
-  // Año -> Mes -> Proveedor (usando Fecha Cosecha local = destAnio/destMes/destDia)
   var histAgg = React.useMemo(function(){
     var base = asig
-      .filter(function(a){ return Number(a.cantidad) > 0; })
+      .filter(function(a){ return Number(a.cantidad != null ? a.cantidad : a.tons) > 0; })
       .filter(function(a){
         return (!histProv || a.proveedorNombre===histProv) &&
                (!histMes  || String(a.destMes)===String(histMes)) &&
@@ -222,20 +225,35 @@ function AbastecimientoMMPP(){
 
       var monthsOut = months.map(function(mk){
         var arrM = byMonth[mk]||[];
-        var byProv = GroupBy(arrM, function(a){ return a.proveedorNombre || '—'; });
-        var provKeys = Object.keys(byProv).sort(function(a,b){return String(a).localeCompare(String(b));});
-        var provOut = provKeys.map(function(pk){
-          var items = byProv[pk]||[];
+
+        // === Agrupar por proveedor normalizado ===
+        var provMap = GroupBy(arrM, function(a){ return normName(a.proveedorNombre || '—'); });
+        var provKeys = Object.keys(provMap).sort(function(a,b){return String(a).localeCompare(String(b));});
+
+        var provOut = provKeys.map(function(normKey){
+          var items = (provMap[normKey]||[]).slice();
+
+          // Ordenar las asignaciones por día (seguro vs UTC)
+          items.sort(function(a,b){
+            var fa = fechaLocalDeAsignacion(a); var fb = fechaLocalDeAsignacion(b);
+            var ta = fa ? fa.getTime() : 0; var tb = fb ? fb.getTime() : 0;
+            return ta - tb;
+          });
+
+          // Nombre “bonito” desde el primer ítem del grupo
+          var displayName = prettyName(items.length ? (items[0].proveedorNombre||'—') : '—');
+
           var sum=0, lastTS=null;
           for(var i=0;i<items.length;i++){
             var it=items[i];
-            sum += Number(it.cantidad)||0;
+            sum += Number(it.cantidad != null ? it.cantidad : it.tons) || 0;
             var f = fechaLocalDeAsignacion(it);
             var ts = f ? f.getTime() : null;
             if (ts!=null && (lastTS==null || ts>lastTS)) lastTS = ts;
           }
-          return { key: pk+'|'+yk+'|'+mk, proveedorNombre: pk, destMes: Number(mk), destAnio: Number(yk), cantidad: sum, lastDestTS: lastTS, items: items };
+          return { key: normKey+'|'+yk+'|'+mk, proveedorNombre: displayName, destMes: Number(mk), destAnio: Number(yk), cantidad: sum, lastDestTS: lastTS, items: items };
         });
+
         var totalMes=0; for(var j=0;j<provOut.length;j++){ totalMes+=Number(provOut[j].cantidad)||0; }
         return { key: yk+'|'+mk, y: Number(yk), m: Number(mk), totalMes: totalMes, groups: provOut };
       });
@@ -256,7 +274,7 @@ function AbastecimientoMMPP(){
   function collapseAll(){ setOpen({year:{},month:{},prov:{}}); }
 
   function onEditAsign(a){
-    setEditAsig({ id:a.id, cantidad:String(a.cantidad||""), destMes:String(a.destMes||""), destAnio:String(a.destAnio||""), proveedorNombre:a.proveedorNombre, originalFecha:a.originalFecha });
+    setEditAsig({ id:a.id, cantidad:String(a.cantidad||a.tons||""), destMes:String(a.destMes||""), destAnio:String(a.destAnio||""), proveedorNombre:a.proveedorNombre, originalFecha:a.originalFecha });
   }
   function guardarEditAsig(){
     var p={ cantidad:Number(editAsig.cantidad)||0, destMes:Number(editAsig.destMes)||null, destAnio:Number(editAsig.destAnio)||null };
@@ -459,9 +477,7 @@ function AbastecimientoMMPP(){
                         <thead>
                           <tr>
                             <th style={{width:40}}></th>
-                            {/* CONTACTO primero */}
                             <th>CONTACTO</th>
-                            {/* FECHA COSECHA después */}
                             <th>FECHA COSECHA</th>
                             <th>CANTIDAD</th>
                             <th>DESTINO</th>
@@ -479,9 +495,7 @@ function AbastecimientoMMPP(){
                                 React.createElement("td", null,
                                   React.createElement("span", {className:"hist-toggle", onClick:function(){toggleProv(g.key);}}, openP?"▾":"▸")
                                 ),
-                                /* CONTACTO primero */
                                 React.createElement("td", null, g.proveedorNombre||"—"),
-                                /* FECHA COSECHA (última del grupo, local) */
                                 React.createElement("td", null, fechaTxt),
                                 React.createElement("td", null, React.createElement("strong", null, numeroCL(g.cantidad)+" tons")),
                                 React.createElement("td", null, dest)
@@ -508,7 +522,7 @@ function AbastecimientoMMPP(){
                                           return React.createElement("tr", {key:(a.id||i)},
                                             React.createElement("td", null, React.createElement("span",{className:"hist-bullet"})),
                                             React.createElement("td", null, fTxt),
-                                            React.createElement("td", null, React.createElement("strong", null, numeroCL(a.cantidad)+" t")),
+                                            React.createElement("td", null, React.createElement("strong", null, numeroCL((a.cantidad!=null?a.cantidad:a.tons)||0)+" t")),
                                             React.createElement("td", null, orig||"—"),
                                             React.createElement("td", null,
                                               React.createElement("div",{className:"mmpp-actions"},
