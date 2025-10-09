@@ -422,19 +422,53 @@ export function focusCentroInMap(idx) {
 }
 
 // ====== Buscador global (input sobre el mapa) ======
+// ====== Buscador global (input sobre el mapa) ======
 function initMapSearchUI() {
   const input = document.getElementById('mapSearch');
   const list  = document.getElementById('mapSearchResults');
   if (!input || !list) { logWarn('mapSearch UI no encontrado'); return; }
   log('mapSearch UI OK');
 
-  function hideList() { list.style.display = 'none'; list.innerHTML = ''; }
+  let activeIdx = -1;         // índice seleccionado en la lista
+  let lastHits  = [];         // cache último resultado para Enter
+  const HILITE_OPEN  = '<mark class="hit">';
+  const HILITE_CLOSE = '</mark>';
+
+  function hideList() {
+    list.style.display = 'none';
+    list.classList.remove('show');
+    list.innerHTML = '';
+    activeIdx = -1;
+    lastHits = [];
+  }
+
+  function setActive(idx) {
+    const items = Array.from(list.querySelectorAll('li[data-idx]'));
+    items.forEach((li, i) => li.classList.toggle('active', i === idx));
+    activeIdx = idx;
+    if (idx >= 0 && items[idx]) {
+      const el = items[idx];
+      const r = el.getBoundingClientRect();
+      const rBox = list.getBoundingClientRect();
+      if (r.top < rBox.top) list.scrollTop -= (rBox.top - r.top) + 8;
+      if (r.bottom > rBox.bottom) list.scrollTop += (r.bottom - rBox.bottom) + 8;
+    }
+  }
+
+  function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function hi(txt, q) {
+    if (!q) return txt;
+    try {
+      const re = new RegExp(`(${escapeRegExp(q)})`, 'ig');
+      return String(txt).replace(re, `${HILITE_OPEN}$1${HILITE_CLOSE}`);
+    } catch { return txt; }
+  }
 
   const doSearch = (q) => {
-    q = (q || '').trim().toLowerCase();
-    hideList();
-    if (!q) return;
+    q = (q || '').trim();
+    if (!q) { hideList(); return; }
 
+    const qLower = q.toLowerCase();
     const hits = (centrosDataGlobal || [])
       .map((c, idx) => ({ c, idx }))
       .filter(({ c }) => {
@@ -442,58 +476,102 @@ function initMapSearchUI() {
         const nombre = (c.name || c.proveedor || '').toString().toLowerCase();
         const code   = (c.code || '').toString().toLowerCase();
         const comuna = (c.comuna || c?.detalles?.comuna || '').toString().toLowerCase();
-        return code.includes(q) || nombre.includes(q) || area.includes(q) || comuna.includes(q);
+        return code.includes(qLower) || nombre.includes(qLower) || area.includes(qLower) || comuna.includes(qLower);
       })
-      .slice(0, 20);
+      .slice(0, 24);
 
-    if (hits.length === 1) {
-      focusCentroInMap(hits[0].idx);
-      input.blur();
-      return;
-    }
+    lastHits = hits;
 
     if (!hits.length) {
-      list.innerHTML = `<li style="color:#6b7280; padding:8px 12px;">Sin resultados</li>`;
+      list.innerHTML = `<li class="nores">Sin resultados</li>`;
       list.style.display = 'block';
+      list.classList.add('show');
+      activeIdx = -1;
       return;
     }
 
     list.innerHTML = hits.map(({ c, idx }) => {
-      const comuna  = toTitle(c.comuna || c?.detalles?.comuna || '—');
-      const haVal   = normalizeHa(c.hectareas ?? c?.detalles?.hectareas ?? c?.detalles?.ha);
-      const haTxt   = (haVal != null) ? `${fmtHaCL(haVal)} ha` : 'Hectáreas: —';
+      const comuna  = (c.comuna || c?.detalles?.comuna || '—');
       const area    = (c.codigoArea || c?.detalles?.codigoArea || '—');
       const code    = (c.code || '—');
       const name    = (c.name || c.proveedor || '-');
       return `
-        <li data-idx="${idx}" tabindex="0">
-          <b>${esc(name)}</b>
-          <div style="font-size:12px;color:#374151">
-            Código: ${esc(code)} · Comuna: ${esc(comuna)} · ${esc(haTxt)} · Área: ${esc(area)}
+        <li data-idx="${idx}" tabindex="0" aria-selected="false">
+          <b>${hi(esc(name), q)}</b>
+          <div class="sub">
+            Código: ${hi(esc(code), q)} · Comuna: ${hi(esc(comuna), q)} · Área: ${hi(esc(area), q)}
           </div>
         </li>
       `;
     }).join('');
     list.style.display = 'block';
+    list.classList.add('show');
+    activeIdx = -1;
 
-    Array.from(list.querySelectorAll('li')).forEach(li => {
+    Array.from(list.querySelectorAll('li[data-idx]')).forEach((li, i) => {
       const go = () => { const id = +li.getAttribute('data-idx'); focusCentroInMap(id); hideList(); };
       li.onclick = go;
       li.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') go(); };
     });
   };
 
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); doSearch(input.value); }
-    if (e.key === 'Escape') hideList();
+  // === Eventos ===
+  // 1) Autocompletar mientras escribe (con debounce suave)
+  const debouncedSearch = throttle((val) => doSearch(val), 120);
+  input.addEventListener('input', () => {
+    const val = input.value;
+    if (!val.trim()) { hideList(); return; }
+    debouncedSearch(val);
   });
-  input.addEventListener('input', () => { if (!input.value) hideList(); });
 
-  // click fuera -> ocultar
+  // 2) Enter/Escape/↑/↓
+  input.addEventListener('keydown', (e) => {
+    const items = Array.from(list.querySelectorAll('li[data-idx]'));
+    const max = items.length - 1;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!items.length) return;
+      setActive(Math.min(activeIdx + 1, max));
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!items.length) return;
+      setActive(Math.max(activeIdx - 1, 0));
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIdx >= 0 && items[activeIdx]) {
+        items[activeIdx].click();
+        return;
+      }
+      // sin selección, usa primer hit si existe
+      if (lastHits.length) {
+        focusCentroInMap(lastHits[0].idx);
+        hideList();
+      }
+      return;
+    }
+    if (e.key === 'Escape') {
+      hideList();
+      return;
+    }
+  });
+
+  // 3) Click fuera -> ocultar
   document.addEventListener('click', (e) => {
     if (!list.contains(e.target) && e.target !== input) hideList();
   });
 
+  // 4) Accesibilidad básica
+  input.setAttribute('aria-autocomplete', 'list');
+  input.setAttribute('aria-haspopup', 'listbox');
+  list.setAttribute('role', 'listbox');
+}
+
   // Helpers debug
   window.__MAPDBG = { L, map, setBaseLayer, baseLayersDefs, centrosSample: () => centrosDataGlobal.slice(0, 3) };
 }
+
