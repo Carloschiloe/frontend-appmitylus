@@ -572,6 +572,6 @@ function initMapSearchUI() {
 }
 
   // Helpers debug
-  window.__MAPDBG = { L, map, setBaseLayer, baseLayersDefs, centrosSample: () => centrosDataGlobal.slice(0, 3) };
-}
+  window.__MAPDBG = { L, map, setBaseLayer, baseLayersDefs, centrosSample: () => centrosDataGlobal.slice(0, 3) }
+
 
