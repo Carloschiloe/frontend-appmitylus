@@ -67,7 +67,7 @@ const MAPBOX_TOKEN =
 
 const baseLayersDefs = (typeof L !== 'undefined') ? {
   mapboxSat: L.tileLayer(
-    `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`,
+    `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}` ,
     { maxZoom: 19, tileSize: 512, zoomOffset: -1, attribution: '© Mapbox, © OpenStreetMap, © Maxar' }
   ),
   esri: L.tileLayer(
@@ -360,22 +360,22 @@ export function drawCentrosInMap(centros = [], defaultLatLng = CHILOE_COORDS, on
       </div>`;
     poly.bindTooltip(labelHtml, { permanent: true, direction: 'center', opacity: 0.95, className: 'centro-label' });
 
-   // Hover highlight + “pill” solo en hover
-poly.on('mouseover', () => {
-  try {
-    poly.setStyle({ weight: 5 });
-    poly.bringToFront();
-    const tEl = poly.getTooltip()?.getElement?.();
-    if (tEl) tEl.classList.add('hover-pill'); // activa píldora solo mientras está el hover
-  } catch {}
-});
-poly.on('mouseout', () => {
-  try {
-    poly.setStyle({ weight: 3 });
-    const tEl = poly.getTooltip()?.getElement?.();
-    if (tEl) tEl.classList.remove('hover-pill'); // vuelve a texto transparente
-  } catch {}
-});
+    // Hover highlight + “pill” solo en hover
+    poly.on('mouseover', () => {
+      try {
+        poly.setStyle({ weight: 5 });
+        poly.bringToFront();
+        const tEl = poly.getTooltip()?.getElement?.();
+        if (tEl) tEl.classList.add('hover-pill'); // activa píldora solo mientras está el hover
+      } catch {}
+    });
+    poly.on('mouseout', () => {
+      try {
+        poly.setStyle({ weight: 3 });
+        const tEl = poly.getTooltip()?.getElement?.();
+        if (tEl) tEl.classList.remove('hover-pill'); // vuelve a texto transparente
+      } catch {}
+    });
 
     // Click → modal
     poly.on('click', (ev) => {
@@ -402,13 +402,33 @@ poly.on('mouseout', () => {
 
 export function updateLabelVisibility() {
   if (!map) return;
-  const show = map.getZoom() >= LABEL_ZOOM;
+
+  const z = map.getZoom();
+  const show = z >= LABEL_ZOOM;
+
+  // Escala suave según zoom (opcional, usa tu CSS --label-scale)
+  const scale = (z >= 16) ? 1.00
+              : (z >= 15) ? 0.95
+              : (z >= 14) ? 0.90
+              : (z >= 13) ? 0.85
+              : 0.80;
+
   Object.values(centroTooltips).forEach(t => {
     const el = t?.getElement?.();
-    if (el) el.style.display = show ? 'block' : 'none';
+    if (!el) return;
+
+    el.style.display = show ? 'block' : 'none';
+    el.style.setProperty('--label-scale', scale);
+
+    // Fuerza orientación horizontal y evita “columna” de letras
+    el.style.writingMode = 'horizontal-tb';
+    el.style.textOrientation = 'mixed';
+    el.style.whiteSpace = 'normal';
+    el.style.wordBreak = 'normal';
+    el.style.maxWidth = '260px'; // alineado con CSS
   });
-  log('updateLabelVisibility → zoom:', map.getZoom(), 'showLabels:', show,
-      'tooltips:', Object.keys(centroTooltips).length);
+
+  log('updateLabelVisibility → zoom:', z, 'showLabels:', show, 'tooltips:', Object.keys(centroTooltips).length);
 }
 
 function centrarMapaEnPoligonos(centros = [], defaultLatLng = CHILOE_COORDS) {
@@ -434,7 +454,6 @@ export function focusCentroInMap(idx) {
   try { poly.setStyle({ weight: 6 }); setTimeout(() => poly.setStyle({ weight: 3 }), 850); } catch {}
 }
 
-// ====== Buscador global (input sobre el mapa) ======
 // ====== Buscador global (input sobre el mapa) ======
 function initMapSearchUI() {
   const input = document.getElementById('mapSearch');
@@ -521,7 +540,7 @@ function initMapSearchUI() {
     list.classList.add('show');
     activeIdx = -1;
 
-    Array.from(list.querySelectorAll('li[data-idx]')).forEach((li, i) => {
+    Array.from(list.querySelectorAll('li[data-idx]')).forEach((li) => {
       const go = () => { const id = +li.getAttribute('data-idx'); focusCentroInMap(id); hideList(); };
       li.onclick = go;
       li.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') go(); };
@@ -584,8 +603,5 @@ function initMapSearchUI() {
   list.setAttribute('role', 'listbox');
 }
 
-  // Helpers debug
-  window.__MAPDBG = { L, map, setBaseLayer, baseLayersDefs, centrosSample: () => centrosDataGlobal.slice(0, 3) }
-
-
-
+// Helpers debug
+window.__MAPDBG = { L, map, setBaseLayer, baseLayersDefs, centrosSample: () => centrosDataGlobal.slice(0, 3) };
