@@ -360,9 +360,22 @@ export function drawCentrosInMap(centros = [], defaultLatLng = CHILOE_COORDS, on
       </div>`;
     poly.bindTooltip(labelHtml, { permanent: true, direction: 'center', opacity: 0.95, className: 'centro-label' });
 
-    // Hover highlight (sin romper color original)
-    poly.on('mouseover', () => { try { poly.setStyle({ weight: 5 }); poly.bringToFront(); } catch {} });
-    poly.on('mouseout',  () => { try { poly.setStyle({ weight: 3 }); } catch {} });
+   // Hover highlight + “pill” solo en hover
+poly.on('mouseover', () => {
+  try {
+    poly.setStyle({ weight: 5 });
+    poly.bringToFront();
+    const tEl = poly.getTooltip()?.getElement?.();
+    if (tEl) tEl.classList.add('hover-pill'); // activa píldora solo mientras está el hover
+  } catch {}
+});
+poly.on('mouseout', () => {
+  try {
+    poly.setStyle({ weight: 3 });
+    const tEl = poly.getTooltip()?.getElement?.();
+    if (tEl) tEl.classList.remove('hover-pill'); // vuelve a texto transparente
+  } catch {}
+});
 
     // Click → modal
     poly.on('click', (ev) => {
@@ -573,5 +586,6 @@ function initMapSearchUI() {
 
   // Helpers debug
   window.__MAPDBG = { L, map, setBaseLayer, baseLayersDefs, centrosSample: () => centrosDataGlobal.slice(0, 3) }
+
 
 
