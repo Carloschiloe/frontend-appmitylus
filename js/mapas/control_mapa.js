@@ -55,8 +55,11 @@ function wireGlobalEventsOnce() {
 
   const tabEl = document.getElementById('tab-mapa');
   if (tabEl) {
+    // Observa cambios de estilo/clase para invalidar el mapa al mostrar pestaña
     const mo = new MutationObserver(onTabShowInvalidate);
     mo.observe(tabEl, { attributes: true, attributeFilter: ['style', 'class'] });
+    // Guarda el observer por si necesitas desconectarlo en el futuro
+    tabEl._mapMo = mo;
   }
   window.addEventListener('resize', onTabShowInvalidate, { passive: true });
 
@@ -85,7 +88,10 @@ function wireFullscreenOnce() {
     document.webkitFullscreenElement ||
     document.msFullscreenElement;
 
-  const isFSFor = (el) => fsElement() === el;
+  const isFSFor = (el) => {
+    const cur = fsElement();
+    return cur === el || (el && cur && el.contains(cur));
+  };
 
   const requestFS = async (el) => {
     try {
@@ -112,7 +118,6 @@ function wireFullscreenOnce() {
   if (!fsBtn.dataset._wired) {
     fsBtn.dataset._wired = '1';
     fsBtn.addEventListener('click', () => {
-      // Si ya estamos en fullscreen pero de otro elemento, pedimos FS para 'shell'
       if (!fsElement()) {
         requestFS(shell);
       } else if (isFSFor(shell)) {
@@ -127,7 +132,7 @@ function wireFullscreenOnce() {
     document.addEventListener('MSFullscreenChange', onFSChange);
   }
 
-  // Estado inicial del icono
+  // Estado inicial del texto/ícono del botón
   try { actualizarTextoFullscreen(fsBtn, shell); } catch {}
 
   // Atajo teclado "f" solo si está activa la pestaña y no escribes en inputs
