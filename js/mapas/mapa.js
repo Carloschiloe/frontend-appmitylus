@@ -65,7 +65,7 @@ const MAPBOX_TOKEN =
   window.MAPBOX_TOKEN ||
   'pk.eyJ1IjoiY2FybG9zY2hpbG9lIiwiYSI6ImNtZTB3OTZmODA5Mm0ya24zaTQ1bGd3aW4ifQ.XElNIT02jDuetHpo4r_-3g';
 
-const baseLayersDefs = {
+const baseLayersDefs = (typeof L !== 'undefined') ? {
   mapboxSat: L.tileLayer(
     `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`,
     { maxZoom: 19, tileSize: 512, zoomOffset: -1, attribution: '© Mapbox, © OpenStreetMap, © Maxar' }
@@ -82,7 +82,7 @@ const baseLayersDefs = {
     'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     { maxZoom: 19, attribution: '© CARTO' }
   )
-};
+} : {};
 
 let currentBaseKey = 'mapboxSat';
 
@@ -159,14 +159,29 @@ function buildCentroDetallesHtml(c) {
 function openCentroModal(c) {
   const modal = document.getElementById('modalDetallesCentro');
   const body  = document.getElementById('detallesCentroBody');
-  if (!modal || !body) { alert(`Centro: ${c.name || c.proveedor || '-'}\nCódigo: ${c.code || '-'}`); return; }
+  if (!modal || !body) {
+    alert(`Centro: ${c.name || c.proveedor || '-'}\nCódigo: ${c.code || '-'}`);
+    return;
+  }
   body.innerHTML = buildCentroDetallesHtml(c);
-  (window.M?.Modal.getInstance(modal) || window.M?.Modal.init(modal))?.open();
+  // Evita que el mapa atrape scroll cuando abres modal
+  try { document.querySelector('#mapShell')?.classList?.add('modal-open'); } catch {}
+  const inst = (window.M?.Modal.getInstance(modal) || window.M?.Modal.init(modal));
+  inst?.open();
+  // Al cerrar, liberar clase
+  modal.addEventListener('modal:closed', () => {
+    try { document.querySelector('#mapShell')?.classList?.remove('modal-open'); } catch {}
+  }, { once: true });
 }
 
 // ====== Crear mapa (idempotente) ======
 export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZOOM) {
   if (map) { log('crearMapa(): reuse'); return map; }
+
+  if (typeof L === 'undefined') {
+    logErr('Leaflet (L) no está disponible. ¿Cargaste leaflet.js y leaflet.css?');
+    return null;
+  }
 
   const el = document.getElementById('map');
   if (!el) { logErr('crearMapa(): #map no existe'); return null; }
@@ -179,7 +194,7 @@ export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZO
     zoomControl: true,
     center: defaultLatLng,
     zoom: defaultZoom,
-    layers: [baseInicial]
+    layers: baseInicial ? [baseInicial] : []
   });
   window.__mapLeaflet = map;
 
@@ -193,27 +208,29 @@ export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZO
   map.on('moveend', _throttledUpd);
 
   // Logs + fallback base
-  Object.entries(baseLayersDefs).forEach(([key, layer]) => {
-    layer?.on?.('tileload', () => log('tileload OK', key));
-    layer?.on?.('tileerror', () => logWarn('tileerror', key));
-  });
-  if (!map.hasLayer(baseInicial)) {
-    logWarn('Base inicial no montada, forzando OSM…');
-    baseLayersDefs.osm.addTo(map);
-    currentBaseKey = 'osm';
-  }
-  let _baseFailedOnce = false;
-  Object.entries(baseLayersDefs).forEach(([key, layer]) => {
-    layer?.on?.('tileerror', () => {
-      if (_baseFailedOnce || !map) return;
-      _baseFailedOnce = true;
-      try { Object.values(baseLayersDefs).forEach(l => { try { map.removeLayer(l); } catch {} }); } catch {}
-      baseLayersDefs.osm.addTo(map);
-      currentBaseKey = 'osm';
-      setTimeout(() => map.invalidateSize(), 50);
-      logWarn(`tileerror en base "${key}" → fallback a OSM`);
+  if (baseInicial) {
+    Object.entries(baseLayersDefs).forEach(([key, layer]) => {
+      layer?.on?.('tileload', () => log('tileload OK', key));
+      layer?.on?.('tileerror', () => logWarn('tileerror', key));
     });
-  });
+    if (!map.hasLayer(baseInicial)) {
+      logWarn('Base inicial no montada, forzando OSM…');
+      baseLayersDefs.osm?.addTo(map);
+      currentBaseKey = 'osm';
+    }
+    let _baseFailedOnce = false;
+    Object.entries(baseLayersDefs).forEach(([key, layer]) => {
+      layer?.on?.('tileerror', () => {
+        if (_baseFailedOnce || !map) return;
+        _baseFailedOnce = true;
+        try { Object.values(baseLayersDefs).forEach(l => { try { map.removeLayer(l); } catch {} }); } catch {}
+        baseLayersDefs.osm?.addTo(map);
+        currentBaseKey = 'osm';
+        setTimeout(() => map.invalidateSize(), 50);
+        logWarn(`tileerror en base "${key}" → fallback a OSM`);
+      });
+    });
+  }
 
   // Observadores de tamaño/visibilidad (tabs)
   (function attachObservers(){
@@ -258,10 +275,13 @@ export function setBaseLayer(key) {
       baseLayersDefs[key].addTo(map);
       currentBaseKey = key;
       setTimeout(() => map.invalidateSize(), 30);
+      setTimeout(() => map.invalidateSize(), 300); // ajuste extra para evitar tiles “cortados”
     } catch (e) {
       logErr('setBaseLayer error → fallback OSM:', e);
-      baseLayersDefs.osm.addTo(map);
+      try { Object.values(baseLayersDefs).forEach(l => { try { map.removeLayer(l); } catch {} }); } catch {}
+      baseLayersDefs.osm?.addTo(map);
       currentBaseKey = 'osm';
+      setTimeout(() => map.invalidateSize(), 60);
     }
   });
 }
@@ -327,6 +347,9 @@ export function drawCentrosInMap(centros = [], defaultLatLng = CHILOE_COORDS, on
     }
 
     const poly = L.polygon(coords, { color, weight: 3, fillOpacity: .28, fillColor: fill }).addTo(centrosGroup);
+
+    // cursor pointer para interacción
+    try { poly.getElement?.()?.classList?.add('cursor-pointer'); } catch {}
 
     const titular = c.name || c.proveedor || '—';
     const codigo  = c.code || '—';
