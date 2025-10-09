@@ -316,3 +316,39 @@ h5.map-title, #tab-centros h5{
   opacity: .7;
   margin-left: .25rem;
 }
+
+/* Fullscreen del contenedor del mapa */
+#mapShell:fullscreen {
+  /* Deja que el contenedor ocupe toda la pantalla */
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+}
+
+#mapShell:fullscreen #map {
+  /* Asegura que el canvas de Leaflet crezca */
+  width: 100%;
+  height: 100%;
+}
+
+/* Evita scroll de body cuando el mapa está fullscreen */
+body:has(#mapShell:fullscreen) {
+  overflow: hidden;
+}
+
+/* Asegura que la cajita de búsqueda quede visible sobre el mapa */
+#mapShell .map-search {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: auto;
+  z-index: 1000; /* sobre los tiles de Leaflet */
+}
+
+/* Cursor de interacción sobre polígonos (si el browser expone el path) */
+.leaflet-interactive,
+.centro-label,
+.cursor-pointer {
+  cursor: pointer;
+}
+
