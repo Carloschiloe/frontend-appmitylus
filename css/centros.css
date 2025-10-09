@@ -214,40 +214,55 @@ body:has(#mapShell:fullscreen){ overflow:hidden; }
    ETIQUETAS EN POLÍGONOS (TRANSPARENTES)
    ============================== */
 .leaflet-tooltip.centro-label{
-  --label-scale: 1;                /* opcional: JS puede ajustarla por zoom */
-  background: transparent;         /* ← sin píldora */
+  --label-scale: 1;
+  background: transparent;
   border: 0;
   box-shadow: none;
   padding: 0;
   pointer-events: none;
+
+  /* Fuerza orientación horizontal y evita colapsar a 1px */
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
 }
-.centro-label .leaflet-tooltip-content{ margin:0; }
+
+.centro-label .leaflet-tooltip-content{
+  margin: 0;
+  display: inline-block;          /* respeta ancho natural */
+}
+
 .centro-label .centro-label-inner{
-  text-align:center;
+  display: inline-block;
+  text-align: center;
   line-height: 1.15;
-  max-width: 220px;                /* evita rótulos gigantes */
+  min-width: 140px;               /* <- evita que se haga “palito” vertical */
+  max-width: 260px;               /* <- tope razonable */
   white-space: normal;
-  word-break: break-word;
+  word-break: normal;             /* NO cortamos palabras a la mitad */
+  overflow-wrap: break-word;      /* solo cortar si es necesario */
 }
+
 .centro-label .titular{
-  font-weight:800;
-  color:#fff;                      /* texto blanco */
+  font-weight: 800;
+  color: #fff;
   font-size: calc(12px * var(--label-scale));
   text-shadow:
     0 1px 2px rgba(0,0,0,.65),
-    0 0 1px rgba(0,0,0,.9);        /* halo para legibilidad */
+    0 0 1px rgba(0,0,0,.9);
   -webkit-font-smoothing: antialiased;
 }
+
 .centro-label .codigo{
-  font-weight:700;
-  color:rgba(255,255,255,.92);
+  font-weight: 700;
+  color: rgba(255,255,255,.92);
   font-size: calc(10.5px * var(--label-scale));
-  margin-top:1px;
+  margin-top: 1px;
   text-shadow:
     0 1px 2px rgba(0,0,0,.6),
     0 0 1px rgba(0,0,0,.9);
 }
-/* (Opcional) clase para mostrar píldora solo en hover, si la activas desde JS */
+
+/* (opcional) píldora en hover si activaste la clase desde JS */
 .leaflet-tooltip.centro-label.hover-pill{
   background: rgba(255,255,255,.86);
   border: 1px solid #e5e7eb;
@@ -361,3 +376,4 @@ h5.map-title, #tab-centros h5{
 .map-search-results li.active { background:#eef2ff; }
 .map-search-results li .sub { font-size:12px; color:#374151; }
 .map-search-results li.nores { color:#6b7280; padding:10px 12px; cursor:default; }
+
