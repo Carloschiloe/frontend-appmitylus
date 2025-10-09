@@ -150,28 +150,49 @@ nav .btn-flat:hover{ background:rgba(255,255,255,.06) !important; border-radius:
 }
 #map:focus-visible{ outline:2px solid #26a69a; outline-offset:2px; }
 
-/* Fullscreen */
+/* ===== Fullscreen ===== */
 :fullscreen #mapShell, #mapShell:fullscreen{ width:100vw; height:100vh; margin:0; padding:0; border-radius:0; }
 :fullscreen #map, #map:fullscreen{ width:100vw; height:100vh; margin:0; padding:0; }
 body:has(#mapShell:fullscreen){ overflow:hidden; }
 
-/* Buscador flotante */
+/* ===== Buscador flotante (centrado) ===== */
+#mapShell{ position:relative; } /* ancla del absoluto */
 .map-search{
-  position:absolute; top:12px; left:50%; transform:translateX(-50%);
-  width:min(720px,92vw); z-index:1001; display:flex; gap:6px; flex-direction:column;
+  position:absolute;
+  top:16px;
+  left:50%;
+  transform:translateX(-50%);
+  width: clamp(280px, 50vw, 640px);
+  z-index:1001;
+  display:flex;
+  gap:6px;
+  flex-direction:column;
 }
 .map-search input[type="search"]{
-  width:100%; height:44px; border-radius:12px; border:1px solid var(--border);
-  background:#fff; padding:0 14px; font-size:15px; font-family:var(--font);
+  width:100%;
+  height:44px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#fff;
+  padding:0 14px;
+  font-size:15px;
+  font-family:var(--font);
   box-shadow:0 6px 18px rgba(0,0,0,.08);
 }
-.map-search input[type="search"]:focus{ outline:none; border-color:#26a69a; box-shadow:0 0 0 3px rgba(38,166,154,.15); }
+.map-search input[type="search"]:focus{
+  outline:none; border-color:#26a69a; box-shadow:0 0 0 3px rgba(38,166,154,.15);
+}
 .map-search-results{
-  list-style:none; margin:0; padding:6px 0; background:#fff; border:1px solid var(--border); border-radius:12px;
-  box-shadow:0 10px 24px rgba(0,0,0,.10); max-height:52vh; overflow-y:auto; display:none;
+  position:absolute;
+  top:calc(100% + 6px);
+  left:0; right:0;
+  list-style:none; margin:0; padding:6px 0;
+  background:#fff; border:1px solid var(--border); border-radius:12px;
+  box-shadow:0 10px 24px rgba(0,0,0,.10);
+  max-height:52vh; overflow-y:auto; display:none;
 }
 .map-search-results.show{ display:block; }
-.map-search-results li{ padding:8px 12px; cursor:pointer; line-height:1.25; border-bottom:1px solid #f3f4f6; }
+.map-search-results li{ padding:10px 12px; cursor:pointer; line-height:1.25; border-bottom:1px solid #f3f4f6; }
 .map-search-results li:last-child{ border-bottom:none; }
 .map-search-results li:hover{ background:#f9fafb; }
 
@@ -233,26 +254,13 @@ h5.map-title, #tab-centros h5{
 }
 
 /* ==============================
-   RESPONSIVE
+   KPI CARDS
    ============================== */
-@media (max-width:1000px){ #mapShell{ height:calc(100vh - 170px); } }
-@media (max-width:900px){
-  #centrosTable, #centrosTable_wrapper{ display:block !important; min-width:360px !important; }
-  .dataTables_paginate{ justify-content:center; }
-  #mapShell{ height:calc(100vh - 190px); min-height:420px; }
-}
-@media (max-width:700px){
-  .sidebar-centros{ top:86px; left:12px; width:92vw; }
-  .sidebar-centros.minimized{ transform:translateX(-90vw); }
-  .map-search{ width:94vw; }
-}
-@media (max-width:600px){ #mapShell{ height:calc(100vh - 200px); min-height:360px; } }
-
-/* ===== KPI CARDS ===== */
 .kpi-cards{
   display:grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap:14px;
+  grid-template-columns: repeat(4, minmax(240px, 1fr));
+  gap:16px;
+  align-items:stretch;
   margin:10px 0 12px;
 }
 .kpi-card{
@@ -272,83 +280,43 @@ h5.map-title, #tab-centros h5{
 }
 .kpi-value{
   font-weight:800;
-  font-size:28px;
+  font-size:clamp(24px, 4vw, 36px);
   line-height:1.1;
   color:var(--text);
 }
 .kpi-value .kpi-suffix{
   font-size:.55em;
   color:var(--muted);
-  margin-left:4px;
+  margin-left:.25rem;
+  font-weight:700;
+  opacity:.7;
 }
 
+/* ==============================
+   RESPONSIVE
+   ============================== */
+@media (max-width:1100px){
+  .kpi-cards{ grid-template-columns: repeat(2, minmax(240px, 1fr)); }
+}
 @media (max-width:800px){
   .kpi-cards{ grid-template-columns: 1fr; }
+  #mapShell{ height:calc(100vh - 170px); }
+}
+@media (max-width:900px){
+  #centrosTable, #centrosTable_wrapper{ display:block !important; min-width:360px !important; }
+  .dataTables_paginate{ justify-content:center; }
+  #mapShell{ height:calc(100vh - 190px); min-height:420px; }
+}
+@media (max-width:700px){
+  .sidebar-centros{ top:86px; left:12px; width:92vw; }
+  .sidebar-centros.minimized{ transform:translateX(-90vw); }
+  .map-search{ width:94vw; }
+}
+@media (max-width:600px){
+  #mapShell{ height:calc(100vh - 200px); min-height:360px; }
 }
 
-/* KPI cards en una sola fila en pantallas amplias */
-.kpi-cards{
-  display:grid;
-  grid-template-columns: repeat(4, minmax(240px, 1fr)); /* 4 tarjetas en línea */
-  gap: 16px;
-  align-items: stretch;
-}
-
-/* En pantallas chicas, que se acomoden automáticamente */
-@media (max-width: 1100px){
-  .kpi-cards{
-    grid-template-columns: repeat(2, minmax(240px, 1fr));
-  }
-}
-@media (max-width: 640px){
-  .kpi-cards{
-    grid-template-columns: 1fr;
-  }
-}
-
-/* El valor dentro de la tarjeta (un poco más grande) */
-.kpi-card .kpi-value{
-  font-size: clamp(24px, 4vw, 36px);
-  font-weight: 800;
-}
-.kpi-card .kpi-suffix{
-  font-weight: 700;
-  opacity: .7;
-  margin-left: .25rem;
-}
-
-/* Fullscreen del contenedor del mapa */
-#mapShell:fullscreen {
-  /* Deja que el contenedor ocupe toda la pantalla */
-  width: 100vw;
-  height: 100vh;
-  background: #000;
-}
-
-#mapShell:fullscreen #map {
-  /* Asegura que el canvas de Leaflet crezca */
-  width: 100%;
-  height: 100%;
-}
-
-/* Evita scroll de body cuando el mapa está fullscreen */
-body:has(#mapShell:fullscreen) {
-  overflow: hidden;
-}
-
-/* Asegura que la cajita de búsqueda quede visible sobre el mapa */
-#mapShell .map-search {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  right: auto;
-  z-index: 1000; /* sobre los tiles de Leaflet */
-}
-
-/* Cursor de interacción sobre polígonos (si el browser expone el path) */
+/* ===== Cursor de interacción sobre polígonos ===== */
 .leaflet-interactive,
 .centro-label,
-.cursor-pointer {
-  cursor: pointer;
-}
-
+.cursor-pointer { cursor: pointer; }
