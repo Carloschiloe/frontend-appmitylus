@@ -120,3 +120,7 @@ button{font:inherit}
 .mmpp-layout.no-nav{
   grid-template-columns: 1fr;   /* una sola columna a pantalla completa */
 }
+
+.mmpp-layout.no-nav .mmpp-main{
+  grid-column: 1 / -1;          /* asegura que ocupe todo el ancho */
+}
