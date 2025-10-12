@@ -19,6 +19,11 @@
   <link rel="preload" href="/spa-mmpp/layout.css?v=1" as="style">
   <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1">
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1">
+
+  <!-- Oculta cualquier input file nativo dentro de modales -->
+  <style>
+    .modal input[type="file"]{display:none!important}
+  </style>
 </head>
 <body class="mmpp-layout no-nav">
 
@@ -306,11 +311,13 @@
         </div>
       </div>
 
+      <!-- MODAL VISITA -->
       <div id="modalVisita" class="modal">
         <div class="modal-content">
           <h5>Registrar visita</h5>
           <form id="formVisita" autocomplete="off">
             <input type="hidden" id="visita_proveedorId">
+
             <div class="row">
               <div class="input-field col s4">
                 <input type="date" id="visita_fecha" required>
@@ -327,6 +334,7 @@
                 <label for="visita_contacto">Contacto</label>
               </div>
             </div>
+
             <div class="row">
               <div class="input-field col s4">
                 <label for="visita_enAgua" class="active">Muestra</label>
@@ -351,6 +359,22 @@
                 </select>
               </div>
             </div>
+
+            <!-- NUEVO: fecha exacta del próximo paso + fotos -->
+            <div class="row" style="align-items:center">
+              <div class="input-field col s4">
+                <input type="date" id="visita_proximoPasoFecha">
+                <label for="visita_proximoPasoFecha" class="active">Fecha exacta del próximo paso</label>
+              </div>
+              <div class="input-field col s8" style="display:flex;align-items:center;gap:10px;margin-top:18px">
+                <button id="btnAddFotos" type="button" class="mmpp-add">
+                  <i class="material-icons left" style="font-size:18px">photo_camera</i>Agregar fotos
+                </button>
+                <input id="visita_fotos" type="file" accept="image/*" multiple>
+                <span id="fotosSeleccionadas" class="muted">Sin archivos seleccionados</span>
+              </div>
+            </div>
+
             <div class="input-field">
               <textarea id="visita_observaciones" class="materialize-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
               <label for="visita_observaciones">Observaciones</label>
@@ -397,13 +421,44 @@
   <!-- Orquestador -->
   <script type="module" src="../../../js/abastecimiento/contactos/index.js?v=10"></script>
 
+  <!-- Init mínimo (tabs/modals) + UI del modal de visita -->
   <script>
-    // Tabs/Modals Materialize
     document.addEventListener('DOMContentLoaded', function(){
+      // Materialize
       var elTabs = document.querySelectorAll('.tabs');
       M.Tabs.init(elTabs, {});
       var elModals = document.querySelectorAll('.modal');
       M.Modal.init(elModals, {endingTop: '5%'});
+
+      // Botón personalizado de fotos (evita duplicados)
+      (function bindVisitaModalUI(){
+        const addBtn = document.getElementById('btnAddFotos');
+        const fileIn = document.getElementById('visita_fotos');
+        const out    = document.getElementById('fotosSeleccionadas');
+        if (addBtn && fileIn && !addBtn.dataset.bound) {
+          addBtn.dataset.bound = '1';
+          addBtn.addEventListener('click', (e)=>{ e.preventDefault(); fileIn.click(); });
+          fileIn.addEventListener('change', ()=>{
+            const n = fileIn.files?.length || 0;
+            out && (out.textContent = n ? (n + ' archivo(s) seleccionado(s)') : 'Sin archivos seleccionados');
+          });
+        }
+        // Habilitar/deshabilitar fecha del próximo paso
+        const selPaso = document.getElementById('visita_estado');
+        const fechaPaso = document.getElementById('visita_proximoPasoFecha');
+        const toggle = () => {
+          if (!selPaso || !fechaPaso) return;
+          const v = selPaso.value || '';
+          const disabled = !v || v === 'Sin acción';
+          fechaPaso.disabled = disabled;
+          if (disabled) fechaPaso.value = '';
+        };
+        if (selPaso && !selPaso.dataset.bound) {
+          selPaso.dataset.bound = '1';
+          selPaso.addEventListener('change', toggle);
+        }
+        toggle();
+      })();
     });
   </script>
 </body>
