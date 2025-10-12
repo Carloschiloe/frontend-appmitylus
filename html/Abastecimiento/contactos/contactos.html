@@ -75,20 +75,24 @@
           </div>
 
           <div class="mmpp-table-wrap">
-            <table id="tablaContactos" class="display mmpp" style="width:100%">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Proveedor</th>
-                  <th>Centro</th>
-                  <th>Comuna</th>
-                  <th>MMPP</th>
-                  <th>Tons</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+           <!-- EMPRESAS -->
+<table id="tablaContactos" class="display mmpp" style="width:100%">
+  <thead>
+    <tr>
+      <th>Semana</th>
+      <th>Fecha</th>
+      <th>Proveedor</th>
+      <th>Centro</th>
+      <th>Comuna</th>
+      <th>MMPP</th>
+      <th>Tons</th>
+      <th>Responsable</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
           </div>
         </div>
       </section>
@@ -101,21 +105,25 @@
           </div>
 
           <div class="mmpp-table-wrap">
-            <table id="tablaVisitas" class="display mmpp" style="width:100%">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Proveedor</th>
-                  <th>Centro</th>
-                  <th>Muestra</th>
-                  <th>Próximo paso</th>
-                  <th>Tons</th>
-                  <th>Observaciones</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+            <!-- VISITAS -->
+<table id="tablaVisitas" class="display mmpp" style="width:100%">
+  <thead>
+    <tr>
+      <th>Semana</th>
+      <th>Fecha</th>
+      <th>Proveedor</th>
+      <th>Centro</th>
+      <th>Muestra</th>
+      <th>Próximo paso</th>
+      <th>Tons</th>
+      <th>Observaciones</th>
+      <th>Responsable</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
           </div>
         </div>
       </section>
@@ -136,12 +144,22 @@
             <span id="fltConP"   class="mmpp-chip">Con empresa</span>
           </div>
 
-          <div class="table-toolbar" style="display:flex;justify-content:flex-end">
-            <button id="btnOpenPersonaModal" class="mmpp-add">
-              <i class="material-icons left" style="font-size:18px">person_add</i>
-              Agregar persona
-            </button>
-          </div>
+         <div class="table-toolbar">
+  <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
+    <button id="btnOpenContactoModal" class="mmpp-add">
+      <i class="material-icons left" style="font-size:18px">record_voice_over</i>Registrar contacto
+    </button>
+    <button id="btnOpenMuestreoModal" class="mmpp-add">
+      <i class="material-icons left" style="font-size:18px">science</i>Registrar muestreo
+    </button>
+  </div>
+  <div class="right">
+    <div class="search">
+      <input id="searchContactos" class="mmpp-input" placeholder="Buscar…">
+    </div>
+  </div>
+</div>
+
 
           <div class="mmpp-table-wrap">
             <table id="tablaPersonas" class="display mmpp" style="width:100%">
