@@ -4,12 +4,13 @@ import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto } from './form-contacto.js';
 import { abrirModalVisita } from '../visitas/tab.js';
 
-/* ------------ estilos específicos (una sola línea + ellipsis) ------------ */
+/* ------------ estilos específicos (una sola línea + ellipsis + acciones en fila) ------------ */
 (function injectStyles() {
   const css = `
   #tablaPersonas{ table-layout:auto; width:100% !important; }
   #tablaPersonas thead th{ position:sticky; top:0; z-index:2; }
-  /* fuerza una línea + ellipsis en celdas */
+
+  /* forzar línea única + ellipsis en celdas “largas” */
   #tablaPersonas th, #tablaPersonas td{ white-space:nowrap; }
   #tablaPersonas td{ overflow:hidden; text-overflow:ellipsis; }
 
@@ -25,8 +26,17 @@ import { abrirModalVisita } from '../visitas/tab.js';
   #tablaPersonas td .ellipsisEmpresa { max-width: 28ch; }
   #tablaPersonas td .ellipsisNotas   { max-width: 42ch; }
 
-  #tablaPersonas a.icon-action{ display:inline-flex; align-items:center; gap:2px; margin-left:.35rem; }
-  #tablaPersonas a.icon-action i{ font-size:18px; line-height:18px; }
+  /* acciones en una sola fila, mismo look que Contactos */
+  #tablaPersonas td.cell-actions{ white-space:nowrap; }
+  #tablaPersonas td.cell-actions .act{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:32px; height:32px; margin-right:6px;
+    border:1px solid #e5e7eb; border-radius:8px; background:#fff;
+    box-shadow:0 2px 8px rgba(2,6,23,.05); cursor:pointer;
+  }
+  #tablaPersonas td.cell-actions .act:last-child{ margin-right:0; }
+  #tablaPersonas td.cell-actions i.material-icons{ font-size:18px; line-height:18px; }
+
   #tablaPersonas .chip.small{ height:22px; line-height:22px; font-size:12px; }
   `;
   if (!document.getElementById('personas-inline-styles')) {
@@ -64,8 +74,8 @@ export function initPersonasTab() {
 
   // chips
   document.getElementById('fltTodosP')?.addEventListener('click', () => { filtroActualP = 'todos'; renderTablaPersonas(); actualizarKPIs(); });
-  document.getElementById('fltSinP')?.addEventListener('click',   () => { filtroActualP = 'sin';   renderTablaPersonas(); actualizarKPIs(); });
-  document.getElementById('fltConP')?.addEventListener('click',   () => { filtroActualP = 'con';   renderTablaPersonas(); actualizarKPIs(); });
+  document.getElementById('fltSinP')  ?.addEventListener('click', () => { filtroActualP = 'sin';   renderTablaPersonas(); actualizarKPIs(); });
+  document.getElementById('fltConP')  ?.addEventListener('click', () => { filtroActualP = 'con';   renderTablaPersonas(); actualizarKPIs(); });
 
   document.addEventListener('reload-tabla-contactos', () => { renderTablaPersonas(); actualizarKPIs(); });
 
@@ -83,51 +93,37 @@ export function initPersonasTab() {
       responsive: true,
       scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-      // anchos en % aprox. para repartir sin overflow
+      // anchos aproximados para evitar overflow y no activar scroll
       columnDefs: [
-        { targets: 0, width: '9%'  },  // Fecha
-        { targets: 1, width: '18%' },  // Contacto
-        { targets: 2, width: '16%' },  // Teléfono(s)
-        { targets: 3, width: '17%' },  // Email
-        { targets: 4, width: '20%' },  // Empresa
-        { targets: 5, width: '14%' },  // Notas
-        { targets: 6, width: '6%', orderable: false, searchable: false } // Acciones
+        { targets: 0, width: 90  },  // Fecha
+        { targets: 1, width: 180 },  // Contacto
+        { targets: 2, width: 160 },  // Teléfono(s)
+        { targets: 3, width: 200 },  // Email
+        { targets: 4, width: 240 },  // Empresa
+        { targets: 5, width: 220 },  // Notas
+        { targets: 6, width: 120, orderable: false, searchable: false, className: 'cell-actions' } // Acciones
       ]
     });
 
-    // acciones por fila
+    // acciones por fila (delegación)
     jq('#tablaPersonas tbody')
-      .on('click', 'a.icon-ver', function(){
-        const id = this.dataset.id;
-        const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
-        if (c) abrirDetalleContacto(c);
-      })
-      .on('click', 'a.icon-visita', function(){
-        const id = this.dataset.id;
-        const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
-        if (c) abrirModalVisita(c);
-      })
-      .on('click', 'a.icon-editar', function(){
-        const id = this.dataset.id;
-        const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
-        if (c) abrirEdicion(c);
-      })
-      .on('click', 'a.icon-eliminar', async function(){
-        const id = this.dataset.id;
-        if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
-        try { await eliminarContacto(id); renderTablaPersonas(); actualizarKPIs(); }
-        catch (e) { console.error(e); M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 }); }
-      })
-      // asociar / cambiar empresa
-      .on('click', 'a.asociar-btn', function(e){
+      .off('click.personas')
+      .on('click.personas', '.cell-actions .act, a.icon-action', function(e){
         e.preventDefault();
+        e.stopPropagation();
         const id = this.dataset.id;
-        state.asociarContactoId = id;
-        try { document.dispatchEvent(new CustomEvent('asociar-open', { detail: { contactoId: id } })); } catch {}
-        const modal = document.getElementById('modalAsociar');
-        if (modal && window.M && M.Modal) {
-          const inst = M.Modal.getInstance(modal) || M.Modal.init(modal, {});
-          inst.open();
+        const cls = (this.className || '').toLowerCase();
+        const c = (state.contactosGuardados || []).find(x => String(x._id) === String(id));
+        if (!c) return;
+
+        if (cls.includes('icon-ver'))    return abrirDetalleContacto(c);
+        if (cls.includes('icon-visita')) return abrirModalVisita(c);
+        if (cls.includes('icon-editar')) return abrirEdicion(c);
+        if (cls.includes('icon-eliminar')) {
+          if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
+          eliminarContacto(id)
+            .then(()=>{ renderTablaPersonas(); actualizarKPIs(); })
+            .catch(e => { console.error(e); M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 }); });
         }
       });
   }
@@ -158,7 +154,7 @@ export function renderTablaPersonas() {
       const tels = Array.isArray(c.contactoTelefonos) ? c.contactoTelefonos.join(' / ') : (c.contactoTelefono || '');
       const mails = Array.isArray(c.contactoEmails) ? c.contactoEmails.join(' / ') : (c.contactoEmail || '');
 
-      // Empresa en una sola línea con ícono al lado
+      // Empresa en una sola línea con ícono de asociar/cambiar
       let empresaCell = '';
       if (hasEmpresa(c)) {
         const name = esc(c.proveedorNombre || '');
@@ -183,20 +179,30 @@ export function renderTablaPersonas() {
 
       const notas = esc(c.notas || c.notasContacto || '');
       const acciones = `
-        <a href="#!" class="icon-action icon-ver"     title="Ver detalle"       data-id="${c._id}"><i class="material-icons">visibility</i></a>
-        <a href="#!" class="icon-action icon-visita"  title="Registrar visita"  data-id="${c._id}"><i class="material-icons">event_available</i></a>
-        <a href="#!" class="icon-action icon-editar"  title="Editar"            data-id="${c._id}"><i class="material-icons">edit</i></a>
-        <a href="#!" class="icon-action icon-eliminar"title="Eliminar"          data-id="${c._id}"><i class="material-icons">delete</i></a>
+        <div class="cell-actions">
+          <a href="#!" class="act icon-action icon-ver"     title="Ver detalle"       data-id="${c._id}">
+            <i class="material-icons">visibility</i>
+          </a>
+          <a href="#!" class="act icon-action icon-visita"  title="Registrar visita"  data-id="${c._id}">
+            <i class="material-icons">event_available</i>
+          </a>
+          <a href="#!" class="act icon-action icon-editar"  title="Editar"            data-id="${c._id}">
+            <i class="material-icons">edit</i>
+          </a>
+          <a href="#!" class="act icon-action icon-eliminar"title="Eliminar"          data-id="${c._id}">
+            <i class="material-icons">delete</i>
+          </a>
+        </div>
       `;
 
       return [
-        `<span data-order="${new Date(f).getTime()}">${f}</span>`,
-        esc(c.contactoNombre || ''),
-        esc(String(tels)),
-        esc(String(mails)),
-        empresaCell,
-        `<span class="cell-inline"><span class="ellipsisCell ellipsisNotas" title="${notas}">${notas}</span></span>`,
-        acciones
+        `<span data-order="${new Date(f).getTime()}">${f}</span>`,     // Fecha
+        esc(c.contactoNombre || ''),                                   // Contacto
+        esc(String(tels)),                                             // Teléfono(s)
+        esc(String(mails)),                                            // Email
+        empresaCell,                                                   // Empresa
+        `<span class="cell-inline"><span class="ellipsisCell ellipsisNotas" title="${notas}">${notas}</span></span>`, // Notas
+        acciones                                                       // Acciones
       ];
     });
 
