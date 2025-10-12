@@ -156,3 +156,30 @@ th.sort .arrow{ margin-left:6px; font-size:11px; opacity:.7; }
   table.mmpp{ display:block; overflow-x:auto; }
   .mmpp-hero h1{ font-size:20px; }
 }
+
+/* Toolbar con buscador a la derecha, dentro de la card */
+.table-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.table-toolbar .right{display:flex;gap:8px;align-items:center}
+.table-toolbar .search{width:280px}
+.table-toolbar .search .mmpp-input{width:100%}
+
+/* Celdas compactas y sin scroll horizontal */
+table.mmpp th, table.mmpp td{vertical-align:middle}
+table.mmpp td.wrap{white-space:normal; word-break:break-word}
+table.mmpp td.ellipsis{max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+/* Acciones en una sola fila, centradas */
+td.cell-actions{white-space:nowrap}
+.cell-actions .act{display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:#fff;
+  box-shadow:0 2px 8px rgba(2,6,23,.05); margin-right:6px; cursor:pointer}
+.cell-actions .act:last-child{margin-right:0}
+
+/* Tabs más SPA */
+.tabs .tab a{color:var(--muted)}
+.tabs .tab a.active{color:var(--text)}
+.tabs .indicator{background:var(--brand-1);height:3px}
+
+/* Badge de semana actual */
+.week-badge{background:#eef2ff;color:#1e40af;border:1px solid #c7d2fe;border-radius:999px;
+  padding:6px 10px;font-weight:800;font-size:12.5px;display:inline-flex;gap:8px;align-items:center}
