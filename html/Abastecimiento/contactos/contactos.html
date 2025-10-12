@@ -5,325 +5,368 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Abastecimiento de MMPP – Choritos</title>
 
-  <!-- Materialize & Google Icons -->
+  <!-- (opcional) Google Icons para los <i class="material-icons"> -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+
+  <!-- Materialize CSS (lo dejamos por compatibilidad con Tabs/Modal, pero los estilos los sobreescriben nuestras hojas) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-  <link rel="stylesheet" href="../../../styles.css" />
-  <link rel="stylesheet" href="../../../css/abastecimiento.css" />
 
   <!-- DataTables + Buttons -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+
+  <!-- NUEVO: estilos unificados de la SPA -->
+  <link rel="preload" href="/spa-mmpp/layout.css?v=1" as="style">
+  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1">
+  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1">
+
+  <!-- QUITADO: estilos antiguos que metían el verde y sobrecargas -->
+  <!-- <link rel="stylesheet" href="../../../styles.css" /> -->
+  <!-- <link rel="stylesheet" href="../../../css/abastecimiento.css" /> -->
 </head>
-<body>
-  <nav class="teal">
-    <div class="nav-wrapper">
-      <a href="../categorias.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
-      <a href="#" class="brand-logo center">Abastecimiento de MMPP</a>
-    </div>
-  </nav>
+<body class="mmpp-layout">
 
-  <div class="page-wrap">
-    <!-- Tabs -->
-    <ul id="tabs" class="tabs">
-      <li class="tab col s4"><a class="active" href="#tab-contactos">Empresas</a></li>
-      <li class="tab col s4"><a href="#tab-visitas">Visitas a Cultivos</a></li>
-      <li class="tab col s4"><a href="#tab-personas">Agenda de Contactos</a></li>
-    </ul>
+  <!-- NAV lateral (si esta vista vive dentro del layout con nav, déjalo; si no, puedes omitirlo) -->
+  <!-- <aside class="mmpp-nav"> ... </aside> -->
 
-    <!-- EMPRESAS -->
-    <section id="tab-contactos" class="col s12">
-      <div class="page-toolbar">
-        <a id="btnOpenContactoModal" class="btn teal waves-effect">
-          <i class="material-icons left">record_voice_over</i>Registrar contacto
-        </a>
-      </div>
+  <main class="mmpp-main">
+    <div class="mmpp-wrap">
 
-      <table id="tablaContactos" class="highlight display tabla-mt">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Proveedor</th>
-            <th>Centro</th>
-            <th>Comuna</th>
-            <th>MMPP</th>
-            <th>Tons</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    <!-- VISITAS -->
-    <section id="tab-visitas" class="col s12">
-      <div class="page-toolbar">
-        <span class="grey-text text-darken-1">
-          Revisión, filtros y exportación de visitas (la creación sigue en Contactos).
-        </span>
-      </div>
-
-      <table id="tablaVisitas" class="highlight display tabla-mt">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Proveedor</th>
-            <th>Centro</th>
-            <th>Muestra</th>
-            <th>Próximo paso</th>
-            <th>Tons</th>
-            <th>Observaciones</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    <!-- AGENDA DE CONTACTOS -->
-    <section id="tab-personas" class="col s12">
-      <div class="row" id="kpisPersonas">
-        <div class="col s3 center"><h6>Total</h6><div id="kpiPTotal" class="kpi-num">0</div></div>
-        <div class="col s3 center"><h6>Sin empresa</h6><div id="kpiPSin" class="kpi-num">0</div></div>
-        <div class="col s3 center"><h6>Con empresa</h6><div id="kpiPCon" class="kpi-num">0</div></div>
-        <div class="col s3 center"><h6>Visitas (30d) sin empresa</h6><div id="kpiPVisitasSin" class="kpi-num">0</div></div>
-      </div>
-
-      <div class="chip-group" id="chipsFiltroPersonas">
-        <a id="fltTodosP" class="chip teal white-text">Todos</a>
-        <a id="fltSinP"   class="chip">Sin empresa</a>
-        <a id="fltConP"   class="chip">Con empresa</a>
-      </div>
-
-      <div class="page-toolbar" style="justify-content: flex-end;">
-        <a id="btnOpenPersonaModal" class="btn teal waves-effect">
-          <i class="material-icons left">person_add</i>Agregar persona
-        </a>
-      </div>
-
-      <table id="tablaPersonas" class="highlight display tabla-mt-sm">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Contacto</th>
-            <th>Teléfono(s)</th>
-            <th>Email</th>
-            <th>Empresa</th>
-            <th>Notas</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-  </div>
-
-  <!-- MODALES -->
-  <div id="modalContacto" class="modal">
-    <div class="modal-content">
-      <h5>Registrar Contacto</h5>
-
-      <div class="input-field" style="position:relative;">
-        <input type="text" id="buscadorProveedor" list="datalistProveedores" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
-        <label for="buscadorProveedor">Proveedor</label>
-        <datalist id="datalistProveedores"></datalist>
-      </div>
-
-      <div class="input-field">
-        <label for="selectCentro" class="active">Centro</label>
-        <select id="selectCentro" class="browser-default modern-select" disabled>
-          <option value="" disabled selected>Selecciona un centro (opcional)</option>
-        </select>
-      </div>
-
-      <input type="hidden" id="proveedorId">
-      <input type="hidden" id="proveedorNombre">
-      <input type="hidden" id="proveedorKey">
-      <input type="hidden" id="centroId">
-      <input type="hidden" id="centroCodigo">
-      <input type="hidden" id="centroComuna">
-      <input type="hidden" id="centroHectareas">
-
-      <form id="formContacto" autocomplete="off">
-        <div class="row">
-          <div class="input-field col s4">
-            <label for="tieneMMPP" class="active">Disponibilidad</label>
-            <select id="tieneMMPP" class="browser-default modern-select" required>
-              <option value="">¿Tiene MMPP disponible?</option>
-              <option value="Sí">Sí</option>
-              <option value="No">No</option>
-              <option value="pordefinir">Por definir</option>
-            </select>
-          </div>
-
-          <!-- Campo 'Disposición' eliminado -->
-
-          <div class="input-field col s4">
-            <input id="vendeActualmenteA" type="text" placeholder="Ej: Camanchaca, Orizon...">
-            <label for="vendeActualmenteA">Vende actualmente a</label>
-          </div>
-
-          <div class="input-field col s4">
-            <input id="notasContacto" type="text" placeholder="Notas u observaciones">
-            <label for="notasContacto">Notas</label>
-          </div>
+      <!-- Header / Hero -->
+      <header class="mmpp-hero" style="margin-bottom:14px">
+        <div>
+          <h1>Abastecimiento de MMPP</h1>
+          <p>Empresas, visitas a cultivos y agenda de contactos</p>
         </div>
-
-        <div class="row">
-          <div class="input-field col s4">
-            <input id="contactoNombre" type="text" placeholder="Nombre y apellido">
-            <label for="contactoNombre">Nombre del contacto</label>
-          </div>
-
-          <div class="input-field col s4">
-            <input id="contactoTelefono" type="tel" placeholder="+56 9 1234 5678">
-            <label for="contactoTelefono">Teléfono</label>
-          </div>
-
-          <div class="input-field col s4">
-            <input id="contactoEmail" type="email" placeholder="correo@dominio.cl">
-            <label for="contactoEmail">Email</label>
-          </div>
+        <div class="mmpp-badge">
+          <i class="material-icons" style="font-size:18px">inventory_2</i>
+          Gestión unificada
         </div>
+      </header>
 
-        <!-- DISPONIBILIDAD MMPP (asignaciones) -->
-        <div class="row" id="asigDisponibilidadBlock">
-          <div class="col s12"><h6 class="grey-text text-darken-2" style="margin:4px 0 8px">Disponibilidad de MMPP (asignaciones)</h6></div>
+      <!-- Tabs (seguimos usando Materialize JS, pero con nuestro look) -->
+      <div class="card" style="padding:0; margin-bottom:12px">
+        <ul id="tabs" class="tabs" style="padding:0 12px">
+          <li class="tab col s4"><a class="active" href="#tab-contactos">Empresas</a></li>
+          <li class="tab col s4"><a href="#tab-visitas">Visitas a Cultivos</a></li>
+          <li class="tab col s4"><a href="#tab-personas">Agenda de Contactos</a></li>
+        </ul>
+      </div>
 
-          <div class="col s12 m4">
-            <div class="input-field">
-              <input id="asigAnio" type="number" min="2020" max="2100">
-              <label for="asigAnio">Año</label>
+      <!-- EMPRESAS -->
+      <section id="tab-contactos" class="col s12">
+        <div class="mmpp-card" style="margin-bottom:12px">
+          <div class="table-toolbar" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+            <div class="left">
+              <button id="btnOpenContactoModal" class="mmpp-add">
+                <i class="material-icons left" style="font-size:18px">record_voice_over</i>
+                Registrar contacto
+              </button>
+            </div>
+            <div class="right">
+              <!-- Si agregas un buscador global, usa .mmpp-input -->
+              <!-- <input class="mmpp-input" placeholder="Buscar…"> -->
             </div>
           </div>
 
-          <div class="col s12 m4">
-            <div class="input-field">
-              <select id="asigMes">
-                <option value="" selected>Mes…</option>
-                <option value="1">Enero</option>
-                <option value="2">Febrero</option>
-                <option value="3">Marzo</option>
-                <option value="4">Abril</option>
-                <option value="5">Mayo</option>
-                <option value="6">Junio</option>
-                <option value="7">Julio</option>
-                <option value="8">Agosto</option>
-                <option value="9">Septiembre</option>
-                <option value="10">Octubre</option>
-                <option value="11">Noviembre</option>
-                <option value="12">Diciembre</option>
-              </select>
-              <label for="asigMes">Mes</label>
-            </div>
-          </div>
-
-          <div class="col s12 m4">
-            <div class="input-field">
-              <input id="asigTons" type="number" step="0.01" min="0">
-              <label for="asigTons">Cantidad (ton)</label>
-            </div>
-          </div>
-
-          <!-- Historial compactado -->
-          <div class="col s12">
-            <div id="asigHist" class="card-panel grey lighten-4" style="padding:8px 12px">
-              <span class="grey-text">Sin asignaciones registradas.</span>
-            </div>
+          <div class="mmpp-table-wrap">
+            <table id="tablaContactos" class="display mmpp" style="width:100%">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Proveedor</th>
+                  <th>Centro</th>
+                  <th>Comuna</th>
+                  <th>MMPP</th>
+                  <th>Tons</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
-        <!-- /DISPONIBILIDAD -->
-      </form>
-    </div>
+      </section>
 
-    <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:8px;">
-      <button type="button" class="modal-close btn-flat">Cancelar</button>
-      <button class="btn teal" type="submit" form="formContacto">
-        <i class="material-icons left">save</i>Guardar
-      </button>
-    </div>
-  </div>
-
-  <div id="modalDetalleContacto" class="modal">
-    <div class="modal-content">
-      <h5>Detalle del contacto</h5>
-      <div id="detalleContactoBody"></div>
-    </div>
-    <div class="modal-footer"><button class="modal-close btn teal">Cerrar</button></div>
-  </div>
-
-  <div id="modalVisita" class="modal">
-    <div class="modal-content">
-      <h5>Registrar visita</h5>
-      <form id="formVisita" autocomplete="off">
-        <input type="hidden" id="visita_proveedorId">
-        <div class="row">
-          <div class="input-field col s4">
-            <input type="date" id="visita_fecha" required>
-            <label for="visita_fecha" class="active">Fecha</label>
+      <!-- VISITAS -->
+      <section id="tab-visitas" class="col s12">
+        <div class="mmpp-card" style="margin-bottom:12px">
+          <div class="muted" style="margin-bottom:8px">
+            Revisión, filtros y exportación de visitas (la creación sigue en Contactos).
           </div>
-          <div class="input-field col s4">
-            <label for="visita_centroId" class="active">Centro</label>
-            <select id="visita_centroId" class="browser-default">
-              <option value="">Centro visitado (opcional)</option>
+
+          <div class="mmpp-table-wrap">
+            <table id="tablaVisitas" class="display mmpp" style="width:100%">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Proveedor</th>
+                  <th>Centro</th>
+                  <th>Muestra</th>
+                  <th>Próximo paso</th>
+                  <th>Tons</th>
+                  <th>Observaciones</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- AGENDA DE CONTACTOS -->
+      <section id="tab-personas" class="col s12">
+        <div class="mmpp-card" style="margin-bottom:12px">
+          <div class="mmpp-kpis" id="kpisPersonas" style="margin-bottom:8px">
+            <div class="mmpp-kpi">Total: <span id="kpiPTotal" style="margin-left:6px">0</span></div>
+            <div class="mmpp-kpi">Sin empresa: <span id="kpiPSin" style="margin-left:6px">0</span></div>
+            <div class="mmpp-kpi">Con empresa: <span id="kpiPCon" style="margin-left:6px">0</span></div>
+            <div class="mmpp-kpi">Visitas (30d) sin empresa: <span id="kpiPVisitasSin" style="margin-left:6px">0</span></div>
+          </div>
+
+          <div id="chipsFiltroPersonas" style="margin-bottom:8px">
+            <span id="fltTodosP" class="mmpp-chip">Todos</span>
+            <span id="fltSinP"   class="mmpp-chip">Sin empresa</span>
+            <span id="fltConP"   class="mmpp-chip">Con empresa</span>
+          </div>
+
+          <div class="table-toolbar" style="display:flex;justify-content:flex-end">
+            <button id="btnOpenPersonaModal" class="mmpp-add">
+              <i class="material-icons left" style="font-size:18px">person_add</i>
+              Agregar persona
+            </button>
+          </div>
+
+          <div class="mmpp-table-wrap">
+            <table id="tablaPersonas" class="display mmpp" style="width:100%">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Contacto</th>
+                  <th>Teléfono(s)</th>
+                  <th>Email</th>
+                  <th>Empresa</th>
+                  <th>Notas</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- MODALES (seguimos usando estructura Materialize para JS) -->
+      <div id="modalContacto" class="modal">
+        <div class="modal-content">
+          <h5>Registrar Contacto</h5>
+
+          <div class="input-field" style="position:relative;">
+            <input type="text" id="buscadorProveedor" list="datalistProveedores" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
+            <label for="buscadorProveedor">Proveedor</label>
+            <datalist id="datalistProveedores"></datalist>
+          </div>
+
+          <div class="input-field">
+            <label for="selectCentro" class="active">Centro</label>
+            <select id="selectCentro" class="browser-default modern-select" disabled>
+              <option value="" disabled selected>Selecciona un centro (opcional)</option>
             </select>
           </div>
-          <div class="input-field col s4">
-            <input id="visita_contacto" type="text" placeholder="Persona contactada">
-            <label for="visita_contacto">Contacto</label>
-          </div>
-        </div>
-        <div class="row">
-          <div class="input-field col s4">
-            <label for="visita_enAgua" class="active">Muestra</label>
-            <select id="visita_enAgua" class="browser-default">
-              <option value="">¿Toma de Muestras?</option>
-              <option>Sí</option>
-              <option>No</option>
-            </select>
-          </div>
-          <div class="input-field col s4">
-            <input id="visita_tonsComprometidas" type="number" step="0.01" min="0" placeholder="Ej: 120">
-            <label for="visita_tonsComprometidas" class="active">Tons comprometidas (opcional)</label>
-          </div>
-          <div class="input-field col s4">
-            <label for="visita_estado" class="active">Próximo paso</label>
-            <select id="visita_estado" class="browser-default">
-              <option value="Programar nueva visita" selected>Programar nueva visita</option>
-              <option value="Tomar/entregar muestras">Tomar/entregar muestras</option>
-              <option value="Negociar precio/volumen">Negociar precio/volumen</option>
-              <option value="Esperar disponibilidad">Esperar disponibilidad</option>
-              <option value="Sin acción">Sin acción</option>
-            </select>
-          </div>
-        </div>
-        <div class="input-field">
-          <textarea id="visita_observaciones" class="materialize-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
-          <label for="visita_observaciones">Observaciones</label>
+
+          <input type="hidden" id="proveedorId">
+          <input type="hidden" id="proveedorNombre">
+          <input type="hidden" id="proveedorKey">
+          <input type="hidden" id="centroId">
+          <input type="hidden" id="centroCodigo">
+          <input type="hidden" id="centroComuna">
+          <input type="hidden" id="centroHectareas">
+
+          <form id="formContacto" autocomplete="off">
+            <div class="row">
+              <div class="input-field col s4">
+                <label for="tieneMMPP" class="active">Disponibilidad</label>
+                <select id="tieneMMPP" class="browser-default modern-select" required>
+                  <option value="">¿Tiene MMPP disponible?</option>
+                  <option value="Sí">Sí</option>
+                  <option value="No">No</option>
+                  <option value="pordefinir">Por definir</option>
+                </select>
+              </div>
+
+              <div class="input-field col s4">
+                <input id="vendeActualmenteA" type="text" placeholder="Ej: Camanchaca, Orizon...">
+                <label for="vendeActualmenteA">Vende actualmente a</label>
+              </div>
+
+              <div class="input-field col s4">
+                <input id="notasContacto" type="text" placeholder="Notas u observaciones">
+                <label for="notasContacto">Notas</label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="input-field col s4">
+                <input id="contactoNombre" type="text" placeholder="Nombre y apellido">
+                <label for="contactoNombre">Nombre del contacto</label>
+              </div>
+
+              <div class="input-field col s4">
+                <input id="contactoTelefono" type="tel" placeholder="+56 9 1234 5678">
+                <label for="contactoTelefono">Teléfono</label>
+              </div>
+
+              <div class="input-field col s4">
+                <input id="contactoEmail" type="email" placeholder="correo@dominio.cl">
+                <label for="contactoEmail">Email</label>
+              </div>
+            </div>
+
+            <!-- DISPONIBILIDAD MMPP (asignaciones) -->
+            <div class="row" id="asigDisponibilidadBlock">
+              <div class="col s12"><h6 class="grey-text text-darken-2" style="margin:4px 0 8px">Disponibilidad de MMPP (asignaciones)</h6></div>
+
+              <div class="col s12 m4">
+                <div class="input-field">
+                  <input id="asigAnio" type="number" min="2020" max="2100">
+                  <label for="asigAnio">Año</label>
+                </div>
+              </div>
+
+              <div class="col s12 m4">
+                <div class="input-field">
+                  <select id="asigMes">
+                    <option value="" selected>Mes…</option>
+                    <option value="1">Enero</option>
+                    <option value="2">Febrero</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Mayo</option>
+                    <option value="6">Junio</option>
+                    <option value="7">Julio</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                  </select>
+                  <label for="asigMes">Mes</label>
+                </div>
+              </div>
+
+              <div class="col s12 m4">
+                <div class="input-field">
+                  <input id="asigTons" type="number" step="0.01" min="0">
+                  <label for="asigTons">Cantidad (ton)</label>
+                </div>
+              </div>
+
+              <div class="col s12">
+                <div id="asigHist" class="card-panel grey lighten-4" style="padding:8px 12px">
+                  <span class="grey-text">Sin asignaciones registradas.</span>
+                </div>
+              </div>
+            </div>
+            <!-- /DISPONIBILIDAD -->
+          </form>
         </div>
 
-        <div class="right-align">
+        <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:8px;">
           <button type="button" class="modal-close btn-flat">Cancelar</button>
-          <button class="btn teal" type="submit"><i class="material-icons left">save</i>Guardar visita</button>
+          <button class="mmpp-button" type="submit" form="formContacto">
+            <i class="material-icons left">save</i>Guardar
+          </button>
         </div>
-      </form>
-    </div>
-  </div>
-
-  <div id="modalAsociar" class="modal">
-    <div class="modal-content">
-      <h5>Asociar a empresa</h5>
-      <div class="input-field">
-        <input id="empresaSearch" type="text" placeholder="Buscar empresa... (mín. 2 letras)">
       </div>
-      <ul id="searchResults" class="collection" style="max-height:260px;overflow:auto;"></ul>
+
+      <div id="modalDetalleContacto" class="modal">
+        <div class="modal-content">
+          <h5>Detalle del contacto</h5>
+          <div id="detalleContactoBody"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="mmpp-add modal-close">Cerrar</button>
+        </div>
+      </div>
+
+      <div id="modalVisita" class="modal">
+        <div class="modal-content">
+          <h5>Registrar visita</h5>
+          <form id="formVisita" autocomplete="off">
+            <input type="hidden" id="visita_proveedorId">
+            <div class="row">
+              <div class="input-field col s4">
+                <input type="date" id="visita_fecha" required>
+                <label for="visita_fecha" class="active">Fecha</label>
+              </div>
+              <div class="input-field col s4">
+                <label for="visita_centroId" class="active">Centro</label>
+                <select id="visita_centroId" class="browser-default">
+                  <option value="">Centro visitado (opcional)</option>
+                </select>
+              </div>
+              <div class="input-field col s4">
+                <input id="visita_contacto" type="text" placeholder="Persona contactada">
+                <label for="visita_contacto">Contacto</label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="input-field col s4">
+                <label for="visita_enAgua" class="active">Muestra</label>
+                <select id="visita_enAgua" class="browser-default">
+                  <option value="">¿Toma de Muestras?</option>
+                  <option>Sí</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="input-field col s4">
+                <input id="visita_tonsComprometidas" type="number" step="0.01" min="0" placeholder="Ej: 120">
+                <label for="visita_tonsComprometidas" class="active">Tons comprometidas (opcional)</label>
+              </div>
+              <div class="input-field col s4">
+                <label for="visita_estado" class="active">Próximo paso</label>
+                <select id="visita_estado" class="browser-default">
+                  <option value="Programar nueva visita" selected>Programar nueva visita</option>
+                  <option value="Tomar/entregar muestras">Tomar/entregar muestras</option>
+                  <option value="Negociar precio/volumen">Negociar precio/volumen</option>
+                  <option value="Esperar disponibilidad">Esperar disponibilidad</option>
+                  <option value="Sin acción">Sin acción</option>
+                </select>
+              </div>
+            </div>
+            <div class="input-field">
+              <textarea id="visita_observaciones" class="materialize-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
+              <label for="visita_observaciones">Observaciones</label>
+            </div>
+
+            <div class="right-align" style="display:flex;gap:8px;justify-content:flex-end">
+              <button type="button" class="modal-close btn-flat">Cancelar</button>
+              <button class="mmpp-button" type="submit">
+                <i class="material-icons left">save</i>Guardar visita
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div id="modalAsociar" class="modal">
+        <div class="modal-content">
+          <h5>Asociar a empresa</h5>
+          <div class="input-field">
+            <input id="empresaSearch" type="text" class="mmpp-input" placeholder="Buscar empresa... (mín. 2 letras)">
+          </div>
+          <ul id="searchResults" class="collection" style="max-height:260px;overflow:auto;"></ul>
+        </div>
+        <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
+          <a href="#!" id="btnCrearEmpresa" class="btn-flat">Crear empresa nueva</a>
+          <a href="#!" id="btnQuitarEmpresa" class="btn-flat red-text">Quitar empresa</a>
+          <a href="#!" class="modal-close mmpp-add">Cerrar</a>
+        </div>
+      </div>
+
     </div>
-    <div class="modal-footer">
-      <a href="#!" id="btnCrearEmpresa" class="btn-flat">Crear empresa nueva</a>
-      <a href="#!" id="btnQuitarEmpresa" class="btn-flat red-text">Quitar empresa</a>
-      <a href="#!" class="modal-close btn teal">Cerrar</a>
-    </div>
-  </div>
+  </main>
 
   <!-- Libs -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -337,5 +380,15 @@
 
   <!-- Orquestador -->
   <script type="module" src="../../../js/abastecimiento/contactos/index.js?v=10"></script>
+
+  <script>
+    // Asegura Tabs/Modals de Materialize inicializados
+    document.addEventListener('DOMContentLoaded', function(){
+      var elTabs = document.querySelectorAll('.tabs');
+      M.Tabs.init(elTabs, {});
+      var elModals = document.querySelectorAll('.modal');
+      M.Modal.init(elModals, {endingTop: '5%'});
+    });
+  </script>
 </body>
 </html>
