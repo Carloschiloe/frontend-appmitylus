@@ -115,3 +115,8 @@ button{font:inherit}
 .mmpp-nav::-webkit-scrollbar{width:10px}
 .mmpp-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12); border-radius:10px}
 .mmpp-nav::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.18)}
+
+/* Página sin sidebar */
+.mmpp-layout.no-nav{
+  grid-template-columns: 1fr;   /* una sola columna a pantalla completa */
+}
