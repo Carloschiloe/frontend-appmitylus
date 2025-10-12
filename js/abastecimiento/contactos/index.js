@@ -55,6 +55,29 @@ function onAll(selector, event, handler) {
   });
 }
 
+/* ======================= Semana ISO + Badge ======================= */
+function isoWeekNumber(dateStr){
+  // dateStr: 'YYYY-MM-DD' o ISO; lunes=0
+  const d = dateStr ? new Date(dateStr) : new Date();
+  const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNr = (target.getUTCDay() + 6) % 7; // lunes=0
+  target.setUTCDate(target.getUTCDate() - dayNr + 3);
+  const firstThu = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+  const diff = (target - firstThu) / 86400000;
+  return 1 + Math.floor(diff / 7);
+}
+function setSemanaActualBadge(){
+  const el = document.getElementById('badgeSemanaActual');
+  if (!el) return;
+  const today = new Date();
+  const ymd = today.toISOString().slice(0,10);
+  const w = isoWeekNumber(ymd);
+  const span = el.querySelector('span');
+  if (span) span.textContent = `Semana ${w}`;
+}
+// lo dejamos disponible para otros módulos si lo necesitan
+window.isoWeekNumber = isoWeekNumber;
+
 /* ======================= Limpiar overlays “pegados” ======================= */
 function nukeStuckOverlays() {
   // Quita overlays de Materialize si quedaron colgando
@@ -82,6 +105,7 @@ function initUIOnce() {
         if (id.includes('visita')) {
           if (!visitasBooted) { initVisitasTab().catch(()=>{}); visitasBooted = true; }
           adjustDT('#tablaVisitas');
+          bindSearchVisitas();
         }
         if (id.includes('persona')) {
           if (!personasBooted) {
@@ -89,8 +113,12 @@ function initUIOnce() {
             personasBooted = true;
           }
           adjustDT('#tablaPersonas');
+          bindSearchPersonas();
         }
-        if (id.includes('contacto')) adjustDT('#tablaContactos');
+        if (id.includes('contacto')) {
+          adjustDT('#tablaContactos');
+          bindSearchContactos();
+        }
         // por si cambia de tab con un overlay colgado
         nukeStuckOverlays();
       }
@@ -112,7 +140,7 @@ function initUIOnce() {
       }
     });
 
-    // >>>>>>> FIX PRINCIPAL: abrir SIEMPRE en modo NUEVO <<<<<<<
+    // Abrir SIEMPRE en modo NUEVO
     document.getElementById('btnOpenContactoModal')
       ?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -122,7 +150,7 @@ function initUIOnce() {
         inst.open();
       });
 
-    // Mantengo también el botón de “Agregar persona” que reutiliza el mismo modal visual
+    // “Registrar persona” reutiliza el mismo modal visual
     document.getElementById('btnOpenPersonaModal')
       ?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -149,6 +177,7 @@ function initUIOnce() {
   onAll('a[href="#tab-visitas"], a[href="#visitas"]', 'click', async () => {
     if (!visitasBooted) { await initVisitasTab().catch(()=>{}); visitasBooted = true; }
     adjustDT('#tablaVisitas');
+    bindSearchVisitas();
     nukeStuckOverlays();
   });
 
@@ -158,16 +187,56 @@ function initUIOnce() {
       personasBooted = true;
     }
     adjustDT('#tablaPersonas');
+    bindSearchPersonas();
     nukeStuckOverlays();
   });
 
   onAll('a[href="#tab-contactos"], a[href="#contactos"]', 'click', () => {
     adjustDT('#tablaContactos');
+    bindSearchContactos();
     nukeStuckOverlays();
   });
 
+  // --- Botón "Registrar muestreo" (placeholder) ---
+  document.getElementById('btnOpenMuestreoModal')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    M.toast?.({ html: 'Registrar muestreo: próximamente', displayLength: 1800 });
+  });
+
+  // Badge semana actual
+  setSemanaActualBadge();
+
   // Limpieza inicial por si llegó la página con algo pegado
   nukeStuckOverlays();
+}
+
+/* ======================= Buscadores (toolbar) ======================= */
+function bindSearchContactos(){
+  const jq = window.jQuery || window.$;
+  const input = document.getElementById('searchContactos');
+  if (!jq || !jq.fn?.DataTable || !input || input.dataset.bound) return;
+  input.addEventListener('input', () => {
+    try { jq('#tablaContactos').DataTable().search(input.value || '').draw(); } catch {}
+  });
+  input.dataset.bound = '1';
+}
+function bindSearchPersonas(){
+  const jq = window.jQuery || window.$;
+  const input = document.getElementById('searchPersonas');
+  if (!jq || !jq.fn?.DataTable || !input || input.dataset.bound) return;
+  input.addEventListener('input', () => {
+    try { jq('#tablaPersonas').DataTable().search(input.value || '').draw(); } catch {}
+  });
+  input.dataset.bound = '1';
+}
+function bindSearchVisitas(){
+  const jq = window.jQuery || window.$;
+  const input = document.getElementById('searchVisitas');
+  if (!jq || !jq.fn?.DataTable || !input || input.dataset.bound) return;
+  input.addEventListener('input', () => {
+    try { jq('#tablaVisitas').DataTable().search(input.value || '').draw(); } catch {}
+  });
+  input.dataset.bound = '1';
 }
 
 /* ======================= Boot principal ======================= */
@@ -191,6 +260,7 @@ export async function initContactosTab(forceReload = false) {
     initTablaContactos();
     renderTablaContactos();
     adjustDT('#tablaContactos');
+    bindSearchContactos();
     nukeStuckOverlays();
 
     // Asociación y listeners globales
@@ -203,10 +273,12 @@ export async function initContactosTab(forceReload = false) {
       await initVisitasTab().catch(()=>{});
       visitasBooted = true;
       adjustDT('#tablaVisitas');
+      bindSearchVisitas();
     } else if (h === '#tab-personas' || h === '#personas') {
       initPersonasTab();
       personasBooted = true;
       adjustDT('#tablaPersonas');
+      bindSearchPersonas();
     }
 
     nukeStuckOverlays();
