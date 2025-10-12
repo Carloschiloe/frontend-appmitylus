@@ -5,29 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Abastecimiento de MMPP – Choritos</title>
 
-  <!-- (opcional) Google Icons para los <i class="material-icons"> -->
+  <!-- Google Icons (para <i class="material-icons">) -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
 
-  <!-- Materialize CSS (lo dejamos por compatibilidad con Tabs/Modal, pero los estilos los sobreescriben nuestras hojas) -->
+  <!-- Materialize CSS (Tabs/Modal compat.) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
 
   <!-- DataTables + Buttons -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
 
-  <!-- NUEVO: estilos unificados de la SPA -->
+  <!-- Estilos unificados de la SPA -->
   <link rel="preload" href="/spa-mmpp/layout.css?v=1" as="style">
   <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1">
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1">
-
-  <!-- QUITADO: estilos antiguos que metían el verde y sobrecargas -->
-  <!-- <link rel="stylesheet" href="../../../styles.css" /> -->
-  <!-- <link rel="stylesheet" href="../../../css/abastecimiento.css" /> -->
 </head>
 <body class="mmpp-layout no-nav">
-
-  <!-- NAV lateral (si esta vista vive dentro del layout con nav, déjalo; si no, puedes omitirlo) -->
-  <!-- <aside class="mmpp-nav"> ... </aside> -->
 
   <main class="mmpp-main">
     <div class="mmpp-wrap">
@@ -38,18 +31,19 @@
           <h1>Abastecimiento de MMPP</h1>
           <p>Empresas, visitas a cultivos y agenda de contactos</p>
         </div>
-        <div class="mmpp-badge">
-          <i class="material-icons" style="font-size:18px">inventory_2</i>
-          Gestión unificada
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div class="mmpp-badge">
+            <i class="material-icons" style="font-size:18px">inventory_2</i>
+            Gestión unificada
+          </div>
+          <div class="mmpp-badge week-badge" id="badgeSemanaActual">
+            <i class="material-icons" style="font-size:18px">event</i>
+            <span>Semana —</span>
+          </div>
         </div>
-        <div class="mmpp-badge week-badge" id="badgeSemanaActual">
-  <i class="material-icons" style="font-size:18px">event</i>
-  <span>Semana —</span>
-</div>
-
       </header>
 
-      <!-- Tabs (seguimos usando Materialize JS, pero con nuestro look) -->
+      <!-- Tabs -->
       <div class="card" style="padding:0; margin-bottom:12px">
         <ul id="tabs" class="tabs" style="padding:0 12px">
           <li class="tab col s4"><a class="active" href="#tab-contactos">Empresas</a></li>
@@ -61,38 +55,42 @@
       <!-- EMPRESAS -->
       <section id="tab-contactos" class="col s12">
         <div class="mmpp-card" style="margin-bottom:12px">
-          <div class="table-toolbar" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-            <div class="left">
+          <!-- Toolbar -->
+          <div class="table-toolbar">
+            <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
               <button id="btnOpenContactoModal" class="mmpp-add">
                 <i class="material-icons left" style="font-size:18px">record_voice_over</i>
                 Registrar contacto
               </button>
+              <button id="btnOpenMuestreoModal" class="mmpp-add">
+                <i class="material-icons left" style="font-size:18px">science</i>
+                Registrar muestreo
+              </button>
             </div>
             <div class="right">
-              <!-- Si agregas un buscador global, usa .mmpp-input -->
-              <!-- <input class="mmpp-input" placeholder="Buscar…"> -->
+              <div class="search">
+                <input id="searchContactos" class="mmpp-input" placeholder="Buscar…">
+              </div>
             </div>
           </div>
 
           <div class="mmpp-table-wrap">
-           <!-- EMPRESAS -->
-<table id="tablaContactos" class="display mmpp" style="width:100%">
-  <thead>
-    <tr>
-      <th>Semana</th>
-      <th>Fecha</th>
-      <th>Proveedor</th>
-      <th>Centro</th>
-      <th>Comuna</th>
-      <th>MMPP</th>
-      <th>Tons</th>
-      <th>Responsable</th>
-      <th>Acciones</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
-
+            <table id="tablaContactos" class="display mmpp" style="width:100%">
+              <thead>
+                <tr>
+                  <th>Semana</th>
+                  <th>Fecha</th>
+                  <th>Proveedor</th>
+                  <th>Centro</th>
+                  <th>Comuna</th>
+                  <th>MMPP</th>
+                  <th>Tons</th>
+                  <th>Responsable</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -105,25 +103,23 @@
           </div>
 
           <div class="mmpp-table-wrap">
-            <!-- VISITAS -->
-<table id="tablaVisitas" class="display mmpp" style="width:100%">
-  <thead>
-    <tr>
-      <th>Semana</th>
-      <th>Fecha</th>
-      <th>Proveedor</th>
-      <th>Centro</th>
-      <th>Muestra</th>
-      <th>Próximo paso</th>
-      <th>Tons</th>
-      <th>Observaciones</th>
-      <th>Responsable</th>
-      <th>Acciones</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
-
+            <table id="tablaVisitas" class="display mmpp" style="width:100%">
+              <thead>
+                <tr>
+                  <th>Semana</th>
+                  <th>Fecha</th>
+                  <th>Proveedor</th>
+                  <th>Centro</th>
+                  <th>Muestra</th>
+                  <th>Próximo paso</th>
+                  <th>Tons</th>
+                  <th>Observaciones</th>
+                  <th>Responsable</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -144,22 +140,19 @@
             <span id="fltConP"   class="mmpp-chip">Con empresa</span>
           </div>
 
-         <div class="table-toolbar">
-  <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
-    <button id="btnOpenContactoModal" class="mmpp-add">
-      <i class="material-icons left" style="font-size:18px">record_voice_over</i>Registrar contacto
-    </button>
-    <button id="btnOpenMuestreoModal" class="mmpp-add">
-      <i class="material-icons left" style="font-size:18px">science</i>Registrar muestreo
-    </button>
-  </div>
-  <div class="right">
-    <div class="search">
-      <input id="searchContactos" class="mmpp-input" placeholder="Buscar…">
-    </div>
-  </div>
-</div>
-
+          <div class="table-toolbar">
+            <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
+              <button id="btnOpenPersonaModal" class="mmpp-add">
+                <i class="material-icons left" style="font-size:18px">person_add</i>
+                Registrar persona
+              </button>
+            </div>
+            <div class="right">
+              <div class="search">
+                <input id="searchPersonas" class="mmpp-input" placeholder="Buscar…">
+              </div>
+            </div>
+          </div>
 
           <div class="mmpp-table-wrap">
             <table id="tablaPersonas" class="display mmpp" style="width:100%">
@@ -180,7 +173,7 @@
         </div>
       </section>
 
-      <!-- MODALES (seguimos usando estructura Materialize para JS) -->
+      <!-- MODALES -->
       <div id="modalContacto" class="modal">
         <div class="modal-content">
           <h5>Registrar Contacto</h5>
@@ -405,7 +398,7 @@
   <script type="module" src="../../../js/abastecimiento/contactos/index.js?v=10"></script>
 
   <script>
-    // Asegura Tabs/Modals de Materialize inicializados
+    // Tabs/Modals Materialize
     document.addEventListener('DOMContentLoaded', function(){
       var elTabs = document.querySelectorAll('.tabs');
       M.Tabs.init(elTabs, {});
