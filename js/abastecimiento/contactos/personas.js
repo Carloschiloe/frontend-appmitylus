@@ -6,28 +6,22 @@ import { abrirModalVisita } from '../visitas/tab.js';
 /* ------------ estilos (tabla compacta, empresa bajo contacto, acciones visibles) ------------ */
 (function injectStyles() {
   const css = `
-    /* Oculta el buscador nativo de DataTables por si llegara a colarse */
-    #tablaPersonas_wrapper .dataTables_filter{ display:none !important; }
+    /* Oculta el buscador nativo de DataTables */
+    #tablaPersonas_wrapper .dataTables_filter{ display:none!important; }
 
-    /* Evitar recortes en el wrapper */
-    #tablaPersonas_wrapper{ overflow:visible !important; }
-
+    #tablaPersonas_wrapper{ overflow:visible!important; }
     #tablaPersonas{ table-layout:fixed!important; width:100%!important; }
     #tablaPersonas thead th{ position:sticky; top:0; z-index:2; }
 
     #tablaPersonas th, #tablaPersonas td{
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:10px 8px!important;
-      box-sizing:border-box;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      padding:10px 8px!important; box-sizing:border-box;
     }
 
     /* Contacto con sublínea para Empresa */
     .p-contacto{ display:block; min-width:0; }
     .p-contacto .p-nombre{ display:block; font-weight:600; }
     .p-contacto .p-empresa{ display:block; font-size:12px; color:#6b7280; line-height:1.2; }
-
-    /* Notas inline con ellipsis */
-    .cell-inline{ display:flex; align-items:center; gap:6px; min-width:0; }
-    .cell-inline .ellipsisCell{ flex:1 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* Acciones: que no se recorten */
     #tablaPersonas td:last-child{ overflow:visible!important; }
@@ -80,10 +74,9 @@ export function initPersonasTab() {
 
   document.addEventListener('reload-tabla-contactos', () => { renderTablaPersonas(); actualizarKPIs(); });
 
-  // DataTable Personas
   if (jq && !dtP) {
     dtP = jq('#tablaPersonas').DataTable({
-      // SIN 'f' => sin buscador nativo (usamos el externo de la barra)
+      // sin 'f' => sin buscador nativo
       dom: 'Bltip',
       buttons: [
         { extend: 'excelHtml5', title: 'Agenda_de_Personas' },
@@ -92,22 +85,31 @@ export function initPersonasTab() {
       pageLength: 10,
       order: [[0, 'desc']],
       autoWidth: false,
-      responsive: false,   // respeta widths fijos
+      responsive: false,  // respetar widths fijos
       scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       /* THEAD original:
          0 Fecha | 1 Contacto | 2 Teléfono(s) | 3 Email | 4 Empresa | 5 Notas | 6 Acciones
-         Email (3) y Empresa (4) quedan ocultos (la empresa se muestra debajo del contacto).
+         Cambios:
+         - Mostramos Email (3).
+         - Usamos 4 como "Comuna".
+         - Ocultamos Notas (5).
       */
       columnDefs: [
-        { targets: 0, width: 110 },      // Fecha
-        { targets: 1, width: null },     // Contacto (con empresa debajo)
-        { targets: 2, width: 200 },      // Teléfono(s)
-        { targets: 3, visible: false },  // Email (oculto)
-        { targets: 4, visible: false },  // Empresa (oculto en vista)
-        { targets: 5, width: 480 },      // Notas (ancha para evitar corte)
-        { targets: 6, width: 180, orderable: false, searchable: false, className: 'cell-actions' } // Acciones más ancha
-      ]
+        { targets: 0, width: 110 },        // Fecha
+        { targets: 1, width: null },       // Contacto (empresa debajo)
+        { targets: 2, width: 200 },        // Teléfono(s)
+        { targets: 3, width: 240 },        // Email (visible)
+        { targets: 4, width: 160 },        // Comuna (visible; reutiliza "Empresa")
+        { targets: 5, visible: false },    // Notas oculto
+        { targets: 6, width: 180, orderable:false, searchable:false, className:'cell-actions' } // Acciones
+      ],
+      initComplete: function(){
+        // Cambiar encabezado "Empresa" -> "Comuna"
+        const ths = document.querySelectorAll('#tablaPersonas thead th');
+        if (ths && ths[4]) ths[4].textContent = 'Comuna';
+        if (ths && ths[5]) ths[5].textContent = ''; // Notas removida
+      }
     });
 
     // acciones por fila (delegación)
@@ -172,7 +174,8 @@ export function renderTablaPersonas() {
         ? c.contactoEmails.filter(Boolean).join(' / ')
         : (c.contactoEmail || '');
 
-      const notas = c.notas || c.notasContacto || '';
+      // NUEVO: comuna (fallbacks)
+      const comuna = c.centroComuna || c.comuna || '';
 
       const acciones = `
         <div class="cell-actions">
@@ -183,14 +186,15 @@ export function renderTablaPersonas() {
         </div>
       `;
 
-      // Orden según THEAD original (3 y 4 ocultas pero quedan para exportar)
+      // Orden según THEAD original:
+      // 0 Fecha | 1 Contacto | 2 Teléfono(s) | 3 Email | 4 (ahora) Comuna | 5 Notas (oculto) | 6 Acciones
       return [
         `<span data-order="${fKey}">${fStr}</span>`,  // 0 Fecha
-        contactoCell,                                 // 1 Contacto (con empresa debajo)
+        contactoCell,                                 // 1 Contacto (empresa debajo)
         esc(String(tels || '')),                      // 2 Teléfono(s)
-        esc(String(emailExport || '')),               // 3 Email (OCULTO)
-        esc(String(empresa || '')),                   // 4 Empresa (OCULTO)
-        `<span class="cell-inline"><span class="ellipsisCell" title="${esc(notas)}">${esc(notas)}</span></span>`, // 5 Notas
+        esc(String(emailExport || '')),               // 3 Email (visible)
+        esc(String(comuna || '')),                    // 4 Comuna (visible)
+        '',                                           // 5 Notas (oculto)
         acciones                                      // 6 Acciones
       ];
     });
