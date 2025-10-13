@@ -1,8 +1,7 @@
 // /js/abastecimiento/contactos/tabla.js
 import { state, $ } from './state.js';
 import { centroCodigoById, comunaPorCodigo } from './normalizers.js';
-import { abrirEdicion, eliminarContacto } from './form-contacto.js';
-import { abrirDetalleContacto } from './form-contacto.js';
+import { abrirEdicion, eliminarContacto, abrirDetalleContacto } from './form-contacto.js';
 import { abrirModalVisita } from '../visitas/tab.js';
 
 const API_BASE = window.API_URL || '/api';
@@ -24,27 +23,42 @@ function getISOWeek(d = new Date()) {
   return Math.floor(((date - yearStart) / 86400000 + 1)/7);
 }
 
-// ===== estilos compactos + ellipsis + acciones en fila =====
+/* =========== ESTILOS: bloquea overflow y fija anchos (¡con !important!) =========== */
 (function injectStyles () {
   const css = `
-    #tablaContactos{ table-layout: fixed; width:100%!important; }
-    #tablaContactos th, #tablaContactos td{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* 1) el wrapper no debe meter scroll horizontal */
+    .mmpp-table-wrap, #tablaContactos_wrapper{ overflow-x: hidden !important; }
+
+    /* 2) la tabla NO puede crecer más que el contenedor */
+    #tablaContactos{
+      table-layout: fixed !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    #tablaContactos th, #tablaContactos td{
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
     .tright{ text-align:right; }
 
-    /* anchos compactos para evitar scroll horizontal */
-    #tablaContactos th:nth-child(1), #tablaContactos td:nth-child(1){ width:64px; }   /* Semana */
-    #tablaContactos th:nth-child(2), #tablaContactos td:nth-child(2){ width:116px; } /* Fecha */
-    #tablaContactos th:nth-child(3), #tablaContactos td:nth-child(3){ width:240px; } /* Proveedor (ellipsis) */
-    #tablaContactos th:nth-child(4), #tablaContactos td:nth-child(4){ width:92px; }  /* Centro */
-    #tablaContactos th:nth-child(5), #tablaContactos td:nth-child(5){ width:132px; } /* Comuna */
-    #tablaContactos th:nth-child(6), #tablaContactos td:nth-child(6){ width:84px; }  /* Tons */
-    #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:140px; } /* Responsable */
-    #tablaContactos th:nth-child(8), #tablaContactos td:nth-child(8){ width:144px; } /* Acciones */
+    /* 3) anchos compactos por columna (ajustados y con !important) */
+    #tablaContactos th:nth-child(1), #tablaContactos td:nth-child(1){ width:62px  !important; }  /* Semana */
+    #tablaContactos th:nth-child(2), #tablaContactos td:nth-child(2){ width:112px !important; }  /* Fecha */
+    #tablaContactos th:nth-child(3), #tablaContactos td:nth-child(3){ width:232px !important; }  /* Proveedor */
+    #tablaContactos th:nth-child(4), #tablaContactos td:nth-child(4){ width:92px  !important; }  /* Centro */
+    #tablaContactos th:nth-child(5), #tablaContactos td:nth-child(5){ width:126px !important; }  /* Comuna */
+    #tablaContactos th:nth-child(6), #tablaContactos td:nth-child(6){ width:86px  !important; }  /* Tons */
+    #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:128px !important; }  /* Responsable */
 
+    /* si tu HTML tuviera la columna Acciones, deja esto activo; si no, no afecta */
+    #tablaContactos th:nth-child(8), #tablaContactos td:nth-child(8){ width:132px !important; }  /* Acciones */
+
+    /* proveedor con elipsis */
     #tablaContactos td .ellipsisProv{ display:inline-block; max-width:22ch; }
 
     /* acciones en una sola fila, compactas */
-    #tablaContactos td:last-child .actions { display:flex; gap:6px; align-items:center; justify-content:flex-start; }
+    #tablaContactos td:last-child .actions { display:flex; gap:6px; align-items:center; }
     #tablaContactos td:last-child a.icon-action {
       pointer-events:auto; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
       width:34px; height:34px; border-radius:10px; background:#eef2ff; border:1px solid #c7d2fe;
@@ -63,44 +77,31 @@ function getISOWeek(d = new Date()) {
   }
 })();
 
-// ===== click acciones (ver/visita/muestreo/editar/eliminar) =====
+/* ==================== acciones de fila ==================== */
 async function _clickAccContacto(aEl){
   try{
     const id = aEl?.dataset?.id;
     const action = (aEl?.dataset?.action || '').toLowerCase();
     const c = state.contactosGuardados.find(x => String(x._id) === String(id));
     if (!c) { M.toast?.({ html: 'Contacto no encontrado', classes: 'red' }); return; }
-
-    if (action === 'ver')      return abrirDetalleContacto(c);
-    if (action === 'visita')   return abrirModalVisita(c);
-    if (action === 'muestreo') {
-      // dispara evento para tu flujo de muestreo por proveedor
-      document.dispatchEvent(new CustomEvent('muestreo:open', { detail: { contacto: c }}));
-      return;
-    }
-    if (action === 'editar')   return abrirEdicion(c);
-
+    if (action === 'ver')     return abrirDetalleContacto(c);
+    if (action === 'visita')  return abrirModalVisita(c);
+    if (action === 'muestreo'){ document.dispatchEvent(new CustomEvent('muestreo:open',{detail:{contacto:c}})); return; }
+    if (action === 'editar')  return abrirEdicion(c);
     if (action === 'eliminar'){
       if (aEl.dataset.busy === '1') return;
       aEl.dataset.busy = '1';
-      try {
+      try{
         if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
         await eliminarContacto(id);
-      } catch (e) {
-        console.error(e);
-        M.toast?.({ html: 'No se pudo eliminar', classes: 'red' });
-      } finally {
-        delete aEl.dataset.busy;
-      }
-      return;
+      }catch(e){ console.error(e); M.toast?.({ html:'No se pudo eliminar', classes:'red' }); }
+      finally{ delete aEl.dataset.busy; }
     }
-  }catch(err){
-    console.error('[contactos] error en _clickAccContacto', err);
-  }
+  }catch(err){ console.error('[contactos] _clickAccContacto', err); }
 }
 window._clickAccContacto = _clickAccContacto;
 
-// ===== cache para totals =====
+/* ==================== totals cache ==================== */
 state.dispTotalCache = state.dispTotalCache || new Map();
 
 async function getDisponibilidades(params){
@@ -111,68 +112,51 @@ async function getDisponibilidades(params){
   if (params?.contactoId)   q.set('contactoId', params.contactoId);
   if (params?.proveedorKey) q.set('proveedorKey', params.proveedorKey);
   if (params?.centroId)     q.set('centroId', params.centroId);
-
-  const url = `${API_BASE}/disponibilidades?${q.toString()}`;
-  const res = await fetch(url);
+  const res = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
   if (!res.ok) throw new Error('GET /disponibilidades '+res.status);
   const json = await res.json();
   return Array.isArray(json) ? json : (json.items || []);
 }
 
 async function fetchTotalDisponibilidad({ contactoId='', proveedorKey='', centroId='' }){
-  const cacheKey = `${contactoId||''}|${proveedorKey||''}|${centroId||''}`;
-  if (state.dispTotalCache.has(cacheKey)) return state.dispTotalCache.get(cacheKey);
+  const key = `${contactoId||''}|${proveedorKey||''}|${centroId||''}`;
+  if (state.dispTotalCache.has(key)) return state.dispTotalCache.get(key);
 
-  function sum(list, filterByContactoId){
-    let arr = Array.isArray(list) ? list : [];
-    if (filterByContactoId) {
-      arr = arr.filter(it => String(it.contactoId || '') === String(filterByContactoId));
-    }
-    return arr.reduce((acc, it)=> acc + Number(it.tonsDisponible ?? it.tons ?? 0), 0);
-  }
+  const sum = (list, byId) => (Array.isArray(list)?list:[])
+    .filter(it => !byId || String(it.contactoId||'')===String(byId))
+    .reduce((a,it)=>a+Number(it.tonsDisponible??it.tons??0),0);
 
   let total = 0;
   try{
-    if (contactoId) {
-      const list1 = await getDisponibilidades({ contactoId });
-      total = sum(list1, contactoId);
-    }
-    if (total === 0 && (proveedorKey || centroId)) {
-      const list2 = await getDisponibilidades({ proveedorKey, centroId });
-      total = sum(list2);
-    }
-    if (total === 0 && proveedorKey) {
-      const list3 = await getDisponibilidades({ proveedorKey });
-      total = sum(list3);
-    }
-  }catch(e){ console.error('[tablaContactos] fetchTotalDisponibilidad error', e); }
+    if (contactoId){ total = sum(await getDisponibilidades({ contactoId }), contactoId); }
+    if (total===0 && (proveedorKey||centroId)){ total = sum(await getDisponibilidades({ proveedorKey, centroId })); }
+    if (total===0 && proveedorKey){ total = sum(await getDisponibilidades({ proveedorKey })); }
+  }catch(e){ console.error('[tablaContactos] fetchTotalDisponibilidad', e); }
 
-  state.dispTotalCache.set(cacheKey, total);
+  state.dispTotalCache.set(key,total);
   return total;
 }
 
-// ===== footer total =====
+/* ==================== footer ==================== */
 function ensureFooter(){
-  const table = $('#tablaContactos');
-  if (!table) return;
+  const table = $('#tablaContactos'); if (!table) return;
   if (!table.tFoot) {
     const tfoot = table.createTFoot();
     const tr = tfoot.insertRow(0);
     for (let i=0; i<8; i++){
       const th = document.createElement('th');
-      if (i === 5) th.textContent = 'Total página: 0'; // col Tons (index 5)
+      if (i === 5) th.textContent = 'Total página: 0'; // Tons
       tr.appendChild(th);
     }
   }
 }
 function setFooterTotal(total){
-  const table = $('#tablaContactos');
-  if (!table || !table.tFoot) return;
+  const table = $('#tablaContactos'); if (!table || !table.tFoot) return;
   const th = table.tFoot.querySelectorAll('th')[5];
   if (th) th.textContent = `Total página: ${fmtCL(total)}`;
 }
 
-// ===== DataTable =====
+/* ==================== DataTable ==================== */
 export function initTablaContactos() {
   const jq = window.jQuery || window.$;
   const tablaEl = $('#tablaContactos');
@@ -182,13 +166,13 @@ export function initTablaContactos() {
   ensureFooter();
 
   state.dt = jq('#tablaContactos').DataTable({
-    // sin buscador nativo ('f') → usamos #searchContactos
+    // sin buscador nativo (usamos #searchContactos)
     dom: 'Bltip',
     buttons: [
       { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
       { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
     ],
-    order: [[1,'desc']], // FECHA (col 1)
+    order: [[1,'desc']], // FECHA
     paging: true,
     pageLength: 10,
     lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, 'Todos'] ],
@@ -196,57 +180,46 @@ export function initTablaContactos() {
     responsive: true,
     scrollX: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+    /* ancho en DataTables (apoya al CSS !important) */
     columnDefs: [
-      { targets: 0, searchable: true },          // Semana
-      { targets: 1, searchable: true },          // Fecha
-      { targets: 2, searchable: true },          // Proveedor
-      { targets: 3, searchable: true },          // Centro
-      { targets: 4, searchable: true },          // Comuna
-      { targets: 5, className:'tright' },        // Tons
-      { targets: 6, searchable: true },          // Responsable
-      { targets: 7, orderable: false, searchable: false } // Acciones
+      { targets: 0, width:'62px'  },   // Semana
+      { targets: 1, width:'112px' },   // Fecha
+      { targets: 2, width:'232px' },   // Proveedor
+      { targets: 3, width:'92px'  },   // Centro
+      { targets: 4, width:'126px' },   // Comuna
+      { targets: 5, width:'86px',  className:'tright' }, // Tons
+      { targets: 6, width:'128px' },   // Responsable
+      { targets: 7, width:'132px', orderable:false, searchable:false } // Acciones (si existe)
     ]
   });
 
-  // Delegación de acciones
+  // Acciones
   jq('#tablaContactos tbody')
     .off('click.contactos')
     .on('click.contactos', 'a.icon-action', function(e){
-      e.preventDefault();
-      e.stopPropagation();
+      e.preventDefault(); e.stopPropagation();
       _clickAccContacto(this);
     });
 
-  // Redibujo => actualizar “tons” y footer
-  jq('#tablaContactos').on('draw.dt', async () => {
-    await actualizarTonsVisiblesYFooter();
-  });
+  // Redibujo => actualizar tons + footer
+  jq('#tablaContactos').on('draw.dt', async () => { await actualizarTonsVisiblesYFooter(); });
 
-  // === Filtros externos ===
+  // Filtros externos
   const dt = state.dt;
-  const $search = document.getElementById('searchContactos');
-  $search?.addEventListener('input', () => { dt.search($search.value || '').draw(); });
-
+  document.getElementById('searchContactos')?.addEventListener('input', (e)=> {
+    dt.search(e.target.value || '').draw();
+  });
   const $fltSemana = document.getElementById('fltSemana');
   const $fltComuna = document.getElementById('fltComuna');
   const $fltResp   = document.getElementById('fltResp');
+  $fltSemana?.addEventListener('change', ()=> dt.column(0).search($fltSemana.value||'', true, false).draw());
+  $fltComuna?.addEventListener('change', ()=> dt.column(4).search($fltComuna.value||'', true, false).draw());
+  $fltResp?.addEventListener('change',   ()=> dt.column(6).search($fltResp.value||'', true, false).draw());
 
-  $fltSemana?.addEventListener('change', ()=> {
-    dt.column(0).search($fltSemana.value || '', true, false).draw(); // exacto
-  });
-  $fltComuna?.addEventListener('change', ()=> {
-    dt.column(4).search($fltComuna.value || '', true, false).draw();
-  });
-  $fltResp?.addEventListener('change', ()=> {
-    dt.column(6).search($fltResp.value || '', true, false).draw();
-  });
-
-  // Popular opciones iniciales de filtros (semana/comuna) desde datos actuales
   populateFiltrosDesdeDatos();
-
-  console.log('[contactos] DataTable lista. filas=', state.dt.rows().count());
 }
 
+/* ==================== filtros (opciones) ==================== */
 function populateFiltrosDesdeDatos(){
   const semanas = new Set();
   const comunas = new Set();
@@ -264,7 +237,7 @@ function populateFiltrosDesdeDatos(){
   if ($com && $com.children.length<=1) $com.insertAdjacentHTML('beforeend', [...comunas].sort().map(opt).join(''));
 }
 
-// ===== actualizar celdas visibles + footer =====
+/* ==================== tons visibles + footer ==================== */
 async function actualizarTonsVisiblesYFooter(){
   const jq = window.jQuery || window.$;
   if (!state.dt || !jq) return;
@@ -279,8 +252,7 @@ async function actualizarTonsVisiblesYFooter(){
     const centroId     = span.dataset.centroid || '';
     const contactoId   = span.dataset.contactoid || '';
 
-    const cached = span.dataset.value;
-    if (cached !== undefined && cached !== null && cached !== '') return;
+    if (span.dataset.value !== undefined && span.dataset.value !== '') return;
 
     span.classList.add('loading');
     span.textContent = '…';
@@ -297,69 +269,51 @@ async function actualizarTonsVisiblesYFooter(){
 }
 
 function recalcularFooterDesdeDom(){
-  const table = $('#tablaContactos');
-  if (!table) return;
+  const table = $('#tablaContactos'); if (!table) return;
   const spans = table.querySelectorAll('tbody .tons-cell');
   let sum = 0;
   spans.forEach(sp => {
     const tr = sp.closest('tr');
-    if (tr && tr.offsetParent !== null) {
-      sum += Number(sp.dataset.value || 0);
-    }
+    if (tr && tr.offsetParent !== null) sum += Number(sp.dataset.value || 0);
   });
   setFooterTotal(sum);
 }
 
-// ===== render =====
+/* ==================== render ==================== */
 export function renderTablaContactos() {
   const jq = window.jQuery || window.$;
-  const tabla = $('#tablaContactos');
-  if (!tabla) return;
+  const tabla = $('#tablaContactos'); if (!tabla) return;
 
   const base = Array.isArray(state.contactosGuardados) ? state.contactosGuardados : [];
-
   if (state.dispTotalCache?.clear) state.dispTotalCache.clear();
 
   const filas = base
     .slice()
-    .sort((a,b)=>{
-      const da = new Date(a.createdAt || a.fecha || 0).getTime();
-      const db = new Date(b.createdAt || b.fecha || 0).getTime();
-      return db - da;
-    })
+    .sort((a,b)=> (new Date(b.createdAt||b.fecha||0)) - (new Date(a.createdAt||a.fecha||0)) )
     .map(c => {
       const f = new Date(c.createdAt || c.fecha || Date.now());
-      const yyyy = f.getFullYear();
-      const mm   = String(f.getMonth() + 1).padStart(2, '0');
-      const dd   = String(f.getDate()).padStart(2, '0');
-      const whenDisplay = `${yyyy}-${mm}-${dd}`;
-      const whenKey     = f.getTime();
-      const semana      = getISOWeek(f);
+      const whenKey = f.getTime();
+      const whenDisplay = `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')}`;
+      const semana = getISOWeek(f);
 
       let centroCodigo = c.centroCodigo;
-      if (!esCodigoValido(centroCodigo)) {
-        centroCodigo = centroCodigoById(c.centroId) || '';
-      }
+      if (!esCodigoValido(centroCodigo)) centroCodigo = centroCodigoById(c.centroId) || '';
       const comuna = c.centroComuna || c.comuna || comunaPorCodigo(centroCodigo) || '';
 
       const provName = esc(c.proveedorNombre || '');
-      const provCell = provName
-        ? `<span class="ellipsisProv" title="${provName}">${provName}</span>`
-        : '';
+      const provCell = provName ? `<span class="ellipsisProv" title="${provName}">${provName}</span>` : '';
 
       const tonsCell = `<span class="tons-cell" data-contactoid="${esc(c._id || '')}" data-provkey="${esc(c.proveedorKey || '')}" data-centroid="${esc(c.centroId || '')}" data-value=""></span>`;
-
       const responsable = esc(c.responsablePG || '—');
 
       const acciones = `
         <div class="actions">
-          <a href="#!" class="icon-action" data-action="ver"       title="Ver detalle"       data-id="${c._id}"><i class="material-icons">visibility</i></a>
-          <a href="#!" class="icon-action" data-action="visita"    title="Registrar visita"  data-id="${c._id}"><i class="material-icons">event_available</i></a>
-          <a href="#!" class="icon-action" data-action="muestreo"  title="Registrar muestreo"data-id="${c._id}"><i class="material-icons">science</i></a>
-          <a href="#!" class="icon-action" data-action="editar"    title="Editar"            data-id="${c._id}"><i class="material-icons">edit</i></a>
-          <a href="#!" class="icon-action" data-action="eliminar"  title="Eliminar"          data-id="${c._id}"><i class="material-icons">delete</i></a>
-        </div>
-      `;
+          <a href="#!" class="icon-action" data-action="ver"       title="Ver detalle"        data-id="${c._id}"><i class="material-icons">visibility</i></a>
+          <a href="#!" class="icon-action" data-action="visita"    title="Registrar visita"   data-id="${c._id}"><i class="material-icons">event_available</i></a>
+          <a href="#!" class="icon-action" data-action="muestreo"  title="Registrar muestreo" data-id="${c._id}"><i class="material-icons">science</i></a>
+          <a href="#!" class="icon-action" data-action="editar"    title="Editar"             data-id="${c._id}"><i class="material-icons">edit</i></a>
+          <a href="#!" class="icon-action" data-action="eliminar"  title="Eliminar"           data-id="${c._id}"><i class="material-icons">delete</i></a>
+        </div>`;
 
       // columnas: Semana, Fecha, Proveedor, Centro, Comuna, Tons, Responsable, Acciones
       return [
@@ -374,28 +328,20 @@ export function renderTablaContactos() {
       ];
     });
 
+  // Con DataTables
   if (state.dt && jq) {
     state.dt.clear();
     state.dt.rows.add(filas).draw(false);
-    populateFiltrosDesdeDatos(); // refresca opciones si aparecen nuevas
+    populateFiltrosDesdeDatos();
     return;
   }
 
-  // fallback sin DataTables
-  const tbody = $('#tablaContactos tbody');
-  ensureFooter();
+  // Fallback (sin DT)
+  const tbody = $('#tablaContactos tbody'); ensureFooter();
   if (!tbody) return;
-  tbody.innerHTML = '';
-  if (!filas.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="color:#888">No hay contactos registrados aún.</td></tr>`;
-    setFooterTotal(0);
-    return;
-  }
-  filas.forEach(arr => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = arr.map(td => `<td>${td}</td>`).join('');
-    tbody.appendChild(tr);
-  });
+  tbody.innerHTML = filas.length
+    ? filas.map(row => `<tr>${row.map(td=>`<td>${td}</td>`).join('')}</tr>`).join('')
+    : `<tr><td colspan="8" style="color:#888">No hay contactos registrados aún.</td></tr>`;
 
   (async () => {
     const spans = tbody.querySelectorAll('.tons-cell');
@@ -416,6 +362,4 @@ export function renderTablaContactos() {
   })();
 }
 
-document.addEventListener('reload-tabla-contactos', () => {
-  renderTablaContactos();
-});
+document.addEventListener('reload-tabla-contactos', () => renderTablaContactos());
