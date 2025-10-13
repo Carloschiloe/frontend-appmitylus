@@ -23,6 +23,16 @@
   <!-- Oculta cualquier input file nativo dentro de modales (si luego usas botón JS para fotos) -->
   <style>
     .modal input[type="file"]{display:none!important}
+    /* Filtros en una sola fila (responsivo) */
+    .filtros-row{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(180px,1fr));
+      gap:10px;
+      align-items:center;
+    }
+    @media (max-width: 920px){ .filtros-row{ grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 520px){ .filtros-row{ grid-template-columns: 1fr; } }
+    .filtros-row select,.filtros-row input{ height:40px; border-radius:10px; padding:4px 8px; }
   </style>
 </head>
 <body class="mmpp-layout no-nav">
@@ -34,7 +44,7 @@
       <header class="mmpp-hero" style="margin-bottom:14px">
         <div>
           <h1>Abastecimiento de MMPP</h1>
-          <p>Empresas, visitas a cultivos y agenda de contactos</p>
+        <p>Empresas, visitas a cultivos y agenda de contactos</p>
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
           <div class="mmpp-badge">
@@ -58,54 +68,36 @@
       </div>
 
       <!-- EMPRESAS -->
-<section id="tab-contactos" class="col s12">
-  <div class="mmpp-card" style="margin-bottom:12px">
+      <section id="tab-contactos" class="col s12">
+        <div class="mmpp-card" style="margin-bottom:12px">
+          <!-- Toolbar -->
+          <div class="table-toolbar" style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+            <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
+              <button id="btnOpenContactoModal" class="mmpp-add">
+                <i class="material-icons left" style="font-size:18px">record_voice_over</i>
+                Registrar contacto
+              </button>
+            </div>
+            <!-- Filtros + buscador (una sola fila) -->
+            <div id="filtrosContactos" class="filtros-row" style="min-width:620px;flex:1">
+              <select id="fltSemana" class="browser-default modern-select" aria-label="Filtrar por semana">
+                <option value="">Semana…</option>
+              </select>
+              <select id="fltComuna" class="browser-default modern-select" aria-label="Filtrar por comuna">
+                <option value="">Comuna…</option>
+              </select>
+              <select id="fltResp" class="browser-default modern-select" aria-label="Filtrar por responsable">
+                <option value="">Responsable…</option>
+                <option>Claudio Alba</option>
+                <option>Patricio Alvarez</option>
+                <option>Carlos Avendaño</option>
+              </select>
+              <input id="searchContactos" class="mmpp-input" placeholder="Buscar…" aria-label="Buscar en la tabla">
+            </div>
+          </div>
+          <!-- /Toolbar -->
 
-    <!-- Toolbar: botón + filtros en UNA SOLA FILA + único buscador -->
-    <style>
-      /* layout de filtros en una fila (responsivo) */
-      .filtros-row{
-        display:grid;
-        grid-template-columns: repeat(4, minmax(180px,1fr));
-        gap:10px;
-        align-items:center;
-      }
-      @media (max-width: 920px){ .filtros-row{ grid-template-columns: 1fr 1fr; } }
-      @media (max-width: 520px){ .filtros-row{ grid-template-columns: 1fr; } }
-      .filtros-row select,.filtros-row input{ height:40px; border-radius:10px; padding:4px 8px; }
-    </style>
-
-    <div class="table-toolbar" style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
-      <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
-        <button id="btnOpenContactoModal" class="mmpp-add">
-          <i class="material-icons left" style="font-size:18px">record_voice_over</i>
-          Registrar contacto
-        </button>
-      </div>
-
-      <!-- Filtros + buscador (una sola fila) -->
-      <div id="filtrosContactos" class="filtros-row" style="min-width:620px;flex:1">
-        <select id="fltSemana" class="browser-default modern-select" aria-label="Filtrar por semana">
-          <option value="">Semana…</option>
-        </select>
-        <select id="fltComuna" class="browser-default modern-select" aria-label="Filtrar por comuna">
-          <option value="">Comuna…</option>
-        </select>
-        <select id="fltResp" class="browser-default modern-select" aria-label="Filtrar por responsable">
-          <option value="">Responsable…</option>
-          <option>Claudio Alba</option>
-          <option>Patricio Alvarez</option>
-          <option>Carlos Avendaño</option>
-        </select>
-        <input id="searchContactos" class="mmpp-input" placeholder="Buscar…" aria-label="Buscar en la tabla">
-      </div>
-    </div>
-    <!-- /Toolbar -->
-
-  </div>
-</section>
-
-
+          <!-- Tabla Contactos (dentro de la card para que no se “cuele” en otras tabs) -->
           <div class="mmpp-table-wrap">
             <table id="tablaContactos" class="display mmpp" style="width:100%">
               <thead>
@@ -137,7 +129,6 @@
             <table id="tablaVisitas" class="display mmpp" style="width:100%">
               <thead>
                 <tr>
-                  <th>Semana</th>
                   <th>Fecha</th>
                   <th>Proveedor</th>
                   <th>Centro</th>
@@ -145,7 +136,6 @@
                   <th>Próximo paso</th>
                   <th>Tons</th>
                   <th>Observaciones</th>
-                  <th>Responsable</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
