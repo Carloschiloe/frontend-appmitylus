@@ -26,46 +26,48 @@ function getISOWeek(d = new Date()) {
 /* =========== ESTILOS: bloquea overflow y fija anchos (¡con !important!) =========== */
 (function injectStyles () {
   const css = `
-    /* 1) el wrapper no debe meter scroll horizontal */
     .mmpp-table-wrap, #tablaContactos_wrapper{ overflow-x: hidden !important; }
 
-    /* 2) la tabla NO puede crecer más que el contenedor */
     #tablaContactos{
       table-layout: fixed !important;
       width: 100% !important;
       max-width: 100% !important;
     }
+
+    /* padding más chico y ellipsis por defecto */
     #tablaContactos th, #tablaContactos td{
+      padding: 10px 8px !important;
       white-space: nowrap !important;
       overflow: hidden !important;
       text-overflow: ellipsis !important;
+      box-sizing: border-box !important;
     }
-    .tright{ text-align:right; }
 
-    /* 3) anchos compactos por columna (ajustados y con !important) */
-    #tablaContactos th:nth-child(1), #tablaContactos td:nth-child(1){ width:62px  !important; }  /* Semana */
-    #tablaContactos th:nth-child(2), #tablaContactos td:nth-child(2){ width:112px !important; }  /* Fecha */
-    #tablaContactos th:nth-child(3), #tablaContactos td:nth-child(3){ width:232px !important; }  /* Proveedor */
-    #tablaContactos th:nth-child(4), #tablaContactos td:nth-child(4){ width:92px  !important; }  /* Centro */
-    #tablaContactos th:nth-child(5), #tablaContactos td:nth-child(5){ width:126px !important; }  /* Comuna */
-    #tablaContactos th:nth-child(6), #tablaContactos td:nth-child(6){ width:86px  !important; }  /* Tons */
-    #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:128px !important; }  /* Responsable */
+    /* anchos más compactos (suman < 100%) */
+    #tablaContactos th:nth-child(1), #tablaContactos td:nth-child(1){ width:60px  !important; }  /* Semana  */
+    #tablaContactos th:nth-child(2), #tablaContactos td:nth-child(2){ width:108px !important; }  /* Fecha    */
+    #tablaContactos th:nth-child(3), #tablaContactos td:nth-child(3){ width:210px !important; }  /* Proveedor*/
+    #tablaContactos th:nth-child(4), #tablaContactos td:nth-child(4){ width:90px  !important; }  /* Centro   */
+    #tablaContactos th:nth-child(5), #tablaContactos td:nth-child(5){ width:110px !important; }  /* Comuna   */
+    #tablaContactos th:nth-child(6), #tablaContactos td:nth-child(6){ width:82px  !important; }  /* Tons     */
+    #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:110px !important; }  /* Responsable */
+    #tablaContactos th:nth-child(8), #tablaContactos td:nth-child(8){ width:120px !important; }  /* Acciones */
 
-    /* si tu HTML tuviera la columna Acciones, deja esto activo; si no, no afecta */
-    #tablaContactos th:nth-child(8), #tablaContactos td:nth-child(8){ width:132px !important; }  /* Acciones */
-
-    /* proveedor con elipsis */
+    /* El proveedor con elipsis controlada */
     #tablaContactos td .ellipsisProv{ display:inline-block; max-width:22ch; }
 
-    /* acciones en una sola fila, compactas */
+    /* MUY IMPORTANTE: la celda de Acciones no debe recortar su contenido */
+    #tablaContactos td:last-child{ overflow: visible !important; }
+
+    /* Acciones compactas en una sola fila */
     #tablaContactos td:last-child .actions { display:flex; gap:6px; align-items:center; }
     #tablaContactos td:last-child a.icon-action {
       pointer-events:auto; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
-      width:34px; height:34px; border-radius:10px; background:#eef2ff; border:1px solid #c7d2fe;
+      width:30px; height:30px; border-radius:8px; background:#eef2ff; border:1px solid #c7d2fe;
     }
     #tablaContactos td:last-child a.icon-action i{ font-size:18px; color:#0ea5a8; }
 
-    /* celdas tons mientras carga + footer */
+    .tright{ text-align:right; }
     #tablaContactos .tons-cell.loading{ opacity:.6 }
     #tablaContactos tfoot th{ font-weight:700; background:#f6f6f7 }
   `;
@@ -76,6 +78,7 @@ function getISOWeek(d = new Date()) {
     document.head.appendChild(s);
   }
 })();
+
 
 /* ==================== acciones de fila ==================== */
 async function _clickAccContacto(aEl){
@@ -165,33 +168,28 @@ export function initTablaContactos() {
 
   ensureFooter();
 
-  state.dt = jq('#tablaContactos').DataTable({
-    // sin buscador nativo (usamos #searchContactos)
-    dom: 'Bltip',
-    buttons: [
-      { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
-      { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
-    ],
-    order: [[1,'desc']], // FECHA
-    paging: true,
-    pageLength: 10,
-    lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, 'Todos'] ],
-    autoWidth: false,
-    responsive: true,
-    scrollX: false,
-    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-    /* ancho en DataTables (apoya al CSS !important) */
-    columnDefs: [
-      { targets: 0, width:'62px'  },   // Semana
-      { targets: 1, width:'112px' },   // Fecha
-      { targets: 2, width:'232px' },   // Proveedor
-      { targets: 3, width:'92px'  },   // Centro
-      { targets: 4, width:'126px' },   // Comuna
-      { targets: 5, width:'86px',  className:'tright' }, // Tons
-      { targets: 6, width:'128px' },   // Responsable
-      { targets: 7, width:'132px', orderable:false, searchable:false } // Acciones (si existe)
-    ]
-  });
+ state.dt = jq('#tablaContactos').DataTable({
+  dom: 'Bltip',
+  buttons: [ /* ... */ ],
+  order: [[1,'desc']],
+  paging: true,
+  pageLength: 10,
+  lengthMenu: [ [10,25,50,-1], [10,25,50,'Todos'] ],
+  autoWidth: false,
+  responsive: false,               // <-- aquí el cambio clave
+  scrollX: false,
+  language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+  columnDefs: [
+    { targets: 0, width:'60px'  },
+    { targets: 1, width:'108px' },
+    { targets: 2, width:'210px' },
+    { targets: 3, width:'90px'  },
+    { targets: 4, width:'110px' },
+    { targets: 5, width:'82px',  className:'tright' },
+    { targets: 6, width:'110px' },
+    { targets: 7, width:'120px', orderable:false, searchable:false }
+  ]
+});
 
   // Acciones
   jq('#tablaContactos tbody')
@@ -363,3 +361,4 @@ export function renderTablaContactos() {
 }
 
 document.addEventListener('reload-tabla-contactos', () => renderTablaContactos());
+
