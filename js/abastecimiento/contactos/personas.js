@@ -6,6 +6,12 @@ import { abrirModalVisita } from '../visitas/tab.js';
 /* ------------ estilos (tabla compacta, empresa bajo contacto, acciones visibles) ------------ */
 (function injectStyles() {
   const css = `
+    /* Oculta el buscador nativo de DataTables por si llegara a colarse */
+    #tablaPersonas_wrapper .dataTables_filter{ display:none !important; }
+
+    /* Evitar recortes en el wrapper */
+    #tablaPersonas_wrapper{ overflow:visible !important; }
+
     #tablaPersonas{ table-layout:fixed!important; width:100%!important; }
     #tablaPersonas thead th{ position:sticky; top:0; z-index:2; }
 
@@ -23,7 +29,7 @@ import { abrirModalVisita } from '../visitas/tab.js';
     .cell-inline{ display:flex; align-items:center; gap:6px; min-width:0; }
     .cell-inline .ellipsisCell{ flex:1 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-    /* Evitar que Acciones se recorte */
+    /* Acciones: que no se recorten */
     #tablaPersonas td:last-child{ overflow:visible!important; }
     #tablaPersonas td.cell-actions .act{
       display:inline-flex; align-items:center; justify-content:center;
@@ -77,7 +83,8 @@ export function initPersonasTab() {
   // DataTable Personas
   if (jq && !dtP) {
     dtP = jq('#tablaPersonas').DataTable({
-      dom: 'Bfrtip',
+      // SIN 'f' => sin buscador nativo (usamos el externo de la barra)
+      dom: 'Bltip',
       buttons: [
         { extend: 'excelHtml5', title: 'Agenda_de_Personas' },
         { extend: 'pdfHtml5',   title: 'Agenda_de_Personas', orientation: 'landscape', pageSize: 'A4' }
@@ -85,21 +92,21 @@ export function initPersonasTab() {
       pageLength: 10,
       order: [[0, 'desc']],
       autoWidth: false,
-      responsive: false,   // respetar widths fijos
+      responsive: false,   // respeta widths fijos
       scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-      /* Columnas del THEAD original:
+      /* THEAD original:
          0 Fecha | 1 Contacto | 2 Teléfono(s) | 3 Email | 4 Empresa | 5 Notas | 6 Acciones
-         -> Ocultamos 3 (Email) y 4 (Empresa) en la vista. La empresa la renderizamos bajo Contacto.
+         Email (3) y Empresa (4) quedan ocultos (la empresa se muestra debajo del contacto).
       */
       columnDefs: [
-        { targets: 0, width: 100 },      // Fecha
+        { targets: 0, width: 110 },      // Fecha
         { targets: 1, width: null },     // Contacto (con empresa debajo)
-        { targets: 2, width: 180 },      // Teléfono(s)
+        { targets: 2, width: 200 },      // Teléfono(s)
         { targets: 3, visible: false },  // Email (oculto)
         { targets: 4, visible: false },  // Empresa (oculto en vista)
-        { targets: 5, width: 420 },      // Notas
-        { targets: 6, width: 140, orderable: false, searchable: false, className: 'cell-actions' } // Acciones
+        { targets: 5, width: 480 },      // Notas (ancha para evitar corte)
+        { targets: 6, width: 180, orderable: false, searchable: false, className: 'cell-actions' } // Acciones más ancha
       ]
     });
 
@@ -176,16 +183,15 @@ export function renderTablaPersonas() {
         </div>
       `;
 
-      // Orden según THEAD original:
-      // 0 Fecha | 1 Contacto* | 2 Teléfono(s) | 3 Email (OCULTO) | 4 Empresa (OCULTO) | 5 Notas | 6 Acciones
+      // Orden según THEAD original (3 y 4 ocultas pero quedan para exportar)
       return [
-        `<span data-order="${fKey}">${fStr}</span>`,
-        contactoCell,
-        esc(String(tels || '')),
-        esc(String(emailExport || '')),   // oculto en la vista
-        esc(String(empresa || '')),       // oculto en la vista (ya va como sublínea en Contacto)
-        `<span class="cell-inline"><span class="ellipsisCell" title="${esc(notas)}">${esc(notas)}</span></span>`,
-        acciones
+        `<span data-order="${fKey}">${fStr}</span>`,  // 0 Fecha
+        contactoCell,                                 // 1 Contacto (con empresa debajo)
+        esc(String(tels || '')),                      // 2 Teléfono(s)
+        esc(String(emailExport || '')),               // 3 Email (OCULTO)
+        esc(String(empresa || '')),                   // 4 Empresa (OCULTO)
+        `<span class="cell-inline"><span class="ellipsisCell" title="${esc(notas)}">${esc(notas)}</span></span>`, // 5 Notas
+        acciones                                      // 6 Acciones
       ];
     });
 
