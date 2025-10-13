@@ -4,10 +4,9 @@
 export function toId(val) {
   if (!val) return '';
   if (typeof val === 'string') {
-    // "ObjectId('...')" -> "..."
     const m = val.match(/ObjectId\(["']?([0-9a-fA-F]{24})["']?\)/);
     if (m && m[1]) return m[1];
-    return val; // ya puede ser 24hex o algo que tu API devuelva tal cual
+    return val;
   }
   if (typeof val === 'object') {
     if (val.$oid) return String(val.$oid);
@@ -26,17 +25,18 @@ export function centroCodigoById(id, lista = []) {
 export function normalizeVisita(raw) {
   const v = raw || {};
   const out = {
-    _id:            toId(v._id ?? v.id),
-    contactoId:     toId(v.contactoId ?? v.proveedorId),
-    centroId:       toId(v.centroId),
-    centroCodigo:   v.centroCodigo ?? null,
-    contacto:       v.contacto ?? null,
-    enAgua:         v.enAgua ?? null,
-    estado:         v.estado ?? 'Programar nueva visita',
-    tonsComprometidas: v.tonsComprometidas ?? null,
-    observaciones:  v.observaciones ?? null,
-    fecha:          v.fecha ? new Date(v.fecha) : null,
-    fotos:          Array.isArray(v.fotos) ? v.fotos.slice() : []
+    _id:              toId(v._id ?? v.id),
+    contactoId:       toId(v.contactoId ?? v.proveedorId),
+    centroId:         toId(v.centroId),
+    centroCodigo:     v.centroCodigo ?? null,
+    contacto:         v.contacto ?? null,
+    enAgua:           v.enAgua ?? null,
+    estado:           v.estado ?? 'Programar nueva visita',
+    tonsComprometidas:v.tonsComprometidas ?? null,
+    observaciones:    v.observaciones ?? null,
+    fecha:            v.fecha ? new Date(v.fecha) : null,
+    proximoPasoFecha: v.proximoPasoFecha ? new Date(v.proximoPasoFecha) : null, // ← NUEVO
+    fotos:            Array.isArray(v.fotos) ? v.fotos.slice() : []
   };
   return out;
 }
