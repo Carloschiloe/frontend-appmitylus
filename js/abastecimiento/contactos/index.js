@@ -48,6 +48,12 @@ function adjustDT(selector) {
   } catch {}
 }
 
+// Oculta el buscador nativo de DataTables para una tabla dada
+function hideNativeFilter(selector) {
+  const wrap = document.querySelector(`${selector}_wrapper .dataTables_filter`);
+  if (wrap) wrap.style.display = 'none';
+}
+
 // Bind handler a TODAS las coincidencias del selector
 function onAll(selector, event, handler) {
   document.querySelectorAll(selector).forEach(el => {
@@ -75,20 +81,16 @@ function setSemanaActualBadge(){
   const span = el.querySelector('span');
   if (span) span.textContent = `Semana ${w}`;
 }
-// lo dejamos disponible para otros módulos si lo necesitan
 window.isoWeekNumber = isoWeekNumber;
 
 /* ======================= Limpiar overlays “pegados” ======================= */
 function nukeStuckOverlays() {
-  // Quita overlays de Materialize si quedaron colgando
   document.querySelectorAll('.modal-overlay, .sidenav-overlay').forEach(el => el.remove());
-  // Cierra y oculta modales que hayan quedado con .open
   document.querySelectorAll('.modal.open').forEach(el => {
     try { M.Modal.getInstance(el)?.close(); } catch {}
     el.classList.remove('open');
     el.style.display = 'none';
   });
-  // Desbloquea el scroll por seguridad
   document.body.style.overflow = '';
 }
 
@@ -105,6 +107,7 @@ function initUIOnce() {
         if (id.includes('visita')) {
           if (!visitasBooted) { initVisitasTab().catch(()=>{}); visitasBooted = true; }
           adjustDT('#tablaVisitas');
+          hideNativeFilter('#tablaVisitas');
           bindSearchVisitas();
         }
         if (id.includes('persona')) {
@@ -113,13 +116,14 @@ function initUIOnce() {
             personasBooted = true;
           }
           adjustDT('#tablaPersonas');
+          hideNativeFilter('#tablaPersonas');
           bindSearchPersonas();
         }
         if (id.includes('contacto')) {
           adjustDT('#tablaContactos');
+          hideNativeFilter('#tablaContactos');
           bindSearchContactos();
         }
-        // por si cambia de tab con un overlay colgado
         nukeStuckOverlays();
       }
     });
@@ -132,7 +136,6 @@ function initUIOnce() {
   if (modalContactoEl) {
     const inst = M.Modal.getInstance(modalContactoEl) || M.Modal.init(modalContactoEl, {
       onCloseEnd: () => {
-        // Seguridad adicional: dejar siempre el form en modo NUEVO al cerrar
         try { document.getElementById('formContacto')?.reset(); } catch {}
         try { prepararNuevo(); } catch {}
         M.updateTextFields?.();
@@ -140,7 +143,6 @@ function initUIOnce() {
       }
     });
 
-    // Abrir SIEMPRE en modo NUEVO
     document.getElementById('btnOpenContactoModal')
       ?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -150,7 +152,6 @@ function initUIOnce() {
         inst.open();
       });
 
-    // “Registrar persona” reutiliza el mismo modal visual
     document.getElementById('btnOpenPersonaModal')
       ?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -173,10 +174,11 @@ function initUIOnce() {
 
   window.addEventListener('hashchange', cleanupOverlays);
 
-  // Click directo en tabs (antes tomaba solo el primero)
+  // Click directo en tabs
   onAll('a[href="#tab-visitas"], a[href="#visitas"]', 'click', async () => {
     if (!visitasBooted) { await initVisitasTab().catch(()=>{}); visitasBooted = true; }
     adjustDT('#tablaVisitas');
+    hideNativeFilter('#tablaVisitas');
     bindSearchVisitas();
     nukeStuckOverlays();
   });
@@ -187,12 +189,14 @@ function initUIOnce() {
       personasBooted = true;
     }
     adjustDT('#tablaPersonas');
+    hideNativeFilter('#tablaPersonas');
     bindSearchPersonas();
     nukeStuckOverlays();
   });
 
   onAll('a[href="#tab-contactos"], a[href="#contactos"]', 'click', () => {
     adjustDT('#tablaContactos');
+    hideNativeFilter('#tablaContactos');
     bindSearchContactos();
     nukeStuckOverlays();
   });
@@ -205,8 +209,6 @@ function initUIOnce() {
 
   // Badge semana actual
   setSemanaActualBadge();
-
-  // Limpieza inicial por si llegó la página con algo pegado
   nukeStuckOverlays();
 }
 
@@ -219,6 +221,7 @@ function bindSearchContactos(){
     try { jq('#tablaContactos').DataTable().search(input.value || '').draw(); } catch {}
   });
   input.dataset.bound = '1';
+  hideNativeFilter('#tablaContactos');
 }
 function bindSearchPersonas(){
   const jq = window.jQuery || window.$;
@@ -228,6 +231,7 @@ function bindSearchPersonas(){
     try { jq('#tablaPersonas').DataTable().search(input.value || '').draw(); } catch {}
   });
   input.dataset.bound = '1';
+  hideNativeFilter('#tablaPersonas');
 }
 function bindSearchVisitas(){
   const jq = window.jQuery || window.$;
@@ -237,6 +241,7 @@ function bindSearchVisitas(){
     try { jq('#tablaVisitas').DataTable().search(input.value || '').draw(); } catch {}
   });
   input.dataset.bound = '1';
+  hideNativeFilter('#tablaVisitas');
 }
 
 /* ======================= Boot principal ======================= */
@@ -260,6 +265,7 @@ export async function initContactosTab(forceReload = false) {
     initTablaContactos();
     renderTablaContactos();
     adjustDT('#tablaContactos');
+    hideNativeFilter('#tablaContactos');
     bindSearchContactos();
     nukeStuckOverlays();
 
@@ -273,11 +279,13 @@ export async function initContactosTab(forceReload = false) {
       await initVisitasTab().catch(()=>{});
       visitasBooted = true;
       adjustDT('#tablaVisitas');
+      hideNativeFilter('#tablaVisitas');
       bindSearchVisitas();
     } else if (h === '#tab-personas' || h === '#personas') {
       initPersonasTab();
       personasBooted = true;
       adjustDT('#tablaPersonas');
+      hideNativeFilter('#tablaPersonas');
       bindSearchPersonas();
     }
 
@@ -301,7 +309,9 @@ function hookGlobalListeners() {
       renderTablaContactos();
       renderTablaPersonas?.();
       adjustDT('#tablaContactos');
-      if (personasBooted) adjustDT('#tablaPersonas');
+      hideNativeFilter('#tablaContactos');
+      if (personasBooted) { adjustDT('#tablaPersonas'); hideNativeFilter('#tablaPersonas'); }
+      if (visitasBooted)  { adjustDT('#tablaVisitas');  hideNativeFilter('#tablaVisitas'); }
       nukeStuckOverlays();
     } catch (e) {
       console.error(e);
@@ -314,6 +324,7 @@ function hookGlobalListeners() {
     if (visitasBooted) {
       try { await initVisitasTab(true); } catch {}
       adjustDT('#tablaVisitas');
+      hideNativeFilter('#tablaVisitas');
       nukeStuckOverlays();
     }
   });
@@ -321,8 +332,9 @@ function hookGlobalListeners() {
   // Responsivo
   window.addEventListener('resize', () => {
     adjustDT('#tablaContactos');
-    if (visitasBooted)  adjustDT('#tablaVisitas');
-    if (personasBooted) adjustDT('#tablaPersonas');
+    hideNativeFilter('#tablaContactos');
+    if (visitasBooted)  { adjustDT('#tablaVisitas');  hideNativeFilter('#tablaVisitas'); }
+    if (personasBooted) { adjustDT('#tablaPersonas'); hideNativeFilter('#tablaPersonas'); }
   });
 
   // Botón “Nuevo contacto” (si algún día lo agregas aparte del de la barra)
