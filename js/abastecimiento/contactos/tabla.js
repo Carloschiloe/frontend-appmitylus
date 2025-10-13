@@ -16,11 +16,11 @@ const esCodigoValido = (x) => /^\d{4,7}$/.test(String(x || ''));
 
 // Semana ISO
 function getISOWeek(d = new Date()) {
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNum = date.getUTCDay() || 7;
-  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
-  return Math.floor(((date - yearStart) / 86400000 + 1)/7);
+  const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = x.getUTCDay() || 7;            // 1..7 (lunes..domingo)
+  x.setUTCDate(x.getUTCDate() + 4 - day);    // jueves de esa semana
+  const yearStart = new Date(Date.UTC(x.getUTCFullYear(), 0, 1));
+  return Math.ceil(((x - yearStart) / 86400000 + 1) / 7);
 }
 
 /* =========== ESTILOS: bloquea overflow, fija anchos y oculta filtro nativo =========== */
@@ -366,3 +366,4 @@ export function renderTablaContactos() {
 }
 
 document.addEventListener('reload-tabla-contactos', () => renderTablaContactos());
+
