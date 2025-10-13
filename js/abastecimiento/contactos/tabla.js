@@ -3,44 +3,52 @@ import { state, $ } from './state.js';
 import { centroCodigoById, comunaPorCodigo } from './normalizers.js';
 import { abrirEdicion, eliminarContacto } from './form-contacto.js';
 import { abrirDetalleContacto } from './form-contacto.js';
-import { abrirModalVisita } from '../visitas/ui.js';
+import { abrirModalVisita } from '../visitas/tab.js';
 
-/* ---------- Config local ---------- */
 const API_BASE = window.API_URL || '/api';
 const fmtCL = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
 
-/* ---------- Semana ISO (fallback si no existe en window) ---------- */
-function isoWeekNumber(dateStr){
-  const d = dateStr ? new Date(dateStr) : new Date();
-  const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNr = (target.getUTCDay() + 6) % 7;
-  target.setUTCDate(target.getUTCDate() - dayNr + 3);
-  const firstThu = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
-  const diff = (target - firstThu) / 86400000;
-  return 1 + Math.floor(diff / 7);
-}
-const wk = (s) => (window.isoWeekNumber ? window.isoWeekNumber(s) : isoWeekNumber(s));
+// ===== helpers =====
+const esc = (s='') => String(s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
-/* ---------- estilos: proveedor con elipsis + acciones en fila ---------- */
+const esCodigoValido = (x) => /^\d{4,7}$/.test(String(x || ''));
+
+// Semana ISO
+function getISOWeek(d = new Date()) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+  return Math.floor(((date - yearStart) / 86400000 + 1)/7);
+}
+
+// ===== estilos compactos + ellipsis + acciones en fila =====
 (function injectStyles () {
   const css = `
-    #tablaContactos td .ellipsisCell{
-      display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle;
-    }
-    #tablaContactos td .ellipsisProv{ max-width:26ch; }
+    #tablaContactos{ table-layout: fixed; width:100%!important; }
+    #tablaContactos th, #tablaContactos td{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-    /* Acciones en una sola fila */
-    #tablaContactos td.cell-actions{ white-space:nowrap; }
-    #tablaContactos td.cell-actions .act{
-      display:inline-flex; align-items:center; justify-content:center;
-      width:32px; height:32px; margin-right:6px;
-      border:1px solid #e5e7eb; border-radius:8px; background:#fff;
-      box-shadow:0 2px 8px rgba(2,6,23,.05); cursor:pointer;
-    }
-    #tablaContactos td.cell-actions .act:last-child{ margin-right:0; }
-    #tablaContactos td.cell-actions i.material-icons{ font-size:18px; }
+    /* anchos compactos para evitar scroll horizontal */
+    #tablaContactos th:nth-child(1), #tablaContactos td:nth-child(1){ width:64px; }   /* Semana */
+    #tablaContactos th:nth-child(2), #tablaContactos td:nth-child(2){ width:120px; }  /* Fecha */
+    #tablaContactos th:nth-child(3), #tablaContactos td:nth-child(3){ width:260px; }  /* Proveedor (con ellipsis) */
+    #tablaContactos th:nth-child(4), #tablaContactos td:nth-child(4){ width:88px; }   /* Centro */
+    #tablaContactos th:nth-child(5), #tablaContactos td:nth-child(5){ width:130px; }  /* Comuna */
+    #tablaContactos th:nth-child(6), #tablaContactos td:nth-child(6){ width:80px; text-align:right; } /* Tons */
+    #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:150px; }  /* Responsable */
+    #tablaContactos th:nth-child(8), #tablaContactos td:nth-child(8){ width:140px; }  /* Acciones */
 
-    /* celda tons mientras carga */
+    #tablaContactos td .ellipsisProv{ display:inline-block; max-width:26ch; }
+
+    /* acciones en una sola fila */
+    #tablaContactos td:last-child .actions { display:flex; gap:6px; align-items:center; justify-content:flex-start; }
+    #tablaContactos td:last-child a.icon-action {
+      pointer-events:auto; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+      width:34px; height:34px; border-radius:10px; background:#eef2ff; border:1px solid #c7d2fe;
+    }
+    #tablaContactos td:last-child a.icon-action i{ font-size:18px; color:#0ea5a8; }
     #tablaContactos .tons-cell.loading{ opacity:.6 }
     #tablaContactos tfoot th{ font-weight:700; background:#f6f6f7 }
   `;
@@ -52,34 +60,24 @@ const wk = (s) => (window.isoWeekNumber ? window.isoWeekNumber(s) : isoWeekNumbe
   }
 })();
 
-/* -------------------- helpers locales (solo UI, no escriben BD) -------------------- */
-const esc = (s='') => String(s)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-
-const esCodigoValido = (x) => /^\d{4,7}$/.test(String(x || ''));
-
-/* ===== handler único expuesto ===== */
+// ===== click acciones (ver/visita/muestreo/editar/eliminar) =====
 async function _clickAccContacto(aEl){
   try{
     const id = aEl?.dataset?.id;
     const action = (aEl?.dataset?.action || '').toLowerCase();
-    const cls = (aEl?.className || '').toLowerCase();
-
     const c = state.contactosGuardados.find(x => String(x._id) === String(id));
     if (!c) { M.toast?.({ html: 'Contacto no encontrado', classes: 'red' }); return; }
 
-    const act = action || (cls.includes('ver') ? 'ver'
-                  : cls.includes('visita') ? 'visita'
-                  : cls.includes('editar') ? 'editar'
-                  : cls.includes('eliminar') ? 'eliminar'
-                  : '');
+    if (action === 'ver')      return abrirDetalleContacto(c);
+    if (action === 'visita')   return abrirModalVisita(c);
+    if (action === 'muestreo') {
+      // dispara evento para tu flujo de muestreo por proveedor
+      document.dispatchEvent(new CustomEvent('muestreo:open', { detail: { contacto: c }}));
+      return;
+    }
+    if (action === 'editar')   return abrirEdicion(c);
 
-    if (act === 'ver')     return abrirDetalleContacto(c);
-    if (act === 'visita')  return abrirModalVisita(c);
-    if (act === 'editar')  return abrirEdicion(c);
-
-    if (act === 'eliminar'){
+    if (action === 'eliminar'){
       if (aEl.dataset.busy === '1') return;
       aEl.dataset.busy = '1';
       try {
@@ -99,17 +97,14 @@ async function _clickAccContacto(aEl){
 }
 window._clickAccContacto = _clickAccContacto;
 
-/* ---------- Cache de totales de disponibilidad (incluye contactoId) ---------- */
-// key: `${contactoId}|${proveedorKey}|${centroId}`
+// ===== cache para totals =====
 state.dispTotalCache = state.dispTotalCache || new Map();
 
-/* Pequeno helper para GET con rango por defecto (y-1 .. y+1) */
 async function getDisponibilidades(params){
   const y = new Date().getFullYear();
   const q = new URLSearchParams();
   q.set('from', params?.from || `${y-1}-01`);
   q.set('to',   params?.to   || `${y+1}-12`);
-
   if (params?.contactoId) q.set('contactoId', params.contactoId);
   if (params?.proveedorKey) q.set('proveedorKey', params.proveedorKey);
   if (params?.centroId) q.set('centroId', params.centroId);
@@ -121,14 +116,15 @@ async function getDisponibilidades(params){
   return Array.isArray(json) ? json : (json.items || []);
 }
 
-/* Suma robusta con fallbacks */
 async function fetchTotalDisponibilidad({ contactoId='', proveedorKey='', centroId='' }){
   const cacheKey = `${contactoId||''}|${proveedorKey||''}|${centroId||''}`;
   if (state.dispTotalCache.has(cacheKey)) return state.dispTotalCache.get(cacheKey);
 
   function sum(list, filterByContactoId){
     let arr = Array.isArray(list) ? list : [];
-    if (filterByContactoId) arr = arr.filter(it => String(it.contactoId || '') === String(filterByContactoId));
+    if (filterByContactoId) {
+      arr = arr.filter(it => String(it.contactoId || '') === String(filterByContactoId));
+    }
     return arr.reduce((acc, it)=> acc + Number(it.tonsDisponible ?? it.tons ?? 0), 0);
   }
 
@@ -146,25 +142,22 @@ async function fetchTotalDisponibilidad({ contactoId='', proveedorKey='', centro
       const list3 = await getDisponibilidades({ proveedorKey });
       total = sum(list3);
     }
-  }catch(e){
-    console.error('[tablaContactos] fetchTotalDisponibilidad error', e);
-  }
+  }catch(e){ console.error('[tablaContactos] fetchTotalDisponibilidad error', e); }
 
   state.dispTotalCache.set(cacheKey, total);
   return total;
 }
 
-/* ---------- Footer total (solo registros visibles/página actual/filtrados) ---------- */
+// ===== footer total =====
 function ensureFooter(){
   const table = $('#tablaContactos');
   if (!table) return;
   if (!table.tFoot) {
     const tfoot = table.createTFoot();
     const tr = tfoot.insertRow(0);
-    // 9 columnas
-    for (let i=0; i<9; i++){
+    for (let i=0; i<8; i++){
       const th = document.createElement('th');
-      if (i === 6) th.textContent = 'Total página: 0'; // bajo "Tons" (índice 6)
+      if (i === 5) th.textContent = 'Total página: 0'; // col Tons (index 5)
       tr.appendChild(th);
     }
   }
@@ -172,11 +165,11 @@ function ensureFooter(){
 function setFooterTotal(total){
   const table = $('#tablaContactos');
   if (!table || !table.tFoot) return;
-  const th = table.tFoot.querySelectorAll('th')[6];
+  const th = table.tFoot.querySelectorAll('th')[5];
   if (th) th.textContent = `Total página: ${fmtCL(total)}`;
 }
 
-/* --------------------------------- DataTables --------------------------------- */
+// ===== DataTable =====
 export function initTablaContactos() {
   const jq = window.jQuery || window.$;
   const tablaEl = $('#tablaContactos');
@@ -186,12 +179,13 @@ export function initTablaContactos() {
   ensureFooter();
 
   state.dt = jq('#tablaContactos').DataTable({
-    dom: 'Blfrtip',
+    // quitamos el buscador nativo ('f') => sólo usamos #searchContactos
+    dom: 'Blrtip',
     buttons: [
       { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
       { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
     ],
-    order: [[1,'desc']],      // ordenar por Fecha (col 1)
+    order: [[1,'desc']], // por FECHA (col 1)
     paging: true,
     pageLength: 10,
     lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, 'Todos'] ],
@@ -200,38 +194,80 @@ export function initTablaContactos() {
     scrollX: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
     columnDefs: [
-      { targets: 0, width: 60 },             // Semana
-      { targets: 1, width: 110 },            // Fecha
-      { targets: 2, width: 260 },            // Proveedor
-      { targets: 8, orderable: false, searchable: false }, // Acciones
-      { targets: 6, className: 'tright' },   // Tons derecha
+      { targets: 0, searchable: true },          // Semana
+      { targets: 1, searchable: true },          // Fecha
+      { targets: 2, searchable: true },          // Proveedor
+      { targets: 3, searchable: true },          // Centro
+      { targets: 4, searchable: true },          // Comuna
+      { targets: 5, className:'tright' },        // Tons
+      { targets: 6, searchable: true },          // Responsable
+      { targets: 7, orderable: false, searchable: false } // Acciones
     ]
   });
 
   // Delegación de acciones
   jq('#tablaContactos tbody')
     .off('click.contactos')
-    .on('click.contactos', 'a.icon-action, .cell-actions .act', function(e){
+    .on('click.contactos', 'a.icon-action', function(e){
       e.preventDefault();
       e.stopPropagation();
       _clickAccContacto(this);
     });
 
-  // Recalcular celdas y footer en cada draw
+  // Redibujo => actualizar “tons” y footer
   jq('#tablaContactos').on('draw.dt', async () => {
     await actualizarTonsVisiblesYFooter();
   });
 
+  // === Filtros externos ===
+  const dt = state.dt;
+  const $search = document.getElementById('searchContactos');
+  $search?.addEventListener('input', () => { dt.search($search.value || '').draw(); });
+
+  const $fltSemana = document.getElementById('fltSemana');
+  const $fltComuna = document.getElementById('fltComuna');
+  const $fltResp   = document.getElementById('fltResp');
+
+  $fltSemana?.addEventListener('change', ()=> {
+    dt.column(0).search($fltSemana.value || '', true, false).draw(); // exacto
+  });
+  $fltComuna?.addEventListener('change', ()=> {
+    dt.column(4).search($fltComuna.value || '', true, false).draw();
+  });
+  $fltResp?.addEventListener('change', ()=> {
+    dt.column(6).search($fltResp.value || '', true, false).draw();
+  });
+
+  // Popular opciones iniciales de filtros (semana/comuna) desde datos actuales
+  populateFiltrosDesdeDatos();
+
   console.log('[contactos] DataTable lista. filas=', state.dt.rows().count());
 }
 
-/* ---------------------------- Actualizar celdas visibles ---------------------------- */
+function populateFiltrosDesdeDatos(){
+  const semanas = new Set();
+  const comunas = new Set();
+  const base = Array.isArray(state.contactosGuardados) ? state.contactosGuardados : [];
+  base.forEach(c => {
+    const f = new Date(c.createdAt || c.fecha || Date.now());
+    semanas.add(String(getISOWeek(f)));
+    const centroCodigo = c.centroCodigo || centroCodigoById(c.centroId) || '';
+    comunas.add(c.centroComuna || c.comuna || comunaPorCodigo(centroCodigo) || '');
+  });
+  const opt = (v)=> v ? `<option value="${esc(v)}">${esc(v)}</option>` : '';
+  const $sem = document.getElementById('fltSemana');
+  const $com = document.getElementById('fltComuna');
+  if ($sem && $sem.children.length<=1) $sem.insertAdjacentHTML('beforeend', [...semanas].sort((a,b)=>a-b).map(opt).join(''));
+  if ($com && $com.children.length<=1) $com.insertAdjacentHTML('beforeend', [...comunas].sort().map(opt).join(''));
+}
+
+// ===== actualizar celdas visibles + footer =====
 async function actualizarTonsVisiblesYFooter(){
   const jq = window.jQuery || window.$;
   if (!state.dt || !jq) return;
 
   state.dt.rows({ page: 'current', search: 'applied' }).every(function(){
-    const cellNode = state.dt.cell(this, 6).node(); // columna Tons (índice 6)
+    const cellNode = state.dt.cell(this, 5).node(); // Tons
     if (!cellNode) return;
     const span = cellNode.querySelector('.tons-cell');
     if (!span) return;
@@ -240,7 +276,8 @@ async function actualizarTonsVisiblesYFooter(){
     const centroId     = span.dataset.centroid || '';
     const contactoId   = span.dataset.contactoid || '';
 
-    if (span.dataset.value !== undefined && span.dataset.value !== null && span.dataset.value !== '') return;
+    const cached = span.dataset.value;
+    if (cached !== undefined && cached !== null && cached !== '') return;
 
     span.classList.add('loading');
     span.textContent = '…';
@@ -253,7 +290,6 @@ async function actualizarTonsVisiblesYFooter(){
     });
   });
 
-  // set inicial rápido con lo visible
   recalcularFooterDesdeDom();
 }
 
@@ -264,21 +300,21 @@ function recalcularFooterDesdeDom(){
   let sum = 0;
   spans.forEach(sp => {
     const tr = sp.closest('tr');
-    if (tr && tr.offsetParent !== null) sum += Number(sp.dataset.value || 0);
+    if (tr && tr.offsetParent !== null) {
+      sum += Number(sp.dataset.value || 0);
+    }
   });
   setFooterTotal(sum);
 }
 
-/* ------------------------------- Render de filas -------------------------------- */
+// ===== render =====
 export function renderTablaContactos() {
   const jq = window.jQuery || window.$;
   const tabla = $('#tablaContactos');
   if (!tabla) return;
 
   const base = Array.isArray(state.contactosGuardados) ? state.contactosGuardados : [];
-  console.debug('[tablaContactos] render → items:', base.length, base[0]);
 
-  // limpiar cache de totales
   if (state.dispTotalCache?.clear) state.dispTotalCache.clear();
 
   const filas = base
@@ -289,67 +325,46 @@ export function renderTablaContactos() {
       return db - da;
     })
     .map(c => {
-      // Fecha
       const f = new Date(c.createdAt || c.fecha || Date.now());
       const yyyy = f.getFullYear();
       const mm   = String(f.getMonth() + 1).padStart(2, '0');
       const dd   = String(f.getDate()).padStart(2, '0');
       const whenDisplay = `${yyyy}-${mm}-${dd}`;
       const whenKey     = f.getTime();
+      const semana      = getISOWeek(f);
 
-      // Semana ISO
-      const semana = wk(whenDisplay);
-
-      // Centro (código) con fallback por centroId
       let centroCodigo = c.centroCodigo;
       if (!esCodigoValido(centroCodigo)) {
         centroCodigo = centroCodigoById(c.centroId) || '';
       }
-
-      // Comuna
       const comuna = c.centroComuna || c.comuna || comunaPorCodigo(centroCodigo) || '';
 
-      // Proveedor con elipsis + tooltip
       const provName = esc(c.proveedorNombre || '');
       const provCell = provName
-        ? `<span class="ellipsisCell ellipsisProv" title="${provName}">${provName}</span>`
+        ? `<span class="ellipsisProv" title="${provName}">${provName}</span>`
         : '';
 
-      // MMPP
-      const mmpp = c.tieneMMPP || '';
-
-      // Tons (asíncrono)
       const tonsCell = `<span class="tons-cell" data-contactoid="${esc(c._id || '')}" data-provkey="${esc(c.proveedorKey || '')}" data-centroid="${esc(c.centroId || '')}" data-value=""></span>`;
 
-      // Responsable
-      const responsable = esc(c.responsable || '—');
+      const responsable = esc(c.responsablePG || '—');
 
-      // Acciones (wrapper para que queden en una fila)
       const acciones = `
-        <div class="cell-actions">
-          <a href="#!" class="act icon-action ver" data-action="ver" title="Ver" data-id="${c._id}">
-            <i class="material-icons">visibility</i>
-          </a>
-          <a href="#!" class="act icon-action visita" data-action="visita" title="Registrar visita" data-id="${c._id}">
-            <i class="material-icons">event_available</i>
-          </a>
-          <a href="#!" class="act icon-action editar" data-action="editar" title="Editar" data-id="${c._id}">
-            <i class="material-icons">edit</i>
-          </a>
-          <a href="#!" class="act icon-action eliminar" data-action="eliminar" title="Eliminar" data-id="${c._id}">
-            <i class="material-icons">delete</i>
-          </a>
+        <div class="actions">
+          <a href="#!" class="icon-action" data-action="ver"       title="Ver detalle"       data-id="${c._id}"><i class="material-icons">visibility</i></a>
+          <a href="#!" class="icon-action" data-action="visita"    title="Registrar visita"  data-id="${c._id}"><i class="material-icons">event_available</i></a>
+          <a href="#!" class="icon-action" data-action="muestreo"  title="Registrar muestreo"data-id="${c._id}"><i class="material-icons">science</i></a>
+          <a href="#!" class="icon-action" data-action="editar"    title="Editar"            data-id="${c._id}"><i class="material-icons">edit</i></a>
+          <a href="#!" class="icon-action" data-action="eliminar"  title="Eliminar"          data-id="${c._id}"><i class="material-icons">delete</i></a>
         </div>
       `;
 
-      // 9 columnas: Semana, Fecha, Proveedor, Centro, Comuna, MMPP, Tons, Responsable, Acciones
+      // columnas: Semana, Fecha, Proveedor, Centro, Comuna, Tons, Responsable, Acciones
       return [
-        esc(semana),
+        esc(String(semana)),
         `<span data-order="${whenKey}">${whenDisplay}</span>`,
         provCell,
         esc(centroCodigo),
         esc(comuna),
-        esc(mmpp),
         tonsCell,
         responsable,
         acciones
@@ -359,16 +374,17 @@ export function renderTablaContactos() {
   if (state.dt && jq) {
     state.dt.clear();
     state.dt.rows.add(filas).draw(false);
+    populateFiltrosDesdeDatos(); // refresca opciones si aparecen nuevas
     return;
   }
 
-  // Fallback sin DataTables
+  // fallback sin DataTables
   const tbody = $('#tablaContactos tbody');
   ensureFooter();
   if (!tbody) return;
   tbody.innerHTML = '';
   if (!filas.length) {
-    tbody.innerHTML = `<tr><td colspan="9" style="color:#888">No hay contactos registrados aún.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="color:#888">No hay contactos registrados aún.</td></tr>`;
     setFooterTotal(0);
     return;
   }
@@ -378,7 +394,6 @@ export function renderTablaContactos() {
     tbody.appendChild(tr);
   });
 
-  // Completar celdas + footer en fallback
   (async () => {
     const spans = tbody.querySelectorAll('.tons-cell');
     for (const sp of spans) {
@@ -392,15 +407,12 @@ export function renderTablaContactos() {
       sp.textContent = fmtCL(total);
       sp.classList.remove('loading');
     }
-    // total visible (todas las filas en fallback)
     let sum = 0;
     tbody.querySelectorAll('.tons-cell').forEach(s => sum += Number(s.dataset.value || 0));
     setFooterTotal(sum);
   })();
 }
 
-/* 🔁 refresco en vivo cuando otros módulos disparan reload */
 document.addEventListener('reload-tabla-contactos', () => {
-  console.debug('[tablaContactos] reload-tabla-contactos recibido');
   renderTablaContactos();
 });
