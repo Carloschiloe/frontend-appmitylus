@@ -23,15 +23,19 @@ function getISOWeek(d = new Date()) {
   return Math.floor(((date - yearStart) / 86400000 + 1)/7);
 }
 
-/* =========== ESTILOS: bloquea overflow y fija anchos (con !important) =========== */
+/* =========== ESTILOS: bloquea overflow, fija anchos y oculta filtro nativo =========== */
 (function injectStyles () {
   const css = `
+    /* Ocultar el buscador nativo de DataTables: queda SOLO el de la barra */
+    #tablaContactos_filter{ display:none !important; }
+
     .mmpp-table-wrap, #tablaContactos_wrapper{ overflow-x: hidden !important; }
 
     #tablaContactos{
       table-layout: fixed !important;
       width: 100% !important;
       max-width: 100% !important;
+      border-collapse: collapse;
     }
 
     /* padding compacto y ellipsis */
@@ -41,17 +45,18 @@ function getISOWeek(d = new Date()) {
       overflow: hidden !important;
       text-overflow: ellipsis !important;
       box-sizing: border-box !important;
+      vertical-align: middle;
     }
 
-    /* anchos compactos (no exigir scroll) */
+    /* anchos afinados para no forzar scroll */
     #tablaContactos th:nth-child(1), #tablaContactos td:nth-child(1){ width:60px  !important; }  /* Semana  */
     #tablaContactos th:nth-child(2), #tablaContactos td:nth-child(2){ width:108px !important; }  /* Fecha    */
-    #tablaContactos th:nth-child(3), #tablaContactos td:nth-child(3){ width:210px !important; }  /* Proveedor*/
+    #tablaContactos th:nth-child(3), #tablaContactos td:nth-child(3){ width:200px !important; }  /* Proveedor*/
     #tablaContactos th:nth-child(4), #tablaContactos td:nth-child(4){ width:90px  !important; }  /* Centro   */
     #tablaContactos th:nth-child(5), #tablaContactos td:nth-child(5){ width:110px !important; }  /* Comuna   */
     #tablaContactos th:nth-child(6), #tablaContactos td:nth-child(6){ width:82px  !important; text-align:center !important; }  /* Tons centrado */
     #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:110px !important; }  /* Responsable */
-    #tablaContactos th:nth-child(8), #tablaContactos td:nth-child(8){ width:140px !important; }  /* Acciones */
+    #tablaContactos th:nth-child(8), #tablaContactos td:nth-child(8){ width:160px !important; }  /* Acciones + holgura */
 
     /* Proveedor con ellipsis controlada */
     #tablaContactos td .ellipsisProv{ display:inline-block; max-width:22ch; }
@@ -165,6 +170,7 @@ export function initTablaContactos() {
   ensureFooter();
 
   state.dt = jq('#tablaContactos').DataTable({
+    // SIN buscador nativo (lo ocultamos con CSS por seguridad también)
     dom: 'Bltip',
     buttons: [
       { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
@@ -175,18 +181,18 @@ export function initTablaContactos() {
     pageLength: 10,
     lengthMenu: [ [10,25,50,-1], [10,25,50,'Todos'] ],
     autoWidth: false,
-    responsive: false,               // importante para respetar widths fijos
+    responsive: false,               // respetar widths fijos
     scrollX: false,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
     columnDefs: [
       { targets: 0, width:'60px'  },
       { targets: 1, width:'108px' },
-      { targets: 2, width:'210px' },
+      { targets: 2, width:'200px' },
       { targets: 3, width:'90px'  },
       { targets: 4, width:'110px' },
       { targets: 5, width:'82px',  className:'dt-center' },   // Tons centrado
       { targets: 6, width:'110px' },
-      { targets: 7, width:'140px', orderable:false, searchable:false }
+      { targets: 7, width:'160px', orderable:false, searchable:false }
     ]
   });
 
