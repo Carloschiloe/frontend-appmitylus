@@ -62,25 +62,24 @@ function onAll(selector, event, handler) {
 }
 
 /* ======================= Semana ISO + Badge ======================= */
-function isoWeekNumber(dateStr){
-  // dateStr: 'YYYY-MM-DD' o ISO; lunes=0
-  const d = dateStr ? new Date(dateStr) : new Date();
-  const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNr = (target.getUTCDay() + 6) % 7; // lunes=0
-  target.setUTCDate(target.getUTCDate() - dayNr + 3);
-  const firstThu = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
-  const diff = (target - firstThu) / 86400000;
-  return 1 + Math.floor(diff / 7);
+// Semana ISO (Lunes = 1). Usa jueves ISO y CEIL
+function isoWeekNumber(d = new Date()) {
+  const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = x.getUTCDay() || 7;            // 1..7 (lunes..domingo)
+  x.setUTCDate(x.getUTCDate() + 4 - day);    // ir al jueves de esta semana
+  const yearStart = new Date(Date.UTC(x.getUTCFullYear(), 0, 1));
+  // CEIL para cuadrar correctamente el conteo ISO
+  return Math.ceil(((x - yearStart) / 86400000 + 1) / 7);
 }
+
 function setSemanaActualBadge(){
   const el = document.getElementById('badgeSemanaActual');
   if (!el) return;
-  const today = new Date();
-  const ymd = today.toISOString().slice(0,10);
-  const w = isoWeekNumber(ymd);
+  const w = isoWeekNumber(new Date());       // usa la fecha local, sin toISOString()
   const span = el.querySelector('span');
   if (span) span.textContent = `Semana ${w}`;
 }
+
 window.isoWeekNumber = isoWeekNumber;
 
 /* ======================= Limpiar overlays “pegados” ======================= */
@@ -359,3 +358,4 @@ window.abrirModalVisita = abrirModalVisita;
 
 // Por si quieres forzar la limpieza desde consola
 window.nukeStuckOverlays = nukeStuckOverlays;
+
