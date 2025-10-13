@@ -535,9 +535,9 @@ export function setupFormulario() {
 
     // Otros campos
     const tieneMMPP         = $('#tieneMMPP')?.value || '';
-    const dispuestoVender   = $('#dispuestoVender')?.value || '';
     const vendeActualmenteA = $('#vendeActualmenteA')?.value?.trim() || '';
     const notas             = $('#notasContacto')?.value?.trim() || '';
+    const responsablePG     = $('#contactoResponsable')?.value || ''; // NUEVO
 
     // Centro (opcional)
     syncHiddenFromSelect(selCentro);
@@ -552,9 +552,10 @@ export function setupFormulario() {
 
     const payload = {
       proveedorKey, proveedorNombre,
-      resultado, tieneMMPP, dispuestoVender, vendeActualmenteA, notas,
+      resultado, tieneMMPP, vendeActualmenteA, notas,
       centroId, centroCodigo, centroComuna, centroHectareas,
-      contactoNombre, contactoTelefono, contactoEmail
+      contactoNombre, contactoTelefono, contactoEmail,
+      responsablePG // ← NUEVO campo
     };
 
     // Campos de disponibilidad (crear o patch)
@@ -670,12 +671,12 @@ export function abrirEdicion(c) {
   }
 
   if ($('#tieneMMPP')) $('#tieneMMPP').value = c.tieneMMPP || '';
-  if ($('#dispuestoVender')) $('#dispuestoVender').value = c.dispuestoVender || '';
   if ($('#vendeActualmenteA')) $('#vendeActualmenteA').value = c.vendeActualmenteA || '';
   if ($('#notasContacto')) $('#notasContacto').value = c.notas || '';
   if ($('#contactoNombre')) $('#contactoNombre').value = c.contactoNombre || '';
   if ($('#contactoTelefono')) $('#contactoTelefono').value = c.contactoTelefono || '';
   if ($('#contactoEmail')) $('#contactoEmail').value = c.contactoEmail || '';
+  if ($('#contactoResponsable')) $('#contactoResponsable').value = c.responsablePG || ''; // NUEVO
 
   const hoy = new Date();
   const anioEl = document.getElementById('asigAnio');
@@ -689,8 +690,6 @@ export function abrirEdicion(c) {
   const modal = document.getElementById('modalContacto');
   (M.Modal.getInstance(modal) || M.Modal.init(modal)).open();
 }
-
-// /js/abastecimiento/contactos/form-contacto.js
 
 export async function eliminarContacto(id) {
   const idStr = String(id || '').trim();
@@ -710,9 +709,8 @@ export async function eliminarContacto(id) {
   }
 
   try {
-    await apiDeleteContacto(idStr);              // ← ver cambio 2
+    await apiDeleteContacto(idStr);
   } catch (err) {
-    // Si el backend respondió 404 "Contacto no encontrado", lo tratamos como éxito
     const msg = (err && err.message) || '';
     if (/Contacto no encontrado/i.test(msg) || /404/.test(msg)) {
       console.warn('[deleteContacto] backend devolvió 404, tratando como éxito');
@@ -742,4 +740,5 @@ export function prepararNuevo() {
   if (mesEl) mesEl.value = String(hoy.getMonth() + 1);
   const box = document.getElementById('asigHist');
   if (box) box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
+  if ($('#contactoResponsable')) $('#contactoResponsable').value = ''; // NUEVO: limpiar responsable
 }
