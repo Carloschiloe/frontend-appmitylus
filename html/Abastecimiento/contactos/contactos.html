@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1">
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1">
 
-  <!-- Oculta cualquier input file nativo dentro de modales (nuestro módulo de fotos dispara el click por JS) -->
+  <!-- Oculta cualquier input file nativo dentro de modales (si luego usas botón JS para fotos) -->
   <style>
     .modal input[type="file"]{display:none!important}
   </style>
@@ -60,22 +60,28 @@
       <!-- EMPRESAS -->
       <section id="tab-contactos" class="col s12">
         <div class="mmpp-card" style="margin-bottom:12px">
-          <!-- Toolbar -->
-          <div class="table-toolbar">
+          <!-- Toolbar: botón + filtros + único buscador -->
+          <div class="table-toolbar" style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
             <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
               <button id="btnOpenContactoModal" class="mmpp-add">
                 <i class="material-icons left" style="font-size:18px">record_voice_over</i>
                 Registrar contacto
               </button>
-              <button id="btnOpenMuestreoModal" class="mmpp-add">
-                <i class="material-icons left" style="font-size:18px">science</i>
-                Registrar muestreo
-              </button>
             </div>
-            <div class="right">
-              <div class="search">
-                <input id="searchContactos" class="mmpp-input" placeholder="Buscar…">
-              </div>
+            <div class="right" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <select id="fltSemana" class="browser-default modern-select" style="height:34px;border-radius:10px;padding:4px 8px">
+                <option value="">Semana…</option>
+              </select>
+              <select id="fltComuna" class="browser-default modern-select" style="height:34px;border-radius:10px;padding:4px 8px">
+                <option value="">Comuna…</option>
+              </select>
+              <select id="fltResp" class="browser-default modern-select" style="height:34px;border-radius:10px;padding:4px 8px">
+                <option value="">Responsable…</option>
+                <option>Claudio Alba</option>
+                <option>Patricio Alvarez</option>
+                <option>Carlos Avendaño</option>
+              </select>
+              <input id="searchContactos" class="mmpp-input" placeholder="Buscar…">
             </div>
           </div>
 
@@ -88,7 +94,6 @@
                   <th>Proveedor</th>
                   <th>Centro</th>
                   <th>Comuna</th>
-                  <th>MMPP</th>
                   <th>Tons</th>
                   <th>Responsable</th>
                   <th>Acciones</th>
@@ -178,7 +183,7 @@
         </div>
       </section>
 
-      <!-- MODALES -->
+      <!-- MODAL CONTACTO -->
       <div id="modalContacto" class="modal">
         <div class="modal-content">
           <h5>Registrar Contacto</h5>
@@ -217,13 +222,18 @@
               </div>
 
               <div class="input-field col s4">
-                <input id="vendeActualmenteA" type="text" placeholder="Ej: Camanchaca, Orizon...">
-                <label for="vendeActualmenteA">Vende actualmente a</label>
+                <label for="contactoResponsable" class="active">Responsable PG</label>
+                <select id="contactoResponsable" class="browser-default modern-select">
+                  <option value="">—</option>
+                  <option value="Claudio Alba">Claudio Alba</option>
+                  <option value="Patricio Alvarez">Patricio Alvarez</option>
+                  <option value="Carlos Avendaño">Carlos Avendaño</option>
+                </select>
               </div>
 
               <div class="input-field col s4">
-                <input id="notasContacto" type="text" placeholder="Notas u observaciones">
-                <label for="notasContacto">Notas</label>
+                <input id="vendeActualmenteA" type="text" placeholder="Ej: Camanchaca, Orizon...">
+                <label for="vendeActualmenteA">Vende actualmente a</label>
               </div>
             </div>
 
@@ -360,7 +370,7 @@
               </div>
             </div>
 
-            <!-- NUEVO: fecha exacta del próximo paso (el bloque de FOTOS lo inyecta el JS) -->
+            <!-- Fecha exacta del próximo paso -->
             <div class="row">
               <div class="input-field col s4">
                 <input type="date" id="visita_proximoPasoFecha">
@@ -417,7 +427,6 @@
   <!-- Init mínimo (tabs/modals) -->
   <script>
     document.addEventListener('DOMContentLoaded', function(){
-      // Materialize
       var elTabs = document.querySelectorAll('.tabs');
       M.Tabs.init(elTabs, {});
       var elModals = document.querySelectorAll('.modal');
