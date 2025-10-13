@@ -6,7 +6,7 @@ import { abrirModalVisita } from '../visitas/tab.js';
 /* ------------ estilos (tabla compacta, empresa bajo contacto, acciones visibles) ------------ */
 (function injectStyles() {
   const css = `
-    /* Oculta el buscador nativo de DataTables */
+    /* Oculta el buscador nativo de DataTables (usamos el externo) */
     #tablaPersonas_wrapper .dataTables_filter{ display:none!important; }
 
     #tablaPersonas_wrapper{ overflow:visible!important; }
@@ -56,27 +56,21 @@ const fmtDateYMD = (d) => {
   const dd = String(x.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
 };
-const hasEmpresa = (c) => !!(c?.proveedorNombre && String(c.proveedorNombre).trim());
 
 /* ------------ estado ------------ */
 let dtP = null;
-let filtroActualP = 'todos'; // 'todos' | 'sin' | 'con'
 
 /* ------------ init ------------ */
 export function initPersonasTab() {
   const jq = window.jQuery || window.$;
   if (!$('#tablaPersonas')) return;
 
-  // chips
-  document.getElementById('fltTodosP')?.addEventListener('click', () => { filtroActualP = 'todos'; renderTablaPersonas(); actualizarKPIs(); });
-  document.getElementById('fltSinP')  ?.addEventListener('click', () => { filtroActualP = 'sin';   renderTablaPersonas(); actualizarKPIs(); });
-  document.getElementById('fltConP')  ?.addEventListener('click', () => { filtroActualP = 'con';   renderTablaPersonas(); actualizarKPIs(); });
-
-  document.addEventListener('reload-tabla-contactos', () => { renderTablaPersonas(); actualizarKPIs(); });
+  // Re-render cuando se actualicen contactos globalmente
+  document.addEventListener('reload-tabla-contactos', () => { renderTablaPersonas(); });
 
   if (jq && !dtP) {
     dtP = jq('#tablaPersonas').DataTable({
-      // sin 'f' => sin buscador nativo
+      // sin 'f' => sin buscador nativo (usamos el externo #searchPersonas)
       dom: 'Bltip',
       buttons: [
         { extend: 'excelHtml5', title: 'Agenda_de_Personas' },
@@ -85,14 +79,14 @@ export function initPersonasTab() {
       pageLength: 10,
       order: [[0, 'desc']],
       autoWidth: false,
-      responsive: false,  // respetar widths fijos
+      responsive: false,   // respetar widths fijos
       scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       /* THEAD original:
          0 Fecha | 1 Contacto | 2 Teléfono(s) | 3 Email | 4 Empresa | 5 Notas | 6 Acciones
          Cambios:
          - Mostramos Email (3).
-         - Usamos 4 como "Comuna".
+         - Reutilizamos 4 como "Comuna".
          - Ocultamos Notas (5).
       */
       columnDefs: [
@@ -108,11 +102,10 @@ export function initPersonasTab() {
         // Cambiar encabezado "Empresa" -> "Comuna"
         const ths = document.querySelectorAll('#tablaPersonas thead th');
         if (ths && ths[4]) ths[4].textContent = 'Comuna';
-        if (ths && ths[5]) ths[5].textContent = ''; // Notas removida
       }
     });
 
-    // acciones por fila (delegación)
+    // Acciones por fila (delegación)
     jq('#tablaPersonas tbody')
       .off('click.personas')
       .on('click.personas', '.cell-actions .act, a.icon-action', function(e){
@@ -129,14 +122,13 @@ export function initPersonasTab() {
         if (cls.includes('icon-eliminar')) {
           if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
           eliminarContacto(id)
-            .then(()=>{ renderTablaPersonas(); actualizarKPIs(); })
+            .then(()=>{ renderTablaPersonas(); })
             .catch(e => { console.error(e); M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000 }); });
         }
       });
   }
 
   renderTablaPersonas();
-  actualizarKPIs();
 }
 
 /* ------------ render ------------ */
@@ -144,13 +136,7 @@ export function renderTablaPersonas() {
   const jq = window.jQuery || window.$;
   const lista = (state.contactosGuardados || []).slice();
 
-  const filtrada = lista.filter(c => {
-    if (filtroActualP === 'sin') return !hasEmpresa(c);
-    if (filtroActualP === 'con') return hasEmpresa(c);
-    return true;
-  });
-
-  const filas = filtrada
+  const filas = lista
     .sort((a,b)=> (new Date(b.createdAt || b.fecha || 0)) - (new Date(a.createdAt || a.fecha || 0)) )
     .map(c => {
       const fStr = fmtDateYMD(c.createdAt || c.fecha || Date.now());
@@ -209,30 +195,4 @@ export function renderTablaPersonas() {
   const tbody = $('#tablaPersonas tbody');
   if (!tbody) return;
   tbody.innerHTML = filas.map(row => `<tr>${row.map(td => `<td>${td}</td>`).join('')}</tr>`).join('');
-}
-
-/* ------------ KPIs ------------ */
-function actualizarKPIs() {
-  const todos = state.contactosGuardados || [];
-  const sin   = todos.filter(c => !hasEmpresa(c)).length;
-  const con   = todos.filter(c =>  hasEmpresa(c)).length;
-
-  let visitasSin = 0;
-  const visitas = state.visitasGuardadas || [];
-  if (Array.isArray(visitas) && visitas.length) {
-    const hoy = Date.now();
-    const h30 = 30 * 24 * 60 * 60 * 1000;
-    const idsSinEmpresa = new Set(todos.filter(c => !hasEmpresa(c)).map(c => String(c._id)));
-    visitasSin = visitas.filter(v => {
-      const okId = v.contactoId && idsSinEmpresa.has(String(v.contactoId));
-      const okFecha = v.fecha ? (hoy - new Date(v.fecha).getTime() <= h30) : false;
-      return okId && okFecha;
-    }).length;
-  }
-
-  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = String(val); };
-  setText('kpiPTotal', todos.length);
-  setText('kpiPSin',   sin);
-  setText('kpiPCon',   con);
-  setText('kpiPVisitasSin', visitasSin);
 }
