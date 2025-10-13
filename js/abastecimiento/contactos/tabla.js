@@ -29,26 +29,29 @@ function getISOWeek(d = new Date()) {
   const css = `
     #tablaContactos{ table-layout: fixed; width:100%!important; }
     #tablaContactos th, #tablaContactos td{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .tright{ text-align:right; }
 
     /* anchos compactos para evitar scroll horizontal */
     #tablaContactos th:nth-child(1), #tablaContactos td:nth-child(1){ width:64px; }   /* Semana */
-    #tablaContactos th:nth-child(2), #tablaContactos td:nth-child(2){ width:120px; }  /* Fecha */
-    #tablaContactos th:nth-child(3), #tablaContactos td:nth-child(3){ width:260px; }  /* Proveedor (con ellipsis) */
-    #tablaContactos th:nth-child(4), #tablaContactos td:nth-child(4){ width:88px; }   /* Centro */
-    #tablaContactos th:nth-child(5), #tablaContactos td:nth-child(5){ width:130px; }  /* Comuna */
-    #tablaContactos th:nth-child(6), #tablaContactos td:nth-child(6){ width:80px; text-align:right; } /* Tons */
-    #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:150px; }  /* Responsable */
-    #tablaContactos th:nth-child(8), #tablaContactos td:nth-child(8){ width:140px; }  /* Acciones */
+    #tablaContactos th:nth-child(2), #tablaContactos td:nth-child(2){ width:116px; } /* Fecha */
+    #tablaContactos th:nth-child(3), #tablaContactos td:nth-child(3){ width:240px; } /* Proveedor (ellipsis) */
+    #tablaContactos th:nth-child(4), #tablaContactos td:nth-child(4){ width:92px; }  /* Centro */
+    #tablaContactos th:nth-child(5), #tablaContactos td:nth-child(5){ width:132px; } /* Comuna */
+    #tablaContactos th:nth-child(6), #tablaContactos td:nth-child(6){ width:84px; }  /* Tons */
+    #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:140px; } /* Responsable */
+    #tablaContactos th:nth-child(8), #tablaContactos td:nth-child(8){ width:144px; } /* Acciones */
 
-    #tablaContactos td .ellipsisProv{ display:inline-block; max-width:26ch; }
+    #tablaContactos td .ellipsisProv{ display:inline-block; max-width:22ch; }
 
-    /* acciones en una sola fila */
+    /* acciones en una sola fila, compactas */
     #tablaContactos td:last-child .actions { display:flex; gap:6px; align-items:center; justify-content:flex-start; }
     #tablaContactos td:last-child a.icon-action {
       pointer-events:auto; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
       width:34px; height:34px; border-radius:10px; background:#eef2ff; border:1px solid #c7d2fe;
     }
     #tablaContactos td:last-child a.icon-action i{ font-size:18px; color:#0ea5a8; }
+
+    /* celdas tons mientras carga + footer */
     #tablaContactos .tons-cell.loading{ opacity:.6 }
     #tablaContactos tfoot th{ font-weight:700; background:#f6f6f7 }
   `;
@@ -105,9 +108,9 @@ async function getDisponibilidades(params){
   const q = new URLSearchParams();
   q.set('from', params?.from || `${y-1}-01`);
   q.set('to',   params?.to   || `${y+1}-12`);
-  if (params?.contactoId) q.set('contactoId', params.contactoId);
+  if (params?.contactoId)   q.set('contactoId', params.contactoId);
   if (params?.proveedorKey) q.set('proveedorKey', params.proveedorKey);
-  if (params?.centroId) q.set('centroId', params.centroId);
+  if (params?.centroId)     q.set('centroId', params.centroId);
 
   const url = `${API_BASE}/disponibilidades?${q.toString()}`;
   const res = await fetch(url);
@@ -179,13 +182,13 @@ export function initTablaContactos() {
   ensureFooter();
 
   state.dt = jq('#tablaContactos').DataTable({
-    // quitamos el buscador nativo ('f') => sólo usamos #searchContactos
-    dom: 'Blrtip',
+    // sin buscador nativo ('f') → usamos #searchContactos
+    dom: 'Bltip',
     buttons: [
       { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
       { extend: 'pdfHtml5',   title: 'Contactos_Abastecimiento', orientation: 'landscape', pageSize: 'A4' }
     ],
-    order: [[1,'desc']], // por FECHA (col 1)
+    order: [[1,'desc']], // FECHA (col 1)
     paging: true,
     pageLength: 10,
     lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, 'Todos'] ],
