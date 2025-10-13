@@ -137,6 +137,16 @@ export async function renderTablaVisitas() {
     : '<tr><td colspan="8" style="color:#888">No hay visitas registradas.</td></tr>';
 }
 
+/* ========== helpers de UI para el campo fecha del próximo paso ========== */
+function toggleProximoPasoFecha() {
+  const sel = $('#visita_estado');
+  const fecha = $('#visita_proximoPasoFecha');
+  if (!sel || !fecha) return;
+  const disabled = !sel.value || sel.value === 'Sin acción';
+  fecha.disabled = disabled;
+  if (disabled) fecha.value = '';
+}
+
 /* ========== Modal NUEVA VISITA desde Contactos ========== */
 export function abrirModalVisita(contacto) {
   const form = $('#formVisita');
@@ -144,7 +154,8 @@ export function abrirModalVisita(contacto) {
 
   form.dataset.editId = '';
 
-  ensureFotosBlock();
+  ensureFotosBlock(); // inyecta el bloque de fotos propio (evita duplicados)
+
   setVisitaModalMode(false);
 
   setVal(['visita_proveedorId'], contacto._id);
@@ -173,10 +184,15 @@ export function abrirModalVisita(contacto) {
   $('#visita_tonsComprometidas').value = '';
   $('#visita_estado').value = 'Programar nueva visita';
   $('#visita_observaciones').value = '';
+  const fpp = $('#visita_proximoPasoFecha');
+  if (fpp) fpp.value = '';
 
   M.updateTextFields();
 
   resetFotosModal();
+
+  toggleProximoPasoFecha();
+  $('#visita_estado')?.addEventListener('change', toggleProximoPasoFecha, { once: true });
 
   (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
 }
@@ -195,6 +211,8 @@ async function abrirEditarVisita(v, readOnly = false) {
   $('#visita_tonsComprometidas').value = v.tonsComprometidas ?? '';
   $('#visita_estado').value = v.estado || 'Programar nueva visita';
   $('#visita_observaciones').value = v.observaciones || '';
+  const fpp = $('#visita_proximoPasoFecha');
+  if (fpp) fpp.value = v.proximoPasoFecha ? fmtISO(v.proximoPasoFecha) : '';
 
   const contacto = (state.contactosGuardados || []).find(x => String(x._id) === String(v.contactoId));
   if (contacto) {
@@ -217,6 +235,9 @@ async function abrirEditarVisita(v, readOnly = false) {
   M.updateTextFields();
   resetFotosModal();
   await renderGallery(v._id);
+
+  toggleProximoPasoFecha();
+  $('#visita_estado')?.addEventListener('change', toggleProximoPasoFecha, { once: true });
 
   const modal = M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'));
   modal.open();
@@ -247,6 +268,7 @@ export function setupFormularioVisita() {
       enAgua: $('#visita_enAgua').value || null,
       tonsComprometidas: $('#visita_tonsComprometidas').value ? Number($('#visita_tonsComprometidas').value) : null,
       estado: $('#visita_estado').value || 'Programar nueva visita',
+      proximoPasoFecha: $('#visita_proximoPasoFecha')?.value || null, // ← NUEVO
       observaciones: $('#visita_observaciones').value || null
     };
 
@@ -352,7 +374,6 @@ function wireUIEventsOnce() {
   if (window.__visitas_ui_wired) return;
   window.__visitas_ui_wired = true;
 
-  // Desde actions.js → abrir modal en modo lectura/edición
   document.addEventListener('visita:open-readonly', (e)=>{
     const id = e.detail?.id;
     const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(id));
@@ -366,7 +387,6 @@ function wireUIEventsOnce() {
     abrirEditarVisita(v, false);
   });
 
-  // Desde Contactos → registrar visita (detalle del ojo quedó en form-contacto.js)
   document.addEventListener('contacto:visita', (e)=>{
     const c = e.detail?.contacto;
     if (c) abrirModalVisita(c);
@@ -423,7 +443,6 @@ export async function initVisitasTab(forceReload = false) {
   await renderTablaVisitas();
   adjustNow();
 
-  // refrescos externos
   window.addEventListener('visita:created', async () => { await renderTablaVisitas(); adjustNow(); });
   window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); adjustNow(); });
   window.addEventListener('visita:deleted', async () => { await renderTablaVisitas(); adjustNow(); });
