@@ -44,7 +44,7 @@
       <header class="mmpp-hero" style="margin-bottom:14px">
         <div>
           <h1>Abastecimiento de MMPP</h1>
-        <p>Empresas, visitas a cultivos y agenda de contactos</p>
+          <p>Empresas, visitas a cultivos y agenda de contactos</p>
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
           <div class="mmpp-badge">
@@ -97,7 +97,7 @@
           </div>
           <!-- /Toolbar -->
 
-          <!-- Tabla Contactos (dentro de la card para que no se “cuele” en otras tabs) -->
+          <!-- Tabla Contactos -->
           <div class="mmpp-table-wrap">
             <table id="tablaContactos" class="display mmpp" style="width:100%">
               <thead>
@@ -148,19 +148,8 @@
       <!-- AGENDA DE CONTACTOS -->
       <section id="tab-personas" class="col s12">
         <div class="mmpp-card" style="margin-bottom:12px">
-          <div class="mmpp-kpis" id="kpisPersonas" style="margin-bottom:8px">
-            <div class="mmpp-kpi">Total: <span id="kpiPTotal" style="margin-left:6px">0</span></div>
-            <div class="mmpp-kpi">Sin empresa: <span id="kpiPSin" style="margin-left:6px">0</span></div>
-            <div class="mmpp-kpi">Con empresa: <span id="kpiPCon" style="margin-left:6px">0</span></div>
-            <div class="mmpp-kpi">Visitas (30d) sin empresa: <span id="kpiPVisitasSin" style="margin-left:6px">0</span></div>
-          </div>
 
-          <div id="chipsFiltroPersonas" style="margin-bottom:8px">
-            <span id="fltTodosP" class="mmpp-chip">Todos</span>
-            <span id="fltSinP"   class="mmpp-chip">Sin empresa</span>
-            <span id="fltConP"   class="mmpp-chip">Con empresa</span>
-          </div>
-
+          <!-- Toolbar con buscador (se eliminaron KPIs y chips de filtro) -->
           <div class="table-toolbar">
             <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
               <button id="btnOpenPersonaModal" class="mmpp-add">
@@ -183,8 +172,8 @@
                   <th>Contacto</th>
                   <th>Teléfono(s)</th>
                   <th>Email</th>
+                  <th>Comuna</th>
                   <th>Empresa</th>
-                  <th>Notas</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
