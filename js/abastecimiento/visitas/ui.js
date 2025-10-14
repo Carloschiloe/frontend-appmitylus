@@ -446,67 +446,73 @@ function wireUIEventsOnce(){
 }
 
 /* ================= Init principal ================= */
-/* ================= Init principal ================= */
-export async function initVisitasTab(forceReload=false){
-  const jq = window.jQuery || window.$;
+/* ================= Init principal ======================= */
+export async function initVisitasTab(forceReload = false) {
+  const jq    = window.jQuery || window.$;
   const tabla = $('#tablaVisitas');
-  if (!tabla){ console.warn('[visitas/ui] #tablaVisitas no está en el DOM'); return; }
+  if (!tabla) { console.warn('[visitas/ui] #tablaVisitas no está en el DOM'); return; }
 
-  // --- 1) Asegura que exista el <th> Acciones (8ª col) ---
-  const theadRow = tabla.querySelector('thead tr');
-  if (theadRow && theadRow.children.length < 8) {
-    const th = document.createElement('th');
-    th.textContent = 'Acciones';
-    theadRow.appendChild(th);
+  // --- (A) Header canónico: forzamos 8 columnas SIEMPRE ---
+  // Si el thead no tiene exactamente 8 <th>, lo reescribimos completo.
+  const HEADERS = ['Sem.', 'Fecha', 'Proveedor', 'Centro', 'Próximo paso', 'Tons', 'Observaciones', 'Acciones'];
+  const thead   = tabla.querySelector('thead') || (() => { const t=document.createElement('thead'); tabla.prepend(t); return t; })();
+  const trHead  = thead.querySelector('tr');
+  const thCount = trHead ? trHead.children.length : 0;
+
+  if (thCount !== HEADERS.length) {
+    thead.innerHTML = `<tr>${HEADERS.map(h => `<th>${h}</th>`).join('')}</tr>`;
   }
-  const colCount = theadRow ? theadRow.children.length : 0; // debería ser 8
+
+  const colCount = thead.querySelector('tr')?.children.length || 0; // debe dar 8
 
   wireActionsGlobalsOnce();
   wireUIEventsOnce();
   mountFotosUIOnce();
 
-  if (dtV && forceReload){
+  // Si ya estaba inicializado y piden recarga, solo rerender
+  if (dtV && forceReload) {
     await renderTablaVisitas();
     forceAdjustVisitas();
     return;
   }
 
-  if (jq && !dtV){
-    // --- 2) ColumnDefs dinámico según la cantidad real de columnas ---
+  if (jq && !dtV) {
+    // --- (B) columnDefs en función del header real ---
     const defs = [
-      { targets: 0, width: 60  },  // Semana
+      { targets: 0, width: 60  },  // Sem.
       { targets: 1, width: 108 },  // Fecha
-      { targets: 2, width: 280 },  // Proveedor + contacto
-      { targets: 3, width: 160 },  // Centro + comuna
+      { targets: 2, width: 280 },  // Proveedor (empresa + contacto)
+      { targets: 3, width: 160 },  // Centro (código + comuna)
       { targets: 4, width: 180 },  // Próximo paso
       { targets: 5, width: 90  },  // Tons
       { targets: 6, width: 420 },  // Observaciones
     ];
     if (colCount >= 8) {
-      defs.push({ targets: 7, width: 180, orderable:false, searchable:false }); // Acciones
+      defs.push({ targets: 7, width: 180, orderable: false, searchable: false }); // Acciones
     }
 
+    // --- (C) inicializamos DT asegurando scroll horizontal ---
     dtV = jq('#tablaVisitas').DataTable({
       dom: 'Blfrtip',
       buttons: [
         { extend: 'excelHtml5', title: 'Visitas_Abastecimiento' },
         { extend: 'pdfHtml5',   title: 'Visitas_Abastecimiento', orientation: 'landscape', pageSize: 'A4' },
       ],
-      order: [[1,'desc']],               // 1 = Fecha
+      order: [[1, 'desc']],           // 1 = Fecha
       paging: true,
       pageLength: 10,
       lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
       autoWidth: false,
-      responsive: false,                 // medimos anchos fijos
-      scrollX: true,                     // fuerza contenedor scrolleable interno
+      responsive: false,              // usamos anchos fijos
+      scrollX: true,                  // <- garantiza que se vea "Acciones"
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: defs,
       initComplete: () => forceAdjustVisitas(),
       drawCallback:  () => forceAdjustVisitas(),
     });
 
-    // Delegación: click en acciones
-    document.addEventListener('click', (e)=>{
+    // Delegación: acciones por fila
+    document.addEventListener('click', (e) => {
       const a = e.target.closest?.('[data-action]');
       if (!a || !a.closest?.('#tablaVisitas')) return;
       e.preventDefault();
@@ -519,11 +525,9 @@ export async function initVisitasTab(forceReload=false){
   await renderTablaVisitas();
   forceAdjustVisitas();
 
-  window.addEventListener('visita:created', async ()=>{ await renderTablaVisitas(); forceAdjustVisitas(); });
-  window.addEventListener('visita:updated', async ()=>{ await renderTablaVisitas(); forceAdjustVisitas(); });
-  window.addEventListener('visita:deleted', async ()=>{ await renderTablaVisitas(); forceAdjustVisitas(); });
+  window.addEventListener('visita:created', async () => { await renderTablaVisitas(); forceAdjustVisitas(); });
+  window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); forceAdjustVisitas(); });
+  window.addEventListener('visita:deleted', async () => { await renderTablaVisitas(); forceAdjustVisitas(); });
 
-  console.log('[visitas/ui] initVisitasTab listo. dtV?', !!dtV, 'colCount', colCount);
+  console.log('[visitas/ui] initVisitasTab listo. dtV?', !!dtV, 'cols', colCount);
 }
-
-
