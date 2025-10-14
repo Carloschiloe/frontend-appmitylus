@@ -34,6 +34,11 @@
     @media (max-width: 520px){ .filtros-row{ grid-template-columns: 1fr; } }
     .filtros-row select,.filtros-row input{ height:40px; border-radius:10px; padding:4px 8px; }
   </style>
+
+  <style>
+  .mmpp-table-wrap { overflow-x:auto; }
+</style>
+
 </head>
 <body class="mmpp-layout no-nav">
 
@@ -127,20 +132,21 @@
 
           <div class="mmpp-table-wrap">
             <table id="tablaVisitas" class="display mmpp" style="width:100%">
-              <thead>
-                <tr>
-                  <th>Semana</th>
-                  <th>Fecha</th>
-                  <th>Proveedor</th>
-                  <th>Centro</th>
-                  <th>Próximo paso</th>
-                  <th>Tons</th>
-                  <th>Observaciones</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+  <thead>
+    <tr>
+      <th>Sem.</th>
+      <th>Fecha</th>
+      <th>Proveedor</th>
+      <th>Centro</th>
+      <th>Próximo paso</th>
+      <th>Tons</th>
+      <th>Observaciones</th>
+      <th>Acciones</th>   <!-- ← este faltaba -->
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
           </div>
         </div>
       </section>
