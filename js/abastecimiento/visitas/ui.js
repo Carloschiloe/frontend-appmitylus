@@ -104,11 +104,19 @@ function comunaDeVisita(v){
 
 /* ================= DataTable helpers ================= */
 let dtV = null;
+
+/* Ajuste SEGURO: solo llamamos adjust/draw si ya existe el wrapper de scroll */
+function safeAdjust(){
+  if (!dtV) return;
+  const wrapper = document.querySelector('#tablaVisitas_wrapper');
+  // cuando scrollX=true, DataTables genera estos contenedores:
+  const hasScroll = wrapper && (wrapper.querySelector('.dataTables_scrollHead') || wrapper.querySelector('.dataTables_scroll'));
+  if (!hasScroll) return;
+  try { dtV.columns.adjust().draw(false); } catch {}
+}
+
 const rafThrottle = (fn) => { let t=0; return (...a)=>{ if(t) return; t=requestAnimationFrame(()=>{t=0; fn(...a);}); }; };
-const adjustNow = rafThrottle(() => {
-  const jq = window.jQuery || window.$;
-  if (jq && dtV) { try { dtV.columns.adjust().draw(false); } catch {} }
-});
+const adjustNow = rafThrottle(safeAdjust);
 export function forceAdjustVisitas(){ adjustNow(); }
 
 /* ================= render tabla ================= */
@@ -445,7 +453,6 @@ function wireUIEventsOnce(){
   });
 }
 
-/* ================= Init principal ================= */
 /* ================= Init principal ======================= */
 export async function initVisitasTab(forceReload = false) {
   const jq    = window.jQuery || window.$;
@@ -453,7 +460,6 @@ export async function initVisitasTab(forceReload = false) {
   if (!tabla) { console.warn('[visitas/ui] #tablaVisitas no está en el DOM'); return; }
 
   // --- (A) Header canónico: forzamos 8 columnas SIEMPRE ---
-  // Si el thead no tiene exactamente 8 <th>, lo reescribimos completo.
   const HEADERS = ['Sem.', 'Fecha', 'Proveedor', 'Centro', 'Próximo paso', 'Tons', 'Observaciones', 'Acciones'];
   const thead   = tabla.querySelector('thead') || (() => { const t=document.createElement('thead'); tabla.prepend(t); return t; })();
   const trHead  = thead.querySelector('tr');
@@ -469,7 +475,6 @@ export async function initVisitasTab(forceReload = false) {
   wireUIEventsOnce();
   mountFotosUIOnce();
 
-  // Si ya estaba inicializado y piden recarga, solo rerender
   if (dtV && forceReload) {
     await renderTablaVisitas();
     forceAdjustVisitas();
@@ -477,7 +482,6 @@ export async function initVisitasTab(forceReload = false) {
   }
 
   if (jq && !dtV) {
-    // --- (B) columnDefs en función del header real ---
     const defs = [
       { targets: 0, width: 60  },  // Sem.
       { targets: 1, width: 108 },  // Fecha
@@ -491,7 +495,6 @@ export async function initVisitasTab(forceReload = false) {
       defs.push({ targets: 7, width: 180, orderable: false, searchable: false }); // Acciones
     }
 
-    // --- (C) inicializamos DT asegurando scroll horizontal ---
     dtV = jq('#tablaVisitas').DataTable({
       dom: 'Blfrtip',
       buttons: [
