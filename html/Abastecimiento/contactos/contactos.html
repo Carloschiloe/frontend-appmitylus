@@ -34,9 +34,11 @@
     @media (max-width: 520px){ .filtros-row{ grid-template-columns: 1fr; } }
     .filtros-row select,.filtros-row input{ height:40px; border-radius:10px; padding:4px 8px; }
 
-    /* --- QUE NO SE CORTE LA ÚLTIMA COLUMNA --- */
+    /* Contenedor con scroll horizontal externo a DataTables */
     .mmpp-table-wrap{ overflow-x:auto; }
-    #tablaVisitas{ table-layout:fixed; width:100%; }
+
+    /* Tabla de visitas: NO tocar wrappers internos de DT ni forzar table-layout */
+    #tablaVisitas{ width:100%; }
     #tablaVisitas th, #tablaVisitas td{
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
       padding:10px 8px;
@@ -44,12 +46,8 @@
     /* ancho mínimo y visibilidad de Acciones */
     #tablaVisitas th:last-child, #tablaVisitas td:last-child{
       min-width:180px; width:180px; overflow:visible!important;
+      display: table-cell !important;
     }
-    /* por si algún estilo externo oculta la última celda */
-    #tablaVisitas th:last-child, #tablaVisitas td:last-child { display: table-cell !important; }
-
-    /* también al wrapper de DataTables */
-    .dataTables_wrapper{ overflow-x:auto; }
   </style>
 </head>
 <body class="mmpp-layout no-nav">
