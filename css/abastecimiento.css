@@ -130,8 +130,8 @@
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 992px) {
-  #tablaContactos, #tablaContactos_wrapper,
-  #tablaVisitas,  #tablaVisitas_wrapper {
+  /* ⚠️ No tocar #tablaVisitas_wrapper para no romper scroll/medición */
+  #tablaContactos, #tablaContactos_wrapper {
     min-width: 360px !important;
     width: 100vw !important;
     display: block !important;
@@ -159,8 +159,8 @@
 .static-label{transform:none!important;font-size:.9rem;color:#9e9e9e}
 
 /* ===== VISITAS: layout columnas ===== */
+/* ⚠️ Dejamos que DataTables calcule layout/anchos (sin table-layout: fixed) */
 #tab-visitas #tablaVisitas {
-  table-layout: fixed;
   width: 100%;
   border-collapse: collapse;
 }
@@ -173,7 +173,7 @@
   vertical-align: middle;
 }
 
-/* Anchos fijos */
+/* Anchos orientativos: DataTables tiene la última palabra */
 #tab-visitas #tablaVisitas th:nth-child(1),
 #tab-visitas #tablaVisitas td:nth-child(1) { width: 7rem; }
 #tab-visitas #tablaVisitas th:nth-child(3),
@@ -193,11 +193,10 @@
 #tab-visitas #tablaVisitas th:nth-child(7),
 #tab-visitas #tablaVisitas td:nth-child(7) { max-width: 30ch; }
 
-/* Íconos en línea */
+/* Íconos: usamos el contenedor .acts (flex) en lugar de convertir la celda en flex */
 #tab-visitas #tablaVisitas td:nth-child(8){
-  display: flex;
-  justify-content: center;
-  gap: 10px;
+  /* vuelve a table-cell por defecto; centrado con text-align + .acts flex */
+  text-align: center;
 }
 
 /* Responsive Visitas */
@@ -313,4 +312,3 @@ table.highlight > tbody > tr:hover{ background:#f1f1f1; }
 
 /* ===== Fotos de visitas (extra) ===== */
 @import url('/js/abastecimiento/visitas/fotos/styles.css');
-
