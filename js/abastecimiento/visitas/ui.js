@@ -94,11 +94,15 @@ function comunaDeVisita(v){
   const m = lista.find(c => (id && (String(c._id||c.id)===String(id))) || (code && (String(c.code||c.codigo)===String(code))));
   return m?.comuna || '';
 }
+const normalizeEstado = (s='') => {
+  const x = String(s||'').trim();
+  return (x === 'Tomar/entregar muestras') ? 'Tomar muestras' : x;
+};
 
 /* ================= DataTable helpers ================= */
 let dtV = null;
 
-/* Ajuste SEGURO: ahora SIEMPRE ajusta columnas (con o sin scrollX) */
+/* Ajuste SEGURO: siempre ajusta columnas */
 function safeAdjust(){
   if (!dtV) return;
   try { dtV.columns.adjust().draw(false); } catch {}
@@ -107,7 +111,7 @@ const rafThrottle = (fn) => { let t=0; return (...a)=>{ if(t) return; t=requestA
 const adjustNow = rafThrottle(safeAdjust);
 export function forceAdjustVisitas(){ adjustNow(); }
 
-/* ================= render tabla (7 columnas) ================= */
+/* ================= render tabla (8 columnas) ================= */
 export async function renderTablaVisitas(){
   const jq = window.jQuery || window.$;
   let visitas = [];
@@ -142,8 +146,14 @@ export async function renderTablaVisitas(){
           ${comuna ? `<span class="v-sub">${esc(comuna)}</span>` : ``}
         </span>`.trim();
 
-      const proximoPaso = v.estado || '';
+      const proximoPaso = normalizeEstado(v.estado || '');
       const tons        = (v.tonsComprometidas ?? '') + '';
+
+      const fpp = v.proximoPasoFecha ? new Date(v.proximoPasoFecha) : null;
+      const fppISO = fpp && !Number.isNaN(fpp.getTime()) ? fmtISO(fpp) : '';
+      const fppHTML = fppISO
+        ? `<span data-order="${fpp.getTime()}">${fppISO}</span>`
+        : `<span data-order="-1"></span>`;
 
       const vid = esc(v._id || '');
       const tieneMuestreo = String(v.enAgua || '').toLowerCase().startsWith('s');
@@ -170,13 +180,14 @@ export async function renderTablaVisitas(){
           </a>
         </div>`;
 
-      // 0 Sem | 1 Fecha | 2 Proveedor | 3 Centro | 4 Próximo paso | 5 Tons | 6 Acciones
+      // 0 Sem | 1 Fecha | 2 Proveedor | 3 Centro | 4 Próximo paso | 5 Fecha prox. | 6 Tons | 7 Acciones
       return [
         esc(String(semana)),
         `<span data-order="${f.getTime()}">${fecha}</span>`,
         provHTML,
         centroHTML,
         esc(proximoPaso),
+        fppHTML,
         esc(tons),
         acciones
       ];
@@ -194,7 +205,7 @@ export async function renderTablaVisitas(){
   if (!tbody) return;
   tbody.innerHTML = filas.length
     ? filas.map(arr => `<tr>${arr.map(td=>`<td>${td}</td>`).join('')}</tr>`).join('')
-    : '<tr><td colspan="7" style="color:#888">No hay visitas registradas.</td></tr>';
+    : '<tr><td colspan="8" style="color:#888">No hay visitas registradas.</td></tr>';
 }
 
 /* ================= helpers: fecha “próximo paso” ================= */
@@ -262,9 +273,10 @@ async function abrirEditarVisita(v, readOnly=false){
   $('#visita_contacto').value = v.contacto || '';
   $('#visita_enAgua').value = v.enAgua || '';
   $('#visita_tonsComprometidas').value = v.tonsComprometidas ?? '';
-  $('#visita_estado').value = v.estado || 'Programar nueva visita';
+  $('#visita_estado').value = normalizeEstado(v.estado || 'Programar nueva visita');
   $('#visita_observaciones').value = v.observaciones || '';
-  const fpp = $('#visita_proximoPasoFecha'); if (fpp) fpp.value = v.proximoPasoFecha ? fmtISO(v.proximoPasoFecha) : '';
+  const fpp = $('#visita_proximoPasoFecha');
+  if (fpp) fpp.value = v.proximoPasoFecha ? fmtISO(v.proximoPasoFecha) : '';
 
   const contacto = (state.contactosGuardados || []).find(x => String(x._id) === String(v.contactoId));
   if (contacto){
@@ -318,7 +330,7 @@ export function setupFormularioVisita(){
       contacto: $('#visita_contacto').value || null,
       enAgua: $('#visita_enAgua').value || null,
       tonsComprometidas: $('#visita_tonsComprometidas').value ? Number($('#visita_tonsComprometidas').value) : null,
-      estado: $('#visita_estado').value || 'Programar nueva visita',
+      estado: normalizeEstado($('#visita_estado').value || 'Programar nueva visita'),
       proximoPasoFecha: $('#visita_proximoPasoFecha')?.value || null,
       observaciones: $('#visita_observaciones').value || null
     };
@@ -444,8 +456,8 @@ export async function initVisitasTab(forceReload = false) {
   const tabla = $('#tablaVisitas');
   if (!tabla) { console.warn('[visitas/ui] #tablaVisitas no está en el DOM'); return; }
 
-  // --- Header canónico (7 columnas) ---
-  const HEADERS = ['Sem.', 'Fecha', 'Proveedor', 'Centro', 'Próximo paso', 'Tons', 'Acciones'];
+  // --- Header canónico (8 columnas) ---
+  const HEADERS = ['Sem.', 'Fecha', 'Proveedor', 'Centro', 'Próximo paso', 'Fecha prox.', 'Tons', 'Acciones'];
   const thead   = tabla.querySelector('thead') || (() => { const t=document.createElement('thead'); tabla.prepend(t); return t; })();
   const trHead  = thead.querySelector('tr');
   const thCount = trHead ? trHead.children.length : 0;
@@ -471,8 +483,9 @@ export async function initVisitasTab(forceReload = false) {
       { targets: 2, width: 280 },  // Proveedor
       { targets: 3, width: 160 },  // Centro
       { targets: 4, width: 180 },  // Próximo paso
-      { targets: 5, width: 90  },  // Tons
-      { targets: 6, width: 180, orderable: false, searchable: false }, // Acciones
+      { targets: 5, width: 128 },  // Fecha prox.
+      { targets: 6, width: 90  },  // Tons
+      { targets: 7, width: 180, orderable: false, searchable: false }, // Acciones
     ];
 
     dtV = jq('#tablaVisitas').DataTable({
@@ -485,9 +498,9 @@ export async function initVisitasTab(forceReload = false) {
       paging: true,
       pageLength: 10,
       lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
-      autoWidth: true,     // deja que DT calcule
+      autoWidth: true,   // deja que DT calcule anchos
       responsive: false,
-      scrollX: false,      // sin scroll horizontal
+      scrollX: false,    // sin scroll horizontal
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: defs,
       initComplete: () => forceAdjustVisitas(),
