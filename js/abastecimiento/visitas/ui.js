@@ -96,6 +96,7 @@ function comunaDeVisita(v){
 }
 const normalizeEstado = (s='') => {
   const x = String(s||'').trim();
+  if (x === 'Programar nueva visita') return 'Nueva visita';
   return (x === 'Tomar/entregar muestras') ? 'Tomar muestras' : x;
 };
 
@@ -249,7 +250,7 @@ export function abrirModalVisita(contacto){
   $('#visita_contacto').value = '';
   $('#visita_enAgua').value = '';
   $('#visita_tonsComprometidas').value = '';
-  $('#visita_estado').value = 'Programar nueva visita';
+  $('#visita_estado').value = 'Nueva visita';     // <- default correcto
   $('#visita_observaciones').value = '';
   const fpp = $('#visita_proximoPasoFecha'); if (fpp) fpp.value = '';
 
@@ -273,7 +274,7 @@ async function abrirEditarVisita(v, readOnly=false){
   $('#visita_contacto').value = v.contacto || '';
   $('#visita_enAgua').value = v.enAgua || '';
   $('#visita_tonsComprometidas').value = v.tonsComprometidas ?? '';
-  $('#visita_estado').value = normalizeEstado(v.estado || 'Programar nueva visita');
+  $('#visita_estado').value = normalizeEstado(v.estado || 'Nueva visita');  // <- normalizado
   $('#visita_observaciones').value = v.observaciones || '';
   const fpp = $('#visita_proximoPasoFecha');
   if (fpp) fpp.value = v.proximoPasoFecha ? fmtISO(v.proximoPasoFecha) : '';
@@ -330,7 +331,7 @@ export function setupFormularioVisita(){
       contacto: $('#visita_contacto').value || null,
       enAgua: $('#visita_enAgua').value || null,
       tonsComprometidas: $('#visita_tonsComprometidas').value ? Number($('#visita_tonsComprometidas').value) : null,
-      estado: normalizeEstado($('#visita_estado').value || 'Programar nueva visita'),
+      estado: normalizeEstado($('#visita_estado').value || 'Nueva visita'), // <- default correcto
       proximoPasoFecha: $('#visita_proximoPasoFecha')?.value || null,
       observaciones: $('#visita_observaciones').value || null
     };
