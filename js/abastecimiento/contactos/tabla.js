@@ -58,11 +58,26 @@ function getISOWeek(d = new Date()) {
     #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:110px !important; }  /* Responsable */
     #tablaContactos th:nth-child(8), #tablaContactos td:nth-child(8){ width:160px !important; }  /* Acciones + holgura */
 
-    /* Proveedor con dos líneas (empresa + contacto) */
+    /* === PROVEEDOR: dos líneas (empresa + contacto) sin montarse === */
+    #tablaContactos td:nth-child(3){            /* Columna PROVEEDOR */
+      white-space: normal !important;           /* Permite salto de línea en esta celda */
+    }
     .prov-cell{ display:block; min-width:0; }
-    .prov-top{ display:block; font-weight:600; }
-    .prov-sub{ display:block; font-size:12px; color:#6b7280; line-height:1.2; }
-    #tablaContactos td .ellipsisProv{ display:inline-block; max-width:22ch; }
+    .prov-top,
+    .prov-sub{
+      display:block;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      line-height:1.2;
+    }
+    .prov-top{ font-weight:600; }
+    .prov-sub{ font-size:12px; color:#6b7280; }
+
+    /* Que las elipsis no limiten a 22ch ni sean inline */
+    #tablaContactos td .ellipsisProv{
+      display:block;
+      max-width:100%;
+    }
 
     /* Acciones: que no se corten */
     #tablaContactos td:last-child{ overflow: visible !important; }
