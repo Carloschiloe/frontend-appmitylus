@@ -42,9 +42,22 @@ function setDTDefaults() {
 function adjustDT(selector) {
   const jq = window.jQuery || window.$;
   if (!jq?.fn?.DataTable || !jq(selector).length) return;
+
+  // Solo si YA está inicializada (evita crear una DT “default” sin opciones)
+  if (!jq.fn.DataTable.isDataTable(selector)) return;
+
   try {
     const dt = jq(selector).DataTable();
-    setTimeout(() => dt.columns.adjust().draw(false), 0);
+
+    // Si la tabla usa scrollX, espera a que exista el wrapper del scroll
+    const wrap = document.querySelector(`${selector}_wrapper`);
+    const hasScroll =
+      wrap && (wrap.querySelector('.dataTables_scrollHead') || wrap.querySelector('.dataTables_scroll'));
+
+    if (!hasScroll) { requestAnimationFrame(() => adjustDT(selector)); return; }
+
+    // Ajuste diferido para no pelear con init/draw de otras rutinas
+    setTimeout(() => { try { dt.columns.adjust().draw(false); } catch {} }, 0);
   } catch {}
 }
 
@@ -358,5 +371,6 @@ window.abrirModalVisita = abrirModalVisita;
 
 // Por si quieres forzar la limpieza desde consola
 window.nukeStuckOverlays = nukeStuckOverlays;
+
 
 
