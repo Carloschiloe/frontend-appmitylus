@@ -60,22 +60,20 @@ const esc = (s='') => String(s)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;')
   .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
+/** Formatea SIEMPRE como UTC (evita desfases por timezone) */
 const fmtISO = (d) => {
   const x = (d instanceof Date) ? d : new Date(d);
   if (Number.isNaN(x.getTime())) return '';
-  const y = x.getFullYear();
-  const m = String(x.getMonth()+1).padStart(2,'0');
-  const dd = String(x.getDate()).padStart(2,'0');
-  return `${y}-${m}-${dd}`;
+  return x.toISOString().slice(0,10); // YYYY-MM-DD en UTC
 };
 const trunc = (s='', max=42) => (String(s).length>max ? String(s).slice(0,max-1)+'…' : String(s));
 
 function getISOWeek(date){
   const d = (date instanceof Date) ? new Date(date) : new Date(date);
-  d.setHours(0,0,0,0);
-  d.setDate(d.getDate() + 3 - ((d.getDay()+6)%7));
-  const week1 = new Date(d.getFullYear(),0,4);
-  return 1 + Math.round(((d - week1) / 86400000 - 3 + ((week1.getDay()+6)%7)) / 7);
+  d.setUTCHours(0,0,0,0);
+  d.setUTCDate(d.getUTCDate() + 3 - ((d.getUTCDay()+6)%7));
+  const week1 = new Date(Date.UTC(d.getUTCFullYear(),0,4));
+  return 1 + Math.round(((d - week1) / 86400000 - 3 + ((week1.getUTCDay()+6)%7)) / 7);
 }
 function proveedorDeVisita(v){
   const id = v?.contactoId ? String(v.contactoId) : null;
@@ -96,7 +94,7 @@ function comunaDeVisita(v){
 }
 const normalizeEstado = (s='') => {
   const x = String(s||'').trim();
-  if (x === 'Programar nueva visita') return 'Nueva visita';
+  if (!x || x === 'Programar nueva visita') return 'Nueva visita';
   return (x === 'Tomar/entregar muestras') ? 'Tomar muestras' : x;
 };
 
@@ -250,7 +248,7 @@ export function abrirModalVisita(contacto){
   $('#visita_contacto').value = '';
   $('#visita_enAgua').value = '';
   $('#visita_tonsComprometidas').value = '';
-  $('#visita_estado').value = 'Nueva visita';     // <- default correcto
+  $('#visita_estado').value = 'Nueva visita';          // ← default correcto
   $('#visita_observaciones').value = '';
   const fpp = $('#visita_proximoPasoFecha'); if (fpp) fpp.value = '';
 
@@ -274,7 +272,7 @@ async function abrirEditarVisita(v, readOnly=false){
   $('#visita_contacto').value = v.contacto || '';
   $('#visita_enAgua').value = v.enAgua || '';
   $('#visita_tonsComprometidas').value = v.tonsComprometidas ?? '';
-  $('#visita_estado').value = normalizeEstado(v.estado || 'Nueva visita');  // <- normalizado
+  $('#visita_estado').value = normalizeEstado(v.estado || 'Nueva visita');
   $('#visita_observaciones').value = v.observaciones || '';
   const fpp = $('#visita_proximoPasoFecha');
   if (fpp) fpp.value = v.proximoPasoFecha ? fmtISO(v.proximoPasoFecha) : '';
@@ -331,7 +329,7 @@ export function setupFormularioVisita(){
       contacto: $('#visita_contacto').value || null,
       enAgua: $('#visita_enAgua').value || null,
       tonsComprometidas: $('#visita_tonsComprometidas').value ? Number($('#visita_tonsComprometidas').value) : null,
-      estado: normalizeEstado($('#visita_estado').value || 'Nueva visita'), // <- default correcto
+      estado: normalizeEstado($('#visita_estado').value || 'Nueva visita'),
       proximoPasoFecha: $('#visita_proximoPasoFecha')?.value || null,
       observaciones: $('#visita_observaciones').value || null
     };
@@ -339,7 +337,7 @@ export function setupFormularioVisita(){
     try{
       const editId = (form.dataset.editId || '').trim();
       if (editId){
-        await update(editId, payload);
+        await update(editId, payload); // usa PATCH y cae a PUT si es necesario
         window.dispatchEvent(new CustomEvent('visita:updated', { detail:{ id: editId } }));
         M.toast?.({ html:'Visita actualizada', classes:'teal', displayLength:1800 });
         await handleFotosAfterSave(editId);
@@ -359,7 +357,7 @@ export function setupFormularioVisita(){
       forceAdjustVisitas();
     }catch(err){
       console.warn('[visitas/ui] create/update error:', err?.message || err);
-      M.toast?.({ html:'No se pudo guardar la visita', displayLength:2200, classes:'red' });
+      M.toast?.({ html:`No se pudo guardar la visita`, displayLength:2200, classes:'red' });
     }
   });
 }
