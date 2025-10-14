@@ -129,10 +129,10 @@
             <table id="tablaVisitas" class="display mmpp" style="width:100%">
               <thead>
                 <tr>
+                  <th>Semana</th>
                   <th>Fecha</th>
                   <th>Proveedor</th>
                   <th>Centro</th>
-                  <th>Muestra</th>
                   <th>Próximo paso</th>
                   <th>Tons</th>
                   <th>Observaciones</th>
@@ -211,17 +211,8 @@
 
           <form id="formContacto" autocomplete="off">
             <div class="row">
-              <div class="input-field col s4">
-                <label for="tieneMMPP" class="active">Disponibilidad</label>
-                <select id="tieneMMPP" class="browser-default modern-select" required>
-                  <option value="">¿Tiene MMPP disponible?</option>
-                  <option value="Sí">Sí</option>
-                  <option value="No">No</option>
-                  <option value="pordefinir">Por definir</option>
-                </select>
-              </div>
-
-              <div class="input-field col s4">
+              <!-- Eliminado el campo “tiene MMPP” -->
+              <div class="input-field col s6">
                 <label for="contactoResponsable" class="active">Responsable PG</label>
                 <select id="contactoResponsable" class="browser-default modern-select">
                   <option value="">—</option>
@@ -231,7 +222,7 @@
                 </select>
               </div>
 
-              <div class="input-field col s4">
+              <div class="input-field col s6">
                 <input id="vendeActualmenteA" type="text" placeholder="Ej: Camanchaca, Orizon...">
                 <label for="vendeActualmenteA">Vende actualmente a</label>
               </div>
@@ -364,6 +355,7 @@
                   <option value="Programar nueva visita" selected>Programar nueva visita</option>
                   <option value="Tomar/entregar muestras">Tomar/entregar muestras</option>
                   <option value="Negociar precio/volumen">Negociar precio/volumen</option>
+                  <option value="Contacto telefónico">Contacto telefónico</option>
                   <option value="Esperar disponibilidad">Esperar disponibilidad</option>
                   <option value="Sin acción">Sin acción</option>
                 </select>
