@@ -14,21 +14,31 @@ import { wireActionsGlobalsOnce, manejarAccionVisitaEl } from './actions.js';
 
 console.log('[visitas/ui] cargado');
 
-/* ================= estilos compactos (una sola línea) ================= */
+/* ================= estilos compactos + scroll ================= */
 (function injectStyles(){
   const css = `
-    #tablaVisitas_wrapper{ overflow:visible!important; }
-    #tablaVisitas{ table-layout:fixed!important; width:100%!important; }
+    /* el wrapper de la tarjeta y el de DT deben poder scrollear en X */
+    .mmpp-table-wrap{ overflow-x:auto!important; }
+    #tablaVisitas_wrapper{ overflow-x:auto!important; }
+
+    /* obliga a que la tabla sea más ancha que el contenedor => aparece el scroll */
+    #tablaVisitas{
+      table-layout:fixed!important;
+      width:100%!important;
+      min-width: 1320px; /* <- clave: evita que se “coma” la última columna */
+    }
 
     #tablaVisitas th, #tablaVisitas td{
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
       padding:10px 8px!important; box-sizing:border-box;
+      vertical-align: middle;
     }
 
     .v-prov, .v-centro{ display:block; min-width:0; }
     .v-top{ display:block; font-weight:600; }
     .v-sub{ display:block; font-size:12px; color:#6b7280; line-height:1.2; }
 
+    /* Acciones visibles */
     #tablaVisitas td:last-child{ overflow:visible!important; }
     #tablaVisitas td .acts{ display:flex; gap:8px; align-items:center; }
     #tablaVisitas td .acts a{
@@ -37,6 +47,8 @@ console.log('[visitas/ui] cargado');
       box-shadow:0 2px 8px rgba(2,6,23,.05); cursor:pointer;
     }
     #tablaVisitas td .acts a i{ font-size:18px; line-height:18px; }
+
+    /* Muestreo: verde si hay, rojo si no */
     #tablaVisitas td .acts a.mu-red  { border-color:#fecaca; background:#fff1f2; }
     #tablaVisitas td .acts a.mu-red  i{ color:#dc2626; }
     #tablaVisitas td .acts a.mu-green{ border-color:#bbf7d0; background:#ecfdf5; }
@@ -67,7 +79,6 @@ const trunc = (s='', max=42) => (String(s).length>max ? String(s).slice(0,max-1)
 
 function getISOWeek(date){
   const d = (date instanceof Date) ? new Date(date) : new Date(date);
-  // ISO-8601 (lunes a domingo)
   d.setHours(0,0,0,0);
   d.setDate(d.getDate() + 3 - ((d.getDay()+6)%7));
   const week1 = new Date(d.getFullYear(),0,4);
@@ -165,7 +176,6 @@ export async function renderTablaVisitas(){
           </a>
         </div>`;
 
-      // NUEVO orden de columnas:
       // 0 Semana | 1 Fecha | 2 Proveedor | 3 Centro | 4 Próximo paso | 5 Tons | 6 Observaciones | 7 Acciones
       return [
         esc(String(semana)),
@@ -458,14 +468,13 @@ export async function initVisitasTab(forceReload=false){
         { extend: 'excelHtml5', title: 'Visitas_Abastecimiento' },
         { extend: 'pdfHtml5',   title: 'Visitas_Abastecimiento', orientation: 'landscape', pageSize: 'A4' },
       ],
-      // ¡OJO! ahora la Fecha es la columna 1
-      order: [[1,'desc']],
+      order: [[1,'desc']],      // 1 = Fecha
       paging: true,
       pageLength: 10,
       lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
       autoWidth: false,
-      responsive: false,
-      scrollX: false,
+      responsive: false,        // importante: medimos anchos fijos
+      scrollX: true,            // <- clave: crea contenedor scrolleable interno
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: [
         { targets: 0, width: 60  },  // Semana
@@ -486,7 +495,7 @@ export async function initVisitasTab(forceReload=false){
       const a = e.target.closest?.('[data-action]');
       if (!a || !a.closest?.('#tablaVisitas')) return;
       e.preventDefault();
-      manejarAccionVisitaEl(a); // tu handler global
+      manejarAccionVisitaEl(a);
     }, true);
 
     window.addEventListener('resize', adjustNow);
@@ -501,3 +510,4 @@ export async function initVisitasTab(forceReload=false){
 
   console.log('[visitas/ui] initVisitasTab listo. dtV?', !!dtV);
 }
+
