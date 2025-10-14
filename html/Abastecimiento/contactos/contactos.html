@@ -133,32 +133,31 @@
       </section>
 
       <!-- VISITAS -->
-      <!-- VISITAS -->
-<section id="tab-visitas" class="col s12">
-  <div class="mmpp-card" style="margin-bottom:12px">
-    <div class="muted" style="margin-bottom:8px">
-      Revisión, filtros y exportación de visitas (la creación sigue en Contactos).
-    </div>
+      <section id="tab-visitas" class="col s12">
+        <div class="mmpp-card" style="margin-bottom:12px">
+          <div class="muted" style="margin-bottom:8px">
+            Revisión, filtros y exportación de visitas (la creación sigue en Contactos).
+          </div>
 
-    <div class="mmpp-table-wrap">
-      <table id="tablaVisitas" class="display mmpp" style="width:100%">
-        <thead>
-          <tr>
-            <th>Sem.</th>
-            <th>Fecha</th>
-            <th>Proveedor</th>
-            <th>Centro</th>
-            <th>Próximo paso</th>
-            <th>Tons</th>
-            <th>Acciones</th> <!-- ← OBSERVACIONES eliminado -->
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
+          <div class="mmpp-table-wrap">
+            <table id="tablaVisitas" class="display mmpp" style="width:100%">
+              <thead>
+                <tr>
+                  <th>Sem.</th>
+                  <th>Fecha</th>
+                  <th>Proveedor</th>
+                  <th>Centro</th>
+                  <th>Próximo paso</th>
+                  <th>Fecha prox.</th> <!-- NUEVA -->
+                  <th>Tons</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
       <!-- AGENDA DE CONTACTOS -->
       <section id="tab-personas" class="col s12">
@@ -366,7 +365,7 @@
                 <label for="visita_estado" class="active">Próximo paso</label>
                 <select id="visita_estado" class="browser-default">
                   <option value="Programar nueva visita" selected>Nueva visita</option>
-                  <option value="Tomar/entregar muestras">Tomar muestras</option>
+                  <option value="Tomar muestras">Tomar muestras</option> <!-- valor canónico -->
                   <option value="Negociar precio/volumen">Negociar precio/volumen</option>
                   <option value="Contacto telefónico">Contacto telefónico</option>
                   <option value="Esperar disponibilidad">Esperar disponibilidad</option>
