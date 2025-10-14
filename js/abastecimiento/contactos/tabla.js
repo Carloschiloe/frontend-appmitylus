@@ -58,7 +58,10 @@ function getISOWeek(d = new Date()) {
     #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:110px !important; }  /* Responsable */
     #tablaContactos th:nth-child(8), #tablaContactos td:nth-child(8){ width:160px !important; }  /* Acciones + holgura */
 
-    /* Proveedor con ellipsis controlada */
+    /* Proveedor con dos líneas (empresa + contacto) */
+    .prov-cell{ display:block; min-width:0; }
+    .prov-top{ display:block; font-weight:600; }
+    .prov-sub{ display:block; font-size:12px; color:#6b7280; line-height:1.2; }
     #tablaContactos td .ellipsisProv{ display:inline-block; max-width:22ch; }
 
     /* Acciones: que no se corten */
@@ -303,8 +306,17 @@ export function renderTablaContactos() {
       if (!esCodigoValido(centroCodigo)) centroCodigo = centroCodigoById(c.centroId) || '';
       const comuna = c.centroComuna || c.comuna || comunaPorCodigo(centroCodigo) || '';
 
-      const provName = esc(c.proveedorNombre || '');
-      const provCell = provName ? `<span class="ellipsisProv" title="${provName}">${provName}</span>` : '';
+      // Proveedor + contacto en dos líneas
+      const provName   = esc(c.proveedorNombre || '');
+      const contactoNm = esc(c.contactoNombre || c.contacto || '');
+      const provCell = provName
+        ? `
+          <span class="prov-cell" title="${provName}${contactoNm ? ' – ' + contactoNm : ''}">
+            <span class="prov-top ellipsisProv">${provName}</span>
+            ${contactoNm ? `<span class="prov-sub ellipsisProv">${contactoNm}</span>` : ``}
+          </span>
+        `.trim()
+        : '';
 
       const tonsCell = `<span class="tons-cell" data-contactoid="${esc(c._id || '')}" data-provkey="${esc(c.proveedorKey || '')}" data-centroid="${esc(c.centroId || '')}" data-value=""></span>`;
       const responsable = esc(c.responsablePG || '—');
@@ -366,4 +378,3 @@ export function renderTablaContactos() {
 }
 
 document.addEventListener('reload-tabla-contactos', () => renderTablaContactos());
-
