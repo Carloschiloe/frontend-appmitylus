@@ -14,11 +14,11 @@ import { wireActionsGlobalsOnce, manejarAccionVisitaEl } from './actions.js';
 
 console.log('[visitas/ui] cargado');
 
-/* ================= estilos compactos + scroll ================= */
-/* Ojo: NO tocar wrappers internos de DataTables ni forzar table-layout */
+/* ================= estilos mínimos ================= */
 (function injectStyles(){
   const css = `
-    .mmpp-table-wrap{ overflow-x:auto!important; }
+    /* sin forzar scroll horizontal */
+    .mmpp-table-wrap{ overflow-x:visible!important; }
 
     #tablaVisitas{ width:100%!important; }
     #tablaVisitas th, #tablaVisitas td{
@@ -31,9 +31,9 @@ console.log('[visitas/ui] cargado');
     .v-top{ display:block; font-weight:600; }
     .v-sub{ display:block; font-size:12px; color:#6b7280; line-height:1.2; }
 
-    /* Acciones visibles */
-    #tablaVisitas td:last-child{ overflow:visible!important; }
-    #tablaVisitas td .acts{ display:flex; gap:8px; align-items:center; }
+    /* Acciones */
+    #tablaVisitas td:last-child{ overflow:visible!important; text-align:center; }
+    #tablaVisitas td .acts{ display:flex; gap:8px; align-items:center; justify-content:center; }
     #tablaVisitas td .acts a{
       display:inline-flex; align-items:center; justify-content:center;
       width:32px; height:32px; border-radius:8px; border:1px solid #e5e7eb; background:#fff;
@@ -41,7 +41,7 @@ console.log('[visitas/ui] cargado');
     }
     #tablaVisitas td .acts a i{ font-size:18px; line-height:18px; }
 
-    /* Muestreo: verde si hay, rojo si no */
+    /* Muestreo */
     #tablaVisitas td .acts a.mu-red  { border-color:#fecaca; background:#fff1f2; }
     #tablaVisitas td .acts a.mu-red  i{ color:#dc2626; }
     #tablaVisitas td .acts a.mu-green{ border-color:#bbf7d0; background:#ecfdf5; }
@@ -98,20 +98,16 @@ function comunaDeVisita(v){
 /* ================= DataTable helpers ================= */
 let dtV = null;
 
-/* Ajuste SEGURO: solo llamamos adjust/draw si ya existe el wrapper de scroll */
+/* Ajuste SEGURO: ahora SIEMPRE ajusta columnas (con o sin scrollX) */
 function safeAdjust(){
   if (!dtV) return;
-  const wrapper = document.querySelector('#tablaVisitas_wrapper');
-  const hasScroll = wrapper && (wrapper.querySelector('.dataTables_scrollHead') || wrapper.querySelector('.dataTables_scroll'));
-  if (!hasScroll) return;
   try { dtV.columns.adjust().draw(false); } catch {}
 }
-
 const rafThrottle = (fn) => { let t=0; return (...a)=>{ if(t) return; t=requestAnimationFrame(()=>{t=0; fn(...a);}); }; };
 const adjustNow = rafThrottle(safeAdjust);
 export function forceAdjustVisitas(){ adjustNow(); }
 
-/* ================= render tabla ================= */
+/* ================= render tabla (7 columnas) ================= */
 export async function renderTablaVisitas(){
   const jq = window.jQuery || window.$;
   let visitas = [];
@@ -148,11 +144,9 @@ export async function renderTablaVisitas(){
 
       const proximoPaso = v.estado || '';
       const tons        = (v.tonsComprometidas ?? '') + '';
-      const obs         = v.observaciones || '';
-      const obsHTML     = obs ? `<span class="ellipsisCell" title="${esc(obs)}">${esc(trunc(obs,72))}</span>` : '—';
 
       const vid = esc(v._id || '');
-      const tieneMuestreo = String(v.enAgua || '').toLowerCase().startsWith('s'); // “Sí” => verde
+      const tieneMuestreo = String(v.enAgua || '').toLowerCase().startsWith('s');
       const muClase = tieneMuestreo ? 'mu-green' : 'mu-red';
       const muTitle = tieneMuestreo ? 'Ver muestreo' : 'Sin muestreo';
 
@@ -176,7 +170,7 @@ export async function renderTablaVisitas(){
           </a>
         </div>`;
 
-      // 0 Semana | 1 Fecha | 2 Proveedor | 3 Centro | 4 Próximo paso | 5 Tons | 6 Observaciones | 7 Acciones
+      // 0 Sem | 1 Fecha | 2 Proveedor | 3 Centro | 4 Próximo paso | 5 Tons | 6 Acciones
       return [
         esc(String(semana)),
         `<span data-order="${f.getTime()}">${fecha}</span>`,
@@ -184,7 +178,6 @@ export async function renderTablaVisitas(){
         centroHTML,
         esc(proximoPaso),
         esc(tons),
-        obsHTML,
         acciones
       ];
     });
@@ -201,7 +194,7 @@ export async function renderTablaVisitas(){
   if (!tbody) return;
   tbody.innerHTML = filas.length
     ? filas.map(arr => `<tr>${arr.map(td=>`<td>${td}</td>`).join('')}</tr>`).join('')
-    : '<tr><td colspan="8" style="color:#888">No hay visitas registradas.</td></tr>';
+    : '<tr><td colspan="7" style="color:#888">No hay visitas registradas.</td></tr>';
 }
 
 /* ================= helpers: fecha “próximo paso” ================= */
@@ -451,8 +444,8 @@ export async function initVisitasTab(forceReload = false) {
   const tabla = $('#tablaVisitas');
   if (!tabla) { console.warn('[visitas/ui] #tablaVisitas no está en el DOM'); return; }
 
-  // --- (A) Header canónico: forzamos 8 columnas SIEMPRE ---
-  const HEADERS = ['Sem.', 'Fecha', 'Proveedor', 'Centro', 'Próximo paso', 'Tons', 'Observaciones', 'Acciones'];
+  // --- Header canónico (7 columnas) ---
+  const HEADERS = ['Sem.', 'Fecha', 'Proveedor', 'Centro', 'Próximo paso', 'Tons', 'Acciones'];
   const thead   = tabla.querySelector('thead') || (() => { const t=document.createElement('thead'); tabla.prepend(t); return t; })();
   const trHead  = thead.querySelector('tr');
   const thCount = trHead ? trHead.children.length : 0;
@@ -461,13 +454,11 @@ export async function initVisitasTab(forceReload = false) {
     thead.innerHTML = `<tr>${HEADERS.map(h => `<th>${h}</th>`).join('')}</tr>`;
   }
 
-  const colCount = thead.querySelector('tr')?.children.length || 0; // debe dar 8
-
   wireActionsGlobalsOnce();
   wireUIEventsOnce();
   mountFotosUIOnce();
 
-  // Si existe un DataTable previo (pestañas, re-init, etc.), destrúyelo LIMPIO
+  // Si existe un DataTable previo, destrúyelo
   if (jq?.fn?.DataTable && jq.fn.DataTable.isDataTable('#tablaVisitas')) {
     try { jq('#tablaVisitas').DataTable().destroy(true); } catch {}
     dtV = null;
@@ -481,11 +472,8 @@ export async function initVisitasTab(forceReload = false) {
       { targets: 3, width: 160 },  // Centro
       { targets: 4, width: 180 },  // Próximo paso
       { targets: 5, width: 90  },  // Tons
-      { targets: 6, width: 420 },  // Observaciones
+      { targets: 6, width: 180, orderable: false, searchable: false }, // Acciones
     ];
-    if (colCount >= 8) {
-      defs.push({ targets: 7, width: 180, orderable: false, searchable: false }); // Acciones
-    }
 
     dtV = jq('#tablaVisitas').DataTable({
       dom: 'Blfrtip',
@@ -497,9 +485,9 @@ export async function initVisitasTab(forceReload = false) {
       paging: true,
       pageLength: 10,
       lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
-      autoWidth: false,
+      autoWidth: true,     // deja que DT calcule
       responsive: false,
-      scrollX: true,
+      scrollX: false,      // sin scroll horizontal
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: defs,
       initComplete: () => forceAdjustVisitas(),
@@ -514,9 +502,7 @@ export async function initVisitasTab(forceReload = false) {
       manejarAccionVisitaEl(a);
     }, true);
 
-    // Ajustes al redimensionar y al mostrar pestaña
     window.addEventListener('resize', forceAdjustVisitas);
-    document.getElementById('tab-visitas')?.addEventListener('click', () => setTimeout(forceAdjustVisitas, 0), { once:false });
   }
 
   await renderTablaVisitas();
@@ -526,5 +512,5 @@ export async function initVisitasTab(forceReload = false) {
   window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); forceAdjustVisitas(); });
   window.addEventListener('visita:deleted', async () => { await renderTablaVisitas(); forceAdjustVisitas(); });
 
-  console.log('[visitas/ui] initVisitasTab listo. dtV?', !!dtV, 'cols', colCount);
+  console.log('[visitas/ui] initVisitasTab listo. dtV?', !!dtV);
 }
