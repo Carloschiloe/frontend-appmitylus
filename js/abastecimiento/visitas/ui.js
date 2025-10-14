@@ -446,10 +446,20 @@ function wireUIEventsOnce(){
 }
 
 /* ================= Init principal ================= */
+/* ================= Init principal ================= */
 export async function initVisitasTab(forceReload=false){
   const jq = window.jQuery || window.$;
   const tabla = $('#tablaVisitas');
   if (!tabla){ console.warn('[visitas/ui] #tablaVisitas no está en el DOM'); return; }
+
+  // --- 1) Asegura que exista el <th> Acciones (8ª col) ---
+  const theadRow = tabla.querySelector('thead tr');
+  if (theadRow && theadRow.children.length < 8) {
+    const th = document.createElement('th');
+    th.textContent = 'Acciones';
+    theadRow.appendChild(th);
+  }
+  const colCount = theadRow ? theadRow.children.length : 0; // debería ser 8
 
   wireActionsGlobalsOnce();
   wireUIEventsOnce();
@@ -457,37 +467,42 @@ export async function initVisitasTab(forceReload=false){
 
   if (dtV && forceReload){
     await renderTablaVisitas();
-    adjustNow();
+    forceAdjustVisitas();
     return;
   }
 
   if (jq && !dtV){
+    // --- 2) ColumnDefs dinámico según la cantidad real de columnas ---
+    const defs = [
+      { targets: 0, width: 60  },  // Semana
+      { targets: 1, width: 108 },  // Fecha
+      { targets: 2, width: 280 },  // Proveedor + contacto
+      { targets: 3, width: 160 },  // Centro + comuna
+      { targets: 4, width: 180 },  // Próximo paso
+      { targets: 5, width: 90  },  // Tons
+      { targets: 6, width: 420 },  // Observaciones
+    ];
+    if (colCount >= 8) {
+      defs.push({ targets: 7, width: 180, orderable:false, searchable:false }); // Acciones
+    }
+
     dtV = jq('#tablaVisitas').DataTable({
       dom: 'Blfrtip',
       buttons: [
         { extend: 'excelHtml5', title: 'Visitas_Abastecimiento' },
         { extend: 'pdfHtml5',   title: 'Visitas_Abastecimiento', orientation: 'landscape', pageSize: 'A4' },
       ],
-      order: [[1,'desc']],      // 1 = Fecha
+      order: [[1,'desc']],               // 1 = Fecha
       paging: true,
       pageLength: 10,
       lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
       autoWidth: false,
-      responsive: false,        // importante: medimos anchos fijos
-      scrollX: true,            // <- clave: crea contenedor scrolleable interno
+      responsive: false,                 // medimos anchos fijos
+      scrollX: true,                     // fuerza contenedor scrolleable interno
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-      columnDefs: [
-        { targets: 0, width: 60  },  // Semana
-        { targets: 1, width: 108 },  // Fecha
-        { targets: 2, width: 280 },  // Proveedor + contacto
-        { targets: 3, width: 160 },  // Centro + comuna
-        { targets: 4, width: 180 },  // Próximo paso
-        { targets: 5, width: 90  },  // Tons
-        { targets: 6, width: 420 },  // Observaciones
-        { targets: 7, width: 180, orderable:false, searchable:false } // Acciones
-      ],
-      initComplete: () => adjustNow(),
-      drawCallback:  () => adjustNow(),
+      columnDefs: defs,
+      initComplete: () => forceAdjustVisitas(),
+      drawCallback:  () => forceAdjustVisitas(),
     });
 
     // Delegación: click en acciones
@@ -498,16 +513,17 @@ export async function initVisitasTab(forceReload=false){
       manejarAccionVisitaEl(a);
     }, true);
 
-    window.addEventListener('resize', adjustNow);
+    window.addEventListener('resize', forceAdjustVisitas);
   }
 
   await renderTablaVisitas();
-  adjustNow();
+  forceAdjustVisitas();
 
-  window.addEventListener('visita:created', async ()=>{ await renderTablaVisitas(); adjustNow(); });
-  window.addEventListener('visita:updated', async ()=>{ await renderTablaVisitas(); adjustNow(); });
-  window.addEventListener('visita:deleted', async ()=>{ await renderTablaVisitas(); adjustNow(); });
+  window.addEventListener('visita:created', async ()=>{ await renderTablaVisitas(); forceAdjustVisitas(); });
+  window.addEventListener('visita:updated', async ()=>{ await renderTablaVisitas(); forceAdjustVisitas(); });
+  window.addEventListener('visita:deleted', async ()=>{ await renderTablaVisitas(); forceAdjustVisitas(); });
 
-  console.log('[visitas/ui] initVisitasTab listo. dtV?', !!dtV);
+  console.log('[visitas/ui] initVisitasTab listo. dtV?', !!dtV, 'colCount', colCount);
 }
+
 
