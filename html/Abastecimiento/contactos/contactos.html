@@ -5,40 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Abastecimiento de MMPP – Choritos</title>
 
-  <!-- Google Icons (para <i class="material-icons">) -->
+  <!-- Google Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
 
-  <!-- Materialize CSS (Tabs/Modal compat.) -->
+  <!-- Materialize -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
 
   <!-- DataTables + Buttons -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
 
-  <!-- Estilos unificados de la SPA -->
+  <!-- SPA styles -->
   <link rel="preload" href="/spa-mmpp/layout.css?v=1" as="style">
   <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1">
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1">
 
-  <!-- Oculta cualquier input file nativo dentro de modales (si luego usas botón JS para fotos) -->
   <style>
+    /* inputs file nativos */
     .modal input[type="file"]{display:none!important}
-    /* Filtros en una sola fila (responsivo) */
+
+    /* Filtros */
     .filtros-row{
       display:grid;
       grid-template-columns: repeat(4, minmax(180px,1fr));
-      gap:10px;
-      align-items:center;
+      gap:10px; align-items:center;
     }
     @media (max-width: 920px){ .filtros-row{ grid-template-columns: 1fr 1fr; } }
     @media (max-width: 520px){ .filtros-row{ grid-template-columns: 1fr; } }
     .filtros-row select,.filtros-row input{ height:40px; border-radius:10px; padding:4px 8px; }
+
+    /* --- QUE NO SE CORTE LA ÚLTIMA COLUMNA --- */
+    .mmpp-table-wrap{ overflow-x:auto; }
+    #tablaVisitas{ table-layout:fixed; width:100%; }
+    #tablaVisitas th, #tablaVisitas td{
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      padding:10px 8px;
+    }
+    /* ancho mínimo y visibilidad de Acciones */
+    #tablaVisitas th:last-child, #tablaVisitas td:last-child{
+      min-width:180px; width:180px; overflow:visible!important;
+    }
+    /* por si algún estilo externo oculta la última celda */
+    #tablaVisitas th:last-child, #tablaVisitas td:last-child { display: table-cell !important; }
+
+    /* también al wrapper de DataTables */
+    .dataTables_wrapper{ overflow-x:auto; }
   </style>
-
-  <style>
-  .mmpp-table-wrap { overflow-x:auto; }
-</style>
-
 </head>
 <body class="mmpp-layout no-nav">
 
@@ -83,7 +95,7 @@
                 Registrar contacto
               </button>
             </div>
-            <!-- Filtros + buscador (una sola fila) -->
+            <!-- Filtros + buscador -->
             <div id="filtrosContactos" class="filtros-row" style="min-width:620px;flex:1">
               <select id="fltSemana" class="browser-default modern-select" aria-label="Filtrar por semana">
                 <option value="">Semana…</option>
@@ -100,7 +112,6 @@
               <input id="searchContactos" class="mmpp-input" placeholder="Buscar…" aria-label="Buscar en la tabla">
             </div>
           </div>
-          <!-- /Toolbar -->
 
           <!-- Tabla Contactos -->
           <div class="mmpp-table-wrap">
@@ -132,21 +143,20 @@
 
           <div class="mmpp-table-wrap">
             <table id="tablaVisitas" class="display mmpp" style="width:100%">
-  <thead>
-    <tr>
-      <th>Sem.</th>
-      <th>Fecha</th>
-      <th>Proveedor</th>
-      <th>Centro</th>
-      <th>Próximo paso</th>
-      <th>Tons</th>
-      <th>Observaciones</th>
-      <th>Acciones</th>   <!-- ← este faltaba -->
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
-
+              <thead>
+                <tr>
+                  <th>Sem.</th>
+                  <th>Fecha</th>
+                  <th>Proveedor</th>
+                  <th>Centro</th>
+                  <th>Próximo paso</th>
+                  <th>Tons</th>
+                  <th>Observaciones</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -154,8 +164,6 @@
       <!-- AGENDA DE CONTACTOS -->
       <section id="tab-personas" class="col s12">
         <div class="mmpp-card" style="margin-bottom:12px">
-
-          <!-- Toolbar con buscador (se eliminaron KPIs y chips de filtro) -->
           <div class="table-toolbar">
             <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
               <button id="btnOpenPersonaModal" class="mmpp-add">
@@ -217,7 +225,7 @@
 
           <form id="formContacto" autocomplete="off">
             <div class="row">
-              <!-- Eliminado el campo “tiene MMPP” -->
+              <!-- Eliminado “tiene MMPP” -->
               <div class="input-field col s6">
                 <label for="contactoResponsable" class="active">Responsable PG</label>
                 <select id="contactoResponsable" class="browser-default modern-select">
@@ -368,7 +376,6 @@
               </div>
             </div>
 
-            <!-- Fecha exacta del próximo paso -->
             <div class="row">
               <div class="input-field col s4">
                 <input type="date" id="visita_proximoPasoFecha">
