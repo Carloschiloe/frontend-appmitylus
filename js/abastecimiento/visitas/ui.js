@@ -15,19 +15,12 @@ import { wireActionsGlobalsOnce, manejarAccionVisitaEl } from './actions.js';
 console.log('[visitas/ui] cargado');
 
 /* ================= estilos compactos + scroll ================= */
+/* Ojo: NO tocar wrappers internos de DataTables ni forzar table-layout */
 (function injectStyles(){
   const css = `
-    /* el wrapper de la tarjeta y el de DT deben poder scrollear en X */
     .mmpp-table-wrap{ overflow-x:auto!important; }
-    #tablaVisitas_wrapper{ overflow-x:auto!important; }
 
-    /* obliga a que la tabla sea más ancha que el contenedor => aparece el scroll */
-    #tablaVisitas{
-      table-layout:fixed!important;
-      width:100%!important;
-      min-width: 1320px; /* <- clave: evita que se “coma” la última columna */
-    }
-
+    #tablaVisitas{ width:100%!important; }
     #tablaVisitas th, #tablaVisitas td{
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
       padding:10px 8px!important; box-sizing:border-box;
@@ -109,7 +102,6 @@ let dtV = null;
 function safeAdjust(){
   if (!dtV) return;
   const wrapper = document.querySelector('#tablaVisitas_wrapper');
-  // cuando scrollX=true, DataTables genera estos contenedores:
   const hasScroll = wrapper && (wrapper.querySelector('.dataTables_scrollHead') || wrapper.querySelector('.dataTables_scroll'));
   if (!hasScroll) return;
   try { dtV.columns.adjust().draw(false); } catch {}
@@ -475,18 +467,18 @@ export async function initVisitasTab(forceReload = false) {
   wireUIEventsOnce();
   mountFotosUIOnce();
 
-  if (dtV && forceReload) {
-    await renderTablaVisitas();
-    forceAdjustVisitas();
-    return;
+  // Si existe un DataTable previo (pestañas, re-init, etc.), destrúyelo LIMPIO
+  if (jq?.fn?.DataTable && jq.fn.DataTable.isDataTable('#tablaVisitas')) {
+    try { jq('#tablaVisitas').DataTable().destroy(true); } catch {}
+    dtV = null;
   }
 
   if (jq && !dtV) {
     const defs = [
       { targets: 0, width: 60  },  // Sem.
       { targets: 1, width: 108 },  // Fecha
-      { targets: 2, width: 280 },  // Proveedor (empresa + contacto)
-      { targets: 3, width: 160 },  // Centro (código + comuna)
+      { targets: 2, width: 280 },  // Proveedor
+      { targets: 3, width: 160 },  // Centro
       { targets: 4, width: 180 },  // Próximo paso
       { targets: 5, width: 90  },  // Tons
       { targets: 6, width: 420 },  // Observaciones
@@ -501,13 +493,13 @@ export async function initVisitasTab(forceReload = false) {
         { extend: 'excelHtml5', title: 'Visitas_Abastecimiento' },
         { extend: 'pdfHtml5',   title: 'Visitas_Abastecimiento', orientation: 'landscape', pageSize: 'A4' },
       ],
-      order: [[1, 'desc']],           // 1 = Fecha
+      order: [[1, 'desc']],
       paging: true,
       pageLength: 10,
       lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
       autoWidth: false,
-      responsive: false,              // usamos anchos fijos
-      scrollX: true,                  // <- garantiza que se vea "Acciones"
+      responsive: false,
+      scrollX: true,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: defs,
       initComplete: () => forceAdjustVisitas(),
@@ -522,7 +514,9 @@ export async function initVisitasTab(forceReload = false) {
       manejarAccionVisitaEl(a);
     }, true);
 
+    // Ajustes al redimensionar y al mostrar pestaña
     window.addEventListener('resize', forceAdjustVisitas);
+    document.getElementById('tab-visitas')?.addEventListener('click', () => setTimeout(forceAdjustVisitas, 0), { once:false });
   }
 
   await renderTablaVisitas();
