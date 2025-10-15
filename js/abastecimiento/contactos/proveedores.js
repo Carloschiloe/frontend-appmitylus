@@ -1,3 +1,4 @@
+// /js/abastecimiento/contactos/proveedores.js
 import { state, $, setVal, slug } from './state.js';
 
 export function mostrarCentrosDeProveedor(proveedorKey, preselectCentroId = null) {
@@ -41,13 +42,71 @@ export function resetSelectCentros(){
   setVal(['centroHectareas'],'');
 }
 
+/* ========= NUEVO: seleccionar por CÓDIGO DE CENTRO =========
+   - Busca el centro por su código (4–7 dígitos)
+   - Setea proveedor y carga el combo de centros preseleccionando el encontrado
+   - Rellena los hidden del centro
+   Devuelve true si encontró/seleccionó, false si no.
+*/
+export function seleccionarCentroPorCodigo(code) {
+  const ccode = String(code || '').trim();
+  if (!/^\d{4,7}$/.test(ccode)) return false;
+
+  const lista = Array.isArray(state.listaCentros) ? state.listaCentros : [];
+  const centro = lista.find(c =>
+    String(c.codigo || c.code || '').trim() === ccode
+  );
+  if (!centro) return false;
+
+  // Proveedor del centro
+  const provNombre = (centro.proveedor || centro.proveedorNombre || '').trim();
+  const provKey = (centro.proveedorKey || slug(provNombre)).trim();
+
+  // Rellena buscador + hidden proveedor
+  const inp = document.getElementById('buscadorProveedor');
+  if (inp) inp.value = provNombre;
+
+  setVal(['proveedorNombre'], provNombre);
+  setVal(['proveedorKey'], provKey);
+  setVal(['proveedorId'], provKey);
+
+  // Cargar y preseleccionar el centro encontrado
+  const centroId = centro._id || centro.id || '';
+  mostrarCentrosDeProveedor(provKey, centroId);
+
+  // Hidden del centro
+  setVal(['centroId'], centroId);
+  setVal(['centroCodigo'], String(centro.codigo || centro.code || ''));
+  setVal(['centroComuna'], centro.comuna || '');
+  setVal(['centroHectareas'], centro.hectareas || centro.ha || '');
+
+  return true;
+}
+
 export function setupBuscadorProveedores() {
   const input = $('#buscadorProveedor');
   const datalist = $('#datalistProveedores');
   if (!input || !datalist) return;
 
+  // helper local para normalizar el nombre
+  const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+  // 👉 detecta si el usuario teclea un CÓDIGO de centro en el buscador
+  const intentarCodigo = (val) => {
+    const txt = String(val || '').trim();
+    const m = txt.match(/\b(\d{4,7})\b/);   // primer bloque 4–7 dígitos
+    if (m && seleccionarCentroPorCodigo(m[1])) {
+      // si encontró por código, no seguimos con el autocompletado por nombre
+      return true;
+    }
+    return false;
+  };
+
   input.addEventListener('input', () => {
-    const val = input.value.toLowerCase().replace(/\s+/g, ' ').trim();
+    // primero intenta por código (no bloquea escribir, solo autoselecciona si calza)
+    if (intentarCodigo(input.value)) return;
+
+    const val = norm(input.value);
     datalist.innerHTML = '';
     if (!val) return;
     const filtrados = (state.listaProveedores || []).filter(p => p.nombreNormalizado.includes(val));
@@ -59,7 +118,10 @@ export function setupBuscadorProveedores() {
   });
 
   input.addEventListener('change', () => {
-    const valNorm = input.value.toLowerCase().replace(/\s+/g, ' ').trim();
+    // si en change hay código válido, ya habrá seleccionado todo
+    if (intentarCodigo(input.value)) return;
+
+    const valNorm = norm(input.value);
     const prov = (state.listaProveedores || []).find(p => p.nombreNormalizado === valNorm);
     if (prov) {
       setVal(['proveedorKey','proveedorId'], prov.proveedorKey);
