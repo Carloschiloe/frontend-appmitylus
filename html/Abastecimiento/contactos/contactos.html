@@ -38,7 +38,7 @@
     /* Contenedor con scroll horizontal externo a DataTables */
     .mmpp-table-wrap{ overflow-x:auto; }
 
-    /* Tabla de visitas: NO tocar wrappers internos de DT ni forzar table-layout */
+    /* Tabla de visitas */
     #tablaVisitas{ width:100%; }
     #tablaVisitas th, #tablaVisitas td{
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
@@ -50,16 +50,23 @@
       display: table-cell !important;
     }
 
-    /* ===== Barra de filtros de VISITAS ===== */
+    /* ===== Barra de filtros + buscador de VISITAS ===== */
+    .visitas-toolbar{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+      margin:10px 0 6px;
+    }
     .visitas-filtros{
       display:flex; gap:12px; align-items:center; flex-wrap:wrap;
-      margin:10px 0 6px;
     }
     .visitas-filtros .fld{ display:flex; align-items:center; gap:6px; }
     .visitas-filtros label{ font-size:12px; color:#6b7280; }
     .visitas-filtros select.browser-default{
       min-width:160px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff;
       height:auto; line-height:normal;
+    }
+    .visitas-search input{
+      width:260px; max-width:100%;
+      height:40px; border-radius:10px; padding:4px 10px; border:1px solid #e5e7eb;
     }
   </style>
 </head>
@@ -152,22 +159,27 @@
             Revisión, filtros y exportación de visitas (la creación sigue en Contactos).
           </div>
 
-          <!-- ===== Barra de filtros de VISITAS (Semana / Centro) ===== -->
-          <div id="visitas-filtros-bar" class="visitas-filtros">
-            <div class="fld">
-              <label for="fltVisSem">Semana</label>
-              <select id="fltVisSem" class="browser-default">
-                <option value="">Todas</option>
-              </select>
+          <!-- ===== Toolbar de VISITAS: filtros (semana/comuna) + buscador ===== -->
+          <div class="visitas-toolbar">
+            <div id="visitas-filtros-bar" class="visitas-filtros">
+              <div class="fld">
+                <label for="fltVisSem">Semana</label>
+                <select id="fltVisSem" class="browser-default" aria-label="Filtrar por semana">
+                  <option value="">Todas</option>
+                </select>
+              </div>
+              <div class="fld">
+                <label for="fltVisComuna">Comuna</label>
+                <select id="fltVisComuna" class="browser-default" aria-label="Filtrar por comuna">
+                  <option value="">Todas</option>
+                </select>
+              </div>
             </div>
-            <div class="fld">
-              <label for="fltVisCentro">Centro</label>
-              <select id="fltVisCentro" class="browser-default">
-                <option value="">Todos</option>
-              </select>
+            <div class="visitas-search">
+              <input id="searchVisitas" type="text" placeholder="Buscar en visitas…" aria-label="Buscar en la tabla de visitas">
             </div>
           </div>
-          <!-- ===== /Barra de filtros de VISITAS ===== -->
+          <!-- ===== /Toolbar de VISITAS ===== -->
 
           <div class="mmpp-table-wrap">
             <table id="tablaVisitas" class="display mmpp" style="width:100%">
@@ -468,3 +480,4 @@
   </script>
 </body>
 </html>
+
