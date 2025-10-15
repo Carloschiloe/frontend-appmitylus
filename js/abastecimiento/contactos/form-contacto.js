@@ -59,7 +59,6 @@ function buildContactoSnapshot({ tel='', email='', empresaNombre='' } = {}) {
 }
 
 /* ---------- API helpers para DISPONIBILIDADES ---------- */
-// aplanar cualquier formato de _id
 const normId = (x) => {
   let id = (x && (x._id ?? x.id)) ?? null;
   if (!id) return null;
@@ -114,22 +113,15 @@ async function fetchDisponibilidades({ proveedorKey, centroId, contactoId, from,
       };
     });
 
-    // si pedimos por contactoId pero el server no filtró, filtramos en cliente
-    if (contactoId) {
-      mapped = mapped.filter(it => String(it.contactoId || '') === String(contactoId));
-    }
-
+    if (contactoId) mapped = mapped.filter(it => String(it.contactoId || '') === String(contactoId));
     return mapped;
   } catch {
     return [];
   }
 }
 
-// Resolver _id por mesKey con estrategia de fallbacks
 async function resolverDispIdPorMesKey({ contactoId, proveedorKey, centroId, mesKey }) {
   if (!mesKey) return null;
-
-  // 1) intentar sólo por contactoId
   if (contactoId) {
     try {
       const l1 = await fetchDisponibilidades({ contactoId, mesKey });
@@ -137,8 +129,6 @@ async function resolverDispIdPorMesKey({ contactoId, proveedorKey, centroId, mes
       if (i1) return (i1._id || i1.id || null);
     } catch {}
   }
-
-  // 2) intentar por proveedorKey + centroId
   if (proveedorKey || centroId) {
     try {
       const l2 = await fetchDisponibilidades({ proveedorKey, centroId, mesKey });
@@ -146,8 +136,6 @@ async function resolverDispIdPorMesKey({ contactoId, proveedorKey, centroId, mes
       if (i2) return (i2._id || i2.id || null);
     } catch {}
   }
-
-  // 3) intentar por sólo proveedorKey
   if (proveedorKey) {
     try {
       const l3 = await fetchDisponibilidades({ proveedorKey, mesKey });
@@ -155,7 +143,6 @@ async function resolverDispIdPorMesKey({ contactoId, proveedorKey, centroId, mes
       if (i3) return (i3._id || i3.id || null);
     } catch {}
   }
-
   return null;
 }
 
@@ -165,7 +152,7 @@ async function postDisponibilidad(d){
   const payload = {
     proveedorKey: d.proveedorKey || slug(empresaNombre),
     proveedorNombre: empresaNombre,
-    empresaNombre, // para filtros en Inventario
+    empresaNombre,
 
     contactoId: d.contactoId || null,
     contactoNombre: d.contactoNombre || '',
@@ -284,13 +271,10 @@ async function pintarHistorialEdicion(contacto){
 
   box.innerHTML = '<span class="grey-text">Cargando disponibilidad...</span>';
   try {
-    // 1) por contactoId
     let lista = contactoId ? await fetchDisponibilidades({ contactoId }) : [];
-    // 2) fallback prov+centro
     if (!lista.length && (proveedorKey || centroId)) {
       lista = await fetchDisponibilidades({ proveedorKey, centroId });
     }
-    // 3) fallback sólo proveedorKey
     if (!lista.length && proveedorKey) {
       lista = await fetchDisponibilidades({ proveedorKey });
     }
@@ -368,11 +352,9 @@ export async function abrirDetalleContacto(c) {
     ? comunas.map(x => `<span class="badge chip" style="margin-right:.35rem;margin-bottom:.35rem">${esc(x)}</span>`).join('')
     : '<span class="text-soft">Sin centros asociados</span>';
 
-  // últimas visitas (para el timeline)
   let visitas = [];
   try { visitas = await apiGetVisitasByContacto(c._id) || []; } catch {}
 
-  // estructura principal del modal
   body.innerHTML = `
     <div class="mb-4">
       <h6 class="text-soft" style="margin:0 0 .5rem">Comunas con centros del proveedor</h6>
@@ -408,7 +390,6 @@ export async function abrirDetalleContacto(c) {
     </div>
   `;
 
-  // cargar disponibilidades (contactoId → prov+centro → prov)
   try {
     const proveedorKey = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
     const centroId = c.centroId || null;
@@ -432,10 +413,7 @@ export async function abrirDetalleContacto(c) {
     if (cont) cont.innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
   }
 
-  // botón registrar visita
   $('#btnNuevaVisita')?.addEventListener('click', () => abrirModalVisita(c));
-
-  // abrir modal
   (M.Modal.getInstance(document.getElementById('modalDetalleContacto')) || M.Modal.init(document.getElementById('modalDetalleContacto'))).open();
 }
 
@@ -443,9 +421,8 @@ export async function abrirDetalleContacto(c) {
 export function setupFormulario() {
   const form = $('#formContacto'); if (!form) return;
   state.editId = null;
-  state.dispEditId = null; // para PATCH
+  state.dispEditId = null;
 
-  // setear contactoActual al pulsar "ver"
   document.addEventListener('click', (e)=>{
     const a = e.target.closest?.('a.icon-action.ver'); if(!a) return;
     const id = a.dataset.id;
@@ -455,14 +432,12 @@ export function setupFormulario() {
   const selCentro = $('#selectCentro');
   selCentro?.addEventListener('change', () => syncHiddenFromSelect(selCentro));
 
-  // Delegación de acciones en la tabla de disponibilidades (editar/eliminar)
   document.getElementById('asigHist')?.addEventListener('click', async (e)=>{
     const btn = e.target.closest('.mini-actions a'); if(!btn) return;
     e.preventDefault();
 
     let id = btn.dataset.id?.trim() || '';
     if (!id || !isValidObjectId(id)) {
-      // intentar resolver por mesKey con fallbacks
       const mk = btn.dataset.meskey || '';
       const contacto = state.editingContacto || state.contactoActual || {};
       const proveedorKey = contacto?.proveedorKey || (contacto?.proveedorNombre ? slug(contacto.proveedorNombre) : '');
@@ -530,14 +505,13 @@ export function setupFormulario() {
       return;
     }
 
-    // Si no hay empresa, limpia centro
     if (!hasEmpresa) { clearCentroHidden(); resetSelectCentros(); }
 
     // Otros campos
     const tieneMMPP         = $('#tieneMMPP')?.value || '';
     const vendeActualmenteA = $('#vendeActualmenteA')?.value?.trim() || '';
     const notas             = $('#notasContacto')?.value?.trim() || '';
-    const responsablePG     = $('#contactoResponsable')?.value || ''; // NUEVO
+    const responsablePG     = $('#contactoResponsable')?.value || ''; // ← NUEVO
 
     // Centro (opcional)
     syncHiddenFromSelect(selCentro);
@@ -555,7 +529,7 @@ export function setupFormulario() {
       resultado, tieneMMPP, vendeActualmenteA, notas,
       centroId, centroCodigo, centroComuna, centroHectareas,
       contactoNombre, contactoTelefono, contactoEmail,
-      responsablePG // ← NUEVO campo
+      responsablePG // ← incluirlo en el body
     };
 
     // Campos de disponibilidad (crear o patch)
@@ -569,7 +543,6 @@ export function setupFormulario() {
       const editId   = state.editId;
       const esUpdate = isValidObjectId(editId);
 
-      // Guardar/actualizar contacto
       let created = null;
       if (esUpdate) {
         await apiUpdateContacto(editId, payload);
@@ -577,12 +550,10 @@ export function setupFormulario() {
         created = await apiCreateContacto(payload);
       }
 
-      // Id del contacto recién creado
       const contactoIdDoc = esUpdate
         ? editId
         : (created?.item?._id || created?.item?.id || created?._id || created?.id || null);
 
-      // Crear o actualizar disponibilidad (centro es OPCIONAL)
       if (tieneDispCampos) {
         const dispCommon = {
           proveedorKey,
@@ -619,12 +590,10 @@ export function setupFormulario() {
         }
       }
 
-      // Refrescos
       await cargarContactosGuardados();
       renderTablaContactos();
       document.dispatchEvent(new Event('reload-tabla-contactos'));
 
-      // refresca el panel de historial en edición
       const c = state.editId
         ? { _id: state.editId, proveedorKey, proveedorNombre, centroId }
         : (state.contactoActual || {});
@@ -632,7 +601,6 @@ export function setupFormulario() {
 
       M.toast?.({ html: state.editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
 
-      // Cerrar modal y limpiar
       const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
       form.reset();
       clearCentroHidden();
@@ -649,7 +617,7 @@ export function setupFormulario() {
 /* ---------- Acciones ---------- */
 export function abrirEdicion(c) {
   state.editId = c._id;
-  state.editingContacto = c; // para refresco al borrar/editar
+  state.editingContacto = c;
   state.dispEditId = null;
 
   const hasEmpresa = !!(c.proveedorKey || c.proveedorNombre);
@@ -676,7 +644,7 @@ export function abrirEdicion(c) {
   if ($('#contactoNombre')) $('#contactoNombre').value = c.contactoNombre || '';
   if ($('#contactoTelefono')) $('#contactoTelefono').value = c.contactoTelefono || '';
   if ($('#contactoEmail')) $('#contactoEmail').value = c.contactoEmail || '';
-  if ($('#contactoResponsable')) $('#contactoResponsable').value = c.responsablePG || ''; // NUEVO
+  if ($('#contactoResponsable')) $('#contactoResponsable').value = c.responsablePG || ''; // ← setear Responsable PG
 
   const hoy = new Date();
   const anioEl = document.getElementById('asigAnio');
@@ -694,12 +662,10 @@ export function abrirEdicion(c) {
 export async function eliminarContacto(id) {
   const idStr = String(id || '').trim();
 
-  // 1) ¿Ese ID está actualmente en la tabla de contactos?
   const esContacto = (state.contactosGuardados || [])
     .some(c => String(c._id) === idStr);
 
   if (!esContacto) {
-    // Puede haber sido ya eliminado / o era un ID ajeno → tratamos como éxito silencioso
     console.warn('[deleteContacto] id no corresponde a un contacto visible:', idStr);
     await cargarContactosGuardados();
     renderTablaContactos();
@@ -721,7 +687,6 @@ export async function eliminarContacto(id) {
     }
   }
 
-  // 2) Refresco UI
   await cargarContactosGuardados();
   renderTablaContactos();
   document.dispatchEvent(new Event('reload-tabla-contactos'));
@@ -740,5 +705,5 @@ export function prepararNuevo() {
   if (mesEl) mesEl.value = String(hoy.getMonth() + 1);
   const box = document.getElementById('asigHist');
   if (box) box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
-  if ($('#contactoResponsable')) $('#contactoResponsable').value = ''; // NUEVO: limpiar responsable
+  if ($('#contactoResponsable')) $('#contactoResponsable').value = ''; // limpiar Responsable PG
 }
