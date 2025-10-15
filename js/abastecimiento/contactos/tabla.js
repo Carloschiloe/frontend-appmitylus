@@ -23,29 +23,17 @@ function getISOWeek(d = new Date()) {
   return Math.ceil(((x - yearStart) / 86400000 + 1) / 7);
 }
 
-/* =========== ESTILOS: bloquea overflow, fija anchos y oculta filtro nativo =========== */
+/* =========== ESTILOS =========== */
 (function injectStyles () {
   const css = `
-    /* Ocultar el buscador nativo de DataTables: queda SOLO el de la barra */
     #tablaContactos_filter{ display:none !important; }
-
-    .mmpp-table-wrap, #tablaContactos_wrapper{ overflow-x: hidden !important; }
-
-    #tablaContactos{
-      table-layout: fixed !important;
-      width: 100% !important;
-      max-width: 100% !important;
-    }
+    .mmpp-table-wrap, #tablaContactos_wrapper{ overflow-x:hidden !important; }
+    #tablaContactos{ table-layout:fixed !important; width:100%!important; max-width:100%!important; }
     #tablaContactos th, #tablaContactos td{
-      padding: 10px 8px !important;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      box-sizing: border-box !important;
-      vertical-align: middle;
+      padding:10px 8px!important; white-space:nowrap!important; overflow:hidden!important;
+      text-overflow:ellipsis!important; box-sizing:border-box!important; vertical-align:middle;
     }
-
-    /* anchos afinados para no forzar scroll */
+    /* anchos */
     #tablaContactos th:nth-child(1), #tablaContactos td:nth-child(1){ width:60px  !important; }  /* Semana  */
     #tablaContactos th:nth-child(2), #tablaContactos td:nth-child(2){ width:108px !important; }  /* Fecha    */
     #tablaContactos th:nth-child(3), #tablaContactos td:nth-child(3){ width:200px !important; }  /* Proveedor*/
@@ -53,22 +41,12 @@ function getISOWeek(d = new Date()) {
     #tablaContactos th:nth-child(5), #tablaContactos td:nth-child(5){ width:82px  !important; text-align:center !important; }  /* Tons */
     #tablaContactos th:nth-child(6), #tablaContactos td:nth-child(6){ width:110px !important; }  /* Responsable */
     #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:160px !important; }  /* Acciones */
-
-    /* === PROVEEDOR y CENTRO: dos líneas (empresa/contacto y centro/comuna) === */
-    #tablaContactos td:nth-child(3){ white-space: normal !important; }
-    .prov-cell{ display:block; min-width:0; }
-    .prov-top, .prov-sub{
-      display:block; overflow:hidden; text-overflow:ellipsis; line-height:1.2;
-    }
-    .prov-sub{ font-size:12px; color:#6b7280; }
-
-    .centro-cell{ display:block; min-width:0; }
-    .centro-top, .centro-sub{
-      display:block; overflow:hidden; text-overflow:ellipsis; line-height:1.2;
-    }
-    .centro-sub{ font-size:12px; color:#6b7280; }
-
-    /* Acciones */
+    /* celdas multi-línea */
+    #tablaContactos td:nth-child(3){ white-space:normal!important; }
+    .prov-cell, .centro-cell{ display:block; min-width:0; }
+    .prov-top,.prov-sub,.centro-top,.centro-sub{ display:block; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
+    .prov-sub,.centro-sub{ font-size:12px; color:#6b7280; }
+    /* acciones */
     .actions{ display:flex; gap:8px; align-items:center; justify-content:flex-start; }
     .actions .icon-action{
       display:inline-flex; align-items:center; justify-content:center;
@@ -76,7 +54,6 @@ function getISOWeek(d = new Date()) {
       box-shadow:0 2px 8px rgba(2,6,23,.05); cursor:pointer;
     }
     .actions .icon-action i{ font-size:18px; line-height:18px; }
-
     .tons-cell.loading{ opacity:.6; }
   `;
   if (!document.getElementById('tablaContactos-inline-css')){
@@ -170,6 +147,8 @@ export function initTablaContactos() {
   const tablaEl = $('#tablaContactos');
   if (!jq || !tablaEl) return;
 
+  ensureFooter();
+
   // Instancia
   const dt = jq('#tablaContactos').DataTable({
     dom: 'Blfrtip',
@@ -193,7 +172,11 @@ export function initTablaContactos() {
       { targets: 4, width:'82px',  className:'dt-center' },   /* Tons centrado */
       { targets: 5, width:'110px' },                          /* Responsable */
       { targets: 6, width:'160px', orderable:false, searchable:false } /* Acciones */
-    ]
+    ],
+    drawCallback: function(){
+      // asegurar cálculo de tons + footer en cada draw
+      setTimeout(actualizarTonsVisiblesYFooter, 0);
+    }
   });
 
   state.dt = dt;
@@ -206,9 +189,6 @@ export function initTablaContactos() {
       _clickAccContacto(this);
     });
 
-  // Redibujo => actualizar tons + footer
-  jq('#tablaContactos').on('draw.dt', async () => { await actualizarTonsVisiblesYFooter(); });
-
   // Filtros externos
   const $global = document.querySelector('#buscarTablaContactos');
   $global?.addEventListener('input', (e) => {
@@ -218,7 +198,7 @@ export function initTablaContactos() {
   const $fltComuna = document.getElementById('fltComuna');
   const $fltResp   = document.getElementById('fltResp');
   $fltSemana?.addEventListener('change', ()=> dt.column(0).search($fltSemana.value||'', true, false).draw());
-  // ahora la comuna está en la COLUMNA 3 (centro+comuna)
+  // comuna está en la columna 3 (centro + comuna)
   $fltComuna?.addEventListener('change', ()=> dt.column(3).search($fltComuna.value||'', false, true).draw());
   $fltResp?.addEventListener('change',   ()=> dt.column(5).search($fltResp.value||'', true, false).draw());
 
@@ -232,44 +212,47 @@ function populateFiltrosDesdeDatos(){
   const base = Array.isArray(state.contactosGuardados) ? state.contactosGuardados : [];
   base.forEach(c => {
     const f = new Date(c.createdAt || c.fecha || Date.now());
-    semanas.add(String(getISOWeek(f)));
+    if (!Number.isNaN(f.getTime())) semanas.add(String(getISOWeek(f)));
     const centroCodigo = c.centroCodigo || centroCodigoById(c.centroId) || '';
-    comunas.add(c.centroComuna || c.comuna || comunaPorCodigo(centroCodigo) || '');
+    const comuna = c.centroComuna || c.comuna || comunaPorCodigo(centroCodigo) || '';
+    if (comuna) comunas.add(comuna);
   });
   const opt = (v)=> v ? `<option value="${esc(v)}">${esc(v)}</option>` : '';
   const $sem = document.getElementById('fltSemana');
   const $com = document.getElementById('fltComuna');
-  if ($sem && $sem.children.length<=1) $sem.insertAdjacentHTML('beforeend', [...semanas].sort((a,b)=>a-b).map(opt).join(''));
-  if ($com && $com.children.length<=1) $com.insertAdjacentHTML('beforeend', [...comunas].sort().map(opt).join(''));
+  if ($sem && $sem.children.length<=1) $sem.insertAdjacentHTML('beforeend', [...semanas].map(Number).filter(Number.isFinite).sort((a,b)=>a-b).map(String).map(opt).join(''));
+  if ($com && $com.children.length<=1) $com.insertAdjacentHTML('beforeend', [...comunas].sort((a,b)=>a.localeCompare(b,'es')).map(opt).join(''));
 }
 
 /* ==================== tons visibles + footer ==================== */
-async function actualizarTonsVisiblesYFooter(){
+function actualizarTonsVisiblesYFooter(){
   const jq = window.jQuery || window.$;
   if (!state.dt || !jq) return;
 
-  state.dt.rows({ page: 'current', search: 'applied' }).every(function(){
-    const cellNode = state.dt.cell(this, 4).node(); // Tons
-    if (!cellNode) return;
-    const span = cellNode.querySelector('.tons-cell');
-    if (!span) return;
+  try{
+    state.dt.rows({ page: 'current', search: 'applied' }).every(function(){
+      const cellNode = state.dt.cell(this, 4).node(); // Tons
+      if (!cellNode) return;
+      const span = cellNode.querySelector('.tons-cell');
+      if (!span) return;
 
-    const proveedorKey = span.dataset.provkey || '';
-    const centroId     = span.dataset.centroid || '';
-    const contactoId   = span.dataset.contactoid || '';
+      const proveedorKey = span.dataset.provkey || '';
+      const centroId     = span.dataset.centroid || '';
+      const contactoId   = span.dataset.contactoid || '';
 
-    if (span.dataset.value !== undefined && span.dataset.value !== '') return;
+      if (span.dataset.value !== undefined && span.dataset.value !== '') return;
 
-    span.classList.add('loading');
-    span.textContent = '…';
+      span.classList.add('loading');
+      span.textContent = '…';
 
-    fetchTotalDisponibilidad({ contactoId, proveedorKey, centroId }).then(total => {
-      span.dataset.value = String(total);
-      span.textContent = fmtCL(total);
-      span.classList.remove('loading');
-      recalcularFooterDesdeDom();
+      fetchTotalDisponibilidad({ contactoId, proveedorKey, centroId }).then(total => {
+        span.dataset.value = String(total);
+        span.textContent = fmtCL(total);
+        span.classList.remove('loading');
+        recalcularFooterDesdeDom();
+      }).catch(()=>{ span.classList.remove('loading'); });
     });
-  });
+  }catch(e){ console.warn('[contactos] actualizarTonsVisiblesYFooter()', e); }
 }
 
 function recalcularFooterDesdeDom(){
@@ -281,8 +264,7 @@ function recalcularFooterDesdeDom(){
 }
 
 /* ==================== render tabla ==================== */
-  export async function renderTablaContactos() {
-
+export function renderTablaContactos() {
   const jq = window.jQuery || window.$;
   const tabla = $('#tablaContactos'); if (!tabla) return;
 
@@ -302,25 +284,22 @@ function recalcularFooterDesdeDom(){
       if (!esCodigoValido(centroCodigo)) centroCodigo = centroCodigoById(c.centroId) || '';
       const comuna = c.centroComuna || c.comuna || comunaPorCodigo(centroCodigo) || '';
 
-      // Proveedor + contacto en dos líneas
+      // Proveedor + contacto
       const provName   = esc(c.proveedorNombre || '');
       const contactoNm = esc(c.contactoNombre || c.contacto || '');
       const provCell = provName
-        ? `
-          <span class="prov-cell" title="${provName}${contactoNm ? ' – ' + contactoNm : ''}">
-            <span class="prov-top ellipsisProv">${provName}</span>
-            ${contactoNm ? `<span class="prov-sub ellipsisProv">${contactoNm}</span>` : ``}
-          </span>
-        `.trim()
+        ? `<span class="prov-cell" title="${provName}${contactoNm ? ' – ' + contactoNm : ''}">
+             <span class="prov-top ellipsisProv">${provName}</span>
+             ${contactoNm ? `<span class="prov-sub ellipsisProv">${contactoNm}</span>` : ``}
+           </span>`
         : '';
 
-      // Centro + Comuna (comuna debajo)
+      // Centro + Comuna (comuna en sublínea)
       const centroHTML = `
-          <span class="centro-cell" title="${esc(centroCodigo)}${comuna? ' – '+esc(comuna):''}">
-            <span class="centro-top">${esc(centroCodigo)||'—'}</span>
-            ${comuna ? `<span class="centro-sub">${esc(comuna)}</span>` : ``}
-          </span>
-        `.trim();
+        <span class="centro-cell" title="${esc(centroCodigo)}${comuna? ' – '+esc(comuna):''}">
+          <span class="centro-top">${esc(centroCodigo)||'—'}</span>
+          ${comuna ? `<span class="centro-sub">${esc(comuna)}</span>` : ``}
+        </span>`.trim();
 
       const tonsCell = `<span class="tons-cell" data-contactoid="${esc(c._id||'')}" data-provkey="${esc(c.proveedorKey||'')}" data-centroid="${esc(c.centroId || '')}" data-value=""></span>`;
       const responsable = esc(c.responsablePG || '—');
@@ -345,11 +324,13 @@ function recalcularFooterDesdeDom(){
       ];
     });
 
-  // Con DataTables
   if (state.dt && jq) {
     state.dt.clear();
-    state.dt.rows.add(filas).draw(false);
-    await actualizarTonsVisiblesYFooter();
+    state.dt.rows.add(filas);
+    state.dt.columns.adjust();
+    state.dt.draw(false);
+    // calcula tons luego del draw (sin await)
+    setTimeout(actualizarTonsVisiblesYFooter, 0);
     return;
   }
 
@@ -380,4 +361,3 @@ function recalcularFooterDesdeDom(){
 }
 
 document.addEventListener('reload-tabla-contactos', () => renderTablaContactos());
-
