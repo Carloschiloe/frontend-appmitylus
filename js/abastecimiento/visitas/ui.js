@@ -475,9 +475,8 @@ function wireUIEventsOnce(){
   });
 }
 
-/* ====== Filtros externos (Semana y Centro) ====== */
+/* ====== Filtros externos (Semana y Comuna) ====== */
 function buildOrUpdateFiltros(){
-  // contenedor cercano; si no, body
   const tableEl = document.getElementById('tablaVisitas');
   const wrap = tableEl?.closest('.card, .mmpp-table-wrap, .container') || document.body;
   if (!wrap) return;
@@ -492,10 +491,9 @@ function buildOrUpdateFiltros(){
       <div class="fld"><label>Semana</label>
         <select id="fltVisSem"><option value="">Todas</option></select>
       </div>
-      <div class="fld"><label>Centro</label>
-        <select id="fltVisCentro"><option value="">Todos</option></select>
+      <div class="fld"><label>Comuna</label>
+        <select id="fltVisComuna"><option value="">Todas</option></select>
       </div>`;
-    // intenta ponerla antes de la tabla; si no, la agrega al wrap
     if (tableEl?.parentElement){
       tableEl.parentElement.insertBefore(bar, tableEl);
     } else {
@@ -518,26 +516,26 @@ function buildOrUpdateFiltros(){
     });
   };
 
-  // construir listas desde visitas guardadas
+  // armar listas desde visitas guardadas
   const semanasSet = new Set();
-  const centrosSet = new Set();
+  const comunasSet = new Set();
   (state.visitasGuardadas||[]).forEach(v=>{
     const f = new Date(v.fecha||Date.now());
     if (!Number.isNaN(f.getTime())) semanasSet.add(String(getISOWeek(f)));
-    const code = v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '');
-    if (code) centrosSet.add(String(code));
+    const comuna = (v.centroComuna || comunaDeVisita(v) || '').trim();
+    if (comuna) comunasSet.add(comuna);
   });
 
-  const semanas = Array.from(semanasSet).map(n=>Number(n)).filter(n=>Number.isFinite(n)).sort((a,b)=>a-b).map(String);
-  const centros = Array.from(centrosSet).sort();
+  const semanas = Array.from(semanasSet).map(n=>Number(n)).filter(Number.isFinite).sort((a,b)=>a-b).map(String);
+  const comunas = Array.from(comunasSet).sort((a,b)=>a.localeCompare(b,'es'));
 
-  const selSem = bar.querySelector('#fltVisSem');
-  const selCen = bar.querySelector('#fltVisCentro');
+  const selSem    = bar.querySelector('#fltVisSem');
+  const selComuna = bar.querySelector('#fltVisComuna');
 
   repoblar(selSem, semanas, 'Todas');
-  repoblar(selCen, centros, 'Todos');
+  repoblar(selComuna, comunas, 'Todas');
 
-  // handlers (seguros si dtV aún no existe)
+  // handlers
   if (selSem && !selSem.__wired){
     selSem.__wired = true;
     selSem.addEventListener('change', ()=>{
@@ -546,11 +544,12 @@ function buildOrUpdateFiltros(){
       dtV.column(0).search(val, true, false).draw();
     });
   }
-  if (selCen && !selCen.__wired){
-    selCen.__wired = true;
-    selCen.addEventListener('change', ()=>{
+  if (selComuna && !selComuna.__wired){
+    selComuna.__wired = true;
+    selComuna.addEventListener('change', ()=>{
       if (!dtV) return;
-      const val = selCen.value || '';
+      // la comuna está renderizada como texto dentro de la columna 3
+      const val = selComuna.value || '';
       dtV.column(3).search(val, false, true).draw();
     });
   }
@@ -632,3 +631,4 @@ export async function initVisitasTab(forceReload = false) {
 
   console.log('[visitas/ui] initVisitasTab listo. dtV?', !!dtV);
 }
+
