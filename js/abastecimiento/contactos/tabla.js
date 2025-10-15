@@ -281,7 +281,8 @@ function recalcularFooterDesdeDom(){
 }
 
 /* ==================== render tabla ==================== */
-export function renderTablaContactos() {
+  export async function renderTablaContactos() {
+
   const jq = window.jQuery || window.$;
   const tabla = $('#tablaContactos'); if (!tabla) return;
 
@@ -379,3 +380,4 @@ export function renderTablaContactos() {
 }
 
 document.addEventListener('reload-tabla-contactos', () => renderTablaContactos());
+
