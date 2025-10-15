@@ -362,14 +362,12 @@ export function setupFormularioVisita(){
       const editId = (form.dataset.editId || '').trim();
       if (editId){
         await update(editId, payload);
-        // refresco inmediato
         await renderTablaVisitas(); forceAdjustVisitas();
         window.dispatchEvent(new CustomEvent('visita:updated', { detail:{ id: editId } }));
         M.toast?.({ html:'Visita actualizada', classes:'teal' });
         await handleFotosAfterSave(editId);
       }else{
         const nueva = await create(payload);
-        // refresco inmediato
         await renderTablaVisitas(); forceAdjustVisitas();
         window.dispatchEvent(new CustomEvent('visita:created', { detail:{ visita: nueva, contactoId } }));
         M.toast?.({ html:'Visita guardada', classes:'teal' });
@@ -479,9 +477,12 @@ function wireUIEventsOnce(){
 
 /* ====== Filtros externos (Semana y Centro) ====== */
 function buildOrUpdateFiltros(){
-  const wrap = document.querySelector('#tablaVisitas')?.closest('.card, .mmpp-table-wrap, .container, body');
+  // contenedor cercano; si no, body
+  const tableEl = document.getElementById('tablaVisitas');
+  const wrap = tableEl?.closest('.card, .mmpp-table-wrap, .container') || document.body;
   if (!wrap) return;
 
+  // crea barra si no existe
   let bar = document.getElementById('visitas-filtros-bar');
   if (!bar){
     bar = document.createElement('div');
@@ -494,46 +495,65 @@ function buildOrUpdateFiltros(){
       <div class="fld"><label>Centro</label>
         <select id="fltVisCentro"><option value="">Todos</option></select>
       </div>`;
-    const tableEl = document.getElementById('tablaVisitas');
-    tableEl?.parentElement?.insertBefore(bar, tableEl);
+    // intenta ponerla antes de la tabla; si no, la agrega al wrap
+    if (tableEl?.parentElement){
+      tableEl.parentElement.insertBefore(bar, tableEl);
+    } else {
+      wrap.prepend(bar);
+    }
   }
 
-  // opciones desde state.visitasGuardadas
-  const semanas = new Set();
-  const centros = new Set();
-  (state.visitasGuardadas||[]).forEach(v=>{
-    const f = new Date(v.fecha||Date.now());
-    semanas.add(String(getISOWeek(f)));
-    const code = v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '');
-    if (code) centros.add(String(code));
-  });
-
-  const selSem = document.getElementById('fltVisSem');
-  const selCen = document.getElementById('fltVisCentro');
-
-  const ensureOpts = (sel, values) => {
-    const have = new Set([...sel.options].map(o=>o.value));
+  // util: repoblar select sin duplicados
+  const repoblar = (sel, values, etiquetaVacia) => {
+    if (!sel) return;
+    const base = document.createElement('option');
+    base.value = '';
+    base.textContent = etiquetaVacia;
+    sel.innerHTML = '';
+    sel.appendChild(base);
     values.forEach(v=>{
-      if (!have.has(v)){
-        const o = document.createElement('option');
-        o.value = v; o.textContent = v;
-        sel.appendChild(o);
-      }
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v;
+      sel.appendChild(o);
     });
   };
-  ensureOpts(selSem, [...semanas].sort((a,b)=>a-b));
-  ensureOpts(selCen, [...centros].sort());
 
-  selSem.onchange = ()=> {
-    if (!dtV) return;
-    const val = selSem.value ? `^${selSem.value}$` : '';
-    dtV.column(0).search(val, true, false).draw();
-  };
-  selCen.onchange = ()=> {
-    if (!dtV) return;
-    const val = selCen.value || '';
-    dtV.column(3).search(val, false, true).draw(); // busca por texto en la celda Centro
-  };
+  // construir listas desde visitas guardadas
+  const semanasSet = new Set();
+  const centrosSet = new Set();
+  (state.visitasGuardadas||[]).forEach(v=>{
+    const f = new Date(v.fecha||Date.now());
+    if (!Number.isNaN(f.getTime())) semanasSet.add(String(getISOWeek(f)));
+    const code = v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '');
+    if (code) centrosSet.add(String(code));
+  });
+
+  const semanas = Array.from(semanasSet).map(n=>Number(n)).filter(n=>Number.isFinite(n)).sort((a,b)=>a-b).map(String);
+  const centros = Array.from(centrosSet).sort();
+
+  const selSem = bar.querySelector('#fltVisSem');
+  const selCen = bar.querySelector('#fltVisCentro');
+
+  repoblar(selSem, semanas, 'Todas');
+  repoblar(selCen, centros, 'Todos');
+
+  // handlers (seguros si dtV aún no existe)
+  if (selSem && !selSem.__wired){
+    selSem.__wired = true;
+    selSem.addEventListener('change', ()=>{
+      if (!dtV) return;
+      const val = selSem.value ? `^${selSem.value}$` : '';
+      dtV.column(0).search(val, true, false).draw();
+    });
+  }
+  if (selCen && !selCen.__wired){
+    selCen.__wired = true;
+    selCen.addEventListener('change', ()=>{
+      if (!dtV) return;
+      const val = selCen.value || '';
+      dtV.column(3).search(val, false, true).draw();
+    });
+  }
 }
 
 /* ================= Init principal ======================= */
