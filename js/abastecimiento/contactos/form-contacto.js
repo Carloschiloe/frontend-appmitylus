@@ -2,7 +2,7 @@
 import { apiCreateContacto, apiUpdateContacto, apiDeleteContacto, apiGetVisitasByContacto } from '../../core/api.js';
 import { state, $, getVal, setVal, slug } from './state.js';
 import { cargarContactosGuardados } from './data.js';
-import { syncHiddenFromSelect, mostrarCentrosDeProveedor, resetSelectCentros } from './proveedores.js';
+import { syncHiddenFromSelect, mostrarCentrosDeProveedor, resetSelectCentros, seleccionarCentroPorCodigo } from './proveedores.js';
 import { comunaPorCodigo, centroCodigoById } from './normalizers.js';
 import { renderTablaContactos } from './tabla.js';
 import { abrirModalVisita } from '../visitas/ui.js';
@@ -423,6 +423,17 @@ export function setupFormulario() {
   state.editId = null;
   state.dispEditId = null;
 
+  // 👉 soporte de búsqueda por CÓDIGO DE CENTRO en el mismo input del proveedor
+  const provInput = document.getElementById('buscadorProveedor');
+  if (provInput) {
+    const tryCode = (val) => {
+      const m = String(val || '').trim().match(/\b(\d{4,7})\b/);
+      if (m) seleccionarCentroPorCodigo(m[1]);
+    };
+    provInput.addEventListener('input', () => tryCode(provInput.value));
+    provInput.addEventListener('change', () => tryCode(provInput.value));
+  }
+
   document.addEventListener('click', (e)=>{
     const a = e.target.closest?.('a.icon-action.ver'); if(!a) return;
     const id = a.dataset.id;
@@ -511,7 +522,7 @@ export function setupFormulario() {
     const tieneMMPP         = $('#tieneMMPP')?.value || '';
     const vendeActualmenteA = $('#vendeActualmenteA')?.value?.trim() || '';
     const notas             = $('#notasContacto')?.value?.trim() || '';
-    const responsablePG     = $('#contactoResponsable')?.value || ''; // ← NUEVO
+    const responsablePG     = $('#contactoResponsable')?.value || '';
 
     // Centro (opcional)
     syncHiddenFromSelect(selCentro);
@@ -529,7 +540,7 @@ export function setupFormulario() {
       resultado, tieneMMPP, vendeActualmenteA, notas,
       centroId, centroCodigo, centroComuna, centroHectareas,
       contactoNombre, contactoTelefono, contactoEmail,
-      responsablePG // ← incluirlo en el body
+      responsablePG
     };
 
     // Campos de disponibilidad (crear o patch)
@@ -644,7 +655,7 @@ export function abrirEdicion(c) {
   if ($('#contactoNombre')) $('#contactoNombre').value = c.contactoNombre || '';
   if ($('#contactoTelefono')) $('#contactoTelefono').value = c.contactoTelefono || '';
   if ($('#contactoEmail')) $('#contactoEmail').value = c.contactoEmail || '';
-  if ($('#contactoResponsable')) $('#contactoResponsable').value = c.responsablePG || ''; // ← setear Responsable PG
+  if ($('#contactoResponsable')) $('#contactoResponsable').value = c.responsablePG || '';
 
   const hoy = new Date();
   const anioEl = document.getElementById('asigAnio');
@@ -705,5 +716,5 @@ export function prepararNuevo() {
   if (mesEl) mesEl.value = String(hoy.getMonth() + 1);
   const box = document.getElementById('asigHist');
   if (box) box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
-  if ($('#contactoResponsable')) $('#contactoResponsable').value = ''; // limpiar Responsable PG
+  if ($('#contactoResponsable')) $('#contactoResponsable').value = '';
 }
