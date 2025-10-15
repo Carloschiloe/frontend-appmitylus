@@ -17,7 +17,6 @@ console.log('[visitas/ui] cargado');
 /* ================= estilos mínimos ================= */
 (function injectStyles(){
   const css = `
-    /* sin forzar scroll horizontal */
     .mmpp-table-wrap{ overflow-x:visible!important; }
 
     #tablaVisitas{ width:100%!important; }
@@ -31,7 +30,6 @@ console.log('[visitas/ui] cargado');
     .v-top{ display:block; font-weight:600; }
     .v-sub{ display:block; font-size:12px; color:#6b7280; line-height:1.2; }
 
-    /* Acciones */
     #tablaVisitas td:last-child{ overflow:visible!important; text-align:center; }
     #tablaVisitas td .acts{ display:flex; gap:8px; align-items:center; justify-content:center; }
     #tablaVisitas td .acts a{
@@ -41,11 +39,23 @@ console.log('[visitas/ui] cargado');
     }
     #tablaVisitas td .acts a i{ font-size:18px; line-height:18px; }
 
-    /* Muestreo */
     #tablaVisitas td .acts a.mu-red  { border-color:#fecaca; background:#fff1f2; }
     #tablaVisitas td .acts a.mu-red  i{ color:#dc2626; }
     #tablaVisitas td .acts a.mu-green{ border-color:#bbf7d0; background:#ecfdf5; }
     #tablaVisitas td .acts a.mu-green i{ color:#059669; }
+
+    /* Filtros externos */
+    .visitas-filtros{
+      display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+      margin:10px 0 6px;
+    }
+    .visitas-filtros .fld{
+      display:flex; align-items:center; gap:6px;
+    }
+    .visitas-filtros select{
+      min-width:140px; padding:6px 8px;
+      border:1px solid #e5e7eb; border-radius:8px; background:#fff;
+    }
   `;
   if (!document.getElementById('visitas-inline-styles')){
     const s = document.createElement('style');
@@ -55,25 +65,42 @@ console.log('[visitas/ui] cargado');
   }
 })();
 
+/* ============ parche seguro para toasts que se quedan pegados ============ */
+(function patchToastOnce(){
+  if (!window.M || window.__toast_patched) return;
+  window.__toast_patched = true;
+  const orig = M.toast;
+  M.toast = (opts={})=>{
+    try{ M.Toast.dismissAll(); }catch{}
+    const o = (typeof opts==='string') ? { html:opts } : { ...opts };
+    if (o.displayLength == null) o.displayLength = 1600;
+    if (o.inDuration == null)    o.inDuration    = 120;
+    if (o.outDuration == null)   o.outDuration   = 140;
+    return orig(o);
+  };
+})();
+
 /* ================= utils ================= */
 const esc = (s='') => String(s)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;')
   .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
-/** Formatea SIEMPRE como UTC (evita desfases por timezone) */
 const fmtISO = (d) => {
   const x = (d instanceof Date) ? d : new Date(d);
   if (Number.isNaN(x.getTime())) return '';
-  return x.toISOString().slice(0,10); // YYYY-MM-DD en UTC
+  const y = x.getFullYear();
+  const m = String(x.getMonth()+1).padStart(2,'0');
+  const dd = String(x.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
 };
 const trunc = (s='', max=42) => (String(s).length>max ? String(s).slice(0,max-1)+'…' : String(s));
 
 function getISOWeek(date){
   const d = (date instanceof Date) ? new Date(date) : new Date(date);
-  d.setUTCHours(0,0,0,0);
-  d.setUTCDate(d.getUTCDate() + 3 - ((d.getUTCDay()+6)%7));
-  const week1 = new Date(Date.UTC(d.getUTCFullYear(),0,4));
-  return 1 + Math.round(((d - week1) / 86400000 - 3 + ((week1.getUTCDay()+6)%7)) / 7);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() + 3 - ((d.getDay()+6)%7));
+  const week1 = new Date(d.getFullYear(),0,4);
+  return 1 + Math.round(((d - week1) / 86400000 - 3 + ((week1.getDay()+6)%7)) / 7);
 }
 function proveedorDeVisita(v){
   const id = v?.contactoId ? String(v.contactoId) : null;
@@ -94,14 +121,12 @@ function comunaDeVisita(v){
 }
 const normalizeEstado = (s='') => {
   const x = String(s||'').trim();
-  if (!x || x === 'Programar nueva visita') return 'Nueva visita';
   return (x === 'Tomar/entregar muestras') ? 'Tomar muestras' : x;
 };
 
 /* ================= DataTable helpers ================= */
 let dtV = null;
 
-/* Ajuste SEGURO: siempre ajusta columnas */
 function safeAdjust(){
   if (!dtV) return;
   try { dtV.columns.adjust().draw(false); } catch {}
@@ -179,16 +204,15 @@ export async function renderTablaVisitas(){
           </a>
         </div>`;
 
-      // 0 Sem | 1 Fecha | 2 Proveedor | 3 Centro | 4 Próximo paso | 5 Fecha prox. | 6 Tons | 7 Acciones
       return [
-        esc(String(semana)),
-        `<span data-order="${f.getTime()}">${fecha}</span>`,
-        provHTML,
-        centroHTML,
-        esc(proximoPaso),
-        fppHTML,
-        esc(tons),
-        acciones
+        esc(String(semana)),                          // 0 Sem.
+        `<span data-order="${f.getTime()}">${fecha}</span>`, // 1 Fecha
+        provHTML,                                     // 2 Proveedor
+        centroHTML,                                   // 3 Centro
+        esc(proximoPaso),                             // 4 Próximo paso
+        fppHTML,                                      // 5 Fecha prox.
+        esc(tons),                                    // 6 Tons
+        acciones                                      // 7 Acciones
       ];
     });
 
@@ -248,7 +272,7 @@ export function abrirModalVisita(contacto){
   $('#visita_contacto').value = '';
   $('#visita_enAgua').value = '';
   $('#visita_tonsComprometidas').value = '';
-  $('#visita_estado').value = 'Nueva visita';          // ← default correcto
+  $('#visita_estado').value = 'Programar nueva visita';
   $('#visita_observaciones').value = '';
   const fpp = $('#visita_proximoPasoFecha'); if (fpp) fpp.value = '';
 
@@ -272,7 +296,7 @@ async function abrirEditarVisita(v, readOnly=false){
   $('#visita_contacto').value = v.contacto || '';
   $('#visita_enAgua').value = v.enAgua || '';
   $('#visita_tonsComprometidas').value = v.tonsComprometidas ?? '';
-  $('#visita_estado').value = normalizeEstado(v.estado || 'Nueva visita');
+  $('#visita_estado').value = normalizeEstado(v.estado || 'Programar nueva visita');
   $('#visita_observaciones').value = v.observaciones || '';
   const fpp = $('#visita_proximoPasoFecha');
   if (fpp) fpp.value = v.proximoPasoFecha ? fmtISO(v.proximoPasoFecha) : '';
@@ -329,7 +353,7 @@ export function setupFormularioVisita(){
       contacto: $('#visita_contacto').value || null,
       enAgua: $('#visita_enAgua').value || null,
       tonsComprometidas: $('#visita_tonsComprometidas').value ? Number($('#visita_tonsComprometidas').value) : null,
-      estado: normalizeEstado($('#visita_estado').value || 'Nueva visita'),
+      estado: normalizeEstado($('#visita_estado').value || 'Programar nueva visita'),
       proximoPasoFecha: $('#visita_proximoPasoFecha')?.value || null,
       observaciones: $('#visita_observaciones').value || null
     };
@@ -337,14 +361,18 @@ export function setupFormularioVisita(){
     try{
       const editId = (form.dataset.editId || '').trim();
       if (editId){
-        await update(editId, payload); // usa PATCH y cae a PUT si es necesario
+        await update(editId, payload);
+        // refresco inmediato
+        await renderTablaVisitas(); forceAdjustVisitas();
         window.dispatchEvent(new CustomEvent('visita:updated', { detail:{ id: editId } }));
-        M.toast?.({ html:'Visita actualizada', classes:'teal', displayLength:1800 });
+        M.toast?.({ html:'Visita actualizada', classes:'teal' });
         await handleFotosAfterSave(editId);
       }else{
         const nueva = await create(payload);
+        // refresco inmediato
+        await renderTablaVisitas(); forceAdjustVisitas();
         window.dispatchEvent(new CustomEvent('visita:created', { detail:{ visita: nueva, contactoId } }));
-        M.toast?.({ html:'Visita guardada', classes:'teal', displayLength:1800 });
+        M.toast?.({ html:'Visita guardada', classes:'teal' });
         const visitId = (nueva && (nueva._id || nueva.id)) ? (nueva._id || nueva.id) : null;
         await handleFotosAfterSave(visitId);
       }
@@ -357,7 +385,7 @@ export function setupFormularioVisita(){
       forceAdjustVisitas();
     }catch(err){
       console.warn('[visitas/ui] create/update error:', err?.message || err);
-      M.toast?.({ html:`No se pudo guardar la visita`, displayLength:2200, classes:'red' });
+      M.toast?.({ html:'No se pudo guardar la visita', classes:'red', displayLength:2200 });
     }
   });
 }
@@ -449,13 +477,71 @@ function wireUIEventsOnce(){
   });
 }
 
+/* ====== Filtros externos (Semana y Centro) ====== */
+function buildOrUpdateFiltros(){
+  const wrap = document.querySelector('#tablaVisitas')?.closest('.card, .mmpp-table-wrap, .container, body');
+  if (!wrap) return;
+
+  let bar = document.getElementById('visitas-filtros-bar');
+  if (!bar){
+    bar = document.createElement('div');
+    bar.id = 'visitas-filtros-bar';
+    bar.className = 'visitas-filtros';
+    bar.innerHTML = `
+      <div class="fld"><label>Semana</label>
+        <select id="fltVisSem"><option value="">Todas</option></select>
+      </div>
+      <div class="fld"><label>Centro</label>
+        <select id="fltVisCentro"><option value="">Todos</option></select>
+      </div>`;
+    const tableEl = document.getElementById('tablaVisitas');
+    tableEl?.parentElement?.insertBefore(bar, tableEl);
+  }
+
+  // opciones desde state.visitasGuardadas
+  const semanas = new Set();
+  const centros = new Set();
+  (state.visitasGuardadas||[]).forEach(v=>{
+    const f = new Date(v.fecha||Date.now());
+    semanas.add(String(getISOWeek(f)));
+    const code = v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '');
+    if (code) centros.add(String(code));
+  });
+
+  const selSem = document.getElementById('fltVisSem');
+  const selCen = document.getElementById('fltVisCentro');
+
+  const ensureOpts = (sel, values) => {
+    const have = new Set([...sel.options].map(o=>o.value));
+    values.forEach(v=>{
+      if (!have.has(v)){
+        const o = document.createElement('option');
+        o.value = v; o.textContent = v;
+        sel.appendChild(o);
+      }
+    });
+  };
+  ensureOpts(selSem, [...semanas].sort((a,b)=>a-b));
+  ensureOpts(selCen, [...centros].sort());
+
+  selSem.onchange = ()=> {
+    if (!dtV) return;
+    const val = selSem.value ? `^${selSem.value}$` : '';
+    dtV.column(0).search(val, true, false).draw();
+  };
+  selCen.onchange = ()=> {
+    if (!dtV) return;
+    const val = selCen.value || '';
+    dtV.column(3).search(val, false, true).draw(); // busca por texto en la celda Centro
+  };
+}
+
 /* ================= Init principal ======================= */
 export async function initVisitasTab(forceReload = false) {
   const jq    = window.jQuery || window.$;
   const tabla = $('#tablaVisitas');
   if (!tabla) { console.warn('[visitas/ui] #tablaVisitas no está en el DOM'); return; }
 
-  // --- Header canónico (8 columnas) ---
   const HEADERS = ['Sem.', 'Fecha', 'Proveedor', 'Centro', 'Próximo paso', 'Fecha prox.', 'Tons', 'Acciones'];
   const thead   = tabla.querySelector('thead') || (() => { const t=document.createElement('thead'); tabla.prepend(t); return t; })();
   const trHead  = thead.querySelector('tr');
@@ -469,7 +555,6 @@ export async function initVisitasTab(forceReload = false) {
   wireUIEventsOnce();
   mountFotosUIOnce();
 
-  // Si existe un DataTable previo, destrúyelo
   if (jq?.fn?.DataTable && jq.fn.DataTable.isDataTable('#tablaVisitas')) {
     try { jq('#tablaVisitas').DataTable().destroy(true); } catch {}
     dtV = null;
@@ -477,14 +562,14 @@ export async function initVisitasTab(forceReload = false) {
 
   if (jq && !dtV) {
     const defs = [
-      { targets: 0, width: 60  },  // Sem.
-      { targets: 1, width: 108 },  // Fecha
-      { targets: 2, width: 280 },  // Proveedor
-      { targets: 3, width: 160 },  // Centro
-      { targets: 4, width: 180 },  // Próximo paso
-      { targets: 5, width: 128 },  // Fecha prox.
-      { targets: 6, width: 90  },  // Tons
-      { targets: 7, width: 180, orderable: false, searchable: false }, // Acciones
+      { targets: 0, width: 60  },
+      { targets: 1, width: 108 },
+      { targets: 2, width: 280 },
+      { targets: 3, width: 160 },
+      { targets: 4, width: 180 },
+      { targets: 5, width: 128 },
+      { targets: 6, width: 90  },
+      { targets: 7, width: 180, orderable: false, searchable: false },
     ];
 
     dtV = jq('#tablaVisitas').DataTable({
@@ -497,12 +582,12 @@ export async function initVisitasTab(forceReload = false) {
       paging: true,
       pageLength: 10,
       lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
-      autoWidth: true,   // deja que DT calcule anchos
+      autoWidth: true,
       responsive: false,
-      scrollX: false,    // sin scroll horizontal
+      scrollX: false,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: defs,
-      initComplete: () => forceAdjustVisitas(),
+      initComplete: () => { buildOrUpdateFiltros(); forceAdjustVisitas(); },
       drawCallback:  () => forceAdjustVisitas(),
     });
 
@@ -518,11 +603,12 @@ export async function initVisitasTab(forceReload = false) {
   }
 
   await renderTablaVisitas();
+  buildOrUpdateFiltros();
   forceAdjustVisitas();
 
-  window.addEventListener('visita:created', async () => { await renderTablaVisitas(); forceAdjustVisitas(); });
-  window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); forceAdjustVisitas(); });
-  window.addEventListener('visita:deleted', async () => { await renderTablaVisitas(); forceAdjustVisitas(); });
+  window.addEventListener('visita:created', async () => { await renderTablaVisitas(); buildOrUpdateFiltros(); forceAdjustVisitas(); });
+  window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); buildOrUpdateFiltros(); forceAdjustVisitas(); });
+  window.addEventListener('visita:deleted', async () => { await renderTablaVisitas(); buildOrUpdateFiltros(); forceAdjustVisitas(); });
 
   console.log('[visitas/ui] initVisitasTab listo. dtV?', !!dtV);
 }
