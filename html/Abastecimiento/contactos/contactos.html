@@ -20,55 +20,6 @@
   <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1">
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1">
   <link rel="stylesheet" href="/js/abastecimiento/visitas/fotos/styles.css">
-
-  <style>
-    /* inputs file nativos */
-    .modal input[type="file"]{display:none!important}
-
-    /* Filtros (tabla Contactos) */
-    .filtros-row{
-      display:grid;
-      grid-template-columns: repeat(4, minmax(180px,1fr));
-      gap:10px; align-items:center;
-    }
-    @media (max-width: 920px){ .filtros-row{ grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 520px){ .filtros-row{ grid-template-columns: 1fr; } }
-    .filtros-row select,.filtros-row input{ height:40px; border-radius:10px; padding:4px 8px; }
-
-    /* Contenedor con scroll horizontal externo a DataTables */
-    .mmpp-table-wrap{ overflow-x:auto; }
-
-    /* Tabla de visitas */
-    #tablaVisitas{ width:100%; }
-    #tablaVisitas th, #tablaVisitas td{
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      padding:10px 8px;
-    }
-    /* ancho mínimo y visibilidad de Acciones */
-    #tablaVisitas th:last-child, #tablaVisitas td:last-child{
-      min-width:180px; width:180px; overflow:visible!important;
-      display: table-cell !important;
-    }
-
-    /* ===== Barra de filtros + buscador de VISITAS ===== */
-    .visitas-toolbar{
-      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-      margin:10px 0 6px;
-    }
-    .visitas-filtros{
-      display:flex; gap:12px; align-items:center; flex-wrap:wrap;
-    }
-    .visitas-filtros .fld{ display:flex; align-items:center; gap:6px; }
-    .visitas-filtros label{ font-size:12px; color:#6b7280; }
-    .visitas-filtros select.browser-default{
-      min-width:160px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff;
-      height:auto; line-height:normal;
-    }
-    .visitas-search input{
-      width:260px; max-width:100%;
-      height:40px; border-radius:10px; padding:4px 10px; border:1px solid #e5e7eb;
-    }
-  </style>
 </head>
 <body class="mmpp-layout no-nav">
 
@@ -79,7 +30,7 @@
       <header class="mmpp-hero" style="margin-bottom:14px">
         <div>
           <h1>Abastecimiento de MMPP</h1>
-        <p>Empresas, visitas a cultivos y agenda de contactos</p>
+          <p>Empresas, visitas a cultivos y agenda de contactos</p>
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
           <div class="mmpp-badge">
@@ -133,23 +84,22 @@
           </div>
 
           <!-- Tabla Contactos -->
-          <!-- Tabla Contactos -->
-<div class="mmpp-table-wrap">
-  <table id="tablaContactos" class="display mmpp" style="width:100%">
-    <thead>
-      <tr>
-        <th>Semana</th>
-        <th>Fecha</th>
-        <th>Proveedor</th>
-        <th>Centro</th>       <!-- La comuna va debajo del centro -->
-        <th>Tons</th>
-        <th>Responsable</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
+          <div class="mmpp-table-wrap">
+            <table id="tablaContactos" class="display mmpp" style="width:100%">
+              <thead>
+                <tr>
+                  <th>Semana</th>
+                  <th>Fecha</th>
+                  <th>Proveedor</th>
+                  <th>Centro</th>
+                  <th>Tons</th>
+                  <th>Responsable</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
 
         </div>
       </section>
@@ -161,7 +111,7 @@
             Revisión, filtros y exportación de visitas (la creación sigue en Contactos).
           </div>
 
-          <!-- ===== Toolbar de VISITAS: filtros (semana/comuna) + buscador ===== -->
+          <!-- Toolbar Visitas -->
           <div class="visitas-toolbar">
             <div id="visitas-filtros-bar" class="visitas-filtros">
               <div class="fld">
@@ -181,7 +131,6 @@
               <input id="searchVisitas" type="text" placeholder="Buscar en visitas…" aria-label="Buscar en la tabla de visitas">
             </div>
           </div>
-          <!-- ===== /Toolbar de VISITAS ===== -->
 
           <div class="mmpp-table-wrap">
             <table id="tablaVisitas" class="display mmpp" style="width:100%">
@@ -446,8 +395,7 @@
           <div class="input-field">
             <input id="empresaSearch" type="text" class="mmpp-input" placeholder="Buscar empresa... (mín. 2 letras)">
           </div>
-          <ul id="searchResults" class="collection" style="max-height:260px;overflow:auto;">  <li class="tab col s3"><a href="#tab-resumen">Resumen semanal</a></li>
-        </ul>
+          <ul id="searchResults" class="collection" style="max-height:260px;overflow:auto;"></ul>
         </div>
         <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
           <a href="#!" id="btnCrearEmpresa" class="btn-flat">Crear empresa nueva</a>
@@ -455,32 +403,6 @@
           <a href="#!" class="modal-close mmpp-add">Cerrar</a>
         </div>
       </div>
-
-    </div>
-  </main>
-
-  <!-- Libs -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-
-  <!-- Orquestador -->
-  <script type="module" src="../../../js/abastecimiento/contactos/index.js?v=10"></script>
-
-  <!-- Init mínimo (tabs/modals) -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function(){
-      var elTabs = document.querySelectorAll('.tabs');
-      M.Tabs.init(elTabs, {});
-      var elModals = document.querySelectorAll('.modal');
-      M.Modal.init(elModals, {endingTop: '5%'});
-    });
-  </script>
 
       <!-- ====================== TAB: Resumen semanal ====================== -->
       <div id="tab-resumen" class="section">
@@ -520,6 +442,33 @@
         </div>
       </div>
 
+    </div>
+  </main>
+
+  <!-- Libs -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+  <!-- Orquestador -->
+  <script type="module" src="../../../js/abastecimiento/contactos/index.js?v=10"></script>
+
+  <!-- Init mínimo (tabs/modals) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      var elTabs = document.querySelectorAll('.tabs');
+      M.Tabs.init(elTabs, {});
+      var elModals = document.querySelectorAll('.modal');
+      M.Modal.init(elModals, {endingTop: '5%'});
+    });
+  </script>
+
+  <!-- Resumen semanal -->
   <script type="module" src="../../../js/abastecimiento/contactos/resumen-semanal.js?v=1"></script>
 </body>
 </html>
