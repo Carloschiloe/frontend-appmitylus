@@ -57,13 +57,10 @@ import { normalizeVisita } from '../visitas/normalizers.js';
 })();
 
 /* ======================= Utils ======================= */
-const fmtCL0 = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 });
-const fmtCL2 = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
-
-const toDate = (v) => {
-  if (!v) return null;
-  try { return (v instanceof Date) ? v : new Date(v); } catch { return null; }
-};
+const fmt2 = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
+const ymd = (d) => (d instanceof Date && !isNaN(d)) ? d.toISOString().slice(0,10) : '—';
+const toDate = (v) => { if (!v) return null; try { return (v instanceof Date) ? v : new Date(v); } catch { return null; } };
+const uniq = (arr) => Array.from(new Set(arr.filter(Boolean)));
 
 // Semana ISO (Lunes=1), usando jueves ISO y CEIL
 function isoWeek(date) {
@@ -79,11 +76,40 @@ function weekKeyFromDate(dt){
   const {year, week} = isoWeek(dt);
   return `${year}-W${String(week).padStart(2,'0')}`;
 }
-const uniq = (arr) => Array.from(new Set(arr.filter(Boolean)));
-const ymd = (d) => (d instanceof Date && !isNaN(d)) ? d.toISOString().slice(0,10) : '—';
+
+/* ======================= Resolutores robustos ======================= */
+function resolveProveedor(v){
+  // Prueba distintos campos comunes
+  return (
+    v.contacto?.empresaNombre ||
+    v.proveedorNombre ||
+    v.empresaNombre ||
+    v.empresa ||
+    v.contacto?.nombre ||
+    v.proveedor?.nombre ||
+    null
+  );
+}
+function resolveComuna(v){
+  return (
+    v.comuna ||
+    v.contacto?.comuna ||
+    v.centro?.comuna ||
+    null
+  );
+}
+function resolveCentro(v){
+  return (
+    v.centroCodigo ||
+    v.centroId ||
+    v.centro?.codigo ||
+    v.centro?.id ||
+    null
+  );
+}
 
 /* ======================= Cache en memoria ======================= */
-let _cache = { allVisitas: [], byWeek: new Map(), optionsBuiltFor: null };
+let _cache = { allVisitas: [], byWeek: new Map(), optionsSig: null };
 
 async function ensureVisitas() {
   if (_cache.allVisitas.length) return _cache.allVisitas;
@@ -92,7 +118,7 @@ async function ensureVisitas() {
   const list = Array.isArray(raw) ? raw.map(normalizeVisita) : [];
   _cache.allVisitas = list;
 
-  // pre-index por semana
+  // pre-index por semana (usar fecha de visita o del próximo paso)
   const byWeek = new Map();
   for (const v of list){
     const dt = toDate(v.fecha) || toDate(v.proximoPasoFecha);
@@ -102,7 +128,7 @@ async function ensureVisitas() {
     byWeek.get(wk).push(v);
   }
   _cache.byWeek = byWeek;
-  _cache.optionsBuiltFor = null; // invalida options
+  _cache.optionsSig = null;
   return list;
 }
 
@@ -111,10 +137,9 @@ function buildSemanaOptions() {
   const sel = document.getElementById('resumen_semana');
   if (!sel) return;
 
-  // Evita reconstruir si no cambió el set de semanas
   const weeks = Array.from(_cache.byWeek.keys()).sort().reverse();
   const sig = weeks.join(',');
-  if (_cache.optionsBuiltFor === sig) return;
+  if (_cache.optionsSig === sig) return;
 
   sel.innerHTML = '';
   for (const wk of weeks){
@@ -124,31 +149,36 @@ function buildSemanaOptions() {
     sel.appendChild(opt);
   }
   if (weeks.length) sel.value = weeks[0];
-  _cache.optionsBuiltFor = sig;
+  _cache.optionsSig = sig;
 }
 
 function aggregateForWeek(wk){
-  const visitas = _cache.byWeek.get(wk) || [];
+  // ordenar por fecha desc para la tabla
+  const visitas = (_cache.byWeek.get(wk) || []).slice().sort((a,b)=>{
+    const da = toDate(a.fecha) || toDate(a.proximoPasoFecha) || new Date(0);
+    const db = toDate(b.fecha) || toDate(b.proximoPasoFecha) || new Date(0);
+    return db - da;
+  });
 
-  const empresas = uniq(visitas.map(v =>
-    v.contacto?.empresaNombre || v.proveedorNombre || v.contacto?.nombre
-  ));
-  const responsables = uniq(visitas.map(v => v.contacto?.responsable || v.responsable || v.creadoPor));
-  const comunas = uniq(visitas.map(v => v.comuna || v.contacto?.comuna));
-  const centros = uniq(visitas.map(v => String(v.centroCodigo || v.centroId || '')));
+  // conjuntos sin placeholders
+  const empresas = uniq(visitas.map(resolveProveedor)).filter(x => x && x !== '—');
+  const comunas  = uniq(visitas.map(resolveComuna)).filter(x => x && x !== '—');
+  const centros  = uniq(visitas.map(resolveCentro)).filter(x => x && x !== '—');
+
   const totalTons = visitas.reduce((acc, v) => acc + Number(v.tonsComprometidas || 0), 0);
 
-  // Top proveedores por nº de visitas
+  // Top proveedores por nº de visitas (ignora vacíos)
   const cnt = Object.create(null);
   visitas.forEach(v => {
-    const key = v.contacto?.empresaNombre || v.proveedorNombre || v.contacto?.nombre || '—';
+    const key = resolveProveedor(v);
+    if (!key) return;
     cnt[key] = (cnt[key] || 0) + 1;
   });
   const topProveedores = Object.entries(cnt)
     .sort((a,b)=>b[1]-a[1]).slice(0,5)
     .map(([name,count])=>({name,count}));
 
-  return { visitas, empresas, responsables, comunas, centros, totalTons, topProveedores };
+  return { visitas, empresas, comunas, centros, totalTons, topProveedores };
 }
 
 function kpiCard(label, val){
@@ -171,7 +201,7 @@ function renderKPIs(agg){
     <div class="row" style="margin-top:8px">
       ${kpiCard("Empresas visitadas", agg.empresas.length)}
       ${kpiCard("Visitas realizadas", agg.visitas.length)}
-      ${kpiCard("Tons comprometidas", fmtCL2(agg.totalTons))}
+      ${kpiCard("Tons comprometidas", fmt2(agg.totalTons))}
       ${kpiCard("Centros distintos", agg.centros.length)}
       ${kpiCard("Comunas cubiertas", agg.comunas.length)}
     </div>
@@ -181,9 +211,11 @@ function renderKPIs(agg){
 function renderTop(agg){
   const el = $('#resumen_top');
   if (!el) return;
-  const items = agg.topProveedores.map(p =>
-    `<li class="collection-item">${p.name}<span class="secondary-content">${p.count}</span></li>`
-  ).join('') || '<li class="collection-item">—</li>';
+  const items = (agg.topProveedores.length
+    ? agg.topProveedores.map(p =>
+        `<li class="collection-item">${p.name}<span class="secondary-content">${p.count}</span></li>`
+      ).join('')
+    : '<li class="collection-item">—</li>');
   el.innerHTML = `
     <h6 style="margin-top:12px">Top proveedores por nº de visitas</h6>
     <ul class="collection">${items}</ul>
@@ -193,24 +225,37 @@ function renderTop(agg){
 function renderTabla(visitas){
   const tbody = $('#resumen_table_body');
   if (!tbody) return;
+
   const rows = visitas.map(v => {
-    const f = v.fecha ? new Date(v.fecha) : null;
-    const fstr = ymd(f);
-    const prov = v.contacto?.empresaNombre || v.proveedorNombre || v.contacto?.nombre || '—';
-    const centro = v.centroCodigo || v.centroId || '—';
-    const comuna = v.comuna || v.contacto?.comuna || '—';
-    const tons = v.tonsComprometidas ? fmtCL2(v.tonsComprometidas) : '—';
+    const f      = toDate(v.fecha);
+    const fNext  = toDate(v.proximoPasoFecha);
+    const prov   = resolveProveedor(v) || '—';
+    const centro = resolveCentro(v) || '—';
+    const comuna = resolveComuna(v) || '—';
+    const tons   = v.tonsComprometidas ? fmt2(v.tonsComprometidas) : '—';
     const estado = v.estado || '—';
+
     return `<tr>
-      <td>${fstr}</td>
+      <td>${ymd(f)}</td>
       <td>${prov}</td>
       <td>${centro}</td>
       <td>${comuna}</td>
       <td>${tons}</td>
+      <td>${ymd(fNext)}</td>
       <td>${estado}</td>
     </tr>`;
   }).join('');
-  tbody.innerHTML = rows || '<tr><td colspan="6" class="grey-text">No hay visitas para esta semana.</td></tr>';
+
+  // Ajusta headers si aún no tienen la nueva columna
+  const thead = tbody.closest('table')?.querySelector('thead tr');
+  if (thead && thead.children.length === 6) {
+    // Añade "Fecha prox." antes de Estado
+    const th = document.createElement('th');
+    th.textContent = 'Fecha prox.';
+    thead.insertBefore(th, thead.lastElementChild);
+  }
+
+  tbody.innerHTML = rows || '<tr><td colspan="7" class="grey-text">No hay visitas para esta semana.</td></tr>';
 }
 
 /* ======================= Controles ======================= */
@@ -234,8 +279,6 @@ function wireControls(){
     btnCopy.addEventListener('click', async () => {
       const area = document.getElementById('resumen_print_area');
       if (!area) return;
-
-      // Prefiere Clipboard API; fallback a execCommand
       const html = area.outerHTML;
       try {
         if (navigator.clipboard?.write) {
@@ -254,7 +297,6 @@ function wireControls(){
         }
         (window.M?.toast) && M.toast({ html: 'Resumen copiado', displayLength: 1500 });
       } catch {
-        // fallback plano
         try {
           await navigator.clipboard.writeText(area.innerText);
           (window.M?.toast) && M.toast({ html: 'Resumen copiado (texto)', displayLength: 1500 });
