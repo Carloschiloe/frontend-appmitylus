@@ -1,11 +1,9 @@
-
 // /js/abastecimiento/contactos/resumen-semanal.js
 import { state, $ } from './state.js';
 import { getAll as getAllVisitas } from '../visitas/api.js';
 import { normalizeVisita } from '../visitas/normalizers.js';
 
-
-// ---- estilos del módulo (inyección segura) ----
+/* ======================= Estilos del módulo (inyección segura) ======================= */
 (function injectResumenStyles(){
   if (document.getElementById('resumen-semanal-styles')) return;
   const s = document.createElement('style');
@@ -15,6 +13,7 @@ import { normalizeVisita } from '../visitas/normalizers.js';
     #tab-resumen{ padding: 8px 4px 24px; }
     #tab-resumen h5{ font-weight:600; letter-spacing: .2px; }
     .resumen-toolbar{ margin: 8px 0 4px; }
+
     /* KPI cards */
     .kpi-grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:12px; }
     .kpi-card{
@@ -24,7 +23,8 @@ import { normalizeVisita } from '../visitas/normalizers.js';
     }
     .kpi-card .kpi-label{ font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; }
     .kpi-card .kpi-value{ font-size:26px; margin-top:6px; line-height:1.1; font-weight:600; color:#111827; }
-    /* responsive columns: 12→mobile, 6→tablet, 3→desktop */
+
+    /* responsive columnas */
     .col-12{ grid-column: span 12; }
     @media (min-width: 600px){ .col-6{ grid-column: span 6; } }
     @media (min-width: 992px){ .col-3{ grid-column: span 3; } }
@@ -33,9 +33,7 @@ import { normalizeVisita } from '../visitas/normalizers.js';
     #resumen_print_area table.striped thead th{
       font-size:12px; color:#6b7280; font-weight:600; border-bottom:1px solid #e5e7eb;
     }
-    #resumen_print_area table.striped tbody td{
-      padding:10px 12px;
-    }
+    #resumen_print_area table.striped tbody td{ padding:10px 12px; }
 
     /* panel lateral (top proveedores) */
     #resumen_top h6{ font-weight:600; margin: 4px 0 8px; }
@@ -58,13 +56,16 @@ import { normalizeVisita } from '../visitas/normalizers.js';
   document.head.appendChild(s);
 })();
 
-const fmtCL = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 });
-const fmt2  = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
+/* ======================= Utils ======================= */
+const fmtCL0 = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 });
+const fmtCL2 = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
 
-function toDate(v){
+const toDate = (v) => {
   if (!v) return null;
   try { return (v instanceof Date) ? v : new Date(v); } catch { return null; }
-}
+};
+
+// Semana ISO (Lunes=1), usando jueves ISO y CEIL
 function isoWeek(date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
@@ -78,32 +79,44 @@ function weekKeyFromDate(dt){
   const {year, week} = isoWeek(dt);
   return `${year}-W${String(week).padStart(2,'0')}`;
 }
-function uniq(arr){ return Array.from(new Set(arr.filter(Boolean))); }
+const uniq = (arr) => Array.from(new Set(arr.filter(Boolean)));
+const ymd = (d) => (d instanceof Date && !isNaN(d)) ? d.toISOString().slice(0,10) : '—';
 
-let _cache = { allVisitas: [], byWeek: new Map() };
+/* ======================= Cache en memoria ======================= */
+let _cache = { allVisitas: [], byWeek: new Map(), optionsBuiltFor: null };
 
 async function ensureVisitas() {
   if (_cache.allVisitas.length) return _cache.allVisitas;
+
   const raw = await getAllVisitas();
   const list = Array.isArray(raw) ? raw.map(normalizeVisita) : [];
   _cache.allVisitas = list;
-  // pre-index by week
-  _cache.byWeek = new Map();
+
+  // pre-index por semana
+  const byWeek = new Map();
   for (const v of list){
     const dt = toDate(v.fecha) || toDate(v.proximoPasoFecha);
     if (!dt) continue;
     const wk = weekKeyFromDate(dt);
-    if (!_cache.byWeek.has(wk)) _cache.byWeek.set(wk, []);
-    _cache.byWeek.get(wk).push(v);
+    if (!byWeek.has(wk)) byWeek.set(wk, []);
+    byWeek.get(wk).push(v);
   }
+  _cache.byWeek = byWeek;
+  _cache.optionsBuiltFor = null; // invalida options
   return list;
 }
 
+/* ======================= Render ======================= */
 function buildSemanaOptions() {
   const sel = document.getElementById('resumen_semana');
   if (!sel) return;
-  sel.innerHTML = '';
+
+  // Evita reconstruir si no cambió el set de semanas
   const weeks = Array.from(_cache.byWeek.keys()).sort().reverse();
+  const sig = weeks.join(',');
+  if (_cache.optionsBuiltFor === sig) return;
+
+  sel.innerHTML = '';
   for (const wk of weeks){
     const opt = document.createElement('option');
     opt.value = wk;
@@ -111,18 +124,22 @@ function buildSemanaOptions() {
     sel.appendChild(opt);
   }
   if (weeks.length) sel.value = weeks[0];
+  _cache.optionsBuiltFor = sig;
 }
 
 function aggregateForWeek(wk){
   const visitas = _cache.byWeek.get(wk) || [];
-  const empresas = uniq(visitas.map(v => v.contacto?.empresaNombre || v.contacto?.nombre || v.contactoNombre || v.proveedorNombre));
+
+  const empresas = uniq(visitas.map(v =>
+    v.contacto?.empresaNombre || v.proveedorNombre || v.contacto?.nombre
+  ));
   const responsables = uniq(visitas.map(v => v.contacto?.responsable || v.responsable || v.creadoPor));
   const comunas = uniq(visitas.map(v => v.comuna || v.contacto?.comuna));
   const centros = uniq(visitas.map(v => String(v.centroCodigo || v.centroId || '')));
   const totalTons = visitas.reduce((acc, v) => acc + Number(v.tonsComprometidas || 0), 0);
 
-  // top proveedores por visitas
-  const cnt = {};
+  // Top proveedores por nº de visitas
+  const cnt = Object.create(null);
   visitas.forEach(v => {
     const key = v.contacto?.empresaNombre || v.proveedorNombre || v.contacto?.nombre || '—';
     cnt[key] = (cnt[key] || 0) + 1;
@@ -131,30 +148,9 @@ function aggregateForWeek(wk){
     .sort((a,b)=>b[1]-a[1]).slice(0,5)
     .map(([name,count])=>({name,count}));
 
-  return {
-    visitas,
-    empresas,
-    responsables,
-    comunas,
-    centros,
-    totalTons,
-    topProveedores
-  };
+  return { visitas, empresas, responsables, comunas, centros, totalTons, topProveedores };
 }
 
-function renderKPIs(agg){
-  const el = $('#resumen_kpis');
-  if (!el) return;
-  el.innerHTML = `
-    <div class="row" style="margin-top:8px">
-      ${kpiCard("Empresas visitadas", agg.empresas.length)}
-      ${kpiCard("Visitas realizadas", agg.visitas.length)}
-      ${kpiCard("Tons comprometidas", fmt2(agg.totalTons))}
-      ${kpiCard("Centros distintos", agg.centros.length)}
-      ${kpiCard("Comunas cubiertas", agg.comunas.length)}
-    </div>
-  `;
-}
 function kpiCard(label, val){
   return `
     <div class="col s12 m6 l3">
@@ -168,10 +164,26 @@ function kpiCard(label, val){
   `;
 }
 
+function renderKPIs(agg){
+  const el = $('#resumen_kpis');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="row" style="margin-top:8px">
+      ${kpiCard("Empresas visitadas", agg.empresas.length)}
+      ${kpiCard("Visitas realizadas", agg.visitas.length)}
+      ${kpiCard("Tons comprometidas", fmtCL2(agg.totalTons))}
+      ${kpiCard("Centros distintos", agg.centros.length)}
+      ${kpiCard("Comunas cubiertas", agg.comunas.length)}
+    </div>
+  `;
+}
+
 function renderTop(agg){
   const el = $('#resumen_top');
   if (!el) return;
-  const items = agg.topProveedores.map(p => `<li class="collection-item">${p.name}<span class="secondary-content">${p.count}</span></li>`).join('') || '<li class="collection-item">—</li>';
+  const items = agg.topProveedores.map(p =>
+    `<li class="collection-item">${p.name}<span class="secondary-content">${p.count}</span></li>`
+  ).join('') || '<li class="collection-item">—</li>';
   el.innerHTML = `
     <h6 style="margin-top:12px">Top proveedores por nº de visitas</h6>
     <ul class="collection">${items}</ul>
@@ -183,11 +195,11 @@ function renderTabla(visitas){
   if (!tbody) return;
   const rows = visitas.map(v => {
     const f = v.fecha ? new Date(v.fecha) : null;
-    const fstr = f ? f.toISOString().slice(0,10) : '—';
+    const fstr = ymd(f);
     const prov = v.contacto?.empresaNombre || v.proveedorNombre || v.contacto?.nombre || '—';
     const centro = v.centroCodigo || v.centroId || '—';
     const comuna = v.comuna || v.contacto?.comuna || '—';
-    const tons = v.tonsComprometidas ? fmt2(v.tonsComprometidas) : '—';
+    const tons = v.tonsComprometidas ? fmtCL2(v.tonsComprometidas) : '—';
     const estado = v.estado || '—';
     return `<tr>
       <td>${fstr}</td>
@@ -201,36 +213,58 @@ function renderTabla(visitas){
   tbody.innerHTML = rows || '<tr><td colspan="6" class="grey-text">No hay visitas para esta semana.</td></tr>';
 }
 
+/* ======================= Controles ======================= */
 function wireControls(){
   const sel = $('#resumen_semana');
-  const btn = $('#resumen_print');
+  const btnPrint = $('#resumen_print');
   const btnCopy = $('#resumen_copy');
 
   if (sel && !sel.__wired){
     sel.__wired = true;
     sel.addEventListener('change', () => refreshResumen());
   }
-  if (btn && !btn.__wired){
-    btn.__wired = true;
-    btn.addEventListener('click', () => window.print());
+
+  if (btnPrint && !btnPrint.__wired){
+    btnPrint.__wired = true;
+    btnPrint.addEventListener('click', () => window.print());
   }
+
   if (btnCopy && !btnCopy.__wired){
     btnCopy.__wired = true;
-    btnCopy.addEventListener('click', () => {
-      const el = document.getElementById('resumen_print_area');
-      if (!el) return;
-      const range = document.createRange();
-      range.selectNode(el);
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-      document.execCommand('copy');
-      sel.removeAllRanges();
-      M.toast?.({ html: 'Resumen copiado', displayLength: 1500 });
+    btnCopy.addEventListener('click', async () => {
+      const area = document.getElementById('resumen_print_area');
+      if (!area) return;
+
+      // Prefiere Clipboard API; fallback a execCommand
+      const html = area.outerHTML;
+      try {
+        if (navigator.clipboard?.write) {
+          const type = 'text/html';
+          const blob = new Blob([html], { type });
+          const data = [new ClipboardItem({ [type]: blob })];
+          await navigator.clipboard.write(data);
+        } else {
+          const range = document.createRange();
+          range.selectNode(area);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          document.execCommand('copy');
+          sel.removeAllRanges();
+        }
+        (window.M?.toast) && M.toast({ html: 'Resumen copiado', displayLength: 1500 });
+      } catch {
+        // fallback plano
+        try {
+          await navigator.clipboard.writeText(area.innerText);
+          (window.M?.toast) && M.toast({ html: 'Resumen copiado (texto)', displayLength: 1500 });
+        } catch {}
+      }
     });
   }
 }
 
+/* ======================= API ======================= */
 export async function initResumenSemanalTab(){
   await ensureVisitas();
   buildSemanaOptions();
