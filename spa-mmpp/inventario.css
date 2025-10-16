@@ -183,3 +183,43 @@ td.cell-actions{white-space:nowrap}
 /* Badge de semana actual */
 .week-badge{background:#eef2ff;color:#1e40af;border:1px solid #c7d2fe;border-radius:999px;
   padding:6px 10px;font-weight:800;font-size:12.5px;display:inline-flex;gap:8px;align-items:center}
+
+/* ===== Filtros de Contactos: una sola fila en desktop ===== */
+#filtrosContactos{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+}
+
+#filtrosContactos select.browser-default{
+  height:40px;
+  line-height:40px;
+  padding:6px 8px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#fff;
+  flex:0 0 200px; /* ancho fijo cómodo */
+}
+
+#filtrosContactos #searchContactos{
+  height:40px;
+  padding:4px 10px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  flex:1 1 auto;           /* ocupa espacio restante */
+  min-width:240px;
+}
+
+/* En pantallas pequeñas, que se apilen bonito */
+@media (max-width: 900px){
+  #filtrosContactos{ flex-wrap:wrap; }
+  #filtrosContactos select.browser-default{
+    flex:1 1 220px;
+  }
+  #filtrosContactos #searchContactos{
+    flex:1 1 100%;
+    min-width:0;
+  }
+}
