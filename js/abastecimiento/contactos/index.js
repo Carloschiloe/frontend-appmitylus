@@ -14,6 +14,7 @@ import { setupBuscadorProveedores } from './proveedores.js';
 import { setupFormulario, prepararNuevo, abrirDetalleContacto } from './form-contacto.js';
 import { initTablaContactos, renderTablaContactos } from './tabla.js';
 import { initAsociacionContactos } from './asociar-empresa.js';
+import { initResumenSemanalTab } from './resumen-semanal.js';
 
 // Personas
 import { initPersonasTab, renderTablaPersonas } from './personas.js';
@@ -362,7 +363,9 @@ function hookGlobalListeners() {
 
 /* ======================= Arranque ======================= */
 document.addEventListener('DOMContentLoaded', () => {
-  initContactosTab().catch(console.error);
+  initContactosTab().then(()=>{
+    try { initResumenSemanalTab(); } catch(e){ console.error(e); }
+  }).catch(console.error);
 });
 
 /* ======================= Exponer helpers a window ======================= */
