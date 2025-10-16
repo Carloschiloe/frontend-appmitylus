@@ -4,6 +4,60 @@ import { state, $ } from './state.js';
 import { getAll as getAllVisitas } from '../visitas/api.js';
 import { normalizeVisita } from '../visitas/normalizers.js';
 
+
+// ---- estilos del módulo (inyección segura) ----
+(function injectResumenStyles(){
+  if (document.getElementById('resumen-semanal-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'resumen-semanal-styles';
+  s.textContent = `
+    /* layout base */
+    #tab-resumen{ padding: 8px 4px 24px; }
+    #tab-resumen h5{ font-weight:600; letter-spacing: .2px; }
+    .resumen-toolbar{ margin: 8px 0 4px; }
+    /* KPI cards */
+    .kpi-grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:12px; }
+    .kpi-card{
+      border:1px solid #e5e7eb; border-radius:14px; background:#fff;
+      padding:14px 16px; box-shadow: 0 1px 1px rgba(0,0,0,.03);
+      display:flex; flex-direction:column; justify-content:center; min-height:92px;
+    }
+    .kpi-card .kpi-label{ font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; }
+    .kpi-card .kpi-value{ font-size:26px; margin-top:6px; line-height:1.1; font-weight:600; color:#111827; }
+    /* responsive columns: 12→mobile, 6→tablet, 3→desktop */
+    .col-12{ grid-column: span 12; }
+    @media (min-width: 600px){ .col-6{ grid-column: span 6; } }
+    @media (min-width: 992px){ .col-3{ grid-column: span 3; } }
+
+    /* tabla */
+    #resumen_print_area table.striped thead th{
+      font-size:12px; color:#6b7280; font-weight:600; border-bottom:1px solid #e5e7eb;
+    }
+    #resumen_print_area table.striped tbody td{
+      padding:10px 12px;
+    }
+
+    /* panel lateral (top proveedores) */
+    #resumen_top h6{ font-weight:600; margin: 4px 0 8px; }
+    #resumen_top .collection{ border-radius:12px; overflow:hidden; border:1px solid #e5e7eb; }
+    #resumen_top .collection .collection-item{ display:flex; justify-content:space-between; }
+
+    /* botones */
+    #resumen_copy.btn-flat{ border:1px solid #e5e7eb; border-radius:10px; }
+    #resumen_print.btn{ border-radius:10px; }
+
+    /* print: fondo blanco, sin barras ni select */
+    @media print{
+      nav, .tabs, .resumen-toolbar{ display:none !important; }
+      body{ background:#fff !important; }
+      #tab-resumen{ padding:0; }
+      #resumen_print_area{ margin:0; }
+      #resumen_print_area h5{ margin-top:0; }
+    }
+  `;
+  document.head.appendChild(s);
+})();
+
 const fmtCL = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 });
 const fmt2  = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
 
