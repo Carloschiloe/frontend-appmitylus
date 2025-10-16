@@ -99,6 +99,7 @@
           <li class="tab col s4"><a class="active" href="#tab-contactos">Empresas</a></li>
           <li class="tab col s4"><a href="#tab-visitas">Visitas a Cultivos</a></li>
           <li class="tab col s4"><a href="#tab-personas">Agenda de Contactos</a></li>
+          <li class="tab col s3"><a href="#tab-resumen">Resumen semanal</a></li>
         </ul>
       </div>
 
@@ -445,7 +446,8 @@
           <div class="input-field">
             <input id="empresaSearch" type="text" class="mmpp-input" placeholder="Buscar empresa... (mín. 2 letras)">
           </div>
-          <ul id="searchResults" class="collection" style="max-height:260px;overflow:auto;"></ul>
+          <ul id="searchResults" class="collection" style="max-height:260px;overflow:auto;">  <li class="tab col s3"><a href="#tab-resumen">Resumen semanal</a></li>
+        </ul>
         </div>
         <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
           <a href="#!" id="btnCrearEmpresa" class="btn-flat">Crear empresa nueva</a>
@@ -479,6 +481,46 @@
       M.Modal.init(elModals, {endingTop: '5%'});
     });
   </script>
+
+      <!-- ====================== TAB: Resumen semanal ====================== -->
+      <div id="tab-resumen" class="section">
+        <div class="resumen-toolbar" style="display:flex; gap:12px; align-items:center; justify-content:space-between; margin:8px 0">
+          <div>
+            <label class="grey-text text-darken-1" style="font-size:12px">Semana</label>
+            <select id="resumen_semana" class="browser-default" style="min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff"></select>
+          </div>
+          <div>
+            <a id="resumen_copy" class="btn-flat waves-effect">Copiar</a>
+            <a id="resumen_print" class="btn waves-effect">Imprimir / PDF</a>
+          </div>
+        </div>
+        <div id="resumen_print_area">
+          <h5 style="margin:4px 0">Informe semanal</h5>
+          <div id="resumen_kpis"></div>
+          <div class="row">
+            <div class="col s12 m7">
+              <table class="striped">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Proveedor</th>
+                    <th>Centro</th>
+                    <th>Comuna</th>
+                    <th>Tons</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="resumen_table_body"></tbody>
+              </table>
+            </div>
+            <div class="col s12 m5">
+              <div id="resumen_top"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+  <script type="module" src="../../../js/abastecimiento/contactos/resumen-semanal.js?v=1"></script>
 </body>
 </html>
 
