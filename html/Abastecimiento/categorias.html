@@ -4,10 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Abastecimiento · Categorías</title>
+  <meta name="description" content="Abastecimiento MMPP: contactos, visitas, planificación, centros y reportes.">
+
+  <!-- Performance: adelanta conexiones -->
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <!-- Materialize & Google Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+
+  <!-- Estilos propios -->
   <link rel="stylesheet" href="../../styles.css" />
 
   <style>
@@ -26,6 +37,7 @@
       transition: transform .18s ease, box-shadow .18s ease;
       display: flex; align-items: center; gap: 18px;
       text-decoration: none !important; color: inherit !important;
+      will-change: transform;
     }
     @media (min-width: 600px) { .category-card { grid-column: span 6; } }
     @media (min-width: 992px) { .category-card { grid-column: span 6; } }
@@ -40,12 +52,17 @@
     .category-text p { margin:0; color:#5f6b74; }
     nav .brand-logo { font-size: 1.35rem; }
   </style>
+
+  <!-- Prefetch de vistas que se abren desde aquí (para navegación instantánea) -->
+  <link rel="prefetch" href="./contactos/contactos.html" as="document">
+  <link rel="prefetch" href="./asignacion/inventario_mmpp.html" as="document">
+  <link rel="prefetch" href="../../html/Centros/index.html" as="document">
 </head>
 <body class="grey lighten-5">
   <!-- NAV -->
   <nav class="teal">
     <div class="nav-wrapper container">
-      <a href="../../index.html" class="btn-flat left" title="Volver">
+      <a href="../../index.html" class="btn-flat left" title="Volver" aria-label="Volver al panel">
         <i class="material-icons">arrow_back</i>
       </a>
       <a class="brand-logo center">Abastecimiento · Categorías</a>
@@ -58,7 +75,7 @@
 
       <!-- Contactos y Visitas -->
       <a class="category-card waves-effect" href="./contactos/contactos.html#tab-contactos">
-        <div class="category-icon"><i class="material-icons">people_alt</i></div>
+        <div class="category-icon"><i class="material-icons" aria-hidden="true">people_alt</i></div>
         <div class="category-text">
           <h5>Contactos y Visitas</h5>
           <p>Registro de contactos, visitas y seguimiento comercial.</p>
@@ -67,26 +84,25 @@
 
       <!-- Centros y Proveedores -->
       <a class="category-card waves-effect" href="#!" data-soon="true">
-        <div class="category-icon"><i class="material-icons">location_on</i></div>
+        <div class="category-icon"><i class="material-icons" aria-hidden="true">location_on</i></div>
         <div class="category-text">
           <h5>Centros y Proveedores</h5>
           <p>Buscador de centros, datos de concesiones y proveedores.</p>
         </div>
       </a>
 
-      <!-- Planificación Producción (→ ahora enlaza al index de asignacion) -->
-<a class="category-card waves-effect" href="./asignacion/inventario_mmpp.html">
-  <div class="category-icon"><i class="material-icons">event_note</i></div>
-  <div class="category-text">
-    <h5>Planificación Producción</h5>
-    <p>Programas de abastecimiento y metas operativas.</p>
-  </div>
-</a>
-
+      <!-- Planificación Producción (→ enlaza al index de asignación) -->
+      <a class="category-card waves-effect" href="./asignacion/inventario_mmpp.html">
+        <div class="category-icon"><i class="material-icons" aria-hidden="true">event_note</i></div>
+        <div class="category-text">
+          <h5>Planificación Producción</h5>
+          <p>Programas de abastecimiento y metas operativas.</p>
+        </div>
+      </a>
 
       <!-- Reportes Generales -->
       <a class="category-card waves-effect" href="#!" data-soon="true">
-        <div class="category-icon"><i class="material-icons">assessment</i></div>
+        <div class="category-icon"><i class="material-icons" aria-hidden="true">assessment</i></div>
         <div class="category-text">
           <h5>Reportes Generales</h5>
           <p>Indicadores y resúmenes ejecutivos.</p>
@@ -96,21 +112,21 @@
     </div>
   </div>
 
-  <!-- SCRIPTS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <script>
+  <!-- Scripts al final y diferidos -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js" defer></script>
+  <script defer>
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('[data-soon="true"]').forEach(a => {
         a.addEventListener('click', (e) => {
           e.preventDefault();
-          M.toast({ html: 'Próximamente…', displayLength: 1600 });
+          if (window.M?.toast) {
+            M.toast({ html: 'Próximamente…', displayLength: 1600 });
+          } else {
+            alert('Próximamente…');
+          }
         });
       });
     });
   </script>
 </body>
 </html>
-
-
-
-
