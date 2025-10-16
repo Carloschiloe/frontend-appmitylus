@@ -27,39 +27,87 @@ let listenersHooked = false;
 let visitasBooted = false;
 let personasBooted = false;
 
-/* ======================= Utils locales ======================= */
-function setDTDefaults() {
+/* ======================= Utils generales ======================= */
+const rafThrottle = (fn) => {
+  let queued = false;
+  return (...args) => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      fn(...args);
+    });
+  };
+};
+
+const debounce = (fn, wait = 120) => {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), wait);
+  };
+};
+
+function withJQ(cb) {
   const jq = window.jQuery || window.$;
-  if (!jq?.fn?.dataTable) return;
-  jq.extend(true, jq.fn.dataTable.defaults, {
-    scrollX: false,
-    autoWidth: false,
-    responsive: true,
-    deferRender: true,
-  });
-  jq.fn.dataTable.ext.errMode = 'none';
+  if (!jq) return null;
+  try { return cb(jq); } catch { return null; }
 }
 
+/* ======================= DataTables defaults ======================= */
+function setDTDefaults() {
+  withJQ(($) => {
+    if (!$.fn?.dataTable) return;
+    $.extend(true, $.fn.dataTable.defaults, {
+      scrollX: false,
+      autoWidth: false,
+      responsive: true,
+      deferRender: true
+    });
+    $.fn.dataTable.ext.errMode = 'none';
+  });
+}
+
+/* ======================= Ajustes DataTables ======================= */
+const scheduleAdjust = (() => {
+  // Coalesce de múltiples pedidos de ajuste por selector
+  const pending = new Set();
+  const run = rafThrottle(() => {
+    withJQ(($) => {
+      pending.forEach((sel) => {
+        try {
+          if (!$.fn?.DataTable || !$(sel).length || !$.fn.DataTable.isDataTable(sel)) return;
+          const dt = $(sel).DataTable();
+
+          // Espera a que exista el wrapper de scroll si aplica
+          const wrap = document.querySelector(`${sel}_wrapper`);
+          const hasScroll =
+            wrap && (wrap.querySelector('.dataTables_scrollHead') || wrap.querySelector('.dataTables_scroll'));
+
+          if (!hasScroll) {
+            // Reintenta en el próximo frame si el wrapper aún no aparece
+            requestAnimationFrame(() => scheduleAdjust(sel));
+            return;
+          }
+
+          // Ajuste diferido sin redibujar todo
+          setTimeout(() => {
+            try { dt.columns.adjust().draw(false); } catch {}
+          }, 0);
+        } catch {}
+      });
+      pending.clear();
+    });
+  });
+
+  return (selector) => {
+    pending.add(selector);
+    run();
+  };
+})();
+
 function adjustDT(selector) {
-  const jq = window.jQuery || window.$;
-  if (!jq?.fn?.DataTable || !jq(selector).length) return;
-
-  // Solo si YA está inicializada (evita crear una DT “default” sin opciones)
-  if (!jq.fn.DataTable.isDataTable(selector)) return;
-
-  try {
-    const dt = jq(selector).DataTable();
-
-    // Si la tabla usa scrollX, espera a que exista el wrapper del scroll
-    const wrap = document.querySelector(`${selector}_wrapper`);
-    const hasScroll =
-      wrap && (wrap.querySelector('.dataTables_scrollHead') || wrap.querySelector('.dataTables_scroll'));
-
-    if (!hasScroll) { requestAnimationFrame(() => adjustDT(selector)); return; }
-
-    // Ajuste diferido para no pelear con init/draw de otras rutinas
-    setTimeout(() => { try { dt.columns.adjust().draw(false); } catch {} }, 0);
-  } catch {}
+  scheduleAdjust(selector);
 }
 
 // Oculta el buscador nativo de DataTables para una tabla dada
@@ -69,9 +117,9 @@ function hideNativeFilter(selector) {
 }
 
 // Bind handler a TODAS las coincidencias del selector
-function onAll(selector, event, handler) {
+function onAll(selector, event, handler, opts) {
   document.querySelectorAll(selector).forEach(el => {
-    el.addEventListener(event, handler);
+    el.addEventListener(event, handler, opts);
   });
 }
 
@@ -89,7 +137,7 @@ function isoWeekNumber(d = new Date()) {
 function setSemanaActualBadge(){
   const el = document.getElementById('badgeSemanaActual');
   if (!el) return;
-  const w = isoWeekNumber(new Date());       // usa la fecha local, sin toISOString()
+  const w = isoWeekNumber(new Date());       // usa la fecha local
   const span = el.querySelector('span');
   if (span) span.textContent = `Semana ${w}`;
 }
@@ -117,12 +165,14 @@ function initUIOnce() {
     M.Tabs.init(tabs, {
       onShow: (tabEl) => {
         const id = (tabEl?.id || '').toLowerCase();
+
         if (id.includes('visita')) {
           if (!visitasBooted) { initVisitasTab().catch(()=>{}); visitasBooted = true; }
           adjustDT('#tablaVisitas');
           hideNativeFilter('#tablaVisitas');
           bindSearchVisitas();
         }
+
         if (id.includes('persona')) {
           if (!personasBooted) {
             initPersonasTab();
@@ -132,11 +182,13 @@ function initUIOnce() {
           hideNativeFilter('#tablaPersonas');
           bindSearchPersonas();
         }
+
         if (id.includes('contacto')) {
           adjustDT('#tablaContactos');
           hideNativeFilter('#tablaContactos');
           bindSearchContactos();
         }
+
         nukeStuckOverlays();
       }
     });
@@ -144,7 +196,7 @@ function initUIOnce() {
 
   const cleanupOverlays = () => nukeStuckOverlays();
 
-  // Modal Registrar Contacto / Persona
+  // Modal Registrar Contacto / Persona comparten el mismo form (tu flujo actual)
   const modalContactoEl = document.getElementById('modalContacto');
   if (modalContactoEl) {
     const inst = M.Modal.getInstance(modalContactoEl) || M.Modal.init(modalContactoEl, {
@@ -156,23 +208,16 @@ function initUIOnce() {
       }
     });
 
-    document.getElementById('btnOpenContactoModal')
-      ?.addEventListener('click', (e) => {
-        e.preventDefault();
-        try { prepararNuevo(); } catch {}
-        try { document.getElementById('formContacto')?.reset(); } catch {}
-        M.updateTextFields?.();
-        inst.open();
-      });
+    const openModalContacto = (e) => {
+      e?.preventDefault?.();
+      try { prepararNuevo(); } catch {}
+      try { document.getElementById('formContacto')?.reset(); } catch {}
+      M.updateTextFields?.();
+      inst.open();
+    };
 
-    document.getElementById('btnOpenPersonaModal')
-      ?.addEventListener('click', (e) => {
-        e.preventDefault();
-        try { prepararNuevo(); } catch {}
-        try { document.getElementById('formContacto')?.reset(); } catch {}
-        M.updateTextFields?.();
-        inst.open();
-      });
+    document.getElementById('btnOpenContactoModal')?.addEventListener('click', openModalContacto);
+    document.getElementById('btnOpenPersonaModal')?.addEventListener('click', openModalContacto);
 
     modalContactoEl.querySelectorAll('.modal-close').forEach(btn => {
       btn.addEventListener('click', (e) => { e.preventDefault(); inst.close(); });
@@ -185,9 +230,9 @@ function initUIOnce() {
     if (el) M.Modal.getInstance(el) || M.Modal.init(el, { onCloseEnd: cleanupOverlays });
   });
 
-  window.addEventListener('hashchange', cleanupOverlays);
+  window.addEventListener('hashchange', cleanupOverlays, { passive: true });
 
-  // Click directo en tabs
+  // Click directo en tabs (enlaces fuera del ul.tabs)
   onAll('a[href="#tab-visitas"], a[href="#visitas"]', 'click', async () => {
     if (!visitasBooted) { await initVisitasTab().catch(()=>{}); visitasBooted = true; }
     adjustDT('#tablaVisitas');
@@ -227,32 +272,46 @@ function initUIOnce() {
 
 /* ======================= Buscadores (toolbar) ======================= */
 function bindSearchContactos(){
-  const jq = window.jQuery || window.$;
   const input = document.getElementById('searchContactos');
-  if (!jq || !jq.fn?.DataTable || !input || input.dataset.bound) return;
-  input.addEventListener('input', () => {
-    try { jq('#tablaContactos').DataTable().search(input.value || '').draw(); } catch {}
-  });
+  if (!input || input.dataset.bound) return;
+
+  const handler = debounce(() => {
+    withJQ(($) => {
+      try { $('#tablaContactos').DataTable().search(input.value || '').draw(); } catch {}
+    });
+  }, 120);
+
+  input.addEventListener('input', handler);
   input.dataset.bound = '1';
   hideNativeFilter('#tablaContactos');
 }
+
 function bindSearchPersonas(){
-  const jq = window.jQuery || window.$;
   const input = document.getElementById('searchPersonas');
-  if (!jq || !jq.fn?.DataTable || !input || input.dataset.bound) return;
-  input.addEventListener('input', () => {
-    try { jq('#tablaPersonas').DataTable().search(input.value || '').draw(); } catch {}
-  });
+  if (!input || input.dataset.bound) return;
+
+  const handler = debounce(() => {
+    withJQ(($) => {
+      try { $('#tablaPersonas').DataTable().search(input.value || '').draw(); } catch {}
+    });
+  }, 120);
+
+  input.addEventListener('input', handler);
   input.dataset.bound = '1';
   hideNativeFilter('#tablaPersonas');
 }
+
 function bindSearchVisitas(){
-  const jq = window.jQuery || window.$;
   const input = document.getElementById('searchVisitas');
-  if (!jq || !jq.fn?.DataTable || !input || input.dataset.bound) return;
-  input.addEventListener('input', () => {
-    try { jq('#tablaVisitas').DataTable().search(input.value || '').draw(); } catch {}
-  });
+  if (!input || input.dataset.bound) return;
+
+  const handler = debounce(() => {
+    withJQ(($) => {
+      try { $('#tablaVisitas').DataTable().search(input.value || '').draw(); } catch {}
+    });
+  }, 120);
+
+  input.addEventListener('input', handler);
   input.dataset.bound = '1';
   hideNativeFilter('#tablaVisitas');
 }
@@ -340,15 +399,16 @@ function hookGlobalListeners() {
       hideNativeFilter('#tablaVisitas');
       nukeStuckOverlays();
     }
-  });
+  }, { passive: true });
 
-  // Responsivo
-  window.addEventListener('resize', () => {
+  // Resize coalesced
+  const onResize = rafThrottle(() => {
     adjustDT('#tablaContactos');
     hideNativeFilter('#tablaContactos');
     if (visitasBooted)  { adjustDT('#tablaVisitas');  hideNativeFilter('#tablaVisitas'); }
     if (personasBooted) { adjustDT('#tablaPersonas'); hideNativeFilter('#tablaPersonas'); }
   });
+  window.addEventListener('resize', onResize);
 
   // Botón “Nuevo contacto” (si algún día lo agregas aparte del de la barra)
   document.getElementById('btnNuevoContacto')?.addEventListener('click', (e)=>{
@@ -374,6 +434,3 @@ window.abrirModalVisita = abrirModalVisita;
 
 // Por si quieres forzar la limpieza desde consola
 window.nukeStuckOverlays = nukeStuckOverlays;
-
-
-
