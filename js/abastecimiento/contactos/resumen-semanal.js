@@ -78,7 +78,6 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
   document.head.appendChild(s);
 })();
 
-
 /* ======================= Utils ======================= */
 const API_BASE = window.API_URL || '/api';
 const fmt2 = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
@@ -189,7 +188,7 @@ let _cache = {
   allVisitas: [], byWeekVis: new Map(),
   allContactos: [], byWeekCont: new Map(),
   optionsSig: null,
-  mode: 'visitas',
+  mode: 'visitas',                 // 'visitas' | 'contactos'
   tonsDisponiblesSemana: new Map(),
 };
 
@@ -312,7 +311,7 @@ function aggregateContactos(wk){
   return { contactos, empresas, comunas, centros, totalTons, count: contactos.length };
 }
 
-/* ======================= KPIs ======================= */
+/* ======================= KPIs (DINÁMICOS por modo) ======================= */
 function kpi(label, val){
   return `<div class="kpi-card">
     <span class="kpi-label">${label}</span>
@@ -321,16 +320,27 @@ function kpi(label, val){
 }
 async function renderKPIs(aggV, aggC, wk){
   const el = $('#resumen_kpis'); if (!el) return;
-  const tonsDisp = await computeTonsDisponiblesSemana(wk);
-  el.innerHTML = `
-    <div class="kpi-row">
-      ${kpi('Contactos realizados', aggC.count)}
-      ${kpi('Visitas realizadas', aggV.count)}
-      ${kpi('Tons comprometidas', fmt2(aggV.totalTons || 0))}
-      ${kpi('Tons disponibles (semana)', fmt2(tonsDisp || 0))}
-      ${kpi('Centros distintos', uniq([...(aggV.centros||[]), ...(aggC.centros||[])]).length)}
-      ${kpi('Comunas cubiertas', uniq([...(aggV.comunas||[]), ...(aggC.comunas||[])]).length)}
-    </div>`;
+  let cardsHtml = '';
+
+  if (_cache.mode === 'visitas'){
+    const tonsDisp = await computeTonsDisponiblesSemana(wk);
+    cardsHtml = [
+      kpi('Visitas realizadas', aggV.count),
+      kpi('Tons comprometidas', fmt2(aggV.totalTons || 0)),
+      kpi('Centros distintos', (aggV.centros||[]).length),
+      kpi('Comunas cubiertas', (aggV.comunas||[]).length),
+      kpi('Tons disponibles (semana)', fmt2(tonsDisp || 0)),
+    ].join('');
+  } else {
+    cardsHtml = [
+      kpi('Contactos realizados', aggC.count),
+      kpi('Centros distintos', (aggC.centros||[]).length),
+      kpi('Comunas cubiertas', (aggC.comunas||[]).length),
+      kpi('Tons comprometidas', fmt2(aggC.totalTons || 0)), // si los contactos manejan tons
+    ].join('');
+  }
+
+  el.innerHTML = `<div class="kpi-row">${cardsHtml}</div>`;
 }
 
 /* ======================= Tablas ======================= */
@@ -459,6 +469,16 @@ function ensureModeSwitcher(){
   });
 }
 
+/* --- Intento de sincronizar con pestañas principales si existen --- */
+function trySyncModeFromMainTabs(){
+  // Busca .tabs .tab a.active con href que contenga "visitas" o "contactos"
+  const active = document.querySelector('.tabs .tab a.active');
+  if (!active) return;
+  const href = (active.getAttribute('href')||'').toLowerCase();
+  if (href.includes('contacto'))      setResumenMode('contactos', {silentRewire:false});
+  else if (href.includes('visita'))   setResumenMode('visitas', {silentRewire:false});
+}
+
 function wireControls(){
   const sel = $('#resumen_semana');
   const btnPrint = $('#resumen_print');
@@ -494,6 +514,8 @@ function wireControls(){
     });
   }
   ensureModeSwitcher();
+  // Re-sincroniza modo si las tabs principales cambian el hash (común en Materialize)
+  window.addEventListener('hashchange', () => trySyncModeFromMainTabs());
 }
 
 /* ======================= API ======================= */
@@ -501,6 +523,7 @@ export async function initResumenSemanalTab(){
   await ensureData();
   buildSemanaOptions();
   wireControls();
+  trySyncModeFromMainTabs(); // toma el modo desde la pestaña principal si aplica
   refreshResumen();
 
   window.addEventListener('visita:created', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.tonsDisponiblesSemana.clear(); refreshResumen(); });
@@ -509,6 +532,26 @@ export async function initResumenSemanalTab(){
   document.addEventListener('reload-tabla-contactos', () => {
     _cache.allContactos = []; _cache.byWeekCont.clear(); refreshResumen();
   });
+}
+
+/**
+ * Permite forzar el modo desde otras vistas/controladores (ej: al activar pestaña).
+ * @param {'visitas'|'contactos'} mode
+ * @param {{silentRewire?: boolean}} [opts]
+ */
+export function setResumenMode(mode, opts = {}){
+  if (mode !== 'visitas' && mode !== 'contactos') return;
+  if (_cache.mode === mode) return;
+  _cache.mode = mode;
+
+  // Actualiza UI del switcher si existe
+  const seg = document.getElementById('resumen_mode');
+  if (seg){
+    seg.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('is-active', b.getAttribute('data-mode') === mode);
+    });
+  }
+  if (!opts.silentRewire) refreshResumen();
 }
 
 export async function refreshResumen(){
