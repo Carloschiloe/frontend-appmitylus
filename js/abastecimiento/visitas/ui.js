@@ -22,8 +22,7 @@ console.log('[visitas/ui] cargado');
     #tablaVisitas{ width:100%!important; }
     #tablaVisitas th, #tablaVisitas td{
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      padding:10px 8px!important; box-sizing:border-box;
-      vertical-align: middle;
+      padding:10px 8px!important; box-sizing:border-box; vertical-align: middle;
     }
 
     .v-prov, .v-centro{ display:block; min-width:0; }
@@ -49,9 +48,7 @@ console.log('[visitas/ui] cargado');
       display:flex; gap:12px; align-items:center; flex-wrap:wrap;
       margin:10px 0 6px;
     }
-    .visitas-filtros .fld{
-      display:flex; align-items:center; gap:6px;
-    }
+    .visitas-filtros .fld{ display:flex; align-items:center; gap:6px; }
     .visitas-filtros select{
       min-width:140px; padding:6px 8px;
       border:1px solid #e5e7eb; border-radius:8px; background:#fff;
@@ -205,14 +202,14 @@ export async function renderTablaVisitas(){
         </div>`;
 
       return [
-        esc(String(semana)),                          // 0 Sem.
-        `<span data-order="${f.getTime()}">${fecha}</span>`, // 1 Fecha
-        provHTML,                                     // 2 Proveedor
-        centroHTML,                                   // 3 Centro
-        esc(proximoPaso),                             // 4 Próximo paso
-        fppHTML,                                      // 5 Fecha prox.
-        esc(tons),                                    // 6 Tons
-        acciones                                      // 7 Acciones
+        esc(String(semana)),                                 // 0 Sem.
+        `<span data-order="${f.getTime()}">${fecha}</span>`,  // 1 Fecha
+        provHTML,                                            // 2 Proveedor (empresa + contacto)
+        centroHTML,                                          // 3 Centro (código + comuna)
+        esc(proximoPaso),                                    // 4 Próximo paso
+        fppHTML,                                             // 5 Fecha prox. (ordenable)
+        esc(tons),                                           // 6 Tons
+        acciones                                             // 7 Acciones
       ];
     });
 
@@ -604,6 +601,8 @@ export async function initVisitasTab(forceReload = false) {
       autoWidth: true,
       responsive: false,
       scrollX: false,
+      processing: true,
+      deferRender: true,
       language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
       columnDefs: defs,
       initComplete: () => { buildOrUpdateFiltros(); forceAdjustVisitas(); },
@@ -631,4 +630,3 @@ export async function initVisitasTab(forceReload = false) {
 
   console.log('[visitas/ui] initVisitasTab listo. dtV?', !!dtV);
 }
-
