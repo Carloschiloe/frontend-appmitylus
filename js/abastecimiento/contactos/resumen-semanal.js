@@ -39,13 +39,6 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     .res-link:hover{ text-decoration:underline; }
     .subline{ font-size:12px; line-height:1.2; color:#6b7280; }
 
-    /* chips en TONS */
-    .tiny-note{ display:block; margin-top:6px; font-size:12px; color:#374151; }
-    .tiny-note .badge{
-      display:inline-block; padding:4px 8px; border:1px solid #e5e7eb; border-radius:999px; margin:3px 6px 0 0;
-      background:#f8fafc;
-    }
-
     /* chips de estado */
     .chip-estado{
       display:inline-flex; align-items:center; gap:6px;
@@ -87,7 +80,6 @@ const esc  = (s='') => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt
 const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const pad2 = (n) => String(n).padStart(2,'0');
 const fmtDMYShort = (dt) => { const d = toDate(dt); return d ? `${pad2(d.getDate())}.${MES_ABBR[d.getMonth()]}.${String(d.getFullYear()).slice(-2)}` : '—'; };
-const fmtMYShort  = (dt) => { const d = toDate(dt); return d ? `${MES_ABBR[d.getMonth()]}.${String(d.getFullYear()).slice(-2)}` : '—'; };
 
 /* ======================= Semana ISO ======================= */
 function isoWeek(date){
@@ -157,8 +149,7 @@ let _cache = {
   allContactos: [], byWeekCont: new Map(),
   optionsSig: null,
   mode: 'visitas',
-  dispRowCache: new Map(),          // visitas
-  dispRowCacheContact: new Map(),   // contactos
+  dispSumCacheContact: new Map(), // contactoId/proveedorKey|centroId -> suma de disponibilidades
 };
 
 /* ======================= Data ======================= */
@@ -207,75 +198,25 @@ async function getDisponibilidades(params = {}){
   return Array.isArray(json) ? json : (json.items || []);
 }
 
-/* ===== Helpers de chips “tons · mes” ===== */
 const normId = (v) => (v && typeof v === 'object' && (v.$oid || v.oid)) ? (v.$oid || v.oid) : v;
-function dispToChip(it){
-  const tons = Number(it.tonsDisponible ?? it.tons ?? it.tonsComprometidas ?? 0);
-  const dt = toDate(it.fecha || (it.year && it.month ? `${it.year}-${pad2(it.month)}-01` : null));
-  const when = dt ? fmtMYShort(dt) : '';
-  return `<span class="badge">${fmt2(tons)}${when ? ` · ${when}` : ''}</span>`;
-}
 
-/* ===== VISITAS: pintar chips bajo TONS (solo disponibilidades; NO suma) ===== */
-async function paintDisponibilidadesEnFila(v, tr){
-  const key = `v:${v._id || ''}|c:${v.contactoId || ''}|centro:${v.centroId || ''}`;
-  if (_cache.dispRowCache.has(key)) {
-    const chips = _cache.dispRowCache.get(key);
-    const tonsTd = tr.querySelector('td[data-col="tons"]');
-    if (tonsTd){
-      tonsTd.querySelectorAll('.tiny-note').forEach(n => n.remove());
-      if (chips) tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${chips}</span>`);
-    }
-    return;
-  }
-  try{
-    const list = await getDisponibilidades({
-      contactoId: v.contactoId || undefined,
-      centroId: normId(v.centroId) || undefined,
-      proveedorKey: v.proveedorKey || undefined,
-    });
-    const chips = (Array.isArray(list) ? list : []).map(dispToChip).join(' ');
-    _cache.dispRowCache.set(key, chips);
-
-    const tonsTd = tr.querySelector('td[data-col="tons"]');
-    if (tonsTd){
-      tonsTd.querySelectorAll('.tiny-note').forEach(n => n.remove());
-      if (chips) tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${chips}</span>`);
-    }
-  }catch{
-    _cache.dispRowCache.set(key, '');
-  }
-}
-
-/* ===== CONTACTOS: pintar chips bajo TONS (solo disponibilidades; NO suma) ===== */
-async function paintDisponContactoEnFila(c, tr){
+/* ===== CONTACTOS: sumar disponibilidades ===== */
+async function sumDisponibilidadesContacto(c){
   const key = `c:${c._id || ''}|prov:${c.proveedorKey || ''}|centro:${normId(c.centroId) || ''}`;
-  if (_cache.dispRowCacheContact.has(key)){
-    const chips = _cache.dispRowCacheContact.get(key);
-    const tonsTd = tr.querySelector('td[data-col="tons"]');
-    if (tonsTd){
-      tonsTd.querySelectorAll('.tiny-note').forEach(n => n.remove());
-      if (chips) tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${chips}</span>`);
-    }
-    return;
-  }
+  if (_cache.dispSumCacheContact.has(key)) return _cache.dispSumCacheContact.get(key);
+
+  let total = 0;
   try{
     const list = await getDisponibilidades({
       contactoId: c._id || undefined,
       proveedorKey: c.proveedorKey || undefined,
       centroId: normId(c.centroId) || undefined,
     });
-    const chips = (Array.isArray(list) ? list : []).map(dispToChip).join(' ');
-    _cache.dispRowCacheContact.set(key, chips);
+    total = (Array.isArray(list) ? list : []).reduce((a,it)=> a + Number(it.tonsDisponible ?? it.tons ?? 0), 0);
+  }catch{ total = 0; }
 
-    const tonsTd = tr.querySelector('td[data-col="tons"]');
-    if (tonsTd){
-      tonsTd.querySelectorAll('.tiny-note').forEach(n => n.remove());
-      if (chips) tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${chips}</span>`);
-    }
-  }catch{
-    _cache.dispRowCacheContact.set(key, '');
-  }
+  _cache.dispSumCacheContact.set(key, total);
+  return total;
 }
 
 /* ======================= Agregaciones (para KPIs) ======================= */
@@ -288,12 +229,11 @@ function aggregateVisitas(wk){
   const empresas = uniq(visitas.map(proveedorDeVisita)).filter(Boolean);
   const comunas  = uniq(visitas.map(comunaDeVisita)).filter(Boolean);
   const centros  = uniq(visitas.map(centroCodigoDeVisita)).filter(Boolean);
-  const totalTonsContactadas = visitas.reduce((acc,v)=> acc + Number(
-    (v.tons ?? v.tonsDisponible ?? v.tonsComprometidas) || 0
-  ), 0);
-  return { visitas, empresas, comunas, centros, totalTonsContactadas, count: visitas.length };
+  // KPI: Tons conversadas desde visitas
+  const totalConversadas = visitas.reduce((acc,v)=> acc + Number(v.tonsComprometidas || 0), 0);
+  return { visitas, empresas, comunas, centros, totalConversadas, count: visitas.length };
 }
-function aggregateContactos(wk){
+async function aggregateContactosAsync(wk){
   const contactos = (_cache.byWeekCont.get(wk) || []).slice().sort((a,b)=>{
     const da = toDate(fechaDeContacto(a)) || new Date(0);
     const db = toDate(fechaDeContacto(b)) || new Date(0);
@@ -302,10 +242,13 @@ function aggregateContactos(wk){
   const empresas = uniq(contactos.map(proveedorDeContacto)).filter(Boolean);
   const comunas  = uniq(contactos.map(comunaDeContacto)).filter(Boolean);
   const centros  = uniq(contactos.map(centroCodigoDeContacto)).filter(Boolean);
-  const totalTonsContactadas = contactos.reduce((acc,c)=> acc + Number(
-    (c.tons ?? c.tonsDisponible ?? c.tonsComprometidas) || 0
-  ), 0);
-  return { contactos, empresas, comunas, centros, totalTonsContactadas, count: contactos.length };
+
+  // KPI: Tons producidas = suma de disponibilidades por contacto listado
+  let totalProducidas = 0;
+  for (const c of contactos){
+    totalProducidas += await sumDisponibilidadesContacto(c);
+  }
+  return { contactos, empresas, comunas, centros, totalProducidas, count: contactos.length };
 }
 
 /* ======================= KPIs ======================= */
@@ -320,22 +263,21 @@ async function renderKPIs(aggV, aggC){
   const cardsHtml = (_cache.mode === 'visitas')
     ? [
         kpi('Visitas realizadas', aggV.count),
-        kpi('Tons contactadas', fmt2(aggV.totalTonsContactadas || 0)),
+        kpi('Tons conversadas', fmt2(aggV.totalConversadas || 0)),
         kpi('Centros distintos', (aggV.centros||[]).length),
         kpi('Comunas cubiertas', (aggV.comunas||[]).length),
       ].join('')
     : [
         kpi('Contactos realizados', aggC.count),
-        kpi('Tons contactadas', fmt2(aggC.totalTonsContactadas || 0)),
+        kpi('Tons producidas', fmt2(aggC.totalProducidas || 0)),
         kpi('Centros distintos', (aggC.centros||[]).length),
         kpi('Comunas cubiertas', (aggC.comunas||[]).length),
       ].join('');
   el.innerHTML = `<div class="kpi-row">${cardsHtml}</div>`;
 }
 
-/* ======================= Semanas: helpers faltantes ======================= */
+/* ======================= Semanas: helpers ======================= */
 function allWeeks(){
-  // Todas las semanas presentes en visitas + contactos
   return Array.from(new Set([
     ..._cache.byWeekVis.keys(),
     ..._cache.byWeekCont.keys(),
@@ -365,8 +307,8 @@ function ensureHeadColumns(tbody){
   const curr = thead.children.length;
   if (want === curr) return;
   thead.innerHTML = (_cache.mode === 'visitas')
-    ? `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Fecha prox.</th><th>Estado</th>`
-    : `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Responsable</th>`;
+    ? `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons conversadas</th><th>Fecha prox.</th><th>Estado</th>`
+    : `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons producidas</th><th>Responsable</th>`;
 }
 
 function renderTablaVisitas(visitas){
@@ -379,7 +321,7 @@ function renderTablaVisitas(visitas){
     const resp   = responsableDeVisita(v) || '';
     const centro = centroCodigoDeVisita(v) || '—';
     const comuna = comunaDeVisita(v) || '—';
-    const tonsMain = '—'; // solo chips de disponibilidades
+    const tons   = (v.tonsComprometidas != null) ? fmt2(v.tonsComprometidas) : '—';
     const fpp    = fmtDMYShort(toDate(v.proximoPasoFecha));
     const estado = normalizeEstado(v.estado || '—');
     const chipCl = estadoClaseChip(estado);
@@ -395,7 +337,7 @@ function renderTablaVisitas(visitas){
       </td>
       <td><span class="res-link js-open-visita" data-id="${vid}" title="Ver visita">${esc(centro)}</span></td>
       <td>${esc(comuna)}</td>
-      <td data-col="tons">${tonsMain}</td>
+      <td data-col="tons">${tons}</td>
       <td>${fpp}</td>
       <td><span class="${chipCl}">${esc(estado || '—')}</span></td>
     </tr>`;
@@ -413,27 +355,27 @@ function renderTablaVisitas(visitas){
     });
   });
 
-  // chips de disponibilidades (tons · mes)
-  const trs = Array.from(tbody.querySelectorAll('tr[data-visita-id]'));
-  trs.forEach((tr, i) => { const v = visitas[i]; if (v) paintDisponibilidadesEnFila(v, tr); });
-
   ensureFullWidthTable();
 }
 
-function renderTablaContactos(contactos){
+async function renderTablaContactos(contactos){
   const tbody = $('#resumen_table_body'); if (!tbody) return;
   ensureHeadColumns(tbody);
 
-  const rows = contactos.map(c => {
+  let rowsHtml = '';
+  for (const c of contactos){
     const prov   = proveedorDeContacto(c) || '—';
     const contacto = contactoNombreDeContacto(c) || '';
     const centro = centroCodigoDeContacto(c) || '—';
     const comuna = comunaDeContacto(c) || '—';
-    const tonsMain = '—'; // solo chips de disponibilidades
     const resp   = c.responsable || c.contactoResponsable || c.responsablePG || '—';
-    const cid    = esc(c._id || '');
 
-    return `<tr data-contacto-id="${cid}">
+    // Sumatoria de disponibilidades = TONS PRODUCIDAS
+    const sumDisp = await sumDisponibilidadesContacto(c);
+    const tons = sumDisp ? fmt2(sumDisp) : '—';
+
+    const cid    = esc(c._id || '');
+    rowsHtml += `<tr data-contacto-id="${cid}">
       <td>${fmtDMYShort(toDate(fechaDeContacto(c)))}</td>
       <td>
         <a href="#!" class="res-link js-open-contacto" data-id="${cid}" title="Ver contacto">${esc(prov)}</a>
@@ -441,11 +383,12 @@ function renderTablaContactos(contactos){
       </td>
       <td>${esc(centro)}</td>
       <td>${esc(comuna)}</td>
-      <td data-col="tons">${tonsMain}</td>
+      <td data-col="tons">${tons}</td>
       <td>${esc(resp)}</td>
     </tr>`;
-  }).join('');
-  tbody.innerHTML = rows || '<tr><td colspan="6" class="grey-text">No hay contactos para esta semana.</td></tr>';
+  }
+
+  tbody.innerHTML = rowsHtml || '<tr><td colspan="6" class="grey-text">No hay contactos para esta semana.</td></tr>';
 
   // abrir contacto
   tbody.querySelectorAll('.js-open-contacto').forEach(a => {
@@ -459,14 +402,6 @@ function renderTablaContactos(contactos){
         if (typeof window.abrirDetalleContacto === 'function') window.abrirDetalleContacto(c);
       } catch {}
     });
-  });
-
-  // chips de disponibilidades (tons · mes)
-  const trs = Array.from(tbody.querySelectorAll('tr[data-contacto-id]'));
-  trs.forEach(tr => {
-    const id = tr.getAttribute('data-contacto-id');
-    const c = (state.contactosGuardados||[]).find(x => String(x._id) === String(id));
-    if (c) paintDisponContactoEnFila(c, tr);
   });
 
   ensureFullWidthTable();
@@ -499,14 +434,14 @@ function ensureModeSwitcher(){
   `;
   toolbar.insertBefore(seg, toolbar.lastElementChild);
 
-  seg.addEventListener('click', (e) => {
+  seg.addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-mode]');
     if (!btn) return;
     const mode = btn.getAttribute('data-mode');
     if (_cache.mode === mode) return;
     _cache.mode = mode;
     seg.querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b===btn));
-    refreshResumen();
+    await refreshResumen();
   });
 }
 function trySyncModeFromMainTabs(){
@@ -555,15 +490,17 @@ function wireControls(){
 /* ======================= API ======================= */
 export async function initResumenSemanalTab(){
   await ensureData();
-  buildSemanaOptions();   // << ahora sí existe
+  buildSemanaOptions();
   wireControls();
   trySyncModeFromMainTabs();
-  refreshResumen();
+  await refreshResumen();
 
-  window.addEventListener('visita:created', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); refreshResumen(); });
-  window.addEventListener('visita:updated', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); refreshResumen(); });
-  window.addEventListener('visita:deleted', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); refreshResumen(); });
-  document.addEventListener('reload-tabla-contactos', () => { _cache.allContactos = []; _cache.byWeekCont.clear(); refreshResumen(); });
+  window.addEventListener('visita:created', async () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); await refreshResumen(); });
+  window.addEventListener('visita:updated', async () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); await refreshResumen(); });
+  window.addEventListener('visita:deleted', async () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); await refreshResumen(); });
+  document.addEventListener('reload-tabla-contactos', async () => {
+    _cache.allContactos = []; _cache.byWeekCont.clear(); _cache.dispSumCacheContact.clear(); await refreshResumen();
+  });
 }
 
 /** Forzar modo desde otras vistas */
@@ -592,13 +529,13 @@ export async function refreshResumen(){
   const wk = (sel?.value) || '';
 
   const aggV = aggregateVisitas(wk);
-  const aggC = aggregateContactos(wk);
+  const aggC = await aggregateContactosAsync(wk);
 
   await renderKPIs(aggV, aggC);
 
   if (_cache.mode === 'visitas'){
     renderTablaVisitas(aggV.visitas);
   } else {
-    renderTablaContactos(aggC.contactos);
+    await renderTablaContactos(aggC.contactos);
   }
 }
