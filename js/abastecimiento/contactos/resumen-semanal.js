@@ -13,44 +13,49 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     #tab-resumen h5{ font-weight:600; letter-spacing:.2px; }
     .resumen-toolbar{ margin:8px 0 4px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
 
-    /* KPI cards */
-    .kpi-grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:12px; }
-    .kpi-card{
+    /* ===== KPI en UNA SOLA FILA (scroll si no caben) ===== */
+    #resumen_kpis .kpi-row{
+      display:flex; gap:12px; align-items:stretch; flex-wrap:nowrap;
+      overflow:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch;
+    }
+    #resumen_kpis .kpi-card{
+      flex:0 0 220px;
       border:1px solid #e5e7eb; border-radius:14px; background:#fff;
-      padding:14px 16px; box-shadow: 0 1px 1px rgba(0,0,0,.03);
+      padding:14px 16px; box-shadow:0 1px 1px rgba(0,0,0,.03);
       display:flex; flex-direction:column; justify-content:center; min-height:92px;
     }
     .kpi-card .kpi-label{ font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; }
     .kpi-card .kpi-value{ font-size:26px; margin-top:6px; line-height:1.1; font-weight:600; color:#111827; }
-    /* responsive columnas */
-    .col-12{ grid-column: span 12; }
-    @media (min-width:600px){ .col-6{ grid-column: span 6; } }
-    @media (min-width:992px){ .col-3{ grid-column: span 3; } }
 
-    /* tabla */
+    /* ===== Tabla ancho completo ===== */
+    #resumen_print_area table{ width:100%; table-layout:auto; }
     #resumen_print_area table.striped thead th{
       font-size:12px; color:#6b7280; font-weight:600; border-bottom:1px solid #e5e7eb;
     }
     #resumen_print_area table.striped tbody td{ padding:10px 12px; vertical-align:middle; }
 
+    /* si no hay panel lateral, ocultarlo y expandir tabla */
+    #resumen_top:empty{ display:none !important; }
+    .res-col-table.full-width{ width:100% !important; max-width:100% !important; flex:0 0 100% !important; }
+
     /* enlaces clicables en tabla */
     .res-link{ color:#0ea5a8; font-weight:700; text-decoration:none; }
     .res-link:hover{ text-decoration:underline; }
 
-    /* chips de estado (D) */
+    /* chips de estado */
     .chip-estado{
       display:inline-flex; align-items:center; gap:6px;
       padding:4px 8px; border-radius:999px; border:1px solid #e5e7eb;
       font-size:12px; font-weight:700; white-space:nowrap;
     }
-    .chip-vis{ background:#ecfeff; border-color:#a5f3fc; color:#075985; }     /* “Nueva visita”, “Programar nueva visita” */
-    .chip-mue{ background:#f0fdf4; border-color:#bbf7d0; color:#166534; }     /* “Tomar muestras” */
-    .chip-neg{ background:#fef3c7; border-color:#fde68a; color:#92400e; }     /* “Negociar precio/volumen” */
-    .chip-tel{ background:#eef2ff; border-color:#c7d2fe; color:#3730a3; }     /* “Contacto telefónico” */
-    .chip-esp{ background:#faf5ff; border-color:#e9d5ff; color:#6b21a8; }     /* “Esperar disponibilidad” */
-    .chip-na { background:#f3f4f6; border-color:#e5e7eb; color:#374151; }     /* “Sin acción” / otros */
+    .chip-vis{ background:#ecfeff; border-color:#a5f3fc; color:#075985; }
+    .chip-mue{ background:#f0fdf4; border-color:#bbf7d0; color:#166534; }
+    .chip-neg{ background:#fef3c7; border-color:#fde68a; color:#92400e; }
+    .chip-tel{ background:#eef2ff; border-color:#c7d2fe; color:#3730a3; }
+    .chip-esp{ background:#faf5ff; border-color:#e9d5ff; color:#6b21a8; }
+    .chip-na { background:#f3f4f6; border-color:#e5e7eb; color:#374151; }
 
-    /* control segmentado (Visitas / Contactos) */
+    /* control segmentado */
     .segmented{ display:inline-flex; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }
     .segmented button{ padding:8px 12px; background:#fff; border:0; cursor:pointer; font-weight:700; }
     .segmented button+button{ border-left:1px solid #e5e7eb; }
@@ -90,21 +95,19 @@ function weekKeyFromDate(dt){
   return `${year}-W${String(week).padStart(2,'0')}`;
 }
 function weekRange(wkKey){
-  // retorna inicio/fin (lunes-domingo) de la semana en fechas locales
   const [yStr, wStr] = wkKey.split('-W');
   const year = Number(yStr); const week = Number(wStr);
   if (!year || !week) return { start:null, end:null };
-  // Algoritmo: primer jueves del año → semana 1, etc.
   const simple = new Date(Date.UTC(year,0,1));
-  const day = simple.getUTCDay(); // 0..6
-  const diff = (day<=4 ? day-1 : day-8); // ajustar a lunes
+  const day = simple.getUTCDay();
+  const diff = (day<=4 ? day-1 : day-8);
   const monday = new Date(Date.UTC(year,0,1 - diff + (week-1)*7));
   const start = new Date(monday); start.setUTCHours(0,0,0,0);
   const end = new Date(start); end.setUTCDate(end.getUTCDate()+6); end.setUTCHours(23,59,59,999);
   return { start, end };
 }
 
-/* ======================= Resolutores consistentes ======================= */
+/* ======================= Resolutores ======================= */
 // VISITAS
 function proveedorDeVisita(v){
   const emb = v?.contacto?.empresaNombre || v?.proveedorNombre || v?.empresaNombre || v?.empresa;
@@ -147,7 +150,6 @@ function estadoClaseChip(estado){
   if (e.includes('negoci')) return 'chip-estado chip-neg';
   if (e.includes('tel'))    return 'chip-estado chip-tel';
   if (e.includes('esper'))  return 'chip-estado chip-esp';
-  // “nueva/programar visita”
   if (e.includes('visita')) return 'chip-estado chip-vis';
   return 'chip-estado chip-na';
 }
@@ -180,12 +182,11 @@ let _cache = {
   allVisitas: [], byWeekVis: new Map(),
   allContactos: [], byWeekCont: new Map(),
   optionsSig: null,
-  mode: 'visitas', // 'visitas' | 'contactos'
-  tonsDisponiblesSemana: new Map(), // (E) wkKey -> number
+  mode: 'visitas',
+  tonsDisponiblesSemana: new Map(),
 };
 
 async function ensureData(){
-  // VISITAS (desde API, normalizadas)
   if (!_cache.allVisitas.length){
     const rawV = await getAllVisitas();
     const listV = Array.isArray(rawV) ? rawV.map(normalizeVisita) : [];
@@ -200,8 +201,6 @@ async function ensureData(){
     }
     _cache.byWeekVis = byW;
   }
-
-  // CONTACTOS (del estado que ya cargó index.js)
   if (!_cache.allContactos.length){
     const listC = Array.isArray(state.contactosGuardados) ? state.contactosGuardados.slice() : [];
     _cache.allContactos = listC;
@@ -217,8 +216,7 @@ async function ensureData(){
   }
 }
 
-/* ======================= Disponibilidades (E) ======================= */
-/** API util semejante al de tabla.js */
+/* ======================= Disponibilidades (KPI extra) ======================= */
 async function getDisponibilidades(params = {}){
   const y = new Date().getFullYear();
   const q = new URLSearchParams();
@@ -232,42 +230,46 @@ async function getDisponibilidades(params = {}){
   const json = await res.json();
   return Array.isArray(json) ? json : (json.items || []);
 }
-/** Suma “tonsDisponible|tons” para la semana (coarse por mes si el backend es mensual) */
+function weekRange(wkKey){
+  const [yStr, wStr] = wkKey.split('-W');
+  const year = Number(yStr); const week = Number(wStr);
+  if (!year || !week) return { start:null, end:null };
+  const simple = new Date(Date.UTC(year,0,1));
+  const day = simple.getUTCDay();
+  const diff = (day<=4 ? day-1 : day-8);
+  const monday = new Date(Date.UTC(year,0,1 - diff + (week-1)*7));
+  const start = new Date(monday); start.setUTCHours(0,0,0,0);
+  const end = new Date(start); end.setUTCDate(end.getUTCDate()+6); end.setUTCHours(23,59,59,999);
+  return { start, end };
+}
 async function computeTonsDisponiblesSemana(wkKey){
   if (_cache.tonsDisponiblesSemana.has(wkKey)) return _cache.tonsDisponiblesSemana.get(wkKey);
   const { start, end } = weekRange(wkKey);
   if (!start || !end){ _cache.tonsDisponiblesSemana.set(wkKey, 0); return 0; }
-
-  // Como el endpoint es YYYY-MM, pedimos el rango mes-mes que cubre la semana.
   const from = `${start.getUTCFullYear()}-${String(start.getUTCMonth()+1).padStart(2,'0')}`;
   const to   = `${end.getUTCFullYear()}-${String(end.getUTCMonth()+1).padStart(2,'0')}`;
-
   let total = 0;
   try{
     const list = await getDisponibilidades({ from, to });
     total = (Array.isArray(list)?list:[]).reduce((a, it) => a + Number(it.tonsDisponible ?? it.tons ?? 0), 0);
   }catch(e){ console.warn('[resumen] computeTonsDisponiblesSemana', e); }
-
   _cache.tonsDisponiblesSemana.set(wkKey, total);
   return total;
 }
 
 /* ======================= Render base ======================= */
 function allWeeks(){
-  // unión de semanas de visitas y contactos
   return Array.from(new Set([
     ..._cache.byWeekVis.keys(),
     ..._cache.byWeekCont.keys()
   ])).sort().reverse();
 }
-
 function buildSemanaOptions(){
   const sel = document.getElementById('resumen_semana');
   if (!sel) return;
   const weeks = allWeeks();
   const sig = weeks.join(',');
   if (_cache.optionsSig === sig) return;
-
   sel.innerHTML = '';
   for (const wk of weeks){
     const opt = document.createElement('option');
@@ -277,7 +279,6 @@ function buildSemanaOptions(){
   if (weeks.length) sel.value = weeks[0];
   _cache.optionsSig = sig;
 }
-
 function ensureHeadColumns(tbody){
   const thead = tbody.closest('table')?.querySelector('thead tr');
   if (!thead) return;
@@ -302,7 +303,6 @@ function aggregateVisitas(wk){
   const totalTons = visitas.reduce((acc,v)=>acc+Number(v.tonsComprometidas||0),0);
   return { visitas, empresas, comunas, centros, totalTons, count: visitas.length };
 }
-
 function aggregateContactos(wk){
   const contactos = (_cache.byWeekCont.get(wk) || []).slice().sort((a,b)=>{
     const da = toDate(fechaDeContacto(a)) || new Date(0);
@@ -317,32 +317,27 @@ function aggregateContactos(wk){
 }
 
 /* ======================= KPIs ======================= */
-function kpiCard(label, val){
-  return `
-    <div class="col s12 m6 l3">
-      <div class="card z-depth-0" style="border:1px solid #e5e7eb; border-radius:12px">
-        <div class="card-content">
-          <span class="grey-text text-darken-1" style="font-size:12px">${label}</span>
-          <h5 style="margin:6px 0 0">${val}</h5>
-        </div>
-      </div>
-    </div>`;
+function kpi(label, val){
+  return `<div class="kpi-card">
+    <span class="kpi-label">${label}</span>
+    <span class="kpi-value">${val}</span>
+  </div>`;
 }
 async function renderKPIs(aggV, aggC, wk){
   const el = $('#resumen_kpis'); if (!el) return;
-  const tonsDisp = await computeTonsDisponiblesSemana(wk); // (E)
+  const tonsDisp = await computeTonsDisponiblesSemana(wk);
   el.innerHTML = `
-    <div class="row" style="margin-top:8px">
-      ${kpiCard('Contactos realizados', aggC.count)}
-      ${kpiCard('Visitas realizadas', aggV.count)}
-      ${kpiCard('Tons comprometidas', fmt2(aggV.totalTons || 0))}
-      ${kpiCard('Tons disponibles (semana)', fmt2(tonsDisp || 0))}
-      ${kpiCard('Centros distintos', uniq([...(aggV.centros||[]), ...(aggC.centros||[])]).length)}
-      ${kpiCard('Comunas cubiertas', uniq([...(aggV.comunas||[]), ...(aggC.comunas||[])]).length)}
+    <div class="kpi-row">
+      ${kpi('Contactos realizados', aggC.count)}
+      ${kpi('Visitas realizadas', aggV.count)}
+      ${kpi('Tons comprometidas', fmt2(aggV.totalTons || 0))}
+      ${kpi('Tons disponibles (semana)', fmt2(tonsDisp || 0))}
+      ${kpi('Centros distintos', uniq([...(aggV.centros||[]), ...(aggC.centros||[])]).length)}
+      ${kpi('Comunas cubiertas', uniq([...(aggV.comunas||[]), ...(aggC.comunas||[])]).length)}
     </div>`;
 }
 
-/* ======================= Tablas (con Clics y Chips) ======================= */
+/* ======================= Tablas ======================= */
 function renderTablaVisitas(visitas){
   const tbody = $('#resumen_table_body'); if (!tbody) return;
   ensureHeadColumns(tbody);
@@ -373,7 +368,6 @@ function renderTablaVisitas(visitas){
   }).join('');
   tbody.innerHTML = rows || '<tr><td colspan="7" class="grey-text">No hay visitas para esta semana.</td></tr>';
 
-  // (C) Delegación de clic para abrir visita en modo readonly
   tbody.querySelectorAll('.js-open-visita').forEach(a => {
     a.addEventListener('click', (e)=>{
       e.preventDefault();
@@ -382,6 +376,8 @@ function renderTablaVisitas(visitas){
       document.dispatchEvent(new CustomEvent('visita:open-readonly', { detail:{ id } }));
     });
   });
+
+  ensureFullWidthTable();
 }
 
 function renderTablaContactos(contactos){
@@ -407,7 +403,6 @@ function renderTablaContactos(contactos){
   }).join('');
   tbody.innerHTML = rows || '<tr><td colspan="6" class="grey-text">No hay contactos para esta semana.</td></tr>';
 
-  // (C) Delegación de clic para abrir detalle de contacto
   tbody.querySelectorAll('.js-open-contacto').forEach(a => {
     a.addEventListener('click', (e)=>{
       e.preventDefault();
@@ -420,6 +415,26 @@ function renderTablaContactos(contactos){
       } catch {}
     });
   });
+
+  ensureFullWidthTable();
+}
+
+/* ===== Expandir tabla a ancho completo si el panel lateral está vacío ===== */
+function ensureFullWidthTable(){
+  const tableCol = document.querySelector('#resumen_print_area .row .col.s12.m7') || document.querySelector('#resumen_print_area .row .col:first-child');
+  const rightCol = document.querySelector('#resumen_print_area .row .col.s12.m5');
+  const topBox   = document.getElementById('resumen_top');
+
+  if (topBox && rightCol){
+    const isEmpty = !topBox.innerHTML.trim();
+    if (isEmpty){
+      rightCol.style.display = 'none';
+      if (tableCol) tableCol.classList.add('res-col-table','full-width');
+    }else{
+      rightCol.style.display = '';
+      if (tableCol) tableCol.classList.remove('full-width');
+    }
+  }
 }
 
 /* ======================= Controles (semana / modo) ======================= */
@@ -444,7 +459,7 @@ function ensureModeSwitcher(){
     if (_cache.mode === mode) return;
     _cache.mode = mode;
     seg.querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b===btn));
-    refreshResumen(); // re-render
+    refreshResumen();
   });
 }
 
@@ -492,7 +507,6 @@ export async function initResumenSemanalTab(){
   wireControls();
   refreshResumen();
 
-  // live refresh si cambian datos en otras vistas
   window.addEventListener('visita:created', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.tonsDisponiblesSemana.clear(); refreshResumen(); });
   window.addEventListener('visita:updated', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.tonsDisponiblesSemana.clear(); refreshResumen(); });
   window.addEventListener('visita:deleted', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.tonsDisponiblesSemana.clear(); refreshResumen(); });
@@ -508,11 +522,11 @@ export async function refreshResumen(){
   const aggV = aggregateVisitas(wk);
   const aggC = aggregateContactos(wk);
 
-  await renderKPIs(aggV, aggC, wk); // incluye Tons disponibles (E)
+  await renderKPIs(aggV, aggC, wk);
 
   if (_cache.mode === 'visitas'){
-    renderTablaVisitas(aggV.visitas);   // con chips y clics (C, D)
+    renderTablaVisitas(aggV.visitas);
   } else {
-    renderTablaContactos(aggC.contactos); // clic para ver contacto (C)
+    renderTablaContactos(aggC.contactos);
   }
 }
