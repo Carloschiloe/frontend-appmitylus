@@ -14,16 +14,22 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     .resumen-toolbar{ margin:8px 0 4px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
 
     /* ===== KPI en UNA SOLA FILA (scroll si no caben) ===== */
-    #resumen_kpis .kpi-row{
-      display:flex; gap:12px; align-items:stretch; flex-wrap:nowrap;
-      overflow:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch;
-    }
-    #resumen_kpis .kpi-card{
-      flex:0 0 220px;
-      border:1px solid #e5e7eb; border-radius:14px; background:#fff;
-      padding:14px 16px; box-shadow:0 1px 1px rgba(0,0,0,.03);
-      display:flex; flex-direction:column; justify-content:center; min-height:92px;
-    }
+   /* ===== KPI SIN SCROLL: grid auto-fit ===== */
+#resumen_kpis .kpi-row{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  overflow: visible;          /* sin scroll */
+  padding-bottom: 0;
+}
+
+/* cada tarjeta crece/encoge dentro de su celda */
+#resumen_kpis .kpi-card{
+  border:1px solid #e5e7eb; border-radius:14px; background:#fff;
+  padding:14px 16px; box-shadow:0 1px 1px rgba(0,0,0,.03);
+  display:flex; flex-direction:column; justify-content:center; min-height:92px;
+  width: 100%;                /* ocupar toda la celda */
+}
     .kpi-card .kpi-label{ font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; }
     .kpi-card .kpi-value{ font-size:26px; margin-top:6px; line-height:1.1; font-weight:600; color:#111827; }
 
