@@ -3,7 +3,7 @@ import { state, $ } from './state.js';
 import { getAll as getAllVisitas } from '../visitas/api.js';
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
 
-/* ======================= Estilos del módulo ======================= */
+/* ======================= Estilos del módulo (inyección segura) ======================= */
 (function injectResumenStyles(){
   if (document.getElementById('resumen-semanal-styles')) return;
   const s = document.createElement('style');
@@ -22,6 +22,10 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     }
     .kpi-card .kpi-label{ font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; }
     .kpi-card .kpi-value{ font-size:26px; margin-top:6px; line-height:1.1; font-weight:600; color:#111827; }
+    /* responsive columnas */
+    .col-12{ grid-column: span 12; }
+    @media (min-width:600px){ .col-6{ grid-column: span 6; } }
+    @media (min-width:992px){ .col-3{ grid-column: span 3; } }
 
     /* tabla */
     #resumen_print_area table.striped thead th{
@@ -29,14 +33,22 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     }
     #resumen_print_area table.striped tbody td{ padding:10px 12px; vertical-align:middle; }
 
-    /* Celdas compuestas (dos líneas) */
-    .r-prov, .r-centro{ display:block; min-width:0; }
-    .r-top{ display:block; font-weight:600; line-height:1.2; }
-    .r-sub{ display:block; font-size:12px; color:#6b7280; line-height:1.15; }
+    /* enlaces clicables en tabla */
+    .res-link{ color:#0ea5a8; font-weight:700; text-decoration:none; }
+    .res-link:hover{ text-decoration:underline; }
 
-    /* botones */
-    #resumen_copy.btn-flat{ border:1px solid #e5e7eb; border-radius:10px; }
-    #resumen_print.btn{ border-radius:10px; }
+    /* chips de estado (D) */
+    .chip-estado{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 8px; border-radius:999px; border:1px solid #e5e7eb;
+      font-size:12px; font-weight:700; white-space:nowrap;
+    }
+    .chip-vis{ background:#ecfeff; border-color:#a5f3fc; color:#075985; }     /* “Nueva visita”, “Programar nueva visita” */
+    .chip-mue{ background:#f0fdf4; border-color:#bbf7d0; color:#166534; }     /* “Tomar muestras” */
+    .chip-neg{ background:#fef3c7; border-color:#fde68a; color:#92400e; }     /* “Negociar precio/volumen” */
+    .chip-tel{ background:#eef2ff; border-color:#c7d2fe; color:#3730a3; }     /* “Contacto telefónico” */
+    .chip-esp{ background:#faf5ff; border-color:#e9d5ff; color:#6b21a8; }     /* “Esperar disponibilidad” */
+    .chip-na { background:#f3f4f6; border-color:#e5e7eb; color:#374151; }     /* “Sin acción” / otros */
 
     /* control segmentado (Visitas / Contactos) */
     .segmented{ display:inline-flex; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }
@@ -61,10 +73,9 @@ const fmt2 = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigi
 const ymd  = (d) => (d instanceof Date && !isNaN(d)) ? d.toISOString().slice(0,10) : '—';
 const toDate = (v) => { if (!v) return null; try { return (v instanceof Date) ? v : new Date(v); } catch { return null; } };
 const uniq = (arr) => Array.from(new Set(arr.filter(Boolean)));
-const esc = (s='') => String(s)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+const esc  = (s='') => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 
+/* Semana ISO */
 function isoWeek(date){
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
@@ -78,6 +89,20 @@ function weekKeyFromDate(dt){
   const {year, week} = isoWeek(dt);
   return `${year}-W${String(week).padStart(2,'0')}`;
 }
+function weekRange(wkKey){
+  // retorna inicio/fin (lunes-domingo) de la semana en fechas locales
+  const [yStr, wStr] = wkKey.split('-W');
+  const year = Number(yStr); const week = Number(wStr);
+  if (!year || !week) return { start:null, end:null };
+  // Algoritmo: primer jueves del año → semana 1, etc.
+  const simple = new Date(Date.UTC(year,0,1));
+  const day = simple.getUTCDay(); // 0..6
+  const diff = (day<=4 ? day-1 : day-8); // ajustar a lunes
+  const monday = new Date(Date.UTC(year,0,1 - diff + (week-1)*7));
+  const start = new Date(monday); start.setUTCHours(0,0,0,0);
+  const end = new Date(start); end.setUTCDate(end.getUTCDate()+6); end.setUTCHours(23,59,59,999);
+  return { start, end };
+}
 
 /* ======================= Resolutores consistentes ======================= */
 // VISITAS
@@ -89,12 +114,11 @@ function proveedorDeVisita(v){
   const c = (state.contactosGuardados || []).find(x => String(x._id) === id);
   return c?.proveedorNombre || c?.empresaNombre || '';
 }
-function contactoNombreDeVisita(v){
-  if (v?.contactoNombre || v?.contacto) return v.contactoNombre || v.contacto;
+function contactoDeVisita(v){
   const id = v?.contactoId ? String(v.contactoId) : null;
-  if (!id) return '';
+  if (!id) return v?.contacto || '';
   const c = (state.contactosGuardados || []).find(x => String(x._id) === id);
-  return c?.contactoNombre || c?.contacto || '';
+  return c?.contactoNombre || c?.contacto || v?.contacto || '';
 }
 function centroCodigoDeVisita(v){
   if (v?.centroCodigo) return v.centroCodigo;
@@ -112,12 +136,28 @@ function comunaDeVisita(v){
   );
   return m?.comuna || m?.Comuna || '';
 }
+const normalizeEstado = (s='') => {
+  const x = String(s||'').trim();
+  return (x === 'Tomar/entregar muestras') ? 'Tomar muestras' : x;
+};
+function estadoClaseChip(estado){
+  const e = normalizeEstado(estado).toLowerCase();
+  if (!e || e === 'sin acción') return 'chip-estado chip-na';
+  if (e.includes('muestr')) return 'chip-estado chip-mue';
+  if (e.includes('negoci')) return 'chip-estado chip-neg';
+  if (e.includes('tel'))    return 'chip-estado chip-tel';
+  if (e.includes('esper'))  return 'chip-estado chip-esp';
+  // “nueva/programar visita”
+  if (e.includes('visita')) return 'chip-estado chip-vis';
+  return 'chip-estado chip-na';
+}
 // CONTACTOS
 function proveedorDeContacto(c){
   return c?.proveedorNombre || c?.empresaNombre || c?.empresa || c?.contacto?.empresaNombre || '';
 }
-function contactoNombreDeContacto(c){ return c?.contactoNombre || c?.contacto || ''; }
-function fechaDeContacto(c){ return c?.fecha || c?.fechaContacto || c?.createdAt || null; }
+function fechaDeContacto(c){
+  return c?.fecha || c?.fechaContacto || c?.createdAt || null;
+}
 function centroCodigoDeContacto(c){
   if (c?.centroCodigo) return c.centroCodigo;
   if (c?.centroId) return (centroCodigoById?.(c.centroId, state.listaCentros || []) || '');
@@ -135,51 +175,17 @@ function comunaDeContacto(c){
   return m?.comuna || m?.Comuna || '';
 }
 
-/* ======================= Disponibilidades (para tons faltantes) ======================= */
-const dispTotalCache = new Map();
-
-async function getDisponibilidades(params){
-  const y = new Date().getFullYear();
-  const q = new URLSearchParams();
-  q.set('from', params?.from || `${y-1}-01`);
-  q.set('to',   params?.to   || `${y+1}-12`);
-  if (params?.contactoId)   q.set('contactoId', params.contactoId);
-  if (params?.proveedorKey) q.set('proveedorKey', params.proveedorKey);
-  if (params?.centroId)     q.set('centroId', params.centroId);
-  const res = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
-  if (!res.ok) throw new Error('GET /disponibilidades '+res.status);
-  const json = await res.json();
-  return Array.isArray(json) ? json : (json.items || []);
-}
-
-async function fetchTotalDisponibilidad({ contactoId='', proveedorKey='', centroId='' }){
-  const key = `${contactoId||''}|${proveedorKey||''}|${centroId||''}`;
-  if (dispTotalCache.has(key)) return dispTotalCache.get(key);
-
-  const sum = (list, byId) => (Array.isArray(list)?list:[])
-    .filter(it => !byId || String(it.contactoId||'')===String(byId))
-    .reduce((a,it)=>a+Number(it.tonsDisponible??it.tons??0),0);
-
-  let total = 0;
-  try{
-    if (contactoId){ total = sum(await getDisponibilidades({ contactoId }), contactoId); }
-    if (total===0 && (proveedorKey||centroId)){ total = sum(await getDisponibilidades({ proveedorKey, centroId })); }
-    if (total===0 && proveedorKey){ total = sum(await getDisponibilidades({ proveedorKey })); }
-  }catch(e){ console.error('[resumen] fetchTotalDisponibilidad', e); }
-
-  dispTotalCache.set(key,total);
-  return total;
-}
-
 /* ======================= Cache ======================= */
 let _cache = {
   allVisitas: [], byWeekVis: new Map(),
   allContactos: [], byWeekCont: new Map(),
   optionsSig: null,
-  mode: 'visitas' // 'visitas' | 'contactos'
+  mode: 'visitas', // 'visitas' | 'contactos'
+  tonsDisponiblesSemana: new Map(), // (E) wkKey -> number
 };
 
 async function ensureData(){
+  // VISITAS (desde API, normalizadas)
   if (!_cache.allVisitas.length){
     const rawV = await getAllVisitas();
     const listV = Array.isArray(rawV) ? rawV.map(normalizeVisita) : [];
@@ -195,6 +201,7 @@ async function ensureData(){
     _cache.byWeekVis = byW;
   }
 
+  // CONTACTOS (del estado que ya cargó index.js)
   if (!_cache.allContactos.length){
     const listC = Array.isArray(state.contactosGuardados) ? state.contactosGuardados.slice() : [];
     _cache.allContactos = listC;
@@ -210,8 +217,44 @@ async function ensureData(){
   }
 }
 
+/* ======================= Disponibilidades (E) ======================= */
+/** API util semejante al de tabla.js */
+async function getDisponibilidades(params = {}){
+  const y = new Date().getFullYear();
+  const q = new URLSearchParams();
+  q.set('from', params.from || `${y-1}-01`);
+  q.set('to',   params.to   || `${y+1}-12`);
+  if (params.contactoId)   q.set('contactoId', params.contactoId);
+  if (params.proveedorKey) q.set('proveedorKey', params.proveedorKey);
+  if (params.centroId)     q.set('centroId', params.centroId);
+  const res = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
+  if (!res.ok) throw new Error('GET /disponibilidades '+res.status);
+  const json = await res.json();
+  return Array.isArray(json) ? json : (json.items || []);
+}
+/** Suma “tonsDisponible|tons” para la semana (coarse por mes si el backend es mensual) */
+async function computeTonsDisponiblesSemana(wkKey){
+  if (_cache.tonsDisponiblesSemana.has(wkKey)) return _cache.tonsDisponiblesSemana.get(wkKey);
+  const { start, end } = weekRange(wkKey);
+  if (!start || !end){ _cache.tonsDisponiblesSemana.set(wkKey, 0); return 0; }
+
+  // Como el endpoint es YYYY-MM, pedimos el rango mes-mes que cubre la semana.
+  const from = `${start.getUTCFullYear()}-${String(start.getUTCMonth()+1).padStart(2,'0')}`;
+  const to   = `${end.getUTCFullYear()}-${String(end.getUTCMonth()+1).padStart(2,'0')}`;
+
+  let total = 0;
+  try{
+    const list = await getDisponibilidades({ from, to });
+    total = (Array.isArray(list)?list:[]).reduce((a, it) => a + Number(it.tonsDisponible ?? it.tons ?? 0), 0);
+  }catch(e){ console.warn('[resumen] computeTonsDisponiblesSemana', e); }
+
+  _cache.tonsDisponiblesSemana.set(wkKey, total);
+  return total;
+}
+
 /* ======================= Render base ======================= */
 function allWeeks(){
+  // unión de semanas de visitas y contactos
   return Array.from(new Set([
     ..._cache.byWeekVis.keys(),
     ..._cache.byWeekCont.keys()
@@ -238,15 +281,12 @@ function buildSemanaOptions(){
 function ensureHeadColumns(tbody){
   const thead = tbody.closest('table')?.querySelector('thead tr');
   if (!thead) return;
-  // VISITAS: Fecha | Proveedor | Centro | Tons | Fecha prox. | Estado  (6)
-  // CONTACTOS: Fecha | Proveedor | Centro | Tons | Responsable          (5)
-  const want = _cache.mode === 'visitas' ? 6 : 5;
+  const want = _cache.mode === 'visitas' ? 7 : 6;
   const curr = thead.children.length;
   if (want === curr) return;
-
   thead.innerHTML = (_cache.mode === 'visitas')
-    ? `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Tons</th><th>Fecha prox.</th><th>Estado</th>`
-    : `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Tons</th><th>Responsable</th>`;
+    ? `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Fecha prox.</th><th>Estado</th>`
+    : `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Responsable</th>`;
 }
 
 /* ======================= Agregaciones ======================= */
@@ -272,7 +312,6 @@ function aggregateContactos(wk){
   const empresas = uniq(contactos.map(proveedorDeContacto)).filter(Boolean);
   const comunas  = uniq(contactos.map(comunaDeContacto)).filter(Boolean);
   const centros  = uniq(contactos.map(centroCodigoDeContacto)).filter(Boolean);
-  // nota: los contactos rara vez traen tons; se intentará rellenar con disponibilidades si no hay
   const totalTons = contactos.reduce((acc,c)=>acc+Number(c.tons||c.tonsComprometidas||0),0);
   return { contactos, empresas, comunas, centros, totalTons, count: contactos.length };
 }
@@ -289,73 +328,60 @@ function kpiCard(label, val){
       </div>
     </div>`;
 }
-function renderKPIs(aggV, aggC){
+async function renderKPIs(aggV, aggC, wk){
   const el = $('#resumen_kpis'); if (!el) return;
+  const tonsDisp = await computeTonsDisponiblesSemana(wk); // (E)
   el.innerHTML = `
     <div class="row" style="margin-top:8px">
       ${kpiCard('Contactos realizados', aggC.count)}
       ${kpiCard('Visitas realizadas', aggV.count)}
       ${kpiCard('Tons comprometidas', fmt2(aggV.totalTons || 0))}
+      ${kpiCard('Tons disponibles (semana)', fmt2(tonsDisp || 0))}
       ${kpiCard('Centros distintos', uniq([...(aggV.centros||[]), ...(aggC.centros||[])]).length)}
       ${kpiCard('Comunas cubiertas', uniq([...(aggV.comunas||[]), ...(aggC.comunas||[])]).length)}
     </div>`;
 }
 
-/* ======================= Tablas ======================= */
-function provCellHTML(nombreEmpresa, nombreContacto){
-  const top = esc(nombreEmpresa||'—');
-  const sub = (nombreContacto||'').trim();
-  return `
-    <span class="r-prov" title="${top}${sub? ' – '+esc(sub):''}">
-      <span class="r-top">${top}</span>
-      ${sub ? `<span class="r-sub">${esc(sub)}</span>` : ``}
-    </span>`;
-}
-function centroCellHTML(codigo, comuna){
-  const top = esc(codigo||'—');
-  const sub = (comuna||'').trim();
-  return `
-    <span class="r-centro" title="${top}${sub? ' – '+esc(sub):''}">
-      <span class="r-top">${top}</span>
-      ${sub ? `<span class="r-sub">${esc(sub)}</span>` : ``}
-    </span>`;
-}
-
+/* ======================= Tablas (con Clics y Chips) ======================= */
 function renderTablaVisitas(visitas){
   const tbody = $('#resumen_table_body'); if (!tbody) return;
   ensureHeadColumns(tbody);
 
   const rows = visitas.map(v => {
     const prov   = proveedorDeVisita(v) || '—';
-    const cto    = contactoNombreDeVisita(v) || '';
+    const contacto = contactoDeVisita(v) || '';
     const centro = centroCodigoDeVisita(v) || '—';
-    const comuna = comunaDeVisita(v) || '';
-    const tons   = v.tonsComprometidas; // fallback asíncrono abajo si falta
+    const comuna = comunaDeVisita(v) || '—';
+    const tons   = v.tonsComprometidas ? fmt2(v.tonsComprometidas) : '—';
     const fpp    = ymd(toDate(v.proximoPasoFecha));
-    const estado = v.estado || '—';
+    const estado = normalizeEstado(v.estado || '—');
+    const chipCl = estadoClaseChip(estado);
+    const vid = esc(v._id || '');
 
-    const tonsTxt = (tons != null && tons !== '') ? fmt2(tons) : '—';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
+    return `<tr data-visita-id="${vid}">
       <td>${ymd(toDate(v.fecha))}</td>
-      <td>${provCellHTML(prov, cto)}</td>
-      <td>${centroCellHTML(centro, comuna)}</td>
-      <td class="tons-cell" data-kind="visita"
-          data-contactoid="${esc(v.contactoId||'')}"
-          data-proveedorkey="${esc(v.proveedorKey||'')}"
-          data-centroid="${esc(v.centroId||'')}"
-          data-value="${(tons!=null&&tons!=='')?Number(tons):''}">${tonsTxt}</td>
+      <td>
+        <a href="#!" class="res-link js-open-visita" data-id="${vid}" title="Ver visita">${esc(prov)}</a>
+        ${contacto ? `<div class="grey-text" style="font-size:12px">${esc(contacto)}</div>` : ``}
+      </td>
+      <td><span class="res-link js-open-visita" data-id="${vid}" title="Ver visita">${esc(centro)}</span></td>
+      <td>${esc(comuna)}</td>
+      <td>${tons}</td>
       <td>${fpp}</td>
-      <td>${esc(estado)}</td>
-    `;
-    return tr;
+      <td><span class="${chipCl}">${esc(estado || '—')}</span></td>
+    </tr>`;
+  }).join('');
+  tbody.innerHTML = rows || '<tr><td colspan="7" class="grey-text">No hay visitas para esta semana.</td></tr>';
+
+  // (C) Delegación de clic para abrir visita en modo readonly
+  tbody.querySelectorAll('.js-open-visita').forEach(a => {
+    a.addEventListener('click', (e)=>{
+      e.preventDefault();
+      const id = a.getAttribute('data-id');
+      if (!id) return;
+      document.dispatchEvent(new CustomEvent('visita:open-readonly', { detail:{ id } }));
+    });
   });
-
-  tbody.innerHTML = '';
-  rows.forEach(r => tbody.appendChild(r));
-
-  // completar tons faltantes con disponibilidades
-  fillMissingTonsInTable(tbody);
 }
 
 function renderTablaContactos(contactos){
@@ -364,55 +390,36 @@ function renderTablaContactos(contactos){
 
   const rows = contactos.map(c => {
     const prov   = proveedorDeContacto(c) || '—';
-    const cto    = contactoNombreDeContacto(c) || '';
     const centro = centroCodigoDeContacto(c) || '—';
-    const comuna = comunaDeContacto(c) || '';
-    const tons   = c.tons ?? c.tonsComprometidas; // fallback asíncrono abajo si falta
+    const comuna = comunaDeContacto(c) || '—';
+    const tons   = (c.tons ?? c.tonsComprometidas) ? fmt2(c.tons ?? c.tonsComprometidas) : '—';
     const resp   = c.responsable || c.contactoResponsable || '—';
+    const cid    = esc(c._id || '');
 
-    const tonsTxt = (tons != null && tons !== '') ? fmt2(tons) : '—';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
+    return `<tr data-contacto-id="${cid}">
       <td>${ymd(toDate(fechaDeContacto(c)))}</td>
-      <td>${provCellHTML(prov, cto)}</td>
-      <td>${centroCellHTML(centro, comuna)}</td>
-      <td class="tons-cell" data-kind="contacto"
-          data-contactoid="${esc(c._id||'')}"
-          data-proveedorkey="${esc(c.proveedorKey||'')}"
-          data-centroid="${esc(c.centroId||'')}"
-          data-value="${(tons!=null&&tons!=='')?Number(tons):''}">${tonsTxt}</td>
+      <td><a href="#!" class="res-link js-open-contacto" data-id="${cid}" title="Ver contacto">${esc(prov)}</a></td>
+      <td>${esc(centro)}</td>
+      <td>${esc(comuna)}</td>
+      <td>${tons}</td>
       <td>${esc(resp)}</td>
-    `;
-    return tr;
+    </tr>`;
+  }).join('');
+  tbody.innerHTML = rows || '<tr><td colspan="6" class="grey-text">No hay contactos para esta semana.</td></tr>';
+
+  // (C) Delegación de clic para abrir detalle de contacto
+  tbody.querySelectorAll('.js-open-contacto').forEach(a => {
+    a.addEventListener('click', (e)=>{
+      e.preventDefault();
+      const id = a.getAttribute('data-id');
+      if (!id) return;
+      try {
+        const c = (state.contactosGuardados||[]).find(x => String(x._id) === String(id));
+        if (!c) return (window.M?.toast) && M.toast({ html:'Contacto no encontrado', classes:'red' });
+        if (typeof window.abrirDetalleContacto === 'function') window.abrirDetalleContacto(c);
+      } catch {}
+    });
   });
-
-  tbody.innerHTML = '';
-  rows.forEach(r => tbody.appendChild(r));
-
-  // completar tons faltantes con disponibilidades
-  fillMissingTonsInTable(tbody);
-}
-
-/* ====== completar tons desde /disponibilidades cuando falten ====== */
-async function fillMissingTonsInTable(tbody){
-  const cells = Array.from(tbody.querySelectorAll('.tons-cell'));
-  const pending = cells.filter(td => td.dataset.value === '' || td.dataset.value == null);
-
-  if (!pending.length) return;
-
-  await Promise.all(pending.map(async (td) => {
-    const contactoId = td.dataset.contactoid || '';
-    const proveedorKey = td.dataset.proveedorkey || '';
-    const centroId = td.dataset.centroid || '';
-    td.textContent = '…';
-    try{
-      const total = await fetchTotalDisponibilidad({ contactoId, proveedorKey, centroId });
-      td.dataset.value = String(total);
-      td.textContent = fmt2(total);
-    }catch(e){
-      td.textContent = '—';
-    }
-  }));
 }
 
 /* ======================= Controles (semana / modo) ======================= */
@@ -437,7 +444,7 @@ function ensureModeSwitcher(){
     if (_cache.mode === mode) return;
     _cache.mode = mode;
     seg.querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b===btn));
-    refreshResumen();
+    refreshResumen(); // re-render
   });
 }
 
@@ -475,7 +482,6 @@ function wireControls(){
       }
     });
   }
-
   ensureModeSwitcher();
 }
 
@@ -485,6 +491,14 @@ export async function initResumenSemanalTab(){
   buildSemanaOptions();
   wireControls();
   refreshResumen();
+
+  // live refresh si cambian datos en otras vistas
+  window.addEventListener('visita:created', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.tonsDisponiblesSemana.clear(); refreshResumen(); });
+  window.addEventListener('visita:updated', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.tonsDisponiblesSemana.clear(); refreshResumen(); });
+  window.addEventListener('visita:deleted', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.tonsDisponiblesSemana.clear(); refreshResumen(); });
+  document.addEventListener('reload-tabla-contactos', () => {
+    _cache.allContactos = []; _cache.byWeekCont.clear(); refreshResumen();
+  });
 }
 
 export async function refreshResumen(){
@@ -494,11 +508,11 @@ export async function refreshResumen(){
   const aggV = aggregateVisitas(wk);
   const aggC = aggregateContactos(wk);
 
-  renderKPIs(aggV, aggC);
+  await renderKPIs(aggV, aggC, wk); // incluye Tons disponibles (E)
 
   if (_cache.mode === 'visitas'){
-    renderTablaVisitas(aggV.visitas);
+    renderTablaVisitas(aggV.visitas);   // con chips y clics (C, D)
   } else {
-    renderTablaContactos(aggC.contactos);
+    renderTablaContactos(aggC.contactos); // clic para ver contacto (C)
   }
 }
