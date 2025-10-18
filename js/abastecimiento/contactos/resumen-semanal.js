@@ -3,7 +3,7 @@ import { state, $ } from './state.js';
 import { getAll as getAllVisitas } from '../visitas/api.js';
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
 
-/* ======================= Estilos del módulo (inyección segura) ======================= */
+/* ======================= Estilos del módulo ======================= */
 (function injectResumenStyles(){
   if (document.getElementById('resumen-semanal-styles')) return;
   const s = document.createElement('style');
@@ -12,6 +12,7 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     #tab-resumen{ padding:8px 4px 24px; }
     #tab-resumen h5{ font-weight:600; letter-spacing:.2px; }
     .resumen-toolbar{ margin:8px 0 4px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
+
     /* KPI cards */
     .kpi-grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:12px; }
     .kpi-card{
@@ -21,27 +22,28 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     }
     .kpi-card .kpi-label{ font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; }
     .kpi-card .kpi-value{ font-size:26px; margin-top:6px; line-height:1.1; font-weight:600; color:#111827; }
-    /* responsive columnas */
-    .col-12{ grid-column: span 12; }
-    @media (min-width:600px){ .col-6{ grid-column: span 6; } }
-    @media (min-width:992px){ .col-3{ grid-column: span 3; } }
+
     /* tabla */
     #resumen_print_area table.striped thead th{
       font-size:12px; color:#6b7280; font-weight:600; border-bottom:1px solid #e5e7eb;
     }
-    #resumen_print_area table.striped tbody td{ padding:10px 12px; }
-    /* panel lateral (top proveedores) */
-    #resumen_top h6{ font-weight:600; margin: 4px 0 8px; }
-    #resumen_top .collection{ border-radius:12px; overflow:hidden; border:1px solid #e5e7eb; }
-    #resumen_top .collection .collection-item{ display:flex; justify-content:space-between; }
+    #resumen_print_area table.striped tbody td{ padding:10px 12px; vertical-align:middle; }
+
+    /* Celdas compuestas (dos líneas) */
+    .r-prov, .r-centro{ display:block; min-width:0; }
+    .r-top{ display:block; font-weight:600; line-height:1.2; }
+    .r-sub{ display:block; font-size:12px; color:#6b7280; line-height:1.15; }
+
     /* botones */
     #resumen_copy.btn-flat{ border:1px solid #e5e7eb; border-radius:10px; }
     #resumen_print.btn{ border-radius:10px; }
+
     /* control segmentado (Visitas / Contactos) */
     .segmented{ display:inline-flex; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }
     .segmented button{ padding:8px 12px; background:#fff; border:0; cursor:pointer; font-weight:700; }
     .segmented button+button{ border-left:1px solid #e5e7eb; }
     .segmented button.is-active{ background:#eef2ff; color:#1e40af; }
+
     /* print */
     @media print{
       nav, .tabs, .resumen-toolbar{ display:none !important; }
@@ -54,10 +56,14 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
 })();
 
 /* ======================= Utils ======================= */
+const API_BASE = window.API_URL || '/api';
 const fmt2 = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
 const ymd  = (d) => (d instanceof Date && !isNaN(d)) ? d.toISOString().slice(0,10) : '—';
 const toDate = (v) => { if (!v) return null; try { return (v instanceof Date) ? v : new Date(v); } catch { return null; } };
 const uniq = (arr) => Array.from(new Set(arr.filter(Boolean)));
+const esc = (s='') => String(s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
 function isoWeek(date){
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -78,11 +84,17 @@ function weekKeyFromDate(dt){
 function proveedorDeVisita(v){
   const emb = v?.contacto?.empresaNombre || v?.proveedorNombre || v?.empresaNombre || v?.empresa;
   if (emb) return emb;
-  // por contactoId
   const id = v?.contactoId ? String(v.contactoId) : null;
   if (!id) return '';
   const c = (state.contactosGuardados || []).find(x => String(x._id) === id);
   return c?.proveedorNombre || c?.empresaNombre || '';
+}
+function contactoNombreDeVisita(v){
+  if (v?.contactoNombre || v?.contacto) return v.contactoNombre || v.contacto;
+  const id = v?.contactoId ? String(v.contactoId) : null;
+  if (!id) return '';
+  const c = (state.contactosGuardados || []).find(x => String(x._id) === id);
+  return c?.contactoNombre || c?.contacto || '';
 }
 function centroCodigoDeVisita(v){
   if (v?.centroCodigo) return v.centroCodigo;
@@ -100,13 +112,12 @@ function comunaDeVisita(v){
   );
   return m?.comuna || m?.Comuna || '';
 }
-// CONTACTOS (llamadas/gestiones)
+// CONTACTOS
 function proveedorDeContacto(c){
   return c?.proveedorNombre || c?.empresaNombre || c?.empresa || c?.contacto?.empresaNombre || '';
 }
-function fechaDeContacto(c){
-  return c?.fecha || c?.fechaContacto || c?.createdAt || null;
-}
+function contactoNombreDeContacto(c){ return c?.contactoNombre || c?.contacto || ''; }
+function fechaDeContacto(c){ return c?.fecha || c?.fechaContacto || c?.createdAt || null; }
 function centroCodigoDeContacto(c){
   if (c?.centroCodigo) return c.centroCodigo;
   if (c?.centroId) return (centroCodigoById?.(c.centroId, state.listaCentros || []) || '');
@@ -124,6 +135,42 @@ function comunaDeContacto(c){
   return m?.comuna || m?.Comuna || '';
 }
 
+/* ======================= Disponibilidades (para tons faltantes) ======================= */
+const dispTotalCache = new Map();
+
+async function getDisponibilidades(params){
+  const y = new Date().getFullYear();
+  const q = new URLSearchParams();
+  q.set('from', params?.from || `${y-1}-01`);
+  q.set('to',   params?.to   || `${y+1}-12`);
+  if (params?.contactoId)   q.set('contactoId', params.contactoId);
+  if (params?.proveedorKey) q.set('proveedorKey', params.proveedorKey);
+  if (params?.centroId)     q.set('centroId', params.centroId);
+  const res = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
+  if (!res.ok) throw new Error('GET /disponibilidades '+res.status);
+  const json = await res.json();
+  return Array.isArray(json) ? json : (json.items || []);
+}
+
+async function fetchTotalDisponibilidad({ contactoId='', proveedorKey='', centroId='' }){
+  const key = `${contactoId||''}|${proveedorKey||''}|${centroId||''}`;
+  if (dispTotalCache.has(key)) return dispTotalCache.get(key);
+
+  const sum = (list, byId) => (Array.isArray(list)?list:[])
+    .filter(it => !byId || String(it.contactoId||'')===String(byId))
+    .reduce((a,it)=>a+Number(it.tonsDisponible??it.tons??0),0);
+
+  let total = 0;
+  try{
+    if (contactoId){ total = sum(await getDisponibilidades({ contactoId }), contactoId); }
+    if (total===0 && (proveedorKey||centroId)){ total = sum(await getDisponibilidades({ proveedorKey, centroId })); }
+    if (total===0 && proveedorKey){ total = sum(await getDisponibilidades({ proveedorKey })); }
+  }catch(e){ console.error('[resumen] fetchTotalDisponibilidad', e); }
+
+  dispTotalCache.set(key,total);
+  return total;
+}
+
 /* ======================= Cache ======================= */
 let _cache = {
   allVisitas: [], byWeekVis: new Map(),
@@ -133,7 +180,6 @@ let _cache = {
 };
 
 async function ensureData(){
-  // VISITAS (desde API, normalizadas)
   if (!_cache.allVisitas.length){
     const rawV = await getAllVisitas();
     const listV = Array.isArray(rawV) ? rawV.map(normalizeVisita) : [];
@@ -149,7 +195,6 @@ async function ensureData(){
     _cache.byWeekVis = byW;
   }
 
-  // CONTACTOS (del estado en memoria que ya carga index.js)
   if (!_cache.allContactos.length){
     const listC = Array.isArray(state.contactosGuardados) ? state.contactosGuardados.slice() : [];
     _cache.allContactos = listC;
@@ -167,7 +212,6 @@ async function ensureData(){
 
 /* ======================= Render base ======================= */
 function allWeeks(){
-  // unión de semanas de visitas y contactos
   return Array.from(new Set([
     ..._cache.byWeekVis.keys(),
     ..._cache.byWeekCont.keys()
@@ -194,17 +238,15 @@ function buildSemanaOptions(){
 function ensureHeadColumns(tbody){
   const thead = tbody.closest('table')?.querySelector('thead tr');
   if (!thead) return;
-
-  // Si estamos en VISITAS debemos tener 7 columnas (incluye "Fecha prox.")
-  // Si estamos en CONTACTOS: 6 columnas (sin "Fecha prox.")
-  const want = _cache.mode === 'visitas' ? 7 : 6;
+  // VISITAS: Fecha | Proveedor | Centro | Tons | Fecha prox. | Estado  (6)
+  // CONTACTOS: Fecha | Proveedor | Centro | Tons | Responsable          (5)
+  const want = _cache.mode === 'visitas' ? 6 : 5;
   const curr = thead.children.length;
   if (want === curr) return;
 
-  // Limpia y vuelve a construir el header acorde al modo
   thead.innerHTML = (_cache.mode === 'visitas')
-    ? `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Fecha prox.</th><th>Estado</th>`
-    : `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Responsable</th>`;
+    ? `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Tons</th><th>Fecha prox.</th><th>Estado</th>`
+    : `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Tons</th><th>Responsable</th>`;
 }
 
 /* ======================= Agregaciones ======================= */
@@ -214,21 +256,11 @@ function aggregateVisitas(wk){
     const db = toDate(b.fecha) || toDate(b.proximoPasoFecha) || new Date(0);
     return db - da;
   });
-
   const empresas = uniq(visitas.map(proveedorDeVisita)).filter(Boolean);
   const comunas  = uniq(visitas.map(comunaDeVisita)).filter(Boolean);
   const centros  = uniq(visitas.map(centroCodigoDeVisita)).filter(Boolean);
   const totalTons = visitas.reduce((acc,v)=>acc+Number(v.tonsComprometidas||0),0);
-
-  const cnt = Object.create(null);
-  visitas.forEach(v => {
-    const k = proveedorDeVisita(v);
-    if (!k) return; cnt[k] = (cnt[k]||0)+1;
-  });
-  const topProveedores = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,5)
-    .map(([name,count])=>({name,count}));
-
-  return { visitas, empresas, comunas, centros, totalTons, topProveedores, count: visitas.length };
+  return { visitas, empresas, comunas, centros, totalTons, count: visitas.length };
 }
 
 function aggregateContactos(wk){
@@ -237,24 +269,15 @@ function aggregateContactos(wk){
     const db = toDate(fechaDeContacto(b)) || new Date(0);
     return db - da;
   });
-
   const empresas = uniq(contactos.map(proveedorDeContacto)).filter(Boolean);
   const comunas  = uniq(contactos.map(comunaDeContacto)).filter(Boolean);
   const centros  = uniq(contactos.map(centroCodigoDeContacto)).filter(Boolean);
+  // nota: los contactos rara vez traen tons; se intentará rellenar con disponibilidades si no hay
   const totalTons = contactos.reduce((acc,c)=>acc+Number(c.tons||c.tonsComprometidas||0),0);
-
-  const cnt = Object.create(null);
-  contactos.forEach(c => {
-    const k = proveedorDeContacto(c);
-    if (!k) return; cnt[k] = (cnt[k]||0)+1;
-  });
-  const topProveedores = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,5)
-    .map(([name,count])=>({name,count}));
-
-  return { contactos, empresas, comunas, centros, totalTons, topProveedores, count: contactos.length };
+  return { contactos, empresas, comunas, centros, totalTons, count: contactos.length };
 }
 
-/* ======================= KPIs / Top ======================= */
+/* ======================= KPIs ======================= */
 function kpiCard(label, val){
   return `
     <div class="col s12 m6 l3">
@@ -266,7 +289,6 @@ function kpiCard(label, val){
       </div>
     </div>`;
 }
-
 function renderKPIs(aggV, aggC){
   const el = $('#resumen_kpis'); if (!el) return;
   el.innerHTML = `
@@ -279,35 +301,61 @@ function renderKPIs(aggV, aggC){
     </div>`;
 }
 
-function renderTop(items, titulo){
-  const el = $('#resumen_top'); if (!el) return;
-  const list = (items && items.length)
-    ? items.map(p => `<li class="collection-item">${p.name}<span class="secondary-content">${p.count}</span></li>`).join('')
-    : '<li class="collection-item">—</li>';
-  el.innerHTML = `<h6 style="margin-top:12px">${titulo}</h6><ul class="collection">${list}</ul>`;
+/* ======================= Tablas ======================= */
+function provCellHTML(nombreEmpresa, nombreContacto){
+  const top = esc(nombreEmpresa||'—');
+  const sub = (nombreContacto||'').trim();
+  return `
+    <span class="r-prov" title="${top}${sub? ' – '+esc(sub):''}">
+      <span class="r-top">${top}</span>
+      ${sub ? `<span class="r-sub">${esc(sub)}</span>` : ``}
+    </span>`;
+}
+function centroCellHTML(codigo, comuna){
+  const top = esc(codigo||'—');
+  const sub = (comuna||'').trim();
+  return `
+    <span class="r-centro" title="${top}${sub? ' – '+esc(sub):''}">
+      <span class="r-top">${top}</span>
+      ${sub ? `<span class="r-sub">${esc(sub)}</span>` : ``}
+    </span>`;
 }
 
-/* ======================= Tablas ======================= */
 function renderTablaVisitas(visitas){
   const tbody = $('#resumen_table_body'); if (!tbody) return;
   ensureHeadColumns(tbody);
 
   const rows = visitas.map(v => {
     const prov   = proveedorDeVisita(v) || '—';
+    const cto    = contactoNombreDeVisita(v) || '';
     const centro = centroCodigoDeVisita(v) || '—';
-    const comuna = comunaDeVisita(v) || '—';
-    const tons   = v.tonsComprometidas ? fmt2(v.tonsComprometidas) : '—';
-    return `<tr>
+    const comuna = comunaDeVisita(v) || '';
+    const tons   = v.tonsComprometidas; // fallback asíncrono abajo si falta
+    const fpp    = ymd(toDate(v.proximoPasoFecha));
+    const estado = v.estado || '—';
+
+    const tonsTxt = (tons != null && tons !== '') ? fmt2(tons) : '—';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
       <td>${ymd(toDate(v.fecha))}</td>
-      <td>${prov}</td>
-      <td>${centro}</td>
-      <td>${comuna}</td>
-      <td>${tons}</td>
-      <td>${ymd(toDate(v.proximoPasoFecha))}</td>
-      <td>${v.estado || '—'}</td>
-    </tr>`;
-  }).join('');
-  tbody.innerHTML = rows || '<tr><td colspan="7" class="grey-text">No hay visitas para esta semana.</td></tr>';
+      <td>${provCellHTML(prov, cto)}</td>
+      <td>${centroCellHTML(centro, comuna)}</td>
+      <td class="tons-cell" data-kind="visita"
+          data-contactoid="${esc(v.contactoId||'')}"
+          data-proveedorkey="${esc(v.proveedorKey||'')}"
+          data-centroid="${esc(v.centroId||'')}"
+          data-value="${(tons!=null&&tons!=='')?Number(tons):''}">${tonsTxt}</td>
+      <td>${fpp}</td>
+      <td>${esc(estado)}</td>
+    `;
+    return tr;
+  });
+
+  tbody.innerHTML = '';
+  rows.forEach(r => tbody.appendChild(r));
+
+  // completar tons faltantes con disponibilidades
+  fillMissingTonsInTable(tbody);
 }
 
 function renderTablaContactos(contactos){
@@ -316,25 +364,59 @@ function renderTablaContactos(contactos){
 
   const rows = contactos.map(c => {
     const prov   = proveedorDeContacto(c) || '—';
+    const cto    = contactoNombreDeContacto(c) || '';
     const centro = centroCodigoDeContacto(c) || '—';
-    const comuna = comunaDeContacto(c) || '—';
-    const tons   = (c.tons ?? c.tonsComprometidas) ? fmt2(c.tons ?? c.tonsComprometidas) : '—';
+    const comuna = comunaDeContacto(c) || '';
+    const tons   = c.tons ?? c.tonsComprometidas; // fallback asíncrono abajo si falta
     const resp   = c.responsable || c.contactoResponsable || '—';
-    return `<tr>
+
+    const tonsTxt = (tons != null && tons !== '') ? fmt2(tons) : '—';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
       <td>${ymd(toDate(fechaDeContacto(c)))}</td>
-      <td>${prov}</td>
-      <td>${centro}</td>
-      <td>${comuna}</td>
-      <td>${tons}</td>
-      <td>${resp}</td>
-    </tr>`;
-  }).join('');
-  tbody.innerHTML = rows || '<tr><td colspan="6" class="grey-text">No hay contactos para esta semana.</td></tr>';
+      <td>${provCellHTML(prov, cto)}</td>
+      <td>${centroCellHTML(centro, comuna)}</td>
+      <td class="tons-cell" data-kind="contacto"
+          data-contactoid="${esc(c._id||'')}"
+          data-proveedorkey="${esc(c.proveedorKey||'')}"
+          data-centroid="${esc(c.centroId||'')}"
+          data-value="${(tons!=null&&tons!=='')?Number(tons):''}">${tonsTxt}</td>
+      <td>${esc(resp)}</td>
+    `;
+    return tr;
+  });
+
+  tbody.innerHTML = '';
+  rows.forEach(r => tbody.appendChild(r));
+
+  // completar tons faltantes con disponibilidades
+  fillMissingTonsInTable(tbody);
+}
+
+/* ====== completar tons desde /disponibilidades cuando falten ====== */
+async function fillMissingTonsInTable(tbody){
+  const cells = Array.from(tbody.querySelectorAll('.tons-cell'));
+  const pending = cells.filter(td => td.dataset.value === '' || td.dataset.value == null);
+
+  if (!pending.length) return;
+
+  await Promise.all(pending.map(async (td) => {
+    const contactoId = td.dataset.contactoid || '';
+    const proveedorKey = td.dataset.proveedorkey || '';
+    const centroId = td.dataset.centroid || '';
+    td.textContent = '…';
+    try{
+      const total = await fetchTotalDisponibilidad({ contactoId, proveedorKey, centroId });
+      td.dataset.value = String(total);
+      td.textContent = fmt2(total);
+    }catch(e){
+      td.textContent = '—';
+    }
+  }));
 }
 
 /* ======================= Controles (semana / modo) ======================= */
 function ensureModeSwitcher(){
-  // Inserta el control segmentado si no existe
   const toolbar = document.querySelector('.resumen-toolbar');
   if (!toolbar) return;
   if (document.getElementById('resumen_mode')) return;
@@ -346,7 +428,6 @@ function ensureModeSwitcher(){
     <button data-mode="visitas" class="is-active">Visitas</button>
     <button data-mode="contactos">Contactos</button>
   `;
-  // lo ponemos a la derecha de la toolbar (junto a Copiar/Imprimir)
   toolbar.insertBefore(seg, toolbar.lastElementChild);
 
   seg.addEventListener('click', (e) => {
@@ -356,7 +437,7 @@ function ensureModeSwitcher(){
     if (_cache.mode === mode) return;
     _cache.mode = mode;
     seg.querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b===btn));
-    refreshResumen(); // re-render según modo
+    refreshResumen();
   });
 }
 
@@ -413,15 +494,11 @@ export async function refreshResumen(){
   const aggV = aggregateVisitas(wk);
   const aggC = aggregateContactos(wk);
 
-  // KPIs combinados
   renderKPIs(aggV, aggC);
 
-  // Top depende del modo visible
   if (_cache.mode === 'visitas'){
-    renderTop(aggV.topProveedores, 'Top proveedores por nº de visitas');
     renderTablaVisitas(aggV.visitas);
   } else {
-    renderTop(aggC.topProveedores, 'Top proveedores por nº de contactos');
     renderTablaContactos(aggC.contactos);
   }
 }
