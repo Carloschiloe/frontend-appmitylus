@@ -13,7 +13,7 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     #tab-resumen h5{ font-weight:600; letter-spacing:.2px; }
     .resumen-toolbar{ margin:8px 0 4px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
 
-    /* ===== KPI en UNA SOLA FILA (sin scroll) ===== */
+    /* KPI en UNA SOLA FILA */
     #resumen_kpis .kpi-row{ display:flex; flex-wrap:nowrap; gap:12px; overflow:visible; padding-bottom:0; }
     #resumen_kpis .kpi-card{
       flex:1 1 0; min-width:0; border:1px solid #e5e7eb; border-radius:14px; background:#fff;
@@ -23,14 +23,14 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     .kpi-card .kpi-label{ font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; }
     .kpi-card .kpi-value{ font-size:26px; margin-top:6px; line-height:1.1; font-weight:600; color:#111827; }
 
-    /* ===== Tabla ===== */
+    /* Tabla */
     #resumen_print_area table{ width:100%; table-layout:auto; }
     #resumen_print_area table.striped thead th{
       font-size:12px; color:#6b7280; font-weight:600; border-bottom:1px solid #e5e7eb;
     }
     #resumen_print_area table.striped tbody td{ padding:10px 12px; vertical-align:middle; }
 
-    /* ampliar tabla si no hay panel lateral */
+    /* expandir tabla si el panel superior está vacío */
     #resumen_top:empty{ display:none !important; }
     .res-col-table.full-width{ width:100% !important; max-width:100% !important; flex:0 0 100% !important; }
 
@@ -65,7 +65,6 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     .segmented button+button{ border-left:1px solid #e5e7eb; }
     .segmented button.is-active{ background:#eef2ff; color:#1e40af; }
 
-    /* print */
     @media print{
       nav, .tabs, .resumen-toolbar{ display:none !important; }
       body{ background:#fff !important; }
@@ -158,8 +157,8 @@ let _cache = {
   allContactos: [], byWeekCont: new Map(),
   optionsSig: null,
   mode: 'visitas',
-  dispRowCache: new Map(), // visitas
-  dispRowCacheContact: new Map(), // contactos
+  dispRowCache: new Map(),          // visitas
+  dispRowCacheContact: new Map(),   // contactos
 };
 
 /* ======================= Data ======================= */
@@ -334,6 +333,30 @@ async function renderKPIs(aggV, aggC){
   el.innerHTML = `<div class="kpi-row">${cardsHtml}</div>`;
 }
 
+/* ======================= Semanas: helpers faltantes ======================= */
+function allWeeks(){
+  // Todas las semanas presentes en visitas + contactos
+  return Array.from(new Set([
+    ..._cache.byWeekVis.keys(),
+    ..._cache.byWeekCont.keys(),
+  ])).sort().reverse();
+}
+function buildSemanaOptions(){
+  const sel = document.getElementById('resumen_semana');
+  if (!sel) return;
+  const weeks = allWeeks();
+  const sig = weeks.join(',');
+  if (_cache.optionsSig === sig) return;
+  sel.innerHTML = '';
+  for (const wk of weeks){
+    const opt = document.createElement('option');
+    opt.value = wk; opt.textContent = wk;
+    sel.appendChild(opt);
+  }
+  if (weeks.length) sel.value = weeks[0];
+  _cache.optionsSig = sig;
+}
+
 /* ======================= Tablas ======================= */
 function ensureHeadColumns(tbody){
   const thead = tbody.closest('table')?.querySelector('thead tr');
@@ -356,7 +379,7 @@ function renderTablaVisitas(visitas){
     const resp   = responsableDeVisita(v) || '';
     const centro = centroCodigoDeVisita(v) || '—';
     const comuna = comunaDeVisita(v) || '—';
-    const tonsMain = '—'; // << NO mostramos número agregado; solo chips de disponibilidades
+    const tonsMain = '—'; // solo chips de disponibilidades
     const fpp    = fmtDMYShort(toDate(v.proximoPasoFecha));
     const estado = normalizeEstado(v.estado || '—');
     const chipCl = estadoClaseChip(estado);
@@ -406,7 +429,7 @@ function renderTablaContactos(contactos){
     const contacto = contactoNombreDeContacto(c) || '';
     const centro = centroCodigoDeContacto(c) || '—';
     const comuna = comunaDeContacto(c) || '—';
-    const tonsMain = '—'; // << NO mostramos número agregado; solo chips de disponibilidades
+    const tonsMain = '—'; // solo chips de disponibilidades
     const resp   = c.responsable || c.contactoResponsable || c.responsablePG || '—';
     const cid    = esc(c._id || '');
 
@@ -532,7 +555,7 @@ function wireControls(){
 /* ======================= API ======================= */
 export async function initResumenSemanalTab(){
   await ensureData();
-  buildSemanaOptions();
+  buildSemanaOptions();   // << ahora sí existe
   wireControls();
   trySyncModeFromMainTabs();
   refreshResumen();
@@ -560,13 +583,10 @@ export function setResumenMode(mode, opts = {}){
 export async function refreshResumen(){
   await ensureData();
 
-  // fallback: seleccionar la semana más reciente si no hay valor en el <select>
+  // fallback: seleccionar semana más reciente si el <select> está vacío
   const sel = document.getElementById('resumen_semana');
   if (sel && !sel.value){
-    const weeks = Array.from(new Set([
-      ..._cache.byWeekVis.keys(),
-      ..._cache.byWeekCont.keys(),
-    ])).sort().reverse();
+    const weeks = allWeeks();
     if (weeks.length){ sel.value = weeks[0]; }
   }
   const wk = (sel?.value) || '';
