@@ -198,22 +198,46 @@ async function getDisponibilidades(params = {}){
   return Array.isArray(json) ? json : (json.items || []);
 }
 
-const normId = (v) => (v && typeof v === 'object' && (v.$oid || v.oid)) ? (v.$oid || v.oid) : v;
+/* Normaliza distintos formatos de ids (string, number, ObjectId, {$oid}) */
+const normId = (v) => {
+  if (!v) return '';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number') return String(v);
+  if (typeof v === 'object') {
+    if (v.$oid) return v.$oid;
+    if (v.oid)  return v.oid;
+    if (typeof v.toString === 'function') return v.toString();
+  }
+  return String(v);
+};
 
-/* ===== CONTACTOS: sumar disponibilidades ===== */
+/* ===== CONTACTOS: sumar disponibilidades (Tons producidas) ===== */
 async function sumDisponibilidadesContacto(c){
-  const key = `c:${c._id || ''}|prov:${c.proveedorKey || ''}|centro:${normId(c.centroId) || ''}`;
+  const contactoId = normId(c._id);
+  const centroId   = normId(c.centroId);
+  const proveedorKey = c.proveedorKey || c.empresaKey || (c.empresa && c.empresa.key) || '';
+
+  // cache key consistente con IDs normalizados
+  const key = `c:${contactoId}|prov:${proveedorKey}|centro:${centroId}`;
   if (_cache.dispSumCacheContact.has(key)) return _cache.dispSumCacheContact.get(key);
+
+  // filtros: prioriza contactoId; si no existe, usa proveedorKey; centroId es opcional
+  const q = {};
+  if (contactoId) q.contactoId = contactoId;
+  else if (proveedorKey) q.proveedorKey = proveedorKey;
+  if (centroId) q.centroId = centroId;
 
   let total = 0;
   try{
-    const list = await getDisponibilidades({
-      contactoId: c._id || undefined,
-      proveedorKey: c.proveedorKey || undefined,
-      centroId: normId(c.centroId) || undefined,
-    });
-    total = (Array.isArray(list) ? list : []).reduce((a,it)=> a + Number(it.tonsDisponible ?? it.tons ?? 0), 0);
-  }catch{ total = 0; }
+    const list = await getDisponibilidades(q);
+    total = (Array.isArray(list) ? list : []).reduce(
+      (a,it)=> a + Number(it.tonsDisponible ?? it.tons ?? 0),
+      0
+    );
+  }catch(e){
+    console.warn('[resumen] sumDisponibilidadesContacto error', e);
+    total = 0;
+  }
 
   _cache.dispSumCacheContact.set(key, total);
   return total;
@@ -229,7 +253,7 @@ function aggregateVisitas(wk){
   const empresas = uniq(visitas.map(proveedorDeVisita)).filter(Boolean);
   const comunas  = uniq(visitas.map(comunaDeVisita)).filter(Boolean);
   const centros  = uniq(visitas.map(centroCodigoDeVisita)).filter(Boolean);
-  // KPI: Tons conversadas desde visitas
+  // KPI: Tons conversadas desde visitas (tonsComprometidas)
   const totalConversadas = visitas.reduce((acc,v)=> acc + Number(v.tonsComprometidas || 0), 0);
   return { visitas, empresas, comunas, centros, totalConversadas, count: visitas.length };
 }
