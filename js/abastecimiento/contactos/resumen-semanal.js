@@ -13,40 +13,36 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     #tab-resumen h5{ font-weight:600; letter-spacing:.2px; }
     .resumen-toolbar{ margin:8px 0 4px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
 
-    /* ===== KPI en UNA SOLA FILA (sin scroll) ===== */
-    #resumen_kpis .kpi-row{
-      display:flex;
-      flex-wrap:nowrap;      /* una sola fila */
-      gap:12px;
-      overflow:visible;      /* sin scroll del contenedor */
-      padding-bottom:0;
-    }
-    /* cada tarjeta se adapta al ancho disponible */
+    /* ===== KPI en UNA SOLA FILA ===== */
+    #resumen_kpis .kpi-row{ display:flex; flex-wrap:nowrap; gap:12px; overflow:visible; padding-bottom:0; }
     #resumen_kpis .kpi-card{
-      flex:1 1 0;            /* reparte el ancho entre todas */
-      min-width:0;           /* permite compresión del contenido */
+      flex:1 1 0; min-width:0;
       border:1px solid #e5e7eb; border-radius:14px; background:#fff;
       padding:14px 16px; box-shadow:0 1px 1px rgba(0,0,0,.03);
       display:flex; flex-direction:column; justify-content:center; min-height:92px;
-      width:100%;
     }
     .kpi-card .kpi-label{ font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; }
     .kpi-card .kpi-value{ font-size:26px; margin-top:6px; line-height:1.1; font-weight:600; color:#111827; }
 
-    /* ===== Tabla ancho completo ===== */
+    /* ===== Tabla ===== */
     #resumen_print_area table{ width:100%; table-layout:auto; }
     #resumen_print_area table.striped thead th{
       font-size:12px; color:#6b7280; font-weight:600; border-bottom:1px solid #e5e7eb;
     }
     #resumen_print_area table.striped tbody td{ padding:10px 12px; vertical-align:middle; }
 
-    /* ocultar panel lateral si está vacío y expandir tabla */
+    /* ampliar tabla si no hay panel lateral */
     #resumen_top:empty{ display:none !important; }
     .res-col-table.full-width{ width:100% !important; max-width:100% !important; flex:0 0 100% !important; }
 
-    /* enlaces clicables en tabla */
+    /* enlaces */
     .res-link{ color:#0ea5a8; font-weight:700; text-decoration:none; }
     .res-link:hover{ text-decoration:underline; }
+
+    /* sublíneas pequeñas */
+    .subline{ font-size:12px; line-height:1.2; color:#6b7280; }
+    .tiny-note{ display:block; margin-top:4px; font-size:11px; color:#6b7280; }
+    .tiny-note .badge{ display:inline-block; padding:2px 6px; border:1px solid #e5e7eb; border-radius:999px; margin-right:4px; }
 
     /* chips de estado */
     .chip-estado{
@@ -61,7 +57,7 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     .chip-esp{ background:#faf5ff; border-color:#e9d5ff; color:#6b21a8; }
     .chip-na { background:#f3f4f6; border-color:#e5e7eb; color:#374151; }
 
-    /* control segmentado */
+    /* switch modo */
     .segmented{ display:inline-flex; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }
     .segmented button{ padding:8px 12px; background:#fff; border:0; cursor:pointer; font-weight:700; }
     .segmented button+button{ border-left:1px solid #e5e7eb; }
@@ -86,6 +82,12 @@ const toDate = (v) => { if (!v) return null; try { return (v instanceof Date) ? 
 const uniq = (arr) => Array.from(new Set(arr.filter(Boolean)));
 const esc  = (s='') => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 
+/* Abreviaturas ES */
+const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const pad2 = (n) => String(n).padStart(2,'0');
+const fmtDMYShort = (dt) => { const d = toDate(dt); return d ? `${pad2(d.getDate())}.${MES_ABBR[d.getMonth()]}.${String(d.getFullYear()).slice(-2)}` : '—'; };
+const fmtMYShort  = (dt) => { const d = toDate(dt); return d ? `${MES_ABBR[d.getMonth()]}.${String(d.getFullYear()).slice(-2)}` : '—'; };
+
 /* Semana ISO */
 function isoWeek(date){
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -95,11 +97,7 @@ function isoWeek(date){
   const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   return { year: d.getUTCFullYear(), week: weekNo };
 }
-function weekKeyFromDate(dt){
-  if (!dt) return '';
-  const {year, week} = isoWeek(dt);
-  return `${year}-W${String(week).padStart(2,'0')}`;
-}
+function weekKeyFromDate(dt){ if (!dt) return ''; const {year, week} = isoWeek(dt); return `${year}-W${String(week).padStart(2,'0')}`; }
 function weekRange(wkKey){
   const [yStr, wStr] = wkKey.split('-W');
   const year = Number(yStr); const week = Number(wStr);
@@ -129,26 +127,17 @@ function contactoDeVisita(v){
   const c = (state.contactosGuardados || []).find(x => String(x._id) === id);
   return c?.contactoNombre || c?.contacto || v?.contacto || '';
 }
-function centroCodigoDeVisita(v){
-  if (v?.centroCodigo) return v.centroCodigo;
-  if (v?.centroId) return (centroCodigoById?.(v.centroId, state.listaCentros || []) || '');
-  return '';
-}
+function responsableDeVisita(v){ return v?.responsable || v?.contactoResponsable || ''; }
+function centroCodigoDeVisita(v){ if (v?.centroCodigo) return v.centroCodigo; if (v?.centroId) return (centroCodigoById?.(v.centroId, state.listaCentros || []) || ''); return ''; }
 function comunaDeVisita(v){
   if (v?.centroComuna) return v.centroComuna;
   const code = centroCodigoDeVisita(v);
   const id   = v?.centroId ? String(v.centroId) : null;
   const lista = state.listaCentros || [];
-  const m = lista.find(c =>
-    (id && (String(c._id||c.id)===id)) ||
-    (code && (String(c.code||c.codigo||c.Codigo)===String(code)))
-  );
+  const m = lista.find(c => (id && String(c._id||c.id)===id) || (code && String(c.code||c.codigo||c.Codigo)===String(code)));
   return m?.comuna || m?.Comuna || '';
 }
-const normalizeEstado = (s='') => {
-  const x = String(s||'').trim();
-  return (x === 'Tomar/entregar muestras') ? 'Tomar muestras' : x;
-};
+const normalizeEstado = (s='') => { const x = String(s||'').trim(); return (x === 'Tomar/entregar muestras') ? 'Tomar muestras' : x; };
 function estadoClaseChip(estado){
   const e = normalizeEstado(estado).toLowerCase();
   if (!e || e === 'sin acción') return 'chip-estado chip-na';
@@ -160,26 +149,16 @@ function estadoClaseChip(estado){
   return 'chip-estado chip-na';
 }
 // CONTACTOS
-function proveedorDeContacto(c){
-  return c?.proveedorNombre || c?.empresaNombre || c?.empresa || c?.contacto?.empresaNombre || '';
-}
-function fechaDeContacto(c){
-  return c?.fecha || c?.fechaContacto || c?.createdAt || null;
-}
-function centroCodigoDeContacto(c){
-  if (c?.centroCodigo) return c.centroCodigo;
-  if (c?.centroId) return (centroCodigoById?.(c.centroId, state.listaCentros || []) || '');
-  return '';
-}
+function proveedorDeContacto(c){ return c?.proveedorNombre || c?.empresaNombre || c?.empresa || c?.contacto?.empresaNombre || ''; }
+function contactoNombreDeContacto(c){ return c?.contactoNombre || c?.contacto || ''; }
+function fechaDeContacto(c){ return c?.fecha || c?.fechaContacto || c?.createdAt || null; }
+function centroCodigoDeContacto(c){ if (c?.centroCodigo) return c.centroCodigo; if (c?.centroId) return (centroCodigoById?.(c.centroId, state.listaCentros || []) || ''); return ''; }
 function comunaDeContacto(c){
   if (c?.centroComuna) return c.centroComuna;
   const code = centroCodigoDeContacto(c);
   const id   = c?.centroId ? String(c.centroId) : null;
   const lista = state.listaCentros || [];
-  const m = lista.find(x =>
-    (id && (String(x._id||x.id)===id)) ||
-    (code && (String(x.code||x.codigo||x.Codigo)===String(code)))
-  );
+  const m = lista.find(x => (id && String(x._id||x.id)===id) || (code && String(x.code||x.codigo||x.Codigo)===String(code)));
   return m?.comuna || m?.Comuna || '';
 }
 
@@ -188,10 +167,11 @@ let _cache = {
   allVisitas: [], byWeekVis: new Map(),
   allContactos: [], byWeekCont: new Map(),
   optionsSig: null,
-  mode: 'visitas',                 // 'visitas' | 'contactos'
-  tonsDisponiblesSemana: new Map(),
+  mode: 'visitas',
+  dispRowCache: new Map(), // keyFila -> [{fecha, tons}]
 };
 
+/* ======================= Data ======================= */
 async function ensureData(){
   if (!_cache.allVisitas.length){
     const rawV = await getAllVisitas();
@@ -222,7 +202,7 @@ async function ensureData(){
   }
 }
 
-/* ======================= Disponibilidades (KPI extra) ======================= */
+/* ======================= Disponibilidades (para mostrar bajo TONs) ======================= */
 async function getDisponibilidades(params = {}){
   const y = new Date().getFullYear();
   const q = new URLSearchParams();
@@ -237,52 +217,17 @@ async function getDisponibilidades(params = {}){
   return Array.isArray(json) ? json : (json.items || []);
 }
 
-async function computeTonsDisponiblesSemana(wkKey){
-  if (_cache.tonsDisponiblesSemana.has(wkKey)) return _cache.tonsDisponiblesSemana.get(wkKey);
-  const { start, end } = weekRange(wkKey);
-  if (!start || !end){ _cache.tonsDisponiblesSemana.set(wkKey, 0); return 0; }
-  const from = `${start.getUTCFullYear()}-${String(start.getUTCMonth()+1).padStart(2,'0')}`;
-  const to   = `${end.getUTCFullYear()}-${String(end.getUTCMonth()+1).padStart(2,'0')}`;
-  let total = 0;
-  try{
-    const list = await getDisponibilidades({ from, to });
-    total = (Array.isArray(list)?list:[]).reduce((a, it) => a + Number(it.tonsDisponible ?? it.tons ?? 0), 0);
-  }catch(e){ console.warn('[resumen] computeTonsDisponiblesSemana', e); }
-  _cache.tonsDisponiblesSemana.set(wkKey, total);
-  return total;
-}
-
-/* ======================= Render base ======================= */
-function allWeeks(){
-  return Array.from(new Set([
-    ..._cache.byWeekVis.keys(),
-    ..._cache.byWeekCont.keys()
-  ])).sort().reverse();
-}
-function buildSemanaOptions(){
-  const sel = document.getElementById('resumen_semana');
-  if (!sel) return;
-  const weeks = allWeeks();
-  const sig = weeks.join(',');
-  if (_cache.optionsSig === sig) return;
-  sel.innerHTML = '';
-  for (const wk of weeks){
-    const opt = document.createElement('option');
-    opt.value = wk; opt.textContent = wk;
-    sel.appendChild(opt);
+function disponibilidadFechasHumanas(list){
+  // Intento robusto: fecha explícita o (año,mes)
+  const uniqKeys = new Set();
+  const tags = [];
+  for (const it of (list||[])){
+    const dt = toDate(it.fecha || (it.year && it.month ? `${it.year}-${pad2(it.month)}-01` : null));
+    if (!dt) continue;
+    const tag = fmtMYShort(dt); // Abr.26
+    if (!uniqKeys.has(tag)){ uniqKeys.add(tag); tags.push(tag); }
   }
-  if (weeks.length) sel.value = weeks[0];
-  _cache.optionsSig = sig;
-}
-function ensureHeadColumns(tbody){
-  const thead = tbody.closest('table')?.querySelector('thead tr');
-  if (!thead) return;
-  const want = _cache.mode === 'visitas' ? 7 : 6;
-  const curr = thead.children.length;
-  if (want === curr) return;
-  thead.innerHTML = (_cache.mode === 'visitas')
-    ? `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Fecha prox.</th><th>Estado</th>`
-    : `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Responsable</th>`;
+  return tags;
 }
 
 /* ======================= Agregaciones ======================= */
@@ -295,8 +240,11 @@ function aggregateVisitas(wk){
   const empresas = uniq(visitas.map(proveedorDeVisita)).filter(Boolean);
   const comunas  = uniq(visitas.map(comunaDeVisita)).filter(Boolean);
   const centros  = uniq(visitas.map(centroCodigoDeVisita)).filter(Boolean);
-  const totalTons = visitas.reduce((acc,v)=>acc+Number(v.tonsComprometidas||0),0);
-  return { visitas, empresas, comunas, centros, totalTons, count: visitas.length };
+  // **TONS CONTACTADAS** (prioridad: tons > tonsDisponible > tonsComprometidas)
+  const totalTonsContactadas = visitas.reduce((acc,v)=> acc + Number(
+    (v.tons ?? v.tonsDisponible ?? v.tonsComprometidas) || 0
+  ), 0);
+  return { visitas, empresas, comunas, centros, totalTonsContactadas, count: visitas.length };
 }
 function aggregateContactos(wk){
   const contactos = (_cache.byWeekCont.get(wk) || []).slice().sort((a,b)=>{
@@ -307,8 +255,11 @@ function aggregateContactos(wk){
   const empresas = uniq(contactos.map(proveedorDeContacto)).filter(Boolean);
   const comunas  = uniq(contactos.map(comunaDeContacto)).filter(Boolean);
   const centros  = uniq(contactos.map(centroCodigoDeContacto)).filter(Boolean);
-  const totalTons = contactos.reduce((acc,c)=>acc+Number(c.tons||c.tonsComprometidas||0),0);
-  return { contactos, empresas, comunas, centros, totalTons, count: contactos.length };
+  // **TONS CONTACTADAS**
+  const totalTonsContactadas = contactos.reduce((acc,c)=> acc + Number(
+    (c.tons ?? c.tonsDisponible ?? c.tonsComprometidas) || 0
+  ), 0);
+  return { contactos, empresas, comunas, centros, totalTonsContactadas, count: contactos.length };
 }
 
 /* ======================= KPIs (DINÁMICOS por modo) ======================= */
@@ -318,62 +269,96 @@ function kpi(label, val){
     <span class="kpi-value">${val}</span>
   </div>`;
 }
-async function renderKPIs(aggV, aggC, wk){
+async function renderKPIs(aggV, aggC){
   const el = $('#resumen_kpis'); if (!el) return;
-  let cardsHtml = '';
-
-  if (_cache.mode === 'visitas'){
-    const tonsDisp = await computeTonsDisponiblesSemana(wk);
-    cardsHtml = [
-      kpi('Visitas realizadas', aggV.count),
-      kpi('Tons comprometidas', fmt2(aggV.totalTons || 0)),
-      kpi('Centros distintos', (aggV.centros||[]).length),
-      kpi('Comunas cubiertas', (aggV.comunas||[]).length),
-      kpi('Tons disponibles (semana)', fmt2(tonsDisp || 0)),
-    ].join('');
-  } else {
-    cardsHtml = [
-      kpi('Contactos realizados', aggC.count),
-      kpi('Centros distintos', (aggC.centros||[]).length),
-      kpi('Comunas cubiertas', (aggC.comunas||[]).length),
-      kpi('Tons comprometidas', fmt2(aggC.totalTons || 0)), // si los contactos manejan tons
-    ].join('');
-  }
-
+  const cardsHtml = (_cache.mode === 'visitas')
+    ? [
+        kpi('Visitas realizadas', aggV.count),
+        kpi('Tons contactadas', fmt2(aggV.totalTonsContactadas || 0)),
+        kpi('Centros distintos', (aggV.centros||[]).length),
+        kpi('Comunas cubiertas', (aggV.comunas||[]).length),
+      ].join('')
+    : [
+        kpi('Contactos realizados', aggC.count),
+        kpi('Tons contactadas', fmt2(aggC.totalTonsContactadas || 0)),
+        kpi('Centros distintos', (aggC.centros||[]).length),
+        kpi('Comunas cubiertas', (aggC.comunas||[]).length),
+      ].join('');
   el.innerHTML = `<div class="kpi-row">${cardsHtml}</div>`;
 }
 
-/* ======================= Tablas ======================= */
+/* ======================= Tabla: VISITAS ======================= */
+async function paintDisponibilidadesEnFila(v, tr){
+  // usa la mejor llave disponible
+  const key = `v:${v._id || ''}|c:${v.contactoId || ''}|centro:${v.centroId || ''}`;
+  if (_cache.dispRowCache.has(key)) {
+    const tags = _cache.dispRowCache.get(key);
+    if (tags.length) {
+      const tonsTd = tr.querySelector('td[data-col="tons"]');
+      if (tonsTd && !tonsTd.querySelector('.tiny-note')){
+        tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${tags.map(t=>`<span class="badge">${esc(t)}</span>`).join('')}</span>`);
+      }
+    }
+    return;
+  }
+
+  try{
+    const list = await getDisponibilidades({
+      contactoId: v.contactoId || undefined,
+      centroId:   v.centroId   || undefined,
+      // proveedorKey si lo tienes en tu modelo => pásalo aquí
+    });
+    const tags = disponibilidadFechasHumanas(list);
+    _cache.dispRowCache.set(key, tags);
+    if (tags.length){
+      const tonsTd = tr.querySelector('td[data-col="tons"]');
+      if (tonsTd){
+        tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${tags.map(t=>`<span class="badge">${esc(t)}</span>`).join('')}</span>`);
+      }
+    }
+  }catch(e){
+    _cache.dispRowCache.set(key, []);
+    // opcional: console.warn('No se pudo cargar disponibilidades para', key, e);
+  }
+}
+
 function renderTablaVisitas(visitas){
   const tbody = $('#resumen_table_body'); if (!tbody) return;
   ensureHeadColumns(tbody);
 
-  const rows = visitas.map(v => {
+  const rowsHtml = visitas.map(v => {
     const prov   = proveedorDeVisita(v) || '—';
     const contacto = contactoDeVisita(v) || '';
+    const resp   = responsableDeVisita(v) || '';
     const centro = centroCodigoDeVisita(v) || '—';
     const comuna = comunaDeVisita(v) || '—';
-    const tons   = v.tonsComprometidas ? fmt2(v.tonsComprometidas) : '—';
-    const fpp    = ymd(toDate(v.proximoPasoFecha));
+    const tons   = (v.tons ?? v.tonsDisponible ?? v.tonsComprometidas) ? fmt2(v.tons ?? v.tonsDisponible ?? v.tonsComprometidas) : '—';
+    const fpp    = fmtDMYShort(toDate(v.proximoPasoFecha));
     const estado = normalizeEstado(v.estado || '—');
     const chipCl = estadoClaseChip(estado);
     const vid = esc(v._id || '');
 
+    const sub = (contacto || resp)
+      ? `<div class="subline">${esc(contacto || '')}${resp ? ` · Resp.: ${esc(resp)}`:''}</div>`
+      : ``;
+
     return `<tr data-visita-id="${vid}">
-      <td>${ymd(toDate(v.fecha))}</td>
+      <td>${fmtDMYShort(toDate(v.fecha))}</td>
       <td>
         <a href="#!" class="res-link js-open-visita" data-id="${vid}" title="Ver visita">${esc(prov)}</a>
-        ${contacto ? `<div class="grey-text" style="font-size:12px">${esc(contacto)}</div>` : ``}
+        ${sub}
       </td>
       <td><span class="res-link js-open-visita" data-id="${vid}" title="Ver visita">${esc(centro)}</span></td>
       <td>${esc(comuna)}</td>
-      <td>${tons}</td>
+      <td data-col="tons">${tons}</td>
       <td>${fpp}</td>
       <td><span class="${chipCl}">${esc(estado || '—')}</span></td>
     </tr>`;
   }).join('');
-  tbody.innerHTML = rows || '<tr><td colspan="7" class="grey-text">No hay visitas para esta semana.</td></tr>';
 
+  tbody.innerHTML = rowsHtml || '<tr><td colspan="7" class="grey-text">No hay visitas para esta semana.</td></tr>';
+
+  // wire
   tbody.querySelectorAll('.js-open-visita').forEach(a => {
     a.addEventListener('click', (e)=>{
       e.preventDefault();
@@ -383,27 +368,39 @@ function renderTablaVisitas(visitas){
     });
   });
 
+  // pintar disponibilidades bajo "Tons" en cada fila (asíncrono por fila)
+  const trs = Array.from(tbody.querySelectorAll('tr[data-visita-id]'));
+  trs.forEach((tr, i) => {
+    const v = visitas[i];
+    if (v) paintDisponibilidadesEnFila(v, tr);
+  });
+
   ensureFullWidthTable();
 }
 
+/* ======================= Tabla: CONTACTOS ======================= */
 function renderTablaContactos(contactos){
   const tbody = $('#resumen_table_body'); if (!tbody) return;
   ensureHeadColumns(tbody);
 
   const rows = contactos.map(c => {
     const prov   = proveedorDeContacto(c) || '—';
+    const contacto = contactoNombreDeContacto(c) || '';
     const centro = centroCodigoDeContacto(c) || '—';
     const comuna = comunaDeContacto(c) || '—';
-    const tons   = (c.tons ?? c.tonsComprometidas) ? fmt2(c.tons ?? c.tonsComprometidas) : '—';
+    const tons   = (c.tons ?? c.tonsDisponible ?? c.tonsComprometidas) ? fmt2(c.tons ?? c.tonsDisponible ?? c.tonsComprometidas) : '—';
     const resp   = c.responsable || c.contactoResponsable || '—';
     const cid    = esc(c._id || '');
 
     return `<tr data-contacto-id="${cid}">
-      <td>${ymd(toDate(fechaDeContacto(c)))}</td>
-      <td><a href="#!" class="res-link js-open-contacto" data-id="${cid}" title="Ver contacto">${esc(prov)}</a></td>
+      <td>${fmtDMYShort(toDate(fechaDeContacto(c)))}</td>
+      <td>
+        <a href="#!" class="res-link js-open-contacto" data-id="${cid}" title="Ver contacto">${esc(prov)}</a>
+        ${contacto ? `<div class="subline">${esc(contacto)}</div>` : ``}
+      </td>
       <td>${esc(centro)}</td>
       <td>${esc(comuna)}</td>
-      <td>${tons}</td>
+      <td data-col="tons">${tons}</td>
       <td>${esc(resp)}</td>
     </tr>`;
   }).join('');
@@ -425,21 +422,15 @@ function renderTablaContactos(contactos){
   ensureFullWidthTable();
 }
 
-/* ===== Expandir tabla a ancho completo si el panel lateral está vacío ===== */
+/* ===== Expandir tabla si el panel está vacío ===== */
 function ensureFullWidthTable(){
   const tableCol = document.querySelector('#resumen_print_area .row .col.s12.m7') || document.querySelector('#resumen_print_area .row .col:first-child');
   const rightCol = document.querySelector('#resumen_print_area .row .col.s12.m5');
   const topBox   = document.getElementById('resumen_top');
-
   if (topBox && rightCol){
     const isEmpty = !topBox.innerHTML.trim();
-    if (isEmpty){
-      rightCol.style.display = 'none';
-      if (tableCol) tableCol.classList.add('res-col-table','full-width');
-    }else{
-      rightCol.style.display = '';
-      if (tableCol) tableCol.classList.remove('full-width');
-    }
+    if (isEmpty){ rightCol.style.display = 'none'; if (tableCol) tableCol.classList.add('res-col-table','full-width'); }
+    else { rightCol.style.display = ''; if (tableCol) tableCol.classList.remove('full-width'); }
   }
 }
 
@@ -469,9 +460,8 @@ function ensureModeSwitcher(){
   });
 }
 
-/* --- Intento de sincronizar con pestañas principales si existen --- */
+/* --- Sincronía opcional con tabs principales --- */
 function trySyncModeFromMainTabs(){
-  // Busca .tabs .tab a.active con href que contenga "visitas" o "contactos"
   const active = document.querySelector('.tabs .tab a.active');
   if (!active) return;
   const href = (active.getAttribute('href')||'').toLowerCase();
@@ -508,13 +498,10 @@ function wireControls(){
           document.execCommand('copy'); sel.removeAllRanges();
         }
         (window.M?.toast) && M.toast({ html: 'Resumen copiado', displayLength: 1500 });
-      } catch {
-        try { await navigator.clipboard.writeText(area.innerText); } catch {}
-      }
+      } catch { try { await navigator.clipboard.writeText(area.innerText); } catch {} }
     });
   }
   ensureModeSwitcher();
-  // Re-sincroniza modo si las tabs principales cambian el hash (común en Materialize)
   window.addEventListener('hashchange', () => trySyncModeFromMainTabs());
 }
 
@@ -523,28 +510,22 @@ export async function initResumenSemanalTab(){
   await ensureData();
   buildSemanaOptions();
   wireControls();
-  trySyncModeFromMainTabs(); // toma el modo desde la pestaña principal si aplica
+  trySyncModeFromMainTabs();
   refreshResumen();
 
-  window.addEventListener('visita:created', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.tonsDisponiblesSemana.clear(); refreshResumen(); });
-  window.addEventListener('visita:updated', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.tonsDisponiblesSemana.clear(); refreshResumen(); });
-  window.addEventListener('visita:deleted', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.tonsDisponiblesSemana.clear(); refreshResumen(); });
+  window.addEventListener('visita:created', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); refreshResumen(); });
+  window.addEventListener('visita:updated', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); refreshResumen(); });
+  window.addEventListener('visita:deleted', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); refreshResumen(); });
   document.addEventListener('reload-tabla-contactos', () => {
     _cache.allContactos = []; _cache.byWeekCont.clear(); refreshResumen();
   });
 }
 
-/**
- * Permite forzar el modo desde otras vistas/controladores (ej: al activar pestaña).
- * @param {'visitas'|'contactos'} mode
- * @param {{silentRewire?: boolean}} [opts]
- */
+/** Forzar modo desde otras vistas */
 export function setResumenMode(mode, opts = {}){
   if (mode !== 'visitas' && mode !== 'contactos') return;
   if (_cache.mode === mode) return;
   _cache.mode = mode;
-
-  // Actualiza UI del switcher si existe
   const seg = document.getElementById('resumen_mode');
   if (seg){
     seg.querySelectorAll('button').forEach(b => {
@@ -554,6 +535,18 @@ export function setResumenMode(mode, opts = {}){
   if (!opts.silentRewire) refreshResumen();
 }
 
+/* ===== Cabeceras según modo ===== */
+function ensureHeadColumns(tbody){
+  const thead = tbody.closest('table')?.querySelector('thead tr');
+  if (!thead) return;
+  const want = _cache.mode === 'visitas' ? 7 : 6;
+  const curr = thead.children.length;
+  if (want === curr) return;
+  thead.innerHTML = (_cache.mode === 'visitas')
+    ? `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Fecha prox.</th><th>Estado</th>`
+    : `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Responsable</th>`;
+}
+
 export async function refreshResumen(){
   await ensureData();
   const wk = ($('#resumen_semana')?.value) || '';
@@ -561,7 +554,7 @@ export async function refreshResumen(){
   const aggV = aggregateVisitas(wk);
   const aggC = aggregateContactos(wk);
 
-  await renderKPIs(aggV, aggC, wk);
+  await renderKPIs(aggV, aggC);
 
   if (_cache.mode === 'visitas'){
     renderTablaVisitas(aggV.visitas);
