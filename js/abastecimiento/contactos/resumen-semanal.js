@@ -81,6 +81,15 @@ const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','N
 const pad2 = (n) => String(n).padStart(2,'0');
 const fmtDMYShort = (dt) => { const d = toDate(dt); return d ? `${pad2(d.getDate())}.${MES_ABBR[d.getMonth()]}.${String(d.getFullYear()).slice(-2)}` : '—'; };
 
+/* Slug robusto para emparejar nombres con keys */
+function slug(v=''){
+  return String(v||'')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')  // quita tildes
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-+|-+$/g,'');
+}
+
 /* ======================= Semana ISO ======================= */
 function isoWeek(date){
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -149,7 +158,7 @@ let _cache = {
   allContactos: [], byWeekCont: new Map(),
   optionsSig: null,
   mode: 'visitas',
-  dispSumCacheContact: new Map(), // contactoId/proveedorKey|centroId -> suma de disponibilidades
+  dispSumCacheContact: new Map(), // clave: proveedorSlug -> suma de disponibilidades
 };
 
 /* ======================= Data ======================= */
@@ -189,9 +198,9 @@ async function getDisponibilidades(params = {}){
   const q = new URLSearchParams();
   q.set('from', params.from || `${y-1}-01`);
   q.set('to',   params.to   || `${y+1}-12`);
-  if (params.contactoId)   q.set('contactoId', params.contactoId);
   if (params.proveedorKey) q.set('proveedorKey', params.proveedorKey);
   if (params.centroId)     q.set('centroId', params.centroId);
+  // OJO: NO filtramos por contactoId porque muchas disponibilidades no lo traen
   const res = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
   if (!res.ok) throw new Error('GET /disponibilidades '+res.status);
   const json = await res.json();
@@ -212,36 +221,52 @@ const normId = (v) => {
 };
 
 /* ===== CONTACTOS: sumar disponibilidades (Tons producidas) ===== */
+/**
+ * Empareja disponibilidades con el contacto:
+ *  1) Si existe proveedorKey en el contacto => llama API filtrando por proveedorKey.
+ *  2) Si no, descarga disponibilidades del rango y filtra localmente por slug del nombre.
+ *     Coincide contra proveedorKey, empresaKey o proveedorNombre de cada disponibilidad.
+ */
 async function sumDisponibilidadesContacto(c){
-  const contactoId = normId(c._id);
-  const centroId   = normId(c.centroId);
+  // claves del contacto
   const proveedorKey = c.proveedorKey || c.empresaKey || (c.empresa && c.empresa.key) || '';
+  const provNombre   = proveedorDeContacto(c) || '';
+  const provSlug     = slug(proveedorKey || provNombre);
 
-  // cache key consistente con IDs normalizados
-  const key = `c:${contactoId}|prov:${proveedorKey}|centro:${centroId}`;
-  if (_cache.dispSumCacheContact.has(key)) return _cache.dispSumCacheContact.get(key);
-
-  // filtros: prioriza contactoId; si no existe, usa proveedorKey; centroId es opcional
-  const q = {};
-  if (contactoId) q.contactoId = contactoId;
-  else if (proveedorKey) q.proveedorKey = proveedorKey;
-  if (centroId) q.centroId = centroId;
+  if (_cache.dispSumCacheContact.has(provSlug)) {
+    return _cache.dispSumCacheContact.get(provSlug);
+  }
 
   let total = 0;
+
   try{
-    const list = await getDisponibilidades(q);
-    total = (Array.isArray(list) ? list : []).reduce(
-      (a,it)=> a + Number(it.tonsDisponible ?? it.tons ?? 0),
-      0
-    );
+    if (providerKeyLooksValid(proveedorKey)) {
+      // Camino feliz: tenemos proveedorKey consistente con tu BD
+      const list = await getDisponibilidades({ proveedorKey });
+      total = (Array.isArray(list) ? list : []).reduce(
+        (a,it)=> a + Number(it.tonsDisponible ?? it.tons ?? 0),
+        0
+      );
+    } else {
+      // Fallback: filtrado local por slug de nombre (soporta casos sin key)
+      const list = await getDisponibilidades({});
+      total = (Array.isArray(list) ? list : [])
+        .filter(it => {
+          const k = it.proveedorKey || it.empresaKey || it.proveedorNombre || it.empresaNombre || '';
+          return slug(k) === provSlug; // match por slug
+        })
+        .reduce((a,it)=> a + Number(it.tonsDisponible ?? it.tons ?? 0), 0);
+    }
   }catch(e){
     console.warn('[resumen] sumDisponibilidadesContacto error', e);
     total = 0;
   }
 
-  _cache.dispSumCacheContact.set(key, total);
+  _cache.dispSumCacheContact.set(provSlug, total);
   return total;
 }
+
+function providerKeyLooksValid(k){ return !!(k && typeof k === 'string' && k.trim().length >= 3); }
 
 /* ======================= Agregaciones (para KPIs) ======================= */
 function aggregateVisitas(wk){
@@ -267,7 +292,8 @@ async function aggregateContactosAsync(wk){
   const comunas  = uniq(contactos.map(comunaDeContacto)).filter(Boolean);
   const centros  = uniq(contactos.map(centroCodigoDeContacto)).filter(Boolean);
 
-  // KPI: Tons producidas = suma de disponibilidades por contacto listado
+  // KPI: Tons producidas = suma de disponibilidades por cada proveedor listado
+  // (se usa cache por proveedor para no repetir llamadas)
   let totalProducidas = 0;
   for (const c of contactos){
     totalProducidas += await sumDisponibilidadesContacto(c);
@@ -394,7 +420,7 @@ async function renderTablaContactos(contactos){
     const comuna = comunaDeContacto(c) || '—';
     const resp   = c.responsable || c.contactoResponsable || c.responsablePG || '—';
 
-    // Sumatoria de disponibilidades = TONS PRODUCIDAS
+    // Sumatoria de disponibilidades = TONS PRODUCIDAS (con cache por proveedor)
     const sumDisp = await sumDisponibilidadesContacto(c);
     const tons = sumDisp ? fmt2(sumDisp) : '—';
 
