@@ -230,18 +230,7 @@ async function getDisponibilidades(params = {}){
   const json = await res.json();
   return Array.isArray(json) ? json : (json.items || []);
 }
-function weekRange(wkKey){
-  const [yStr, wStr] = wkKey.split('-W');
-  const year = Number(yStr); const week = Number(wStr);
-  if (!year || !week) return { start:null, end:null };
-  const simple = new Date(Date.UTC(year,0,1));
-  const day = simple.getUTCDay();
-  const diff = (day<=4 ? day-1 : day-8);
-  const monday = new Date(Date.UTC(year,0,1 - diff + (week-1)*7));
-  const start = new Date(monday); start.setUTCHours(0,0,0,0);
-  const end = new Date(start); end.setUTCDate(end.getUTCDate()+6); end.setUTCHours(23,59,59,999);
-  return { start, end };
-}
+
 async function computeTonsDisponiblesSemana(wkKey){
   if (_cache.tonsDisponiblesSemana.has(wkKey)) return _cache.tonsDisponiblesSemana.get(wkKey);
   const { start, end } = weekRange(wkKey);
