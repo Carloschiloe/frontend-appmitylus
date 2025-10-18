@@ -13,13 +13,12 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     #tab-resumen h5{ font-weight:600; letter-spacing:.2px; }
     .resumen-toolbar{ margin:8px 0 4px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
 
-    /* ===== KPI en UNA SOLA FILA ===== */
+    /* ===== KPI en UNA SOLA FILA (sin scroll) ===== */
     #resumen_kpis .kpi-row{ display:flex; flex-wrap:nowrap; gap:12px; overflow:visible; padding-bottom:0; }
     #resumen_kpis .kpi-card{
-      flex:1 1 0; min-width:0;
-      border:1px solid #e5e7eb; border-radius:14px; background:#fff;
+      flex:1 1 0; min-width:0; border:1px solid #e5e7eb; border-radius:14px; background:#fff;
       padding:14px 16px; box-shadow:0 1px 1px rgba(0,0,0,.03);
-      display:flex; flex-direction:column; justify-content:center; min-height:92px;
+      display:flex; flex-direction:column; justify-content:center; min-height:92px; width:100%;
     }
     .kpi-card .kpi-label{ font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; }
     .kpi-card .kpi-value{ font-size:26px; margin-top:6px; line-height:1.1; font-weight:600; color:#111827; }
@@ -39,7 +38,7 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     .res-link{ color:#0ea5a8; font-weight:700; text-decoration:none; }
     .res-link:hover{ text-decoration:underline; }
 
-    /* sublíneas pequeñas */
+    /* sublíneas pequeñas y badges */
     .subline{ font-size:12px; line-height:1.2; color:#6b7280; }
     .tiny-note{ display:block; margin-top:4px; font-size:11px; color:#6b7280; }
     .tiny-note .badge{ display:inline-block; padding:2px 6px; border:1px solid #e5e7eb; border-radius:999px; margin-right:4px; }
@@ -88,7 +87,7 @@ const pad2 = (n) => String(n).padStart(2,'0');
 const fmtDMYShort = (dt) => { const d = toDate(dt); return d ? `${pad2(d.getDate())}.${MES_ABBR[d.getMonth()]}.${String(d.getFullYear()).slice(-2)}` : '—'; };
 const fmtMYShort  = (dt) => { const d = toDate(dt); return d ? `${MES_ABBR[d.getMonth()]}.${String(d.getFullYear()).slice(-2)}` : '—'; };
 
-/* Semana ISO */
+/* ======================= Semana ISO ======================= */
 function isoWeek(date){
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
@@ -168,7 +167,7 @@ let _cache = {
   allContactos: [], byWeekCont: new Map(),
   optionsSig: null,
   mode: 'visitas',
-  dispRowCache: new Map(), // keyFila -> [{fecha, tons}]
+  dispRowCache: new Map(), // keyFila -> [Abr.26, May.26, ...]
 };
 
 /* ======================= Data ======================= */
@@ -202,7 +201,7 @@ async function ensureData(){
   }
 }
 
-/* ======================= Disponibilidades (para mostrar bajo TONs) ======================= */
+/* ======================= Disponibilidades (mostrar bajo TONs en VISITAS) ======================= */
 async function getDisponibilidades(params = {}){
   const y = new Date().getFullYear();
   const q = new URLSearchParams();
@@ -216,9 +215,7 @@ async function getDisponibilidades(params = {}){
   const json = await res.json();
   return Array.isArray(json) ? json : (json.items || []);
 }
-
 function disponibilidadFechasHumanas(list){
-  // Intento robusto: fecha explícita o (año,mes)
   const uniqKeys = new Set();
   const tags = [];
   for (const it of (list||[])){
@@ -228,6 +225,53 @@ function disponibilidadFechasHumanas(list){
     if (!uniqKeys.has(tag)){ uniqKeys.add(tag); tags.push(tag); }
   }
   return tags;
+}
+async function paintDisponibilidadesEnFila(v, tr){
+  const key = `v:${v._id || ''}|c:${v.contactoId || ''}|centro:${v.centroId || ''}`;
+  if (_cache.dispRowCache.has(key)) {
+    const tags = _cache.dispRowCache.get(key);
+    if (tags.length) {
+      const tonsTd = tr.querySelector('td[data-col="tons"]');
+      if (tonsTd && !tonsTd.querySelector('.tiny-note')){
+        tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${tags.map(t=>`<span class="badge">${esc(t)}</span>`).join('')}</span>`);
+      }
+    }
+    return;
+  }
+  try{
+    const list = await getDisponibilidades({ contactoId: v.contactoId || undefined, centroId: v.centroId || undefined });
+    const tags = disponibilidadFechasHumanas(list);
+    _cache.dispRowCache.set(key, tags);
+    if (tags.length){
+      const tonsTd = tr.querySelector('td[data-col="tons"]');
+      if (tonsTd){
+        tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${tags.map(t=>`<span class="badge">${esc(t)}</span>`).join('')}</span>`);
+      }
+    }
+  }catch{ _cache.dispRowCache.set(key, []); }
+}
+
+/* ======================= Semanas (helpers) ======================= */
+function allWeeks(){
+  return Array.from(new Set([
+    ..._cache.byWeekVis.keys(),
+    ..._cache.byWeekCont.keys(),
+  ])).sort().reverse();
+}
+function buildSemanaOptions(){
+  const sel = document.getElementById('resumen_semana');
+  if (!sel) return;
+  const weeks = allWeeks();
+  const sig = weeks.join(',');
+  if (_cache.optionsSig === sig) return;
+  sel.innerHTML = '';
+  for (const wk of weeks){
+    const opt = document.createElement('option');
+    opt.value = wk; opt.textContent = wk;
+    sel.appendChild(opt);
+  }
+  if (weeks.length) sel.value = weeks[0];
+  _cache.optionsSig = sig;
 }
 
 /* ======================= Agregaciones ======================= */
@@ -287,39 +331,16 @@ async function renderKPIs(aggV, aggC){
   el.innerHTML = `<div class="kpi-row">${cardsHtml}</div>`;
 }
 
-/* ======================= Tabla: VISITAS ======================= */
-async function paintDisponibilidadesEnFila(v, tr){
-  // usa la mejor llave disponible
-  const key = `v:${v._id || ''}|c:${v.contactoId || ''}|centro:${v.centroId || ''}`;
-  if (_cache.dispRowCache.has(key)) {
-    const tags = _cache.dispRowCache.get(key);
-    if (tags.length) {
-      const tonsTd = tr.querySelector('td[data-col="tons"]');
-      if (tonsTd && !tonsTd.querySelector('.tiny-note')){
-        tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${tags.map(t=>`<span class="badge">${esc(t)}</span>`).join('')}</span>`);
-      }
-    }
-    return;
-  }
-
-  try{
-    const list = await getDisponibilidades({
-      contactoId: v.contactoId || undefined,
-      centroId:   v.centroId   || undefined,
-      // proveedorKey si lo tienes en tu modelo => pásalo aquí
-    });
-    const tags = disponibilidadFechasHumanas(list);
-    _cache.dispRowCache.set(key, tags);
-    if (tags.length){
-      const tonsTd = tr.querySelector('td[data-col="tons"]');
-      if (tonsTd){
-        tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${tags.map(t=>`<span class="badge">${esc(t)}</span>`).join('')}</span>`);
-      }
-    }
-  }catch(e){
-    _cache.dispRowCache.set(key, []);
-    // opcional: console.warn('No se pudo cargar disponibilidades para', key, e);
-  }
+/* ======================= Tablas ======================= */
+function ensureHeadColumns(tbody){
+  const thead = tbody.closest('table')?.querySelector('thead tr');
+  if (!thead) return;
+  const want = _cache.mode === 'visitas' ? 7 : 6;
+  const curr = thead.children.length;
+  if (want === curr) return;
+  thead.innerHTML = (_cache.mode === 'visitas')
+    ? `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Fecha prox.</th><th>Estado</th>`
+    : `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Responsable</th>`;
 }
 
 function renderTablaVisitas(visitas){
@@ -338,9 +359,7 @@ function renderTablaVisitas(visitas){
     const chipCl = estadoClaseChip(estado);
     const vid = esc(v._id || '');
 
-    const sub = (contacto || resp)
-      ? `<div class="subline">${esc(contacto || '')}${resp ? ` · Resp.: ${esc(resp)}`:''}</div>`
-      : ``;
+    const sub = (contacto || resp) ? `<div class="subline">${esc(contacto || '')}${resp ? ` · Resp.: ${esc(resp)}`:''}</div>` : ``;
 
     return `<tr data-visita-id="${vid}">
       <td>${fmtDMYShort(toDate(v.fecha))}</td>
@@ -370,15 +389,11 @@ function renderTablaVisitas(visitas){
 
   // pintar disponibilidades bajo "Tons" en cada fila (asíncrono por fila)
   const trs = Array.from(tbody.querySelectorAll('tr[data-visita-id]'));
-  trs.forEach((tr, i) => {
-    const v = visitas[i];
-    if (v) paintDisponibilidadesEnFila(v, tr);
-  });
+  trs.forEach((tr, i) => { const v = visitas[i]; if (v) paintDisponibilidadesEnFila(v, tr); });
 
   ensureFullWidthTable();
 }
 
-/* ======================= Tabla: CONTACTOS ======================= */
 function renderTablaContactos(contactos){
   const tbody = $('#resumen_table_body'); if (!tbody) return;
   ensureHeadColumns(tbody);
@@ -516,9 +531,7 @@ export async function initResumenSemanalTab(){
   window.addEventListener('visita:created', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); refreshResumen(); });
   window.addEventListener('visita:updated', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); refreshResumen(); });
   window.addEventListener('visita:deleted', () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); refreshResumen(); });
-  document.addEventListener('reload-tabla-contactos', () => {
-    _cache.allContactos = []; _cache.byWeekCont.clear(); refreshResumen();
-  });
+  document.addEventListener('reload-tabla-contactos', () => { _cache.allContactos = []; _cache.byWeekCont.clear(); refreshResumen(); });
 }
 
 /** Forzar modo desde otras vistas */
@@ -535,21 +548,16 @@ export function setResumenMode(mode, opts = {}){
   if (!opts.silentRewire) refreshResumen();
 }
 
-/* ===== Cabeceras según modo ===== */
-function ensureHeadColumns(tbody){
-  const thead = tbody.closest('table')?.querySelector('thead tr');
-  if (!thead) return;
-  const want = _cache.mode === 'visitas' ? 7 : 6;
-  const curr = thead.children.length;
-  if (want === curr) return;
-  thead.innerHTML = (_cache.mode === 'visitas')
-    ? `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Fecha prox.</th><th>Estado</th>`
-    : `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons</th><th>Responsable</th>`;
-}
-
 export async function refreshResumen(){
   await ensureData();
-  const wk = ($('#resumen_semana')?.value) || '';
+
+  // fallback: seleccionar la semana más reciente si no hay valor en el <select>
+  const sel = document.getElementById('resumen_semana');
+  if (sel && !sel.value){
+    const weeks = allWeeks();
+    if (weeks.length){ sel.value = weeks[0]; }
+  }
+  const wk = (sel?.value) || '';
 
   const aggV = aggregateVisitas(wk);
   const aggC = aggregateContactos(wk);
