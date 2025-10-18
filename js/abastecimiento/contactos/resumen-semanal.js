@@ -13,23 +13,23 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     #tab-resumen h5{ font-weight:600; letter-spacing:.2px; }
     .resumen-toolbar{ margin:8px 0 4px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
 
-    /* ===== KPI en UNA SOLA FILA (scroll si no caben) ===== */
-   /* ===== KPI SIN SCROLL: grid auto-fit ===== */
-#resumen_kpis .kpi-row{
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  overflow: visible;          /* sin scroll */
-  padding-bottom: 0;
-}
-
-/* cada tarjeta crece/encoge dentro de su celda */
-#resumen_kpis .kpi-card{
-  border:1px solid #e5e7eb; border-radius:14px; background:#fff;
-  padding:14px 16px; box-shadow:0 1px 1px rgba(0,0,0,.03);
-  display:flex; flex-direction:column; justify-content:center; min-height:92px;
-  width: 100%;                /* ocupar toda la celda */
-}
+    /* ===== KPI en UNA SOLA FILA (sin scroll) ===== */
+    #resumen_kpis .kpi-row{
+      display:flex;
+      flex-wrap:nowrap;      /* una sola fila */
+      gap:12px;
+      overflow:visible;      /* sin scroll del contenedor */
+      padding-bottom:0;
+    }
+    /* cada tarjeta se adapta al ancho disponible */
+    #resumen_kpis .kpi-card{
+      flex:1 1 0;            /* reparte el ancho entre todas */
+      min-width:0;           /* permite compresión del contenido */
+      border:1px solid #e5e7eb; border-radius:14px; background:#fff;
+      padding:14px 16px; box-shadow:0 1px 1px rgba(0,0,0,.03);
+      display:flex; flex-direction:column; justify-content:center; min-height:92px;
+      width:100%;
+    }
     .kpi-card .kpi-label{ font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; }
     .kpi-card .kpi-value{ font-size:26px; margin-top:6px; line-height:1.1; font-weight:600; color:#111827; }
 
@@ -40,7 +40,7 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     }
     #resumen_print_area table.striped tbody td{ padding:10px 12px; vertical-align:middle; }
 
-    /* si no hay panel lateral, ocultarlo y expandir tabla */
+    /* ocultar panel lateral si está vacío y expandir tabla */
     #resumen_top:empty{ display:none !important; }
     .res-col-table.full-width{ width:100% !important; max-width:100% !important; flex:0 0 100% !important; }
 
@@ -77,6 +77,7 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
   `;
   document.head.appendChild(s);
 })();
+
 
 /* ======================= Utils ======================= */
 const API_BASE = window.API_URL || '/api';
