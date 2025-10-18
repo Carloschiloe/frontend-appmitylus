@@ -38,8 +38,13 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     .res-link{ color:#0ea5a8; font-weight:700; text-decoration:none; }
     .res-link:hover{ text-decoration:underline; }
     .subline{ font-size:12px; line-height:1.2; color:#6b7280; }
-    .tiny-note{ display:block; margin-top:4px; font-size:11px; color:#6b7280; }
-    .tiny-note .badge{ display:inline-block; padding:2px 6px; border:1px solid #e5e7eb; border-radius:999px; margin-right:4px; }
+
+    /* chips en TONS */
+    .tiny-note{ display:block; margin-top:6px; font-size:12px; color:#374151; }
+    .tiny-note .badge{
+      display:inline-block; padding:4px 8px; border:1px solid #e5e7eb; border-radius:999px; margin:3px 6px 0 0;
+      background:#f8fafc;
+    }
 
     /* chips de estado */
     .chip-estado{
@@ -90,23 +95,11 @@ function isoWeek(date){
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullFullYear?.() ?? d.getUTCFullYear(), 0, 1));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   return { year: d.getUTCFullYear(), week: weekNo };
 }
 function weekKeyFromDate(dt){ if (!dt) return ''; const {year, week} = isoWeek(dt); return `${year}-W${String(week).padStart(2,'0')}`; }
-function weekRange(wkKey){
-  const [yStr, wStr] = wkKey.split('-W');
-  const year = Number(yStr); const week = Number(wStr);
-  if (!year || !week) return { start:null, end:null };
-  const simple = new Date(Date.UTC(year,0,1));
-  const day = simple.getUTCDay();
-  const diff = (day<=4 ? day-1 : day-8);
-  const monday = new Date(Date.UTC(year,0,1 - diff + (week-1)*7));
-  const start = new Date(monday); start.setUTCHours(0,0,0,0);
-  const end = new Date(start); end.setUTCDate(end.getUTCDate()+6); end.setUTCHours(23,59,59,999);
-  return { start, end };
-}
 
 /* ======================= Resolutores ======================= */
 // VISITAS
@@ -165,7 +158,8 @@ let _cache = {
   allContactos: [], byWeekCont: new Map(),
   optionsSig: null,
   mode: 'visitas',
-  dispRowCache: new Map(), // visitas: keyFila -> [Abr.26, May.26, ...]
+  dispRowCache: new Map(), // visitas
+  dispRowCacheContact: new Map(), // contactos
 };
 
 /* ======================= Data ======================= */
@@ -214,128 +208,78 @@ async function getDisponibilidades(params = {}){
   return Array.isArray(json) ? json : (json.items || []);
 }
 
-/* ===== VISITAS: chips de meses bajo TONS (NO toca el número) ===== */
-function disponibilidadFechasHumanas(list){
-  const uniqKeys = new Set();
-  const tags = [];
-  for (const it of (list||[])){
-    const dt = toDate(it.fecha || (it.year && it.month ? `${it.year}-${pad2(it.month)}-01` : null));
-    if (!dt) continue;
-    const tag = fmtMYShort(dt); // Abr.26
-    if (!uniqKeys.has(tag)){ uniqKeys.add(tag); tags.push(tag); }
-  }
-  return tags;
+/* ===== Helpers de chips “tons · mes” ===== */
+const normId = (v) => (v && typeof v === 'object' && (v.$oid || v.oid)) ? (v.$oid || v.oid) : v;
+function dispToChip(it){
+  const tons = Number(it.tonsDisponible ?? it.tons ?? it.tonsComprometidas ?? 0);
+  const dt = toDate(it.fecha || (it.year && it.month ? `${it.year}-${pad2(it.month)}-01` : null));
+  const when = dt ? fmtMYShort(dt) : '';
+  return `<span class="badge">${fmt2(tons)}${when ? ` · ${when}` : ''}</span>`;
 }
+
+/* ===== VISITAS: pintar chips bajo TONS (solo disponibilidades; NO suma) ===== */
 async function paintDisponibilidadesEnFila(v, tr){
   const key = `v:${v._id || ''}|c:${v.contactoId || ''}|centro:${v.centroId || ''}`;
   if (_cache.dispRowCache.has(key)) {
-    const tags = _cache.dispRowCache.get(key);
-    if (tags.length) {
-      const tonsTd = tr.querySelector('td[data-col="tons"]');
-      if (tonsTd && !tonsTd.querySelector('.tiny-note')){
-        tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${tags.map(t=>`<span class="badge">${esc(t)}</span>`).join('')}</span>`);
-      }
+    const chips = _cache.dispRowCache.get(key);
+    const tonsTd = tr.querySelector('td[data-col="tons"]');
+    if (tonsTd){
+      tonsTd.querySelectorAll('.tiny-note').forEach(n => n.remove());
+      if (chips) tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${chips}</span>`);
     }
     return;
   }
   try{
-    const list = await getDisponibilidades({ contactoId: v.contactoId || undefined, centroId: v.centroId || undefined });
-    const tags = disponibilidadFechasHumanas(list);
-    _cache.dispRowCache.set(key, tags);
-    if (tags.length){
-      const tonsTd = tr.querySelector('td[data-col="tons"]');
-      if (tonsTd){
-        tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${tags.map(t=>`<span class="badge">${esc(t)}</span>`).join('')}</span>`);
-      }
-    }
-  }catch{ _cache.dispRowCache.set(key, []); }
-}
+    const list = await getDisponibilidades({
+      contactoId: v.contactoId || undefined,
+      centroId: normId(v.centroId) || undefined,
+      proveedorKey: v.proveedorKey || undefined,
+    });
+    const chips = (Array.isArray(list) ? list : []).map(dispToChip).join(' ');
+    _cache.dispRowCache.set(key, chips);
 
-/* ===== CONTACTOS: traer disponibilidades por fila SOLO para chips ===== */
-const CONTACT_DISP_MEMO = new Map();
-const normId = (v) => (v && typeof v === 'object' && (v.$oid || v.oid)) ? (v.$oid || v.oid) : v;
-
-async function fetchDisponibilidadesForContacto(c){
-  const contactoId = String(c._id || '');
-  const proveedorKey = c.proveedorKey || '';
-  const centroId = normId(c.centroId) || '';
-
-  const keyA = contactoId ? `A:${contactoId}` : '';
-  const keyB = (proveedorKey && centroId) ? `B:${proveedorKey}|${centroId}` : '';
-  const keyC = proveedorKey ? `C:${proveedorKey}` : '';
-
-  if (keyA) {
-    if (CONTACT_DISP_MEMO.has(keyA)) return CONTACT_DISP_MEMO.get(keyA);
-    const a = await getDisponibilidades({ contactoId });
-    if (Array.isArray(a) && a.length){ CONTACT_DISP_MEMO.set(keyA, a); return a; }
-  }
-  if (keyB) {
-    if (CONTACT_DISP_MEMO.has(keyB)) return CONTACT_DISP_MEMO.get(keyB);
-    const b = await getDisponibilidades({ proveedorKey, centroId });
-    if (Array.isArray(b) && b.length){ CONTACT_DISP_MEMO.set(keyB, b); return b; }
-  }
-  if (keyC) {
-    if (CONTACT_DISP_MEMO.has(keyC)) return CONTACT_DISP_MEMO.get(keyC);
-    const cList = await getDisponibilidades({ proveedorKey });
-    CONTACT_DISP_MEMO.set(keyC, Array.isArray(cList) ? cList : []);
-    return CONTACT_DISP_MEMO.get(keyC);
-  }
-  return [];
-}
-function chipsFromList(list){
-  const map = new Map();
-  for (const it of (list||[])){
-    const mesKey = it.mesKey || (it.year && it.month ? `${it.year}-${String(it.month).padStart(2,'0')}` : null);
-    if (!mesKey) continue;
-    map.set(mesKey, true);
-  }
-  const fmt = (mesKey) => {
-    const [y,m] = mesKey.split('-').map(Number);
-    const d = new Date(Date.UTC(y,(m-1),1));
-    return `${MES_ABBR[d.getUTCMonth()]}.${String(d.getUTCFullYear()).slice(-2)}`;
-  };
-  return Array.from(map.keys()).sort().map(k => `<span class="badge">${fmt(k)}</span>`).join(' ');
-}
-async function paintDisponContactoEnFila(c, tr){
-  try{
-    const list = await fetchDisponibilidadesForContacto(c);
-    const chips = chipsFromList(list);
     const tonsTd = tr.querySelector('td[data-col="tons"]');
-    if (!tonsTd) return;
-    // NO tocar el número; solo chips
-    tonsTd.querySelectorAll('.tiny-note').forEach(n => n.remove());
-    if (chips){
-      tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${chips}</span>`);
+    if (tonsTd){
+      tonsTd.querySelectorAll('.tiny-note').forEach(n => n.remove());
+      if (chips) tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${chips}</span>`);
     }
-  }catch(e){
-    // si falla, no rompe la fila
+  }catch{
+    _cache.dispRowCache.set(key, '');
   }
 }
 
-/* ======================= Semanas (helpers) ======================= */
-function allWeeks(){
-  return Array.from(new Set([
-    ..._cache.byWeekVis.keys(),
-    ..._cache.byWeekCont.keys(),
-  ])).sort().reverse();
-}
-function buildSemanaOptions(){
-  const sel = document.getElementById('resumen_semana');
-  if (!sel) return;
-  const weeks = allWeeks();
-  const sig = weeks.join(',');
-  if (_cache.optionsSig === sig) return;
-  sel.innerHTML = '';
-  for (const wk of weeks){
-    const opt = document.createElement('option');
-    opt.value = wk; opt.textContent = wk;
-    sel.appendChild(opt);
+/* ===== CONTACTOS: pintar chips bajo TONS (solo disponibilidades; NO suma) ===== */
+async function paintDisponContactoEnFila(c, tr){
+  const key = `c:${c._id || ''}|prov:${c.proveedorKey || ''}|centro:${normId(c.centroId) || ''}`;
+  if (_cache.dispRowCacheContact.has(key)){
+    const chips = _cache.dispRowCacheContact.get(key);
+    const tonsTd = tr.querySelector('td[data-col="tons"]');
+    if (tonsTd){
+      tonsTd.querySelectorAll('.tiny-note').forEach(n => n.remove());
+      if (chips) tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${chips}</span>`);
+    }
+    return;
   }
-  if (weeks.length) sel.value = weeks[0];
-  _cache.optionsSig = sig;
+  try{
+    const list = await getDisponibilidades({
+      contactoId: c._id || undefined,
+      proveedorKey: c.proveedorKey || undefined,
+      centroId: normId(c.centroId) || undefined,
+    });
+    const chips = (Array.isArray(list) ? list : []).map(dispToChip).join(' ');
+    _cache.dispRowCacheContact.set(key, chips);
+
+    const tonsTd = tr.querySelector('td[data-col="tons"]');
+    if (tonsTd){
+      tonsTd.querySelectorAll('.tiny-note').forEach(n => n.remove());
+      if (chips) tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${chips}</span>`);
+    }
+  }catch{
+    _cache.dispRowCacheContact.set(key, '');
+  }
 }
 
-/* ======================= Agregaciones ======================= */
+/* ======================= Agregaciones (para KPIs) ======================= */
 function aggregateVisitas(wk){
   const visitas = (_cache.byWeekVis.get(wk) || []).slice().sort((a,b)=>{
     const da = toDate(a.fecha) || toDate(a.proximoPasoFecha) || new Date(0);
@@ -365,7 +309,7 @@ function aggregateContactos(wk){
   return { contactos, empresas, comunas, centros, totalTonsContactadas, count: contactos.length };
 }
 
-/* ======================= KPIs (DINÁMICOS por modo) ======================= */
+/* ======================= KPIs ======================= */
 function kpi(label, val){
   return `<div class="kpi-card">
     <span class="kpi-label">${label}</span>
@@ -412,7 +356,7 @@ function renderTablaVisitas(visitas){
     const resp   = responsableDeVisita(v) || '';
     const centro = centroCodigoDeVisita(v) || '—';
     const comuna = comunaDeVisita(v) || '—';
-    const tons   = (v.tons ?? v.tonsDisponible ?? v.tonsComprometidas) ? fmt2(v.tons ?? v.tonsDisponible ?? v.tonsComprometidas) : '—';
+    const tonsMain = '—'; // << NO mostramos número agregado; solo chips de disponibilidades
     const fpp    = fmtDMYShort(toDate(v.proximoPasoFecha));
     const estado = normalizeEstado(v.estado || '—');
     const chipCl = estadoClaseChip(estado);
@@ -428,7 +372,7 @@ function renderTablaVisitas(visitas){
       </td>
       <td><span class="res-link js-open-visita" data-id="${vid}" title="Ver visita">${esc(centro)}</span></td>
       <td>${esc(comuna)}</td>
-      <td data-col="tons">${tons}</td>
+      <td data-col="tons">${tonsMain}</td>
       <td>${fpp}</td>
       <td><span class="${chipCl}">${esc(estado || '—')}</span></td>
     </tr>`;
@@ -446,7 +390,7 @@ function renderTablaVisitas(visitas){
     });
   });
 
-  // chips de disponibilidades (NO toca número)
+  // chips de disponibilidades (tons · mes)
   const trs = Array.from(tbody.querySelectorAll('tr[data-visita-id]'));
   trs.forEach((tr, i) => { const v = visitas[i]; if (v) paintDisponibilidadesEnFila(v, tr); });
 
@@ -462,8 +406,7 @@ function renderTablaContactos(contactos){
     const contacto = contactoNombreDeContacto(c) || '';
     const centro = centroCodigoDeContacto(c) || '—';
     const comuna = comunaDeContacto(c) || '—';
-    // **TONS CONTACTADAS del contacto** (no de disponibilidades)
-    const tons   = (c.tons ?? c.tonsDisponible ?? c.tonsComprometidas) ? fmt2(c.tons ?? c.tonsDisponible ?? c.tonsComprometidas) : '—';
+    const tonsMain = '—'; // << NO mostramos número agregado; solo chips de disponibilidades
     const resp   = c.responsable || c.contactoResponsable || c.responsablePG || '—';
     const cid    = esc(c._id || '');
 
@@ -475,7 +418,7 @@ function renderTablaContactos(contactos){
       </td>
       <td>${esc(centro)}</td>
       <td>${esc(comuna)}</td>
-      <td data-col="tons">${tons}</td>
+      <td data-col="tons">${tonsMain}</td>
       <td>${esc(resp)}</td>
     </tr>`;
   }).join('');
@@ -495,7 +438,7 @@ function renderTablaContactos(contactos){
     });
   });
 
-  // chips de disponibilidades (NO toca número)
+  // chips de disponibilidades (tons · mes)
   const trs = Array.from(tbody.querySelectorAll('tr[data-contacto-id]'));
   trs.forEach(tr => {
     const id = tr.getAttribute('data-contacto-id');
@@ -543,8 +486,6 @@ function ensureModeSwitcher(){
     refreshResumen();
   });
 }
-
-/* --- Sincronía opcional con tabs principales --- */
 function trySyncModeFromMainTabs(){
   const active = document.querySelector('.tabs .tab a.active');
   if (!active) return;
@@ -552,7 +493,6 @@ function trySyncModeFromMainTabs(){
   if (href.includes('contacto'))      setResumenMode('contactos', {silentRewire:false});
   else if (href.includes('visita'))   setResumenMode('visitas', {silentRewire:false});
 }
-
 function wireControls(){
   const sel = $('#resumen_semana');
   const btnPrint = $('#resumen_print');
@@ -623,7 +563,10 @@ export async function refreshResumen(){
   // fallback: seleccionar la semana más reciente si no hay valor en el <select>
   const sel = document.getElementById('resumen_semana');
   if (sel && !sel.value){
-    const weeks = allWeeks();
+    const weeks = Array.from(new Set([
+      ..._cache.byWeekVis.keys(),
+      ..._cache.byWeekCont.keys(),
+    ])).sort().reverse();
     if (weeks.length){ sel.value = weeks[0]; }
   }
   const wk = (sel?.value) || '';
