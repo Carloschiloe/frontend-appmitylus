@@ -201,8 +201,7 @@ async function ensureData(){
   }
 }
 
-/* ======================= Disponibilidades ======================= */
-/* ---- para VISITAS (mostrar etiquetas bajo TONs por fila) ---- */
+/* ======================= Disponibilidades (API) ======================= */
 async function getDisponibilidades(params = {}){
   const y = new Date().getFullYear();
   const q = new URLSearchParams();
@@ -216,6 +215,8 @@ async function getDisponibilidades(params = {}){
   const json = await res.json();
   return Array.isArray(json) ? json : (json.items || []);
 }
+
+/* ===== VISITAS: pintar chips de meses bajo TONS ===== */
 function disponibilidadFechasHumanas(list){
   const uniqKeys = new Set();
   const tags = [];
@@ -252,78 +253,79 @@ async function paintDisponibilidadesEnFila(v, tr){
   }catch{ _cache.dispRowCache.set(key, []); }
 }
 
-/* ---- para CONTACTOS (sumar y listar por contacto/proveedor/centro) ---- */
-const DISP_CACHE = {
-  loaded: false,
-  byContacto: new Map(),     // contactoId -> [{mesKey, tons}]
-  byProvCentro: new Map(),   // `${proveedorKey}::${centroId}` -> [...]
-  byProveedor: new Map()     // proveedorKey -> [...]
-};
-const keyProvCentro = (proveedorKey, centroId) => `${String(proveedorKey||'')}::${String(centroId||'')}`;
+/* ===== CONTACTOS: traer directo de la API por fila (sin mezclar) ===== */
+const CONTACT_DISP_MEMO = new Map();
+const normId = (v) => (v && typeof v === 'object' && (v.$oid || v.oid)) ? (v.$oid || v.oid) : v;
 
-async function loadDisponibilidadesAll(){
-  if (DISP_CACHE.loaded) return;
-  const y = new Date().getFullYear();
-  const q = new URLSearchParams({ from: `${y-1}-01`, to: `${y+1}-12` });
-  const res = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
-  if (!res.ok) throw new Error('GET /disponibilidades '+res.status);
-  const list = await res.json();
-  const items = Array.isArray(list) ? list : (list.items || []);
+async function fetchDisponibilidadesForContacto(c){
+  const contactoId = String(c._id || '');
+  const proveedorKey = c.proveedorKey || '';
+  const centroId = normId(c.centroId) || '';
 
-  for (const it of items){
-    const row = {
-      mesKey: it.mesKey || (it.year && it.month ? `${it.year}-${pad2(it.month)}` : null),
-      tons: Number(it.tonsDisponible ?? it.tons ?? 0),
-      contactoId: String(it.contactoId || ''),
-      proveedorKey: it.proveedorKey || it.empresaKey || '',
-      centroId: (it.centroId && (it.centroId.$oid || it.centroId)) || it.centroId || ''
-    };
-    if (row.contactoId){
-      if (!DISP_CACHE.byContacto.has(row.contactoId)) DISP_CACHE.byContacto.set(row.contactoId, []);
-      DISP_CACHE.byContacto.get(row.contactoId).push(row);
-    }
-    if (row.proveedorKey){
-      if (!DISP_CACHE.byProveedor.has(row.proveedorKey)) DISP_CACHE.byProveedor.set(row.proveedorKey, []);
-      DISP_CACHE.byProveedor.get(row.proveedorKey).push(row);
-      if (row.centroId){
-        const k = keyProvCentro(row.proveedorKey, row.centroId);
-        if (!DISP_CACHE.byProvCentro.has(k)) DISP_CACHE.byProvCentro.set(k, []);
-        DISP_CACHE.byProvCentro.get(k).push(row);
-      }
-    }
+  const keyA = contactoId ? `A:${contactoId}` : '';
+  const keyB = (proveedorKey && centroId) ? `B:${proveedorKey}|${centroId}` : '';
+  const keyC = proveedorKey ? `C:${proveedorKey}` : '';
+
+  if (keyA) {
+    if (CONTACT_DISP_MEMO.has(keyA)) return CONTACT_DISP_MEMO.get(keyA);
+    const a = await getDisponibilidades({ contactoId });
+    if (Array.isArray(a) && a.length){ CONTACT_DISP_MEMO.set(keyA, a); return a; }
   }
-  DISP_CACHE.loaded = true;
+  if (keyB) {
+    if (CONTACT_DISP_MEMO.has(keyB)) return CONTACT_DISP_MEMO.get(keyB);
+    const b = await getDisponibilidades({ proveedorKey, centroId });
+    if (Array.isArray(b) && b.length){ CONTACT_DISP_MEMO.set(keyB, b); return b; }
+  }
+  if (keyC) {
+    if (CONTACT_DISP_MEMO.has(keyC)) return CONTACT_DISP_MEMO.get(keyC);
+    const cList = await getDisponibilidades({ proveedorKey });
+    CONTACT_DISP_MEMO.set(keyC, Array.isArray(cList) ? cList : []);
+    return CONTACT_DISP_MEMO.get(keyC);
+  }
+  return [];
 }
-function sumDisponiblesForContacto(c){
-  const id = String(c._id || '');
-  const provKey = c.proveedorKey || '';
-  const centroId = (c.centroId && (c.centroId.$oid || c.centroId)) || c.centroId || '';
-  let sum = 0;
-  const listC  = DISP_CACHE.byContacto.get(id) || [];
-  const listPC = DISP_CACHE.byProvCentro.get(keyProvCentro(provKey, centroId)) || [];
-  const listP  = DISP_CACHE.byProveedor.get(provKey) || [];
-  for (const r of [...listC, ...listPC, ...listP]) sum += Number(r.tons||0);
-  return sum;
+function sumTonsFromList(list){
+  return (list||[]).reduce((a, it)=> a + Number(it.tonsDisponible ?? it.tons ?? 0), 0);
 }
-function chipsFechasDisponibles(c){
-  const id = String(c._id || '');
-  const provKey = c.proveedorKey || '';
-  const centroId = (c.centroId && (c.centroId.$oid || c.centroId)) || c.centroId || '';
-  const rows = [
-    ...(DISP_CACHE.byContacto.get(id) || []),
-    ...(DISP_CACHE.byProvCentro.get(keyProvCentro(provKey, centroId)) || []),
-    ...(DISP_CACHE.byProveedor.get(provKey) || []),
-  ];
-  const uniq = Array.from(new Map(rows
-    .filter(r => r.mesKey)
-    .map(r => [r.mesKey, r])).values())
-    .sort((a,b)=> a.mesKey.localeCompare(b.mesKey));
+function chipsFromList(list){
+  const map = new Map();
+  for (const it of (list||[])){
+    const mesKey = it.mesKey || (it.year && it.month ? `${it.year}-${String(it.month).padStart(2,'0')}` : null);
+    if (!mesKey) continue;
+    map.set(mesKey, true);
+  }
   const fmt = (mesKey) => {
     const [y,m] = mesKey.split('-').map(Number);
     const d = new Date(Date.UTC(y,(m-1),1));
     return `${MES_ABBR[d.getUTCMonth()]}.${String(d.getUTCFullYear()).slice(-2)}`;
   };
-  return uniq.map(r => `<span class="badge">${esc(fmt(r.mesKey))}</span>`).join(' ');
+  return Array.from(map.keys()).sort().map(k => `<span class="badge">${fmt(k)}</span>`).join(' ');
+}
+async function paintDisponContactoEnFila(c, tr){
+  try{
+    const list = await fetchDisponibilidadesForContacto(c);
+    const sum = sumTonsFromList(list);
+    const chips = chipsFromList(list);
+
+    const tonsTd = tr.querySelector('td[data-col="tons"]');
+    if (!tonsTd) return;
+
+    // set valor base
+    const text = sum ? Number(sum).toLocaleString('es-CL', { maximumFractionDigits: 2 }) : '—';
+    if (tonsTd.firstChild && tonsTd.firstChild.nodeType === Node.TEXT_NODE){
+      tonsTd.firstChild.nodeValue = text;
+    } else {
+      tonsTd.insertAdjacentText('afterbegin', text);
+    }
+
+    // limpiar y agregar chips
+    tonsTd.querySelectorAll('.tiny-note').forEach(n => n.remove());
+    if (chips){
+      tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${chips}</span>`);
+    }
+  }catch(e){
+    // si falla, no rompe la fila
+  }
 }
 
 /* ======================= Semanas (helpers) ======================= */
@@ -476,16 +478,10 @@ function renderTablaContactos(contactos){
     const contacto = contactoNombreDeContacto(c) || '';
     const centro = centroCodigoDeContacto(c) || '—';
     const comuna = comunaDeContacto(c) || '—';
-
-    // === TONS desde DISPONIBILIDADES ===
-    const tonsDisp = sumDisponiblesForContacto(c);
-    const tonsStr  = tonsDisp ? fmt2(tonsDisp) : '—';
-    const chips    = chipsFechasDisponibles(c);
-
-    // Responsable: incluye responsablePG
     const resp   = c.responsable || c.contactoResponsable || c.responsablePG || '—';
     const cid    = esc(c._id || '');
 
+    // placeholder; se rellenará asíncronamente desde /disponibilidades
     return `<tr data-contacto-id="${cid}">
       <td>${fmtDMYShort(toDate(fechaDeContacto(c)))}</td>
       <td>
@@ -494,15 +490,13 @@ function renderTablaContactos(contactos){
       </td>
       <td>${esc(centro)}</td>
       <td>${esc(comuna)}</td>
-      <td data-col="tons">
-        ${tonsStr}
-        ${chips ? `<span class="tiny-note">${chips}</span>` : ``}
-      </td>
+      <td data-col="tons">—</td>
       <td>${esc(resp)}</td>
     </tr>`;
   }).join('');
   tbody.innerHTML = rows || '<tr><td colspan="6" class="grey-text">No hay contactos para esta semana.</td></tr>';
 
+  // wire
   tbody.querySelectorAll('.js-open-contacto').forEach(a => {
     a.addEventListener('click', (e)=>{
       e.preventDefault();
@@ -514,6 +508,14 @@ function renderTablaContactos(contactos){
         if (typeof window.abrirDetalleContacto === 'function') window.abrirDetalleContacto(c);
       } catch {}
     });
+  });
+
+  // pintar TONS + chips desde disponibilidades por cada fila
+  const trs = Array.from(tbody.querySelectorAll('tr[data-contacto-id]'));
+  trs.forEach(tr => {
+    const id = tr.getAttribute('data-contacto-id');
+    const c = (state.contactosGuardados||[]).find(x => String(x._id) === String(id));
+    if (c) paintDisponContactoEnFila(c, tr);
   });
 
   ensureFullWidthTable();
@@ -632,9 +634,6 @@ export function setResumenMode(mode, opts = {}){
 
 export async function refreshResumen(){
   await ensureData();
-
-  // disponibilidad para Contactos (la cargamos una vez)
-  await loadDisponibilidadesAll().catch(()=>{});
 
   // fallback: seleccionar la semana más reciente si no hay valor en el <select>
   const sel = document.getElementById('resumen_semana');
