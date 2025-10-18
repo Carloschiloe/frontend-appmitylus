@@ -34,11 +34,9 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
     #resumen_top:empty{ display:none !important; }
     .res-col-table.full-width{ width:100% !important; max-width:100% !important; flex:0 0 100% !important; }
 
-    /* enlaces */
+    /* enlaces y sublíneas */
     .res-link{ color:#0ea5a8; font-weight:700; text-decoration:none; }
     .res-link:hover{ text-decoration:underline; }
-
-    /* sublíneas pequeñas y badges */
     .subline{ font-size:12px; line-height:1.2; color:#6b7280; }
     .tiny-note{ display:block; margin-top:4px; font-size:11px; color:#6b7280; }
     .tiny-note .badge{ display:inline-block; padding:2px 6px; border:1px solid #e5e7eb; border-radius:999px; margin-right:4px; }
@@ -92,7 +90,7 @@ function isoWeek(date){
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const yearStart = new Date(Date.UTC(d.getUTCFullFullYear?.() ?? d.getUTCFullYear(), 0, 1));
   const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   return { year: d.getUTCFullYear(), week: weekNo };
 }
@@ -216,7 +214,7 @@ async function getDisponibilidades(params = {}){
   return Array.isArray(json) ? json : (json.items || []);
 }
 
-/* ===== VISITAS: pintar chips de meses bajo TONS ===== */
+/* ===== VISITAS: chips de meses bajo TONS (NO toca el número) ===== */
 function disponibilidadFechasHumanas(list){
   const uniqKeys = new Set();
   const tags = [];
@@ -253,7 +251,7 @@ async function paintDisponibilidadesEnFila(v, tr){
   }catch{ _cache.dispRowCache.set(key, []); }
 }
 
-/* ===== CONTACTOS: traer directo de la API por fila (sin mezclar) ===== */
+/* ===== CONTACTOS: traer disponibilidades por fila SOLO para chips ===== */
 const CONTACT_DISP_MEMO = new Map();
 const normId = (v) => (v && typeof v === 'object' && (v.$oid || v.oid)) ? (v.$oid || v.oid) : v;
 
@@ -284,9 +282,6 @@ async function fetchDisponibilidadesForContacto(c){
   }
   return [];
 }
-function sumTonsFromList(list){
-  return (list||[]).reduce((a, it)=> a + Number(it.tonsDisponible ?? it.tons ?? 0), 0);
-}
 function chipsFromList(list){
   const map = new Map();
   for (const it of (list||[])){
@@ -304,21 +299,10 @@ function chipsFromList(list){
 async function paintDisponContactoEnFila(c, tr){
   try{
     const list = await fetchDisponibilidadesForContacto(c);
-    const sum = sumTonsFromList(list);
     const chips = chipsFromList(list);
-
     const tonsTd = tr.querySelector('td[data-col="tons"]');
     if (!tonsTd) return;
-
-    // set valor base
-    const text = sum ? Number(sum).toLocaleString('es-CL', { maximumFractionDigits: 2 }) : '—';
-    if (tonsTd.firstChild && tonsTd.firstChild.nodeType === Node.TEXT_NODE){
-      tonsTd.firstChild.nodeValue = text;
-    } else {
-      tonsTd.insertAdjacentText('afterbegin', text);
-    }
-
-    // limpiar y agregar chips
+    // NO tocar el número; solo chips
     tonsTd.querySelectorAll('.tiny-note').forEach(n => n.remove());
     if (chips){
       tonsTd.insertAdjacentHTML('beforeend', `<span class="tiny-note">${chips}</span>`);
@@ -452,7 +436,7 @@ function renderTablaVisitas(visitas){
 
   tbody.innerHTML = rowsHtml || '<tr><td colspan="7" class="grey-text">No hay visitas para esta semana.</td></tr>';
 
-  // wire
+  // abrir visita
   tbody.querySelectorAll('.js-open-visita').forEach(a => {
     a.addEventListener('click', (e)=>{
       e.preventDefault();
@@ -462,7 +446,7 @@ function renderTablaVisitas(visitas){
     });
   });
 
-  // pintar disponibilidades bajo "Tons" en cada fila (asíncrono por fila)
+  // chips de disponibilidades (NO toca número)
   const trs = Array.from(tbody.querySelectorAll('tr[data-visita-id]'));
   trs.forEach((tr, i) => { const v = visitas[i]; if (v) paintDisponibilidadesEnFila(v, tr); });
 
@@ -478,10 +462,11 @@ function renderTablaContactos(contactos){
     const contacto = contactoNombreDeContacto(c) || '';
     const centro = centroCodigoDeContacto(c) || '—';
     const comuna = comunaDeContacto(c) || '—';
+    // **TONS CONTACTADAS del contacto** (no de disponibilidades)
+    const tons   = (c.tons ?? c.tonsDisponible ?? c.tonsComprometidas) ? fmt2(c.tons ?? c.tonsDisponible ?? c.tonsComprometidas) : '—';
     const resp   = c.responsable || c.contactoResponsable || c.responsablePG || '—';
     const cid    = esc(c._id || '');
 
-    // placeholder; se rellenará asíncronamente desde /disponibilidades
     return `<tr data-contacto-id="${cid}">
       <td>${fmtDMYShort(toDate(fechaDeContacto(c)))}</td>
       <td>
@@ -490,13 +475,13 @@ function renderTablaContactos(contactos){
       </td>
       <td>${esc(centro)}</td>
       <td>${esc(comuna)}</td>
-      <td data-col="tons">—</td>
+      <td data-col="tons">${tons}</td>
       <td>${esc(resp)}</td>
     </tr>`;
   }).join('');
   tbody.innerHTML = rows || '<tr><td colspan="6" class="grey-text">No hay contactos para esta semana.</td></tr>';
 
-  // wire
+  // abrir contacto
   tbody.querySelectorAll('.js-open-contacto').forEach(a => {
     a.addEventListener('click', (e)=>{
       e.preventDefault();
@@ -510,7 +495,7 @@ function renderTablaContactos(contactos){
     });
   });
 
-  // pintar TONS + chips desde disponibilidades por cada fila
+  // chips de disponibilidades (NO toca número)
   const trs = Array.from(tbody.querySelectorAll('tr[data-contacto-id]'));
   trs.forEach(tr => {
     const id = tr.getAttribute('data-contacto-id');
