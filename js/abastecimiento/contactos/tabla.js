@@ -2,7 +2,7 @@
 import { state, $ } from './state.js';
 import { centroCodigoById, comunaPorCodigo } from './normalizers.js';
 import { abrirEdicion, eliminarContacto, abrirDetalleContacto } from './form-contacto.js';
-import { abrirModalVisita } from '../visitas/tab.js';
+import { abrirModalVisita } from '../visitas/ui.js'; // consistente con index.js
 
 const API_BASE = window.API_URL || '/api';
 const fmtCL = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
@@ -186,7 +186,6 @@ export function initTablaContactos() {
   ensureFooter();
 
   state.dt = jq('#tablaContactos').DataTable({
-    // SIN buscador nativo (lo ocultamos con CSS por seguridad también)
     dom: 'Bltip',
     buttons: [
       { extend: 'excelHtml5', title: 'Contactos_Abastecimiento' },
@@ -199,6 +198,8 @@ export function initTablaContactos() {
     autoWidth: false,
     responsive: false,
     scrollX: false,
+    processing: true,
+    deferRender: true,            // ⚡ render perezoso
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
     columnDefs: [
       { targets: 0, width:'60px'  },   // Semana
@@ -209,7 +210,10 @@ export function initTablaContactos() {
       { targets: 5, width:'110px' },   // Responsable
       { targets: 6, width:'160px', orderable:false, searchable:false } // Acciones
     ],
-    drawCallback: () => { setTimeout(actualizarTonsVisiblesYFooter, 0); }
+    drawCallback: () => {
+      // da un tick al layout y luego calcula tons + footer
+      requestAnimationFrame(() => setTimeout(actualizarTonsVisiblesYFooter, 0));
+    }
   });
 
   // Acciones
@@ -339,7 +343,7 @@ export function renderTablaContactos() {
       `.trim();
 
       const tonsCell = `<span class="tons-cell" data-contactoid="${esc(c._id || '')}" data-provkey="${esc(c.proveedorKey || '')}" data-centroid="${esc(c.centroId || '')}" data-value=""></span>`;
-      const responsable = esc(c.responsablePG || '—');
+      const responsable = esc(c.responsablePG || c.responsable || c.contactoResponsable || '—');
 
       const acciones = `
         <div class="actions">
