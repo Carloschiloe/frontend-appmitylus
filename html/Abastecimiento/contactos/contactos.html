@@ -20,6 +20,23 @@
   <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1">
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1">
   <link rel="stylesheet" href="/js/abastecimiento/visitas/fotos/styles.css">
+
+  <!-- Ajustes mínimos para semana actual y estrella de proveedor nuevo -->
+  <style>
+    .week-badge{font-weight:700}
+    .week-badge span{font-size:14px}
+    @media(min-width:992px){ .week-badge span{font-size:16px} }
+
+    /* Estrellita de “proveedor nuevo” (se usa desde JS en el Resumen) */
+    .nuevo-star{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:18px; height:18px; border-radius:50%;
+      font-size:12px; line-height:1; margin-left:6px;
+      vertical-align:middle;
+    }
+    .nuevo-star.yellow{ background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; } /* amarillo */
+    .nuevo-star.green{  background:#DCFCE7; color:#166534; border:1px solid #BBF7D0; } /* verde */
+  </style>
 </head>
 <body class="mmpp-layout no-nav">
 <main class="mmpp-main">
@@ -47,7 +64,7 @@
         <li class="tab col s4"><a class="active" href="#tab-contactos">Empresas</a></li>
         <li class="tab col s4"><a href="#tab-visitas">Visitas a Cultivos</a></li>
         <li class="tab col s4"><a href="#tab-personas">Agenda de Contactos</a></li>
-        <li class="tab col s3"><a href="#tab-resumen">Resumen semanal</a></li>
+        <li class="tab col s3"><a href="#tab-resumen">Resumen (semana/mes)</a></li>
       </ul>
     </div>
 
@@ -435,11 +452,11 @@
       </div>
     </div>
 
-    <!-- ====================== TAB: Resumen semanal ====================== -->
+    <!-- ====================== TAB: Resumen (semana/mes) ====================== -->
     <div id="tab-resumen" class="section">
       <div class="resumen-toolbar" style="display:flex; gap:12px; align-items:center; justify-content:space-between; margin:8px 0; flex-wrap:wrap">
         <div style="display:flex; gap:10px; align-items:center;">
-          <!-- NUEVO: Selector Semana/Mes -->
+          <!-- Selector Semana/Mes -->
           <div class="segmented" id="resumen_period" aria-label="Tipo de período">
             <button data-period="semana" class="is-active" type="button">Semana</button>
             <button data-period="mes" type="button">Mes</button>
@@ -451,13 +468,13 @@
             <select id="resumen_semana" class="browser-default" style="min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Seleccionar semana"></select>
           </div>
 
-          <!-- NUEVO: Mes -->
+          <!-- Mes -->
           <div>
             <label class="grey-text text-darken-1" for="resumen_mes" style="font-size:12px">Mes</label>
             <select id="resumen_mes" class="browser-default" style="min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Seleccionar mes (YYYY-MM)"></select>
           </div>
 
-          <!-- NUEVO: Responsable PG -->
+          <!-- Responsable PG -->
           <div>
             <label class="grey-text text-darken-1" for="resumen_resp" style="font-size:12px">Responsable PG</label>
             <select id="resumen_resp" class="browser-default" style="min-width:180px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Filtrar por Responsable PG">
@@ -524,7 +541,7 @@
   });
 </script>
 
-<!-- Resumen semanal -->
-<script type="module" src="../../../js/abastecimiento/contactos/resumen-semanal.js?v=1"></script>
+<!-- Resumen semanal (cache-bust actualizado) -->
+<script type="module" src="../../../js/abastecimiento/contactos/resumen-semanal.js?v=2"></script>
 </body>
 </html>
