@@ -155,6 +155,30 @@ function nukeStuckOverlays() {
   document.body.style.overflow = '';
 }
 
+/* ======================= Helpers de campos NUEVOS ======================= */
+function resetContactoExtras() {
+  // Localidad (máx 20 ya está en el HTML)
+  const loc = document.getElementById('contactoLocalidad');
+  if (loc) loc.value = '';
+
+  // Biomasa (select)
+  const bio = document.getElementById('contactoBiomasa');
+  if (bio) bio.value = '';
+
+  // Proveedor nuevo (checkbox)
+  const nuevo = document.getElementById('contactoProveedorNuevo');
+  if (nuevo) nuevo.checked = false;
+
+  // Próximo paso + fecha
+  const paso = document.getElementById('contacto_proximoPaso');
+  if (paso) paso.value = '';
+  const pasoFecha = document.getElementById('contacto_proximoPasoFecha');
+  if (pasoFecha) pasoFecha.value = '';
+
+  // Refrescar labels de Materialize
+  try { M.updateTextFields?.(); } catch {}
+}
+
 /* ======================= UI: tabs + modales (init una vez) ======================= */
 function initUIOnce() {
   if (!window.M) return;
@@ -202,6 +226,7 @@ function initUIOnce() {
     const inst = M.Modal.getInstance(modalContactoEl) || M.Modal.init(modalContactoEl, {
       onCloseEnd: () => {
         try { document.getElementById('formContacto')?.reset(); } catch {}
+        resetContactoExtras();   // <<< limpia campos nuevos
         try { prepararNuevo(); } catch {}
         M.updateTextFields?.();
         cleanupOverlays();
@@ -212,6 +237,7 @@ function initUIOnce() {
       e?.preventDefault?.();
       try { prepararNuevo(); } catch {}
       try { document.getElementById('formContacto')?.reset(); } catch {}
+      resetContactoExtras();     // <<< limpia campos nuevos al abrir
       M.updateTextFields?.();
       inst.open();
     };
