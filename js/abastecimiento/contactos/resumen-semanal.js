@@ -3,7 +3,9 @@ import { state, $ } from './state.js';
 import { getAll as getAllVisitas } from '../visitas/api.js';
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
 
-/* ======================= Estilos del módulo (inyección segura) ======================= */
+console.log('[resumen] CARGADO v=2025-10-20-2');
+
+/* ======================= Estilos del módulo ======================= */
 (function injectResumenStyles(){
   if (document.getElementById('resumen-semanal-styles')) return;
   const s = document.createElement('style');
@@ -70,17 +72,16 @@ import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
 /* ======================= Utils ======================= */
 const API_BASE = window.API_URL || '/api';
 const fmt2 = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
-const ymd  = (d) => (d instanceof Date && !isNaN(d)) ? d.toISOString().slice(0,10) : '—';
 const toDate = (v) => { if (!v) return null; try { return (v instanceof Date) ? v : new Date(v); } catch { return null; } };
 const uniq = (arr) => Array.from(new Set(arr.filter(Boolean)));
-const esc  = (s='') => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])));
+const esc  = (s='') => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 
 /* Abreviaturas ES */
 const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const pad2 = (n) => String(n).padStart(2,'0');
 const fmtDMYShort = (dt) => { const d = toDate(dt); return d ? `${pad2(d.getDate())}.${MES_ABBR[d.getMonth()]}.${String(d.getFullYear()).slice(-2)}` : '—'; };
 
-/* Slug robusto */
+/* Slug */
 function slug(v=''){
   return String(v||'')
     .toLowerCase()
@@ -154,7 +155,7 @@ function comunaDeContacto(c){
   return m?.comuna || m?.Comuna || '';
 }
 
-/* ====== Proveedor NUEVO (desde contacto.checkbox) ====== */
+/* ====== Proveedor NUEVO ====== */
 function isProveedorNuevoByContact(contactOrNameOrKey){
   const lista = state.contactosGuardados || [];
   if (!lista.length) return false;
@@ -192,8 +193,7 @@ function renderStarIfNuevo({ proveedorKey, proveedorNombre } = {}){
 let _cache = {
   allVisitas: [], byWeekVis: new Map(), byMonthVis: new Map(),
   allContactos: [], byWeekCont: new Map(), byMonthCont: new Map(),
-  optionsSigW: null, optionsSigM: null,
-  mode: 'contactos',         // visitas | contactos (arranca en contactos porque tus KPIs lo usan)
+  mode: 'contactos',
   periodMode: 'semana',      // semana | mes
   dispSumCacheContact: new Map(),
   respFilter: '',
@@ -245,13 +245,6 @@ async function getDisponibilidades(params = {}){
   const json = await res.json();
   return Array.isArray(json) ? json : (json.items || []);
 }
-const normId = (v) => {
-  if (!v) return '';
-  if (typeof v === 'string') return v;
-  if (typeof v === 'number') return String(v);
-  if (typeof v === 'object') { if (v.$oid) return v.$oid; if (v.oid) return v.oid; if (typeof v.toString === 'function') return v.toString(); }
-  return String(v);
-};
 function providerKeyLooksValid(k){ return !!(k && typeof k === 'string' && k.trim().length >= 3); }
 
 /* ===== CONTACTOS: sumar disponibilidades ===== */
@@ -278,7 +271,7 @@ async function sumDisponibilidadesContacto(c){
   return total;
 }
 
-/* ======================= Agregaciones (KPIs) ======================= */
+/* ======================= Agregaciones ======================= */
 function filterByResp(items, getResp, resp){
   if (!resp) return items;
   return items.filter(it => (getResp(it) || '').trim() === resp);
@@ -355,7 +348,6 @@ function ensureHeadColumns(tbody){
     ? `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons conversadas</th><th>Fecha prox.</th><th>Estado</th>`
     : `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons producidas</th><th>Responsable</th>`;
 }
-
 function renderTablaVisitas(visitas){
   const tbody = $('#resumen_table_body'); if (!tbody) return;
   ensureHeadColumns(tbody);
@@ -393,7 +385,6 @@ function renderTablaVisitas(visitas){
   });
   ensureFullWidthTable();
 }
-
 async function renderTablaContactos(contactos){
   const tbody = $('#resumen_table_body'); if (!tbody) return;
   ensureHeadColumns(tbody);
@@ -440,12 +431,12 @@ function ensureFullWidthTable(){
   }
 }
 
-/* ======================= Controles ======================= */
+/* ======================= Controles (Semana/Mes/Resp) ======================= */
 function ensureModeSwitcher(){
   const toolbar = document.querySelector('.resumen-toolbar');
   if (!toolbar) return;
 
-  // Segmentado Semana/Mes (ya existe en HTML): sólo wire
+  // Segmentado Semana/Mes (ya existe en HTML): sólo wiring
   const seg = document.getElementById('resumen_period');
   if (seg && !seg.__wired){
     seg.__wired = true;
@@ -456,15 +447,14 @@ function ensureModeSwitcher(){
       if (_cache.periodMode === period) return;
       _cache.periodMode = period;
       seg.querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b===btn));
-      // mostrar/ocultar selects
       document.getElementById('resumen_semana').parentElement.style.display = (period==='semana')?'':'none';
       document.getElementById('resumen_mes').parentElement.style.display    = (period==='mes')?'':'none';
-      document.getElementById('resumen_titulo').textContent = (period==='semana') ? 'Informe semanal' : 'Informe mensual';
+      document.getElementById('resumen_titulo')?.textContent = (period==='semana') ? 'Informe semanal' : 'Informe mensual';
       await refreshResumen();
     });
   }
 
-  // Filtro Responsable PG (ya existe en HTML): poblar
+  // Poblar responsables (una vez)
   const selResp = document.getElementById('resumen_resp');
   if (selResp && !selResp.__filled){
     selResp.__filled = true;
@@ -477,11 +467,11 @@ function ensureModeSwitcher(){
       const r = c?.responsable || c?.contactoResponsable || c?.responsablePG;
       if (r) set.add(String(r));
     });
-    const opts = Array.from(set).sort();
-    opts.forEach(o=>{ const op = document.createElement('option'); op.value = o; op.textContent = o; selResp.appendChild(op); });
+    Array.from(set).sort().forEach(o=>{
+      const op = document.createElement('option'); op.value = o; op.textContent = o; selResp.appendChild(op);
+    });
   }
 
-  // Wire selectores
   const selSemana = document.getElementById('resumen_semana');
   const selMes    = document.getElementById('resumen_mes');
 
@@ -489,7 +479,7 @@ function ensureModeSwitcher(){
   if (selMes && !selMes.__wired){ selMes.__wired = true; selMes.addEventListener('change', () => refreshResumen()); }
   if (selResp && !selResp.__wired){ selResp.__wired = true; selResp.addEventListener('change', () => { _cache.respFilter = selResp.value || ''; refreshResumen(); }); }
 
-  // Estado inicial de visibilidad
+  // Visibilidad inicial
   const period = _cache.periodMode;
   document.getElementById('resumen_semana').parentElement.style.display = (period==='semana')?'':'none';
   document.getElementById('resumen_mes').parentElement.style.display    = (period==='mes')?'':'none';
@@ -595,3 +585,4 @@ export async function refreshResumen(){
 if (document.getElementById('tab-resumen')) {
   initResumenSemanalTab().catch(err => console.error('[resumen] init error', err));
 }
+
