@@ -21,21 +21,18 @@
   <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1">
   <link rel="stylesheet" href="/js/abastecimiento/visitas/fotos/styles.css">
 
-  <!-- Ajustes mínimos para semana actual y estrella de proveedor nuevo -->
+  <!-- Ajustes mínimos -->
   <style>
     .week-badge{font-weight:700}
     .week-badge span{font-size:14px}
     @media(min-width:992px){ .week-badge span{font-size:16px} }
-
-    /* Estrellita de “proveedor nuevo” (se usa desde JS en el Resumen) */
     .nuevo-star{
       display:inline-flex; align-items:center; justify-content:center;
       width:18px; height:18px; border-radius:50%;
-      font-size:12px; line-height:1; margin-left:6px;
-      vertical-align:middle;
+      font-size:12px; line-height:1; margin-left:6px; vertical-align:middle;
     }
-    .nuevo-star.yellow{ background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; } /* amarillo */
-    .nuevo-star.green{  background:#DCFCE7; color:#166534; border:1px solid #BBF7D0; } /* verde */
+    .nuevo-star.yellow{ background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; }
+    .nuevo-star.green{  background:#DCFCE7; color:#166534; border:1px solid #BBF7D0; }
   </style>
 </head>
 <body class="mmpp-layout no-nav">
@@ -71,14 +68,12 @@
     <!-- EMPRESAS -->
     <section id="tab-contactos" class="col s12">
       <div class="mmpp-card" style="margin-bottom:12px">
-        <!-- Toolbar -->
         <div class="table-toolbar" style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
           <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
             <button id="btnOpenContactoModal" class="mmpp-add">
               <i class="material-icons left" style="font-size:18px">record_voice_over</i> Registrar contacto
             </button>
           </div>
-          <!-- Filtros + buscador -->
           <div id="filtrosContactos" class="filtros-row" style="min-width:620px;flex:1">
             <select id="fltSemana" class="browser-default modern-select" aria-label="Filtrar por semana">
               <option value="">Semana…</option>
@@ -96,7 +91,6 @@
           </div>
         </div>
 
-        <!-- Tabla Contactos -->
         <div class="mmpp-table-wrap">
           <table id="tablaContactos" class="display mmpp" style="width:100%">
             <thead>
@@ -123,7 +117,6 @@
           Revisión, filtros y exportación de visitas (la creación sigue en Contactos).
         </div>
 
-        <!-- Toolbar Visitas -->
         <div class="visitas-toolbar">
           <div id="visitas-filtros-bar" class="visitas-filtros">
             <div class="fld">
@@ -279,7 +272,7 @@
             </div>
           </div>
 
-          <!-- NUEVO: Próximo paso + Fecha próximo paso (igual que en Visitas) -->
+          <!-- NUEVO: Próximo paso + Fecha próximo paso -->
           <div class="row">
             <div class="input-field col s6">
               <label for="contacto_proximoPaso" class="active">Próximo paso</label>
@@ -344,7 +337,6 @@
               </div>
             </div>
           </div>
-          <!-- /DISPONIBILIDAD -->
         </form>
       </div>
 
@@ -456,25 +448,21 @@
     <div id="tab-resumen" class="section">
       <div class="resumen-toolbar" style="display:flex; gap:12px; align-items:center; justify-content:space-between; margin:8px 0; flex-wrap:wrap">
         <div style="display:flex; gap:10px; align-items:center;">
-          <!-- Selector Semana/Mes -->
           <div class="segmented" id="resumen_period" aria-label="Tipo de período">
             <button data-period="semana" class="is-active" type="button">Semana</button>
             <button data-period="mes" type="button">Mes</button>
           </div>
 
-          <!-- Semana -->
           <div>
             <label class="grey-text text-darken-1" for="resumen_semana" style="font-size:12px">Semana</label>
             <select id="resumen_semana" class="browser-default" style="min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Seleccionar semana"></select>
           </div>
 
-          <!-- Mes -->
           <div>
             <label class="grey-text text-darken-1" for="resumen_mes" style="font-size:12px">Mes</label>
             <select id="resumen_mes" class="browser-default" style="min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Seleccionar mes (YYYY-MM)"></select>
           </div>
 
-          <!-- Responsable PG -->
           <div>
             <label class="grey-text text-darken-1" for="resumen_resp" style="font-size:12px">Responsable PG</label>
             <select id="resumen_resp" class="browser-default" style="min-width:180px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Filtrar por Responsable PG">
@@ -490,7 +478,7 @@
       </div>
 
       <div id="resumen_print_area">
-        <h5 style="margin:4px 0">Informe semanal</h5>
+        <h5 id="resumen_titulo" style="margin:4px 0">Informe semanal</h5>
         <div id="resumen_kpis"></div>
         <div class="row">
           <div class="col s12 m7">
@@ -542,6 +530,6 @@
 </script>
 
 <!-- Resumen semanal (cache-bust actualizado) -->
-<script type="module" src="../../../js/abastecimiento/contactos/resumen-semanal.js?v=3"></script>
+<script type="module" src="../../../js/abastecimiento/contactos/resumen-semanal.js?v=9"></script>
 </body>
 </html>
