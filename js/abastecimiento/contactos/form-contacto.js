@@ -518,8 +518,14 @@ export function setupFormulario() {
 
     if (!hasEmpresa) { clearCentroHidden(); resetSelectCentros(); }
 
-    // Otros campos
-    const tieneMMPP         = $('#tieneMMPP')?.value || '';
+    // ===== Campos NUEVOS =====
+    const localidad           = $('#contactoLocalidad')?.value?.trim() || '';
+    const biomasaVal          = $('#contactoBiomasa')?.value || '';        // '' | 'con' | 'sin'
+    const proveedorNuevoBool  = !!$('#contactoProveedorNuevo')?.checked;
+    const proximoPaso         = $('#contacto_proximoPaso')?.value || '';
+    const proximoPasoFechaRaw = $('#contacto_proximoPasoFecha')?.value || ''; // YYYY-MM-DD o ''
+
+    // Otros campos existentes
     const vendeActualmenteA = $('#vendeActualmenteA')?.value?.trim() || '';
     const notas             = $('#notasContacto')?.value?.trim() || '';
     const responsablePG     = $('#contactoResponsable')?.value || '';
@@ -531,13 +537,21 @@ export function setupFormulario() {
     const centroComuna    = hasEmpresa ? (getVal(['centroComuna']) || comunaPorCodigo(centroCodigo) || null) : null;
     const centroHectareas = hasEmpresa ? (getVal(['centroHectareas']) || null) : null;
 
+    // Compatibilidad: mapear biomasa → tieneMMPP/resultado
+    let tieneMMPP = '';
     let resultado = '';
-    if (tieneMMPP === 'Sí') resultado = 'Disponible';
-    else if (tieneMMPP === 'No') resultado = 'No disponible';
+    if (biomasaVal === 'con') { tieneMMPP = 'Sí';  resultado = 'Disponible'; }
+    if (biomasaVal === 'sin') { tieneMMPP = 'No';  resultado = 'No disponible'; }
 
     const payload = {
       proveedorKey, proveedorNombre,
-      resultado, tieneMMPP, vendeActualmenteA, notas,
+      resultado, tieneMMPP,
+      biomasa: biomasaVal,                 // <<< NUEVO
+      localidad,                           // <<< NUEVO
+      proveedorNuevo: proveedorNuevoBool,  // <<< NUEVO (boolean)
+      proximoPaso,                         // <<< NUEVO
+      proximoPasoFecha: proximoPasoFechaRaw || null, // <<< NUEVO
+      vendeActualmenteA, notas,
       centroId, centroCodigo, centroComuna, centroHectareas,
       contactoNombre, contactoTelefono, contactoEmail,
       responsablePG
@@ -617,6 +631,15 @@ export function setupFormulario() {
       clearCentroHidden();
       clearProveedorHidden();
       state.editId = null;
+
+      // limpiar extras nuevos
+      const n1 = document.getElementById('contactoBiomasa'); if (n1) n1.value = '';
+      const n2 = document.getElementById('contactoLocalidad'); if (n2) n2.value = '';
+      const n3 = document.getElementById('contactoProveedorNuevo'); if (n3) n3.checked = false;
+      const n4 = document.getElementById('contacto_proximoPaso'); if (n4) n4.value = '';
+      const n5 = document.getElementById('contacto_proximoPasoFecha'); if (n5) n5.value = '';
+      M.updateTextFields?.();
+
       modalInst?.close();
     } catch (err) {
       console.error('[form-contacto] ERROR:', err?.message || err);
@@ -649,13 +672,23 @@ export function abrirEdicion(c) {
     resetSelectCentros(); clearCentroHidden();
   }
 
-  if ($('#tieneMMPP')) $('#tieneMMPP').value = c.tieneMMPP || '';
+  // Existentes
   if ($('#vendeActualmenteA')) $('#vendeActualmenteA').value = c.vendeActualmenteA || '';
   if ($('#notasContacto')) $('#notasContacto').value = c.notas || '';
   if ($('#contactoNombre')) $('#contactoNombre').value = c.contactoNombre || '';
   if ($('#contactoTelefono')) $('#contactoTelefono').value = c.contactoTelefono || '';
   if ($('#contactoEmail')) $('#contactoEmail').value = c.contactoEmail || '';
   if ($('#contactoResponsable')) $('#contactoResponsable').value = c.responsablePG || '';
+
+  // NUEVOS
+  if ($('#contactoLocalidad')) $('#contactoLocalidad').value = c.localidad || '';
+  if ($('#contactoBiomasa'))   $('#contactoBiomasa').value   = (c.biomasa || (c.tieneMMPP === 'Sí' ? 'con' : (c.tieneMMPP === 'No' ? 'sin' : ''))) || '';
+  if ($('#contactoProveedorNuevo')) $('#contactoProveedorNuevo').checked = !!c.proveedorNuevo;
+  if ($('#contacto_proximoPaso')) $('#contacto_proximoPaso').value = c.proximoPaso || '';
+  if ($('#contacto_proximoPasoFecha')) {
+    const f = (c.proximoPasoFecha || '').slice(0,10);
+    $('#contacto_proximoPasoFecha').value = f || '';
+  }
 
   const hoy = new Date();
   const anioEl = document.getElementById('asigAnio');
@@ -709,6 +742,14 @@ export function prepararNuevo() {
   state.dispEditId = null;
   const form = $('#formContacto'); form?.reset();
   clearProveedorHidden(); resetSelectCentros(); clearCentroHidden();
+
+  // limpiar extras nuevos
+  const n1 = document.getElementById('contactoBiomasa'); if (n1) n1.value = '';
+  const n2 = document.getElementById('contactoLocalidad'); if (n2) n2.value = '';
+  const n3 = document.getElementById('contactoProveedorNuevo'); if (n3) n3.checked = false;
+  const n4 = document.getElementById('contacto_proximoPaso'); if (n4) n4.value = '';
+  const n5 = document.getElementById('contacto_proximoPasoFecha'); if (n5) n5.value = '';
+
   const hoy = new Date();
   const anioEl = document.getElementById('asigAnio');
   const mesEl = document.getElementById('asigMes');
@@ -717,4 +758,6 @@ export function prepararNuevo() {
   const box = document.getElementById('asigHist');
   if (box) box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
   if ($('#contactoResponsable')) $('#contactoResponsable').value = '';
+
+  M.updateTextFields?.();
 }
