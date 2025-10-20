@@ -34,7 +34,7 @@
         <div class="mmpp-badge">
           <i class="material-icons" style="font-size:18px">inventory_2</i> Gestión unificada
         </div>
-        <div class="mmpp-badge week-badge" id="badgeSemanaActual">
+        <div class="mmpp-badge week-badge" id="badgeSemanaActual" aria-live="polite">
           <i class="material-icons" style="font-size:18px">event</i>
           <span>Semana —</span>
         </div>
@@ -182,7 +182,7 @@
     </section>
 
     <!-- MODAL CONTACTO -->
-    <div id="modalContacto" class="modal">
+    <div id="modalContacto" class="modal" aria-hidden="true">
       <div class="modal-content">
         <h5>Registrar Contacto</h5>
 
@@ -211,7 +211,7 @@
           <div class="row">
             <div class="input-field col s6">
               <label for="contactoResponsable" class="active">Responsable PG</label>
-              <select id="contactoResponsable" class="browser-default modern-select">
+              <select id="contactoResponsable" class="browser-default modern-select" aria-label="Responsable PG">
                 <option value="">—</option>
                 <option value="Claudio Alba">Claudio Alba</option>
                 <option value="Patricio Alvarez">Patricio Alvarez</option>
@@ -247,7 +247,7 @@
             </div>
             <div class="input-field col s4">
               <label for="contactoBiomasa" class="active">Biomasa</label>
-              <select id="contactoBiomasa" class="browser-default modern-select">
+              <select id="contactoBiomasa" class="browser-default modern-select" aria-label="Biomasa">
                 <option value="">Seleccione…</option>
                 <option value="con">Con producto</option>
                 <option value="sin">Sin producto</option>
@@ -266,7 +266,7 @@
           <div class="row">
             <div class="input-field col s6">
               <label for="contacto_proximoPaso" class="active">Próximo paso</label>
-              <select id="contacto_proximoPaso" class="browser-default modern-select">
+              <select id="contacto_proximoPaso" class="browser-default modern-select" aria-label="Próximo paso">
                 <option value="" selected>Seleccione…</option>
                 <option value="Programar nueva visita">Nueva visita</option>
                 <option value="Tomar muestras">Tomar muestras</option>
@@ -277,7 +277,7 @@
               </select>
             </div>
             <div class="input-field col s6">
-              <input type="date" id="contacto_proximoPasoFecha">
+              <input type="date" id="contacto_proximoPasoFecha" aria-label="Fecha exacta del próximo paso">
               <label for="contacto_proximoPasoFecha" class="active">Fecha exacta del próximo paso</label>
             </div>
           </div>
@@ -295,7 +295,7 @@
 
             <div class="col s12 m4">
               <div class="input-field">
-                <select id="asigMes">
+                <select id="asigMes" aria-label="Mes de asignación">
                   <option value="" selected>Mes…</option>
                   <option value="1">Enero</option>
                   <option value="2">Febrero</option>
@@ -362,7 +362,7 @@
             </div>
             <div class="input-field col s4">
               <label for="visita_centroId" class="active">Centro</label>
-              <select id="visita_centroId" class="browser-default">
+              <select id="visita_centroId" class="browser-default" aria-label="Centro visitado">
                 <option value="">Centro visitado (opcional)</option>
               </select>
             </div>
@@ -375,7 +375,7 @@
           <div class="row">
             <div class="input-field col s4">
               <label for="visita_enAgua" class="active">Muestra</label>
-              <select id="visita_enAgua" class="browser-default">
+              <select id="visita_enAgua" class="browser-default" aria-label="¿Toma de Muestras?">
                 <option value="">¿Toma de Muestras?</option>
                 <option>Sí</option>
                 <option>No</option>
@@ -387,7 +387,7 @@
             </div>
             <div class="input-field col s4">
               <label for="visita_estado" class="active">Próximo paso</label>
-              <select id="visita_estado" class="browser-default">
+              <select id="visita_estado" class="browser-default" aria-label="Próximo paso">
                 <option value="Programar nueva visita" selected>Nueva visita</option>
                 <option value="Tomar muestras">Tomar muestras</option>
                 <option value="Negociar precio/volumen">Negociar precio/volumen</option>
@@ -400,7 +400,7 @@
 
           <div class="row">
             <div class="input-field col s4">
-              <input type="date" id="visita_proximoPasoFecha">
+              <input type="date" id="visita_proximoPasoFecha" aria-label="Fecha exacta del próximo paso">
               <label for="visita_proximoPasoFecha" class="active">Fecha exacta del próximo paso</label>
             </div>
           </div>
@@ -437,11 +437,35 @@
 
     <!-- ====================== TAB: Resumen semanal ====================== -->
     <div id="tab-resumen" class="section">
-      <div class="resumen-toolbar" style="display:flex; gap:12px; align-items:center; justify-content:space-between; margin:8px 0">
-        <div>
-          <label class="grey-text text-darken-1" style="font-size:12px">Semana</label>
-          <select id="resumen_semana" class="browser-default" style="min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff"></select>
+      <div class="resumen-toolbar" style="display:flex; gap:12px; align-items:center; justify-content:space-between; margin:8px 0; flex-wrap:wrap">
+        <div style="display:flex; gap:10px; align-items:center;">
+          <!-- NUEVO: Selector Semana/Mes -->
+          <div class="segmented" id="resumen_period" aria-label="Tipo de período">
+            <button data-period="semana" class="is-active" type="button">Semana</button>
+            <button data-period="mes" type="button">Mes</button>
+          </div>
+
+          <!-- Semana -->
+          <div>
+            <label class="grey-text text-darken-1" for="resumen_semana" style="font-size:12px">Semana</label>
+            <select id="resumen_semana" class="browser-default" style="min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Seleccionar semana"></select>
+          </div>
+
+          <!-- NUEVO: Mes -->
+          <div>
+            <label class="grey-text text-darken-1" for="resumen_mes" style="font-size:12px">Mes</label>
+            <select id="resumen_mes" class="browser-default" style="min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Seleccionar mes (YYYY-MM)"></select>
+          </div>
+
+          <!-- NUEVO: Responsable PG -->
+          <div>
+            <label class="grey-text text-darken-1" for="resumen_resp" style="font-size:12px">Responsable PG</label>
+            <select id="resumen_resp" class="browser-default" style="min-width:180px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Filtrar por Responsable PG">
+              <option value="">Responsable…</option>
+            </select>
+          </div>
         </div>
+
         <div>
           <a id="resumen_copy" class="btn-flat waves-effect">Copiar</a>
           <a id="resumen_print" class="btn waves-effect">Imprimir / PDF</a>
@@ -453,7 +477,7 @@
         <div id="resumen_kpis"></div>
         <div class="row">
           <div class="col s12 m7">
-            <table class="striped">
+            <table class="striped" aria-label="Tabla de resumen">
               <thead>
                 <tr>
                   <th>Fecha</th>
@@ -504,4 +528,3 @@
 <script type="module" src="../../../js/abastecimiento/contactos/resumen-semanal.js?v=1"></script>
 </body>
 </html>
-
