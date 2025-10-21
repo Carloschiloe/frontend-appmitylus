@@ -228,7 +228,7 @@ async function deleteDisponibilidad(id){
 
 /* ---------- Render helpers (grilla en el modal) ---------- */
 function renderAsignaciones(list){
-  if(!list?.length) return '<span class="grey-text">Sin disponibilidades registradas.</span>';
+  if(!list || !list.length) return '<span class="grey-text">Sin disponibilidades registradas.</span>';
   const rows = list.slice().sort((a,b)=>((b.anio||0)*100+b.mes)-((a.anio||0)*100+a.mes))
     .map(a=>{
       const rowId = (a._id || a.id || '');
@@ -259,9 +259,9 @@ function renderAsignaciones(list){
 async function pintarHistorialEdicion(contacto){
   const box = document.getElementById('asigHist'); if(!box) return;
 
-  const proveedorKey = contacto?.proveedorKey || (contacto?.proveedorNombre ? slug(contacto.proveedorNombre) : '');
-  const centroId = contacto?.centroId || null;
-  const contactoId = contacto?._id || contacto?.contactoId || null;
+  const proveedorKey = (contacto && (contacto.proveedorKey || (contacto.proveedorNombre ? slug(contacto.proveedorNombre) : ''))) || '';
+  const centroId = (contacto && contacto.centroId) || null;
+  const contactoId = (contacto && (contacto._id || contacto.contactoId)) || null;
 
   if (!proveedorKey && !centroId && !contactoId) {
     box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
@@ -282,7 +282,7 @@ async function pintarHistorialEdicion(contacto){
     state._ultimaDispLista = lista;
     box.innerHTML = renderAsignaciones(lista);
   } catch(e){
-    console.error(e);
+    try { console.error(e); } catch(_) {}
     state._ultimaDispLista = [];
     box.innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
   }
@@ -294,10 +294,12 @@ function clearProveedorHidden(){ setVal(['proveedorKey'],''); setVal(['proveedor
 
 /* ================== Detalle (modal del ojo) ================== */
 function comunasDelProveedor(proveedorKey) {
-  const key = proveedorKey?.length ? proveedorKey : null;
+  const key = (proveedorKey && proveedorKey.length) ? proveedorKey : null;
   const comunas = new Set();
-  for (const c of state.listaCentros || []) {
-    const k = c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '');
+  const lista = state.listaCentros || [];
+  for (let i=0; i<lista.length; i++) {
+    const c = lista[i];
+    const k = (c.proveedorKey && c.proveedorKey.length) ? c.proveedorKey : slug(c.proveedor || '');
     if (!key || k === key) {
       const comuna = (c.comuna || '').trim();
       if (comuna) comunas.add(comuna);
@@ -307,7 +309,7 @@ function comunasDelProveedor(proveedorKey) {
 }
 
 function miniTimelineHTML(visitas = []) {
-  const arr = Array.isArray(visitas) ? visitas : (visitas?.items || []);
+  const arr = Array.isArray(visitas) ? visitas : ((visitas && visitas.items) || []);
   if (!arr.length) return '<div class="text-soft">Sin visitas registradas</div>';
   const filas = arr.slice(0, 3).map((v) => {
     const code = v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '') || '-';
@@ -325,7 +327,7 @@ function miniTimelineHTML(visitas = []) {
 }
 
 function renderAsignacionesSimple(list){
-  if(!list?.length) return '<span class="grey-text">Sin disponibilidades registradas.</span>';
+  if(!list || !list.length) return '<span class="grey-text">Sin disponibilidades registradas.</span>';
   const rows = list.map(a => `
     <tr>
       <td>${MES[a.mes]||a.mes} ${a.anio||''}</td>
@@ -335,7 +337,7 @@ function renderAsignacionesSimple(list){
     </tr>
   `).join('');
   return `
-    <table className="striped highlight" style="margin:6px 0">
+    <table class="striped highlight" style="margin:6px 0">
       <thead>
         <tr><th>Mes</th><th class="right-align">Tons</th><th>Estado</th><th class="right-align" style="width:100px">Opciones</th></tr>
       </thead>
@@ -413,8 +415,11 @@ export async function abrirDetalleContacto(c) {
     if (cont) cont.innerHTML = '<span class="red-text">No se pudo cargar disponibilidad</span>';
   }
 
-  $('#btnNuevaVisita')?.addEventListener('click', () => abrirModalVisita(c));
-  (M.Modal.getInstance(document.getElementById('modalDetalleContacto')) || M.Modal.init(document.getElementById('modalDetalleContacto'))).open();
+  const btnNV = document.getElementById('btnNuevaVisita');
+  if (btnNV) btnNV.addEventListener('click', function(){ abrirModalVisita(c); });
+
+  const md = document.getElementById('modalDetalleContacto');
+  (M.Modal.getInstance(md) || M.Modal.init(md)).open();
 }
 
 /* ---------- Setup ---------- */
@@ -430,30 +435,33 @@ export function setupFormulario() {
       const m = String(val || '').trim().match(/\b(\d{4,7})\b/);
       if (m) seleccionarCentroPorCodigo(m[1]);
     };
-    provInput.addEventListener('input', () => tryCode(provInput.value));
-    provInput.addEventListener('change', () => tryCode(provInput.value));
+    provInput.addEventListener('input', function(){ tryCode(provInput.value); });
+    provInput.addEventListener('change', function(){ tryCode(provInput.value); });
   }
 
-  document.addEventListener('click', (e)=>{
-    const a = e.target.closest?.('a.icon-action.ver'); if(!a) return;
+  document.addEventListener('click', function(e){
+    const a = e.target && e.target.closest ? e.target.closest('a.icon-action.ver') : null;
+    if(!a) return;
     const id = a.dataset.id;
     state.contactoActual = (state.contactosGuardados||[]).find(x=>String(x._id)===String(id)) || null;
   }, true);
 
   const selCentro = $('#selectCentro');
-  selCentro?.addEventListener('change', () => syncHiddenFromSelect(selCentro));
+  if (selCentro) selCentro.addEventListener('change', function(){ syncHiddenFromSelect(selCentro); });
 
-  document.getElementById('asigHist')?.addEventListener('click', async (e)=>{
-    const btn = e.target.closest('.mini-actions a'); if(!btn) return;
+  const asigHist = document.getElementById('asigHist');
+  if (asigHist) asigHist.addEventListener('click', async function(e){
+    const btn = e.target && e.target.closest ? e.target.closest('.mini-actions a') : null;
+    if(!btn) return;
     e.preventDefault();
 
-    let id = btn.dataset.id?.trim() || '';
+    let id = (btn.dataset.id || '').trim();
     if (!id || !isValidObjectId(id)) {
       const mk = btn.dataset.meskey || '';
       const contacto = state.editingContacto || state.contactoActual || {};
-      const proveedorKey = contacto?.proveedorKey || (contacto?.proveedorNombre ? slug(contacto.proveedorNombre) : '');
-      const centroId = contacto?.centroId || null;
-      const contactoId = contacto?._id || contacto?.contactoId || null;
+      const proveedorKey = (contacto && (contacto.proveedorKey || (contacto.proveedorNombre ? slug(contacto.proveedorNombre) : ''))) || '';
+      const centroId = (contacto && contacto.centroId) || null;
+      const contactoId = (contacto && (contacto._id || contacto.contactoId)) || null;
       if (mk) {
         try {
           const resolved = await resolverDispIdPorMesKey({ contactoId, proveedorKey, centroId, mesKey: mk });
@@ -463,7 +471,7 @@ export function setupFormulario() {
     }
 
     if (!id || !isValidObjectId(id)) {
-      M.toast?.({ html:'No hay ID válido para esta fila', classes:'red' });
+      if (typeof M !== 'undefined' && M.toast) M.toast({ html:'No hay ID válido para esta fila', classes:'red' });
       return;
     }
 
@@ -473,10 +481,10 @@ export function setupFormulario() {
         await deleteDisponibilidad(id);
         const c = state.editingContacto || state.contactoActual || {};
         await pintarHistorialEdicion(c);
-        M.toast?.({ html:'Disponibilidad eliminada', classes:'teal' });
+        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'Disponibilidad eliminada', classes:'teal' });
       } catch (err) {
-        console.error(err);
-        M.toast?.({ html:'No se pudo eliminar', classes:'red' });
+        try { console.error(err); } catch(_) {}
+        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'No se pudo eliminar', classes:'red' });
       }
       return;
     }
@@ -489,12 +497,12 @@ export function setupFormulario() {
       if (mesEl)  mesEl.value  = btn.dataset.mes  || '';
       if (tonsEl) tonsEl.value = btn.dataset.tons || '';
       state.dispEditId = id;
-      M.toast?.({ html:'Editando disponibilidad: recuerda presionar Guardar', displayLength: 2200 });
+      if (typeof M !== 'undefined' && M.toast) M.toast({ html:'Editando disponibilidad: recuerda presionar Guardar', displayLength: 2200 });
       return;
     }
   });
 
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener('submit', async function(e) {
     e.preventDefault();
 
     // Empresa / proveedor
@@ -505,33 +513,39 @@ export function setupFormulario() {
     const hasEmpresa      = !!(proveedorKey && proveedorNombre);
 
     // Persona de contacto
-    const contactoNombre   = $('#contactoNombre')?.value?.trim() || '';
-    const contactoTelefono = $('#contactoTelefono')?.value?.trim() || '';
-    const contactoEmail    = $('#contactoEmail')?.value?.trim() || '';
+    const contactoNombre   = (document.getElementById('contactoNombre') && document.getElementById('contactoNombre').value || '').trim();
+    const contactoTelefono = (document.getElementById('contactoTelefono') && document.getElementById('contactoTelefono').value || '').trim();
+    const contactoEmail    = (document.getElementById('contactoEmail') && document.getElementById('contactoEmail').value || '').trim();
     const hasPersona       = !!contactoNombre && (!!contactoTelefono || !!contactoEmail);
 
     if (!hasEmpresa && !hasPersona) {
-      M.toast?.({ html: 'Ingresa una empresa o una persona (nombre + teléfono o email).', displayLength: 2800 });
-      ($('#contactoNombre')?.focus?.());
+      if (typeof M !== 'undefined' && M.toast) M.toast({ html: 'Ingresa una empresa o una persona (nombre + teléfono o email).', displayLength: 2800 });
+      const cn = document.getElementById('contactoNombre'); if (cn && cn.focus) cn.focus();
       return;
     }
 
     if (!hasEmpresa) { clearCentroHidden(); resetSelectCentros(); }
 
     // ===== Campos NUEVOS =====
-    const localidad           = $('#contactoLocalidad')?.value?.trim() || '';
-    const biomasaVal          = $('#contactoBiomasa')?.value || '';        // '' | 'con' | 'sin'
-    const proveedorNuevoBool  = !!$('#contactoProveedorNuevo')?.checked;
-    const proximoPaso         = $('#contacto_proximoPaso')?.value || '';
-    const proximoPasoFechaRaw = $('#contacto_proximoPasoFecha')?.value || ''; // YYYY-MM-DD o ''
+    const localidadEl = document.getElementById('contactoLocalidad');
+    const biomasaEl   = document.getElementById('contactoBiomasa');
+    const provNuevoEl = document.getElementById('contactoProveedorNuevo');
+    const proxPasoEl  = document.getElementById('contacto_proximoPaso');
+    const proxFechaEl = document.getElementById('contacto_proximoPasoFecha');
+
+    const localidad           = (localidadEl && localidadEl.value || '').trim();
+    const biomasaVal          = biomasaEl ? (biomasaEl.value || '') : ''; // '' | 'con' | 'sin'
+    const proveedorNuevoBool  = !!(provNuevoEl && provNuevoEl.checked);
+    const proximoPaso         = proxPasoEl ? (proxPasoEl.value || '') : '';
+    const proximoPasoFechaRaw = proxFechaEl ? (proxFechaEl.value || '') : ''; // YYYY-MM-DD o ''
 
     // Otros campos existentes
-    const vendeActualmenteA = $('#vendeActualmenteA')?.value?.trim() || '';
-    const notas             = $('#notasContacto')?.value?.trim() || '';
-    const responsablePG     = $('#contactoResponsable')?.value || '';
+    const vendeActualmenteA = (document.getElementById('vendeActualmenteA') && document.getElementById('vendeActualmenteA').value || '').trim();
+    const notas             = (document.getElementById('notasContacto') && document.getElementById('notasContacto').value || '').trim();
+    const responsablePG     = (document.getElementById('contactoResponsable') && document.getElementById('contactoResponsable').value) || '';
 
     // Centro (opcional)
-    syncHiddenFromSelect(selCentro);
+    if (selCentro) syncHiddenFromSelect(selCentro);
     const centroId        = hasEmpresa ? (getVal(['centroId']) || null) : null;
     const centroCodigo    = hasEmpresa ? (getVal(['centroCodigo']) || null) : null;
     const centroComuna    = hasEmpresa ? (getVal(['centroComuna']) || comunaPorCodigo(centroCodigo) || null) : null;
@@ -546,11 +560,11 @@ export function setupFormulario() {
     const payload = {
       proveedorKey, proveedorNombre,
       resultado, tieneMMPP,
-      biomasa: biomasaVal,                 // <<< NUEVO
-      localidad,                           // <<< NUEVO
-      proveedorNuevo: proveedorNuevoBool,  // <<< NUEVO (boolean)
-      proximoPaso,                         // <<< NUEVO
-      proximoPasoFecha: proximoPasoFechaRaw || null, // <<< NUEVO
+      biomasa: biomasaVal,
+      localidad,
+      proveedorNuevo: proveedorNuevoBool,
+      proximoPaso,
+      proximoPasoFecha: proximoPasoFechaRaw || null,
       vendeActualmenteA, notas,
       centroId, centroCodigo, centroComuna, centroHectareas,
       contactoNombre, contactoTelefono, contactoEmail,
@@ -558,9 +572,9 @@ export function setupFormulario() {
     };
 
     // Campos de disponibilidad (crear o patch)
-    const asigAnio    = parseInt(document.getElementById('asigAnio')?.value || '', 10);
-    const asigMes     = parseInt(document.getElementById('asigMes')?.value  || '', 10);
-    const asigTonsNum = Number(document.getElementById('asigTons')?.value  || NaN);
+    const asigAnio    = parseInt((document.getElementById('asigAnio') && document.getElementById('asigAnio').value) || '', 10);
+    const asigMes     = parseInt((document.getElementById('asigMes') && document.getElementById('asigMes').value) || '', 10);
+    const asigTonsNum = Number((document.getElementById('asigTons') && document.getElementById('asigTons').value) || NaN);
     const tieneDispCampos = Number.isInteger(asigAnio) && Number.isInteger(asigMes) &&
                             Number.isFinite(asigTonsNum) && asigTonsNum > 0;
 
@@ -577,7 +591,7 @@ export function setupFormulario() {
 
       const contactoIdDoc = esUpdate
         ? editId
-        : (created?.item?._id || created?.item?.id || created?._id || created?.id || null);
+        : ((created && created.item && (created.item._id || created.item.id)) || (created && (created._id || created.id)) || null);
 
       if (tieneDispCampos) {
         const dispCommon = {
@@ -599,7 +613,7 @@ export function setupFormulario() {
             estado: 'disponible'
           });
           state.dispEditId = null;
-          M.toast?.({ html: 'Disponibilidad actualizada', classes: 'teal' });
+          if (typeof M !== 'undefined' && M.toast) M.toast({ html: 'Disponibilidad actualizada', classes: 'teal' });
         } else {
           await postDisponibilidad({
             ...dispCommon,
@@ -611,7 +625,7 @@ export function setupFormulario() {
             tons: asigTonsNum,
             estado: 'disponible'
           });
-          M.toast?.({ html: 'Disponibilidad registrada', classes: 'teal' });
+          if (typeof M !== 'undefined' && M.toast) M.toast({ html: 'Disponibilidad registrada', classes: 'teal' });
         }
       }
 
@@ -624,7 +638,7 @@ export function setupFormulario() {
         : (state.contactoActual || {});
       await pintarHistorialEdicion({ ...c, _id: (state.editId || contactoIdDoc) });
 
-      M.toast?.({ html: state.editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
+      if (typeof M !== 'undefined' && M.toast) M.toast({ html: state.editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
 
       const modalInst = M.Modal.getInstance(document.getElementById('modalContacto'));
       form.reset();
@@ -632,27 +646,28 @@ export function setupFormulario() {
       clearProveedorHidden();
       state.editId = null;
 
-    // limpiar extras nuevos
-var n1 = document.getElementById('contactoBiomasa');        if (n1) n1.value = '';
-var n2 = document.getElementById('contactoLocalidad');      if (n2) n2.value = '';
-var n3 = document.getElementById('contactoProveedorNuevo'); if (n3) n3.checked = false;
-var n4 = document.getElementById('contacto_proximoPaso');   if (n4) n4.value = '';
-var n5 = document.getElementById('contacto_proximoPasoFecha'); if (n5) n5.value = '';
+      // limpiar extras nuevos
+      var n1 = document.getElementById('contactoBiomasa');        if (n1) n1.value = '';
+      var n2 = document.getElementById('contactoLocalidad');      if (n2) n2.value = '';
+      var n3 = document.getElementById('contactoProveedorNuevo'); if (n3) n3.checked = false;
+      var n4 = document.getElementById('contacto_proximoPaso');   if (n4) n4.value = '';
+      var n5 = document.getElementById('contacto_proximoPasoFecha'); if (n5) n5.value = '';
 
-if (typeof M !== 'undefined' && typeof M.updateTextFields === 'function') {
-  M.updateTextFields();
-}
+      if (typeof M !== 'undefined' && typeof M.updateTextFields === 'function') {
+        M.updateTextFields();
+      }
 
-if (modalInst && typeof modalInst.close === 'function') {
-  modalInst.close();
-}
-} catch (err) {
-  // logging sin optional chaining y con fallback
-  var msg = (err && (err.message || err)) || 'Error desconocido';
-  try { console.error('[form-contacto] ERROR:', msg); } catch (_) {}
-  if (typeof M !== 'undefined' && M.toast) {
-    M.toast({ html: 'Error al guardar contacto', displayLength: 2500 });
-  }
+      if (modalInst && typeof modalInst.close === 'function') {
+        modalInst.close();
+      }
+    } catch (err) {
+      var msg = (err && (err.message || err)) || 'Error desconocido';
+      try { console.error('[form-contacto] ERROR:', msg); } catch (_) {}
+      if (typeof M !== 'undefined' && M.toast) {
+        M.toast({ html: 'Error al guardar contacto', displayLength: 2500 });
+      }
+    }
+  }); // <-- cierre del addEventListener submit
 }
 
 /* ---------- Acciones ---------- */
@@ -680,32 +695,33 @@ export function abrirEdicion(c) {
   }
 
   // Existentes
-  if ($('#vendeActualmenteA')) $('#vendeActualmenteA').value = c.vendeActualmenteA || '';
-  if ($('#notasContacto')) $('#notasContacto').value = c.notas || '';
-  if ($('#contactoNombre')) $('#contactoNombre').value = c.contactoNombre || '';
-  if ($('#contactoTelefono')) $('#contactoTelefono').value = c.contactoTelefono || '';
-  if ($('#contactoEmail')) $('#contactoEmail').value = c.contactoEmail || '';
-  if ($('#contactoResponsable')) $('#contactoResponsable').value = c.responsablePG || '';
+  const vA = document.getElementById('vendeActualmenteA'); if (vA) vA.value = c.vendeActualmenteA || '';
+  const notasEl = document.getElementById('notasContacto'); if (notasEl) notasEl.value = c.notas || '';
+  const nomEl = document.getElementById('contactoNombre'); if (nomEl) nomEl.value = c.contactoNombre || '';
+  const telEl = document.getElementById('contactoTelefono'); if (telEl) telEl.value = c.contactoTelefono || '';
+  const emEl = document.getElementById('contactoEmail'); if (emEl) emEl.value = c.contactoEmail || '';
+  const respEl = document.getElementById('contactoResponsable'); if (respEl) respEl.value = c.responsablePG || '';
 
   // NUEVOS
-  if ($('#contactoLocalidad')) $('#contactoLocalidad').value = c.localidad || '';
-  if ($('#contactoBiomasa'))   $('#contactoBiomasa').value   = (c.biomasa || (c.tieneMMPP === 'Sí' ? 'con' : (c.tieneMMPP === 'No' ? 'sin' : ''))) || '';
-  if ($('#contactoProveedorNuevo')) $('#contactoProveedorNuevo').checked = !!c.proveedorNuevo;
-  if ($('#contacto_proximoPaso')) $('#contacto_proximoPaso').value = c.proximoPaso || '';
-  if ($('#contacto_proximoPasoFecha')) {
+  const locEl = document.getElementById('contactoLocalidad'); if (locEl) locEl.value = c.localidad || '';
+  const bioEl = document.getElementById('contactoBiomasa');   if (bioEl) bioEl.value = (c.biomasa || (c.tieneMMPP === 'Sí' ? 'con' : (c.tieneMMPP === 'No' ? 'sin' : ''))) || '';
+  const pnEl  = document.getElementById('contactoProveedorNuevo'); if (pnEl) pnEl.checked = !!c.proveedorNuevo;
+  const ppEl  = document.getElementById('contacto_proximoPaso'); if (ppEl) ppEl.value = c.proximoPaso || '';
+  const pfEl  = document.getElementById('contacto_proximoPasoFecha');
+  if (pfEl) {
     const f = (c.proximoPasoFecha || '').slice(0,10);
-    $('#contacto_proximoPasoFecha').value = f || '';
+    pfEl.value = f || '';
   }
 
   const hoy = new Date();
   const anioEl = document.getElementById('asigAnio');
-  const mesEl = document.getElementById('asigMes');
+  const mesEl  = document.getElementById('asigMes');
   if (anioEl && !anioEl.value) anioEl.value = hoy.getFullYear();
   if (mesEl && !mesEl.value) mesEl.value = String(hoy.getMonth() + 1);
 
   pintarHistorialEdicion(c);
 
-  M.updateTextFields?.();
+  if (typeof M !== 'undefined' && typeof M.updateTextFields === 'function') M.updateTextFields();
   const modal = document.getElementById('modalContacto');
   (M.Modal.getInstance(modal) || M.Modal.init(modal)).open();
 }
@@ -717,11 +733,11 @@ export async function eliminarContacto(id) {
     .some(c => String(c._id) === idStr);
 
   if (!esContacto) {
-    console.warn('[deleteContacto] id no corresponde a un contacto visible:', idStr);
+    try { console.warn('[deleteContacto] id no corresponde a un contacto visible:', idStr); } catch(_) {}
     await cargarContactosGuardados();
     renderTablaContactos();
     document.dispatchEvent(new Event('reload-tabla-contactos'));
-    M.toast?.({ html: 'Contacto ya no existe', classes: 'teal' });
+    if (typeof M !== 'undefined' && M.toast) M.toast({ html: 'Contacto ya no existe', classes: 'teal' });
     return;
   }
 
@@ -730,10 +746,10 @@ export async function eliminarContacto(id) {
   } catch (err) {
     const msg = (err && err.message) || '';
     if (/Contacto no encontrado/i.test(msg) || /404/.test(msg)) {
-      console.warn('[deleteContacto] backend devolvió 404, tratando como éxito');
+      try { console.warn('[deleteContacto] backend devolvió 404, tratando como éxito'); } catch(_) {}
     } else {
-      console.error(err);
-      M.toast?.({ html: 'No se pudo eliminar', classes: 'red' });
+      try { console.error(err); } catch(_) {}
+      if (typeof M !== 'undefined' && M.toast) M.toast({ html: 'No se pudo eliminar', classes: 'red' });
       return;
     }
   }
@@ -741,13 +757,13 @@ export async function eliminarContacto(id) {
   await cargarContactosGuardados();
   renderTablaContactos();
   document.dispatchEvent(new Event('reload-tabla-contactos'));
-  M.toast?.({ html: 'Contacto eliminado', displayLength: 1800 });
+  if (typeof M !== 'undefined' && M.toast) M.toast({ html: 'Contacto eliminado', displayLength: 1800 });
 }
 
 export function prepararNuevo() {
   state.editId = null;
   state.dispEditId = null;
-  const form = $('#formContacto'); form?.reset();
+  const form = $('#formContacto'); if (form && form.reset) form.reset();
   clearProveedorHidden(); resetSelectCentros(); clearCentroHidden();
 
   // limpiar extras nuevos
@@ -759,12 +775,12 @@ export function prepararNuevo() {
 
   const hoy = new Date();
   const anioEl = document.getElementById('asigAnio');
-  const mesEl = document.getElementById('asigMes');
+  const mesEl  = document.getElementById('asigMes');
   if (anioEl) anioEl.value = hoy.getFullYear();
   if (mesEl) mesEl.value = String(hoy.getMonth() + 1);
   const box = document.getElementById('asigHist');
   if (box) box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
-  if ($('#contactoResponsable')) $('#contactoResponsable').value = '';
+  const respEl = document.getElementById('contactoResponsable'); if (respEl) respEl.value = '';
 
-  M.updateTextFields?.();
+  if (typeof M !== 'undefined' && typeof M.updateTextFields === 'function') M.updateTextFields();
 }
