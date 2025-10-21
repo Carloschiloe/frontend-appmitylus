@@ -249,49 +249,49 @@
             </div>
           </div>
 
-          <!-- NUEVO: Localidad / Biomasa / Proveedor nuevo -->
-          <div class="row">
-            <div class="input-field col s4">
-              <input id="contactoLocalidad" type="text" maxlength="20" placeholder="Ej: Putemún">
-              <label for="contactoLocalidad">Localidad (máx. 20)</label>
-            </div>
-            <div class="input-field col s4">
-              <label for="contactoBiomasa" class="active">Biomasa</label>
-              <select id="contactoBiomasa" class="browser-default modern-select" aria-label="Biomasa">
-                <option value="">Seleccione…</option>
-                <option value="con">Con producto</option>
-                <option value="sin">Sin producto</option>
-              </select>
-            </div>
-            <div class="input-field col s4" style="display:flex;align-items:center;gap:8px">
-              <label for="contactoProveedorNuevo" class="active" style="margin-right:8px">Proveedor nuevo</label>
-              <label style="display:flex;align-items:center;gap:6px">
-                <input type="checkbox" id="contactoProveedorNuevo" />
-                <span>Es nuevo</span>
-              </label>
-            </div>
-          </div>
+        <!-- NUEVO: Localidad / Biomasa / Proveedor nuevo -->
+<div class="row">
+  <div class="input-field col s4">
+    <input id="contactoLocalidad" type="text" maxlength="20" placeholder="Ej: Putemún">
+    <label for="contactoLocalidad">Localidad (máx. 20)</label>
+  </div>
+  <div class="input-field col s4">
+    <label for="contactoBiomasa" class="active">Biomasa</label>
+    <select id="contactoBiomasa" class="browser-default modern-select" aria-label="Biomasa">
+      <option value="">Seleccione…</option>
+      <option value="Con biomasa">Con biomasa</option>
+      <option value="Sin biomasa">Sin biomasa</option>
+    </select>
+  </div>
+  <div class="input-field col s4" style="display:flex;align-items:center;gap:8px">
+    <label for="contactoProveedorNuevo" class="active" style="margin-right:8px">Proveedor nuevo</label>
+    <label style="display:flex;align-items:center;gap:6px">
+      <input type="checkbox" id="contactoProveedorNuevo" />
+      <span>Es nuevo</span>
+    </label>
+  </div>
+</div>
 
-          <!-- NUEVO: Próximo paso + Fecha próximo paso -->
-          <div class="row">
-            <div class="input-field col s6">
-              <label for="contacto_proximoPaso" class="active">Próximo paso</label>
-              <select id="contacto_proximoPaso" class="browser-default modern-select" aria-label="Próximo paso">
-                <option value="" selected>Seleccione…</option>
-                <option value="Programar nueva visita">Nueva visita</option>
-                <option value="Tomar muestras">Tomar muestras</option>
-                <option value="Negociar precio/volumen">Negociar precio/volumen</option>
-                <option value="Contacto telefónico">Contacto telefónico</option>
-                <option value="Esperar disponibilidad">Esperar disponibilidad</option>
-                <option value="Reunión">Reunión</option>
-                <option value="Sin acción">Sin acción</option>
-              </select>
-            </div>
-            <div class="input-field col s6">
-              <input type="date" id="contacto_proximoPasoFecha" aria-label="Fecha exacta del próximo paso">
-              <label for="contacto_proximoPasoFecha" class="active">Fecha exacta del próximo paso</label>
-            </div>
-          </div>
+<!-- Próximo paso (con “Reunión” y “Nueva visita” en vez de “Programar…”) -->
+<div class="row">
+  <div class="input-field col s6">
+    <label for="contacto_proximoPaso" class="active">Próximo paso</label>
+    <select id="contacto_proximoPaso" class="browser-default modern-select" aria-label="Próximo paso">
+      <option value="" selected>Seleccione…</option>
+      <option value="Nueva visita">Nueva visita</option>
+      <option value="Tomar muestras">Tomar muestras</option>
+      <option value="Negociar precio/volumen">Negociar precio/volumen</option>
+      <option value="Contacto telefónico">Contacto telefónico</option>
+      <option value="Reunión">Reunión</option>
+      <option value="Esperar disponibilidad">Esperar disponibilidad</option>
+      <option value="Sin acción">Sin acción</option>
+    </select>
+  </div>
+  <div class="input-field col s6">
+    <input type="date" id="contacto_proximoPasoFecha" aria-label="Fecha exacta del próximo paso">
+    <label for="contacto_proximoPasoFecha" class="active">Fecha exacta del próximo paso</label>
+  </div>
+</div>
 
           <!-- DISPONIBILIDAD MMPP (asignaciones) -->
           <div class="row" id="asigDisponibilidadBlock">
@@ -398,7 +398,7 @@
             <div class="input-field col s4">
               <label for="visita_proximoPaso" class="active">Próximo paso</label>
               <select id="visita_proximoPaso" class="browser-default" aria-label="Próximo paso">
-                <option value="Programar nueva visita" selected>Nueva visita</option>
+                <option value="Nueva visita" selected>Nueva visita</option>
                 <option value="Tomar muestras">Tomar muestras</option>
                 <option value="Negociar precio/volumen">Negociar precio/volumen</option>
                 <option value="Contacto telefónico">Contacto telefónico</option>
