@@ -3,7 +3,7 @@ import { state, $ } from './state.js';
 import { getAll as getAllVisitas } from '../visitas/api.js';
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
 
-console.log('[resumen] CARGADO v=2025-10-20-4');
+console.log('[resumen] CARGADO v=2025-10-20-5');
 
 /* ======================= Estilos del módulo (inyección segura) ======================= */
 (function injectResumenStyles(){
@@ -337,6 +337,36 @@ function buildOptions(sel, items, current){
 function buildSemanaOptions(){ buildOptions(document.getElementById('resumen_semana'), allWeeks(), getCurrentWeekKey()); }
 function buildMesOptions(){ buildOptions(document.getElementById('resumen_mes'), allMonths(), getCurrentMonthKey()); }
 
+/* ======================= Responsable PG: opciones (SIEMPRE sincronizadas) ======================= */
+function buildRespOptions() {
+  const selResp = document.getElementById('resumen_resp');
+  if (!selResp) return;
+
+  const set = new Set();
+  (_cache.allContactos || []).forEach(c => {
+    const r = (c?.responsablePG || c?.responsable || c?.contactoResponsable || '').trim();
+    if (r) set.add(r);
+  });
+  (_cache.allVisitas || []).forEach(v => {
+    const r = (responsableDeVisita(v) || '').trim();
+    if (r) set.add(r);
+  });
+
+  const values = Array.from(set).sort();
+  const sig = values.join('||');
+  if (selResp.__sig === sig) return;
+
+  const prev = selResp.value || '';
+  selResp.innerHTML = '<option value="">Responsable…</option>';
+  for (const r of values) {
+    const opt = document.createElement('option');
+    opt.value = r; opt.textContent = r;
+    selResp.appendChild(opt);
+  }
+  if (prev && values.includes(prev)) selResp.value = prev;
+  selResp.__sig = sig;
+}
+
 /* ======================= Tablas (sin cambios visuales) ======================= */
 function ensureHeadColumns(tbody){
   const thead = tbody.closest('table')?.querySelector('thead tr');
@@ -503,29 +533,12 @@ function ensureModeSwitcher(){
     applyVisibility();
   }
 
-  // Filtro Responsable (se llena una vez, combinando contactos + visitas resueltas)
+  // --- Filtro Responsable: siempre sincronizado ---
+  buildRespOptions();
   const selResp = document.getElementById('resumen_resp');
-  if (selResp && !selResp.__filled){
-    selResp.__filled = true;
-    const set = new Set();
-
-    (_cache.allContactos || []).forEach(c=>{
-      const r = c?.responsablePG || c?.responsable || c?.contactoResponsable;
-      if (r) set.add(String(r));
-    });
-
-    (_cache.allVisitas || []).forEach(v=>{
-      const r = responsableDeVisita(v);
-      if (r) set.add(String(r));
-    });
-
-    Array.from(set).sort().forEach(o=>{
-      const op = document.createElement('option'); op.value = o; op.textContent = o; selResp.appendChild(op);
-    });
-  }
   if (selResp && !selResp.__wired){
     selResp.__wired = true;
-    selResp.addEventListener('change', () => { _cache.respFilter = selResp.value || ''; refreshResumen(); });
+    selResp.addEventListener('change', () => { _cache.respFilter = (selResp.value || '').trim(); refreshResumen(); });
   }
 }
 
@@ -566,15 +579,16 @@ export async function initResumenSemanalTab(){
   await ensureData();
   buildSemanaOptions();
   buildMesOptions();
+  buildRespOptions();          // << NUEVO: poblar responsables al inicio
   wireControls();
   await refreshResumen();
 
-  window.addEventListener('visita:created', async () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.byMonthVis.clear(); await ensureData(); await refreshResumen(); });
-  window.addEventListener('visita:updated', async () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.byMonthVis.clear(); await ensureData(); await refreshResumen(); });
-  window.addEventListener('visita:deleted', async () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.byMonthVis.clear(); await ensureData(); await refreshResumen(); });
+  window.addEventListener('visita:created', async () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.byMonthVis.clear(); await ensureData(); buildRespOptions(); await refreshResumen(); });
+  window.addEventListener('visita:updated', async () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.byMonthVis.clear(); await ensureData(); buildRespOptions(); await refreshResumen(); });
+  window.addEventListener('visita:deleted', async () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.byMonthVis.clear(); await ensureData(); buildRespOptions(); await refreshResumen(); });
   document.addEventListener('reload-tabla-contactos', async () => {
     _cache.allContactos = []; _cache.byWeekCont.clear(); _cache.byMonthCont.clear(); _cache.dispSumCacheContact.clear();
-    await ensureData(); await refreshResumen();
+    await ensureData(); buildRespOptions(); await refreshResumen();
   });
 }
 
@@ -596,6 +610,7 @@ export function setResumenMode(mode, opts = {}){
 export async function refreshResumen(){
   await ensureData();
   buildSemanaOptions(); buildMesOptions();
+  buildRespOptions(); // << NUEVO: re-sync responsables cada refresh
 
   const isWeek = _cache.periodMode === 'semana';
   const selW = document.getElementById('resumen_semana');
