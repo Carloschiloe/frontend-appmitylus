@@ -436,54 +436,86 @@ function ensureModeSwitcher(){
   const toolbar = document.querySelector('.resumen-toolbar');
   if (!toolbar) return;
 
-  // Segmentado Semana/Mes (ya existe en HTML): sólo wiring
-  const seg = document.getElementById('resumen_period');
+  const seg       = document.getElementById('resumen_period');
+  const selSemana = document.getElementById('resumen_semana');
+  const selMes    = document.getElementById('resumen_mes');
+  const selResp   = document.getElementById('resumen_resp');
+  const tituloEl  = document.getElementById('resumen_titulo');
+
+  // actualizar visibilidad y título de forma segura
+  const applyVisibility = () => {
+    if (selSemana && selSemana.parentElement) {
+      selSemana.parentElement.style.display = (_cache.periodMode === 'semana') ? '' : 'none';
+    }
+    if (selMes && selMes.parentElement) {
+      selMes.parentElement.style.display = (_cache.periodMode === 'mes') ? '' : 'none';
+    }
+    if (tituloEl) {
+      tituloEl.textContent = (_cache.periodMode === 'semana') ? 'Informe semanal' : 'Informe mensual';
+    }
+  };
+
+  // Wiring del segmentado Semana/Mes
   if (seg && !seg.__wired){
     seg.__wired = true;
     seg.addEventListener('click', async (e) => {
       const btn = e.target.closest('button[data-period]');
       if (!btn) return;
+
       const period = btn.getAttribute('data-period');
       if (_cache.periodMode === period) return;
+
       _cache.periodMode = period;
-      seg.querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b===btn));
-      document.getElementById('resumen_semana').parentElement.style.display = (period==='semana')?'':'none';
-      document.getElementById('resumen_mes').parentElement.style.display    = (period==='mes')?'':'none';
-      document.getElementById('resumen_titulo')?.textContent = (period==='semana') ? 'Informe semanal' : 'Informe mensual';
+
+      // activar/desactivar botones del propio contenedor
+      const btns = seg.querySelectorAll ? seg.querySelectorAll('button[data-period]') : [];
+      btns.forEach(b => b.classList.toggle('is-active', b === btn));
+
+      applyVisibility();
       await refreshResumen();
     });
   }
 
   // Poblar responsables (una vez)
-  const selResp = document.getElementById('resumen_resp');
   if (selResp && !selResp.__filled){
     selResp.__filled = true;
     const set = new Set();
-    (_cache.allVisitas || []).forEach(v=>{
-      const r = v?.responsable || v?.contactoResponsable || v?.responsablePG;
+    (_cache.allVisitas || []).forEach(v => {
+      const r = v && (v.responsable || v.contactoResponsable || v.responsablePG);
       if (r) set.add(String(r));
     });
-    (_cache.allContactos || []).forEach(c=>{
-      const r = c?.responsable || c?.contactoResponsable || c?.responsablePG;
+    (_cache.allContactos || []).forEach(c => {
+      const r = c && (c.responsable || c.contactoResponsable || c.responsablePG);
       if (r) set.add(String(r));
     });
-    Array.from(set).sort().forEach(o=>{
-      const op = document.createElement('option'); op.value = o; op.textContent = o; selResp.appendChild(op);
+    Array.from(set).sort().forEach(o => {
+      const op = document.createElement('option');
+      op.value = o; op.textContent = o;
+      selResp.appendChild(op);
     });
   }
 
-  const selSemana = document.getElementById('resumen_semana');
-  const selMes    = document.getElementById('resumen_mes');
+  // Change handlers (seguros)
+  if (selSemana && !selSemana.__wired){
+    selSemana.__wired = true;
+    selSemana.addEventListener('change', () => refreshResumen());
+  }
+  if (selMes && !selMes.__wired){
+    selMes.__wired = true;
+    selMes.addEventListener('change', () => refreshResumen());
+  }
+  if (selResp && !selResp.__wired){
+    selResp.__wired = true;
+    selResp.addEventListener('change', () => {
+      _cache.respFilter = selResp.value || '';
+      refreshResumen();
+    });
+  }
 
-  if (selSemana && !selSemana.__wired){ selSemana.__wired = true; selSemana.addEventListener('change', () => refreshResumen()); }
-  if (selMes && !selMes.__wired){ selMes.__wired = true; selMes.addEventListener('change', () => refreshResumen()); }
-  if (selResp && !selResp.__wired){ selResp.__wired = true; selResp.addEventListener('change', () => { _cache.respFilter = selResp.value || ''; refreshResumen(); }); }
-
-  // Visibilidad inicial
-  const period = _cache.periodMode;
-  document.getElementById('resumen_semana').parentElement.style.display = (period==='semana')?'':'none';
-  document.getElementById('resumen_mes').parentElement.style.display    = (period==='mes')?'':'none';
+  // Estado inicial
+  applyVisibility();
 }
+
 
 function wireCopyPrint(){
   const btnPrint = $('#resumen_print');
