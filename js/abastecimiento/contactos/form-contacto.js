@@ -633,17 +633,25 @@ export function setupFormulario() {
       state.editId = null;
 
       // limpiar extras nuevos
-      const n1 = document.getElementById('contactoBiomasa'); if (n1) n1.value = '';
-      const n2 = document.getElementById('contactoLocalidad'); if (n2) n2.value = '';
-      const n3 = document.getElementById('contactoProveedorNuevo'); if (n3) n3.checked = false;
-      const n4 = document.getElementById('contacto_proximoPaso'); if (n4) n4.value = '';
-      const n5 = document.getElementById('contacto_proximoPasoFecha'); if (n5) n5.value = '';
-      M.updateTextFields?.();
+var n1 = document.getElementById('contactoBiomasa');        if (n1) n1.value = '';
+var n2 = document.getElementById('contactoLocalidad');      if (n2) n2.value = '';
+var n3 = document.getElementById('contactoProveedorNuevo'); if (n3) n3.checked = false;
+var n4 = document.getElementById('contacto_proximoPaso');   if (n4) n4.value = '';
+var n5 = document.getElementById('contacto_proximoPasoFecha'); if (n5) n5.value = '';
 
-      modalInst?.close();
-    } catch (err) {
-      console.error('[form-contacto] ERROR:', err?.message || err);
-      M.toast?.({ html: 'Error al guardar contacto', displayLength: 2500 });
+if (typeof M !== 'undefined' && typeof M.updateTextFields === 'function') {
+  M.updateTextFields();
+}
+
+if (modalInst && typeof modalInst.close === 'function') {
+  modalInst.close();
+}
+} catch (err) {
+  // logging sin optional chaining y con fallback
+  var msg = (err && (err.message || err)) || 'Error desconocido';
+  try { console.error('[form-contacto] ERROR:', msg); } catch (_) {}
+  if (typeof M !== 'undefined' && M.toast) {
+    M.toast({ html: 'Error al guardar contacto', displayLength: 2500 });
     }
   });
 }
