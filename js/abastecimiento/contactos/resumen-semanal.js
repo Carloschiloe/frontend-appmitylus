@@ -3,7 +3,7 @@ import { state, $ } from './state.js';
 import { getAll as getAllVisitas } from '../visitas/api.js';
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
 
-console.log('[resumen] CARGADO v=2025-10-20-3');
+console.log('[resumen] CARGADO v=2025-10-20-4');
 
 /* ======================= Estilos del módulo (inyección segura) ======================= */
 (function injectResumenStyles(){
@@ -13,7 +13,7 @@ console.log('[resumen] CARGADO v=2025-10-20-3');
   s.textContent = `
     #tab-resumen{ padding:8px 4px 24px; }
     #tab-resumen h5{ font-weight:600; letter-spacing:.2px; }
-    .resumen-toolbar{ margin:8px 0 4px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
+    .resumen-toolbar{ margin:8px 0 4px; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
 
     /* KPI en UNA SOLA FILA */
     #resumen_kpis .kpi-row{ display:flex; flex-wrap:nowrap; gap:12px; overflow:visible; padding-bottom:0; }
@@ -92,6 +92,19 @@ function slug(v=''){
     .replace(/^-+|-+$/g,'');
 }
 
+/* Normaliza ids (string/number/ObjectId/{$oid}) */
+function normId(v){
+  if (!v) return '';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number') return String(v);
+  if (typeof v === 'object'){
+    if (v.$oid) return String(v.$oid);
+    if (v.oid)  return String(v.oid);
+    if (typeof v.toString === 'function') return String(v.toString());
+  }
+  return String(v);
+}
+
 /* ======================= Semana/Mes keys ======================= */
 function isoWeek(date){
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -111,18 +124,26 @@ function getCurrentMonthKey(){ const now = new Date(); return `${now.getFullYear
 function proveedorDeVisita(v){
   const emb = v?.contacto?.empresaNombre || v?.proveedorNombre || v?.empresaNombre || v?.empresa;
   if (emb) return emb;
-  const id = v?.contactoId ? String(v.contactoId) : null;
+  const id = v?.contactoId ? normId(v.contactoId) : null;
   if (!id) return '';
-  const c = (state.contactosGuardados || []).find(x => String(x._id) === id);
+  const c = (state.contactosGuardados || []).find(x => normId(x._id) === id);
   return c?.proveedorNombre || c?.empresaNombre || '';
 }
 function contactoDeVisita(v){
-  const id = v?.contactoId ? String(v.contactoId) : null;
+  const id = v?.contactoId ? normId(v.contactoId) : null;
   if (!id) return v?.contacto || '';
-  const c = (state.contactosGuardados || []).find(x => String(x._id) === id);
+  const c = (state.contactosGuardados || []).find(x => normId(x._id) === id);
   return c?.contactoNombre || c?.contacto || v?.contacto || '';
 }
-function responsableDeVisita(v){ return v?.responsable || v?.contactoResponsable || v?.responsablePG || ''; }
+/* === Resolver correcto del Responsable para una visita === */
+function responsableDeVisita(v){
+  const direct = v?.responsable || v?.contactoResponsable || v?.responsablePG;
+  if (direct) return direct;
+  const id = v?.contactoId ? normId(v.contactoId) : null;
+  if (!id) return '';
+  const c = (state.contactosGuardados || []).find(x => normId(x._id) === id);
+  return c?.responsablePG || c?.responsable || c?.contactoResponsable || '';
+}
 function centroCodigoDeVisita(v){ if (v?.centroCodigo) return v.centroCodigo; if (v?.centroId) return (centroCodigoById?.(v.centroId, state.listaCentros || []) || ''); return ''; }
 function comunaDeVisita(v){
   if (v?.centroComuna) return v.centroComuna;
@@ -240,7 +261,7 @@ async function sumDisponibilidadesContacto(c){
   return total;
 }
 
-/* ======================= Agregaciones ======================= */
+/* ======================= Agregaciones + Filtros ======================= */
 function filterByResp(items, getResp, resp){
   if (!resp) return items;
   return items.filter(it => (getResp(it) || '').trim() === resp);
@@ -251,7 +272,7 @@ function aggregateVisitasByKey(key, isWeek, resp){
   const visitasAll = (src.get(key) || []);
   const visitas = filterByResp(
     visitasAll,
-    (v)=> v?.responsable || v?.contactoResponsable || v?.responsablePG || '',
+    (v)=> responsableDeVisita(v),
     resp
   ).slice().sort((a,b)=>{
     const da = toDate(a.fecha) || toDate(a.proximoPasoFecha) || new Date(0);
@@ -270,7 +291,7 @@ async function aggregateContactosByKeyAsync(key, isWeek, resp){
   const contactosAll = (src.get(key) || []);
   const contactos = filterByResp(
     contactosAll,
-    (c)=> c?.responsable || c?.contactoResponsable || c?.responsablePG || '',
+    (c)=> c?.responsablePG || c?.responsable || c?.contactoResponsable || '',
     resp
   ).slice().sort((a,b)=>{
     const da = toDate(fechaDeContacto(a)) || new Date(0);
@@ -458,7 +479,7 @@ function ensureModeSwitcher(){
     });
   }
 
-  // Segmentado Semana/Mes (si existe en HTML)
+  // Segmentado Semana/Mes
   const segPeriod = document.getElementById('resumen_period');
   const tituloEl  = document.getElementById('resumen_titulo');
   const selW = document.getElementById('resumen_semana');
@@ -482,13 +503,22 @@ function ensureModeSwitcher(){
     applyVisibility();
   }
 
-  // Filtro Responsable (si existe en HTML)
+  // Filtro Responsable (se llena una vez, combinando contactos + visitas resueltas)
   const selResp = document.getElementById('resumen_resp');
   if (selResp && !selResp.__filled){
     selResp.__filled = true;
     const set = new Set();
-    (_cache.allVisitas || []).forEach(v=>{ const r = v?.responsable || v?.contactoResponsable || v?.responsablePG; if (r) set.add(String(r)); });
-    (_cache.allContactos || []).forEach(c=>{ const r = c?.responsable || c?.contactoResponsable || c?.responsablePG; if (r) set.add(String(r)); });
+
+    (_cache.allContactos || []).forEach(c=>{
+      const r = c?.responsablePG || c?.responsable || c?.contactoResponsable;
+      if (r) set.add(String(r));
+    });
+
+    (_cache.allVisitas || []).forEach(v=>{
+      const r = responsableDeVisita(v);
+      if (r) set.add(String(r));
+    });
+
     Array.from(set).sort().forEach(o=>{
       const op = document.createElement('option'); op.value = o; op.textContent = o; selResp.appendChild(op);
     });
