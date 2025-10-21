@@ -3,9 +3,9 @@ import { state, $ } from './state.js';
 import { getAll as getAllVisitas } from '../visitas/api.js';
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
 
-console.log('[resumen] CARGADO v=2025-10-20-2');
+console.log('[resumen] CARGADO v=2025-10-20-3');
 
-/* ======================= Estilos del módulo ======================= */
+/* ======================= Estilos del módulo (inyección segura) ======================= */
 (function injectResumenStyles(){
   if (document.getElementById('resumen-semanal-styles')) return;
   const s = document.createElement('style');
@@ -13,8 +13,9 @@ console.log('[resumen] CARGADO v=2025-10-20-2');
   s.textContent = `
     #tab-resumen{ padding:8px 4px 24px; }
     #tab-resumen h5{ font-weight:600; letter-spacing:.2px; }
-    .resumen-toolbar{ margin:8px 0 4px; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    .resumen-toolbar{ margin:8px 0 4px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
 
+    /* KPI en UNA SOLA FILA */
     #resumen_kpis .kpi-row{ display:flex; flex-wrap:nowrap; gap:12px; overflow:visible; padding-bottom:0; }
     #resumen_kpis .kpi-card{
       flex:1 1 0; min-width:0; border:1px solid #e5e7eb; border-radius:14px; background:#fff;
@@ -24,19 +25,23 @@ console.log('[resumen] CARGADO v=2025-10-20-2');
     .kpi-card .kpi-label{ font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; }
     .kpi-card .kpi-value{ font-size:26px; margin-top:6px; line-height:1.1; font-weight:600; color:#111827; }
 
+    /* Tabla */
     #resumen_print_area table{ width:100%; table-layout:auto; }
     #resumen_print_area table.striped thead th{
       font-size:12px; color:#6b7280; font-weight:600; border-bottom:1px solid #e5e7eb;
     }
     #resumen_print_area table.striped tbody td{ padding:10px 12px; vertical-align:middle; }
 
+    /* expandir tabla si el panel superior está vacío */
     #resumen_top:empty{ display:none !important; }
     .res-col-table.full-width{ width:100% !important; max-width:100% !important; flex:0 0 100% !important; }
 
+    /* enlaces y sublíneas */
     .res-link{ color:#0ea5a8; font-weight:700; text-decoration:none; }
     .res-link:hover{ text-decoration:underline; }
     .subline{ font-size:12px; line-height:1.2; color:#6b7280; }
 
+    /* chips de estado */
     .chip-estado{
       display:inline-flex; align-items:center; gap:6px;
       padding:4px 8px; border-radius:999px; border:1px solid #e5e7eb;
@@ -49,15 +54,11 @@ console.log('[resumen] CARGADO v=2025-10-20-2');
     .chip-esp{ background:#faf5ff; border-color:#e9d5ff; color:#6b21a8; }
     .chip-na { background:#f3f4f6; border-color:#e5e7eb; color:#374151; }
 
+    /* switches */
     .segmented{ display:inline-flex; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }
     .segmented button{ padding:8px 12px; background:#fff; border:0; cursor:pointer; font-weight:700; }
     .segmented button+button{ border-left:1px solid #e5e7eb; }
     .segmented button.is-active{ background:#eef2ff; color:#1e40af; }
-
-    .resumen-filtros{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .resumen-filtros .modern{ min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; }
-
-    .star-new{ color:#f59e0b; font-size:18px; vertical-align:middle; margin-left:6px; }
 
     @media print{
       nav, .tabs, .resumen-toolbar{ display:none !important; }
@@ -72,6 +73,7 @@ console.log('[resumen] CARGADO v=2025-10-20-2');
 /* ======================= Utils ======================= */
 const API_BASE = window.API_URL || '/api';
 const fmt2 = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
+const ymd  = (d) => (d instanceof Date && !isNaN(d)) ? d.toISOString().slice(0,10) : '—';
 const toDate = (v) => { if (!v) return null; try { return (v instanceof Date) ? v : new Date(v); } catch { return null; } };
 const uniq = (arr) => Array.from(new Set(arr.filter(Boolean)));
 const esc  = (s='') => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -81,7 +83,7 @@ const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','N
 const pad2 = (n) => String(n).padStart(2,'0');
 const fmtDMYShort = (dt) => { const d = toDate(dt); return d ? `${pad2(d.getDate())}.${MES_ABBR[d.getMonth()]}.${String(d.getFullYear()).slice(-2)}` : '—'; };
 
-/* Slug */
+/* Slug robusto */
 function slug(v=''){
   return String(v||'')
     .toLowerCase()
@@ -155,48 +157,15 @@ function comunaDeContacto(c){
   return m?.comuna || m?.Comuna || '';
 }
 
-/* ====== Proveedor NUEVO ====== */
-function isProveedorNuevoByContact(contactOrNameOrKey){
-  const lista = state.contactosGuardados || [];
-  if (!lista.length) return false;
-
-  const matchesFlag = (c) => Boolean(
-    c?.proveedorNuevo === true ||
-    c?.contactoProveedorNuevo === true ||
-    c?.esNuevo === true ||
-    c?.nuevo === true
-  );
-
-  if (contactOrNameOrKey && typeof contactOrNameOrKey === 'object') return matchesFlag(contactOrNameOrKey);
-
-  const target = String(contactOrNameOrKey || '').trim();
-  if (!target) return false;
-
-  const byKey = lista.find(c => String(c.proveedorKey || c.empresaKey || '').trim() &&
-                                String(c.proveedorKey || c.empresaKey).trim() === target);
-  if (byKey) return matchesFlag(byKey);
-
-  const tslug = slug(target);
-  const found = lista.find(c => {
-    const name = proveedorDeContacto(c) || '';
-    const key  = c.proveedorKey || c.empresaKey || '';
-    return slug(name) === tslug || slug(String(key)) === tslug;
-  });
-  return found ? matchesFlag(found) : false;
-}
-function renderStarIfNuevo({ proveedorKey, proveedorNombre } = {}){
-  const nuevo = isProveedorNuevoByContact(proveedorKey || proveedorNombre || '');
-  return nuevo ? `<i class="material-icons star-new" title="Proveedor nuevo">star</i>` : '';
-}
-
 /* ======================= Cache ======================= */
 let _cache = {
-  allVisitas: [], byWeekVis: new Map(), byMonthVis: new Map(),
+  allVisitas: [],  byWeekVis: new Map(),  byMonthVis: new Map(),
   allContactos: [], byWeekCont: new Map(), byMonthCont: new Map(),
-  mode: 'contactos',
-  periodMode: 'semana',      // semana | mes
+  optionsSigW: null, optionsSigM: null,
+  mode: 'visitas',          // visitas | contactos
+  periodMode: 'semana',     // semana | mes
+  respFilter: '',           // filtro por responsable
   dispSumCacheContact: new Map(),
-  respFilter: '',
 };
 
 /* ======================= Data ======================= */
@@ -232,7 +201,7 @@ async function ensureData(){
   }
 }
 
-/* ======================= Disponibilidades ======================= */
+/* ======================= Disponibilidades (API) ======================= */
 async function getDisponibilidades(params = {}){
   const y = new Date().getFullYear();
   const q = new URLSearchParams();
@@ -276,30 +245,38 @@ function filterByResp(items, getResp, resp){
   if (!resp) return items;
   return items.filter(it => (getResp(it) || '').trim() === resp);
 }
+
 function aggregateVisitasByKey(key, isWeek, resp){
   const src = isWeek ? _cache.byWeekVis : _cache.byMonthVis;
   const visitasAll = (src.get(key) || []);
-  const visitas = filterByResp(visitasAll, (v)=> v?.responsable || v?.contactoResponsable || v?.responsablePG || '', resp)
-    .slice().sort((a,b)=>{
-      const da = toDate(a.fecha) || toDate(a.proximoPasoFecha) || new Date(0);
-      const db = toDate(b.fecha) || toDate(b.proximoPasoFecha) || new Date(0);
-      return db - da;
-    });
+  const visitas = filterByResp(
+    visitasAll,
+    (v)=> v?.responsable || v?.contactoResponsable || v?.responsablePG || '',
+    resp
+  ).slice().sort((a,b)=>{
+    const da = toDate(a.fecha) || toDate(a.proximoPasoFecha) || new Date(0);
+    const db = toDate(b.fecha) || toDate(b.proximoPasoFecha) || new Date(0);
+    return db - da;
+  });
   const empresas = uniq(visitas.map(proveedorDeVisita)).filter(Boolean);
   const comunas  = uniq(visitas.map(comunaDeVisita)).filter(Boolean);
   const centros  = uniq(visitas.map(centroCodigoDeVisita)).filter(Boolean);
   const totalConversadas = visitas.reduce((acc,v)=> acc + Number(v.tonsComprometidas || 0), 0);
   return { visitas, empresas, comunas, centros, totalConversadas, count: visitas.length };
 }
+
 async function aggregateContactosByKeyAsync(key, isWeek, resp){
   const src = isWeek ? _cache.byWeekCont : _cache.byMonthCont;
   const contactosAll = (src.get(key) || []);
-  const contactos = filterByResp(contactosAll, (c)=> c?.responsable || c?.contactoResponsable || c?.responsablePG || '', resp)
-    .slice().sort((a,b)=>{
-      const da = toDate(fechaDeContacto(a)) || new Date(0);
-      const db = toDate(fechaDeContacto(b)) || new Date(0);
-      return db - da;
-    });
+  const contactos = filterByResp(
+    contactosAll,
+    (c)=> c?.responsable || c?.contactoResponsable || c?.responsablePG || '',
+    resp
+  ).slice().sort((a,b)=>{
+    const da = toDate(fechaDeContacto(a)) || new Date(0);
+    const db = toDate(fechaDeContacto(b)) || new Date(0);
+    return db - da;
+  });
   const empresas = uniq(contactos.map(proveedorDeContacto)).filter(Boolean);
   const comunas  = uniq(contactos.map(comunaDeContacto)).filter(Boolean);
   const centros  = uniq(contactos.map(centroCodigoDeContacto)).filter(Boolean);
@@ -326,6 +303,7 @@ async function renderKPIs(aggV, aggC){
 /* ======================= Opciones Semana/Mes ======================= */
 function allWeeks(){ return Array.from(new Set([ ..._cache.byWeekVis.keys(), ..._cache.byWeekCont.keys() ])).sort().reverse(); }
 function allMonths(){ return Array.from(new Set([ ..._cache.byMonthVis.keys(), ..._cache.byMonthCont.keys() ])).sort().reverse(); }
+
 function buildOptions(sel, items, current){
   if (!sel) return;
   const sig = items.join(',');
@@ -338,19 +316,22 @@ function buildOptions(sel, items, current){
 function buildSemanaOptions(){ buildOptions(document.getElementById('resumen_semana'), allWeeks(), getCurrentWeekKey()); }
 function buildMesOptions(){ buildOptions(document.getElementById('resumen_mes'), allMonths(), getCurrentMonthKey()); }
 
-/* ======================= Tablas ======================= */
+/* ======================= Tablas (sin cambios visuales) ======================= */
 function ensureHeadColumns(tbody){
   const thead = tbody.closest('table')?.querySelector('thead tr');
   if (!thead) return;
   const want = _cache.mode === 'visitas' ? 7 : 6;
-  if (thead.children.length === want) return;
+  const curr = thead.children.length;
+  if (want === curr) return;
   thead.innerHTML = (_cache.mode === 'visitas')
     ? `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons conversadas</th><th>Fecha prox.</th><th>Estado</th>`
     : `<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Comuna</th><th>Tons producidas</th><th>Responsable</th>`;
 }
+
 function renderTablaVisitas(visitas){
   const tbody = $('#resumen_table_body'); if (!tbody) return;
   ensureHeadColumns(tbody);
+
   const rowsHtml = visitas.map(v => {
     const prov   = proveedorDeVisita(v) || '—';
     const contacto = contactoDeVisita(v) || '';
@@ -363,14 +344,14 @@ function renderTablaVisitas(visitas){
     const chipCl = estadoClaseChip(estado);
     const vid = esc(v._id || '');
 
-    const provKey = v.proveedorKey || (v.contacto && v.contacto.proveedorKey) || '';
-    const star = renderStarIfNuevo({ proveedorKey: provKey, proveedorNombre: prov });
-
     const sub = (contacto || resp) ? `<div class="subline">${esc(contacto || '')}${resp ? ` · Resp.: ${esc(resp)}`:''}</div>` : ``;
 
     return `<tr data-visita-id="${vid}">
       <td>${fmtDMYShort(toDate(v.fecha))}</td>
-      <td><a href="#!" class="res-link js-open-visita" data-id="${vid}" title="Ver visita">${esc(prov)}</a>${star}${sub}</td>
+      <td>
+        <a href="#!" class="res-link js-open-visita" data-id="${vid}" title="Ver visita">${esc(prov)}</a>
+        ${sub}
+      </td>
       <td><span class="res-link js-open-visita" data-id="${vid}" title="Ver visita">${esc(centro)}</span></td>
       <td>${esc(comuna)}</td>
       <td data-col="tons">${tons}</td>
@@ -378,16 +359,26 @@ function renderTablaVisitas(visitas){
       <td><span class="${chipCl}">${esc(estado || '—')}</span></td>
     </tr>`;
   }).join('');
+
   tbody.innerHTML = rowsHtml || '<tr><td colspan="7" class="grey-text">No hay visitas para este período.</td></tr>';
+
+  // abrir visita
   tbody.querySelectorAll('.js-open-visita').forEach(a => {
-    a.addEventListener('click', (e)=>{ e.preventDefault(); const id = a.getAttribute('data-id'); if (!id) return;
-      document.dispatchEvent(new CustomEvent('visita:open-readonly', { detail:{ id } })); });
+    a.addEventListener('click', (e)=>{
+      e.preventDefault();
+      const id = a.getAttribute('data-id');
+      if (!id) return;
+      document.dispatchEvent(new CustomEvent('visita:open-readonly', { detail:{ id } }));
+    });
   });
+
   ensureFullWidthTable();
 }
+
 async function renderTablaContactos(contactos){
   const tbody = $('#resumen_table_body'); if (!tbody) return;
   ensureHeadColumns(tbody);
+
   let rowsHtml = '';
   for (const c of contactos){
     const prov   = proveedorDeContacto(c) || '—';
@@ -395,31 +386,44 @@ async function renderTablaContactos(contactos){
     const centro = centroCodigoDeContacto(c) || '—';
     const comuna = comunaDeContacto(c) || '—';
     const resp   = c.responsable || c.contactoResponsable || c.responsablePG || '—';
+
+    // Sumatoria de disponibilidades = TONS PRODUCIDAS
     const sumDisp = await sumDisponibilidadesContacto(c);
     const tons = sumDisp ? fmt2(sumDisp) : '—';
-    const cid    = esc(c._id || '');
-    const star = renderStarIfNuevo({ proveedorKey: c.proveedorKey || c.empresaKey || '', proveedorNombre: prov });
 
+    const cid = esc(c._id || '');
     rowsHtml += `<tr data-contacto-id="${cid}">
       <td>${fmtDMYShort(toDate(fechaDeContacto(c)))}</td>
-      <td><a href="#!" class="res-link js-open-contacto" data-id="${cid}" title="Ver contacto">${esc(prov)}</a>${star}${contacto ? `<div class="subline">${esc(contacto)}</div>` : ``}</td>
+      <td>
+        <a href="#!" class="res-link js-open-contacto" data-id="${cid}" title="Ver contacto">${esc(prov)}</a>
+        ${contacto ? `<div class="subline">${esc(contacto)}</div>` : ``}
+      </td>
       <td>${esc(centro)}</td>
       <td>${esc(comuna)}</td>
       <td data-col="tons">${tons}</td>
       <td>${esc(resp)}</td>
     </tr>`;
   }
+
   tbody.innerHTML = rowsHtml || '<tr><td colspan="6" class="grey-text">No hay contactos para este período.</td></tr>';
+
+  // abrir contacto
   tbody.querySelectorAll('.js-open-contacto').forEach(a => {
-    a.addEventListener('click', (e)=>{ e.preventDefault(); const id = a.getAttribute('data-id'); if (!id) return;
-      try { const c = (state.contactosGuardados||[]).find(x => String(x._id) === String(id));
+    a.addEventListener('click', (e)=>{
+      e.preventDefault();
+      const id = a.getAttribute('data-id'); if (!id) return;
+      try {
+        const c = (state.contactosGuardados||[]).find(x => String(x._id) === String(id));
         if (!c) return (window.M?.toast) && M.toast({ html:'Contacto no encontrado', classes:'red' });
         if (typeof window.abrirDetalleContacto === 'function') window.abrirDetalleContacto(c);
       } catch {}
     });
   });
+
   ensureFullWidthTable();
 }
+
+/* ===== Expandir tabla si el panel está vacío ===== */
 function ensureFullWidthTable(){
   const tableCol = document.querySelector('#resumen_print_area .row .col.s12.m7') || document.querySelector('#resumen_print_area .row .col:first-child');
   const rightCol = document.querySelector('#resumen_print_area .row .col.s12.m5');
@@ -431,93 +435,71 @@ function ensureFullWidthTable(){
   }
 }
 
-/* ======================= Controles (Semana/Mes/Resp) ======================= */
+/* ======================= Controles (modo / periodo / selects) ======================= */
 function ensureModeSwitcher(){
   const toolbar = document.querySelector('.resumen-toolbar');
   if (!toolbar) return;
-
-  const seg       = document.getElementById('resumen_period');
-  const selSemana = document.getElementById('resumen_semana');
-  const selMes    = document.getElementById('resumen_mes');
-  const selResp   = document.getElementById('resumen_resp');
-  const tituloEl  = document.getElementById('resumen_titulo');
-
-  // actualizar visibilidad y título de forma segura
-  const applyVisibility = () => {
-    if (selSemana && selSemana.parentElement) {
-      selSemana.parentElement.style.display = (_cache.periodMode === 'semana') ? '' : 'none';
-    }
-    if (selMes && selMes.parentElement) {
-      selMes.parentElement.style.display = (_cache.periodMode === 'mes') ? '' : 'none';
-    }
-    if (tituloEl) {
-      tituloEl.textContent = (_cache.periodMode === 'semana') ? 'Informe semanal' : 'Informe mensual';
-    }
-  };
-
-  // Wiring del segmentado Semana/Mes
-  if (seg && !seg.__wired){
-    seg.__wired = true;
+  if (!document.getElementById('resumen_mode')){
+    const seg = document.createElement('div');
+    seg.className = 'segmented';
+    seg.id = 'resumen_mode';
+    seg.innerHTML = `
+      <button data-mode="visitas" class="is-active">Visitas</button>
+      <button data-mode="contactos">Contactos</button>
+    `;
+    toolbar.insertBefore(seg, toolbar.lastElementChild);
     seg.addEventListener('click', async (e) => {
-      const btn = e.target.closest('button[data-period]');
-      if (!btn) return;
-
-      const period = btn.getAttribute('data-period');
-      if (_cache.periodMode === period) return;
-
-      _cache.periodMode = period;
-
-      // activar/desactivar botones del propio contenedor
-      const btns = seg.querySelectorAll ? seg.querySelectorAll('button[data-period]') : [];
-      btns.forEach(b => b.classList.toggle('is-active', b === btn));
-
-      applyVisibility();
+      const btn = e.target.closest('button[data-mode]'); if (!btn) return;
+      const mode = btn.getAttribute('data-mode');
+      if (_cache.mode === mode) return;
+      _cache.mode = mode;
+      seg.querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b===btn));
       await refreshResumen();
     });
   }
 
-  // Poblar responsables (una vez)
+  // Segmentado Semana/Mes (si existe en HTML)
+  const segPeriod = document.getElementById('resumen_period');
+  const tituloEl  = document.getElementById('resumen_titulo');
+  const selW = document.getElementById('resumen_semana');
+  const selM = document.getElementById('resumen_mes');
+  const applyVisibility = () => {
+    if (selW && selW.parentElement) selW.parentElement.style.display = (_cache.periodMode === 'semana') ? '' : 'none';
+    if (selM && selM.parentElement) selM.parentElement.style.display = (_cache.periodMode === 'mes') ? '' : 'none';
+    if (tituloEl) tituloEl.textContent = (_cache.periodMode === 'semana') ? 'Informe semanal' : 'Informe mensual';
+  };
+  if (segPeriod && !segPeriod.__wired){
+    segPeriod.__wired = true;
+    segPeriod.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-period]'); if (!btn) return;
+      const period = btn.getAttribute('data-period');
+      if (_cache.periodMode === period) return;
+      _cache.periodMode = period;
+      (segPeriod.querySelectorAll('button[data-period]') || []).forEach(b => b.classList.toggle('is-active', b===btn));
+      applyVisibility();
+      await refreshResumen();
+    });
+    applyVisibility();
+  }
+
+  // Filtro Responsable (si existe en HTML)
+  const selResp = document.getElementById('resumen_resp');
   if (selResp && !selResp.__filled){
     selResp.__filled = true;
     const set = new Set();
-    (_cache.allVisitas || []).forEach(v => {
-      const r = v && (v.responsable || v.contactoResponsable || v.responsablePG);
-      if (r) set.add(String(r));
+    (_cache.allVisitas || []).forEach(v=>{ const r = v?.responsable || v?.contactoResponsable || v?.responsablePG; if (r) set.add(String(r)); });
+    (_cache.allContactos || []).forEach(c=>{ const r = c?.responsable || c?.contactoResponsable || c?.responsablePG; if (r) set.add(String(r)); });
+    Array.from(set).sort().forEach(o=>{
+      const op = document.createElement('option'); op.value = o; op.textContent = o; selResp.appendChild(op);
     });
-    (_cache.allContactos || []).forEach(c => {
-      const r = c && (c.responsable || c.contactoResponsable || c.responsablePG);
-      if (r) set.add(String(r));
-    });
-    Array.from(set).sort().forEach(o => {
-      const op = document.createElement('option');
-      op.value = o; op.textContent = o;
-      selResp.appendChild(op);
-    });
-  }
-
-  // Change handlers (seguros)
-  if (selSemana && !selSemana.__wired){
-    selSemana.__wired = true;
-    selSemana.addEventListener('change', () => refreshResumen());
-  }
-  if (selMes && !selMes.__wired){
-    selMes.__wired = true;
-    selMes.addEventListener('change', () => refreshResumen());
   }
   if (selResp && !selResp.__wired){
     selResp.__wired = true;
-    selResp.addEventListener('change', () => {
-      _cache.respFilter = selResp.value || '';
-      refreshResumen();
-    });
+    selResp.addEventListener('change', () => { _cache.respFilter = selResp.value || ''; refreshResumen(); });
   }
-
-  // Estado inicial
-  applyVisibility();
 }
 
-
-function wireCopyPrint(){
+function wireControls(){
   const btnPrint = $('#resumen_print');
   const btnCopy  = $('#resumen_copy');
   if (btnPrint && !btnPrint.__wired){ btnPrint.__wired = true; btnPrint.addEventListener('click', () => window.print()); }
@@ -540,16 +522,21 @@ function wireCopyPrint(){
       } catch { try { await navigator.clipboard.writeText(area.innerText); } catch {} }
     });
   }
+
+  ensureModeSwitcher();
+
+  const selW = document.getElementById('resumen_semana');
+  const selM = document.getElementById('resumen_mes');
+  if (selW && !selW.__wired){ selW.__wired = true; selW.addEventListener('change', () => refreshResumen()); }
+  if (selM && !selM.__wired){ selM.__wired = true; selM.addEventListener('change', () => refreshResumen()); }
 }
 
 /* ======================= API ======================= */
 export async function initResumenSemanalTab(){
   await ensureData();
-  ensureModeSwitcher();
   buildSemanaOptions();
   buildMesOptions();
-  wireCopyPrint();
-  syncHeaderWeekBadge();
+  wireControls();
   await refreshResumen();
 
   window.addEventListener('visita:created', async () => { _cache.allVisitas = []; _cache.byWeekVis.clear(); _cache.byMonthVis.clear(); await ensureData(); await refreshResumen(); });
@@ -560,23 +547,19 @@ export async function initResumenSemanalTab(){
     await ensureData(); await refreshResumen();
   });
 }
+
+/** Forzar modo desde otras vistas */
 export function setResumenMode(mode, opts = {}){
   if (mode !== 'visitas' && mode !== 'contactos') return;
   if (_cache.mode === mode) return;
   _cache.mode = mode;
+  const seg = document.getElementById('resumen_mode');
+  if (seg){
+    seg.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('is-active', b.getAttribute('data-mode') === mode);
+    });
+  }
   if (!opts.silentRewire) refreshResumen();
-}
-
-/* ======================= Header badge ======================= */
-function syncHeaderWeekBadge(){
-  const badge = document.getElementById('badgeSemanaActual');
-  if (!badge) return;
-  const span = badge.querySelector('span');
-  const curr = getCurrentWeekKey();
-  if (span) span.textContent = `Semana ${curr}`;
-  badge.style.border = '1px solid #f59e0b';
-  badge.style.background = '#fff7ed';
-  badge.style.fontWeight = '700';
 }
 
 /* ======================= Refresh ======================= */
@@ -584,25 +567,16 @@ export async function refreshResumen(){
   await ensureData();
   buildSemanaOptions(); buildMesOptions();
 
+  const isWeek = _cache.periodMode === 'semana';
   const selW = document.getElementById('resumen_semana');
   const selM = document.getElementById('resumen_mes');
-  const selectedWeek  = (selW?.value) || getCurrentWeekKey();
-  const selectedMonth = (selM?.value) || getCurrentMonthKey();
 
-  const isWeek = _cache.periodMode === 'semana';
-  const key = isWeek ? selectedWeek : selectedMonth;
+  // fallback valores por defecto
+  if (isWeek && selW && !selW.value){ const weeks = allWeeks(); if (weeks.length) selW.value = weeks[0]; }
+  if (!isWeek && selM && !selM.value){ const months = allMonths(); if (months.length) selM.value = months[0]; }
+
+  const key  = isWeek ? ((selW && selW.value) || getCurrentWeekKey()) : ((selM && selM.value) || getCurrentMonthKey());
   const resp = _cache.respFilter || (document.getElementById('resumen_resp')?.value || '');
-
-  const top = document.getElementById('resumen_top');
-  if (top){
-    if (isWeek && key === getCurrentWeekKey()){
-      top.innerHTML = `<div class="chip-estado" style="background:#fef3c7;border-color:#fde68a;color:#92400e">
-        <i class="material-icons" style="font-size:16px">event</i> Semana actual: ${key}
-      </div>`;
-    } else {
-      top.innerHTML = '';
-    }
-  }
 
   const aggV = aggregateVisitasByKey(key, isWeek, resp);
   const aggC = await aggregateContactosByKeyAsync(key, isWeek, resp);
@@ -617,4 +591,3 @@ export async function refreshResumen(){
 if (document.getElementById('tab-resumen')) {
   initResumenSemanalTab().catch(err => console.error('[resumen] init error', err));
 }
-
