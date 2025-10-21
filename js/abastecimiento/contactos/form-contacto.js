@@ -632,7 +632,7 @@ export function setupFormulario() {
       clearProveedorHidden();
       state.editId = null;
 
-      // limpiar extras nuevos
+    // limpiar extras nuevos
 var n1 = document.getElementById('contactoBiomasa');        if (n1) n1.value = '';
 var n2 = document.getElementById('contactoLocalidad');      if (n2) n2.value = '';
 var n3 = document.getElementById('contactoProveedorNuevo'); if (n3) n3.checked = false;
@@ -652,8 +652,7 @@ if (modalInst && typeof modalInst.close === 'function') {
   try { console.error('[form-contacto] ERROR:', msg); } catch (_) {}
   if (typeof M !== 'undefined' && M.toast) {
     M.toast({ html: 'Error al guardar contacto', displayLength: 2500 });
-    }
-  });
+  }
 }
 
 /* ---------- Acciones ---------- */
