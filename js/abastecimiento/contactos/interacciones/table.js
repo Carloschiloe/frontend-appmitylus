@@ -6,7 +6,7 @@ export async function renderTable(container, { onChanged } = {}){
   container.innerHTML = `
   <div class="card"><div class="card-content">
     <div class="row" style="margin-bottom:8px">
-      <!-- RESPONSABLE PG: ahora es SELECT con opciones fijas -->
+      <!-- RESPONSABLE PG (select fijo) -->
       <div class="col s12 m3">
         <label class="grey-text text-darken-1" style="font-size:12px">Responsable PG</label>
         <select id="f-responsable" class="browser-default" aria-label="Responsable PG">
@@ -17,6 +17,7 @@ export async function renderTable(container, { onChanged } = {}){
         </select>
       </div>
 
+      <!-- TIPO (select) -->
       <div class="col s12 m3">
         <label class="grey-text text-darken-1" style="font-size:12px">Tipo</label>
         <select id="f-tipo" class="browser-default" aria-label="Tipo">
@@ -29,9 +30,10 @@ export async function renderTable(container, { onChanged } = {}){
         </select>
       </div>
 
+      <!-- SEMANA (select autogenerado con últimas 20 semanas) -->
       <div class="col s12 m3">
         <label class="grey-text text-darken-1" style="font-size:12px">Semana</label>
-        <input id="f-semana" placeholder="2025-W43" aria-label="Semana (YYYY-Www)">
+        <select id="f-semana" class="browser-default" aria-label="Semana (YYYY-Www)"></select>
       </div>
 
       <div class="col s12 m3" style="display:flex;gap:8px;align-items:center;">
@@ -71,15 +73,8 @@ export async function renderTable(container, { onChanged } = {}){
   const fSemana = container.querySelector('#f-semana');
   const fNuevo  = container.querySelector('#f-solo-nuevos');
 
-  // Semana ISO por defecto si el input está vacío
-  if (!fSemana.value) {
-    fSemana.value = currentIsoWeek();
-  }
-
-  // Enter solo en semana (el responsable ahora es select)
-  [fSemana].forEach(el => el.addEventListener('keydown', (e)=>{
-    if (e.key === 'Enter') btn.click();
-  }));
+  // ==== poblar semanas (actual y 19 anteriores) ====
+  populateWeeksSelect(fSemana, 20);
 
   // Delegación para editar
   tbody.addEventListener('click', (ev)=>{
@@ -115,22 +110,21 @@ export async function renderTable(container, { onChanged } = {}){
         tipo: (fTipo.value || '').trim() || undefined,
         responsable: (fResp.value || '').trim() || undefined,
         semana: (fSemana.value || '').trim() || undefined,
-        // si tildas "solo nuevos", lo pedimos al backend:
         nuevos: fNuevo.checked ? true : undefined
       };
 
-      // Evita enviar semana vacía
+      // Asegura semana por defecto
       if (!params.semana) params.semana = currentIsoWeek();
 
       const resp = await list(params);
       const items = (resp && (resp.items || resp.data || [])) || [];
 
-      // Si el backend aún no implementa 'nuevos', filtramos acá como fallback
+      // fallback de "nuevos" si backend aún no lo filtra
       const rows = (!fNuevo.checked) ? items : items.filter(it =>
         esContactoNuevo(it.contactoId) || esProveedorNuevoInteraccion(it)
       );
 
-      // Orden por fecha desc (fecha de la interacción)
+      // Orden por fecha desc
       rows.sort((a,b)=> (new Date(b.fecha||0)) - (new Date(a.fecha||0)));
 
       _lastRows = rows;
@@ -170,17 +164,35 @@ export async function renderTable(container, { onChanged } = {}){
   await refresh();
 }
 
-/* Utils */
+/* ===== Helpers ===== */
+function populateWeeksSelect(selectEl, count = 20){
+  const weeks = lastNWeeks(count);
+  selectEl.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join('');
+  // Selecciona la actual si existe en la lista
+  const curr = currentIsoWeek();
+  const has = weeks.includes(curr);
+  selectEl.value = has ? curr : weeks[0];
+}
+
+function lastNWeeks(n = 20){
+  const out = [];
+  let d = new Date();
+  for (let i=0; i<n; i++){
+    out.push(currentIsoWeek(d));
+    // retroceder 7 días
+    d = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7);
+  }
+  return out;
+}
+
 function currentIsoWeek(d = new Date()){
-  // Si ya tienes un helper global, úsalo:
   if (window.app?.utils?.isoWeek) {
     const w = window.app.utils.isoWeek(d);
     return `${d.getFullYear()}-W${String(w).padStart(2,'0')}`;
   }
-  // Fallback ISO week (lunes como primer día)
   const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNum = (tmp.getUTCDay() + 6) % 7; // 0..6 (0=Lunes)
-  tmp.setUTCDate(tmp.getUTCDate() - dayNum + 3); // jueves de esa semana
+  const dayNum = (tmp.getUTCDay() + 6) % 7; // 0..6 (0=Lun)
+  tmp.setUTCDate(tmp.getUTCDate() - dayNum + 3); // jueves
   const firstThursday = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 4));
   const week = 1 + Math.round(((tmp - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6)%7)) / 7);
   return `${tmp.getUTCFullYear()}-W${String(week).padStart(2,'0')}`;
