@@ -1,40 +1,85 @@
 import { state } from '../state.js';
-import { centroCodigoById } from '../../visitas/normalizers.js';
+import { centroCodigoById as _centroCodigoById } from '../../visitas/normalizers.js';
 
-// Detecta “nuevo contacto” por flag guardado al registrarlo.
-// Ajusta los posibles nombres según tu esquema real:
+// Detecta “nuevo” según varios flags comunes y/o el mapa local
 export function esContactoNuevo(contactoId){
-  const c = (state.contactosById && state.contactosById[contactoId]) || null;
-  if (!c) return false;
-  return !!(c.esNuevoProveedor || c.esNuevoContacto || c.nuevoProveedor || c.isNewSupplier);
+  // 1) flags en el mapa de contactos (si existe)
+  const c = state?.contactosById?.[contactoId] || null;
+  if (c && (c.proveedorNuevo || c.contactoProveedorNuevo || c.esNuevoProveedor || c.esNuevoContacto || c.isNewSupplier)) {
+    return true;
+  }
+  return false;
+}
+
+// Útil cuando la interacción ya trae su propio flag
+export function esProveedorNuevoInteraccion(interaccion = {}){
+  return !!(interaccion.proveedorNuevo || interaccion.contactoProveedorNuevo || interaccion.esNuevoProveedor);
+}
+
+// Normaliza tipo/proximoPaso a una categoría canónica
+function canonTipo(interaccion = {}){
+  const raw = String(interaccion.proximoPaso || interaccion.tipo || '').toLowerCase();
+  if (/llamada|telef/.test(raw)) return 'llamada';
+  if (/muestra/.test(raw)) return 'muestra';
+  if (/reuni/.test(raw)) return 'reunion';
+  if (/visita/.test(raw)) return 'visita';
+  if (/negociar|seguim/.test(raw)) return 'seguimiento';
+  return 'tarea';
+}
+
+// Resuelve centro con fallback seguro
+function centroCodigo(interaccion = {}){
+  if (interaccion.centroCodigo) return interaccion.centroCodigo;
+  if (interaccion.centroId && typeof _centroCodigoById === 'function') {
+    try { return _centroCodigoById(interaccion.centroId) || ''; } catch(e){ /* noop */ }
+  }
+  return '';
 }
 
 export function toCalendarEvent(interaccion){
-  const start = interaccion.fechaProx || interaccion.fecha;
+  if (!interaccion) return null;
+
+  // fecha: prioriza el próximo paso si existe (lo que vas a agendar)
+  const start = interaccion.proximoPasoFecha || interaccion.fechaProx || interaccion.fecha;
+  const startISO = start ? new Date(start).toISOString() : null;
+
+  const tipo = canonTipo(interaccion);
   const contacto = interaccion.contactoNombre || interaccion.proveedorNombre || 'Contacto';
-  const centro = interaccion.centroCodigo || centroCodigoById(interaccion.centroId) || '';
-  const tipo = interaccion.tipo || 'tarea';
+  const centro = centroCodigo(interaccion);
+  const tons = Number(interaccion.tonsConversadas || interaccion.tons || 0) || null;
 
+  // Título compacto por tipo
   const title =
-    tipo === 'llamada' ? `📞 ${contacto}`
-  : tipo === 'muestra' ? `🧪 Muestra ${centro || contacto}`
-  : tipo === 'reunion' ? `🤝 Reunión ${contacto}`
-  : tipo === 'visita'  ? `🗺️ Visita ${centro}`
-  : `✅ ${interaccion.proximoPaso || 'Tarea'}`;
+    tipo === 'llamada'     ? `📞 ${contacto}`
+  : tipo === 'muestra'     ? `🧪 ${centro || contacto}`
+  : tipo === 'reunion'     ? `🤝 ${contacto}`
+  : tipo === 'visita'      ? `🗺️ ${centro || contacto}`
+  : tipo === 'seguimiento' ? `🔁 ${contacto}`
+  :                          `✅ ${interaccion.proximoPaso || 'Tarea'}`;
 
-  const color =
-    tipo === 'llamada' ? '#1e88e5'
-  : tipo === 'muestra' ? '#8e24aa'
-  : tipo === 'reunion' ? '#43a047'
-  : tipo === 'visita'  ? '#fb8c00'
-  : '#546e7a';
+  // Paleta simple por tipo (fallback gris)
+  const colorMap = {
+    llamada:     '#1e88e5',
+    muestra:     '#8e24aa',
+    reunion:     '#43a047',
+    visita:      '#fb8c00',
+    seguimiento: '#0ea5e9',
+    tarea:       '#546e7a'
+  };
+  const color = colorMap[tipo] || '#546e7a';
 
   return {
-    id: interaccion._id,
+    id: interaccion._id || interaccion.id,
     title,
-    start,
-    end: start,
+    start: startISO,   // el calendario y tus adapters andan mejor con ISO-8601
+    end: startISO,     // eventos puntuales
     color,
-    meta: interaccion
+    meta: {
+      ...interaccion,
+      tipoCanon: tipo,
+      centroCodigo: centro,
+      tonsConversadas: tons
+    }
   };
 }
+
