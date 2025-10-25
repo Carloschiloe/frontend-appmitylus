@@ -6,8 +6,19 @@ export async function renderTable(container, { onChanged } = {}){
   container.innerHTML = `
   <div class="card"><div class="card-content">
     <div class="row" style="margin-bottom:8px">
-      <div class="col s12 m3"><input id="f-responsable" placeholder="Responsable PG" aria-label="Responsable"></div>
+      <!-- RESPONSABLE PG: ahora es SELECT con opciones fijas -->
       <div class="col s12 m3">
+        <label class="grey-text text-darken-1" style="font-size:12px">Responsable PG</label>
+        <select id="f-responsable" class="browser-default" aria-label="Responsable PG">
+          <option value="">Todos</option>
+          <option value="Claudio Alba">Claudio Alba</option>
+          <option value="Patricio Alvarez">Patricio Alvarez</option>
+          <option value="Carlos Avendaño">Carlos Avendaño</option>
+        </select>
+      </div>
+
+      <div class="col s12 m3">
+        <label class="grey-text text-darken-1" style="font-size:12px">Tipo</label>
         <select id="f-tipo" class="browser-default" aria-label="Tipo">
           <option value="">Todos los tipos</option>
           <option value="llamada">Llamada</option>
@@ -17,7 +28,12 @@ export async function renderTable(container, { onChanged } = {}){
           <option value="tarea">Tarea</option>
         </select>
       </div>
-      <div class="col s12 m3"><input id="f-semana" placeholder="2025-W43" aria-label="Semana (YYYY-Www)"></div>
+
+      <div class="col s12 m3">
+        <label class="grey-text text-darken-1" style="font-size:12px">Semana</label>
+        <input id="f-semana" placeholder="2025-W43" aria-label="Semana (YYYY-Www)">
+      </div>
+
       <div class="col s12 m3" style="display:flex;gap:8px;align-items:center;">
         <label style="display:flex;align-items:center;gap:6px">
           <input type="checkbox" id="f-solo-nuevos"><span>Solo contactos NUEVOS</span>
@@ -25,6 +41,7 @@ export async function renderTable(container, { onChanged } = {}){
         <button id="btn-filtrar" class="btn">Filtrar</button>
       </div>
     </div>
+
     <div class="mmpp-table-wrap">
       <table id="int-table" class="striped highlight" style="font-size:.95rem;width:100%">
         <thead>
@@ -59,8 +76,8 @@ export async function renderTable(container, { onChanged } = {}){
     fSemana.value = currentIsoWeek();
   }
 
-  // Enter en inputs = filtrar
-  [fResp, fSemana].forEach(el => el.addEventListener('keydown', (e)=>{
+  // Enter solo en semana (el responsable ahora es select)
+  [fSemana].forEach(el => el.addEventListener('keydown', (e)=>{
     if (e.key === 'Enter') btn.click();
   }));
 
