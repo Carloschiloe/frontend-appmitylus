@@ -165,3 +165,58 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
   }
   function esc(s){ return String(s||'').replace(/[<>&"]/g,c=>({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c])); }
 }
+
+// ==== helpers de autocomplete =====
+function attachAutocomplete(inputEl, fetcher, onPick, { min = 2 } = {}){
+  let box = document.createElement('div');
+  box.className = 'autocomplete-menu card';
+  Object.assign(box.style, { position:'absolute', zIndex: 9999, maxHeight:'260px', overflow:'auto', minWidth: inputEl.offsetWidth+'px' });
+  inputEl.parentNode.style.position = 'relative';
+  inputEl.parentNode.appendChild(box);
+
+  let last = '', timer = null;
+
+  const close = () => { box.innerHTML=''; box.style.display='none'; };
+  const open  = (html) => { box.innerHTML = html; box.style.display='block'; };
+
+  inputEl.addEventListener('input', () => {
+    const q = inputEl.value.trim();
+    if (q === last) return;
+    last = q;
+    if (timer) clearTimeout(timer);
+    if (q.length < min) { close(); return; }
+
+    timer = setTimeout(async () => {
+      const items = await fetcher(q);
+      if (!items || !items.length){ close(); return; }
+
+      const html = items.map((it, idx) => `
+        <a href="#" data-idx="${idx}" class="collection-item" style="display:block;padding:8px 12px">
+          <div style="font-weight:700">${esc(it.label)}</div>
+          ${it.sublabel ? `<div class="grey-text" style="font-size:12px">${esc(it.sublabel)}</div>` : ''}
+        </a>`).join('');
+
+      open(`<div class="collection" style="margin:0">${html}</div>`);
+
+      box.querySelectorAll('a').forEach(a=>{
+        a.addEventListener('click', (ev)=>{
+          ev.preventDefault();
+          const i = Number(a.getAttribute('data-idx'));
+          const it = items[i];
+          close();
+          onPick && onPick(it);
+        });
+      });
+    }, 160);
+  });
+
+  document.addEventListener('click', (e)=>{ if (!box.contains(e.target) && e.target!==inputEl) close(); });
+}
+
+// utils fetch JSON
+async function GET(url){
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+
