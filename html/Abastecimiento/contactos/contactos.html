@@ -61,6 +61,8 @@
         <li class="tab col s4"><a class="active" href="#tab-contactos">Empresas</a></li>
         <li class="tab col s4"><a href="#tab-visitas">Visitas a Cultivos</a></li>
         <li class="tab col s4"><a href="#tab-personas">Agenda de Contactos</a></li>
+        <!-- NUEVO: pestaña Interacciones -->
+        <li class="tab"><a href="#tab-interacciones">Interacciones</a></li>
         <li class="tab col s3"><a href="#tab-resumen">Resumen (semana/mes)</a></li>
       </ul>
     </div>
@@ -163,7 +165,7 @@
         <div class="table-toolbar">
           <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
             <button id="btnOpenPersonaModal" class="mmpp-add">
-              <i class="material-icons left" style="font-size:18px">person_add</i> Registrar persona
+              <i class="material-icons left">person_add</i> Registrar persona
             </button>
           </div>
           <div class="right">
@@ -188,6 +190,13 @@
             <tbody></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <!-- NUEVO: TAB INTERACCIONES -->
+    <section id="tab-interacciones" class="col s12" style="display:none;">
+      <div class="mmpp-card" style="margin-bottom:12px">
+        <div id="interacciones-root"></div>
       </div>
     </section>
 
@@ -517,6 +526,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+<!-- NUEVO: módulo Interacciones (lazy-mount al abrir la pestaña) -->
+<script src="/js/abastecimiento/contactos/interacciones/index.js?v=1"></script>
 
 <!-- Orquestador (carga e inicializa todo, incluido el Resumen) -->
 <script type="module" src="../../../js/abastecimiento/contactos/index.js?v=10"></script>
