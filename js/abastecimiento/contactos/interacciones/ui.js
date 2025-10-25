@@ -1,7 +1,7 @@
 // /js/abastecimiento/contactos/interacciones/ui.js
 import { list } from './api.js';
 import { renderTable } from './table.js';
-import { mountCalendar } from './calendar.js';
+import { mountAgendaLite } from './agenda-lite.js';
 import { openInteraccionModal } from './modal.js';
 
 export function mountInteracciones(root){
@@ -32,27 +32,26 @@ export function mountInteracciones(root){
   // Tabla (pasa rows a updateKPIs cuando cambian)
   renderTable(document.getElementById('int-table-wrap'), { onChanged: updateKPIs });
 
-  // Calendario: montar lazy al abrir la pestaña
+  // Calendario: montar lazy al abrir la pestaña (agenda de actividades, independiente del calendario MMPP)
   const calTabLink = root.querySelector('a[href="#int-calendario"]');
   const calDiv = root.querySelector('#int-calendario');
 
- calTabLink.addEventListener('click', async () => {
-  if (calDiv.dataset.mounted) return;
-  const { from, to } = currentMonthRange();
+  calTabLink.addEventListener('click', async () => {
+    if (calDiv.dataset.mounted) return;
+    const { from, to } = currentMonthRange();
 
-  let items = [];
-  try {
-    const resp = await list({ from, to });
-    items = (resp && resp.items) || [];
-  } catch (e) {
-    // backend aún no existe → montamos calendario vacío (solo UI)
-    items = [];
-  }
+    let items = [];
+    try {
+      const resp = await list({ from, to });
+      items = (resp && resp.items) || [];
+    } catch (e) {
+      // backend aún no existe → montamos calendario vacío (solo UI)
+      items = [];
+    }
 
-  mountCalendar(calDiv, items);
-  calDiv.dataset.mounted = '1';
-});
-
+    mountAgendaLite(calDiv, items);
+    calDiv.dataset.mounted = '1';
+  });
 
   // ===== helpers internos =====
   async function refreshAll(){
@@ -62,8 +61,12 @@ export function mountInteracciones(root){
     // fuerza refresh del calendario si ya estaba montado (mes visible actual)
     if (calDiv.dataset.mounted){
       const { from, to } = currentMonthRange();
-      const { items = [] } = await list({ from, to });
-      mountCalendar(calDiv, items);
+      let items = [];
+      try {
+        const resp = await list({ from, to });
+        items = (resp && resp.items) || [];
+      } catch (_) { items = []; }
+      mountAgendaLite(calDiv, items);
     }
   }
 
@@ -124,7 +127,7 @@ function currentIsoWeek(d = new Date()){
   if (window.app?.utils?.isoWeek) {
     const w = window.app.utils.isoWeek(d);
     return `${d.getFullYear()}-W${String(w).padStart(2,'0')}`;
-  }
+    }
   // Fallback ISO-8601
   const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   const dayNum = (tmp.getUTCDay() + 6) % 7; // 0..6 (0=Lun)
@@ -146,4 +149,3 @@ function fmtNum(n){
   const v = Number(n)||0;
   return v.toLocaleString('es-CL', { maximumFractionDigits: 2 });
 }
-
