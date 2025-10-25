@@ -7,6 +7,8 @@ const RESPONSABLES = [
 ];
 
 export function openInteraccionModal({ preset = {}, onSaved } = {}){
+  ensureAutoStyles();
+
   // crea/recicla modal
   const id = 'modal-interaccion';
   let modal = document.getElementById(id);
@@ -44,12 +46,12 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
         </div>
 
         <div class="input-field col s12">
-          <input id="i-contacto-nombre" placeholder="Nombre contacto">
+          <input id="i-contacto-nombre" placeholder="Nombre contacto" autocomplete="off">
           <label class="active" for="i-contacto-nombre">Contacto</label>
         </div>
 
         <div class="input-field col s12">
-          <input id="i-proveedor-nombre" placeholder="Proveedor">
+          <input id="i-proveedor-nombre" placeholder="Proveedor (por nombre o código de centro)" autocomplete="off">
           <label class="active" for="i-proveedor-nombre">Proveedor</label>
         </div>
 
@@ -111,6 +113,72 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
   setVal('#i-estado', preset.estado || 'pendiente');
   setVal('#i-resumen', preset.resumen || '');
 
+  // ====== AUTOCOMPLETE ======
+  const elContacto  = modal.querySelector('#i-contacto-nombre');
+  const elProveedor = modal.querySelector('#i-proveedor-nombre');
+
+  // guardamos selección para mandar ids/keys solo si el usuario eligió del listado
+  let picked = {
+    contactoId:  preset.contactoId || null,
+    proveedorKey: preset.proveedorKey || null
+  };
+
+  // CONTACTO: sugiere por nombre (y muestra proveedor debajo)
+  attachAutocomplete(
+    elContacto,
+    async (q) => {
+      try{
+        const { items=[] } = await GET(`/api/suggest/contactos?q=${encodeURIComponent(q)}`);
+        return items.map(c => ({
+          value: c.nombre || '',
+          label: c.nombre || '',
+          sublabel: c.proveedorNombre ? `Proveedor: ${c.proveedorNombre}` : '',
+          meta: c
+        }));
+      }catch{ return []; }
+    },
+    async (it) => {
+      elContacto.value = it.value;
+      picked.contactoId = it.meta._id || null;
+
+      // Si el contacto tiene proveedorKey conocido, intenta precargar proveedor
+      if (it.meta.proveedorKey){
+        try{
+          const { items=[] } = await GET(`/api/contactos/${it.meta._id}/proveedores`);
+          if (items.length === 1){
+            elProveedor.value = items[0].proveedorNombre || '';
+            picked.proveedorKey = items[0].proveedorKey || null;
+          } else {
+            // varias opciones: dejamos que el usuario elija con el autocomplete de proveedor
+            picked.proveedorKey = null;
+          }
+        }catch{/* noop */}
+      }
+    },
+    { min: 2 }
+  );
+
+  // PROVEEDOR: busca por nombre o código de centro
+  attachAutocomplete(
+    elProveedor,
+    async (q) => {
+      try{
+        const { items=[] } = await GET(`/api/suggest/proveedores?q=${encodeURIComponent(q)}`);
+        return items.map(p => ({
+          value: p.proveedorNombre || '',
+          label: p.proveedorNombre || '',
+          sublabel: p.codigos?.length ? `Códigos: ${p.codigos.slice(0,5).join(', ')}` : '',
+          meta: p
+        }));
+      }catch{ return []; }
+    },
+    (it) => {
+      elProveedor.value   = it.value;
+      picked.proveedorKey = it.meta.proveedorKey || null;
+    },
+    { min: 2 }
+  );
+
   // Guardar
   modal.querySelector('#i-save').addEventListener('click', async () => {
     const payload = {
@@ -124,9 +192,12 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
       fechaProx: fromLocalDT(val('#i-fecha-prox')),
       estado: val('#i-estado','pendiente'),
       resumen: val('#i-resumen'),
+
+      // IDs/keys solo si el usuario eligió una sugerencia
+      contactoId: picked.contactoId || preset.contactoId || null,
+      proveedorKey: picked.proveedorKey || preset.proveedorKey || null,
+
       // from preset (si venían)
-      contactoId: preset.contactoId || null,
-      proveedorKey: preset.proveedorKey || null,
       centroId: preset.centroId || null,
       centroCodigo: preset.centroCodigo || null,
       comuna: preset.comuna || null,
@@ -168,11 +239,12 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
 
 // ==== helpers de autocomplete =====
 function attachAutocomplete(inputEl, fetcher, onPick, { min = 2 } = {}){
+  const field = inputEl.closest('.input-field') || inputEl.parentNode;
+  field.style.position = field.style.position || 'relative';
+
   let box = document.createElement('div');
   box.className = 'autocomplete-menu card';
-  Object.assign(box.style, { position:'absolute', zIndex: 9999, maxHeight:'260px', overflow:'auto', minWidth: inputEl.offsetWidth+'px' });
-  inputEl.parentNode.style.position = 'relative';
-  inputEl.parentNode.appendChild(box);
+  field.appendChild(box);
 
   let last = '', timer = null;
 
@@ -187,7 +259,8 @@ function attachAutocomplete(inputEl, fetcher, onPick, { min = 2 } = {}){
     if (q.length < min) { close(); return; }
 
     timer = setTimeout(async () => {
-      const items = await fetcher(q);
+      let items = [];
+      try { items = await fetcher(q); } catch { items = []; }
       if (!items || !items.length){ close(); return; }
 
       const html = items.map((it, idx) => `
@@ -219,4 +292,19 @@ async function GET(url){
   if (!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
 }
+
+// estilos mínimos para el menú (una sola vez)
+function ensureAutoStyles(){
+  if (document.getElementById('auto-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'auto-styles';
+  s.textContent = `
+    .autocomplete-menu{position:absolute;left:0;right:0;top:100%;margin-top:2px;display:none;max-height:260px;overflow:auto;}
+    .autocomplete-menu .collection{border:none;box-shadow:none;}
+    .autocomplete-menu .collection-item{border-bottom:1px solid #eee;}
+    .autocomplete-menu .collection-item:hover{background:#f5f5f5;}
+  `;
+  document.head.appendChild(s);
+}
+
 
