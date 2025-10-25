@@ -1,6 +1,13 @@
 import { create, update } from './api.js';
 
+const RESPONSABLES = [
+  'Claudio Alba',
+  'Patricio Alvarez',
+  'Carlos Avendaño',
+];
+
 export function openInteraccionModal({ preset = {}, onSaved } = {}){
+  // crea/recicla modal
   const id = 'modal-interaccion';
   let modal = document.getElementById(id);
   if (!modal){
@@ -10,6 +17,7 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
     document.body.appendChild(modal);
   }
 
+  // HTML
   modal.innerHTML = `
     <div class="modal-content">
       <h5>${preset._id ? 'Editar' : 'Nueva'} interacción</h5>
@@ -20,6 +28,7 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
         </div>
 
         <div class="input-field col s12 m4">
+          <label class="active" for="i-tipo">Tipo</label>
           <select id="i-tipo" class="browser-default">
             <option value="llamada">Llamada</option>
             <option value="visita">Visita</option>
@@ -27,12 +36,11 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
             <option value="reunion">Reunión</option>
             <option value="tarea">Tarea</option>
           </select>
-          <label class="active" for="i-tipo" style="transform:translateY(-18px);display:block;font-size:12px;color:#666">Tipo</label>
         </div>
 
         <div class="input-field col s12 m4">
-          <input id="i-responsable" placeholder="Responsable PG">
           <label class="active" for="i-responsable">Responsable PG</label>
+          <select id="i-responsable" class="browser-default"></select>
         </div>
 
         <div class="input-field col s12">
@@ -46,7 +54,7 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
         </div>
 
         <div class="input-field col s12 m4">
-          <input id="i-tons" type="number" min="0" step="0.01">
+          <input id="i-tons" type="number" min="0" step="1">
           <label class="active" for="i-tons">Tons conversadas (opcional)</label>
         </div>
 
@@ -61,17 +69,17 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
         </div>
 
         <div class="input-field col s12 m4">
+          <label class="active" for="i-estado">Estado</label>
           <select id="i-estado" class="browser-default">
             <option value="pendiente">Pendiente</option>
             <option value="agendado">Agendado</option>
-            <option value="hecho">Hecho</option>
+            <option value="completado">Completado</option>
             <option value="cancelado">Cancelado</option>
           </select>
-          <label class="active" for="i-estado" style="transform:translateY(-18px);display:block;font-size:12px;color:#666">Estado</label>
         </div>
 
         <div class="input-field col s12">
-          <textarea id="i-resumen" class="materialize-textarea" placeholder="Hallazgos, acuerdos, observaciones"></textarea>
+          <textarea id="i-resumen" class="materialize-textarea" placeholder="Resumen/Observaciones"></textarea>
           <label class="active" for="i-resumen">Resumen</label>
         </div>
       </div>
@@ -85,63 +93,45 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
   const inst = M.Modal.init(modal, { dismissible: true });
   inst.open();
 
+  // Pinta opciones del select Responsable PG (sin escritura)
+  const selResp = modal.querySelector('#i-responsable');
+  selResp.innerHTML = `<option value=""></option>` +
+    RESPONSABLES.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+
   // defaults
-  const setVal = (sel,val) => { const el = modal.querySelector(sel); if (el) el.value = (val ?? ''); };
-
-  // fecha interacción: ahora si no viene
-  const fechaBaseISO = preset.fecha || new Date().toISOString();
-  setVal('#i-fecha', toLocalDT(fechaBaseISO));
-
+  const setVal = (sel,val) => { const el = modal.querySelector(sel); if (el) el.value = val ?? ''; };
+  setVal('#i-fecha', toLocalDT(preset.fecha || new Date().toISOString()));
   setVal('#i-tipo',  preset.tipo || 'llamada');
-  setVal('#i-responsable', preset.responsable || '');
+  setVal('#i-responsable', matchResp(preset.responsable));
   setVal('#i-contacto-nombre', preset.contactoNombre || '');
   setVal('#i-proveedor-nombre', preset.proveedorNombre || '');
   setVal('#i-tons', preset.tonsConversadas ?? '');
-
-  // próximo paso: prioriza proximoPasoFecha, admite legacy fechaProx
-  const proxISO = preset.proximoPasoFecha || preset.fechaProx || '';
   setVal('#i-prox-paso', preset.proximoPaso || '');
-  setVal('#i-fecha-prox', toLocalDT(proxISO));
-
-  // estado canónico
-  const est = (preset.estado === 'completado') ? 'hecho' : (preset.estado || 'pendiente');
-  setVal('#i-estado', est);
-
+  setVal('#i-fecha-prox', toLocalDT(preset.fechaProx || ''));
+  setVal('#i-estado', preset.estado || 'pendiente');
   setVal('#i-resumen', preset.resumen || '');
 
+  // Guardar
   modal.querySelector('#i-save').addEventListener('click', async () => {
-    // normaliza estado si el usuario lo cambió a completado por costumbre
-    const estadoSel = val('#i-estado','pendiente');
-    const estado = (estadoSel === 'completado') ? 'hecho' : estadoSel;
-
     const payload = {
       tipo: val('#i-tipo','llamada'),
       fecha: fromLocalDT(val('#i-fecha')),
-
-      responsable: val('#i-responsable'),
+      responsable: matchResp(val('#i-responsable')) || '',
       contactoNombre: val('#i-contacto-nombre'),
       proveedorNombre: val('#i-proveedor-nombre'),
-
       tonsConversadas: num(val('#i-tons')),
-
       proximoPaso: val('#i-prox-paso'),
-      proximoPasoFecha: fromLocalDT(val('#i-fecha-prox')), // <-- nombre definitivo
-      estado,
+      fechaProx: fromLocalDT(val('#i-fecha-prox')),
+      estado: val('#i-estado','pendiente'),
       resumen: val('#i-resumen'),
-
-      // preservar llaves que vengan en preset
-      contactoId: preset.contactoId ?? null,
-      proveedorKey: preset.proveedorKey ?? null,
-      centroId: preset.centroId ?? null,
-      centroCodigo: preset.centroCodigo ?? null,
-      comuna: preset.comuna ?? null,
-      areaCodigo: preset.areaCodigo ?? null
+      // from preset (si venían)
+      contactoId: preset.contactoId || null,
+      proveedorKey: preset.proveedorKey || null,
+      centroId: preset.centroId || null,
+      centroCodigo: preset.centroCodigo || null,
+      comuna: preset.comuna || null,
+      areaCodigo: preset.areaCodigo || null,
     };
-
-    // compat: si alguien del backend aún lee fechaProx, la incluimos
-    if (payload.proximoPasoFecha && !preset.fechaProx) {
-      payload.fechaProx = payload.proximoPasoFecha;
-    }
 
     try {
       if (preset._id) await update(preset._id, payload);
@@ -155,19 +145,23 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
     }
   });
 
+  // helpers locales
   function val(sel, def=''){ const el = modal.querySelector(sel); return el ? (el.value ?? def) : def; }
   function num(v){ const n = Number(v); return Number.isFinite(n) ? n : null; }
   function toLocalDT(iso){
     if (!iso) return '';
     const d = new Date(iso);
-    if (isNaN(d)) return '';
     const pad = n => String(n).padStart(2,'0');
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    // segundos no los mostramos para no ensuciar el input
   }
   function fromLocalDT(local){
     if (!local) return null;
     const d = new Date(local);
-    return isNaN(d) ? null : d.toISOString();
+    return d.toISOString();
   }
+  function matchResp(val){
+    const v = String(val||'').trim();
+    return RESPONSABLES.find(r => r.toLowerCase() === v.toLowerCase()) || '';
+  }
+  function esc(s){ return String(s||'').replace(/[<>&"]/g,c=>({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c])); }
 }
