@@ -16,13 +16,20 @@ export function mountInteracciones(root){
       <button id="btn-nueva-int" class="btn">+ Llamada/Acuerdo</button>
     </div>
 
-    <div id="int-llamadas">
+    <div id="int-llamadas" class="section">
       <div class="row" id="int-kpis" style="margin-top:8px;"></div>
       <div id="int-table-wrap" class="mmpp-table-wrap"></div>
     </div>
 
-    <div id="int-calendario" class="section"></div>
+    <!-- 👇 oculto por defecto -->
+    <div id="int-calendario" class="section hide"></div>
   `;
+
+  // Inicializar tabs (Materialize) para esta sub-sección
+  if (window.M && M.Tabs) {
+    const tabs = root.querySelectorAll('.tabs');
+    M.Tabs.init(tabs, {});
+  }
 
   // Crear nueva interacción
   document.getElementById('btn-nueva-int').addEventListener('click', () => {
@@ -32,21 +39,32 @@ export function mountInteracciones(root){
   // Tabla (pasa rows a updateKPIs cuando cambian)
   renderTable(document.getElementById('int-table-wrap'), { onChanged: updateKPIs });
 
-  // Calendario: montar lazy al abrir la pestaña (agenda de actividades, independiente del calendario MMPP)
-  const calTabLink = root.querySelector('a[href="#int-calendario"]');
-  const calDiv = root.querySelector('#int-calendario');
+  // Referencias
+  const llamadasDiv = root.querySelector('#int-llamadas');
+  const calDiv      = root.querySelector('#int-calendario');
+  const tabL        = root.querySelector('a[href="#int-llamadas"]');
+  const tabC        = root.querySelector('a[href="#int-calendario"]');
 
-  calTabLink.addEventListener('click', async () => {
+  // Mostrar solo la vista seleccionada
+  tabL.addEventListener('click', () => {
+    llamadasDiv.classList.remove('hide');
+    calDiv.classList.add('hide');
+  });
+
+  // Calendario: montar lazy al abrir la pestaña (agenda de actividades)
+  tabC.addEventListener('click', async () => {
+    llamadasDiv.classList.add('hide');
+    calDiv.classList.remove('hide');
+
     if (calDiv.dataset.mounted) return;
-    const { from, to } = currentMonthRange();
 
+    const { from, to } = currentMonthRange();
     let items = [];
     try {
       const resp = await list({ from, to });
       items = (resp && resp.items) || [];
-    } catch (e) {
-      // backend aún no existe → montamos calendario vacío (solo UI)
-      items = [];
+    } catch (_) {
+      items = []; // backend aún no está: agenda vacía, no rompe
     }
 
     mountAgendaLite(calDiv, items);
@@ -55,10 +73,9 @@ export function mountInteracciones(root){
 
   // ===== helpers internos =====
   async function refreshAll(){
-    // refresca KPIs de la semana actual
     await updateKPIs();
 
-    // fuerza refresh del calendario si ya estaba montado (mes visible actual)
+    // Si el calendario ya está montado, recárgalo para el mes visible
     if (calDiv.dataset.mounted){
       const { from, to } = currentMonthRange();
       let items = [];
@@ -79,11 +96,7 @@ export function mountInteracciones(root){
         rows = resp.items || [];
       }
 
-      // normalizaciones
-      const canonEstado = s => {
-        const raw = String(s || '').toLowerCase();
-        return raw === 'completado' ? 'hecho' : raw;
-      };
+      const canonEstado = s => (String(s||'').toLowerCase() === 'completado' ? 'hecho' : String(s||'').toLowerCase());
       const isLlamada = r => String(r.tipo||'').toLowerCase().trim() === 'llamada';
       const hasAcuerdoConFecha = r => !!(r.proximoPaso && (r.proximoPasoFecha || r.fechaProx));
 
@@ -123,12 +136,10 @@ function injectStyles(){
 
 /* ===== utilidades de fecha/número ===== */
 function currentIsoWeek(d = new Date()){
-  // Usa helper global si existe para mantener consistencia con el resto de la app
   if (window.app?.utils?.isoWeek) {
     const w = window.app.utils.isoWeek(d);
     return `${d.getFullYear()}-W${String(w).padStart(2,'0')}`;
-    }
-  // Fallback ISO-8601
+  }
   const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   const dayNum = (tmp.getUTCDay() + 6) % 7; // 0..6 (0=Lun)
   tmp.setUTCDate(tmp.getUTCDate() - dayNum + 3); // jueves de esa semana
@@ -149,3 +160,4 @@ function fmtNum(n){
   const v = Number(n)||0;
   return v.toLocaleString('es-CL', { maximumFractionDigits: 2 });
 }
+
