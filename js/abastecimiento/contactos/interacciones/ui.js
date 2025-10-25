@@ -36,14 +36,23 @@ export function mountInteracciones(root){
   const calTabLink = root.querySelector('a[href="#int-calendario"]');
   const calDiv = root.querySelector('#int-calendario');
 
-  calTabLink.addEventListener('click', async () => {
-    if (!calDiv.dataset.mounted){
-      const { from, to } = currentMonthRange();
-      const { items = [] } = await list({ from, to });
-      mountCalendar(calDiv, items);
-      calDiv.dataset.mounted = '1';
-    }
-  });
+ calTabLink.addEventListener('click', async () => {
+  if (calDiv.dataset.mounted) return;
+  const { from, to } = currentMonthRange();
+
+  let items = [];
+  try {
+    const resp = await list({ from, to });
+    items = (resp && resp.items) || [];
+  } catch (e) {
+    // backend aún no existe → montamos calendario vacío (solo UI)
+    items = [];
+  }
+
+  mountCalendar(calDiv, items);
+  calDiv.dataset.mounted = '1';
+});
+
 
   // ===== helpers internos =====
   async function refreshAll(){
@@ -137,3 +146,4 @@ function fmtNum(n){
   const v = Number(n)||0;
   return v.toLocaleString('es-CL', { maximumFractionDigits: 2 });
 }
+
