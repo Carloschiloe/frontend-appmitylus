@@ -2,7 +2,7 @@ import { list } from './api.js';
 import { esContactoNuevo, esProveedorNuevoInteraccion } from './normalizers.js';
 import { openInteraccionModal } from './modal.js';
 
-export async function renderTable(container, { onChanged } = {}){
+export async function renderTable(container, { onChanged } = {}) {
   container.innerHTML = `
   <div class="card"><div class="card-content">
     <div class="row" style="margin-bottom:8px">
@@ -77,7 +77,7 @@ export async function renderTable(container, { onChanged } = {}){
   populateWeeksSelect(fSemana, 20);
 
   // Delegación para editar
-  tbody.addEventListener('click', (ev)=>{
+  tbody.addEventListener('click', (ev) => {
     const t = ev.target;
     if (!t || !t.classList) return;
     if (t.classList.contains('edit-int')) {
@@ -97,7 +97,7 @@ export async function renderTable(container, { onChanged } = {}){
   let _lastRows = [];
   let _loading = false;
 
-  async function refresh(){
+  async function refresh() {
     if (_loading) return;
     _loading = true;
     const oldTxt = btn.textContent;
@@ -125,7 +125,7 @@ export async function renderTable(container, { onChanged } = {}){
       );
 
       // Orden por fecha desc
-      rows.sort((a,b)=> (new Date(b.fecha||0)) - (new Date(a.fecha||0)));
+      rows.sort((a, b) => (new Date(b.fecha || 0)) - (new Date(a.fecha || 0)));
 
       _lastRows = rows;
 
@@ -133,16 +133,17 @@ export async function renderTable(container, { onChanged } = {}){
         const nuevo = (esContactoNuevo(r.contactoId) || esProveedorNuevoInteraccion(r))
           ? '<span class="nuevo-star yellow" title="Proveedor nuevo">★</span>'
           : '';
+
         return `
           <tr data-id="${esc(r._id || r.id || '')}" data-idx="${i}">
             <td>${fmtDT(r.fecha)}</td>
             <td>${esc(r.tipo || '')}</td>
             <td>${esc(r.contactoNombre || '')}</td>
             <td>${esc(r.proveedorNombre || '')}</td>
-            <td style="text-align:right">${fmtNum(r.tonsConversadas)}</td>
+            <td style="text-align:right">${fmtNum(r.tonsAcordadas)}</td> <!-- ✅ corregido -->
             <td>${esc(r.proximoPaso || '')}</td>
-            <td>${fmtDT(r.proximoPasoFecha || r.fechaProx)}</td>
-            <td>${esc(r.responsable || '')}</td>
+            <td>${fmtDT(r.fechaProximo)}</td> <!-- ✅ corregido -->
+            <td>${esc(r.responsablePG || '')}</td> <!-- ✅ corregido -->
             <td>${esc(canonEstado(r.estado))}</td>
             <td>${nuevo}</td>
             <td><a class="btn-flat blue-text edit-int">Editar</a></td>
@@ -165,55 +166,57 @@ export async function renderTable(container, { onChanged } = {}){
 }
 
 /* ===== Helpers ===== */
-function populateWeeksSelect(selectEl, count = 20){
+function populateWeeksSelect(selectEl, count = 20) {
   const weeks = lastNWeeks(count);
   selectEl.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join('');
-  // Selecciona la actual si existe en la lista
   const curr = currentIsoWeek();
   const has = weeks.includes(curr);
   selectEl.value = has ? curr : weeks[0];
 }
 
-function lastNWeeks(n = 20){
+function lastNWeeks(n = 20) {
   const out = [];
   let d = new Date();
-  for (let i=0; i<n; i++){
+  for (let i = 0; i < n; i++) {
     out.push(currentIsoWeek(d));
-    // retroceder 7 días
     d = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7);
   }
   return out;
 }
 
-function currentIsoWeek(d = new Date()){
+function currentIsoWeek(d = new Date()) {
   if (window.app?.utils?.isoWeek) {
     const w = window.app.utils.isoWeek(d);
-    return `${d.getFullYear()}-W${String(w).padStart(2,'0')}`;
+    return `${d.getFullYear()}-W${String(w).padStart(2, '0')}`;
   }
   const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNum = (tmp.getUTCDay() + 6) % 7; // 0..6 (0=Lun)
-  tmp.setUTCDate(tmp.getUTCDate() - dayNum + 3); // jueves
+  const dayNum = (tmp.getUTCDay() + 6) % 7;
+  tmp.setUTCDate(tmp.getUTCDate() - dayNum + 3);
   const firstThursday = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 4));
-  const week = 1 + Math.round(((tmp - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6)%7)) / 7);
-  return `${tmp.getUTCFullYear()}-W${String(week).padStart(2,'0')}`;
+  const week = 1 + Math.round(((tmp - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+  return `${tmp.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 
-function canonEstado(s){
+function canonEstado(s) {
   const raw = String(s || '').toLowerCase();
   if (raw === 'completado') return 'hecho';
   if (!raw) return '';
   return raw;
 }
 
-function fmtDT(iso){
-  if(!iso) return '';
+function fmtDT(iso) {
+  if (!iso) return '';
   const d = new Date(iso);
   if (isNaN(d)) return '';
   return d.toLocaleString('es-CL');
 }
-function fmtNum(n){
+
+function fmtNum(n) {
   if (n === null || n === undefined || n === '') return '';
   const v = Number(n); if (!Number.isFinite(v)) return '';
   return v.toLocaleString('es-CL', { maximumFractionDigits: 2 });
 }
-function esc(s){ return String(s||'').replace(/[<>&]/g,c=>({ '<':'&lt;','>':'&gt;','&':'&amp;' }[c])); }
+
+function esc(s) {
+  return String(s || '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+}
