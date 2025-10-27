@@ -1,10 +1,10 @@
-// modal.js — Interacciones (completo y corregido)
-// - Autocomplete de contacto con /api/suggest/contactos?q=
+// modal.js — Interacciones (completo y corregido - Opción B)
+// - Usa API_BASE exportado desde ./api.js (sin tocar window)
+// - Autocomplete de contacto con `${API_BASE}/suggest/contactos?q=`
 // - Al pickear contacto: setea contactoId, proveedorNombre y proveedorKey
 // - Fix: define esc() para evitar "esc is not defined"
-// - Sin dependencias de /api/suggest/proveedores ni /api/contactos/:id/proveedores
 
-import { create, update } from './api.js';
+import { create, update, API_BASE } from './api.js';
 
 const RESPONSABLES = [
   'Claudio Alba',
@@ -21,11 +21,13 @@ function esc(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+
 async function GET(url){
   const r = await fetch(url);
   if (!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
 }
+
 function ensureAutoStyles(){
   if (document.getElementById('auto-styles')) return;
   const s = document.createElement('style');
@@ -38,6 +40,7 @@ function ensureAutoStyles(){
   `;
   document.head.appendChild(s);
 }
+
 function attachAutocomplete(inputEl, fetcher, onPick, { min = 2 } = {}){
   const field = inputEl.closest('.input-field') || inputEl.parentNode;
   field.style.position = field.style.position || 'relative';
@@ -215,10 +218,9 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
   attachAutocomplete(
     elContacto,
     async (q) => {
-      // Espera items de /api/suggest/contactos en formato:
+      // Espera items de /suggest/contactos:
       // { contactoId, contactoNombre, email, telefono, empresas:[{proveedorKey,nombre,...}], label }
-      const base = (window.API_BASE || '/api');
-      const { items = [] } = await GET(`${base}/suggest/contactos?q=${encodeURIComponent(q)}`);
+      const { items = [] } = await GET(`${API_BASE}/suggest/contactos?q=${encodeURIComponent(q)}`);
       return items.map(it => ({
         value: it.contactoNombre || '',
         label: it.label || it.contactoNombre || '',
