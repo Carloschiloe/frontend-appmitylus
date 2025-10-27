@@ -58,10 +58,11 @@ export function mountInteracciones(root){
 
     if (calDiv.dataset.mounted) return;
 
-    const { from, to } = currentMonthRange();
+    const { desde, hasta } = currentMonthRange();
     let items = [];
     try {
-      const resp = await list({ from, to });
+      // 👇 Calendario SIEMPRE por fechaProx
+      const resp = await list({ desde, hasta, campoFecha: 'fechaProx', limit: 1000 });
       items = (resp && resp.items) || [];
     } catch (_) {
       items = []; // backend aún no está: agenda vacía, no rompe
@@ -77,10 +78,10 @@ export function mountInteracciones(root){
 
     // Si el calendario ya está montado, recárgalo para el mes visible
     if (calDiv.dataset.mounted){
-      const { from, to } = currentMonthRange();
+      const { desde, hasta } = currentMonthRange();
       let items = [];
       try {
-        const resp = await list({ from, to });
+        const resp = await list({ desde, hasta, campoFecha: 'fechaProx', limit: 1000 });
         items = (resp && resp.items) || [];
       } catch (_) { items = []; }
       mountAgendaLite(calDiv, items);
@@ -92,7 +93,8 @@ export function mountInteracciones(root){
       // Si la tabla no pasó rows, traemos semana actual al backend
       if (!rows){
         const semana = currentIsoWeek();
-        const resp = await list({ semana });
+        // 👇 KPIs/tabla SIEMPRE por fecha (realizada)
+        const resp = await list({ semana, campoFecha: 'fecha', limit: 500 });
         rows = resp.items || [];
       }
 
@@ -150,14 +152,16 @@ function currentIsoWeek(d = new Date()){
 
 function currentMonthRange(base = new Date()){
   const y = base.getFullYear(), m = base.getMonth();
-  const from = new Date(y, m, 1);
-  const to   = new Date(y, m+1, 0, 23, 59, 59, 999);
+  const first = new Date(y, m, 1);
+  const nextFirst = new Date(y, m+1, 1);
   const iso = d => d.toISOString().slice(0,10);
-  return { from: iso(from), to: iso(to) };
+  // 👇 Backend interpreta "hasta" como exclusivo (00:00 del día indicado)
+  return { desde: iso(first), hasta: iso(nextFirst) };
 }
 
 function fmtNum(n){
   const v = Number(n)||0;
   return v.toLocaleString('es-CL', { maximumFractionDigits: 2 });
 }
+
 
