@@ -1,8 +1,8 @@
-// modal.js — Interacciones (completo y corregido - Opción B)
+// modal.js — Interacciones (Opción B, robusto)
 // - Usa API_BASE exportado desde ./api.js (sin tocar window)
-// - Autocomplete de contacto con `${API_BASE}/suggest/contactos?q=`
-// - Al pickear contacto: setea contactoId, proveedorNombre y proveedorKey
-// - Fix: define esc() para evitar "esc is not defined"
+// - Autocomplete de contacto contra `${API_BASE}/suggest/contactos?q=`
+// - Logs visibles si falla la consulta
+// - Dispara también al enfocar (si ya hay texto)
 
 import { create, update, API_BASE } from './api.js';
 
@@ -23,8 +23,11 @@ function esc(s){
 }
 
 async function GET(url){
-  const r = await fetch(url);
-  if (!r.ok) throw new Error('HTTP '+r.status);
+  const r = await fetch(url, { credentials: 'omit' });
+  if (!r.ok) {
+    const text = await r.text().catch(()=> '');
+    throw new Error(`HTTP ${r.status} ${r.statusText} — ${text.slice(0,200)}`);
+  }
   return r.json();
 }
 
@@ -33,10 +36,11 @@ function ensureAutoStyles(){
   const s = document.createElement('style');
   s.id = 'auto-styles';
   s.textContent = `
-    .autocomplete-menu{position:absolute;left:0;right:0;top:100%;margin-top:2px;display:none;max-height:260px;overflow:auto;}
-    .autocomplete-menu .collection{border:none;box-shadow:none;}
-    .autocomplete-menu .collection-item{border-bottom:1px solid #eee;}
-    .autocomplete-menu .collection-item:hover{background:#f5f5f5;}
+    .autocomplete-menu{position:absolute;left:0;right:0;top:100%;margin-top:2px;display:none;max-height:260px;overflow:auto;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 12px 28px rgba(0,0,0,.08)}
+    .autocomplete-menu .collection{border:none;box-shadow:none;margin:0}
+    .autocomplete-menu .collection-item{border-bottom:1px solid #eee}
+    .autocomplete-menu .collection-item:hover{background:#f5f5f5}
+    .autocomplete-empty{padding:8px 12px;color:#667085;font-size:12px}
   `;
   document.head.appendChild(s);
 }
@@ -54,36 +58,54 @@ function attachAutocomplete(inputEl, fetcher, onPick, { min = 2 } = {}){
   const close = () => { box.innerHTML=''; box.style.display='none'; };
   const open  = (html) => { box.innerHTML = html; box.style.display='block'; };
 
+  async function run(q){
+    let items = [];
+    try {
+      items = await fetcher(q);
+    } catch (e) {
+      console.error('[autocomplete] error consultando', e);
+      open(`<div class="autocomplete-empty">Error consultando sugerencias</div>`);
+      return;
+    }
+    if (!items || !items.length){
+      open(`<div class="autocomplete-empty">Sin resultados</div>`);
+      return;
+    }
+    const html = items.map((it, idx) => `
+      <a href="#" data-idx="${idx}" class="collection-item" style="display:block;padding:8px 12px">
+        <div style="font-weight:700">${esc(it.label)}</div>
+        ${it.sublabel ? `<div class="grey-text" style="font-size:12px">${esc(it.sublabel)}</div>` : ''}
+      </a>`).join('');
+    open(`<div class="collection">${html}</div>`);
+    box.querySelectorAll('a').forEach(a=>{
+      a.addEventListener('click', (ev)=>{
+        ev.preventDefault();
+        const i = Number(a.getAttribute('data-idx'));
+        const it = items[i];
+        close();
+        onPick && onPick(it);
+      });
+    });
+  }
+
   inputEl.addEventListener('input', () => {
     const q = inputEl.value.trim();
     if (q === last) return;
     last = q;
     if (timer) clearTimeout(timer);
     if (q.length < min) { close(); return; }
+    box.style.display = 'block';
+    open(`<div class="autocomplete-empty">Buscando…</div>`);
+    timer = setTimeout(() => run(q), 160);
+  });
 
-    timer = setTimeout(async () => {
-      let items = [];
-      try { items = await fetcher(q); } catch { items = []; }
-      if (!items || !items.length){ close(); return; }
-
-      const html = items.map((it, idx) => `
-        <a href="#" data-idx="${idx}" class="collection-item" style="display:block;padding:8px 12px">
-          <div style="font-weight:700">${esc(it.label)}</div>
-          ${it.sublabel ? `<div class="grey-text" style="font-size:12px">${esc(it.sublabel)}</div>` : ''}
-        </a>`).join('');
-
-      open(`<div class="collection" style="margin:0">${html}</div>`);
-
-      box.querySelectorAll('a').forEach(a=>{
-        a.addEventListener('click', (ev)=>{
-          ev.preventDefault();
-          const i = Number(a.getAttribute('data-idx'));
-          const it = items[i];
-          close();
-          onPick && onPick(it);
-        });
-      });
-    }, 160);
+  // también dispara al enfocar si ya hay texto
+  inputEl.addEventListener('focus', () => {
+    const q = inputEl.value.trim();
+    if (q.length >= min) {
+      open(`<div class="autocomplete-empty">Buscando…</div>`);
+      run(q);
+    }
   });
 
   document.addEventListener('click', (e)=>{ if (!box.contains(e.target) && e.target!==inputEl) close(); });
@@ -209,7 +231,6 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
   const elContactoId = modal.querySelector('#i-contacto-id');
   const elProvKey    = modal.querySelector('#i-proveedor-key');
 
-  // guardamos selección concreta
   let picked = {
     contactoId:  preset.contactoId || null,
     proveedorKey: preset.proveedorKey || null
@@ -218,9 +239,10 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
   attachAutocomplete(
     elContacto,
     async (q) => {
-      // Espera items de /suggest/contactos:
-      // { contactoId, contactoNombre, email, telefono, empresas:[{proveedorKey,nombre,...}], label }
-      const { items = [] } = await GET(`${API_BASE}/suggest/contactos?q=${encodeURIComponent(q)}`);
+      const url = `${API_BASE}/suggest/contactos?q=${encodeURIComponent(q)}`;
+      console.info('[suggest] GET', url);
+      const { items = [] } = await GET(url);
+      console.info('[suggest] items', items.length);
       return items.map(it => ({
         value: it.contactoNombre || '',
         label: it.label || it.contactoNombre || '',
@@ -240,7 +262,6 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
         picked.proveedorKey = empresa.proveedorKey || empresa.empresaKey || null;
         elProvKey.value = picked.proveedorKey || '';
       } else {
-        // limpiamos si no hay
         elProveedor.value = '';
         picked.proveedorKey = null;
         elProvKey.value = '';
@@ -263,11 +284,9 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
       estado: val('#i-estado','pendiente'),
       resumen: val('#i-resumen'),
 
-      // IDs/keys solo si el usuario eligió una sugerencia (o venían en preset)
       contactoId: picked.contactoId || preset.contactoId || null,
       proveedorKey: picked.proveedorKey || preset.proveedorKey || null,
 
-      // from preset (si venían)
       centroId: preset.centroId || null,
       centroCodigo: preset.centroCodigo || null,
       comuna: preset.comuna || null,
