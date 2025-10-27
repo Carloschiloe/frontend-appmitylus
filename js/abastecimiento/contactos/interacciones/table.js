@@ -4,6 +4,17 @@ import { openInteraccionModal } from './modal.js';
 
 export async function renderTable(container, { onChanged } = {}) {
   container.innerHTML = `
+  <style id="int-table-styles">
+    /* compacta tipografías y filas */
+    #int-table th, #int-table td{ font-size:.85rem; line-height:1.15; }
+    #int-table .c-compact{ font-size:.85rem; }
+    #int-table .subline{ font-size:.75rem; color:#6b7280; margin-top:2px; } /* gris-500 */
+    #int-table .strong{ font-weight:600; letter-spacing:.2px; }
+    /* ocultar columna Proveedor (dejamos el dato debajo del contacto) */
+    #int-table th.th-proveedor, 
+    #int-table td.td-proveedor { display:none; }
+  </style>
+
   <div class="card"><div class="card-content">
     <div class="row" style="margin-bottom:8px">
       <!-- RESPONSABLE PG (select fijo) -->
@@ -45,13 +56,13 @@ export async function renderTable(container, { onChanged } = {}) {
     </div>
 
     <div class="mmpp-table-wrap">
-      <table id="int-table" class="striped highlight" style="font-size:.95rem;width:100%">
+      <table id="int-table" class="striped highlight c-compact" style="width:100%">
         <thead>
           <tr>
             <th>Fecha llamada</th>
             <th>Tipo</th>
             <th>Contacto</th>
-            <th>Proveedor</th>
+            <th class="th-proveedor">Proveedor</th>
             <th>Tons</th>
             <th>Próx. paso</th>
             <th>Fecha próx.</th>
@@ -140,21 +151,6 @@ export async function renderTable(container, { onChanged } = {}) {
       rows.sort((a,b)=> (new Date(b.fecha||0)) - (new Date(a.fecha||0)));
 
       console.log('[int] rows a renderizar:', rows.length);
-      if (rows.length) {
-        const r = rows[0];
-        console.log('[int] row[0] campos claves ->', {
-          fecha: r.fecha,
-          tipo: r.tipo,
-          contacto: r.contactoNombre,
-          proveedor: r.proveedorNombre,
-          tonsAcordadas: r.tonsAcordadas,
-          proximoPaso: r.proximoPaso,
-          fechaProximo: r.fechaProximo,
-          responsablePG: r.responsablePG,
-          estado: r.estado,
-          semanaKey: r.semanaKey
-        });
-      }
 
       _lastRows = rows;
 
@@ -162,15 +158,22 @@ export async function renderTable(container, { onChanged } = {}) {
         const nuevo = (esContactoNuevo(r.contactoId) || esProveedorNuevoInteraccion(r))
           ? '<span class="nuevo-star yellow" title="Proveedor nuevo">★</span>'
           : '';
+
+        // contacto fuerte + proveedor en sublínea (estilo Empresas)
+        const contactoProveedor = `
+          <div class="strong">${esc(r.contactoNombre || '')}</div>
+          <div class="subline">${esc(r.proveedorNombre || '')}</div>
+        `;
+
         return `
           <tr data-id="${esc(r._id || r.id || '')}" data-idx="${i}">
-            <td>${fmtDT(r.fecha)}</td>
-            <td>${esc(r.tipo || '')}</td>
-            <td>${esc(r.contactoNombre || '')}</td>
-            <td>${esc(r.proveedorNombre || '')}</td>
+            <td>${fmtD(r.fecha)}</td>
+            <td>${esc((r.tipo || '').toUpperCase())}</td>
+            <td>${contactoProveedor}</td>
+            <td class="td-proveedor">${esc(r.proveedorNombre || '')}</td>
             <td style="text-align:right">${fmtNum(r.tonsAcordadas)}</td>
             <td>${esc(r.proximoPaso || '')}</td>
-            <td>${fmtDT(r.fechaProximo)}</td>
+            <td>${fmtD(r.fechaProximo)}</td>
             <td>${esc(r.responsablePG || '')}</td>
             <td>${esc(canonEstado(r.estado))}</td>
             <td>${nuevo}</td>
@@ -232,11 +235,12 @@ function canonEstado(s) {
   return raw;
 }
 
-function fmtDT(iso) {
+// === fechas SOLO con día/mes/año (sin hora)
+function fmtD(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   if (isNaN(d)) return '';
-  return d.toLocaleString('es-CL');
+  return d.toLocaleDateString('es-CL'); // 23-10-2025
 }
 
 function fmtNum(n) {
