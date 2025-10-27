@@ -97,73 +97,93 @@ export async function renderTable(container, { onChanged } = {}) {
   let _lastRows = [];
   let _loading = false;
 
-  async function refresh() {
-    if (_loading) return;
-    _loading = true;
-    const oldTxt = btn.textContent;
-    btn.textContent = 'Cargando…';
-    btn.disabled = true;
+ async function refresh() {
+  if (_loading) return;
+  _loading = true;
+  const oldTxt = btn.textContent;
+  btn.textContent = 'Cargando…';
+  btn.disabled = true;
 
-    try {
-      // Armar params limpios
-      const params = {
-        tipo: (fTipo.value || '').trim() || undefined,
-        responsable: (fResp.value || '').trim() || undefined,
-        semana: (fSemana.value || '').trim() || undefined,
-        nuevos: fNuevo.checked ? true : undefined
-      };
+  try {
+    const params = {
+      tipo: (fTipo.value || '').trim() || undefined,
+      responsable: (fResp.value || '').trim() || undefined,
+      // NOTA: semana la filtramos client-side por semanaKey
+      nuevos: fNuevo.checked ? true : undefined
+    };
 
-      // Asegura semana por defecto
-      if (!params.semana) params.semana = currentIsoWeek();
+    const semanaSel = (fSemana.value || '').trim();
 
-      const resp = await list(params);
-      const items = (resp && (resp.items || resp.data || [])) || [];
+    console.log('[int] UI filtros ->', { ...params, semanaSel });
 
-      console.log('[interacciones] params:', params);
-      console.log('[interacciones] resp bruto:', resp);
-      console.log('[interacciones] items procesados:', items);
+    // Traemos sin semana para no depender del filtro del backend
+    const resp = await list({ ...params, semana: undefined });
+    const items = (resp && (resp.items || resp.data || [])) || [];
 
-      // fallback de "nuevos" si backend aún no lo filtra
-      const rows = (!fNuevo.checked) ? items : items.filter(it =>
-        esContactoNuevo(it.contactoId) || esProveedorNuevoInteraccion(it)
-      );
+    console.log('[int] resp.ok?', resp?.ok, 'items.size', items.length);
+    if (items.length) console.log('[int] sample item ->', items[0]);
 
-      // Orden por fecha desc
-      rows.sort((a, b) => (new Date(b.fecha || 0)) - (new Date(a.fecha || 0)));
+    // Filtrar por semanaKey en cliente
+    const itemsBySemana = semanaSel ? items.filter(x => x.semanaKey === semanaSel) : items;
+    console.log('[int] itemsBySemana.size', itemsBySemana.length, 'semanaSel', semanaSel);
 
-      _lastRows = rows;
+    // “solo nuevos”
+    const rows = (!fNuevo.checked)
+      ? itemsBySemana
+      : itemsBySemana.filter(it => esContactoNuevo(it.contactoId) || esProveedorNuevoInteraccion(it));
 
-      tbody.innerHTML = rows.map((r, i) => {
-        const nuevo = (esContactoNuevo(r.contactoId) || esProveedorNuevoInteraccion(r))
-          ? '<span class="nuevo-star yellow" title="Proveedor nuevo">★</span>'
-          : '';
+    // Orden por fecha (fecha de la interacción)
+    rows.sort((a,b)=> (new Date(b.fecha||0)) - (new Date(a.fecha||0)));
 
-        return `
-          <tr data-id="${esc(r._id || r.id || '')}" data-idx="${i}">
-            <td>${fmtDT(r.fecha)}</td>
-            <td>${esc(r.tipo || '')}</td>
-            <td>${esc(r.contactoNombre || '')}</td>
-            <td>${esc(r.proveedorNombre || '')}</td>
-            <td style="text-align:right">${fmtNum(r.tonsAcordadas)}</td> <!-- ✅ corregido -->
-            <td>${esc(r.proximoPaso || '')}</td>
-            <td>${fmtDT(r.fechaProximo)}</td> <!-- ✅ corregido -->
-            <td>${esc(r.responsablePG || '')}</td> <!-- ✅ corregido -->
-            <td>${esc(canonEstado(r.estado))}</td>
-            <td>${nuevo}</td>
-            <td><a class="btn-flat blue-text edit-int">Editar</a></td>
-          </tr>`;
-      }).join('') || `<tr><td colspan="11" class="grey-text">Sin resultados.</td></tr>`;
-
-      onChanged && onChanged(rows);
-    } catch (e) {
-      console.error(e);
-      M && M.toast && M.toast({ html: 'Error al cargar interacciones', classes: 'red' });
-    } finally {
-      _loading = false;
-      btn.textContent = oldTxt;
-      btn.disabled = false;
+    console.log('[int] rows a renderizar:', rows.length);
+    if (rows.length) {
+      const r = rows[0];
+      console.log('[int] row[0] campos claves ->', {
+        fecha: r.fecha,
+        tipo: r.tipo,
+        contacto: r.contactoNombre,
+        proveedor: r.proveedorNombre,
+        tonsAcordadas: r.tonsAcordadas,
+        proximoPaso: r.proximoPaso,
+        fechaProximo: r.fechaProximo,
+        responsablePG: r.responsablePG,
+        estado: r.estado,
+        semanaKey: r.semanaKey
+      });
     }
+
+    _lastRows = rows;
+
+    tbody.innerHTML = rows.map((r, i) => {
+      const nuevo = (esContactoNuevo(r.contactoId) || esProveedorNuevoInteraccion(r))
+        ? '<span class="nuevo-star yellow" title="Proveedor nuevo">★</span>'
+        : '';
+      return `
+        <tr data-id="${esc(r._id || r.id || '')}" data-idx="${i}">
+          <td>${fmtDT(r.fecha)}</td>
+          <td>${esc(r.tipo || '')}</td>
+          <td>${esc(r.contactoNombre || '')}</td>
+          <td>${esc(r.proveedorNombre || '')}</td>
+          <td style="text-align:right">${fmtNum(r.tonsAcordadas)}</td>
+          <td>${esc(r.proximoPaso || '')}</td>
+          <td>${fmtDT(r.fechaProximo)}</td>
+          <td>${esc(r.responsablePG || '')}</td>
+          <td>${esc(canonEstado(r.estado))}</td>
+          <td>${nuevo}</td>
+          <td><a class="btn-flat blue-text edit-int">Editar</a></td>
+        </tr>`;
+    }).join('') || `<tr><td colspan="11" class="grey-text">Sin resultados.</td></tr>`;
+
+    onChanged && onChanged(rows);
+  } catch (e) {
+    console.error('[int] ERROR refresh():', e);
+    M && M.toast && M.toast({ html: 'Error al cargar interacciones', classes: 'red' });
+  } finally {
+    _loading = false;
+    btn.textContent = oldTxt;
+    btn.disabled = false;
   }
+}
 
   btn.addEventListener('click', refresh);
   await refresh();
@@ -224,4 +244,5 @@ function fmtNum(n) {
 function esc(s) {
   return String(s || '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
 }
+
 
