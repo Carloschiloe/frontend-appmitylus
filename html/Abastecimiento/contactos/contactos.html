@@ -55,15 +55,14 @@
       </div>
     </header>
 
-    <!-- Tabs -->
+    <!-- Tabs (corregido: sin col sX y con aria-controls) -->
     <div class="card" style="padding:0; margin-bottom:12px">
       <ul id="tabs" class="tabs" style="padding:0 12px">
-        <li class="tab col s4"><a class="active" href="#tab-contactos">Empresas</a></li>
-        <li class="tab col s4"><a href="#tab-visitas">Visitas a Cultivos</a></li>
-        <li class="tab col s4"><a href="#tab-personas">Agenda de Contactos</a></li>
-        <!-- NUEVO: pestaña Interacciones -->
-        <li class="tab"><a href="#tab-interacciones">Interacciones</a></li>
-        <li class="tab col s3"><a href="#tab-resumen">Resumen (semana/mes)</a></li>
+        <li class="tab"><a class="active" href="#tab-contactos" aria-controls="tab-contactos">Empresas</a></li>
+        <li class="tab"><a href="#tab-visitas" aria-controls="tab-visitas">Visitas a Cultivos</a></li>
+        <li class="tab"><a href="#tab-personas" aria-controls="tab-personas">Agenda de Contactos</a></li>
+        <li class="tab"><a href="#tab-interacciones" aria-controls="tab-interacciones">Interacciones</a></li>
+        <li class="tab"><a href="#tab-resumen" aria-controls="tab-resumen">Resumen (semana/mes)</a></li>
       </ul>
     </div>
 
@@ -193,8 +192,8 @@
       </div>
     </section>
 
-    <!-- NUEVO: TAB INTERACCIONES -->
-    <section id="tab-interacciones" class="col s12" style="display:none;">
+    <!-- TAB INTERACCIONES (corregido: sin display:none) -->
+    <section id="tab-interacciones" class="col s12">
       <div class="mmpp-card" style="margin-bottom:12px">
         <div id="interacciones-root"></div>
       </div>
@@ -258,49 +257,49 @@
             </div>
           </div>
 
-        <!-- NUEVO: Localidad / Biomasa / Proveedor nuevo -->
-<div class="row">
-  <div class="input-field col s4">
-    <input id="contactoLocalidad" type="text" maxlength="20" placeholder="Ej: Putemún">
-    <label for="contactoLocalidad">Localidad (máx. 20)</label>
-  </div>
-  <div class="input-field col s4">
-    <label for="contactoBiomasa" class="active">Biomasa</label>
-    <select id="contactoBiomasa" class="browser-default modern-select" aria-label="Biomasa">
-      <option value="">Seleccione…</option>
-      <option value="Con biomasa">Con biomasa</option>
-      <option value="Sin biomasa">Sin biomasa</option>
-    </select>
-  </div>
-  <div class="input-field col s4" style="display:flex;align-items:center;gap:8px">
-    <label for="contactoProveedorNuevo" class="active" style="margin-right:8px">Proveedor nuevo</label>
-    <label style="display:flex;align-items:center;gap:6px">
-      <input type="checkbox" id="contactoProveedorNuevo" />
-      <span>Es nuevo</span>
-    </label>
-  </div>
-</div>
+          <!-- NUEVO: Localidad / Biomasa / Proveedor nuevo -->
+          <div class="row">
+            <div class="input-field col s4">
+              <input id="contactoLocalidad" type="text" maxlength="20" placeholder="Ej: Putemún">
+              <label for="contactoLocalidad">Localidad (máx. 20)</label>
+            </div>
+            <div class="input-field col s4">
+              <label for="contactoBiomasa" class="active">Biomasa</label>
+              <select id="contactoBiomasa" class="browser-default modern-select" aria-label="Biomasa">
+                <option value="">Seleccione…</option>
+                <option value="Con biomasa">Con biomasa</option>
+                <option value="Sin biomasa">Sin biomasa</option>
+              </select>
+            </div>
+            <div class="input-field col s4" style="display:flex;align-items:center;gap:8px">
+              <label for="contactoProveedorNuevo" class="active" style="margin-right:8px">Proveedor nuevo</label>
+              <label style="display:flex;align-items:center;gap:6px">
+                <input type="checkbox" id="contactoProveedorNuevo" />
+                <span>Es nuevo</span>
+              </label>
+            </div>
+          </div>
 
-<!-- Próximo paso (con “Reunión” y “Nueva visita” en vez de “Programar…”) -->
-<div class="row">
-  <div class="input-field col s6">
-    <label for="contacto_proximoPaso" class="active">Próximo paso</label>
-    <select id="contacto_proximoPaso" class="browser-default modern-select" aria-label="Próximo paso">
-      <option value="" selected>Seleccione…</option>
-      <option value="Nueva visita">Nueva visita</option>
-      <option value="Tomar muestras">Tomar muestras</option>
-      <option value="Negociar precio/volumen">Negociar precio/volumen</option>
-      <option value="Contacto telefónico">Contacto telefónico</option>
-      <option value="Reunión">Reunión</option>
-      <option value="Esperar disponibilidad">Esperar disponibilidad</option>
-      <option value="Sin acción">Sin acción</option>
-    </select>
-  </div>
-  <div class="input-field col s6">
-    <input type="date" id="contacto_proximoPasoFecha" aria-label="Fecha exacta del próximo paso">
-    <label for="contacto_proximoPasoFecha" class="active">Fecha exacta del próximo paso</label>
-  </div>
-</div>
+          <!-- Próximo paso -->
+          <div class="row">
+            <div class="input-field col s6">
+              <label for="contacto_proximoPaso" class="active">Próximo paso</label>
+              <select id="contacto_proximoPaso" class="browser-default modern-select" aria-label="Próximo paso">
+                <option value="" selected>Seleccione…</option>
+                <option value="Nueva visita">Nueva visita</option>
+                <option value="Tomar muestras">Tomar muestras</option>
+                <option value="Negociar precio/volumen">Negociar precio/volumen</option>
+                <option value="Contacto telefónico">Contacto telefónico</option>
+                <option value="Reunión">Reunión</option>
+                <option value="Esperar disponibilidad">Esperar disponibilidad</option>
+                <option value="Sin acción">Sin acción</option>
+              </select>
+            </div>
+            <div class="input-field col s6">
+              <input type="date" id="contacto_proximoPasoFecha" aria-label="Fecha exacta del próximo paso">
+              <label for="contacto_proximoPasoFecha" class="active">Fecha exacta del próximo paso</label>
+            </div>
+          </div>
 
           <!-- DISPONIBILIDAD MMPP (asignaciones) -->
           <div class="row" id="asigDisponibilidadBlock">
@@ -526,23 +525,23 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  
-<!-- NUEVO: CAlendario solo lectura -->
+
+<!-- Calendario solo lectura -->
 <script src="/spa-mmpp/mmpp-calendario.js"></script>
-  
-<!-- NUEVO: módulo Interacciones (lazy-mount al abrir la pestaña) -->
+
+<!-- Módulo Interacciones (lazy-mount al abrir la pestaña) -->
 <script type="module" src="/js/abastecimiento/contactos/interacciones/index.js?v=2"></script>
 
 <!-- Orquestador (carga e inicializa todo, incluido el Resumen) -->
-<script type="module" src="../../../js/abastecimiento/contactos/index.js?v=10"></script>
+<script type="module" src="/js/abastecimiento/contactos/index.js?v=10"></script>
 
 <!-- Init mínimo (tabs/modals) -->
 <script>
   document.addEventListener('DOMContentLoaded', function(){
-    var elTabs = document.querySelectorAll('.tabs');
-    M.Tabs.init(elTabs, {});
-    var elModals = document.querySelectorAll('.modal');
-    M.Modal.init(elModals, {endingTop: '5%'});
+    const elTabs = document.querySelectorAll('.tabs');
+    if (elTabs.length) M.Tabs.init(elTabs, {});
+    const elModals = document.querySelectorAll('.modal');
+    if (elModals.length) M.Modal.init(elModals, {endingTop: '5%'});
   });
 </script>
 
