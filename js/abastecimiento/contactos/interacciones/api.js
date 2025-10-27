@@ -1,5 +1,37 @@
-// api.js (Interacciones)
-const API = (window.API_BASE ? String(window.API_BASE).replace(/\/$/, '') : '') || '/api';
+// api.js (Interacciones) — FIX apuntando SIEMPRE al backend correcto
+// - Auto-detecta si estás en el dominio del frontend de Vercel y fuerza la base del backend.
+// - Respeta VITE_API_BASE si está configurado.
+// - Mantiene compatibilidad local (localhost) con rutas relativas /api.
+// - Incluye suggestContactos y suggestProveedores.
+
+(function initApiBase(){
+  const FRONT_VERCEL = 'frontend-appmitylus.vercel.app';
+  const BACK_VERCEL  = 'https://backend-appmitylus.vercel.app/api';
+
+  // 1) Si viene por env, úsalo
+  let base =
+    (typeof import !== 'undefined' && import.meta && import.meta.env && import.meta.env.VITE_API_BASE) ||
+    (typeof window !== 'undefined' && window.API_BASE);
+
+  // 2) Si estamos en el dominio del frontend de Vercel, fuerza backend vercel
+  if (!base && typeof window !== 'undefined' && window.location && window.location.host === FRONT_VERCEL) {
+    base = BACK_VERCEL;
+  }
+
+  // 3) Fallback:
+  //    - En local (vite/localhost) funciona con /api (proxy o server local).
+  //    - En otras origins, intenta usar BACK_VERCEL para evitar pegarle al mismo dominio del FE.
+  if (!base) {
+    const host = (typeof window !== 'undefined' && window.location && window.location.host) || '';
+    base = host && /localhost:?\d*/i.test(host) ? '/api' : BACK_VERCEL;
+  }
+
+  // Normaliza (sin slash final)
+  base = String(base).replace(/\/$/, '');
+  window.API_BASE = base;
+})();
+
+const API = window.API_BASE;
 
 /* =========================
    Utils
@@ -50,17 +82,23 @@ async function fx(url, opts = {}, timeoutMs = 15000) {
     if (!r.ok) {
       let msg = `HTTP ${r.status}`;
       try {
-        const j = await r.json();
-        if (j?.error) msg = j.error;
-        else if (j?.message) msg = j.message;
-        else if (j?.msg) msg = j.msg;
+        const ct = r.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          const j = await r.json();
+          if (j?.error) msg = j.error;
+          else if (j?.message) msg = j.message;
+          else if (j?.msg) msg = j.msg;
+        } else {
+          msg = await r.text();
+        }
       } catch {/* ignore */}
-      const e = new Error(msg);
+      const e = new Error(msg || `HTTP ${r.status}`);
       e.status = r.status;
       throw e;
     }
     if (r.status === 204) return null; // No Content
-    return r.json();
+    const ct = r.headers.get('content-type') || '';
+    return ct.includes('application/json') ? r.json() : r.text();
   } finally {
     clearTimeout(t);
   }
@@ -84,7 +122,7 @@ export async function list(params = {}) {
   return fx(url); // { ok, items }
 }
 
-// (Opcional) GET /api/interacciones/:id — sólo si tu backend lo implementó
+// GET /api/interacciones/:id
 export async function getOne(id) {
   if (!id) throw new Error('Falta id');
   return fx(`${API}/interacciones/${encodeURIComponent(id)}`);
@@ -118,13 +156,19 @@ export async function remove(id) {
 }
 
 /* =========================
-   Sugerencias de contactos
+   Sugerencias
    ========================= */
 
 // GET /api/suggest/contactos?q=...
 export async function suggestContactos(q) {
   const url = `${API}/suggest/contactos${buildQuery({ q })}`;
   return fx(url); // { ok, items: [{contactoId,...}] }
+}
+
+// GET /api/suggest/proveedores?q=...
+export async function suggestProveedores(q) {
+  const url = `${API}/suggest/proveedores${buildQuery({ q })}`;
+  return fx(url); // { ok, items: [{ proveedorKey, proveedorNombre, codigos:[] }] }
 }
 
 /* =========================
@@ -138,11 +182,17 @@ function sanitizePayload(p = {}) {
   // Fechas
   if (out.fecha)        out.fecha        = toISODateOnly(out.fecha);
   if (out.fechaProximo) out.fechaProximo = toISODateOnly(out.fechaProximo);
+  if (out.fechaProx)    out.fechaProx    = toISODateOnly(out.fechaProx);
+  if (out.proximoPasoFecha) out.proximoPasoFecha = toISODateOnly(out.proximoPasoFecha);
 
   // Números
   if (out.tonsCompromiso !== undefined && out.tonsCompromiso !== null) {
     const n = Number(out.tonsCompromiso);
     out.tonsCompromiso = Number.isFinite(n) ? n : undefined;
+  }
+  if (out.tonsConversadas !== undefined && out.tonsConversadas !== null) {
+    const n = Number(out.tonsConversadas);
+    out.tonsConversadas = Number.isFinite(n) ? n : undefined;
   }
 
   // Booleanos
@@ -153,4 +203,11 @@ function sanitizePayload(p = {}) {
     if (out[k] === '') delete out[k];
   }
   return out;
+}
+
+/* =========================
+   Debug helper opcional
+   ========================= */
+export function pingAlive(){
+  return fx(`${API}/_alive`);
 }
