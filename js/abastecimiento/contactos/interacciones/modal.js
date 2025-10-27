@@ -1,7 +1,8 @@
-// modal.js — Interacciones (Opción B con búsqueda robusta + filtro cliente)
-// - Usa API_BASE exportado desde ./api.js (sin tocar window)
-// - Autocomplete: intenta varias rutas y filtra en el cliente por tokens/acentos
-// - Al pickear: setea contactoId, proveedorNombre y proveedorKey
+// modal.js — Interacciones (Opción B con selector de Próximo paso)
+// - Usa API_BASE exportado desde ./api.js
+// - Autocomplete de contacto + proveedor
+// - "Próximo paso" ahora es <select> con opciones:
+//   Nueva visita, Tomar muestras, Negociar precio/volumen, Contacto telefónico, Reunión, Esperar disponibilidad, Sin acción
 
 import { create, update, API_BASE } from './api.js';
 
@@ -9,6 +10,16 @@ const RESPONSABLES = [
   'Claudio Alba',
   'Patricio Alvarez',
   'Carlos Avendaño',
+];
+
+const PROXIMO_PASO_OPCIONES = [
+  'Nueva visita',
+  'Tomar muestras',
+  'Negociar precio/volumen',
+  'Contacto telefónico',
+  'Reunión',
+  'Esperar disponibilidad',
+  'Sin acción',
 ];
 
 /* ========= helpers comunes ========= */
@@ -109,16 +120,13 @@ function attachAutocomplete(inputEl, fetcher, onPick, { min = 2 } = {}){
   document.addEventListener('click', (e)=>{ if (!box.contains(e.target) && e.target!==inputEl) close(); });
 }
 
-/* ========== búsqueda backend + filtro cliente ========== */
-
-// quitar acentos y pasar a lower
+/* === utilidades de normalización (para autocomplete de contacto) === */
 function norm(s){
   return String(s||'')
     .normalize('NFD').replace(/\p{Diacritic}/gu,'')
     .toLowerCase();
 }
 
-// match por tokens: “patri hue” ⇒ [“patri”,“hue”]
 function clientFilter(items, q, limit = 8){
   const tokens = norm(q).split(/\s+/).filter(Boolean);
   if (!tokens.length) return items.slice(0, limit);
@@ -131,44 +139,33 @@ function clientFilter(items, q, limit = 8){
       (r.empresas?.map(e=>e.nombre).join(' ') || '')
     ].map(norm).join(' ');
 
-    // todos los tokens deben aparecer
     const allHit = tokens.every(t => haystack.includes(t));
     if (!allHit) return -1;
 
-    // bonus por "startsWith" en el nombre
     const name = norm(r.contactoNombre||'');
     let score = 0;
     tokens.forEach(t=>{
       if (name.startsWith(t)) score += 3;
       else if (name.includes(t)) score += 2;
-      else score += 1; // encontrado en otros campos
+      else score += 1;
     });
     return score;
   }
 
-  const ranked = items
+  return items
     .map(r => ({ r, s: scoreRow(r) }))
     .filter(x => x.s >= 0)
     .sort((a,b) => b.s - a.s)
     .slice(0, limit)
     .map(x => x.r);
-
-  return ranked;
 }
 
-/** Normaliza cualquier “shape” de contacto */
 function normalizeContacto(raw){
   if (!raw || typeof raw !== 'object') return null;
-
-  const contactoId =
-    raw.contactoId || raw._id || raw.id || null;
-
-  const contactoNombre =
-    raw.contactoNombre || raw.nombre || raw.contacto || raw.name || '';
-
+  const contactoId = raw.contactoId || raw._id || raw.id || null;
+  const contactoNombre = raw.contactoNombre || raw.nombre || raw.contacto || raw.name || '';
   const email = raw.email || raw.contactoEmail || '';
   const telefono = raw.telefono || raw.phone || raw.contactoTelefono || '';
-
   let empresas = [];
   if (Array.isArray(raw.empresas) && raw.empresas.length){
     empresas = raw.empresas.map(e => ({
@@ -180,22 +177,12 @@ function normalizeContacto(raw){
     const proveedorKey = raw.proveedorKey || raw.empresaKey || '';
     if (nombre || proveedorKey) empresas = [{ nombre, proveedorKey }];
   }
-
   const label = raw.label || contactoNombre || '';
-
-  return {
-    contactoId,
-    contactoNombre,
-    email,
-    telefono,
-    empresas,
-    label: label || contactoNombre
-  };
+  return { contactoId, contactoNombre, email, telefono, empresas, label: label || contactoNombre };
 }
 
-/** Intenta varias rutas y devuelve NORMALIZADO */
 async function fetchContactosSmart(q){
-  const limit = 30; // traemos más y luego filtramos cliente
+  const limit = 30;
   const tries = [
     `${API_BASE}/suggest/contactos?q=${encodeURIComponent(q)}&limit=${limit}`,
     `${API_BASE}/contactos?search=${encodeURIComponent(q)}&limit=${limit}`,
@@ -237,7 +224,7 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
     document.body.appendChild(modal);
   }
 
-  // HTML
+  // HTML (ojo: Próximo paso es SELECT)
   modal.innerHTML = `
     <div class="modal-content">
       <h5>${preset._id ? 'Editar' : 'Nueva'} interacción</h5>
@@ -279,8 +266,11 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
         </div>
 
         <div class="input-field col s12 m4">
-          <input id="i-prox-paso" placeholder="Ej: Tomar muestras / Reunión">
           <label class="active" for="i-prox-paso">Próximo paso</label>
+          <select id="i-prox-paso" class="browser-default">
+            <option value="">Seleccione…</option>
+            ${PROXIMO_PASO_OPCIONES.map(op => `<option value="${esc(op)}">${esc(op)}</option>`).join('')}
+          </select>
         </div>
 
         <div class="input-field col s12 m4">
@@ -317,7 +307,7 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
   const inst = M.Modal.init(modal, { dismissible: true });
   inst.open();
 
-  // Pinta opciones del select Responsable PG (sin escritura)
+  // Pinta opciones del select Responsable PG
   const selResp = modal.querySelector('#i-responsable');
   selResp.innerHTML = `<option value=""></option>` +
     RESPONSABLES.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
@@ -330,7 +320,7 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
   setVal('#i-contacto-nombre', preset.contactoNombre || '');
   setVal('#i-proveedor-nombre', preset.proveedorNombre || '');
   setVal('#i-tons', preset.tonsConversadas ?? '');
-  setVal('#i-prox-paso', preset.proximoPaso || '');
+  setVal('#i-prox-paso', preset.proximoPaso || '');               // ahora es <select>
   setVal('#i-fecha-prox', toLocalDT(preset.fechaProx || ''));
   setVal('#i-estado', preset.estado || 'pendiente');
   setVal('#i-resumen', preset.resumen || '');
@@ -351,11 +341,8 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
   attachAutocomplete(
     elContacto,
     async (q) => {
-      // 1) Traemos muchos (con fallback de rutas)
       const raw = await fetchContactosSmart(q);
-      // 2) Filtramos en el cliente por tokens/acentos y priorizamos startsWith
       const filtered = clientFilter(raw, q, 8);
-      // 3) Formato para el menú
       return filtered.map(it => ({
         value: it.contactoNombre || '',
         label: it.label || it.contactoNombre || '',
@@ -368,7 +355,6 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
       picked.contactoId = it.meta.contactoId || null;
       elContactoId.value = picked.contactoId || '';
 
-      // Si el contacto trae empresas asociadas, usamos la primera por defecto
       const empresa = (it.meta.empresas && it.meta.empresas[0]) || null;
       if (empresa){
         elProveedor.value = empresa.nombre || '';
@@ -392,7 +378,7 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
       contactoNombre: val('#i-contacto-nombre'),
       proveedorNombre: val('#i-proveedor-nombre'),
       tonsConversadas: num(val('#i-tons')),
-      proximoPaso: val('#i-prox-paso'),
+      proximoPaso: val('#i-prox-paso'),               // ahora viene del <select>
       fechaProx: fromLocalDT(val('#i-fecha-prox')),
       estado: val('#i-estado','pendiente'),
       resumen: val('#i-resumen'),
