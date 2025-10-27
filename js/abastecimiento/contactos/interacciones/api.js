@@ -1,26 +1,34 @@
 // js/abastecimiento/contactos/interacciones/api.js
 // API helper SOLO para Interacciones, sin tocar globals ni window.API_BASE
-(function(){ /* no-op IIFE para aislar scope */ })();
 
 const FRONT_VERCEL = 'frontend-appmitylus.vercel.app';
 const BACK_VERCEL  = 'https://backend-appmitylus.vercel.app/api';
 
 /** Determina base sin modificar globals */
 function resolveBase(){
-  // respeta window.API_BASE si ya existe
-  const preset = (typeof window !== 'undefined' && window.API_BASE) ? String(window.API_BASE).replace(/\/$/, '') : '';
+  // respeta window.API_BASE si ya existe (pero NO la seteamos)
+  const preset = (typeof window !== 'undefined' && window.API_BASE)
+    ? String(window.API_BASE).replace(/\/$/, '')
+    : '';
+
   if (preset) return preset;
 
   if (typeof window !== 'undefined' && window.location){
     const host = String(window.location.host || '');
+    // En prod FE -> apuntar al backend vercel
     if (host === FRONT_VERCEL) return BACK_VERCEL;
+    // En local -> usar proxy /api
     if (/localhost(:\d+)?/i.test(host)) return '/api';
   }
+  // Fallback neutro
   return '/api';
 }
 
-// Base FINAL para este módulo (SCOPE LOCAL)
-const API_INT = resolveBase() + '/interacciones';
+// 👉 Exportamos la BASE para que otros módulos (p.ej. modal.js) la usen también
+export const API_BASE = resolveBase();
+
+// Base FINAL para este módulo
+const API_INT = `${API_BASE}/interacciones`;
 
 /* =========================
    Utils
@@ -59,26 +67,28 @@ function buildQuery(params = {}){
 async function fx(url, opts = {}){
   const res = await fetch(url, { headers:{'Content-Type':'application/json'}, ...opts });
   if (!res.ok){
-    const txt = await res.text().catch(()=>'');
+    const txt = await res.text().catch(()=> '');
     throw new Error(`HTTP ${res.status} – ${txt}`);
   }
-  const ct = res.headers.get('content-type')||'';
-  if (ct.includes('application/json')) return res.json();
-  return res.text();
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('application/json') ? res.json() : res.text();
 }
 
 /* ============ ENDPOINTS (scoped) ============ */
-export function pingAlive(){ return fx(API_INT + '/_alive'); }
+export function pingAlive(){ return fx(`${API_INT}/_alive`); }
 
 export function list(params){ return fx(API_INT + buildQuery(params)); }
 
-export function create(payload){ 
-  return fx(API_INT, { method:'POST', body: JSON.stringify(payload||{}) });
+export function create(payload){
+  return fx(API_INT, { method:'POST', body: JSON.stringify(payload || {}) });
 }
 
 export function update(id, payload){
   if (!id) throw new Error('update(): id requerido');
-  return fx(`${API_INT}/${encodeURIComponent(id)}`, { method:'PUT', body: JSON.stringify(payload||{}) });
+  return fx(`${API_INT}/${encodeURIComponent(id)}`, {
+    method:'PUT',
+    body: JSON.stringify(payload || {})
+  });
 }
 
 export function remove_(id){
@@ -90,7 +100,7 @@ export function remove_(id){
 export function normalizeForSave(data = {}){
   const out = { ...data };
   if (out.fecha) out.fecha = toISODateOnly(out.fecha);
-  if (out.tonsConversadas != null) out.tonsConversadas = Number(out.tonsConversadas)||0;
+  if (out.tonsConversadas != null) out.tonsConversadas = Number(out.tonsConversadas) || 0;
   for (const k of Object.keys(out)){
     if (out[k] === '') delete out[k];
   }
