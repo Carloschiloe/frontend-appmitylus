@@ -119,6 +119,10 @@ export async function renderTable(container, { onChanged } = {}) {
       const resp = await list(params);
       const items = (resp && (resp.items || resp.data || [])) || [];
 
+      console.log('[interacciones] params:', params);
+      console.log('[interacciones] resp bruto:', resp);
+      console.log('[interacciones] items procesados:', items);
+
       // fallback de "nuevos" si backend aún no lo filtra
       const rows = (!fNuevo.checked) ? items : items.filter(it =>
         esContactoNuevo(it.contactoId) || esProveedorNuevoInteraccion(it)
@@ -220,3 +224,4 @@ function fmtNum(n) {
 function esc(s) {
   return String(s || '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
 }
+
