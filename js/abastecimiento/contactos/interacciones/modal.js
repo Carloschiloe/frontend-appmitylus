@@ -1,7 +1,7 @@
-// modal.js — Interacciones (Opción B con fallback robusto de búsqueda)
+// modal.js — Interacciones (Opción B con búsqueda robusta + filtro cliente)
 // - Usa API_BASE exportado desde ./api.js (sin tocar window)
-// - Autocomplete de contacto: intenta /suggest/contactos y cae a /contactos con varias keys
-// - Al pickear contacto: setea contactoId, proveedorNombre y proveedorKey
+// - Autocomplete: intenta varias rutas y filtra en el cliente por tokens/acentos
+// - Al pickear: setea contactoId, proveedorNombre y proveedorKey
 
 import { create, update, API_BASE } from './api.js';
 
@@ -22,8 +22,11 @@ function esc(s){
 }
 
 async function GET(url){
-  const r = await fetch(url);
-  if (!r.ok) throw new Error('HTTP '+r.status);
+  const r = await fetch(url, { credentials: 'omit' });
+  if (!r.ok) {
+    const text = await r.text().catch(()=> '');
+    throw new Error(`HTTP ${r.status} ${r.statusText} — ${text.slice(0,200)}`);
+  }
   return r.json();
 }
 
@@ -32,10 +35,11 @@ function ensureAutoStyles(){
   const s = document.createElement('style');
   s.id = 'auto-styles';
   s.textContent = `
-    .autocomplete-menu{position:absolute;left:0;right:0;top:100%;margin-top:2px;display:none;max-height:260px;overflow:auto;z-index:1002}
+    .autocomplete-menu{position:absolute;left:0;right:0;top:100%;margin-top:2px;display:none;max-height:260px;overflow:auto;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 12px 28px rgba(0,0,0,.08);z-index:1002}
     .autocomplete-menu .collection{border:none;box-shadow:none;margin:0}
-    .autocomplete-menu .collection-item{border-bottom:1px solid #eee;}
-    .autocomplete-menu .collection-item:hover{background:#f5f5f5;}
+    .autocomplete-menu .collection-item{border-bottom:1px solid #eee}
+    .autocomplete-menu .collection-item:hover{background:#f5f5f5}
+    .autocomplete-empty{padding:8px 12px;color:#667085;font-size:12px}
   `;
   document.head.appendChild(s);
 }
@@ -53,54 +57,106 @@ function attachAutocomplete(inputEl, fetcher, onPick, { min = 2 } = {}){
   const close = () => { box.innerHTML=''; box.style.display='none'; };
   const open  = (html) => { box.innerHTML = html; box.style.display='block'; };
 
+  async function run(q){
+    let items = [];
+    try {
+      items = await fetcher(q);
+    } catch (e) {
+      console.error('[autocomplete] error consultando', e);
+      open(`<div class="autocomplete-empty">Error consultando sugerencias</div>`);
+      return;
+    }
+    if (!items || !items.length){
+      open(`<div class="autocomplete-empty">Sin resultados</div>`);
+      return;
+    }
+    const html = items.map((it, idx) => `
+      <a href="#" data-idx="${idx}" class="collection-item" style="display:block;padding:8px 12px">
+        <div style="font-weight:700">${esc(it.label)}</div>
+        ${it.sublabel ? `<div class="grey-text" style="font-size:12px">${esc(it.sublabel)}</div>` : ''}
+      </a>`).join('');
+    open(`<div class="collection">${html}</div>`);
+    box.querySelectorAll('a').forEach(a=>{
+      a.addEventListener('click', (ev)=>{
+        ev.preventDefault();
+        const i = Number(a.getAttribute('data-idx'));
+        const it = items[i];
+        close();
+        onPick && onPick(it);
+      });
+    });
+  }
+
   inputEl.addEventListener('input', () => {
     const q = inputEl.value.trim();
     if (q === last) return;
     last = q;
     if (timer) clearTimeout(timer);
     if (q.length < min) { close(); return; }
+    open(`<div class="autocomplete-empty">Buscando…</div>`);
+    timer = setTimeout(() => run(q), 160);
+  });
 
-    // indicador de carga
-    open(`<div class="collection"><div class="collection-item grey-text">Buscando…</div></div>`);
-
-    timer = setTimeout(async () => {
-      let items = [];
-      try { items = await fetcher(q); } catch { items = []; }
-      if (!items || !items.length){ close(); return; }
-
-      const html = items.map((it, idx) => `
-        <a href="#" data-idx="${idx}" class="collection-item" style="display:block;padding:8px 12px">
-          <div style="font-weight:700">${esc(it.label)}</div>
-          ${it.sublabel ? `<div class="grey-text" style="font-size:12px">${esc(it.sublabel)}</div>` : ''}
-        </a>`).join('');
-
-      open(`<div class="collection">${html}</div>`);
-
-      box.querySelectorAll('a').forEach(a=>{
-        a.addEventListener('click', (ev)=>{
-          ev.preventDefault();
-          const i = Number(a.getAttribute('data-idx'));
-          const it = items[i];
-          close();
-          onPick && onPick(it);
-        });
-      });
-    }, 160);
+  // al enfocar, si ya hay texto, dispara
+  inputEl.addEventListener('focus', () => {
+    const q = inputEl.value.trim();
+    if (q.length >= min) {
+      open(`<div class="autocomplete-empty">Buscando…</div>`);
+      run(q);
+    }
   });
 
   document.addEventListener('click', (e)=>{ if (!box.contains(e.target) && e.target!==inputEl) close(); });
 }
 
-/* ========== BÚSQUEDA ROBUSTA DE CONTACTOS ========== */
+/* ========== búsqueda backend + filtro cliente ========== */
 
-/**
- * Normaliza cualquier “shape” de contacto a:
- * {
- *   contactoId, contactoNombre,
- *   empresas: [{ nombre, proveedorKey }],
- *   email, telefono, label
- * }
- */
+// quitar acentos y pasar a lower
+function norm(s){
+  return String(s||'')
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .toLowerCase();
+}
+
+// match por tokens: “patri hue” ⇒ [“patri”,“hue”]
+function clientFilter(items, q, limit = 8){
+  const tokens = norm(q).split(/\s+/).filter(Boolean);
+  if (!tokens.length) return items.slice(0, limit);
+
+  function scoreRow(r){
+    const haystack = [
+      r.contactoNombre,
+      r.email,
+      r.telefono,
+      (r.empresas?.map(e=>e.nombre).join(' ') || '')
+    ].map(norm).join(' ');
+
+    // todos los tokens deben aparecer
+    const allHit = tokens.every(t => haystack.includes(t));
+    if (!allHit) return -1;
+
+    // bonus por "startsWith" en el nombre
+    const name = norm(r.contactoNombre||'');
+    let score = 0;
+    tokens.forEach(t=>{
+      if (name.startsWith(t)) score += 3;
+      else if (name.includes(t)) score += 2;
+      else score += 1; // encontrado en otros campos
+    });
+    return score;
+  }
+
+  const ranked = items
+    .map(r => ({ r, s: scoreRow(r) }))
+    .filter(x => x.s >= 0)
+    .sort((a,b) => b.s - a.s)
+    .slice(0, limit)
+    .map(x => x.r);
+
+  return ranked;
+}
+
+/** Normaliza cualquier “shape” de contacto */
 function normalizeContacto(raw){
   if (!raw || typeof raw !== 'object') return null;
 
@@ -113,7 +169,6 @@ function normalizeContacto(raw){
   const email = raw.email || raw.contactoEmail || '';
   const telefono = raw.telefono || raw.phone || raw.contactoTelefono || '';
 
-  // empresas puede venir en array o como campos sueltos (proveedorNombre/proveedorKey)
   let empresas = [];
   if (Array.isArray(raw.empresas) && raw.empresas.length){
     empresas = raw.empresas.map(e => ({
@@ -138,12 +193,9 @@ function normalizeContacto(raw){
   };
 }
 
-/**
- * Intenta varias rutas de backend hasta obtener resultados.
- * Prioriza /suggest/contactos y cae a /contactos con distintas query keys.
- */
+/** Intenta varias rutas y devuelve NORMALIZADO */
 async function fetchContactosSmart(q){
-  const limit = 8;
+  const limit = 30; // traemos más y luego filtramos cliente
   const tries = [
     `${API_BASE}/suggest/contactos?q=${encodeURIComponent(q)}&limit=${limit}`,
     `${API_BASE}/contactos?search=${encodeURIComponent(q)}&limit=${limit}`,
@@ -158,12 +210,10 @@ async function fetchContactosSmart(q){
                 : Array.isArray(json.items) ? json.items
                 : Array.isArray(json.data) ? json.data
                 : [];
-
-      const norm = arr.map(normalizeContacto).filter(Boolean);
-
-      if (norm.length){
-        console.log('[suggest] hits via', url, norm.length);
-        return norm;
+      const normed = arr.map(normalizeContacto).filter(Boolean);
+      if (normed.length){
+        console.log('[suggest] hits via', url, normed.length);
+        return normed;
       }
       console.log('[suggest] vacío via', url);
     }catch(err){
@@ -293,7 +343,6 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
   const elContactoId = modal.querySelector('#i-contacto-id');
   const elProvKey    = modal.querySelector('#i-proveedor-key');
 
-  // guardamos selección concreta
   let picked = {
     contactoId:  preset.contactoId || null,
     proveedorKey: preset.proveedorKey || null
@@ -302,11 +351,12 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
   attachAutocomplete(
     elContacto,
     async (q) => {
-      // intenta varias rutas hasta obtener resultados
-      const items = await fetchContactosSmart(q);
-
-      // mapea al shape que usa el menú
-      return items.map(it => ({
+      // 1) Traemos muchos (con fallback de rutas)
+      const raw = await fetchContactosSmart(q);
+      // 2) Filtramos en el cliente por tokens/acentos y priorizamos startsWith
+      const filtered = clientFilter(raw, q, 8);
+      // 3) Formato para el menú
+      return filtered.map(it => ({
         value: it.contactoNombre || '',
         label: it.label || it.contactoNombre || '',
         sublabel: (it.email || it.telefono || '') + (it.empresas?.[0]?.nombre ? ` · ${it.empresas[0].nombre}` : ''),
@@ -325,7 +375,6 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
         picked.proveedorKey = empresa.proveedorKey || empresa.empresaKey || null;
         elProvKey.value = picked.proveedorKey || '';
       } else {
-        // limpiamos si no hay
         elProveedor.value = '';
         picked.proveedorKey = null;
         elProvKey.value = '';
@@ -348,11 +397,9 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}){
       estado: val('#i-estado','pendiente'),
       resumen: val('#i-resumen'),
 
-      // IDs/keys solo si el usuario eligió una sugerencia (o venían en preset)
       contactoId: picked.contactoId || preset.contactoId || null,
       proveedorKey: picked.proveedorKey || preset.proveedorKey || null,
 
-      // from preset (si venían)
       centroId: preset.centroId || null,
       centroCodigo: preset.centroCodigo || null,
       comuna: preset.comuna || null,
