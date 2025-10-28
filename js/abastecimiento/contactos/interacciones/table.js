@@ -1,4 +1,5 @@
-import { list } from './api.js'; 
+// /js/abastecimiento/contactos/interacciones/table.js
+import { list } from './api.js';
 import { esContactoNuevo, esProveedorNuevoInteraccion } from './normalizers.js';
 import { openInteraccionModal } from './modal.js';
 
@@ -13,6 +14,19 @@ export async function renderTable(container, { onChanged } = {}) {
     /* ocultar columna Proveedor (dejamos el dato debajo del contacto) */
     #int-table th.th-proveedor, 
     #int-table td.td-proveedor { display:none; }
+
+    /* sub-fila expandible */
+    #int-table tr.subrow { background:#f8fafc; } /* slate-50 */
+    #int-table tr.subrow td { padding:10px 12px; font-size:.85rem; }
+    #int-table .obs-title { font-weight:600; margin-right:6px; }
+    #int-table .hide { display:none !important; }
+
+    /* acciones compactas */
+    #int-table .acts { display:flex; gap:8px; align-items:center; }
+    #int-table .acts .btn-flat { padding:0 6px; min-width:auto; }
+    #int-table .caret { display:inline-block; transition:transform .18s ease; vertical-align:middle; }
+    #int-table tr.expanded .caret { transform:rotate(180deg); }
+    #int-table .nuevo-star { font-size:14px; }
   </style>
 
   <div class="card"><div class="card-content">
@@ -72,10 +86,10 @@ export async function renderTable(container, { onChanged } = {}) {
             <th>Contacto</th>
             <th class="th-proveedor">Proveedor</th>
             <th>Tons</th>
-            <th>Próx. paso</th>   <!-- 👈 aquí irá la fecha chiquita debajo -->
-            <th>Resp.</th>        <!-- 👈 aquí irá el estado chiquito debajo -->
+            <th>Próx. paso</th>   <!-- fecha pequeña va debajo -->
+            <th>Resp.</th>        <!-- estado pequeño va debajo -->
             <th>Nuevo</th>
-            <th></th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -101,20 +115,30 @@ export async function renderTable(container, { onChanged } = {}) {
   fNuevo.addEventListener('change', refresh);
   fPaso.addEventListener('change', refresh);
 
-  // Delegación para editar
+  // Delegación: editar y expandir
   tbody.addEventListener('click', (ev) => {
     const t = ev.target;
-    if (!t || !t.classList) return;
-    if (t.classList.contains('edit-int')) {
-      const tr = t.closest('tr[data-id]');
+
+    // Editar
+    if (t && t.classList && t.classList.contains('edit-int')) {
+      const tr = t.closest('tr[data-id].main-row');
       if (!tr) return;
       const idx = Number(tr.getAttribute('data-idx') || -1);
       const row = _lastRows[idx];
       if (!row) return;
-      openInteraccionModal({
-        preset: row,
-        onSaved: refresh
-      });
+      openInteraccionModal({ preset: row, onSaved: refresh });
+      return;
+    }
+
+    // Expandir/colapsar observaciones
+    const toggleBtn = t.closest?.('.more-int');
+    if (toggleBtn) {
+      const main = toggleBtn.closest('tr.main-row');
+      const sub  = main?.nextElementSibling;
+      if (sub && sub.classList.contains('subrow')) {
+        sub.classList.toggle('hide');
+        main.classList.toggle('expanded');
+      }
     }
   });
 
@@ -176,20 +200,32 @@ export async function renderTable(container, { onChanged } = {}) {
           <div class="subline">${esc(r.proveedorNombre || '')}</div>
         `;
 
-        // Próx. paso EN GRANDE + fecha chiquita debajo (sacamos la columna independiente)
+        // Próx. paso EN GRANDE + fecha chiquita debajo
         const proxPasoCell = `
-          <div>${esc(r.proximoPaso || '')}</div>
+          <div>${esc(r.proximoPaso || '') || '—'}</div>
           <div class="subline">${fmtD(r.fechaProximo)}</div>
         `;
 
-        // Responsable EN GRANDE + estado chiquito debajo (sacamos la columna independiente)
+        // Responsable EN GRANDE + estado chiquito debajo
         const respCell = `
-          <div>${esc(r.responsablePG || '')}</div>
+          <div>${esc(r.responsablePG || '') || '—'}</div>
           <div class="subline">${esc(canonEstado(r.estado))}</div>
         `;
 
+        // Acciones: Ver (expansión) + Editar
+        const acciones = `
+          <div class="acts">
+            <a class="btn-flat grey-text text-darken-2 more-int" title="Ver resumen/observaciones">
+              <i class="material-icons tiny caret">expand_more</i> Ver
+            </a>
+            <a class="btn-flat blue-text edit-int">Editar</a>
+          </div>
+        `;
+
+        // Fila principal + subfila (observaciones)
+        const subTexto = esc(r.resumen || r.observaciones || 'Sin observaciones registradas');
         return `
-          <tr data-id="${esc(r._id || r.id || '')}" data-idx="${i}">
+          <tr class="main-row" data-id="${esc(r._id || r.id || '')}" data-idx="${i}">
             <td>${fmtD(r.fecha)}</td>
             <td>${esc((r.tipo || '').toUpperCase())}</td>
             <td>${contactoProveedor}</td>
@@ -198,7 +234,13 @@ export async function renderTable(container, { onChanged } = {}) {
             <td>${proxPasoCell}</td>
             <td>${respCell}</td>
             <td>${nuevo}</td>
-            <td><a class="btn-flat blue-text edit-int">Editar</a></td>
+            <td>${acciones}</td>
+          </tr>
+          <tr class="subrow hide">
+            <td colspan="9">
+              <span class="obs-title">Resumen / Observaciones:</span>
+              <span>${subTexto}</span>
+            </td>
           </tr>`;
       }).join('') || `<tr><td colspan="9" class="grey-text">Sin resultados.</td></tr>`;
 
