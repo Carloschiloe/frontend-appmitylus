@@ -121,6 +121,35 @@ const normalizeEstado = (s='') => {
   return (x === 'Tomar/entregar muestras') ? 'Tomar muestras' : x;
 };
 
+// helpers DOM seguros
+const getEl = (sel) => (typeof sel === 'string' ? document.getElementById(sel) : sel);
+const setIf = (sel, prop, val) => { const el = getEl(sel); if (el && prop in el) el[prop] = val; return !!el; };
+
+/* ============== asegure infraestructura del modal ============== */
+async function ensureVisitaInfra(){
+  let modal = getEl('modalVisita');
+  let form  = getEl('formVisita');
+
+  if (!modal || !form){
+    // intenta cambiar a la pestaña de "Visitas a cultivos" para que se monte el HTML
+    const a = document.querySelector('[href="#tab-visitas"], a[data-target="tab-visitas"]');
+    if (a) { try { a.click(); } catch {} }
+    // espera un ratito a que el DOM se monte
+    const start = Date.now();
+    while (Date.now() - start < 800) {
+      await new Promise(r=>setTimeout(r, 40));
+      modal = getEl('modalVisita');
+      form  = getEl('formVisita');
+      if (modal && form) break;
+    }
+  }
+
+  if (modal && !M.Modal.getInstance(modal)) {
+    try { M.Modal.init(modal); } catch {}
+  }
+  return !!(modal && form);
+}
+
 /* ================= DataTable helpers ================= */
 let dtV = null;
 
@@ -204,10 +233,10 @@ export async function renderTablaVisitas(){
       return [
         esc(String(semana)),                                 // 0 Sem.
         `<span data-order="${f.getTime()}">${fecha}</span>`,  // 1 Fecha
-        provHTML,                                            // 2 Proveedor (empresa + contacto)
-        centroHTML,                                          // 3 Centro (código + comuna)
+        provHTML,                                            // 2 Proveedor
+        centroHTML,                                          // 3 Centro
         esc(proximoPaso),                                    // 4 Próximo paso
-        fppHTML,                                             // 5 Fecha prox. (ordenable)
+        fppHTML,                                             // 5 Fecha prox.
         esc(tons),                                           // 6 Tons
         acciones                                             // 7 Acciones
       ];
@@ -230,8 +259,8 @@ export async function renderTablaVisitas(){
 
 /* ================= helpers: fecha “próximo paso” ================= */
 function toggleProximoPasoFecha(){
-  const sel = $('#visita_estado');
-  const fecha = $('#visita_proximoPasoFecha');
+  const sel = getEl('visita_estado');
+  const fecha = getEl('visita_proximoPasoFecha');
   if (!sel || !fecha) return;
   const disabled = !sel.value || sel.value === 'Sin acción';
   fecha.disabled = disabled;
@@ -239,17 +268,26 @@ function toggleProximoPasoFecha(){
 }
 
 /* ================= Modal NUEVA VISITA desde Contactos ================= */
-export function abrirModalVisita(contacto){
-  const form = $('#formVisita'); if (!form) return;
+export async function abrirModalVisita(contacto){
+  const ok = await ensureVisitaInfra();
+  if (!ok) {
+    console.warn('[visitas/ui] No se encontró infraestructura del modal de visitas.');
+    M.toast?.({ html:'No se pudo abrir el modal de visitas', classes:'red' });
+    return;
+  }
 
+  const form = getEl('formVisita'); if (!form) return;
   form.dataset.editId = '';
   ensureFotosBlock();
   setVisitaModalMode(false);
 
-  setVal(['visita_proveedorId'], contacto._id);
-  const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
+  // proveedor/contacto
+  setVal(['visita_proveedorId'], contacto?._id);
 
-  const selectVisita = $('#visita_centroId');
+  const proveedorKey = contacto?.proveedorKey || slug(contacto?.proveedorNombre || '');
+
+  // centros del mismo proveedor
+  const selectVisita = getEl('visita_centroId');
   if (selectVisita){
     const centros = (state.listaCentros || []).filter(
       (c) => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '')) === proveedorKey
@@ -263,45 +301,55 @@ export function abrirModalVisita(contacto){
     selectVisita.value = '';
   }
 
-  const hoy = new Date();
-  const fechaEl = $('#visita_fecha'); if (fechaEl) fechaEl.value = fmtISO(hoy);
+  const hoyISO = fmtISO(new Date());
+  setIf('visita_fecha', 'value', hoyISO);
 
-  $('#visita_contacto').value = '';
-  $('#visita_enAgua').value = '';
-  $('#visita_tonsComprometidas').value = '';
-  $('#visita_estado').value = 'Programar nueva visita';
-  $('#visita_observaciones').value = '';
-  const fpp = $('#visita_proximoPasoFecha'); if (fpp) fpp.value = '';
+  setIf('visita_contacto', 'value', '');
+  setIf('visita_enAgua', 'value', '');
+  setIf('visita_tonsComprometidas', 'value', '');
+  setIf('visita_estado', 'value', 'Programar nueva visita');
+  setIf('visita_observaciones', 'value', '');
+  setIf('visita_proximoPasoFecha', 'value', '');
 
-  M.updateTextFields();
+  try { M.updateTextFields(); } catch {}
+
   resetFotosModal();
   toggleProximoPasoFecha();
-  $('#visita_estado')?.addEventListener('change', toggleProximoPasoFecha, { once:true });
+  const selEstado = getEl('visita_estado');
+  if (selEstado) selEstado.addEventListener('change', toggleProximoPasoFecha, { once:true });
 
-  (M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'))).open();
+  const modal = getEl('modalVisita');
+  (M.Modal.getInstance(modal) || M.Modal.init(modal))?.open();
 }
 
 /* ================= Editar / Ver existente ================= */
 async function abrirEditarVisita(v, readOnly=false){
-  const form = $('#formVisita'); if (!form) return;
+  const ok = await ensureVisitaInfra();
+  if (!ok) {
+    console.warn('[visitas/ui] Modal/forma de visitas no disponible.');
+    M.toast?.({ html:'No se pudo abrir la visita', classes:'red' });
+    return;
+  }
+
+  const form = getEl('formVisita'); if (!form) return;
   form.dataset.editId = String(v._id || '');
 
   ensureFotosBlock();
 
   setVal(['visita_proveedorId'], v.contactoId || '');
-  $('#visita_fecha').value = fmtISO(v.fecha);
-  $('#visita_contacto').value = v.contacto || '';
-  $('#visita_enAgua').value = v.enAgua || '';
-  $('#visita_tonsComprometidas').value = v.tonsComprometidas ?? '';
-  $('#visita_estado').value = normalizeEstado(v.estado || 'Programar nueva visita');
-  $('#visita_observaciones').value = v.observaciones || '';
-  const fpp = $('#visita_proximoPasoFecha');
-  if (fpp) fpp.value = v.proximoPasoFecha ? fmtISO(v.proximoPasoFecha) : '';
+  setIf('visita_fecha', 'value', fmtISO(v.fecha));
+  setIf('visita_contacto', 'value', v.contacto || '');
+  setIf('visita_enAgua', 'value', v.enAgua || '');
+  setIf('visita_tonsComprometidas', 'value', v.tonsComprometidas ?? '');
+  setIf('visita_estado', 'value', normalizeEstado(v.estado || 'Programar nueva visita'));
+  setIf('visita_observaciones', 'value', v.observaciones || '');
+  const fppISO = v.proximoPasoFecha ? fmtISO(v.proximoPasoFecha) : '';
+  setIf('visita_proximoPasoFecha', 'value', fppISO);
 
   const contacto = (state.contactosGuardados || []).find(x => String(x._id) === String(v.contactoId));
   if (contacto){
     const proveedorKey = contacto.proveedorKey || slug(contacto.proveedorNombre || '');
-    const selectVisita = $('#visita_centroId');
+    const selectVisita = getEl('visita_centroId');
     if (selectVisita){
       const centros = (state.listaCentros || []).filter(
         (c) => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '')) === proveedorKey
@@ -316,43 +364,44 @@ async function abrirEditarVisita(v, readOnly=false){
     }
   }
 
-  M.updateTextFields();
+  try { M.updateTextFields(); } catch {}
   resetFotosModal();
   await renderGallery(v._id);
 
   toggleProximoPasoFecha();
-  $('#visita_estado')?.addEventListener('change', toggleProximoPasoFecha, { once:true });
+  const selEstado = getEl('visita_estado');
+  if (selEstado) selEstado.addEventListener('change', toggleProximoPasoFecha, { once:true });
 
-  const modal = M.Modal.getInstance(document.getElementById('modalVisita')) || M.Modal.init(document.getElementById('modalVisita'));
-  modal.open();
+  const modal = getEl('modalVisita');
+  (M.Modal.getInstance(modal) || M.Modal.init(modal))?.open();
 
   setVisitaModalMode(!!readOnly);
 }
 
 /* ================= Submit ================= */
 export function setupFormularioVisita(){
-  const form = $('#formVisita'); if (!form) return;
+  const form = getEl('formVisita'); if (!form) return;
 
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
-    const contactoId = $('#visita_proveedorId').value;
+    const contactoId = getEl('visita_proveedorId')?.value;
 
-    const selCentro = $('#visita_centroId');
+    const selCentro = getEl('visita_centroId');
     const centroId = selCentro?.value || null;
     const centroCodigo =
       selCentro?.selectedOptions?.[0]?.dataset?.code || (centroId ? centroCodigoById(centroId) : null);
 
     const payload = {
       contactoId,
-      fecha: $('#visita_fecha').value,
+      fecha: getEl('visita_fecha')?.value,
       centroId,
       centroCodigo,
-      contacto: $('#visita_contacto').value || null,
-      enAgua: $('#visita_enAgua').value || null,
-      tonsComprometidas: $('#visita_tonsComprometidas').value ? Number($('#visita_tonsComprometidas').value) : null,
-      estado: normalizeEstado($('#visita_estado').value || 'Programar nueva visita'),
-      proximoPasoFecha: $('#visita_proximoPasoFecha')?.value || null,
-      observaciones: $('#visita_observaciones').value || null
+      contacto: getEl('visita_contacto')?.value || null,
+      enAgua: getEl('visita_enAgua')?.value || null,
+      tonsComprometidas: getEl('visita_tonsComprometidas')?.value ? Number(getEl('visita_tonsComprometidas')?.value) : null,
+      estado: normalizeEstado(getEl('visita_estado')?.value || 'Programar nueva visita'),
+      proximoPasoFecha: getEl('visita_proximoPasoFecha')?.value || null,
+      observaciones: getEl('visita_observaciones')?.value || null
     };
 
     try{
@@ -372,7 +421,7 @@ export function setupFormularioVisita(){
         await handleFotosAfterSave(visitId);
       }
 
-      (M.Modal.getInstance(document.getElementById('modalVisita')))?.close();
+      (M.Modal.getInstance(getEl('modalVisita')))?.close();
       form.reset();
       form.dataset.editId = '';
       setVisitaModalMode(false);
@@ -387,7 +436,7 @@ export function setupFormularioVisita(){
 
 /* ================= Modo del modal ================= */
 function setVisitaModalMode(readOnly){
-  const form = $('#formVisita'); if (!form) return;
+  const form = getEl('formVisita'); if (!form) return;
 
   const inputs = form.querySelectorAll('input, select, textarea, label input');
   const btnSave = form.querySelector('button[type="submit"]');
@@ -414,7 +463,7 @@ function setVisitaModalMode(readOnly){
 function ensureFotosBlock(){
   if (document.getElementById('visita_fotos')) return;
 
-  const form = $('#formVisita'); if (!form) return;
+  const form = getEl('formVisita'); if (!form) return;
 
   const wrapper = document.createElement('div');
   wrapper.id = 'visita_fotos';
