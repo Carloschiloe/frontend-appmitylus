@@ -1,4 +1,4 @@
-import { list } from './api.js';
+import { list } from './api.js'; 
 import { esContactoNuevo, esProveedorNuevoInteraccion } from './normalizers.js';
 import { openInteraccionModal } from './modal.js';
 
@@ -47,7 +47,15 @@ export async function renderTable(container, { onChanged } = {}) {
         <select id="f-semana" class="browser-default" aria-label="Semana (YYYY-Www)"></select>
       </div>
 
-      <div class="col s12 m3" style="display:flex;gap:8px;align-items:center;">
+      <!-- PRÓXIMO PASO (nuevo filtro) -->
+      <div class="col s12 m3">
+        <label class="grey-text text-darken-1" style="font-size:12px">Próx. paso</label>
+        <select id="f-prox" class="browser-default" aria-label="Próximo paso">
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <div class="col s12" style="display:flex;gap:12px;align-items:center;margin-top:8px">
         <label style="display:flex;align-items:center;gap:6px">
           <input type="checkbox" id="f-solo-nuevos"><span>Solo contactos NUEVOS</span>
         </label>
@@ -64,10 +72,8 @@ export async function renderTable(container, { onChanged } = {}) {
             <th>Contacto</th>
             <th class="th-proveedor">Proveedor</th>
             <th>Tons</th>
-            <th>Próx. paso</th>
-            <th>Fecha próx.</th>
-            <th>Resp.</th>
-            <th>Estado</th>
+            <th>Próx. paso</th>   <!-- 👈 aquí irá la fecha chiquita debajo -->
+            <th>Resp.</th>        <!-- 👈 aquí irá el estado chiquito debajo -->
             <th>Nuevo</th>
             <th></th>
           </tr>
@@ -83,6 +89,7 @@ export async function renderTable(container, { onChanged } = {}) {
   const fResp   = container.querySelector('#f-responsable');
   const fSemana = container.querySelector('#f-semana');
   const fNuevo  = container.querySelector('#f-solo-nuevos');
+  const fPaso   = container.querySelector('#f-prox');
 
   // ==== poblar semanas (actual y 19 anteriores) ====
   populateWeeksSelect(fSemana, 20);
@@ -92,6 +99,7 @@ export async function renderTable(container, { onChanged } = {}) {
   fTipo.addEventListener('change', refresh);
   fResp.addEventListener('change', refresh);
   fNuevo.addEventListener('change', refresh);
+  fPaso.addEventListener('change', refresh);
 
   // Delegación para editar
   tbody.addEventListener('click', (ev) => {
@@ -129,28 +137,31 @@ export async function renderTable(container, { onChanged } = {}) {
       };
 
       const semanaSel = (fSemana.value || '').trim();
-      console.log('[int] UI filtros ->', { ...params, semanaSel });
+      const pasoSel   = (fPaso.value   || '').trim();
 
       // Traemos sin semana para no depender del filtro del backend
       const resp = await list({ ...params, semana: undefined });
       const items = (resp && (resp.items || resp.data || [])) || [];
 
-      console.log('[int] resp.ok?', resp?.ok, 'items.size', items.length);
-      if (items.length) console.log('[int] sample item ->', items[0]);
+      // Filtrar por semana (cliente)
+      let rows = semanaSel ? items.filter(x => x.semanaKey === semanaSel) : items;
 
-      // Filtrar por semanaKey en cliente (la tabla debe mostrar la semana seleccionada)
-      const itemsBySemana = semanaSel ? items.filter(x => x.semanaKey === semanaSel) : items;
-      console.log('[int] itemsBySemana.size', itemsBySemana.length, 'semanaSel', semanaSel);
+      // Filtro: “solo nuevos”
+      if (fNuevo.checked) {
+        rows = rows.filter(it => esContactoNuevo(it.contactoId) || esProveedorNuevoInteraccion(it));
+      }
 
-      // “solo nuevos”
-      const rows = (!fNuevo.checked)
-        ? itemsBySemana
-        : itemsBySemana.filter(it => esContactoNuevo(it.contactoId) || esProveedorNuevoInteraccion(it));
+      // Filtro: Próximo paso
+      if (pasoSel) {
+        const norm = (s) => String(s || '').trim().toLowerCase();
+        rows = rows.filter(r => norm(r.proximoPaso) === norm(pasoSel));
+      }
 
-      // Orden por fecha (fecha de la interacción registrada)
+      // Orden por fecha desc
       rows.sort((a,b)=> (new Date(b.fecha||0)) - (new Date(a.fecha||0)));
 
-      console.log('[int] rows a renderizar:', rows.length);
+      // Poblar opciones de Próx. paso dinámicamente (sin duplicados)
+      populatePasoOptions(fPaso, rows, pasoSel);
 
       _lastRows = rows;
 
@@ -159,10 +170,22 @@ export async function renderTable(container, { onChanged } = {}) {
           ? '<span class="nuevo-star yellow" title="Proveedor nuevo">★</span>'
           : '';
 
-        // contacto fuerte + proveedor en sublínea (estilo Empresas)
+        // contacto fuerte + proveedor en sublínea
         const contactoProveedor = `
           <div class="strong">${esc(r.contactoNombre || '')}</div>
           <div class="subline">${esc(r.proveedorNombre || '')}</div>
+        `;
+
+        // Próx. paso EN GRANDE + fecha chiquita debajo (sacamos la columna independiente)
+        const proxPasoCell = `
+          <div>${esc(r.proximoPaso || '')}</div>
+          <div class="subline">${fmtD(r.fechaProximo)}</div>
+        `;
+
+        // Responsable EN GRANDE + estado chiquito debajo (sacamos la columna independiente)
+        const respCell = `
+          <div>${esc(r.responsablePG || '')}</div>
+          <div class="subline">${esc(canonEstado(r.estado))}</div>
         `;
 
         return `
@@ -172,19 +195,17 @@ export async function renderTable(container, { onChanged } = {}) {
             <td>${contactoProveedor}</td>
             <td class="td-proveedor">${esc(r.proveedorNombre || '')}</td>
             <td style="text-align:right">${fmtNum(r.tonsAcordadas)}</td>
-            <td>${esc(r.proximoPaso || '')}</td>
-            <td>${fmtD(r.fechaProximo)}</td>
-            <td>${esc(r.responsablePG || '')}</td>
-            <td>${esc(canonEstado(r.estado))}</td>
+            <td>${proxPasoCell}</td>
+            <td>${respCell}</td>
             <td>${nuevo}</td>
             <td><a class="btn-flat blue-text edit-int">Editar</a></td>
           </tr>`;
-      }).join('') || `<tr><td colspan="11" class="grey-text">Sin resultados.</td></tr>`;
+      }).join('') || `<tr><td colspan="9" class="grey-text">Sin resultados.</td></tr>`;
 
       onChanged && onChanged(rows);
     } catch (e) {
       console.error('[int] ERROR refresh():', e);
-      M && M.toast && M.toast({ html: 'Error al cargar interacciones', classes: 'red' });
+      window.M && M.toast && M.toast({ html: 'Error al cargar interacciones', classes: 'red' });
     } finally {
       _loading = false;
       btn.textContent = oldTxt;
@@ -203,6 +224,16 @@ function populateWeeksSelect(selectEl, count = 20) {
   const curr = currentIsoWeek();
   const has = weeks.includes(curr);
   selectEl.value = has ? curr : weeks[0];
+}
+
+function populatePasoOptions(sel, rows, keepValue='') {
+  // junta opciones únicas (ignorando mayúsculas/minúsculas)
+  const norm = s => String(s||'').trim();
+  const uniq = [...new Set(rows.map(r => norm(r.proximoPaso)).filter(v => v))].sort((a,b)=>a.localeCompare(b,'es'));
+  const old = sel.value;
+  const want = keepValue || old;
+  sel.innerHTML = `<option value="">Todos</option>` + uniq.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+  if (want && uniq.includes(want)) sel.value = want;
 }
 
 function lastNWeeks(n = 20) {
