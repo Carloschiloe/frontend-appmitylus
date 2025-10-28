@@ -2,7 +2,7 @@
 import { state, $ } from './state.js';
 import { centroCodigoById, comunaPorCodigo } from './normalizers.js';
 import { abrirEdicion, eliminarContacto, abrirDetalleContacto } from './form-contacto.js';
-import { abrirModalVisita } from '../visitas/ui.js'; // consistente con index.js
+import { abrirModalVisita } from '../visitas/ui.js'; // se mantiene el import, con fallback por evento
 
 const API_BASE = window.API_URL || '/api';
 const fmtCL = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
@@ -103,20 +103,45 @@ async function _clickAccContacto(aEl){
     const action = (aEl?.dataset?.action || '').toLowerCase();
     const c = state.contactosGuardados.find(x => String(x._id) === String(id));
     if (!c) { M.toast?.({ html: 'Contacto no encontrado', classes: 'red' }); return; }
+
     if (action === 'ver')     return abrirDetalleContacto(c);
-    if (action === 'visita')  return abrirModalVisita(c);
-    if (action === 'muestreo'){ document.dispatchEvent(new CustomEvent('muestreo:open',{detail:{contacto:c}})); return; }
+
+    if (action === 'visita'){
+      // Preferir llamada directa al modal canónico de visitas...
+      try{
+        if (typeof abrirModalVisita === 'function') {
+          return abrirModalVisita(c);
+        }
+      }catch(err){
+        console.warn('[contactos] abrirModalVisita lanzó error, usando fallback por evento:', err);
+      }
+      // ...y fallback por bus de eventos si el módulo no está listo
+      document.dispatchEvent(new CustomEvent('contacto:visita', { detail:{ contacto: c } }));
+      return;
+    }
+
+    if (action === 'muestreo'){
+      document.dispatchEvent(new CustomEvent('muestreo:open',{detail:{contacto:c}}));
+      return;
+    }
     if (action === 'editar')  return abrirEdicion(c);
+
     if (action === 'eliminar'){
       if (aEl.dataset.busy === '1') return;
       aEl.dataset.busy = '1';
       try{
         if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
         await eliminarContacto(id);
-      }catch(e){ console.error(e); M.toast?.({ html:'No se pudo eliminar', classes:'red' }); }
-      finally{ delete aEl.dataset.busy; }
+      }catch(e){
+        console.error(e);
+        M.toast?.({ html:'No se pudo eliminar', classes:'red' });
+      } finally {
+        delete aEl.dataset.busy;
+      }
     }
-  }catch(err){ console.error('[contactos] _clickAccContacto', err); }
+  }catch(err){
+    console.error('[contactos] _clickAccContacto', err);
+  }
 }
 window._clickAccContacto = _clickAccContacto;
 
