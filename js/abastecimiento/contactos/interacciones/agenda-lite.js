@@ -4,55 +4,43 @@
 export function mountAgendaLite(rootEl, items = []) {
   injectStyles();
 
+  // Normaliza pero conserva el objeto original para poder editar luego
   const allRows = (items || [])
     .map((r) => normalize(r))
     .filter((r) => r.date);
 
+  // Mes visible (futuro más cercano o actual)
   const now = new Date();
   const firstFuture = allRows.find((r) => r.date >= startOfDay(now));
   let view = firstFuture ? new Date(firstFuture.date) : now;
 
-  // ===== Filtros + densidad =====
-  const filters = { responsable:'', estado:'', tipo:'', q:'', minTons:0 };
-  let density = 'compact'; // 'cozy' | 'compact' | 'ultra'
+  // Filtros y densidad
+  const filters = { responsable:'', tipo:'', q:'' }; // q: contacto/proveedor
+  let density = 'compact';
 
   rootEl.innerHTML = `
     <div class="ag-scope ag-density-compact">
       <div class="ag-card">
         <div class="ag-header">
           <h5 class="ag-title">Calendario de actividades (Interacciones)</h5>
-          <div class="ag-actions">
-            <button id="agAddBtn" class="ag-btn" title="Nueva interacción">+</button>
-          </div>
+          <!-- se elimina el botón + pequeño -->
         </div>
 
         <!-- Filtros -->
         <div class="ag-filters">
           <div class="ag-filter">
             <label for="agFilterResp">Responsable</label>
-            <select id="agFilterResp" class="ag-select">
-              <option value="">Todos</option>
-            </select>
+            <select id="agFilterResp" class="ag-select"><option value="">Todos</option></select>
           </div>
-          <div class="ag-filter">
-            <label for="agFilterEstado">Estado</label>
-            <select id="agFilterEstado" class="ag-select">
-              <option value="">Todos</option>
-            </select>
-          </div>
+
           <div class="ag-filter">
             <label for="agFilterTipo">Tipo</label>
-            <select id="agFilterTipo" class="ag-select">
-              <option value="">Todos</option>
-            </select>
+            <select id="agFilterTipo" class="ag-select"><option value="">Todos</option></select>
           </div>
+
           <div class="ag-filter ag-filter-grow">
-            <label for="agFilterQ">Buscar</label>
-            <input id="agFilterQ" type="text" placeholder="Contacto, tipo, responsable..." />
-          </div>
-          <div class="ag-filter ag-filter-min">
-            <label for="agFilterMinTons">Mín. t</label>
-            <input id="agFilterMinTons" type="number" min="0" step="1" value="0" />
+            <label for="agFilterQ">Buscar (Contacto/Proveedor)</label>
+            <input id="agFilterQ" type="text" placeholder="Ej: PATRICIO, Paillacar…" />
           </div>
 
           <div class="ag-filter ag-filter-min">
@@ -81,69 +69,67 @@ export function mountAgendaLite(rootEl, items = []) {
     </div>
   `;
 
-  // refs filtros
+  // refs UI
   const $resp = rootEl.querySelector('#agFilterResp');
-  const $estado = rootEl.querySelector('#agFilterEstado');
   const $tipo = rootEl.querySelector('#agFilterTipo');
   const $q = rootEl.querySelector('#agFilterQ');
-  const $minTons = rootEl.querySelector('#agFilterMinTons');
   const $density = rootEl.querySelector('#agDensity');
   const $scope = rootEl.querySelector('.ag-scope');
 
-  populateSelect($resp, uniq(allRows.map(r => r.responsable)).sort());
-  populateSelect($estado, uniq(allRows.map(r => r.estado)).filter(Boolean).sort());
-  populateSelect($tipo, uniq(allRows.map(r => r.paso)).filter(Boolean).sort());
-
-  // listeners filtros
-  $resp.addEventListener('change', () => { filters.responsable = $resp.value; render(); });
-  $estado.addEventListener('change', () => { filters.estado = $estado.value; render(); });
-  $tipo.addEventListener('change', () => { filters.tipo = $tipo.value; render(); });
-  $q.addEventListener('input', () => { filters.q = $q.value.trim(); render(); });
-  $minTons.addEventListener('change', () => {
-    const v = Number($minTons.value || 0);
-    filters.minTons = Number.isFinite(v) && v >= 0 ? v : 0;
-    render();
-  });
-  rootEl.querySelector('#agFilterClear').addEventListener('click', () => {
-    $resp.value = $estado.value = $tipo.value = $q.value = '';
-    $minTons.value = '0';
-    filters.responsable = filters.estado = filters.tipo = filters.q = '';
-    filters.minTons = 0;
-    render();
-  });
-
   // densidad
   $density.addEventListener('change', () => {
-    density = $density.value; // cozy | compact | ultra
+    density = $density.value;
     $scope.classList.remove('ag-density-cozy','ag-density-compact','ag-density-ultra');
     $scope.classList.add(`ag-density-${density}`);
-    // no hace falta recalcular, solo reflujo CSS
   });
 
-  // nav
-  rootEl.querySelector('#agPrev').addEventListener('click', () => { view = addMonths(view, -1); render(); });
-  rootEl.querySelector('#agNext').addEventListener('click', () => { view = addMonths(view, 1); render(); });
-
-  rootEl.querySelector('#agAddBtn').addEventListener('click', () => {
-    const addBtn = document.getElementById('btn-nueva-int');
-    if (addBtn) addBtn.click();
+  // filtros
+  $resp.addEventListener('change', () => { filters.responsable = $resp.value; render(); });
+  $tipo.addEventListener('change', () => { filters.tipo = $tipo.value; render(); });
+  $q.addEventListener('input', () => { filters.q = $q.value.trim(); render(); });
+  rootEl.querySelector('#agFilterClear').addEventListener('click', () => {
+    $resp.value = $tipo.value = $q.value = '';
+    filters.responsable = filters.tipo = filters.q = '';
+    render();
   });
 
-  render();
+  // navegación
+  rootEl.querySelector('#agPrev').addEventListener('click', () => { view = addMonths(view, -1); render(true); });
+  rootEl.querySelector('#agNext').addEventListener('click', () => { view = addMonths(view, 1); render(true); });
 
-  function render() {
+  render(true); // primera vez refresca combos del mes
+
+  // ================== render ==================
+  function render(refreshCombos = false) {
+    // encabezado mes
     rootEl.querySelector('#agMonthLabel').textContent = formatMonth(view);
 
+    // header weekdays (con domingo en rojo)
     const wd = ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
-    rootEl.querySelector('#agWeekdays').innerHTML = wd.map(d => `<div>${d}</div>`).join('');
+    rootEl.querySelector('#agWeekdays').innerHTML = wd
+      .map((d,i) => `<div class="${i===6?'is-sunday':''}">${d}</div>`).join('');
 
+    // matriz: SOLO mes actual (sin otros meses)
     const matrix = buildMonthMatrixExact(view);
     const first = startOfMonth(view);
     const last  = endOfMonth(view);
 
-    const rows = applyFilters(allRows, filters);
-    const byDay = groupByDate(rows, first, last);
+    // Datos del mes visible (sirven para combos y para pintar)
+    const monthRows = allRows.filter(r => r.date >= first && r.date <= last);
 
+    // poblar combos del mes si corresponde
+    if (refreshCombos) {
+      populateSelectReset($resp, uniq(monthRows.map(r => r.responsable)).sort());
+      populateSelectReset($tipo, uniq(monthRows.map(r => r.paso)).filter(Boolean).sort());
+    }
+
+    // aplicar filtros
+    const rows = applyFilters(monthRows, filters);
+
+    // agrupar por día
+    const byDay = groupByDateStrict(rows, first, last);
+
+    // pinta grid
     const todayISO = isoDate(new Date());
     rootEl.querySelector('#agGrid').innerHTML = matrix
       .map(cell => dayCell(cell, byDay[isoDate(cell.date)] || [], todayISO))
@@ -166,6 +152,24 @@ export function mountAgendaLite(rootEl, items = []) {
         }
       });
     });
+
+    // doble-click para editar (usa modal si existe)
+    rootEl.querySelectorAll('.ag-item').forEach(el => {
+      el.addEventListener('dblclick', () => {
+        const payload = el._raw || null;
+        if (!payload) return;
+        if (typeof window !== 'undefined' && typeof window.openInteraccionModal === 'function') {
+          window.openInteraccionModal({
+            preset: payload,
+            onSaved: () => render(true)
+          });
+        } else {
+          // fallback: emite evento para que otro módulo abra el modal
+          const evt = new CustomEvent('interaccion:edit', { detail: payload });
+          window.dispatchEvent(evt);
+        }
+      });
+    });
   }
 }
 
@@ -177,17 +181,21 @@ function normalize(r) {
 
   const contacto = r.contactoNombre || r.contacto || '';
   const proveedor = r.proveedorNombre || r.proveedor || '';
-  const etiquetaPersona = contacto ? contacto : (proveedor || '—');
+  const labelPersona = contacto || proveedor || '—';
 
   return {
+    raw: r, // conservar todo
     date,
     iso: date ? isoDate(date) : '',
     time: date ? timeHHMM(date) : '',
     paso: (r.proximoPaso || r.tipo || r.__tipo || '').trim(),
-    contacto: etiquetaPersona,
+    contacto,
+    proveedor,
+    persona: labelPersona,
     responsable: r.responsablePG || r.responsable || '—',
     estado: (r.estado || '').toString().toLowerCase(),
     tons: Number(r.tonsConversadas || r.tons || 0) || 0,
+    notas: r.observaciones || r.notas || r.descripcion || ''
   };
 }
 
@@ -195,18 +203,16 @@ function applyFilters(list, f) {
   const q = f.q.toLowerCase();
   return list.filter(it => {
     if (f.responsable && it.responsable !== f.responsable) return false;
-    if (f.estado && it.estado !== f.estado) return false;
     if (f.tipo && it.paso !== f.tipo) return false;
-    if (f.minTons && it.tons < f.minTons) return false;
     if (q) {
-      const blob = `${it.contacto} ${it.paso} ${it.responsable}`.toLowerCase();
+      const blob = `${it.contacto} ${it.proveedor}`.toLowerCase();
       if (!blob.includes(q)) return false;
     }
     return true;
   });
 }
 
-function groupByDate(list, from, to) {
+function groupByDateStrict(list, from, to) {
   const map = Object.create(null);
   const fromISO = isoDate(from), toISO = isoDate(to);
   list.forEach(it => {
@@ -244,32 +250,60 @@ function pillForEstado(estado) {
   return `<span class="ag-pill" style="border-color:${c.bd};background:${c.bg};color:${c.fg}">${escapeHtml(s)}</span>`;
 }
 
+function tooltipForItem(it) {
+  // resumen con todo lo que pueda venir del modal
+  const r = it.raw || {};
+  const campos = [
+    ['Fecha', it.iso + (it.time ? ` ${it.time}` : '')],
+    ['Tipo', it.paso],
+    ['Responsable', it.responsable],
+    ['Contacto', it.contacto],
+    ['Proveedor', it.proveedor],
+    ['Estado', it.estado],
+    ['Tons', it.tons ? `${it.tons}` : '—'],
+    ['Notas', it.notas || '—']
+  ];
+  return campos
+    .filter(([k,v]) => v != null && String(v).trim() !== '')
+    .map(([k,v]) => `${k}: ${String(v)}`)
+    .join('\n');
+}
+
 function itemCard(it) {
   const dot = colorForPaso(it.paso);
   const tons = it.tons ? ` · ${formatTons(it.tons)}` : '';
-  return `
-    <div class="ag-item">
+  const title = tooltipForItem(it);
+  const html = `
+    <div class="ag-item" title="${escapeHtml(title)}">
       <div class="ag-item-top">
         <span class="ag-dot" style="background:${dot};"></span>
         <span class="ag-time">${escapeHtml(it.time || '')}</span>
         ${pillForEstado(it.estado)}
       </div>
       <div class="ag-item-main"><div class="ag-type">${escapeHtml(it.paso || '—')}</div></div>
-      <div class="ag-item-sub">${escapeHtml(it.contacto)}${tons}</div>
+      <div class="ag-item-sub">${escapeHtml(it.persona)}${tons}</div>
       <div class="ag-item-foot">${escapeHtml(it.responsable)}</div>
     </div>
   `;
+  // Empaquetamos el raw para dblclick
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = html.trim();
+  const el = wrapper.firstChild;
+  el._raw = it.raw;
+  return el.outerHTML;
 }
 
 function dayCell(cell, list, todayISO) {
   if (cell.empty) return `<div class="ag-day ag-empty" aria-hidden="true"></div>`;
   const isToday = isoDate(cell.date) === todayISO;
+  const isSunday = cell.date.getDay() === 0;
+
   const first = list.slice(0, 3).map(itemCard).join('');
   const full  = list.map(itemCard).join('');
   const moreN = Math.max(0, list.length - 3);
 
   return `
-    <div class="ag-day ${isToday ? 'is-today':''}" data-expanded="0">
+    <div class="ag-day ${isToday ? 'is-today':''} ${isSunday ? 'is-sunday':''}" data-expanded="0">
       <div class="ag-day-head"><span class="ag-day-num" title="${isoDate(cell.date)}">${cell.day}</span></div>
       <div class="ag-day-body">
         <div class="ag-items-compact">${first || ''}</div>
@@ -289,7 +323,7 @@ function addMonths(d, n){ const x=new Date(d); x.setMonth(x.getMonth()+n); retur
 function buildMonthMatrixExact(refDate){
   const first = startOfMonth(refDate);
   const last  = endOfMonth(refDate);
-  const dayIdx = (d) => (d.getDay() + 6) % 7;
+  const dayIdx = (d) => (d.getDay() + 6) % 7; // L=0 … D=6
 
   const totalDays = last.getDate();
   const lead = dayIdx(first);
@@ -313,11 +347,20 @@ function isoDate(d){ return d && !Number.isNaN(d.valueOf()) ? d.toISOString().sl
 function timeHHMM(d){ const h=String(d.getHours()).padStart(2,'0'); const m=String(d.getMinutes()).padStart(2,'0'); return `${h}:${m}`; }
 function formatMonth(d){ const fmt=new Intl.DateTimeFormat('es-CL',{month:'long', year:'numeric'}); const txt=fmt.format(d); return txt.charAt(0).toUpperCase()+txt.slice(1); }
 function formatTons(v){ return `${Number(v).toLocaleString('es-CL',{maximumFractionDigits:0})} t`; }
-function escapeHtml(s){ return String(s||'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+function escapeHtml(s){ return String(s||'').replace(/[<>&"\n]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;','\n':'&#10;'}[c])); }
 function uniq(arr){ return Array.from(new Set(arr.filter(v => v != null && v !== ''))); }
-function populateSelect(sel, values){ const frag=document.createDocumentFragment(); values.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; frag.appendChild(o); }); sel.appendChild(frag); }
+function populateSelectReset(sel, values){
+  sel.innerHTML = '<option value="">Todos</option>';
+  const frag = document.createDocumentFragment();
+  values.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    frag.appendChild(opt);
+  });
+  sel.appendChild(frag);
+}
 
-/* ================== estilos (con densidad) ================== */
+/* ================== estilos ================== */
 function injectStyles(){
   if (document.getElementById('ag-lite-styles')) return;
   const s = document.createElement('style');
@@ -326,84 +369,45 @@ function injectStyles(){
   .ag-scope, .ag-scope * { box-sizing: border-box; }
   .ag-scope .hide{ display:none !important; }
 
-  /* Variables por densidad */
-  .ag-scope{
-    --ag-gap: 8px;
-    --ag-day-minh: 200px;
-    --ag-fs-xxs: .70rem;
-    --ag-fs-xs:  .76rem;
-    --ag-fs-s:   .82rem;
-    --ag-fs-m:   .88rem;
-    --ag-fs-l:   .94rem;
-    --ag-pad-sm: 6px;
-    --ag-pad-md: 8px;
-  }
-  .ag-density-cozy{ --ag-gap: 8px;  --ag-day-minh: 200px; --ag-fs-xxs:.72rem; --ag-fs-xs:.78rem; --ag-fs-s:.84rem; --ag-fs-m:.9rem;  --ag-fs-l:.98rem; --ag-pad-sm:6px; --ag-pad-md:10px; }
-  .ag-density-compact{ --ag-gap: 6px; --ag-day-minh: 170px; --ag-fs-xxs:.68rem; --ag-fs-xs:.74rem; --ag-fs-s:.80rem; --ag-fs-m:.86rem; --ag-fs-l:.92rem; --ag-pad-sm:5px; --ag-pad-md:8px; }
-  .ag-density-ultra{ --ag-gap: 5px; --ag-day-minh: 140px; --ag-fs-xxs:.64rem; --ag-fs-xs:.70rem; --ag-fs-s:.76rem; --ag-fs-m:.82rem; --ag-fs-l:.88rem; --ag-pad-sm:4px; --ag-pad-md:6px; }
+  /* Densidades (variables) */
+  .ag-scope{ --ag-gap:8px; --ag-day-minh:170px; --ag-fs-xxs:.68rem; --ag-fs-xs:.74rem; --ag-fs-s:.80rem; --ag-fs-m:.86rem; --ag-fs-l:.92rem; --ag-pad-sm:5px; --ag-pad-md:8px; }
+  .ag-density-cozy{ --ag-gap:8px;  --ag-day-minh:200px; --ag-fs-xxs:.70rem; --ag-fs-xs:.76rem; --ag-fs-s:.84rem; --ag-fs-m:.90rem; --ag-fs-l:.98rem; --ag-pad-sm:6px; --ag-pad-md:10px; }
+  .ag-density-compact{ --ag-gap:6px; --ag-day-minh:170px; }
+  .ag-density-ultra{ --ag-gap:5px; --ag-day-minh:140px; --ag-fs-xxs:.64rem; --ag-fs-xs:.70rem; --ag-fs-s:.76rem; --ag-fs-m:.82rem; --ag-fs-l:.88rem; --ag-pad-sm:4px; --ag-pad-md:6px; }
 
-  .ag-scope .ag-card{
-    width:100%; background:#fff; border-radius:12px;
-    box-shadow:0 6px 16px rgba(0,0,0,.05); padding:12px;
-  }
+  .ag-scope .ag-card{ width:100%; background:#fff; border-radius:12px; box-shadow:0 6px 16px rgba(0,0,0,.05); padding:12px; }
   .ag-scope .ag-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:var(--ag-gap); }
   .ag-scope .ag-title{ margin:0; font-size:calc(var(--ag-fs-l) + .1rem); letter-spacing:.2px; font-weight:700; }
-  .ag-scope .ag-actions .ag-btn{ background:#16a34a; color:#fff; border:none; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:var(--ag-fs-s); }
 
   /* Filtros */
   .ag-scope .ag-filters{
-    display:grid;
-    grid-template-columns: 180px 150px 200px 1fr 90px 140px 110px;
-    gap:var(--ag-gap); align-items:end; margin:var(--ag-gap) 0 calc(var(--ag-gap) + 2px);
+    display:grid; grid-template-columns: 200px 220px 1fr 140px 110px; gap:var(--ag-gap); align-items:end; margin:var(--ag-gap) 0 calc(var(--ag-gap) + 2px);
   }
-  .ag-scope .ag-filter label{
-    display:block; font-size:calc(var(--ag-fs-xxs)); color:#475569; margin-bottom:4px; font-weight:600; letter-spacing:.2px;
-  }
-  .ag-scope .ag-select,
-  .ag-scope .ag-filters input[type="text"],
-  .ag-scope .ag-filters input[type="number"]{
+  .ag-scope .ag-filter label{ display:block; font-size:var(--ag-fs-xxs); color:#475569; margin-bottom:4px; font-weight:600; letter-spacing:.2px; }
+  .ag-scope .ag-select, .ag-scope .ag-filters input[type="text"]{
     width:100%; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; font-size:var(--ag-fs-s); background:#fff;
   }
-  .ag-scope .ag-filters input[type="text"]::placeholder{ color:#94a3b8; }
-  .ag-scope .ag-filter-grow{ min-width:220px; }
-  .ag-scope .ag-filter-min{ max-width:140px; }
   .ag-scope .ag-btn-secondary{ background:#f8fafc; color:#0f172a; border:1px solid #e5e7eb; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:var(--ag-fs-s); }
 
   .ag-scope .ag-monthbar{ display:flex; align-items:center; justify-content:center; gap:var(--ag-gap); margin:2px 0 var(--ag-gap); }
   .ag-scope .ag-month{ font-weight:700; letter-spacing:.3px; font-size:var(--ag-fs-m); }
   .ag-scope .ag-nav{ border:1px solid #e5e7eb; background:#f8fafc; border-radius:8px; padding:2px 8px; cursor:pointer; line-height:1; }
 
-  .ag-scope .ag-weekdays{
-    display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:var(--ag-gap); width:100%;
-  }
-  .ag-scope .ag-weekdays>div{
-    background:#f3f4f6; color:#0f172a; font-weight:700;
-    border-radius:8px; padding:var(--ag-pad-sm); text-align:center; font-size:var(--ag-fs-s);
-  }
+  .ag-scope .ag-weekdays{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:var(--ag-gap); width:100%; }
+  .ag-scope .ag-weekdays>div{ background:#f3f4f6; color:#0f172a; font-weight:700; border-radius:8px; padding:var(--ag-pad-sm); text-align:center; font-size:var(--ag-fs-s); }
+  .ag-scope .ag-weekdays>div.is-sunday{ background:#fee2e2; color:#991b1b; }
 
-  .ag-scope .ag-grid{
-    display:grid; grid-template-columns:repeat(7, minmax(0,1fr));
-    grid-auto-flow: row dense; grid-auto-rows: auto;
-    gap:var(--ag-gap); width:100%;
-  }
+  .ag-scope .ag-grid{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); grid-auto-flow: row dense; grid-auto-rows: auto; gap:var(--ag-gap); width:100%; }
   .ag-scope .ag-grid > * { min-width:0; }
 
-  .ag-scope .ag-day{
-    background:#fff; border:1px solid #eef2f7; border-radius:10px;
-    min-height:var(--ag-day-minh); display:flex; flex-direction:column; position:relative;
-    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
-  }
+  .ag-scope .ag-day{ background:#fff; border:1px solid #eef2f7; border-radius:10px; min-height:var(--ag-day-minh); display:flex; flex-direction:column; position:relative; transition: border-color .15s ease, box-shadow .15s ease, background .15s ease; }
   .ag-scope .ag-day.ag-empty{ background:transparent; border:1px dashed transparent; min-height:var(--ag-day-minh); }
+  .ag-scope .ag-day.is-sunday .ag-day-num{ color:#991b1b; }
   .ag-scope .ag-day-head{ display:flex; justify-content:flex-end; padding:var(--ag-pad-sm) var(--ag-pad-sm) 0; }
   .ag-scope .ag-day-num{ font-weight:700; color:#475569; font-size:var(--ag-fs-s); }
 
-  .ag-scope .ag-day.is-today{
-    border-color:#22c55e; box-shadow:0 0 0 2px rgba(34,197,94,.2) inset;
-    background:linear-gradient(0deg, #ffffff 0%, #f6fffb 100%);
-  }
-  .ag-scope .ag-today-badge{
-    position:absolute; right:8px; top:8px; width:8px; height:8px; border-radius:50%; background:#22c55e;
-  }
+  .ag-scope .ag-day.is-today{ border-color:#22c55e; box-shadow:0 0 0 2px rgba(34,197,94,.2) inset; background:linear-gradient(0deg, #ffffff 0%, #f6fffb 100%); }
+  .ag-scope .ag-today-badge{ position:absolute; right:8px; top:8px; width:8px; height:8px; border-radius:50%; background:#22c55e; }
 
   .ag-scope .ag-day-body{ padding:var(--ag-pad-sm); display:flex; flex-direction:column; gap:4px; }
 
@@ -417,22 +421,13 @@ function injectStyles(){
   .ag-scope .ag-item-sub{ color:#475569; font-size:var(--ag-fs-xs); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .ag-scope .ag-item-foot{ color:#64748b; font-size:var(--ag-fs-xxs); }
 
-  .ag-scope .ag-more{
-    margin:4px; border:1px dashed #cbd5e1; background:#fff;
-    border-radius:8px; padding:4px 6px; font-size:var(--ag-fs-xs); color:#334155; cursor:pointer; align-self:flex-start;
-  }
+  .ag-scope .ag-more{ margin:4px; border:1px dashed #cbd5e1; background:#fff; border-radius:8px; padding:4px 6px; font-size:var(--ag-fs-xs); color:#334155; cursor:pointer; align-self:flex-start; }
 
   .ag-scope .ag-day:not(.ag-empty):hover{ border-color:#cbd5e1; }
 
   /* Responsive */
-  @media (max-width: 1200px){
-    .ag-scope .ag-filters{ grid-template-columns: 1fr 1fr 1fr 1fr 90px 140px 110px; }
-  }
-  @media (max-width: 900px){
-    .ag-scope .ag-title{ font-size:var(--ag-fs-m); }
-    .ag-scope .ag-weekdays>div{ font-size:var(--ag-fs-xs); }
-    .ag-scope .ag-filters{ grid-template-columns: 1fr 1fr; }
-  }
+  @media (max-width: 1200px){ .ag-scope .ag-filters{ grid-template-columns: 1fr 1fr 1fr 140px 110px; } }
+  @media (max-width: 900px){ .ag-scope .ag-title{ font-size:var(--ag-fs-m); } .ag-scope .ag-weekdays>div{ font-size:var(--ag-fs-xs); } .ag-scope .ag-filters{ grid-template-columns: 1fr 1fr; } }
   `;
   document.head.appendChild(s);
 }
