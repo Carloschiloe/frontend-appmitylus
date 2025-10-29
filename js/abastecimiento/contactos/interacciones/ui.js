@@ -1,7 +1,7 @@
 // /js/abastecimiento/contactos/interacciones/ui.js
 import { list } from './api.js';
 import { renderTable } from './table.js';
-import { mountAgendaLite } from './agenda-lite.js';
+import { mountCalendar } from './calendar.js?v=3'; // usa el adapter MMpp, con bust de caché
 import { openInteraccionModal } from './modal.js';
 
 export function mountInteracciones(root){
@@ -160,4 +160,5 @@ function fmtNum(n){
   const v = Number(n)||0;
   return v.toLocaleString('es-CL', { maximumFractionDigits: 2 });
 }
+
 
