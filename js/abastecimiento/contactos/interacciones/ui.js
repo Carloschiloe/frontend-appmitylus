@@ -4,6 +4,11 @@ import { renderTable } from './table.js';
 import { mountAgendaLite } from './agenda-lite.js';
 import { openInteraccionModal } from './modal.js';
 
+// Exponer el modal de edición para que agenda-lite pueda abrirlo con doble-click
+if (typeof window !== 'undefined') {
+  window.openInteraccionModal = openInteraccionModal;
+}
+
 export function mountInteracciones(root){
   injectStyles();
 
@@ -67,8 +72,8 @@ export function mountInteracciones(root){
       items = []; // backend aún no está: agenda vacía, no rompe
     }
 
-   mountAgendaLite(calDiv, items); // agenda propia (expandir/contraer)
-   calDiv.dataset.mounted = '1';
+    mountAgendaLite(calDiv, items); // agenda propia (expandir/contraer)
+    calDiv.dataset.mounted = '1';
   });
 
   // ===== helpers internos =====
@@ -139,7 +144,7 @@ function currentIsoWeek(d = new Date()){
   if (window.app?.utils?.isoWeek) {
     const w = window.app.utils.isoWeek(d);
     return `${d.getFullYear()}-W${String(w).padStart(2,'0')}`;
-  }
+    }
   const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   const dayNum = (tmp.getUTCDay() + 6) % 7; // 0..6 (0=Lun)
   tmp.setUTCDate(tmp.getUTCDate() - dayNum + 3); // jueves de esa semana
@@ -160,8 +165,3 @@ function fmtNum(n){
   const v = Number(n)||0;
   return v.toLocaleString('es-CL', { maximumFractionDigits: 2 });
 }
-
-
-
-
-
