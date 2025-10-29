@@ -27,7 +27,7 @@ export function mountAgendaLite(rootEl, items = []) {
       <div class="ag-card">
         <div class="ag-header">
           <h5 class="ag-title">Calendario de actividades (Interacciones)</h5>
-          <div class="ag-actions"><button id="agAddBtn" class="ag-btn">+</button></div>
+          <div class="ag-actions"><button id="agAddBtn" class="ag-btn" title="Nueva interacción">+</button></div>
         </div>
 
         <div class="ag-monthbar">
@@ -68,23 +68,19 @@ export function mountAgendaLite(rootEl, items = []) {
 
     // header weekdays
     const wd = ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
-    const wdHtml = wd.map(d => `<div>${d}</div>`).join('');
-    rootEl.querySelector('#agWeekdays').innerHTML = wdHtml;
+    rootEl.querySelector('#agWeekdays').innerHTML = wd.map(d => `<div>${d}</div>`).join('');
 
-    // matriz de días (6 semanas; con desbordes anterior/siguiente)
-    const matrix = buildMonthMatrix(view);
-    const from = matrix[0].date;
-    const to   = matrix[matrix.length-1].date;
+    // matriz: SOLO mes actual (sin pintar días de otros meses)
+    const matrix = buildMonthMatrixExact(view); // celdas vacías de relleno, sin "out"
+    const first = startOfMonth(view);
+    const last  = endOfMonth(view);
 
-    // agrupamos filas por yyyy-mm-dd del período visible
-    const byDay = groupByDate(rows, from, to);
+    // agrupamos filas por yyyy-mm-dd SOLO dentro del mes
+    const byDay = groupByDate(rows, first, last);
 
     // pinta grid
     const todayISO = isoDate(new Date());
-    const html = matrix.map(cell => {
-      const list = byDay[isoDate(cell.date)] || [];
-      return dayCell(cell, list, todayISO);
-    }).join('');
+    const html = matrix.map(cell => dayCell(cell, byDay[isoDate(cell.date)] || [], todayISO)).join('');
     rootEl.querySelector('#agGrid').innerHTML = html;
 
     // wire “+N más / ver menos”
@@ -117,12 +113,18 @@ export function mountAgendaLite(rootEl, items = []) {
 function normalize(r) {
   const dateStr = r.fechaProx || r.proximoPasoFecha || r.destFecha;
   const date = dateStr ? new Date(dateStr) : null;
+
+  // Priorizar contacto (lo que pidió el usuario). Proveedor queda de respaldo.
+  const contacto = r.contactoNombre || r.contacto || '';
+  const proveedor = r.proveedorNombre || r.proveedor || '';
+  const etiquetaPersona = contacto ? contacto : (proveedor || '—');
+
   return {
     date,
     iso: date ? isoDate(date) : '',
     time: date ? timeHHMM(date) : '',
     paso: (r.proximoPaso || r.tipo || r.__tipo || '').trim(),
-    proveedor: r.proveedorNombre || r.contactoNombre || '—',
+    contacto: etiquetaPersona, // <<< ahora la tarjeta usa el contacto
     responsable: r.responsablePG || r.responsable || '—',
     estado: (r.estado || '').toString().toLowerCase(),
     tons: Number(r.tonsConversadas || r.tons || 0) || 0,
@@ -180,14 +182,18 @@ function itemCard(it) {
       <div class="ag-item-main">
         <div class="ag-type">${escapeHtml(it.paso || '—')}</div>
       </div>
-      <div class="ag-item-sub">${escapeHtml(it.proveedor)}${tons}</div>
+      <div class="ag-item-sub">${escapeHtml(it.contacto)}${tons}</div>
       <div class="ag-item-foot">${escapeHtml(it.responsable)}</div>
     </div>
   `;
 }
 
 function dayCell(cell, list, todayISO) {
-  const isOut = cell.out;
+  if (cell.empty) {
+    // celda de relleno (para mantener la cuadrícula, sin mostrar otro mes)
+    return `<div class="ag-day ag-empty" aria-hidden="true"></div>`;
+  }
+
   const isToday = isoDate(cell.date) === todayISO;
 
   // compact: primeras 3
@@ -197,7 +203,7 @@ function dayCell(cell, list, todayISO) {
   const moreN = Math.max(0, list.length - 3);
 
   return `
-    <div class="ag-day ${isOut ? 'is-out':''}" data-expanded="0">
+    <div class="ag-day ${isToday ? 'is-today':''}" data-expanded="0">
       <div class="ag-day-head">
         <span class="ag-day-num" title="${isoDate(cell.date)}">${cell.day}</span>
       </div>
@@ -217,34 +223,55 @@ function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
 function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0, 23,59,59,999); }
 function addMonths(d, n){ const x=new Date(d); x.setMonth(x.getMonth()+n); return x; }
 
-function buildMonthMatrix(refDate){
+/**
+ * Construye matriz SOLO del mes actual:
+ * - Celdas vacías al inicio/fin para alinear la grilla (no muestra días de otros meses).
+ * - 7 columnas, filas necesarias (5 o 6 semanas).
+ */
+function buildMonthMatrixExact(refDate){
   const first = startOfMonth(refDate);
   const last  = endOfMonth(refDate);
 
-  // lunes=0 … domingo=6 (normalizamos desde getDay() que es 0=domingo)
+  // lunes=0 … domingo=6 (desde getDay() 0=domingo)
   const dayIdx = (d) => (d.getDay() + 6) % 7;
 
-  const start = new Date(first);
-  start.setDate(first.getDate() - dayIdx(first)); // arranca lunes de la 1a semana
-  const end = new Date(last);
-  end.setDate(last.getDate() + (6 - dayIdx(last))); // termina domingo
+  const totalDays = last.getDate();
+  const lead = dayIdx(first); // celdas vacías previas
+  const used = lead + totalDays;
+  const tail = (7 - (used % 7)) % 7; // celdas vacías finales
 
-  // 6 semanas seguras
   const cells = [];
-  let cursor = new Date(start);
-  for (let i=0;i<42;i++){
-    cells.push({
-      date: new Date(cursor),
-      day: cursor.getDate(),
-      out: (cursor < first || cursor > last)
-    });
-    cursor.setDate(cursor.getDate()+1);
+
+  // previos vacíos
+  for (let i=0;i<lead;i++){
+    cells.push({ empty:true, date:new Date(NaN), day:null });
   }
+
+  // días reales del mes
+  for (let d=1; d<=totalDays; d++){
+    const curr = new Date(first.getFullYear(), first.getMonth(), d);
+    cells.push({ empty:false, date:curr, day:d });
+  }
+
+  // finales vacíos
+  for (let i=0;i<tail;i++){
+    cells.push({ empty:true, date:new Date(NaN), day:null });
+  }
+
+  // garantizar 6 semanas si quieres altura fija; si no, comenta este bloque:
+  if (cells.length <= 35) {
+    // 5 semanas → expandir a 6 con vacíos
+    const extra = 42 - cells.length;
+    for (let i=0;i<extra;i++){
+      cells.push({ empty:true, date:new Date(NaN), day:null });
+    }
+  }
+
   return cells;
 }
 
 /* ---------- format & misc ---------- */
-function isoDate(d){ return d.toISOString().slice(0,10); }
+function isoDate(d){ return d && !Number.isNaN(d.valueOf()) ? d.toISOString().slice(0,10) : ''; }
 function timeHHMM(d){
   const h = String(d.getHours()).padStart(2,'0');
   const m = String(d.getMinutes()).padStart(2,'0');
@@ -253,7 +280,6 @@ function timeHHMM(d){
 function formatMonth(d){
   const fmt = new Intl.DateTimeFormat('es-CL',{month:'long', year:'numeric'});
   let txt = fmt.format(d); // "octubre de 2025"
-  // Capitaliza primera letra
   return txt.charAt(0).toUpperCase() + txt.slice(1);
 }
 function formatTons(v){
@@ -307,15 +333,26 @@ function injectStyles(){
   .ag-scope .ag-day{
     background:#fff; border:1px solid #eef2f7; border-radius:10px;
     min-height:200px; display:flex; flex-direction:column; position:relative;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
   }
-  .ag-scope .ag-day.is-out{ opacity:.55; background:#fafafa; }
+  .ag-scope .ag-day.ag-empty{
+    background:transparent; border:1px dashed transparent; min-height:200px;
+  }
   .ag-scope .ag-day-head{ display:flex; justify-content:flex-end; padding:6px 6px 0; }
   .ag-scope .ag-day-num{ font-weight:700; color:#475569; font-size:.85rem; }
-  .ag-scope .ag-day-body{ padding:6px; display:flex; flex-direction:column; gap:5px; }
+
+  /* HOY destacado */
+  .ag-scope .ag-day.is-today{
+    border-color:#22c55e;
+    box-shadow:0 0 0 2px rgba(34,197,94,.2) inset;
+    background:linear-gradient(0deg, #ffffff 0%, #f6fffb 100%);
+  }
   .ag-scope .ag-today-badge{
-    position:absolute; right:8px; top:8px; width:6px; height:6px; border-radius:50%;
+    position:absolute; right:8px; top:8px; width:8px; height:8px; border-radius:50%;
     background:#22c55e;
   }
+
+  .ag-scope .ag-day-body{ padding:6px; display:flex; flex-direction:column; gap:5px; }
 
   /* Tarjetas compactas (más densidad) */
   .ag-scope .ag-item{ border:1px solid #e5e7eb; border-radius:8px; padding:6px; background:#fff; }
@@ -335,6 +372,11 @@ function injectStyles(){
     margin:6px; border:1px dashed #cbd5e1; background:#fff;
     border-radius:8px; padding:5px; font-size:.78rem; color:#334155; cursor:pointer;
     align-self:flex-start;
+  }
+
+  /* Hover sutil para legibilidad al explorar */
+  .ag-scope .ag-day:not(.ag-empty):hover{
+    border-color:#cbd5e1;
   }
 
   /* Responsive pequeño */
