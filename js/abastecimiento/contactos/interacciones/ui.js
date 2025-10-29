@@ -67,7 +67,7 @@ export function mountInteracciones(root){
       items = []; // backend aún no está: agenda vacía, no rompe
     }
 
-   mountCalendar(calDiv, items); // usará el adapter con tarjetas expandir/contraer y estilos propios
+   mountAgendaLite(calDiv, items); // agenda propia (expandir/contraer)
    calDiv.dataset.mounted = '1';
   });
 
@@ -160,6 +160,7 @@ function fmtNum(n){
   const v = Number(n)||0;
   return v.toLocaleString('es-CL', { maximumFractionDigits: 2 });
 }
+
 
 
 
