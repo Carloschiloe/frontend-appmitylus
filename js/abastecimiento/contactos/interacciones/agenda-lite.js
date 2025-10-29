@@ -22,24 +22,28 @@ export function mountAgendaLite(rootEl, items = []) {
       <div class="ag-card">
         <div class="ag-header">
           <h5 class="ag-title">Calendario de actividades (Interacciones)</h5>
-          <!-- Botón + pequeño eliminado: ya tienes el rectangular -->
         </div>
 
         <!-- Filtros -->
         <div class="ag-filters">
           <div class="ag-filter">
             <label for="agFilterResp">Responsable</label>
-            <select id="agFilterResp" class="ag-select"><option value="">Todos</option></select>
+            <select id="agFilterResp" class="browser-default ag-select">
+              <option value="">Todos</option>
+            </select>
           </div>
           <div class="ag-filter">
             <label for="agFilterTipo">Tipo</label>
-            <select id="agFilterTipo" class="ag-select"><option value="">Todos</option></select>
+            <select id="agFilterTipo" class="browser-default ag-select">
+              <option value="">Todos</option>
+            </select>
           </div>
           <div class="ag-filter ag-filter-grow">
             <label for="agFilterQ">Buscar (Contacto / Proveedor)</label>
-            <input id="agFilterQ" type="text" placeholder="Ej: PATRICIO, Paillacar…"/>
+            <input id="agFilterQ" type="text" class="ag-input" placeholder="Ej: PATRICIO, Paillacar…"/>
           </div>
-          <div class="ag-filter">
+          <div class="ag-filter ag-filter-min">
+            <label>&nbsp;</label>
             <button id="agFilterClear" class="ag-btn-secondary" title="Limpiar filtros">Limpiar</button>
           </div>
         </div>
@@ -108,12 +112,12 @@ export function mountAgendaLite(rootEl, items = []) {
 
     // Pintar grilla
     const todayISO = isoDate(new Date());
-    rootEl.querySelector('#agGrid').innerHTML = matrix
-      .map(cell => dayCell(cell, byDay[isoDate(cell.date)] || [], todayISO))
-      .join('');
+    const html = matrix.map(cell => dayCell(cell, byDay[isoDate(cell.date)] || [], todayISO)).join('');
+    const grid = rootEl.querySelector('#agGrid');
+    grid.innerHTML = html;
 
     // Toggle “+N más”
-    rootEl.querySelectorAll('.ag-more').forEach(btn => {
+    grid.querySelectorAll('.ag-more').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const day = e.currentTarget.closest('.ag-day');
         const full = day.querySelector('.ag-items-full');
@@ -130,15 +134,17 @@ export function mountAgendaLite(rootEl, items = []) {
       });
     });
 
-    // Doble-click para editar en modal
-    rootEl.querySelectorAll('.ag-item').forEach(el => {
+    // Doble-click para editar en modal (lee data-raw serializado)
+    grid.querySelectorAll('.ag-item').forEach(el => {
       el.addEventListener('dblclick', () => {
-        const payload = el._raw || null;
+        let payload = null;
+        try {
+          payload = JSON.parse(decodeURIComponent(el.dataset.raw || '{}'));
+        } catch (_) { payload = null; }
         if (!payload) return;
         if (typeof window !== 'undefined' && typeof window.openInteraccionModal === 'function') {
           window.openInteraccionModal({ preset: payload, onSaved: () => render(true) });
         } else {
-          // fallback: evento para que otro módulo lo capture
           window.dispatchEvent(new CustomEvent('interaccion:edit', { detail: payload }));
         }
       });
@@ -223,7 +229,6 @@ function pillForEstado(estado) {
 }
 
 function tooltipForItem(it) {
-  const r = it.raw || {};
   const campos = [
     ['Fecha', it.iso + (it.time ? ` ${it.time}` : '')],
     ['Tipo', it.paso],
@@ -244,8 +249,12 @@ function itemCard(it) {
   const dot  = colorForPaso(it.paso);
   const tons = it.tons ? ` · ${formatTons(it.tons)}` : '';
   const title = tooltipForItem(it);
-  const html = `
-    <div class="ag-item" title="${escapeHtml(title)}">
+
+  // Serializamos el raw en data-raw para poder recuperarlo en dblclick
+  const rawEncoded = encodeURIComponent(JSON.stringify(it.raw || {}));
+
+  return `
+    <div class="ag-item" title="${escapeHtml(title)}" data-raw="${rawEncoded}">
       <div class="ag-item-top">
         <span class="ag-dot" style="background:${dot};"></span>
         <span class="ag-time">${escapeHtml(it.time || '')}</span>
@@ -256,11 +265,6 @@ function itemCard(it) {
       <div class="ag-item-foot">${escapeHtml(it.responsable)}</div>
     </div>
   `;
-  const wrap = document.createElement('div');
-  wrap.innerHTML = html.trim();
-  const el = wrap.firstChild;
-  el._raw = it.raw;            // 👈 necesario para dblclick
-  return el.outerHTML;
 }
 
 function dayCell(cell, list, todayISO) {
@@ -342,11 +346,18 @@ function injectStyles(){
     .ag-scope .ag-title{ margin:0; font-size:16px; letter-spacing:.2px; font-weight:700; }
 
     /* Filtros */
-    .ag-scope .ag-filters{ display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin:4px 0 8px; }
+    .ag-scope .ag-filters{
+      display:grid;
+      grid-template-columns: 220px 220px 1fr 120px;
+      gap:10px; align-items:end; margin:6px 0 10px;
+    }
     .ag-scope .ag-filter{ display:flex; flex-direction:column; gap:4px; min-width:160px; }
-    .ag-scope .ag-filter-grow{ flex:1 1 240px; min-width:240px; }
-    .ag-scope .ag-select, .ag-scope input[type="text"]{ border:1px solid #e5e7eb; border-radius:8px; padding:6px 8px; font-size:12px; }
+    .ag-scope .ag-filter-grow{ min-width:260px; }
+    .ag-scope .ag-filter-min{ min-width:120px; }
+    .ag-scope .ag-select{ width:100%; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; font-size:12px; background:#fff; }
+    .ag-scope .ag-input{ width:100%; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; font-size:12px; background:#fff; }
     .ag-scope .ag-btn-secondary{ border:1px solid #cbd5e1; background:#fff; border-radius:8px; padding:6px 10px; font-size:12px; color:#334155; cursor:pointer; }
+    .ag-scope .ag-filter label{ font-size:.72rem; color:#475569; font-weight:600; letter-spacing:.2px; }
 
     .ag-scope .ag-monthbar{ display:flex; align-items:center; justify-content:center; gap:8px; margin:0 0 6px; }
     .ag-scope .ag-month{ font-weight:700; letter-spacing:.3px; font-size:13px; }
@@ -376,8 +387,15 @@ function injectStyles(){
 
     .ag-scope .ag-more{ margin:4px 0 0; border:1px dashed #cbd5e1; background:#fff; border-radius:8px; padding:4px 6px; font-size:.72rem; color:#334155; cursor:pointer; align-self:flex-start; }
 
-    @media (max-width: 1200px){ .ag-scope .ag-day{ min-height:150px; } }
-    @media (max-width: 900px){ .ag-scope .ag-title{ font-size:15px; } .ag-scope .ag-day{ min-height:140px; } }
+    @media (max-width: 1200px){
+      .ag-scope .ag-filters{ grid-template-columns: 1fr 1fr 1fr 120px; }
+      .ag-scope .ag-day{ min-height:150px; }
+    }
+    @media (max-width: 900px){
+      .ag-scope .ag-title{ font-size:15px; }
+      .ag-scope .ag-day{ min-height:140px; }
+      .ag-scope .ag-filters{ grid-template-columns: 1fr 1fr; }
+    }
   `;
   document.head.appendChild(s);
 }
