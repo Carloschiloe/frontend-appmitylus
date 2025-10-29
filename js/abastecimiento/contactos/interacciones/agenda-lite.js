@@ -373,7 +373,37 @@ function injectStyles(){
     .ag-scope .ag-day-head{ display:flex; justify-content:flex-end; padding:4px 6px 0; }
     .ag-scope .ag-day-num{ font-weight:700; color:#475569; font-size:.8rem; }
     .ag-scope .ag-day-body{ padding:6px; display:flex; flex-direction:column; gap:4px; }
-    .ag-scope .ag-today-badge{ position:absolute; right:8px; top:8px; width:6px; height:6px; border-radius:50%; background:#22c55e; }
+
+    /* === HOY bien destacado === */
+    .ag-scope .ag-day.is-today{
+      border-color:#10b981;               /* borde verde */
+      background:#f0fdf4;                 /* verde muy suave */
+      box-shadow:
+        0 0 0 2px #bbf7d0 inset,          /* halo interior */
+        0 0 0 2px rgba(16,185,129,.35);   /* aro exterior */
+      position:relative;
+      animation: agPulse 2.4s ease-in-out 1;
+    }
+    .ag-scope .ag-day.is-today .ag-day-num{
+      color:#065f46;                       /* verde oscuro */
+      background:#dcfce7;                  /* pastilla del número */
+      border-radius:999px;
+      padding:2px 6px;
+    }
+    .ag-scope .ag-day.is-today .ag-today-badge{
+      position:absolute; right:6px; top:6px;
+      width:auto; height:auto;
+      padding:2px 6px;
+      border-radius:999px;
+      background:#10b981;                  /* verde PG */
+      color:#fff; font-weight:700;
+      font-size:.70rem;
+    }
+    @keyframes agPulse {
+      0%{ box-shadow:0 0 0 0 rgba(16,185,129,.45); }
+      70%{ box-shadow:0 0 0 8px rgba(16,185,129,0); }
+      100%{ box-shadow:0 0 0 0 rgba(16,185,129,0); }
+    }
 
     /* Tarjetas compactas */
     .ag-scope .ag-item{ border:1px solid #e5e7eb; border-radius:8px; padding:6px; background:#fff; }
