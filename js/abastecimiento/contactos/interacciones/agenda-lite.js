@@ -1,188 +1,231 @@
 // /js/abastecimiento/contactos/interacciones/agenda-lite.js
-// Calendario simple de INTERACCIONES (solo lectura)
+// Calendario ligero SOLO para Interacciones (agenda)
+// - NO depende del calendario de cosechas
+// - 7 columnas (LU..DO) con CSS Grid
+// - Expandir/Contraer por día cuando hay muchas tarjetas
 
-(function injectStyles(){
-  if (document.getElementById('int-cal-styles')) return;
+export function mountAgendaLite(root, items = []) {
+  injectStyles();
+
+  // Estado local (mes visible)
+  let view = firstOfMonth(new Date());
+
+  root.innerHTML = `
+    <div class="ag-card">
+      <div class="ag-header">
+        <h5 class="ag-title">Calendario de actividades (Interacciones)</h5>
+        <div class="ag-actions">
+          <button class="ag-btn" id="ag-new">+</button>
+        </div>
+      </div>
+
+      <div class="ag-monthbar">
+        <button class="ag-nav" id="ag-prev" aria-label="Mes anterior">‹</button>
+        <div class="ag-month" id="ag-month-label"></div>
+        <button class="ag-nav" id="ag-next" aria-label="Mes siguiente">›</button>
+      </div>
+
+      <div class="ag-weekdays" aria-hidden="true">
+        <div>Lun</div><div>Mar</div><div>Mié</div>
+        <div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+      </div>
+
+      <div class="ag-grid" id="ag-grid" role="grid" aria-label="Cuadrícula mensual"></div>
+    </div>
+  `;
+
+  root.querySelector('#ag-prev').addEventListener('click', () => {
+    view = addMonths(view, -1);
+    render();
+  });
+  root.querySelector('#ag-next').addEventListener('click', () => {
+    view = addMonths(view, 1);
+    render();
+  });
+  root.querySelector('#ag-new').addEventListener('click', () => {
+    // deja el click para que tu botón global abra el modal si quieres engancharlo después
+    if (window.M?.toast) M.toast({ html: 'Usa el botón “+ Llamada/Acuerdo” de la pestaña', classes: 'blue' });
+  });
+
+  render();
+
+  function render() {
+    // etiqueta de mes
+    const label = root.querySelector('#ag-month-label');
+    label.textContent = monthLabel(view);
+
+    // rango visible (lunes…domingo)
+    const start = startOfCalendar(view);
+    const end   = endOfCalendar(view);
+
+    // indexa interacciones por día ISO (YYYY-MM-DD)
+    const byDay = groupByDay(items);
+
+    const grid = root.querySelector('#ag-grid');
+    grid.innerHTML = '';
+
+    // 6 semanas * 7 días = 42 celdas
+    let d = new Date(start);
+    for (let i = 0; i < 42; i++) {
+      const iso = toISO(d);
+      const inMonth = d.getMonth() === view.getMonth();
+      const dayItems = (byDay.get(iso) || []).sort((a,b) => timeInt(a) - timeInt(b));
+
+      const cell = document.createElement('div');
+      cell.className = 'ag-day' + (inMonth ? '' : ' is-out');
+      cell.setAttribute('role', 'gridcell');
+
+      // header: número de día
+      const head = document.createElement('div');
+      head.className = 'ag-day-head';
+      head.innerHTML = `<span class="ag-day-num">${String(d.getDate())}</span>`;
+      cell.appendChild(head);
+
+      // body: tarjetas
+      const body = document.createElement('div');
+      body.className = 'ag-day-body';
+      cell.appendChild(body);
+
+      // tarjetas (compactas)
+      dayItems.forEach((r) => {
+        const card = document.createElement('div');
+        card.className = 'ag-item';
+        const h = hhmm(r.fechaProx || r.proximoPasoFecha);
+        const paso = (r.proximoPaso || r.tipo || '').toUpperCase();
+        const quien = r.contactoNombre || r.proveedorNombre || '—';
+        const resp = r.responsablePG || r.responsable || '';
+        const est  = canonEstado(r.estado);
+        const tons = num(r.tonsConversadas) ? ` · ${fmtNum(r.tonsConversadas)} t` : '';
+
+        card.innerHTML = `
+          <div class="ag-item-top">
+            <span class="ag-dot"></span>
+            <span class="ag-time">${h || '—'}</span>
+            <span class="ag-pill">${est || 'pendiente'}</span>
+          </div>
+          <div class="ag-item-main">${escapeHtml(paso)}</div>
+          <div class="ag-item-sub">
+            ${escapeHtml(quien)}${tons}
+          </div>
+          <div class="ag-item-foot">${escapeHtml(resp)}</div>
+        `;
+        body.appendChild(card);
+      });
+
+      // expandir / contraer si hay mucho
+      if (body.scrollHeight > 260) {
+        body.classList.add('is-collapsed');
+        const more = document.createElement('button');
+        more.className = 'ag-more';
+        more.textContent = 'Ver más';
+        more.addEventListener('click', () => {
+          const expanded = body.classList.toggle('is-collapsed');
+          // toggle retorna estado DESPUÉS, invertimos el texto
+          more.textContent = expanded ? 'Ver más' : 'Ver menos';
+        });
+        cell.appendChild(more);
+      }
+
+      grid.appendChild(cell);
+      d.setDate(d.getDate() + 1);
+    }
+  }
+}
+
+/* ======================= Styles inyectados ======================= */
+function injectStyles() {
+  if (document.getElementById('ag-lite-styles')) return;
   const css = `
-#int-cal { --b:#e5e7eb; --mut:#6b7280; --pill:#eef2ff; }
-#int-cal .cal-wrap{ border:1px solid var(--b); border-radius:16px; padding:12px; }
-#int-cal .cal-toolbar{ display:flex; align-items:center; justify-content:space-between; margin:6px 4px 12px; }
-#int-cal .cal-toolbar h5{ margin:0; font-weight:700; }
-#int-cal .nav-btn{ display:inline-flex; width:36px; height:36px; border:1px solid var(--b); border-radius:10px; align-items:center; justify-content:center; background:#fff; }
-#int-cal .days-hdr{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin:6px 0 8px; }
-#int-cal .days-hdr div{ text-align:center; font-weight:700; color:#334155; background:#f8fafc; border:1px solid var(--b); padding:8px 0; border-radius:12px; }
-#int-cal .grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
-#int-cal .day{ min-height:120px; background:#fff; border:1px solid var(--b); border-radius:14px; padding:8px; display:flex; flex-direction:column; }
-#int-cal .day .dtop{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-#int-cal .day .num{ font-weight:700; color:#0f172a; }
-#int-cal .day .sum{ font-size:12px; color:var(--mut); }
-#int-cal .list{ display:flex; flex-direction:column; gap:6px; }
-#int-cal .card{ border:1px solid var(--b); border-radius:12px; padding:8px 10px; background:#fff; box-shadow:0 1px 4px rgba(2,6,23,.05); }
-#int-cal .card .row1{ display:flex; gap:8px; align-items:center; margin-bottom:2px; }
-#int-cal .icon{ width:20px; height:20px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; background:var(--pill); font-size:14px; }
-#int-cal .ppaso{ font-weight:600; }
-#int-cal .sub{ color:#6b7280; font-size:12px; line-height:1.25; }
-#int-cal .badges{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
-#int-cal .badge{ font-size:11px; padding:2px 6px; border-radius:999px; border:1px solid var(--b); background:#f8fafc; }
-#int-cal .more{ margin-top:4px; }
-#int-cal .more a{ font-size:12px; }
+  .ag-card{ background:#fff; border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.05); padding:14px; }
+  .ag-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+  .ag-title{ margin:0; font-size:20px; letter-spacing:.2px; }
+  .ag-actions{ display:flex; gap:8px; }
+  .ag-btn{ background:#16a34a; color:#fff; border:none; border-radius:10px; padding:8px 12px; cursor:pointer; }
+  .ag-monthbar{ display:flex; align-items:center; justify-content:center; gap:10px; margin:6px 0 10px; }
+  .ag-month{ font-weight:700; letter-spacing:.3px; }
+  .ag-nav{ border:1px solid #e5e7eb; background:#f8fafc; border-radius:8px; padding:6px 10px; cursor:pointer; }
+  .ag-weekdays{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:12px; margin-bottom:8px; }
+  .ag-weekdays>div{ background:#f3f4f6; color:#111827; font-weight:600; border-radius:10px; padding:8px 10px; text-align:center; }
+  .ag-grid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:12px; }
+  .ag-day{ display:flex; flex-direction:column; background:#fff; border:1px solid #eef2f7; border-radius:12px; min-height:260px; position:relative; }
+  .ag-day.is-out{ opacity:.55; background:#fafafa; }
+  .ag-day-head{ display:flex; justify-content:flex-end; padding:6px 8px 0; }
+  .ag-day-num{ font-weight:700; color:#374151; }
+  .ag-day-body{ padding:8px; display:flex; flex-direction:column; gap:6px; max-height:260px; overflow:hidden; }
+  .ag-day-body.is-collapsed{ max-height:190px; }
+  .ag-more{ position:absolute; bottom:6px; left:8px; right:8px; border:1px dashed #cbd5e1; background:#fff; border-radius:8px; padding:6px; font-size:.85rem; color:#334155; cursor:pointer; }
+  .ag-item{ border:1px solid #e5e7eb; border-radius:10px; padding:8px; background:#fff; }
+  .ag-item-top{ display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+  .ag-dot{ width:8px; height:8px; border-radius:50%; background:#0ea5e9; display:inline-block; }
+  .ag-time{ font-weight:600; color:#0f172a; }
+  .ag-pill{ margin-left:auto; font-size:.72rem; padding:2px 6px; border-radius:999px; border:1px solid #e2e8f0; color:#334155; background:#f8fafc; }
+  .ag-item-main{ font-weight:700; letter-spacing:.2px; }
+  .ag-item-sub{ color:#475569; font-size:.9rem; }
+  .ag-item-foot{ color:#64748b; font-size:.85rem; }
+  @media (max-width: 992px){
+    .ag-grid, .ag-weekdays{ gap:8px; }
+    .ag-day{ min-height:220px; }
+    .ag-day-body{ max-height:220px; }
+    .ag-day-body.is-collapsed{ max-height:160px; }
+  }
   `;
   const s = document.createElement('style');
-  s.id = 'int-cal-styles';
+  s.id = 'ag-lite-styles';
   s.textContent = css;
   document.head.appendChild(s);
-})();
-
-export function mountAgendaLite(containerEl, interacciones){
-  containerEl.innerHTML = `
-    <div id="int-cal">
-      <div class="cal-wrap">
-        <div class="cal-toolbar">
-          <h5>Calendario de actividades (Interacciones)</h5>
-          <div>
-            <button class="nav-btn" id="intCalPrev" aria-label="Mes anterior">‹</button>
-            <span id="intCalTitle" style="font-weight:700; margin:0 10px;"></span>
-            <button class="nav-btn" id="intCalNext" aria-label="Mes siguiente">›</button>
-          </div>
-        </div>
-        <div class="days-hdr" id="intCalHdr"></div>
-        <div class="grid" id="intCalGrid"></div>
-      </div>
-    </div>
-  `;
-  console.log('[int/agenda-lite] mount');
-
-  const state = {
-    baseDate: inferMonthFromData(interacciones) || new Date(),
-    items: (interacciones || []).filter(i => !!(i && (i.fechaProx || i.proximoPasoFecha))),
-    expanded: new Set(),
-  };
-
-  renderCalendar(containerEl, state);
-
-  containerEl.querySelector('#intCalPrev')?.addEventListener('click', ()=>{
-    state.baseDate = addMonths(state.baseDate, -1);
-    renderCalendar(containerEl, state);
-  });
-  containerEl.querySelector('#intCalNext')?.addEventListener('click', ()=>{
-    state.baseDate = addMonths(state.baseDate, +1);
-    renderCalendar(containerEl, state);
-  });
 }
 
-function renderCalendar(root, state){
-  const title = root.querySelector('#intCalTitle');
-  const hdr   = root.querySelector('#intCalHdr');
-  const grid  = root.querySelector('#intCalGrid');
+/* ======================= Utilidades ======================= */
+function firstOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+function addMonths(d, n){ return new Date(d.getFullYear(), d.getMonth()+n, 1); }
 
-  const { weeks, monthLabel } = buildMonthMatrix(state.baseDate);
-  title.textContent = monthLabel;
-  hdr.innerHTML = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>`<div>${d}</div>`).join('');
-
-  const byDay = groupByDay(state.items);
-
-  grid.innerHTML = weeks.map(week=>week.map(({ d, iso })=>{
-    const list = byDay.get(iso) || [];
-    const key = iso;
-    const max = 4;
-    const expanded = state.expanded.has(key);
-    const visible = expanded ? list : list.slice(0, max);
-    const moreN = Math.max(0, list.length - visible.length);
-
-    return `
-      <div class="day">
-        <div class="dtop"><div class="num">${d}</div><div class="sum">${list.length? list.length+' act.':'—'}</div></div>
-        <div class="list" data-day="${key}">
-          ${visible.map(renderCard).join('')}
-          ${moreN ? `<div class="more"><a href="#!" data-more="${key}">+ Ver ${moreN} más</a></div>` : ''}
-        </div>
-      </div>`;
-  }).join('')).join('');
-
-  grid.querySelectorAll('[data-more]').forEach(a=>{
-    a.addEventListener('click', e=>{
-      e.preventDefault();
-      state.expanded.add(a.getAttribute('data-more'));
-      renderCalendar(root, state);
-    });
-  });
+function startOfCalendar(base){
+  // lunes de la primera semana visible
+  const d = new Date(base.getFullYear(), base.getMonth(), 1);
+  const weekday = (d.getDay()+6)%7; // 0..6 (0=lunes)
+  d.setDate(d.getDate() - weekday);
+  return d;
+}
+function endOfCalendar(base){
+  const start = startOfCalendar(base);
+  const d = new Date(start);
+  d.setDate(d.getDate() + 41);
+  return d;
+}
+function monthLabel(d){
+  return d.toLocaleDateString('es-CL', { month:'long', year:'numeric' }).replace(/^./, c=>c.toUpperCase());
 }
 
-function renderCard(ev){
-  const paso   = str(ev.proximoPaso || ev.tipo || 'Actividad');
-  const fecha  = ev.fechaProx || ev.proximoPasoFecha;
-  const fechaTxt = fmtDayTime(fecha);
-  const contacto = str(ev.contactoNombre || ev.contacto || '');
-  const prov     = str(ev.proveedorNombre || '');
-  const resp     = str(ev.responsablePG || ev.responsable || '');
-  const estado   = canonEstado(ev.estado);
-  const tons     = numStr(ev.tonsConversadas);
-
-  const icon = (() => {
-    const p = paso.toLowerCase();
-    if (p.includes('muestra'))   return '🧪';
-    if (p.includes('reun'))      return '👥';
-    if (p.includes('llama')||p.includes('tel')) return '📞';
-    if (p.includes('visita'))    return '📍';
-    if (p.includes('negoci'))    return '💬';
-    if (p.includes('esperar'))   return '⏳';
-    return '📌';
-  })();
-
-  return `
-  <div class="card">
-    <div class="row1"><span class="icon">${icon}</span><div class="ppaso">${esc(paso)}</div></div>
-    <div class="sub">${fechaTxt ? esc(fechaTxt)+' · ' : ''}${contacto ? esc(contacto)+' · ' : ''}${esc(prov)}</div>
-    <div class="badges">
-      ${resp ? `<span class="badge" title="Responsable">${esc(resp)}</span>` : ''}
-      ${estado ? `<span class="badge" title="Estado">${esc(estado)}</span>` : ''}
-      ${tons ? `<span class="badge" title="Tons conversadas">${tons} t</span>` : ''}
-    </div>
-  </div>`;
+function toISO(d){ return d.toISOString().slice(0,10); }
+function timeInt(row){
+  const s = row?.fechaProx || row?.proximoPasoFecha || '';
+  const d = new Date(s);
+  if (!isFinite(d)) return 999999;
+  return d.getHours()*100 + d.getMinutes();
 }
-
-/* utils */
 function groupByDay(items){
   const m = new Map();
-  items.forEach(i=>{
-    const iso = toIso(i.fechaProx || i.proximoPasoFecha);
-    if (!iso) return;
+  for (const r of items){
+    const dt = r.fechaProx || r.proximoPasoFecha;
+    if (!dt) continue;
+    const iso = toISO(new Date(dt));
     if (!m.has(iso)) m.set(iso, []);
-    m.get(iso).push(i);
-  });
-  for (const [,arr] of m){
-    arr.sort((a,b)=>{
-      const ta = timeVal(a.fechaProx||a.proximoPasoFecha);
-      const tb = timeVal(b.fechaProx||b.proximoPasoFecha);
-      if (ta !== tb) return ta - tb;
-      return str(a.contactoNombre||'').localeCompare(str(b.contactoNombre||''),'es');
-    });
+    m.get(iso).push(r);
   }
   return m;
 }
-function buildMonthMatrix(base){
-  const y = base.getFullYear(), m = base.getMonth();
-  const first = new Date(y,m,1);
-  const start = startOfWeek(first);
-  const end   = endOfWeek(new Date(y,m+1,0));
-  const days=[];
-  for (let d=new Date(start); d<=end; d=addDays(d,1)) days.push({ d:d.getDate(), iso: toIso(d) });
-  const weeks=[]; for (let i=0;i<days.length;i+=7) weeks.push(days.slice(i,i+7));
-  const monthLabel = first.toLocaleString('es-CL',{ month:'long', year:'numeric' }).toUpperCase();
-  return { weeks, monthLabel };
+function hhmm(iso){
+  if (!iso) return '';
+  const d = new Date(iso); if (!isFinite(d)) return '';
+  const h = String(d.getHours()).padStart(2,'0');
+  const m = String(d.getMinutes()).padStart(2,'0');
+  return `${h}:${m}`;
 }
-function inferMonthFromData(items){
-  const ds = (items||[]).map(i=>new Date(i.fechaProx||i.proximoPasoFecha)).filter(d=>!isNaN(d)).sort((a,b)=>a-b);
-  return ds[0] || null;
+function canonEstado(s){
+  const raw = String(s||'').trim().toLowerCase();
+  if (raw === 'completado') return 'hecho';
+  return raw || 'pendiente';
 }
-function addMonths(d,n){ const x=new Date(d); x.setMonth(x.getMonth()+n); return x; }
-function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
-function startOfWeek(d){ const x=new Date(d); const w=(x.getDay()+6)%7; x.setDate(x.getDate()-w); x.setHours(0,0,0,0); return x; }
-function endOfWeek(d){ const x=new Date(d); const w=(x.getDay()+6)%7; x.setDate(x.getDate()+(6-w)); x.setHours(23,59,59,999); return x; }
-function toIso(v){ const d=(v instanceof Date)?v:new Date(v); return isNaN(d)?'':d.toISOString().slice(0,10); }
-function timeVal(v){ const s=String(v||''); const m=s.match(/(\d{1,2}):(\d{2})/); return m?Number(m[1])*60+Number(m[2]):24*60; }
-function fmtDayTime(v){ if(!v) return ''; const d=new Date(v); if(isNaN(d)) return ''; return `${d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'})} ${d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})}`; }
-function canonEstado(s){ const r=String(s||'').toLowerCase(); return r==='completado'?'hecho':r||''; }
-function numStr(n){ const v=Number(n); return Number.isFinite(v)?v.toLocaleString('es-CL',{maximumFractionDigits:0}):''; }
-function esc(s){ return String(s||'').replace(/[<&>]/g,c=>({ '<':'&lt;','>':'&gt;','&':'&amp;' }[c])); }
-function str(s){ return (s==null?'':String(s).trim()); }
+function num(n){ const v = Number(n); return Number.isFinite(v) ? v : 0; }
+function fmtNum(n){ return Number(n||0).toLocaleString('es-CL', { maximumFractionDigits: 0 }); }
+function escapeHtml(s){ return String(s||'').replace(/[&<>"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
