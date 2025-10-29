@@ -1,7 +1,7 @@
 // /js/abastecimiento/contactos/interacciones/agenda-lite.js
 // Agenda mensual ligera para Interacciones (independiente del calendario de cosechas)
 
-const MAX_COLLAPSED = 4;
+const MAX_COLLAPSED = 2;
 
 const TYPE_COLORS = {
   'llamada':    '#0284c7',
