@@ -154,32 +154,52 @@ export function mountAgendaLite(rootEl, items = []) {
 
 /* ================= helpers ================= */
 
+// --- Soporte para Mongo Extended JSON y variantes ---
+function extractDateAny(x){
+  if (!x) return null;
+  if (x instanceof Date) return x;
+  if (typeof x === 'string' || typeof x === 'number') {
+    const d = new Date(x);
+    return Number.isNaN(d.valueOf()) ? null : d;
+  }
+  // { $date: '...' } (Mongo Extended JSON)
+  if (typeof x === 'object' && ('$date' in x)) {
+    const d = new Date(x.$date);
+    return Number.isNaN(d.valueOf()) ? null : d;
+  }
+  return null;
+}
+
 function normalize(r) {
-  const dateStr = r.fechaProx || r.proximoPasoFecha || r.destFecha;
-  const date = dateStr ? new Date(dateStr) : null;
+  // FECHA PARA EL CALENDARIO = fechaProximo (agendado)
+  const date =
+    extractDateAny(r.fechaProximo) ||
+    extractDateAny(r.fechaProx) ||
+    extractDateAny(r.proximoPasoFecha) ||
+    extractDateAny(r.destFecha);
 
   const contacto  = r.contactoNombre || r.contacto || '';
   const proveedor = r.proveedorNombre || r.proveedor || '';
-  const persona   = contacto || proveedor || '—'; // 👈 prioridad a CONTACTO
+  const persona   = contacto || proveedor || '—'; // prioridad a CONTACTO
 
   return {
     raw: r,
     date,
     iso: date ? isoDate(date) : '',
     time: date ? timeHHMM(date) : '',
-    paso: (r.proximoPaso || r.tipo || r.__tipo || '').trim(),
+    paso: (r.proximoPaso || r.tipo || r.__tipo || '').toString().trim(),
     contacto,
     proveedor,
     persona,
     responsable: r.responsablePG || r.responsable || '—',
     estado: (r.estado || '').toString().toLowerCase(),
-    tons: Number(r.tonsConversadas || r.tons || 0) || 0,
-    notas: r.observaciones || r.notas || r.descripcion || ''
+    tons: Number(r.tonsAcordadas ?? r.tonsConversadas ?? r.tons ?? 0) || 0,
+    notas: r.resumen || r.observaciones || r.notas || r.descripcion || ''
   };
 }
 
 function applyFilters(list, f) {
-  const q = f.q.toLowerCase();
+  const q = (f.q || '').toLowerCase();
   return list.filter(it => {
     if (f.responsable && it.responsable !== f.responsable) return false;
     if (f.tipo && it.paso !== f.tipo) return false;
@@ -376,17 +396,17 @@ function injectStyles(){
 
     /* === HOY bien destacado === */
     .ag-scope .ag-day.is-today{
-      border-color:#10b981;               /* borde verde */
-      background:#f0fdf4;                 /* verde muy suave */
+      border-color:#10b981;
+      background:#f0fdf4;
       box-shadow:
-        0 0 0 2px #bbf7d0 inset,          /* halo interior */
-        0 0 0 2px rgba(16,185,129,.35);   /* aro exterior */
+        0 0 0 2px #bbf7d0 inset,
+        0 0 0 2px rgba(16,185,129,.35);
       position:relative;
       animation: agPulse 2.4s ease-in-out 1;
     }
     .ag-scope .ag-day.is-today .ag-day-num{
-      color:#065f46;                       /* verde oscuro */
-      background:#dcfce7;                  /* pastilla del número */
+      color:#065f46;
+      background:#dcfce7;
       border-radius:999px;
       padding:2px 6px;
     }
@@ -395,7 +415,7 @@ function injectStyles(){
       width:auto; height:auto;
       padding:2px 6px;
       border-radius:999px;
-      background:#10b981;                  /* verde PG */
+      background:#10b981;
       color:#fff; font-weight:700;
       font-size:.70rem;
     }
