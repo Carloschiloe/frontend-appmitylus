@@ -4,10 +4,12 @@ import { renderTable } from './table.js';
 import { mountAgendaLite } from './agenda-lite.js';
 import { openInteraccionModal } from './modal.js';
 
-// 👇 clave para que agenda-lite pueda abrir el modal al hacer doble-click
+// 👇 para que agenda-lite pueda abrir el modal al hacer doble-click
 if (typeof window !== 'undefined') {
   window.openInteraccionModal = openInteraccionModal;
 }
+
+const DEBUG_CAL = false; // ponlo en true si quieres logs de calendario
 
 export function mountInteracciones(root){
   injectStyles();
@@ -55,12 +57,17 @@ export function mountInteracciones(root){
 
     if (calDiv.dataset.mounted) return;
 
-    const { from, to } = currentMonthRange();
+    // ⛳ IMPORTANTE: el calendario muestra lo AGENDADO → pedir por fechaProximo
+    const { fromProx, toProx } = proxWindowAround(new Date(), 2); // ±2 meses
     let items = [];
     try {
-      const resp = await list({ from, to });
-      items = (resp && resp.items) || [];
-    } catch (_) { items = []; }
+      const resp = await list({ fromProx, toProx, limit: 2000 });
+      items = (resp && Array.isArray(resp.items)) ? resp.items : [];
+      if (DEBUG_CAL) console.log('[CAL] fetched by fechaProximo:', items.length, { fromProx, toProx });
+    } catch (e) {
+      console.error('[CAL] fetch error:', e);
+      items = [];
+    }
 
     mountAgendaLite(calDiv, items);
     calDiv.dataset.mounted = '1';
@@ -69,11 +76,12 @@ export function mountInteracciones(root){
   async function refreshAll(){
     await updateKPIs();
     if (calDiv.dataset.mounted){
-      const { from, to } = currentMonthRange();
+      const { fromProx, toProx } = proxWindowAround(new Date(), 2);
       let items = [];
       try {
-        const resp = await list({ from, to });
-        items = (resp && resp.items) || [];
+        const resp = await list({ fromProx, toProx, limit: 2000 });
+        items = (resp && Array.isArray(resp.items)) ? resp.items : [];
+        if (DEBUG_CAL) console.log('[CAL] refresh fetched:', items.length);
       } catch (_) { items = []; }
       mountAgendaLite(calDiv, items);
     }
@@ -83,6 +91,7 @@ export function mountInteracciones(root){
     try{
       if (!rows){
         const semana = currentIsoWeek();
+        // KPIs de la TABLA: se calculan por semana de la interacción (fecha)
         const resp = await list({ semana });
         rows = resp.items || [];
       }
@@ -125,7 +134,9 @@ function injectStyles(){
   document.head.appendChild(s);
 }
 
-/* ===== utilidades de fecha/número ===== */
+/* ===== utilidades ===== */
+
+// semana ISO de la interacción (para KPIs)
 function currentIsoWeek(d = new Date()){
   if (window.app?.utils?.isoWeek) {
     const w = window.app.utils.isoWeek(d);
@@ -139,12 +150,18 @@ function currentIsoWeek(d = new Date()){
   return `${tmp.getUTCFullYear()}-W${String(week).padStart(2,'0')}`;
 }
 
-function currentMonthRange(base = new Date()){
-  const y = base.getFullYear(), m = base.getMonth();
-  const from = new Date(y, m, 1);
-  const to   = new Date(y, m+1, 0, 23, 59, 59, 999);
-  const iso = d => d.toISOString().slice(0,10);
-  return { from: iso(from), to: iso(to) };
+/**
+ * Ventana centrada en `base` para pedir por fechaProximo (agendados).
+ * @param {Date} base
+ * @param {number} monthsAheadBehind  cantidad de meses hacia atrás/adelante (default 2)
+ * @returns {{fromProx:string, toProx:string}}
+ */
+function proxWindowAround(base = new Date(), monthsAheadBehind = 2){
+  const y = base.getUTCFullYear();
+  const m = base.getUTCMonth();
+  const from = new Date(Date.UTC(y, m - monthsAheadBehind, 1, 0,0,0,0));
+  const to   = new Date(Date.UTC(y, m + monthsAheadBehind + 1, 1, 0,0,0,0)); // excluyente
+  return { fromProx: from.toISOString(), toProx: to.toISOString() };
 }
 
 function fmtNum(n){
