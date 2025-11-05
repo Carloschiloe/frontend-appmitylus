@@ -1,17 +1,15 @@
 // /js/abastecimiento/semi-cerrado/modal.js
-// Base de API robusta (con barra final) para evitar errores de concatenación
+// Base API con barra final
 const API = (() => {
   const env = (window.API_BASE || window.API_URL || '').toString().trim();
   if (env) return env.endsWith('/') ? env : env + '/';
   if (location.hostname.includes('frontend-appmitylus.vercel.app')) {
-    return 'https://backend-appmitylus.vercel.app/api/'; // prod
+    return 'https://backend-appmitylus.vercel.app/api/';
   }
-  return '/api/'; // dev con proxy
+  return '/api/';
 })();
 const $ = (sel, ctx=document) => ctx.querySelector(sel);
 const fmtCL = (n)=> Number(n||0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
-
-console.log('[semi] API =', API);
 
 /** Crea el contenedor del modal si no existe */
 function ensureModal(){
@@ -25,13 +23,13 @@ function ensureModal(){
   return wrap;
 }
 
-/** Render del modal (sin ids internos obligatorios) */
+/** UI compacta */
 function renderModalUI(wrap){
   wrap.innerHTML = `
-    <div class="modal-content">
-      <h5>Asignar biomasa <span class="green-text text-darken-2">semi-cerrada</span></h5>
+    <div class="modal-content sc-compact">
+      <h5 style="margin:0 0 8px">Biomasa <span class="green-text text-darken-2">semi-cerrada</span></h5>
 
-      <div class="row">
+      <div class="row" style="margin-bottom:6px">
         <div class="input-field col s12 m6">
           <label class="active">Proveedor</label>
           <input id="sc_proveedorNombre" type="text" readonly>
@@ -42,40 +40,20 @@ function renderModalUI(wrap){
         </div>
       </div>
 
-      <div class="row">
+      <div class="row" style="margin-bottom:6px">
         <div class="input-field col s12 m6">
-          <label class="active">Centro (código, opcional)</label>
-          <input id="sc_centroCodigo" type="text" readonly>
-        </div>
-        <div class="input-field col s12 m6">
-          <label class="active">Responsable PG</label>
-          <input id="sc_responsablePG" type="text" readonly>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="input-field col s12 m4">
-          <label class="active" for="sc_periodo">Período (YYYY-MM)</label>
+          <label class="active" for="sc_periodo">Mes disponible (YYYY-MM)</label>
           <input id="sc_periodo" type="month">
         </div>
-        <div class="input-field col s12 m4">
-          <label class="active">Tons disponibles (referencia)</label>
-          <input id="sc_tonsDisp" type="text" readonly>
-        </div>
-        <div class="input-field col s12 m4">
-          <label class="active" for="sc_cantidadTon">Cantidad (ton) a semi-cerrar</label>
+        <div class="input-field col s12 m6">
+          <label class="active" for="sc_cantidadTon">Biomasa (ton)</label>
           <input id="sc_cantidadTon" type="number" min="0" step="0.01" placeholder="Ej: 120">
         </div>
       </div>
 
-      <div class="input-field">
-        <textarea id="sc_notas" class="materialize-textarea" placeholder="Notas (opcional)"></textarea>
-        <label for="sc_notas">Notas (opcional)</label>
-      </div>
-
-      <div class="card" style="margin-top:12px">
+      <div class="card" style="margin-top:8px">
         <div class="card-content" style="padding:10px">
-          <span class="card-title" style="font-size:16px">Disponibilidad de MMPP (asignaciones)</span>
+          <span class="card-title" style="font-size:15px">Biomasa semi-cerrada</span>
           <div style="overflow:auto">
             <table class="striped" style="min-width:520px">
               <thead>
@@ -87,17 +65,34 @@ function renderModalUI(wrap){
         </div>
       </div>
     </div>
+
     <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
       <a href="#!" class="modal-close btn-flat">Cancelar</a>
-      <a id="sc_btnGuardar" href="#!" class="btn">
-        <i class="material-icons left">save</i>Guardar
-      </a>
+      <a id="sc_btnGuardar" href="#!" class="btn"><i class="material-icons left">save</i>Guardar</a>
     </div>
   `;
+
+  // estilos compactos
+  ensureStyles();
   if (window.M?.updateTextFields) M.updateTextFields();
 }
 
-/** GET historial de semi-cerrados por proveedor */
+function ensureStyles(){
+  if (document.getElementById('sc-compact-css')) return;
+  const s = document.createElement('style');
+  s.id = 'sc-compact-css';
+  s.textContent = `
+    #modalSemiCerrado .sc-compact .input-field { margin: 8px 0; }
+    #modalSemiCerrado .sc-compact input[type="text"],
+    #modalSemiCerrado .sc-compact input[type="month"],
+    #modalSemiCerrado .sc-compact input[type="number"] { margin-bottom: 2px; }
+    #modalSemiCerrado .modal-content { padding: 14px 16px 6px; }
+    #modalSemiCerrado .modal-footer { padding: 8px 12px; }
+  `;
+  document.head.appendChild(s);
+}
+
+/** GET historial por proveedor */
 async function loadHistorial({ proveedorKey }){
   const tbody = $('#sc_histBody');
   if (!proveedorKey){
@@ -106,22 +101,20 @@ async function loadHistorial({ proveedorKey }){
   }
   try{
     const url = `${API}semi-cerrados?proveedorKey=${encodeURIComponent(proveedorKey)}`;
-    console.log('[semi] GET', url);
     const res = await fetch(url);
     if (!res.ok) throw new Error(`GET ${url} → ${res.status}`);
     const data = await res.json();
-    // backend devuelve array o {ok:true,data:[...]}
     const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
 
     if (!items.length){
-      tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin asignaciones registradas.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin registros.</td></tr>`;
       return;
     }
     tbody.innerHTML = items.map(it => `
       <tr>
         <td>${String(it.periodo || '').replace('-', ' / ')}</td>
         <td class="right-align">${fmtCL(it.tons ?? 0)}</td>
-        <td>${it.estado || 'disponible'}</td>
+        <td>semi-cerrada</td>
         <td>
           <a href="#!" class="blue-text tooltipped" data-id="${it._id}" data-act="edit"  data-tooltip="Editar"><i class="material-icons">edit</i></a>
           <a href="#!" class="red-text  tooltipped" data-id="${it._id}" data-act="del"   data-tooltip="Eliminar"><i class="material-icons">delete</i></a>
@@ -135,30 +128,24 @@ async function loadHistorial({ proveedorKey }){
   }
 }
 
-/** POST crear asignación */
+/** POST crear asignación (campos mínimos) */
 async function guardarAsignacion(preset){
   const btn = $('#sc_btnGuardar');
   if (!btn || btn.dataset.busy==='1') return;
   btn.dataset.busy='1';
-
   try{
     const body = {
       proveedorKey: preset.proveedorKey || '',
-      centroId: preset.centroId || null, // opcional
       proveedorNombre: $('#sc_proveedorNombre')?.value || '',
-      contactoNombre: $('#sc_contactoNombre')?.value || '',
-      responsablePG: $('#sc_responsablePG')?.value || '',
-      periodo: $('#sc_periodo')?.value || '', // YYYY-MM (backend)
-      tons: Number($('#sc_cantidadTon')?.value || 0),
-      notas: $('#sc_notas')?.value || '',
+      contactoNombre:  $('#sc_contactoNombre')?.value  || '',
+      periodo:         $('#sc_periodo')?.value || '',    // YYYY-MM
+      tons:            Number($('#sc_cantidadTon')?.value || 0),
     };
-
     if (!body.proveedorKey) throw new Error('Falta proveedor');
-    if (!body.periodo)      throw new Error('Falta período (YYYY-MM)');
-    if (!(body.tons > 0))   throw new Error('Cantidad debe ser mayor a 0');
+    if (!body.periodo)      throw new Error('Falta mes (YYYY-MM)');
+    if (!(body.tons > 0))   throw new Error('Biomasa debe ser > 0');
 
     const url = `${API}semi-cerrados`;
-    console.log('[semi] POST', url, body);
     const res = await fetch(url, {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
@@ -166,7 +153,7 @@ async function guardarAsignacion(preset){
     });
     if (!res.ok) throw new Error(`POST ${url} → ${res.status}`);
 
-    window.M?.toast?.({ html:'Asignación guardada', classes:'green' });
+    window.M?.toast?.({ html:'Guardado', classes:'green' });
     await loadHistorial({ proveedorKey: body.proveedorKey });
   }catch(e){
     console.error('[semi] guardar Error:', e);
@@ -176,18 +163,14 @@ async function guardarAsignacion(preset){
   }
 }
 
-/** Abre el modal con preset */
+/** Abre el modal */
 function openSemiCerradoModal(preset = {}){
   const wrap = ensureModal();
   renderModalUI(wrap);
 
-  // Prefills
+  // Prefills mínimos
   $('#sc_proveedorNombre').value = preset.proveedorNombre || '';
   $('#sc_contactoNombre').value  = preset.contacto || preset.contactoNombre || '';
-  $('#sc_responsablePG').value   = preset.responsablePG || '';
-  $('#sc_centroCodigo').value    = preset.centroCodigo || '';
-  $('#sc_tonsDisp').value        = fmtCL(preset.tonsDisponible || 0);
-
   const hoy = new Date();
   const defYM = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
   $('#sc_periodo').value = preset.periodo || preset.periodoYM || defYM;
@@ -195,12 +178,12 @@ function openSemiCerradoModal(preset = {}){
   // Acciones
   $('#sc_btnGuardar')?.addEventListener('click', ()=> guardarAsignacion(preset));
 
-  // Carga historial
+  // Historial
   loadHistorial({ proveedorKey: preset.proveedorKey });
 
-  // Init/abrir materialize
+  // Abrir
   if (window.M?.Modal){
-    const inst = window.M.Modal.init(wrap, { endingTop:'5%' });
+    const inst = window.M.Modal.init(wrap, { endingTop:'6%' });
     inst.open();
   }else{
     wrap.style.display='block';
@@ -210,14 +193,12 @@ function openSemiCerradoModal(preset = {}){
 /* Exponer y wirear */
 window.openSemiCerradoModal = openSemiCerradoModal;
 
-// Abrir desde el botón de la barra (sin preset)
 document.addEventListener('click', (e)=>{
   const el = e.target.closest('#btnOpenSemiCerrado');
   if (!el) return;
-  openSemiCerradoModal(); // vacío (mostrar solo campos)
+  openSemiCerradoModal();
 });
 
-// Abrir desde la tabla por evento (con preset)
 document.addEventListener('semi-cerrado:open', (ev)=>{
   const preset = ev?.detail || {};
   openSemiCerradoModal(preset);
