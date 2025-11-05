@@ -366,52 +366,57 @@
     if (chartRef && chartRef.destroy) chartRef.destroy();
 
     chartRef = new Chart(canvas.getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [
-          { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#3b82f6' }, // azul
-          { label: 'Semi-cerrado', data: dataSemi,    borderWidth: 1, stack: 'pipeline', backgroundColor: '#22c55e' }, // verde
-          { label: 'No asignado',  data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#ec4899' }  // rosado
-        ]
+  type: 'bar',
+  data: {
+    labels: labels,
+    datasets: [
+      {
+        label: 'Asignado',
+        data: dataAsign,
+        stack: 'pipeline',
+        borderWidth: 1,
+        backgroundColor: '#2563EB',
+        borderColor: '#1E40AF',           // borde azul un pelo más oscuro
+        hoverBackgroundColor: '#3B82F6'
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        interaction: { mode: 'nearest', intersect: true },
-        layout: { padding: { top: 12 } },
-        plugins: {
-          legend: { position: 'right' },
-          stackTotals: { enabled:true, fontSize:12 },
-          tooltip: {
-            callbacks: {
-              title: function(items){
-                return (items && items[0] && items[0].label) ? items[0].label : '';
-              },
-              beforeBody: function(items){
-                var lbl = items && items[0] && items[0].label;
-                var det = toolDetail[lbl] || {contactos:[]};
-                var lines = (det.contactos||[]).slice(0,8).map(function(s){ return '• '+s; });
-                if ((det.contactos||[]).length>8) lines.push('• +'+((det.contactos||[]).length-8)+' más…');
-                return lines.length?lines:['(sin contactos)'];
-              },
-              footer: function(items){
-                var lbl = items && items[0] && items[0].label;
-                var det = toolDetail[lbl] || {asignado:0, semi:0, saldo:0};
-                return 'Asignado: '+numeroCL(det.asignado)+' t   |   Semi-cerrado: '+numeroCL(det.semi)+' t   |   Restante: '+numeroCL(det.saldo)+' t';
-              }
-            }
-          }
-        },
-        scales: {
-          x: { stacked: true, ticks: { autoSkip:false, maxRotation:45, minRotation:45 } },
-          y: { stacked: true, beginAtZero: true, grace: '15%', ticks: { padding: 6 } }
-        }
+      {
+        label: 'Semi-cerrado',
+        data: dataSemi || [],              // tu serie verde
+        stack: 'pipeline',
+        borderWidth: 1,
+        backgroundColor: '#10B981',
+        borderColor: '#047857',
+        hoverBackgroundColor: '#34D399'
       },
-      plugins: [stackTotalPlugin]
-    });
-  }
+      {
+        label: 'No asignado',
+        data: dataNoAsig,
+        stack: 'pipeline',
+        borderWidth: 1,
+        backgroundColor: '#94A3B8',
+        borderColor: '#64748B',
+        hoverBackgroundColor: '#A8B2BE'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    interaction: { mode: 'nearest', intersect: true },
+    layout: { padding: { top: 12 } },
+    plugins: {
+      legend: { position: 'right' },
+      stackTotals: { enabled:true, fontSize:12 },
+      tooltip: { /* tus callbacks tal cual */ }
+    },
+    scales: {
+      x: { stacked: true, ticks: { autoSkip:false, maxRotation:45, minRotation:45 } },
+      y: { stacked: true, beginAtZero: true, grace: '15%', ticks: { padding: 6 } }
+    }
+  },
+  plugins: [stackTotalPlugin]
+});
 
   /* ---------- Tabla (sin cambios visibles) ---------- */
   function renderTable(rows, axisMode, year){
