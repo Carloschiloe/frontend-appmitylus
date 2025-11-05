@@ -11,7 +11,6 @@ const API = (() => {
 const $ = (sel, ctx=document) => ctx.querySelector(sel);
 const fmtCL = (n)=> Number(n||0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
 
-/** Crea el contenedor del modal si no existe */
 function ensureModal(){
   let wrap = $('#modalSemiCerrado');
   if (!wrap){
@@ -148,7 +147,7 @@ async function loadHistorial({ proveedorKey }){
       </tr>
     `).join('');
 
-    // ⚠️ Nada de M.AutoInit() acá — solo tooltips
+    // Solo tooltips (nada de AutoInit)
     const tips = tbody.querySelectorAll('.tooltipped');
     if (window.M?.Tooltip && tips.length) window.M.Tooltip.init(tips, { enterDelay: 100 });
   }catch(e){
@@ -157,7 +156,14 @@ async function loadHistorial({ proveedorKey }){
   }
 }
 
-/** Crea o actualiza según exista → mismo botón */
+/** Normaliza número (soporta coma/punto) */
+function readTons(){
+  const raw = ($('#sc_cantidadTon')?.value || '').trim().replace(',', '.');
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Crea o actualiza según exista → mismo botón. Cierra el modal al éxito. */
 async function guardarAsignacion(preset){
   const btn = $('#sc_btnGuardar');
   const btnTxt = $('#sc_btnTxt');
@@ -167,7 +173,7 @@ async function guardarAsignacion(preset){
   try{
     const proveedorKey = preset.proveedorKey || '';
     const periodo = $('#sc_periodo')?.value || '';
-    const tons = Number($('#sc_cantidadTon')?.value || 0);
+    const tons = readTons();
 
     if (!proveedorKey) throw new Error('Falta proveedor');
     if (!periodo)      throw new Error('Falta mes (YYYY-MM)');
@@ -191,7 +197,19 @@ async function guardarAsignacion(preset){
       window.M?.toast?.({ html:'Guardado', classes:'green' });
     }
 
+    // refrescar tabla (por si quieres dejarlo abierto)…
     await loadHistorial({ proveedorKey });
+
+    // …pero ahora lo cerraremos automáticamente
+    const wrap = $('#modalSemiCerrado');
+    if (window.M?.Modal){
+      const inst = window.M.Modal.getInstance(wrap) || window.M.Modal.init(wrap);
+      inst.close();
+    } else {
+      wrap.style.display = 'none';
+    }
+
+    // limpiar estado edición
     delete btn.dataset.editId;
     btnTxt.textContent = 'Guardar';
   }catch(e){
@@ -202,7 +220,7 @@ async function guardarAsignacion(preset){
   }
 }
 
-/** Revisa si existe registro para el mes seleccionado y ajusta botón */
+/** Ajusta botón a modo edición si existe registro del mes */
 async function checkEditMode(preset){
   const btn = $('#sc_btnGuardar');
   const btnTxt = $('#sc_btnTxt');
@@ -227,7 +245,7 @@ function openSemiCerradoModal(preset = {}){
   const wrap = ensureModal();
   renderModalUI(wrap);
 
-  // Prefills mínimos
+  // Prefills
   $('#sc_proveedorNombre').value = preset.proveedorNombre || '';
   $('#sc_contactoNombre').value  = preset.contacto || preset.contactoNombre || '';
   const hoy = new Date();
@@ -237,11 +255,17 @@ function openSemiCerradoModal(preset = {}){
   // Acciones
   $('#sc_btnGuardar')?.addEventListener('click', (ev)=>{ ev.preventDefault(); guardarAsignacion(preset); });
   $('#sc_periodo')?.addEventListener('change', ()=> checkEditMode(preset));
+  // Enter para guardar
+  wrap.addEventListener('keydown', (ev)=>{
+    if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
+      ev.preventDefault(); guardarAsignacion(preset);
+    }
+  });
 
   // Historial + detección inicial de edición
   loadHistorial({ proveedorKey: preset.proveedorKey }).then(()=> checkEditMode(preset));
 
-  // Init y abrir — reusar instancia y evitar dismissible
+  // Init y abrir (no dismissible para evitar cierres accidentales)
   if (window.M?.Modal){
     let inst = window.M.Modal.getInstance(wrap);
     if (!inst){
@@ -255,16 +279,14 @@ function openSemiCerradoModal(preset = {}){
 
 /* Delegación de eventos en la tabla (editar/eliminar) */
 document.addEventListener('click', async (e)=>{
-  // abrir modal vacío (botón flotante)
   const openBtn = e.target.closest('#btnOpenSemiCerrado');
   if (openBtn){ e.preventDefault(); openSemiCerradoModal(); return; }
 
-  // acciones en tabla del modal
   const edit = e.target.closest('.sc-act-edit');
   const del  = e.target.closest('.sc-act-del');
   if (!edit && !del) return;
 
-  e.preventDefault(); // 👈 evita comportamientos que cierren el modal
+  e.preventDefault();
 
   const tr = e.target.closest('tr[data-id]');
   const id = tr?.dataset?.id;
@@ -286,6 +308,16 @@ document.addEventListener('click', async (e)=>{
       await apiDELETE(`semi-cerrados/${encodeURIComponent(id)}`);
       tr.remove();
       window.M?.toast?.({ html:'Eliminado', classes:'green' });
+
+      // Si estabas editando este mismo id, limpia estado
+      const btn = $('#sc_btnGuardar'); const btnTxt = $('#sc_btnTxt');
+      if (btn.dataset.editId === id){
+        delete btn.dataset.editId;
+        btnTxt.textContent = 'Guardar';
+        $('#sc_cantidadTon').value = '';
+      }
+
+      // Si tabla queda vacía, recarga mensaje
       const tbody = $('#sc_histBody');
       if (!tbody.querySelector('tr')) {
         const proveedorKey = window.__lastSemiProveedorKey || '';
@@ -301,7 +333,6 @@ document.addEventListener('click', async (e)=>{
 /* Exponer para abrir desde afuera */
 window.openSemiCerradoModal = openSemiCerradoModal;
 
-// Abrir desde eventos externos (con preset)
 document.addEventListener('semi-cerrado:open', (ev)=>{
   const preset = ev?.detail || {};
   window.__lastSemiProveedorKey = preset.proveedorKey || '';
