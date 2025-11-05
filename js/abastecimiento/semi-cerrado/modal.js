@@ -1,8 +1,17 @@
 // /js/abastecimiento/semi-cerrado/modal.js
-// Usa siempre el proxy /api para evitar CORS
-const API = (window.API_BASE || window.API_URL || '/api').toString().replace(/\/$/, '/');
+// Base de API robusta (con barra final) para evitar errores de concatenación
+const API = (() => {
+  const env = (window.API_BASE || window.API_URL || '').toString().trim();
+  if (env) return env.endsWith('/') ? env : env + '/';
+  if (location.hostname.includes('frontend-appmitylus.vercel.app')) {
+    return 'https://backend-appmitylus.vercel.app/api/'; // prod
+  }
+  return '/api/'; // dev con proxy
+})();
 const $ = (sel, ctx=document) => ctx.querySelector(sel);
 const fmtCL = (n)=> Number(n||0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
+
+console.log('[semi] API =', API);
 
 /** Crea el contenedor del modal si no existe */
 function ensureModal(){
@@ -16,7 +25,7 @@ function ensureModal(){
   return wrap;
 }
 
-/** Render del modal con la UI correcta (sin id proveedor ni id centro) */
+/** Render del modal (sin ids internos obligatorios) */
 function renderModalUI(wrap){
   wrap.innerHTML = `
     <div class="modal-content">
@@ -88,15 +97,20 @@ function renderModalUI(wrap){
   if (window.M?.updateTextFields) M.updateTextFields();
 }
 
-/** Carga historial de semi-cerrados del proveedor */
+/** GET historial de semi-cerrados por proveedor */
 async function loadHistorial({ proveedorKey }){
   const tbody = $('#sc_histBody');
-  if (!proveedorKey){ tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin proveedor seleccionado.</td></tr>`; return; }
+  if (!proveedorKey){
+    tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin proveedor seleccionado.</td></tr>`;
+    return;
+  }
   try{
     const url = `${API}semi-cerrados?proveedorKey=${encodeURIComponent(proveedorKey)}`;
+    console.log('[semi] GET', url);
     const res = await fetch(url);
     if (!res.ok) throw new Error(`GET ${url} → ${res.status}`);
     const data = await res.json();
+    // backend devuelve array o {ok:true,data:[...]}
     const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
 
     if (!items.length){
@@ -116,12 +130,12 @@ async function loadHistorial({ proveedorKey }){
     `).join('');
     if (window.M?.AutoInit) M.AutoInit();
   }catch(e){
-    console.error('[semi] historial', e);
+    console.error('[semi] historial Error:', e);
     tbody.innerHTML = `<tr><td colspan="4" class="red-text">Error cargando historial</td></tr>`;
   }
 }
 
-/** Guarda asignación */
+/** POST crear asignación */
 async function guardarAsignacion(preset){
   const btn = $('#sc_btnGuardar');
   if (!btn || btn.dataset.busy==='1') return;
@@ -130,12 +144,11 @@ async function guardarAsignacion(preset){
   try{
     const body = {
       proveedorKey: preset.proveedorKey || '',
-      centroId: preset.centroId || null,                // opcional
+      centroId: preset.centroId || null, // opcional
       proveedorNombre: $('#sc_proveedorNombre')?.value || '',
       contactoNombre: $('#sc_contactoNombre')?.value || '',
       responsablePG: $('#sc_responsablePG')?.value || '',
-      // ojo: backend espera 'periodo' (YYYY-MM)
-      periodo: $('#sc_periodo')?.value || '',
+      periodo: $('#sc_periodo')?.value || '', // YYYY-MM (backend)
       tons: Number($('#sc_cantidadTon')?.value || 0),
       notas: $('#sc_notas')?.value || '',
     };
@@ -145,6 +158,7 @@ async function guardarAsignacion(preset){
     if (!(body.tons > 0))   throw new Error('Cantidad debe ser mayor a 0');
 
     const url = `${API}semi-cerrados`;
+    console.log('[semi] POST', url, body);
     const res = await fetch(url, {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
@@ -155,7 +169,7 @@ async function guardarAsignacion(preset){
     window.M?.toast?.({ html:'Asignación guardada', classes:'green' });
     await loadHistorial({ proveedorKey: body.proveedorKey });
   }catch(e){
-    console.error('[semi] guardar', e);
+    console.error('[semi] guardar Error:', e);
     window.M?.toast?.({ html: e.message || 'No se pudo guardar', classes:'red' });
   }finally{
     delete btn.dataset.busy;
