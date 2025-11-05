@@ -1,4 +1,4 @@
-/* MMppApi – adaptador tolerante para disponibilidades, asignaciones y saldos (backend AppMitylus)
+/* MMppApi – adaptador tolerante para disponibilidades, asignaciones, semi-cerrados y saldos (backend AppMitylus)
    Usa window.API_BASE (definido en /js/config.js).
 */
 (function (global) {
@@ -66,7 +66,7 @@
     });
   }
 
-  // ➜ CAMBIO CLAVE: si una ruta devuelve 500/502/503/0, seguimos probando la siguiente.
+  // ➜ si una ruta devuelve 404/405/400/500/502/503/0, probamos la siguiente.
   function tryRoutes(method, routes, bodyObj){
     var i=0;
     function next(){
@@ -78,7 +78,6 @@
 
       return doFetch(url, opts).then(function(res){
         if (res.ok) return res;
-        // Saltar también en 500/502/503/0
         if (res.status===404 || res.status===405 || res.status===400 ||
             res.status===500 || res.status===502 || res.status===503 || res.status===0) {
           return next();
@@ -217,6 +216,45 @@
     });
   }
 
+  // --- normalizador para SEMI-CERRADOS ---
+  function normalizeSemi(payload){
+    var list = Array.isArray(payload) ? payload
+              : (payload && (payload.items||payload.data||payload.results)) || [];
+    return list.map(function(r){
+      var mk = r.periodo || null; // "YYYY-MM"
+      var anio = mk && mk.split('-')[0] ? Number(mk.split('-')[0]) : null;
+      var mes  = mk && mk.split('-')[1] ? Number(mk.split('-')[1]) : null;
+      var provNombre = r.proveedorNombre || r.contactoNombre || "";
+      var provKey = r.proveedorKey || slug(provNombre);
+
+      return {
+        id: r.id || r._id || null,
+
+        proveedorId: r.proveedorId || null,
+        proveedorNombre: provNombre,
+        proveedorKey: provKey,
+
+        // normalizados (empresa > proveedor). En semi no viene empresa, usamos proveedor.
+        proveedorKeyNorm: r.proveedorKeyNorm || provKey,
+        proveedorNombreNorm: r.proveedorNombreNorm || provNombre,
+
+        contactoNombre: r.contactoNombre || "",
+        empresaNombre : "",    // no aplica en semi-cerrados por ahora
+        comuna: "", centroCodigo: "", areaCodigo: "",
+
+        tons: Number(r.tons || 0) || 0,
+        fecha: mk ? (new Date(anio||1970, (mes||1)-1, 1)).toISOString() : null,
+        mesKey: mk,
+        anio: anio,
+        mes : mes,
+
+        estado: "semi-cerrado",
+        deleted: false,
+        isDeleted: false
+      };
+    });
+  }
+
   function keyFrom(item){
     // preferimos key normalizada (empresa > proveedor) para evitar duplicados por persona
     if (item && item.proveedorKeyNorm) return "key:"+item.proveedorKeyNorm;
@@ -260,7 +298,7 @@
         "/asignaciones"+q,
         "/asignacion"+q,
         "/mmpp/asignaciones"+q
-        // si más adelante montas /planificacion/asignaciones, agrégala aquí
+        // si más adelante montas /planificacion/asignaciones, agrégala aquí:
         // "/planificacion/asignaciones"+q,
       ];
       return tryRoutes("GET", paths).then(function(res){
@@ -272,6 +310,27 @@
         norm.sort(function(a,b){
           var ta=a.createdAt?Date.parse(a.createdAt):0, tb=b.createdAt?Date.parse(b.createdAt):0; return tb-ta;
         });
+        return norm;
+      }).catch(function(){ return []; });
+    },
+
+    // ------- Semi-cerrados -------
+    getSemiCerrados: function(params){
+      params = params || {};
+      // rango por defecto amplio si no pasan filtros de fecha
+      if(!params.from && !params.to && !params.anio){
+        var y = new Date().getFullYear();
+        params.from = (y-1) + "-01";
+        params.to   = (y+1) + "-12";
+      }
+      var q = qs(params);
+      var paths = [ "/semi-cerrados" + q ];
+      return tryRoutes("GET", paths).then(function(res){
+        var json = (res && res.body) || [];
+        var list = Array.isArray(json) ? json : (json.items||json.data||json.results)||[];
+        var norm = normalizeSemi(list)
+          .filter(esVigente)
+          .filter(function(r){ return Number(r.tons||0) > 0; });
         return norm;
       }).catch(function(){ return []; });
     },
