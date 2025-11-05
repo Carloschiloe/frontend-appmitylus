@@ -1,157 +1,206 @@
 // /js/abastecimiento/semi-cerrado/modal.js
-const API_BASE = window.API_URL || '/api';
+const API = window.API_URL || '/api';
+const $ = (sel, ctx=document) => ctx.querySelector(sel);
+const fmtCL = (n)=> Number(n||0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
 
-function mm(val = new Date()){
-  const y = val instanceof Date ? val.getFullYear() : new Date().getFullYear();
-  const m = val instanceof Date ? (val.getMonth()+1) : (new Date().getMonth()+1);
-  return `${y}-${String(m).padStart(2,'0')}`;
-}
-
-function esc(s=''){ return String(s)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
-
-function ensureModalShell(){
-  let el = document.getElementById('modalSemiCerrado');
-  if (!el){
-    el = document.createElement('div');
-    el.id = 'modalSemiCerrado';
-    el.className = 'modal';
-    document.body.appendChild(el);
+/** Crea el contenedor del modal si no existe */
+function ensureModal(){
+  let wrap = $('#modalSemiCerrado');
+  if (!wrap){
+    wrap = document.createElement('div');
+    wrap.id = 'modalSemiCerrado';
+    wrap.className = 'modal';
+    document.body.appendChild(wrap);
   }
-  return el;
+  return wrap;
 }
 
-function renderModal({ preset } = {}){
-  const el = ensureModalShell();
-
-  const proveedorNombre = preset?.proveedorNombre || preset?.proveedor || preset?.contactoNombre || '';
-  const proveedorId     = preset?.proveedorKey || preset?._id || preset?.proveedorId || '';
-  const centroId        = preset?.centroId || '';
-  const centroCodigo    = preset?.centroCodigo || '';
-  const responsablePG   = preset?.responsablePG || preset?.responsable || preset?.contactoResponsable || '';
-
-  el.innerHTML = `
+/** Render del modal con la UI correcta (sin id proveedor ni id centro) */
+function renderModalUI(wrap){
+  wrap.innerHTML = `
     <div class="modal-content">
       <h5>Asignar biomasa <span class="green-text text-darken-2">semi-cerrada</span></h5>
 
-      <form id="formSemi" autocomplete="off">
-        <div class="row">
-          <div class="input-field col s12 m6">
-            <input id="sc_proveedorNombre" type="text" placeholder="Proveedor..." value="${esc(proveedorNombre)}">
-            <label class="active" for="sc_proveedorNombre">Proveedor</label>
-            <span class="helper-text">${preset ? '' : 'Sugerencia: abre este modal desde una fila para precargar los datos.'}</span>
-          </div>
-          <div class="input-field col s12 m6">
-            <input id="sc_proveedorId" type="text" placeholder="ID proveedor" value="${esc(proveedorId)}">
-            <label class="active" for="sc_proveedorId">ID proveedor</label>
-            <span class="helper-text">Obligatorio si no se precargó automáticamente.</span>
-          </div>
+      <div class="row">
+        <div class="input-field col s12 m6">
+          <label class="active">Proveedor</label>
+          <input id="sc_proveedorNombre" type="text" readonly>
         </div>
+        <div class="input-field col s12 m6">
+          <label class="active">Contacto</label>
+          <input id="sc_contacto" type="text" readonly>
+        </div>
+      </div>
 
-        <div class="row">
-          <div class="input-field col s12 m6">
-            <input id="sc_centroId" type="text" placeholder="ID centro (opcional)" value="${esc(centroId)}">
-            <label class="active" for="sc_centroId">Centro (ID, opcional)</label>
-          </div>
-          <div class="input-field col s12 m6">
-            <input id="sc_centroCodigo" type="text" placeholder="Código centro (opcional)" value="${esc(centroCodigo)}">
-            <label class="active" for="sc_centroCodigo">Código centro (opcional)</label>
-          </div>
+      <div class="row">
+        <div class="input-field col s12 m6">
+          <label class="active">Centro (código, opcional)</label>
+          <input id="sc_centroCodigo" type="text" readonly>
         </div>
+        <div class="input-field col s12 m6">
+          <label class="active">Responsable PG</label>
+          <input id="sc_responsablePG" type="text" readonly>
+        </div>
+      </div>
 
-        <div class="row">
-          <div class="input-field col s12 m4">
-            <input id="sc_periodo" type="month" value="${mm()}">
-            <label class="active" for="sc_periodo">Periodo (YYYY-MM)</label>
-          </div>
-          <div class="input-field col s12 m4">
-            <input id="sc_cantidad" type="number" step="0.01" min="0" placeholder="Ej: 120">
-            <label class="active" for="sc_cantidad">Cantidad (ton)</label>
-          </div>
-          <div class="input-field col s12 m4">
-            <input id="sc_responsable" type="text" placeholder="Responsable PG" value="${esc(responsablePG)}">
-            <label class="active" for="sc_responsable">Responsable PG</label>
-          </div>
+      <div class="row">
+        <div class="input-field col s12 m4">
+          <label class="active" for="sc_periodoYM">Período (YYYY-MM)</label>
+          <input id="sc_periodoYM" type="month">
         </div>
+        <div class="input-field col s12 m4">
+          <label class="active">Tons disponibles (referencia)</label>
+          <input id="sc_tonsDisp" type="text" readonly>
+        </div>
+        <div class="input-field col s12 m4">
+          <label class="active" for="sc_cantidadTon">Cantidad (ton) a semi-cerrar</label>
+          <input id="sc_cantidadTon" type="number" min="0" step="0.01" placeholder="Ej: 120">
+        </div>
+      </div>
 
-        <div class="input-field">
-          <textarea id="sc_notas" class="materialize-textarea" placeholder="Notas (opcional)"></textarea>
-          <label for="sc_notas">Notas (opcional)</label>
-        </div>
+      <div class="input-field">
+        <textarea id="sc_notas" class="materialize-textarea" placeholder="Notas (opcional)"></textarea>
+        <label for="sc_notas">Notas (opcional)</label>
+      </div>
 
-        <div class="right-align" style="display:flex; gap:8px; justify-content:flex-end">
-          <a class="btn-flat modal-close">Cancelar</a>
-          <button id="sc_submit" class="btn" type="submit">
-            <i class="material-icons left">save</i>Guardar
-          </button>
+      <div class="card" style="margin-top:12px">
+        <div class="card-content" style="padding:10px">
+          <span class="card-title" style="font-size:16px">Disponibilidad de MMPP (asignaciones)</span>
+          <div style="overflow:auto">
+            <table class="striped" style="min-width:520px">
+              <thead>
+                <tr><th>Mes</th><th class="right-align">Tons</th><th>Estado</th><th>Opciones</th></tr>
+              </thead>
+              <tbody id="sc_histBody"><tr><td colspan="4" class="grey-text">Cargando…</td></tr></tbody>
+            </table>
+          </div>
         </div>
-      </form>
+      </div>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
+      <a href="#!" class="modal-close btn-flat">Cancelar</a>
+      <a id="sc_btnGuardar" href="#!" class="btn">
+        <i class="material-icons left">save</i>Guardar
+      </a>
     </div>
   `;
+  // Inicializa labels de Materialize si es necesario
+  if (window.M?.updateTextFields) M.updateTextFields();
+}
 
-  // Materialize init/refresh
-  if (window.M?.Modal){
-    // Evita el warning de aria-hidden: asegúrate de quitarlo antes de abrir
-    el.removeAttribute('aria-hidden');
-    const inst = M.Modal.getInstance(el) || M.Modal.init(el, { endingTop: '5%' });
-    inst.open();
+/** Carga historial de semi-cerrados del proveedor */
+async function loadHistorial({ proveedorKey }){
+  const tbody = $('#sc_histBody');
+  if (!proveedorKey){ tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin proveedor seleccionado.</td></tr>`; return; }
+  try{
+    const res = await fetch(`${API}/semi-cerrados?proveedorKey=${encodeURIComponent(proveedorKey)}`);
+    const data = res.ok ? await res.json() : [];
+    const items = Array.isArray(data?.items) ? data.items : (Array.isArray(data)?data:[]);
+    if (!items.length){
+      tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin asignaciones registradas.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = items.map(it => `
+      <tr>
+        <td>${String(it.periodoYM || '').replace('-', ' / ')}</td>
+        <td class="right-align">${fmtCL(it.tons || it.cantidad || 0)}</td>
+        <td>${it.estado || 'disponible'}</td>
+        <td>
+          <a href="#!" class="blue-text tooltipped" data-id="${it._id}" data-act="edit"  data-tooltip="Editar"><i class="material-icons">edit</i></a>
+          <a href="#!" class="red-text  tooltipped" data-id="${it._id}" data-act="del"   data-tooltip="Eliminar"><i class="material-icons">delete</i></a>
+        </td>
+      </tr>
+    `).join('');
+    if (window.M?.AutoInit) M.AutoInit();
+  }catch(e){
+    console.error('[semi] historial', e);
+    tbody.innerHTML = `<tr><td colspan="4" class="red-text">Error cargando historial</td></tr>`;
   }
+}
 
-  // Submit
-  const form = el.querySelector('#formSemi');
-  form?.addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-    const payload = {
-      proveedorNombre:  el.querySelector('#sc_proveedorNombre')?.value?.trim() || '',
-      proveedorId:      el.querySelector('#sc_proveedorId')?.value?.trim() || '',
-      centroId:         el.querySelector('#sc_centroId')?.value?.trim() || '',
-      centroCodigo:     el.querySelector('#sc_centroCodigo')?.value?.trim() || '',
-      periodo:          el.querySelector('#sc_periodo')?.value?.trim() || '',
-      cantidadTon:      Number(el.querySelector('#sc_cantidad')?.value || 0),
-      responsablePG:    el.querySelector('#sc_responsable')?.value?.trim() || '',
-      notas:            el.querySelector('#sc_notas')?.value?.trim() || ''
+/** Guarda asignación */
+async function guardarAsignacion(preset){
+  const btn = $('#sc_btnGuardar');
+  if (!btn || btn.dataset.busy==='1') return;
+  btn.dataset.busy='1';
+
+  try{
+    const body = {
+      proveedorKey: preset.proveedorKey || '',
+      proveedorNombre: $('#sc_proveedorNombre')?.value || '',
+      contacto: $('#sc_contacto')?.value || '',
+      responsablePG: $('#sc_responsablePG')?.value || '',
+      centroCodigo: $('#sc_centroCodigo')?.value || '',
+      periodoYM: $('#sc_periodoYM')?.value || '',
+      tons: Number($('#sc_cantidadTon')?.value || 0),
+      notas: $('#sc_notas')?.value || '',
     };
 
-    if (!payload.proveedorId && !payload.proveedorNombre){
-      M.toast?.({ html: 'Falta proveedor', classes: 'red' }); return;
-    }
-    if (!payload.periodo){ M.toast?.({ html: 'Falta período (YYYY-MM)', classes: 'red' }); return; }
-    if (!payload.cantidadTon || payload.cantidadTon <= 0){
-      M.toast?.({ html: 'Cantidad debe ser > 0', classes: 'red' }); return;
-    }
+    if (!body.proveedorKey) throw new Error('Falta proveedor');
+    if (!body.periodoYM)   throw new Error('Falta período (YYYY-MM)');
+    if (!(body.tons > 0))  throw new Error('Cantidad debe ser mayor a 0');
 
-    try{
-      const res = await fetch(`${API_BASE}/semi-cerrados`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error(`POST /semi-cerrados ${res.status}`);
-      M.toast?.({ html: 'Asignación registrada ✔', classes: 'teal' });
+    const res = await fetch(`${API}/semi-cerrados`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('POST /semi-cerrados '+res.status);
 
-      // Cierra modal y notifica
-      const inst = window.M?.Modal?.getInstance(el);
-      inst?.close();
-      document.dispatchEvent(new CustomEvent('semi:changed', { detail: { ok: true, item: payload }}));
-    }catch(err){
-      console.error('[semi] create error', err);
-      M.toast?.({ html: 'No se pudo guardar', classes: 'red' });
-    }
-  });
+    window.M?.toast?.({ html:'Asignación guardada', classes:'green' });
+    // refresca historial
+    await loadHistorial({ proveedorKey: body.proveedorKey });
+  }catch(e){
+    console.error('[semi] guardar', e);
+    window.M?.toast?.({ html: e.message || 'No se pudo guardar', classes:'red' });
+  }finally{
+    delete btn.dataset.busy;
+  }
 }
 
-// API pública
-export function openSemiCerradoModal({ preset = null } = {}){
-  // Si llega desde la fila, viene todo en preset → precarga
-  renderModal({ preset });
+/** Abre el modal con preset */
+function openSemiCerradoModal(preset = {}){
+  const wrap = ensureModal();
+  renderModalUI(wrap);
+
+  // Prefills
+  $('#sc_proveedorNombre').value = preset.proveedorNombre || '';
+  $('#sc_contacto').value        = preset.contacto || '';
+  $('#sc_responsablePG').value   = preset.responsablePG || '';
+  $('#sc_centroCodigo').value    = preset.centroCodigo || '';
+  $('#sc_tonsDisp').value        = fmtCL(preset.tonsDisponible || 0);
+
+  const hoy = new Date();
+  const defYM = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+  $('#sc_periodoYM').value = preset.periodoYM || defYM;
+
+  // Acciones
+  $('#sc_btnGuardar')?.addEventListener('click', ()=> guardarAsignacion(preset));
+
+  // Carga historial
+  loadHistorial({ proveedorKey: preset.proveedorKey });
+
+  // Init/abrir materialize
+  if (window.M?.Modal){
+    const inst = window.M.Modal.init(wrap, { endingTop:'5%' });
+    inst.open();
+  }else{
+    wrap.style.display='block';
+  }
 }
 
-// expone en window para que tabla.js lo llame
+/* Exponer y wirear */
 window.openSemiCerradoModal = openSemiCerradoModal;
 
-// fallback: si alguien dispara el evento
-document.addEventListener('semi:open', (ev) => {
-  const preset = ev?.detail?.preset || null;
-  openSemiCerradoModal({ preset });
+// Abrir desde el botón de la barra (sin preset)
+document.addEventListener('click', (e)=>{
+  const el = e.target.closest('#btnOpenSemiCerrado');
+  if (!el) return;
+  openSemiCerradoModal(); // vacío (mostrar solo campos)
+});
+
+// Abrir desde la tabla por evento (con preset)
+document.addEventListener('semi-cerrado:open', (ev)=>{
+  const preset = ev?.detail || {};
+  openSemiCerradoModal(preset);
 });
