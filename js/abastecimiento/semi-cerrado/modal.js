@@ -68,7 +68,9 @@ function renderModalUI(wrap){
 
     <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
       <a href="#!" class="modal-close btn-flat">Cancelar</a>
-      <a id="sc_btnGuardar" href="#!" class="btn"><i class="material-icons left">save</i><span id="sc_btnTxt">Guardar</span></a>
+      <a id="sc_btnGuardar" href="#!" class="btn">
+        <i class="material-icons left">save</i><span id="sc_btnTxt">Guardar</span>
+      </a>
     </div>
   `;
   ensureStyles();
@@ -145,7 +147,10 @@ async function loadHistorial({ proveedorKey }){
         </td>
       </tr>
     `).join('');
-    if (window.M?.AutoInit) M.AutoInit();
+
+    // ⚠️ Nada de M.AutoInit() acá — solo tooltips
+    const tips = tbody.querySelectorAll('.tooltipped');
+    if (window.M?.Tooltip && tips.length) window.M.Tooltip.init(tips, { enterDelay: 100 });
   }catch(e){
     console.error('[semi] historial Error:', e);
     tbody.innerHTML = `<tr><td colspan="4" class="red-text">Error cargando historial</td></tr>`;
@@ -168,7 +173,6 @@ async function guardarAsignacion(preset){
     if (!periodo)      throw new Error('Falta mes (YYYY-MM)');
     if (!(tons > 0))   throw new Error('Biomasa debe ser > 0');
 
-    // ¿ya existe?
     const existingId = btn.dataset.editId || (await findExisting(proveedorKey, periodo))?._id || null;
 
     const body = {
@@ -187,7 +191,6 @@ async function guardarAsignacion(preset){
       window.M?.toast?.({ html:'Guardado', classes:'green' });
     }
 
-    // refrescar tabla y “estado de edición”
     await loadHistorial({ proveedorKey });
     delete btn.dataset.editId;
     btnTxt.textContent = 'Guardar';
@@ -215,6 +218,7 @@ async function checkEditMode(preset){
     btn.dataset.editId = exist._id;
     $('#sc_cantidadTon').value = exist.tons ?? 0;
     btnTxt.textContent = 'Actualizar';
+    if (window.M?.updateTextFields) M.updateTextFields();
   }
 }
 
@@ -231,17 +235,18 @@ function openSemiCerradoModal(preset = {}){
   $('#sc_periodo').value = preset.periodo || preset.periodoYM || defYM;
 
   // Acciones
-  $('#sc_btnGuardar')?.addEventListener('click', ()=> guardarAsignacion(preset));
-
-  // Cuando cambia el mes, vuelve a detectar si hay registro → cambia a modo edición
+  $('#sc_btnGuardar')?.addEventListener('click', (ev)=>{ ev.preventDefault(); guardarAsignacion(preset); });
   $('#sc_periodo')?.addEventListener('change', ()=> checkEditMode(preset));
 
   // Historial + detección inicial de edición
   loadHistorial({ proveedorKey: preset.proveedorKey }).then(()=> checkEditMode(preset));
 
-  // Abrir
+  // Init y abrir — reusar instancia y evitar dismissible
   if (window.M?.Modal){
-    const inst = window.M.Modal.init(wrap, { endingTop:'6%' });
+    let inst = window.M.Modal.getInstance(wrap);
+    if (!inst){
+      inst = window.M.Modal.init(wrap, { endingTop:'6%', dismissible:false });
+    }
     inst.open();
   }else{
     wrap.style.display='block';
@@ -252,12 +257,14 @@ function openSemiCerradoModal(preset = {}){
 document.addEventListener('click', async (e)=>{
   // abrir modal vacío (botón flotante)
   const openBtn = e.target.closest('#btnOpenSemiCerrado');
-  if (openBtn){ openSemiCerradoModal(); return; }
+  if (openBtn){ e.preventDefault(); openSemiCerradoModal(); return; }
 
   // acciones en tabla del modal
   const edit = e.target.closest('.sc-act-edit');
   const del  = e.target.closest('.sc-act-del');
   if (!edit && !del) return;
+
+  e.preventDefault(); // 👈 evita comportamientos que cierren el modal
 
   const tr = e.target.closest('tr[data-id]');
   const id = tr?.dataset?.id;
@@ -265,7 +272,6 @@ document.addEventListener('click', async (e)=>{
   const tons = Number(tr?.dataset?.tons || 0);
 
   if (edit){
-    // modo edición: precarga mes + tons y marca el botón como "Actualizar"
     $('#sc_periodo').value = periodo;
     $('#sc_cantidadTon').value = tons;
     const btn = $('#sc_btnGuardar'); const btnTxt = $('#sc_btnTxt');
@@ -278,12 +284,13 @@ document.addEventListener('click', async (e)=>{
     if (!confirm('¿Eliminar esta asignación semi-cerrada?')) return;
     try{
       await apiDELETE(`semi-cerrados/${encodeURIComponent(id)}`);
-      const proveedorKey = window.__lastSemiProveedorKey || '';
-      const tbody = $('#sc_histBody');
       tr.remove();
       window.M?.toast?.({ html:'Eliminado', classes:'green' });
-      // si la tabla quedó vacía, recarga para mensaje “sin registros”
-      if (!tbody.querySelector('tr')) await loadHistorial({ proveedorKey });
+      const tbody = $('#sc_histBody');
+      if (!tbody.querySelector('tr')) {
+        const proveedorKey = window.__lastSemiProveedorKey || '';
+        await loadHistorial({ proveedorKey });
+      }
     }catch(e){
       console.error('[semi] delete', e);
       window.M?.toast?.({ html:'No se pudo eliminar', classes:'red' });
