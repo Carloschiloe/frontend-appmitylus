@@ -300,4 +300,3 @@ document.addEventListener('semi-cerrado:open', (ev)=>{
   window.__lastSemiProveedorKey = preset.proveedorKey || '';
   openSemiCerradoModal(preset);
 });
-
