@@ -370,9 +370,9 @@
       data: {
         labels: labels,
         datasets: [
-          { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#3b82f6' }, // azul
-          { label: 'Semi-cerrado', data: dataSemi,    borderWidth: 1, stack: 'pipeline', backgroundColor: '#22c55e' }, // verde
-          { label: 'No asignado',  data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#ec4899' }  // rosado
+          { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#0EA5E9' }, // azul
+          { label: 'Semi-cerrado', data: dataSemi,    borderWidth: 1, stack: 'pipeline', backgroundColor: '#22C55E' }, // verde
+          { label: 'No asignado',  data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#CBD5E1' }  // rosado
         ]
       },
       options: {
