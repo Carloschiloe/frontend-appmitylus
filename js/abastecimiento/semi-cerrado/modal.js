@@ -1,7 +1,16 @@
 // /js/abastecimiento/semi-cerrado/modal.js
-const API = window.API_URL || '/api';
-const $ = (sel, ctx=document) => ctx.querySelector(sel);
-const fmtCL = (n)=> Number(n||0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
+// Reemplaza tu const API = ... por esto:
+const API = (() => {
+  const conf = (window.API_BASE || window.API_URL || '').toString().replace(/\/$/, '');
+  if (conf) return conf;
+  // si estás en el frontend de Vercel y no hay config global, usa el backend público
+  if (location.hostname.includes('frontend-appmitylus.vercel.app')) {
+    return 'https://backend-appmitylus.vercel.app';
+  }
+  // en local con proxy
+  return '/api';
+})();
+console.log('[semi] API =', API);
 
 /** Crea el contenedor del modal si no existe */
 function ensureModal(){
@@ -204,3 +213,4 @@ document.addEventListener('semi-cerrado:open', (ev)=>{
   const preset = ev?.detail || {};
   openSemiCerradoModal(preset);
 });
+
