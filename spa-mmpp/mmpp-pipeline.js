@@ -1,663 +1,543 @@
-/* /spa-mmpp/mmpp-pipeline.js
-   Pipeline MMPP — Contactado vs Asignado (+ Semi-cerrado)
-   - Contactado: suma por mes de la disponibilidad (d.mes/d.anio)
-   - Asignado:   suma por mes de destino de la asignación (a.destMes/a.destAnio)
-   - Semi-cerrado: parte del “restante” pintada en verde (min(semi, restante))
-   - Paleta: Asignado (azul), Semi-cerrado (verde), No asignado (rosado)
+/* MMppApi – adaptador tolerante para disponibilidades, asignaciones, semi-cerrados y saldos (backend AppMitylus)
+   Usa window.API_BASE (definido en /js/config.js).
 */
 (function (global) {
-  var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
-  var MMESES_LARGO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  // ===== BASE =====
+  var API_BASE =
+    (typeof global.API_BASE === "string" && global.API_BASE) ||
+    (typeof global.__MMPP_API_BASE__ === "string" && global.__MMPP_API_BASE__) ||
+    "/api";
 
-  /* ---------- CSS ---------- */
-  function injectCSS(){
-    if (document.getElementById('mmpp-pipeline-css')) return;
-    var css = ''
-      + '.pl-wrap{max-width:1200px;margin:0 auto;padding:20px}'
-      + '.pl-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}'
-      + '.pl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}'
-      + '.pl-title{margin:0;font-weight:800;color:#2b3440}'
-      + '.pl-filters{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:10px;align-items:center;margin-top:8px}'
-      + '.pl-select{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}'
-      + '.pl-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
-      + '.pl-btn{background:#eef2ff;border:1px solid #c7d2fe;color:#1e40af;height:38px;border-radius:10px;padding:0 12px;cursor:pointer;font-weight:700}'
-      + '.pl-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:10px}'
-      + '.kpi{background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:14px}'
-      + '.kpi .lab{font-size:12px;color:#64748b}'
-      + '.kpi .val{font-size:22px;font-weight:900;color:#111827}'
-      + '.pl-monthsbar{width:100%;margin:10px 0 6px 0;overflow-x:auto}'
-      + '.pl-months-line{width:100%;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px}'
-      + '.pl-chip{width:100%;height:34px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #c7d2fe;background:#eef2ff;color:#1e40af;border-radius:999px;font-weight:700;cursor:pointer;user-select:none;font-size:13px;white-space:nowrap;padding:0 10px}'
-      + '.pl-chip.is-on{background:#1e40af;color:#fff;border-color:#1e40af}'
-      + '.pl-chart-wrap{margin-top:14px}'
-      + '.pl-chart-frame{display:block;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;background:#fff}'
-      + '.pl-chart-container{position:relative;width:100%;height:360px}'
-      + '.pl-chart-canvas{display:block;width:100% !important;height:100% !important}'
-      + '.pl-note{color:#64748b;font-size:12px;margin-top:6px}'
-      + '.pl-table{width:100%;border-collapse:separate;border-spacing:0 8px;margin-top:14px}'
-      + '.pl-table th,.pl-table td{padding:10px 8px}'
-      + '.pl-table tr{background:#fff;border:1px solid #e5e7eb}'
-      + '.pl-right{text-align:right}'
-      + '@media (max-width: 1100px){ .pl-kpis{grid-template-columns:repeat(2,minmax(0,1fr))} }'
-      + '@media (max-width: 720px){ .pl-filters{grid-template-columns:1fr} }';
-    var s = document.createElement('style');
-    s.id = 'mmpp-pipeline-css';
-    s.textContent = css;
-    document.head.appendChild(s);
+  var DEBUG = !!global.DEBUG;
+  function join(base, path) {
+    return String(base).replace(/\/+$/,"") + "/" + String(path).replace(/^\/+/, "");
   }
+  function log(){ if (DEBUG) try{ console.log.apply(console, ["[MMppApi]"].concat([].slice.call(arguments))); }catch(_){} }
 
-  /* ---------- utils ---------- */
-  function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
-  function pct(a,b){ a=Number(a)||0; b=Number(b)||0; if(b<=0) return '—'; return Math.round((a*100)/b)+'%'; }
-  function range12(){ var a=[]; for(var i=1;i<=12;i++) a.push(i); return a; }
-  function uniqSorted(arr){
-    var set = {}, out=[];
-    (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v); } });
-    out.sort(); return out;
+  // --- utils ---
+  function pad2(n){ n=Number(n)||0; return (n<10?"0":"")+n; }
+  function slug(val){
+    val=(val||"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+    return val || "sin-proveedor";
   }
-
-  /* ---------- UI skeleton ---------- */
-  function buildUI(root){
-    root.innerHTML = ''
-    +'<div class="pl-wrap">'
-      +'<div class="pl-card">'
-        +'<div class="pl-head" style="margin-bottom:10px">'
-          +'<h2 class="pl-title">Pipeline MMPP — Contactado vs Asignado</h2>'
-          +'<div class="pl-actions">'
-            +'<label style="display:flex;gap:8px;align-items:center">'
-              +'<input id="plHideEmptyMonths" type="checkbox" checked />'
-              +'<span>Ocultar meses sin datos</span>'
-            +'</label>'
-            +'<button id="plBtnMesesConDatos" class="pl-btn">Meses con datos</button>'
-            +'<button id="plBtnLimpiarMeses" class="pl-btn">Limpiar meses</button>'
-            +'<button id="plBtnLimpiarFiltros" class="pl-btn">Limpiar filtros</button>'
-            +'<button id="plAxisBtn" class="pl-btn">Eje: Empresa</button>'
-          +'</div>'
-        +'</div>'
-
-        +'<div class="pl-filters">'
-          +'<select id="plYear" class="pl-select"></select>'
-          +'<select id="plProv" class="pl-select"><option value="">Todos los contactos</option></select>'
-          +'<select id="plComuna" class="pl-select"><option value="">Todas las comunas</option></select>'
-          +'<select id="plEmpresa" class="pl-select"><option value="">Todas las empresas</option></select>'
-        +'</div>'
-
-        +'<div class="pl-monthsbar"><div id="plMonths" class="pl-months-line"></div></div>'
-
-        +'<div class="pl-kpis" id="plKpis"></div>'
-
-        +'<div class="pl-chart-wrap">'
-          +'<div class="pl-chart-frame">'
-            +'<div class="pl-chart-container">'
-              +'<canvas id="plChart" class="pl-chart-canvas"></canvas>'
-            +'</div>'
-          +'</div>'
-          +'<div id="plChartNote" class="pl-note"></div>'
-        +'</div>'
-
-        +'<div id="plTableWrap"></div>'
-      +'</div>'
-    +'</div>';
+  function provStableKey(id, nombre){
+    return id ? ("id:"+String(id)) : ("name:"+slug(nombre||""));
   }
-
-  /* ---------- helper: empresa ---------- */
-  function cleanEmpresa(d, a){
-    var s = (d && (d.empresaNombre||'')) || (a && (a.empresaNombre||'')) || (d && (d.proveedorNombre||d.contactoNombre||'')) || (a && (a.proveedorNombre||a.contactoNombre||'')) || '—';
-    s = String(s||'').trim();
-    return s || '—';
+  function toMesKey(d){
+    if(!d) return null; try{ var dt=new Date(d);
+      if(isNaN(dt.getTime())) return null;
+      return dt.getFullYear()+"-"+pad2(dt.getMonth()+1);
+    }catch(e){ return null; }
   }
-
-  /* ---------- DERIVACIÓN (mensual) con semi ---------- */
-  // Deriva por (empresa, anio, mes) y calcula: contactado, asignado, semiRestante, noSemiRestante
-  function buildDerivMonthly(dispon, asig, semi){
-    var byId = {};
-    (dispon||[]).forEach(function(d){ if (d && (d.id!=null)) byId[String(d.id)] = d; });
-
-    var map = {};
-    function key(emp, anio, mes){ return emp + '|' + (anio||'') + '|' + (mes||0); }
-    function ensure(emp, anio, mes){
-      var k = key(emp, anio, mes);
-      if (!map[k]){
-        map[k] = {
-          empresa: emp || '—',
-          anio: Number(anio)||null,
-          mes: Number(mes)||0,
-          contactado: 0,     // disponible
-          asignado: 0,       // asignado
-          semi: 0,           // total semi-cerrado
-          semiRestante: 0,   // min(semi, restante)
-          noSemiRestante: 0, // restante - semiRestante
-          contactos: new Set(),
-          _ids: new Set()
-        };
+  function fromMesKey(mk){
+    if(!mk || mk.indexOf("-")<0) return null;
+    var p=mk.split("-"), y=Number(p[0])||0, m=Number(p[1])||1;
+    return new Date(y, m-1, 1).toISOString();
+  }
+  function qs(params){
+    var parts=[]; for(var k in params) if(Object.prototype.hasOwnProperty.call(params,k)){
+      var v=params[k]; if(v!==null && v!==undefined && v!==""){
+        parts.push(encodeURIComponent(k)+"="+encodeURIComponent(String(v)));
       }
-      return map[k];
-    }
-
-    // Contactado por mes de disponibilidad
-    (dispon||[]).forEach(function(d){
-      var emp = cleanEmpresa(d, null);
-      var anio = Number(d.anio)||null;
-      var mes  = Number(d.mes)||0;
-      var tons = Number(d.tons||0)||0;
-      var row = ensure(emp, anio, mes);
-      row.contactado += tons;
-      row._ids.add(String(d.id));
-      var contacto = d.contactoNombre || d.proveedorNombre || '—';
-      var comuna   = d.comuna || '';
-      row.contactos.add((contacto+' – '+comuna).trim());
-    });
-
-    // Asignado por mes de destino
-    (asig||[]).forEach(function(a){
-      var destY = Number(a.destAnio||a.anio||0)||0;
-      var destM = Number(a.destMes ||a.mes ||0)||0;
-      if (!destY || !destM) return;
-
-      var dpo = byId[String(a.disponibilidadId||'')];
-      var emp = cleanEmpresa(dpo, a);
-      var row = ensure(emp, destY, destM);
-      row.asignado += Number(a.cantidad||a.tons||0)||0;
-      if (dpo && dpo.id!=null) row._ids.add(String(dpo.id));
-      var contacto = (a.proveedorNombre || a.contactoNombre || (dpo && (dpo.proveedorNombre||dpo.contactoNombre)) || '—');
-      var comuna   = (a.comuna || (dpo && dpo.comuna) || '');
-      row.contactos.add((contacto+' – '+comuna).trim());
-    });
-
-    // Semi-cerrado por periodo (YYYY-MM)
-    (semi||[]).forEach(function(s){
-      var emp = cleanEmpresa(s, null);
-      var anio = Number(s.anio)||null;
-      var mes  = Number(s.mes)||0;
-      if (!anio || !mes) return;
-      var row = ensure(emp, anio, mes);
-      row.semi += Number(s.tons||0)||0;
-      var contacto = s.contactoNombre || s.proveedorNombre || '—';
-      row.contactos.add(contacto);
-    });
-
-    // Compute splits
-    Object.keys(map).forEach(function(k){
-      var o = map[k];
-      var restante = Math.max(0, o.contactado - o.asignado);
-      var semiRest = Math.min(o.semi, restante);
-      var noSemi   = Math.max(0, restante - semiRest);
-      o.semiRestante = semiRest;
-      o.noSemiRestante = noSemi;
-    });
-
-    // salida
-    return Object.keys(map).map(function(k){
-      var o = map[k];
-      return {
-        empresa: o.empresa,
-        anio: o.anio,
-        mes: o.mes,
-        contactado: o.contactado,
-        asignado: o.asignado,
-        semiRestante: o.semiRestante,
-        noSemiRestante: o.noSemiRestante,
-        saldo: Math.max(0, o.contactado - o.asignado),
-        lotes: o._ids.size,
-        contactos: Array.from(o.contactos)
-      };
-    });
+    } return parts.length?("?"+parts.join("&")):"";
   }
 
-  function mesesConDatosDispon(deriv, filters){
-    var sumByM = {}; for (var i=1;i<=12;i++) sumByM[i]=0;
-    (deriv||[]).forEach(function(r){
-      if (filters.year && String(r.anio)!==String(filters.year)) return;
-      if (filters.empresa && r.empresa!==filters.empresa) return;
-      sumByM[r.mes] += (Number(r.contactado)||0) + (Number(r.asignado)||0);
-    });
-    var out=[]; for (var mi=1; mi<=12; mi++) if (sumByM[mi]>0) out.push(mi);
-    return out;
-  }
+  // --- fetch helpers (con fallback de rutas) ---
+  function doFetch(url, opts){
+    opts = opts || {};
+    var headers = opts.headers || {};
+    headers["Accept"] = "application/json";
+    if (opts.body && !headers["Content-Type"]) headers["Content-Type"]="application/json";
+    opts.headers = headers;
+    opts.cache = 'no-store';
 
-  function filterDeriv(deriv, filters){
-    var monthsSel = filters.months || [];
-    return (deriv||[]).filter(function(r){
-      if (filters.year && String(r.anio)!==String(filters.year)) return false;
-      if (filters.empresa && r.empresa!==filters.empresa) return false;
-      if (monthsSel.length && monthsSel.indexOf(Number(r.mes))<0) return false;
-      return true;
-    });
-  }
-
-  function groupByEmpresa(rows){
-    var map={}, det={};
-    rows.forEach(function(r){
-      if (!map[r.empresa]){
-        map[r.empresa] = {empresa:r.empresa, contactado:0, asignado:0, semiRestante:0, noSemiRestante:0, lotes:0};
-        det[r.empresa]=new Set();
-      }
-      map[r.empresa].contactado     += r.contactado;
-      map[r.empresa].asignado       += r.asignado;
-      map[r.empresa].semiRestante   += r.semiRestante;
-      map[r.empresa].noSemiRestante += r.noSemiRestante;
-      map[r.empresa].lotes          += r.lotes;
-      (r.contactos||[]).forEach(function(s){ if(s) det[r.empresa].add(s); });
-    });
-    var arr = Object.keys(map).map(function(k){
-      var o = map[k];
-      return {
-        empresa: o.empresa,
-        contactado: o.contactado,
-        asignado: o.asignado,
-        semiRestante: o.semiRestante,
-        noSemiRestante: o.noSemiRestante,
-        saldo: Math.max(0, o.contactado - o.asignado),
-        lotes: o.lotes,
-        contactos: Array.from(det[k]||[])
-      };
-    });
-    arr.sort(function(a,b){ return (b.contactado||0)-(a.contactado||0); });
-    return arr;
-  }
-
-  function groupByMes(rows){
-    var map={}; for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,semiRestante:0,noSemiRestante:0,lotes:0, contactos:new Set()};
-    rows.forEach(function(r){
-      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,semiRestante:0,noSemiRestante:0,lotes:0, contactos:new Set()};
-      map[k].contactado     += r.contactado;
-      map[k].asignado       += r.asignado;
-      map[k].semiRestante   += r.semiRestante;
-      map[k].noSemiRestante += r.noSemiRestante;
-      map[k].lotes          += r.lotes;
-      (r.contactos||[]).forEach(function(s){ if(s) map[k].contactos.add(s); });
-    });
-    return range12().map(function(m){
-      var o = map[m];
-      return {
-        mes: m,
-        contactado: o.contactado,
-        asignado: o.asignado,
-        semiRestante: o.semiRestante,
-        noSemiRestante: o.noSemiRestante,
-        saldo: Math.max(0, o.contactado - o.asignado),
-        lotes: o.lotes,
-        contactos: Array.from(o.contactos)
-      };
-    });
-  }
-
-  /* ---------- KPIs ---------- */
-  function renderKPIs(rows){
-    var contact=0, asign=0, empSet=new Set();
-    rows.forEach(function(r){ contact+=r.contactado; asign+=r.asignado; empSet.add(r.empresa); });
-    var saldo = Math.max(0, contact - asign);
-    var html = ''
-      +kpi('Contactado', numeroCL(contact)+' tons')
-      +kpi('Asignado', numeroCL(asign)+' tons')
-      +kpi('% Asignación', (contact>0?Math.round(asign*100/contact)+'%':'—'))
-      +kpi('Saldo', numeroCL(saldo)+' tons')
-      +kpi('# Proveedores', numeroCL(empSet.size));
-    document.getElementById('plKpis').innerHTML = html;
-
-    function kpi(lab,val){ return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val">'+val+'</div></div>'; }
-  }
-
-  /* ---------- Chart ---------- */
-  var chartRef = null;
-  var stackTotalPlugin = {
-    id: 'stackTotals',
-    afterDatasetsDraw: function(chart){
-      var opts = chart.options.plugins.stackTotals || {};
-      if (opts.enabled===false) return;
-      var ctx = chart.ctx, meta0 = chart.getDatasetMeta(0), n = (meta0 && meta0.data)?meta0.data.length:0;
-      ctx.save(); ctx.font=(opts.fontSize||12)+'px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#111827';
-      for (var i=0;i<n;i++){
-        var tot=0, ds=chart.data.datasets;
-        for (var d=0; d<ds.length; d++) tot += Number(ds[d].data[i]||0);
-        if (tot<=0) continue;
-        var x=(meta0.data[i] && meta0.data[i].x)||0;
-        var y=chart.scales.y.getPixelForValue(tot); var yClamped=Math.max(y, chart.chartArea.top+12);
-        ctx.fillText(numeroCL(tot), x, yClamped-6);
-      }
-      ctx.restore();
-    }
-  };
-
-  function renderChart(rows, axisMode){
-    var canvas = document.getElementById('plChart');
-    if (!canvas) return;
-
-    if (!global.Chart){
-      var ctx0 = canvas.getContext('2d');
-      ctx0.clearRect(0,0,canvas.width||300,canvas.height||150);
-      document.getElementById('plChartNote').textContent = 'Chart.js no está cargado; se muestra solo la tabla.';
-      return;
-    }
-    document.getElementById('plChartNote').textContent = '';
-
-    var labels=[], dataAsign=[], dataSemi=[], dataNoAsig=[], toolDetail={};
-
-    if (axisMode==='empresa'){
-      var g = groupByEmpresa(rows);
-      labels  = g.map(function(x){return x.empresa;});
-      dataAsign = g.map(function(x){return x.asignado;});
-      dataSemi  = g.map(function(x){return x.semiRestante;});
-      dataNoAsig= g.map(function(x){return Math.max(0, x.noSemiRestante);});
-      g.forEach(function(x){
-        toolDetail[x.empresa] = {
-          contactos: x.contactos,
-          asignado: x.asignado,
-          semi: x.semiRestante,
-          saldo: Math.max(0, x.semiRestante + x.noSemiRestante)
-        };
+    log(opts.method || "GET", url);
+    return fetch(url, opts).then(function(res){
+      var ct = (res.headers.get("content-type")||"").toLowerCase();
+      var parse = ct.indexOf("application/json")>=0 ? res.json() : res.text().then(function(t){ return { message: t }; });
+      return parse.then(function(body){
+        if (!res.ok) log("HTTP", res.status, url, body && body.message);
+        return { ok: res.ok, status: res.status, body: body };
       });
-    } else {
-      var gm = groupByMes(rows);
-      labels  = gm.map(function(x){return MMESES[x.mes-1];});
-      dataAsign = gm.map(function(x){return x.asignado;});
-      dataSemi  = gm.map(function(x){return x.semiRestante;});
-      dataNoAsig= gm.map(function(x){return Math.max(0, x.noSemiRestante);});
-      gm.forEach(function(x){
-        toolDetail[MMESES[x.mes-1]] = {
-          contactos: x.contactos,
-          asignado: x.asignado,
-          semi: x.semiRestante,
-          saldo: Math.max(0, x.semiRestante + x.noSemiRestante)
-        };
-      });
-    }
-
-    if (chartRef && chartRef.destroy) chartRef.destroy();
-
-    chartRef = new Chart(canvas.getContext('2d'), {
-  type: 'bar',
-  data: {
-    labels: labels,
-    datasets: [
-      {
-        label: 'Asignado',
-        data: dataAsign,
-        stack: 'pipeline',
-        borderWidth: 1,
-        backgroundColor: '#2563EB',
-        borderColor: '#1E40AF',           // borde azul un pelo más oscuro
-        hoverBackgroundColor: '#3B82F6'
-      },
-      {
-        label: 'Semi-cerrado',
-        data: dataSemi || [],              // tu serie verde
-        stack: 'pipeline',
-        borderWidth: 1,
-        backgroundColor: '#10B981',
-        borderColor: '#047857',
-        hoverBackgroundColor: '#34D399'
-      },
-      {
-        label: 'No asignado',
-        data: dataNoAsig,
-        stack: 'pipeline',
-        borderWidth: 1,
-        backgroundColor: '#94A3B8',
-        borderColor: '#64748B',
-        hoverBackgroundColor: '#A8B2BE'
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
-    interaction: { mode: 'nearest', intersect: true },
-    layout: { padding: { top: 12 } },
-    plugins: {
-      legend: { position: 'right' },
-      stackTotals: { enabled:true, fontSize:12 },
-      tooltip: { /* tus callbacks tal cual */ }
-    },
-    scales: {
-      x: { stacked: true, ticks: { autoSkip:false, maxRotation:45, minRotation:45 } },
-      y: { stacked: true, beginAtZero: true, grace: '15%', ticks: { padding: 6 } }
-    }
-  },
-  plugins: [stackTotalPlugin]
-});
-
-  /* ---------- Tabla (sin cambios visibles) ---------- */
-  function renderTable(rows, axisMode, year){
-    var html='';
-    if (axisMode==='empresa'){
-      var g = groupByEmpresa(rows);
-      var thead='<thead><tr>'
-        +'<th>EMPRESA</th>'
-        +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
-        +'<th class="pl-right">ASIGNADO</th>'
-        +'<th class="pl-right">% ASIG</th>'
-        +'<th class="pl-right">SALDO</th>'
-        +'<th class="pl-right"># LOTES</th>'
-        +'</tr></thead>';
-      var body='<tbody>';
-      var totC=0, totA=0, totL=0;
-      for (var i=0;i<g.length;i++){
-        var r=g[i]; if (r.contactado<=0 && r.asignado<=0) continue;
-        totC+=r.contactado; totA+=r.asignado; totL+=r.lotes;
-        body+='<tr>'
-           +'<td><strong>'+r.empresa+'</strong></td>'
-           +'<td class="pl-right">'+numeroCL(r.contactado)+'</td>'
-           +'<td class="pl-right">'+numeroCL(r.asignado)+'</td>'
-           +'<td class="pl-right">'+pct(r.asignado,r.contactado)+'</td>'
-           +'<td class="pl-right">'+numeroCL(Math.max(0,r.saldo))+'</td>'
-           +'<td class="pl-right">'+numeroCL(r.lotes)+'</td>'
-           +'</tr>';
-      }
-      if (body==='<tbody>') body+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
-      body+='</tbody>';
-      var foot='<tfoot><tr>'
-        +'<td><strong>Totales</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(totC)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(totA)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+(totC>0?Math.round(totA*100/totC)+'%':'—')+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,totC-totA))+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(totL)+'</strong></td>'
-        +'</tr></tfoot>';
-      html = '<table class="pl-table">'+thead+body+foot+'</table>';
-    } else {
-      var gm = groupByMes(rows);
-      var thead2='<thead><tr>'
-        +'<th>MES</th>'
-        +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
-        +'<th class="pl-right">ASIGNADO</th>'
-        +'<th class="pl-right">% ASIG</th>'
-        +'<th class="pl-right">SALDO</th>'
-        +'<th class="pl-right"># LOTES</th>'
-        +'</tr></thead>';
-      var body2='<tbody>', tc=0,ta=0,tl=0;
-      for (var j=0;j<gm.length;j++){
-        var r2=gm[j]; if (r2.contactado<=0 && r2.asignado<=0) continue;
-        tc+=r2.contactado; ta+=r2.asignado; tl+=r2.lotes;
-        body2+='<tr>'
-          +'<td>'+MMESES[r2.mes-1]+'</td>'
-          +'<td class="pl-right">'+numeroCL(r2.contactado)+'</td>'
-          +'<td class="pl-right">'+numeroCL(r2.asignado)+'</td>'
-          +'<td class="pl-right">'+pct(r2.asignado,r2.contactado)+'</td>'
-          +'<td class="pl-right">'+numeroCL(Math.max(0,r2.saldo))+'</td>'
-          +'<td class="pl-right">'+numeroCL(r2.lotes)+'</td>'
-          +'</tr>';
-      }
-      if (body2==='<tbody>') body2+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
-      body2+='</tbody>';
-      var foot2='<tfoot><tr>'
-        +'<td><strong>Totales</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(tc)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(ta)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+(tc>0?Math.round(ta*100/tc)+'%':'—')+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,tc-ta))+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(tl)+'</strong></td>'
-        +'</tr></tfoot>';
-      html = '<table class="pl-table">'+thead2+body2+foot2+'</table>';
-    }
-    document.getElementById('plTableWrap').innerHTML = html;
-  }
-
-  /* ---------- estado / montaje ---------- */
-  var STATE = {
-    deriv: [],
-    filters: { year:null, proveedor:'', comuna:'', empresa:'', months:[] },
-    hideEmpty: true,
-    axisMode: 'empresa'
-  };
-
-  function getSelectedMonths(){
-    var monthsDiv = document.getElementById('plMonths');
-    var nodes = monthsDiv ? monthsDiv.querySelectorAll('.pl-chip.is-on') : [];
-    var out=[]; for (var i=0;i<nodes.length;i++){ out.push(Number(nodes[i].getAttribute('data-m'))||0); }
-    return out;
-  }
-  function setSelectedMonths(arr){
-    var monthsDiv = document.getElementById('plMonths');
-    var nodes = monthsDiv ? monthsDiv.querySelectorAll('.pl-chip') : [];
-    for (var i=0;i<nodes.length;i++){
-      var m = Number(nodes[i].getAttribute('data-m'))||0;
-      var on = arr && arr.indexOf(m)>=0;
-      if (on) nodes[i].classList.add('is-on'); else nodes[i].classList.remove('is-on');
-    }
-  }
-
-  function filterRowsForRefresh(){
-    return filterDeriv(STATE.deriv, STATE.filters);
-  }
-
-  function renderAll(){
-    var rows = filterRowsForRefresh();
-    renderKPIs(rows);
-    renderChart(rows, STATE.axisMode);
-    renderTable(rows, STATE.axisMode, STATE.filters.year || '');
-  }
-
-  function attachEvents(){
-    function updateFromUI(){
-      var y   = document.getElementById('plYear').value;
-      var p   = document.getElementById('plProv').value;
-      var c   = document.getElementById('plComuna').value;
-      var e   = document.getElementById('plEmpresa').value;
-      var ms  = getSelectedMonths();
-      var hide= document.getElementById('plHideEmptyMonths').checked;
-
-      STATE.filters.year = y;
-      STATE.filters.proveedor = p;
-      STATE.filters.comuna = c;
-      STATE.filters.empresa = e;
-      STATE.filters.months = ms;
-      STATE.hideEmpty = hide;
-      renderAll();
-    }
-
-    ['plYear','plProv','plComuna','plEmpresa','plHideEmptyMonths'].forEach(function(id){
-      var el=document.getElementById(id); if (el) el.addEventListener('change', updateFromUI);
+    }).catch(function(err){
+      log("FETCH ERROR", err && err.message);
+      return { ok:false, status:0, body:{ message: (err && err.message) || "network error" } };
     });
+  }
 
-    var monthsDiv = document.getElementById('plMonths');
-    if (monthsDiv){
-      monthsDiv.addEventListener('click', function(ev){
-        var t = ev.target;
-        while (t && t!==monthsDiv && !t.classList.contains('pl-chip')) t = t.parentNode;
-        if (t && t.classList.contains('pl-chip')){
-          t.classList.toggle('is-on');
-          updateFromUI();
+  // ➜ si una ruta devuelve 404/405/400/500/502/503/0, probamos la siguiente.
+  function tryRoutes(method, routes, bodyObj){
+    var i=0;
+    function next(){
+      if (i>=routes.length) return Promise.resolve({ ok:false, status:404, body:{ message:"No matching route" }});
+      var path = routes[i++], url = join(API_BASE, path);
+      var opts = { method: method };
+      if (bodyObj && (method!=="GET" && method!=="DELETE")) opts.body = JSON.stringify(bodyObj);
+      if (method==="DELETE" && bodyObj && /\/delete/i.test(path)){ opts.body = JSON.stringify(bodyObj); }
+
+      return doFetch(url, opts).then(function(res){
+        if (res.ok) return res;
+        if (res.status===404 || res.status===405 || res.status===400 ||
+            res.status===500 || res.status===502 || res.status===503 || res.status===0) {
+          return next();
         }
+        return res;
       });
     }
-
-    var btnDatos = document.getElementById('plBtnMesesConDatos');
-    if (btnDatos){
-      btnDatos.addEventListener('click', function(){
-        var m = mesesConDatosDispon(STATE.deriv, STATE.filters);
-        setSelectedMonths(m); STATE.filters.months = m; renderAll();
-      });
-    }
-    var btnLimpiar = document.getElementById('plBtnLimpiarMeses');
-    if (btnLimpiar){
-      btnLimpiar.addEventListener('click', function(){
-        setSelectedMonths([]); STATE.filters.months=[]; renderAll();
-      });
-    }
-    var btnLimpiarFiltros = document.getElementById('plBtnLimpiarFiltros');
-    if (btnLimpiarFiltros){
-      btnLimpiarFiltros.addEventListener('click', function(){
-        var p=document.getElementById('plProv'), c=document.getElementById('plComuna'), e=document.getElementById('plEmpresa');
-        if (p) p.value=''; if (c) c.value=''; if (e) e.value='';
-        setSelectedMonths([]); STATE.filters.months=[]; renderAll();
-      });
-    }
-
-    var axisBtn = document.getElementById('plAxisBtn');
-    if (axisBtn){
-      axisBtn.addEventListener('click', function(){
-        STATE.axisMode = (STATE.axisMode==='empresa' ? 'mes' : 'empresa');
-        axisBtn.textContent = 'Eje: ' + (STATE.axisMode==='empresa' ? 'Empresa' : 'Mes');
-        renderAll();
-      });
-    }
+    return next();
   }
 
-  function optionsFromDeriv(deriv){
-    var emp  = uniqSorted((deriv||[]).map(function(r){return r.empresa;}).filter(Boolean));
-    var years= uniqSorted((deriv||[]).map(function(r){return r.anio;}).filter(Boolean));
-    return {emp:emp, years:years};
+  // --- cache simple de disponibilidades para enriquecer asignaciones ---
+  var _cacheDispon = [];
+
+  // --- filtros/normalizadores globales ---
+  function esVigente(row){
+    var st = String(row && row.estado || '').toLowerCase();
+    return !(row && (row.deleted || row.isDeleted || st==='eliminado' || st==='borrado' || st==='anulado'));
   }
 
-  function fillFilters(deriv){
-    var selY = document.getElementById('plYear');
-    var selE = document.getElementById('plEmpresa');
-    var monthsDiv = document.getElementById('plMonths');
-
-    var opts = optionsFromDeriv(deriv);
-    var yNow = (new Date()).getFullYear();
-    var years = opts.years.length ? opts.years : [yNow];
-    var yDefault = years.indexOf(yNow)>=0 ? yNow : years[years.length-1];
-
-    selY.innerHTML = years.map(function(y){return '<option value="'+y+'" '+(String(y)===String(yDefault)?'selected':'')+'>'+y+'</option>';}).join('');
-    selE.innerHTML = '<option value="">Todas las empresas</option>' + opts.emp.map(function(e){return '<option value="'+e+'">'+e+'</option>'}).join('');
-
-    monthsDiv.innerHTML = range12().map(function(m){
-      return '<button type="button" class="pl-chip" data-m="'+m+'">'+MMESES_LARGO[m-1]+'</button>';
-    }).join('');
+  function pickProveedorId(obj){
+    // tolerante a varios nombres de campo
+    return obj.proveedorId || obj.proveedor_id ||
+           (obj.proveedor && (obj.proveedor.id || obj.proveedor._id)) ||
+           obj.contactoProveedorId || obj.contactId || obj.contact_id ||
+           null;
   }
 
-  function mount(opts){
-    injectCSS();
-    var root = document.getElementById('mmppPipeline');
-    if (!root){ console.warn('[mmpp-pipeline] No existe #mmppPipeline'); return; }
-    buildUI(root);
+  function normalizeDispon(payload){
+    var list = Array.isArray(payload) ? payload
+              : (payload && (payload.items||payload.data||payload.results)) || [];
+    var out = list.map(function(r){
+      var id = r.id || r._id || r._docId || r.uuid || null;
+      var tons = (r.tonsDisponible!=null ? Number(r.tonsDisponible)
+                 : r.disponible!=null ? Number(r.disponible)
+                 : Number(r.tons||0));
+      var mk = r.mesKey || (r.anio&&r.mes ? (r.anio+"-"+pad2(r.mes)) : (r.fecha?toMesKey(r.fecha):null));
+      var fecha = r.fecha || (mk?fromMesKey(mk):null);
+      var tel = (r.contactoSnapshot && (r.contactoSnapshot.telefono || r.contactoSnapshot.phone)) || r.contactoTelefono || "";
+      var email = (r.contactoSnapshot && r.contactoSnapshot.email) || r.contactoEmail || "";
 
-    function go(dispon, asig, semi){
-      STATE.deriv = buildDerivMonthly(dispon, asig, semi);
-      fillFilters(STATE.deriv);
+      // proveedor / empresa normalizados
+      var proveedorNombre = r.proveedorNombre || r.proveedor || r.contactoNombre || r.contacto || "";
+      var proveedorId = pickProveedorId(r);
+      var empresaNombre = r.empresaNombre || r.empresa || null;
+      var proveedorKey = r.proveedorKey || slug(proveedorNombre);
+      var empresaKey = r.empresaKey || (empresaNombre ? slug(empresaNombre) : null);
 
-      var ySel = document.getElementById('plYear');
-      STATE.filters.year = ySel ? ySel.value : '';
-      STATE.filters.proveedor = '';
-      STATE.filters.comuna = '';
-      STATE.filters.empresa = '';
-      STATE.filters.months = [];
-      STATE.hideEmpty = true;
-      setSelectedMonths([]);
+      var proveedorKeyNorm = r.proveedorKeyNorm || empresaKey || proveedorKey;
+      var proveedorNombreNorm = r.proveedorNombreNorm || empresaNombre || proveedorNombre;
 
-      attachEvents();
-      renderAll();
-    }
+      return {
+        id: id,
+        proveedorId: proveedorId,
+        proveedorNombre: proveedorNombre,
+        proveedorKey: proveedorKey,
 
-    if (opts && Array.isArray(opts.dispon) && Array.isArray(opts.asig) && Array.isArray(opts.semi)){
-      return go(opts.dispon, opts.asig, opts.semi);
-    }
+        // normalizados (empresa > proveedor)
+        proveedorKeyNorm: proveedorKeyNorm,
+        proveedorNombreNorm: proveedorNombreNorm,
 
-    // Carga desde API (front integra con MMppApi)
-    if (global.MMppApi && typeof global.MMppApi.getDisponibilidades==='function'){
-      Promise.all([
-        global.MMppApi.getDisponibilidades(),
-        (global.MMppApi.getAsignaciones ? global.MMppApi.getAsignaciones() : Promise.resolve([])).catch(function(){return[];}),
-        (global.MMppApi.getSemiCerrados ? global.MMppApi.getSemiCerrados() : Promise.resolve([])).catch(function(){return[];})
-      ]).then(function(res){ go(res[0]||[], res[1]||[], res[2]||[]); })
-       .catch(function(){ go([],[],[]); });
-    } else {
-      go([],[],[]);
-    }
+        contactoNombre: r.contactoNombre || r.contacto || "",
+        empresaNombre : empresaNombre || "",
+        telefono: tel, email: email,
+        comuna: r.comuna || "",
+        centroCodigo: r.centroCodigo || "",
+        areaCodigo: r.areaCodigo || "",
+
+        tons: Number(tons||0),
+        fecha: fecha,
+        mesKey: mk,
+        anio: r.anio || (mk?Number(mk.split("-")[0]):null),
+        mes : r.mes  || (mk?Number(mk.split("-")[1]):null),
+        estado: r.estado || "disponible",
+        deleted: r.deleted || false,
+        isDeleted: r.isDeleted || false
+      };
+    });
+    return out;
   }
 
-  global.MMppPipeline = { mount: mount, refresh: renderAll };
+  function normalizeAsign(payload){
+    var list = Array.isArray(payload) ? payload
+              : (payload && (payload.items||payload.data||payload.results)) || [];
+    return list.map(function(a){
+      var tons = (a.tons!=null ? Number(a.tons) : Number(a.cantidad||0));
+      var proveedorId = pickProveedorId(a);
+      var provNombre = a.proveedorNombre || a.proveedor || "";
+      var provKey = a.proveedorKey || (provNombre?slug(provNombre):"");
+      var empresaNombre = a.empresaNombre || a.empresa || null;
+      var empresaKey = a.empresaKey || (empresaNombre ? slug(empresaNombre) : null);
+
+      return {
+        id: a.id || a._id || a.uuid || null,
+        disponibilidadId: a.disponibilidadId || a.disponibilidad || a.dispoId || null,
+
+        proveedorId: proveedorId,
+        proveedorNombre: provNombre,
+        proveedorKey: provKey,
+
+        // normalizados (empresa > proveedor)
+        proveedorKeyNorm: a.proveedorKeyNorm || empresaKey || provKey,
+        proveedorNombreNorm: a.proveedorNombreNorm || empresaNombre || provNombre,
+
+        cantidad: tons,
+        tons: tons,
+        camiones: a.camiones!=null ? Number(a.camiones) : null,
+        capacidadCamion: a.capacidadCamion!=null ? Number(a.capacidadCamion) : null,
+
+        destDia: (a.destDia!=null ? Number(a.destDia) : null),
+        destMes: Number(a.destMes || a.mes || 0) || null,
+        destAnio: Number(a.destAnio || a.anio || 0) || null,
+        destFecha: a.destFecha || null,
+
+        anio: a.anio!=null ? Number(a.anio) : (a.destAnio!=null?Number(a.destAnio):null),
+        mes : a.mes !=null ? Number(a.mes ) : (a.destMes !=null?Number(a.destMes ):null),
+        mesKey: a.mesKey || (a.anio && a.mes ? (a.anio+"-"+pad2(a.mes)) : null),
+
+        contactoNombre: a.contactoNombre || "",
+        empresaNombre: empresaNombre || "",
+        comuna: a.comuna || "",
+        centroCodigo: a.centroCodigo || "",
+        areaCodigo: a.areaCodigo || "",
+
+        transportistaId: a.transportistaId || null,
+        transportistaNombre: a.transportistaNombre || "",
+
+        originalTons: a.originalTons!=null ? Number(a.originalTons) : null,
+        originalFecha: a.originalFecha || null,
+
+        fuente: a.fuente || "",
+        estado: a.estado || "",
+        deleted: a.deleted || false,
+        isDeleted: a.isDeleted || false,
+        createdAt: a.createdAt || a.fecha || null
+      };
+    });
+  }
+
+  // --- normalizador para SEMI-CERRADOS ---
+  function normalizeSemi(payload){
+    var list = Array.isArray(payload) ? payload
+              : (payload && (payload.items||payload.data||payload.results)) || [];
+    return list.map(function(r){
+      var mk = r.periodo || null; // "YYYY-MM"
+      var anio = mk && mk.split('-')[0] ? Number(mk.split('-')[0]) : null;
+      var mes  = mk && mk.split('-')[1] ? Number(mk.split('-')[1]) : null;
+      var provNombre = r.proveedorNombre || r.contactoNombre || "";
+      var provKey = r.proveedorKey || slug(provNombre);
+
+      return {
+        id: r.id || r._id || null,
+
+        proveedorId: r.proveedorId || null,
+        proveedorNombre: provNombre,
+        proveedorKey: provKey,
+
+        // normalizados (empresa > proveedor). En semi no viene empresa, usamos proveedor.
+        proveedorKeyNorm: r.proveedorKeyNorm || provKey,
+        proveedorNombreNorm: r.proveedorNombreNorm || provNombre,
+
+        contactoNombre: r.contactoNombre || "",
+        empresaNombre : "",    // no aplica en semi-cerrados por ahora
+        comuna: "", centroCodigo: "", areaCodigo: "",
+
+        tons: Number(r.tons || 0) || 0,
+        fecha: mk ? (new Date(anio||1970, (mes||1)-1, 1)).toISOString() : null,
+        mesKey: mk,
+        anio: anio,
+        mes : mes,
+
+        estado: "semi-cerrado",
+        deleted: false,
+        isDeleted: false
+      };
+    });
+  }
+
+  function keyFrom(item){
+    // preferimos key normalizada (empresa > proveedor) para evitar duplicados por persona
+    if (item && item.proveedorKeyNorm) return "key:"+item.proveedorKeyNorm;
+    // fallback a id/nombre estable
+    return provStableKey(item && item.proveedorId, (item && (item.proveedorNombreNorm || item.proveedorNombre)) || "");
+  }
+
+  // --- API pública ---
+  var API = {
+    // ------- Disponibilidades -------
+    getDisponibilidades: function(params){
+      params=params||{};
+      if(!params.anio && !params.from && !params.to && !params.mesKey){
+        var y=new Date().getFullYear();
+        params.from=(y-1)+"-01"; params.to=(y+1)+"-12";
+      }
+      var q = qs(params);
+      var paths = [
+        // ➜ agrega las rutas reales del backend
+        "/planificacion/disponibilidad"+q,
+        "/disponibilidades"+q,
+        "/mmpp/disponibilidades"+q,
+        "/disponibilidad"+q
+      ];
+      return tryRoutes("GET", paths).then(function(res){
+        var json = (res && res.body) || [];
+        var list = Array.isArray(json) ? json : (json.items||json.data||json.results)||[];
+        var norm = normalizeDispon(list)
+          .filter(esVigente)
+          .filter(function(r){ return Number(r.tons||0) > 0; });
+        _cacheDispon = norm;
+        return norm;
+      }).catch(function(){ return []; });
+    },
+
+    // ------- Asignaciones -------
+    getAsignaciones: function(params){
+      params=params||{};
+      var q = qs(params);
+      var paths = [
+        "/asignaciones"+q,
+        "/asignacion"+q,
+        "/mmpp/asignaciones"+q
+        // si más adelante montas /planificacion/asignaciones, agrégala aquí:
+        // "/planificacion/asignaciones"+q,
+      ];
+      return tryRoutes("GET", paths).then(function(res){
+        var json = (res && res.body) || [];
+        var list = Array.isArray(json) ? json : (json.items||json.data||json.results) || [];
+        var norm = normalizeAsign(list)
+          .filter(esVigente)
+          .filter(function(a){ return a && Number(a.cantidad)>0 && (a.id || a.disponibilidadId); });
+        norm.sort(function(a,b){
+          var ta=a.createdAt?Date.parse(a.createdAt):0, tb=b.createdAt?Date.parse(b.createdAt):0; return tb-ta;
+        });
+        return norm;
+      }).catch(function(){ return []; });
+    },
+
+    // ------- Semi-cerrados -------
+    getSemiCerrados: function(params){
+      params = params || {};
+      // rango por defecto amplio si no pasan filtros de fecha
+      if(!params.from && !params.to && !params.anio){
+        var y = new Date().getFullYear();
+        params.from = (y-1) + "-01";
+        params.to   = (y+1) + "-12";
+      }
+      var q = qs(params);
+      var paths = [ "/semi-cerrados" + q ];
+      return tryRoutes("GET", paths).then(function(res){
+        var json = (res && res.body) || [];
+        var list = Array.isArray(json) ? json : (json.items||json.data||json.results)||[];
+        var norm = normalizeSemi(list)
+          .filter(esVigente)
+          .filter(function(r){ return Number(r.tons||0) > 0; });
+        return norm;
+      }).catch(function(){ return []; });
+    },
+
+    // ------- Saldos (servidor o cálculo local) -------
+    getSaldos: function(params){
+      params=params||{};
+      var q = qs(params);
+      // 1) Intentar endpoint del backend
+      return tryRoutes("GET", ["/planificacion/saldos"+q]).then(function(res){
+        var body = (res && res.body) || {};
+        var items = Array.isArray(body) ? body : (body.items||[]);
+        var hasDisponible = items.some(function(it){ return Number(it.disponible||0) > 0; });
+        if (res.ok && hasDisponible) return items;
+
+        // 2) Fallback local: sumar dispo + asig con normalización y filtro de vigencia
+        return Promise.all([
+          API.getDisponibilidades(params),
+          API.getAsignaciones(params)
+        ]).then(function(arr){
+          var dispo = arr[0]||[], asign = arr[1]||[];
+          var map = new Map(); // key: mesKey|provKeyNorm -> {mesKey, proveedor..., disponible, asignado}
+
+          dispo.forEach(function(d){
+            if (!esVigente(d)) return;
+            var mk = d.mesKey || (d.anio && d.mes ? (d.anio+"-"+pad2(d.mes)) : null);
+            if (!mk) return;
+            var key = keyFrom(d);
+            var k = mk+"|"+key;
+            if(!map.has(k)) map.set(k, {
+              mesKey: mk,
+              proveedorId: d.proveedorId||null,
+              proveedorNombre: d.proveedorNombreNorm || d.proveedorNombre || "Sin proveedor",
+              proveedorKeyNorm: d.proveedorKeyNorm || null,
+              disponible:0, asignado:0
+            });
+            var row = map.get(k);
+            row.disponible += Number(d.tons||0);
+          });
+
+          asign.forEach(function(a){
+            if (!esVigente(a)) return;
+            var mk = a.mesKey || (a.anio && a.mes ? (a.anio+"-"+pad2(a.mes)) : null);
+            if (!mk) return;
+            var key = keyFrom(a);
+            var k = mk+"|"+key;
+            if(!map.has(k)) map.set(k, {
+              mesKey: mk,
+              proveedorId: a.proveedorId||null,
+              proveedorNombre: a.proveedorNombreNorm || a.proveedorNombre || "Sin proveedor",
+              proveedorKeyNorm: a.proveedorKeyNorm || null,
+              disponible:0, asignado:0
+            });
+            var row = map.get(k);
+            row.asignado += Number(a.tons||0);
+          });
+
+          return Array.from(map.values()).sort(function(a,b){
+            var t = String(a.mesKey).localeCompare(String(b.mesKey));
+            if (t!==0) return t;
+            return String(a.proveedorNombre||"").localeCompare(String(b.proveedorNombre||""));
+          });
+        });
+      }).catch(function(){ return []; });
+    },
+
+    // ------- Crear / Editar / Borrar asignación -------
+    crearAsignacion: function(payload){
+      var y = Number(payload.destAnio||payload.anio||0);
+      var m = Number(payload.destMes ||payload.mes ||0);
+      var d = Number(payload.destDia ||0);
+      var mk = (y && m) ? (y+"-"+pad2(m)) : null;
+
+      var cap = Number(payload.capacidadCamion||10);
+      var tons = Number(payload.cantidad||payload.tons||0);
+      var cam = cap>0 ? Math.ceil(tons/cap) : null;
+
+      function pickDispo(list){
+        for (var i=0;i<list.length;i++){
+          if(String(list[i].id)===String(payload.disponibilidadId)) return list[i];
+        }
+        return null;
+      }
+
+      var ensureDispo = (_cacheDispon && _cacheDispon.length)
+        ? Promise.resolve(pickDispo(_cacheDispon))
+        : API.getDisponibilidades().then(function(ds){ return pickDispo(ds); });
+
+      return ensureDispo.then(function(dispo){
+        var proveedorNombre = payload.proveedorNombre || (dispo?dispo.proveedorNombre:"") || (dispo?dispo.contactoNombre:"") || "";
+        var proveedorKey    = (dispo && (dispo.proveedorKeyNorm || dispo.proveedorKey)) || slug(proveedorNombre);
+        var proveedorId     = payload.proveedorId || (dispo ? dispo.proveedorId : null);
+
+        var body = {
+          disponibilidadId: payload.disponibilidadId,
+
+          tons: tons,
+          cantidad: tons,
+          camiones: cam,
+          capacidadCamion: cap,
+
+          anio: y, mes: m, mesKey: mk,
+          destAnio: y, destMes: m,
+          destDia: d || null,
+          destFecha: payload.destFecha || (y&&m&&(new Date(y,m-1,d||1)).toISOString()),
+
+          // proveedor (incluye ID nuevo)
+          proveedorId: proveedorId,
+          proveedorNombre: proveedorNombre,
+          proveedorKey: proveedorKey,
+
+          contactoNombre: (dispo && dispo.contactoNombre) || "",
+          empresaNombre:  (dispo && dispo.empresaNombre)  || "",
+          comuna:         (dispo && dispo.comuna)         || "",
+          centroCodigo:   (dispo && dispo.centroCodigo)   || "",
+          areaCodigo:     (dispo && dispo.areaCodigo)     || "",
+          contactoTelefono: (dispo && dispo.telefono)     || "",
+          contactoEmail:    (dispo && dispo.email)        || "",
+
+          transportistaId: payload.transportistaId || null,
+          transportistaNombre: payload.transportistaNombre || "",
+
+          originalTons:  (payload.originalTons!=null ? Number(payload.originalTons) : (dispo?Number(dispo.tons||0):null)),
+          originalFecha: payload.originalFecha || (dispo?dispo.fecha:null),
+
+          fuente: "ui-calendario",
+          estado: "confirmado",
+
+          createdAt: new Date().toISOString()
+        };
+
+        var paths = ["/asignaciones", "/asignacion", "/mmpp/asignaciones"];
+        return tryRoutes("POST", paths, body).then(function(res){
+          var j = res && res.body; j = j && j.body ? j.body : j;
+          if (!res || !res.ok) {
+            var err = new Error((j && j.message) || "Error creando asignación");
+            err.status = res && res.status; throw err;
+          }
+          return j;
+        });
+      });
+    },
+
+    editarAsignacion: function(id, patch){
+      var cap = Number(patch.capacidadCamion || patch.cap_camion || 10);
+      var qty = (patch.cantidad!=null ? Number(patch.cantidad) :
+                (patch.tons!=null ? Number(patch.tons) : null));
+      var body = Object.assign({}, patch);
+      if (qty!=null){ body.tons = qty; body.cantidad = qty; body.camiones = Math.ceil(qty/(cap||10)); }
+
+      var paths = [
+        "/asignaciones/"+encodeURIComponent(id),
+        "/asignaciones?id="+encodeURIComponent(id),
+        "/asignacion/"+encodeURIComponent(id),
+        "/asignacion?id="+encodeURIComponent(id),
+        "/asignaciones/update",
+        "/mmpp/asignaciones/"+encodeURIComponent(id),
+        "/mmpp/asignacion/"+encodeURIComponent(id),
+        "/mmpp/asignaciones/update"
+      ];
+      return tryRoutes("PATCH", paths, body).then(function(res){
+        if (!res.ok) return tryRoutes("PUT", paths, body);
+        return res;
+      }).then(function(res){
+        if (!res.ok) return tryRoutes("POST",
+          ["/asignaciones/update","/asignacion/update","/mmpp/asignaciones/update","/mmpp/asignacion/update"],
+          Object.assign({ id:id }, body)
+        );
+        return res;
+      }).then(function(res){
+        var j = res && res.body; j = j && j.body ? j.body : j;
+        if (!res || !res.ok) {
+          var err = new Error((j && j.message) || "Error editando asignación"); err.status=res&&res.status; throw err;
+        }
+        return j;
+      });
+    },
+
+    borrarAsignacion: function(id){
+      var q = "?id="+encodeURIComponent(id);
+      var paths = [
+        "/asignaciones/"+encodeURIComponent(id),
+        "/asignaciones"+q,
+        "/asignacion/"+encodeURIComponent(id),
+        "/asignacion"+q,
+        "/asignaciones/delete",
+        "/asignacion/delete",
+        "/mmpp/asignaciones/"+encodeURIComponent(id),
+        "/mmpp/asignacion/"+encodeURIComponent(id),
+        "/mmpp/asignaciones/delete",
+        "/mmpp/asignacion/delete"
+      ];
+      return tryRoutes("DELETE", paths).then(function(res){
+        if (!res.ok) return tryRoutes("POST",
+          ["/asignaciones/delete","/asignacion/delete","/mmpp/asignaciones/delete","/mmpp/asignacion/delete"],
+          { id:id }
+        );
+        return res;
+      }).then(function(res){
+        var j = res && res.body; j = j && j.body ? j.body : j;
+        if (!res || !res.ok) {
+          var err = new Error((j && j.message) || "Error eliminando asignación"); err.status=res&&res.status; throw err;
+        }
+        return j || null;
+      });
+    }
+  };
+
+  global.MMppApi = API;
 })(window);
