@@ -47,6 +47,7 @@ function renderModalUI(wrap){
         <div class="input-field col s12 m6">
           <label class="active" for="sc_cantidadTon">Biomasa (ton)</label>
           <input id="sc_cantidadTon" type="number" min="0" step="0.01" placeholder="Ej: 120">
+          <span id="sc_cantHelp" class="helper-text" data-error="" data-success=""></span>
         </div>
       </div>
 
@@ -87,6 +88,7 @@ function ensureStyles(){
     #modalSemiCerrado .sc-compact input[type="number"] { margin-bottom: 2px; }
     #modalSemiCerrado .modal-content { padding: 14px 16px 6px; }
     #modalSemiCerrado .modal-footer { padding: 8px 12px; }
+    #sc_cantidadTon.invalid { border-bottom-color:#e53935 !important; box-shadow:0 1px 0 0 #e53935 !important; }
   `;
   document.head.appendChild(s);
 }
@@ -111,6 +113,24 @@ async function apiDELETE(path){
   const res = await fetch(`${API}${path}`, { method:'DELETE' });
   if (!res.ok) throw new Error(`${res.status} DELETE ${path}`);
   return res.json();
+}
+
+/* ===== helpers UI validación ===== */
+function clearTonsError(){
+  const inp = $('#sc_cantidadTon'); const help = $('#sc_cantHelp');
+  inp.classList.remove('invalid'); if (help) help.setAttribute('data-error','');
+}
+function setTonsError(msg){
+  const inp = $('#sc_cantidadTon'); const help = $('#sc_cantHelp');
+  inp.classList.add('invalid'); if (help) help.setAttribute('data-error', msg || '');
+  inp.focus(); if (window.M?.updateTextFields) M.updateTextFields();
+}
+
+/** Normaliza número (soporta coma/punto) */
+function readTons(){
+  const raw = ($('#sc_cantidadTon')?.value || '').trim().replace(',', '.');
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : 0;
 }
 
 /** Busca si ya existe registro para proveedor+periodo → devuelve doc o null */
@@ -147,20 +167,13 @@ async function loadHistorial({ proveedorKey }){
       </tr>
     `).join('');
 
-    // Solo tooltips (nada de AutoInit)
+    // tooltips solo
     const tips = tbody.querySelectorAll('.tooltipped');
     if (window.M?.Tooltip && tips.length) window.M.Tooltip.init(tips, { enterDelay: 100 });
   }catch(e){
     console.error('[semi] historial Error:', e);
     tbody.innerHTML = `<tr><td colspan="4" class="red-text">Error cargando historial</td></tr>`;
   }
-}
-
-/** Normaliza número (soporta coma/punto) */
-function readTons(){
-  const raw = ($('#sc_cantidadTon')?.value || '').trim().replace(',', '.');
-  const n = parseFloat(raw);
-  return Number.isFinite(n) ? n : 0;
 }
 
 /** Crea o actualiza según exista → mismo botón. Cierra el modal al éxito. */
@@ -171,13 +184,15 @@ async function guardarAsignacion(preset){
   btn.dataset.busy='1';
 
   try{
+    clearTonsError();
+
     const proveedorKey = preset.proveedorKey || '';
     const periodo = $('#sc_periodo')?.value || '';
     const tons = readTons();
 
-    if (!proveedorKey) throw new Error('Falta proveedor');
-    if (!periodo)      throw new Error('Falta mes (YYYY-MM)');
-    if (!(tons > 0))   throw new Error('Biomasa debe ser > 0');
+    if (!proveedorKey) { window.M?.toast?.({ html:'Falta proveedor', classes:'red' }); return; }
+    if (!periodo)      { window.M?.toast?.({ html:'Falta mes (YYYY-MM)', classes:'red' }); return; }
+    if (!(tons > 0))   { setTonsError('Biomasa debe ser > 0'); return; }
 
     const existingId = btn.dataset.editId || (await findExisting(proveedorKey, periodo))?._id || null;
 
@@ -197,10 +212,7 @@ async function guardarAsignacion(preset){
       window.M?.toast?.({ html:'Guardado', classes:'green' });
     }
 
-    // refrescar tabla (por si quieres dejarlo abierto)…
-    await loadHistorial({ proveedorKey });
-
-    // …pero ahora lo cerraremos automáticamente
+    // cerrar modal
     const wrap = $('#modalSemiCerrado');
     if (window.M?.Modal){
       const inst = window.M.Modal.getInstance(wrap) || window.M.Modal.init(wrap);
@@ -226,6 +238,7 @@ async function checkEditMode(preset){
   const btnTxt = $('#sc_btnTxt');
   btnTxt.textContent = 'Guardar';
   delete btn.dataset.editId;
+  clearTonsError();
 
   const proveedorKey = preset.proveedorKey || '';
   const periodo = $('#sc_periodo')?.value || '';
@@ -236,6 +249,7 @@ async function checkEditMode(preset){
     btn.dataset.editId = exist._id;
     $('#sc_cantidadTon').value = exist.tons ?? 0;
     btnTxt.textContent = 'Actualizar';
+    clearTonsError();
     if (window.M?.updateTextFields) M.updateTextFields();
   }
 }
@@ -255,17 +269,12 @@ function openSemiCerradoModal(preset = {}){
   // Acciones
   $('#sc_btnGuardar')?.addEventListener('click', (ev)=>{ ev.preventDefault(); guardarAsignacion(preset); });
   $('#sc_periodo')?.addEventListener('change', ()=> checkEditMode(preset));
-  // Enter para guardar
-  wrap.addEventListener('keydown', (ev)=>{
-    if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
-      ev.preventDefault(); guardarAsignacion(preset);
-    }
-  });
+  $('#sc_cantidadTon')?.addEventListener('input', clearTonsError);
 
   // Historial + detección inicial de edición
   loadHistorial({ proveedorKey: preset.proveedorKey }).then(()=> checkEditMode(preset));
 
-  // Init y abrir (no dismissible para evitar cierres accidentales)
+  // Init y abrir
   if (window.M?.Modal){
     let inst = window.M.Modal.getInstance(wrap);
     if (!inst){
@@ -298,6 +307,7 @@ document.addEventListener('click', async (e)=>{
     $('#sc_cantidadTon').value = tons;
     const btn = $('#sc_btnGuardar'); const btnTxt = $('#sc_btnTxt');
     btn.dataset.editId = id; btnTxt.textContent = 'Actualizar';
+    clearTonsError();
     if (window.M?.updateTextFields) M.updateTextFields();
     return;
   }
@@ -309,12 +319,14 @@ document.addEventListener('click', async (e)=>{
       tr.remove();
       window.M?.toast?.({ html:'Eliminado', classes:'green' });
 
-      // Si estabas editando este mismo id, limpia estado
       const btn = $('#sc_btnGuardar'); const btnTxt = $('#sc_btnTxt');
       if (btn.dataset.editId === id){
         delete btn.dataset.editId;
         btnTxt.textContent = 'Guardar';
+        // dejar listo para escribir y guardar de inmediato
         $('#sc_cantidadTon').value = '';
+        clearTonsError();
+        $('#sc_cantidadTon').focus();
       }
 
       // Si tabla queda vacía, recarga mensaje
