@@ -53,11 +53,11 @@ function getISOWeek(d = new Date()) {
     #tablaContactos th:nth-child(2), #tablaContactos td:nth-child(2){ width:108px !important; }  /* Fecha    */
     #tablaContactos th:nth-child(3), #tablaContactos td:nth-child(3){ width:200px !important; }  /* Proveedor*/
     #tablaContactos th:nth-child(4), #tablaContactos td:nth-child(4){ width:160px !important; }  /* Centro+Comuna  */
-    #tablaContactos th:nth-child(5), #tablaContactos td:nth-child(5){ width:82px  !important; text-align:center !important; }  /* Tons centrado */
+    #tablaContactos th:nth-child(5), #tablaContactos td:nth-child(5){ width:82px  !important; text-align:center !important; }  /* Tons */
     #tablaContactos th:nth-child(6), #tablaContactos td:nth-child(6){ width:110px !important; }  /* Responsable */
-    #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:180px !important; }  /* Acciones (más ancho por icono nuevo) */
+    #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:160px !important; }  /* Acciones */
 
-    /* === PROVEEDOR: dos líneas (empresa + contacto) === */
+    /* PROVEEEDOR (dos líneas) */
     #tablaContactos td:nth-child(3){ white-space: normal !important; }
     .prov-cell{ display:block; min-width:0; }
     .prov-top, .prov-sub{
@@ -66,17 +66,16 @@ function getISOWeek(d = new Date()) {
     .prov-top{ font-weight:600; }
     .prov-sub{ font-size:12px; color:#6b7280; }
 
-    /* === CENTRO + COMUNA (comuna chiquita debajo) === */
+    /* CENTRO + COMUNA (sub) */
     .centro-cell{ display:block; min-width:0; }
     .centro-top, .centro-sub{
       display:block; overflow:hidden; text-overflow:ellipsis; line-height:1.2;
     }
     .centro-sub{ font-size:12px; color:#6b7280; }
 
-    /* Que las elipsis no limiten a 22ch ni sean inline */
     #tablaContactos td .ellipsisProv{ display:block; max-width:100%; }
 
-    /* Acciones: que no se corten */
+    /* Acciones */
     #tablaContactos td:last-child{ overflow: visible !important; }
     #tablaContactos td:last-child .actions { display:flex; gap:6px; align-items:center; justify-content:flex-start; }
     #tablaContactos td:last-child a.icon-action {
@@ -95,60 +94,6 @@ function getISOWeek(d = new Date()) {
     document.head.appendChild(s);
   }
 })();
-
-/* ==================== acciones de fila ==================== */
-async function _clickAccContacto(aEl){
-  try{
-    const id = aEl?.dataset?.id;
-    const action = (aEl?.dataset?.action || '').toLowerCase();
-    const c = state.contactosGuardados.find(x => String(x._id) === String(id));
-    if (!c) { M.toast?.({ html: 'Contacto no encontrado', classes: 'red' }); return; }
-
-    if (action === 'ver')     return abrirDetalleContacto(c);
-
-    if (action === 'visita'){
-      // Preferir llamada directa al modal canónico de visitas...
-      try{
-        if (typeof abrirModalVisita === 'function') {
-          return abrirModalVisita(c);
-        }
-      }catch(err){
-        console.warn('[contactos] abrirModalVisita lanzó error, usando fallback por evento:', err);
-      }
-      // ...y fallback por bus de eventos si el módulo no está listo
-      document.dispatchEvent(new CustomEvent('contacto:visita', { detail:{ contacto: c } }));
-      return;
-    }
-
-    // 🔁 REEMPLAZO: acción "semi" (biomasa semi-cerrada)
-    if (action === 'semi'){
-      if (typeof window.openSemiCerradoModal === 'function') {
-        return window.openSemiCerradoModal({ preset: c });
-      }
-      document.dispatchEvent(new CustomEvent('semi:open', { detail:{ preset: c } }));
-      return;
-    }
-
-    if (action === 'editar')  return abrirEdicion(c);
-
-    if (action === 'eliminar'){
-      if (aEl.dataset.busy === '1') return;
-      aEl.dataset.busy = '1';
-      try{
-        if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
-        await eliminarContacto(id);
-      }catch(e){
-        console.error(e);
-        M.toast?.({ html:'No se pudo eliminar', classes:'red' });
-      } finally {
-        delete aEl.dataset.busy;
-      }
-    }
-  }catch(err){
-    console.error('[contactos] _clickAccContacto', err);
-  }
-}
-window._clickAccContacto = _clickAccContacto;
 
 /* ==================== totals cache ==================== */
 state.dispTotalCache = state.dispTotalCache || new Map();
@@ -192,7 +137,6 @@ function ensureFooter(){
   if (!table.tFoot) {
     const tfoot = table.createTFoot();
     const tr = tfoot.insertRow(0);
-    // Ahora la tabla tiene 7 columnas (SIN Comuna)
     for (let i=0; i<7; i++){
       const th = document.createElement('th');
       if (i === 4) th.textContent = 'Total página: 0'; // Tons (col 5)
@@ -205,6 +149,90 @@ function setFooterTotal(total){
   const th = table.tFoot.querySelectorAll('th')[4]; // Tons (col 5)
   if (th) th.textContent = `Total página: ${fmtCL(total)}`;
 }
+
+/* ==================== acciones de fila ==================== */
+async function _openSemiCerradoDesdeFila(c){
+  try{
+    const hoy = new Date();
+    const periodoYM = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+
+    // total disponible calculado con la misma lógica de la tabla
+    const tonsDisponible = await fetchTotalDisponibilidad({
+      contactoId: c._id || '',
+      proveedorKey: c.proveedorKey || '',
+      centroId: c.centroId || ''
+    });
+
+    const preset = {
+      proveedorNombre: c.proveedorNombre || '',
+      proveedorKey: c.proveedorKey || '',
+      // 👇 lo que pediste: “contacto” (no id proveedor)
+      contacto: c.contactoNombre || c.contacto || '',
+      responsablePG: c.responsablePG || c.responsable || c.contactoResponsable || '',
+      // mostramos solo el código como referencia visual, NO el centroId
+      centroCodigo: (c.centroCodigo && esCodigoValido(c.centroCodigo))
+        ? c.centroCodigo
+        : (centroCodigoById(c.centroId) || ''),
+      periodoYM,                 // YYYY-MM por defecto al mes actual
+      tonsDisponible             // para prellenar referencia y/o sugerencia
+    };
+
+    if (typeof window.openSemiCerradoModal === 'function'){
+      window.openSemiCerradoModal(preset);
+    }else{
+      document.dispatchEvent(new CustomEvent('semi-cerrado:open', { detail: preset }));
+    }
+  }catch(e){
+    console.error('[semi-cerrado] no se pudo abrir con preset:', e);
+    M.toast?.({ html:'No se pudo abrir el modal de semi-cerrado', classes:'red' });
+  }
+}
+
+async function _clickAccContacto(aEl){
+  try{
+    const id = aEl?.dataset?.id;
+    const action = (aEl?.dataset?.action || '').toLowerCase();
+    const c = state.contactosGuardados.find(x => String(x._id) === String(id));
+    if (!c) { M.toast?.({ html: 'Contacto no encontrado', classes: 'red' }); return; }
+
+    if (action === 'ver')     return abrirDetalleContacto(c);
+
+    if (action === 'visita'){
+      try{
+        if (typeof abrirModalVisita === 'function') {
+          return abrirModalVisita(c);
+        }
+      }catch(err){
+        console.warn('[contactos] abrirModalVisita lanzó error, usando fallback por evento:', err);
+      }
+      document.dispatchEvent(new CustomEvent('contacto:visita', { detail:{ contacto: c } }));
+      return;
+    }
+
+    if (action === 'semi'){           // ← NUEVO
+      return _openSemiCerradoDesdeFila(c);
+    }
+
+    if (action === 'editar')  return abrirEdicion(c);
+
+    if (action === 'eliminar'){
+      if (aEl.dataset.busy === '1') return;
+      aEl.dataset.busy = '1';
+      try{
+        if (!confirm('¿Seguro que quieres eliminar este contacto?')) return;
+        await eliminarContacto(id);
+      }catch(e){
+        console.error(e);
+        M.toast?.({ html:'No se pudo eliminar', classes:'red' });
+      } finally {
+        delete aEl.dataset.busy;
+      }
+    }
+  }catch(err){
+    console.error('[contactos] _clickAccContacto', err);
+  }
+}
+window._clickAccContacto = _clickAccContacto;
 
 /* ==================== DataTable ==================== */
 export function initTablaContactos() {
@@ -229,7 +257,7 @@ export function initTablaContactos() {
     responsive: false,
     scrollX: false,
     processing: true,
-    deferRender: true,            // ⚡ render perezoso
+    deferRender: true,
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
     columnDefs: [
       { targets: 0, width:'60px'  },   // Semana
@@ -238,10 +266,9 @@ export function initTablaContactos() {
       { targets: 3, width:'160px' },   // Centro + Comuna (sub)
       { targets: 4, width:'82px',  className:'dt-center' },   // Tons
       { targets: 5, width:'110px' },   // Responsable
-      { targets: 6, width:'180px', orderable:false, searchable:false } // Acciones
+      { targets: 6, width:'160px', orderable:false, searchable:false } // Acciones
     ],
     drawCallback: () => {
-      // da un tick al layout y luego calcula tons + footer
       requestAnimationFrame(() => setTimeout(actualizarTonsVisiblesYFooter, 0));
     }
   });
@@ -264,7 +291,6 @@ export function initTablaContactos() {
   const $fltResp   = document.getElementById('fltResp');
 
   $fltSemana?.addEventListener('change', ()=> dt.column(0).search($fltSemana.value||'', true, false).draw());
-  // AHORA comuna se busca en la COLUMNA 3 (Centro + subtexto comuna)
   $fltComuna?.addEventListener('change', ()=> dt.column(3).search($fltComuna.value||'', false, true).draw());
   $fltResp?.addEventListener('change',   ()=> dt.column(5).search($fltResp.value||'', true, false).draw());
 
@@ -364,7 +390,7 @@ export function renderTablaContactos() {
         `.trim()
         : '';
 
-      // Centro + Comuna (comuna chiquita debajo)
+      // Centro + Comuna
       const centroHTML = `
         <span class="centro-cell" title="${esc(centroCodigo)}${comuna? ' – '+esc(comuna):''}">
           <span class="centro-top">${esc(centroCodigo)||'—'}</span>
@@ -377,14 +403,15 @@ export function renderTablaContactos() {
 
       const acciones = `
         <div class="actions">
-          <a href="#!" class="icon-action" data-action="ver"     title="Ver detalle"                    data-id="${c._id}"><i class="material-icons">visibility</i></a>
-          <a href="#!" class="icon-action" data-action="visita"  title="Registrar visita"               data-id="${c._id}"><i class="material-icons">event_available</i></a>
-          <a href="#!" class="icon-action" data-action="semi"    title="Registrar biomasa semi-cerrada" data-id="${c._id}"><i class="material-icons">inventory</i></a>
-          <a href="#!" class="icon-action" data-action="editar"  title="Editar"                         data-id="${c._id}"><i class="material-icons">edit</i></a>
-          <a href="#!" class="icon-action" data-action="eliminar" title="Eliminar"                      data-id="${c._id}"><i class="material-icons">delete</i></a>
+          <a href="#!" class="icon-action" data-action="ver"     title="Ver detalle"                 data-id="${c._id}"><i class="material-icons">visibility</i></a>
+          <a href="#!" class="icon-action" data-action="visita"  title="Registrar visita"            data-id="${c._id}"><i class="material-icons">event_available</i></a>
+          <!-- Reemplaza muestreo por semi-cerrado -->
+          <a href="#!" class="icon-action" data-action="semi"    title="Asignar biomasa semi-cerrada" data-id="${c._id}"><i class="material-icons">inventory</i></a>
+          <a href="#!" class="icon-action" data-action="editar"  title="Editar"                      data-id="${c._id}"><i class="material-icons">edit</i></a>
+          <a href="#!" class="icon-action" data-action="eliminar" title="Eliminar"                   data-id="${c._id}"><i class="material-icons">delete</i></a>
         </div>`;
 
-      // Orden: Semana, Fecha, Proveedor, Centro(+comuna), Tons, Responsable, Acciones
+      // Orden (7 columnas)
       return [
         esc(String(semana)),
         `<span data-order="${whenKey}">${whenDisplay}</span>`,
@@ -430,26 +457,5 @@ export function renderTablaContactos() {
   })();
 }
 
-// 🔗 Glue: botón de barra que abre el modal de semi-cerrado
-function bindSemiButton(retries = 5){
-  const btn = document.getElementById('btnOpenSemiCerrado');
-  if (btn){
-    if (!btn.dataset.bound){
-      btn.dataset.bound = '1';
-      btn.addEventListener('click', (e)=>{
-        e.preventDefault();
-        if (typeof window.openSemiCerradoModal === 'function'){
-          window.openSemiCerradoModal({});
-        } else {
-          // fallback a bus de eventos
-          document.dispatchEvent(new CustomEvent('semi:open', { detail:{ preset: null } }));
-        }
-      });
-    }
-  } else if (retries > 0) {
-    setTimeout(()=>bindSemiButton(retries-1), 300);
-  }
-}
-bindSemiButton();
-
 document.addEventListener('reload-tabla-contactos', () => renderTablaContactos());
+
