@@ -1,7 +1,8 @@
 /* /spa-mmpp/mmpp-pipeline.js
-   Pipeline MMPP — Contactado vs Asignado (eje por EMPRESA, tooltip simple + asignado/saldo)
+   Pipeline MMPP — Contactado vs Asignado vs Semi-cerrada (stack)
    - Contactado: suma por mes de la disponibilidad (d.mes/d.anio)
    - Asignado:   suma por mes de destino de la asignación (a.destMes/a.destAnio)
+   - Semi:       suma por mes (periodo) de semi-cerradas (s.mes/s.anio o s.periodo)
    - Fallback empresa: d.empresaNombre || a.empresaNombre || d.proveedorNombre || d.contactoNombre || '—'
 */
 (function (global) {
@@ -53,6 +54,17 @@
     var set = {}, out=[];
     (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v); } });
     out.sort(); return out;
+  }
+  function parsePeriodo(o){
+    // Devuelve {anio, mes} lo más robusto posible
+    var y = Number(o.anio||o.year||o.destAnio||0)||0;
+    var m = Number(o.mes||o.month||o.destMes||0)||0;
+    if ((!y || !m) && o.periodo){
+      // admite 'YYYY-MM' o 'YYYY/MM'
+      var m1 = String(o.periodo).match(/(\d{4})[-/](\d{1,2})/);
+      if (m1){ y = Number(m1[1])||y; m = Number(m1[2])||m; }
+    }
+    return { anio: y, mes: m };
   }
 
   /* ---------- UI skeleton ---------- */
@@ -107,7 +119,7 @@
   }
 
   // devuelve array por (empresa, anio, mes)
-  function buildDerivMonthly(dispon, asig){
+  function buildDerivMonthly(dispon, asig, semi){
     var byId = {};
     (dispon||[]).forEach(function(d){
       if (d && (d.id!=null)) byId[String(d.id)] = d;
@@ -124,6 +136,7 @@
           mes: Number(mes)||0,
           contactado: 0,
           asignado: 0,
+          semi: 0,
           contactos: new Set(), // "Contacto – Comuna"
           _ids: new Set()
         };
@@ -161,6 +174,17 @@
       row.contactos.add((contacto+' – '+comuna).trim());
     });
 
+    // Semi-cerrada por periodo
+    (semi||[]).forEach(function(s){
+      var ym = parsePeriodo(s); if (!ym.anio || !ym.mes) return;
+      var emp = cleanEmpresa(s, null);
+      var row = ensure(emp, ym.anio, ym.mes);
+      row.semi += Number(s.tons||s.toneladas||0)||0;
+      var contacto = s.proveedorNombre || s.contactoNombre || '—';
+      var comuna   = s.comuna || '';
+      row.contactos.add((contacto+' – '+comuna).trim());
+    });
+
     // salida
     return Object.keys(map).map(function(k){
       var o = map[k];
@@ -170,7 +194,8 @@
         mes: o.mes,
         contactado: o.contactado,
         asignado: o.asignado,
-        saldo: Math.max(0, o.contactado - o.asignado),
+        semi: o.semi,
+        saldo: Math.max(0, o.contactado - (o.asignado + o.semi)),
         lotes: o._ids.size,
         contactos: Array.from(o.contactos)
       };
@@ -181,10 +206,8 @@
     var sumByM = {}; for (var i=1;i<=12;i++) sumByM[i]=0;
     (deriv||[]).forEach(function(r){
       if (filters.year && String(r.anio)!==String(filters.year)) return;
-      if (filters.proveedor && r.contactos.filter(Boolean).every(function(){return false;})) return;
-      if (filters.comuna && r.contactos.every(function(){return true;})){} // no filtro por comuna aquí; se hace arriba en filterDeriv si lo necesitas
       if (filters.empresa && r.empresa!==filters.empresa) return;
-      sumByM[r.mes] += (Number(r.contactado)||0) + (Number(r.asignado)||0);
+      sumByM[r.mes] += (Number(r.contactado)||0) + (Number(r.asignado)||0) + (Number(r.semi)||0);
     });
     var out=[]; for (var mi=1; mi<=12; mi++) if (sumByM[mi]>0) out.push(mi);
     return out;
@@ -203,9 +226,13 @@
   function groupByEmpresa(rows){
     var map={}, det={};
     rows.forEach(function(r){
-      if (!map[r.empresa]){ map[r.empresa] = {empresa:r.empresa, contactado:0, asignado:0, lotes:0}; det[r.empresa]=new Set(); }
+      if (!map[r.empresa]){
+        map[r.empresa] = {empresa:r.empresa, contactado:0, asignado:0, semi:0, lotes:0};
+        det[r.empresa]=new Set();
+      }
       map[r.empresa].contactado += r.contactado;
       map[r.empresa].asignado   += r.asignado;
+      map[r.empresa].semi       += r.semi||0;
       map[r.empresa].lotes      += r.lotes;
       (r.contactos||[]).forEach(function(s){ if(s) det[r.empresa].add(s); });
     });
@@ -215,7 +242,8 @@
         empresa: o.empresa,
         contactado: o.contactado,
         asignado: o.asignado,
-        saldo: Math.max(0, o.contactado - o.asignado),
+        semi: o.semi,
+        saldo: Math.max(0, o.contactado - (o.asignado + o.semi)),
         lotes: o.lotes,
         contactos: Array.from(det[k]||[])
       };
@@ -225,11 +253,12 @@
   }
 
   function groupByMes(rows){
-    var map={}; for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,lotes:0, contactos:new Set()};
+    var map={}; for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,semi:0,lotes:0, contactos:new Set()};
     rows.forEach(function(r){
-      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,lotes:0, contactos:new Set()};
+      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,semi:0,lotes:0, contactos:new Set()};
       map[k].contactado += r.contactado;
       map[k].asignado   += r.asignado;
+      map[k].semi       += r.semi||0;
       map[k].lotes      += r.lotes;
       (r.contactos||[]).forEach(function(s){ if(s) map[k].contactos.add(s); });
     });
@@ -239,7 +268,8 @@
         mes: m,
         contactado: o.contactado,
         asignado: o.asignado,
-        saldo: Math.max(0, o.contactado - o.asignado),
+        semi: o.semi,
+        saldo: Math.max(0, o.contactado - (o.asignado + o.semi)),
         lotes: o.lotes,
         contactos: Array.from(o.contactos)
       };
@@ -248,12 +278,13 @@
 
   /* ---------- KPIs ---------- */
   function renderKPIs(rows){
-    var contact=0, asign=0, empSet=new Set();
-    rows.forEach(function(r){ contact+=r.contactado; asign+=r.asignado; empSet.add(r.empresa); });
-    var saldo = Math.max(0, contact - asign);
+    var contact=0, asign=0, semi=0, empSet=new Set();
+    rows.forEach(function(r){ contact+=r.contactado; asign+=r.asignado; semi+=(r.semi||0); empSet.add(r.empresa); });
+    var saldo = Math.max(0, contact - (asign+semi));
     var html = ''
       +kpi('Contactado', numeroCL(contact)+' tons')
       +kpi('Asignado', numeroCL(asign)+' tons')
+      +kpi('Semi-cerrada', numeroCL(semi)+' tons')
       +kpi('% Asignación', (contact>0?Math.round(asign*100/contact)+'%':'—'))
       +kpi('Saldo', numeroCL(saldo)+' tons')
       +kpi('# Proveedores', numeroCL(empSet.size));
@@ -295,30 +326,34 @@
     }
     document.getElementById('plChartNote').textContent = '';
 
-    var labels=[], dataAsign=[], dataNoAsig=[], toolDetail={};
+    var labels=[], dataAsign=[], dataSemi=[], dataNoAsig=[], toolDetail={};
 
     if (axisMode==='empresa'){
       var g = groupByEmpresa(rows);
-      labels = g.map(function(x){return x.empresa;});
-      dataAsign = g.map(function(x){return x.asignado;});
-      dataNoAsig= g.map(function(x){return Math.max(0, x.contactado-x.asignado);});
+      labels   = g.map(function(x){return x.empresa;});
+      dataAsign= g.map(function(x){return x.asignado;});
+      dataSemi = g.map(function(x){return x.semi||0;});
+      dataNoAsig= g.map(function(x){return Math.max(0, x.contactado - (x.asignado + (x.semi||0)));});
       g.forEach(function(x){
         toolDetail[x.empresa] = {
           contactos: x.contactos,
           asignado: x.asignado,
-          saldo: Math.max(0, x.contactado-x.asignado)
+          semi: x.semi||0,
+          saldo: Math.max(0, x.contactado - (x.asignado + (x.semi||0)))
         };
       });
     } else {
       var gm = groupByMes(rows);
-      labels = gm.map(function(x){return MMESES[x.mes-1];});
-      dataAsign = gm.map(function(x){return x.asignado;});
-      dataNoAsig= gm.map(function(x){return Math.max(0, x.contactado-x.asignado);});
+      labels   = gm.map(function(x){return MMESES[x.mes-1];});
+      dataAsign= gm.map(function(x){return x.asignado;});
+      dataSemi = gm.map(function(x){return x.semi||0;});
+      dataNoAsig= gm.map(function(x){return Math.max(0, x.contactado - (x.asignado + (x.semi||0)));});
       gm.forEach(function(x){
         toolDetail[ MMESES[x.mes-1] ] = {
           contactos: x.contactos,
           asignado: x.asignado,
-          saldo: Math.max(0, x.contactado-x.asignado)
+          semi: x.semi||0,
+          saldo: Math.max(0, x.contactado - (x.asignado + (x.semi||0)))
         };
       });
     }
@@ -330,8 +365,10 @@
       data: {
         labels: labels,
         datasets: [
-          { label: 'Asignado', data: dataAsign, borderWidth: 1, stack: 'pipeline' },
-          { label: 'No asignado', data: dataNoAsig, borderWidth: 1, stack: 'pipeline' }
+          { label: 'Asignado',     data: dataAsign, borderWidth: 1, stack: 'pipeline' },
+          { label: 'Semi-cerrada', data: dataSemi,  borderWidth: 1, stack: 'pipeline',
+            backgroundColor: 'rgba(34,197,94,0.5)', borderColor: 'rgba(34,197,94,1)' }, // verdecito
+          { label: 'No asignado',  data: dataNoAsig, borderWidth: 1, stack: 'pipeline' }
         ]
       },
       options: {
@@ -351,15 +388,14 @@
               beforeBody: function(items){
                 var lbl = items && items[0] && items[0].label;
                 var det = toolDetail[lbl] || {contactos:[]};
-                // solo contacto – comuna, una por línea
                 var lines = (det.contactos||[]).slice(0,8).map(function(s){ return '• '+s; });
                 if ((det.contactos||[]).length>8) lines.push('• +'+((det.contactos||[]).length-8)+' más…');
                 return lines.length?lines:['(sin contactos)'];
               },
               footer: function(items){
                 var lbl = items && items[0] && items[0].label;
-                var det = toolDetail[lbl] || {asignado:0, saldo:0};
-                return 'Asignado: '+numeroCL(det.asignado)+' t   |   Saldo: '+numeroCL(det.saldo)+' t';
+                var det = toolDetail[lbl] || {asignado:0, semi:0, saldo:0};
+                return 'Asignado: '+numeroCL(det.asignado)+' t   |   Semi: '+numeroCL(det.semi)+' t   |   Saldo: '+numeroCL(det.saldo)+' t';
               }
             }
           }
@@ -382,32 +418,35 @@
         +'<th>EMPRESA</th>'
         +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
         +'<th class="pl-right">ASIGNADO</th>'
+        +'<th class="pl-right">SEMI-CERRADA</th>'
         +'<th class="pl-right">% ASIG</th>'
         +'<th class="pl-right">SALDO</th>'
         +'<th class="pl-right"># LOTES</th>'
         +'</tr></thead>';
       var body='<tbody>';
-      var totC=0, totA=0, totL=0;
+      var totC=0, totA=0, totS=0, totL=0;
       for (var i=0;i<g.length;i++){
-        var r=g[i]; if (r.contactado<=0 && r.asignado<=0) continue;
-        totC+=r.contactado; totA+=r.asignado; totL+=r.lotes;
+        var r=g[i]; if (r.contactado<=0 && r.asignado<=0 && (r.semi||0)<=0) continue;
+        totC+=r.contactado; totA+=r.asignado; totS+=(r.semi||0); totL+=r.lotes;
         body+='<tr>'
            +'<td><strong>'+r.empresa+'</strong></td>'
            +'<td class="pl-right">'+numeroCL(r.contactado)+'</td>'
            +'<td class="pl-right">'+numeroCL(r.asignado)+'</td>'
+           +'<td class="pl-right">'+numeroCL(r.semi||0)+'</td>'
            +'<td class="pl-right">'+pct(r.asignado,r.contactado)+'</td>'
            +'<td class="pl-right">'+numeroCL(Math.max(0,r.saldo))+'</td>'
            +'<td class="pl-right">'+numeroCL(r.lotes)+'</td>'
            +'</tr>';
       }
-      if (body==='<tbody>') body+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
+      if (body==='<tbody>') body+='<tr><td colspan="7" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
       body+='</tbody>';
       var foot='<tfoot><tr>'
         +'<td><strong>Totales</strong></td>'
         +'<td class="pl-right"><strong>'+numeroCL(totC)+'</strong></td>'
         +'<td class="pl-right"><strong>'+numeroCL(totA)+'</strong></td>'
+        +'<td class="pl-right"><strong>'+numeroCL(totS)+'</strong></td>'
         +'<td class="pl-right"><strong>'+(totC>0?Math.round(totA*100/totC)+'%':'—')+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,totC-totA))+'</strong></td>'
+        +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,totC-(totA+totS)))+'</strong></td>'
         +'<td class="pl-right"><strong>'+numeroCL(totL)+'</strong></td>'
         +'</tr></tfoot>';
       html = '<table class="pl-table">'+thead+body+foot+'</table>';
@@ -417,31 +456,34 @@
         +'<th>MES</th>'
         +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
         +'<th class="pl-right">ASIGNADO</th>'
+        +'<th class="pl-right">SEMI-CERRADA</th>'
         +'<th class="pl-right">% ASIG</th>'
         +'<th class="pl-right">SALDO</th>'
         +'<th class="pl-right"># LOTES</th>'
         +'</tr></thead>';
-      var body2='<tbody>', tc=0,ta=0,tl=0;
+      var body2='<tbody>', tc=0,ta=0,ts=0,tl=0;
       for (var j=0;j<gm.length;j++){
-        var r2=gm[j]; if (r2.contactado<=0 && r2.asignado<=0) continue;
-        tc+=r2.contactado; ta+=r2.asignado; tl+=r2.lotes;
+        var r2=gm[j]; if (r2.contactado<=0 && r2.asignado<=0 && (r2.semi||0)<=0) continue;
+        tc+=r2.contactado; ta+=r2.asignado; ts+=(r2.semi||0); tl+=r2.lotes;
         body2+='<tr>'
           +'<td>'+MMESES[r2.mes-1]+'</td>'
           +'<td class="pl-right">'+numeroCL(r2.contactado)+'</td>'
           +'<td class="pl-right">'+numeroCL(r2.asignado)+'</td>'
+          +'<td class="pl-right">'+numeroCL(r2.semi||0)+'</td>'
           +'<td class="pl-right">'+pct(r2.asignado,r2.contactado)+'</td>'
           +'<td class="pl-right">'+numeroCL(Math.max(0,r2.saldo))+'</td>'
           +'<td class="pl-right">'+numeroCL(r2.lotes)+'</td>'
           +'</tr>';
       }
-      if (body2==='<tbody>') body2+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
+      if (body2==='<tbody>') body2+='<tr><td colspan="7" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
       body2+='</tbody>';
       var foot2='<tfoot><tr>'
         +'<td><strong>Totales</strong></td>'
         +'<td class="pl-right"><strong>'+numeroCL(tc)+'</strong></td>'
         +'<td class="pl-right"><strong>'+numeroCL(ta)+'</strong></td>'
+        +'<td class="pl-right"><strong>'+numeroCL(ts)+'</strong></td>'
         +'<td class="pl-right"><strong>'+(tc>0?Math.round(ta*100/tc)+'%':'—')+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,tc-ta))+'</strong></td>'
+        +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,tc-(ta+ts)))+'</strong></td>'
         +'<td class="pl-right"><strong>'+numeroCL(tl)+'</strong></td>'
         +'</tr></tfoot>';
       html = '<table class="pl-table">'+thead2+body2+foot2+'</table>';
@@ -553,7 +595,6 @@
   function optionsFromDeriv(deriv){
     var emp  = uniqSorted((deriv||[]).map(function(r){return r.empresa;}).filter(Boolean));
     var years= uniqSorted((deriv||[]).map(function(r){return r.anio;}).filter(Boolean));
-    // (prov/comuna dependen de joins; si los necesitas aquí, alimenta desde otra fuente)
     return {emp:emp, years:years};
   }
 
@@ -581,8 +622,8 @@
     if (!root){ console.warn('[mmpp-pipeline] No existe #mmppPipeline'); return; }
     buildUI(root);
 
-    function go(dispon, asig){
-      STATE.deriv = buildDerivMonthly(dispon, asig);
+    function go(dispon, asig, semi){
+      STATE.deriv = buildDerivMonthly(dispon, asig, semi);
       fillFilters(STATE.deriv);
 
       var ySel = document.getElementById('plYear');
@@ -599,18 +640,20 @@
     }
 
     if (opts && Array.isArray(opts.dispon) && Array.isArray(opts.asig)){
-      return go(opts.dispon, opts.asig);
+      return go(opts.dispon, opts.asig, Array.isArray(opts.semi)?opts.semi:[]);
     }
 
     // Carga desde API (front integra con MMppApi)
     if (global.MMppApi && typeof global.MMppApi.getDisponibilidades==='function'){
+      var semiPromise = (global.MMppApi.getSemiCerrados ? global.MMppApi.getSemiCerrados() : Promise.resolve([])).catch(function(){return[];});
       Promise.all([
         global.MMppApi.getDisponibilidades(),
-        (global.MMppApi.getAsignaciones ? global.MMppApi.getAsignaciones() : Promise.resolve([])).catch(function(){return[];})
-      ]).then(function(res){ go(res[0]||[], res[1]||[]); })
-       .catch(function(){ go([],[]); });
+        (global.MMppApi.getAsignaciones ? global.MMppApi.getAsignaciones() : Promise.resolve([])).catch(function(){return[];}),
+        semiPromise
+      ]).then(function(res){ go(res[0]||[], res[1]||[], res[2]||[]); })
+       .catch(function(){ go([],[],[]); });
     } else {
-      go([],[]);
+      go([],[],[]);
     }
   }
 
