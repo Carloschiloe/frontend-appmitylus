@@ -1,26 +1,9 @@
 // /js/abastecimiento/semi-cerrado/modal.js
+const API = window.API_URL || '/api';
+const $ = (sel, ctx=document) => ctx.querySelector(sel);
+const fmtCL = (n)=> Number(n||0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
 
-// ===== API base (corrige 404 al pegarle al dominio del frontend) =====
-const API = (() => {
-  const conf = (window.API_BASE || window.API_URL || '').toString().replace(/\/$/, '');
-  if (conf) return conf;
-  if (location.hostname.includes('frontend-appmitylus.vercel.app')) {
-    return 'https://backend-appmitylus.vercel.app';
-  }
-  return '/api';
-})();
-console.log('[semi] API =', API);
-
-// ===== helpers locales =====
-// fallback para $ (en tu app suele ser getElementById)
-const $ = (typeof window.$ === 'function')
-  ? window.$
-  : (id) => document.getElementById(id);
-
-// formato CLP/num
-const fmtCL = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
-
-// crea modal si no existe
+/** Crea el contenedor del modal si no existe */
 function ensureModal(){
   let wrap = $('#modalSemiCerrado');
   if (!wrap){
@@ -32,7 +15,7 @@ function ensureModal(){
   return wrap;
 }
 
-// UI del modal (sin IDs técnicos)
+/** Render del modal con la UI correcta (sin id proveedor ni id centro) */
 function renderModalUI(wrap){
   wrap.innerHTML = `
     <div class="modal-content">
@@ -101,20 +84,18 @@ function renderModalUI(wrap){
       </a>
     </div>
   `;
+  // Inicializa labels de Materialize si es necesario
   if (window.M?.updateTextFields) M.updateTextFields();
 }
 
-// historial (lista de semi-cerrados para el proveedor)
+/** Carga historial de semi-cerrados del proveedor */
 async function loadHistorial({ proveedorKey }){
   const tbody = $('#sc_histBody');
-  if (!proveedorKey){
-    tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin proveedor seleccionado.</td></tr>`;
-    return;
-  }
+  if (!proveedorKey){ tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin proveedor seleccionado.</td></tr>`; return; }
   try{
     const res = await fetch(`${API}/semi-cerrados?proveedorKey=${encodeURIComponent(proveedorKey)}`);
     const data = res.ok ? await res.json() : [];
-    const items = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+    const items = Array.isArray(data?.items) ? data.items : (Array.isArray(data)?data:[]);
     if (!items.length){
       tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin asignaciones registradas.</td></tr>`;
       return;
@@ -137,11 +118,12 @@ async function loadHistorial({ proveedorKey }){
   }
 }
 
-// guardar
+/** Guarda asignación */
 async function guardarAsignacion(preset){
   const btn = $('#sc_btnGuardar');
-  if (!btn || btn.dataset.busy === '1') return;
-  btn.dataset.busy = '1';
+  if (!btn || btn.dataset.busy==='1') return;
+  btn.dataset.busy='1';
+
   try{
     const body = {
       proveedorKey: preset.proveedorKey || '',
@@ -153,17 +135,20 @@ async function guardarAsignacion(preset){
       tons: Number($('#sc_cantidadTon')?.value || 0),
       notas: $('#sc_notas')?.value || '',
     };
+
     if (!body.proveedorKey) throw new Error('Falta proveedor');
     if (!body.periodoYM)   throw new Error('Falta período (YYYY-MM)');
     if (!(body.tons > 0))  throw new Error('Cantidad debe ser mayor a 0');
 
     const res = await fetch(`${API}/semi-cerrados`, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify(body)
     });
-    if (!res.ok) throw new Error('POST /semi-cerrados ' + res.status);
+    if (!res.ok) throw new Error('POST /semi-cerrados '+res.status);
+
     window.M?.toast?.({ html:'Asignación guardada', classes:'green' });
+    // refresca historial
     await loadHistorial({ proveedorKey: body.proveedorKey });
   }catch(e){
     console.error('[semi] guardar', e);
@@ -173,12 +158,12 @@ async function guardarAsignacion(preset){
   }
 }
 
-// abrir con preset
+/** Abre el modal con preset */
 function openSemiCerradoModal(preset = {}){
   const wrap = ensureModal();
   renderModalUI(wrap);
 
-  // Prefills del contacto seleccionado
+  // Prefills
   $('#sc_proveedorNombre').value = preset.proveedorNombre || '';
   $('#sc_contacto').value        = preset.contacto || '';
   $('#sc_responsablePG').value   = preset.responsablePG || '';
@@ -189,30 +174,33 @@ function openSemiCerradoModal(preset = {}){
   const defYM = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
   $('#sc_periodoYM').value = preset.periodoYM || defYM;
 
-  $('#sc_btnGuardar')?.addEventListener('click', () => guardarAsignacion(preset));
+  // Acciones
+  $('#sc_btnGuardar')?.addEventListener('click', ()=> guardarAsignacion(preset));
 
+  // Carga historial
   loadHistorial({ proveedorKey: preset.proveedorKey });
 
+  // Init/abrir materialize
   if (window.M?.Modal){
-    const inst = window.M.Modal.init(wrap, { endingTop: '5%' });
-    setTimeout(() => inst.open(), 0); // abre en el siguiente tick (evita warning ARIA)
-  } else {
-    wrap.style.display = 'block';
+    const inst = window.M.Modal.init(wrap, { endingTop:'5%' });
+    inst.open();
+  }else{
+    wrap.style.display='block';
   }
 }
 
-// expone y wirea
+/* Exponer y wirear */
 window.openSemiCerradoModal = openSemiCerradoModal;
 
-// botón de barra (abre vacío)
-document.addEventListener('click', (e) => {
+// Abrir desde el botón de la barra (sin preset)
+document.addEventListener('click', (e)=>{
   const el = e.target.closest('#btnOpenSemiCerrado');
   if (!el) return;
-  openSemiCerradoModal();
+  openSemiCerradoModal(); // vacío (mostrar solo campos)
 });
 
-// evento desde la tabla (con preset)
-document.addEventListener('semi-cerrado:open', (ev) => {
+// Abrir desde la tabla por evento (con preset)
+document.addEventListener('semi-cerrado:open', (ev)=>{
   const preset = ev?.detail || {};
   openSemiCerradoModal(preset);
 });
