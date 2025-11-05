@@ -192,9 +192,28 @@ async function guardarAsignacion(preset){
 
     if (!proveedorKey) { window.M?.toast?.({ html:'Falta proveedor', classes:'red' }); return; }
     if (!periodo)      { window.M?.toast?.({ html:'Falta mes (YYYY-MM)', classes:'red' }); return; }
-    if (!(tons > 0))   { setTonsError('Biomasa debe ser > 0'); return; }
 
-    const existingId = btn.dataset.editId || (await findExisting(proveedorKey, periodo))?._id || null;
+    // ¿Existe algo para proveedor+mes?
+    const editIdFromBtn = btn.dataset.editId || null;
+    const exist = editIdFromBtn ? { _id: editIdFromBtn } : await findExisting(proveedorKey, periodo);
+    const existingId = exist?._id || null;
+
+    // 🔸 Caso "no-op": nada que guardar (no existe registro y tons <= 0) → cerrar sin error
+    if (!existingId && !(tons > 0)) {
+      const wrap = $('#modalSemiCerrado');
+      if (window.M?.Modal){
+        const inst = window.M.Modal.getInstance(wrap) || window.M.Modal.init(wrap);
+        inst.close();
+      } else {
+        wrap.style.display = 'none';
+      }
+      delete btn.dataset.editId;
+      btnTxt.textContent = 'Guardar';
+      return;
+    }
+
+    // Desde aquí en adelante, sí hay algo que crear/actualizar → se exige tons > 0
+    if (!(tons > 0)) { setTonsError('Biomasa debe ser > 0'); return; }
 
     const body = {
       proveedorKey,
@@ -212,7 +231,7 @@ async function guardarAsignacion(preset){
       window.M?.toast?.({ html:'Guardado', classes:'green' });
     }
 
-    // cerrar modal
+    // Cerrar modal al éxito
     const wrap = $('#modalSemiCerrado');
     if (window.M?.Modal){
       const inst = window.M.Modal.getInstance(wrap) || window.M.Modal.init(wrap);
@@ -221,7 +240,6 @@ async function guardarAsignacion(preset){
       wrap.style.display = 'none';
     }
 
-    // limpiar estado edición
     delete btn.dataset.editId;
     btnTxt.textContent = 'Guardar';
   }catch(e){
@@ -231,6 +249,7 @@ async function guardarAsignacion(preset){
     delete btn.dataset.busy;
   }
 }
+
 
 /** Ajusta botón a modo edición si existe registro del mes */
 async function checkEditMode(preset){
@@ -350,3 +369,4 @@ document.addEventListener('semi-cerrado:open', (ev)=>{
   window.__lastSemiProveedorKey = preset.proveedorKey || '';
   openSemiCerradoModal(preset);
 });
+
