@@ -68,11 +68,9 @@ function renderModalUI(wrap){
 
     <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
       <a href="#!" class="modal-close btn-flat">Cancelar</a>
-      <a id="sc_btnGuardar" href="#!" class="btn"><i class="material-icons left">save</i>Guardar</a>
+      <a id="sc_btnGuardar" href="#!" class="btn"><i class="material-icons left">save</i><span id="sc_btnTxt">Guardar</span></a>
     </div>
   `;
-
-  // estilos compactos
   ensureStyles();
   if (window.M?.updateTextFields) M.updateTextFields();
 }
@@ -92,6 +90,36 @@ function ensureStyles(){
   document.head.appendChild(s);
 }
 
+/* ========== API helpers ========== */
+async function apiGET(path){
+  const res = await fetch(`${API}${path}`);
+  if (!res.ok) throw new Error(`${res.status} GET ${path}`);
+  return res.json();
+}
+async function apiPOST(path, body){
+  const res = await fetch(`${API}${path}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`${res.status} POST ${path}`);
+  return res.json();
+}
+async function apiPATCH(path, body){
+  const res = await fetch(`${API}${path}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`${res.status} PATCH ${path}`);
+  return res.json();
+}
+async function apiDELETE(path){
+  const res = await fetch(`${API}${path}`, { method:'DELETE' });
+  if (!res.ok) throw new Error(`${res.status} DELETE ${path}`);
+  return res.json();
+}
+
+/** Busca si ya existe registro para proveedor+periodo → devuelve doc o null */
+async function findExisting(proveedorKey, periodo){
+  if (!proveedorKey || !periodo) return null;
+  const r = await apiGET(`semi-cerrados?proveedorKey=${encodeURIComponent(proveedorKey)}&periodo=${encodeURIComponent(periodo)}`);
+  const items = Array.isArray(r?.data) ? r.data : (Array.isArray(r) ? r : []);
+  return items[0] || null;
+}
+
 /** GET historial por proveedor */
 async function loadHistorial({ proveedorKey }){
   const tbody = $('#sc_histBody');
@@ -100,24 +128,20 @@ async function loadHistorial({ proveedorKey }){
     return;
   }
   try{
-    const url = `${API}semi-cerrados?proveedorKey=${encodeURIComponent(proveedorKey)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`GET ${url} → ${res.status}`);
-    const data = await res.json();
+    const data = await apiGET(`semi-cerrados?proveedorKey=${encodeURIComponent(proveedorKey)}`);
     const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
-
     if (!items.length){
       tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin registros.</td></tr>`;
       return;
     }
     tbody.innerHTML = items.map(it => `
-      <tr>
+      <tr data-id="${it._id}" data-periodo="${it.periodo}" data-tons="${it.tons ?? 0}">
         <td>${String(it.periodo || '').replace('-', ' / ')}</td>
         <td class="right-align">${fmtCL(it.tons ?? 0)}</td>
         <td>semi-cerrada</td>
         <td>
-          <a href="#!" class="blue-text tooltipped" data-id="${it._id}" data-act="edit"  data-tooltip="Editar"><i class="material-icons">edit</i></a>
-          <a href="#!" class="red-text  tooltipped" data-id="${it._id}" data-act="del"   data-tooltip="Eliminar"><i class="material-icons">delete</i></a>
+          <a href="#!" class="blue-text tooltipped sc-act-edit" data-tooltip="Editar"><i class="material-icons">edit</i></a>
+          <a href="#!" class="red-text  tooltipped sc-act-del"  data-tooltip="Eliminar"><i class="material-icons">delete</i></a>
         </td>
       </tr>
     `).join('');
@@ -128,33 +152,45 @@ async function loadHistorial({ proveedorKey }){
   }
 }
 
-/** POST crear asignación (campos mínimos) */
+/** Crea o actualiza según exista → mismo botón */
 async function guardarAsignacion(preset){
   const btn = $('#sc_btnGuardar');
+  const btnTxt = $('#sc_btnTxt');
   if (!btn || btn.dataset.busy==='1') return;
   btn.dataset.busy='1';
+
   try{
+    const proveedorKey = preset.proveedorKey || '';
+    const periodo = $('#sc_periodo')?.value || '';
+    const tons = Number($('#sc_cantidadTon')?.value || 0);
+
+    if (!proveedorKey) throw new Error('Falta proveedor');
+    if (!periodo)      throw new Error('Falta mes (YYYY-MM)');
+    if (!(tons > 0))   throw new Error('Biomasa debe ser > 0');
+
+    // ¿ya existe?
+    const existingId = btn.dataset.editId || (await findExisting(proveedorKey, periodo))?._id || null;
+
     const body = {
-      proveedorKey: preset.proveedorKey || '',
+      proveedorKey,
       proveedorNombre: $('#sc_proveedorNombre')?.value || '',
       contactoNombre:  $('#sc_contactoNombre')?.value  || '',
-      periodo:         $('#sc_periodo')?.value || '',    // YYYY-MM
-      tons:            Number($('#sc_cantidadTon')?.value || 0),
+      periodo,
+      tons
     };
-    if (!body.proveedorKey) throw new Error('Falta proveedor');
-    if (!body.periodo)      throw new Error('Falta mes (YYYY-MM)');
-    if (!(body.tons > 0))   throw new Error('Biomasa debe ser > 0');
 
-    const url = `${API}semi-cerrados`;
-    const res = await fetch(url, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error(`POST ${url} → ${res.status}`);
+    if (existingId){
+      await apiPATCH(`semi-cerrados/${encodeURIComponent(existingId)}`, body);
+      window.M?.toast?.({ html:'Actualizado', classes:'green' });
+    }else{
+      await apiPOST('semi-cerrados', body);
+      window.M?.toast?.({ html:'Guardado', classes:'green' });
+    }
 
-    window.M?.toast?.({ html:'Guardado', classes:'green' });
-    await loadHistorial({ proveedorKey: body.proveedorKey });
+    // refrescar tabla y “estado de edición”
+    await loadHistorial({ proveedorKey });
+    delete btn.dataset.editId;
+    btnTxt.textContent = 'Guardar';
   }catch(e){
     console.error('[semi] guardar Error:', e);
     window.M?.toast?.({ html: e.message || 'No se pudo guardar', classes:'red' });
@@ -163,7 +199,26 @@ async function guardarAsignacion(preset){
   }
 }
 
-/** Abre el modal */
+/** Revisa si existe registro para el mes seleccionado y ajusta botón */
+async function checkEditMode(preset){
+  const btn = $('#sc_btnGuardar');
+  const btnTxt = $('#sc_btnTxt');
+  btnTxt.textContent = 'Guardar';
+  delete btn.dataset.editId;
+
+  const proveedorKey = preset.proveedorKey || '';
+  const periodo = $('#sc_periodo')?.value || '';
+  if (!proveedorKey || !periodo) return;
+
+  const exist = await findExisting(proveedorKey, periodo);
+  if (exist){
+    btn.dataset.editId = exist._id;
+    $('#sc_cantidadTon').value = exist.tons ?? 0;
+    btnTxt.textContent = 'Actualizar';
+  }
+}
+
+/** Abre el modal (create o edit) */
 function openSemiCerradoModal(preset = {}){
   const wrap = ensureModal();
   renderModalUI(wrap);
@@ -178,8 +233,11 @@ function openSemiCerradoModal(preset = {}){
   // Acciones
   $('#sc_btnGuardar')?.addEventListener('click', ()=> guardarAsignacion(preset));
 
-  // Historial
-  loadHistorial({ proveedorKey: preset.proveedorKey });
+  // Cuando cambia el mes, vuelve a detectar si hay registro → cambia a modo edición
+  $('#sc_periodo')?.addEventListener('change', ()=> checkEditMode(preset));
+
+  // Historial + detección inicial de edición
+  loadHistorial({ proveedorKey: preset.proveedorKey }).then(()=> checkEditMode(preset));
 
   // Abrir
   if (window.M?.Modal){
@@ -190,16 +248,56 @@ function openSemiCerradoModal(preset = {}){
   }
 }
 
-/* Exponer y wirear */
+/* Delegación de eventos en la tabla (editar/eliminar) */
+document.addEventListener('click', async (e)=>{
+  // abrir modal vacío (botón flotante)
+  const openBtn = e.target.closest('#btnOpenSemiCerrado');
+  if (openBtn){ openSemiCerradoModal(); return; }
+
+  // acciones en tabla del modal
+  const edit = e.target.closest('.sc-act-edit');
+  const del  = e.target.closest('.sc-act-del');
+  if (!edit && !del) return;
+
+  const tr = e.target.closest('tr[data-id]');
+  const id = tr?.dataset?.id;
+  const periodo = tr?.dataset?.periodo || '';
+  const tons = Number(tr?.dataset?.tons || 0);
+
+  if (edit){
+    // modo edición: precarga mes + tons y marca el botón como "Actualizar"
+    $('#sc_periodo').value = periodo;
+    $('#sc_cantidadTon').value = tons;
+    const btn = $('#sc_btnGuardar'); const btnTxt = $('#sc_btnTxt');
+    btn.dataset.editId = id; btnTxt.textContent = 'Actualizar';
+    if (window.M?.updateTextFields) M.updateTextFields();
+    return;
+  }
+
+  if (del && id){
+    if (!confirm('¿Eliminar esta asignación semi-cerrada?')) return;
+    try{
+      await apiDELETE(`semi-cerrados/${encodeURIComponent(id)}`);
+      const proveedorKey = window.__lastSemiProveedorKey || '';
+      const tbody = $('#sc_histBody');
+      tr.remove();
+      window.M?.toast?.({ html:'Eliminado', classes:'green' });
+      // si la tabla quedó vacía, recarga para mensaje “sin registros”
+      if (!tbody.querySelector('tr')) await loadHistorial({ proveedorKey });
+    }catch(e){
+      console.error('[semi] delete', e);
+      window.M?.toast?.({ html:'No se pudo eliminar', classes:'red' });
+    }
+  }
+});
+
+/* Exponer para abrir desde afuera */
 window.openSemiCerradoModal = openSemiCerradoModal;
 
-document.addEventListener('click', (e)=>{
-  const el = e.target.closest('#btnOpenSemiCerrado');
-  if (!el) return;
-  openSemiCerradoModal();
-});
-
+// Abrir desde eventos externos (con preset)
 document.addEventListener('semi-cerrado:open', (ev)=>{
   const preset = ev?.detail || {};
+  window.__lastSemiProveedorKey = preset.proveedorKey || '';
   openSemiCerradoModal(preset);
 });
+
