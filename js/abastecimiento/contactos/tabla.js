@@ -281,7 +281,7 @@ function populateFiltrosDesdeDatos(){
   const $sem = document.getElementById('fltSemana');
   const $com = document.getElementById('fltComuna');
   if ($sem && $sem.children.length<=1) $sem.insertAdjacentHTML('beforeend', [...semanas].sort((a,b)=>a-b).map(opt).join(''));
-  if ($com && $com.children.length<=1) $com.insertAdjacentHTML('beforeend', [...comunas].sort().map(opt).join(''));
+  if ($com && $com.children.length<=1) $com.insertAdjacentHTML('beforeend', [...comunas].filter(Boolean).sort().map(opt).join(''));
 }
 
 /* ==================== tons visibles + footer ==================== */
