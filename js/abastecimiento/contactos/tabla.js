@@ -55,7 +55,7 @@ function getISOWeek(d = new Date()) {
     #tablaContactos th:nth-child(4), #tablaContactos td:nth-child(4){ width:160px !important; }  /* Centro+Comuna  */
     #tablaContactos th:nth-child(5), #tablaContactos td:nth-child(5){ width:82px  !important; text-align:center !important; }  /* Tons centrado */
     #tablaContactos th:nth-child(6), #tablaContactos td:nth-child(6){ width:110px !important; }  /* Responsable */
-    #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:160px !important; }  /* Acciones + holgura */
+    #tablaContactos th:nth-child(7), #tablaContactos td:nth-child(7){ width:180px !important; }  /* Acciones (más ancho por icono nuevo) */
 
     /* === PROVEEDOR: dos líneas (empresa + contacto) === */
     #tablaContactos td:nth-child(3){ white-space: normal !important; }
@@ -120,10 +120,15 @@ async function _clickAccContacto(aEl){
       return;
     }
 
-    if (action === 'muestreo'){
-      document.dispatchEvent(new CustomEvent('muestreo:open',{detail:{contacto:c}}));
+    // 🔁 REEMPLAZO: acción "semi" (biomasa semi-cerrada)
+    if (action === 'semi'){
+      if (typeof window.openSemiCerradoModal === 'function') {
+        return window.openSemiCerradoModal({ preset: c });
+      }
+      document.dispatchEvent(new CustomEvent('semi:open', { detail:{ preset: c } }));
       return;
     }
+
     if (action === 'editar')  return abrirEdicion(c);
 
     if (action === 'eliminar'){
@@ -233,7 +238,7 @@ export function initTablaContactos() {
       { targets: 3, width:'160px' },   // Centro + Comuna (sub)
       { targets: 4, width:'82px',  className:'dt-center' },   // Tons
       { targets: 5, width:'110px' },   // Responsable
-      { targets: 6, width:'160px', orderable:false, searchable:false } // Acciones
+      { targets: 6, width:'180px', orderable:false, searchable:false } // Acciones
     ],
     drawCallback: () => {
       // da un tick al layout y luego calcula tons + footer
@@ -372,14 +377,14 @@ export function renderTablaContactos() {
 
       const acciones = `
         <div class="actions">
-          <a href="#!" class="icon-action" data-action="ver"       title="Ver detalle"        data-id="${c._id}"><i class="material-icons">visibility</i></a>
-          <a href="#!" class="icon-action" data-action="visita"    title="Registrar visita"   data-id="${c._id}"><i class="material-icons">event_available</i></a>
-          <a href="#!" class="icon-action" data-action="muestreo"  title="Registrar muestreo" data-id="${c._id}"><i class="material-icons">science</i></a>
-          <a href="#!" class="icon-action" data-action="editar"    title="Editar"             data-id="${c._id}"><i class="material-icons">edit</i></a>
-          <a href="#!" class="icon-action" data-action="eliminar"  title="Eliminar"           data-id="${c._id}"><i class="material-icons">delete</i></a>
+          <a href="#!" class="icon-action" data-action="ver"     title="Ver detalle"                    data-id="${c._id}"><i class="material-icons">visibility</i></a>
+          <a href="#!" class="icon-action" data-action="visita"  title="Registrar visita"               data-id="${c._id}"><i class="material-icons">event_available</i></a>
+          <a href="#!" class="icon-action" data-action="semi"    title="Registrar biomasa semi-cerrada" data-id="${c._id}"><i class="material-icons">inventory</i></a>
+          <a href="#!" class="icon-action" data-action="editar"  title="Editar"                         data-id="${c._id}"><i class="material-icons">edit</i></a>
+          <a href="#!" class="icon-action" data-action="eliminar" title="Eliminar"                      data-id="${c._id}"><i class="material-icons">delete</i></a>
         </div>`;
 
-      // NUEVO ORDEN (7 columnas): Semana, Fecha, Proveedor, Centro(+comuna), Tons, Responsable, Acciones
+      // Orden: Semana, Fecha, Proveedor, Centro(+comuna), Tons, Responsable, Acciones
       return [
         esc(String(semana)),
         `<span data-order="${whenKey}">${whenDisplay}</span>`,
@@ -395,7 +400,6 @@ export function renderTablaContactos() {
   if (state.dt && jq) {
     state.dt.clear();
     state.dt.rows.add(filas).draw(false);
-    // calcula tons después del draw
     setTimeout(actualizarTonsVisiblesYFooter, 0);
     return;
   }
@@ -425,5 +429,27 @@ export function renderTablaContactos() {
     setFooterTotal(sum);
   })();
 }
+
+// 🔗 Glue: botón de barra que abre el modal de semi-cerrado
+function bindSemiButton(retries = 5){
+  const btn = document.getElementById('btnOpenSemiCerrado');
+  if (btn){
+    if (!btn.dataset.bound){
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        if (typeof window.openSemiCerradoModal === 'function'){
+          window.openSemiCerradoModal({});
+        } else {
+          // fallback a bus de eventos
+          document.dispatchEvent(new CustomEvent('semi:open', { detail:{ preset: null } }));
+        }
+      });
+    }
+  } else if (retries > 0) {
+    setTimeout(()=>bindSemiButton(retries-1), 300);
+  }
+}
+bindSemiButton();
 
 document.addEventListener('reload-tabla-contactos', () => renderTablaContactos());
