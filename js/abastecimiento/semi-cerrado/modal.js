@@ -1,20 +1,13 @@
 // /js/abastecimiento/semi-cerrado/modal.js
-// API base robusta (prod/local) + logs
-const API = (() => {
-  const conf = (window.API_BASE || window.API_URL || '').toString().replace(/\/$/, '');
-  if (conf) return conf;
-  if (location.hostname.includes('frontend-appmitylus.vercel.app')) return 'https://backend-appmitylus.vercel.app';
-  return '/api';
-})();
-const $ = (sel, ctx = document) => ctx.querySelector(sel);
-const fmtCL = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
-
-console.log('[semi] API =', API);
+// Usa siempre el proxy /api para evitar CORS
+const API = (window.API_BASE || window.API_URL || '/api').toString().replace(/\/$/, '/');
+const $ = (sel, ctx=document) => ctx.querySelector(sel);
+const fmtCL = (n)=> Number(n||0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
 
 /** Crea el contenedor del modal si no existe */
-function ensureModal() {
+function ensureModal(){
   let wrap = $('#modalSemiCerrado');
-  if (!wrap) {
+  if (!wrap){
     wrap = document.createElement('div');
     wrap.id = 'modalSemiCerrado';
     wrap.className = 'modal';
@@ -24,7 +17,7 @@ function ensureModal() {
 }
 
 /** Render del modal con la UI correcta (sin id proveedor ni id centro) */
-function renderModalUI(wrap) {
+function renderModalUI(wrap){
   wrap.innerHTML = `
     <div class="modal-content">
       <h5>Asignar biomasa <span class="green-text text-darken-2">semi-cerrada</span></h5>
@@ -36,7 +29,7 @@ function renderModalUI(wrap) {
         </div>
         <div class="input-field col s12 m6">
           <label class="active">Contacto</label>
-          <input id="sc_contacto" type="text" readonly>
+          <input id="sc_contactoNombre" type="text" readonly>
         </div>
       </div>
 
@@ -53,8 +46,8 @@ function renderModalUI(wrap) {
 
       <div class="row">
         <div class="input-field col s12 m4">
-          <label class="active" for="sc_periodoYM">Período (YYYY-MM)</label>
-          <input id="sc_periodoYM" type="month">
+          <label class="active" for="sc_periodo">Período (YYYY-MM)</label>
+          <input id="sc_periodo" type="month">
         </div>
         <div class="input-field col s12 m4">
           <label class="active">Tons disponibles (referencia)</label>
@@ -95,60 +88,25 @@ function renderModalUI(wrap) {
   if (window.M?.updateTextFields) M.updateTextFields();
 }
 
-// ---- Helpers de fetch con fallback de ruta ----
-async function getSemiCerrados(proveedorKey) {
-  const urls = [
-    `${API}/semi-cerrados?proveedorKey=${encodeURIComponent(proveedorKey)}`,
-    `${API}/semi-cerrado?proveedorKey=${encodeURIComponent(proveedorKey)}`
-  ];
-  for (const url of urls) {
-    console.log('[semi] GET', url);
-    const res = await fetch(url);
-    if (res.ok) return res.json();
-    console.warn('[semi] GET falló', res.status, url);
-    if (res.status !== 404) break; // si no es 404, no sigas probando
-  }
-  throw new Error('Historial no disponible (404)');
-}
-
-async function postSemiCerrados(body) {
-  const urls = [
-    `${API}/semi-cerrados`,
-    `${API}/semi-cerrado`
-  ];
-  let last;
-  for (const url of urls) {
-    console.log('[semi] POST', url, body);
-    last = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (last.ok) return last;
-    console.warn('[semi] POST falló', last.status, url);
-    if (last.status !== 404) break;
-  }
-  throw new Error(`POST semi-cerrados falló (${last?.status || '??'})`);
-}
-
 /** Carga historial de semi-cerrados del proveedor */
-async function loadHistorial({ proveedorKey }) {
+async function loadHistorial({ proveedorKey }){
   const tbody = $('#sc_histBody');
-  if (!proveedorKey) {
-    tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin proveedor seleccionado.</td></tr>`;
-    return;
-  }
-  try {
-    const data = await getSemiCerrados(proveedorKey);
-    const items = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
-    if (!items.length) {
+  if (!proveedorKey){ tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin proveedor seleccionado.</td></tr>`; return; }
+  try{
+    const url = `${API}semi-cerrados?proveedorKey=${encodeURIComponent(proveedorKey)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`GET ${url} → ${res.status}`);
+    const data = await res.json();
+    const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+
+    if (!items.length){
       tbody.innerHTML = `<tr><td colspan="4" class="grey-text">Sin asignaciones registradas.</td></tr>`;
       return;
     }
     tbody.innerHTML = items.map(it => `
       <tr>
-        <td>${String(it.periodoYM || '').replace('-', ' / ')}</td>
-        <td class="right-align">${fmtCL(it.tons ?? it.cantidad ?? 0)}</td>
+        <td>${String(it.periodo || '').replace('-', ' / ')}</td>
+        <td class="right-align">${fmtCL(it.tons ?? 0)}</td>
         <td>${it.estado || 'disponible'}</td>
         <td>
           <a href="#!" class="blue-text tooltipped" data-id="${it._id}" data-act="edit"  data-tooltip="Editar"><i class="material-icons">edit</i></a>
@@ -157,73 +115,81 @@ async function loadHistorial({ proveedorKey }) {
       </tr>
     `).join('');
     if (window.M?.AutoInit) M.AutoInit();
-  } catch (e) {
+  }catch(e){
     console.error('[semi] historial', e);
     tbody.innerHTML = `<tr><td colspan="4" class="red-text">Error cargando historial</td></tr>`;
   }
 }
 
 /** Guarda asignación */
-async function guardarAsignacion(preset) {
+async function guardarAsignacion(preset){
   const btn = $('#sc_btnGuardar');
-  if (!btn || btn.dataset.busy === '1') return;
-  btn.dataset.busy = '1';
+  if (!btn || btn.dataset.busy==='1') return;
+  btn.dataset.busy='1';
 
-  try {
+  try{
     const body = {
       proveedorKey: preset.proveedorKey || '',
+      centroId: preset.centroId || null,                // opcional
       proveedorNombre: $('#sc_proveedorNombre')?.value || '',
-      contacto: $('#sc_contacto')?.value || '',
+      contactoNombre: $('#sc_contactoNombre')?.value || '',
       responsablePG: $('#sc_responsablePG')?.value || '',
-      centroCodigo: $('#sc_centroCodigo')?.value || '',
-      periodoYM: $('#sc_periodoYM')?.value || '',
+      // ojo: backend espera 'periodo' (YYYY-MM)
+      periodo: $('#sc_periodo')?.value || '',
       tons: Number($('#sc_cantidadTon')?.value || 0),
       notas: $('#sc_notas')?.value || '',
     };
 
     if (!body.proveedorKey) throw new Error('Falta proveedor');
-    if (!body.periodoYM) throw new Error('Falta período (YYYY-MM)');
-    if (!(body.tons > 0)) throw new Error('Cantidad debe ser mayor a 0');
+    if (!body.periodo)      throw new Error('Falta período (YYYY-MM)');
+    if (!(body.tons > 0))   throw new Error('Cantidad debe ser mayor a 0');
 
-    const res = await postSemiCerrados(body);
-    window.M?.toast?.({ html: 'Asignación guardada', classes: 'green' });
+    const url = `${API}semi-cerrados`;
+    const res = await fetch(url, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(`POST ${url} → ${res.status}`);
+
+    window.M?.toast?.({ html:'Asignación guardada', classes:'green' });
     await loadHistorial({ proveedorKey: body.proveedorKey });
-  } catch (e) {
+  }catch(e){
     console.error('[semi] guardar', e);
-    window.M?.toast?.({ html: e.message || 'No se pudo guardar', classes: 'red' });
-  } finally {
+    window.M?.toast?.({ html: e.message || 'No se pudo guardar', classes:'red' });
+  }finally{
     delete btn.dataset.busy;
   }
 }
 
 /** Abre el modal con preset */
-function openSemiCerradoModal(preset = {}) {
+function openSemiCerradoModal(preset = {}){
   const wrap = ensureModal();
   renderModalUI(wrap);
 
   // Prefills
   $('#sc_proveedorNombre').value = preset.proveedorNombre || '';
-  $('#sc_contacto').value = preset.contacto || '';
-  $('#sc_responsablePG').value = preset.responsablePG || '';
-  $('#sc_centroCodigo').value = preset.centroCodigo || '';
-  $('#sc_tonsDisp').value = fmtCL(preset.tonsDisponible || 0);
+  $('#sc_contactoNombre').value  = preset.contacto || preset.contactoNombre || '';
+  $('#sc_responsablePG').value   = preset.responsablePG || '';
+  $('#sc_centroCodigo').value    = preset.centroCodigo || '';
+  $('#sc_tonsDisp').value        = fmtCL(preset.tonsDisponible || 0);
 
   const hoy = new Date();
-  const defYM = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
-  $('#sc_periodoYM').value = preset.periodoYM || defYM;
+  const defYM = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+  $('#sc_periodo').value = preset.periodo || preset.periodoYM || defYM;
 
   // Acciones
-  $('#sc_btnGuardar')?.addEventListener('click', () => guardarAsignacion(preset));
+  $('#sc_btnGuardar')?.addEventListener('click', ()=> guardarAsignacion(preset));
 
   // Carga historial
   loadHistorial({ proveedorKey: preset.proveedorKey });
 
   // Init/abrir materialize
-  if (window.M?.Modal) {
-    const inst = window.M.Modal.init(wrap, { endingTop: '5%' });
+  if (window.M?.Modal){
+    const inst = window.M.Modal.init(wrap, { endingTop:'5%' });
     inst.open();
-  } else {
-    wrap.style.display = 'block';
+  }else{
+    wrap.style.display='block';
   }
 }
 
@@ -231,14 +197,14 @@ function openSemiCerradoModal(preset = {}) {
 window.openSemiCerradoModal = openSemiCerradoModal;
 
 // Abrir desde el botón de la barra (sin preset)
-document.addEventListener('click', (e) => {
+document.addEventListener('click', (e)=>{
   const el = e.target.closest('#btnOpenSemiCerrado');
   if (!el) return;
   openSemiCerradoModal(); // vacío (mostrar solo campos)
 });
 
 // Abrir desde la tabla por evento (con preset)
-document.addEventListener('semi-cerrado:open', (ev) => {
+document.addEventListener('semi-cerrado:open', (ev)=>{
   const preset = ev?.detail || {};
   openSemiCerradoModal(preset);
 });
