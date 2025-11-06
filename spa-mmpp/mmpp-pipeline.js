@@ -44,7 +44,11 @@
       + '.acc-body{padding:10px 6px 4px 6px;background:#fbfdff;border-top:1px dashed #e5e7eb}'
       + '.acc-grid{display:grid;grid-template-columns:1.3fr .6fr .6fr;gap:8px}'
       + '@media (max-width: 1100px){ .pl-kpis{grid-template-columns:repeat(3,minmax(0,1fr))} }'
-      + '@media (max-width: 720px){ .pl-filters{grid-template-columns:1fr} }';
+      + '@media (max-width: 720px){ .pl-filters{grid-template-columns:1fr} }'
+      + '.tone-contact{color:#64748b}'   /* Contactado (gris del gráfico) */
+      + '.tone-semi{color:#22C55E}'      /* Semi-cerrado (verde) */
+      + '.tone-asign{color:#0EA5E9}';     /* Asignado (azul) */
+
     var s = document.createElement('style');
     s.id = 'mmpp-pipeline-css';
     s.textContent = css;
@@ -464,119 +468,113 @@
   }
 
   /* ---------- Tabla con acordeón ---------- */
-  function renderTable(rows, axisMode, year){
-    var html='';
-    if (axisMode==='empresa'){
-      var g = groupByEmpresa(rows);
-      var thead='<thead><tr>'
-        +'<th>EMPRESA</th>'
-        +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
-        +'<th class="pl-right">SEMI-CERRADO</th>'
-        +'<th class="pl-right">ASIGNADO</th>'
-        +'<th class="pl-right">SALDO</th>'
-        +'<th class="pl-right"># LOTES</th>'
-        +'</tr></thead>';
-      var body='<tbody>';
-      var totC=0, totA=0, totS=0, totL=0;
-      for (var i=0;i<g.length;i++){
-        var r=g[i]; if (r.contactado<=0 && r.asignado<=0 && r.semiRestante<=0) continue;
-        totC+=r.contactado; totA+=r.asignado; totS+=r.semiRestante; totL+=r.lotes;
-        body+='<tr>'
-           +'<td><strong>'+r.empresa+'</strong></td>'
-           +'<td class="pl-right">'+numeroCL(r.contactado)+'</td>'
-           +'<td class="pl-right">'+numeroCL(r.semiRestante)+'</td>'
-           +'<td class="pl-right">'+numeroCL(r.asignado)+'</td>'
-           +'<td class="pl-right">'+numeroCL(Math.max(0,r.saldo))+'</td>'
-           +'<td class="pl-right">'+numeroCL(r.lotes)+'</td>'
-           +'</tr>';
-      }
-      if (body==='<tbody>') body+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
-      body+='</tbody>';
-      var foot='<tfoot><tr>'
-        +'<td><strong>Totales</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(totC)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(totS)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(totA)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,totC-totA))+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(totL)+'</strong></td>'
-        +'</tr></tfoot>';
-      html = '<table class="pl-table">'+thead+body+foot+'</table>';
-    } else {
-      var gm = groupByMes(rows);
-      var thead2='<thead><tr>'
-        +'<th>MES</th>'
-        +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
-        +'<th class="pl-right">SEMI-CERRADO</th>'
-        +'<th class="pl-right">ASIGNADO</th>'
-        +'<th class="pl-right">SALDO</th>'
-        +'<th class="pl-right"># LOTES</th>'
-        +'<th></th>'
-        +'</tr></thead>';
-      var body2='<tbody>', tc=0,ta=0,ts=0,tl=0;
-      for (var j=0;j<gm.length;j++){
-        var r2=gm[j]; if (r2.contactado<=0 && r2.asignado<=0 && r2.semiRestante<=0) continue;
-        tc+=r2.contactado; ta+=r2.asignado; ts+=r2.semiRestante; tl+=r2.lotes;
-        var lbl = MMESES[r2.mes-1];
-        var accId = 'acc_'+String(r2.mes);
-        body2+='<tr>'
-          +'<td>'+lbl+'</td>'
-          +'<td class="pl-right">'+numeroCL(r2.contactado)+'</td>'
-          +'<td class="pl-right">'+numeroCL(r2.semiRestante)+'</td>'
-          +'<td class="pl-right">'+numeroCL(r2.asignado)+'</td>'
-          +'<td class="pl-right">'+numeroCL(Math.max(0,r2.saldo))+'</td>'
-          +'<td class="pl-right">'+numeroCL(r2.lotes)+'</td>'
-          +'<td class="pl-right"><button class="acc-btn" data-acc="'+accId+'">Ver detalle</button></td>'
-          +'</tr>'
-          +'<tr id="'+accId+'" style="display:none"><td colspan="7">'
-            +'<div class="acc-body">'
-              +'<div style="font-weight:700;margin-bottom:6px">Detalle por proveedor</div>'
-              +'<div class="acc-grid">'
-                +'<div style="font-size:12px;color:#64748b">Proveedor – Comuna</div>'
-                +'<div class="pl-right" style="font-size:12px;color:#64748b">Semi-cerrado (t)</div>'
-                +'<div class="pl-right" style="font-size:12px;color:#64748b">Asignado (t)</div>'
-              +'</div>';
-        var detS = mapToSortedPairs(r2.detSemi);
-        var detA = mapToSortedPairs(r2.detAsign);
-        var idx = new Map();
-        detS.forEach(function(p){ idx.set(p.k, {s:p.v, a:0}); });
-        detA.forEach(function(p){ var o=idx.get(p.k)||{s:0,a:0}; o.a+=p.v; idx.set(p.k,o); });
-        Array.from(idx.entries()).sort(function(a,b){ return (b[1].s+b[1].a)-(a[1].s+a[1].a); }).forEach(function(e){
-          var parts = String(e[0]).split('|'); var prov=parts[0]||'—', com=parts[1]||'';
-          body2+='<div class="acc-grid"><div>'+prov+(com?(' – '+com):'')+'</div>'
-               +'<div class="pl-right">'+(e[1].s?numeroCL(e[1].s):'—')+'</div>'
-               +'<div class="pl-right">'+(e[1].a?numeroCL(e[1].a):'—')+'</div></div>';
-        });
-        body2+='</div></td></tr>';
-      }
-      if (body2==='<tbody>') body2+='<tr><td colspan="7" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
-      body2+='</tbody>';
-      var foot2='<tfoot><tr>'
-        +'<td><strong>Totales</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(tc)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(ts)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(ta)+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,tc-ta))+'</strong></td>'
-        +'<td class="pl-right"><strong>'+numeroCL(tl)+'</strong></td>'
-        +'<td></td>'
-        +'</tr></tfoot>';
-      html = '<table class="pl-table">'+thead2+body2+foot2+'</table>';
+ function renderTable(rows, axisMode, year){
+  var html='';
+  if (axisMode==='empresa'){
+    var g = groupByEmpresa(rows);
+    var thead='<thead><tr>'
+      +'<th>EMPRESA</th>'
+      +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
+      +'<th class="pl-right">SEMI-CERRADO</th>'
+      +'<th class="pl-right">ASIGNADO</th>'
+      +'<th class="pl-right">SALDO</th>'
+      +'</tr></thead>';
+    var body='<tbody>';
+    var totC=0, totA=0, totS=0;
+    for (var i=0;i<g.length;i++){
+      var r=g[i]; if (r.contactado<=0 && r.asignado<=0 && r.semiRestante<=0) continue;
+      totC+=r.contactado; totA+=r.asignado; totS+=r.semiRestante;
+      body+='<tr>'
+         +'<td><strong>'+r.empresa+'</strong></td>'
+         +'<td class="pl-right tone-contact">'+numeroCL(r.contactado)+'</td>'
+         +'<td class="pl-right tone-semi">'+numeroCL(r.semiRestante)+'</td>'
+         +'<td class="pl-right tone-asign">'+numeroCL(r.asignado)+'</td>'
+         +'<td class="pl-right">'+numeroCL(Math.max(0,r.saldo))+'</td>'
+         +'</tr>';
     }
-    var wrap = document.getElementById('plTableWrap');
-    wrap.innerHTML = html;
-
-    // toggle acordeón
-    wrap.querySelectorAll('.acc-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var id = btn.getAttribute('data-acc');
-        var row = document.getElementById(id);
-        if (!row) return;
-        var on = row.style.display!=='none';
-        row.style.display = on ? 'none' : '';
-        btn.textContent = on ? 'Ver detalle' : 'Ocultar detalle';
-        btn.classList.toggle('is-open', !on);
+    if (body==='<tbody>') body+='<tr><td colspan="5" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
+    body+='</tbody>';
+    var foot='<tfoot><tr>'
+      +'<td><strong>Totales</strong></td>'
+      +'<td class="pl-right tone-contact"><strong>'+numeroCL(totC)+'</strong></td>'
+      +'<td class="pl-right tone-semi"><strong>'+numeroCL(totS)+'</strong></td>'
+      +'<td class="pl-right tone-asign"><strong>'+numeroCL(totA)+'</strong></td>'
+      +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,totC-totA))+'</strong></td>'
+      +'</tr></tfoot>';
+    html = '<table class="pl-table">'+thead+body+foot+'</table>';
+  } else {
+    var gm = groupByMes(rows);
+    var thead2='<thead><tr>'
+      +'<th>MES</th>'
+      +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
+      +'<th class="pl-right">SEMI-CERRADO</th>'
+      +'<th class="pl-right">ASIGNADO</th>'
+      +'<th class="pl-right">SALDO</th>'
+      +'<th></th>'
+      +'</tr></thead>';
+    var body2='<tbody>', tc=0,ta=0,ts=0;
+    for (var j=0;j<gm.length;j++){
+      var r2=gm[j]; if (r2.contactado<=0 && r2.asignado<=0 && r2.semiRestante<=0) continue;
+      tc+=r2.contactado; ta+=r2.asignado; ts+=r2.semiRestante;
+      var lbl = MMESES[r2.mes-1];
+      var accId = 'acc_'+String(r2.mes);
+      body2+='<tr>'
+        +'<td>'+lbl+'</td>'
+        +'<td class="pl-right tone-contact">'+numeroCL(r2.contactado)+'</td>'
+        +'<td class="pl-right tone-semi">'+numeroCL(r2.semiRestante)+'</td>'
+        +'<td class="pl-right tone-asign">'+numeroCL(r2.asignado)+'</td>'
+        +'<td class="pl-right">'+numeroCL(Math.max(0,r2.saldo))+'</td>'
+        +'<td class="pl-right"><button class="acc-btn" data-acc="'+accId+'">Ver detalle</button></td>'
+        +'</tr>'
+        +'<tr id="'+accId+'" style="display:none"><td colspan="6">'
+          +'<div class="acc-body">'
+            +'<div style="font-weight:700;margin-bottom:6px">Detalle por proveedor</div>'
+            +'<div class="acc-grid">'
+              +'<div style="font-size:12px;color:#64748b">Proveedor – Comuna</div>'
+              +'<div class="pl-right" style="font-size:12px;color:#64748b">Semi-cerrado (t)</div>'
+              +'<div class="pl-right" style="font-size:12px;color:#64748b">Asignado (t)</div>'
+            +'</div>';
+      var detS = mapToSortedPairs(r2.detSemi);
+      var detA = mapToSortedPairs(r2.detAsign);
+      var idx = new Map();
+      detS.forEach(function(p){ idx.set(p.k, {s:p.v, a:0}); });
+      detA.forEach(function(p){ var o=idx.get(p.k)||{s:0,a:0}; o.a+=p.v; idx.set(p.k,o); });
+      Array.from(idx.entries()).sort(function(a,b){ return (b[1].s+b[1].a)-(a[1].s+a[1].a); }).forEach(function(e){
+        var parts = String(e[0]).split('|'); var prov=parts[0]||'—', com=parts[1]||'';
+        body2+='<div class="acc-grid"><div>'+prov+(com?(' – '+com):'')+'</div>'
+             +'<div class="pl-right tone-semi">'+(e[1].s?numeroCL(e[1].s):'—')+'</div>'
+             +'<div class="pl-right tone-asign">'+(e[1].a?numeroCL(e[1].a):'—')+'</div></div>';
       });
-    });
+      body2+='</div></td></tr>';
+    }
+    if (body2==='<tbody>') body2+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
+    body2+='</tbody>';
+    var foot2='<tfoot><tr>'
+      +'<td><strong>Totales</strong></td>'
+      +'<td class="pl-right tone-contact"><strong>'+numeroCL(tc)+'</strong></td>'
+      +'<td class="pl-right tone-semi"><strong>'+numeroCL(ts)+'</strong></td>'
+      +'<td class="pl-right tone-asign"><strong>'+numeroCL(ta)+'</strong></td>'
+      +'<td class="pl-right"><strong>'+numeroCL(Math.max(0,tc-ta))+'</strong></td>'
+      +'<td></td>'
+      +'</tr></tfoot>';
+    html = '<table class="pl-table">'+thead2+body2+foot2+'</table>';
   }
+  var wrap = document.getElementById('plTableWrap');
+  wrap.innerHTML = html;
+
+  // toggle acordeón
+  wrap.querySelectorAll('.acc-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = btn.getAttribute('data-acc');
+      var row = document.getElementById(id);
+      if (!row) return;
+      var on = row.style.display!=='none';
+      row.style.display = on ? 'none' : '';
+      btn.textContent = on ? 'Ver detalle' : 'Ocultar detalle';
+      btn.classList.toggle('is-open', !on);
+    });
+  });
+}
 
   /* ---------- estado / montaje ---------- */
   var STATE = {
