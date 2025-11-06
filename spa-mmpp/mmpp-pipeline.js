@@ -45,6 +45,11 @@
       + '.acc-grid{display:grid;grid-template-columns:1.3fr .6fr .6fr;gap:8px}'
       + '@media (max-width: 1100px){ .pl-kpis{grid-template-columns:repeat(3,minmax(0,1fr))} }'
       + '@media (max-width: 720px){ .pl-filters{grid-template-columns:1fr} }'
+      + '.pill{display:inline-block;padding:2px 10px;border-radius:9999px;font-weight:800;font-size:12px;line-height:1;border:1px solid transparent}'
+      + '.pill-asign{color:#0EA5E9;background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35)}'   /* Azul Asignado */
+      + '.pill-semi{color:#22C55E;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35)}'     /* Verde Semi */
+      + '.pill-contact{color:#475569;background:rgba(203,213,225,.35);border-color:rgba(148,163,184,.45)}'/* Gris Contactado */
+
       + '.tone-contact{color:#64748b}'   /* Contactado (gris del gráfico) */
       + '.tone-semi{color:#22C55E}'      /* Semi-cerrado (verde) */
       + '.tone-asign{color:#0EA5E9}';     /* Asignado (azul) */
@@ -468,6 +473,9 @@
   }
 
   /* ---------- Tabla con acordeón ---------- */
+   function pillNum(n, kind){
+  return '<span class="pill pill-'+kind+'">'+numeroCL(n)+'</span>';
+}
  function renderTable(rows, axisMode, year){
   var html='';
   if (axisMode==='empresa'){
