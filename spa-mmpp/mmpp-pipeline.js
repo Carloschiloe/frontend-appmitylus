@@ -68,6 +68,16 @@
     out.sort(); return out;
   }
   function pillNum(n, kind){ return '<span class="pill pill-'+kind+'">'+numeroCL(n)+'</span>'; }
+   
+     // Parse 'YYYY-MM' -> { anio, mes } (acepta 'YYYY-M' también)
+  function parsePeriodo(p){
+    if (!p) return { anio:null, mes:0 };
+    var parts = String(p).trim().split('-');
+    var y = Number(parts[0])||null;
+    var m = Number(parts[1])||0; // acepta '4' o '04'
+    return { anio: y, mes: m };
+  }
+
 
   /* ---------- UI skeleton ---------- */
   function buildUI(root){
@@ -184,15 +194,25 @@
       row.search += ' '+emp+' '+proveedor+' '+(a.centroCodigo||'')+' '+(a.areaCodigo||'')+' '+(a.comuna||'');
     });
 
-    // Semi-cerrado
+       // Semi-cerrado
     (semi||[]).forEach(function(s){
       var anio = Number(s.anio)||null;
       var mes  = Number(s.mes)||0;
-      if (!anio || !mes) return;
+
+      // Si no vienen anio/mes, derivarlos desde 'periodo'
+      if ((!anio || !mes) && s.periodo){
+        var pm = parsePeriodo(s.periodo);
+        if (!anio) anio = pm.anio;
+        if (!mes)  mes  = pm.mes;
+      }
+
+      if (!anio || !mes) return; // sigue inválido -> omitir
+
       var emp = cleanEmpresa(s, null);
       var tons = Number(s.tons||0)||0;
       var row = ensure(emp, anio, mes);
       row.semi += tons;
+
       var proveedor = s.proveedorNombre || s.contactoNombre || '—';
       var comuna    = s.comuna || '';
       var provKey   = (proveedor+'|'+(comuna||'')).trim();
@@ -200,6 +220,7 @@
       row.contactos.add((proveedor+' – '+comuna).trim());
       row.search += ' '+emp+' '+proveedor+' '+(s.centroCodigo||'')+' '+(s.areaCodigo||'')+' '+(s.comuna||'');
     });
+
 
     // Splits
     Object.keys(map).forEach(function(k){
