@@ -1,11 +1,8 @@
 /* /spa-mmpp/mmpp-pipeline.js
    Pipeline MMPP — Contactado vs Asignado (+ Semi-cerrado total SIEMPRE)
-
-   - Semi-cerrado SIEMPRE se grafica y suma como TOTAL independiente de contactado/asignado.
-   - Buscador global (proveedor, comuna, centro, etc).
-   - Tooltips con desglose por proveedor para Asignado y Semi.
-   - Tabla mensual con detalle fusionado por “Proveedor – Comuna” (una fila, tres columnas).
-   - Totales sobre barras considerando datasets visibles.
+   - Claves “Proveedor|Comuna” con NORMALIZACIÓN FUERTE para fusionar filas.
+   - labelByKey conserva la etiqueta bonita (prioriza Contactado).
+   - Semi-cerrado SIEMPRE total en KPI, gráfico y tabla.
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
@@ -43,74 +40,72 @@
       + '.acc-btn{display:inline-flex;gap:6px;align-items:center;border:1px solid #e5e7eb;background:#f8fafc;border-radius:8px;height:30px;padding:0 10px;cursor:pointer;font-weight:700}'
       + '.acc-body{padding:10px 6px 4px 6px;background:#fbfdff;border-top:1px dashed #e5e7eb}'
       + '.acc-grid{display:grid;grid-template-columns:1.3fr .6fr .6fr .6fr;gap:8px}'
-      + '@media (max-width: 1100px){ .pl-kpis{grid-template-columns:repeat(3,minmax(0,1fr))} }'
-      + '@media (max-width: 720px){ .pl-filters{grid-template-columns:1fr} }'
+      + '@media (max-width:1100px){.pl-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}'
+      + '@media (max-width:720px){.pl-filters{grid-template-columns:1fr}}'
       + '.pill{display:inline-block;padding:2px 10px;border-radius:9999px;font-weight:800;font-size:12px;line-height:1;border:1px solid transparent}'
       + '.pill-asign{color:#0EA5E9;background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35)}'
       + '.pill-semi{color:#22C55E;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35)}'
       + '.pill-contact{color:#475569;background:rgba(203,213,225,.35);border-color:rgba(148,163,184,.45)}'
       + '.pill-neutral{color:#111827;background:rgba(17,24,39,.06);border-color:rgba(17,24,39,.15)}';
-    var s = document.createElement('style');
-    s.id = 'mmpp-pipeline-css';
-    s.textContent = css;
-    document.head.appendChild(s);
+    var s=document.createElement('style'); s.id='mmpp-pipeline-css'; s.textContent=css; document.head.appendChild(s);
   }
 
   /* ---------- utils ---------- */
   function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
   function range12(){ var a=[]; for(var i=1;i<=12;i++) a.push(i); return a; }
-  function uniqSorted(arr){ var set = {}, out=[]; (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v); } }); out.sort(); return out; }
+  function uniqSorted(arr){ var set={}, out=[]; (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v);} }); out.sort(); return out; }
   function pillNum(n, kind){ return '<span class="pill pill-'+kind+'">'+numeroCL(n)+'</span>'; }
 
-  function parsePeriodo(p){
-    if (!p) return { anio:null, mes:0 };
-    var parts = String(p).trim().split('-');
-    var y = Number(parts[0])||null;
-    var m = Number(parts[1])||0;
-    return { anio: y, mes: m };
+  // Normaliza para agrupar: minúsculas, sin acentos, espacios colapsados, guiones normalizados
+  function normalizeTxt(s){
+    return String(s||'')
+      .replace(/[–—]/g,'-')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase()
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+  function makeKey(prov, comuna){
+    var p = normalizeTxt(prov);
+    var c = normalizeTxt(comuna);
+    return p+'|'+c;
+  }
+  function displayLabel(prov, comuna){
+    var p = String(prov||'—').trim();
+    var c = String(comuna||'').trim();
+    return p + (c?(' – '+c):'');
   }
 
   /* ---------- UI skeleton ---------- */
   function buildUI(root){
     root.innerHTML = ''
-    +'<div class="pl-wrap">'
-      +'<div class="pl-card">'
-        +'<div class="pl-head" style="margin-bottom:10px">'
-          +'<h2 class="pl-title">Pipeline MMPP — Contactado vs Asignado</h2>'
-          +'<div class="pl-actions">'
-            +'<label style="display:flex;gap:8px;align-items:center">'
-              +'<input id="plHideEmptyMonths" type="checkbox" checked />'
-              +'<span>Ocultar meses sin datos</span>'
-            +'</label>'
-            +'<button id="plBtnMesesConDatos" class="pl-btn">Meses con datos</button>'
-            +'<button id="plBtnLimpiarMeses" class="pl-btn">Limpiar meses</button>'
-            +'<button id="plBtnLimpiarFiltros" class="pl-btn">Limpiar filtros</button>'
-            +'<button id="plAxisBtn" class="pl-btn">Eje: Mes</button>'
-          +'</div>'
+    +'<div class="pl-wrap"><div class="pl-card">'
+      +'<div class="pl-head" style="margin-bottom:10px">'
+        +'<h2 class="pl-title">Pipeline MMPP — Contactado vs Asignado</h2>'
+        +'<div class="pl-actions">'
+          +'<label style="display:flex;gap:8px;align-items:center"><input id="plHideEmptyMonths" type="checkbox" checked /><span>Ocultar meses sin datos</span></label>'
+          +'<button id="plBtnMesesConDatos" class="pl-btn">Meses con datos</button>'
+          +'<button id="plBtnLimpiarMeses" class="pl-btn">Limpiar meses</button>'
+          +'<button id="plBtnLimpiarFiltros" class="pl-btn">Limpiar filtros</button>'
+          +'<button id="plAxisBtn" class="pl-btn">Eje: Mes</button>'
         +'</div>'
-
-        +'<div class="pl-filters">'
-          +'<select id="plYear" class="pl-select"></select>'
-          +'<select id="plEmpresa" class="pl-select"><option value="">Todas las empresas</option></select>'
-          +'<input id="plSearch" class="pl-input" placeholder="Buscar proveedor, contacto o código de centro..."/>'
-        +'</div>'
-
-        +'<div class="pl-monthsbar"><div id="plMonths" class="pl-months-line"></div></div>'
-
-        +'<div class="pl-kpis" id="plKpis"></div>'
-
-        +'<div class="pl-chart-wrap">'
-          +'<div class="pl-chart-frame">'
-            +'<div class="pl-chart-container">'
-              +'<canvas id="plChart" class="pl-chart-canvas"></canvas>'
-            +'</div>'
-          +'</div>'
-          +'<div id="plChartNote" class="pl-note"></div>'
-        +'</div>'
-
-        +'<div id="plTableWrap"></div>'
       +'</div>'
-    +'</div>';
+
+      +'<div class="pl-filters">'
+        +'<select id="plYear" class="pl-select"></select>'
+        +'<select id="plEmpresa" class="pl-select"><option value="">Todas las empresas</option></select>'
+        +'<input id="plSearch" class="pl-input" placeholder="Buscar proveedor, contacto o código de centro..."/>'
+      +'</div>'
+
+      +'<div class="pl-monthsbar"><div id="plMonths" class="pl-months-line"></div></div>'
+      +'<div class="pl-kpis" id="plKpis"></div>'
+
+      +'<div class="pl-chart-wrap"><div class="pl-chart-frame"><div class="pl-chart-container">'
+        +'<canvas id="plChart" class="pl-chart-canvas"></canvas>'
+      +'</div></div><div id="plChartNote" class="pl-note"></div></div>'
+
+      +'<div id="plTableWrap"></div>'
+    +'</div></div>';
   }
 
   /* ---------- helper: empresa ---------- */
@@ -136,12 +131,13 @@
           mes: Number(mes)||0,
           contactado: 0,
           asignado: 0,
-          semiTotal: 0,             // ⟵ SIEMPRE total de semi-cerrado
+          semiTotal: 0,                   // ⟵ SIEMPRE TOTAL
           lotes: 0,
           contactos: new Set(),
-          detAsign: new Map(),      // “Proveedor|Comuna” -> tons
+          detAsign: new Map(),            // clave normalizada -> tons
           detSemi: new Map(),
           detContactado: new Map(),
+          labelByKey: new Map(),          // clave normalizada -> “Proveedor – Comuna” bonito
           search: ''
         };
       }
@@ -157,11 +153,17 @@
       var row = ensure(emp, anio, mes);
       row.contactado += tons;
       row.lotes += 1;
+
       var proveedor = d.proveedorNombre || d.contactoNombre || '—';
       var comuna    = d.comuna || '';
-      var provKey   = (proveedor+'|'+(comuna||'')).trim();
-      row.contactos.add((proveedor+' – '+comuna).trim());
-      row.detContactado.set(provKey, (row.detContactado.get(provKey)||0)+tons);
+      var kNorm     = makeKey(proveedor, comuna);
+      var label     = displayLabel(proveedor, comuna);
+
+      row.contactos.add(label);
+      row.detContactado.set(kNorm, (row.detContactado.get(kNorm)||0)+tons);
+      // Prioriza etiqueta de Contactado
+      if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
+
       row.search += ' '+emp+' '+proveedor+' '+(d.centroCodigo||'')+' '+(d.areaCodigo||'')+' '+(d.comuna||'');
     });
 
@@ -175,11 +177,16 @@
       var tons = Number(a.cantidad||a.tons||0)||0;
       var row = ensure(emp, destY, destM);
       row.asignado += tons;
+
       var proveedor = (a.proveedorNombre || a.contactoNombre || (dpo && (dpo.proveedorNombre||dpo.contactoNombre)) || '—');
       var comuna    = (a.comuna || (dpo && dpo.comuna) || '');
-      var provKey   = (proveedor+'|'+(comuna||'')).trim();
-      row.contactos.add((proveedor+' – '+comuna).trim());
-      row.detAsign.set(provKey, (row.detAsign.get(provKey)||0)+tons);
+      var kNorm     = makeKey(proveedor, comuna);
+      var label     = displayLabel(proveedor, comuna);
+
+      row.contactos.add(label);
+      row.detAsign.set(kNorm, (row.detAsign.get(kNorm)||0)+tons);
+      if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
+
       row.search += ' '+emp+' '+proveedor+' '+(a.centroCodigo||'')+' '+(a.areaCodigo||'')+' '+(a.comuna||'');
     });
 
@@ -188,20 +195,29 @@
       var anio = Number(s.anio)||null;
       var mes  = Number(s.mes)||0;
       if ((!anio || !mes) && s.periodo){
-        var pm = parsePeriodo(s.periodo);
+        var pm = (function(p){
+          var parts=String(p||'').split('-'); return { anio:Number(parts[0])||null, mes:Number(parts[1])||0 };
+        })(s.periodo);
         if (!anio) anio = pm.anio;
         if (!mes)  mes  = pm.mes;
       }
       if (!anio || !mes) return;
+
       var emp = cleanEmpresa(s, null);
       var tons = Number(s.tons||0)||0;
       var row = ensure(emp, anio, mes);
       row.semiTotal += tons;
+
       var proveedor = s.proveedorNombre || s.contactoNombre || '—';
       var comuna    = s.comuna || '';
-      var provKey   = (proveedor+'|'+(comuna||'')).trim();
-      row.detSemi.set(provKey, (row.detSemi.get(provKey)||0)+tons);
-      row.contactos.add((proveedor+' – '+comuna).trim());
+      var kNorm     = makeKey(proveedor, comuna);
+      var label     = displayLabel(proveedor, comuna);
+
+      row.contactos.add(label);
+      row.detSemi.set(kNorm, (row.detSemi.get(kNorm)||0)+tons);
+      // Solo setea si no existe (para mantener etiqueta de Contactado si estaba)
+      if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
+
       row.search += ' '+emp+' '+proveedor+' '+(s.centroCodigo||'')+' '+(s.areaCodigo||'')+' '+(s.comuna||'');
     });
 
@@ -213,13 +229,14 @@
         mes: o.mes,
         contactado: o.contactado,
         asignado: o.asignado,
-        semiTotal: o.semiTotal,              // ⟵ usamos este en todos lados
+        semiTotal: o.semiTotal,
         saldo: Math.max(0, o.contactado - o.asignado),
         lotes: o.lotes,
         contactos: Array.from(o.contactos),
         detAsign: o.detAsign,
         detSemi: o.detSemi,
         detContactado: o.detContactado,
+        labelByKey: o.labelByKey,
         search: (o.search||'').toLowerCase()
       };
     });
@@ -248,45 +265,11 @@
     });
   }
 
-  function groupByEmpresa(rows){
-    var map={}, detAsign={}, detSemi={}, detCont={};
-    rows.forEach(function(r){
-      if (!map[r.empresa]){
-        map[r.empresa] = {empresa:r.empresa, contactado:0, asignado:0, semiTotal:0, lotes:0};
-        detAsign[r.empresa]=new Map();
-        detSemi[r.empresa]=new Map();
-        detCont[r.empresa]=new Map();
-      }
-      map[r.empresa].contactado += r.contactado;
-      map[r.empresa].asignado   += r.asignado;
-      map[r.empresa].semiTotal  += r.semiTotal;
-      map[r.empresa].lotes      += r.lotes;
-      r.detAsign.forEach(function(v,k){ detAsign[r.empresa].set(k,(detAsign[r.empresa].get(k)||0)+v); });
-      r.detSemi.forEach(function(v,k){ detSemi[r.empresa].set(k,(detSemi[r.empresa].get(k)||0)+v); });
-      r.detContactado.forEach(function(v,k){ detCont[r.empresa].set(k,(detCont[r.empresa].get(k)||0)+v); });
-    });
-    var arr = Object.keys(map).map(function(k){
-      var o = map[k];
-      return {
-        empresa: o.empresa,
-        contactado: o.contactado,
-        asignado: o.asignado,
-        semiTotal: o.semiTotal,
-        saldo: Math.max(0, o.contactado - o.asignado),
-        lotes: o.lotes,
-        detAsign: detAsign[k],
-        detSemi: detSemi[k],
-        detContactado: detCont[k]
-      };
-    });
-    arr.sort(function(a,b){ return (b.contactado||0)-(a.contactado||0); });
-    return arr;
-  }
-
   function groupByMes(rows){
-    var map={}; for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,semiTotal:0,lotes:0, detAsign:new Map(), detSemi:new Map(), detContactado:new Map()};
+    var map={};
+    for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,semiTotal:0,lotes:0, detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map()};
     rows.forEach(function(r){
-      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,semiTotal:0,lotes:0, detAsign:new Map(), detSemi:new Map(), detContactado:new Map()};
+      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,semiTotal:0,lotes:0,detAsign:new Map(),detSemi:new Map(),detContactado:new Map(),labelByKey:new Map()};
       map[k].contactado += r.contactado;
       map[k].asignado   += r.asignado;
       map[k].semiTotal  += r.semiTotal;
@@ -294,6 +277,10 @@
       r.detAsign.forEach(function(v,kk){ map[k].detAsign.set(kk,(map[k].detAsign.get(kk)||0)+v); });
       r.detSemi.forEach(function(v,kk){ map[k].detSemi.set(kk,(map[k].detSemi.get(kk)||0)+v); });
       r.detContactado.forEach(function(v,kk){ map[k].detContactado.set(kk,(map[k].detContactado.get(kk)||0)+v); });
+      // fusiona etiquetas (prioriza si viene de contactado)
+      r.labelByKey.forEach(function(label, kk){
+        if (!map[k].labelByKey.has(kk)) map[k].labelByKey.set(kk, label);
+      });
     });
     return range12().map(function(m){
       var o = map[m];
@@ -306,7 +293,8 @@
         lotes: o.lotes,
         detAsign: o.detAsign,
         detSemi: o.detSemi,
-        detContactado: o.detContactado
+        detContactado: o.detContactado,
+        labelByKey: o.labelByKey
       };
     });
   }
@@ -318,15 +306,13 @@
     var saldo = Math.max(0, contact - asign);
 
     function kpi(lab, chip){ return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val">'+chip+'</div></div>'; }
-
     var html = ''
       + kpi('Contactado',   pillNum(contact, 'contact'))
-      + kpi('Semi-cerrado', pillNum(semi, 'semi'))               // ⟵ total
+      + kpi('Semi-cerrado', pillNum(semi, 'semi'))
       + kpi('Asignado',     pillNum(asign, 'asign'))
       + kpi('% Asignación', (contact>0?Math.round(asign*100/contact)+'%':'—'))
       + kpi('Saldo',        '<span class="pill pill-neutral">'+numeroCL(saldo)+'</span>')
       + kpi('# Proveedores','<span class="pill pill-neutral">'+numeroCL(empSet.size)+'</span>');
-
     document.getElementById('plKpis').innerHTML = html;
   }
 
@@ -373,38 +359,25 @@
 
     var labels=[], dataAsign=[], dataSemi=[], dataNoAsig=[], toolDetail={}, accDetail={};
 
-    if (axisMode==='empresa'){
-      var g = groupByEmpresa(rows);
-      labels  = g.map(function(x){return x.empresa;});
-      dataAsign = g.map(function(x){return x.asignado;});
-      dataSemi  = g.map(function(x){return x.semiTotal;});          // ⟵ total
-      dataNoAsig= g.map(function(x){return Math.max(0, x.saldo);});
-      g.forEach(function(x){
-        toolDetail[x.empresa] = {
-          asign: mapToSortedPairs(x.detAsign),
-          semi : mapToSortedPairs(x.detSemi)
-        };
-      });
-    } else {
-      var gm = groupByMes(rows);
-      labels  = gm.map(function(x){return MMESES[x.mes-1];});
-      dataAsign = gm.map(function(x){return x.asignado;});
-      dataSemi  = gm.map(function(x){return x.semiTotal;});         // ⟵ total
-      dataNoAsig= gm.map(function(x){return Math.max(0, x.saldo);});
-      gm.forEach(function(x){
-        var lbl = MMESES[x.mes-1];
-        toolDetail[lbl] = {
-          asign: mapToSortedPairs(x.detAsign),
-          semi : mapToSortedPairs(x.detSemi)
-        };
-        accDetail[lbl] = {
-          detAsign: x.detAsign,
-          detSemi: x.detSemi,
-          detContactado: x.detContactado,
-          contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo, lotes:x.lotes
-        };
-      });
-    }
+    var gm = groupByMes(rows);
+    labels  = gm.map(function(x){return MMESES[x.mes-1];});
+    dataAsign = gm.map(function(x){return x.asignado;});
+    dataSemi  = gm.map(function(x){return x.semiTotal;});       // ⟵ total
+    dataNoAsig= gm.map(function(x){return Math.max(0, x.saldo);});
+    gm.forEach(function(x){
+      var lbl = MMESES[x.mes-1];
+      toolDetail[lbl] = {
+        asign: mapToSortedPairs(x.detAsign),
+        semi : mapToSortedPairs(x.detSemi)
+      };
+      accDetail[lbl] = {
+        detAsign: x.detAsign,
+        detSemi: x.detSemi,
+        detContactado: x.detContactado,
+        labelByKey: x.labelByKey,
+        contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo, lotes:x.lotes
+      };
+    });
 
     if (chartRef && chartRef.destroy) chartRef.destroy();
 
@@ -463,9 +436,9 @@
   /* ---------- Tabla con acordeón ---------- */
   function renderTable(rows, axisMode, year){
     var html='';
-    // Para el usuario: se pidió detalle MENSAUL fusionado (proveedor|comuna) → mantenemos el acordeón por mes
     var gm = groupByMes(rows);
-    var thead2='<thead><tr>'
+
+    var thead='<thead><tr>'
       +'<th>MES</th>'
       +'<th class="pl-right">CONTACTADO '+(year||'')+'</th>'
       +'<th class="pl-right">SEMI-CERRADO</th>'
@@ -473,18 +446,21 @@
       +'<th class="pl-right">SALDO</th>'
       +'<th></th>'
       +'</tr></thead>';
-    var body2='<tbody>', tc=0,ta=0,ts=0;
+
+    var body='<tbody>', tc=0,ta=0,ts=0;
+
     for (var j=0;j<gm.length;j++){
-      var r2=gm[j]; if (r2.contactado<=0 && r2.asignado<=0 && r2.semiTotal<=0) continue;
-      tc+=r2.contactado; ta+=r2.asignado; ts+=r2.semiTotal;
-      var lbl = MMESES[r2.mes-1];
-      var accId = 'acc_'+String(r2.mes);
-      body2+='<tr>'
+      var r=gm[j]; if (r.contactado<=0 && r.asignado<=0 && r.semiTotal<=0) continue;
+      tc+=r.contactado; ta+=r.asignado; ts+=r.semiTotal;
+      var lbl = MMESES[r.mes-1];
+      var accId = 'acc_'+String(r.mes);
+
+      body+='<tr>'
         +'<td>'+lbl+'</td>'
-        +'<td class="pl-right">'+pillNum(r2.contactado,'contact')+'</td>'
-        +'<td class="pl-right">'+pillNum(r2.semiTotal,'semi')+'</td>'
-        +'<td class="pl-right">'+pillNum(r2.asignado,'asign')+'</td>'
-        +'<td class="pl-right"><span class="pill pill-neutral">'+numeroCL(Math.max(0,r2.saldo))+'</span></td>'
+        +'<td class="pl-right">'+pillNum(r.contactado,'contact')+'</td>'
+        +'<td class="pl-right">'+pillNum(r.semiTotal,'semi')+'</td>'
+        +'<td class="pl-right">'+pillNum(r.asignado,'asign')+'</td>'
+        +'<td class="pl-right"><span class="pill pill-neutral">'+numeroCL(Math.max(0,r.saldo))+'</span></td>'
         +'<td class="pl-right"><button class="acc-btn" data-acc="'+accId+'">Ver detalle</button></td>'
         +'</tr>'
         +'<tr id="'+accId+'" style="display:none"><td colspan="6">'
@@ -497,15 +473,11 @@
               +'<div class="pl-right" style="font-size:12px;color:#64748b">Asignado (t)</div>'
             +'</div>';
 
-      // Fusionar por clave “Proveedor|Comuna”
-      var detC = (function(mp){var a=[]; mp.forEach((v,k)=>a.push({k,v})); return a;})(r2.detContactado);
-      var detS = (function(mp){var a=[]; mp.forEach((v,k)=>a.push({k,v})); return a;})(r2.detSemi);
-      var detA = (function(mp){var a=[]; mp.forEach((v,k)=>a.push({k,v})); return a;})(r2.detAsign);
-
+      // Fusiona por clave normalizada
       var idx = new Map();
-      detC.forEach(function(p){ idx.set(p.k, {c:p.v, s:0, a:0}); });
-      detS.forEach(function(p){ var o=idx.get(p.k)||{c:0,s:0,a:0}; o.s+=p.v; idx.set(p.k,o); });
-      detA.forEach(function(p){ var o=idx.get(p.k)||{c:0,s:0,a:0}; o.a+=p.v; idx.set(p.k,o); });
+      r.detContactado.forEach(function(v,k){ idx.set(k, {c:v,s:0,a:0}); });
+      r.detSemi.forEach(function(v,k){ var o=idx.get(k)||{c:0,s:0,a:0}; o.s+=v; idx.set(k,o); });
+      r.detAsign.forEach(function(v,k){ var o=idx.get(k)||{c:0,s:0,a:0}; o.a+=v; idx.set(k,o); });
 
       Array.from(idx.entries())
         .sort(function(A,B){
@@ -513,18 +485,26 @@
           return vb-va;
         })
         .forEach(function(e){
-          var parts = String(e[0]).split('|'); var prov=parts[0]||'—', com=parts[1]||'';
-          body2+='<div class="acc-grid"><div>'+prov+(com?(' – '+com):'')+'</div>'
-               +'<div class="pl-right">'+(e[1].c?pillNum(e[1].c,'contact'):'—')+'</div>'
-               +'<div class="pl-right">'+(e[1].s?pillNum(e[1].s,'semi'):'—')+'</div>'
-               +'<div class="pl-right">'+(e[1].a?pillNum(e[1].a,'asign'):'—')+'</div></div>';
+          var k=e[0], vals=e[1];
+          var label = r.labelByKey.get(k);
+          if (!label){
+            // fallback si no hubiesen labels (no debería)
+            var parts = k.split('|'); var prov=parts[0]||'—', com=parts[1]||'';
+            label = prov+(com?(' – '+com):'');
+          }
+          body+='<div class="acc-grid"><div>'+label+'</div>'
+              +'<div class="pl-right">'+(vals.c?pillNum(vals.c,'contact'):'—')+'</div>'
+              +'<div class="pl-right">'+(vals.s?pillNum(vals.s,'semi'):'—')+'</div>'
+              +'<div class="pl-right">'+(vals.a?pillNum(vals.a,'asign'):'—')+'</div></div>';
         });
 
-      body2+='</div></td></tr>';
+      body+='</div></td></tr>';
     }
-    if (body2==='<tbody>') body2+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
-    body2+='</tbody>';
-    var foot2='<tfoot><tr>'
+
+    if (body==='<tbody>') body+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
+    body+='</tbody>';
+
+    var foot='<tfoot><tr>'
       +'<td><strong>Totales</strong></td>'
       +'<td class="pl-right"><strong>'+pillNum(tc,'contact')+'</strong></td>'
       +'<td class="pl-right"><strong>'+pillNum(ts,'semi')+'</strong></td>'
@@ -532,10 +512,9 @@
       +'<td class="pl-right"><strong><span class="pill pill-neutral">'+numeroCL(Math.max(0,tc-ta))+'</span></strong></td>'
       +'<td></td>'
       +'</tr></tfoot>';
-    html = '<table class="pl-table">'+thead2+body2+foot2+'</table>';
 
     var wrap = document.getElementById('plTableWrap');
-    wrap.innerHTML = html;
+    wrap.innerHTML = '<table class="pl-table">'+thead+body+foot+'</table>';
 
     // toggle acordeón
     wrap.querySelectorAll('.acc-btn').forEach(function(btn){
@@ -575,9 +554,7 @@
     }
   }
 
-  function filterRowsForRefresh(){
-    return filterDeriv(STATE.deriv, STATE.filters);
-  }
+  function filterRowsForRefresh(){ return filterDeriv(STATE.deriv, STATE.filters); }
 
   function renderAll(){
     var rows = filterRowsForRefresh();
