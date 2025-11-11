@@ -1,7 +1,7 @@
 /* /spa-mmpp/mmpp-pipeline.js
    Pipeline MMPP — Contactado vs Asignado (+ Semi-cerrado total SIEMPRE)
-   - AHORA fusiona SOLO por “Proveedor” (se ignora comuna).
-   - labelByKey conserva la etiqueta bonita (usa solo proveedor).
+   - Claves “Proveedor” (solo proveedor) con NORMALIZACIÓN FUERTE para fusionar filas.
+   - labelByKey conserva la etiqueta bonita (prioriza Contactado).
    - Semi-cerrado SIEMPRE total en KPI, gráfico y tabla.
 */
 (function (global) {
@@ -56,28 +56,24 @@
   function uniqSorted(arr){ var set={}, out=[]; (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v);} }); out.sort(); return out; }
   function pillNum(n, kind){ return '<span class="pill pill-'+kind+'">'+numeroCL(n)+'</span>'; }
 
-  // Normaliza para agrupar solo por PROVEEDOR (se ignora comuna)
+  // Normalización fuerte para agrupar por PROVEEDOR (sin comuna)
   function normalizeTxt(s){
     return String(s||'')
       .replace(/[–—]/g,'-')
-      .replace(/[.,]/g,'')           // limpia puntos/comas típicos de razones sociales
-      .replace(/-{2,}/g,'-')
       .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
       .toLowerCase()
       .replace(/\s+/g,' ')
       .trim();
   }
-
-  // === CLAVE SOLO POR PROVEEDOR (comuna ignorada) ===
-  function makeKey(prov/*, comuna*/){
+  // ⟵ clave SOLO por proveedor
+  function makeKey(prov, _comuna){
     var p = normalizeTxt(prov);
-    return p; // << solo proveedor
-  }
-
-  // Etiqueta visible: solo proveedor (sin comuna)
-  function displayLabel(prov/*, comuna*/){
-    var p = String(prov||'—').trim();
     return p;
+  }
+  function displayLabel(prov, comuna){
+    var p = String(prov||'—').trim();
+    var c = String(comuna||'').trim();
+    return p + (c?(' – '+c):'');
   }
 
   /* ---------- UI skeleton ---------- */
@@ -138,22 +134,22 @@
           semiTotal: 0,                   // ⟵ SIEMPRE TOTAL
           lotes: 0,
           contactos: new Set(),
-          detAsign: new Map(),            // clave normalizada -> tons (POR PROVEEDOR)
+          detAsign: new Map(),            // clave normalizada -> tons
           detSemi: new Map(),
           detContactado: new Map(),
-          labelByKey: new Map(),          // clave normalizada -> “Proveedor” bonito
+          labelByKey: new Map(),          // clave normalizada -> “Proveedor – Comuna”
           search: ''
         };
       }
       return map[k];
     }
 
-    // Contactado
+    // Contactado (lee d.tonsDisponible si no existe d.tons)
     (dispon||[]).forEach(function(d){
       var emp = cleanEmpresa(d, null);
       var anio = Number(d.anio)||null;
       var mes  = Number(d.mes)||0;
-      var tons = Number(d.tons||0)||0;
+      var tons = Number((d.tons ?? d.tonsDisponible ?? d.cantidad) || 0) || 0; // ⟵ FIX principal
       var row = ensure(emp, anio, mes);
       row.contactado += tons;
       row.lotes += 1;
@@ -219,7 +215,6 @@
 
       row.contactos.add(label);
       row.detSemi.set(kNorm, (row.detSemi.get(kNorm)||0)+tons);
-      // Solo setea si no existe (para mantener etiqueta de Contactado si estaba)
       if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
 
       row.search += ' '+emp+' '+proveedor+' '+(s.centroCodigo||'')+' '+(s.areaCodigo||'')+' '+(s.comuna||'');
@@ -366,7 +361,7 @@
     var gm = groupByMes(rows);
     labels  = gm.map(function(x){return MMESES[x.mes-1];});
     dataAsign = gm.map(function(x){return x.asignado;});
-    dataSemi  = gm.map(function(x){return x.semiTotal;});       // ⟵ total
+    dataSemi  = gm.map(function(x){return x.semiTotal;});
     dataNoAsig= gm.map(function(x){return Math.max(0, x.saldo);});
     gm.forEach(function(x){
       var lbl = MMESES[x.mes-1];
@@ -412,8 +407,9 @@
                 var det = toolDetail[lbl] || {};
                 var arr = (ds==='Asignado' ? det.asign : ds==='Semi-cerrado' ? det.semi : null) || [];
                 var lines = arr.slice(0,8).map(function(p){
-                  var prov = String(p.k||'')||'—'; // k AHORA es solo proveedor
-                  return '• '+prov+': '+numeroCL(p.v)+' t';
+                  var nk = String(p.k||'').split('|');
+                  var prov = nk[0]||'—', comuna = nk[1]||''; // comuna puede venir vacío porque la clave es solo proveedor
+                  return '• '+prov+(comuna?(' – '+comuna):'')+': '+numeroCL(p.v)+' t';
                 });
                 if (arr.length>8) lines.push('• +'+(arr.length-8)+' más…');
                 return lines.length?lines:['(sin detalle)'];
@@ -470,13 +466,13 @@
           +'<div class="acc-body">'
             +'<div style="font-weight:700;margin-bottom:6px">Detalle por proveedor</div>'
             +'<div class="acc-grid">'
-              +'<div style="font-size:12px;color:#64748b">Proveedor</div>'  /* encabezado actualizado */
+              +'<div style="font-size:12px;color:#64748b">Proveedor – Comuna</div>'
               +'<div class="pl-right" style="font-size:12px;color:#64748b">Contactado (t)</div>'
               +'<div class="pl-right" style="font-size:12px;color:#64748b">Semi-cerrado (t)</div>'
               +'<div class="pl-right" style="font-size:12px;color:#64748b">Asignado (t)</div>'
             +'</div>';
 
-      // Fusiona POR PROVEEDOR (clave = proveedor normalizado)
+      // Fusiona por clave normalizada (SOLO proveedor)
       var idx = new Map();
       r.detContactado.forEach(function(v,k){ idx.set(k, {c:v,s:0,a:0}); });
       r.detSemi.forEach(function(v,k){ var o=idx.get(k)||{c:0,s:0,a:0}; o.s+=v; idx.set(k,o); });
@@ -489,7 +485,12 @@
         })
         .forEach(function(e){
           var k=e[0], vals=e[1];
-          var label = r.labelByKey.get(k) || String(k||'—'); // label = proveedor
+          var label = r.labelByKey.get(k);
+          if (!label){
+            // fallback si no hubiese labels (no debería)
+            var prov = k || '—';
+            label = prov; // sin comuna en la clave
+          }
           body+='<div class="acc-grid"><div>'+label+'</div>'
               +'<div class="pl-right">'+(vals.c?pillNum(vals.c,'contact'):'—')+'</div>'
               +'<div class="pl-right">'+(vals.s?pillNum(vals.s,'semi'):'—')+'</div>'
