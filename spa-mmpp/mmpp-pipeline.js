@@ -366,8 +366,10 @@
     gm.forEach(function(x){
       var lbl = MMESES[x.mes-1];
       toolDetail[lbl] = {
-        asign: mapToSortedPairs(x.detAsign),
-        semi : mapToSortedPairs(x.detSemi)
+        asign : mapToSortedPairs(x.detAsign),
+        semi  : mapToSortedPairs(x.detSemi),
+        // ⟵ NUEVO: detalle de proveedores de lo disponible (contactado)
+        contact: mapToSortedPairs(x.detContactado)
       };
       accDetail[lbl] = {
         detAsign: x.detAsign,
@@ -387,7 +389,8 @@
         datasets: [
           { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#0EA5E9' },
           { label: 'Semi-cerrado', data: dataSemi,    borderWidth: 1, stack: 'pipeline', backgroundColor: '#22C55E' },
-          { label: 'No asignado',  data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#CBD5E1' }
+          // ⟵ RENOMBRADO: antes “No asignado”
+          { label: 'Disponible',   data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#CBD5E1' }
         ]
       },
       options: {
@@ -405,7 +408,11 @@
               label: function(ctx){
                 var lbl = ctx.label, ds = ctx.dataset.label;
                 var det = toolDetail[lbl] || {};
-                var arr = (ds==='Asignado' ? det.asign : ds==='Semi-cerrado' ? det.semi : null) || [];
+                // Asignado → det.asign; Semi-cerrado → det.semi; Disponible → det.contact
+                var arr = (ds==='Asignado'      ? det.asign
+                         : ds==='Semi-cerrado' ? det.semi
+                         : ds==='Disponible'   ? det.contact
+                         : null) || [];
                 var lines = arr.slice(0,8).map(function(p){
                   var nk = String(p.k||'').split('|');
                   var prov = nk[0]||'—', comuna = nk[1]||''; // comuna puede venir vacío porque la clave es solo proveedor
