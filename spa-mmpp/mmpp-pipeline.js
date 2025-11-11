@@ -2,10 +2,9 @@
    Pipeline MMPP — Contactado vs Asignado (+ Semi-cerrado)
    Cambios clave:
    - Semi-cerrado SIEMPRE se grafica como TOTAL (no “restante”).
-   - Buscador global; se quitan filtros de contactos y comunas
-   - Tooltips por dataset (Asignado/Semi/No asignado) con desglose proveedor->tons
-   - Tabla: columna Semi-cerrado total; sin % Asignación; acordeón por mes con detalle (Contactado/Semi/Asignado)
-   - Totales sobre barras dinámicos (solo datasets visibles)
+   - Tooltip y detalle muestran también proveedores contactados.
+   - En la tabla del detalle mensual se fusionan filas por proveedor+comuna
+     (aunque alguna fuente venga sin comuna o con espacios/caso distintos).
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
@@ -45,14 +44,11 @@
       + '.acc-grid{display:grid;grid-template-columns:1.3fr .6fr .6fr .6fr;gap:8px}'
       + '@media (max-width: 1100px){ .pl-kpis{grid-template-columns:repeat(3,minmax(0,1fr))} }'
       + '@media (max-width: 720px){ .pl-filters{grid-template-columns:1fr} }'
-
-      /* Chips/píldoras para números */
       + '.pill{display:inline-block;padding:2px 10px;border-radius:9999px;font-weight:800;font-size:12px;line-height:1;border:1px solid transparent}'
-      + '.pill-asign{color:#0EA5E9;background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35)}'     /* Azul Asignado */
-      + '.pill-semi{color:#22C55E;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35)}'       /* Verde Semi */
-      + '.pill-contact{color:#475569;background:rgba(203,213,225,.35);border-color:rgba(148,163,184,.45)}' /* Gris Contactado */
-      + '.pill-neutral{color:#111827;background:rgba(17,24,39,.06);border-color:rgba(17,24,39,.15)}';     /* Neutro (saldo, etc.) */
-
+      + '.pill-asign{color:#0EA5E9;background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35)}'
+      + '.pill-semi{color:#22C55E;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35)}'
+      + '.pill-contact{color:#475569;background:rgba(203,213,225,.35);border-color:rgba(148,163,184,.45)}'
+      + '.pill-neutral{color:#111827;background:rgba(17,24,39,.06);border-color:rgba(17,24,39,.15)}';
     var s = document.createElement('style');
     s.id = 'mmpp-pipeline-css';
     s.textContent = css;
@@ -68,8 +64,6 @@
     out.sort(); return out;
   }
   function pillNum(n, kind){ return '<span class="pill pill-'+kind+'">'+numeroCL(n)+'</span>'; }
-
-  // Parse 'YYYY-MM' -> { anio, mes } (acepta 'YYYY-M' también)
   function parsePeriodo(p){
     if (!p) return { anio:null, mes:0 };
     var parts = String(p).trim().split('-');
@@ -78,7 +72,7 @@
     return { anio: y, mes: m };
   }
 
-  /* ---------- UI skeleton ---------- */
+  /* ---------- UI ---------- */
   function buildUI(root){
     root.innerHTML = ''
     +'<div class="pl-wrap">'
@@ -96,26 +90,19 @@
             +'<button id="plAxisBtn" class="pl-btn">Eje: Mes</button>'
           +'</div>'
         +'</div>'
-
         +'<div class="pl-filters">'
           +'<select id="plYear" class="pl-select"></select>'
           +'<select id="plEmpresa" class="pl-select"><option value="">Todas las empresas</option></select>'
           +'<input id="plSearch" class="pl-input" placeholder="Buscar proveedor, contacto o código de centro..."/>'
         +'</div>'
-
         +'<div class="pl-monthsbar"><div id="plMonths" class="pl-months-line"></div></div>'
-
         +'<div class="pl-kpis" id="plKpis"></div>'
-
         +'<div class="pl-chart-wrap">'
-          +'<div class="pl-chart-frame">'
-            +'<div class="pl-chart-container">'
-              +'<canvas id="plChart" class="pl-chart-canvas"></canvas>'
-            +'</div>'
-          +'</div>'
+          +'<div class="pl-chart-frame"><div class="pl-chart-container">'
+            +'<canvas id="plChart" class="pl-chart-canvas"></canvas>'
+          +'</div></div>'
           +'<div id="plChartNote" class="pl-note"></div>'
         +'</div>'
-
         +'<div id="plTableWrap"></div>'
       +'</div>'
     +'</div>';
@@ -128,7 +115,7 @@
     return s || '—';
   }
 
-  /* ---------- DERIVACIÓN (mensual) con detalles por proveedor ---------- */
+  /* ---------- derivación ---------- */
   function buildDerivMonthly(dispon, asig, semi){
     var byId = {};
     (dispon||[]).forEach(function(d){ if (d && (d.id!=null)) byId[String(d.id)] = d; });
@@ -144,12 +131,12 @@
           mes: Number(mes)||0,
           contactado: 0,
           asignado: 0,
-          semi: 0,                 // TOTAL semi-cerrado
-          semiRestante: 0,         // calculado (no usado para gráfico)
-          noSemiRestante: 0,       // contacto restante no cubierto por semi
+          semi: 0,
+          semiRestante: 0,
+          noSemiRestante: 0,
           lotes: 0,
           contactos: new Set(),
-          detAsign: new Map(),      // proveedor|comuna -> tons
+          detAsign: new Map(),
           detSemi: new Map(),
           detContactado: new Map(),
           search: ''
@@ -158,7 +145,6 @@
       return map[k];
     }
 
-    // Contactado
     (dispon||[]).forEach(function(d){
       var emp = cleanEmpresa(d, null);
       var anio = Number(d.anio)||null;
@@ -175,7 +161,6 @@
       row.search += ' '+emp+' '+proveedor+' '+(d.centroCodigo||'')+' '+(d.areaCodigo||'')+' '+(d.comuna||'');
     });
 
-    // Asignado (por mes destino)
     (asig||[]).forEach(function(a){
       var destY = Number(a.destAnio||a.anio||0)||0;
       var destM = Number(a.destMes ||a.mes ||0)||0;
@@ -193,7 +178,6 @@
       row.search += ' '+emp+' '+proveedor+' '+(a.centroCodigo||'')+' '+(a.areaCodigo||'')+' '+(a.comuna||'');
     });
 
-    // Semi-cerrado (TOTAL, independiente de contactado/asignado)
     (semi||[]).forEach(function(s){
       var anio = Number(s.anio)||null;
       var mes  = Number(s.mes)||0;
@@ -216,7 +200,6 @@
       row.search += ' '+emp+' '+proveedor+' '+(s.centroCodigo||'')+' '+(s.areaCodigo||'')+' '+(s.comuna||'');
     });
 
-    // Splits informativos (no afectan gráfico/KPIs)
     Object.keys(map).forEach(function(k){
       var o = map[k];
       var restante = Math.max(0, o.contactado - o.asignado);
@@ -234,7 +217,7 @@
         mes: o.mes,
         contactado: o.contactado,
         asignado: o.asignado,
-        semi: o.semi,                     // ← usamos TOTAL
+        semi: o.semi,
         semiRestante: o.semiRestante,
         noSemiRestante: o.noSemiRestante,
         saldo: Math.max(0, o.contactado - o.asignado),
@@ -282,7 +265,7 @@
       }
       map[r.empresa].contactado     += r.contactado;
       map[r.empresa].asignado       += r.asignado;
-      map[r.empresa].semi           += r.semi;            // TOTAL semi
+      map[r.empresa].semi           += r.semi;
       map[r.empresa].semiRestante   += r.semiRestante;
       map[r.empresa].noSemiRestante += r.noSemiRestante;
       map[r.empresa].lotes          += r.lotes;
@@ -296,7 +279,7 @@
         empresa: o.empresa,
         contactado: o.contactado,
         asignado: o.asignado,
-        semi: o.semi,                           // TOTAL
+        semi: o.semi,
         semiRestante: o.semiRestante,
         noSemiRestante: o.noSemiRestante,
         saldo: Math.max(0, o.contactado - o.asignado),
@@ -321,7 +304,7 @@
                           detAsign:new Map(), detSemi:new Map(), detContactado:new Map()};
       map[k].contactado     += r.contactado;
       map[k].asignado       += r.asignado;
-      map[k].semi           += r.semi;            // TOTAL
+      map[k].semi           += r.semi;
       map[k].semiRestante   += r.semiRestante;
       map[k].noSemiRestante += r.noSemiRestante;
       map[k].lotes          += r.lotes;
@@ -335,7 +318,7 @@
         mes: m,
         contactado: o.contactado,
         asignado: o.asignado,
-        semi: o.semi,                       // TOTAL
+        semi: o.semi,
         semiRestante: o.semiRestante,
         noSemiRestante: o.noSemiRestante,
         saldo: Math.max(0, o.contactado - o.asignado),
@@ -350,19 +333,16 @@
   /* ---------- KPIs ---------- */
   function renderKPIs(rows){
     var contact=0, asign=0, semi=0, empSet=new Set();
-    rows.forEach(function(r){ contact+=r.contactado; asign+=r.asignado; semi+=r.semi; empSet.add(r.empresa); }); // semi total
+    rows.forEach(function(r){ contact+=r.contactado; asign+=r.asignado; semi+=r.semi; empSet.add(r.empresa); });
     var saldo = Math.max(0, contact - asign);
-
     function kpi(lab, chip){ return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val">'+chip+'</div></div>'; }
-
     var html = ''
       + kpi('Contactado',   pillNum(contact, 'contact'))
-      + kpi('Semi-cerrado', pillNum(semi, 'semi'))      // TOTAL
+      + kpi('Semi-cerrado', pillNum(semi, 'semi'))
       + kpi('Asignado',     pillNum(asign, 'asign'))
       + kpi('% Asignación', (contact>0?Math.round(asign*100/contact)+'%':'—'))
       + kpi('Saldo',        '<span class="pill pill-neutral">'+numeroCL(saldo)+'</span>')
       + kpi('# Proveedores','<span class="pill pill-neutral">'+numeroCL(empSet.size)+'</span>');
-
     document.getElementById('plKpis').innerHTML = html;
   }
 
@@ -388,17 +368,11 @@
       ctx.restore();
     }
   };
-
-  function mapToSortedPairs(mp){
-    var arr=[]; mp.forEach(function(v,k){ arr.push({k:k,v:v}); });
-    arr.sort(function(a,b){ return b.v-a.v; });
-    return arr;
-  }
+  function mapToSortedPairs(mp){ var arr=[]; mp.forEach(function(v,k){ arr.push({k:k,v:v}); }); arr.sort(function(a,b){ return b.v-a.v; }); return arr; }
 
   function renderChart(rows, axisMode){
     var canvas = document.getElementById('plChart');
     if (!canvas) return;
-
     if (!global.Chart){
       var ctx0 = canvas.getContext('2d');
       ctx0.clearRect(0,0,canvas.width||300,canvas.height||150);
@@ -413,7 +387,7 @@
       var g = groupByEmpresa(rows);
       labels  = g.map(function(x){return x.empresa;});
       dataAsign = g.map(function(x){return x.asignado;});
-      dataSemi  = g.map(function(x){return x.semi;});               // TOTAL
+      dataSemi  = g.map(function(x){return x.semi;});
       dataNoAsig= g.map(function(x){return Math.max(0, x.saldo);});
       g.forEach(function(x){
         toolDetail[x.empresa] = {
@@ -426,7 +400,7 @@
       var gm = groupByMes(rows);
       labels  = gm.map(function(x){return MMESES[x.mes-1];});
       dataAsign = gm.map(function(x){return x.asignado;});
-      dataSemi  = gm.map(function(x){return x.semi;});              // TOTAL
+      dataSemi  = gm.map(function(x){return x.semi;});
       dataNoAsig= gm.map(function(x){return Math.max(0, x.saldo);});
       gm.forEach(function(x){
         var lbl = MMESES[x.mes-1];
@@ -449,9 +423,9 @@
       data: {
         labels: labels,
         datasets: [
-          { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#0EA5E9' }, // azul
-          { label: 'Semi-cerrado', data: dataSemi,    borderWidth: 1, stack: 'pipeline', backgroundColor: '#22C55E' }, // verde
-          { label: 'No asignado',  data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#CBD5E1' }  // gris
+          { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#0EA5E9' },
+          { label: 'Semi-cerrado', data: dataSemi,    borderWidth: 1, stack: 'pipeline', backgroundColor: '#22C55E' },
+          { label: 'No asignado',  data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#CBD5E1' }
         ]
       },
       options: {
@@ -472,10 +446,9 @@
                 var arr =
                   ds==='Asignado'      ? (det.asign||[]) :
                   ds==='Semi-cerrado'  ? (det.semi||[])  :
-                                          (det.contact||[]); // “No asignado” usa contactados
+                                          (det.contact||[]);
                 var lines = arr.slice(0,8).map(function(p){
-                  var nk = String(p.k||'').split('|'); // [proveedor, comuna?]
-                  var prov = nk[0]||'—', comuna = nk[1]||'';
+                  var nk = String(p.k||'').split('|'); var prov = nk[0]||'—', comuna = nk[1]||'';
                   return '• '+prov+(comuna?(' – '+comuna):'')+': '+numeroCL(p.v)+' t';
                 });
                 if (arr.length>8) lines.push('• +'+(arr.length-8)+' más…');
@@ -496,7 +469,6 @@
       plugins: [stackTotalPlugin]
     });
 
-    // detalle para acordeón en renderTable
     renderTable._accDetail = accDetail;
   }
 
@@ -554,39 +526,65 @@
         body2+='<tr>'
           +'<td>'+lbl+'</td>'
           +'<td class="pl-right">'+pillNum(r2.contactado,'contact')+'</td>'
-          +'<td class="pl-right">'+pillNum(r2.semi,'semi')+'</td>'          /* TOTAL */
+          +'<td class="pl-right">'+pillNum(r2.semi,'semi')+'</td>'
           +'<td class="pl-right">'+pillNum(r2.asignado,'asign')+'</td>'
           +'<td class="pl-right"><span class="pill pill-neutral">'+numeroCL(Math.max(0,r2.saldo))+'</span></td>'
           +'<td class="pl-right"><button class="acc-btn" data-acc="'+accId+'">Ver detalle</button></td>'
           +'</tr>'
           +'<tr id="'+accId+'" style="display:none"><td colspan="6">'
             +'<div class="acc-body">'
-              +'<div style="font-weight:700;margin-bottom:6px">Detalle por proveedor</div>';
-
-        // Encabezados de la grilla de detalle
-        body2+='<div class="acc-grid">'
-              +'<div style="font-size:12px;color:#64748b">Proveedor – Comuna</div>'
-              +'<div class="pl-right" style="font-size:12px;color:#64748b">Contactado (t)</div>'
-              +'<div class="pl-right" style="font-size:12px;color:#64748b">Semi-cerrado (t)</div>'
-              +'<div class="pl-right" style="font-size:12px;color:#64748b">Asignado (t)</div>'
+              +'<div style="font-weight:700;margin-bottom:6px">Detalle por proveedor</div>'
+              +'<div class="acc-grid">'
+                +'<div style="font-size:12px;color:#64748b">Proveedor – Comuna</div>'
+                +'<div class="pl-right" style="font-size:12px;color:#64748b">Contactado (t)</div>'
+                +'<div class="pl-right" style="font-size:12px;color:#64748b">Semi-cerrado (t)</div>'
+                +'<div class="pl-right" style="font-size:12px;color:#64748b">Asignado (t)</div>'
               +'</div>';
 
-        function toArray(mp){ var a=[]; mp.forEach((v,k)=>a.push({k,v})); a.sort((x,y)=>y.v-x.v); return a; }
-        var detC = toArray(r2.detContactado || new Map()); // Contactado
-        var detS = toArray(r2.detSemi       || new Map()); // Semi
-        var detA = toArray(r2.detAsign      || new Map()); // Asignado
+        // ---- FUSIÓN POR PROVEEDOR+COMUNA (normalizada) ----
+        function norm(s){ return String(s||'').normalize('NFKC').replace(/\s+/g,' ').trim().toLowerCase(); }
+        function splitKey(k){ var p=String(k||'').split('|'); return {prov:(p[0]||'').trim(), com:(p[1]||'').trim()}; }
+        function fuseKeyFrom(k){
+          var o = splitKey(k);
+          return norm(o.prov) + '|' + norm(o.com);
+        }
+        // convierte Map -> [{keyNorm, prov, com, v}]
+        function flatten(mp){
+          var out=[];
+          (mp||new Map()).forEach(function(v,k){
+            var sp = splitKey(k);
+            out.push({key:fuseKeyFrom(k), prov:sp.prov, com:sp.com, v:Number(v)||0});
+          });
+          return out;
+        }
 
-        var idx = new Map();
-        detC.forEach(function(p){ idx.set(p.k, {c:p.v, s:0, a:0}); });
-        detS.forEach(function(p){ var o=idx.get(p.k)||{c:0,s:0,a:0}; o.s += p.v; idx.set(p.k,o); });
-        detA.forEach(function(p){ var o=idx.get(p.k)||{c:0,s:0,a:0}; o.a += p.v; idx.set(p.k,o); });
+        var detC = flatten(r2.detContactado);
+        var detS = flatten(r2.detSemi);
+        var detA = flatten(r2.detAsign);
+
+        // índice fusionado
+        var idx = new Map(); // keyNorm -> {prov, com, c,s,a}
+        function upsert(arr, field){
+          arr.forEach(function(e){
+            var o = idx.get(e.key) || {prov:e.prov, com:e.com, c:0, s:0, a:0};
+            // si la entrada guardada no tiene comuna y la nueva sí, la completamos
+            if (!o.com && e.com) o.com = e.com;
+            // preferimos el nombre de proveedor con mayúsculas tal como vino de Contactado
+            if (field==='c') o.prov = e.prov || o.prov;
+            o[field] += e.v;
+            idx.set(e.key, o);
+          });
+        }
+        upsert(detC, 'c'); // Contactado primero (sirve para “bonito”)
+        upsert(detS, 's');
+        upsert(detA, 'a');
 
         Array.from(idx.entries())
           .sort(function(a,b){ var A=a[1], B=b[1]; return (B.c+B.s+B.a) - (A.c+A.s+A.a); })
           .forEach(function(e){
-            var parts = String(e[0]).split('|'); var prov=parts[0]||'—', com=parts[1]||'';
             var v = e[1];
-            body2+='<div class="acc-grid"><div>'+prov+(com?(' – '+com):'')+'</div>'
+            var alias = v.prov + (v.com ? (' – '+v.com) : '');
+            body2+='<div class="acc-grid"><div>'+alias+'</div>'
                  +'<div class="pl-right">'+(v.c?pillNum(v.c,'contact'):'—')+'</div>'
                  +'<div class="pl-right">'+(v.s?pillNum(v.s,'semi'):'—')+'</div>'
                  +'<div class="pl-right">'+(v.a?pillNum(v.a,'asign'):'—')+'</div>'
@@ -649,10 +647,7 @@
     }
   }
 
-  function filterRowsForRefresh(){
-    return filterDeriv(STATE.deriv, STATE.filters);
-  }
-
+  function filterRowsForRefresh(){ return filterDeriv(STATE.deriv, STATE.filters); }
   function renderAll(){
     var rows = filterRowsForRefresh();
     renderKPIs(rows);
@@ -675,7 +670,6 @@
       STATE.hideEmpty = hide;
       renderAll();
     }
-
     ['plYear','plEmpresa','plHideEmptyMonths','plSearch'].forEach(function(id){
       var el=document.getElementById(id); if (el) el.addEventListener('input', updateFromUI);
       var elc=document.getElementById(id); if (elc) elc.addEventListener('change', updateFromUI);
@@ -758,7 +752,6 @@
     function go(dispon, asig, semi){
       STATE.deriv = buildDerivMonthly(dispon, asig, semi);
       fillFilters(STATE.deriv);
-
       var ySel = document.getElementById('plYear');
       STATE.filters.year = ySel ? ySel.value : '';
       STATE.filters.empresa = '';
@@ -766,7 +759,6 @@
       STATE.filters.q = '';
       STATE.hideEmpty = true;
       setSelectedMonths([]);
-
       attachEvents();
       renderAll();
     }
@@ -775,7 +767,6 @@
       return go(opts.dispon, opts.asig, opts.semi);
     }
 
-    // Carga desde API (front integra con MMppApi)
     if (global.MMppApi && typeof global.MMppApi.getDisponibilidades==='function'){
       Promise.all([
         global.MMppApi.getDisponibilidades(),
@@ -790,3 +781,4 @@
 
   global.MMppPipeline = { mount: mount, refresh: renderAll };
 })(window);
+
