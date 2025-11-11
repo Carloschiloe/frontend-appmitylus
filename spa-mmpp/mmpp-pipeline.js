@@ -1,7 +1,7 @@
 /* /spa-mmpp/mmpp-pipeline.js
    Pipeline MMPP — Contactado vs Asignado (+ Semi-cerrado total SIEMPRE)
-   - Claves “Proveedor|Comuna” con NORMALIZACIÓN FUERTE para fusionar filas.
-   - labelByKey conserva la etiqueta bonita (prioriza Contactado).
+   - AHORA fusiona SOLO por “Proveedor” (se ignora comuna).
+   - labelByKey conserva la etiqueta bonita (usa solo proveedor).
    - Semi-cerrado SIEMPRE total en KPI, gráfico y tabla.
 */
 (function (global) {
@@ -56,24 +56,28 @@
   function uniqSorted(arr){ var set={}, out=[]; (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v);} }); out.sort(); return out; }
   function pillNum(n, kind){ return '<span class="pill pill-'+kind+'">'+numeroCL(n)+'</span>'; }
 
-  // Normaliza para agrupar: minúsculas, sin acentos, espacios colapsados, guiones normalizados
+  // Normaliza para agrupar solo por PROVEEDOR (se ignora comuna)
   function normalizeTxt(s){
     return String(s||'')
       .replace(/[–—]/g,'-')
+      .replace(/[.,]/g,'')           // limpia puntos/comas típicos de razones sociales
+      .replace(/-{2,}/g,'-')
       .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
       .toLowerCase()
       .replace(/\s+/g,' ')
       .trim();
   }
-  function makeKey(prov, comuna){
+
+  // === CLAVE SOLO POR PROVEEDOR (comuna ignorada) ===
+  function makeKey(prov/*, comuna*/){
     var p = normalizeTxt(prov);
-    var c = normalizeTxt(comuna);
-    return p+'|'+c;
+    return p; // << solo proveedor
   }
-  function displayLabel(prov, comuna){
+
+  // Etiqueta visible: solo proveedor (sin comuna)
+  function displayLabel(prov/*, comuna*/){
     var p = String(prov||'—').trim();
-    var c = String(comuna||'').trim();
-    return p + (c?(' – '+c):'');
+    return p;
   }
 
   /* ---------- UI skeleton ---------- */
@@ -134,10 +138,10 @@
           semiTotal: 0,                   // ⟵ SIEMPRE TOTAL
           lotes: 0,
           contactos: new Set(),
-          detAsign: new Map(),            // clave normalizada -> tons
+          detAsign: new Map(),            // clave normalizada -> tons (POR PROVEEDOR)
           detSemi: new Map(),
           detContactado: new Map(),
-          labelByKey: new Map(),          // clave normalizada -> “Proveedor – Comuna” bonito
+          labelByKey: new Map(),          // clave normalizada -> “Proveedor” bonito
           search: ''
         };
       }
@@ -408,9 +412,8 @@
                 var det = toolDetail[lbl] || {};
                 var arr = (ds==='Asignado' ? det.asign : ds==='Semi-cerrado' ? det.semi : null) || [];
                 var lines = arr.slice(0,8).map(function(p){
-                  var nk = String(p.k||'').split('|');
-                  var prov = nk[0]||'—', comuna = nk[1]||'';
-                  return '• '+prov+(comuna?(' – '+comuna):'')+': '+numeroCL(p.v)+' t';
+                  var prov = String(p.k||'')||'—'; // k AHORA es solo proveedor
+                  return '• '+prov+': '+numeroCL(p.v)+' t';
                 });
                 if (arr.length>8) lines.push('• +'+(arr.length-8)+' más…');
                 return lines.length?lines:['(sin detalle)'];
@@ -467,13 +470,13 @@
           +'<div class="acc-body">'
             +'<div style="font-weight:700;margin-bottom:6px">Detalle por proveedor</div>'
             +'<div class="acc-grid">'
-              +'<div style="font-size:12px;color:#64748b">Proveedor – Comuna</div>'
+              +'<div style="font-size:12px;color:#64748b">Proveedor</div>'  /* encabezado actualizado */
               +'<div class="pl-right" style="font-size:12px;color:#64748b">Contactado (t)</div>'
               +'<div class="pl-right" style="font-size:12px;color:#64748b">Semi-cerrado (t)</div>'
               +'<div class="pl-right" style="font-size:12px;color:#64748b">Asignado (t)</div>'
             +'</div>';
 
-      // Fusiona por clave normalizada
+      // Fusiona POR PROVEEDOR (clave = proveedor normalizado)
       var idx = new Map();
       r.detContactado.forEach(function(v,k){ idx.set(k, {c:v,s:0,a:0}); });
       r.detSemi.forEach(function(v,k){ var o=idx.get(k)||{c:0,s:0,a:0}; o.s+=v; idx.set(k,o); });
@@ -486,12 +489,7 @@
         })
         .forEach(function(e){
           var k=e[0], vals=e[1];
-          var label = r.labelByKey.get(k);
-          if (!label){
-            // fallback si no hubiesen labels (no debería)
-            var parts = k.split('|'); var prov=parts[0]||'—', com=parts[1]||'';
-            label = prov+(com?(' – '+com):'');
-          }
+          var label = r.labelByKey.get(k) || String(k||'—'); // label = proveedor
           body+='<div class="acc-grid"><div>'+label+'</div>'
               +'<div class="pl-right">'+(vals.c?pillNum(vals.c,'contact'):'—')+'</div>'
               +'<div class="pl-right">'+(vals.s?pillNum(vals.s,'semi'):'—')+'</div>'
