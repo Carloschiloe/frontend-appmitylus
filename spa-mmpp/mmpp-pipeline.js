@@ -298,6 +298,42 @@
     });
   }
 
+  // NUEVO: agrupación por empresa (para eje Empresa)
+  function groupByEmpresa(rows){
+    var map={};
+    (rows||[]).forEach(function(r){
+      var k=r.empresa||'—';
+      if(!map[k]) map[k]={empresa:k,contactado:0,asignado:0,semiTotal:0, detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map()};
+      map[k].contactado += r.contactado;
+      map[k].asignado   += r.asignado;
+      map[k].semiTotal  += r.semiTotal;
+      r.detAsign.forEach(function(v,kk){ map[k].detAsign.set(kk,(map[k].detAsign.get(kk)||0)+v); });
+      r.detSemi.forEach(function(v,kk){ map[k].detSemi.set(kk,(map[k].detSemi.get(kk)||0)+v); });
+      r.detContactado.forEach(function(v,kk){ map[k].detContactado.set(kk,(map[k].detContactado.get(kk)||0)+v); });
+      r.labelByKey.forEach(function(label, kk){
+        if (!map[k].labelByKey.has(kk)) map[k].labelByKey.set(kk, label);
+      });
+    });
+    // ordenar por total (contactado+asignado+semi) desc
+    return Object.keys(map).map(function(k){
+      var o=map[k];
+      return {
+        empresa: k,
+        contactado: o.contactado,
+        asignado: o.asignado,
+        semiTotal: o.semiTotal,
+        saldo: Math.max(0, o.contactado - o.asignado),
+        detAsign: o.detAsign,
+        detSemi: o.detSemi,
+        detContactado: o.detContactado,
+        labelByKey: o.labelByKey
+      };
+    }).sort(function(a,b){
+      var ta=a.contactado+a.asignado+a.semiTotal, tb=b.contactado+b.asignado+b.semiTotal;
+      return tb-ta;
+    });
+  }
+
   /* ---------- KPIs ---------- */
   function renderKPIs(rows){
     var contact=0, asign=0, semi=0, empSet=new Set();
@@ -311,7 +347,7 @@
       + kpi('Asignado',     pillNum(asign, 'asign'))
       + kpi('% Asignación', (contact>0?Math.round(asign*100/contact)+'%':'—'))
       + kpi('Saldo',        '<span class="pill pill-neutral">'+numeroCL(saldo)+'</span>')
-      + kpi('# Proveedores','<span class="pill pill-neutral">'+numeroCL(empSet.size)+'</span>');
+      + kpi('# Empresas','<span class="pill pill-neutral">'+numeroCL(empSet.size)+'</span>'); // ⟵ etiqueta corregida
     document.getElementById('plKpis').innerHTML = html;
   }
 
@@ -358,27 +394,60 @@
 
     var labels=[], dataAsign=[], dataSemi=[], dataNoAsig=[], toolDetail={}, accDetail={};
 
-    var gm = groupByMes(rows);
-    labels  = gm.map(function(x){return MMESES[x.mes-1];});
-    dataAsign = gm.map(function(x){return x.asignado;});
-    dataSemi  = gm.map(function(x){return x.semiTotal;});
-    dataNoAsig= gm.map(function(x){return Math.max(0, x.saldo);});
-    gm.forEach(function(x){
-      var lbl = MMESES[x.mes-1];
-      toolDetail[lbl] = {
-        asign : mapToSortedPairs(x.detAsign),
-        semi  : mapToSortedPairs(x.detSemi),
-        // ⟵ NUEVO: detalle de proveedores de lo disponible (contactado)
-        contact: mapToSortedPairs(x.detContactado)
-      };
-      accDetail[lbl] = {
-        detAsign: x.detAsign,
-        detSemi: x.detSemi,
-        detContactado: x.detContactado,
-        labelByKey: x.labelByKey,
-        contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo, lotes:x.lotes
-      };
-    });
+    var series;
+    if (axisMode === 'empresa'){
+      // NUEVO: eje Empresa
+      var ge = groupByEmpresa(rows);
+      labels  = ge.map(function(x){return x.empresa || '—';});
+      dataAsign = ge.map(function(x){return x.asignado;});
+      dataSemi  = ge.map(function(x){return x.semiTotal;});
+      dataNoAsig= ge.map(function(x){return Math.max(0, x.saldo);});
+      ge.forEach(function(x){
+        var lbl = x.empresa || '—';
+        toolDetail[lbl] = {
+          asign : mapToSortedPairs(x.detAsign),
+          semi  : mapToSortedPairs(x.detSemi),
+          contact: mapToSortedPairs(x.detContactado)
+        };
+        accDetail[lbl] = {
+          detAsign: x.detAsign,
+          detSemi: x.detSemi,
+          detContactado: x.detContactado,
+          labelByKey: x.labelByKey,
+          contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo
+        };
+      });
+      series = {ticksX:{autoSkip:true, maxRotation:0, minRotation:0}};
+    } else {
+      // eje Mes (default)
+      var gm = groupByMes(rows);
+      // opcional: ocultar meses sin datos
+      var hideEmpty = STATE.hideEmpty;
+      if (hideEmpty){
+        gm = gm.filter(function(x){ return (x.contactado+x.asignado+x.semiTotal) > 0; });
+      }
+      labels  = gm.map(function(x){return MMESES[x.mes-1];});
+      dataAsign = gm.map(function(x){return x.asignado;});
+      dataSemi  = gm.map(function(x){return x.semiTotal;});
+      dataNoAsig= gm.map(function(x){return Math.max(0, x.saldo);});
+      gm.forEach(function(x){
+        var lbl = MMESES[x.mes-1];
+        toolDetail[lbl] = {
+          asign : mapToSortedPairs(x.detAsign),
+          semi  : mapToSortedPairs(x.detSemi),
+          // detalle de proveedores de lo disponible (contactado)
+          contact: mapToSortedPairs(x.detContactado)
+        };
+        accDetail[lbl] = {
+          detAsign: x.detAsign,
+          detSemi: x.detSemi,
+          detContactado: x.detContactado,
+          labelByKey: x.labelByKey,
+          contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo, lotes:x.lotes
+        };
+      });
+      series = {ticksX:{autoSkip:false, maxRotation:45, minRotation:45}};
+    }
 
     if (chartRef && chartRef.destroy) chartRef.destroy();
 
@@ -389,7 +458,6 @@
         datasets: [
           { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#0EA5E9' },
           { label: 'Semi-cerrado', data: dataSemi,    borderWidth: 1, stack: 'pipeline', backgroundColor: '#22C55E' },
-          // ⟵ RENOMBRADO: antes “No asignado”
           { label: 'Disponible',   data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#CBD5E1' }
         ]
       },
@@ -414,9 +482,9 @@
                          : ds==='Disponible'   ? det.contact
                          : null) || [];
                 var lines = arr.slice(0,8).map(function(p){
-                  var nk = String(p.k||'').split('|');
-                  var prov = nk[0]||'—', comuna = nk[1]||''; // comuna puede venir vacío porque la clave es solo proveedor
-                  return '• '+prov+(comuna?(' – '+comuna):'')+': '+numeroCL(p.v)+' t';
+                  // clave SOLO proveedor (sin comuna); label bonito vendrá del acordeón
+                  var prov = (p.k||'—');
+                  return '• '+prov+': '+numeroCL(p.v)+' t';
                 });
                 if (arr.length>8) lines.push('• +'+(arr.length-8)+' más…');
                 return lines.length?lines:['(sin detalle)'];
@@ -429,7 +497,7 @@
           }
         },
         scales: {
-          x: { stacked: true, ticks: { autoSkip:false, maxRotation:45, minRotation:45 } },
+          x: { stacked: true, ticks: series.ticksX },
           y: { stacked: true, beginAtZero: true, grace: '15%', ticks: { padding: 6 } }
         }
       },
@@ -494,9 +562,8 @@
           var k=e[0], vals=e[1];
           var label = r.labelByKey.get(k);
           if (!label){
-            // fallback si no hubiese labels (no debería)
             var prov = k || '—';
-            label = prov; // sin comuna en la clave
+            label = prov;
           }
           body+='<div class="acc-grid"><div>'+label+'</div>'
               +'<div class="pl-right">'+(vals.c?pillNum(vals.c,'contact'):'—')+'</div>'
