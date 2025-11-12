@@ -2,10 +2,9 @@
    Pipeline MMPP — Disponible –  Semi-cerrado – Asignado
    - Eje Empresa/Mes.
    - Sin filtro "Todas las empresas" ni casillas extras.
-   - Autocomplete custom: aparece al escribir ≥2 letras, filtra en vivo.
-   - Búsqueda y sugerencias por Proveedor/Contacto y Código de Centro.
+   - Autocomplete: aparece al escribir ≥2 letras; filtra en vivo.
+   - Buscar por Proveedor/Contacto y Código de Centro.
    - Semi-cerrado SIEMPRE total.
-   - Muestra semana ISO actual junto al título (ej: Sem 42).
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
@@ -18,8 +17,8 @@
       + '.pl-wrap{max-width:1200px;margin:0 auto;padding:20px}'
       + '.pl-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}'
       + '.pl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}'
-      + '.pl-title{margin:0;font-weight:800;color:#2b3440;display:flex;align-items:center;gap:10px;flex-wrap:wrap}'
-      + '.pl-title .pl-week{font-weight:700;font-size:14px;color:#6b7280;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:999px;padding:4px 10px}'
+      + '.pl-title{margin:0;font-weight:800;color:#2b3440}'
+      + '.pl-title .pl-week{display:inline-block;font-size:.85em;background:#eef2ff;border:1px solid #c7d2fe;padding:2px 8px;border-radius:999px;margin-left:8px;color:#1e40af;font-weight:800}'
       + '.pl-filters{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr)) 1fr;gap:10px;align-items:center;margin-top:8px}'
       + '.pl-select,.pl-input{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}'
       + '.pl-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
@@ -54,7 +53,7 @@
       + '.pill-semi{color:#22C55E;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35)}'
       + '.pill-contact{color:#475569;background:rgba(203,213,225,.35);border-color:rgba(148,163,184,.45)}'
       + '.pill-neutral{color:#111827;background:rgba(17,24,39,.06);border-color:rgba(17,24,39,.15)}'
-      /* Autocomplete custom */
+      /* Autocomplete */
       + '.pl-autocomplete{position:relative}'
       + '.pl-suggest{position:absolute;left:0;right:0;top:100%;margin-top:6px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 12px 30px rgba(17,24,39,.12);max-height:280px;overflow:auto;z-index:50;padding:6px}'
       + '.pl-suggest-item{padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600}'
@@ -75,61 +74,93 @@
       .replace(/\s+/g,' ')
       .trim();
   }
-  function norm(s){ // para el buscador
+  function norm(s){ // para buscador (proveedor/CONTACTO/códigos)
     return String(s||'')
       .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
       .toLowerCase().trim();
   }
-  // clave SOLO por proveedor
+  // clave SOLO por proveedor (fusiona filas, comuna se usa solo para etiqueta)
   function makeKey(prov, _comuna){ return normalizeTxt(prov); }
   function displayLabel(prov, comuna){
     var p = String(prov||'—').trim();
     var c = String(comuna||'').trim();
     return p + (c?(' – '+c):'');
   }
-  // ISO week (Sem X)
-  function getISOWeek(d){
-    var date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    var dayNum = (date.getUTCDay() + 6) % 7; // 0 = Monday
-    date.setUTCDate(date.getUTCDate() - dayNum + 3);
-    var firstThursday = new Date(Date.UTC(date.getUTCFullYear(),0,4));
-    var diff = (date - firstThursday) / 86400000;
-    return 1 + Math.floor(diff/7);
+
+  // ====== Semana ISO en HORA LOCAL (Chile) ======
+  function isoWeekNumberLocal(d){
+    const dt = new Date(d);
+    dt.setHours(0,0,0,0);
+    const day = (dt.getDay() + 6) % 7;   // 0=Lun ... 6=Dom
+    const thu = new Date(dt);
+    thu.setDate(dt.getDate() - day + 3);
+    const firstThu = new Date(thu.getFullYear(), 0, 4);
+    const firstDay = (firstThu.getDay() + 6) % 7;
+    firstThu.setDate(firstThu.getDate() - firstDay + 3);
+    return 1 + Math.round((thu - firstThu) / 604800000);
+  }
+  function isoWeekRangeLocal(d){
+    const dt = new Date(d);
+    dt.setHours(0,0,0,0);
+    const day = (dt.getDay() + 6) % 7;   // 0=Lun
+    const start = new Date(dt); start.setDate(dt.getDate() - day);   // Lunes
+    const end   = new Date(start); end.setDate(start.getDate() + 6); // Domingo
+    return { start, end };
+  }
+  // Si es lunes, mostrar semana ANTERIOR (tus reportes de lunes son de la semana previa)
+  function pickDisplayDateForWeek(){
+    const today = new Date();
+    if (today.getDay() === 1) { // 1=Lunes
+      const prev = new Date(today); prev.setDate(today.getDate() - 7);
+      return prev;
+    }
+    return today;
   }
 
   /* ---------- UI skeleton ---------- */
   function buildUI(root){
-    var semTxt = 'Sem ' + getISOWeek(new Date());
+    // título con semana ISO local (y regla del lunes)
+    var baseDate = pickDisplayDateForWeek();
+    var semNum   = isoWeekNumberLocal(baseDate);
+    // Si quieres rango visual, descomenta:
+    // var wr = isoWeekRangeLocal(baseDate);
+    // var fmt = (d)=> d.toLocaleDateString('es-CL',{day:'2-digit',month:'short'});
+    // var rango = ' <span style="color:#64748b;font-weight:600">('+fmt(wr.start)+' – '+fmt(wr.end)+')</span>';
+
     root.innerHTML = ''
-    +'<div class="pl-wrap"><div class="pl-card">'
-      +'<div class="pl-head" style="margin-bottom:10px">'
-        +'<h2 class="pl-title">Disponible –  Semi-cerrado – Asignado <span class="pl-week">'+semTxt+'</span></h2>'
-        +'<div class="pl-actions">'
-          +'<button id="plBtnLimpiarMeses" class="pl-btn">Limpiar meses</button>'
-          +'<button id="plBtnLimpiarFiltros" class="pl-btn">Limpiar filtros</button>'
-          +'<button id="plAxisBtn" class="pl-btn">Eje: Mes</button>'
+      +'<div class="pl-wrap"><div class="pl-card">'
+        +'<div class="pl-head" style="margin-bottom:10px">'
+          +'<h2 class="pl-title">Disponible –  Semi-cerrado – Asignado'
+            +'<span class="pl-week">Sem '+ semNum +'</span>' /* + (rango||'') */
+          +'</h2>'
+          +'<div class="pl-actions">'
+            +'<button id="plBtnLimpiarMeses" class="pl-btn">Limpiar meses</button>'
+            +'<button id="plBtnLimpiarFiltros" class="pl-btn">Limpiar filtros</button>'
+            +'<button id="plAxisBtn" class="pl-btn">Eje: Mes</button>'
+          +'</div>'
         +'</div>'
-      +'</div>'
 
-      +'<div class="pl-filters">'
-        +'<select id="plYear" class="pl-select"></select>'
+        +'<div class="pl-filters">'
+          +'<select id="plYear" class="pl-select"></select>'
 
-        +'<div class="pl-autocomplete">'
-          +'<input id="plSearch" class="pl-input" placeholder="Buscar proveedor, contacto o código de centro…" autocomplete="off"/>'
-          +'<div id="plSuggest" class="pl-suggest" hidden></div>'
+          +'<div class="pl-autocomplete">'
+            +'<input id="plSearch" class="pl-input" placeholder="Buscar proveedor, contacto o código de centro…" autocomplete="off"/>'
+            +'<div id="plSuggest" class="pl-suggest" hidden></div>'
+          +'</div>'
         +'</div>'
-      +'</div>'
 
-      +'<div class="pl-monthsbar"><div id="plMonths" class="pl-months-line"></div></div>'
-      +'<div class="pl-kpis" id="plKpis"></div>'
+        +'<div class="pl-monthsbar"><div id="plMonths" class="pl-months-line"></div></div>'
+        +'<div class="pl-kpis" id="plKpis"></div>'
 
-      +'<div class="pl-chart-wrap"><div class="pl-chart-frame"><div class="pl-chart-container">'
-        +'<canvas id="plChart" class="pl-chart-canvas"></canvas>'
-      +'</div></div><div id="plChartNote" class="pl-note"></div></div>'
+        +'<div class="pl-chart-wrap"><div class="pl-chart-frame"><div class="pl-chart-container">'
+          +'<canvas id="plChart" class="pl-chart-canvas"></canvas>'
+        +'</div></div><div id="plChartNote" class="pl-note"></div></div>'
 
-      +'<div id="plTableWrap" class="pl-table-wrap"></div>'
-    +'</div></div>';
+        +'<div id="plTableWrap" class="pl-table-wrap"></div>'
+      +'</div></div>';
   }
+
+  /* ===== (sigue el archivo con tus funciones: cleanEmpresa, buildDerivMonthly, groupByMes, groupByEmpresa, KPIs, chart, tabla, eventos, mount, etc.) ===== */
 
   /* ---------- helper: empresa ---------- */
   function cleanEmpresa(d, a){
