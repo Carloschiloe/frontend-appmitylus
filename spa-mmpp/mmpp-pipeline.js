@@ -1,9 +1,8 @@
 /* /spa-mmpp/mmpp-pipeline.js
    Pipeline MMPP — Contactado vs Asignado (+ Semi-cerrado total SIEMPRE)
-   - Fusión SOLO por proveedor (normalización fuerte).
+   - Claves “Proveedor” (solo proveedor) con NORMALIZACIÓN FUERTE para fusionar filas.
+   - labelByKey conserva la etiqueta bonita (prioriza Contactado).
    - Semi-cerrado SIEMPRE total en KPI, gráfico y tabla.
-   - Vista Empresa: barras horizontales **PAGINADAS** (Top N) para evitar amontonamiento.
-   - KPI SIN "% Asignación".
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
@@ -21,7 +20,7 @@
       + '.pl-select,.pl-input{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}'
       + '.pl-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
       + '.pl-btn{background:#eef2ff;border:1px solid #c7d2fe;color:#1e40af;height:38px;border-radius:10px;padding:0 12px;cursor:pointer;font-weight:700}'
-      + '.pl-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:10px}'
+      + '.pl-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:10px}'
       + '.kpi{background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:14px}'
       + '.kpi .lab{font-size:12px;color:#64748b}'
       + '.kpi .val{font-size:22px;font-weight:900;color:#111827}'
@@ -31,11 +30,9 @@
       + '.pl-chip.is-on{background:#1e40af;color:#fff;border-color:#1e40af}'
       + '.pl-chart-wrap{margin-top:14px}'
       + '.pl-chart-frame{display:block;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;background:#fff}'
-      + '.pl-chart-container{position:relative;width:100%;height:480px;overflow:hidden}'
+      + '.pl-chart-container{position:relative;width:100%;height:360px}'
       + '.pl-chart-canvas{display:block;width:100% !important;height:100% !important}'
       + '.pl-note{color:#64748b;font-size:12px;margin-top:6px}'
-      + '.pl-pager{display:flex;align-items:center;gap:8px;margin-top:8px;justify-content:flex-end;flex-wrap:wrap}'
-      + '.pl-pager select,.pl-pager button{height:34px;border:1px solid #e5e7eb;border-radius:10px;background:#fafafa;padding:0 10px;font-weight:700;cursor:pointer}'
       + '.pl-table{width:100%;border-collapse:separate;border-spacing:0 8px;margin-top:14px}'
       + '.pl-table th,.pl-table td{padding:10px 8px}'
       + '.pl-table tr{background:#fff;border:1px solid #e5e7eb}'
@@ -59,6 +56,7 @@
   function uniqSorted(arr){ var set={}, out=[]; (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v);} }); out.sort(); return out; }
   function pillNum(n, kind){ return '<span class="pill pill-'+kind+'">'+numeroCL(n)+'</span>'; }
 
+  // Normalización fuerte para agrupar por PROVEEDOR (sin comuna)
   function normalizeTxt(s){
     return String(s||'')
       .replace(/[–—]/g,'-')
@@ -67,14 +65,18 @@
       .replace(/\s+/g,' ')
       .trim();
   }
-  function makeKey(prov){ return normalizeTxt(prov); } // solo proveedor
+  // ⟵ clave SOLO por proveedor
+  function makeKey(prov, _comuna){
+    var p = normalizeTxt(prov);
+    return p;
+  }
   function displayLabel(prov, comuna){
     var p = String(prov||'—').trim();
     var c = String(comuna||'').trim();
     return p + (c?(' – '+c):'');
   }
 
-  /* ---------- UI ---------- */
+  /* ---------- UI skeleton ---------- */
   function buildUI(root){
     root.innerHTML = ''
     +'<div class="pl-wrap"><div class="pl-card">'
@@ -100,15 +102,7 @@
 
       +'<div class="pl-chart-wrap"><div class="pl-chart-frame"><div class="pl-chart-container">'
         +'<canvas id="plChart" class="pl-chart-canvas"></canvas>'
-      +'</div></div>'
-      +'<div class="pl-pager">'
-        +'<span>Proveedores por página</span>'
-        +'<select id="plPageSize"><option>10</option><option selected>20</option><option>50</option><option>100</option></select>'
-        +'<button id="plPrev">◀︎</button>'
-        +'<span id="plPageInfo">1/1</span>'
-        +'<button id="plNext">▶︎</button>'
-      +'</div>'
-      +'<div id="plChartNote" class="pl-note"></div></div>'
+      +'</div></div><div id="plChartNote" class="pl-note"></div></div>'
 
       +'<div id="plTableWrap"></div>'
     +'</div></div>';
@@ -116,9 +110,7 @@
 
   /* ---------- helper: empresa ---------- */
   function cleanEmpresa(d, a){
-    var s = (d && (d.empresaNombre||'')) || (a && (a.empresaNombre||'')) ||
-            (d && (d.proveedorNombre||d.contactoNombre||'')) ||
-            (a && (a.proveedorNombre||a.contactoNombre||'')) || '—';
+    var s = (d && (d.empresaNombre||'')) || (a && (a.empresaNombre||'')) || (d && (d.proveedorNombre||d.contactoNombre||'')) || (a && (a.proveedorNombre||a.contactoNombre||'')) || '—';
     s = String(s||'').trim();
     return s || '—';
   }
@@ -139,40 +131,43 @@
           mes: Number(mes)||0,
           contactado: 0,
           asignado: 0,
-          semiTotal: 0,
+          semiTotal: 0,                   // ⟵ SIEMPRE TOTAL
           lotes: 0,
           contactos: new Set(),
-          detAsign: new Map(), detSemi: new Map(), detContactado: new Map(),
-          labelByKey: new Map(),
+          detAsign: new Map(),            // clave normalizada -> tons
+          detSemi: new Map(),
+          detContactado: new Map(),
+          labelByKey: new Map(),          // clave normalizada -> “Proveedor – Comuna”
           search: ''
         };
       }
       return map[k];
     }
 
-    // Contactado
+    // Contactado (lee d.tonsDisponible si no existe d.tons)
     (dispon||[]).forEach(function(d){
       var emp = cleanEmpresa(d, null);
       var anio = Number(d.anio)||null;
       var mes  = Number(d.mes)||0;
-      var tons = Number((d.tons ?? d.tonsDisponible ?? d.cantidad) || 0) || 0;
+      var tons = Number((d.tons ?? d.tonsDisponible ?? d.cantidad) || 0) || 0; // ⟵ FIX principal
       var row = ensure(emp, anio, mes);
       row.contactado += tons;
       row.lotes += 1;
 
       var proveedor = d.proveedorNombre || d.contactoNombre || '—';
       var comuna    = d.comuna || '';
-      var kNorm     = makeKey(proveedor);
+      var kNorm     = makeKey(proveedor, comuna);
       var label     = displayLabel(proveedor, comuna);
 
       row.contactos.add(label);
       row.detContactado.set(kNorm, (row.detContactado.get(kNorm)||0)+tons);
+      // Prioriza etiqueta de Contactado
       if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
 
       row.search += ' '+emp+' '+proveedor+' '+(d.centroCodigo||'')+' '+(d.areaCodigo||'')+' '+(d.comuna||'');
     });
 
-    // Asignado
+    // Asignado (por mes destino)
     (asig||[]).forEach(function(a){
       var destY = Number(a.destAnio||a.anio||0)||0;
       var destM = Number(a.destMes ||a.mes ||0)||0;
@@ -185,7 +180,7 @@
 
       var proveedor = (a.proveedorNombre || a.contactoNombre || (dpo && (dpo.proveedorNombre||dpo.contactoNombre)) || '—');
       var comuna    = (a.comuna || (dpo && dpo.comuna) || '');
-      var kNorm     = makeKey(proveedor);
+      var kNorm     = makeKey(proveedor, comuna);
       var label     = displayLabel(proveedor, comuna);
 
       row.contactos.add(label);
@@ -195,14 +190,16 @@
       row.search += ' '+emp+' '+proveedor+' '+(a.centroCodigo||'')+' '+(a.areaCodigo||'')+' '+(a.comuna||'');
     });
 
-    // Semi-cerrado total
+    // Semi-cerrado (TOTAL por periodo)
     (semi||[]).forEach(function(s){
       var anio = Number(s.anio)||null;
       var mes  = Number(s.mes)||0;
       if ((!anio || !mes) && s.periodo){
-        var parts=String(s.periodo||'').split('-');
-        anio = anio || Number(parts[0])||null;
-        mes  = mes  || Number(parts[1])||0;
+        var pm = (function(p){
+          var parts=String(p||'').split('-'); return { anio:Number(parts[0])||null, mes:Number(parts[1])||0 };
+        })(s.periodo);
+        if (!anio) anio = pm.anio;
+        if (!mes)  mes  = pm.mes;
       }
       if (!anio || !mes) return;
 
@@ -213,7 +210,7 @@
 
       var proveedor = s.proveedorNombre || s.contactoNombre || '—';
       var comuna    = s.comuna || '';
-      var kNorm     = makeKey(proveedor);
+      var kNorm     = makeKey(proveedor, comuna);
       var label     = displayLabel(proveedor, comuna);
 
       row.contactos.add(label);
@@ -226,12 +223,18 @@
     return Object.keys(map).map(function(k){
       var o = map[k];
       return {
-        empresa: o.empresa, anio: o.anio, mes: o.mes,
-        contactado: o.contactado, asignado: o.asignado, semiTotal: o.semiTotal,
+        empresa: o.empresa,
+        anio: o.anio,
+        mes: o.mes,
+        contactado: o.contactado,
+        asignado: o.asignado,
+        semiTotal: o.semiTotal,
         saldo: Math.max(0, o.contactado - o.asignado),
         lotes: o.lotes,
         contactos: Array.from(o.contactos),
-        detAsign: o.detAsign, detSemi: o.detSemi, detContactado: o.detContactado,
+        detAsign: o.detAsign,
+        detSemi: o.detSemi,
+        detContactado: o.detContactado,
         labelByKey: o.labelByKey,
         search: (o.search||'').toLowerCase()
       };
@@ -273,6 +276,7 @@
       r.detAsign.forEach(function(v,kk){ map[k].detAsign.set(kk,(map[k].detAsign.get(kk)||0)+v); });
       r.detSemi.forEach(function(v,kk){ map[k].detSemi.set(kk,(map[k].detSemi.get(kk)||0)+v); });
       r.detContactado.forEach(function(v,kk){ map[k].detContactado.set(kk,(map[k].detContactado.get(kk)||0)+v); });
+      // fusiona etiquetas (prioriza si viene de contactado)
       r.labelByKey.forEach(function(label, kk){
         if (!map[k].labelByKey.has(kk)) map[k].labelByKey.set(kk, label);
       });
@@ -294,57 +298,24 @@
     });
   }
 
-  // Agrupación por empresa
-  function groupByEmpresa(rows){
-    var map={};
-    (rows||[]).forEach(function(r){
-      var k=r.empresa||'—';
-      if(!map[k]) map[k]={empresa:k,contactado:0,asignado:0,semiTotal:0, detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map()};
-      map[k].contactado += r.contactado;
-      map[k].asignado   += r.asignado;
-      map[k].semiTotal  += r.semiTotal;
-      r.detAsign.forEach(function(v,kk){ map[k].detAsign.set(kk,(map[k].detAsign.get(kk)||0)+v); });
-      r.detSemi.forEach(function(v,kk){ map[k].detSemi.set(kk,(map[k].detSemi.get(kk)||0)+v); });
-      r.detContactado.forEach(function(v,kk){ map[k].detContactado.set(kk,(map[k].detContactado.get(kk)||0)+v); });
-      r.labelByKey.forEach(function(label, kk){
-        if (!map[k].labelByKey.has(kk)) map[k].labelByKey.set(kk, label);
-      });
-    });
-    return Object.keys(map).map(function(k){
-      var o=map[k];
-      return {
-        empresa: k,
-        contactado: o.contactado,
-        asignado: o.asignado,
-        semiTotal: o.semiTotal,
-        saldo: Math.max(0, o.contactado - o.asignado),
-        detAsign: o.detAsign,
-        detSemi: o.detSemi,
-        detContactado: o.detContactado,
-        labelByKey: o.labelByKey
-      };
-    }).sort(function(a,b){
-      var ta=a.contactado+a.asignado+a.semiTotal, tb=b.contactado+b.asignado+b.semiTotal;
-      return tb-ta;
-    });
-  }
-
-  /* ---------- KPIs (SIN %) ---------- */
+  /* ---------- KPIs ---------- */
   function renderKPIs(rows){
     var contact=0, asign=0, semi=0, empSet=new Set();
     rows.forEach(function(r){ contact+=r.contactado; asign+=r.asignado; semi+=r.semiTotal; empSet.add(r.empresa); });
     var saldo = Math.max(0, contact - asign);
 
     function kpi(lab, chip){ return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val">'+chip+'</div></div>'; }
-    document.getElementById('plKpis').innerHTML =
-        kpi('Contactado',   pillNum(contact, 'contact')) +
-        kpi('Semi-cerrado', pillNum(semi, 'semi')) +
-        kpi('Asignado',     pillNum(asign, 'asign')) +
-        kpi('Saldo',        '<span class="pill pill-neutral">'+numeroCL(saldo)+'</span>') +
-        kpi('# Empresas',   '<span class="pill pill-neutral">'+numeroCL(empSet.size)+'</span>');
+    var html = ''
+      + kpi('Contactado',   pillNum(contact, 'contact'))
+      + kpi('Semi-cerrado', pillNum(semi, 'semi'))
+      + kpi('Asignado',     pillNum(asign, 'asign'))
+      + kpi('% Asignación', (contact>0?Math.round(asign*100/contact)+'%':'—'))
+      + kpi('Saldo',        '<span class="pill pill-neutral">'+numeroCL(saldo)+'</span>')
+      + kpi('# Proveedores','<span class="pill pill-neutral">'+numeroCL(empSet.size)+'</span>');
+    document.getElementById('plKpis').innerHTML = html;
   }
 
-  /* ---------- Chart + Paginación ---------- */
+  /* ---------- Chart ---------- */
   var chartRef = null;
   var stackTotalPlugin = {
     id: 'stackTotals',
@@ -385,156 +356,92 @@
     }
     document.getElementById('plChartNote').textContent = '';
 
-    var container = document.querySelector('.pl-chart-container');
-    var pageSizeSel = document.getElementById('plPageSize');
-    var pageInfo    = document.getElementById('plPageInfo');
-    var btnPrev     = document.getElementById('plPrev');
-    var btnNext     = document.getElementById('plNext');
+    var labels=[], dataAsign=[], dataSemi=[], dataNoAsig=[], toolDetail={}, accDetail={};
 
-    // Estado de paginación
-    STATE.pageSize = Number(pageSizeSel.value||20);
-    STATE.page = STATE.page || 1;
-
-    // AUX para refrescar paginación
-    function setPageInfo(total){
-      var pages = Math.max(1, Math.ceil(total/STATE.pageSize));
-      if (STATE.page>pages) STATE.page = pages;
-      pageInfo.textContent = STATE.page + '/' + pages;
-      btnPrev.disabled = (STATE.page<=1);
-      btnNext.disabled = (STATE.page>=pages);
-      return {pages:pages};
-    }
-
-    // Eventos de paginación
-    if (!renderChart._wired){
-      pageSizeSel.addEventListener('change', function(){ STATE.pageSize=Number(pageSizeSel.value||20); STATE.page=1; renderAll(); });
-      btnPrev.addEventListener('click', function(){ if (STATE.page>1){ STATE.page--; renderAll(); }});
-      btnNext.addEventListener('click', function(){ STATE.page++; renderAll(); });
-      renderChart._wired = true;
-    }
-
-    var labels=[], dataAsign=[], dataSemi=[], dataDisp=[], toolDetail={};
-
-    // ----- EJE EMPRESA → HORIZONTAL + PAGINADO -----
-    if (axisMode === 'empresa'){
-      var geAll = groupByEmpresa(rows);      // lista completa ordenada
-      var info = setPageInfo(geAll.length);
-
-      var start = (STATE.page-1)*STATE.pageSize;
-      var end   = Math.min(start+STATE.pageSize, geAll.length);
-      var ge    = geAll.slice(start, end);   // página actual
-
-      labels    = ge.map(function(x){return x.empresa || '—';});
-      dataAsign = ge.map(function(x){return x.asignado;});
-      dataSemi  = ge.map(function(x){return x.semiTotal;});
-      dataDisp  = ge.map(function(x){return Math.max(0, x.saldo);});
-
-      ge.forEach(function(x){
-        toolDetail[x.empresa||'—'] = {
-          asign : mapToSortedPairs(x.detAsign),
-          semi  : mapToSortedPairs(x.detSemi),
-          contact: mapToSortedPairs(x.detContactado)
-        };
-      });
-
-      // Alto exacto para la página (sin comprimir)
-      var rowH = 28;
-      var fullH = Math.max(220, ge.length * rowH);
-      container.style.height = fullH + 'px';
-      container.style.overflowY = 'hidden';
-      canvas.style.height = fullH + 'px';
-      canvas.height = fullH;
-      canvas.style.width = '100%';
-      canvas.width = container.clientWidth;
-
-      if (chartRef && chartRef.destroy) chartRef.destroy();
-      chartRef = new Chart(canvas.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [
-            { label:'Asignado',     data:dataAsign, borderWidth:1, stack:'pipeline', backgroundColor:'#0EA5E9', barPercentage:0.9, categoryPercentage:0.9 },
-            { label:'Semi-cerrado', data:dataSemi,  borderWidth:1, stack:'pipeline', backgroundColor:'#22C55E', barPercentage:0.9, categoryPercentage:0.9 },
-            { label:'Disponible',   data:dataDisp,  borderWidth:1, stack:'pipeline', backgroundColor:'#CBD5E1', barPercentage:0.9, categoryPercentage:0.9 }
-          ]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: false, maintainAspectRatio: false, animation: false,
-          interaction: { mode:'nearest', intersect:true },
-          layout: { padding:{ top:8, right:8, bottom:8, left:8 } },
-          plugins: {
-            legend: { position:'right' },
-            stackTotals: { enabled: ge.length <= 25, fontSize:12 },
-            tooltip: {
-              callbacks: {
-                label: function(ctx){
-                  var det = toolDetail[ctx.label] || {};
-                  var arr = (ctx.dataset.label==='Asignado' ? det.asign
-                           : ctx.dataset.label==='Semi-cerrado' ? det.semi
-                           : det.contact) || [];
-                  var lines = arr.slice(0,6).map(function(p){ return '• '+(p.k||'—')+': '+numeroCL(p.v)+' t'; });
-                  if (arr.length>6) lines.push('• +'+(arr.length-6)+' más…');
-                  return lines.length?lines:['(sin detalle)'];
-                },
-                footer: function(ctx){
-                  var v = ctx && ctx[0] && ctx[0].parsed && ctx[0].parsed.x;
-                  return 'Subtotal '+ctx[0].dataset.label+': '+numeroCL(v)+' t';
-                }
-              }
-            }
-          },
-          scales: {
-            y: { stacked:true, ticks:{ autoSkip:false, padding:4 }, grid:{ display:false } },
-            x: { stacked:true, beginAtZero:true, grace:'12%', ticks:{ padding:6 } }
-          }
-        },
-        plugins: [stackTotalPlugin]
-      });
-      return;
-    }
-
-    // ----- EJE MES (vertical) -----
     var gm = groupByMes(rows);
-    if (STATE.hideEmpty){
-      gm = gm.filter(function(x){ return (x.contactado+x.asignado+x.semiTotal) > 0; });
-    }
-    labels    = gm.map(function(x){return MMESES[x.mes-1];});
+    labels  = gm.map(function(x){return MMESES[x.mes-1];});
     dataAsign = gm.map(function(x){return x.asignado;});
     dataSemi  = gm.map(function(x){return x.semiTotal;});
-    dataDisp  = gm.map(function(x){return Math.max(0, x.saldo);});
-    container.style.height = '360px';
-    container.style.overflowY = 'hidden';
-    canvas.style.height = ''; canvas.height = container.clientHeight;
-    canvas.style.width  = ''; canvas.width  = container.clientWidth;
+    dataNoAsig= gm.map(function(x){return Math.max(0, x.saldo);});
+    gm.forEach(function(x){
+      var lbl = MMESES[x.mes-1];
+      toolDetail[lbl] = {
+        asign : mapToSortedPairs(x.detAsign),
+        semi  : mapToSortedPairs(x.detSemi),
+        // ⟵ NUEVO: detalle de proveedores de lo disponible (contactado)
+        contact: mapToSortedPairs(x.detContactado)
+      };
+      accDetail[lbl] = {
+        detAsign: x.detAsign,
+        detSemi: x.detSemi,
+        detContactado: x.detContactado,
+        labelByKey: x.labelByKey,
+        contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo, lotes:x.lotes
+      };
+    });
 
     if (chartRef && chartRef.destroy) chartRef.destroy();
+
     chartRef = new Chart(canvas.getContext('2d'), {
-      type:'bar',
-      data:{
+      type: 'bar',
+      data: {
         labels: labels,
-        datasets:[
-          { label:'Asignado',     data:dataAsign, borderWidth:1, stack:'pipeline', backgroundColor:'#0EA5E9' },
-          { label:'Semi-cerrado', data:dataSemi,  borderWidth:1, stack:'pipeline', backgroundColor:'#22C55E' },
-          { label:'Disponible',   data:dataDisp,  borderWidth:1, stack:'pipeline', backgroundColor:'#CBD5E1' }
+        datasets: [
+          { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#0EA5E9' },
+          { label: 'Semi-cerrado', data: dataSemi,    borderWidth: 1, stack: 'pipeline', backgroundColor: '#22C55E' },
+          // ⟵ RENOMBRADO: antes “No asignado”
+          { label: 'Disponible',   data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#CBD5E1' }
         ]
       },
-      options:{
-        responsive:true, maintainAspectRatio:false, animation:false,
-        interaction:{ mode:'nearest', intersect:true },
-        layout:{ padding:{ top:12 } },
-        plugins:{ legend:{ position:'right' }, stackTotals:{ enabled:true, fontSize:12 } },
-        scales:{
-          x:{ stacked:true, ticks:{autoSkip:false, maxRotation:45, minRotation:45}, grid:{display:false} },
-          y:{ stacked:true, beginAtZero:true, grace:'15%', ticks:{ padding:6 } }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { mode: 'nearest', intersect: true },
+        layout: { padding: { top: 12 } },
+        plugins: {
+          legend: { position: 'right' },
+          stackTotals: { enabled:true, fontSize:12 },
+          tooltip: {
+            callbacks: {
+              title: function(items){ return (items && items[0] && items[0].label) ? items[0].label : ''; },
+              label: function(ctx){
+                var lbl = ctx.label, ds = ctx.dataset.label;
+                var det = toolDetail[lbl] || {};
+                // Asignado → det.asign; Semi-cerrado → det.semi; Disponible → det.contact
+                var arr = (ds==='Asignado'      ? det.asign
+                         : ds==='Semi-cerrado' ? det.semi
+                         : ds==='Disponible'   ? det.contact
+                         : null) || [];
+                var lines = arr.slice(0,8).map(function(p){
+                  var nk = String(p.k||'').split('|');
+                  var prov = nk[0]||'—', comuna = nk[1]||''; // comuna puede venir vacío porque la clave es solo proveedor
+                  return '• '+prov+(comuna?(' – '+comuna):'')+': '+numeroCL(p.v)+' t';
+                });
+                if (arr.length>8) lines.push('• +'+(arr.length-8)+' más…');
+                return lines.length?lines:['(sin detalle)'];
+              },
+              footer: function(ctx){
+                var v = ctx && ctx[0] && ctx[0].parsed && ctx[0].parsed.y;
+                return 'Subtotal '+ctx[0].dataset.label+': '+numeroCL(v)+' t';
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, ticks: { autoSkip:false, maxRotation:45, minRotation:45 } },
+          y: { stacked: true, beginAtZero: true, grace: '15%', ticks: { padding: 6 } }
         }
       },
-      plugins:[stackTotalPlugin]
+      plugins: [stackTotalPlugin]
     });
+
+    renderTable._accDetail = accDetail;
   }
 
-  /* ---------- Tabla ---------- */
+  /* ---------- Tabla con acordeón ---------- */
   function renderTable(rows, axisMode, year){
+    var html='';
     var gm = groupByMes(rows);
 
     var thead='<thead><tr>'
@@ -572,6 +479,7 @@
               +'<div class="pl-right" style="font-size:12px;color:#64748b">Asignado (t)</div>'
             +'</div>';
 
+      // Fusiona por clave normalizada (SOLO proveedor)
       var idx = new Map();
       r.detContactado.forEach(function(v,k){ idx.set(k, {c:v,s:0,a:0}); });
       r.detSemi.forEach(function(v,k){ var o=idx.get(k)||{c:0,s:0,a:0}; o.s+=v; idx.set(k,o); });
@@ -584,7 +492,12 @@
         })
         .forEach(function(e){
           var k=e[0], vals=e[1];
-          var label = r.labelByKey.get(k) || (k || '—');
+          var label = r.labelByKey.get(k);
+          if (!label){
+            // fallback si no hubiese labels (no debería)
+            var prov = k || '—';
+            label = prov; // sin comuna en la clave
+          }
           body+='<div class="acc-grid"><div>'+label+'</div>'
               +'<div class="pl-right">'+(vals.c?pillNum(vals.c,'contact'):'—')+'</div>'
               +'<div class="pl-right">'+(vals.s?pillNum(vals.s,'semi'):'—')+'</div>'
@@ -609,6 +522,7 @@
     var wrap = document.getElementById('plTableWrap');
     wrap.innerHTML = '<table class="pl-table">'+thead+body+foot+'</table>';
 
+    // toggle acordeón
     wrap.querySelectorAll('.acc-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
         var id = btn.getAttribute('data-acc');
@@ -627,9 +541,7 @@
     deriv: [],
     filters: { year:null, empresa:'', months:[], q:'' },
     hideEmpty: true,
-    axisMode: 'mes', // 'mes' | 'empresa'
-    page: 1,
-    pageSize: 20
+    axisMode: 'mes'
   };
 
   function getSelectedMonths(){
@@ -670,7 +582,6 @@
       STATE.filters.months = ms;
       STATE.filters.q = q;
       STATE.hideEmpty = hide;
-      STATE.page = 1;
       renderAll();
     }
 
@@ -686,7 +597,6 @@
         while (t && t!==monthsDiv && !t.classList.contains('pl-chip')) t = t.parentNode;
         if (t && t.classList.contains('pl-chip')){
           t.classList.toggle('is-on');
-          STATE.page = 1;
           updateFromUI();
         }
       });
@@ -696,13 +606,13 @@
     if (btnDatos){
       btnDatos.addEventListener('click', function(){
         var m = mesesConDatosDispon(STATE.deriv, STATE.filters);
-        setSelectedMonths(m); STATE.filters.months = m; STATE.page = 1; renderAll();
+        setSelectedMonths(m); STATE.filters.months = m; renderAll();
       });
     }
     var btnLimpiar = document.getElementById('plBtnLimpiarMeses');
     if (btnLimpiar){
       btnLimpiar.addEventListener('click', function(){
-        setSelectedMonths([]); STATE.filters.months=[]; STATE.page = 1; renderAll();
+        setSelectedMonths([]); STATE.filters.months=[]; renderAll();
       });
     }
     var btnLimpiarFiltros = document.getElementById('plBtnLimpiarFiltros');
@@ -710,7 +620,7 @@
       btnLimpiarFiltros.addEventListener('click', function(){
         var e=document.getElementById('plEmpresa'); var s=document.getElementById('plSearch');
         if (e) e.value=''; if (s) s.value='';
-        setSelectedMonths([]); STATE.filters.months=[]; STATE.page = 1; renderAll();
+        setSelectedMonths([]); STATE.filters.months=[]; renderAll();
       });
     }
 
@@ -719,7 +629,6 @@
       axisBtn.addEventListener('click', function(){
         STATE.axisMode = (STATE.axisMode==='empresa' ? 'mes' : 'empresa');
         axisBtn.textContent = 'Eje: ' + (STATE.axisMode==='empresa' ? 'Empresa' : 'Mes');
-        STATE.page = 1;
         renderAll();
       });
     }
@@ -765,8 +674,6 @@
       STATE.filters.months = [];
       STATE.filters.q = '';
       STATE.hideEmpty = true;
-      STATE.page = 1;
-      STATE.pageSize = 20;
       setSelectedMonths([]);
 
       attachEvents();
@@ -791,3 +698,4 @@
 
   global.MMppPipeline = { mount: mount, refresh: renderAll };
 })(window);
+
