@@ -1,12 +1,9 @@
 /* /spa-mmpp/mmpp-pipeline.js
-   Pipeline MMPP — Contactado vs Asignado (+ Semi-cerrado total SIEMPRE)
-   Cambios solicitados:
-   - Implementar eje "Empresa" (chart + tabla).
-   - Quitar "Ocultar meses sin datos" y "Meses con datos".
-   - KPI "# Proveedores" (proveedores únicos, no empresas).
-   - Tooltips usan labelByKey (Proveedor – Comuna).
-   - Tabla con ARIA en acordeón + header sticky + scroll responsive.
-   - Eliminar KPI "% Asignación".
+   Pipeline MMPP — Disponible –  Semi-cerrado – Asignado
+   Cambios:
+   - Quitar filtro "Todas las empresas".
+   - Buscador con autocomplete (datalist) que se alimenta con los proveedores visibles en la vista actual.
+   - Título actualizado: "Disponible –  Semi-cerrado – Asignado".
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
@@ -20,7 +17,7 @@
       + '.pl-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}'
       + '.pl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}'
       + '.pl-title{margin:0;font-weight:800;color:#2b3440}'
-      + '.pl-filters{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:10px;align-items:center;margin-top:8px}'
+      + '.pl-filters{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr)) 1fr;gap:10px;align-items:center;margin-top:8px}'
       + '.pl-select,.pl-input{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}'
       + '.pl-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
       + '.pl-btn{background:#eef2ff;border:1px solid #c7d2fe;color:#1e40af;height:38px;border-radius:10px;padding:0 12px;cursor:pointer;font-weight:700}'
@@ -48,7 +45,7 @@
       + '.acc-body{padding:10px 6px 4px 6px;background:#fbfdff;border-top:1px dashed #e5e7eb}'
       + '.acc-grid{display:grid;grid-template-columns:1.3fr .6fr .6fr .6fr;gap:8px}'
       + '@media (max-width:1100px){.pl-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}'
-      + '@media (max-width:720px){.pl-filters{grid-template-columns:1fr}}'
+      + '@media (max-width:720px){.pl-filters{grid-template-columns:1fr 1fr;grid-auto-rows:auto}}'
       + '.pill{display:inline-block;padding:2px 10px;border-radius:9999px;font-weight:800;font-size:12px;line-height:1;border:1px solid transparent}'
       + '.pill-asign{color:#0EA5E9;background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35)}'
       + '.pill-semi{color:#22C55E;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35)}'
@@ -62,7 +59,6 @@
   function range12(){ var a=[]; for(var i=1;i<=12;i++) a.push(i); return a; }
   function uniqSorted(arr){ var set={}, out=[]; (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v);} }); out.sort(); return out; }
   function pillNum(n, kind){ return '<span class="pill pill-'+kind+'">'+numeroCL(n)+'</span>'; }
-
   function normalizeTxt(s){
     return String(s||'')
       .replace(/[–—]/g,'-')
@@ -71,7 +67,7 @@
       .replace(/\s+/g,' ')
       .trim();
   }
-  // clave SOLO por proveedor (para fusionar)
+  // clave SOLO por proveedor
   function makeKey(prov, _comuna){ return normalizeTxt(prov); }
   function displayLabel(prov, comuna){
     var p = String(prov||'—').trim();
@@ -84,7 +80,7 @@
     root.innerHTML = ''
     +'<div class="pl-wrap"><div class="pl-card">'
       +'<div class="pl-head" style="margin-bottom:10px">'
-        +'<h2 class="pl-title">Pipeline MMPP — Contactado vs Asignado</h2>'
+        +'<h2 class="pl-title">Disponible –  Semi-cerrado – Asignado</h2>'
         +'<div class="pl-actions">'
           +'<button id="plBtnLimpiarMeses" class="pl-btn">Limpiar meses</button>'
           +'<button id="plBtnLimpiarFiltros" class="pl-btn">Limpiar filtros</button>'
@@ -94,8 +90,8 @@
 
       +'<div class="pl-filters">'
         +'<select id="plYear" class="pl-select"></select>'
-        +'<select id="plEmpresa" class="pl-select"><option value="">Todas las empresas</option></select>'
-        +'<input id="plSearch" class="pl-input" placeholder="Buscar proveedor, contacto o código de centro..."/>'
+        +'<input id="plSearch" class="pl-input" placeholder="Buscar proveedor…" list="plSuggest" autocomplete="off"/>'
+        +'<datalist id="plSuggest"></datalist>'
       +'</div>'
 
       +'<div class="pl-monthsbar"><div id="plMonths" class="pl-months-line"></div></div>'
@@ -116,7 +112,7 @@
     return s || '—';
   }
 
-  /* ---------- DERIVACIÓN (mensual) con detalles por proveedor ---------- */
+  /* ---------- DERIVACIÓN (mensual) ---------- */
   function buildDerivMonthly(dispon, asig, semi){
     var byId = {};
     (dispon||[]).forEach(function(d){ if (d && (d.id!=null)) byId[String(d.id)] = d; });
@@ -132,13 +128,13 @@
           mes: Number(mes)||0,
           contactado: 0,
           asignado: 0,
-          semiTotal: 0,                   // SIEMPRE TOTAL
+          semiTotal: 0,
           lotes: 0,
           contactos: new Set(),
-          detAsign: new Map(),            // clave normalizada -> tons
+          detAsign: new Map(),
           detSemi: new Map(),
           detContactado: new Map(),
-          labelByKey: new Map(),          // clave normalizada -> “Proveedor – Comuna”
+          labelByKey: new Map(),
           search: ''
         };
       }
@@ -163,7 +159,6 @@
 
       row.contactos.add(label);
       row.detContactado.set(kNorm, (row.detContactado.get(kNorm)||0)+tons);
-      // Prioriza etiqueta de Contactado
       if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
 
       row.search += ' '+emp+' '+proveedor+' '+(d.centroCodigo||'')+' '+(d.areaCodigo||'')+' '+(d.comuna||'');
@@ -241,23 +236,10 @@
     });
   }
 
-  function mesesConDatosDispon(deriv, filters){
-    var sumByM = {}; for (var i=1;i<=12;i++) sumByM[i]=0;
-    (deriv||[]).forEach(function(r){
-      if (filters.year && String(r.anio)!==String(filters.year)) return;
-      if (filters.empresa && r.empresa!==filters.empresa) return;
-      if (filters.q && r.search.indexOf(filters.q)<0) return;
-      sumByM[r.mes] += (Number(r.contactado)||0) + (Number(r.asignado)||0) + (Number(r.semiTotal)||0);
-    });
-    var out=[]; for (var mi=1; mi<=12; mi++) if (sumByM[mi]>0) out.push(mi);
-    return out;
-  }
-
   function filterDeriv(deriv, filters){
     var monthsSel = filters.months || [];
     return (deriv||[]).filter(function(r){
       if (filters.year && String(r.anio)!==String(filters.year)) return false;
-      if (filters.empresa && r.empresa!==filters.empresa) return false;
       if (filters.q && r.search.indexOf(filters.q)<0) return false;
       if (monthsSel.length && monthsSel.indexOf(Number(r.mes))<0) return false;
       return true;
@@ -297,9 +279,8 @@
     });
   }
 
-  // NUEVO: agrupación por empresa (sumando meses filtrados)
   function groupByEmpresa(rows){
-    var map = new Map(); // empresa -> agregados
+    var map = new Map();
     rows.forEach(function(r){
       var e = r.empresa || '—';
       if (!map.has(e)){
@@ -317,14 +298,10 @@
       r.detAsign.forEach(function(v,kk){ o.detAsign.set(kk,(o.detAsign.get(kk)||0)+v); });
       r.detSemi.forEach(function(v,kk){ o.detSemi.set(kk,(o.detSemi.get(kk)||0)+v); });
       r.detContactado.forEach(function(v,kk){ o.detContactado.set(kk,(o.detContactado.get(kk)||0)+v); });
-      r.labelByKey.forEach(function(label, kk){
-        if (!o.labelByKey.has(kk)) o.labelByKey.set(kk, label);
-      });
+      r.labelByKey.forEach(function(label, kk){ if (!o.labelByKey.has(kk)) o.labelByKey.set(kk, label); });
     });
-    // calcular saldo al final
     var out = Array.from(map.values());
     out.forEach(function(o){ o.saldo = Math.max(0, o.contactado - o.asignado); });
-    // ordenar por total (contactado+semi+asignado) desc
     out.sort(function(a,b){ return (b.contactado+b.semiTotal+b.asignado) - (a.contactado+a.semiTotal+a.asignado); });
     return out;
   }
@@ -332,7 +309,6 @@
   /* ---------- KPIs ---------- */
   function renderKPIs(rows){
     var contact=0, asign=0, semi=0;
-    // set de proveedores únicos (por clave normalizada)
     var provSet = new Set();
     rows.forEach(function(r){
       contact+=r.contactado; asign+=r.asignado; semi+=r.semiTotal;
@@ -447,14 +423,15 @@
 
     if (chartRef && chartRef.destroy) chartRef.destroy();
 
+    // orden de datasets para que coincida con el título: Disponible – Semi – Asignado
     chartRef = new Chart(canvas.getContext('2d'), {
       type: 'bar',
       data: {
         labels: labels,
         datasets: [
-          { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#0EA5E9' },
+          { label: 'Disponible',   data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#CBD5E1' },
           { label: 'Semi-cerrado', data: dataSemi,    borderWidth: 1, stack: 'pipeline', backgroundColor: '#22C55E' },
-          { label: 'Disponible',   data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#CBD5E1' }
+          { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#0EA5E9' }
         ]
       },
       options: {
@@ -476,7 +453,6 @@
                          : ds==='Semi-cerrado' ? det.semi
                          : ds==='Disponible'   ? det.contact
                          : null) || [];
-                // usar labelByKey para mostrar etiqueta bonita
                 var acc = accDetail[lbl] || {};
                 var labMap = acc.labelByKey || new Map();
                 var lines = arr.slice(0,8).map(function(p){
@@ -502,19 +478,29 @@
     });
 
     renderTable._accDetail = accDetail;
+    // actualizar sugerencias del buscador según vista actual
+    rebuildSuggestionsFromAccDetail(accDetail);
   }
 
-  /* ---------- Tabla con acordeón ---------- */
-  function renderTable(rows, axisMode, year){
-    var html='';
-    var sections;
+  /* ---------- Sugerencias (autocomplete) ---------- */
+  function rebuildSuggestionsFromAccDetail(accDetail){
+    var dl = document.getElementById('plSuggest');
+    if (!dl) return;
+    var set = new Set();
+    Object.keys(accDetail||{}).forEach(function(bucket){
+      var lab = accDetail[bucket].labelByKey;
+      if (lab && lab.forEach){
+        lab.forEach(function(v){ if (v) set.add(String(v)); });
+      }
+    });
+    var opts = Array.from(set).sort().map(function(txt){ return '<option value="'+txt.replace(/"/g,'&quot;')+'"></option>'; }).join('');
+    dl.innerHTML = opts;
+  }
 
-    if (axisMode === 'empresa'){
-      sections = groupByEmpresa(rows);
-    } else {
-      sections = groupByMes(rows)
-        .filter(function(r){ return (r.contactado>0 || r.asignado>0 || r.semiTotal>0); });
-    }
+  /* ---------- Tabla ---------- */
+  function renderTable(rows, axisMode, year){
+    var sections = (axisMode === 'empresa') ? groupByEmpresa(rows)
+                                            : groupByMes(rows).filter(function(r){ return (r.contactado>0 || r.asignado>0 || r.semiTotal>0); });
 
     var thead='<thead><tr>'
       +'<th>'+(axisMode==='empresa' ? 'EMPRESA' : 'MES')+'</th>'
@@ -554,7 +540,6 @@
               +'<div class="pl-right" style="font-size:12px;color:#64748b">Asignado (t)</div>'
             +'</div>';
 
-      // Fusiona por clave normalizada (SOLO proveedor)
       var idx = new Map();
       r.detContactado.forEach(function(v,k){ idx.set(k, {c:v,s:0,a:0}); });
       r.detSemi.forEach(function(v,k){ var o=idx.get(k)||{c:0,s:0,a:0}; o.s+=v; idx.set(k,o); });
@@ -592,7 +577,6 @@
     var wrap = document.getElementById('plTableWrap');
     wrap.innerHTML = '<table class="pl-table">'+thead+body+foot+'</table>';
 
-    // toggle acordeón con ARIA
     wrap.querySelectorAll('.acc-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
         var id = btn.getAttribute('data-acc');
@@ -609,8 +593,8 @@
   /* ---------- estado / montaje ---------- */
   var STATE = {
     deriv: [],
-    filters: { year:null, empresa:'', months:[], q:'' },
-    axisMode: 'mes' // 'mes' | 'empresa'
+    filters: { year:null, months:[], q:'' },
+    axisMode: 'mes'
   };
 
   function getSelectedMonths(){
@@ -641,18 +625,16 @@
   function attachEvents(){
     function updateFromUI(){
       var y   = document.getElementById('plYear').value;
-      var e   = document.getElementById('plEmpresa').value;
       var ms  = getSelectedMonths();
       var q   = (document.getElementById('plSearch').value||'').trim().toLowerCase();
 
       STATE.filters.year = y;
-      STATE.filters.empresa = e;
       STATE.filters.months = ms;
       STATE.filters.q = q;
       renderAll();
     }
 
-    ['plYear','plEmpresa','plSearch'].forEach(function(id){
+    ['plYear','plSearch'].forEach(function(id){
       var el=document.getElementById(id); if (el) el.addEventListener('input', updateFromUI);
       var elc=document.getElementById(id); if (elc) elc.addEventListener('change', updateFromUI);
     });
@@ -682,8 +664,8 @@
     var btnLimpiarFiltros = document.getElementById('plBtnLimpiarFiltros');
     if (btnLimpiarFiltros){
       btnLimpiarFiltros.addEventListener('click', function(){
-        var e=document.getElementById('plEmpresa'); var s=document.getElementById('plSearch');
-        if (e) e.value=''; if (s) s.value='';
+        var s=document.getElementById('plSearch');
+        if (s) s.value='';
         setSelectedMonths([]); STATE.filters.months=[]; renderAll();
       });
     }
@@ -699,22 +681,17 @@
   }
 
   function optionsFromDeriv(deriv){
-    var emp  = uniqSorted((deriv||[]).map(function(r){return r.empresa;}).filter(Boolean));
     var years= uniqSorted((deriv||[]).map(function(r){return r.anio;}).filter(Boolean));
-    return {emp:emp, years:years};
+    return {years:years};
   }
 
   function fillFilters(deriv){
     var selY = document.getElementById('plYear');
-    var selE = document.getElementById('plEmpresa');
-
     var opts = optionsFromDeriv(deriv);
     var yNow = (new Date()).getFullYear();
     var years = opts.years.length ? opts.years : [yNow];
     var yDefault = years.indexOf(yNow)>=0 ? yNow : years[years.length-1];
-
     selY.innerHTML = years.map(function(y){return '<option value="'+y+'" '+(String(y)===String(yDefault)?'selected':'')+'>'+y+'</option>';}).join('');
-    selE.innerHTML = '<option value="">Todas las empresas</option>' + opts.emp.map(function(e){return '<option value="'+e+'">'+e+'</option>'}).join('');
   }
 
   function mount(opts){
@@ -729,7 +706,6 @@
 
       var ySel = document.getElementById('plYear');
       STATE.filters.year = ySel ? ySel.value : '';
-      STATE.filters.empresa = '';
       STATE.filters.months = [];
       STATE.filters.q = '';
       setSelectedMonths([]);
