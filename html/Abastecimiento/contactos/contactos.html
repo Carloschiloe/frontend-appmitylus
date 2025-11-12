@@ -74,10 +74,7 @@
             <button id="btnOpenContactoModal" class="mmpp-add">
               <i class="material-icons left" style="font-size:18px">record_voice_over</i> Registrar contacto
             </button>
-            <!-- NUEVO: botón para semi-cerrado -->
-            <button id="btnOpenSemiCerrado" class="mmpp-add" title="Asignar biomasa semi-cerrada">
-              <i class="material-icons left" style="font-size:18px">inventory</i> Asignar biomasa semi-cerrada
-            </button>
+            <!-- (El botón general de "Asignar biomasa semi-cerrada" fue eliminado) -->
           </div>
           <div id="filtrosContactos" class="filtros-row" style="min-width:620px;flex:1">
             <select id="fltSemana" class="browser-default modern-select" aria-label="Filtrar por semana">
@@ -542,7 +539,7 @@
 <!-- Orquestador (carga e inicializa todo, incluido el Resumen) -->
 <script type="module" src="/js/abastecimiento/contactos/index.js?v=12"></script>
 
-<!-- NUEVO: modal de Semi-cerrado (escucha #btnOpenSemiCerrado y expone window.openSemiCerradoModal) -->
+<!-- Modal de Semi-cerrado (se mantiene porque lo usan los botones por fila) -->
 <script type="module" src="/js/abastecimiento/semi-cerrado/modal.js?v=1"></script>
 
 <!-- Init mínimo (tabs/modals) -->
@@ -557,4 +554,3 @@
 
 </body>
 </html>
-
