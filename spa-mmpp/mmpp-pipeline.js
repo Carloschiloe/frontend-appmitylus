@@ -1,9 +1,10 @@
 /* /spa-mmpp/mmpp-pipeline.js
    Pipeline MMPP — Disponible –  Semi-cerrado – Asignado
-   Cambios:
-   - Quitar filtro "Todas las empresas".
-   - Buscador con autocomplete (datalist) que se alimenta con los proveedores visibles en la vista actual.
-   - Título actualizado: "Disponible –  Semi-cerrado – Asignado".
+   - Eje Empresa/Mes.
+   - Sin filtro "Todas las empresas" ni casillas extras.
+   - Autocomplete custom: aparece al escribir ≥2 letras, filtra en vivo.
+   - Búsqueda y sugerencias por Proveedor/Contacto y Código de Centro.
+   - Semi-cerrado SIEMPRE total.
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
@@ -50,7 +51,12 @@
       + '.pill-asign{color:#0EA5E9;background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35)}'
       + '.pill-semi{color:#22C55E;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35)}'
       + '.pill-contact{color:#475569;background:rgba(203,213,225,.35);border-color:rgba(148,163,184,.45)}'
-      + '.pill-neutral{color:#111827;background:rgba(17,24,39,.06);border-color:rgba(17,24,39,.15)}';
+      + '.pill-neutral{color:#111827;background:rgba(17,24,39,.06);border-color:rgba(17,24,39,.15)}'
+      /* Autocomplete custom */
+      + '.pl-autocomplete{position:relative}'
+      + '.pl-suggest{position:absolute;left:0;right:0;top:100%;margin-top:6px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 12px 30px rgba(17,24,39,.12);max-height:280px;overflow:auto;z-index:50;padding:6px}'
+      + '.pl-suggest-item{padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600}'
+      + '.pl-suggest-item:hover,.pl-suggest-item.is-active{background:#eef2ff;color:#1e40af}';
     var s=document.createElement('style'); s.id='mmpp-pipeline-css'; s.textContent=css; document.head.appendChild(s);
   }
 
@@ -66,6 +72,11 @@
       .toLowerCase()
       .replace(/\s+/g,' ')
       .trim();
+  }
+  function norm(s){ // para el buscador
+    return String(s||'')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase().trim();
   }
   // clave SOLO por proveedor
   function makeKey(prov, _comuna){ return normalizeTxt(prov); }
@@ -90,8 +101,11 @@
 
       +'<div class="pl-filters">'
         +'<select id="plYear" class="pl-select"></select>'
-        +'<input id="plSearch" class="pl-input" placeholder="Buscar proveedor…" list="plSuggest" autocomplete="off"/>'
-        +'<datalist id="plSuggest"></datalist>'
+
+        +'<div class="pl-autocomplete">'
+          +'<input id="plSearch" class="pl-input" placeholder="Buscar proveedor, contacto o código de centro…" autocomplete="off"/>'
+          +'<div id="plSuggest" class="pl-suggest" hidden></div>'
+        +'</div>'
       +'</div>'
 
       +'<div class="pl-monthsbar"><div id="plMonths" class="pl-months-line"></div></div>'
@@ -135,6 +149,7 @@
           detSemi: new Map(),
           detContactado: new Map(),
           labelByKey: new Map(),
+          codes: new Set(),              // <- códigos de centro/área presentes
           search: ''
         };
       }
@@ -161,6 +176,11 @@
       row.detContactado.set(kNorm, (row.detContactado.get(kNorm)||0)+tons);
       if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
 
+      var ccode = (d.centroCodigo||'');
+      var acode = (d.areaCodigo||'');
+      if (ccode) row.codes.add(String(ccode));
+      if (acode) row.codes.add(String(acode));
+
       row.search += ' '+emp+' '+proveedor+' '+(d.centroCodigo||'')+' '+(d.areaCodigo||'')+' '+(d.comuna||'');
     });
 
@@ -183,6 +203,11 @@
       row.contactos.add(label);
       row.detAsign.set(kNorm, (row.detAsign.get(kNorm)||0)+tons);
       if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
+
+      var ccode = (a.centroCodigo||'') || (dpo && dpo.centroCodigo) || '';
+      var acode = (a.areaCodigo||'') || (dpo && dpo.areaCodigo) || '';
+      if (ccode) row.codes.add(String(ccode));
+      if (acode) row.codes.add(String(acode));
 
       row.search += ' '+emp+' '+proveedor+' '+(a.centroCodigo||'')+' '+(a.areaCodigo||'')+' '+(a.comuna||'');
     });
@@ -212,6 +237,11 @@
       row.detSemi.set(kNorm, (row.detSemi.get(kNorm)||0)+tons);
       if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
 
+      var ccode = (s.centroCodigo||'');
+      var acode = (s.areaCodigo||'');
+      if (ccode) row.codes.add(String(ccode));
+      if (acode) row.codes.add(String(acode));
+
       row.search += ' '+emp+' '+proveedor+' '+(s.centroCodigo||'')+' '+(s.areaCodigo||'')+' '+(s.comuna||'');
     });
 
@@ -231,6 +261,7 @@
         detSemi: o.detSemi,
         detContactado: o.detContactado,
         labelByKey: o.labelByKey,
+        codes: o.codes,
         search: (o.search||'').toLowerCase()
       };
     });
@@ -246,11 +277,17 @@
     });
   }
 
+  function mergeSets(to, from){
+    if (!to) to = new Set();
+    if (from && from.forEach){ from.forEach(function(v){ to.add(v); }); }
+    return to;
+  }
+
   function groupByMes(rows){
     var map={};
-    for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,semiTotal:0,lotes:0, detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map()};
+    for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,semiTotal:0,lotes:0, detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map(), codes:new Set()};
     rows.forEach(function(r){
-      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,semiTotal:0,lotes:0,detAsign:new Map(),detSemi:new Map(),detContactado:new Map(),labelByKey:new Map()};
+      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,semiTotal:0,lotes:0,detAsign:new Map(),detSemi:new Map(),detContactado:new Map(),labelByKey:new Map(), codes:new Set()};
       map[k].contactado += r.contactado;
       map[k].asignado   += r.asignado;
       map[k].semiTotal  += r.semiTotal;
@@ -258,9 +295,8 @@
       r.detAsign.forEach(function(v,kk){ map[k].detAsign.set(kk,(map[k].detAsign.get(kk)||0)+v); });
       r.detSemi.forEach(function(v,kk){ map[k].detSemi.set(kk,(map[k].detSemi.get(kk)||0)+v); });
       r.detContactado.forEach(function(v,kk){ map[k].detContactado.set(kk,(map[k].detContactado.get(kk)||0)+v); });
-      r.labelByKey.forEach(function(label, kk){
-        if (!map[k].labelByKey.has(kk)) map[k].labelByKey.set(kk, label);
-      });
+      r.labelByKey.forEach(function(label, kk){ if (!map[k].labelByKey.has(kk)) map[k].labelByKey.set(kk, label); });
+      map[k].codes = mergeSets(map[k].codes, r.codes);
     });
     return range12().map(function(m){
       var o = map[m];
@@ -274,7 +310,8 @@
         detAsign: o.detAsign,
         detSemi: o.detSemi,
         detContactado: o.detContactado,
-        labelByKey: o.labelByKey
+        labelByKey: o.labelByKey,
+        codes: o.codes
       };
     });
   }
@@ -287,7 +324,7 @@
         map.set(e, {
           empresa:e,
           contactado:0, asignado:0, semiTotal:0, saldo:0, lotes:0,
-          detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map()
+          detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map(), codes:new Set()
         });
       }
       var o = map.get(e);
@@ -299,6 +336,7 @@
       r.detSemi.forEach(function(v,kk){ o.detSemi.set(kk,(o.detSemi.get(kk)||0)+v); });
       r.detContactado.forEach(function(v,kk){ o.detContactado.set(kk,(o.detContactado.get(kk)||0)+v); });
       r.labelByKey.forEach(function(label, kk){ if (!o.labelByKey.has(kk)) o.labelByKey.set(kk, label); });
+      o.codes = mergeSets(o.codes, r.codes);
     });
     var out = Array.from(map.values());
     out.forEach(function(o){ o.saldo = Math.max(0, o.contactado - o.asignado); });
@@ -375,6 +413,7 @@
           detSemi: x.detSemi,
           detContactado: x.detContactado,
           labelByKey: x.labelByKey,
+          codes: x.codes,
           contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo, lotes:x.lotes
         };
       });
@@ -398,6 +437,7 @@
           detSemi: x.detSemi,
           detContactado: x.detContactado,
           labelByKey: x.labelByKey,
+          codes: x.codes,
           contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo, lotes:x.lotes
         };
       });
@@ -423,7 +463,7 @@
 
     if (chartRef && chartRef.destroy) chartRef.destroy();
 
-    // orden de datasets para que coincida con el título: Disponible – Semi – Asignado
+    // Orden para coincidir con el título: Disponible – Semi – Asignado
     chartRef = new Chart(canvas.getContext('2d'), {
       type: 'bar',
       data: {
@@ -483,18 +523,43 @@
   }
 
   /* ---------- Sugerencias (autocomplete) ---------- */
+  var STATE = {
+    deriv: [],
+    filters: { year:null, months:[], q:'' },
+    axisMode: 'mes',
+    allSuggestions: [],  // textos bonitos (Proveedor – Comuna) + códigos
+    suggOpen: false,
+    suggIndex: -1
+  };
+
   function rebuildSuggestionsFromAccDetail(accDetail){
-    var dl = document.getElementById('plSuggest');
-    if (!dl) return;
+    // Recolecta etiquetas bonitas (Proveedor – Comuna) y códigos presentes en la vista
     var set = new Set();
     Object.keys(accDetail||{}).forEach(function(bucket){
       var lab = accDetail[bucket].labelByKey;
-      if (lab && lab.forEach){
-        lab.forEach(function(v){ if (v) set.add(String(v)); });
-      }
+      if (lab && lab.forEach){ lab.forEach(function(v){ if (v) set.add(String(v)); }); }
+      var codes = accDetail[bucket].codes;
+      if (codes && codes.forEach){ codes.forEach(function(c){ if (c) set.add(String(c)); }); }
     });
-    var opts = Array.from(set).sort().map(function(txt){ return '<option value="'+txt.replace(/"/g,'&quot;')+'"></option>'; }).join('');
-    dl.innerHTML = opts;
+    STATE.allSuggestions = Array.from(set).sort();
+  }
+
+  function renderSuggestList(items){
+    var box = document.getElementById('plSuggest');
+    if (!box) return;
+    if (!items || !items.length){ box.hidden = true; STATE.suggOpen=false; return; }
+    box.innerHTML = items.map(function(txt, i){
+      return '<div class="pl-suggest-item" data-i="'+i+'">'+txt+'</div>';
+    }).join('');
+    box.hidden = false;
+    STATE.suggOpen = true;
+    STATE.suggIndex = -1;
+  }
+
+  function closeSuggest(){
+    var box = document.getElementById('plSuggest');
+    if (box){ box.hidden = true; }
+    STATE.suggOpen=false; STATE.suggIndex=-1;
   }
 
   /* ---------- Tabla ---------- */
@@ -590,29 +655,7 @@
     });
   }
 
-  /* ---------- estado / montaje ---------- */
-  var STATE = {
-    deriv: [],
-    filters: { year:null, months:[], q:'' },
-    axisMode: 'mes'
-  };
-
-  function getSelectedMonths(){
-    var monthsDiv = document.getElementById('plMonths');
-    var nodes = monthsDiv ? monthsDiv.querySelectorAll('.pl-chip.is-on') : [];
-    var out=[]; for (var i=0;i<nodes.length;i++){ out.push(Number(nodes[i].getAttribute('data-m'))||0); }
-    return out;
-  }
-  function setSelectedMonths(arr){
-    var monthsDiv = document.getElementById('plMonths');
-    var nodes = monthsDiv ? monthsDiv.querySelectorAll('.pl-chip') : [];
-    for (var i=0;i<nodes.length;i++){
-      var m = Number(nodes[i].getAttribute('data-m'))||0;
-      var on = arr && arr.indexOf(m)>=0;
-      if (on) nodes[i].classList.add('is-on'); else nodes[i].classList.remove('is-on');
-    }
-  }
-
+  /* ---------- refresco ---------- */
   function filterRowsForRefresh(){ return filterDeriv(STATE.deriv, STATE.filters); }
 
   function renderAll(){
@@ -622,19 +665,94 @@
     renderTable(rows, STATE.axisMode, STATE.filters.year || '');
   }
 
+  /* ---------- eventos ---------- */
   function attachEvents(){
+    var searchEl = document.getElementById('plSearch');
+    var suggestEl = document.getElementById('plSuggest');
+
     function updateFromUI(){
       var y   = document.getElementById('plYear').value;
       var ms  = getSelectedMonths();
-      var q   = (document.getElementById('plSearch').value||'').trim().toLowerCase();
-
+      var qRaw= (searchEl && searchEl.value) ? searchEl.value : '';
+      var qn  = norm(qRaw);
       STATE.filters.year = y;
       STATE.filters.months = ms;
-      STATE.filters.q = q;
+      // regla: solo filtrar si hay ≥ 2 letras
+      STATE.filters.q = (qn.length>=2 ? qn : '');
       renderAll();
     }
 
-    ['plYear','plSearch'].forEach(function(id){
+    if (searchEl){
+      // filtra al escribir
+      searchEl.addEventListener('input', function(){
+        var qn = norm(searchEl.value||'');
+        if (qn.length < 2){ closeSuggest(); STATE.filters.q=''; renderAll(); return; }
+        var matches = STATE.allSuggestions.filter(function(txt){
+          return norm(txt).indexOf(qn) !== -1;
+        }).slice(0, 60);
+        renderSuggestList(matches);
+        STATE.filters.q = qn;
+        renderAll();
+      });
+
+      // navegación teclado
+      searchEl.addEventListener('keydown', function(e){
+        if (!STATE.suggOpen) return;
+        var items = suggestEl.querySelectorAll('.pl-suggest-item');
+        if (!items.length) return;
+
+        if (e.key === 'ArrowDown'){ e.preventDefault();
+          STATE.suggIndex = Math.min(items.length-1, STATE.suggIndex+1);
+        } else if (e.key === 'ArrowUp'){ e.preventDefault();
+          STATE.suggIndex = Math.max(0, STATE.suggIndex-1);
+        } else if (e.key === 'Enter'){
+          if (STATE.suggIndex>=0){ e.preventDefault();
+            var txt = items[STATE.suggIndex].textContent;
+            searchEl.value = txt;
+            STATE.filters.q = norm(txt);
+            closeSuggest();
+            renderAll();
+          }
+          return;
+        } else if (e.key === 'Escape'){ closeSuggest(); return; }
+
+        items.forEach(function(it){ it.classList.remove('is-active'); });
+        if (STATE.suggIndex>=0) items[STATE.suggIndex].classList.add('is-active');
+      });
+
+      searchEl.addEventListener('focus', function(){
+        var qn = norm(searchEl.value||'');
+        if (qn.length>=2){
+          var matches = STATE.allSuggestions.filter(function(txt){ return norm(txt).indexOf(qn)!==-1; }).slice(0,60);
+          renderSuggestList(matches);
+        }
+      });
+
+      searchEl.addEventListener('blur', function(){ setTimeout(closeSuggest, 120); });
+    }
+
+    if (suggestEl){
+      suggestEl.addEventListener('mousedown', function(e){ e.preventDefault(); });
+      suggestEl.addEventListener('click', function(e){
+        var item = e.target.closest('.pl-suggest-item');
+        if (!item) return;
+        var txt = item.textContent;
+        if (searchEl) searchEl.value = txt;
+        STATE.filters.q = norm(txt);
+        closeSuggest();
+        renderAll();
+      });
+      suggestEl.addEventListener('mouseover', function(e){
+        var item = e.target.closest('.pl-suggest-item');
+        if (!item) return;
+        var items = suggestEl.querySelectorAll('.pl-suggest-item');
+        items.forEach(function(it){ it.classList.remove('is-active'); });
+        item.classList.add('is-active');
+        STATE.suggIndex = parseInt(item.getAttribute('data-i'),10) || 0;
+      });
+    }
+
+    ['plYear'].forEach(function(id){
       var el=document.getElementById(id); if (el) el.addEventListener('input', updateFromUI);
       var elc=document.getElementById(id); if (elc) elc.addEventListener('change', updateFromUI);
     });
@@ -664,9 +782,8 @@
     var btnLimpiarFiltros = document.getElementById('plBtnLimpiarFiltros');
     if (btnLimpiarFiltros){
       btnLimpiarFiltros.addEventListener('click', function(){
-        var s=document.getElementById('plSearch');
-        if (s) s.value='';
-        setSelectedMonths([]); STATE.filters.months=[]; renderAll();
+        if (searchEl) searchEl.value='';
+        setSelectedMonths([]); STATE.filters.months=[]; STATE.filters.q=''; closeSuggest(); renderAll();
       });
     }
 
@@ -680,6 +797,24 @@
     }
   }
 
+  /* ---------- helpers meses ---------- */
+  function getSelectedMonths(){
+    var monthsDiv = document.getElementById('plMonths');
+    var nodes = monthsDiv ? monthsDiv.querySelectorAll('.pl-chip.is-on') : [];
+    var out=[]; for (var i=0;i<nodes.length;i++){ out.push(Number(nodes[i].getAttribute('data-m'))||0); }
+    return out;
+  }
+  function setSelectedMonths(arr){
+    var monthsDiv = document.getElementById('plMonths');
+    var nodes = monthsDiv ? monthsDiv.querySelectorAll('.pl-chip') : [];
+    for (var i=0;i<nodes.length;i++){
+      var m = Number(nodes[i].getAttribute('data-m'))||0;
+      var on = arr && arr.indexOf(m)>=0;
+      if (on) nodes[i].classList.add('is-on'); else nodes[i].classList.remove('is-on');
+    }
+  }
+
+  /* ---------- filtros iniciales & montaje ---------- */
   function optionsFromDeriv(deriv){
     var years= uniqSorted((deriv||[]).map(function(r){return r.anio;}).filter(Boolean));
     return {years:years};
@@ -730,5 +865,7 @@
     }
   }
 
+  /* ---------- API pública ---------- */
   global.MMppPipeline = { mount: mount, refresh: renderAll };
 })(window);
+
