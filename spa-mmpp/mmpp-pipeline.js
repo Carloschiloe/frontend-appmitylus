@@ -2,7 +2,7 @@
    Pipeline MMPP — Contactado vs Asignado (+ Semi-cerrado total SIEMPRE)
    - Fusión SOLO por proveedor (normalización fuerte).
    - Semi-cerrado SIEMPRE total en KPI, gráfico y tabla.
-   - Eje Empresa: barras horizontales + scroll vertical (nombres completos, sin autoskip).
+   - Vista Empresa: barras horizontales **PAGINADAS** (Top N) para evitar amontonamiento.
    - KPI SIN "% Asignación".
 */
 (function (global) {
@@ -31,9 +31,11 @@
       + '.pl-chip.is-on{background:#1e40af;color:#fff;border-color:#1e40af}'
       + '.pl-chart-wrap{margin-top:14px}'
       + '.pl-chart-frame{display:block;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;background:#fff}'
-      + '.pl-chart-container{position:relative;width:100%;height:360px;overflow:hidden}'
+      + '.pl-chart-container{position:relative;width:100%;height:480px;overflow:hidden}'
       + '.pl-chart-canvas{display:block;width:100% !important;height:100% !important}'
       + '.pl-note{color:#64748b;font-size:12px;margin-top:6px}'
+      + '.pl-pager{display:flex;align-items:center;gap:8px;margin-top:8px;justify-content:flex-end;flex-wrap:wrap}'
+      + '.pl-pager select,.pl-pager button{height:34px;border:1px solid #e5e7eb;border-radius:10px;background:#fafafa;padding:0 10px;font-weight:700;cursor:pointer}'
       + '.pl-table{width:100%;border-collapse:separate;border-spacing:0 8px;margin-top:14px}'
       + '.pl-table th,.pl-table td{padding:10px 8px}'
       + '.pl-table tr{background:#fff;border:1px solid #e5e7eb}'
@@ -57,7 +59,6 @@
   function uniqSorted(arr){ var set={}, out=[]; (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v);} }); out.sort(); return out; }
   function pillNum(n, kind){ return '<span class="pill pill-'+kind+'">'+numeroCL(n)+'</span>'; }
 
-  // Normalización fuerte para agrupar por PROVEEDOR (sin comuna)
   function normalizeTxt(s){
     return String(s||'')
       .replace(/[–—]/g,'-')
@@ -99,7 +100,15 @@
 
       +'<div class="pl-chart-wrap"><div class="pl-chart-frame"><div class="pl-chart-container">'
         +'<canvas id="plChart" class="pl-chart-canvas"></canvas>'
-      +'</div></div><div id="plChartNote" class="pl-note"></div></div>'
+      +'</div></div>'
+      +'<div class="pl-pager">'
+        +'<span>Proveedores por página</span>'
+        +'<select id="plPageSize"><option>10</option><option selected>20</option><option>50</option><option>100</option></select>'
+        +'<button id="plPrev">◀︎</button>'
+        +'<span id="plPageInfo">1/1</span>'
+        +'<button id="plNext">▶︎</button>'
+      +'</div>'
+      +'<div id="plChartNote" class="pl-note"></div></div>'
 
       +'<div id="plTableWrap"></div>'
     +'</div></div>';
@@ -130,7 +139,7 @@
           mes: Number(mes)||0,
           contactado: 0,
           asignado: 0,
-          semiTotal: 0, // SIEMPRE TOTAL
+          semiTotal: 0,
           lotes: 0,
           contactos: new Set(),
           detAsign: new Map(), detSemi: new Map(), detContactado: new Map(),
@@ -141,7 +150,7 @@
       return map[k];
     }
 
-    // Contactado (prefiere tonsDisponible si no existe tons)
+    // Contactado
     (dispon||[]).forEach(function(d){
       var emp = cleanEmpresa(d, null);
       var anio = Number(d.anio)||null;
@@ -163,7 +172,7 @@
       row.search += ' '+emp+' '+proveedor+' '+(d.centroCodigo||'')+' '+(d.areaCodigo||'')+' '+(d.comuna||'');
     });
 
-    // Asignado (por mes destino)
+    // Asignado
     (asig||[]).forEach(function(a){
       var destY = Number(a.destAnio||a.anio||0)||0;
       var destM = Number(a.destMes ||a.mes ||0)||0;
@@ -186,7 +195,7 @@
       row.search += ' '+emp+' '+proveedor+' '+(a.centroCodigo||'')+' '+(a.areaCodigo||'')+' '+(a.comuna||'');
     });
 
-    // Semi-cerrado (TOTAL por periodo)
+    // Semi-cerrado total
     (semi||[]).forEach(function(s){
       var anio = Number(s.anio)||null;
       var mes  = Number(s.mes)||0;
@@ -285,7 +294,7 @@
     });
   }
 
-  // Agrupación por empresa (para eje Empresa)
+  // Agrupación por empresa
   function groupByEmpresa(rows){
     var map={};
     (rows||[]).forEach(function(r){
@@ -301,7 +310,6 @@
         if (!map[k].labelByKey.has(kk)) map[k].labelByKey.set(kk, label);
       });
     });
-    // ordenar por total desc
     return Object.keys(map).map(function(k){
       var o=map[k];
       return {
@@ -328,16 +336,15 @@
     var saldo = Math.max(0, contact - asign);
 
     function kpi(lab, chip){ return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val">'+chip+'</div></div>'; }
-    var html = ''
-      + kpi('Contactado',   pillNum(contact, 'contact'))
-      + kpi('Semi-cerrado', pillNum(semi, 'semi'))
-      + kpi('Asignado',     pillNum(asign, 'asign'))
-      + kpi('Saldo',        '<span class="pill pill-neutral">'+numeroCL(saldo)+'</span>')
-      + kpi('# Empresas',   '<span class="pill pill-neutral">'+numeroCL(empSet.size)+'</span>');
-    document.getElementById('plKpis').innerHTML = html;
+    document.getElementById('plKpis').innerHTML =
+        kpi('Contactado',   pillNum(contact, 'contact')) +
+        kpi('Semi-cerrado', pillNum(semi, 'semi')) +
+        kpi('Asignado',     pillNum(asign, 'asign')) +
+        kpi('Saldo',        '<span class="pill pill-neutral">'+numeroCL(saldo)+'</span>') +
+        kpi('# Empresas',   '<span class="pill pill-neutral">'+numeroCL(empSet.size)+'</span>');
   }
 
-  /* ---------- Chart ---------- */
+  /* ---------- Chart + Paginación ---------- */
   var chartRef = null;
   var stackTotalPlugin = {
     id: 'stackTotals',
@@ -378,13 +385,46 @@
     }
     document.getElementById('plChartNote').textContent = '';
 
-    var labels=[], dataAsign=[], dataSemi=[], dataDisp=[], toolDetail={};
     var container = document.querySelector('.pl-chart-container');
+    var pageSizeSel = document.getElementById('plPageSize');
+    var pageInfo    = document.getElementById('plPageInfo');
+    var btnPrev     = document.getElementById('plPrev');
+    var btnNext     = document.getElementById('plNext');
 
-    // ----- EJE EMPRESA → HORIZONTAL + SCROLL VERTICAL -----
+    // Estado de paginación
+    STATE.pageSize = Number(pageSizeSel.value||20);
+    STATE.page = STATE.page || 1;
+
+    // AUX para refrescar paginación
+    function setPageInfo(total){
+      var pages = Math.max(1, Math.ceil(total/STATE.pageSize));
+      if (STATE.page>pages) STATE.page = pages;
+      pageInfo.textContent = STATE.page + '/' + pages;
+      btnPrev.disabled = (STATE.page<=1);
+      btnNext.disabled = (STATE.page>=pages);
+      return {pages:pages};
+    }
+
+    // Eventos de paginación
+    if (!renderChart._wired){
+      pageSizeSel.addEventListener('change', function(){ STATE.pageSize=Number(pageSizeSel.value||20); STATE.page=1; renderAll(); });
+      btnPrev.addEventListener('click', function(){ if (STATE.page>1){ STATE.page--; renderAll(); }});
+      btnNext.addEventListener('click', function(){ STATE.page++; renderAll(); });
+      renderChart._wired = true;
+    }
+
+    var labels=[], dataAsign=[], dataSemi=[], dataDisp=[], toolDetail={};
+
+    // ----- EJE EMPRESA → HORIZONTAL + PAGINADO -----
     if (axisMode === 'empresa'){
-      var ge = groupByEmpresa(rows);  // ya viene ordenado desc
-      labels    = ge.map(function(x){return x.empresa || '—';}); // nombres completos
+      var geAll = groupByEmpresa(rows);      // lista completa ordenada
+      var info = setPageInfo(geAll.length);
+
+      var start = (STATE.page-1)*STATE.pageSize;
+      var end   = Math.min(start+STATE.pageSize, geAll.length);
+      var ge    = geAll.slice(start, end);   // página actual
+
+      labels    = ge.map(function(x){return x.empresa || '—';});
       dataAsign = ge.map(function(x){return x.asignado;});
       dataSemi  = ge.map(function(x){return x.semiTotal;});
       dataDisp  = ge.map(function(x){return Math.max(0, x.saldo);});
@@ -397,12 +437,11 @@
         };
       });
 
-      // Alto dinámico + scroll vertical
-      var rowH = 28;          // alto por proveedor
-      var maxH = 480;         // alto visible
-      var fullH = Math.max(maxH, ge.length * rowH);
-      container.style.height = maxH + 'px';
-      container.style.overflowY = 'auto';
+      // Alto exacto para la página (sin comprimir)
+      var rowH = 28;
+      var fullH = Math.max(220, ge.length * rowH);
+      container.style.height = fullH + 'px';
+      container.style.overflowY = 'hidden';
       canvas.style.height = fullH + 'px';
       canvas.height = fullH;
       canvas.style.width = '100%';
@@ -420,13 +459,13 @@
           ]
         },
         options: {
-          indexAxis: 'y', // HORIZONTAL
+          indexAxis: 'y',
           responsive: false, maintainAspectRatio: false, animation: false,
           interaction: { mode:'nearest', intersect:true },
           layout: { padding:{ top:8, right:8, bottom:8, left:8 } },
           plugins: {
             legend: { position:'right' },
-            stackTotals: { enabled: ge.length <= 25, fontSize:12 }, // con muchos proveedores molesta
+            stackTotals: { enabled: ge.length <= 25, fontSize:12 },
             tooltip: {
               callbacks: {
                 label: function(ctx){
@@ -455,7 +494,7 @@
       return;
     }
 
-    // ----- EJE MES (vertical, como siempre) -----
+    // ----- EJE MES (vertical) -----
     var gm = groupByMes(rows);
     if (STATE.hideEmpty){
       gm = gm.filter(function(x){ return (x.contactado+x.asignado+x.semiTotal) > 0; });
@@ -464,6 +503,7 @@
     dataAsign = gm.map(function(x){return x.asignado;});
     dataSemi  = gm.map(function(x){return x.semiTotal;});
     dataDisp  = gm.map(function(x){return Math.max(0, x.saldo);});
+    container.style.height = '360px';
     container.style.overflowY = 'hidden';
     canvas.style.height = ''; canvas.height = container.clientHeight;
     canvas.style.width  = ''; canvas.width  = container.clientWidth;
@@ -483,11 +523,7 @@
         responsive:true, maintainAspectRatio:false, animation:false,
         interaction:{ mode:'nearest', intersect:true },
         layout:{ padding:{ top:12 } },
-        plugins:{
-          legend:{ position:'right' },
-          stackTotals:{ enabled:true, fontSize:12 },
-          tooltip:{}
-        },
+        plugins:{ legend:{ position:'right' }, stackTotals:{ enabled:true, fontSize:12 } },
         scales:{
           x:{ stacked:true, ticks:{autoSkip:false, maxRotation:45, minRotation:45}, grid:{display:false} },
           y:{ stacked:true, beginAtZero:true, grace:'15%', ticks:{ padding:6 } }
@@ -536,7 +572,6 @@
               +'<div class="pl-right" style="font-size:12px;color:#64748b">Asignado (t)</div>'
             +'</div>';
 
-      // Fusión por clave normalizada (solo proveedor)
       var idx = new Map();
       r.detContactado.forEach(function(v,k){ idx.set(k, {c:v,s:0,a:0}); });
       r.detSemi.forEach(function(v,k){ var o=idx.get(k)||{c:0,s:0,a:0}; o.s+=v; idx.set(k,o); });
@@ -574,7 +609,6 @@
     var wrap = document.getElementById('plTableWrap');
     wrap.innerHTML = '<table class="pl-table">'+thead+body+foot+'</table>';
 
-    // toggle acordeón
     wrap.querySelectorAll('.acc-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
         var id = btn.getAttribute('data-acc');
@@ -593,7 +627,9 @@
     deriv: [],
     filters: { year:null, empresa:'', months:[], q:'' },
     hideEmpty: true,
-    axisMode: 'mes' // 'mes' | 'empresa'
+    axisMode: 'mes', // 'mes' | 'empresa'
+    page: 1,
+    pageSize: 20
   };
 
   function getSelectedMonths(){
@@ -634,6 +670,7 @@
       STATE.filters.months = ms;
       STATE.filters.q = q;
       STATE.hideEmpty = hide;
+      STATE.page = 1;
       renderAll();
     }
 
@@ -649,6 +686,7 @@
         while (t && t!==monthsDiv && !t.classList.contains('pl-chip')) t = t.parentNode;
         if (t && t.classList.contains('pl-chip')){
           t.classList.toggle('is-on');
+          STATE.page = 1;
           updateFromUI();
         }
       });
@@ -658,13 +696,13 @@
     if (btnDatos){
       btnDatos.addEventListener('click', function(){
         var m = mesesConDatosDispon(STATE.deriv, STATE.filters);
-        setSelectedMonths(m); STATE.filters.months = m; renderAll();
+        setSelectedMonths(m); STATE.filters.months = m; STATE.page = 1; renderAll();
       });
     }
     var btnLimpiar = document.getElementById('plBtnLimpiarMeses');
     if (btnLimpiar){
       btnLimpiar.addEventListener('click', function(){
-        setSelectedMonths([]); STATE.filters.months=[]; renderAll();
+        setSelectedMonths([]); STATE.filters.months=[]; STATE.page = 1; renderAll();
       });
     }
     var btnLimpiarFiltros = document.getElementById('plBtnLimpiarFiltros');
@@ -672,7 +710,7 @@
       btnLimpiarFiltros.addEventListener('click', function(){
         var e=document.getElementById('plEmpresa'); var s=document.getElementById('plSearch');
         if (e) e.value=''; if (s) s.value='';
-        setSelectedMonths([]); STATE.filters.months=[]; renderAll();
+        setSelectedMonths([]); STATE.filters.months=[]; STATE.page = 1; renderAll();
       });
     }
 
@@ -681,6 +719,7 @@
       axisBtn.addEventListener('click', function(){
         STATE.axisMode = (STATE.axisMode==='empresa' ? 'mes' : 'empresa');
         axisBtn.textContent = 'Eje: ' + (STATE.axisMode==='empresa' ? 'Empresa' : 'Mes');
+        STATE.page = 1;
         renderAll();
       });
     }
@@ -726,6 +765,8 @@
       STATE.filters.months = [];
       STATE.filters.q = '';
       STATE.hideEmpty = true;
+      STATE.page = 1;
+      STATE.pageSize = 20;
       setSelectedMonths([]);
 
       attachEvents();
