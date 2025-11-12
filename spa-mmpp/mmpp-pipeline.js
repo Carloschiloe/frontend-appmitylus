@@ -1,9 +1,8 @@
 /* /spa-mmpp/mmpp-pipeline.js
-   Pipeline MMPP — Disponible - Asignado - Semi-cerrado
-   ► EJE MENSUAL (se mantiene)
-   ► Corte seleccionable (Semanal/Mensual/Anual) por FECHA DE REGISTRO para "foto" de avance
-   ► Luego se agrega por mes destino/periodo como en el original
-   ► Semi-cerrado SIEMPRE total en KPI, gráfico y tabla
+   Pipeline MMPP — Contactado vs Asignado (+ Semi-cerrado total SIEMPRE)
+   - Claves “Proveedor” (solo proveedor) con NORMALIZACIÓN FUERTE para fusionar filas.
+   - labelByKey conserva la etiqueta bonita (prioriza Contactado).
+   - Semi-cerrado SIEMPRE total en KPI, gráfico y tabla.
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
@@ -17,7 +16,7 @@
       + '.pl-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}'
       + '.pl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}'
       + '.pl-title{margin:0;font-weight:800;color:#2b3440}'
-      + '.pl-filters{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:10px;align-items:center;margin-top:8px}'
+      + '.pl-filters{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:10px;align-items:center;margin-top:8px}'
       + '.pl-select,.pl-input{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}'
       + '.pl-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
       + '.pl-btn{background:#eef2ff;border:1px solid #c7d2fe;color:#1e40af;height:38px;border-radius:10px;padding:0 12px;cursor:pointer;font-weight:700}'
@@ -47,8 +46,7 @@
       + '.pill-asign{color:#0EA5E9;background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35)}'
       + '.pill-semi{color:#22C55E;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35)}'
       + '.pill-contact{color:#475569;background:rgba(203,213,225,.35);border-color:rgba(148,163,184,.45)}'
-      + '.pill-neutral{color:#111827;background:rgba(17,24,39,.06);border-color:rgba(17,24,39,.15)}'
-      + '.subtle{font-size:12px;color:#6b7280;margin-left:6px}';
+      + '.pill-neutral{color:#111827;background:rgba(17,24,39,.06);border-color:rgba(17,24,39,.15)}';
     var s=document.createElement('style'); s.id='mmpp-pipeline-css'; s.textContent=css; document.head.appendChild(s);
   }
 
@@ -67,42 +65,15 @@
       .replace(/\s+/g,' ')
       .trim();
   }
-  function makeKey(prov){ return normalizeTxt(prov); }
+  // ⟵ clave SOLO por proveedor
+  function makeKey(prov, _comuna){
+    var p = normalizeTxt(prov);
+    return p;
+  }
   function displayLabel(prov, comuna){
     var p = String(prov||'—').trim();
     var c = String(comuna||'').trim();
     return p + (c?(' – '+c):'');
-  }
-
-  // -------- fechas de registro + cortes --------
-  function pickRegistroFecha(o){
-    var keys = ['fechaRegistro','fecha','createdAt','updatedAt','fechaSemi','fechaAsignacion'];
-    for (var i=0;i<keys.length;i++){
-      var v = o && o[keys[i]]; if (!v) continue;
-      var d = new Date(v); if (!isNaN(d.getTime())) return d;
-    }
-    return null;
-  }
-
-  function isoWeekEnd(iso){
-    // fin de semana (domingo) de una ISO week "YYYY-Www"
-    var m = /^(\d{4})-W(\d{2})$/.exec(String(iso||''));
-    if (!m) return null;
-    var y = Number(m[1]), w = Number(m[2]);
-    var simple = new Date(Date.UTC(y,0,1 + (w-1)*7));
-    var dow = simple.getUTCDay(); // 0..6, dom=0
-    var monday = new Date(simple);
-    if (dow===1) {/*lunes*/}
-    else if (dow===0) monday.setUTCDate(simple.getUTCDate()-6);
-    else monday.setUTCDate(simple.getUTCDate()-(dow-1));
-    var sunday = new Date(monday); sunday.setUTCDate(monday.getUTCDate()+6);
-    return sunday;
-  }
-  function monthEnd(year, month){ // month: 1..12
-    return new Date(Number(year)||new Date().getFullYear(), Number(month)||1, 0, 23,59,59,999);
-  }
-  function yearEnd(year){
-    return new Date(Number(year)||new Date().getFullYear(), 11, 31, 23,59,59,999);
   }
 
   /* ---------- UI skeleton ---------- */
@@ -110,7 +81,7 @@
     root.innerHTML = ''
     +'<div class="pl-wrap"><div class="pl-card">'
       +'<div class="pl-head" style="margin-bottom:10px">'
-        +'<h2 class="pl-title">Disponible - Asignado - Semi-cerrado</h2>'
+        +'<h2 class="pl-title">Pipeline MMPP — Contactado vs Asignado</h2>'
         +'<div class="pl-actions">'
           +'<label style="display:flex;gap:8px;align-items:center"><input id="plHideEmptyMonths" type="checkbox" checked /><span>Ocultar meses sin datos</span></label>'
           +'<button id="plBtnMesesConDatos" class="pl-btn">Meses con datos</button>'
@@ -124,12 +95,6 @@
         +'<select id="plYear" class="pl-select"></select>'
         +'<select id="plEmpresa" class="pl-select"><option value="">Todas las empresas</option></select>'
         +'<input id="plSearch" class="pl-input" placeholder="Buscar proveedor, contacto o código de centro..."/>'
-        +'<div style="display:flex;gap:8px;align-items:center">'
-          +'<select id="plCorteMode" class="pl-select"><option value="semanal">Corte: Semanal</option><option value="mensual">Corte: Mensual</option><option value="anual">Corte: Anual</option></select>'
-          +'<input id="plCorteWeek" class="pl-input" placeholder="Semana ISO: 2025-W46" style="max-width:160px" />'
-          +'<select id="plCorteMonth" class="pl-select" style="max-width:150px"></select>'
-          +'<span id="plCorteInfo" class="subtle"></span>'
-        +'</div>'
       +'</div>'
 
       +'<div class="pl-monthsbar"><div id="plMonths" class="pl-months-line"></div></div>'
@@ -150,29 +115,6 @@
     return s || '—';
   }
 
-  /* ---------- FILTRO POR CORTE (por FECHA DE REGISTRO) ---------- */
-  function applyCorte(dispon, asig, semi, corte){
-    // corte = {mode:'semanal'|'mensual'|'anual', weekIso, year, month}
-    var end=null;
-    if (corte.mode==='semanal' && corte.weekIso){
-      end = isoWeekEnd(corte.weekIso);
-    } else if (corte.mode==='mensual' && corte.year && corte.month){
-      end = monthEnd(corte.year, corte.month);
-    } else if (corte.mode==='anual' && corte.year){
-      end = yearEnd(corte.year);
-    }
-    if (!end) return {dispon:dispon||[], asig:asig||[], semi:semi||[], cutoff:null};
-
-    function pass(o){
-      var d = pickRegistroFecha(o); if (!d) return false;
-      return d.getTime() <= end.getTime();
-    }
-    var d2 = (dispon||[]).filter(pass);
-    var a2 = (asig||[]).filter(pass);
-    var s2 = (semi||[]).filter(pass);
-    return {dispon:d2, asig:a2, semi:s2, cutoff:end};
-  }
-
   /* ---------- DERIVACIÓN (mensual) con detalles por proveedor ---------- */
   function buildDerivMonthly(dispon, asig, semi){
     var byId = {};
@@ -189,42 +131,43 @@
           mes: Number(mes)||0,
           contactado: 0,
           asignado: 0,
-          semiTotal: 0,
+          semiTotal: 0,                   // ⟵ SIEMPRE TOTAL
           lotes: 0,
           contactos: new Set(),
-          detAsign: new Map(),
+          detAsign: new Map(),            // clave normalizada -> tons
           detSemi: new Map(),
           detContactado: new Map(),
-          labelByKey: new Map(),
+          labelByKey: new Map(),          // clave normalizada -> “Proveedor – Comuna”
           search: ''
         };
       }
       return map[k];
     }
 
-    // Contactado (lee d.tonsDisponible si no existe d.tons) → por (d.anio, d.mes)
+    // Contactado (lee d.tonsDisponible si no existe d.tons)
     (dispon||[]).forEach(function(d){
       var emp = cleanEmpresa(d, null);
       var anio = Number(d.anio)||null;
       var mes  = Number(d.mes)||0;
-      var tons = Number((d.tons ?? d.tonsDisponible ?? d.cantidad) || 0) || 0;
+      var tons = Number((d.tons ?? d.tonsDisponible ?? d.cantidad) || 0) || 0; // ⟵ FIX principal
       var row = ensure(emp, anio, mes);
       row.contactado += tons;
       row.lotes += 1;
 
       var proveedor = d.proveedorNombre || d.contactoNombre || '—';
       var comuna    = d.comuna || '';
-      var kNorm     = makeKey(proveedor);
+      var kNorm     = makeKey(proveedor, comuna);
       var label     = displayLabel(proveedor, comuna);
 
       row.contactos.add(label);
       row.detContactado.set(kNorm, (row.detContactado.get(kNorm)||0)+tons);
+      // Prioriza etiqueta de Contactado
       if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
 
       row.search += ' '+emp+' '+proveedor+' '+(d.centroCodigo||'')+' '+(d.areaCodigo||'')+' '+(d.comuna||'');
     });
 
-    // Asignado → por MES DESTINO
+    // Asignado (por mes destino)
     (asig||[]).forEach(function(a){
       var destY = Number(a.destAnio||a.anio||0)||0;
       var destM = Number(a.destMes ||a.mes ||0)||0;
@@ -233,12 +176,11 @@
       var emp = cleanEmpresa(dpo, a);
       var tons = Number(a.cantidad||a.tons||0)||0;
       var row = ensure(emp, destY, destM);
-
       row.asignado += tons;
 
       var proveedor = (a.proveedorNombre || a.contactoNombre || (dpo && (dpo.proveedorNombre||dpo.contactoNombre)) || '—');
       var comuna    = (a.comuna || (dpo && dpo.comuna) || '');
-      var kNorm     = makeKey(proveedor);
+      var kNorm     = makeKey(proveedor, comuna);
       var label     = displayLabel(proveedor, comuna);
 
       row.contactos.add(label);
@@ -248,14 +190,16 @@
       row.search += ' '+emp+' '+proveedor+' '+(a.centroCodigo||'')+' '+(a.areaCodigo||'')+' '+(a.comuna||'');
     });
 
-    // Semi-cerrado (TOTAL por periodo s.anio/s.mes o s.periodo "YYYY-MM")
+    // Semi-cerrado (TOTAL por periodo)
     (semi||[]).forEach(function(s){
       var anio = Number(s.anio)||null;
       var mes  = Number(s.mes)||0;
       if ((!anio || !mes) && s.periodo){
-        var parts=String(s.periodo||'').split('-');
-        anio = anio || (Number(parts[0])||null);
-        mes  = mes  || (Number(parts[1])||0);
+        var pm = (function(p){
+          var parts=String(p||'').split('-'); return { anio:Number(parts[0])||null, mes:Number(parts[1])||0 };
+        })(s.periodo);
+        if (!anio) anio = pm.anio;
+        if (!mes)  mes  = pm.mes;
       }
       if (!anio || !mes) return;
 
@@ -266,7 +210,7 @@
 
       var proveedor = s.proveedorNombre || s.contactoNombre || '—';
       var comuna    = s.comuna || '';
-      var kNorm     = makeKey(proveedor);
+      var kNorm     = makeKey(proveedor, comuna);
       var label     = displayLabel(proveedor, comuna);
 
       row.contactos.add(label);
@@ -332,6 +276,7 @@
       r.detAsign.forEach(function(v,kk){ map[k].detAsign.set(kk,(map[k].detAsign.get(kk)||0)+v); });
       r.detSemi.forEach(function(v,kk){ map[k].detSemi.set(kk,(map[k].detSemi.get(kk)||0)+v); });
       r.detContactado.forEach(function(v,kk){ map[k].detContactado.set(kk,(map[k].detContactado.get(kk)||0)+v); });
+      // fusiona etiquetas (prioriza si viene de contactado)
       r.labelByKey.forEach(function(label, kk){
         if (!map[k].labelByKey.has(kk)) map[k].labelByKey.set(kk, label);
       });
@@ -364,7 +309,7 @@
       + kpi('Contactado',   pillNum(contact, 'contact'))
       + kpi('Semi-cerrado', pillNum(semi, 'semi'))
       + kpi('Asignado',     pillNum(asign, 'asign'))
-      // % Asignación eliminado
+      + kpi('% Asignación', (contact>0?Math.round(asign*100/contact)+'%':'—'))
       + kpi('Saldo',        '<span class="pill pill-neutral">'+numeroCL(saldo)+'</span>')
       + kpi('# Proveedores','<span class="pill pill-neutral">'+numeroCL(empSet.size)+'</span>');
     document.getElementById('plKpis').innerHTML = html;
@@ -423,6 +368,7 @@
       toolDetail[lbl] = {
         asign : mapToSortedPairs(x.detAsign),
         semi  : mapToSortedPairs(x.detSemi),
+        // ⟵ NUEVO: detalle de proveedores de lo disponible (contactado)
         contact: mapToSortedPairs(x.detContactado)
       };
       accDetail[lbl] = {
@@ -443,6 +389,7 @@
         datasets: [
           { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#0EA5E9' },
           { label: 'Semi-cerrado', data: dataSemi,    borderWidth: 1, stack: 'pipeline', backgroundColor: '#22C55E' },
+          // ⟵ RENOMBRADO: antes “No asignado”
           { label: 'Disponible',   data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#CBD5E1' }
         ]
       },
@@ -461,13 +408,15 @@
               label: function(ctx){
                 var lbl = ctx.label, ds = ctx.dataset.label;
                 var det = toolDetail[lbl] || {};
+                // Asignado → det.asign; Semi-cerrado → det.semi; Disponible → det.contact
                 var arr = (ds==='Asignado'      ? det.asign
                          : ds==='Semi-cerrado' ? det.semi
                          : ds==='Disponible'   ? det.contact
                          : null) || [];
                 var lines = arr.slice(0,8).map(function(p){
-                  var prov = p.k || '—';
-                  return '• '+prov+': '+numeroCL(p.v)+' t';
+                  var nk = String(p.k||'').split('|');
+                  var prov = nk[0]||'—', comuna = nk[1]||''; // comuna puede venir vacío porque la clave es solo proveedor
+                  return '• '+prov+(comuna?(' – '+comuna):'')+': '+numeroCL(p.v)+' t';
                 });
                 if (arr.length>8) lines.push('• +'+(arr.length-8)+' más…');
                 return lines.length?lines:['(sin detalle)'];
@@ -492,6 +441,7 @@
 
   /* ---------- Tabla con acordeón ---------- */
   function renderTable(rows, axisMode, year){
+    var html='';
     var gm = groupByMes(rows);
 
     var thead='<thead><tr>'
@@ -542,7 +492,12 @@
         })
         .forEach(function(e){
           var k=e[0], vals=e[1];
-          var label = r.labelByKey.get(k) || k || '—';
+          var label = r.labelByKey.get(k);
+          if (!label){
+            // fallback si no hubiese labels (no debería)
+            var prov = k || '—';
+            label = prov; // sin comuna en la clave
+          }
           body+='<div class="acc-grid"><div>'+label+'</div>'
               +'<div class="pl-right">'+(vals.c?pillNum(vals.c,'contact'):'—')+'</div>'
               +'<div class="pl-right">'+(vals.s?pillNum(vals.s,'semi'):'—')+'</div>'
@@ -583,12 +538,10 @@
 
   /* ---------- estado / montaje ---------- */
   var STATE = {
-    src: {dispon:[], asig:[], semi:[]},    // fuentes crudas
     deriv: [],
     filters: { year:null, empresa:'', months:[], q:'' },
     hideEmpty: true,
-    axisMode: 'mes',
-    corte: { mode:'semanal', weekIso:'', year:(new Date()).getFullYear(), month:(new Date()).getMonth()+1, cutoff:null }
+    axisMode: 'mes'
   };
 
   function getSelectedMonths(){
@@ -609,19 +562,7 @@
 
   function filterRowsForRefresh(){ return filterDeriv(STATE.deriv, STATE.filters); }
 
-  function recomputeFromCorte(){
-    var applied = applyCorte(STATE.src.dispon, STATE.src.asig, STATE.src.semi, STATE.corte);
-    STATE.corte.cutoff = applied.cutoff;
-    // info de corte
-    var info = document.getElementById('plCorteInfo');
-    if (info){
-      info.textContent = applied.cutoff ? ('Corte hasta: '+(new Date(applied.cutoff)).toLocaleDateString('es-CL')) : '';
-    }
-    STATE.deriv = buildDerivMonthly(applied.dispon, applied.asig, applied.semi);
-  }
-
   function renderAll(){
-    recomputeFromCorte();
     var rows = filterRowsForRefresh();
     renderKPIs(rows);
     renderChart(rows, STATE.axisMode);
@@ -691,23 +632,6 @@
         renderAll();
       });
     }
-
-    // ----- Controles de CORTE -----
-    var selMode = document.getElementById('plCorteMode');
-    var inpWeek = document.getElementById('plCorteWeek');
-    var selMonth= document.getElementById('plCorteMonth');
-
-    function updateCorte(){
-      STATE.corte.mode  = selMode.value;
-      STATE.corte.year  = Number(document.getElementById('plYear').value)||new Date().getFullYear();
-      STATE.corte.month = Number(selMonth.value)||((new Date()).getMonth()+1);
-      STATE.corte.weekIso = (inpWeek.value||'').trim();
-      renderAll();
-    }
-
-    if (selMode) selMode.addEventListener('change', updateCorte);
-    if (inpWeek) inpWeek.addEventListener('change', updateCorte);
-    if (selMonth) selMonth.addEventListener('change', updateCorte);
   }
 
   function optionsFromDeriv(deriv){
@@ -720,7 +644,6 @@
     var selY = document.getElementById('plYear');
     var selE = document.getElementById('plEmpresa');
     var monthsDiv = document.getElementById('plMonths');
-    var selMonth= document.getElementById('plCorteMonth');
 
     var opts = optionsFromDeriv(deriv);
     var yNow = (new Date()).getFullYear();
@@ -733,8 +656,6 @@
     monthsDiv.innerHTML = range12().map(function(m){
       return '<button type="button" class="pl-chip" data-m="'+m+'">'+MMESES_LARGO[m-1]+'</button>';
     }).join('');
-
-    selMonth.innerHTML = range12().map(function(m){ return '<option value="'+m+'" '+(m===(new Date().getMonth()+1)?'selected':'')+'>'+MMESES_LARGO[m-1]+'</option>'; }).join('');
   }
 
   function mount(opts){
@@ -744,11 +665,8 @@
     buildUI(root);
 
     function go(dispon, asig, semi){
-      STATE.src = {dispon:dispon||[], asig:asig||[], semi:semi||[]};
-      fillFilters(STATE.src.dispon.concat(STATE.src.asig).concat(STATE.src.semi).map(function(x){
-        // Mapear a estructura mínima para extraer años en selectors
-        return {empresa: cleanEmpresa(x,x), anio: Number(x.anio||x.destAnio||((x.periodo||'').split('-')[0]))||null};
-      }));
+      STATE.deriv = buildDerivMonthly(dispon, asig, semi);
+      fillFilters(STATE.deriv);
 
       var ySel = document.getElementById('plYear');
       STATE.filters.year = ySel ? ySel.value : '';
@@ -778,5 +696,5 @@
     }
   }
 
-  global.MMppPipeline = { mount: mount, refresh: function(){ renderAll(); } };
+  global.MMppPipeline = { mount: mount, refresh: renderAll };
 })(window);
