@@ -1,8 +1,9 @@
 /* /spa-mmpp/mmpp-pipeline.js
    Pipeline MMPP — Contactado vs Asignado (+ Semi-cerrado total SIEMPRE)
-   - Claves “Proveedor” (solo proveedor) con NORMALIZACIÓN FUERTE para fusionar filas.
-   - labelByKey conserva la etiqueta bonita (prioriza Contactado).
+   - Fusión SOLO por proveedor (normalización fuerte).
    - Semi-cerrado SIEMPRE total en KPI, gráfico y tabla.
+   - Eje Empresa: barras horizontales + scroll vertical (nombres completos, sin autoskip).
+   - KPI SIN "% Asignación".
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
@@ -20,7 +21,7 @@
       + '.pl-select,.pl-input{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}'
       + '.pl-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
       + '.pl-btn{background:#eef2ff;border:1px solid #c7d2fe;color:#1e40af;height:38px;border-radius:10px;padding:0 12px;cursor:pointer;font-weight:700}'
-      + '.pl-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:10px}'
+      + '.pl-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:10px}'
       + '.kpi{background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:14px}'
       + '.kpi .lab{font-size:12px;color:#64748b}'
       + '.kpi .val{font-size:22px;font-weight:900;color:#111827}'
@@ -30,7 +31,7 @@
       + '.pl-chip.is-on{background:#1e40af;color:#fff;border-color:#1e40af}'
       + '.pl-chart-wrap{margin-top:14px}'
       + '.pl-chart-frame{display:block;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;background:#fff}'
-      + '.pl-chart-container{position:relative;width:100%;height:360px}'
+      + '.pl-chart-container{position:relative;width:100%;height:360px;overflow:hidden}'
       + '.pl-chart-canvas{display:block;width:100% !important;height:100% !important}'
       + '.pl-note{color:#64748b;font-size:12px;margin-top:6px}'
       + '.pl-table{width:100%;border-collapse:separate;border-spacing:0 8px;margin-top:14px}'
@@ -65,18 +66,14 @@
       .replace(/\s+/g,' ')
       .trim();
   }
-  // ⟵ clave SOLO por proveedor
-  function makeKey(prov, _comuna){
-    var p = normalizeTxt(prov);
-    return p;
-  }
+  function makeKey(prov){ return normalizeTxt(prov); } // solo proveedor
   function displayLabel(prov, comuna){
     var p = String(prov||'—').trim();
     var c = String(comuna||'').trim();
     return p + (c?(' – '+c):'');
   }
 
-  /* ---------- UI skeleton ---------- */
+  /* ---------- UI ---------- */
   function buildUI(root){
     root.innerHTML = ''
     +'<div class="pl-wrap"><div class="pl-card">'
@@ -110,7 +107,9 @@
 
   /* ---------- helper: empresa ---------- */
   function cleanEmpresa(d, a){
-    var s = (d && (d.empresaNombre||'')) || (a && (a.empresaNombre||'')) || (d && (d.proveedorNombre||d.contactoNombre||'')) || (a && (a.proveedorNombre||a.contactoNombre||'')) || '—';
+    var s = (d && (d.empresaNombre||'')) || (a && (a.empresaNombre||'')) ||
+            (d && (d.proveedorNombre||d.contactoNombre||'')) ||
+            (a && (a.proveedorNombre||a.contactoNombre||'')) || '—';
     s = String(s||'').trim();
     return s || '—';
   }
@@ -131,37 +130,34 @@
           mes: Number(mes)||0,
           contactado: 0,
           asignado: 0,
-          semiTotal: 0,                   // ⟵ SIEMPRE TOTAL
+          semiTotal: 0, // SIEMPRE TOTAL
           lotes: 0,
           contactos: new Set(),
-          detAsign: new Map(),            // clave normalizada -> tons
-          detSemi: new Map(),
-          detContactado: new Map(),
-          labelByKey: new Map(),          // clave normalizada -> “Proveedor – Comuna”
+          detAsign: new Map(), detSemi: new Map(), detContactado: new Map(),
+          labelByKey: new Map(),
           search: ''
         };
       }
       return map[k];
     }
 
-    // Contactado (lee d.tonsDisponible si no existe d.tons)
+    // Contactado (prefiere tonsDisponible si no existe tons)
     (dispon||[]).forEach(function(d){
       var emp = cleanEmpresa(d, null);
       var anio = Number(d.anio)||null;
       var mes  = Number(d.mes)||0;
-      var tons = Number((d.tons ?? d.tonsDisponible ?? d.cantidad) || 0) || 0; // ⟵ FIX principal
+      var tons = Number((d.tons ?? d.tonsDisponible ?? d.cantidad) || 0) || 0;
       var row = ensure(emp, anio, mes);
       row.contactado += tons;
       row.lotes += 1;
 
       var proveedor = d.proveedorNombre || d.contactoNombre || '—';
       var comuna    = d.comuna || '';
-      var kNorm     = makeKey(proveedor, comuna);
+      var kNorm     = makeKey(proveedor);
       var label     = displayLabel(proveedor, comuna);
 
       row.contactos.add(label);
       row.detContactado.set(kNorm, (row.detContactado.get(kNorm)||0)+tons);
-      // Prioriza etiqueta de Contactado
       if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
 
       row.search += ' '+emp+' '+proveedor+' '+(d.centroCodigo||'')+' '+(d.areaCodigo||'')+' '+(d.comuna||'');
@@ -180,7 +176,7 @@
 
       var proveedor = (a.proveedorNombre || a.contactoNombre || (dpo && (dpo.proveedorNombre||dpo.contactoNombre)) || '—');
       var comuna    = (a.comuna || (dpo && dpo.comuna) || '');
-      var kNorm     = makeKey(proveedor, comuna);
+      var kNorm     = makeKey(proveedor);
       var label     = displayLabel(proveedor, comuna);
 
       row.contactos.add(label);
@@ -195,11 +191,9 @@
       var anio = Number(s.anio)||null;
       var mes  = Number(s.mes)||0;
       if ((!anio || !mes) && s.periodo){
-        var pm = (function(p){
-          var parts=String(p||'').split('-'); return { anio:Number(parts[0])||null, mes:Number(parts[1])||0 };
-        })(s.periodo);
-        if (!anio) anio = pm.anio;
-        if (!mes)  mes  = pm.mes;
+        var parts=String(s.periodo||'').split('-');
+        anio = anio || Number(parts[0])||null;
+        mes  = mes  || Number(parts[1])||0;
       }
       if (!anio || !mes) return;
 
@@ -210,7 +204,7 @@
 
       var proveedor = s.proveedorNombre || s.contactoNombre || '—';
       var comuna    = s.comuna || '';
-      var kNorm     = makeKey(proveedor, comuna);
+      var kNorm     = makeKey(proveedor);
       var label     = displayLabel(proveedor, comuna);
 
       row.contactos.add(label);
@@ -223,18 +217,12 @@
     return Object.keys(map).map(function(k){
       var o = map[k];
       return {
-        empresa: o.empresa,
-        anio: o.anio,
-        mes: o.mes,
-        contactado: o.contactado,
-        asignado: o.asignado,
-        semiTotal: o.semiTotal,
+        empresa: o.empresa, anio: o.anio, mes: o.mes,
+        contactado: o.contactado, asignado: o.asignado, semiTotal: o.semiTotal,
         saldo: Math.max(0, o.contactado - o.asignado),
         lotes: o.lotes,
         contactos: Array.from(o.contactos),
-        detAsign: o.detAsign,
-        detSemi: o.detSemi,
-        detContactado: o.detContactado,
+        detAsign: o.detAsign, detSemi: o.detSemi, detContactado: o.detContactado,
         labelByKey: o.labelByKey,
         search: (o.search||'').toLowerCase()
       };
@@ -276,7 +264,6 @@
       r.detAsign.forEach(function(v,kk){ map[k].detAsign.set(kk,(map[k].detAsign.get(kk)||0)+v); });
       r.detSemi.forEach(function(v,kk){ map[k].detSemi.set(kk,(map[k].detSemi.get(kk)||0)+v); });
       r.detContactado.forEach(function(v,kk){ map[k].detContactado.set(kk,(map[k].detContactado.get(kk)||0)+v); });
-      // fusiona etiquetas (prioriza si viene de contactado)
       r.labelByKey.forEach(function(label, kk){
         if (!map[k].labelByKey.has(kk)) map[k].labelByKey.set(kk, label);
       });
@@ -298,7 +285,7 @@
     });
   }
 
-  // NUEVO: agrupación por empresa (para eje Empresa)
+  // Agrupación por empresa (para eje Empresa)
   function groupByEmpresa(rows){
     var map={};
     (rows||[]).forEach(function(r){
@@ -314,7 +301,7 @@
         if (!map[k].labelByKey.has(kk)) map[k].labelByKey.set(kk, label);
       });
     });
-    // ordenar por total (contactado+asignado+semi) desc
+    // ordenar por total desc
     return Object.keys(map).map(function(k){
       var o=map[k];
       return {
@@ -334,7 +321,7 @@
     });
   }
 
-  /* ---------- KPIs ---------- */
+  /* ---------- KPIs (SIN %) ---------- */
   function renderKPIs(rows){
     var contact=0, asign=0, semi=0, empSet=new Set();
     rows.forEach(function(r){ contact+=r.contactado; asign+=r.asignado; semi+=r.semiTotal; empSet.add(r.empresa); });
@@ -345,9 +332,8 @@
       + kpi('Contactado',   pillNum(contact, 'contact'))
       + kpi('Semi-cerrado', pillNum(semi, 'semi'))
       + kpi('Asignado',     pillNum(asign, 'asign'))
-      + kpi('% Asignación', (contact>0?Math.round(asign*100/contact)+'%':'—'))
       + kpi('Saldo',        '<span class="pill pill-neutral">'+numeroCL(saldo)+'</span>')
-      + kpi('# Empresas','<span class="pill pill-neutral">'+numeroCL(empSet.size)+'</span>'); // ⟵ etiqueta corregida
+      + kpi('# Empresas',   '<span class="pill pill-neutral">'+numeroCL(empSet.size)+'</span>');
     document.getElementById('plKpis').innerHTML = html;
   }
 
@@ -392,124 +378,127 @@
     }
     document.getElementById('plChartNote').textContent = '';
 
-    var labels=[], dataAsign=[], dataSemi=[], dataNoAsig=[], toolDetail={}, accDetail={};
+    var labels=[], dataAsign=[], dataSemi=[], dataDisp=[], toolDetail={};
+    var container = document.querySelector('.pl-chart-container');
 
-    var series;
+    // ----- EJE EMPRESA → HORIZONTAL + SCROLL VERTICAL -----
     if (axisMode === 'empresa'){
-      // NUEVO: eje Empresa
-      var ge = groupByEmpresa(rows);
-      labels  = ge.map(function(x){return x.empresa || '—';});
+      var ge = groupByEmpresa(rows);  // ya viene ordenado desc
+      labels    = ge.map(function(x){return x.empresa || '—';}); // nombres completos
       dataAsign = ge.map(function(x){return x.asignado;});
       dataSemi  = ge.map(function(x){return x.semiTotal;});
-      dataNoAsig= ge.map(function(x){return Math.max(0, x.saldo);});
+      dataDisp  = ge.map(function(x){return Math.max(0, x.saldo);});
+
       ge.forEach(function(x){
-        var lbl = x.empresa || '—';
-        toolDetail[lbl] = {
+        toolDetail[x.empresa||'—'] = {
           asign : mapToSortedPairs(x.detAsign),
           semi  : mapToSortedPairs(x.detSemi),
           contact: mapToSortedPairs(x.detContactado)
         };
-        accDetail[lbl] = {
-          detAsign: x.detAsign,
-          detSemi: x.detSemi,
-          detContactado: x.detContactado,
-          labelByKey: x.labelByKey,
-          contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo
-        };
       });
-      series = {ticksX:{autoSkip:true, maxRotation:0, minRotation:0}};
-    } else {
-      // eje Mes (default)
-      var gm = groupByMes(rows);
-      // opcional: ocultar meses sin datos
-      var hideEmpty = STATE.hideEmpty;
-      if (hideEmpty){
-        gm = gm.filter(function(x){ return (x.contactado+x.asignado+x.semiTotal) > 0; });
-      }
-      labels  = gm.map(function(x){return MMESES[x.mes-1];});
-      dataAsign = gm.map(function(x){return x.asignado;});
-      dataSemi  = gm.map(function(x){return x.semiTotal;});
-      dataNoAsig= gm.map(function(x){return Math.max(0, x.saldo);});
-      gm.forEach(function(x){
-        var lbl = MMESES[x.mes-1];
-        toolDetail[lbl] = {
-          asign : mapToSortedPairs(x.detAsign),
-          semi  : mapToSortedPairs(x.detSemi),
-          // detalle de proveedores de lo disponible (contactado)
-          contact: mapToSortedPairs(x.detContactado)
-        };
-        accDetail[lbl] = {
-          detAsign: x.detAsign,
-          detSemi: x.detSemi,
-          detContactado: x.detContactado,
-          labelByKey: x.labelByKey,
-          contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo, lotes:x.lotes
-        };
-      });
-      series = {ticksX:{autoSkip:false, maxRotation:45, minRotation:45}};
-    }
 
-    if (chartRef && chartRef.destroy) chartRef.destroy();
+      // Alto dinámico + scroll vertical
+      var rowH = 28;          // alto por proveedor
+      var maxH = 480;         // alto visible
+      var fullH = Math.max(maxH, ge.length * rowH);
+      container.style.height = maxH + 'px';
+      container.style.overflowY = 'auto';
+      canvas.style.height = fullH + 'px';
+      canvas.height = fullH;
+      canvas.style.width = '100%';
+      canvas.width = container.clientWidth;
 
-    chartRef = new Chart(canvas.getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [
-          { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#0EA5E9' },
-          { label: 'Semi-cerrado', data: dataSemi,    borderWidth: 1, stack: 'pipeline', backgroundColor: '#22C55E' },
-          { label: 'Disponible',   data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#CBD5E1' }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        interaction: { mode: 'nearest', intersect: true },
-        layout: { padding: { top: 12 } },
-        plugins: {
-          legend: { position: 'right' },
-          stackTotals: { enabled:true, fontSize:12 },
-          tooltip: {
-            callbacks: {
-              title: function(items){ return (items && items[0] && items[0].label) ? items[0].label : ''; },
-              label: function(ctx){
-                var lbl = ctx.label, ds = ctx.dataset.label;
-                var det = toolDetail[lbl] || {};
-                // Asignado → det.asign; Semi-cerrado → det.semi; Disponible → det.contact
-                var arr = (ds==='Asignado'      ? det.asign
-                         : ds==='Semi-cerrado' ? det.semi
-                         : ds==='Disponible'   ? det.contact
-                         : null) || [];
-                var lines = arr.slice(0,8).map(function(p){
-                  // clave SOLO proveedor (sin comuna); label bonito vendrá del acordeón
-                  var prov = (p.k||'—');
-                  return '• '+prov+': '+numeroCL(p.v)+' t';
-                });
-                if (arr.length>8) lines.push('• +'+(arr.length-8)+' más…');
-                return lines.length?lines:['(sin detalle)'];
-              },
-              footer: function(ctx){
-                var v = ctx && ctx[0] && ctx[0].parsed && ctx[0].parsed.y;
-                return 'Subtotal '+ctx[0].dataset.label+': '+numeroCL(v)+' t';
+      if (chartRef && chartRef.destroy) chartRef.destroy();
+      chartRef = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { label:'Asignado',     data:dataAsign, borderWidth:1, stack:'pipeline', backgroundColor:'#0EA5E9', barPercentage:0.9, categoryPercentage:0.9 },
+            { label:'Semi-cerrado', data:dataSemi,  borderWidth:1, stack:'pipeline', backgroundColor:'#22C55E', barPercentage:0.9, categoryPercentage:0.9 },
+            { label:'Disponible',   data:dataDisp,  borderWidth:1, stack:'pipeline', backgroundColor:'#CBD5E1', barPercentage:0.9, categoryPercentage:0.9 }
+          ]
+        },
+        options: {
+          indexAxis: 'y', // HORIZONTAL
+          responsive: false, maintainAspectRatio: false, animation: false,
+          interaction: { mode:'nearest', intersect:true },
+          layout: { padding:{ top:8, right:8, bottom:8, left:8 } },
+          plugins: {
+            legend: { position:'right' },
+            stackTotals: { enabled: ge.length <= 25, fontSize:12 }, // con muchos proveedores molesta
+            tooltip: {
+              callbacks: {
+                label: function(ctx){
+                  var det = toolDetail[ctx.label] || {};
+                  var arr = (ctx.dataset.label==='Asignado' ? det.asign
+                           : ctx.dataset.label==='Semi-cerrado' ? det.semi
+                           : det.contact) || [];
+                  var lines = arr.slice(0,6).map(function(p){ return '• '+(p.k||'—')+': '+numeroCL(p.v)+' t'; });
+                  if (arr.length>6) lines.push('• +'+(arr.length-6)+' más…');
+                  return lines.length?lines:['(sin detalle)'];
+                },
+                footer: function(ctx){
+                  var v = ctx && ctx[0] && ctx[0].parsed && ctx[0].parsed.x;
+                  return 'Subtotal '+ctx[0].dataset.label+': '+numeroCL(v)+' t';
+                }
               }
             }
+          },
+          scales: {
+            y: { stacked:true, ticks:{ autoSkip:false, padding:4 }, grid:{ display:false } },
+            x: { stacked:true, beginAtZero:true, grace:'12%', ticks:{ padding:6 } }
           }
         },
-        scales: {
-          x: { stacked: true, ticks: series.ticksX },
-          y: { stacked: true, beginAtZero: true, grace: '15%', ticks: { padding: 6 } }
+        plugins: [stackTotalPlugin]
+      });
+      return;
+    }
+
+    // ----- EJE MES (vertical, como siempre) -----
+    var gm = groupByMes(rows);
+    if (STATE.hideEmpty){
+      gm = gm.filter(function(x){ return (x.contactado+x.asignado+x.semiTotal) > 0; });
+    }
+    labels    = gm.map(function(x){return MMESES[x.mes-1];});
+    dataAsign = gm.map(function(x){return x.asignado;});
+    dataSemi  = gm.map(function(x){return x.semiTotal;});
+    dataDisp  = gm.map(function(x){return Math.max(0, x.saldo);});
+    container.style.overflowY = 'hidden';
+    canvas.style.height = ''; canvas.height = container.clientHeight;
+    canvas.style.width  = ''; canvas.width  = container.clientWidth;
+
+    if (chartRef && chartRef.destroy) chartRef.destroy();
+    chartRef = new Chart(canvas.getContext('2d'), {
+      type:'bar',
+      data:{
+        labels: labels,
+        datasets:[
+          { label:'Asignado',     data:dataAsign, borderWidth:1, stack:'pipeline', backgroundColor:'#0EA5E9' },
+          { label:'Semi-cerrado', data:dataSemi,  borderWidth:1, stack:'pipeline', backgroundColor:'#22C55E' },
+          { label:'Disponible',   data:dataDisp,  borderWidth:1, stack:'pipeline', backgroundColor:'#CBD5E1' }
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false, animation:false,
+        interaction:{ mode:'nearest', intersect:true },
+        layout:{ padding:{ top:12 } },
+        plugins:{
+          legend:{ position:'right' },
+          stackTotals:{ enabled:true, fontSize:12 },
+          tooltip:{}
+        },
+        scales:{
+          x:{ stacked:true, ticks:{autoSkip:false, maxRotation:45, minRotation:45}, grid:{display:false} },
+          y:{ stacked:true, beginAtZero:true, grace:'15%', ticks:{ padding:6 } }
         }
       },
-      plugins: [stackTotalPlugin]
+      plugins:[stackTotalPlugin]
     });
-
-    renderTable._accDetail = accDetail;
   }
 
-  /* ---------- Tabla con acordeón ---------- */
+  /* ---------- Tabla ---------- */
   function renderTable(rows, axisMode, year){
-    var html='';
     var gm = groupByMes(rows);
 
     var thead='<thead><tr>'
@@ -547,7 +536,7 @@
               +'<div class="pl-right" style="font-size:12px;color:#64748b">Asignado (t)</div>'
             +'</div>';
 
-      // Fusiona por clave normalizada (SOLO proveedor)
+      // Fusión por clave normalizada (solo proveedor)
       var idx = new Map();
       r.detContactado.forEach(function(v,k){ idx.set(k, {c:v,s:0,a:0}); });
       r.detSemi.forEach(function(v,k){ var o=idx.get(k)||{c:0,s:0,a:0}; o.s+=v; idx.set(k,o); });
@@ -560,11 +549,7 @@
         })
         .forEach(function(e){
           var k=e[0], vals=e[1];
-          var label = r.labelByKey.get(k);
-          if (!label){
-            var prov = k || '—';
-            label = prov;
-          }
+          var label = r.labelByKey.get(k) || (k || '—');
           body+='<div class="acc-grid"><div>'+label+'</div>'
               +'<div class="pl-right">'+(vals.c?pillNum(vals.c,'contact'):'—')+'</div>'
               +'<div class="pl-right">'+(vals.s?pillNum(vals.s,'semi'):'—')+'</div>'
@@ -608,7 +593,7 @@
     deriv: [],
     filters: { year:null, empresa:'', months:[], q:'' },
     hideEmpty: true,
-    axisMode: 'mes'
+    axisMode: 'mes' // 'mes' | 'empresa'
   };
 
   function getSelectedMonths(){
