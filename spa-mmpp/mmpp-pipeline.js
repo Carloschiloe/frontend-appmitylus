@@ -5,6 +5,7 @@
    - Autocomplete custom: aparece al escribir ≥2 letras, filtra en vivo.
    - Búsqueda y sugerencias por Proveedor/Contacto y Código de Centro.
    - Semi-cerrado SIEMPRE total.
+   - Muestra semana ISO actual junto al título (ej: Sem 42).
 */
 (function (global) {
   var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
@@ -17,7 +18,8 @@
       + '.pl-wrap{max-width:1200px;margin:0 auto;padding:20px}'
       + '.pl-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}'
       + '.pl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}'
-      + '.pl-title{margin:0;font-weight:800;color:#2b3440}'
+      + '.pl-title{margin:0;font-weight:800;color:#2b3440;display:flex;align-items:center;gap:10px;flex-wrap:wrap}'
+      + '.pl-title .pl-week{font-weight:700;font-size:14px;color:#6b7280;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:999px;padding:4px 10px}'
       + '.pl-filters{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr)) 1fr;gap:10px;align-items:center;margin-top:8px}'
       + '.pl-select,.pl-input{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}'
       + '.pl-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
@@ -85,13 +87,23 @@
     var c = String(comuna||'').trim();
     return p + (c?(' – '+c):'');
   }
+  // ISO week (Sem X)
+  function getISOWeek(d){
+    var date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var dayNum = (date.getUTCDay() + 6) % 7; // 0 = Monday
+    date.setUTCDate(date.getUTCDate() - dayNum + 3);
+    var firstThursday = new Date(Date.UTC(date.getUTCFullYear(),0,4));
+    var diff = (date - firstThursday) / 86400000;
+    return 1 + Math.floor(diff/7);
+  }
 
   /* ---------- UI skeleton ---------- */
   function buildUI(root){
+    var semTxt = 'Sem ' + getISOWeek(new Date());
     root.innerHTML = ''
     +'<div class="pl-wrap"><div class="pl-card">'
       +'<div class="pl-head" style="margin-bottom:10px">'
-        +'<h2 class="pl-title">Disponible –  Semi-cerrado – Asignado</h2>'
+        +'<h2 class="pl-title">Disponible –  Semi-cerrado – Asignado <span class="pl-week">'+semTxt+'</span></h2>'
         +'<div class="pl-actions">'
           +'<button id="plBtnLimpiarMeses" class="pl-btn">Limpiar meses</button>'
           +'<button id="plBtnLimpiarFiltros" class="pl-btn">Limpiar filtros</button>'
@@ -143,13 +155,15 @@
           contactado: 0,
           asignado: 0,
           semiTotal: 0,
+          saldo: 0,
           lotes: 0,
-          contactos: new Set(),
+          contactos: new Set(),           // etiquetas proveedor – comuna
+          contactNames: new Set(),        // nombres de contacto
           detAsign: new Map(),
           detSemi: new Map(),
           detContactado: new Map(),
           labelByKey: new Map(),
-          codes: new Set(),              // <- códigos de centro/área presentes
+          codes: new Set(),
           search: ''
         };
       }
@@ -173,6 +187,7 @@
       var label     = displayLabel(proveedor, comuna);
 
       row.contactos.add(label);
+      if (d.contactoNombre) row.contactNames.add(String(d.contactoNombre));
       row.detContactado.set(kNorm, (row.detContactado.get(kNorm)||0)+tons);
       if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
 
@@ -181,7 +196,7 @@
       if (ccode) row.codes.add(String(ccode));
       if (acode) row.codes.add(String(acode));
 
-      row.search += ' '+emp+' '+proveedor+' '+(d.centroCodigo||'')+' '+(d.areaCodigo||'')+' '+(d.comuna||'');
+      row.search += ' '+emp+' '+proveedor+' '+(d.centroCodigo||'')+' '+(d.areaCodigo||'')+' '+(d.comuna||'')+' '+(d.contactoNombre||'');
     });
 
     // Asignado (por mes destino)
@@ -201,6 +216,7 @@
       var label     = displayLabel(proveedor, comuna);
 
       row.contactos.add(label);
+      if (a.contactoNombre) row.contactNames.add(String(a.contactoNombre));
       row.detAsign.set(kNorm, (row.detAsign.get(kNorm)||0)+tons);
       if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
 
@@ -209,7 +225,7 @@
       if (ccode) row.codes.add(String(ccode));
       if (acode) row.codes.add(String(acode));
 
-      row.search += ' '+emp+' '+proveedor+' '+(a.centroCodigo||'')+' '+(a.areaCodigo||'')+' '+(a.comuna||'');
+      row.search += ' '+emp+' '+proveedor+' '+(a.centroCodigo||'')+' '+(a.areaCodigo||'')+' '+(a.comuna||'')+' '+(a.contactoNombre||'');
     });
 
     // Semi-cerrado (TOTAL por periodo)
@@ -234,6 +250,7 @@
       var label     = displayLabel(proveedor, comuna);
 
       row.contactos.add(label);
+      if (s.contactoNombre) row.contactNames.add(String(s.contactoNombre));
       row.detSemi.set(kNorm, (row.detSemi.get(kNorm)||0)+tons);
       if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
 
@@ -242,7 +259,7 @@
       if (ccode) row.codes.add(String(ccode));
       if (acode) row.codes.add(String(acode));
 
-      row.search += ' '+emp+' '+proveedor+' '+(s.centroCodigo||'')+' '+(s.areaCodigo||'')+' '+(s.comuna||'');
+      row.search += ' '+emp+' '+proveedor+' '+(s.centroCodigo||'')+' '+(s.areaCodigo||'')+' '+(s.comuna||'')+' '+(s.contactoNombre||'');
     });
 
     return Object.keys(map).map(function(k){
@@ -257,6 +274,7 @@
         saldo: Math.max(0, o.contactado - o.asignado),
         lotes: o.lotes,
         contactos: Array.from(o.contactos),
+        contactNames: o.contactNames, // Set
         detAsign: o.detAsign,
         detSemi: o.detSemi,
         detContactado: o.detContactado,
@@ -285,9 +303,9 @@
 
   function groupByMes(rows){
     var map={};
-    for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,semiTotal:0,lotes:0, detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map(), codes:new Set()};
+    for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,semiTotal:0,lotes:0, detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map(), codes:new Set(), contactNames:new Set()};
     rows.forEach(function(r){
-      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,semiTotal:0,lotes:0,detAsign:new Map(),detSemi:new Map(),detContactado:new Map(),labelByKey:new Map(), codes:new Set()};
+      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,semiTotal:0,lotes:0,detAsign:new Map(),detSemi:new Map(),detContactado:new Map(),labelByKey:new Map(), codes:new Set(), contactNames:new Set()};
       map[k].contactado += r.contactado;
       map[k].asignado   += r.asignado;
       map[k].semiTotal  += r.semiTotal;
@@ -297,6 +315,7 @@
       r.detContactado.forEach(function(v,kk){ map[k].detContactado.set(kk,(map[k].detContactado.get(kk)||0)+v); });
       r.labelByKey.forEach(function(label, kk){ if (!map[k].labelByKey.has(kk)) map[k].labelByKey.set(kk, label); });
       map[k].codes = mergeSets(map[k].codes, r.codes);
+      map[k].contactNames = mergeSets(map[k].contactNames, r.contactNames);
     });
     return range12().map(function(m){
       var o = map[m];
@@ -311,7 +330,8 @@
         detSemi: o.detSemi,
         detContactado: o.detContactado,
         labelByKey: o.labelByKey,
-        codes: o.codes
+        codes: o.codes,
+        contactNames: o.contactNames
       };
     });
   }
@@ -324,7 +344,7 @@
         map.set(e, {
           empresa:e,
           contactado:0, asignado:0, semiTotal:0, saldo:0, lotes:0,
-          detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map(), codes:new Set()
+          detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map(), codes:new Set(), contactNames:new Set()
         });
       }
       var o = map.get(e);
@@ -337,6 +357,7 @@
       r.detContactado.forEach(function(v,kk){ o.detContactado.set(kk,(o.detContactado.get(kk)||0)+v); });
       r.labelByKey.forEach(function(label, kk){ if (!o.labelByKey.has(kk)) o.labelByKey.set(kk, label); });
       o.codes = mergeSets(o.codes, r.codes);
+      o.contactNames = mergeSets(o.contactNames, r.contactNames);
     });
     var out = Array.from(map.values());
     out.forEach(function(o){ o.saldo = Math.max(0, o.contactado - o.asignado); });
@@ -414,6 +435,7 @@
           detContactado: x.detContactado,
           labelByKey: x.labelByKey,
           codes: x.codes,
+          contactNames: x.contactNames,
           contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo, lotes:x.lotes
         };
       });
@@ -438,6 +460,7 @@
           detContactado: x.detContactado,
           labelByKey: x.labelByKey,
           codes: x.codes,
+          contactNames: x.contactNames,
           contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo, lotes:x.lotes
         };
       });
@@ -527,19 +550,21 @@
     deriv: [],
     filters: { year:null, months:[], q:'' },
     axisMode: 'mes',
-    allSuggestions: [],  // textos bonitos (Proveedor – Comuna) + códigos
+    allSuggestions: [],  // textos bonitos, códigos y contactos
     suggOpen: false,
     suggIndex: -1
   };
 
   function rebuildSuggestionsFromAccDetail(accDetail){
-    // Recolecta etiquetas bonitas (Proveedor – Comuna) y códigos presentes en la vista
+    // Recolecta etiquetas bonitas (Proveedor – Comuna), códigos y nombres de contacto presentes en la vista
     var set = new Set();
     Object.keys(accDetail||{}).forEach(function(bucket){
       var lab = accDetail[bucket].labelByKey;
       if (lab && lab.forEach){ lab.forEach(function(v){ if (v) set.add(String(v)); }); }
       var codes = accDetail[bucket].codes;
       if (codes && codes.forEach){ codes.forEach(function(c){ if (c) set.add(String(c)); }); }
+      var cn = accDetail[bucket].contactNames;
+      if (cn && cn.forEach){ cn.forEach(function(n){ if (n) set.add(String(n)); }); }
     });
     STATE.allSuggestions = Array.from(set).sort();
   }
@@ -868,4 +893,3 @@
   /* ---------- API pública ---------- */
   global.MMppPipeline = { mount: mount, refresh: renderAll };
 })(window);
-
