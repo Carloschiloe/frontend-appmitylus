@@ -13,6 +13,14 @@ let centroTooltips = {};
 let windowCentrosDebug = [];
 let _throttledUpd;
 
+// ====== Medición de distancias (regla) ======
+let measureLayer;
+let measureOn = false;
+let measurePoints = [];
+let measureLine = null;
+let measureLabelMarker = null;
+let measureButtonEl = null;
+
 // ====== Constantes ======
 const CHILOE_COORDS = [-42.65, -73.99];
 const CHILOE_ZOOM = 10;
@@ -58,6 +66,89 @@ function normalizeHa(v){
 const fmtHaCL = n => n == null
   ? '—'
   : n.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// ====== Helpers de medición (distancias) ======
+function formatDistance(meters) {
+  if (!Number.isFinite(meters)) return '0 m';
+  if (meters < 1000) {
+    return `${meters.toFixed(0)} m`;
+  }
+  const km = meters / 1000;
+  return `${km.toFixed(2)} km (${meters.toFixed(0)} m)`;
+}
+
+function setMeasureActive(active) {
+  measureOn = !!active;
+  const container = map && map.getContainer ? map.getContainer() : null;
+  if (container) {
+    container.classList.toggle('measure-active', !!active);
+  }
+  if (measureButtonEl) {
+    measureButtonEl.classList.toggle('measure-btn-active', !!active);
+  }
+}
+
+function clearMeasure() {
+  measurePoints = [];
+  if (measureLayer) {
+    measureLayer.clearLayers();
+  }
+  measureLine = null;
+  measureLabelMarker = null;
+}
+
+function handleMeasureClick(e) {
+  if (!measureOn || !map) return;
+
+  const latlng = e.latlng;
+  if (!latlng) return;
+
+  measurePoints.push(latlng);
+
+  // Línea principal
+  if (!measureLine) {
+    measureLine = L.polyline([latlng], {
+      color: '#c62828',
+      weight: 3,
+      dashArray: '6,4'
+    }).addTo(measureLayer);
+  } else {
+    measureLine.addLatLng(latlng);
+  }
+
+  // Calcular distancia total
+  let total = 0;
+  for (let i = 1; i < measurePoints.length; i++) {
+    total += map.distance(measurePoints[i - 1], measurePoints[i]);
+  }
+
+  // Etiqueta de distancia
+  if (!measureLabelMarker) {
+    measureLabelMarker = L.circleMarker(latlng, {
+      radius: 0,
+      opacity: 0,
+      fillOpacity: 0
+    }).addTo(measureLayer);
+
+    measureLabelMarker.bindTooltip(formatDistance(total), {
+      permanent: true,
+      direction: 'top',
+      className: 'measure-label'
+    }).openTooltip();
+  } else {
+    measureLabelMarker.setLatLng(latlng);
+    measureLabelMarker.getTooltip().setContent(formatDistance(total));
+  }
+}
+
+function handleMeasureKeyDown(e) {
+  if (!measureOn) return;
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    // ESC → apagar modo medición y limpiar
+    clearMeasure();
+    setMeasureActive(false);
+  }
+}
 
 // ====== Base tiles ======
 const MAPBOX_TOKEN =
@@ -201,6 +292,9 @@ export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZO
   // Grupos
   puntosIngresoGroup = L.layerGroup().addTo(map);
   centrosGroup = L.layerGroup().addTo(map);
+
+  // Capa + control de medición
+  initMeasureControl();
 
   // Eventos del mapa
   _throttledUpd = throttle(updateLabelVisibility, 80);
@@ -452,6 +546,51 @@ export function focusCentroInMap(idx) {
   const t = centroTooltips[idx]?.getElement?.(); if (t) t.style.display = 'block';
   // Flash de énfasis breve
   try { poly.setStyle({ weight: 6 }); setTimeout(() => poly.setStyle({ weight: 3 }), 850); } catch {}
+}
+
+// ====== Control de medición (regla) ======
+function initMeasureControl() {
+  if (!map || typeof L === 'undefined') return;
+  if (measureLayer) return; // ya inicializado
+
+  // Capa donde van línea + tooltip
+  measureLayer = L.layerGroup().addTo(map);
+
+  const MeasureControl = L.Control.extend({
+    options: { position: 'topleft' },
+    onAdd: function() {
+      const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom measure-control');
+      container.title = 'Medir distancia (clicks en el mapa, ESC para limpiar)';
+      container.innerHTML = '<span class="measure-icon">📏</span>';
+
+      measureButtonEl = container;
+
+      // Evitar que el click propague al mapa
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.on(container, 'click', function (ev) {
+        L.DomEvent.stopPropagation(ev);
+        L.DomEvent.preventDefault(ev);
+
+        if (measureOn) {
+          // Apagar
+          clearMeasure();
+          setMeasureActive(false);
+        } else {
+          // Encender (y limpiar cualquier medición previa)
+          clearMeasure();
+          setMeasureActive(true);
+        }
+      });
+
+      return container;
+    }
+  });
+
+  map.addControl(new MeasureControl());
+
+  // Eventos del mapa/documento para medición
+  map.on('click', handleMeasureClick);
+  document.addEventListener('keydown', handleMeasureKeyDown);
 }
 
 // ====== Buscador global (input sobre el mapa) ======
