@@ -377,3 +377,38 @@ h5.map-title, #tab-centros h5{
 .map-search-results li .sub { font-size:12px; color:#374151; }
 .map-search-results li.nores { color:#6b7280; padding:10px 12px; cursor:default; }
 
+/* ===== Regla de medición en el mapa ===== */
+
+.leaflet-control.measure-control {
+  cursor: pointer;
+}
+
+.leaflet-control.measure-control .measure-icon {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.leaflet-control.measure-control.measure-btn-active,
+.leaflet-control.measure-control.measure-btn-active:hover {
+  background: #004d40;
+  color: #fff;
+}
+
+/* Cuando está activo el modo medición, cambiar cursor del mapa */
+.leaflet-container.measure-active {
+  cursor: crosshair;
+}
+
+/* Tooltip con la distancia total */
+.leaflet-tooltip.measure-label {
+  background: #004d40;
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,.4);
+}
+
