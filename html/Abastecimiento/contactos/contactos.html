@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Abastecimiento de MMPP – Choritos</title>
+
+  <!-- Google Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+
+  <!-- Materialize -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+
+  <!-- DataTables + Buttons -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+
+  <!-- SPA styles -->
+  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=4">
+  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1">
+  <link rel="stylesheet" href="/js/abastecimiento/visitas/fotos/styles.css">
+
+  <!-- Ajustes mínimos -->
+  <style>
+    .week-badge{font-weight:700}
+    .week-badge span{font-size:14px}
+    @media(min-width:992px){ .week-badge span{font-size:16px} }
+    .nuevo-star{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:18px; height:18px; border-radius:50%;
+      font-size:12px; line-height:1; margin-left:6px; vertical-align:middle;
+    }
+    .nuevo-star.yellow{ background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; }
+    .nuevo-star.green{  background:#DCFCE7; color:#166534; border:1px solid #BBF7D0; }
+  </style>
+</head>
+<body class="mmpp-layout">
+  <div id="mmppNavMount"></div>
+  <main class="mmpp-main">
+    <div class="mmpp-wrap">
+    <!-- Header / Hero -->
+    <header class="mmpp-hero" style="margin-bottom:14px">
+      <div>
+        <h1>Abastecimiento de MMPP</h1>
+        <p>Empresas, visitas a cultivos y agenda de contactos</p>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div class="mmpp-badge">
+          <i class="material-icons" style="font-size:18px">inventory_2</i> Gestión unificada
+        </div>
+        <div class="mmpp-badge week-badge" id="badgeSemanaActual" aria-live="polite">
+          <i class="material-icons" style="font-size:18px">event</i>
+          <span>Semana —</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tabs (corregido: sin col sX y con aria-controls) -->
+    <div class="card" style="padding:0; margin-bottom:12px">
+      <ul id="tabs" class="tabs" style="padding:0 12px">
+        <li class="tab"><a class="active" href="#tab-contactos" aria-controls="tab-contactos">Empresas</a></li>
+        <li class="tab"><a href="#tab-visitas" aria-controls="tab-visitas">Visitas a Cultivos</a></li>
+        <li class="tab"><a href="#tab-personas" aria-controls="tab-personas">Agenda de Contactos</a></li>
+        <li class="tab"><a href="#tab-interacciones" aria-controls="tab-interacciones">Interacciones</a></li>
+        <li class="tab"><a href="#tab-resumen" aria-controls="tab-resumen">Resumen (semana/mes)</a></li>
+      </ul>
+    </div>
+
+    <!-- EMPRESAS -->
+    <section id="tab-contactos" class="col s12">
+      <div class="mmpp-card" style="margin-bottom:12px">
+        <div class="table-toolbar" style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+          <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="btnOpenContactoModal" class="mmpp-add">
+              <i class="material-icons left" style="font-size:18px">record_voice_over</i> Registrar contacto
+            </button>
+            <!-- (El botón general de "Asignar biomasa semi-cerrada" fue eliminado) -->
+          </div>
+          <div id="filtrosContactos" class="filtros-row" style="min-width:620px;flex:1">
+            <select id="fltSemana" class="browser-default modern-select" aria-label="Filtrar por semana">
+              <option value="">Semana…</option>
+            </select>
+            <select id="fltComuna" class="browser-default modern-select" aria-label="Filtrar por comuna">
+              <option value="">Comuna…</option>
+            </select>
+            <select id="fltResp" class="browser-default modern-select" aria-label="Filtrar por responsable">
+              <option value="">Responsable…</option>
+              <option>Claudio Alba</option>
+              <option>Patricio Alvarez</option>
+              <option>Carlos Avendaño</option>
+            </select>
+            <input id="searchContactos" class="mmpp-input" placeholder="Buscar…" aria-label="Buscar en la tabla">
+          </div>
+        </div>
+
+        <div class="mmpp-table-wrap">
+          <table id="tablaContactos" class="display mmpp" style="width:100%">
+            <thead>
+              <tr>
+                <th>Semana</th>
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th>Centro</th>
+                <th>Tons</th>
+                <th>Responsable</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VISITAS -->
+    <section id="tab-visitas" class="col s12">
+      <div class="mmpp-card" style="margin-bottom:12px">
+        <div class="muted" style="margin-bottom:8px">
+          Revisión, filtros y exportación de visitas (la creación sigue en Contactos).
+        </div>
+
+        <div class="visitas-toolbar">
+          <div id="visitas-filtros-bar" class="visitas-filtros">
+            <div class="fld">
+              <label for="fltVisSem">Semana</label>
+              <select id="fltVisSem" class="browser-default" aria-label="Filtrar por semana">
+                <option value="">Todas</option>
+              </select>
+            </div>
+            <div class="fld">
+              <label for="fltVisComuna">Comuna</label>
+              <select id="fltVisComuna" class="browser-default" aria-label="Filtrar por comuna">
+                <option value="">Todas</option>
+              </select>
+            </div>
+          </div>
+          <div class="visitas-search">
+            <input id="searchVisitas" type="text" placeholder="Buscar en visitas…" aria-label="Buscar en la tabla de visitas">
+          </div>
+        </div>
+
+        <div class="mmpp-table-wrap">
+          <table id="tablaVisitas" class="display mmpp" style="width:100%">
+            <thead>
+              <tr>
+                <th>Sem.</th>
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th>Centro</th>
+                <th>Próximo paso</th>
+                <th>Fecha prox.</th>
+                <th>Tons</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- AGENDA DE CONTACTOS -->
+    <section id="tab-personas" class="col s12">
+      <div class="mmpp-card" style="margin-bottom:12px">
+        <div class="table-toolbar">
+          <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="btnOpenPersonaModal" class="mmpp-add">
+              <i class="material-icons left">person_add</i> Registrar persona
+            </button>
+          </div>
+          <div class="right">
+            <div class="search">
+              <input id="searchPersonas" class="mmpp-input" placeholder="Buscar…">
+            </div>
+          </div>
+        </div>
+        <div class="mmpp-table-wrap">
+          <table id="tablaPersonas" class="display mmpp" style="width:100%">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Contacto</th>
+                <th>Teléfono(s)</th>
+                <th>Email</th>
+                <th>Comuna</th>
+                <th>Empresa</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB INTERACCIONES (corregido: sin display:none) -->
+    <section id="tab-interacciones" class="col s12">
+      <div class="mmpp-card" style="margin-bottom:12px">
+        <div id="interacciones-root"></div>
+      </div>
+    </section>
+
+    <!-- MODAL CONTACTO -->
+    <div id="modalContacto" class="modal" aria-hidden="true">
+      <div class="modal-content">
+        <h5>Registrar Contacto</h5>
+
+        <div class="input-field" style="position:relative;">
+          <input type="text" id="buscadorProveedor" list="datalistProveedores" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
+          <label for="buscadorProveedor">Proveedor</label>
+          <datalist id="datalistProveedores"></datalist>
+        </div>
+
+        <div class="input-field">
+          <label for="selectCentro" class="active">Centro</label>
+          <select id="selectCentro" class="browser-default modern-select" disabled>
+            <option value="" disabled selected>Selecciona un centro (opcional)</option>
+          </select>
+        </div>
+
+        <input type="hidden" id="proveedorId">
+        <input type="hidden" id="proveedorNombre">
+        <input type="hidden" id="proveedorKey">
+        <input type="hidden" id="centroId">
+        <input type="hidden" id="centroCodigo">
+        <input type="hidden" id="centroComuna">
+        <input type="hidden" id="centroHectareas">
+
+        <form id="formContacto" autocomplete="off">
+          <div class="row">
+            <div class="input-field col s6">
+              <label for="contactoResponsable" class="active">Responsable PG</label>
+              <select id="contactoResponsable" class="browser-default modern-select" aria-label="Responsable PG">
+                <option value="">—</option>
+                <option value="Claudio Alba">Claudio Alba</option>
+                <option value="Patricio Alvarez">Patricio Alvarez</option>
+                <option value="Carlos Avendaño">Carlos Avendaño</option>
+              </select>
+            </div>
+            <div class="input-field col s6">
+              <input id="vendeActualmenteA" type="text" placeholder="Ej: Camanchaca, Orizon...">
+              <label for="vendeActualmenteA">Vende actualmente a</label>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="input-field col s4">
+              <input id="contactoNombre" type="text" placeholder="Nombre y apellido">
+              <label for="contactoNombre">Nombre del contacto</label>
+            </div>
+            <div class="input-field col s4">
+              <input id="contactoTelefono" type="tel" placeholder="+56 9 1234 5678">
+              <label for="contactoTelefono">Teléfono</label>
+            </div>
+            <div class="input-field col s4">
+              <input id="contactoEmail" type="email" placeholder="correo@dominio.cl">
+              <label for="contactoEmail">Email</label>
+            </div>
+          </div>
+
+          <!-- NUEVO: Localidad / Biomasa / Proveedor nuevo -->
+          <div class="row">
+            <div class="input-field col s4">
+              <input id="contactoLocalidad" type="text" maxlength="20" placeholder="Ej: Putemún">
+              <label for="contactoLocalidad">Localidad (máx. 20)</label>
+            </div>
+            <div class="input-field col s4">
+              <label for="contactoBiomasa" class="active">Biomasa</label>
+              <select id="contactoBiomasa" class="browser-default modern-select" aria-label="Biomasa">
+                <option value="">Seleccione…</option>
+                <option value="Con biomasa">Con biomasa</option>
+                <option value="Sin biomasa">Sin biomasa</option>
+              </select>
+            </div>
+            <div class="input-field col s4" style="display:flex;align-items:center;gap:8px">
+              <label for="contactoProveedorNuevo" class="active" style="margin-right:8px">Proveedor nuevo</label>
+              <label style="display:flex;align-items:center;gap:6px">
+                <input type="checkbox" id="contactoProveedorNuevo" />
+                <span>Es nuevo</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Próximo paso -->
+          <div class="row">
+            <div class="input-field col s6">
+              <label for="contacto_proximoPaso" class="active">Próximo paso</label>
+              <select id="contacto_proximoPaso" class="browser-default modern-select" aria-label="Próximo paso">
+                <option value="" selected>Seleccione…</option>
+                <option value="Nueva visita">Nueva visita</option>
+                <option value="Tomar muestras">Tomar muestras</option>
+                <option value="Negociar precio/volumen">Negociar precio/volumen</option>
+                <option value="Contacto telefónico">Contacto telefónico</option>
+                <option value="Reunión">Reunión</option>
+                <option value="Esperar disponibilidad">Esperar disponibilidad</option>
+                <option value="Sin acción">Sin acción</option>
+              </select>
+            </div>
+            <div class="input-field col s6">
+              <input type="date" id="contacto_proximoPasoFecha" aria-label="Fecha exacta del próximo paso">
+              <label for="contacto_proximoPasoFecha" class="active">Fecha exacta del próximo paso</label>
+            </div>
+          </div>
+
+          <!-- DISPONIBILIDAD MMPP (asignaciones) -->
+          <div class="row" id="asigDisponibilidadBlock">
+            <div class="col s12"><h6 class="grey-text text-darken-2" style="margin:4px 0 8px">Disponibilidad de MMPP (asignaciones)</h6></div>
+
+            <div class="col s12 m4">
+              <div class="input-field">
+                <input id="asigAnio" type="number" min="2020" max="2100">
+                <label for="asigAnio">Año</label>
+              </div>
+            </div>
+
+            <div class="col s12 m4">
+              <div class="input-field">
+                <select id="asigMes" aria-label="Mes de asignación">
+                  <option value="" selected>Mes…</option>
+                  <option value="1">Enero</option>
+                  <option value="2">Febrero</option>
+                  <option value="3">Marzo</option>
+                  <option value="4">Abril</option>
+                  <option value="5">Mayo</option>
+                  <option value="6">Junio</option>
+                  <option value="7">Julio</option>
+                  <option value="8">Agosto</option>
+                  <option value="9">Septiembre</option>
+                  <option value="10">Octubre</option>
+                  <option value="11">Noviembre</option>
+                  <option value="12">Diciembre</option>
+                </select>
+                <label for="asigMes">Mes</label>
+              </div>
+            </div>
+
+            <div class="col s12 m4">
+              <div class="input-field">
+                <input id="asigTons" type="number" step="0.01" min="0">
+                <label for="asigTons">Cantidad (ton)</label>
+              </div>
+            </div>
+
+            <div class="col s12">
+              <div id="asigHist" class="card-panel grey lighten-4" style="padding:8px 12px">
+                <span class="grey-text">Sin asignaciones registradas.</span>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:8px;">
+        <button type="button" class="modal-close btn-flat">Cancelar</button>
+        <button class="mmpp-button" type="submit" form="formContacto">
+          <i class="material-icons left">save</i>Guardar
+        </button>
+      </div>
+    </div>
+
+    <div id="modalDetalleContacto" class="modal">
+      <div class="modal-content">
+        <h5>Detalle del contacto</h5>
+        <div id="detalleContactoBody"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="mmpp-add modal-close">Cerrar</button>
+      </div>
+    </div>
+
+    <!-- MODAL VISITA -->
+    <div id="modalVisita" class="modal">
+      <div class="modal-content">
+        <h5>Registrar visita</h5>
+        <form id="formVisita" autocomplete="off">
+          <input type="hidden" id="visita_proveedorId">
+          <div class="row">
+            <div class="input-field col s4">
+              <input type="date" id="visita_fecha" required>
+              <label for="visita_fecha" class="active">Fecha</label>
+            </div>
+            <div class="input-field col s4">
+              <label for="visita_centroId" class="active">Centro</label>
+              <select id="visita_centroId" class="browser-default" aria-label="Centro visitado">
+                <option value="">Centro visitado (opcional)</option>
+              </select>
+            </div>
+            <div class="input-field col s4">
+              <input id="visita_contacto" type="text" placeholder="Persona contactada">
+              <label for="visita_contacto">Contacto</label>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="input-field col s4">
+              <label for="visita_enAgua" class="active">Muestra</label>
+              <select id="visita_enAgua" class="browser-default" aria-label="¿Toma de Muestras?">
+                <option value="">¿Toma de Muestras?</option>
+                <option>Sí</option>
+                <option>No</option>
+              </select>
+            </div>
+            <div class="input-field col s4">
+              <input id="visita_tonsComprometidas" type="number" step="0.01" min="0" placeholder="Ej: 120">
+              <label for="visita_tonsComprometidas" class="active">Tons comprometidas (opcional)</label>
+            </div>
+            <div class="input-field col s4">
+              <label for="visita_proximoPaso" class="active">Próximo paso</label>
+              <select id="visita_proximoPaso" class="browser-default" aria-label="Próximo paso">
+                <option value="Nueva visita" selected>Nueva visita</option>
+                <option value="Tomar muestras">Tomar muestras</option>
+                <option value="Negociar precio/volumen">Negociar precio/volumen</option>
+                <option value="Contacto telefónico">Contacto telefónico</option>
+                <option value="Esperar disponibilidad">Esperar disponibilidad</option>
+                <option value="Reunión">Reunión</option>
+                <option value="Sin acción">Sin acción</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="input-field col s4">
+              <input type="date" id="visita_proximoPasoFecha" aria-label="Fecha exacta del próximo paso">
+              <label for="visita_proximoPasoFecha" class="active">Fecha exacta del próximo paso</label>
+            </div>
+          </div>
+
+          <div class="input-field">
+            <textarea id="visita_observaciones" class="materialize-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
+            <label for="visita_observaciones">Observaciones</label>
+          </div>
+
+          <div class="right-align" style="display:flex;gap:8px;justify-content:flex-end">
+            <button type="button" class="modal-close btn-flat">Cancelar</button>
+            <button class="mmpp-button" type="submit">
+              <i class="material-icons left">save</i>Guardar visita
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="modalAsociar" class="modal">
+      <div class="modal-content">
+        <h5>Asociar a empresa</h5>
+        <div class="input-field">
+          <input id="empresaSearch" type="text" class="mmpp-input" placeholder="Buscar empresa... (mín. 2 letras)">
+        </div>
+        <ul id="searchResults" class="collection" style="max-height:260px;overflow:auto;"></ul>
+      </div>
+      <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
+        <a href="#!" id="btnCrearEmpresa" class="btn-flat">Crear empresa nueva</a>
+        <a href="#!" id="btnQuitarEmpresa" class="btn-flat red-text">Quitar empresa</a>
+        <a href="#!" class="modal-close mmpp-add">Cerrar</a>
+      </div>
+    </div>
+
+    <!-- ====================== TAB: Resumen (semana/mes) ====================== -->
+    <div id="tab-resumen" class="section">
+      <div class="resumen-toolbar" style="display:flex; gap:12px; align-items:center; justify-content:space-between; margin:8px 0; flex-wrap:wrap">
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div class="segmented" id="resumen_period" aria-label="Tipo de período">
+            <button data-period="semana" class="is-active" type="button">Semana</button>
+            <button data-period="mes" type="button">Mes</button>
+          </div>
+
+          <div>
+            <label class="grey-text text-darken-1" for="resumen_semana" style="font-size:12px">Semana</label>
+            <select id="resumen_semana" class="browser-default" style="min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Seleccionar semana"></select>
+          </div>
+
+          <div>
+            <label class="grey-text text-darken-1" for="resumen_mes" style="font-size:12px">Mes</label>
+            <select id="resumen_mes" class="browser-default" style="min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Seleccionar mes (YYYY-MM)"></select>
+          </div>
+
+          <div>
+            <label class="grey-text text-darken-1" for="resumen_resp" style="font-size:12px">Responsable PG</label>
+            <select id="resumen_resp" class="browser-default" style="min-width:180px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Filtrar por Responsable PG">
+              <option value="">Responsable…</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <a id="resumen_copy" class="btn-flat waves-effect">Copiar</a>
+          <a id="resumen_print" class="btn waves-effect">Imprimir / PDF</a>
+        </div>
+      </div>
+
+      <div id="resumen_print_area">
+        <h5 id="resumen_titulo" style="margin:4px 0">Informe semanal</h5>
+        <div id="resumen_kpis"></div>
+        <div class="row">
+          <div class="col s12 m7">
+            <table class="striped" aria-label="Tabla de resumen">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Proveedor</th>
+                  <th>Centro</th>
+                  <th>Comuna</th>
+                  <th>Tons</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="resumen_table_body"></tbody>
+            </table>
+          </div>
+          <div class="col s12 m5">
+            <div id="resumen_top"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NUEVO: contenedor del modal de Semi-cerrado -->
+    <div id="modalSemiCerrado" class="modal" aria-hidden="true"></div>
+
+  </main>
+
+<!-- Sidebar -->
+<script src="https://unpkg.com/react@18/umd/react.development.js?v=4" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js?v=4" crossorigin></script>
+<script type="module" src="/spa-mmpp/nav.jsx?v=4"></script>
+
+<!-- Libs -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+<!-- Calendario solo lectura -->
+<script src="/spa-mmpp/mmpp-calendario.js"></script>
+
+<!-- Módulo Interacciones (lazy-mount al abrir la pestaña) -->
+<script type="module" src="/js/abastecimiento/contactos/interacciones/index.js?v=2"></script>
+
+<!-- Orquestador (carga e inicializa todo, incluido el Resumen) -->
+<script type="module" src="/js/abastecimiento/contactos/index.js?v=12"></script>
+
+<!-- Modal de Semi-cerrado (se mantiene porque lo usan los botones por fila) -->
+<script type="module" src="/js/abastecimiento/semi-cerrado/modal.js?v=1"></script>
+
+<!-- Init mínimo (tabs/modals) -->
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const elTabs = document.querySelectorAll('.tabs');
+    if (elTabs.length) M.Tabs.init(elTabs, {});
+    const elModals = document.querySelectorAll('.modal');
+    if (elModals.length) M.Modal.init(elModals, {endingTop: '5%'});
+  });
+</script>
+
+</body>
+</html>

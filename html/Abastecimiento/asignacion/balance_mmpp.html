@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Balance MMPP</title>
+
+  <!-- Estilos compartidos (mismos que el resto) -->
+  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
+  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
+
+  <!-- ===== CONFIG (antes de cualquier JS) ===== -->
+  <script>window.DEBUG = true;</script>
+  <!-- Usa /api con proxy de vercel.json. Si quieres forzar otro backend, define window.API_URL en /js/config.js -->
+  <script src="/js/config.js"></script>
+  <!-- ========================================= -->
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+
+  <!-- Sidebar (JSX) -->
+  <script type="module" src="/spa-mmpp/nav.jsx?v=2"></script>
+
+  <!-- App (JSX) -->
+  <script type="module" src="/spa-mmpp/mmpp-balance.jsx?v=12"></script>
+</head>
+<body>
+  <div class="mmpp-layout">
+    <div id="mmppNavMount"></div>
+    <main class="mmpp-main">
+      <div id="mmppBalance"></div>
+    </main>
+  </div>
+
+  <!-- API compartida -->
+  <script defer src="/spa-mmpp/mmpp-api.js?v=12"></script>
+
+  <!-- Sidebar (JSX via Babel) -->
+  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
+
+  <!-- Balance MMPP (JSX) -->
+  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/mmpp-balance.jsx?v=4"></script>
+
+  <!-- Fallback de montaje: por si Babel termina después -->
+  <script>
+    setTimeout(function(){
+      var host = document.getElementById('mmppBalance');
+      if (window.MMppBalance && host && !MMppBalance._root) {
+        MMppBalance.mount({ anio: new Date().getFullYear() });
+      }
+    }, 2000);
+  </script>
+
+  <noscript>Esta página requiere JavaScript.</noscript>
+</body>
+</html>
+

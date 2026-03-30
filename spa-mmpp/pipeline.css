@@ -1,0 +1,58 @@
+/* === Pipeline MMPP – estilos externos === */
+:root{
+  /* Colores corporativos (ajústalos si quieres) */
+  --pl-asignado:    #2563EB;  /* azul */
+  --pl-semicerrado: #10B981;  /* verde */
+  --pl-noasignado:  #94A3B8;  /* gris neutro */
+  --pl-text:        #111827;
+  --pl-text-soft:   #64748b;
+  --pl-border:      #e5e7eb;
+  --pl-bg:          #ffffff;
+  --pl-bg-soft:     #f8fafc;
+  --pl-chip-bg:     #eef2ff;
+  --pl-chip-border: #c7d2fe;
+  --pl-chip-on:     #1e40af;
+}
+
+/* Layout */
+.pl-wrap{max-width:1200px;margin:0 auto;padding:20px}
+.pl-card{background:var(--pl-bg);border:1px solid var(--pl-border);border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}
+.pl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pl-title{margin:0;font-weight:800;color:#2b3440}
+
+/* Filtros */
+.pl-filters{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:10px;align-items:center;margin-top:8px}
+.pl-select{height:44px;border:1px solid var(--pl-border);border-radius:12px;padding:0 12px;background:#fafafa;width:100%}
+
+/* Acciones */
+.pl-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pl-btn{background:var(--pl-chip-bg);border:1px solid var(--pl-chip-border);color:var(--pl-chip-on);height:38px;border-radius:10px;padding:0 12px;cursor:pointer;font-weight:700}
+
+/* Meses (chips) */
+.pl-monthsbar{width:100%;margin:10px 0 6px 0;overflow-x:auto}
+.pl-months-line{width:100%;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px}
+.pl-chip{width:100%;height:34px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--pl-chip-border);background:var(--pl-chip-bg);color:var(--pl-chip-on);border-radius:999px;font-weight:700;cursor:pointer;user-select:none;font-size:13px;white-space:nowrap;padding:0 10px}
+.pl-chip.is-on{background:var(--pl-chip-on);color:#fff;border-color:var(--pl-chip-on)}
+
+/* KPIs */
+.pl-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:10px}
+.kpi{background:var(--pl-bg-soft);border:1px solid var(--pl-border);border-radius:14px;padding:14px}
+.kpi .lab{font-size:12px;color:var(--pl-text-soft)}
+.kpi .val{font-size:22px;font-weight:900;color:var(--pl-text)}
+
+/* Chart */
+.pl-chart-wrap{margin-top:14px}
+.pl-chart-frame{display:block;border:1px solid var(--pl-border);border-radius:14px;overflow:hidden;background:#fff}
+.pl-chart-container{position:relative;width:100%;height:360px}
+.pl-chart-canvas{display:block;width:100% !important;height:100% !important}
+.pl-note{color:var(--pl-text-soft);font-size:12px;margin-top:6px}
+
+/* Tabla */
+.pl-table{width:100%;border-collapse:separate;border-spacing:0 8px;margin-top:14px}
+.pl-table th,.pl-table td{padding:10px 8px}
+.pl-table tr{background:#fff;border:1px solid var(--pl-border)}
+.pl-right{text-align:right}
+
+/* Responsivo */
+@media (max-width: 1100px){ .pl-kpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width: 720px){ .pl-filters{grid-template-columns:1fr} }

@@ -1,0 +1,157 @@
+/* ===========================
+   ASIGNACIÓN / INVENTARIOS UI
+   =========================== */
+
+:root{
+  --compact-h: 36px;
+  --compact-fs: .92rem;
+  --compact-label: .82rem;
+  --gap-base: 8px;
+}
+
+/* Fondo suave general */
+body{ background:#fafafa; }
+
+/* Título centrado de la barra superior */
+nav.teal .brand-logo{ font-size:1.1rem; }
+
+/* Tarjeta blanca suave */
+.card-soft{
+  border-radius:14px;
+  background:#fff;
+  border:1px solid #eaeaea;
+}
+
+/* Etiqueta tipo píldora */
+.pill{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:999px;
+  background:#e0f2f1;
+  color:#00695c;
+  font-size:.8rem;
+}
+
+/* ===== Toolbar compacta ===== */
+.toolbar{
+  display:grid;
+  grid-template-columns:repeat(4, minmax(160px,1fr)) auto;
+  gap:var(--gap-base);
+  align-items:end;
+}
+.toolbar .input-field{ margin:0; }
+
+/* Materialize select más compacto */
+.toolbar .select-wrapper input.select-dropdown{
+  height:var(--compact-h);
+  line-height:var(--compact-h);
+  font-size:var(--compact-fs);
+}
+.toolbar .dropdown-content li>a,
+.toolbar .dropdown-content li>span{
+  font-size:.9rem;
+}
+.toolbar .input-field>label{ font-size:var(--compact-label); }
+.toolbar .select-wrapper+label{ top:-12px; }
+
+/* Asegura que el botón "Actualizar" no interfiera con el select */
+.toolbar .right-actions{ position:relative; z-index:5; }
+.toolbar .select-wrapper{ position:relative; z-index:1; }
+
+/* ===== Contenedores de tablas ===== */
+#invTableWrap, #progTableWrap{ overflow-x:auto; }
+
+/* Tabulator: bordes suaves y ancho mínimo de columnas */
+.tabulator{
+  border-radius:12px;
+  border:1px solid #e0e0e0;
+}
+.tabulator .tabulator-col{ min-width:110px; }
+
+/* ===== KPIs y layout de Asignación ===== */
+.kpi{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+.kpi .card-soft{ padding:12px; }
+.kpi h6{ margin:0 0 4px; font-size:.9rem; color:#666; }
+.kpi p{ margin:0; font-weight:700; }
+
+.assign-grid{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:14px;
+}
+.assign-actions .btn{ width:100%; }
+
+/* ===== Programa semanal ===== */
+.col-noop .tabulator-col-content{
+  background: repeating-linear-gradient(-45deg,#f5f5f5,#f5f5f5 10px,#ededed 10px,#ededed 20px);
+}
+.badge-noop{
+  background:#bdbdbd;
+  color:#333;
+  border-radius:999px;
+  padding:2px 8px;
+  font-size:.75rem;
+  margin-left:6px;
+}
+
+/* ===== Tabs ===== */
+.tabs.tabs-fixed-width .tab a{ color:#00695c; }
+.tabs .indicator{ background:#26a69a; }
+
+/* ===== Responsivo ===== */
+@media (max-width:1100px){
+  .toolbar{ grid-template-columns:repeat(2, minmax(160px,1fr)) auto; }
+  .assign-grid{ grid-template-columns:1fr; }
+}
+
+/* Evitar que los dropdown/modales queden tapados por la card o la tabla */
+.card-soft,
+.toolbar {
+  overflow: visible !important;
+}
+
+/* Asegurar que todo lo "flotante" de Materialize quede por encima */
+ul.dropdown-content,
+.select-dropdown,
+.datepicker-modal,
+.timepicker-modal {
+  z-index: 10050 !important;
+}
+.modal {
+  z-index: 10040 !important;
+}
+.modal-overlay {
+  z-index: 10030 !important;
+}
+
+/* La Tabulator no debe ganar la pelea de z-index */
+.tabulator {
+  z-index: 10;
+}
+
+/* Por si el botón 'Actualizar' pisaba el dropdown */
+.toolbar .right-actions {
+  position: relative;
+  z-index: 15;
+}
+
+/* ===================================================== */
+/*  🔻 Ocultar los botones antiguos (CSV y XLSX)         */
+/*  Mantén visibles SOLO “EXCEL” y “PDF”.                */
+/*  Estos ids existen en tu JS anterior.                 */
+/* ===================================================== */
+#btnCSV,
+#btnXLSX{
+  display: none !important;
+}
+
+/* (opcional) si esos dos tenían ancho reservado en el grid,
+   permite que EXCEL/PDF se peguen al contador de registros */
+#invToolbar .btn,
+#invToolbar .pill{
+  margin-right: 8px;
+}

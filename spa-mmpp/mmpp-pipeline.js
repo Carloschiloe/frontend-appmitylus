@@ -1,0 +1,926 @@
+/* /spa-mmpp/mmpp-pipeline.js
+   Pipeline MMPP — Disponible –  Semi-cerrado – Asignado
+   - Eje Empresa/Mes.
+   - Sin filtro "Todas las empresas" ni casillas extras.
+   - Autocomplete: aparece al escribir ≥2 letras; filtra en vivo.
+   - Buscar por Proveedor/Contacto y Código de Centro.
+   - Semi-cerrado SIEMPRE total.
+*/
+(function (global) {
+  var MMESES = ["Ene.","Feb.","Mar.","Abr.","May.","Jun.","Jul.","Ago.","Sept.","Oct.","Nov.","Dic."];
+  var MMESES_LARGO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+  /* ---------- CSS ---------- */
+  function injectCSS(){
+    if (document.getElementById('mmpp-pipeline-css')) return;
+    var css = ''
+      + '.pl-wrap{max-width:1200px;margin:0 auto;padding:20px}'
+      + '.pl-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(17,24,39,.06)}'
+      + '.pl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}'
+      + '.pl-title{margin:0;font-weight:800;color:#2b3440}'
+      + '.pl-title .pl-week{display:inline-block;font-size:.85em;background:#eef2ff;border:1px solid #c7d2fe;padding:2px 8px;border-radius:999px;margin-left:8px;color:#1e40af;font-weight:800}'
+      + '.pl-filters{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr)) 1fr;gap:10px;align-items:center;margin-top:8px}'
+      + '.pl-select,.pl-input{height:44px;border:1px solid #e5e7eb;border-radius:12px;padding:0 12px;background:#fafafa;width:100%}'
+      + '.pl-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
+      + '.pl-btn{background:#eef2ff;border:1px solid #c7d2fe;color:#1e40af;height:38px;border-radius:10px;padding:0 12px;cursor:pointer;font-weight:700}'
+      + '.pl-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:10px}'
+      + '.kpi{background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:14px}'
+      + '.kpi .lab{font-size:12px;color:#64748b}'
+      + '.kpi .val{font-size:22px;font-weight:900;color:#111827}'
+      + '.pl-monthsbar{width:100%;margin:10px 0 6px 0;overflow-x:auto}'
+      + '.pl-months-line{width:100%;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px}'
+      + '.pl-chip{width:100%;height:34px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #c7d2fe;background:#eef2ff;color:#1e40af;border-radius:999px;font-weight:700;cursor:pointer;user-select:none;font-size:13px;white-space:nowrap;padding:0 10px}'
+      + '.pl-chip.is-on{background:#1e40af;color:#fff;border-color:#1e40af}'
+      + '.pl-chart-wrap{margin-top:14px}'
+      + '.pl-chart-frame{display:block;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;background:#fff}'
+      + '.pl-chart-container{position:relative;width:100%;height:360px}'
+      + '.pl-chart-canvas{display:block;width:100% !important;height:100% !important}'
+      + '.pl-note{color:#64748b;font-size:12px;margin-top:6px}'
+      + '.pl-table-wrap{width:100%;overflow:auto}'
+      + '.pl-table{width:100%;border-collapse:separate;border-spacing:0 8px;margin-top:14px;min-width:760px}'
+      + '.pl-table thead th{position:sticky;top:0;background:#fff;z-index:1;border-bottom:1px solid #e5e7eb}'
+      + '.pl-table th,.pl-table td{padding:10px 8px}'
+      + '.pl-table tr{background:#fff;border:1px solid #e5e7eb}'
+      + '.pl-right{text-align:right}'
+      + '.acc-btn{display:inline-flex;gap:6px;align-items:center;border:1px solid #e5e7eb;background:#f8fafc;border-radius:8px;height:30px;padding:0 10px;cursor:pointer;font-weight:700}'
+      + '.acc-btn[aria-expanded="true"]{background:#eef2ff;border-color:#c7d2fe;color:#1e40af}'
+      + '.acc-body{padding:10px 6px 4px 6px;background:#fbfdff;border-top:1px dashed #e5e7eb}'
+      + '.acc-grid{display:grid;grid-template-columns:1.3fr .6fr .6fr .6fr;gap:8px}'
+      + '@media (max-width:1100px){.pl-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}'
+      + '@media (max-width:720px){.pl-filters{grid-template-columns:1fr 1fr;grid-auto-rows:auto}}'
+      + '.pill{display:inline-block;padding:2px 10px;border-radius:9999px;font-weight:800;font-size:12px;line-height:1;border:1px solid transparent}'
+      + '.pill-asign{color:#0EA5E9;background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35)}'
+      + '.pill-semi{color:#22C55E;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35)}'
+      + '.pill-contact{color:#475569;background:rgba(203,213,225,.35);border-color:rgba(148,163,184,.45)}'
+      + '.pill-neutral{color:#111827;background:rgba(17,24,39,.06);border-color:rgba(17,24,39,.15)}'
+      /* Autocomplete */
+      + '.pl-autocomplete{position:relative}'
+      + '.pl-suggest{position:absolute;left:0;right:0;top:100%;margin-top:6px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 12px 30px rgba(17,24,39,.12);max-height:280px;overflow:auto;z-index:50;padding:6px}'
+      + '.pl-suggest-item{padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600}'
+      + '.pl-suggest-item:hover,.pl-suggest-item.is-active{background:#eef2ff;color:#1e40af}';
+    var s=document.createElement('style'); s.id='mmpp-pipeline-css'; s.textContent=css; document.head.appendChild(s);
+  }
+
+  /* ---------- utils ---------- */
+  function numeroCL(n){ return (Number(n)||0).toLocaleString("es-CL"); }
+  function range12(){ var a=[]; for(var i=1;i<=12;i++) a.push(i); return a; }
+  function uniqSorted(arr){ var set={}, out=[]; (arr||[]).forEach(function(v){ if(v!=null && v!=="" && !set[v]){ set[v]=1; out.push(v);} }); out.sort(); return out; }
+  function pillNum(n, kind){ return '<span class="pill pill-'+kind+'">'+numeroCL(n)+'</span>'; }
+  function normalizeTxt(s){
+    return String(s||'')
+      .replace(/[–—]/g,'-')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase()
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+  function norm(s){ // para buscador (proveedor/CONTACTO/códigos)
+    return String(s||'')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase().trim();
+  }
+  // clave SOLO por proveedor (fusiona filas, comuna se usa solo para etiqueta)
+  function makeKey(prov, _comuna){ return normalizeTxt(prov); }
+  function displayLabel(prov, comuna){
+    var p = String(prov||'—').trim();
+    var c = String(comuna||'').trim();
+    return p + (c?(' – '+c):'');
+  }
+
+  // ====== Semana ISO en HORA LOCAL (Chile) ======
+  function isoWeekNumberLocal(d){
+    const dt = new Date(d);
+    dt.setHours(0,0,0,0);
+    const day = (dt.getDay() + 6) % 7;   // 0=Lun ... 6=Dom
+    const thu = new Date(dt);
+    thu.setDate(dt.getDate() - day + 3);
+    const firstThu = new Date(thu.getFullYear(), 0, 4);
+    const firstDay = (firstThu.getDay() + 6) % 7;
+    firstThu.setDate(firstThu.getDate() - firstDay + 3);
+    return 1 + Math.round((thu - firstThu) / 604800000);
+  }
+  function isoWeekRangeLocal(d){
+    const dt = new Date(d);
+    dt.setHours(0,0,0,0);
+    const day = (dt.getDay() + 6) % 7;   // 0=Lun
+    const start = new Date(dt); start.setDate(dt.getDate() - day);   // Lunes
+    const end   = new Date(start); end.setDate(start.getDate() + 6); // Domingo
+    return { start, end };
+  }
+  // Si es lunes, mostrar semana ANTERIOR (tus reportes de lunes son de la semana previa)
+  function pickDisplayDateForWeek(){
+    const today = new Date();
+    if (today.getDay() === 1) { // 1=Lunes
+      const prev = new Date(today); prev.setDate(today.getDate() - 7);
+      return prev;
+    }
+    return today;
+  }
+
+  /* ---------- UI skeleton ---------- */
+  function buildUI(root){
+    // título con semana ISO local (y regla del lunes)
+    var baseDate = pickDisplayDateForWeek();
+    var semNum   = isoWeekNumberLocal(baseDate);
+    // Si quieres rango visual, descomenta:
+    // var wr = isoWeekRangeLocal(baseDate);
+    // var fmt = (d)=> d.toLocaleDateString('es-CL',{day:'2-digit',month:'short'});
+    // var rango = ' <span style="color:#64748b;font-weight:600">('+fmt(wr.start)+' – '+fmt(wr.end)+')</span>';
+
+    root.innerHTML = ''
+      +'<div class="pl-wrap"><div class="pl-card">'
+        +'<div class="pl-head" style="margin-bottom:10px">'
+          +'<h2 class="pl-title">Disponible –  Semi-cerrado – Asignado'
+            +'<span class="pl-week">Sem '+ semNum +'</span>' /* + (rango||'') */
+          +'</h2>'
+          +'<div class="pl-actions">'
+            +'<button id="plBtnLimpiarMeses" class="pl-btn">Limpiar meses</button>'
+            +'<button id="plBtnLimpiarFiltros" class="pl-btn">Limpiar filtros</button>'
+            +'<button id="plAxisBtn" class="pl-btn">Eje: Mes</button>'
+          +'</div>'
+        +'</div>'
+
+        +'<div class="pl-filters">'
+          +'<select id="plYear" class="pl-select"></select>'
+
+          +'<div class="pl-autocomplete">'
+            +'<input id="plSearch" class="pl-input" placeholder="Buscar proveedor, contacto o código de centro…" autocomplete="off"/>'
+            +'<div id="plSuggest" class="pl-suggest" hidden></div>'
+          +'</div>'
+        +'</div>'
+
+        +'<div class="pl-monthsbar"><div id="plMonths" class="pl-months-line"></div></div>'
+        +'<div class="pl-kpis" id="plKpis"></div>'
+
+        +'<div class="pl-chart-wrap"><div class="pl-chart-frame"><div class="pl-chart-container">'
+          +'<canvas id="plChart" class="pl-chart-canvas"></canvas>'
+        +'</div></div><div id="plChartNote" class="pl-note"></div></div>'
+
+        +'<div id="plTableWrap" class="pl-table-wrap"></div>'
+      +'</div></div>';
+  }
+
+  /* ===== (sigue el archivo con tus funciones: cleanEmpresa, buildDerivMonthly, groupByMes, groupByEmpresa, KPIs, chart, tabla, eventos, mount, etc.) ===== */
+
+  /* ---------- helper: empresa ---------- */
+  function cleanEmpresa(d, a){
+    var s = (d && (d.empresaNombre||'')) || (a && (a.empresaNombre||'')) || (d && (d.proveedorNombre||d.contactoNombre||'')) || (a && (a.proveedorNombre||a.contactoNombre||'')) || '—';
+    s = String(s||'').trim();
+    return s || '—';
+  }
+
+  /* ---------- DERIVACIÓN (mensual) ---------- */
+  function buildDerivMonthly(dispon, asig, semi){
+    var byId = {};
+    (dispon||[]).forEach(function(d){ if (d && (d.id!=null)) byId[String(d.id)] = d; });
+
+    var map = {};
+    function key(emp, anio, mes){ return emp + '|' + (anio||'') + '|' + (mes||0); }
+    function ensure(emp, anio, mes){
+      var k = key(emp, anio, mes);
+      if (!map[k]){
+        map[k] = {
+          empresa: emp || '—',
+          anio: Number(anio)||null,
+          mes: Number(mes)||0,
+          contactado: 0,
+          asignado: 0,
+          semiTotal: 0,
+          saldo: 0,
+          lotes: 0,
+          contactos: new Set(),           // etiquetas proveedor – comuna
+          contactNames: new Set(),        // nombres de contacto
+          detAsign: new Map(),
+          detSemi: new Map(),
+          detContactado: new Map(),
+          labelByKey: new Map(),
+          codes: new Set(),
+          search: ''
+        };
+      }
+      return map[k];
+    }
+
+    // Contactado
+    (dispon||[]).forEach(function(d){
+      var emp = cleanEmpresa(d, null);
+      var anio = Number(d.anio)||null;
+      var mes  = Number(d.mes)||0;
+      var tons = Number((d.tons ?? d.tonsDisponible ?? d.cantidad) || 0) || 0;
+      if (!anio || !mes) return;
+      var row = ensure(emp, anio, mes);
+      row.contactado += tons;
+      row.lotes += 1;
+
+      var proveedor = d.proveedorNombre || d.contactoNombre || '—';
+      var comuna    = d.comuna || '';
+      var kNorm     = makeKey(proveedor, comuna);
+      var label     = displayLabel(proveedor, comuna);
+
+      row.contactos.add(label);
+      if (d.contactoNombre) row.contactNames.add(String(d.contactoNombre));
+      row.detContactado.set(kNorm, (row.detContactado.get(kNorm)||0)+tons);
+      if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
+
+      var ccode = (d.centroCodigo||'');
+      var acode = (d.areaCodigo||'');
+      if (ccode) row.codes.add(String(ccode));
+      if (acode) row.codes.add(String(acode));
+
+      row.search += ' '+emp+' '+proveedor+' '+(d.centroCodigo||'')+' '+(d.areaCodigo||'')+' '+(d.comuna||'')+' '+(d.contactoNombre||'');
+    });
+
+    // Asignado (por mes destino)
+    (asig||[]).forEach(function(a){
+      var destY = Number(a.destAnio||a.anio||0)||0;
+      var destM = Number(a.destMes ||a.mes ||0)||0;
+      if (!destY || !destM) return;
+      var dpo = byId[String(a.disponibilidadId||'')];
+      var emp = cleanEmpresa(dpo, a);
+      var tons = Number(a.cantidad||a.tons||0)||0;
+      var row = ensure(emp, destY, destM);
+      row.asignado += tons;
+
+      var proveedor = (a.proveedorNombre || a.contactoNombre || (dpo && (dpo.proveedorNombre||dpo.contactoNombre)) || '—');
+      var comuna    = (a.comuna || (dpo && dpo.comuna) || '');
+      var kNorm     = makeKey(proveedor, comuna);
+      var label     = displayLabel(proveedor, comuna);
+
+      row.contactos.add(label);
+      if (a.contactoNombre) row.contactNames.add(String(a.contactoNombre));
+      row.detAsign.set(kNorm, (row.detAsign.get(kNorm)||0)+tons);
+      if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
+
+      var ccode = (a.centroCodigo||'') || (dpo && dpo.centroCodigo) || '';
+      var acode = (a.areaCodigo||'') || (dpo && dpo.areaCodigo) || '';
+      if (ccode) row.codes.add(String(ccode));
+      if (acode) row.codes.add(String(acode));
+
+      row.search += ' '+emp+' '+proveedor+' '+(a.centroCodigo||'')+' '+(a.areaCodigo||'')+' '+(a.comuna||'')+' '+(a.contactoNombre||'');
+    });
+
+    // Semi-cerrado (TOTAL por periodo)
+    (semi||[]).forEach(function(s){
+      var anio = Number(s.anio)||null;
+      var mes  = Number(s.mes)||0;
+      if ((!anio || !mes) && s.periodo){
+        var parts=String(s.periodo||'').split('-');
+        anio = anio || (Number(parts[0])||null);
+        mes  = mes  || (Number(parts[1])||0);
+      }
+      if (!anio || !mes) return;
+
+      var emp = cleanEmpresa(s, null);
+      var tons = Number(s.tons||0)||0;
+      var row = ensure(emp, anio, mes);
+      row.semiTotal += tons;
+
+      var proveedor = s.proveedorNombre || s.contactoNombre || '—';
+      var comuna    = s.comuna || '';
+      var kNorm     = makeKey(proveedor, comuna);
+      var label     = displayLabel(proveedor, comuna);
+
+      row.contactos.add(label);
+      if (s.contactoNombre) row.contactNames.add(String(s.contactoNombre));
+      row.detSemi.set(kNorm, (row.detSemi.get(kNorm)||0)+tons);
+      if (!row.labelByKey.has(kNorm)) row.labelByKey.set(kNorm, label);
+
+      var ccode = (s.centroCodigo||'');
+      var acode = (s.areaCodigo||'');
+      if (ccode) row.codes.add(String(ccode));
+      if (acode) row.codes.add(String(acode));
+
+      row.search += ' '+emp+' '+proveedor+' '+(s.centroCodigo||'')+' '+(s.areaCodigo||'')+' '+(s.comuna||'')+' '+(s.contactoNombre||'');
+    });
+
+    return Object.keys(map).map(function(k){
+      var o = map[k];
+      return {
+        empresa: o.empresa,
+        anio: o.anio,
+        mes: o.mes,
+        contactado: o.contactado,
+        asignado: o.asignado,
+        semiTotal: o.semiTotal,
+        saldo: Math.max(0, o.contactado - o.asignado),
+        lotes: o.lotes,
+        contactos: Array.from(o.contactos),
+        contactNames: o.contactNames, // Set
+        detAsign: o.detAsign,
+        detSemi: o.detSemi,
+        detContactado: o.detContactado,
+        labelByKey: o.labelByKey,
+        codes: o.codes,
+        search: (o.search||'').toLowerCase()
+      };
+    });
+  }
+
+  function filterDeriv(deriv, filters){
+    var monthsSel = filters.months || [];
+    return (deriv||[]).filter(function(r){
+      if (filters.year && String(r.anio)!==String(filters.year)) return false;
+      if (filters.q && r.search.indexOf(filters.q)<0) return false;
+      if (monthsSel.length && monthsSel.indexOf(Number(r.mes))<0) return false;
+      return true;
+    });
+  }
+
+  function mergeSets(to, from){
+    if (!to) to = new Set();
+    if (from && from.forEach){ from.forEach(function(v){ to.add(v); }); }
+    return to;
+  }
+
+  function groupByMes(rows){
+    var map={};
+    for (var m=1;m<=12;m++) map[m]={mes:m,contactado:0,asignado:0,semiTotal:0,lotes:0, detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map(), codes:new Set(), contactNames:new Set()};
+    rows.forEach(function(r){
+      var k=r.mes||0; if(!map[k]) map[k]={mes:k,contactado:0,asignado:0,semiTotal:0,lotes:0,detAsign:new Map(),detSemi:new Map(),detContactado:new Map(),labelByKey:new Map(), codes:new Set(), contactNames:new Set()};
+      map[k].contactado += r.contactado;
+      map[k].asignado   += r.asignado;
+      map[k].semiTotal  += r.semiTotal;
+      map[k].lotes      += r.lotes;
+      r.detAsign.forEach(function(v,kk){ map[k].detAsign.set(kk,(map[k].detAsign.get(kk)||0)+v); });
+      r.detSemi.forEach(function(v,kk){ map[k].detSemi.set(kk,(map[k].detSemi.get(kk)||0)+v); });
+      r.detContactado.forEach(function(v,kk){ map[k].detContactado.set(kk,(map[k].detContactado.get(kk)||0)+v); });
+      r.labelByKey.forEach(function(label, kk){ if (!map[k].labelByKey.has(kk)) map[k].labelByKey.set(kk, label); });
+      map[k].codes = mergeSets(map[k].codes, r.codes);
+      map[k].contactNames = mergeSets(map[k].contactNames, r.contactNames);
+    });
+    return range12().map(function(m){
+      var o = map[m];
+      return {
+        mes: m,
+        contactado: o.contactado,
+        asignado: o.asignado,
+        semiTotal: o.semiTotal,
+        saldo: Math.max(0, o.contactado - o.asignado),
+        lotes: o.lotes,
+        detAsign: o.detAsign,
+        detSemi: o.detSemi,
+        detContactado: o.detContactado,
+        labelByKey: o.labelByKey,
+        codes: o.codes,
+        contactNames: o.contactNames
+      };
+    });
+  }
+
+  function groupByEmpresa(rows){
+    var map = new Map();
+    rows.forEach(function(r){
+      var e = r.empresa || '—';
+      if (!map.has(e)){
+        map.set(e, {
+          empresa:e,
+          contactado:0, asignado:0, semiTotal:0, saldo:0, lotes:0,
+          detAsign:new Map(), detSemi:new Map(), detContactado:new Map(), labelByKey:new Map(), codes:new Set(), contactNames:new Set()
+        });
+      }
+      var o = map.get(e);
+      o.contactado += r.contactado;
+      o.asignado   += r.asignado;
+      o.semiTotal  += r.semiTotal;
+      o.lotes      += r.lotes;
+      r.detAsign.forEach(function(v,kk){ o.detAsign.set(kk,(o.detAsign.get(kk)||0)+v); });
+      r.detSemi.forEach(function(v,kk){ o.detSemi.set(kk,(o.detSemi.get(kk)||0)+v); });
+      r.detContactado.forEach(function(v,kk){ o.detContactado.set(kk,(o.detContactado.get(kk)||0)+v); });
+      r.labelByKey.forEach(function(label, kk){ if (!o.labelByKey.has(kk)) o.labelByKey.set(kk, label); });
+      o.codes = mergeSets(o.codes, r.codes);
+      o.contactNames = mergeSets(o.contactNames, r.contactNames);
+    });
+    var out = Array.from(map.values());
+    out.forEach(function(o){ o.saldo = Math.max(0, o.contactado - o.asignado); });
+    out.sort(function(a,b){ return (b.contactado+b.semiTotal+b.asignado) - (a.contactado+a.semiTotal+a.asignado); });
+    return out;
+  }
+
+  /* ---------- KPIs ---------- */
+  function renderKPIs(rows){
+    var contact=0, asign=0, semi=0;
+    var provSet = new Set();
+    rows.forEach(function(r){
+      contact+=r.contactado; asign+=r.asignado; semi+=r.semiTotal;
+      r.labelByKey && r.labelByKey.forEach(function(_label, kNorm){ provSet.add(kNorm); });
+    });
+    var saldo = Math.max(0, contact - asign);
+
+    function kpi(lab, chip){ return '<div class="kpi"><div class="lab">'+lab+'</div><div class="val">'+chip+'</div></div>'; }
+    var html = ''
+      + kpi('Contactado',   pillNum(contact, 'contact'))
+      + kpi('Semi-cerrado', pillNum(semi, 'semi'))
+      + kpi('Asignado',     pillNum(asign, 'asign'))
+      + kpi('Saldo',        '<span class="pill pill-neutral">'+numeroCL(saldo)+'</span>')
+      + kpi('# Proveedores','<span class="pill pill-neutral">'+numeroCL(provSet.size)+'</span>');
+    document.getElementById('plKpis').innerHTML = html;
+  }
+
+  /* ---------- Chart ---------- */
+  var chartRef = null;
+  var stackTotalPlugin = {
+    id: 'stackTotals',
+    afterDatasetsDraw: function(chart){
+      var opts = chart.options.plugins.stackTotals || {};
+      if (opts.enabled===false) return;
+      var ctx = chart.ctx, meta0 = chart.getDatasetMeta(0), n = (meta0 && meta0.data)?meta0.data.length:0;
+      ctx.save(); ctx.font=(opts.fontSize||12)+'px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#111827';
+      for (var i=0;i<n;i++){
+        var tot=0, ds=chart.data.datasets;
+        for (var d=0; d<ds.length; d++){
+          if (chart.isDatasetVisible(d)) tot += Number(ds[d].data[i]||0);
+        }
+        if (tot<=0) continue;
+        var x=(meta0.data[i] && meta0.data[i].x)||0;
+        var y=chart.scales.y.getPixelForValue(tot); var yClamped=Math.max(y, chart.chartArea.top+12);
+        ctx.fillText(numeroCL(tot), x, yClamped-6);
+      }
+      ctx.restore();
+    }
+  };
+
+  function mapToSortedPairs(mp){
+    var arr=[]; mp.forEach(function(v,k){ arr.push({k:k,v:v}); });
+    arr.sort(function(a,b){ return b.v-a.v; });
+    return arr;
+  }
+
+  function buildChartData(rows, axisMode){
+    if (axisMode === 'empresa'){
+      var ge = groupByEmpresa(rows);
+      var labels = ge.map(function(x){return x.empresa;});
+      var dataAsign = ge.map(function(x){return x.asignado;});
+      var dataSemi  = ge.map(function(x){return x.semiTotal;});
+      var dataDisp  = ge.map(function(x){return Math.max(0, x.saldo);});
+      var toolDetail = {}, accDetail = {};
+      ge.forEach(function(x){
+        var lbl = x.empresa;
+        toolDetail[lbl] = {
+          asign : mapToSortedPairs(x.detAsign),
+          semi  : mapToSortedPairs(x.detSemi),
+          contact: mapToSortedPairs(x.detContactado)
+        };
+        accDetail[lbl] = {
+          detAsign: x.detAsign,
+          detSemi: x.detSemi,
+          detContactado: x.detContactado,
+          labelByKey: x.labelByKey,
+          codes: x.codes,
+          contactNames: x.contactNames,
+          contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo, lotes:x.lotes
+        };
+      });
+      return {labels, dataAsign, dataSemi, dataDisp, toolDetail, accDetail};
+    } else {
+      var gm = groupByMes(rows);
+      var labels  = gm.map(function(x){return MMESES[x.mes-1];});
+      var dataAsign = gm.map(function(x){return x.asignado;});
+      var dataSemi  = gm.map(function(x){return x.semiTotal;});
+      var dataDisp  = gm.map(function(x){return Math.max(0, x.saldo);});
+      var toolDetail = {}, accDetail = {};
+      gm.forEach(function(x){
+        var lbl = MMESES[x.mes-1];
+        toolDetail[lbl] = {
+          asign : mapToSortedPairs(x.detAsign),
+          semi  : mapToSortedPairs(x.detSemi),
+          contact: mapToSortedPairs(x.detContactado)
+        };
+        accDetail[lbl] = {
+          detAsign: x.detAsign,
+          detSemi: x.detSemi,
+          detContactado: x.detContactado,
+          labelByKey: x.labelByKey,
+          codes: x.codes,
+          contactNames: x.contactNames,
+          contactado: x.contactado, asignado: x.asignado, semiTotal: x.semiTotal, saldo: x.saldo, lotes:x.lotes
+        };
+      });
+      return {labels, dataAsign, dataSemi, dataDisp, toolDetail, accDetail};
+    }
+  }
+
+  function renderChart(rows, axisMode){
+    var canvas = document.getElementById('plChart');
+    if (!canvas) return;
+
+    if (!global.Chart){
+      var ctx0 = canvas.getContext('2d');
+      ctx0.clearRect(0,0,canvas.width||300,canvas.height||150);
+      document.getElementById('plChartNote').textContent = 'Chart.js no está cargado; se muestra solo la tabla.';
+      return;
+    }
+    document.getElementById('plChartNote').textContent = '';
+
+    var built = buildChartData(rows, axisMode);
+    var labels = built.labels, dataAsign = built.dataAsign, dataSemi = built.dataSemi, dataNoAsig = built.dataDisp;
+    var toolDetail = built.toolDetail, accDetail = built.accDetail;
+
+    if (chartRef && chartRef.destroy) chartRef.destroy();
+
+    // Orden para coincidir con el título: Disponible – Semi – Asignado
+    chartRef = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Disponible',   data: dataNoAsig,  borderWidth: 1, stack: 'pipeline', backgroundColor: '#CBD5E1' },
+          { label: 'Semi-cerrado', data: dataSemi,    borderWidth: 1, stack: 'pipeline', backgroundColor: '#22C55E' },
+          { label: 'Asignado',     data: dataAsign,   borderWidth: 1, stack: 'pipeline', backgroundColor: '#0EA5E9' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { mode: 'nearest', intersect: true },
+        layout: { padding: { top: 12 } },
+        plugins: {
+          legend: { position: 'right' },
+          stackTotals: { enabled:true, fontSize:12 },
+          tooltip: {
+            callbacks: {
+              title: function(items){ return (items && items[0] && items[0].label) ? items[0].label : ''; },
+              label: function(ctx){
+                var lbl = ctx.label, ds = ctx.dataset.label;
+                var det = toolDetail[lbl] || {};
+                var arr = (ds==='Asignado'      ? det.asign
+                         : ds==='Semi-cerrado' ? det.semi
+                         : ds==='Disponible'   ? det.contact
+                         : null) || [];
+                var acc = accDetail[lbl] || {};
+                var labMap = acc.labelByKey || new Map();
+                var lines = arr.slice(0,8).map(function(p){
+                  var pretty = labMap.get(p.k) || p.k || '—';
+                  return '• '+ pretty +': '+numeroCL(p.v)+' t';
+                });
+                if (arr.length>8) lines.push('• +'+(arr.length-8)+' más…');
+                return lines.length?lines:['(sin detalle)'];
+              },
+              footer: function(ctx){
+                var v = ctx && ctx[0] && ctx[0].parsed && ctx[0].parsed.y;
+                return 'Subtotal '+ctx[0].dataset.label+': '+numeroCL(v)+' t';
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, ticks: { autoSkip:false, maxRotation: axisMode==='empresa'? 0 : 45, minRotation: axisMode==='empresa'? 0 : 45 } },
+          y: { stacked: true, beginAtZero: true, grace: '15%', ticks: { padding: 6 } }
+        }
+      },
+      plugins: [stackTotalPlugin]
+    });
+
+    renderTable._accDetail = accDetail;
+    // actualizar sugerencias del buscador según vista actual
+    rebuildSuggestionsFromAccDetail(accDetail);
+  }
+
+  /* ---------- Sugerencias (autocomplete) ---------- */
+  var STATE = {
+    deriv: [],
+    filters: { year:null, months:[], q:'' },
+    axisMode: 'mes',
+    allSuggestions: [],  // textos bonitos, códigos y contactos
+    suggOpen: false,
+    suggIndex: -1
+  };
+
+  function rebuildSuggestionsFromAccDetail(accDetail){
+    // Recolecta etiquetas bonitas (Proveedor – Comuna), códigos y nombres de contacto presentes en la vista
+    var set = new Set();
+    Object.keys(accDetail||{}).forEach(function(bucket){
+      var lab = accDetail[bucket].labelByKey;
+      if (lab && lab.forEach){ lab.forEach(function(v){ if (v) set.add(String(v)); }); }
+      var codes = accDetail[bucket].codes;
+      if (codes && codes.forEach){ codes.forEach(function(c){ if (c) set.add(String(c)); }); }
+      var cn = accDetail[bucket].contactNames;
+      if (cn && cn.forEach){ cn.forEach(function(n){ if (n) set.add(String(n)); }); }
+    });
+    STATE.allSuggestions = Array.from(set).sort();
+  }
+
+  function renderSuggestList(items){
+    var box = document.getElementById('plSuggest');
+    if (!box) return;
+    if (!items || !items.length){ box.hidden = true; STATE.suggOpen=false; return; }
+    box.innerHTML = items.map(function(txt, i){
+      return '<div class="pl-suggest-item" data-i="'+i+'">'+txt+'</div>';
+    }).join('');
+    box.hidden = false;
+    STATE.suggOpen = true;
+    STATE.suggIndex = -1;
+  }
+
+  function closeSuggest(){
+    var box = document.getElementById('plSuggest');
+    if (box){ box.hidden = true; }
+    STATE.suggOpen=false; STATE.suggIndex=-1;
+  }
+
+  /* ---------- Tabla ---------- */
+  function renderTable(rows, axisMode, year){
+    var sections = (axisMode === 'empresa') ? groupByEmpresa(rows)
+                                            : groupByMes(rows).filter(function(r){ return (r.contactado>0 || r.asignado>0 || r.semiTotal>0); });
+
+    var thead='<thead><tr>'
+      +'<th>'+(axisMode==='empresa' ? 'EMPRESA' : 'MES')+'</th>'
+      +'<th class="pl-right">CONTACTADO '+(axisMode==='empresa'?'':(year||''))+'</th>'
+      +'<th class="pl-right">SEMI-CERRADO</th>'
+      +'<th class="pl-right">ASIGNADO</th>'
+      +'<th class="pl-right">SALDO</th>'
+      +'<th></th>'
+      +'</tr></thead>';
+
+    var body='<tbody>', tc=0,ta=0,ts=0;
+
+    for (var j=0;j<sections.length;j++){
+      var r=sections[j];
+      tc+=r.contactado; ta+=r.asignado; ts+=r.semiTotal;
+
+      var rowLabel = (axisMode==='empresa') ? (r.empresa||'—') : MMESES[r.mes-1];
+      var accId = (axisMode==='empresa' ? 'acc_emp_' : 'acc_') + String(axisMode==='empresa'? j : r.mes);
+
+      body+='<tr>'
+        +'<td>'+rowLabel+'</td>'
+        +'<td class="pl-right">'+pillNum(r.contactado,'contact')+'</td>'
+        +'<td class="pl-right">'+pillNum(r.semiTotal,'semi')+'</td>'
+        +'<td class="pl-right">'+pillNum(r.asignado,'asign')+'</td>'
+        +'<td class="pl-right"><span class="pill pill-neutral">'+numeroCL(Math.max(0,r.saldo))+'</span></td>'
+        +'<td class="pl-right">'
+          +'<button class="acc-btn" role="button" aria-expanded="false" aria-controls="'+accId+'" data-acc="'+accId+'">Ver detalle</button>'
+        +'</td>'
+        +'</tr>'
+        +'<tr id="'+accId+'" style="display:none"><td colspan="6">'
+          +'<div class="acc-body">'
+            +'<div style="font-weight:700;margin-bottom:6px">Detalle por proveedor</div>'
+            +'<div class="acc-grid">'
+              +'<div style="font-size:12px;color:#64748b">Proveedor – Comuna</div>'
+              +'<div class="pl-right" style="font-size:12px;color:#64748b">Contactado (t)</div>'
+              +'<div class="pl-right" style="font-size:12px;color:#64748b">Semi-cerrado (t)</div>'
+              +'<div class="pl-right" style="font-size:12px;color:#64748b">Asignado (t)</div>'
+            +'</div>';
+
+      var idx = new Map();
+      r.detContactado.forEach(function(v,k){ idx.set(k, {c:v,s:0,a:0}); });
+      r.detSemi.forEach(function(v,k){ var o=idx.get(k)||{c:0,s:0,a:0}; o.s+=v; idx.set(k,o); });
+      r.detAsign.forEach(function(v,k){ var o=idx.get(k)||{c:0,s:0,a:0}; o.a+=v; idx.set(k,o); });
+
+      Array.from(idx.entries())
+        .sort(function(A,B){
+          var va=A[1].c+A[1].s+A[1].a, vb=B[1].c+B[1].s+B[1].a;
+          return vb-va;
+        })
+        .forEach(function(e){
+          var k=e[0], vals=e[1];
+          var label = r.labelByKey.get(k) || k || '—';
+          body+='<div class="acc-grid"><div>'+label+'</div>'
+              +'<div class="pl-right">'+(vals.c?pillNum(vals.c,'contact'):'—')+'</div>'
+              +'<div class="pl-right">'+(vals.s?pillNum(vals.s,'semi'):'—')+'</div>'
+              +'<div class="pl-right">'+(vals.a?pillNum(vals.a,'asign'):'—')+'</div></div>';
+        });
+
+      body+='</div></td></tr>';
+    }
+
+    if (body==='<tbody>') body+='<tr><td colspan="6" style="color:#6b7280">Sin datos para los filtros seleccionados.</td></tr>';
+    body+='</tbody>';
+
+    var foot='<tfoot><tr>'
+      +'<td><strong>Totales</strong></td>'
+      +'<td class="pl-right"><strong>'+pillNum(tc,'contact')+'</strong></td>'
+      +'<td class="pl-right"><strong>'+pillNum(ts,'semi')+'</strong></td>'
+      +'<td class="pl-right"><strong>'+pillNum(ta,'asign')+'</strong></td>'
+      +'<td class="pl-right"><strong><span class="pill pill-neutral">'+numeroCL(Math.max(0,tc-ta))+'</span></strong></td>'
+      +'<td></td>'
+      +'</tr></tfoot>';
+
+    var wrap = document.getElementById('plTableWrap');
+    wrap.innerHTML = '<table class="pl-table">'+thead+body+foot+'</table>';
+
+    wrap.querySelectorAll('.acc-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-acc');
+        var row = document.getElementById(id);
+        if (!row) return;
+        var on = row.style.display!=='none';
+        row.style.display = on ? 'none' : '';
+        btn.textContent = on ? 'Ver detalle' : 'Ocultar detalle';
+        btn.setAttribute('aria-expanded', String(!on));
+      });
+    });
+  }
+
+  /* ---------- refresco ---------- */
+  function filterRowsForRefresh(){ return filterDeriv(STATE.deriv, STATE.filters); }
+
+  function renderAll(){
+    var rows = filterRowsForRefresh();
+    renderKPIs(rows);
+    renderChart(rows, STATE.axisMode);
+    renderTable(rows, STATE.axisMode, STATE.filters.year || '');
+  }
+
+  /* ---------- eventos ---------- */
+  function attachEvents(){
+    var searchEl = document.getElementById('plSearch');
+    var suggestEl = document.getElementById('plSuggest');
+
+    function updateFromUI(){
+      var y   = document.getElementById('plYear').value;
+      var ms  = getSelectedMonths();
+      var qRaw= (searchEl && searchEl.value) ? searchEl.value : '';
+      var qn  = norm(qRaw);
+      STATE.filters.year = y;
+      STATE.filters.months = ms;
+      // regla: solo filtrar si hay ≥ 2 letras
+      STATE.filters.q = (qn.length>=2 ? qn : '');
+      renderAll();
+    }
+
+    if (searchEl){
+      // filtra al escribir
+      searchEl.addEventListener('input', function(){
+        var qn = norm(searchEl.value||'');
+        if (qn.length < 2){ closeSuggest(); STATE.filters.q=''; renderAll(); return; }
+        var matches = STATE.allSuggestions.filter(function(txt){
+          return norm(txt).indexOf(qn) !== -1;
+        }).slice(0, 60);
+        renderSuggestList(matches);
+        STATE.filters.q = qn;
+        renderAll();
+      });
+
+      // navegación teclado
+      searchEl.addEventListener('keydown', function(e){
+        if (!STATE.suggOpen) return;
+        var items = suggestEl.querySelectorAll('.pl-suggest-item');
+        if (!items.length) return;
+
+        if (e.key === 'ArrowDown'){ e.preventDefault();
+          STATE.suggIndex = Math.min(items.length-1, STATE.suggIndex+1);
+        } else if (e.key === 'ArrowUp'){ e.preventDefault();
+          STATE.suggIndex = Math.max(0, STATE.suggIndex-1);
+        } else if (e.key === 'Enter'){
+          if (STATE.suggIndex>=0){ e.preventDefault();
+            var txt = items[STATE.suggIndex].textContent;
+            searchEl.value = txt;
+            STATE.filters.q = norm(txt);
+            closeSuggest();
+            renderAll();
+          }
+          return;
+        } else if (e.key === 'Escape'){ closeSuggest(); return; }
+
+        items.forEach(function(it){ it.classList.remove('is-active'); });
+        if (STATE.suggIndex>=0) items[STATE.suggIndex].classList.add('is-active');
+      });
+
+      searchEl.addEventListener('focus', function(){
+        var qn = norm(searchEl.value||'');
+        if (qn.length>=2){
+          var matches = STATE.allSuggestions.filter(function(txt){ return norm(txt).indexOf(qn)!==-1; }).slice(0,60);
+          renderSuggestList(matches);
+        }
+      });
+
+      searchEl.addEventListener('blur', function(){ setTimeout(closeSuggest, 120); });
+    }
+
+    if (suggestEl){
+      suggestEl.addEventListener('mousedown', function(e){ e.preventDefault(); });
+      suggestEl.addEventListener('click', function(e){
+        var item = e.target.closest('.pl-suggest-item');
+        if (!item) return;
+        var txt = item.textContent;
+        if (searchEl) searchEl.value = txt;
+        STATE.filters.q = norm(txt);
+        closeSuggest();
+        renderAll();
+      });
+      suggestEl.addEventListener('mouseover', function(e){
+        var item = e.target.closest('.pl-suggest-item');
+        if (!item) return;
+        var items = suggestEl.querySelectorAll('.pl-suggest-item');
+        items.forEach(function(it){ it.classList.remove('is-active'); });
+        item.classList.add('is-active');
+        STATE.suggIndex = parseInt(item.getAttribute('data-i'),10) || 0;
+      });
+    }
+
+    ['plYear'].forEach(function(id){
+      var el=document.getElementById(id); if (el) el.addEventListener('input', updateFromUI);
+      var elc=document.getElementById(id); if (elc) elc.addEventListener('change', updateFromUI);
+    });
+
+    var monthsDiv = document.getElementById('plMonths');
+    if (monthsDiv){
+      monthsDiv.innerHTML = range12().map(function(m){
+        return '<button type="button" class="pl-chip" data-m="'+m+'">'+MMESES_LARGO[m-1]+'</button>';
+      }).join('');
+      monthsDiv.addEventListener('click', function(ev){
+        var t = ev.target;
+        while (t && t!==monthsDiv && !t.classList.contains('pl-chip')) t = t.parentNode;
+        if (t && t.classList.contains('pl-chip')){
+          t.classList.toggle('is-on');
+          updateFromUI();
+        }
+      });
+    }
+
+    var btnLimpiar = document.getElementById('plBtnLimpiarMeses');
+    if (btnLimpiar){
+      btnLimpiar.addEventListener('click', function(){
+        setSelectedMonths([]); STATE.filters.months=[]; renderAll();
+      });
+    }
+
+    var btnLimpiarFiltros = document.getElementById('plBtnLimpiarFiltros');
+    if (btnLimpiarFiltros){
+      btnLimpiarFiltros.addEventListener('click', function(){
+        if (searchEl) searchEl.value='';
+        setSelectedMonths([]); STATE.filters.months=[]; STATE.filters.q=''; closeSuggest(); renderAll();
+      });
+    }
+
+    var axisBtn = document.getElementById('plAxisBtn');
+    if (axisBtn){
+      axisBtn.addEventListener('click', function(){
+        STATE.axisMode = (STATE.axisMode==='empresa' ? 'mes' : 'empresa');
+        axisBtn.textContent = 'Eje: ' + (STATE.axisMode==='empresa' ? 'Empresa' : 'Mes');
+        renderAll();
+      });
+    }
+  }
+
+  /* ---------- helpers meses ---------- */
+  function getSelectedMonths(){
+    var monthsDiv = document.getElementById('plMonths');
+    var nodes = monthsDiv ? monthsDiv.querySelectorAll('.pl-chip.is-on') : [];
+    var out=[]; for (var i=0;i<nodes.length;i++){ out.push(Number(nodes[i].getAttribute('data-m'))||0); }
+    return out;
+  }
+  function setSelectedMonths(arr){
+    var monthsDiv = document.getElementById('plMonths');
+    var nodes = monthsDiv ? monthsDiv.querySelectorAll('.pl-chip') : [];
+    for (var i=0;i<nodes.length;i++){
+      var m = Number(nodes[i].getAttribute('data-m'))||0;
+      var on = arr && arr.indexOf(m)>=0;
+      if (on) nodes[i].classList.add('is-on'); else nodes[i].classList.remove('is-on');
+    }
+  }
+
+  /* ---------- filtros iniciales & montaje ---------- */
+  function optionsFromDeriv(deriv){
+    var years= uniqSorted((deriv||[]).map(function(r){return r.anio;}).filter(Boolean));
+    return {years:years};
+  }
+
+  function fillFilters(deriv){
+    var selY = document.getElementById('plYear');
+    var opts = optionsFromDeriv(deriv);
+    var yNow = (new Date()).getFullYear();
+    var years = opts.years.length ? opts.years : [yNow];
+    var yDefault = years.indexOf(yNow)>=0 ? yNow : years[years.length-1];
+    selY.innerHTML = years.map(function(y){return '<option value="'+y+'" '+(String(y)===String(yDefault)?'selected':'')+'>'+y+'</option>';}).join('');
+  }
+
+  function mount(opts){
+    injectCSS();
+    var root = document.getElementById('mmppPipeline');
+    if (!root){ console.warn('[mmpp-pipeline] No existe #mmppPipeline'); return; }
+    buildUI(root);
+
+    function go(dispon, asig, semi){
+      STATE.deriv = buildDerivMonthly(dispon, asig, semi);
+      fillFilters(STATE.deriv);
+
+      var ySel = document.getElementById('plYear');
+      STATE.filters.year = ySel ? ySel.value : '';
+      STATE.filters.months = [];
+      STATE.filters.q = '';
+      setSelectedMonths([]);
+
+      attachEvents();
+      renderAll();
+    }
+
+    if (opts && Array.isArray(opts.dispon) && Array.isArray(opts.asig) && Array.isArray(opts.semi)){
+      return go(opts.dispon, opts.asig, opts.semi);
+    }
+
+    if (global.MMppApi && typeof global.MMppApi.getDisponibilidades==='function'){
+      Promise.all([
+        global.MMppApi.getDisponibilidades(),
+        (global.MMppApi.getAsignaciones ? global.MMppApi.getAsignaciones() : Promise.resolve([])).catch(function(){return[];}),
+        (global.MMppApi.getSemiCerrados ? global.MMppApi.getSemiCerrados() : Promise.resolve([])).catch(function(){return[];})
+      ]).then(function(res){ go(res[0]||[], res[1]||[], res[2]||[]); })
+       .catch(function(){ go([],[],[]); });
+    } else {
+      go([],[],[]);
+    }
+  }
+
+  /* ---------- API pública ---------- */
+  global.MMppPipeline = { mount: mount, refresh: renderAll };
+})(window);
