@@ -1,131 +1,95 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Abastecimiento · Categorías</title>
-  <meta name="description" content="Abastecimiento MMPP: contactos, visitas, planificación, centros y reportes.">
-
-  <!-- Performance: adelanta conexiones -->
-  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MMPP · Categorías</title>
+  
+  <!-- Tipografía & Iconos -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
 
-  <!-- Materialize & Google Icons -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-
-  <!-- Estilos propios -->
-  <link rel="stylesheet" href="../../styles.css" />
-  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=2" />
-
-  <style>
-    .category-grid {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 18px;
-    }
-    @media (min-width: 993px) { .category-grid { gap: 22px; } }
-    .category-card {
-      grid-column: span 12;
-      border-radius: 16px;
-      padding: 26px 22px;
-      background: #fff;
-      box-shadow: 0 6px 20px rgba(0,0,0,.08);
-      transition: transform .18s ease, box-shadow .18s ease;
-      display: flex; align-items: center; gap: 18px;
-      text-decoration: none !important; color: inherit !important;
-      will-change: transform;
-    }
-    @media (min-width: 600px) { .category-card { grid-column: span 6; } }
-    @media (min-width: 992px) { .category-card { grid-column: span 6; } }
-    .category-card:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(0,0,0,.12); }
-    .category-icon {
-      width: 64px; height: 64px; border-radius: 16px;
-      background: #e0f2f1; display:flex; align-items:center; justify-content:center;
-      flex: 0 0 64px;
-    }
-    .category-icon i { color: #00695c; font-size: 34px; }
-    .category-text h5 { margin:0 0 6px; font-weight: 600; }
-    .category-text p { margin:0; color:#5f6b74; }
-    nav .brand-logo { font-size: 1.35rem; }
-  </style>
-
-  <!-- Prefetch de vistas que se abren desde aquí (para navegación instantánea) -->
-  <link rel="prefetch" href="./contactos/contactos.html" as="document">
-  <link rel="prefetch" href="./asignacion/inventario_mmpp.html" as="document">
-  <link rel="prefetch" href="../../html/Centros/index.html" as="document">
+  <!-- Tailwind 4 Core -->
+  <link rel="stylesheet" href="/spa-mmpp/index.css" />
 </head>
-<body class="grey lighten-5 mmpp-layout">
+<body class="mmpp-layout bg-slate-50 min-h-screen">
+
+  <!-- Sidebar Mount -->
   <div id="mmppNavMount"></div>
-  <main class="mmpp-main">
-      <!-- CONTENIDO -->
-      <div class="container" style="margin-top: 24px; margin-bottom: 32px;">
-        <div class="category-grid">
 
-          <!-- Contactos y Visitas -->
-          <a class="category-card waves-effect" href="./contactos/contactos.html#tab-contactos">
-            <div class="category-icon"><i class="material-icons" aria-hidden="true">people_alt</i></div>
-            <div class="category-text">
-              <h5>Contactos y Visitas</h5>
-              <p>Registro de contactos, visitas y seguimiento comercial.</p>
-            </div>
-          </a>
-
-          <!-- Centros y Proveedores -->
-          <a class="category-card waves-effect" href="#!" data-soon="true">
-            <div class="category-icon"><i class="material-icons" aria-hidden="true">location_on</i></div>
-            <div class="category-text">
-              <h5>Centros y Proveedores</h5>
-              <p>Buscador de centros, datos de concesiones y proveedores.</p>
-            </div>
-          </a>
-
-          <!-- Planificación Producción (→ enlaza al index de asignación) -->
-          <a class="category-card waves-effect" href="./asignacion/inventario_mmpp.html">
-            <div class="category-icon"><i class="material-icons" aria-hidden="true">event_note</i></div>
-            <div class="category-text">
-              <h5>Planificación Producción</h5>
-              <p>Programas de abastecimiento y metas operativas.</p>
-            </div>
-          </a>
-
-          <!-- Reportes Generales -->
-          <a class="category-card waves-effect" href="#!" data-soon="true">
-            <div class="category-icon"><i class="material-icons" aria-hidden="true">assessment</i></div>
-            <div class="category-text">
-              <h5>Reportes Generales</h5>
-              <p>Indicadores y resúmenes ejecutivos.</p>
-            </div>
-          </a>
-
-        </div>
+  <!-- Contenido Principal -->
+  <main class="mmpp-main flex-1 flex flex-col">
+    
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-8 px-4">
+      <div>
+        <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Categorías de Abastecimiento</h2>
+        <p class="text-slate-500 mt-1 text-lg">Selecciona una categoría para gestionar compras o reportes.</p>
       </div>
-    </main>
+      <a href="../index.html" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm font-semibold shadow-sm">
+        <i class="material-icons text-lg">arrow_back</i> Panel Principal
+      </a>
+    </header>
 
-  <!-- Scripts -->
+    <!-- Category Grid -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
+      
+      <!-- Chorito (MMPP) -->
+      <a href="./asignacion/inventario_mmpp.html" 
+         class="group p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-brand-600/30 transition-all duration-300 transform hover:-translate-y-1">
+        <div class="w-16 h-16 rounded-2xl bg-brand-600/10 text-brand-600 flex items-center justify-center mb-6 group-hover:bg-brand-600 group-hover:text-white transition-colors">
+          <i class="material-icons text-3xl">shopping_basket</i>
+        </div>
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Chorito (MMPP)</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">
+          Ingreso de compras, inventario actual y asignación de lotes a planta.
+        </p>
+      </a>
+
+      <!-- Contactos / Visitas -->
+      <a href="./contactos/contactos.html" 
+         class="group p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-brand-600/30 transition-all duration-300 transform hover:-translate-y-1">
+        <div class="w-16 h-16 rounded-2xl bg-brand-600/10 text-brand-600 flex items-center justify-center mb-6 group-hover:bg-brand-600 group-hover:text-white transition-colors">
+          <i class="material-icons text-3xl">record_voice_over</i>
+        </div>
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Empresas y Cultivos</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">
+          Directorio de proveedores, historial de visitas y agenda de contactos.
+        </p>
+      </a>
+
+      <!-- Pipeline Logístico -->
+      <a href="./asignacion/pipeline_mmpp.html" 
+         class="group p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-brand-600/30 transition-all duration-300 transform hover:-translate-y-1">
+        <div class="w-16 h-16 rounded-2xl bg-brand-600/10 text-brand-600 flex items-center justify-center mb-6 group-hover:bg-brand-600 group-hover:text-white transition-colors">
+          <i class="material-icons text-3xl">navigation</i>
+        </div>
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Pipeline Logístico</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">
+          Seguimiento en tiempo real de transportes y despachos programados.
+        </p>
+      </a>
+
+      <!-- Reportes -->
+      <div class="group p-8 rounded-3xl bg-white border border-slate-200 shadow-sm opacity-60 grayscale cursor-not-allowed">
+        <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-6">
+          <i class="material-icons text-3xl">assessment</i>
+        </div>
+        <h3 class="text-xl font-bold text-slate-400 mb-2">Reportes Analíticos</h3>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          Próximamente: Paneles BI y KPI de rendimiento por zona.
+        </p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- React & Sidebar -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <script type="module" src="/spa-mmpp/nav.jsx?v=3"></script>
-
-  <!-- Scripts al final y diferidos -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js" defer></script>
-  <script defer>
-    document.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll('[data-soon="true"]').forEach(a => {
-        a.addEventListener('click', (e) => {
-          e.preventDefault();
-          if (window.M?.toast) {
-            M.toast({ html: 'Próximamente…', displayLength: 1600 });
-          } else {
-            alert('Próximamente…');
-          }
-        });
-      });
-    });
-  </script>
+  <script type="module" src="/spa-mmpp/nav.jsx"></script>
 </body>
 </html>

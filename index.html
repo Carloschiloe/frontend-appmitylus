@@ -3,187 +3,132 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Inicio · Choritos</title>
-  <meta name="description" content="Panel de App Mitylus: abastecimiento MMPP, directorio de centros, planificación y configuración."/>
+  <title>AppMitylus · Panel Directivo</title>
+  <meta name="description" content="Gestión centralizada de abastecimiento, centros y planificación para App Mitylus."/>
 
-  <!-- ===== Rendimiento: resolver DNS y abrir conexiones antes ===== -->
-  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <!-- Tipografía & Iconos -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <!-- Materialize CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
-  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
 
-  <!-- Shell MMPP -->
-  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=4" />
-
-  <!-- ====== CONFIG GLOBAL (igual que tu versión, pero con defer donde aplica) ====== -->
-  <script>window.DEBUG = true;</script>
-  <!-- Si quieres forzar backend, descomenta: -->
-  <!-- <script>window.API_URL = 'https://tu-backend.tld/api';</script> -->
-  <!-- config.js no es módulo; mantenemos orden temprano para que otras vistas lo lean -->
-  <script src="./js/config.js" defer></script>
-  <!-- ============================================================================ -->
+  <!-- Tailwind 4 Core -->
+  <link rel="stylesheet" href="/spa-mmpp/index.css" />
 
   <style>
-    :root{
-      --teal-600:#00796b;
-      --teal-700:#00695c;
-      --teal-800:#00564d;
-      --ink:#0b1416;
-      --soft:#5f6b6f;
-      --bg:#f6f8f9;
-      --card:#ffffff;
-      --ring:rgba(0,121,107,.12);
+    /* Efecto de fondo premium */
+    .bg-mesh {
+      background-image: 
+        radial-gradient(circle at 0% 0%, rgba(0, 121, 107, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(0, 105, 92, 0.05) 0%, transparent 50%);
     }
-    html,body{height:100%;}
-    body{
-      background:
-        radial-gradient(1500px 800px at 10% -20%, rgba(0,121,107,.07), transparent 40%),
-        radial-gradient(1500px 800px at 110% -10%, rgba(0,105,92,.06), transparent 40%),
-        var(--bg);
-      color:var(--ink);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      text-rendering:optimizeLegibility;
-    }
-
-    /* NAV */
-    .app-nav{background:linear-gradient(90deg,var(--teal-700),var(--teal-600));}
-    .app-title{
-      font-weight:700; letter-spacing:.3px; text-transform:uppercase;
-      font-size:1.05rem; margin:0;
-    }
-
-    /* GRID */
-    .app-wrap{max-width:1050px; margin:26px auto 40px; padding:0 14px;}
-    .cards{display:grid; grid-template-columns:repeat(12,1fr); gap:18px;}
-    .col-12{grid-column:span 12;}
-    .col-6 {grid-column:span 6;}
-    .col-4 {grid-column:span 4;}
-    @media (max-width:992px){
-      .col-4{grid-column:span 6;}
-    }
-    @media (max-width:600px){
-      .col-6,.col-4{grid-column:span 12;}
-    }
-
-    /* CARD */
-    .dash-card{
-      display:block; position:relative; overflow:hidden;
-      background:var(--card); border-radius:18px;
-      box-shadow:0 10px 24px rgba(15,23,42,.06), 0 2px 8px rgba(15,23,42,.04);
-      transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease;
-      border:1px solid rgba(2,6,12,.06);
-      padding:22px 20px 18px; color:inherit; text-decoration:none;
-      will-change:transform;
-    }
-    .dash-card:hover{
-      transform:translateY(-3px);
-      box-shadow:0 16px 34px rgba(15,23,42,.10), 0 4px 10px rgba(15,23,42,.06);
-      border-color:rgba(0,121,107,.18);
-    }
-    .dash-card:after{
-      content:""; position:absolute; inset:0; pointer-events:none;
-      background:radial-gradient(300px 140px at 85% -20%, var(--ring), transparent 70%);
-      opacity:.9;
-    }
-
-    /* ICONO */
-    .dc-icon{
-      width:56px; height:56px; border-radius:50%;
-      display:flex; align-items:center; justify-content:center;
-      background:linear-gradient(145deg,var(--teal-600),var(--teal-800));
-      color:#fff; box-shadow:0 8px 18px rgba(0,121,107,.25), inset 0 0 0 2px rgba(255,255,255,.12);
-    }
-    .dc-icon .material-icons{font-size:28px;}
-
-    /* TEXTOS */
-    .dc-title{
-      font-size:1.08rem; font-weight:700; margin:.6rem 0 .25rem; color:#0d1b1e;
-    }
-    .dc-desc{color:var(--soft); line-height:1.45; margin:0;}
-
-    /* Footer mini */
-    .footer-mini{margin-top:22px; color:#85939a; font-size:.85rem; text-align:center;}
   </style>
 </head>
-<body class="grey lighten-5 mmpp-layout">
+<body class="mmpp-layout bg-mesh bg-slate-50 min-h-screen">
+
+  <!-- Sidebar Mount -->
   <div id="mmppNavMount"></div>
-  <main class="mmpp-main">
-      <nav class="app-nav">
-        <div class="nav-wrapper center-align">
-          <span class="app-title">App Mitylus · Panel</span>
-        </div>
-      </nav>
 
-      <div class="app-wrap">
-        <section class="cards">
+  <!-- Contenido Principal -->
+  <main class="mmpp-main flex-1 flex flex-col">
     
-          <!-- Abastecimiento -->
-          <div class="col-4">
-            <a class="dash-card" href="./html/Abastecimiento/categorias.html">
-              <div class="dc-icon"><i class="material-icons">local_shipping</i></div>
-              <h3 class="dc-title">Abastecimiento de MMPP</h3>
-              <p class="dc-desc">Compras, contactos, visitas, muestreo y reportes de choritos a planta.</p>
-            </a>
-          </div>
-    
-          <!-- Directorio de Centros Mitílidos -->
-          <div class="col-4">
-            <a class="dash-card" href="./html/Centros/index.html">
-              <div class="dc-icon"><i class="material-icons">list_alt</i></div>
-              <h3 class="dc-title">Directorio de Centros Mitílidos</h3>
-              <p class="dc-desc">Registro y visualización en mapa de los centros de choritos de Los Lagos.</p>
-            </a>
-          </div>
-    
-          <!-- Tareas y Planificación -->
-          <div class="col-4">
-            <a class="dash-card" href="html/Planificacion/mantencion_lineas.html">
-              <div class="dc-icon"><i class="material-icons">event_note</i></div>
-              <h3 class="dc-title">Tareas y Planificación</h3>
-              <p class="dc-desc">Asignación de tareas, calendario operativo y planificación.</p>
-            </a>
-          </div>
-    
-          <!-- Configuración -->
-          <div class="col-4">
-            <a class="dash-card" href="html/Configuracion/configuracion.html">
-              <div class="dc-icon"><i class="material-icons">settings</i></div>
-              <h3 class="dc-title">Configuración</h3>
-              <p class="dc-desc">Criterios de clasificacion mmpp, clientes de Planta.</p>
-            </a>
-          </div>
-    
-        </section>
-    
-        <p class="footer-mini">
-          v0.1 · Trabajando en producción para Abastecimiento MMPP (modo offline/online)
-        </p>
+    <!-- Hero / Header -->
+    <header class="mb-10 px-4">
+      <div class="flex items-center gap-2 text-brand-600 font-bold text-sm tracking-widest uppercase mb-1">
+        <span class="w-2 h-2 rounded-full bg-brand-600 animate-pulse"></span>
+        Sistema Operativo
       </div>
-    </main>
-</body>
+      <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight">
+        Panel de Control <span class="text-brand-600">Mitylus</span>
+      </h1>
+      <p class="text-slate-500 mt-2 text-lg max-w-2xl leading-relaxed">
+        Bienvenido al centro de mando de Abastecimiento. Gestiona centros, proveedores y logística desde una única interfaz optimizada.
+      </p>
+    </header>
 
-  <!-- Sidebar React -->
+    <!-- Grid de Aplicaciones -->
+    <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 px-4 flex-1">
+      
+      <!-- Abastecimiento -->
+      <a href="./html/Abastecimiento/categorias.html" 
+         class="group relative overflow-hidden p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-brand-600/30 transition-all duration-300 transform hover:-translate-y-1">
+        <div class="absolute top-0 right-0 p-8 text-brand-600/5 group-hover:text-brand-600/10 transition-colors">
+          <i class="material-icons text-9xl">local_shipping</i>
+        </div>
+        <div class="w-14 h-14 rounded-2xl bg-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-600/20 mb-6">
+          <i class="material-icons text-3xl">local_shipping</i>
+        </div>
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Abastecimiento MMPP</h3>
+        <p class="text-slate-500 text-sm leading-relaxed mb-6">
+          Compras, contactos, visitas y reportes analíticos de choritos a planta.
+        </p>
+        <div class="flex items-center text-brand-600 font-bold text-xs uppercase tracking-wider">
+          Explorar sección <i class="material-icons text-sm ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</i>
+        </div>
+      </a>
+
+      <!-- Directorio de Centros -->
+      <a href="./html/Centros/index.html" 
+         class="group relative overflow-hidden p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-brand-600/30 transition-all duration-300 transform hover:-translate-y-1">
+        <div class="absolute top-0 right-0 p-8 text-indigo-600/5 group-hover:text-indigo-600/10 transition-colors">
+          <i class="material-icons text-9xl">map</i>
+        </div>
+        <div class="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/20 mb-6">
+          <i class="material-icons text-3xl">list_alt</i>
+        </div>
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Directorio de Centros</h3>
+        <p class="text-slate-500 text-sm leading-relaxed mb-6">
+          Registro geográfico y visualización en mapa de los cultivos en Los Lagos.
+        </p>
+        <div class="flex items-center text-indigo-600 font-bold text-xs uppercase tracking-wider">
+          Abrir directorio <i class="material-icons text-sm ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</i>
+        </div>
+      </a>
+
+      <!-- Planificación -->
+      <a href="html/Planificacion/mantencion_lineas.html" 
+         class="group relative overflow-hidden p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-brand-600/30 transition-all duration-300 transform hover:-translate-y-1">
+        <div class="absolute top-0 right-0 p-8 text-amber-600/5 group-hover:text-amber-600/10 transition-colors">
+          <i class="material-icons text-9xl">event_available</i>
+        </div>
+        <div class="w-14 h-14 rounded-2xl bg-amber-600 text-white flex items-center justify-center shadow-lg shadow-amber-600/20 mb-6">
+          <i class="material-icons text-3xl">event_note</i>
+        </div>
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Tareas y Planificación</h3>
+        <p class="text-slate-500 text-sm leading-relaxed mb-6">
+          Asignación inteligente de tareas y calendario operativo mensual.
+        </p>
+        <div class="flex items-center text-amber-600 font-bold text-xs uppercase tracking-wider">
+          Ver calendario <i class="material-icons text-sm ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</i>
+        </div>
+      </a>
+
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-auto py-8 px-4 border-t border-slate-200/60 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-4">
+        <div class="px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+          Versión 0.2.0
+        </div>
+        <div class="flex items-center gap-2 text-emerald-600 text-[10px] font-bold uppercase tracking-widest">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          Backend Online
+        </div>
+      </div>
+      <p class="text-slate-400 text-xs">
+        &copy; 2026 AppMitylus · Todos los derechos reservados.
+      </p>
+    </footer>
+
+  </main>
+
+  <!-- React & Sidebar -->
+  <!-- Enriquecemos la carga de React usando NPM local vía Vite en lugar de unpkg si es posible, 
+       pero mantenemos compatibilidad directa con script para el auto-mount. -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <script type="module" src="/spa-mmpp/nav.jsx?v=3"></script>
+  <script type="module" src="/spa-mmpp/nav.jsx"></script>
 
-  <!-- Materialize JS: lo dejamos al final y con defer para no bloquear -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js" defer></script>
-
-  <!-- Hook mínimo (no bloquea) por si necesitas inicializar algo global de Materialize -->
-  <script defer>
-    document.addEventListener('DOMContentLoaded', function(){
-      // Si luego agregas tooltips, modals, etc., inícialos acá.
-      // M.AutoInit(); // Descomenta si quieres auto-inicialización global
-    });
-  </script>
 </body>
 </html>
