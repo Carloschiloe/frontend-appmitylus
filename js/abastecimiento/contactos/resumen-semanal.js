@@ -2,86 +2,22 @@
 import { state, $ } from './state.js';
 import { getAll as getAllVisitas } from '../visitas/api.js';
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
+import { escapeHtml, fetchJson } from './ui-common.js';
 
-console.log('[resumen] CARGADO v=2025-10-20-6');
-
-/* ======================= Estilos del módulo (inyección segura) ======================= */
-(function injectResumenStyles(){
-  if (document.getElementById('resumen-semanal-styles')) return;
-  const s = document.createElement('style');
-  s.id = 'resumen-semanal-styles';
-  s.textContent = `
-    #tab-resumen{ padding:8px 4px 24px; }
-    #tab-resumen h5{ font-weight:600; letter-spacing:.2px; }
-    .resumen-toolbar{ margin:8px 0 4px; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
-
-    /* KPI en UNA SOLA FILA */
-    #resumen_kpis .kpi-row{ display:flex; flex-wrap:nowrap; gap:12px; overflow:visible; padding-bottom:0; }
-    #resumen_kpis .kpi-card{
-      flex:1 1 0; min-width:0; border:1px solid #e5e7eb; border-radius:14px; background:#fff;
-      padding:14px 16px; box-shadow:0 1px 1px rgba(0,0,0,.03);
-      display:flex; flex-direction:column; justify-content:center; min-height:92px; width:100%;
-    }
-    .kpi-card .kpi-label{ font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; }
-    .kpi-card .kpi-value{ font-size:26px; margin-top:6px; line-height:1.1; font-weight:600; color:#111827; }
-
-    /* Tabla */
-    #resumen_print_area table{ width:100%; table-layout:auto; }
-    #resumen_print_area table.striped thead th{
-      font-size:12px; color:#6b7280; font-weight:600; border-bottom:1px solid #e5e7eb;
-    }
-    #resumen_print_area table.striped tbody td{ padding:10px 12px; vertical-align:middle; }
-
-    /* expandir tabla si el panel superior está vacío */
-    #resumen_top:empty{ display:none !important; }
-    .res-col-table.full-width{ width:100% !important; max-width:100% !important; flex:0 0 100% !important; }
-
-    /* enlaces y sublíneas */
-    .res-link{ color:#0ea5a8; font-weight:700; text-decoration:none; }
-    .res-link:hover{ text-decoration:underline; }
-    .subline{ font-size:12px; line-height:1.2; color:#6b7280; }
-
-    /* chips de estado */
-    .chip-estado{
-      display:inline-flex; align-items:center; gap:6px;
-      padding:4px 8px; border-radius:999px; border:1px solid #e5e7eb;
-      font-size:12px; font-weight:700; white-space:nowrap;
-    }
-    .chip-vis{ background:#ecfeff; border-color:#a5f3fc; color:#075985; }
-    .chip-mue{ background:#f0fdf4; border-color:#bbf7d0; color:#166534; }
-    .chip-neg{ background:#fef3c7; border-color:#fde68a; color:#92400e; }
-    .chip-tel{ background:#eef2ff; border-color:#c7d2fe; color:#3730a3; }
-    .chip-esp{ background:#faf5ff; border-color:#e9d5ff; color:#6b21a8; }
-    .chip-na { background:#f3f4f6; border-color:#e5e7eb; color:#374151; }
-
-    /* switches */
-    .segmented{ display:inline-flex; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }
-    .segmented button{ padding:8px 12px; background:#fff; border:0; cursor:pointer; font-weight:700; }
-    .segmented button+button{ border-left:1px solid #e5e7eb; }
-    .segmented button.is-active{ background:#eef2ff; color:#1e40af; }
-
-    @media print{
-      nav, .tabs, .resumen-toolbar{ display:none !important; }
-      body{ background:#fff !important; }
-      #tab-resumen{ padding:0; } #resumen_print_area{ margin:0; }
-      #resumen_print_area h5{ margin-top:0; }
-    }
-  `;
-  document.head.appendChild(s);
-})();
+console.log('[resumen] CARGADO v=2025-10-20-7');
 
 /* ======================= Utils ======================= */
 const API_BASE = window.API_URL || '/api';
 const fmt2 = (n) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 });
-const ymd  = (d) => (d instanceof Date && !isNaN(d)) ? d.toISOString().slice(0,10) : '—';
+const ymd  = (d) => (d instanceof Date && !isNaN(d)) ? d.toISOString().slice(0,10) : '-';
 const toDate = (v) => { if (!v) return null; try { return (v instanceof Date) ? v : new Date(v); } catch { return null; } };
 const uniq = (arr) => Array.from(new Set(arr.filter(Boolean)));
-const esc  = (s='') => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#039;'}[m]));
+const esc = escapeHtml;
 
 /* Abreviaturas ES */
 const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const pad2 = (n) => String(n).padStart(2,'0');
-const fmtDMYShort = (dt) => { const d = toDate(dt); return d ? `${pad2(d.getDate())}.${MES_ABBR[d.getMonth()]}.${String(d.getFullYear()).slice(-2)}` : '—'; };
+const fmtDMYShort = (dt) => { const d = toDate(dt); return d ? `${pad2(d.getDate())}.${MES_ABBR[d.getMonth()]}.${String(d.getFullYear()).slice(-2)}` : '-'; };
 
 /* Slug robusto */
 function slug(v=''){
@@ -156,7 +92,7 @@ function comunaDeVisita(v){
 const normalizeEstado = (s='') => { const x = String(s||'').trim(); return (x === 'Tomar/entregar muestras') ? 'Tomar muestras' : x; };
 function estadoClaseChip(estado){
   const e = normalizeEstado(estado).toLowerCase();
-  if (!e || e === 'sin acción') return 'chip-estado chip-na';
+  if (!e || e === 'sin accion') return 'chip-estado chip-na';
   if (e.includes('muestr')) return 'chip-estado chip-mue';
   if (e.includes('negoci')) return 'chip-estado chip-neg';
   if (e.includes('tel'))    return 'chip-estado chip-tel';
@@ -230,9 +166,7 @@ async function getDisponibilidades(params = {}){
   q.set('to',   params.to   || `${y+1}-12`);
   if (params.proveedorKey) q.set('proveedorKey', params.proveedorKey);
   if (params.centroId)     q.set('centroId', params.centroId);
-  const res = await fetch(`${API_BASE}/disponibilidades?${q.toString()}`);
-  if (!res.ok) throw new Error('GET /disponibilidades '+res.status);
-  const json = await res.json();
+  const json = await fetchJson(`${API_BASE}/disponibilidades?${q.toString()}`, { credentials: 'same-origin' });
   return Array.isArray(json) ? json : (json.items || []);
 }
 function providerKeyLooksValid(k){ return !!(k && typeof k === 'string' && k.trim().length >= 3); }
@@ -373,7 +307,7 @@ function fillResponsableSelect(){
   const items = collectResponsables();
   const sig = items.join('|');
   if (sel.__sig === sig && sel.options.length > 0) {
-    return; // nada cambió
+    return; // nada cambio
   }
 
   sel.innerHTML = '';
@@ -411,18 +345,18 @@ function renderTablaVisitas(visitas){
   ensureHeadColumns(tbody);
 
   const rowsHtml = visitas.map(v => {
-    const prov   = proveedorDeVisita(v) || '—';
+    const prov   = proveedorDeVisita(v) || '-';
     const contacto = contactoDeVisita(v) || '';
     const resp   = responsableDeVisita(v) || '';
-    const centro = centroCodigoDeVisita(v) || '—';
-    const comuna = comunaDeVisita(v) || '—';
-    const tons   = (v.tonsComprometidas != null) ? fmt2(v.tonsComprometidas) : '—';
+    const centro = centroCodigoDeVisita(v) || '-';
+    const comuna = comunaDeVisita(v) || '-';
+    const tons   = (v.tonsComprometidas != null) ? fmt2(v.tonsComprometidas) : '-';
     const fpp    = fmtDMYShort(toDate(v.proximoPasoFecha));
-    const estado = normalizeEstado(v.estado || '—');
+    const estado = normalizeEstado(v.estado || '-');
     const chipCl = estadoClaseChip(estado);
     const vid = esc(v._id || '');
 
-    const sub = (contacto || resp) ? `<div class="subline">${esc(contacto || '')}${resp ? ` · Resp.: ${esc(resp)}`:''}</div>` : ``;
+    const sub = (contacto || resp) ? `<div class="subline">${esc(contacto || '')}${resp ? `  Resp.: ${esc(resp)}`:''}</div>` : ``;
 
     return `<tr data-visita-id="${vid}">
       <td>${fmtDMYShort(toDate(v.fecha))}</td>
@@ -434,11 +368,11 @@ function renderTablaVisitas(visitas){
       <td>${esc(comuna)}</td>
       <td data-col="tons">${tons}</td>
       <td>${fpp}</td>
-      <td><span class="${chipCl}">${esc(estado || '—')}</span></td>
+      <td><span class="${chipCl}">${esc(estado || '-')}</span></td>
     </tr>`;
   }).join('');
 
-  tbody.innerHTML = rowsHtml || '<tr><td colspan="7" class="grey-text">No hay visitas para este período.</td></tr>';
+  tbody.innerHTML = rowsHtml || '<tr><td colspan="7" class="grey-text">No hay visitas para este periodo.</td></tr>';
 
   // abrir visita
   tbody.querySelectorAll('.js-open-visita').forEach(a => {
@@ -459,15 +393,15 @@ async function renderTablaContactos(contactos){
 
   let rowsHtml = '';
   for (const c of contactos){
-    const prov   = proveedorDeContacto(c) || '—';
+    const prov   = proveedorDeContacto(c) || '-';
     const contacto = contactoNombreDeContacto(c) || '';
-    const centro = centroCodigoDeContacto(c) || '—';
-    const comuna = comunaDeContacto(c) || '—';
-    const resp   = c.responsable || c.contactoResponsable || c.responsablePG || '—';
+    const centro = centroCodigoDeContacto(c) || '-';
+    const comuna = comunaDeContacto(c) || '-';
+    const resp   = c.responsable || c.contactoResponsable || c.responsablePG || '-';
 
     // Sumatoria de disponibilidades = TONS PRODUCIDAS
     const sumDisp = await sumDisponibilidadesContacto(c);
-    const tons = sumDisp ? fmt2(sumDisp) : '—';
+    const tons = sumDisp ? fmt2(sumDisp) : '-';
 
     const cid = esc(c._id || '');
     rowsHtml += `<tr data-contacto-id="${cid}">
@@ -483,7 +417,7 @@ async function renderTablaContactos(contactos){
     </tr>`;
   }
 
-  tbody.innerHTML = rowsHtml || '<tr><td colspan="6" class="grey-text">No hay contactos para este período.</td></tr>';
+  tbody.innerHTML = rowsHtml || '<tr><td colspan="6" class="grey-text">No hay contactos para este periodo.</td></tr>';
 
   // abrir contacto
   tbody.querySelectorAll('.js-open-contacto').forEach(a => {
@@ -501,7 +435,7 @@ async function renderTablaContactos(contactos){
   ensureFullWidthTable();
 }
 
-/* ===== Expandir tabla si el panel está vacío ===== */
+/* ===== Expandir tabla si el panel esta vacio ===== */
 function ensureFullWidthTable(){
   const tableCol = document.querySelector('#resumen_print_area .row .col.s12.m7') || document.querySelector('#resumen_print_area .row .col:first-child');
   const rightCol = document.querySelector('#resumen_print_area .row .col.s12.m5');
@@ -560,7 +494,7 @@ function ensureModeSwitcher(){
     applyVisibility();
   }
 
-  // Filtro Responsable (llenado idempotente + reinicialización Materialize)
+  // Filtro Responsable (llenado idempotente + reinicializacion Materialize)
   const selResp = document.getElementById('resumen_resp');
   if (selResp && !selResp.__wired){
     selResp.__wired = true;
@@ -659,7 +593,7 @@ export async function refreshResumen(){
   else                           await renderTablaContactos(aggC.contactos);
 }
 
-/* ======================= Auto-init si está el tab ======================= */
+/* ======================= Auto-init si esta el tab ======================= */
 if (document.getElementById('tab-resumen')) {
   initResumenSemanalTab().catch(err => console.error('[resumen] init error', err));
 }

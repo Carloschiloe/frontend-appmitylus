@@ -1,0 +1,876 @@
+/* =========================================================
+   TABLAS GESTION (CONTACTOS / VISITAS / PERSONAS)
+   Estilo unificado y consistente con Interacciones
+   ========================================================= */
+
+.contactos-page {
+  --gestion-table-row-height: 56px;
+  --gestion-table-cell-py: 8px;
+  --gestion-table-cell-px: 8px;
+}
+
+#tab-contactos .table-toolbar,
+#tab-visitas .visitas-toolbar,
+#tab-personas .table-toolbar,
+#tab-muestreos .table-toolbar {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  background: #fff;
+  min-width: 0;
+  overflow: hidden;
+}
+
+#tab-contactos .table-toolbar {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+#tab-contactos #filtrosContactos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(130px, 170px)) minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  align-items: center;
+}
+
+#tab-visitas .visitas-toolbar {
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+  align-items: end;
+  min-width: 0;
+}
+
+#tab-visitas #visitas-filtros-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 180px));
+  gap: 10px;
+  margin: 0;
+  min-width: 0;
+}
+
+#tab-visitas #visitas-filtros-bar .fld {
+  display: grid;
+  gap: 4px;
+}
+
+#tab-visitas .visitas-search input {
+  width: 100%;
+}
+
+#tab-personas .table-toolbar {
+  grid-template-columns: auto minmax(240px, 320px);
+  align-items: center;
+  min-width: 0;
+}
+
+#tab-personas .table-toolbar .right,
+#tab-personas .table-toolbar .search {
+  width: 100%;
+  min-width: 0;
+}
+
+#tab-muestreos .table-toolbar {
+  grid-template-columns: 1fr;
+  align-items: center;
+  min-width: 0;
+}
+
+#tab-muestreos #muFiltrosBar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(170px, 1fr)) repeat(2, minmax(130px, 150px)) minmax(240px, 1.2fr) auto;
+  gap: 8px;
+  min-width: 0;
+  align-items: center;
+}
+
+#tab-muestreos .mu-chip-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+#tab-muestreos .mu-chip-group {
+  min-width: 0;
+}
+
+#tab-muestreos .mu-chip-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4b617f;
+  margin-bottom: 5px;
+}
+
+#tab-muestreos .mu-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+#tab-muestreos .mu-chip-btn {
+  appearance: none;
+  border: 1px solid #c7d7ea;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f7fc 100%);
+  color: #2a476b;
+  min-height: 32px;
+  padding: 5px 13px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+}
+
+#tab-muestreos .mu-chip-btn:hover {
+  transform: translateY(-1px);
+  border-color: #9fc3df;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+}
+
+#tab-muestreos .mu-chip-btn.is-active {
+  border-color: #0f766e;
+  background: linear-gradient(180deg, #178f85 0%, #0f766e 100%);
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(15, 118, 110, 0.26);
+}
+
+#tab-contactos .table-toolbar select,
+#tab-contactos .table-toolbar input,
+#tab-visitas .visitas-toolbar select,
+#tab-visitas .visitas-toolbar input,
+#tab-personas .table-toolbar input,
+#tab-muestreos .table-toolbar select,
+#tab-muestreos .table-toolbar input {
+  min-height: 40px;
+  border: 1px solid #c9d7ea !important;
+  border-radius: 10px !important;
+  background: #fff;
+  padding: 8px 10px !important;
+  box-sizing: border-box;
+}
+
+#tab-contactos .table-toolbar select:focus,
+#tab-contactos .table-toolbar input:focus,
+#tab-visitas .visitas-toolbar select:focus,
+#tab-visitas .visitas-toolbar input:focus,
+#tab-personas .table-toolbar input:focus,
+#tab-muestreos .table-toolbar select:focus,
+#tab-muestreos .table-toolbar input:focus {
+  border-color: #0f766e !important;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.12) !important;
+}
+
+#tab-contactos .mmpp-table-wrap,
+#tab-visitas .mmpp-table-wrap,
+#tab-personas .mmpp-table-wrap,
+#tab-muestreos .mmpp-table-wrap {
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  background: #fff;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#tablaContactos,
+#tablaVisitas,
+#tablaPersonas,
+#tablaMuestreos {
+  table-layout: fixed !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+#tablaContactos thead th,
+#tablaVisitas thead th,
+#tablaPersonas thead th,
+#tablaMuestreos thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f8fbff;
+  color: #1f3554;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #dbe3ee !important;
+}
+
+#tablaContactos th,
+#tablaContactos td,
+#tablaVisitas th,
+#tablaVisitas td,
+#tablaPersonas th,
+#tablaPersonas td,
+#tablaMuestreos th,
+#tablaMuestreos td {
+  padding: var(--gestion-table-cell-py) var(--gestion-table-cell-px) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  vertical-align: middle;
+  line-height: 1.25;
+  border-bottom: 1px solid #eef3fa !important;
+}
+
+#tablaContactos tbody tr,
+#tablaVisitas tbody tr,
+#tablaPersonas tbody tr,
+#tablaMuestreos tbody tr {
+  height: var(--gestion-table-row-height);
+}
+
+#tablaContactos tbody tr:hover,
+#tablaVisitas tbody tr:hover,
+#tablaPersonas tbody tr:hover,
+#tablaMuestreos tbody tr:hover {
+  background: #f8fbff !important;
+}
+
+/* ---------------- Contactos ---------------- */
+#tablaContactos th:nth-child(1),
+#tablaContactos td:nth-child(1) {
+  width: 60px !important;
+}
+
+#tablaContactos th:nth-child(2),
+#tablaContactos td:nth-child(2) {
+  width: 108px !important;
+}
+
+#tablaContactos th:nth-child(3),
+#tablaContactos td:nth-child(3) {
+  width: 220px !important;
+  white-space: normal !important;
+}
+
+#tablaContactos th:nth-child(4),
+#tablaContactos td:nth-child(4) {
+  width: 170px !important;
+}
+
+#tablaContactos th:nth-child(5),
+#tablaContactos td:nth-child(5) {
+  width: 90px !important;
+  text-align: center !important;
+}
+
+#tablaContactos th:nth-child(6),
+#tablaContactos td:nth-child(6) {
+  width: 130px !important;
+}
+
+#tablaContactos th:nth-child(7),
+#tablaContactos td:nth-child(7) {
+  width: 220px !important;
+  min-width: 220px !important;
+}
+
+#tablaContactos tbody td {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+.prov-cell,
+.centro-cell {
+  display: block;
+  min-width: 0;
+}
+
+.prov-top,
+.prov-sub,
+.centro-top,
+.centro-sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.prov-top,
+.centro-top {
+  font-weight: 700;
+  color: #223a5d;
+}
+
+.prov-sub,
+.centro-sub {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+#tablaContactos td:last-child,
+#tablaVisitas td:last-child,
+#tablaPersonas td:last-child,
+#tablaMuestreos td:last-child {
+  overflow: visible !important;
+  padding-right: 10px !important;
+}
+
+.tbl-actions,
+#tablaContactos td:last-child .actions,
+#tablaVisitas td .acts,
+#tablaPersonas td.cell-actions,
+#tablaMuestreos td .acts {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.tbl-action-btn,
+#tablaContactos td:last-child a.icon-action,
+#tablaVisitas td .acts a,
+#tablaPersonas td.cell-actions .act,
+#tablaMuestreos td .acts .tbl-action-btn {
+  pointer-events: auto;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #d5e0ef;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(2, 6, 23, 0.05);
+}
+
+.tbl-action-btn i,
+#tablaContactos td:last-child a.icon-action i,
+#tablaVisitas td .acts a i,
+#tablaPersonas td.cell-actions .act i.material-icons,
+#tablaMuestreos td .acts i.material-icons {
+  font-size: 18px;
+  line-height: 18px;
+  color: #334155 !important;
+}
+
+.tbl-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(2, 6, 23, 0.12);
+}
+
+.tbl-action-btn:not(.mu-red):not(.mu-green) {
+  border-color: #d5e0ef;
+  background: #fff;
+}
+
+.tbl-action-btn:not(.mu-red):not(.mu-green) i {
+  color: #334155 !important;
+}
+
+.tbl-action-btn.mu-red,
+#tablaVisitas td .acts a.mu-red {
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
+.tbl-action-btn.mu-red i,
+#tablaVisitas td .acts a.mu-red i {
+  color: #dc2626;
+}
+
+.tbl-action-btn.mu-green,
+#tablaVisitas td .acts a.mu-green {
+  border-color: #bbf7d0;
+  background: #ecfdf5;
+}
+
+.tbl-action-btn.mu-green i,
+#tablaVisitas td .acts a.mu-green i {
+  color: #059669;
+}
+
+#tablaContactos .tons-cell.loading {
+  opacity: 0.6;
+}
+
+#tablaContactos tfoot th {
+  font-weight: 800;
+  background: #f8fbff;
+  border-top: 1px solid #dbe3ee !important;
+}
+
+/* ---------------- Visitas ---------------- */
+#tablaVisitas th:nth-child(1),
+#tablaVisitas td:nth-child(1) {
+  width: 60px !important;
+}
+
+#tablaVisitas th:nth-child(2),
+#tablaVisitas td:nth-child(2) {
+  width: 108px !important;
+}
+
+#tablaVisitas th:nth-child(3),
+#tablaVisitas td:nth-child(3) {
+  width: 240px !important;
+}
+
+#tablaVisitas th:nth-child(4),
+#tablaVisitas td:nth-child(4) {
+  width: 150px !important;
+}
+
+#tablaVisitas th:nth-child(5),
+#tablaVisitas td:nth-child(5) {
+  width: 160px !important;
+}
+
+#tablaVisitas th:nth-child(6),
+#tablaVisitas td:nth-child(6) {
+  width: 120px !important;
+}
+
+#tablaVisitas th:nth-child(7),
+#tablaVisitas td:nth-child(7) {
+  width: 90px !important;
+}
+
+#tablaVisitas th:nth-child(8),
+#tablaVisitas td:nth-child(8) {
+  width: 170px !important;
+  min-width: 170px !important;
+}
+
+.v-prov,
+.v-centro {
+  display: block;
+  min-width: 0;
+}
+
+.v-top {
+  display: block;
+  font-weight: 700;
+  color: #223a5d;
+}
+
+.v-sub {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+/* ---------------- Personas ---------------- */
+#tablaPersonas th:nth-child(1),
+#tablaPersonas td:nth-child(1) {
+  width: 96px !important;
+}
+
+#tablaPersonas th:nth-child(2),
+#tablaPersonas td:nth-child(2) {
+  width: 220px !important;
+  white-space: normal !important;
+}
+
+#tablaPersonas th:nth-child(3),
+#tablaPersonas td:nth-child(3) {
+  width: 160px !important;
+}
+
+#tablaPersonas th:nth-child(4),
+#tablaPersonas td:nth-child(4) {
+  width: 180px !important;
+}
+
+#tablaPersonas th:nth-child(5),
+#tablaPersonas td:nth-child(5) {
+  width: 120px !important;
+}
+
+#tablaPersonas th:nth-child(6),
+#tablaPersonas td:nth-child(6) {
+  width: 170px !important;
+  min-width: 170px !important;
+}
+
+.p-contacto {
+  display: block;
+  min-width: 0;
+}
+
+.p-contacto .p-nombre {
+  display: block;
+  font-weight: 700;
+  color: #223a5d;
+}
+
+.p-contacto .p-empresa {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+/* ---------------- Muestreos ---------------- */
+#tab-muestreos .mu-kpi-strip {
+  margin: 0 0 10px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#tab-muestreos .mu-kpi-strip article {
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 8px 10px;
+  min-width: 0;
+}
+
+#tab-muestreos .mu-kpi-strip article span {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #4b617f;
+}
+
+#tab-muestreos .mu-kpi-strip article strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 16px;
+  color: #1f3554;
+}
+
+#tablaMuestreos th:nth-child(1),
+#tablaMuestreos td:nth-child(1) {
+  width: 170px !important;
+  white-space: normal !important;
+}
+
+#tablaMuestreos th:nth-child(2),
+#tablaMuestreos td:nth-child(2) {
+  width: 260px !important;
+  white-space: normal !important;
+}
+
+#tablaMuestreos th:nth-child(3),
+#tablaMuestreos td:nth-child(3) {
+  width: 90px !important;
+  text-align: center !important;
+}
+
+#tablaMuestreos th:nth-child(4),
+#tablaMuestreos td:nth-child(4) {
+  width: 100px !important;
+  text-align: center !important;
+}
+
+#tablaMuestreos th:nth-child(5),
+#tablaMuestreos td:nth-child(5) {
+  width: 110px !important;
+  text-align: center !important;
+}
+
+#tablaMuestreos th:nth-child(6),
+#tablaMuestreos td:nth-child(6) {
+  width: 140px !important;
+  text-align: center !important;
+}
+
+#tablaMuestreos th:nth-child(7),
+#tablaMuestreos td:nth-child(7) {
+  width: 170px !important;
+  min-width: 170px !important;
+}
+
+#tablaMuestreos .mu-date-cell,
+#tablaMuestreos .mu-contact-stack {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+#tablaMuestreos .mu-date-main,
+#tablaMuestreos .mu-contact-main {
+  display: block;
+  font-weight: 700;
+  color: #223a5d;
+  line-height: 1.2;
+}
+
+#tablaMuestreos .mu-date-main {
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+#tablaMuestreos .mu-contact-main {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#tablaMuestreos .mu-date-sub,
+#tablaMuestreos .mu-provider-sub {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#tablaMuestreos .mu-date-sub {
+  max-width: 150px;
+}
+
+#tablaMuestreos .mu-num-main {
+  font-weight: 700;
+  color: #1f3554;
+  font-size: 13px;
+}
+
+#tablaMuestreos tbody tr {
+  height: 64px;
+}
+
+#tablaMuestreos .mu-rechazo-btn {
+  border: 1px solid #d5e0ef;
+  border-radius: 999px;
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  background: #f8fbff;
+  color: #2b4e76;
+}
+
+#tablaMuestreos .mu-rechazo-btn.is-low {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+#tablaMuestreos .mu-rechazo-btn.is-mid {
+  background: #fefce8;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+#tablaMuestreos .mu-rechazo-btn.is-high {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+#muInfoBody .mu-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#muInfoBody .mu-modal-grid article {
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 8px 10px;
+}
+
+#muInfoBody .mu-modal-grid article span {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #4b617f;
+}
+
+#muInfoBody .mu-modal-grid article strong {
+  display: block;
+  margin-top: 3px;
+  color: #1f3554;
+}
+
+#muRechazoBody .mu-rechazo-head {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#muRechazoBody .mu-rechazo-head article {
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 8px 10px;
+}
+
+#muRechazoBody .mu-rechazo-head span {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #4b617f;
+}
+
+#muRechazoBody .mu-rechazo-head strong {
+  display: block;
+  margin-top: 3px;
+  color: #1f3554;
+}
+
+#muRechazoBody .mu-rechazo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#muRechazoBody .mu-rechazo-col h6 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: #1f3554;
+}
+
+#muRechazoBody .mu-mini-table th,
+#muRechazoBody .mu-mini-table td {
+  font-size: 12px;
+  padding: 6px 8px !important;
+}
+
+#muRechazoBody .mu-mini-table td.mu-num {
+  text-align: right;
+  font-weight: 700;
+}
+
+#muRechazoBody .mu-mini-table tr.is-desc td.mu-num {
+  color: #14532d;
+}
+
+#muRechazoBody .mu-mini-table tr.is-defecto td.mu-num {
+  color: #1d4ed8;
+}
+
+.mmpp-empty-row {
+  color: #64748b;
+  text-align: center;
+}
+
+/* ---------------- Controles locales (export / paginacion) ---------------- */
+.contactos-page .local-table-top {
+  margin: 8px 0;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.contactos-page .local-export-group {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.contactos-page .local-table-bottom {
+  margin-top: 8px;
+  border-top: 1px solid #dbe3ee;
+  padding-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.contactos-page .local-table-info {
+  color: #4b617f;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.contactos-page .local-table-pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.contactos-page .local-table-page {
+  min-width: 72px;
+  text-align: center;
+  color: #1e3a5f;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.contactos-page .tbl-ctrl-btn {
+  border: 1px solid #c9d7ea;
+  border-radius: 10px;
+  background: #fff;
+  color: #1f3554;
+  font-weight: 700;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.contactos-page .tbl-ctrl-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1280px) {
+  #tab-contactos #filtrosContactos {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+  }
+
+  #tab-muestreos #muFiltrosBar {
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
+  }
+
+  #tab-muestreos .mu-kpi-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  #muRechazoBody .mu-rechazo-head {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: 900px) {
+  #tab-contactos .table-toolbar,
+  #tab-visitas .visitas-toolbar,
+  #tab-personas .table-toolbar,
+  #tab-muestreos .table-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  #tab-contactos #filtrosContactos,
+  #tab-visitas #visitas-filtros-bar,
+  #tab-muestreos #muFiltrosBar {
+    grid-template-columns: 1fr;
+  }
+
+  #tab-muestreos .mu-chip-filters {
+    grid-template-columns: 1fr;
+  }
+
+  #tab-personas .table-toolbar .right {
+    min-width: 0;
+  }
+
+  #tab-muestreos .mu-kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .contactos-page .local-table-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  #muInfoBody .mu-modal-grid,
+  #muRechazoBody .mu-rechazo-grid,
+  #muRechazoBody .mu-rechazo-head {
+    grid-template-columns: 1fr;
+  }
+
+}

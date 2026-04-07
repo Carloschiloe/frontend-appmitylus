@@ -5,13 +5,8 @@ import { coerceArray, normalizeContacto } from './normalizers.js';
 import { slug } from './state.js';
 
 /* =========================================================================
-   Config cache + utils
+   Config utils
    ========================================================================= */
-const TTL_MS = 15 * 60 * 1000; // 15 minutos
-const LS_KEYS = {
-  centros: 'mmpp.cache.centros.v1',
-  contactos: 'mmpp.cache.contactos.v1',
-};
 
 const inflight = new Map(); // de-dup promesas por clave
 
@@ -24,20 +19,12 @@ const log = (...args) => {
 function now() { return Date.now(); }
 
 function loadCache(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const obj = JSON.parse(raw);
-    if (!obj || typeof obj !== 'object') return null;
-    if (!obj.ts || (now() - obj.ts) > TTL_MS) return null; // expirado
-    return obj.data ?? null;
-  } catch { return null; }
+  return null;
 }
 
 function saveCache(key, data) {
-  try {
-    localStorage.setItem(key, JSON.stringify({ ts: now(), data }));
-  } catch {}
+  void key;
+  void data;
 }
 
 function dedup(key, fn) {
@@ -85,35 +72,35 @@ function indexarProveedoresDesdeCentros(centros) {
    Carga de Centros (SWR + de-dup)
    ========================================================================= */
 /**
- * Carga catálogo de centros y arma índice de proveedores.
+ * Carga catalogo de centros y arma indice de proveedores.
  * - Usa cache inmediato si existe (SWR).
  * - Revalida en background y vuelve a notificar.
  * - Emite 'centros:loaded' cuando hay datos en state.
  */
 export async function cargarCentros() {
-  // 1) entregar cache rápido si existe
-  const cached = loadCache(LS_KEYS.centros);
+  // 1) cache local deshabilitada (todo conectado por API)
+  const cached = loadCache('');
   if (Array.isArray(cached) && !state.listaCentros?.length) {
     state.listaCentros = cached;
     indexarProveedoresDesdeCentros(state.listaCentros);
-    log('[cargarCentros][cache] ←', state.listaCentros.length, 'centros');
+    log('[cargarCentros][cache] <-', state.listaCentros.length, 'centros');
     document.dispatchEvent(new Event('centros:loaded'));
   }
 
   // 2) siempre revalidar con de-dup
   try {
     const lista = await dedup('centros', async () => {
-      log('[cargarCentros][net] → apiGetCentros()');
+      log('[cargarCentros][net]  apiGetCentros()');
       const res = await apiGetCentros();
       return coerceArray(res);
     });
 
     state.listaCentros = Array.isArray(lista) ? lista : [];
-    saveCache(LS_KEYS.centros, state.listaCentros);
+    saveCache('', state.listaCentros);
     indexarProveedoresDesdeCentros(state.listaCentros);
-    log('[cargarCentros][net] ←', state.listaCentros.length, 'centros / proveedores:', state.listaProveedores.length);
+    log('[cargarCentros][net] <-', state.listaCentros.length, 'centros / proveedores:', state.listaProveedores.length);
 
-    // 🔔 Notificar a otros módulos (asociar-empresa.js, visitas/ui.js, etc.)
+    //  Notificar a otros modulos (asociar-empresa.js, visitas/ui.js, etc.)
     document.dispatchEvent(new Event('centros:loaded'));
   } catch (e) {
     console.error('[cargarCentros] error:', e?.message || e);
@@ -133,24 +120,24 @@ export async function cargarCentros() {
  * - Revalida en background.
  */
 export async function cargarContactosGuardados() {
-  // 1) cache rápido
-  const cached = loadCache(LS_KEYS.contactos);
+  // 1) cache local deshabilitada (todo conectado por API)
+  const cached = loadCache('');
   if (Array.isArray(cached) && !state.contactosGuardados?.length) {
     state.contactosGuardados = cached.map(normalizeContacto);
-    log('[cargarContactosGuardados][cache] ←', state.contactosGuardados.length, 'contactos');
+    log('[cargarContactosGuardados][cache] <-', state.contactosGuardados.length, 'contactos');
   }
 
   // 2) revalidar
   try {
     const raw = await dedup('contactos', async () => {
-      log('[cargarContactosGuardados][net] → apiGetContactos()');
+      log('[cargarContactosGuardados][net]  apiGetContactos()');
       return coerceArray(await apiGetContactos());
     });
 
     const normalizados = raw.map(normalizeContacto);
     state.contactosGuardados = normalizados;
-    saveCache(LS_KEYS.contactos, normalizados); // guardamos ya normalizados
-    log('[cargarContactosGuardados][net] ←', state.contactosGuardados.length, 'contactos');
+    saveCache('', normalizados);
+    log('[cargarContactosGuardados][net] <-', state.contactosGuardados.length, 'contactos');
   } catch (e) {
     console.error('[cargarContactosGuardados] error:', e?.message || e);
     if (!state.contactosGuardados) state.contactosGuardados = [];

@@ -6,8 +6,8 @@
   <title>Calendario MMPP</title>
 
   <!-- Estilos compartidos -->
-  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
-  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
+  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=2" />
+  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=2" />
 
   <!-- ===== CONFIG (antes de cualquier JS tuyo) ===== -->
   <script>window.DEBUG = true;</script>
@@ -22,9 +22,6 @@
 
   <!-- Sidebar (JSX) -->
   <script type="module" src="/spa-mmpp/nav.jsx?v=2"></script>
-
-  <!-- App (JSX) -->
-  <script type="module" src="/spa-mmpp/mmpp-calendario.jsx?v=12"></script>
 </head>
 <body>
   <div class="mmpp-layout">
@@ -37,8 +34,6 @@
   <!-- API (antes del calendario) -->
   <script defer src="/spa-mmpp/mmpp-api.js?v=12"></script>
 
-  <!-- Sidebar (JSX via Babel) -->
-  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
 
   <!-- Calendario -->
   <script defer src="/spa-mmpp/mmpp-calendario.js?v=chips-3"></script>

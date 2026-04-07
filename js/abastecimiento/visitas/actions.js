@@ -1,10 +1,28 @@
 // /js/abastecimiento/visitas/actions.js
 import { remove } from './api.js';
+import { createModalConfirm } from '../contactos/ui-common.js';
 
-export function manejarAccionVisitaEl(el) {
+const askDeleteVisita = createModalConfirm({
+  id: 'modalConfirmDeleteVisita',
+  defaultTitle: 'Eliminar visita',
+  defaultMessage: '¿Eliminar esta visita?',
+  acceptText: 'Eliminar'
+});
+
+export async function manejarAccionVisitaEl(el) {
   const action = (el?.dataset?.action || '').toLowerCase();
   const id = el?.dataset?.id || '';
   try {
+    if (action === 'muestreo') {
+      const hasMuestreo = !!el?.classList?.contains('mu-green');
+      document.dispatchEvent(new CustomEvent('muestreo:open-from-visita', {
+        detail: {
+          id,
+          view: hasMuestreo ? 'summary' : 'form'
+        }
+      }));
+      return;
+    }
     if (action === 'ver' || action === 'detalle') {
       document.dispatchEvent(new CustomEvent('visita:open-readonly', { detail: { id } }));
       return;
@@ -15,20 +33,16 @@ export function manejarAccionVisitaEl(el) {
     }
     if (action === 'eliminar') {
       if (!id) return;
-      if (!confirm('¿Eliminar esta visita?')) return;
-      (async () => {
-        await remove(id);
-        M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
-        window.dispatchEvent(new CustomEvent('visita:deleted', { detail: { id } }));
-      })().catch(err => {
-        console.warn(err);
-        M.toast?.({ html: 'No se pudo eliminar', classes: 'red', displayLength: 2000 });
-      });
+      const ok = await askDeleteVisita('Eliminar visita', '¿Eliminar esta visita?', 'Eliminar');
+      if (!ok) return;
+      await remove(id);
+      M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
+      window.dispatchEvent(new CustomEvent('visita:deleted', { detail: { id } }));
       return;
     }
   } catch (err) {
     console.error('[visitas/actions] error', err);
-    M.toast?.({ html: 'Acción no disponible', classes: 'red' });
+    M.toast?.({ html: 'Accion no disponible', classes: 'red' });
   }
 }
 

@@ -1,4 +1,4 @@
-// Monta la vista Interacciones cuando se abre la pestaña (lazy)
+// Monta la vista de Interacciones cuando se abre la pestaña (lazy)
 import { mountInteracciones } from './ui.js';
 
 function mountOnce() {
@@ -8,36 +8,36 @@ function mountOnce() {
   root.dataset.mounted = '1';
 }
 
+function emitTabHide(tabDiv) {
+  if (!tabDiv) return;
+  tabDiv.dispatchEvent(new Event('mmpp:tab-hide'));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const tabAnchor = document.querySelector('a[href="#tab-interacciones"]');
   const tabDiv = document.getElementById('tab-interacciones');
   if (!tabAnchor || !tabDiv) return;
 
-  // 1) Click en la pestaña → montar (una sola vez)
+  // 1) Click en la pestaña: montar una sola vez.
   tabAnchor.addEventListener('click', mountOnce, { once: true });
 
-  // 2) Si llegas con hash directo (#tab-interacciones), montar también
+  // 2) Si llega con hash directo (#tab-interacciones), montar también.
   if (location.hash === '#tab-interacciones') {
-    // Espera a que Materialize termine de mostrar las tabs
-    setTimeout(mountOnce, 0);
+    requestAnimationFrame(mountOnce);
   }
 
-  // 3) Al cambiar a otra pestaña, avisar que Interacciones se “oculta”
-  //    (para que el viewer del calendario libere MMppApi, etc.)
+  // 3) Al cambiar a otra pestaña, avisar que Interacciones se ocultó.
   const allTabLinks = document.querySelectorAll('.tabs .tab a');
-  allTabLinks.forEach(a => {
+  allTabLinks.forEach((a) => {
     a.addEventListener('click', () => {
       const target = a.getAttribute('href');
-      if (target !== '#tab-interacciones' && tabDiv) {
-        tabDiv.dispatchEvent(new Event('mmpp:tab-hide'));
-      }
+      if (target !== '#tab-interacciones') emitTabHide(tabDiv);
     });
   });
 
-  // 4) Por si el hash cambia vía navegación (sin click)
+  // 4) También cubrir navegación que cambia hash sin click.
   window.addEventListener('hashchange', () => {
     if (location.hash === '#tab-interacciones') mountOnce();
-    else if (tabDiv) tabDiv.dispatchEvent(new Event('mmpp:tab-hide'));
+    else emitTabHide(tabDiv);
   });
 });
-

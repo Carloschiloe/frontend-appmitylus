@@ -18,10 +18,10 @@ export function normalizeContacto(c = {}) {
   o.proveedorNombre  = o.proveedorNombre || o.proveedor || '';
 
   // Centro asociado (si existe)
-  o.centroId         = o.centroId ?? null;
+  o.centroId         = o.centroId || o.centro_id || null;
   o.centroCodigo     = o.centroCodigo || o.centro_code || o.codigoCentro || '';
   o.centroComuna     = o.centroComuna || '';
-  o.centroHectareas  = o.centroHectareas ?? null;
+  o.centroHectareas  = o.centroHectareas ?? o.hectareas ?? o.ha ?? null;
 
   // Persona
   o.contactoNombre   = o.contactoNombre || '';
@@ -66,5 +66,5 @@ export function comunaPorCodigo(codigo){
     const cs = [x.codigo, x.code, x.Codigo].filter(v => v != null).map(String);
     return cs.includes(cod);
   });
-  return ct?.comuna ?? ct?.Comuna ?? '';
+  return ct?.comuna || ct?.Comuna || '';
 }

@@ -1,18 +1,22 @@
 // /js/contactos/asociar-empresa.js
-import { apiPatchContactoSafe } from '../../core/api.js';   // ← PATCH seguro
+import { apiPatchContactoSafe } from '../../core/api.js';
 import { state, $, slug } from './state.js';
 import { cargarContactosGuardados } from './data.js';
+import { escapeHtml, fetchJson, getModalInstance } from './ui-common.js';
+import { buscarCoincidenciasProveedor } from './proveedores.js';
 
 /* ---------------- helpers ---------------- */
 const API_BASE = (window.API_URL || '/api'); // base para POST asignaciones
+const apiJson = (path, options = {}) => {
+  const opts = { credentials: 'same-origin', ...options, headers: { ...(options.headers || {}) } };
+  if (opts.body !== undefined && opts.body !== null && typeof opts.body !== 'string') {
+    opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
+    opts.body = JSON.stringify(opts.body);
+  }
+  return fetchJson(`${API_BASE}${path}`, opts);
+};
 
-const esc = (s = '') =>
-  String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+const esc = escapeHtml;
 
 const norm = (s = '') =>
   String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -20,7 +24,7 @@ const norm = (s = '') =>
 const pad2 = (n) => String(n).padStart(2, '0');
 const mesKeyFrom = (anio, mes) => `${anio}-${pad2(mes)}`;
 
-/* Construye índice de empresas desde centros + contactos */
+/* Construye indice de empresas desde centros + contactos */
 function buildProvidersIndex() {
   const out = new Map();
 
@@ -50,24 +54,15 @@ let debounceT = null;
 
 /* ======================== ASIGNACIONES (MMPP) ======================== */
 async function postAsignacion(payload){
-  const resp = await fetch(`${API_BASE}/asignaciones`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!resp.ok) {
-    const t = await resp.text().catch(()=>'');
-    throw new Error(`HTTP ${resp.status} - ${t}`);
-  }
-  try { return await resp.json(); } catch { return null; }
+  return apiJson('/asignaciones', { method: 'POST', body: payload });
 }
 
 function getEl(id){ return document.getElementById(id); }
 
-/** Guarda asignación si el checkbox está marcado */
+/** Guarda asignacion si el checkbox esta marcado */
 async function saveAsignacionIfChecked({ proveedorKey, contactoId }){
   const chk = getEl('asigAgregarDisponibilidad');
-  if (!chk || !chk.checked) return; // no pidió guardar
+  if (!chk || !chk.checked) return; // no pidio guardar
 
   const anio = parseInt(getEl('asigAnio')?.value, 10);
   const mes  = parseInt(getEl('asigMes')?.value, 10);
@@ -83,7 +78,7 @@ async function saveAsignacionIfChecked({ proveedorKey, contactoId }){
   if (!contactoId)   { M?.toast?.({ html:'Falta contacto', classes:'red' }); return; }
   if (!centroId)     { M?.toast?.({ html:'Selecciona un centro', classes:'red' }); return; }
   if (!anio || !mes || Number.isNaN(tons)) {
-    M?.toast?.({ html:'Completa año, mes y cantidad (ton)', classes:'red' });
+    M?.toast?.({ html:'Completa anio, mes y cantidad (ton)', classes:'red' });
     return;
   }
 
@@ -131,16 +126,43 @@ export function initAsociacionContactos() {
     }
     ul.innerHTML = items.map(
       (p) => `<li class="collection-item">
-        <a href="#!" class="sel-prov" data-key="${p.key}" data-name="${esc(p.name)}">${esc(p.name)}</a>
+        <a href="#!" class="sel-prov" data-key="${p.key}" data-name="${esc(p.name)}">
+          <div>${esc(p.name)}</div>
+          ${p.hint ? `<small class="grey-text">${esc(p.hint)}</small>` : ''}
+        </a>
       </li>`).join('');
   };
 
   /* --- search (debounced, accent-insensitive) --- */
   const searchNow = (q) => {
     const s = norm(q || '');
-    if (s.length < 2) { if (ul) ul.innerHTML = ''; return; }
-    const items = providersCache.filter((p) => norm(p.name).includes(s)).slice(0, 20);
-    render(items);
+    const isCenterCodeQuery = /^\d{4,8}$/.test(String(q || '').trim());
+    if (s.length < 2 && !isCenterCodeQuery) {
+      if (ul) ul.innerHTML = '';
+      return;
+    }
+
+    const fast = buscarCoincidenciasProveedor(q, { limit: 30 });
+    const dedup = new Map();
+    fast.forEach((hit) => {
+      const key = String(hit?.key || '').trim();
+      const name = String(hit?.name || '').trim();
+      if (!key || !name || dedup.has(key)) return;
+      const hint = hit.type === 'center'
+        ? `Centro ${hit.centerCode || '-'}${hit.centerComuna ? ` - ${hit.centerComuna}` : ''}`
+        : hit.sublabel || '';
+      dedup.set(key, { key, name, hint });
+    });
+
+    if (!dedup.size) {
+      const fallback = providersCache
+        .filter((p) => norm(p.name).includes(s))
+        .slice(0, 20);
+      render(fallback);
+      return;
+    }
+
+    render(Array.from(dedup.values()).slice(0, 20));
   };
   const search = (q) => {
     clearTimeout(debounceT);
@@ -158,25 +180,25 @@ export function initAsociacionContactos() {
     }
   });
 
-  // click en resultado → asocia y (si corresponde) guarda disponibilidad
+  // click en resultado -> asocia y (si corresponde) guarda disponibilidad
   ul?.addEventListener('click', async (e) => {
     const a = e.target.closest('a.sel-prov');
     if (!a) return;
     await asociarAProveedor(a.dataset.key, a.dataset.name);
   });
 
-  // crear empresa nueva con el texto actual → idem
+  // crear empresa nueva con el texto actual -> idem
   btnCrear?.addEventListener('click', async (e) => {
     e.preventDefault();
     const name = (input?.value || '').trim();
     if (name.length < 2) {
-      M.toast?.({ html: 'Escribe un nombre (mín 2 letras)' });
+      M.toast?.({ html: 'Escribe un nombre (min 2 letras)' });
       return;
     }
     await asociarAProveedor(slug(name), name);
   });
 
-  // quitar empresa (y limpiar centro) — usar PATCH seguro
+  // quitar empresa (y limpiar centro) - usar PATCH seguro
   btnQuitar?.addEventListener('click', async (e) => {
     e.preventDefault();
     const id = state.asociarContactoId;
@@ -202,7 +224,7 @@ export function initAsociacionContactos() {
 
   // Cuando abran el modal desde Personas
   document.addEventListener('asociar-open', () => {
-    providersCache = buildProvidersIndex();       // refresca índice
+    providersCache = buildProvidersIndex();       // refresca indice
     if (input) input.value = '';                  // limpia input
     if (ul) ul.innerHTML = '';                    // limpia lista
     // defaults de disponibilidad
@@ -212,7 +234,7 @@ export function initAsociacionContactos() {
     input?.focus();
   });
 
-  // Si se recargan contactos o centros, reconstruye índice
+  // Si se recargan contactos o centros, reconstruye indice
   document.addEventListener('reload-tabla-contactos', () => { providersCache = buildProvidersIndex(); });
   document.addEventListener('centros:loaded', () => { providersCache = buildProvidersIndex(); });
 }
@@ -232,14 +254,14 @@ async function asociarAProveedor(proveedorKey, proveedorNombre) {
     await apiPatchContactoSafe(id, {
       proveedorKey: key,
       proveedorNombre: name,
-      // limpia centro hasta que lo seleccionen explícitamente
+      // limpia centro hasta que lo seleccionen explicitamente
       centroId: null,
       centroCodigo: null,
       centroComuna: null,
       centroHectareas: null,
     });
 
-    // 2) (Opcional) Guarda disponibilidad en 'asignaciones' si el usuario marcó el checkbox
+    // 2) (Opcional) Guarda disponibilidad en 'asignaciones' si el usuario marco el checkbox
     await saveAsignacionIfChecked({ proveedorKey: key, contactoId: id });
 
     // 3) Refresca UI
@@ -254,8 +276,5 @@ async function asociarAProveedor(proveedorKey, proveedorNombre) {
 }
 
 function cerrarModal() {
-  const modal = document.getElementById('modalAsociar');
-  if (modal && window.M && M.Modal) {
-    (M.Modal.getInstance(modal) || M.Modal.init(modal, {})).close();
-  }
+  getModalInstance('modalAsociar')?.close();
 }

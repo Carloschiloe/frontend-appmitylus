@@ -3,103 +3,470 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mitylus · Abastecimiento</title>
+  <title>Abastecimiento de MMPP – Choritos</title>
 
-  <!-- Tipografía & Iconos -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <!-- Google Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-  <!-- Materialize (Legacy needed for modals/tabs) -->
+  <!-- Materialize -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
 
-  <!-- Tailwind 4 Core -->
-  <link rel="stylesheet" href="/spa-mmpp/index.css" />
-  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=2">
-</head>
-<body class="mmpp-layout bg-slate-50 min-h-screen">
+  <!-- SPA styles -->
+  <link rel="stylesheet" href="/css/index-modern.css?v=7">
+  <link rel="stylesheet" href="/css/app-shell.css?v=1">
+  <link rel="stylesheet" href="/css/mmpp-ui.css?v=1">
+  <link rel="stylesheet" href="/css/contactos.css?v=20">
+  <link rel="stylesheet" href="/css/interacciones.css?v=10">
+  <link rel="stylesheet" href="/css/contactos-tabla.css?v=7">
+  <link rel="stylesheet" href="/css/contactos-form.css?v=1">
+  <link rel="stylesheet" href="/css/resumen-semanal.css?v=2">
+  <link rel="stylesheet" href="/js/abastecimiento/visitas/fotos/styles.css">
+  <link rel="stylesheet" href="/css/modals-modern.css?v=2">
 
-  <div id="mmppNavMount"></div>
-
-  <main class="mmpp-main flex-1 flex flex-col">
-    
-    <!-- Modern Header -->
-    <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 px-4 gap-4">
-      <div>
-        <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Gestión de Abastecimiento</h2>
-        <p class="text-slate-500 mt-1">Empresas, visitas a cultivos y agenda de contactos</p>
-      </div>
-      <div class="flex items-center gap-3">
-        <div class="px-4 py-2 bg-brand-600/10 text-brand-600 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2">
-          <i class="material-icons text-sm">event</i> <span id="badgeSemanaActual">Semana --</span>
+  <style>
+    /* Force visibility and layout rules */
+    .am-panel-view { display: none !important; }
+    .am-panel-view.active { display: block !important; }
+    .am-panel-view.active .am-tab-grid-2 { display: flex !important; gap: 20px; }
+    .app-modal-modern .app-modal-body { overflow-y: auto !important; max-height: 520px; }
+  </style></head>
+<body class="contactos-page">
+  <div class="layout">
+    <aside class="sidebar" aria-label="Navegacion principal">
+      <div class="brand">
+        <span class="brand-mark">AM</span>
+        <div>
+          <p class="brand-title">Abastecimiento MMPP</p>
+          <p class="brand-sub">Control operativo</p>
         </div>
-        <a href="../categorias.html" class="p-2 text-slate-400 hover:text-slate-600 transition-colors">
-          <i class="material-icons">close</i>
-        </a>
+      </div>
+
+      <div id="sideNav" class="menu" role="navigation" aria-label="Menu lateral principal">
+        <section class="menu-group" data-group="dashboard">
+          <button class="menu-head" type="button" data-toggle-group="dashboard">
+            <span class="menu-head-text"><i class="bi bi-speedometer2"></i> Dashboard</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+          <div class="submenu">
+            <a href="/index.html#dashboard-home"><i class="bi bi-house-door"></i> Inicio</a>
+            <a href="/index.html#dashboard-kpi"><i class="bi bi-graph-up"></i> KPIs</a>
+          </div>
+        </section>
+
+        <section class="menu-group" data-group="proveedores">
+          <button class="menu-head" type="button" data-toggle-group="proveedores">
+            <span class="menu-head-text"><i class="bi bi-buildings"></i> Proveedores</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+          <div class="submenu">
+            <a href="/html/Centros/index.html#tab-centros"><i class="bi bi-grid-1x2"></i> Centros</a>
+            <a href="/html/Centros/index.html#tab-mapa"><i class="bi bi-geo-alt"></i> Mapa de Centros</a>
+          </div>
+        </section>
+
+        <section class="menu-group" data-group="biomasa">
+          <button class="menu-head" type="button" data-toggle-group="biomasa">
+            <span class="menu-head-text"><i class="bi bi-droplet-half"></i> Biomasa</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+          <div class="submenu">
+            <a href="/html/Abastecimiento/asignacion/inventario_mmpp.html"><i class="bi bi-box-seam"></i> Inventario MMPP</a>
+          </div>
+        </section>
+
+        <section class="menu-group is-open has-active-link" data-group="gestion">
+          <button class="menu-head" type="button" data-toggle-group="gestion">
+            <span class="menu-head-text"><i class="bi bi-kanban"></i> Gestion</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+          <div class="submenu">
+            <a href="#tab-gestion" data-tab-link><i class="bi bi-house-gear"></i> Bandeja <span class="menu-badge-wrap"><span id="sbBadgeOverdue" class="menu-badge warn">V 0</span><span id="sbBadgeToday" class="menu-badge ok">H 0</span></span></a>
+            <a href="#tab-registro" data-tab-link><i class="bi bi-pencil-square"></i> Registro</a>
+            <a href="#tab-consulta" data-tab-link><i class="bi bi-table"></i> Consulta</a>
+          </div>
+        </section>
+
+        <section class="menu-group" data-group="historial">
+          <button class="menu-head" type="button" data-toggle-group="historial">
+            <span class="menu-head-text"><i class="bi bi-clock-history"></i> Historial</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+          <div class="submenu">
+            <a href="/html/Abastecimiento/historial/index.html"><i class="bi bi-journal-text"></i> Historial de gestiones</a>
+            <a href="/html/Abastecimiento/asignacion/resumen_mmpp.html"><i class="bi bi-diagram-3"></i> Trazabilidad por proveedor</a>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <main class="content contactos-main-shell">
+      <div class="contactos-main">
+        <div class="mmpp-wrap">
+    <!-- Header / Hero -->
+    <header class="mmpp-hero hero-spacing">
+      <div>
+        <h1>Abastecimiento de MMPP</h1>
+        <p>Proveedores, visitas a cultivos y agenda de contactos</p>
+      </div>
+      <div class="hero-badges">
+        <div class="mmpp-badge">
+          <i class="material-icons icon-18">inventory_2</i> Gestión unificada
+        </div>
+        <div class="mmpp-badge week-badge" id="badgeSemanaActual" aria-live="polite">
+          <i class="material-icons icon-18">event</i>
+          <span>Semana —</span>
+        </div>
       </div>
     </header>
 
-    <!-- Tabs Container -->
-    <div class="px-4 flex-1 flex flex-col">
-      <ul id="tabs" class="tabs transparent mb-6" style="border:none">
-        <li class="tab"><a class="active px-6 font-bold text-sm" href="#tab-contactos">Empresas</a></li>
-        <li class="tab"><a class="px-6 font-bold text-sm" href="#tab-visitas">Visitas</a></li>
-        <li class="tab"><a class="px-6 font-bold text-sm" href="#tab-personas">Agenda</a></li>
-        <li class="tab"><a class="px-6 font-medium text-sm" href="#tab-interacciones">Interacciones</a></li>
-        <li class="tab"><a class="px-6 font-medium text-sm" href="#tab-resumen">Resumen</a></li>
+    <!-- Tabs (corregido: sin col sX y con aria-controls) -->
+    <div class="card tabs-card">
+      <ul id="tabs" class="tabs tabs-pad">
+        <li class="tab"><a class="active" href="#tab-gestion" aria-controls="tab-gestion">Bandeja</a></li>
+        <li class="tab"><a href="#tab-registro" aria-controls="tab-registro">Registro</a></li>
+        <li class="tab"><a href="#tab-consulta" aria-controls="tab-consulta">Consulta</a></li>
+        <li class="tab tab-hidden"><a href="#tab-contactos" aria-controls="tab-contactos">Proveedores</a></li>
+        <li class="tab tab-hidden"><a href="#tab-visitas" aria-controls="tab-visitas">Visitas a Cultivos</a></li>
+        <li class="tab tab-hidden"><a href="#tab-personas" aria-controls="tab-personas">Agenda de Contactos</a></li>
+        <li class="tab tab-hidden"><a href="#tab-muestreos" aria-controls="tab-muestreos">Muestreos</a></li>
+        <li class="tab tab-hidden"><a href="#tab-interacciones" aria-controls="tab-interacciones">Interacciones</a></li>
+        <li class="tab tab-hidden"><a href="#tab-resumen" aria-controls="tab-resumen">Resumen (semana/mes)</a></li>
       </ul>
-
-      <!-- Legacy Sections Wrapper -->
-      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex-1 overflow-auto">
-        
-        <!-- EMPRESAS -->
-        <section id="tab-contactos">
-          <div class="flex flex-wrap justify-between gap-4 mb-6">
-            <button id="btnOpenContactoModal" class="flex items-center gap-2 px-6 py-3 bg-brand-600 text-white rounded-2xl font-bold text-sm hover:bg-brand-700 transition-all shadow-lg shadow-brand-600/20">
-              <i class="material-icons text-lg">add_circle</i> Registrar Contacto
-            </button>
-            <div class="flex gap-2 flex-grow max-w-xl">
-              <input id="searchContactos" class="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-600/20 outline-none transition-all" placeholder="Buscar por proveedor o centro...">
-            </div>
-          </div>
-          <table id="tablaContactos" class="display w-full text-sm">
-            <thead>
-              <tr class="text-slate-400 uppercase text-[10px] font-bold tracking-widest border-b border-slate-100">
-                <th class="py-4 px-2">Semana</th>
-                <th class="py-4 px-2">Fecha</th>
-                <th class="py-4 px-2">Proveedor</th>
-                <th class="py-4 px-2">Centro</th>
-                <th class="py-4 px-2">Tons</th>
-                <th class="py-4 px-2">Responsable</th>
-                <th class="py-4 px-2">Acciones</th>
-              </tr>
-            </thead>
-            <tbody class="text-slate-600"></tbody>
-          </table>
-        </section>
-
-        <!-- (Other sections simplified for structure, but functionally identical to original) -->
-        <section id="tab-visitas" class="hidden">
-           <table id="tablaVisitas" class="display w-full"><thead><tr><th>Sem.</th><th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Acciones</th></tr></thead><tbody></tbody></table>
-        </section>
-        
-        <section id="tab-personas" class="hidden">
-           <table id="tablaPersonas" class="display w-full"><thead><tr><th>Nombre</th><th>Empresa</th><th>Acciones</th></tr></thead><tbody></tbody></table>
-        </section>
-
-        <section id="tab-interacciones" class="hidden">
-          <div id="interacciones-root"></div>
-        </section>
-
-        <section id="tab-resumen" class="hidden">
-          <div id="resumen_print_area"></div>
-        </section>
-
-      </div>
     </div>
 
-          Revisión, filtros y exportación de visitas (la creación sigue en Contactos).
+    <!-- GESTION: INICIO OPERATIVO -->
+    <section id="tab-gestion" class="col s12">
+      <div class="mmpp-card section-card gestion-home">
+        <div class="gestion-home-head">
+          <h5>Centro de Gestión</h5>
+          <p>Acciones rápidas y navegación operacional para registrar la gestión diaria sin fricción.</p>
+          <div class="gestion-focus" role="group" aria-label="Modo de foco de bandeja">
+            <button type="button" class="gestion-focus-btn is-active" data-gestion-focus="all">Todo</button>
+            <button type="button" class="gestion-focus-btn" data-gestion-focus="urgent">Urgente</button>
+            <button type="button" class="gestion-focus-btn" data-gestion-focus="today">Hoy</button>
+            <button type="button" class="gestion-focus-btn" data-gestion-focus="next">Próximos</button>
+            <button type="button" class="gestion-focus-btn" data-gestion-focus="nodate">Sin fecha</button>
+            <button type="button" class="gestion-focus-btn" data-gestion-focus="muestras">Solo muestras</button>
+          </div>
+          <div id="gestionMuestraStage" class="gestion-muestra-stage is-hidden" role="group" aria-label="Etapa de muestra">
+            <button type="button" class="gestion-stage-btn is-active" data-muestra-stage="all">Todas</button>
+            <button type="button" class="gestion-stage-btn" data-muestra-stage="recibida">Recibida</button>
+            <button type="button" class="gestion-stage-btn" data-muestra-stage="enviada planta">Enviada planta</button>
+            <button type="button" class="gestion-stage-btn" data-muestra-stage="en analisis">En análisis</button>
+            <button type="button" class="gestion-stage-btn" data-muestra-stage="resultado recibido">Resultado recibido</button>
+          </div>
+          <div class="gestion-head-actions">
+            <button id="gestionResetDismissed" class="dash-btn" type="button">Mostrar gestionados</button>
+          </div>
+        </div>
+
+        <div class="gestion-filters" id="gestionFilters">
+          <select id="gestionFltResponsable" class="browser-default modern-select" aria-label="Filtrar por responsable">
+            <option value="">Todos los responsables</option>
+          </select>
+          <select id="gestionFltFuente" class="browser-default modern-select" aria-label="Filtrar por origen de dato">
+            <option value="">Todas las fuentes</option>
+            <option value="interaccion">Interacciones remotas</option>
+            <option value="contacto">Contactos</option>
+            <option value="visita">Visitas</option>
+          </select>
+          <input id="gestionSearch" class="mmpp-input" type="text" placeholder="Buscar proveedor, contacto o paso...">
+          <button id="gestionClearFilters" class="dash-btn" type="button">Limpiar</button>
+        </div>
+
+        <div id="gestionKpis" class="gestion-kpis">
+          <div class="gestion-kpi"><div class="k">Vencidos</div><div class="v">-</div></div>
+          <div class="gestion-kpi"><div class="k">Hoy</div><div class="v">-</div></div>
+          <div class="gestion-kpi"><div class="k">Próx 7 días</div><div class="v">-</div></div>
+          <div class="gestion-kpi"><div class="k">Sin fecha</div><div class="v">-</div></div>
+        </div>
+
+        <div class="gestion-lanes">
+          <article class="gestion-lane" id="laneWrapOverdue">
+            <h6>Vencidos</h6>
+            <ul id="gestionLaneOverdue" class="gestion-list"><li class="empty">Cargando...</li></ul>
+          </article>
+          <article class="gestion-lane" id="laneWrapToday">
+            <h6>Hoy</h6>
+            <ul id="gestionLaneToday" class="gestion-list"><li class="empty">Cargando...</li></ul>
+          </article>
+          <article class="gestion-lane" id="laneWrapNext">
+            <h6>Próximos 7 días</h6>
+            <ul id="gestionLaneNext" class="gestion-list"><li class="empty">Cargando...</li></ul>
+          </article>
+          <article class="gestion-lane" id="laneWrapNoDate">
+            <h6>Sin fecha</h6>
+            <ul id="gestionLaneNoDate" class="gestion-list"><li class="empty">Cargando...</li></ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-registro" class="col s12">
+      <div class="mmpp-card section-card gestion-home">
+        <div class="gestion-home-head">
+          <h5>Registro operativo</h5>
+          <p>Acciones rápidas para capturar gestión diaria sin entrar a tablas.</p>
+          <p class="registro-subline">Llamadas y reuniones van a Interacciones. Visitas y muestreos van a Terreno.</p>
+        </div>
+
+        <div class="registro-hints" id="registroHints">
+          <div class="registro-hint"><strong>1.</strong> Selecciona proveedor y centro antes de guardar.</div>
+          <div class="registro-hint"><strong>2.</strong> Si defines próximo paso, completa fecha compromiso.</div>
+          <div class="registro-hint"><strong>3.</strong> Usa teléfono y correo válidos para seguimiento.</div>
+        </div>
+
+        <div class="gestion-quick-grid" id="registroQuickGrid">
+          <button id="qaNuevaLlamada" class="mmpp-add qa-btn"><i class="material-icons left icon-18">phone</i>Nueva llamada</button>
+          <button id="qaNuevaVisita" class="mmpp-add qa-btn"><i class="material-icons left icon-18">directions_boat</i>Nueva visita</button>
+          <button id="qaTomarMuestras" class="mmpp-add qa-btn"><i class="material-icons left icon-18">science</i>Flujo de muestra</button>
+          <button id="qaNuevaReunion" class="mmpp-add qa-btn"><i class="material-icons left icon-18">groups</i>Nueva reunión</button>
+          <button id="qaNuevoCompromiso" class="mmpp-add qa-btn"><i class="material-icons left icon-18">event_available</i>Nuevo compromiso</button>
+          <button id="qaNuevoContacto" class="mmpp-add qa-btn"><i class="material-icons left icon-18">person_add</i>Registrar contacto</button>
+        </div>
+
+        <div id="modalMuestreo" class="modal app-modal modal-muestreo">
+          <div class="modal-content">
+        <div class="muestreo-shell" id="muestreoShell">
+          <div class="muestreo-shell-head">
+            <h6>Muestreos MMPP</h6>
+            <div class="segmented muestreo-view-switch" role="group" aria-label="Vista de muestreos">
+              <button type="button" id="btnMuestreoViewForm" class="is-active">Formulario</button>
+              <button type="button" id="btnMuestreoViewSummary">Resumen</button>
+            </div>
+          </div>
+
+          <section id="muestreoFormView">
+            <div class="mu-wizard-head" role="tablist" aria-label="Pasos de muestreo">
+              <button type="button" class="mu-step-btn is-active" data-mu-step="1">1. Base</button>
+              <button type="button" class="mu-step-btn" data-mu-step="2">2. Técnica</button>
+              <button type="button" class="mu-step-btn" data-mu-step="3">3. Categorías</button>
+            </div>
+            <div id="muStepSummary" class="mu-step-summary muestreo-hidden">
+              <span id="muStepSummaryText">-</span>
+              <button type="button" id="btnMuEditBase" class="dash-btn">Editar</button>
+            </div>
+            <input id="muestreoOrigen" type="hidden" value="terreno">
+
+            <section id="muStep1" class="mu-step-panel">
+              <div class="muestreo-route" role="group" aria-label="Ruta de muestra">
+                <button type="button" class="mu-route-btn is-active" data-mu-route="terreno">Toma en terreno</button>
+                <button type="button" class="mu-route-btn" data-mu-route="directa">Recepción directa</button>
+                <button type="button" class="mu-route-btn" data-mu-route="planta">Enviar a planta</button>
+              </div>
+            <p id="muestreoRouteHint" class="muestreo-route-hint">Ruta activa: toma en terreno. Completa datos técnicos del muestreo.</p>
+
+            <form id="muestreoForm" class="muestreo-form-grid">
+              <label>Proveedor
+                <input id="muestreoProveedor" class="mmpp-input" type="text" placeholder="Nombre proveedor" required>
+              </label>
+              <label>Centro
+                <input id="muestreoCentro" class="mmpp-input" type="text" placeholder="Centro / concesión">
+              </label>
+              <label>Línea
+                <input id="muestreoLinea" class="mmpp-input" type="text" placeholder="Ej: Línea 2 o Cosecha">
+              </label>
+              <label>Fecha
+                <input id="muestreoFecha" class="mmpp-input" type="date" required>
+              </label>
+              <label>Responsable
+                <input id="muestreoResponsable" class="mmpp-input" type="text" placeholder="Responsable PG">
+              </label>
+            </form>
+              <div class="mu-nav">
+                <span></span>
+                <button type="button" id="btnMuToStep2" class="mmpp-add">Continuar</button>
+              </div>
+            </section>
+
+            <section id="muStep2" class="mu-step-panel muestreo-hidden">
+            <div id="muestreoTechnicalBlock">
+              <div class="muestreo-kpis-edit">
+                <label>U° x Kg
+                  <input id="muestreoUxKg" class="mmpp-input" type="number" min="0" step="1" placeholder="Unidades por kilo">
+                </label>
+                <label>Peso choritos vivos (kg)
+                  <input id="muestreoPesoVivo" class="mmpp-input" type="number" min="0" step="0.01" placeholder="0.00">
+                </label>
+                <label>Peso carne cocida (kg)
+                  <input id="muestreoPesoCocida" class="mmpp-input" type="number" min="0" step="0.01" placeholder="0.00">
+                </label>
+                <label>R% carne
+                  <input id="muestreoRendimiento" class="mmpp-input" type="text" readonly>
+                </label>
+              </div>
+              <p class="muestreo-note">R% carne = (peso carne cocida / peso choritos vivos) x 100.</p>
+            </div>
+              <div class="mu-nav">
+                <button type="button" id="btnMuBackToStep1" class="dash-btn">Atrás</button>
+                <button type="button" id="btnMuToStep3" class="mmpp-add">Continuar</button>
+              </div>
+            </section>
+
+            <section id="muStep3" class="mu-step-panel muestreo-hidden">
+              <div class="mu-section-title">Selecciona categorías presentes</div>
+              <div class="muestreo-cat-selector" id="muCatSelector"></div>
+              <p class="muestreo-route-hint">El detalle se edita en el panel derecho.</p>
+
+              <div class="muestreo-totals" id="muestreoTotals">
+                <article><span>Total muestra</span><strong id="muTotalMuestra">0.00 %</strong></article>
+                <article><span>Procesable</span><strong id="muProcesable">0.00 %</strong></article>
+                <article><span>Rechazos</span><strong id="muRechazos">0.00 %</strong></article>
+                <article><span>Defectos</span><strong id="muDefectos">0.00 %</strong></article>
+              </div>
+
+            <div class="muestreo-actions">
+              <button type="button" id="btnMuBackToStep2" class="dash-btn">Atrás</button>
+              <button type="button" id="btnMuestreoClear" class="dash-btn">Limpiar</button>
+              <button type="button" id="btnMuestreoSave" class="mmpp-add">Guardar muestreo</button>
+            </div>
+            </section>
+          </section>
+
+          <section id="muestreoSummaryView" class="muestreo-hidden">
+            <div class="muestreo-summary-filters">
+              <input id="muResumenBuscar" class="mmpp-input" type="text" placeholder="Buscar proveedor o centro...">
+              <select id="muResumenPeriodo" class="browser-default modern-select">
+                <option value="all">Todo</option>
+                <option value="week">Semana actual</option>
+                <option value="month">Mes actual</option>
+                <option value="year">Año actual</option>
+              </select>
+            </div>
+
+            <div class="muestreo-summary-kpis">
+              <article><span>Muestreos</span><strong id="muKpiCount">0</strong></article>
+              <article><span>Prom. R% carne</span><strong id="muKpiRend">0%</strong></article>
+              <article><span>Prom. U° x Kg</span><strong id="muKpiUxKg">0</strong></article>
+              <article><span>Prom. rechazos</span><strong id="muKpiRech">0%</strong></article>
+            </div>
+
+            <div class="muestreo-topcats" id="muTopCats"></div>
+
+            <div class="muestreo-table-wrap">
+              <table class="muestreo-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Proveedor</th>
+                    <th>Centro</th>
+                    <th>Línea</th>
+                    <th>R% carne</th>
+                    <th>U° x Kg</th>
+                    <th>Procesable</th>
+                    <th>Rechazos</th>
+                  </tr>
+                </thead>
+                <tbody id="muResumenBody">
+                  <tr><td colspan="8" class="muted">Sin muestreos registrados.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+          </div>
+          <div class="modal-footer modal-actions">
+            <button type="button" id="btnMuestreoCloseMain" class="btn-flat">Cerrar</button>
+          </div>
+        </div>
+        <div id="modalMuestreoItems" class="modal app-modal modal-muestreo-side">
+          <div class="modal-content">
+            <div class="mu-section-title">Detalle de ítems seleccionados</div>
+            <p class="mu-side-help">Ingresa valores base por item. El <strong>% se calcula automaticamente</strong> y no se puede editar.</p>
+            <div class="mu-cat-editor-list" id="muCatEditorList">
+              <div class="muted">Selecciona una categoría para comenzar.</div>
+            </div>
+          </div>
+          <div class="modal-footer modal-actions mu-side-actions">
+            <button type="button" id="btnMuestreoSaveSide" class="mmpp-add">Guardar muestreo</button>
+            <button type="button" id="btnMuestreoCloseSide" class="btn-flat">Cerrar panel</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-consulta" class="col s12">
+      <div class="mmpp-card section-card gestion-home">
+        <div class="gestion-home-head">
+          <h5>Consulta de información</h5>
+          <p>Abre solo la tabla que necesites para no sobrecargar la vista.</p>
+          <p class="consulta-subline">Tip: parte en Visitas pendientes para ejecutar seguimiento diario.</p>
+        </div>
+        <div class="gestion-jump-grid">
+          <a href="#tab-contactos" class="gestion-jump" data-open-consulta-panel="#tab-contactos">Proveedores <span id="consultaCountEmpresas" class="consulta-count">0</span></a>
+          <a href="#tab-visitas" class="gestion-jump" data-open-consulta-panel="#tab-visitas" data-consulta-preset="visitas-pendientes">Visitas pendientes <span id="consultaCountVisitas" class="consulta-count">0</span></a>
+          <a href="#tab-personas" class="gestion-jump" data-open-consulta-panel="#tab-personas">Agenda <span id="consultaCountAgenda" class="consulta-count">0</span></a>
+          <a href="#tab-muestreos" class="gestion-jump" data-open-consulta-panel="#tab-muestreos">Muestreos <span id="consultaCountMuestreos" class="consulta-count">0</span></a>
+          <a href="#tab-interacciones" class="gestion-jump" data-open-consulta-panel="#tab-interacciones">Interacciones remotas <span id="consultaCountInteracciones" class="consulta-count">0</span></a>
+          <a href="#tab-resumen" class="gestion-jump" data-open-consulta-panel="#tab-resumen">Resumen <span id="consultaCountResumen" class="consulta-count">0</span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- EMPRESAS -->
+    <section id="tab-contactos" class="col s12">
+      <div class="mmpp-card section-card">
+        <div class="consulta-panel-head">
+          <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Consulta</button>
+          <h6>Proveedores</h6>
+          <span id="estadoFiltroContactos" class="consulta-filter-state">Sin filtros</span>
+        </div>
+        <div id="contactosV2Root"></div>
+
+        <div class="table-toolbar toolbar-wrap">
+          <div class="left left-actions">
+            <button id="btnOpenContactoModal" class="mmpp-add">
+              <i class="material-icons left icon-18">record_voice_over</i> Registrar contacto
+            </button>
+            <!-- (El botón general de "Asignar biomasa semi-cerrada" fue eliminado) -->
+          </div>
+          <div id="filtrosContactos" class="filtros-row filtros-grow">
+            <select id="fltSemana" class="browser-default modern-select" aria-label="Filtrar por semana">
+              <option value="">Semana…</option>
+            </select>
+            <select id="fltComuna" class="browser-default modern-select" aria-label="Filtrar por comuna">
+              <option value="">Comuna…</option>
+            </select>
+            <select id="fltResp" class="browser-default modern-select" aria-label="Filtrar por responsable">
+              <option value="">Responsable…</option>
+              <option>Claudio Alba</option>
+              <option>Patricio Alvarez</option>
+              <option>Carlos Avendaño</option>
+            </select>
+            <input id="searchContactos" class="mmpp-input" placeholder="Buscar…" aria-label="Buscar en la tabla">
+          </div>
+        </div>
+
+        <div class="mmpp-table-wrap">
+          <table id="tablaContactos" class="display mmpp table-full">
+            <thead>
+              <tr>
+                <th>Semana</th>
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th>Centro</th>
+                <th>Tons</th>
+                <th>Responsable</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VISITAS -->
+    <section id="tab-visitas" class="col s12">
+      <div class="mmpp-card section-card">
+        <div class="consulta-panel-head">
+          <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Consulta</button>
+          <h6>Visitas a Cultivos</h6>
+          <span id="estadoFiltroVisitas" class="consulta-filter-state">Sin filtros</span>
+        </div>
+        <div class="muted mb-8">
+          Revisión, filtros y exportación de visitas en terreno (incluye muestreo).
         </div>
 
         <div class="visitas-toolbar">
@@ -123,7 +490,7 @@
         </div>
 
         <div class="mmpp-table-wrap">
-          <table id="tablaVisitas" class="display mmpp" style="width:100%">
+          <table id="tablaVisitas" class="display mmpp table-full">
             <thead>
               <tr>
                 <th>Sem.</th>
@@ -144,9 +511,14 @@
 
     <!-- AGENDA DE CONTACTOS -->
     <section id="tab-personas" class="col s12">
-      <div class="mmpp-card" style="margin-bottom:12px">
+      <div class="mmpp-card section-card">
+        <div class="consulta-panel-head">
+          <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Consulta</button>
+          <h6>Agenda de Contactos</h6>
+          <span id="estadoFiltroPersonas" class="consulta-filter-state">Sin filtros</span>
+        </div>
         <div class="table-toolbar">
-          <div class="left" style="display:flex;gap:8px;flex-wrap:wrap">
+          <div class="left left-actions">
             <button id="btnOpenPersonaModal" class="mmpp-add">
               <i class="material-icons left">person_add</i> Registrar persona
             </button>
@@ -158,7 +530,7 @@
           </div>
         </div>
         <div class="mmpp-table-wrap">
-          <table id="tablaPersonas" class="display mmpp" style="width:100%">
+          <table id="tablaPersonas" class="display mmpp table-full">
             <thead>
               <tr>
                 <th>Fecha</th>
@@ -166,7 +538,6 @@
                 <th>Teléfono(s)</th>
                 <th>Email</th>
                 <th>Comuna</th>
-                <th>Empresa</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -176,290 +547,405 @@
       </div>
     </section>
 
+    <!-- MUESTREOS -->
+    <section id="tab-muestreos" class="col s12">
+      <div class="mmpp-card section-card">
+        <div class="consulta-panel-head">
+          <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Consulta</button>
+          <h6>Muestreos</h6>
+          <span id="estadoFiltroMuestreos" class="consulta-filter-state">Sin filtros</span>
+        </div>
+        <div class="muted mb-8">
+          Revision consolidada de resultados de muestreo para lectura rapida y comparacion por porcentaje.
+        </div>
+
+        <div class="table-toolbar mu-toolbar">
+          <div class="mu-chip-filters">
+            <div class="mu-chip-group">
+              <span class="mu-chip-title">Ruta</span>
+              <div id="muRutaChips" class="mu-chip-wrap" role="group" aria-label="Filtrar por ruta"></div>
+            </div>
+            <div class="mu-chip-group">
+              <span class="mu-chip-title">Responsable</span>
+              <div id="muRespChips" class="mu-chip-wrap" role="group" aria-label="Filtrar por responsable"></div>
+            </div>
+          </div>
+          <div id="muFiltrosBar" class="mu-filtros-grid">
+            <select id="muFltProveedor" class="browser-default modern-select" aria-label="Filtrar por proveedor">
+              <option value="">Todos los proveedores</option>
+            </select>
+            <select id="muFltContacto" class="browser-default modern-select" aria-label="Filtrar por contacto">
+              <option value="">Todos los contactos</option>
+            </select>
+            <input id="muFltResponsable" type="hidden" value="">
+            <input id="muFltOrigen" type="hidden" value="">
+            <input id="muFltDesde" class="mmpp-input" type="date" aria-label="Fecha desde">
+            <input id="muFltHasta" class="mmpp-input" type="date" aria-label="Fecha hasta">
+            <input id="searchMuestreos" class="mmpp-input" type="text" placeholder="Buscar proveedor o contacto..." aria-label="Buscar en muestreos">
+            <button id="btnMuFltClear" class="dash-btn" type="button">Limpiar</button>
+          </div>
+        </div>
+
+        <div class="mu-kpi-strip" aria-live="polite">
+          <article><span>Muestreos</span><strong id="muTabKpiTotal">0</strong></article>
+          <article><span>Proveedores</span><strong id="muTabKpiProveedores">0</strong></article>
+          <article><span>U° x Kg prom.</span><strong id="muTabKpiUxkg">0</strong></article>
+          <article><span>R% Prom.</span><strong id="muTabKpiRend">0.00 %</strong></article>
+          <article><span>Procesable prom.</span><strong id="muTabKpiProcesable">0.00 %</strong></article>
+          <article><span>Rechazos prom.</span><strong id="muTabKpiRechazos">0.00 %</strong></article>
+          <article><span>Sin asociar</span><strong id="muTabKpiPendientes">0</strong></article>
+        </div>
+
+        <div class="mmpp-table-wrap">
+          <table id="tablaMuestreos" class="display mmpp table-full">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Contacto / Proveedor</th>
+                <th>U° x Kg</th>
+                <th>R% carne</th>
+                <th>Procesable</th>
+                <th>Total rechazos</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div id="modalMuInfo" class="modal app-modal">
+      <div class="modal-content">
+        <h6>Detalle de muestreo</h6>
+        <div id="muInfoBody"></div>
+      </div>
+      <div class="modal-footer modal-actions">
+        <button type="button" class="btn-flat modal-close">Cerrar</button>
+      </div>
+    </div>
+
+    <div id="modalMuRechazo" class="modal app-modal app-modal--wide">
+      <div class="modal-content">
+        <h6>Composicion de rechazos y defectos (%)</h6>
+        <div id="muRechazoBody"></div>
+      </div>
+      <div class="modal-footer modal-actions">
+        <button type="button" class="btn-flat modal-close">Cerrar</button>
+      </div>
+    </div>
+
     <!-- TAB INTERACCIONES (corregido: sin display:none) -->
     <section id="tab-interacciones" class="col s12">
-      <div class="mmpp-card" style="margin-bottom:12px">
+      <div class="mmpp-card section-card">
+        <div class="consulta-panel-head">
+          <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Consulta</button>
+          <h6>Interacciones remotas (no terreno)</h6>
+          <span id="estadoFiltroInteracciones" class="consulta-filter-state">Filtros en panel interno</span>
+        </div>
         <div id="interacciones-root"></div>
       </div>
     </section>
 
-    <!-- MODAL CONTACTO -->
-    <div id="modalContacto" class="modal" aria-hidden="true">
-      <div class="modal-content">
-        <h5>Registrar Contacto</h5>
-
-        <div class="input-field" style="position:relative;">
-          <input type="text" id="buscadorProveedor" list="datalistProveedores" placeholder="Nombre o apellido del proveedor..." autocomplete="off">
-          <label for="buscadorProveedor">Proveedor</label>
-          <datalist id="datalistProveedores"></datalist>
+    <!-- MODAL CONTACTO - FORMATO UNIFICADO PREMIUM -->
+    <div id="modalContacto" class="modal app-modal-modern">
+      <!-- CABECERA CON TABS -->
+      <div class="app-modal-header">
+        <div class="app-modal-header-top">
+          <h5>Registrar Contacto</h5>
+          <button type="button" class="modal-close" style="background:none; border:none; color:#64748b; cursor:pointer; font-size:20px;">&times;</button>
         </div>
-
-        <div class="input-field">
-          <label for="selectCentro" class="active">Centro</label>
-          <select id="selectCentro" class="browser-default modern-select" disabled>
-            <option value="" disabled selected>Selecciona un centro (opcional)</option>
-          </select>
+        <div class="am-tabs-nav">
+          <button type="button" class="am-tab-btn active" data-tab="tabGeneral">
+            <i class="bi bi-buildings"></i> Origen
+          </button>
+          <button type="button" class="am-tab-btn" data-tab="tabContacto">
+            <i class="bi bi-person-badge"></i> Contacto
+          </button>
+          <button type="button" class="am-tab-btn" data-tab="tabGestion">
+            <i class="bi bi-chat-left-dots"></i> Gestión
+          </button>
         </div>
+      </div>
 
-        <input type="hidden" id="proveedorId">
-        <input type="hidden" id="proveedorNombre">
-        <input type="hidden" id="proveedorKey">
-        <input type="hidden" id="centroId">
-        <input type="hidden" id="centroCodigo">
-        <input type="hidden" id="centroComuna">
-        <input type="hidden" id="centroHectareas">
+      <div class="app-modal-body">
+        <form id="formContacto">
+          <!-- Hidden Fields -->
+          <input type="hidden" id="proveedorId">
+          <input type="hidden" id="proveedorNombre">
+          <input type="hidden" id="proveedorKey">
+          <input type="hidden" id="centroId">
+          <input type="hidden" id="centroCodigo">
+          <input type="hidden" id="centroComuna">
+          <input type="hidden" id="centroHectareas">
 
-        <form id="formContacto" autocomplete="off">
-          <div class="row">
-            <div class="input-field col s6">
-              <label for="contactoResponsable" class="active">Responsable PG</label>
-              <select id="contactoResponsable" class="browser-default modern-select" aria-label="Responsable PG">
-                <option value="">—</option>
-                <option value="Claudio Alba">Claudio Alba</option>
-                <option value="Patricio Alvarez">Patricio Alvarez</option>
-                <option value="Carlos Avendaño">Carlos Avendaño</option>
-              </select>
-            </div>
-            <div class="input-field col s6">
-              <input id="vendeActualmenteA" type="text" placeholder="Ej: Camanchaca, Orizon...">
-              <label for="vendeActualmenteA">Vende actualmente a</label>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="input-field col s4">
-              <input id="contactoNombre" type="text" placeholder="Nombre y apellido">
-              <label for="contactoNombre">Nombre del contacto</label>
-            </div>
-            <div class="input-field col s4">
-              <input id="contactoTelefono" type="tel" placeholder="+56 9 1234 5678">
-              <label for="contactoTelefono">Teléfono</label>
-            </div>
-            <div class="input-field col s4">
-              <input id="contactoEmail" type="email" placeholder="correo@dominio.cl">
-              <label for="contactoEmail">Email</label>
-            </div>
-          </div>
-
-          <!-- NUEVO: Localidad / Biomasa / Proveedor nuevo -->
-          <div class="row">
-            <div class="input-field col s4">
-              <input id="contactoLocalidad" type="text" maxlength="20" placeholder="Ej: Putemún">
-              <label for="contactoLocalidad">Localidad (máx. 20)</label>
-            </div>
-            <div class="input-field col s4">
-              <label for="contactoBiomasa" class="active">Biomasa</label>
-              <select id="contactoBiomasa" class="browser-default modern-select" aria-label="Biomasa">
-                <option value="">Seleccione…</option>
-                <option value="Con biomasa">Con biomasa</option>
-                <option value="Sin biomasa">Sin biomasa</option>
-              </select>
-            </div>
-            <div class="input-field col s4" style="display:flex;align-items:center;gap:8px">
-              <label for="contactoProveedorNuevo" class="active" style="margin-right:8px">Proveedor nuevo</label>
-              <label style="display:flex;align-items:center;gap:6px">
-                <input type="checkbox" id="contactoProveedorNuevo" />
-                <span>Es nuevo</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Próximo paso -->
-          <div class="row">
-            <div class="input-field col s6">
-              <label for="contacto_proximoPaso" class="active">Próximo paso</label>
-              <select id="contacto_proximoPaso" class="browser-default modern-select" aria-label="Próximo paso">
-                <option value="" selected>Seleccione…</option>
-                <option value="Nueva visita">Nueva visita</option>
-                <option value="Tomar muestras">Tomar muestras</option>
-                <option value="Negociar precio/volumen">Negociar precio/volumen</option>
-                <option value="Contacto telefónico">Contacto telefónico</option>
-                <option value="Reunión">Reunión</option>
-                <option value="Esperar disponibilidad">Esperar disponibilidad</option>
-                <option value="Sin acción">Sin acción</option>
-              </select>
-            </div>
-            <div class="input-field col s6">
-              <input type="date" id="contacto_proximoPasoFecha" aria-label="Fecha exacta del próximo paso">
-              <label for="contacto_proximoPasoFecha" class="active">Fecha exacta del próximo paso</label>
-            </div>
-          </div>
-
-          <!-- DISPONIBILIDAD MMPP (asignaciones) -->
-          <div class="row" id="asigDisponibilidadBlock">
-            <div class="col s12"><h6 class="grey-text text-darken-2" style="margin:4px 0 8px">Disponibilidad de MMPP (asignaciones)</h6></div>
-
-            <div class="col s12 m4">
-              <div class="input-field">
-                <input id="asigAnio" type="number" min="2020" max="2100">
-                <label for="asigAnio">Año</label>
+          <!-- PESTAÑA 1: ORIGEN -->
+          <div id="tabGeneral" class="am-panel-view active">
+            <div class="am-form-grid">
+              <div class="am-input-group col-12">
+                <label class="am-label" for="buscadorProveedor">Proveedor</label>
+                <input type="text" id="buscadorProveedor" class="am-input" placeholder="Buscar proveedor..." autocomplete="off">
               </div>
-            </div>
 
-            <div class="col s12 m4">
-              <div class="input-field">
-                <select id="asigMes" aria-label="Mes de asignación">
-                  <option value="" selected>Mes…</option>
-                  <option value="1">Enero</option>
-                  <option value="2">Febrero</option>
-                  <option value="3">Marzo</option>
-                  <option value="4">Abril</option>
-                  <option value="5">Mayo</option>
-                  <option value="6">Junio</option>
-                  <option value="7">Julio</option>
-                  <option value="8">Agosto</option>
-                  <option value="9">Septiembre</option>
-                  <option value="10">Octubre</option>
-                  <option value="11">Noviembre</option>
-                  <option value="12">Diciembre</option>
+              <div class="am-input-group col-6">
+                <label class="am-label" for="selectCentro">Centro operativo</label>
+                <select id="selectCentro" class="am-select browser-default" disabled>
+                  <option value="">Sin centro</option>
                 </select>
-                <label for="asigMes">Mes</label>
+              </div>
+
+              <div class="am-input-group col-6">
+                <label class="am-label" for="contactoResponsable">Responsable PG</label>
+                <select id="contactoResponsable" class="am-select browser-default">
+                  <option value="">Seleccione...</option>
+                  <option value="Claudio Alba">Claudio Alba</option>
+                  <option value="Patricio Alvarez">Patricio Alvarez</option>
+                  <option value="Carlos Avendano">Carlos Avendano</option>
+                </select>
+              </div>
+
+              <div class="am-input-group col-6" style="padding: 8px 0;">
+                <label class="checkbox-label" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <input type="checkbox" id="contactoProveedorNuevo" style="width: 18px; height: 18px; margin: 0;">
+                  <span style="font-size: 13px; font-weight: 600; color: #334155;">Proveedor Nuevo</span>
+                </label>
+              </div>
+
+              <div class="am-input-group col-6" style="padding: 8px 0;">
+                <label class="checkbox-label" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <input type="checkbox" id="contactoBiomasa" style="width: 18px; height: 18px; margin: 0;">
+                  <span style="font-size: 13px; font-weight: 600; color: #334155;">Tiene Biomasa</span>
+                </label>
               </div>
             </div>
+          </div>
 
-            <div class="col s12 m4">
-              <div class="input-field">
-                <input id="asigTons" type="number" step="0.01" min="0">
-                <label for="asigTons">Cantidad (ton)</label>
+          <!-- PESTAÑA 2: CONTACTO -->
+          <div id="tabContacto" class="am-panel-view">
+            <div class="am-form-grid">
+              <div class="am-input-group col-12">
+                <label class="am-label" for="contactoNombre">Nombre completo</label>
+                <input id="contactoNombre" class="am-input" type="text" placeholder="Ej: Juan Perez">
+              </div>
+
+              <div class="am-input-group col-6">
+                <label class="am-label" for="contactoTelefono">Teléfono</label>
+                <input id="contactoTelefono" class="am-input" type="tel" placeholder="+569...">
+              </div>
+
+              <div class="am-input-group col-6">
+                <label class="am-label" for="contactoLocalidad">Localidad</label>
+                <input id="contactoLocalidad" class="am-input" type="text" maxlength="20" placeholder="Ej: Chonchi">
+              </div>
+
+              <div class="am-input-group col-12">
+                <label class="am-label" for="contactoEmail">Email personal / Empresa</label>
+                <input id="contactoEmail" class="am-input" type="email" placeholder="correo@ejemplo.com">
               </div>
             </div>
+          </div>
 
-            <div class="col s12">
-              <div id="asigHist" class="card-panel grey lighten-4" style="padding:8px 12px">
-                <span class="grey-text">Sin asignaciones registradas.</span>
+          <!-- PESTAÑA 3: GESTIÓN (Doble Columna) -->
+          <div id="tabGestion" class="am-panel-view">
+            <div class="am-tab-grid-2" style="display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; gap: 24px !important; align-items: flex-start !important; width: 100% !important;">
+              <!-- Columna 1: Formulario Gestión -->
+              <div class="am-form-col" style="flex: 0 0 52% !important; max-width: 52% !important; min-width: 0 !important;">
+                <div class="am-form-grid" style="display: grid !important; grid-template-columns: repeat(12, 1fr) !important; gap: 16px 12px !important;">
+                  <div class="am-input-group col-6">
+                    <label class="am-label" for="contacto_proximoPaso" style="font-size: 10px;">Próximo paso</label>
+                    <select id="contacto_proximoPaso" class="am-select browser-default" style="height: 36px; padding: 0 8px;">
+                      <option value="">Ninguno</option>
+                      <option value="Nueva visita">Nueva visita</option>
+                      <option value="Tomar muestras">Tomar muestras</option>
+                      <option value="Negociar precio/volumen">Negociar precio</option>
+                      <option value="Contacto telefonico">Llamar</option>
+                      <option value="Reunion">Reunión</option>
+                    </select>
+                  </div>
+
+                  <div class="am-input-group col-6">
+                    <label class="am-label" for="contacto_proximoPasoFecha" style="font-size: 10px;">Fecha</label>
+                    <input type="date" id="contacto_proximoPasoFecha" class="am-input" style="height: 36px; padding: 0 8px;">
+                  </div>
+
+                  <div class="am-input-group col-12">
+                    <label class="am-label" for="vendeActualmenteA" style="font-size: 10px;">Observaciones y acuerdos</label>
+                    <textarea id="vendeActualmenteA" class="am-input" style="height: 42px; padding: 10px; resize: none;" maxlength="160" placeholder="Notas del contacto..."></textarea>
+                  </div>
+
+                  <div class="am-section-title" style="margin-top: 8px; font-size: 12px; padding-bottom: 4px;">
+                    <i class="bi bi-plus-circle"></i> Nuevo Volumen
+                  </div>
+
+                  <div class="am-input-group col-4">
+                    <label class="am-label" style="font-size: 10px;">Tons</label>
+                    <input id="asigTons" class="am-input" type="number" step="0.01" placeholder="0.00" style="height: 36px;">
+                  </div>
+                  
+                  <div class="am-input-group col-4">
+                    <label class="am-label" style="font-size: 10px;">Año</label>
+                    <input id="asigAnio" class="am-input" type="number" placeholder="2026" style="height: 36px;">
+                  </div>
+                  
+                  <div class="am-input-group col-4">
+                    <label class="am-label" style="font-size: 10px;">Mes</label>
+                    <select id="asigMes" class="am-select browser-default" style="height: 36px; padding: 0 8px;">
+                      <option value="1">Enero</option>
+                      <option value="2">Febrero</option>
+                      <option value="3">Marzo</option>
+                      <option value="4">Abril</option>
+                      <option value="5">Mayo</option>
+                      <option value="6">Junio</option>
+                      <option value="7">Julio</option>
+                      <option value="8">Agosto</option>
+                      <option value="9">Septiembre</option>
+                      <option value="10">Octubre</option>
+                      <option value="11">Noviembre</option>
+                      <option value="12">Diciembre</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Columna 2: Historial de Biomasa -->
+              <div class="am-history-col" style="flex: 1 1 auto !important; border-left: 1px solid #f1f5f9 !important; padding-left: 20px !important; min-width: 0 !important;">
+                <div class="am-section-title" style="margin-top: 0; font-size: 12px; margin-bottom: 8px;">
+                  <i class="bi bi-clock-history"></i> Historial de Biomasa
+                </div>
+                <div id="asigHist" class="am-biomass-history-list" style="overflow-y: auto !important; max-height: 480px !important; padding-right: 5px !important;">
+                  <!-- JS poblara esto con la tabla original asigHist -->
+                  <div class="text-soft p-2">Cargando historial...</div>
+                </div>
               </div>
             </div>
           </div>
         </form>
       </div>
 
-      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:8px;">
-        <button type="button" class="modal-close btn-flat">Cancelar</button>
-        <button class="mmpp-button" type="submit" form="formContacto">
-          <i class="material-icons left">save</i>Guardar
+      <div class="app-modal-footer">
+        <button type="button" class="am-btn am-btn-flat modal-close">CANCELAR</button>
+        <button type="submit" form="formContacto" class="am-btn am-btn-primary">
+          <i class="bi bi-check-lg"></i> GUARDAR CONTACTO
         </button>
       </div>
     </div>
 
-    <div id="modalDetalleContacto" class="modal">
+    <div id="modalDetalleContacto" class="modal app-modal app-modal--wide app-modal--form">
       <div class="modal-content">
         <h5>Detalle del contacto</h5>
         <div id="detalleContactoBody"></div>
       </div>
-      <div class="modal-footer">
-        <button class="mmpp-add modal-close">Cerrar</button>
+      <div class="modal-footer modal-actions">
+        <button type="button" class="mmpp-add modal-close">Cerrar</button>
       </div>
     </div>
 
     <!-- MODAL VISITA -->
-    <div id="modalVisita" class="modal">
+    <div id="modalVisita" class="modal app-modal app-modal--wide app-modal--form modal-interaccion modal-visita">
       <div class="modal-content">
-        <h5>Registrar visita</h5>
-        <form id="formVisita" autocomplete="off">
+        <div class="inter-modal-head">
+          <div class="inter-modal-head-main">
+            <h5>Registrar visita</h5>
+            <span class="inter-type-badge"><i class="material-icons tiny">directions_boat</i>Visita</span>
+          </div>
+          <p>Registra la visita en terreno y define seguimiento en una sola vista.</p>
+        </div>
+
+        <form id="formVisita" class="inter-modal-grid visita-modal-grid" autocomplete="off">
           <input type="hidden" id="visita_proveedorId">
-          <div class="row">
-            <div class="input-field col s4">
-              <input type="date" id="visita_fecha" required>
-              <label for="visita_fecha" class="active">Fecha</label>
-            </div>
-            <div class="input-field col s4">
-              <label for="visita_centroId" class="active">Centro</label>
-              <select id="visita_centroId" class="browser-default" aria-label="Centro visitado">
-                <option value="">Centro visitado (opcional)</option>
-              </select>
-            </div>
-            <div class="input-field col s4">
-              <input id="visita_contacto" type="text" placeholder="Persona contactada">
-              <label for="visita_contacto">Contacto</label>
-            </div>
-          </div>
+          <label class="inter-field-fecha inter-field-short">Fecha
+            <input type="date" id="visita_fecha" class="mmpp-input" required>
+          </label>
+          <label class="inter-field-centro inter-field-short">Centro
+            <select id="visita_centroId" class="browser-default modern-select" aria-label="Centro visitado">
+              <option value="">Centro visitado (opcional)</option>
+            </select>
+          </label>
+          <label class="inter-field-contacto">Contacto
+            <input id="visita_contacto" class="mmpp-input" type="text" placeholder="Persona contactada">
+          </label>
 
-          <div class="row">
-            <div class="input-field col s4">
-              <label for="visita_enAgua" class="active">Muestra</label>
-              <select id="visita_enAgua" class="browser-default" aria-label="¿Toma de Muestras?">
-                <option value="">¿Toma de Muestras?</option>
-                <option>Sí</option>
-                <option>No</option>
-              </select>
-            </div>
-            <div class="input-field col s4">
-              <input id="visita_tonsComprometidas" type="number" step="0.01" min="0" placeholder="Ej: 120">
-              <label for="visita_tonsComprometidas" class="active">Tons comprometidas (opcional)</label>
-            </div>
-            <div class="input-field col s4">
-              <label for="visita_proximoPaso" class="active">Próximo paso</label>
-              <select id="visita_proximoPaso" class="browser-default" aria-label="Próximo paso">
-                <option value="Nueva visita" selected>Nueva visita</option>
-                <option value="Tomar muestras">Tomar muestras</option>
-                <option value="Negociar precio/volumen">Negociar precio/volumen</option>
-                <option value="Contacto telefónico">Contacto telefónico</option>
-                <option value="Esperar disponibilidad">Esperar disponibilidad</option>
-                <option value="Reunión">Reunión</option>
-                <option value="Sin acción">Sin acción</option>
-              </select>
-            </div>
-          </div>
+          <label class="inter-field-estado inter-field-short">Muestra
+            <select id="visita_enAgua" class="browser-default modern-select" aria-label="¿Toma de Muestras?">
+              <option value="">¿Toma de Muestras?</option>
+              <option>Sí</option>
+              <option>No</option>
+            </select>
+          </label>
+          <label class="inter-field-tons inter-field-short">Tons comprometidas (opcional)
+            <input id="visita_tonsComprometidas" class="mmpp-input" type="number" step="0.01" min="0" placeholder="Ej: 120">
+          </label>
+          <label class="inter-field-prox">Próximo paso
+            <select id="visita_proximoPaso" class="browser-default modern-select" aria-label="Próximo paso">
+              <option value="Nueva visita" selected>Nueva visita</option>
+              <option value="Tomar muestras">Tomar muestras</option>
+              <option value="Negociar precio/volumen">Negociar precio/volumen</option>
+              <option value="Contacto telefónico">Contacto telefónico</option>
+              <option value="Esperar disponibilidad">Esperar disponibilidad</option>
+              <option value="Reunión">Reunión</option>
+              <option value="Sin acción">Sin acción</option>
+            </select>
+          </label>
 
-          <div class="row">
-            <div class="input-field col s4">
-              <input type="date" id="visita_proximoPasoFecha" aria-label="Fecha exacta del próximo paso">
-              <label for="visita_proximoPasoFecha" class="active">Fecha exacta del próximo paso</label>
-            </div>
-          </div>
+          <label class="inter-field-fecha-prox inter-field-short">Fecha exacta del próximo paso
+            <input type="date" id="visita_proximoPasoFecha" class="mmpp-input" aria-label="Fecha exacta del próximo paso">
+          </label>
 
-          <div class="input-field">
-            <textarea id="visita_observaciones" class="materialize-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
-            <label for="visita_observaciones">Observaciones</label>
-          </div>
-
-          <div class="right-align" style="display:flex;gap:8px;justify-content:flex-end">
-            <button type="button" class="modal-close btn-flat">Cancelar</button>
-            <button class="mmpp-button" type="submit">
-              <i class="material-icons left">save</i>Guardar visita
-            </button>
-          </div>
+          <label class="span-3 inter-resumen-row">Observaciones
+            <textarea id="visita_observaciones" class="materialize-textarea mmpp-input inter-modal-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
+          </label>
         </form>
+      </div>
+      <div class="modal-footer modal-actions">
+        <button type="button" class="modal-close btn-flat">Cancelar</button>
+        <button class="mmpp-button" type="submit" form="formVisita">
+          <i class="material-icons left">save</i>Guardar visita
+        </button>
       </div>
     </div>
 
-    <div id="modalAsociar" class="modal">
+    <div id="modalAsociar" class="modal app-modal app-modal--form">
       <div class="modal-content">
-        <h5>Asociar a empresa</h5>
+        <h5>Asociar a proveedor</h5>
         <div class="input-field">
-          <input id="empresaSearch" type="text" class="mmpp-input" placeholder="Buscar empresa... (mín. 2 letras)">
+          <input id="empresaSearch" type="text" class="mmpp-input" placeholder="Buscar proveedor o codigo de centro...">
         </div>
-        <ul id="searchResults" class="collection" style="max-height:260px;overflow:auto;"></ul>
+        <ul id="searchResults" class="collection search-results-list"></ul>
       </div>
-      <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
-        <a href="#!" id="btnCrearEmpresa" class="btn-flat">Crear empresa nueva</a>
-        <a href="#!" id="btnQuitarEmpresa" class="btn-flat red-text">Quitar empresa</a>
-        <a href="#!" class="modal-close mmpp-add">Cerrar</a>
+      <div class="modal-footer modal-actions">
+        <button type="button" id="btnCrearEmpresa" class="btn-flat">Crear proveedor nuevo</button>
+        <button type="button" id="btnQuitarEmpresa" class="btn-flat red-text">Quitar proveedor</button>
+        <button type="button" class="modal-close mmpp-add">Cerrar</button>
       </div>
     </div>
 
     <!-- ====================== TAB: Resumen (semana/mes) ====================== -->
     <div id="tab-resumen" class="section">
-      <div class="resumen-toolbar" style="display:flex; gap:12px; align-items:center; justify-content:space-between; margin:8px 0; flex-wrap:wrap">
-        <div style="display:flex; gap:10px; align-items:center;">
+      <div class="consulta-panel-head">
+        <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Consulta</button>
+        <h6>Resumen y compromisos</h6>
+        <span id="estadoFiltroResumen" class="consulta-filter-state">Filtros en panel interno</span>
+      </div>
+      <div class="resumen-toolbar">
+        <div class="resumen-toolbar-left">
           <div class="segmented" id="resumen_period" aria-label="Tipo de período">
             <button data-period="semana" class="is-active" type="button">Semana</button>
             <button data-period="mes" type="button">Mes</button>
           </div>
 
           <div>
-            <label class="grey-text text-darken-1" for="resumen_semana" style="font-size:12px">Semana</label>
-            <select id="resumen_semana" class="browser-default" style="min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Seleccionar semana"></select>
+            <label class="grey-text text-darken-1 resumen-field-label" for="resumen_semana">Semana</label>
+            <select id="resumen_semana" class="browser-default resumen-select" aria-label="Seleccionar semana"></select>
           </div>
 
           <div>
-            <label class="grey-text text-darken-1" for="resumen_mes" style="font-size:12px">Mes</label>
-            <select id="resumen_mes" class="browser-default" style="min-width:140px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Seleccionar mes (YYYY-MM)"></select>
+            <label class="grey-text text-darken-1 resumen-field-label" for="resumen_mes">Mes</label>
+            <select id="resumen_mes" class="browser-default resumen-select" aria-label="Seleccionar mes (YYYY-MM)"></select>
           </div>
 
           <div>
-            <label class="grey-text text-darken-1" for="resumen_resp" style="font-size:12px">Responsable PG</label>
-            <select id="resumen_resp" class="browser-default" style="min-width:180px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff" aria-label="Filtrar por Responsable PG">
+            <label class="grey-text text-darken-1 resumen-field-label" for="resumen_resp">Responsable PG</label>
+            <select id="resumen_resp" class="browser-default resumen-select resp" aria-label="Filtrar por Responsable PG">
               <option value="">Responsable…</option>
             </select>
           </div>
@@ -472,7 +958,7 @@
       </div>
 
       <div id="resumen_print_area">
-        <h5 id="resumen_titulo" style="margin:4px 0">Informe semanal</h5>
+        <h5 id="resumen_titulo" class="resumen-title">Informe semanal</h5>
         <div id="resumen_kpis"></div>
         <div class="row">
           <div class="col s12 m7">
@@ -498,46 +984,27 @@
     </div>
 
     <!-- NUEVO: contenedor del modal de Semi-cerrado -->
-    <div id="modalSemiCerrado" class="modal" aria-hidden="true"></div>
+    <div id="modalSemiCerrado" class="modal app-modal"></div>
 
-  </main>
-
-<!-- Sidebar -->
-<script src="https://unpkg.com/react@18/umd/react.development.js?v=4" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js?v=4" crossorigin></script>
-<script type="module" src="/spa-mmpp/nav.jsx?v=4"></script>
+        </div>
+      </div>
+    </main>
+  </div>
 
 <!-- Libs -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
-<!-- Calendario solo lectura -->
-<script src="/spa-mmpp/mmpp-calendario.js"></script>
-
 <!-- Módulo Interacciones (lazy-mount al abrir la pestaña) -->
-<script type="module" src="/js/abastecimiento/contactos/interacciones/index.js?v=2"></script>
+<script type="module" src="/js/abastecimiento/contactos/interacciones/index.js?v=4"></script>
 
 <!-- Orquestador (carga e inicializa todo, incluido el Resumen) -->
-<script type="module" src="/js/abastecimiento/contactos/index.js?v=12"></script>
+<script type="module" src="/js/abastecimiento/contactos/index.js?v=36"></script>
 
 <!-- Modal de Semi-cerrado (se mantiene porque lo usan los botones por fila) -->
 <script type="module" src="/js/abastecimiento/semi-cerrado/modal.js?v=1"></script>
 
-<!-- Init mínimo (tabs/modals) -->
-<script>
-  document.addEventListener('DOMContentLoaded', function(){
-    const elTabs = document.querySelectorAll('.tabs');
-    if (elTabs.length) M.Tabs.init(elTabs, {});
-    const elModals = document.querySelectorAll('.modal');
-    if (elModals.length) M.Modal.init(elModals, {endingTop: '5%'});
-  });
-</script>
-
 </body>
 </html>
+
+
+

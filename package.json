@@ -1,12 +1,13 @@
 {
   "name": "frontend-appmitylus-main",
   "version": "1.0.0",
-  "main": "inventario-frontend.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "vite",
+    "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev-vite.ps1 -Port 5173",
+    "dev:raw": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint src --ext .js,.jsx",
+    "format": "prettier --write \"src/**/*.{js,jsx,css,html}\""
   },
   "keywords": [],
   "author": "",
@@ -22,17 +23,13 @@
     "react-dom": "^19.2.4",
     "vite": "^8.0.3"
   },
-  "bundleDependencies": [
-    "@vitejs/plugin-react",
-    "axios",
-    "lucide-react",
-    "react",
-    "react-dom",
-    "vite"
-  ],
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@tailwindcss/vite": "^4.2.2",
+    "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.27",
     "postcss": "^8.5.8",
-    "tailwindcss": "^4.2.2"
+    "tailwindcss": "^4.2.2",
+    "vite": "^8.0.3"
   }
 }

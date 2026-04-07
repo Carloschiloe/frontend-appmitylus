@@ -1,5 +1,7 @@
 // /js/abastecimiento/visitas/ui.js
 import { state, $, setVal, slug } from '../contactos/state.js';
+import { escapeHtml, getModalInstance, debounce } from '../contactos/ui-common.js';
+import { createLocalTableController } from '../contactos/local-table.js';
 import { centroCodigoById } from './normalizers.js';
 import { getAll, create, update } from './api.js';
 
@@ -13,54 +15,6 @@ import {
 import { wireActionsGlobalsOnce, manejarAccionVisitaEl } from './actions.js';
 
 console.log('[visitas/ui] cargado');
-
-/* ================= estilos mínimos ================= */
-(function injectStyles(){
-  const css = `
-    .mmpp-table-wrap{ overflow-x:visible!important; }
-
-    #tablaVisitas{ width:100%!important; }
-    #tablaVisitas th, #tablaVisitas td{
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      padding:10px 8px!important; box-sizing:border-box; vertical-align: middle;
-    }
-
-    .v-prov, .v-centro{ display:block; min-width:0; }
-    .v-top{ display:block; font-weight:600; }
-    .v-sub{ display:block; font-size:12px; color:#6b7280; line-height:1.2; }
-
-    #tablaVisitas td:last-child{ overflow:visible!important; text-align:center; }
-    #tablaVisitas td .acts{ display:flex; gap:8px; align-items:center; justify-content:center; }
-    #tablaVisitas td .acts a{
-      display:inline-flex; align-items:center; justify-content:center;
-      width:32px; height:32px; border-radius:8px; border:1px solid #e5e7eb; background:#fff;
-      box-shadow:0 2px 8px rgba(2,6,23,.05); cursor:pointer;
-    }
-    #tablaVisitas td .acts a i{ font-size:18px; line-height:18px; }
-
-    #tablaVisitas td .acts a.mu-red  { border-color:#fecaca; background:#fff1f2; }
-    #tablaVisitas td .acts a.mu-red  i{ color:#dc2626; }
-    #tablaVisitas td .acts a.mu-green{ border-color:#bbf7d0; background:#ecfdf5; }
-    #tablaVisitas td .acts a.mu-green i{ color:#059669; }
-
-    /* Filtros externos */
-    .visitas-filtros{
-      display:flex; gap:12px; align-items:center; flex-wrap:wrap;
-      margin:10px 0 6px;
-    }
-    .visitas-filtros .fld{ display:flex; align-items:center; gap:6px; }
-    .visitas-filtros select{
-      min-width:140px; padding:6px 8px;
-      border:1px solid #e5e7eb; border-radius:8px; background:#fff;
-    }
-  `;
-  if (!document.getElementById('visitas-inline-styles')){
-    const s = document.createElement('style');
-    s.id = 'visitas-inline-styles';
-    s.textContent = css;
-    document.head.appendChild(s);
-  }
-})();
 
 /* ============ parche seguro para toasts que se quedan pegados ============ */
 (function patchToastOnce(){
@@ -78,9 +32,7 @@ console.log('[visitas/ui] cargado');
 })();
 
 /* ================= utils ================= */
-const esc = (s='') => String(s)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+const esc = escapeHtml;
 
 const fmtISO = (d) => {
   const x = (d instanceof Date) ? d : new Date(d);
@@ -90,7 +42,7 @@ const fmtISO = (d) => {
   const dd = String(x.getDate()).padStart(2,'0');
   return `${y}-${m}-${dd}`;
 };
-const trunc = (s='', max=42) => (String(s).length>max ? String(s).slice(0,max-1)+'…' : String(s));
+const trunc = (s='', max=42) => (String(s).length>max ? `${String(s).slice(0,max-1)}...` : String(s));
 
 function getISOWeek(date){
   const d = (date instanceof Date) ? new Date(date) : new Date(date);
@@ -124,6 +76,7 @@ const normalizeEstado = (s='') => {
 // helpers DOM seguros
 const getEl = (sel) => (typeof sel === 'string' ? document.getElementById(sel) : sel);
 const setIf = (sel, prop, val) => { const el = getEl(sel); if (el && prop in el) el[prop] = val; return !!el; };
+const getPasoEl = () => getEl('visita_estado') || getEl('visita_proximoPaso');
 
 /* ============== asegure infraestructura del modal ============== */
 async function ensureVisitaInfra(){
@@ -131,7 +84,7 @@ async function ensureVisitaInfra(){
   let form  = getEl('formVisita');
 
   if (!modal || !form){
-    // intenta cambiar a la pestaña de "Visitas a cultivos" para que se monte el HTML
+    // intenta cambiar a la pestana de "Visitas a cultivos" para que se monte el HTML
     const a = document.querySelector('[href="#tab-visitas"], a[data-target="tab-visitas"]');
     if (a) { try { a.click(); } catch {} }
     // espera un ratito a que el DOM se monte
@@ -144,125 +97,201 @@ async function ensureVisitaInfra(){
     }
   }
 
-  if (modal && !M.Modal.getInstance(modal)) {
-    try { M.Modal.init(modal); } catch {}
+  if (modal) {
+    try { getModalInstance('modalVisita'); } catch {}
   }
   return !!(modal && form);
 }
 
-/* ================= DataTable helpers ================= */
-let dtV = null;
+/* ================= Tabla local (sin DataTables) ================= */
+let visitasListenersBound = false;
+let visitasActionsBound = false;
+let visitasFiltersBound = false;
+let tableCtrlVisitas = null;
+let visitasPreset = '';
 
-function safeAdjust(){
-  if (!dtV) return;
-  try { dtV.columns.adjust().draw(false); } catch {}
+export function forceAdjustVisitas() {}
+
+function ensureLocalTableVisitas() {
+  if (tableCtrlVisitas) return tableCtrlVisitas;
+  tableCtrlVisitas = createLocalTableController({
+    section: '#tab-visitas .mmpp-card',
+    table: '#tablaVisitas',
+    pageSize: 10,
+    emptyColspan: 8,
+    emptyText: 'No hay visitas registradas.',
+    fileName: 'Visitas_Abastecimiento',
+    exportHeaders: ['Semana', 'Fecha', 'Proveedor', 'Contacto', 'Centro', 'Comuna', 'Proximo paso', 'Fecha prox.', 'Tons']
+  });
+  return tableCtrlVisitas;
 }
-const rafThrottle = (fn) => { let t=0; return (...a)=>{ if(t) return; t=requestAnimationFrame(()=>{t=0; fn(...a);}); }; };
-const adjustNow = rafThrottle(safeAdjust);
-export function forceAdjustVisitas(){ adjustNow(); }
 
-/* ================= render tabla (8 columnas) ================= */
-export async function renderTablaVisitas(){
-  const jq = window.jQuery || window.$;
-  let visitas = [];
-  try{
-    visitas = await getAll();
-    state.visitasGuardadas = visitas.slice();
-  }catch(e){
-    console.error('[visitas/ui] getAll error:', e?.message || e);
-    visitas = [];
-  }
+function isEstadoPendiente(rawEstado) {
+  const est = String(rawEstado || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+  if (!est) return false;
+  if (est === 'sin accion' || est === 'cerrado' || est === 'completado' || est === 'finalizado') return false;
+  return true;
+}
 
-  const filas = visitas
+function buildRowsVisitas(visitas) {
+  return visitas
     .slice()
-    .sort((a,b)=> new Date(b.fecha||0) - new Date(a.fecha||0))
-    .map((v)=>{
-      const f      = new Date(v.fecha || Date.now());
-      const semana = getISOWeek(f);
-      const fecha  = fmtISO(f);
-
+    .sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0))
+    .map((v, idx) => {
+      const f = new Date(v.fecha || Date.now());
+      const semana = String(getISOWeek(f));
+      const fecha = fmtISO(f);
       const { empresa, contacto } = proveedorDeVisita(v);
-      const provHTML = `
-        <span class="v-prov" title="${esc(empresa)}${contacto? ' – '+esc(contacto):''}">
-          <span class="v-top">${esc(trunc(empresa,48))||'—'}</span>
-          ${contacto ? `<span class="v-sub">${esc(trunc(contacto,46))}</span>` : ``}
-        </span>`.trim();
-
       const centro = codigoDeVisita(v);
       const comuna = comunaDeVisita(v);
-      const centroHTML = `
-        <span class="v-centro" title="${esc(centro)}${comuna? ' – '+esc(comuna):''}">
-          <span class="v-top">${esc(centro)||'—'}</span>
-          ${comuna ? `<span class="v-sub">${esc(comuna)}</span>` : ``}
-        </span>`.trim();
-
       const proximoPaso = normalizeEstado(v.estado || '');
-      const tons        = (v.tonsComprometidas ?? '') + '';
-
+      const tons = Number(v.tonsComprometidas ?? 0);
       const fpp = v.proximoPasoFecha ? new Date(v.proximoPasoFecha) : null;
       const fppISO = fpp && !Number.isNaN(fpp.getTime()) ? fmtISO(fpp) : '';
-      const fppHTML = fppISO
-        ? `<span data-order="${fpp.getTime()}">${fppISO}</span>`
-        : `<span data-order="-1"></span>`;
-
-      const vid = esc(v._id || '');
-      const tieneMuestreo = String(v.enAgua || '').toLowerCase().startsWith('s');
+      const vid = esc(v._id || `v-${idx}`);
+      const tieneMuestreo = !!v.hasMuestreo || (Number(v.muestreoCount) || 0) > 0;
       const muClase = tieneMuestreo ? 'mu-green' : 'mu-red';
-      const muTitle = tieneMuestreo ? 'Ver muestreo' : 'Sin muestreo';
+      const muTitle = tieneMuestreo ? 'Ver resumen de muestreos' : 'Registrar muestreo';
+
+      const provHTML = `
+        <span class="v-prov" title="${esc(empresa)}${contacto ? ` - ${esc(contacto)}` : ''}">
+          <span class="v-top">${esc(trunc(empresa, 48)) || '-'}</span>
+          ${contacto ? `<span class="v-sub">${esc(trunc(contacto, 46))}</span>` : ''}
+        </span>
+      `.trim();
+
+      const centroHTML = `
+        <span class="v-centro" title="${esc(centro)}${comuna ? ` - ${esc(comuna)}` : ''}">
+          <span class="v-top">${esc(centro) || '-'}</span>
+          ${comuna ? `<span class="v-sub">${esc(comuna)}</span>` : ''}
+        </span>
+      `.trim();
 
       const acciones = `
-        <div class="acts">
-          <a href="#!" class="${muClase}" data-action="muestreo" title="${muTitle}" data-id="${vid}"
+        <div class="acts tbl-actions">
+          <a href="#!" class="tbl-action-btn tbl-act-biomasa ${muClase}" data-action="muestreo" title="${muTitle}" data-id="${vid}"
              onpointerdown="window.__visAction && window.__visAction(this,event)" ontouchstart="window.__visAction && window.__visAction(this,event)" onclick="return false;">
             <i class="material-icons">science</i>
           </a>
-          <a href="#!" data-action="ver" title="Ver visita" data-id="${vid}"
+          <a href="#!" class="tbl-action-btn tbl-act-view" data-action="ver" title="Ver visita" data-id="${vid}"
              onpointerdown="window.__visAction && window.__visAction(this,event)" ontouchstart="window.__visAction && window.__visAction(this,event)" onclick="return false;">
             <i class="material-icons">visibility</i>
           </a>
-          <a href="#!" data-action="editar" title="Editar visita" data-id="${vid}"
+          <a href="#!" class="tbl-action-btn tbl-act-edit" data-action="editar" title="Editar visita" data-id="${vid}"
              onpointerdown="window.__visAction && window.__visAction(this,event)" ontouchstart="window.__visAction && window.__visAction(this,event)" onclick="return false;">
             <i class="material-icons">edit</i>
           </a>
-          <a href="#!" data-action="eliminar" title="Eliminar visita" data-id="${vid}"
+          <a href="#!" class="tbl-action-btn tbl-act-delete" data-action="eliminar" title="Eliminar visita" data-id="${vid}"
              onpointerdown="window.__visAction && window.__visAction(this,event)" ontouchstart="window.__visAction && window.__visAction(this,event)" onclick="return false;">
             <i class="material-icons">delete</i>
           </a>
-        </div>`;
+        </div>
+      `.trim();
 
-      return [
-        esc(String(semana)),                                 // 0 Sem.
-        `<span data-order="${f.getTime()}">${fecha}</span>`,  // 1 Fecha
-        provHTML,                                            // 2 Proveedor
-        centroHTML,                                          // 3 Centro
-        esc(proximoPaso),                                    // 4 Próximo paso
-        fppHTML,                                             // 5 Fecha prox.
-        esc(tons),                                           // 6 Tons
-        acciones                                             // 7 Acciones
-      ];
+      const searchKey = String([semana, fecha, empresa, contacto, centro, comuna, proximoPaso, fppISO].join(' '))
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+
+      return {
+        id: v._id || '',
+        semana,
+        comuna,
+        estado: proximoPaso,
+        searchKey,
+        cells: [
+          esc(semana),
+          `<span data-order="${f.getTime()}">${fecha}</span>`,
+          provHTML,
+          centroHTML,
+          esc(proximoPaso),
+          fppISO ? `<span data-order="${fpp.getTime()}">${fppISO}</span>` : '<span data-order="-1"></span>',
+          esc(tons ? String(tons) : ''),
+          acciones
+        ],
+        export: [
+          semana,
+          fecha,
+          String(empresa || ''),
+          String(contacto || ''),
+          String(centro || ''),
+          String(comuna || ''),
+          String(proximoPaso || ''),
+          String(fppISO || ''),
+          tons ? String(tons) : ''
+        ]
+      };
     });
-
-  const jqOk = jq?.fn?.DataTable;
-  if (dtV && jqOk){
-    dtV.clear();
-    dtV.rows.add(filas).draw(false);
-    return;
-  }
-
-  // Fallback sin DataTables
-  const tbody = $('#tablaVisitas tbody');
-  if (!tbody) return;
-  tbody.innerHTML = filas.length
-    ? filas.map(arr => `<tr>${arr.map(td=>`<td>${td}</td>`).join('')}</tr>`).join('')
-    : '<tr><td colspan="8" style="color:#888">No hay visitas registradas.</td></tr>';
 }
 
-/* ================= helpers: fecha “próximo paso” ================= */
+function filterRowsVisitas(rows) {
+  const sem = String(document.getElementById('fltVisSem')?.value || '').trim();
+  const comuna = String(document.getElementById('fltVisComuna')?.value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+  const q = String(document.getElementById('searchVisitas')?.value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+  return rows.filter((r) => {
+    if (sem && r.semana !== sem) return false;
+    if (comuna) {
+      const rc = String(r.comuna || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+      if (rc !== comuna) return false;
+    }
+    if (visitasPreset === 'visitas-pendientes' && !isEstadoPendiente(r.estado)) return false;
+    if (q && !r.searchKey.includes(q)) return false;
+    return true;
+  });
+}
+
+async function loadVisitas(forceReload = false) {
+  if (!forceReload && Array.isArray(state.visitasGuardadas) && state.visitasGuardadas.length) {
+    return state.visitasGuardadas.slice();
+  }
+  try {
+    const visitas = await getAll();
+    state.visitasGuardadas = visitas.slice();
+    return visitas;
+  } catch (e) {
+    console.error('[visitas/ui] getAll error:', e?.message || e);
+    return [];
+  }
+}
+
+export async function renderTablaVisitas(forceReload = false) {
+  const table = ensureLocalTableVisitas();
+  if (!table) return;
+  const visitas = await loadVisitas(!!forceReload);
+  const rows = buildRowsVisitas(visitas);
+  table.setRows(filterRowsVisitas(rows));
+}
+
+export function setVisitasPreset(preset = '') {
+  visitasPreset = String(preset || '').trim();
+  renderTablaVisitas(false).catch(() => {});
+}
+
+/* ================= helpers: fecha "proximo paso" ================= */
 function toggleProximoPasoFecha(){
-  const sel = getEl('visita_estado');
+  const sel = getPasoEl();
   const fecha = getEl('visita_proximoPasoFecha');
   if (!sel || !fecha) return;
-  const disabled = !sel.value || sel.value === 'Sin acción';
+  const sv = String(sel.value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  const disabled = !sv || sv === 'sin accion';
   fecha.disabled = disabled;
   if (disabled) fecha.value = '';
 }
@@ -271,7 +300,7 @@ function toggleProximoPasoFecha(){
 export async function abrirModalVisita(contacto){
   const ok = await ensureVisitaInfra();
   if (!ok) {
-    console.warn('[visitas/ui] No se encontró infraestructura del modal de visitas.');
+    console.warn('[visitas/ui] No se encontro infraestructura del modal de visitas.');
     M.toast?.({ html:'No se pudo abrir el modal de visitas', classes:'red' });
     return;
   }
@@ -295,7 +324,7 @@ export async function abrirModalVisita(contacto){
     let options = `<option value="">Centro visitado (opcional)</option>`;
     options += centros.map((c)=>`
       <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">
-        ${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}
+        ${(c.code || c.codigo || '')} - ${(c.comuna || 's/comuna')}
       </option>`).join('');
     selectVisita.innerHTML = options;
     selectVisita.value = '';
@@ -308,6 +337,7 @@ export async function abrirModalVisita(contacto){
   setIf('visita_enAgua', 'value', '');
   setIf('visita_tonsComprometidas', 'value', '');
   setIf('visita_estado', 'value', 'Programar nueva visita');
+  setIf('visita_proximoPaso', 'value', 'Nueva visita');
   setIf('visita_observaciones', 'value', '');
   setIf('visita_proximoPasoFecha', 'value', '');
 
@@ -315,11 +345,11 @@ export async function abrirModalVisita(contacto){
 
   resetFotosModal();
   toggleProximoPasoFecha();
-  const selEstado = getEl('visita_estado');
+  const selEstado = getPasoEl();
   if (selEstado) selEstado.addEventListener('change', toggleProximoPasoFecha, { once:true });
 
   const modal = getEl('modalVisita');
-  (M.Modal.getInstance(modal) || M.Modal.init(modal))?.open();
+  if (modal) getModalInstance('modalVisita')?.open();
 }
 
 /* ================= Editar / Ver existente ================= */
@@ -341,7 +371,9 @@ async function abrirEditarVisita(v, readOnly=false){
   setIf('visita_contacto', 'value', v.contacto || '');
   setIf('visita_enAgua', 'value', v.enAgua || '');
   setIf('visita_tonsComprometidas', 'value', v.tonsComprometidas ?? '');
-  setIf('visita_estado', 'value', normalizeEstado(v.estado || 'Programar nueva visita'));
+  const estadoNorm = normalizeEstado(v.estado || 'Programar nueva visita');
+  setIf('visita_estado', 'value', estadoNorm);
+  setIf('visita_proximoPaso', 'value', estadoNorm);
   setIf('visita_observaciones', 'value', v.observaciones || '');
   const fppISO = v.proximoPasoFecha ? fmtISO(v.proximoPasoFecha) : '';
   setIf('visita_proximoPasoFecha', 'value', fppISO);
@@ -357,7 +389,7 @@ async function abrirEditarVisita(v, readOnly=false){
       let options = `<option value="">Centro visitado (opcional)</option>`;
       options += centros.map((c)=>`
         <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">
-          ${(c.code || c.codigo || '')} – ${(c.comuna || 's/comuna')}
+          ${(c.code || c.codigo || '')} - ${(c.comuna || 's/comuna')}
         </option>`).join('');
       selectVisita.innerHTML = options;
       selectVisita.value = v.centroId || '';
@@ -369,11 +401,11 @@ async function abrirEditarVisita(v, readOnly=false){
   await renderGallery(v._id);
 
   toggleProximoPasoFecha();
-  const selEstado = getEl('visita_estado');
+  const selEstado = getPasoEl();
   if (selEstado) selEstado.addEventListener('change', toggleProximoPasoFecha, { once:true });
 
   const modal = getEl('modalVisita');
-  (M.Modal.getInstance(modal) || M.Modal.init(modal))?.open();
+  if (modal) getModalInstance('modalVisita')?.open();
 
   setVisitaModalMode(!!readOnly);
 }
@@ -399,7 +431,7 @@ export function setupFormularioVisita(){
       contacto: getEl('visita_contacto')?.value || null,
       enAgua: getEl('visita_enAgua')?.value || null,
       tonsComprometidas: getEl('visita_tonsComprometidas')?.value ? Number(getEl('visita_tonsComprometidas')?.value) : null,
-      estado: normalizeEstado(getEl('visita_estado')?.value || 'Programar nueva visita'),
+      estado: normalizeEstado(getPasoEl()?.value || 'Programar nueva visita'),
       proximoPasoFecha: getEl('visita_proximoPasoFecha')?.value || null,
       observaciones: getEl('visita_observaciones')?.value || null
     };
@@ -408,20 +440,20 @@ export function setupFormularioVisita(){
       const editId = (form.dataset.editId || '').trim();
       if (editId){
         await update(editId, payload);
-        await renderTablaVisitas(); forceAdjustVisitas();
+        await renderTablaVisitas(true); forceAdjustVisitas();
         window.dispatchEvent(new CustomEvent('visita:updated', { detail:{ id: editId } }));
         M.toast?.({ html:'Visita actualizada', classes:'teal' });
         await handleFotosAfterSave(editId);
       }else{
         const nueva = await create(payload);
-        await renderTablaVisitas(); forceAdjustVisitas();
+        await renderTablaVisitas(true); forceAdjustVisitas();
         window.dispatchEvent(new CustomEvent('visita:created', { detail:{ visita: nueva, contactoId } }));
         M.toast?.({ html:'Visita guardada', classes:'teal' });
         const visitId = (nueva && (nueva._id || nueva.id)) ? (nueva._id || nueva.id) : null;
         await handleFotosAfterSave(visitId);
       }
 
-      (M.Modal.getInstance(getEl('modalVisita')))?.close();
+      getModalInstance('modalVisita')?.close();
       form.reset();
       form.dataset.editId = '';
       setVisitaModalMode(false);
@@ -442,7 +474,8 @@ function setVisitaModalMode(readOnly){
   const btnSave = form.querySelector('button[type="submit"]');
   const fotosActions = document.querySelector('#visita_fotos .fotos-actions');
   const closeBtn = form.closest('.modal-content')?.parentElement?.querySelector('.modal-close');
-  const titleEl = document.querySelector('#modalVisita h5');
+  const titleEl = document.querySelector('#modalVisita .inter-modal-head h5') || document.querySelector('#modalVisita h5');
+  const badgeEl = document.querySelector('#modalVisita .inter-type-badge');
 
   if (readOnly){
     inputs.forEach(el => { if (el.type !== 'button') el.setAttribute('disabled','disabled'); });
@@ -450,12 +483,14 @@ function setVisitaModalMode(readOnly){
     if (fotosActions) fotosActions.style.display = 'none';
     if (closeBtn) closeBtn.textContent = 'Cerrar';
     if (titleEl) titleEl.textContent = 'Detalle de visita';
+    if (badgeEl) badgeEl.innerHTML = '<i class="material-icons tiny">visibility</i>Solo lectura';
   }else{
     inputs.forEach(el => el.removeAttribute('disabled'));
     if (btnSave) btnSave.style.display = '';
     if (fotosActions) fotosActions.style.display = '';
     if (closeBtn) closeBtn.textContent = 'Cancelar';
     if (titleEl) titleEl.textContent = 'Registrar visita';
+    if (badgeEl) badgeEl.innerHTML = '<i class="material-icons tiny">directions_boat</i>Visita';
   }
 }
 
@@ -477,8 +512,8 @@ function ensureFotosBlock(){
         <input id="visita_fotos_input" class="filepick-input" type="file" accept="image/*" multiple>
       </span>
     </div>
-    <div id="visita_fotos_preview" class="fotos-grid" style="margin-top:10px"></div>
-    <div id="visita_fotos_gallery" class="fotos-grid" style="margin-top:10px"></div>
+    <div id="visita_fotos_preview" class="fotos-grid fotos-grid-spaced"></div>
+    <div id="visita_fotos_gallery" class="fotos-grid fotos-grid-spaced"></div>
   `;
 
   const submitBtn = form.querySelector('button[type="submit"]');
@@ -523,29 +558,8 @@ function wireUIEventsOnce(){
 
 /* ====== Filtros externos (Semana y Comuna) ====== */
 function buildOrUpdateFiltros(){
-  const tableEl = document.getElementById('tablaVisitas');
-  const wrap = tableEl?.closest('.card, .mmpp-table-wrap, .container') || document.body;
-  if (!wrap) return;
-
-  // crea barra si no existe
-  let bar = document.getElementById('visitas-filtros-bar');
-  if (!bar){
-    bar = document.createElement('div');
-    bar.id = 'visitas-filtros-bar';
-    bar.className = 'visitas-filtros';
-    bar.innerHTML = `
-      <div class="fld"><label>Semana</label>
-        <select id="fltVisSem"><option value="">Todas</option></select>
-      </div>
-      <div class="fld"><label>Comuna</label>
-        <select id="fltVisComuna"><option value="">Todas</option></select>
-      </div>`;
-    if (tableEl?.parentElement){
-      tableEl.parentElement.insertBefore(bar, tableEl);
-    } else {
-      wrap.prepend(bar);
-    }
-  }
+  const bar = document.getElementById('visitas-filtros-bar');
+  if (!bar) return;
 
   // util: repoblar select sin duplicados
   const repoblar = (sel, values, etiquetaVacia) => {
@@ -575,39 +589,27 @@ function buildOrUpdateFiltros(){
   const semanas = Array.from(semanasSet).map(n=>Number(n)).filter(Number.isFinite).sort((a,b)=>a-b).map(String);
   const comunas = Array.from(comunasSet).sort((a,b)=>a.localeCompare(b,'es'));
 
-  const selSem    = bar.querySelector('#fltVisSem');
+  const selSem = bar.querySelector('#fltVisSem');
   const selComuna = bar.querySelector('#fltVisComuna');
+  const prevSem = selSem?.value || '';
+  const prevComuna = selComuna?.value || '';
 
   repoblar(selSem, semanas, 'Todas');
   repoblar(selComuna, comunas, 'Todas');
-
-  // handlers
-  if (selSem && !selSem.__wired){
-    selSem.__wired = true;
-    selSem.addEventListener('change', ()=>{
-      if (!dtV) return;
-      const val = selSem.value ? `^${selSem.value}$` : '';
-      dtV.column(0).search(val, true, false).draw();
-    });
-  }
-  if (selComuna && !selComuna.__wired){
-    selComuna.__wired = true;
-    selComuna.addEventListener('change', ()=>{
-      if (!dtV) return;
-      // la comuna está renderizada como texto dentro de la columna 3
-      const val = selComuna.value || '';
-      dtV.column(3).search(val, false, true).draw();
-    });
-  }
+  if (selSem) selSem.value = semanas.includes(prevSem) ? prevSem : '';
+  if (selComuna) selComuna.value = comunas.includes(prevComuna) ? prevComuna : '';
 }
 
 /* ================= Init principal ======================= */
 export async function initVisitasTab(forceReload = false) {
-  const jq    = window.jQuery || window.$;
-  const tabla = $('#tablaVisitas');
-  if (!tabla) { console.warn('[visitas/ui] #tablaVisitas no está en el DOM'); return; }
+  let tabla = $('#tablaVisitas');
+  if (!tabla) {
+    await new Promise((r) => setTimeout(r, 50));
+    tabla = $('#tablaVisitas');
+  }
+  if (!tabla) { console.warn('[visitas/ui] #tablaVisitas no esta en el DOM'); return; }
 
-  const HEADERS = ['Sem.', 'Fecha', 'Proveedor', 'Centro', 'Próximo paso', 'Fecha prox.', 'Tons', 'Acciones'];
+  const HEADERS = ['Sem.', 'Fecha', 'Proveedor', 'Centro', 'Proximo paso', 'Fecha prox.', 'Tons', 'Acciones'];
   const thead   = tabla.querySelector('thead') || (() => { const t=document.createElement('thead'); tabla.prepend(t); return t; })();
   const trHead  = thead.querySelector('tr');
   const thCount = trHead ? trHead.children.length : 0;
@@ -619,63 +621,57 @@ export async function initVisitasTab(forceReload = false) {
   wireActionsGlobalsOnce();
   wireUIEventsOnce();
   mountFotosUIOnce();
+  ensureLocalTableVisitas();
 
-  if (jq?.fn?.DataTable && jq.fn.DataTable.isDataTable('#tablaVisitas')) {
-    try { jq('#tablaVisitas').DataTable().destroy(true); } catch {}
-    dtV = null;
-  }
-
-  if (jq && !dtV) {
-    const defs = [
-      { targets: 0, width: 60  },
-      { targets: 1, width: 108 },
-      { targets: 2, width: 280 },
-      { targets: 3, width: 160 },
-      { targets: 4, width: 180 },
-      { targets: 5, width: 128 },
-      { targets: 6, width: 90  },
-      { targets: 7, width: 180, orderable: false, searchable: false },
-    ];
-
-    dtV = jq('#tablaVisitas').DataTable({
-      dom: 'Blfrtip',
-      buttons: [
-        { extend: 'excelHtml5', title: 'Visitas_Abastecimiento' },
-        { extend: 'pdfHtml5',   title: 'Visitas_Abastecimiento', orientation: 'landscape', pageSize: 'A4' },
-      ],
-      order: [[1, 'desc']],
-      paging: true,
-      pageLength: 10,
-      lengthMenu: [[10,25,50,-1],[10,25,50,'Todos']],
-      autoWidth: true,
-      responsive: false,
-      scrollX: false,
-      processing: true,
-      deferRender: true,
-      language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
-      columnDefs: defs,
-      initComplete: () => { buildOrUpdateFiltros(); forceAdjustVisitas(); },
-      drawCallback:  () => forceAdjustVisitas(),
-    });
-
-    // Delegación: acciones por fila
+  if (!visitasActionsBound) {
+    visitasActionsBound = true;
     document.addEventListener('click', (e) => {
       const a = e.target.closest?.('[data-action]');
       if (!a || !a.closest?.('#tablaVisitas')) return;
       e.preventDefault();
       manejarAccionVisitaEl(a);
     }, true);
-
-    window.addEventListener('resize', forceAdjustVisitas);
   }
 
-  await renderTablaVisitas();
+  if (!visitasFiltersBound) {
+    visitasFiltersBound = true;
+    const onFilter = debounce(() => {
+      renderTablaVisitas(false).catch(() => {});
+    }, 120);
+
+    document.getElementById('fltVisSem')?.addEventListener('change', () => {
+      if (visitasPreset) visitasPreset = '';
+      onFilter();
+    });
+    document.getElementById('fltVisComuna')?.addEventListener('change', () => {
+      if (visitasPreset) visitasPreset = '';
+      onFilter();
+    });
+    document.getElementById('searchVisitas')?.addEventListener('input', (e) => {
+      if ((e.target?.value || '').trim() && visitasPreset) visitasPreset = '';
+      onFilter();
+    });
+  }
+
+  await renderTablaVisitas(!!forceReload);
   buildOrUpdateFiltros();
-  forceAdjustVisitas();
 
-  window.addEventListener('visita:created', async () => { await renderTablaVisitas(); buildOrUpdateFiltros(); forceAdjustVisitas(); });
-  window.addEventListener('visita:updated', async () => { await renderTablaVisitas(); buildOrUpdateFiltros(); forceAdjustVisitas(); });
-  window.addEventListener('visita:deleted', async () => { await renderTablaVisitas(); buildOrUpdateFiltros(); forceAdjustVisitas(); });
+  if (!visitasListenersBound) {
+    visitasListenersBound = true;
+    window.addEventListener('visita:created', async () => {
+      await renderTablaVisitas(true);
+      buildOrUpdateFiltros();
+    });
+    window.addEventListener('visita:updated', async () => {
+      await renderTablaVisitas(true);
+      buildOrUpdateFiltros();
+    });
+    window.addEventListener('visita:deleted', async () => {
+      await renderTablaVisitas(true);
+      buildOrUpdateFiltros();
+    });
+  }
 
-  console.log('[visitas/ui] initVisitasTab listo. dtV?', !!dtV);
+  console.log('[visitas/ui] initVisitasTab listo (local table)');
 }
+

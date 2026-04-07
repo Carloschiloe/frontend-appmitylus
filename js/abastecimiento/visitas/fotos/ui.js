@@ -1,8 +1,15 @@
 // /js/abastecimiento/visitas/fotos/ui.js
 import * as fotos from './service.js';
+import { createModalConfirm } from '../../contactos/ui-common.js';
 
 let mounted = false;
 let pendingFiles = [];
+const askDeleteFoto = createModalConfirm({
+  id: 'modalConfirmDeleteFotoVisita',
+  defaultTitle: 'Eliminar foto',
+  defaultMessage: '¿Eliminar esta foto?',
+  acceptText: 'Eliminar'
+});
 
 // Selectores
 const SEL = {
@@ -79,7 +86,8 @@ export async function renderGallery(visitId) {
       e.preventDefault();
       const id = a.dataset.id;
       if (!id) return;
-      if (!confirm('¿Eliminar esta foto?')) return;
+      const ok = await askDeleteFoto('Eliminar foto', '¿Eliminar esta foto?', 'Eliminar');
+      if (!ok) return;
       await fotos.remove(visitId, id);
       await renderGallery(visitId);
       M.toast?.({ html: 'Foto eliminada', displayLength: 1400 });
@@ -164,7 +172,7 @@ function openFotoViewer(src) {
     viewer.className = 'foto-viewer';
     viewer.innerHTML = `
       <img src="${src}">
-      <button class="foto-viewer__close">×</button>
+      <button class="foto-viewer__close">x</button>
     `;
     document.body.appendChild(viewer);
   } else {

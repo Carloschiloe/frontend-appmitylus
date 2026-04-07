@@ -1,7 +1,20 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap");
 
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --app-bg: #f6f7fb;
+  --app-surface: #ffffff;
+  --app-surface-2: #f9fafb;
+  --app-text: #0f172a;
+  --app-muted: #64748b;
+  --app-border: #e2e8f0;
+  --app-border-strong: #cbd5f5;
+  --app-accent: #0f766e;
+  --app-accent-strong: #0f4c5c;
+  --app-accent-soft: #e0f2f1;
+  --app-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  --app-shadow-soft: 0 6px 16px rgba(15, 23, 42, 0.06);
+  font-family: "Manrope", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -10,5 +23,20 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  @apply bg-slate-50 text-slate-900;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: #c7d2fe;
+  color: #1e293b;
+}
+
+:focus-visible {
+  outline: 2px solid #94a3b8;
+  outline-offset: 2px;
 }

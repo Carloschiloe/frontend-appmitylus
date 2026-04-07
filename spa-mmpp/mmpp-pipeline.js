@@ -923,4 +923,15 @@
 
   /* ---------- API pública ---------- */
   global.MMppPipeline = { mount: mount, refresh: renderAll };
+
+  /* ---------- auto mount ---------- */
+  function autoMount(){
+    if (!document.getElementById('mmppPipeline')) return;
+    mount();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', autoMount);
+  } else {
+    autoMount();
+  }
 })(window);

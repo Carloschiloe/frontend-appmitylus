@@ -173,7 +173,7 @@ export function renderCriteriosClasificacion() {
       if (isNaN(unKgMin) || isNaN(unKgMax) || isNaN(rechazoMin) || isNaN(rechazoMax) || isNaN(rdmtoMin) || isNaN(rdmtoMax))
         return M.toast({ html: 'Campos numéricos inválidos' });
       if (unKgMax < unKgMin || rechazoMax < rechazoMin || rdmtoMax < rdmtoMin)
-        return M.toast({ html: 'Máximos no pueden ser menores al mínimo' });
+        return M.toast({ html: 'máximos no pueden ser menores al mínimo' });
 
       const obj = { cliente, unKgMin, unKgMax, rechazoMin, rechazoMax, rdmtoMin, rdmtoMax };
       if (data && editIdx !== null) {
@@ -191,3 +191,5 @@ export function renderCriteriosClasificacion() {
     localStorage.setItem('criteriosClasif', JSON.stringify(criterios));
   }
 }
+
+

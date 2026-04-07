@@ -7,6 +7,7 @@ import {
   apiDeleteVisita,
 } from '../../core/api.js';
 import { normalizeVisita } from './normalizers.js';
+import { fetchJson } from '../contactos/ui-common.js';
 
 const normList = (raw) => {
   const arr = Array.isArray(raw) ? raw : raw?.items || [];
@@ -28,27 +29,22 @@ export async function create(payload) {
 }
 
 /**
- * Fuerza PUT si el servidor rechaza PATCH, o directamente usa PUT si PATCH lanza 500/405.
+ * Fuerza PUT si el servidor rechaza PATCH, o directamente usa PUT si PATCH falla.
  * Mantiene la misma forma de retorno que apiUpdateVisita.
  */
 export async function update(id, payload) {
   try {
     // 1) Intento PATCH (lo que hace hoy core)
     return await apiUpdateVisita(id, payload);
-  } catch (err) {
-    // 2) Fallback robusto a PUT (independiente de la lógica de core/api.js)
+  } catch {
+    // 2) Fallback robusto a PUT
     const url = `/api/visitas/${encodeURIComponent(String(id))}`;
-    const resp = await fetch(url, {
+    return fetchJson(url, {
       method: 'PUT',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (!resp.ok) {
-      let msg = `HTTP ${resp.status}`;
-      try { const j = await resp.json(); if (j?.error) msg = j.error; } catch {}
-      throw new Error(msg);
-    }
-    return resp.json();
   }
 }
 

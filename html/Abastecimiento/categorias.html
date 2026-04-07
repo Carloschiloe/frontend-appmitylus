@@ -3,93 +3,70 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MMPP · Categorías</title>
-  
-  <!-- Tipografía & Iconos -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <title>Abastecimiento · Categorías</title>
 
-  <!-- Tailwind 4 Core -->
-  <link rel="stylesheet" href="/spa-mmpp/index.css" />
+  <link rel="stylesheet" href="/css/app-shell.css?v=1" />
+  <link rel="stylesheet" href="/css/mmpp-ui.css?v=1" />
+
 </head>
-<body class="mmpp-layout bg-slate-50 min-h-screen">
-
-  <!-- Sidebar Mount -->
-  <div id="mmppNavMount"></div>
-
-  <!-- Contenido Principal -->
-  <main class="mmpp-main flex-1 flex flex-col">
-    
-    <!-- Header -->
-    <header class="flex items-center justify-between mb-8 px-4">
-      <div>
-        <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Categorías de Abastecimiento</h2>
-        <p class="text-slate-500 mt-1 text-lg">Selecciona una categoría para gestionar compras o reportes.</p>
+<body>
+  <div class="app-shell">
+    <header class="app-topbar">
+      <div class="brand">
+        <div class="logo">M</div>
+        <div>
+          <span class="title">AppMitylus</span>
+          <span class="subtitle">Abastecimiento</span>
+        </div>
       </div>
-      <a href="../index.html" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm font-semibold shadow-sm">
-        <i class="material-icons text-lg">arrow_back</i> Panel Principal
-      </a>
+      <div class="top-actions">
+        <div class="status"><span class="app-dot"></span> Operativo</div>
+        <a href="/index.html" class="app-back">← Volver al panel</a>
+      </div>
     </header>
 
-    <!-- Category Grid -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
-      
-      <!-- Chorito (MMPP) -->
-      <a href="./asignacion/inventario_mmpp.html" 
-         class="group p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-brand-600/30 transition-all duration-300 transform hover:-translate-y-1">
-        <div class="w-16 h-16 rounded-2xl bg-brand-600/10 text-brand-600 flex items-center justify-center mb-6 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-          <i class="material-icons text-3xl">shopping_basket</i>
-        </div>
-        <h3 class="text-xl font-bold text-slate-900 mb-2">Chorito (MMPP)</h3>
-        <p class="text-slate-500 text-sm leading-relaxed">
-          Ingreso de compras, inventario actual y asignación de lotes a planta.
-        </p>
-      </a>
+    <main class="app-main">
+      <div class="app-container">
+        <section class="app-hero">
+          <h1 class="hero-title">Abastecimiento · Categorías</h1>
+          <p class="hero-subtitle">Accesos directos a la operación comercial y planificación de MMPP.</p>
+        </section>
 
-      <!-- Contactos / Visitas -->
-      <a href="./contactos/contactos.html" 
-         class="group p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-brand-600/30 transition-all duration-300 transform hover:-translate-y-1">
-        <div class="w-16 h-16 rounded-2xl bg-brand-600/10 text-brand-600 flex items-center justify-center mb-6 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-          <i class="material-icons text-3xl">record_voice_over</i>
-        </div>
-        <h3 class="text-xl font-bold text-slate-900 mb-2">Empresas y Cultivos</h3>
-        <p class="text-slate-500 text-sm leading-relaxed">
-          Directorio de proveedores, historial de visitas y agenda de contactos.
-        </p>
-      </a>
+        <div class="app-cards">
+          <a href="contactos/contactos.html" class="app-card">
+            <div class="app-card-icon">👥</div>
+            <div>
+              <p class="app-card-title">Contactos y Visitas</p>
+              <p class="app-card-desc">Registro de contactos, visitas y seguimiento comercial.</p>
+            </div>
+          </a>
 
-      <!-- Pipeline Logístico -->
-      <a href="./asignacion/pipeline_mmpp.html" 
-         class="group p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-brand-600/30 transition-all duration-300 transform hover:-translate-y-1">
-        <div class="w-16 h-16 rounded-2xl bg-brand-600/10 text-brand-600 flex items-center justify-center mb-6 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-          <i class="material-icons text-3xl">navigation</i>
-        </div>
-        <h3 class="text-xl font-bold text-slate-900 mb-2">Pipeline Logístico</h3>
-        <p class="text-slate-500 text-sm leading-relaxed">
-          Seguimiento en tiempo real de transportes y despachos programados.
-        </p>
-      </a>
+          <a href="/html/Centros/index.html" class="app-card">
+            <div class="app-card-icon">🧭</div>
+            <div>
+              <p class="app-card-title">Centros y Proveedores</p>
+              <p class="app-card-desc">Buscador de centros, datos de concesiones y proveedores.</p>
+            </div>
+          </a>
 
-      <!-- Reportes -->
-      <div class="group p-8 rounded-3xl bg-white border border-slate-200 shadow-sm opacity-60 grayscale cursor-not-allowed">
-        <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-6">
-          <i class="material-icons text-3xl">assessment</i>
+          <a href="/html/Abastecimiento/asignacion/inventario_mmpp.html" class="app-card">
+            <div class="app-card-icon">📊</div>
+            <div>
+              <p class="app-card-title">Planificación Producción</p>
+              <p class="app-card-desc">Programas de abastecimiento y metas operativas.</p>
+            </div>
+          </a>
+
+          <a href="/html/Abastecimiento/asignacion/inventario_mmpp.html" class="app-card">
+            <div class="app-card-icon">📈</div>
+            <div>
+              <p class="app-card-title">Reportes Generales</p>
+              <p class="app-card-desc">Indicadores y resúmenes ejecutivos.</p>
+            </div>
+          </a>
         </div>
-        <h3 class="text-xl font-bold text-slate-400 mb-2">Reportes Analíticos</h3>
-        <p class="text-slate-400 text-sm leading-relaxed">
-          Próximamente: Paneles BI y KPI de rendimiento por zona.
-        </p>
       </div>
-
-    </section>
-
-  </main>
-
-  <!-- React & Sidebar -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <script type="module" src="/spa-mmpp/nav.jsx"></script>
+    </main>
+  </div>
 </body>
 </html>

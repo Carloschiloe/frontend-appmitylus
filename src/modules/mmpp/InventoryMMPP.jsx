@@ -100,6 +100,19 @@ export default function InventoryMMPP() {
 
   return (
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Seccion</p>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mt-2">
+          <div>
+            <h3 className="text-2xl font-black text-slate-900">Inventario MMPP</h3>
+            <p className="text-sm text-slate-500">Disponibilidades por proveedor y tipo para el periodo seleccionado.</p>
+          </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-slate-500">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+            Actualizado
+          </div>
+        </div>
+      </div>
       {/* KPI Header */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Disponible" value={`${resumen?.totalDisponible || 0} t`} icon={Package} color="indigo" />
@@ -117,6 +130,9 @@ export default function InventoryMMPP() {
           <div className="text-lg font-black text-slate-900 min-w-[160px] text-center">
             {MESES[cursor.m]} {cursor.y}
           </div>
+          {loading && (
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Actualizando</span>
+          )}
           <button onClick={goNext} className="p-2 hover:bg-slate-100 rounded-xl bg-slate-50 transition-colors">
             <ChevronRight className="w-5 h-5 text-slate-600" />
           </button>
@@ -130,12 +146,12 @@ export default function InventoryMMPP() {
               placeholder="Buscar proveedor..." 
               value={qProv}
               onChange={e => setQProv(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-slate-300 transition-all font-medium"
             />
           </div>
           <button 
             onClick={() => { setForm({ ...emptyForm, mesKey }); setShowModal(true); }}
-            className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-2xl font-bold shadow-indigo-200 shadow-lg hover:bg-indigo-700 transition-all active:scale-95 whitespace-nowrap"
+            className="flex items-center gap-2 px-6 py-2 bg-slate-900 text-white rounded-2xl font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap"
           >
             <Plus className="w-5 h-5" />
             Nuevo Lote
@@ -148,14 +164,21 @@ export default function InventoryMMPP() {
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="px-6 py-4 font-bold text-slate-500 text-sm">Proveedor</th>
-                <th className="px-6 py-4 font-bold text-slate-500 text-sm">Tipo</th>
-                <th className="px-6 py-4 font-bold text-slate-500 text-sm text-right">Toneladas</th>
-                <th className="px-6 py-4 font-bold text-slate-500 text-sm text-right">Acciones</th>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">Proveedor</th>
+                <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider">Tipo</th>
+                <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider text-right">Toneladas</th>
+                <th className="px-6 py-4 font-bold text-slate-500 text-xs uppercase tracking-wider text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
+              {loading && (
+                <tr>
+                  <td colSpan="4" className="px-6 py-10 text-center text-slate-400">
+                    <p className="text-sm font-semibold">Cargando inventario...</p>
+                  </td>
+                </tr>
+              )}
               {filtered.map(r => (
                 <tr key={r._id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4">
@@ -169,12 +192,12 @@ export default function InventoryMMPP() {
                       {r.tipo || 'normal'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right font-black text-indigo-600 text-lg">
+                  <td className="px-6 py-4 text-right font-black text-slate-900 text-lg">
                     {r.tons} t
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => { setForm(r); setShowModal(true); }} className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors">
+                      <button onClick={() => { setForm(r); setShowModal(true); }} className="p-2 hover:bg-slate-100 text-slate-700 rounded-xl transition-colors">
                         <Edit3 className="w-4 h-4" />
                       </button>
                       <button onClick={() => handleDelete(r._id)} className="p-2 hover:bg-rose-50 text-rose-600 rounded-xl transition-colors">
@@ -187,7 +210,7 @@ export default function InventoryMMPP() {
               {filtered.length === 0 && !loading && (
                 <tr>
                   <td colSpan="4" className="px-6 py-12 text-center text-slate-400">
-                    <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                    <Package className="w-10 h-10 mx-auto mb-3 opacity-20" />
                     <p className="font-medium">No hay registros para este período</p>
                   </td>
                 </tr>
@@ -200,36 +223,39 @@ export default function InventoryMMPP() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-300">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-2xl font-black text-slate-900">{form._id ? "Editar" : "Nuevo"} Lote</h3>
+          <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-300">
+            <div className="p-7 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Inventario</p>
+                <h3 className="text-2xl font-black text-slate-900">{form._id ? "Editar" : "Nuevo"} Lote</h3>
+              </div>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                 <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
-            <div className="p-8 space-y-5">
+            <div className="p-7 space-y-5">
               <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-tighter text-slate-400 ml-1">KEY PROVEEDOR</label>
+                <label className="text-xs font-black uppercase tracking-tighter text-slate-400 ml-1">Key Proveedor</label>
                 <input 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-bold"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none focus:ring-4 focus:ring-slate-200 transition-all font-bold"
                   value={form.proveedorKey}
                   onChange={e => setForm({ ...form, proveedorKey: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-tighter text-slate-400 ml-1">TONELADAS</label>
+                  <label className="text-xs font-black uppercase tracking-tighter text-slate-400 ml-1">Toneladas</label>
                   <input 
                     type="number"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-bold text-indigo-600"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none focus:ring-4 focus:ring-slate-200 transition-all font-bold text-slate-900"
                     value={form.tons}
                     onChange={e => setForm({ ...form, tons: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-tighter text-slate-400 ml-1">TIPO</label>
+                  <label className="text-xs font-black uppercase tracking-tighter text-slate-400 ml-1">Tipo</label>
                   <select 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-bold"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none focus:ring-4 focus:ring-slate-200 transition-all font-bold"
                     value={form.tipo}
                     onChange={e => setForm({ ...form, tipo: e.target.value })}
                   >
@@ -239,7 +265,7 @@ export default function InventoryMMPP() {
                 </div>
               </div>
             </div>
-            <div className="p-8 bg-slate-50/50 flex gap-4">
+            <div className="p-7 bg-slate-50/50 flex gap-4">
               <button 
                 onClick={() => setShowModal(false)}
                 className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-2xl transition-colors"
@@ -248,7 +274,7 @@ export default function InventoryMMPP() {
               </button>
               <button 
                 onClick={handleSave}
-                className="flex-[1.5] py-4 bg-indigo-600 text-white font-black text-lg rounded-2xl shadow-indigo-100 shadow-xl hover:bg-indigo-700 active:scale-95 transition-all"
+                className="flex-[1.5] py-4 bg-slate-900 text-white font-black text-lg rounded-2xl shadow-lg hover:bg-slate-800 active:scale-95 transition-all"
               >
                 Guardar Cambios
               </button>
@@ -262,20 +288,20 @@ export default function InventoryMMPP() {
 
 function StatCard({ label, value, icon: Icon, color }) {
   const colors = {
-    indigo: "from-indigo-500 to-blue-600 text-white shadow-indigo-100",
-    emerald: "from-emerald-500 to-teal-600 text-white shadow-emerald-100",
-    amber: "from-amber-400 to-orange-500 text-white shadow-amber-100",
-    slate: "from-slate-700 to-slate-900 text-white shadow-slate-100"
+    indigo: "border-slate-200",
+    emerald: "border-slate-200",
+    amber: "border-slate-200",
+    slate: "border-slate-200"
   };
   return (
-    <div className={`p-6 rounded-[2rem] bg-gradient-to-br transition-all hover:scale-[1.02] shadow-xl ${colors[color]}`}>
+    <div className={`p-6 rounded-[1.75rem] bg-white border shadow-sm transition-all ${colors[color]}`}>
       <div className="flex justify-between items-start mb-4">
-        <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
-          <Icon className="w-5 h-5" />
+        <div className="p-2 bg-slate-100 rounded-xl">
+          <Icon className="w-5 h-5 text-slate-700" />
         </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">{label}</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{label}</p>
       </div>
-      <p className="text-3xl font-black">{value}</p>
+      <p className="text-3xl font-black text-slate-900">{value}</p>
     </div>
   );
 }

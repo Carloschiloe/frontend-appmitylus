@@ -1,0 +1,115 @@
+.hist-filters {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1.2fr 1.4fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.hist-kpis {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.hist-layout {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 10px;
+}
+
+.hist-meta {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.hist-meta-line {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 8px;
+}
+
+.hist-meta-k {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.hist-meta-v {
+  margin-top: 2px;
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.hist-timeline {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.hist-item {
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #14b8a6;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px 10px;
+}
+
+.hist-item.is-visita {
+  border-left-color: #0ea5e9;
+}
+
+.hist-item.is-interaccion {
+  border-left-color: #a855f7;
+}
+
+.hist-item.is-oportunidad {
+  border-left-color: #f59e0b;
+}
+
+.hist-item.is-evento {
+  border-left-color: #16a34a;
+}
+
+.hist-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.hist-item-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.hist-item-date {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.hist-item-sub {
+  margin-top: 3px;
+  font-size: 12px;
+  color: #475569;
+}
+
+@media (max-width: 980px) {
+  .hist-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .hist-filters,
+  .hist-kpis {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { 
-  Package, 
-  Calendar, 
-  BarChart3, 
-  LayoutDashboard, 
+import {
+  Package,
+  Calendar,
+  BarChart3,
+  LayoutDashboard,
   Settings,
   ChevronRight,
   Menu,
@@ -12,29 +12,16 @@ import {
 import InventoryMMPP from "./modules/mmpp/InventoryMMPP";
 import BalanceMMPP from "./modules/mmpp/mmpp-balance"; // We will refactor this to export a component
 
-const UI = {
-  primary: "#6366f1", // Indigo 500
-  secondary: "#a855f7", // Purple 500
-  accent: "#f43f5e", // Rose 500
-  bg: "#f8fafc", // Slate 50
-  surface: "#ffffff",
-  text: "#0f172a", // Slate 900
-  textMuted: "#64748b", // Slate 500
-  border: "#e2e8f0", // Slate 200
-  shadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
-  radius: "1rem"
-};
-
 const NavigationItem = ({ id, icon: Icon, label, active, onClick }) => (
   <button
     onClick={() => onClick(id)}
-    className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 group ${
-      active 
-        ? "bg-indigo-50 text-indigo-600 shadow-sm" 
-        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+    className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 group border ${
+      active
+        ? "bg-slate-100 text-slate-900 border-slate-200 shadow-sm"
+        : "text-slate-600 border-transparent hover:bg-slate-50 hover:text-slate-900"
     }`}
     style={{
-      border: active ? `1px solid ${UI.primary}20` : "1px solid transparent"
+      borderColor: active ? "var(--app-border-strong)" : "transparent"
     }}
   >
     <Icon className={`w-5 h-5 transition-transform duration-200 ${active ? "scale-110" : "group-hover:scale-110"}`} />
@@ -49,6 +36,11 @@ export default function App() {
     return h || "inventario";
   });
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const pageLabels = {
+    inventario: "Inventario",
+    balance: "Balance General",
+    calendario: "Calendario"
+  };
 
   useEffect(() => {
     const handleHash = () => {
@@ -64,12 +56,12 @@ export default function App() {
   }, [page]);
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 italic-none">
+    <div className="flex min-h-screen bg-[var(--app-bg)] text-[var(--app-text)] font-sans">
       {/* Sidebar Overlay for Mobile */}
       {!sidebarOpen && (
         <button 
           onClick={() => setSidebarOpen(true)}
-          className="fixed bottom-6 right-6 z-50 p-4 bg-indigo-600 text-white rounded-full shadow-lg lg:hidden"
+          className="fixed bottom-6 right-6 z-50 p-4 bg-slate-900 text-white rounded-full shadow-xl lg:hidden"
         >
           <Menu className="w-6 h-6" />
         </button>
@@ -82,14 +74,12 @@ export default function App() {
         }`}
       >
         <div className="flex flex-col h-full">
-          <div className="p-8 flex items-center gap-3 border-b border-slate-100">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-indigo-200 shadow-lg">
-              <LayoutDashboard className="text-white w-6 h-6" />
+          <div className="p-7 flex items-center gap-3 border-b border-slate-100">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-md">
+              <LayoutDashboard className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
-                Mitylus
-              </h1>
+              <h1 className="text-xl font-bold text-slate-900">Mitylus</h1>
               <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Enterprise</p>
             </div>
             <button 
@@ -142,13 +132,16 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-30">
-          <h2 className="text-xl font-semibold text-slate-800 capitalize">
-            {page.replace("-", " ")}
-          </h2>
+        <header className="h-20 bg-white/90 backdrop-blur-md border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-30">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Panel MMPP</p>
+            <h2 className="text-2xl font-semibold text-slate-900">
+              {pageLabels[page] || page.replace("-", " ")}
+            </h2>
+          </div>
           <div className="flex items-center gap-4">
             {/* Demo Mode Badge */}
-            <div className="px-3 py-1 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
+            <div className="px-3 py-1 bg-amber-50 border border-amber-200 rounded-full flex items-center gap-2">
               <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
               <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Demo Mode</span>
             </div>
@@ -162,12 +155,12 @@ export default function App() {
           </div>
         </header>
 
-        <section className="p-8 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <section className="p-8 max-w-6xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
           {page === "inventario" && <InventoryMMPP />}
           {page === "balance" && <BalanceMMPP />}
           {page === "calendario" && (
             <div className="bg-white rounded-3xl p-12 border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-slate-100 text-slate-700 rounded-2xl flex items-center justify-center mb-6">
                 <Calendar className="w-10 h-10" />
               </div>
               <h3 className="text-2xl font-bold text-slate-900 mb-2">Calendario en Desarrollo</h3>
@@ -181,4 +174,3 @@ export default function App() {
     </div>
   );
 }
-

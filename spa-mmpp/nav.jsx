@@ -1,18 +1,26 @@
 /* /spa-mmpp/nav.jsx */
 import './index.css';
 
-const { useMemo } = React;
-
 function Sidebar() {
   const here = (typeof location !== "undefined"
     ? ((location.pathname || "").toLowerCase() + " " + (location.hash || "").toLowerCase())
     : "");
+
+  const pathname = (typeof location !== "undefined" && location.pathname
+    ? location.pathname.toLowerCase()
+    : "");
+  const isAsignacionFlow = pathname.startsWith("/html/abastecimiento/asignacion/");
 
   const itemsMain = [
     { href: "/html/Abastecimiento/categorias.html",           label:"Categorías",      icon:"🏠" },
     { href: "/html/Abastecimiento/contactos/contactos.html",   label:"Contactos",       icon:"👥" },
     { href: "/html/Centros/index.html",                        label:"Centros",         icon:"📍" },
   ];
+
+  const asignacionExcludedMain = ["categorías", "contactos", "centros"];
+  const itemsMainVisible = isAsignacionFlow
+    ? itemsMain.filter((it) => !asignacionExcludedMain.includes(it.label.toLowerCase()))
+    : itemsMain;
 
   const itemsCentros = [
     { href: "/html/Centros/index.html#tab-centros",            label:"Directorio",      icon:"📋" },
@@ -32,7 +40,7 @@ function Sidebar() {
     const f = href.split("/").pop().toLowerCase(); 
     const token = f.indexOf("#") >= 0 ? f.split("#")[1] : "";
     const active = here.indexOf(f) >= 0 || (token && here.indexOf(token) >= 0);
-    return active ? "bg-slate-800 text-white shadow-sm ring-1 ring-white/10" : "hover:bg-slate-800/50 hover:text-white";
+    return active ? "is-active" : "";
   }
 
   function onClickItem(e, it) {
@@ -44,51 +52,51 @@ function Sidebar() {
 
   const NavItem = ({ it }) => (
     <a key={it.href}
-       className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group text-sm font-medium ${isActive(it.href)}`}
+       className={`nav-item ${isActive(it.href)}`}
        href={it.href}
        onClick={(e) => onClickItem(e, it)}>
-      <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800/50 group-hover:bg-brand-600 transition-colors shadow-inner text-base">
-        {it.icon}
-      </span>
+      <span className="i">{it.icon}</span>
       {it.label}
     </a>
   );
 
   return (
-    <aside className="mmpp-nav w-[260px] p-4 gap-6">
-      <div className="flex items-center gap-4 px-2 py-4 border-b border-white/5 mb-2">
-        <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-brand-600/20">
-          M
-        </div>
-        <div className="flex flex-col">
-          <span className="text-white font-bold tracking-tight">AppMitylus</span>
-          <span className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Abastecimiento</span>
+    <aside className="mmpp-nav">
+      <div className="brand">
+        <div className="logo">M</div>
+        <div className="brand-text">
+          <span className="title">AppMitylus</span>
+          <span className="subtitle">Abastecimiento</span>
         </div>
       </div>
 
-      <nav className="flex flex-col gap-1 overflow-y-auto">
-        <div className="text-[10px] uppercase font-bold text-slate-500 px-4 mb-2 tracking-[0.2em]">Principal</div>
-        {itemsMain.map(it => <NavItem key={it.href} it={it} />)}
+      <nav className="nav-scroll">
+        {itemsMainVisible.length > 0 && (
+          <div className="nav-group">
+            <div className="section">Principal</div>
+            {itemsMainVisible.map(it => <NavItem key={it.href} it={it} />)}
+          </div>
+        )}
 
         {here.indexOf("centros") >= 0 && (
-          <div className="mt-4">
-            <div className="text-[10px] uppercase font-bold text-slate-500 px-4 mb-2 tracking-[0.2em]">Centros</div>
+          <div className="nav-group">
+            <div className="section">Centros</div>
             {itemsCentros.map(it => <NavItem key={it.href} it={it} />)}
           </div>
         )}
 
-        <div className="mt-4">
-          <div className="text-[10px] uppercase font-bold text-slate-500 px-4 mb-2 tracking-[0.2em]">Planificación</div>
+        <div className="nav-group">
+          <div className="section">Planificación</div>
           {itemsAsignacion.map(it => <NavItem key={it.href} it={it} />)}
         </div>
       </nav>
 
-      <div className="mt-auto px-4 py-4 border-t border-white/5">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs">CS</div>
-          <div className="flex flex-col">
-            <span className="text-xs font-bold text-white">Carlos Serv</span>
-            <span className="text-[10px] text-slate-500">Administrador</span>
+      <div className="nav-footer">
+        <div className="nav-user">
+          <div className="avatar">CS</div>
+          <div className="meta">
+            <span className="name">Carlos Serv</span>
+            <span className="role">Administrador</span>
           </div>
         </div>
       </div>

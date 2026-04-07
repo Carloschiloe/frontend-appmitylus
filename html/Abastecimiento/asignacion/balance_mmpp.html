@@ -6,8 +6,8 @@
   <title>Balance MMPP</title>
 
   <!-- Estilos compartidos (mismos que el resto) -->
-  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=1" />
-  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=1" />
+  <link rel="stylesheet" href="/spa-mmpp/layout.css?v=2" />
+  <link rel="stylesheet" href="/spa-mmpp/inventario.css?v=2" />
 
   <!-- ===== CONFIG (antes de cualquier JS) ===== -->
   <script>window.DEBUG = true;</script>
@@ -36,23 +36,7 @@
   <!-- API compartida -->
   <script defer src="/spa-mmpp/mmpp-api.js?v=12"></script>
 
-  <!-- Sidebar (JSX via Babel) -->
-  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/nav.jsx?v=1"></script>
-
-  <!-- Balance MMPP (JSX) -->
-  <script defer type="text/babel" data-presets="es2015,react" src="/spa-mmpp/mmpp-balance.jsx?v=4"></script>
-
-  <!-- Fallback de montaje: por si Babel termina después -->
-  <script>
-    setTimeout(function(){
-      var host = document.getElementById('mmppBalance');
-      if (window.MMppBalance && host && !MMppBalance._root) {
-        MMppBalance.mount({ anio: new Date().getFullYear() });
-      }
-    }, 2000);
-  </script>
 
   <noscript>Esta página requiere JavaScript.</noscript>
 </body>
 </html>
-

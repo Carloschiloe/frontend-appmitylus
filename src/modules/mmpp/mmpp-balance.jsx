@@ -18,12 +18,12 @@ function SimpleBarChart({ data }) {
           <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
             <div className="flex gap-1 items-end h-32 w-full justify-center">
               <div 
-                className="w-2 md:w-4 bg-indigo-500 rounded-t-sm transition-all hover:brightness-110" 
+                className="w-2 md:w-4 bg-slate-700 rounded-t-sm transition-all hover:brightness-110" 
                 style={{ height: `${hD}%` }}
                 title={`Disponible: ${d.disponible}`}
               />
               <div 
-                className="w-2 md:w-4 bg-purple-500 rounded-t-sm transition-all hover:brightness-110" 
+                className="w-2 md:w-4 bg-emerald-500 rounded-t-sm transition-all hover:brightness-110" 
                 style={{ height: `${hA}%` }}
                 title={`Asignado: ${d.asignado}`}
               />
@@ -100,13 +100,27 @@ export default function BalanceMMPP() {
 
   return (
     <div className="space-y-6">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Seccion</p>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mt-2">
+          <div>
+            <h3 className="text-2xl font-black text-slate-900">Balance General</h3>
+            <p className="text-sm text-slate-500">Consolidado de disponible, asignado y saldo por periodo.</p>
+          </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-slate-500">
+            <span className={`inline-block w-2 h-2 rounded-full ${loading ? "bg-amber-400" : "bg-emerald-500"}`} />
+            {loading ? "Actualizando" : "Actualizado"}
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div className="space-y-2">
           <label className="text-sm font-bold text-slate-500 ml-1">Año</label>
           <select 
             value={anio} 
             onChange={e => setAnio(parseInt(e.target.value))}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-slate-300 outline-none transition-all"
           >
             {[y0-1, y0, y0+1].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
@@ -121,10 +135,16 @@ export default function BalanceMMPP() {
         <KPICard label="Cumplimiento" value={`${totals.p.toFixed(1)}%`} icon={BarChart3} color="amber" />
       </div>
 
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl px-4 py-3 text-sm font-semibold">
+          {error}
+        </div>
+      )}
+
       {chartData.length > 0 && (
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
           <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-indigo-500" />
+            <BarChart3 className="w-5 h-5 text-slate-600" />
             Tendencia Mensual
           </h3>
           <SimpleBarChart data={chartData} />
@@ -137,18 +157,32 @@ export default function BalanceMMPP() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-100">
-                <th className="pb-4 font-bold text-slate-500 px-2">Proveedor</th>
-                <th className="pb-4 font-bold text-slate-500 px-2 text-right">Disponible (t)</th>
-                <th className="pb-4 font-bold text-slate-500 px-2 text-right">Asignado (t)</th>
-                <th className="pb-4 font-bold text-slate-500 px-2 text-right">Saldo (t)</th>
+                <th className="pb-4 font-bold text-slate-500 px-2 text-xs uppercase tracking-wider">Proveedor</th>
+                <th className="pb-4 font-bold text-slate-500 px-2 text-xs uppercase tracking-wider text-right">Disponible (t)</th>
+                <th className="pb-4 font-bold text-slate-500 px-2 text-xs uppercase tracking-wider text-right">Asignado (t)</th>
+                <th className="pb-4 font-bold text-slate-500 px-2 text-xs uppercase tracking-wider text-right">Saldo (t)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
+              {loading && (
+                <tr>
+                  <td colSpan="4" className="py-10 px-2 text-center text-slate-400">
+                    <p className="text-sm font-semibold">Cargando balance...</p>
+                  </td>
+                </tr>
+              )}
+              {!loading && filteredRows.length === 0 && (
+                <tr>
+                  <td colSpan="4" className="py-10 px-2 text-center text-slate-400">
+                    <p className="text-sm font-semibold">Sin datos para el periodo seleccionado.</p>
+                  </td>
+                </tr>
+              )}
               {filteredRows.map((r, i) => (
                 <tr key={i} className="hover:bg-slate-50 transition-colors">
                   <td className="py-4 px-2 font-medium">{r.proveedorNombre || "—"}</td>
                   <td className="py-4 px-2 text-right">{fmtTons(r.disponible)}</td>
-                  <td className="py-4 px-2 text-right text-indigo-600 font-semibold">{fmtTons(r.asignado)}</td>
+                  <td className="py-4 px-2 text-right text-slate-900 font-semibold">{fmtTons(r.asignado)}</td>
                   <td className="py-4 px-2 text-right text-slate-500">{fmtTons(num(r.disponible) - num(r.asignado))}</td>
                 </tr>
               ))}
@@ -162,18 +196,18 @@ export default function BalanceMMPP() {
 
 function KPICard({ label, value, color, icon: Icon }) {
   const colors = {
-    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
-    purple: "bg-purple-50 text-purple-600 border-purple-100",
-    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
-    amber: "bg-amber-50 text-amber-600 border-amber-100",
+    indigo: "border-slate-200",
+    purple: "border-slate-200",
+    emerald: "border-slate-200",
+    amber: "border-slate-200",
   };
   return (
-    <div className={`p-6 rounded-3xl border shadow-sm flex flex-col gap-3 ${colors[color] || colors.indigo}`}>
+    <div className={`p-6 rounded-3xl border shadow-sm flex flex-col gap-3 bg-white ${colors[color] || colors.indigo}`}>
       <div className="flex justify-between items-start">
-        <p className="text-xs font-bold uppercase tracking-wider opacity-80">{label}</p>
-        {Icon && <Icon className="w-5 h-5 opacity-60" />}
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{label}</p>
+        {Icon && <Icon className="w-5 h-5 text-slate-500" />}
       </div>
-      <p className="text-2xl font-black">{value}</p>
+      <p className="text-2xl font-black text-slate-900">{value}</p>
     </div>
   );
 }

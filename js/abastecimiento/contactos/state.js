@@ -4,7 +4,6 @@ export const state = {
   proveedoresIndex: {},      // { proveedorKey: { proveedor } }
   listaCentros: [],
   contactosGuardados: [],
-  dt: null,
   editId: null,
 };
 

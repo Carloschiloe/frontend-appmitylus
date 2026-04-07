@@ -75,6 +75,10 @@
   grid-template-columns: repeat(12, 1fr);
   gap: 10px;
 }
+
+.fotos-grid-spaced {
+  margin-top: 10px;
+}
 @media (max-width:1200px){ .fotos-grid{ grid-template-columns: repeat(8, 1fr); } }
 @media (max-width:768px){  .fotos-grid{ grid-template-columns: repeat(6, 1fr); } }
 @media (max-width:600px){  .fotos-grid{ grid-template-columns: repeat(4, 1fr); } }

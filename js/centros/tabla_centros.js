@@ -41,6 +41,25 @@ let $buscador;     // <input id="buscarProveedor"> o <input id="filtroProveedor"
 ================================================================== */
 const COL = { PROV:0, COMUNA:1, CODE:2, CODAREA:3, HECT_FMT:4, DET:5, ACC:6, HECT_RAW:7, TONS_RAW:8 };
 
+/* ===== Barra de exportacion moderna ===== */
+function wireExportToolbar() {
+  const mapping = [
+    ['btnExportCopy',  '.buttons-copy'],
+    ['btnExportCsv',   '.buttons-csv'],
+    ['btnExportExcel', '.buttons-excel'],
+    ['btnExportPdf',   '.buttons-pdf']
+  ];
+
+  mapping.forEach(([id, btnSelector]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.onclick = () => {
+      if (!api) return;
+      api.button(btnSelector).trigger();
+    };
+  });
+}
+
 /* ===== KPIs + Footer con filas filtradas ===== */
 function updateKpisYFooter() {
   if (!api) return;
@@ -87,8 +106,6 @@ function populateComunasYWireFilter() {
   $comunaSelect.innerHTML = `<option value="">Todas las comunas</option>` +
     comunas.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
 
-  try { window.M?.FormSelect?.init($comunaSelect); } catch {}
-
   // Filtro por comuna (columna 1)
   $comunaSelect.addEventListener('change', () => {
     const val = ($comunaSelect.value || '').trim();
@@ -126,6 +143,8 @@ export function initTablaCentros() {
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
     columnDefs: [
       { targets: [COL.HECT_FMT], className: 'dt-right' },
+      { targets: [COL.DET], className: 'centro-col-detail' },
+      { targets: [COL.ACC], className: 'centro-col-actions' },
       { targets: [COL.DET, COL.ACC], orderable: false, searchable: false },
       // columnas crudas ocultas (para KPIs correctos)
       { targets: [COL.HECT_RAW, COL.TONS_RAW], visible: false, searchable: false }
@@ -139,6 +158,7 @@ export function initTablaCentros() {
 
   registerTablaCentrosEventos();
   wireExternalSearch();
+  wireExportToolbar();
 
   // Ocultar el filtro nativo por si aparece
   window.$('#centrosTable_filter').hide();
@@ -165,16 +185,26 @@ export async function loadCentros(data) {
       const tonsRaw   = toNum(c.tonsMax ?? c.tons ?? c?.detalles?.tonsMax);
 
       const coordsCell = `
-        <i class="material-icons btn-coords" data-idx="${i}" style="cursor:pointer"
-           title="Ver detalles" aria-label="Ver detalles">visibility</i>`;
+        <button type="button" class="centro-action-btn centro-action-btn--details btn-coords"
+                data-idx="${i}" title="Ver detalles" aria-label="Ver detalles">
+          <i class="bi bi-eye"></i>
+        </button>`;
 
       const accionesCell = `
-        <i class="material-icons btn-view-on-map" data-idx="${i}" style="cursor:pointer"
-           title="Ver en mapa" aria-label="Ver en mapa">place</i>
-        <i class="material-icons editar-centro"   data-idx="${i}" style="cursor:pointer"
-           title="Editar centro" aria-label="Editar centro">edit</i>
-        <i class="material-icons eliminar-centro" data-idx="${i}" style="cursor:pointer"
-           title="Eliminar centro" aria-label="Eliminar centro">delete</i>`;
+        <div class="centro-actions-stack">
+          <button type="button" class="centro-action-btn centro-action-btn--map btn-view-on-map"
+                  data-idx="${i}" title="Ver en mapa" aria-label="Ver en mapa">
+            <i class="bi bi-geo-alt"></i>
+          </button>
+          <button type="button" class="centro-action-btn centro-action-btn--edit editar-centro"
+                  data-idx="${i}" title="Editar centro" aria-label="Editar centro">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button type="button" class="centro-action-btn centro-action-btn--delete eliminar-centro"
+                  data-idx="${i}" title="Eliminar centro" aria-label="Eliminar centro">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>`;
 
       return [
         esc(proveedor),        // 0 Proveedor
@@ -200,7 +230,6 @@ export async function loadCentros(data) {
       btnLimpiar.onclick = () => {
         if ($comunaSelect) {
           $comunaSelect.value = '';
-          try { window.M?.FormSelect?.init($comunaSelect); } catch {}
           api.column(COL.COMUNA).search('', true, false);
         }
         if ($buscador) $buscador.value = '';

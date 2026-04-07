@@ -2,7 +2,7 @@
 import { state } from '../state.js';
 import { centroCodigoById as _centroCodigoById } from '../../visitas/normalizers.js';
 
-/** Detecta “nuevo” según varios flags comunes y/o el mapa local */
+/** Detecta "nuevo" segun varios flags comunes y/o el mapa local */
 export function esContactoNuevo(contactoId){
   const c = state?.contactosById?.[contactoId] || null;
   if (!c) return false;
@@ -15,7 +15,7 @@ export function esContactoNuevo(contactoId){
   );
 }
 
-/** Útil cuando la interacción ya trae su propio flag */
+/** Util cuando la interaccion ya trae su propio flag */
 export function esProveedorNuevoInteraccion(interaccion = {}){
   return !!(
     interaccion.proveedorNuevo ||
@@ -24,14 +24,14 @@ export function esProveedorNuevoInteraccion(interaccion = {}){
   );
 }
 
-/** Fecha segura → ISO (o null si inválida) */
+/** Fecha segura  ISO (o null si invalida) */
 function safeISO(d) {
   if (!d) return null;
   const t = new Date(d);
   return isNaN(t) ? null : t.toISOString();
 }
 
-/** Normaliza tipo/proximoPaso a una categoría canónica */
+/** Normaliza tipo/proximoPaso a una categoria canonica */
 function canonTipo(interaccion = {}){
   const raw = String(interaccion.proximoPaso || interaccion.tipo || '')
     .normalize('NFC')
@@ -55,31 +55,31 @@ function centroCodigo(interaccion = {}){
   return '';
 }
 
-/** Convierte una interacción a evento de calendario */
+/** Convierte una interaccion a evento de calendario */
 export function toCalendarEvent(interaccion){
   if (!interaccion) return null;
 
-  // Prioriza el próximo paso (lo que se agenda); acepta legacy fechaProx
+  // Prioriza el proximo paso (lo que se agenda); acepta legacy fechaProx
   const startISO = safeISO(
     interaccion.proximoPasoFecha ||
     interaccion.fechaProx ||
     interaccion.fecha
   );
-  if (!startISO) return null; // sin fecha válida no generamos evento
+  if (!startISO) return null; // sin fecha valida no generamos evento
 
   const tipo = canonTipo(interaccion);
   const contacto = interaccion.contactoNombre || interaccion.proveedorNombre || 'Contacto';
   const centro = centroCodigo(interaccion);
   const tons = Number(interaccion.tonsConversadas ?? interaccion.tons ?? 0) || null;
 
-  // Título compacto por tipo
+  // Titulo compacto por tipo
   const title =
-    tipo === 'llamada'     ? `📞 ${contacto}` :
-    tipo === 'muestra'     ? `🧪 ${centro || contacto}` :
-    tipo === 'reunion'     ? `🤝 ${contacto}` :
-    tipo === 'visita'      ? `🗺️ ${centro || contacto}` :
-    tipo === 'seguimiento' ? `🔁 ${contacto}` :
-                             `✅ ${interaccion.proximoPaso || 'Tarea'}`;
+    tipo === 'llamada'     ? `Llamada ${contacto}` :
+    tipo === 'muestra'     ? `Muestra ${centro || contacto}` :
+    tipo === 'reunion'     ? `Reunion ${contacto}` :
+    tipo === 'visita'      ? `Visita ${centro || contacto}` :
+    tipo === 'seguimiento' ? `Seguimiento ${contacto}` :
+                             `${interaccion.proximoPaso || 'Tarea'} ${contacto}`;
 
   // Paleta simple por tipo (fallback gris)
   const colorMap = {

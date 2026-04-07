@@ -10,6 +10,11 @@ let centrosGroup;
 let currentPoly = null;
 let centroPolys = {};
 let centroTooltips = {};
+let centroBaseStyles = {};
+let centroMeta = {};
+let selectedCentroIdx = null;
+let selectedBlinkTimer = null;
+let selectedBlinkOn = false;
 let windowCentrosDebug = [];
 let _throttledUpd;
 
@@ -25,6 +30,17 @@ let measureButtonEl = null;
 const CHILOE_COORDS = [-42.65, -73.99];
 const CHILOE_ZOOM = 10;
 const LABEL_ZOOM = 13; // mostrar etiquetas desde este zoom
+let labelDensity = 'medium';
+const mapFilterState = {
+  tipo: { salmon: true, mitilidos: true, otros: true },
+  estado: { otorgada: true, noOtorgada: true }
+};
+let pendingUrlFocus = null;
+const LABEL_DENSITY_CFG = {
+  high:   { minPx: 46, maxLabels: 260 },
+  medium: { minPx: 82, maxLabels: 140 },
+  low:    { minPx: 128, maxLabels: 80 }
+};
 
 // ====== Logging ======
 const LOG = false;
@@ -37,6 +53,7 @@ const group   = (title, fn) => { if (!LOG) return fn(); console.group('[MAP]', t
 const parseNum = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toTitle = s => (s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const throttle = (fn, ms=80) => {
   let last = 0, t;
   return (...args) => {
@@ -46,6 +63,216 @@ const throttle = (fn, ms=80) => {
     else { clearTimeout(t); t = setTimeout(() => { last = Date.now(); fn.apply(null, args); }, wait); }
   };
 };
+
+function getCenterIndexByQuery(query) {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) return -1;
+  return (centrosDataGlobal || []).findIndex((c, idx) => {
+    const meta = centroMeta[idx] || getCentroMeta(c);
+    if (!passesMapFilters(meta)) return false;
+    const code = String(c?.code || '').toLowerCase();
+    const name = String(c?.name || c?.proveedor || '').toLowerCase();
+    const comuna = String(c?.comuna || c?.detalles?.comuna || '').toLowerCase();
+    const area = String(c?.codigoArea || c?.detalles?.codigoArea || '').toLowerCase();
+    return code.includes(q) || name.includes(q) || comuna.includes(q) || area.includes(q);
+  });
+}
+
+function classifyConcesionTipo(c) {
+  const text = [
+    c?.grupoEspecie,
+    c?.detalles?.grupoEspecie,
+    Array.isArray(c?.especies) ? c.especies.join(' ') : c?.especies,
+    c?.detalles?.especies
+  ].filter(Boolean).map(norm).join(' | ');
+
+  const isSalmon = /(salmon|salmonido|atlantic|coho|trucha)/.test(text);
+  const isMitilidos = /(mitil|mytil|chorito|choritos|choro|choros|mejillon)/.test(text);
+
+  if (isSalmon) return 'salmon';
+  if (isMitilidos) return 'mitilidos';
+  return 'otros';
+}
+
+function isConcesionOtorgada(c) {
+  if (typeof c?.otorgada === 'boolean') return c.otorgada;
+  if (typeof c?.detalles?.otorgada === 'boolean') return c.detalles.otorgada;
+
+  const statusText = [
+    c?.estado, c?.status, c?.situacion, c?.condicion,
+    c?.detalles?.estado, c?.detalles?.status, c?.detalles?.situacion, c?.detalles?.condicion
+  ].filter(Boolean).map(norm).join(' | ');
+
+  if (!statusText) return true; // si no hay dato explícito, mantener normal
+
+  const nonGranted = /(no otorgad|en tramite|tramite|pendiente|solicitad|rechazad|caducad|renunciad|vencid|suspendid)/;
+  if (nonGranted.test(statusText)) return false;
+
+  const granted = /(otorgad|concesionad|vigent|aprobad|autorizad|regularizad)/;
+  if (granted.test(statusText)) return true;
+
+  return true;
+}
+
+function getBaseStyleForCentro(c) {
+  const tipo = classifyConcesionTipo(c);
+  const otorgada = isConcesionOtorgada(c);
+
+  const byTipo = {
+    salmon:    { color: '#f97316', fillColor: '#fdba74' },
+    mitilidos: { color: '#16a34a', fillColor: '#86efac' },
+    // Blanco puro sobre satélite se pierde; usamos neutro claro con borde visible
+    otros:     { color: '#94a3b8', fillColor: '#e2e8f0' }
+  };
+  const t = byTipo[tipo] || byTipo.otros;
+
+  return {
+    color: t.color,
+    fillColor: t.fillColor,
+    weight: otorgada ? 3 : 2.5,
+    // No otorgadas siguen más tenues, pero claramente visibles
+    opacity: otorgada ? 0.96 : 0.78,
+    fillOpacity: otorgada ? 0.26 : 0.14,
+    dashArray: otorgada ? null : '5,5',
+  };
+}
+
+function getCentroMeta(c) {
+  return { tipo: classifyConcesionTipo(c), otorgada: isConcesionOtorgada(c) };
+}
+
+function passesMapFilters(meta) {
+  if (!meta) return true;
+  const byTipo = !!mapFilterState.tipo[meta.tipo];
+  const byEstado = meta.otorgada ? !!mapFilterState.estado.otorgada : !!mapFilterState.estado.noOtorgada;
+  return byTipo && byEstado;
+}
+
+function applyMapFilters() {
+  Object.keys(centroPolys).forEach((k) => {
+    const idx = Number(k);
+    const poly = centroPolys[idx];
+    const meta = centroMeta[idx];
+    const base = centroBaseStyles[idx];
+    const tipEl = centroTooltips[idx]?.getElement?.();
+    if (!poly || !base) return;
+
+    const visible = passesMapFilters(meta);
+    if (!visible) {
+      if (selectedCentroIdx === idx) setSelectedCentro(null);
+      poly.setStyle({ ...base, opacity: 0, fillOpacity: 0, weight: 0.1 });
+      const pEl = poly.getElement?.();
+      if (pEl) pEl.style.pointerEvents = 'none';
+      if (tipEl) tipEl.style.display = 'none';
+      return;
+    }
+
+    const pEl = poly.getElement?.();
+    if (pEl) pEl.style.pointerEvents = 'auto';
+    if (selectedCentroIdx === idx) applyPolygonStyle(idx, 'selected');
+    else applyPolygonStyle(idx, 'base');
+  });
+
+  updateLabelVisibility();
+
+  const searchInput = document.getElementById('mapSearch');
+  if (searchInput && String(searchInput.value || '').trim()) {
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+}
+
+function applyPolygonStyle(idx, mode = 'base') {
+  const poly = centroPolys[idx];
+  const base = centroBaseStyles[idx];
+  if (!poly || !base) return;
+
+  if (mode === 'selected') {
+    poly.setStyle({
+      ...base,
+      color: '#38bdf8',
+      weight: Math.max(5, base.weight + 2),
+      opacity: 1,
+      fillOpacity: Math.max(0.32, base.fillOpacity),
+      dashArray: null
+    });
+    poly.bringToFront();
+    return;
+  }
+
+  if (mode === 'selected-alt') {
+    poly.setStyle({
+      ...base,
+      color: '#2563eb',
+      weight: Math.max(4, base.weight + 1),
+      opacity: 0.95,
+      fillOpacity: Math.max(0.2, base.fillOpacity),
+      dashArray: null
+    });
+    poly.bringToFront();
+    return;
+  }
+
+  if (mode === 'hover') {
+    poly.setStyle({
+      ...base,
+      weight: base.weight + 1,
+      opacity: Math.min(1, base.opacity + 0.12)
+    });
+    return;
+  }
+
+  poly.setStyle(base);
+}
+
+function clearSelectionBlink() {
+  if (selectedBlinkTimer) {
+    clearInterval(selectedBlinkTimer);
+    selectedBlinkTimer = null;
+  }
+  selectedBlinkOn = false;
+}
+
+function startSelectionBlink(idx) {
+  clearSelectionBlink();
+  selectedBlinkOn = true;
+  applyPolygonStyle(idx, 'selected');
+  selectedBlinkTimer = setInterval(() => {
+    if (selectedCentroIdx == null || selectedCentroIdx !== idx || !centroPolys[idx]) {
+      clearSelectionBlink();
+      return;
+    }
+    selectedBlinkOn = !selectedBlinkOn;
+    applyPolygonStyle(idx, selectedBlinkOn ? 'selected' : 'selected-alt');
+  }, 430);
+}
+
+function setSelectedCentro(idx) {
+  if (selectedCentroIdx !== null && selectedCentroIdx !== idx) {
+    clearSelectionBlink();
+    applyPolygonStyle(selectedCentroIdx, 'base');
+    const prevT = centroTooltips[selectedCentroIdx]?.getElement?.();
+    if (prevT) prevT.classList.remove('is-selected-label');
+  }
+
+  if (idx === null || idx === undefined) {
+    selectedCentroIdx = null;
+    clearSelectionBlink();
+    return;
+  }
+
+  selectedCentroIdx = idx;
+  if (selectedCentroIdx === null || selectedCentroIdx === undefined) {
+    clearSelectionBlink();
+    return;
+  }
+
+  startSelectionBlink(selectedCentroIdx);
+  const t = centroTooltips[selectedCentroIdx]?.getElement?.();
+  if (t) {
+    t.classList.add('is-selected-label');
+    t.style.display = 'block';
+  }
+}
 
 // === Normalizador y formateador de hectáreas (corrige 42.67 vs 42,67) ===
 function normalizeHa(v){
@@ -154,7 +381,7 @@ function handleMeasureKeyDown(e) {
 const MAPBOX_TOKEN =
   (window.CONFIG && window.CONFIG.MAPBOX_TOKEN) ||
   window.MAPBOX_TOKEN ||
-  'pk.eyJ1IjoiY2FybG9zY2hpbG9lIiwiYSI6ImNtZTB3OTZmODA5Mm0ya24zaTQ1bGd3aW4ifQ.XElNIT02jDuetHpo4r_-3g';
+  'TU_TOKEN_AQUI_POR_SEGURIDAD';
 
 const baseLayersDefs = (typeof L !== 'undefined') ? {
   mapboxSat: L.tileLayer(
@@ -251,18 +478,79 @@ function openCentroModal(c) {
   const modal = document.getElementById('modalDetallesCentro');
   const body  = document.getElementById('detallesCentroBody');
   if (!modal || !body) {
-    alert(`Centro: ${c.name || c.proveedor || '-'}\nCódigo: ${c.code || '-'}`);
+    alert(`Centro: ${c.name || c.proveedor || '-'}\nCodigo: ${c.code || '-'}`);
     return;
   }
-  body.innerHTML = buildCentroDetallesHtml(c);
-  // Evita que el mapa atrape scroll cuando abres modal
-  try { document.querySelector('#mapShell')?.classList?.add('modal-open'); } catch {}
-  const inst = (window.M?.Modal.getInstance(modal) || window.M?.Modal.init(modal));
-  inst?.open();
-  // Al cerrar, liberar clase
-  modal.addEventListener('modal:closed', () => {
-    try { document.querySelector('#mapShell')?.classList?.remove('modal-open'); } catch {}
-  }, { once: true });
+
+  const getFsEl = () =>
+    document.fullscreenElement ||
+    document.webkitFullscreenElement ||
+    document.msFullscreenElement ||
+    null;
+
+  const closeFsDetails = () => {
+    const panel = document.getElementById('mapFsDetails');
+    if (panel) panel.remove();
+  };
+
+  const openFsDetails = (targetEl) => {
+    closeFsDetails();
+    const panel = document.createElement('div');
+    panel.id = 'mapFsDetails';
+    panel.innerHTML = `
+      <div class="map-fs-details__backdrop" data-close-fs-details="1"></div>
+      <section class="map-fs-details__card" role="dialog" aria-modal="true" aria-label="Detalles del centro">
+        <header class="map-fs-details__head">
+          <h5>Detalles del Centro</h5>
+          <button type="button" class="map-fs-details__close" aria-label="Cerrar" data-close-fs-details="1">&times;</button>
+        </header>
+        <div class="map-fs-details__body">${buildCentroDetallesHtml(c)}</div>
+      </section>
+    `;
+
+    const closeNow = () => closeFsDetails();
+    panel.querySelectorAll('[data-close-fs-details="1"]').forEach((el) => {
+      el.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeNow();
+      });
+    });
+
+    panel.addEventListener('click', (ev) => {
+      if (ev.target?.getAttribute?.('data-close-fs-details') === '1') {
+        closeNow();
+      }
+    });
+
+    document.addEventListener('keydown', function onEsc(ev) {
+      if (ev.key === 'Escape' || ev.key === 'Esc') {
+        closeFsDetails();
+        document.removeEventListener('keydown', onEsc);
+      }
+    });
+
+    targetEl.appendChild(panel);
+  };
+
+  const doOpen = () => {
+    body.innerHTML = buildCentroDetallesHtml(c);
+    try { document.querySelector('#mapShell')?.classList?.add('modal-open'); } catch {}
+    const inst = (window.M?.Modal.getInstance(modal) || window.M?.Modal.init(modal));
+    inst?.open();
+    modal.addEventListener('modal:closed', () => {
+      try { document.querySelector('#mapShell')?.classList?.remove('modal-open'); } catch {}
+    }, { once: true });
+  };
+
+  const fsEl = getFsEl();
+  const mapShell = document.getElementById('mapShell');
+  if (fsEl && mapShell && (fsEl === mapShell || fsEl.contains(mapShell))) {
+    openFsDetails(mapShell);
+    return;
+  }
+
+  doOpen();
 }
 
 // ====== Crear mapa (idempotente) ======
@@ -300,6 +588,7 @@ export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZO
   _throttledUpd = throttle(updateLabelVisibility, 80);
   map.on('zoomend', _throttledUpd);
   map.on('moveend', _throttledUpd);
+  map.on('click', () => setSelectedCentro(null));
 
   // Logs + fallback base
   if (baseInicial) {
@@ -352,6 +641,8 @@ export function crearMapa(defaultLatLng = CHILOE_COORDS, defaultZoom = CHILOE_ZO
 
   // UI de búsqueda
   initMapSearchUI();
+  initLabelDensityControls();
+  initMapFilterControls();
 
   log('Mapa creado');
   return map;
@@ -415,14 +706,18 @@ export function drawCentrosInMap(centros = [], defaultLatLng = CHILOE_COORDS, on
   if (!centrosGroup) return;
 
   centros = Array.isArray(centros) ? centros : [];
+  centrosDataGlobal = centros;
   windowCentrosDebug = centros.slice();
 
   centrosGroup.clearLayers();
   centroPolys = {};
   centroTooltips = {};
-
-  // Paleta consistente si existe u.paletteFor (de /js/utils.js)
-  const hasPalette = !!(window.u && typeof window.u.paletteFor === 'function');
+  centroBaseStyles = {};
+  centroMeta = {};
+  if (selectedCentroIdx != null && (selectedCentroIdx < 0 || selectedCentroIdx >= centros.length)) {
+    clearSelectionBlink();
+    selectedCentroIdx = null;
+  }
 
   let dib = 0, filtrados = 0;
   centros.forEach((c, idx) => {
@@ -432,15 +727,9 @@ export function drawCentrosInMap(centros = [], defaultLatLng = CHILOE_COORDS, on
 
     if (coords.length < 3) { filtrados++; return; }
 
-    // Color por proveedor/contacto/código (opcional)
-    let color = '#1976d2', fill = '#e3f2fd';
-    if (hasPalette) {
-      const pal = window.u.paletteFor(c.proveedor || c.name || c.code || idx);
-      color = pal.main;
-      fill = pal.faint;
-    }
-
-    const poly = L.polygon(coords, { color, weight: 3, fillOpacity: .28, fillColor: fill }).addTo(centrosGroup);
+    const baseStyle = getBaseStyleForCentro(c);
+    const meta = getCentroMeta(c);
+    const poly = L.polygon(coords, baseStyle).addTo(centrosGroup);
 
     // cursor pointer para interacción
     try { poly.getElement?.()?.classList?.add('cursor-pointer'); } catch {}
@@ -457,7 +746,7 @@ export function drawCentrosInMap(centros = [], defaultLatLng = CHILOE_COORDS, on
     // Hover highlight + “pill” solo en hover
     poly.on('mouseover', () => {
       try {
-        poly.setStyle({ weight: 5 });
+        if (selectedCentroIdx !== idx) applyPolygonStyle(idx, 'hover');
         poly.bringToFront();
         const tEl = poly.getTooltip()?.getElement?.();
         if (tEl) tEl.classList.add('hover-pill'); // activa píldora solo mientras está el hover
@@ -465,7 +754,7 @@ export function drawCentrosInMap(centros = [], defaultLatLng = CHILOE_COORDS, on
     });
     poly.on('mouseout', () => {
       try {
-        poly.setStyle({ weight: 3 });
+        if (selectedCentroIdx !== idx) applyPolygonStyle(idx, 'base');
         const tEl = poly.getTooltip()?.getElement?.();
         if (tEl) tEl.classList.remove('hover-pill'); // vuelve a texto transparente
       } catch {}
@@ -474,12 +763,15 @@ export function drawCentrosInMap(centros = [], defaultLatLng = CHILOE_COORDS, on
     // Click → modal
     poly.on('click', (ev) => {
       ev?.originalEvent && L.DomEvent.stopPropagation(ev);
+      setSelectedCentro(idx);
       openCentroModal(c);
       onPolyClick && onPolyClick(idx);
     });
 
     centroPolys[idx] = poly;
     centroTooltips[idx] = poly.getTooltip();
+    centroBaseStyles[idx] = baseStyle;
+    centroMeta[idx] = meta;
     dib++;
   });
 
@@ -491,6 +783,17 @@ export function drawCentrosInMap(centros = [], defaultLatLng = CHILOE_COORDS, on
   setTimeout(() => map && map.invalidateSize(), 300);
 
   updateLabelVisibility();
+  applyMapFilters();
+  if (pendingUrlFocus) {
+    const idx = getCenterIndexByQuery(pendingUrlFocus);
+    if (idx >= 0) {
+      setTimeout(() => focusCentroInMap(idx), 120);
+    }
+    pendingUrlFocus = null;
+  }
+  if (selectedCentroIdx != null && centroPolys[selectedCentroIdx]) {
+    setSelectedCentro(selectedCentroIdx);
+  }
   log('Redibujados centros =', dib);
 }
 
@@ -499,6 +802,7 @@ export function updateLabelVisibility() {
 
   const z = map.getZoom();
   const show = z >= LABEL_ZOOM;
+  const densityCfg = LABEL_DENSITY_CFG[labelDensity] || LABEL_DENSITY_CFG.medium;
 
   // Escala suave según zoom (opcional, usa tu CSS --label-scale)
   const scale = (z >= 16) ? 1.00
@@ -507,22 +811,146 @@ export function updateLabelVisibility() {
               : (z >= 13) ? 0.85
               : 0.80;
 
-  Object.values(centroTooltips).forEach(t => {
+  const tooltipEls = [];
+  Object.entries(centroTooltips).forEach(([idx, t]) => {
     const el = t?.getElement?.();
-    if (!el) return;
+    const poly = centroPolys[idx];
+    if (!el || !poly) return;
+    const meta = centroMeta[idx];
+    if (!passesMapFilters(meta)) {
+      el.style.display = 'none';
+      return;
+    }
+    tooltipEls.push({ idx: Number(idx), el, poly });
+  });
 
-    el.style.display = show ? 'block' : 'none';
-    el.style.setProperty('--label-scale', scale);
+  if (!show) {
+    tooltipEls.forEach(({ el }) => { el.style.display = 'none'; });
+    return;
+  }
 
-    // Fuerza orientación horizontal y evita “columna” de letras
-    el.style.writingMode = 'horizontal-tb';
-    el.style.textOrientation = 'mixed';
-    el.style.whiteSpace = 'normal';
-    el.style.wordBreak = 'normal';
-    el.style.maxWidth = '260px'; // alineado con CSS
+  const bounds = map.getBounds().pad(0.12);
+  const centerPt = map.latLngToLayerPoint(map.getCenter());
+
+  const candidates = tooltipEls
+    .filter(({ poly }) => bounds.intersects(poly.getBounds()))
+    .map((item) => {
+      const c = item.poly.getBounds().getCenter();
+      const pt = map.latLngToLayerPoint(c);
+      const d = Math.hypot(pt.x - centerPt.x, pt.y - centerPt.y);
+      return { ...item, pt, d };
+    })
+    .sort((a, b) => a.d - b.d);
+
+  const keep = [];
+  for (const cand of candidates) {
+    if (keep.length >= densityCfg.maxLabels) break;
+    const tooClose = keep.some((k) => Math.hypot(cand.pt.x - k.pt.x, cand.pt.y - k.pt.y) < densityCfg.minPx);
+    if (!tooClose) keep.push(cand);
+  }
+
+  const keepSet = new Set(keep.map((k) => k.idx));
+  if (selectedCentroIdx != null) keepSet.add(Number(selectedCentroIdx));
+
+  tooltipEls.forEach(({ idx, el }) => {
+    const on = keepSet.has(idx);
+    el.style.display = on ? 'block' : 'none';
+    el.classList.toggle('is-selected-label', idx === selectedCentroIdx);
+    if (on) {
+      el.style.setProperty('--label-scale', scale);
+      el.style.writingMode = 'horizontal-tb';
+      el.style.textOrientation = 'mixed';
+      el.style.whiteSpace = 'normal';
+      el.style.wordBreak = 'normal';
+      el.style.maxWidth = '280px';
+
+      if (el.dataset.clickBound !== '1') {
+        el.dataset.clickBound = '1';
+        el.style.pointerEvents = 'auto';
+        el.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const c = centrosDataGlobal[idx];
+          if (!c) return;
+          setSelectedCentro(idx);
+          openCentroModal(c);
+        });
+      }
+    }
   });
 
   log('updateLabelVisibility → zoom:', z, 'showLabels:', show, 'tooltips:', Object.keys(centroTooltips).length);
+}
+
+function initLabelDensityControls() {
+  const root = document.querySelector('.map-density-toggle');
+  if (!root || root.dataset.bound === '1') return;
+  root.dataset.bound = '1';
+
+  const paintState = () => {
+    root.querySelectorAll('[data-label-density]').forEach((btn) => {
+      const on = btn.getAttribute('data-label-density') === labelDensity;
+      btn.classList.toggle('is-active', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  };
+
+  paintState();
+
+  root.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-label-density]');
+    if (!btn) return;
+    const mode = btn.getAttribute('data-label-density');
+    if (!LABEL_DENSITY_CFG[mode]) return;
+    labelDensity = mode;
+    paintState();
+    updateLabelVisibility();
+  });
+}
+
+function initMapFilterControls() {
+  const root = document.querySelector('.map-type-filters');
+  if (!root || root.dataset.bound === '1') return;
+  root.dataset.bound = '1';
+
+  const paintState = () => {
+    root.querySelectorAll('[data-map-filter]').forEach((btn) => {
+      const key = btn.getAttribute('data-map-filter') || '';
+      let on = true;
+      if (key.startsWith('tipo:')) {
+        const v = key.split(':')[1];
+        on = !!mapFilterState.tipo[v];
+      } else if (key.startsWith('estado:')) {
+        const v = key.split(':')[1];
+        on = !!mapFilterState.estado[v];
+      }
+      btn.classList.toggle('is-active', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  };
+
+  paintState();
+
+  root.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-map-filter]');
+    if (!btn) return;
+    const key = btn.getAttribute('data-map-filter') || '';
+
+    if (key.startsWith('tipo:')) {
+      const v = key.split(':')[1];
+      if (!(v in mapFilterState.tipo)) return;
+      mapFilterState.tipo[v] = !mapFilterState.tipo[v];
+      if (!Object.values(mapFilterState.tipo).some(Boolean)) mapFilterState.tipo[v] = true;
+    } else if (key.startsWith('estado:')) {
+      const v = key.split(':')[1];
+      if (!(v in mapFilterState.estado)) return;
+      mapFilterState.estado[v] = !mapFilterState.estado[v];
+      if (!Object.values(mapFilterState.estado).some(Boolean)) mapFilterState.estado[v] = true;
+    } else return;
+
+    paintState();
+    applyMapFilters();
+  });
 }
 
 function centrarMapaEnPoligonos(centros = [], defaultLatLng = CHILOE_COORDS) {
@@ -541,11 +969,12 @@ function centrarMapaEnPoligonos(centros = [], defaultLatLng = CHILOE_COORDS) {
 }
 
 export function focusCentroInMap(idx) {
+  const meta = centroMeta[idx];
+  if (meta && !passesMapFilters(meta)) return;
   const poly = centroPolys[idx]; if (!poly) return;
   try { map.fitBounds(poly.getBounds(), { maxZoom: 16 }); } catch {}
+  setSelectedCentro(Number(idx));
   const t = centroTooltips[idx]?.getElement?.(); if (t) t.style.display = 'block';
-  // Flash de énfasis breve
-  try { poly.setStyle({ weight: 6 }); setTimeout(() => poly.setStyle({ weight: 3 }), 850); } catch {}
 }
 
 // ====== Control de medición (regla) ======
@@ -599,6 +1028,8 @@ function initMapSearchUI() {
   const list  = document.getElementById('mapSearchResults');
   if (!input || !list) { logWarn('mapSearch UI no encontrado'); return; }
   log('mapSearch UI OK');
+  const focusFromUrl = new URLSearchParams(window.location.search).get('focusCentro');
+  if (focusFromUrl) pendingUrlFocus = String(focusFromUrl || '').trim();
 
   let activeIdx = -1;         // índice seleccionado en la lista
   let lastHits  = [];         // cache último resultado para Enter
@@ -642,7 +1073,9 @@ function initMapSearchUI() {
     const qLower = q.toLowerCase();
     const hits = (centrosDataGlobal || [])
       .map((c, idx) => ({ c, idx }))
-      .filter(({ c }) => {
+      .filter(({ c, idx }) => {
+        const meta = centroMeta[idx] || getCentroMeta(c);
+        if (!passesMapFilters(meta)) return false;
         const area   = (c.codigoArea || c?.detalles?.codigoArea || '').toString().toLowerCase();
         const nombre = (c.name || c.proveedor || '').toString().toLowerCase();
         const code   = (c.code || '').toString().toLowerCase();
@@ -740,7 +1173,13 @@ function initMapSearchUI() {
   input.setAttribute('aria-autocomplete', 'list');
   input.setAttribute('aria-haspopup', 'listbox');
   list.setAttribute('role', 'listbox');
+
+  if (pendingUrlFocus) {
+    input.value = pendingUrlFocus;
+  }
 }
 
 // Helpers debug
 window.__MAPDBG = { L, map, setBaseLayer, baseLayersDefs, centrosSample: () => centrosDataGlobal.slice(0, 3) };
+
+

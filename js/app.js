@@ -38,6 +38,30 @@ const $ = window.$ || window.jQuery;
 const APPLOG  = (...a) => console.log('[APP]', ...a);
 const APPWARN = (...a) => console.warn('[APP]', ...a);
 const APPERR  = (...a) => console.error('[APP]', ...a);
+const CENTROS_CACHE_KEY = 'mmpp.centros.cache.v1';
+const CENTROS_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function readCentrosCache() {
+  try {
+    const raw = sessionStorage.getItem(CENTROS_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    const ts = Number(parsed?.ts || 0);
+    const data = Array.isArray(parsed?.data) ? parsed.data : [];
+    if (!data.length) return [];
+    if (!ts || (Date.now() - ts) > CENTROS_CACHE_TTL_MS) return [];
+    return data;
+  } catch {
+    return [];
+  }
+}
+
+function saveCentrosCache(data = []) {
+  try {
+    const arr = Array.isArray(data) ? data : [];
+    sessionStorage.setItem(CENTROS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: arr }));
+  } catch {}
+}
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
@@ -97,6 +121,14 @@ async function init() {
   }
 
   // ===== Carga inicial =====
+  const cached = readCentrosCache();
+  if (cached.length) {
+    APPLOG('Render inmediato desde cache:', cached.length);
+    Estado.centros = cached;
+    loadTablaCentros(cached);
+    try { cargarYRenderizarCentros(cached); } catch {}
+  }
+
   await recargarCentros();
 
   // ===== Formularios =====
@@ -110,6 +142,7 @@ async function recargarCentros() {
     APPLOG('recargarCentros(): solicitando API…');
     const data = await getCentrosAll();
     Estado.centros = Array.isArray(data) ? data : [];
+    saveCentrosCache(Estado.centros);
     APPLOG('Centros recibidos:', Estado.centros.length, Estado.centros[0] || '(sin items)');
 
     // Tabla
@@ -127,7 +160,11 @@ async function recargarCentros() {
     }
   } catch (e) {
     APPERR('Error cargando centros:', e);
-    M.toast({ html: 'Error cargando centros', classes: 'red' });
+    if (!Array.isArray(Estado.centros) || !Estado.centros.length) {
+      M.toast({ html: 'Error cargando centros', classes: 'red' });
+    } else {
+      APPWARN('Se mantiene data en cache por error de red.');
+    }
   }
 }
 
