@@ -48,7 +48,6 @@ const state = {
     visitas: [],
     interacciones: [],
     disponibilidades: [],
-    semiCerrados: [],
     oportunidades: []
   },
   filters: {
@@ -75,11 +74,11 @@ const state = {
   annualVisibleProviders: []
 };
 
-const STATUS_ORDER = ['disponible', 'semiCerrado', 'confirmado', 'descartado', 'perdido'];
+const STATUS_ORDER = ['disponible', 'semi_acordado', 'acordado', 'descartado', 'perdido'];
 const STATUS_LABELS = {
   disponible: 'Disponible',
-  semiCerrado: 'Semi-cerrado',
-  confirmado: 'Confirmado compra',
+  semi_acordado: 'Semi-acordado',
+  acordado: 'Acordado',
   descartado: 'Descartado',
   perdido: 'Perdido'
 };
@@ -378,14 +377,15 @@ function overlapDays(aStart, aEnd, bStart, bEnd) {
 function normalizeEstadoOportunidad(o) {
   const e = String(o?.estado || '').toLowerCase();
   const r = String(o?.resultadoFinal || '').toLowerCase();
-  if (['cerrado_exitoso', 'adquirido', 'comprado', 'cerrado'].includes(e) || r === 'vendido') return 'confirmado';
+  if (e === 'semi_acordado' || e === 'semi_cerrado') return 'semi_acordado';
+  if (e === 'acordado' || e === 'cerrado' || ['adquirido', 'comprado'].includes(e) || r === 'vendido') return 'acordado';
   if (e === 'descartado') return 'descartado';
   if (e === 'perdido' || r === 'no_vendido') return 'perdido';
   return '';
 }
 
 function emptyStatusTotals() {
-  return { disponible: 0, semiCerrado: 0, confirmado: 0, descartado: 0, perdido: 0 };
+  return { disponible: 0, semi_acordado: 0, acordado: 0, descartado: 0, perdido: 0 };
 }
 
 function getActiveStatusKeys() {
@@ -430,8 +430,8 @@ function computeBiomasaForRange(start, end, allowed) {
   const totals = emptyStatusTotals();
   const contrib = {
     disponible: new Map(),
-    semiCerrado: new Map(),
-    confirmado: new Map(),
+    semi_acordado: new Map(),
+    acordado: new Map(),
     descartado: new Map(),
     perdido: new Map()
   };
@@ -456,31 +456,24 @@ function computeBiomasaForRange(start, end, allowed) {
     addContribution(contrib, 'disponible', r, val);
   });
 
-  (state.raw.semiCerrados || []).forEach((r) => {
-    if (!allowedRow(r)) return;
-    const mk = monthKeyFrom(r);
-    if (!mk) return;
-    const m = monthRangeFromKey(mk);
-    const d = overlapDays(m.start, m.end, start, end);
-    if (!d) return;
-    const daysInMonth = overlapDays(m.start, m.end, m.start, m.end) || 30;
-    const tons = Number(r?.tons ?? 0) || 0;
-    const val = tons * (d / daysInMonth);
-    totals.semiCerrado += val;
-    addContribution(contrib, 'semiCerrado', r, val);
-  });
-
   (state.raw.oportunidades || []).forEach((o) => {
     if (!allowedRow(o)) return;
     const status = normalizeEstadoOportunidad(o);
     if (!status) return;
-    const tons = Number(o?.biomasaEstimacion || 0) || 0;
+    const tons = Number(o?.tonsAcordadas ?? o?.biomasaEstimacion ?? 0) || 0;
     if (!tons) return;
-    const d = dateFrom(o, ['fechaCierre', 'ultimaActividadAt', 'updatedAt', 'createdAt']);
+
+    const rs = dateFrom(o, ['vigenciaDesde', 'fechaInicio', 'createdAt', 'updatedAt', 'ultimaActividadAt']);
+    const re = dateFrom(o, ['vigenciaHasta']) || rs;
+    if (!rs || !re) return;
+
+    const d = overlapDays(rs, re, start, end);
     if (!d) return;
-    if (d < start || d > end) return;
-    totals[status] += tons;
-    addContribution(contrib, status, o, tons);
+
+    const dur = overlapDays(rs, re, rs, re) || 1;
+    const val = tons * (d / dur);
+    totals[status] += val;
+    addContribution(contrib, status, o, val);
   });
 
   const contribObj = Object.fromEntries(
@@ -562,8 +555,8 @@ function resetBioInteractiveSelection() {
 function renderBiomasaTableAndCards(totalsRaw, totalsFiltered, label) {
   if (ui.bioPeriodLabel) ui.bioPeriodLabel.textContent = label;
   if (ui.bioCardDisponible) ui.bioCardDisponible.textContent = fmtN(totalsRaw.disponible);
-  if (ui.bioCardSemi) ui.bioCardSemi.textContent = fmtN(totalsRaw.semiCerrado);
-  if (ui.bioCardConfirmado) ui.bioCardConfirmado.textContent = fmtN(totalsRaw.confirmado);
+  if (ui.bioCardSemi) ui.bioCardSemi.textContent = fmtN(totalsRaw.semi_acordado);
+  if (ui.bioCardConfirmado) ui.bioCardConfirmado.textContent = fmtN(totalsRaw.acordado);
   if (ui.bioCardDescartado) ui.bioCardDescartado.textContent = fmtN(totalsRaw.descartado);
   if (ui.bioCardPerdido) ui.bioCardPerdido.textContent = fmtN(totalsRaw.perdido);
 
@@ -620,9 +613,9 @@ function renderProvidersByStatus(statusKey) {
 function chartColorsForFocus() {
   const base = {
     disponible: '#0ea5e9',
-    semiCerrado: '#14b8a6',
-    confirmado: '#16a34a',
-    descartado: '#f59e0b',
+    semi_acordado: '#f59e0b',
+    acordado: '#16a34a',
+    descartado: '#94a3b8',
     perdido: '#ef4444'
   };
   if (!state.bio.focusStatus) return STATUS_ORDER.map((k) => base[k]);
@@ -935,7 +928,11 @@ function setBioScale(scale) {
 function refreshActiveNav() {
   if (!ui.nav) return;
   const href = window.location.href;
-  ui.nav.querySelectorAll('.menu-group').forEach((g) => g.classList.remove('has-active-link'));
+  ui.nav.querySelectorAll('.menu-group').forEach((g) => {
+    g.classList.remove('has-active-link');
+    // Mantener Configuración siempre visible (submenu "Maestros")
+    if (g.dataset.group !== 'config') g.classList.remove('is-open');
+  });
   ui.nav.querySelectorAll('.submenu a').forEach((a) => {
     a.classList.remove('is-active-link');
     const h = a.getAttribute('href') || '';
@@ -952,6 +949,9 @@ function refreshActiveNav() {
       a.closest('.menu-group')?.classList.add('has-active-link', 'is-open');
     }
   });
+
+  // Configuración siempre abierto para que "Maestros" no desaparezca.
+  ui.nav.querySelector('.menu-group[data-group="config"]')?.classList.add('is-open');
 }
 
 function bindSidebar() {
@@ -959,7 +959,17 @@ function bindSidebar() {
   ui.nav.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-toggle-group]');
     if (btn) {
-      btn.closest('.menu-group')?.classList.toggle('is-open');
+      const group = btn.closest('.menu-group');
+      if (!group) return;
+      if (group.dataset.group === 'config') {
+        group.classList.add('is-open');
+        return;
+      }
+      const willOpen = !group.classList.contains('is-open');
+      ui.nav.querySelectorAll('.menu-group.is-open').forEach((g) => {
+        if (g !== group && g.dataset.group !== 'config') g.classList.remove('is-open');
+      });
+      group.classList.toggle('is-open', willOpen);
       return;
     }
     const link = e.target.closest('.submenu a[href^="#"]');
@@ -1079,12 +1089,11 @@ async function loadDashboardData() {
   const y = new Date().getFullYear();
   const q = new URLSearchParams({ from: `${y - 1}-01`, to: `${y + 1}-12` });
 
-  const [contactosR, visitasR, interaccionesR, disponibilidadesR, semiR, oportunidadesR] = await Promise.all([
+  const [contactosR, visitasR, interaccionesR, disponibilidadesR, oportunidadesR] = await Promise.all([
     fetchJson('/contactos').catch(() => []),
     fetchJson('/visitas').catch(() => []),
     fetchJson('/interacciones').catch(() => []),
     fetchJson(`/disponibilidades?${q.toString()}`).catch(() => []),
-    fetchJson(`/semi-cerrados?from=${y - 1}-01&to=${y + 1}-12`).catch(() => []),
     fetchJson('/oportunidades').catch(() => [])
   ]);
 
@@ -1092,7 +1101,6 @@ async function loadDashboardData() {
   state.raw.visitas = toArray(visitasR);
   state.raw.interacciones = toArray(interaccionesR);
   state.raw.disponibilidades = toArray(disponibilidadesR);
-  state.raw.semiCerrados = toArray(semiR);
   state.raw.oportunidades = toArray(oportunidadesR);
 
   populateGlobalFilters();

@@ -17,20 +17,18 @@
   <link rel="stylesheet" href="/css/app-shell.css?v=1">
   <link rel="stylesheet" href="/css/mmpp-ui.css?v=1">
   <link rel="stylesheet" href="/css/contactos.css?v=20">
-  <link rel="stylesheet" href="/css/interacciones.css?v=10">
-  <link rel="stylesheet" href="/css/contactos-tabla.css?v=7">
+  <link rel="stylesheet" href="/css/interacciones.css?v=12">
+  <link rel="stylesheet" href="/css/contactos-tabla.css?v=8">
   <link rel="stylesheet" href="/css/contactos-form.css?v=1">
   <link rel="stylesheet" href="/css/resumen-semanal.css?v=2">
-  <link rel="stylesheet" href="/js/abastecimiento/visitas/fotos/styles.css">
-  <link rel="stylesheet" href="/css/modals-modern.css?v=2">
+  <link rel="stylesheet" href="/js/abastecimiento/visitas/fotos/styles.css?v=2">
+  <link rel="stylesheet" href="/css/modals-modern.css?v=3">
+  <link rel="stylesheet" href="/css/tratos.css?v=1">
+  <link rel="stylesheet" href="/css/muestreos-tabla.css?v=1">
+  <link rel="stylesheet" href="/css/muestreo-resultado.css?v=1">
+  <link rel="stylesheet" href="/css/calendario.css?v=1">
 
-  <style>
-    /* Force visibility and layout rules */
-    .am-panel-view { display: none !important; }
-    .am-panel-view.active { display: block !important; }
-    .am-panel-view.active .am-tab-grid-2 { display: flex !important; gap: 20px; }
-    .app-modal-modern .app-modal-body { overflow-y: auto !important; max-height: 520px; }
-  </style></head>
+</head>
 <body class="contactos-page">
   <div class="layout">
     <aside class="sidebar" aria-label="Navegacion principal">
@@ -42,26 +40,41 @@
         </div>
       </div>
 
-      <div id="sideNav" class="menu" role="navigation" aria-label="Menu lateral principal">
+      <div id="sideNav" class="menu">
+
         <section class="menu-group" data-group="dashboard">
           <button class="menu-head" type="button" data-toggle-group="dashboard">
-            <span class="menu-head-text"><i class="bi bi-speedometer2"></i> Dashboard</span>
+            <span class="menu-head-text"><i class="bi bi-speedometer2"></i> Inicio</span>
             <i class="bi bi-chevron-down caret"></i>
           </button>
           <div class="submenu">
-            <a href="/index.html#dashboard-home"><i class="bi bi-house-door"></i> Inicio</a>
-            <a href="/index.html#dashboard-kpi"><i class="bi bi-graph-up"></i> KPIs</a>
+            <a href="/index.html#dashboard-home"><i class="bi bi-house-door"></i> Dashboard</a>
+          </div>
+        </section>
+
+        <section class="menu-group is-open has-active-link" data-group="contactos">
+          <button class="menu-head" type="button" data-toggle-group="contactos">
+            <span class="menu-head-text"><i class="bi bi-person-lines-fill"></i> Proveedores MMPP</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+          <div class="submenu">
+            <a href="#tab-gestion" data-tab-link><i class="bi bi-inbox"></i> Bandeja <span class="menu-badge-wrap"><span id="sbBadgeOverdue" class="menu-badge warn">V 0</span><span id="sbBadgeToday" class="menu-badge ok">H 0</span></span></a>
+            <a href="#tab-directorio" data-tab-link><i class="bi bi-buildings"></i> Directorio</a>
+            <a href="#tab-calendario" data-tab-link><i class="bi bi-calendar3"></i> Calendario</a>
+            <a href="#tab-interacciones" data-tab-link><i class="bi bi-chat-left-dots"></i> Interacciones</a>
+            <a href="#tab-tratos" data-tab-link><i class="bi bi-handshake"></i> Tratos</a>
+            <a href="#tab-muestreos" data-tab-link><i class="bi bi-eyedropper"></i> Muestreos</a>
           </div>
         </section>
 
         <section class="menu-group" data-group="proveedores">
           <button class="menu-head" type="button" data-toggle-group="proveedores">
-            <span class="menu-head-text"><i class="bi bi-buildings"></i> Proveedores</span>
+            <span class="menu-head-text"><i class="bi bi-buildings"></i> BD Cultivos</span>
             <i class="bi bi-chevron-down caret"></i>
           </button>
           <div class="submenu">
             <a href="/html/Centros/index.html#tab-centros"><i class="bi bi-grid-1x2"></i> Centros</a>
-            <a href="/html/Centros/index.html#tab-mapa"><i class="bi bi-geo-alt"></i> Mapa de Centros</a>
+            <a href="/html/Centros/index.html#tab-mapa"><i class="bi bi-geo-alt"></i> Mapa</a>
           </div>
         </section>
 
@@ -71,19 +84,9 @@
             <i class="bi bi-chevron-down caret"></i>
           </button>
           <div class="submenu">
-            <a href="/html/Abastecimiento/asignacion/inventario_mmpp.html"><i class="bi bi-box-seam"></i> Inventario MMPP</a>
-          </div>
-        </section>
-
-        <section class="menu-group is-open has-active-link" data-group="gestion">
-          <button class="menu-head" type="button" data-toggle-group="gestion">
-            <span class="menu-head-text"><i class="bi bi-kanban"></i> Gestion</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="#tab-gestion" data-tab-link><i class="bi bi-house-gear"></i> Bandeja <span class="menu-badge-wrap"><span id="sbBadgeOverdue" class="menu-badge warn">V 0</span><span id="sbBadgeToday" class="menu-badge ok">H 0</span></span></a>
-            <a href="#tab-registro" data-tab-link><i class="bi bi-pencil-square"></i> Registro</a>
-            <a href="#tab-consulta" data-tab-link><i class="bi bi-table"></i> Consulta</a>
+            <a href="/#compras"><i class="bi bi-kanban"></i> Compras</a>
+            <a href="/#inventario"><i class="bi bi-box-seam"></i> Disponibilidad</a>
+            <a href="/#balance"><i class="bi bi-bar-chart-line"></i> Balance</a>
           </div>
         </section>
 
@@ -93,10 +96,20 @@
             <i class="bi bi-chevron-down caret"></i>
           </button>
           <div class="submenu">
-            <a href="/html/Abastecimiento/historial/index.html"><i class="bi bi-journal-text"></i> Historial de gestiones</a>
-            <a href="/html/Abastecimiento/asignacion/resumen_mmpp.html"><i class="bi bi-diagram-3"></i> Trazabilidad por proveedor</a>
+            <a href="/html/Abastecimiento/historial/index.html"><i class="bi bi-journal-text"></i> Gestiones</a>
           </div>
         </section>
+
+        <section class="menu-group" data-group="config">
+          <button class="menu-head" type="button" data-toggle-group="config">
+            <span class="menu-head-text"><i class="bi bi-sliders"></i> Configuración</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+          <div class="submenu">
+            <a href="/html/Maestros/index.html"><i class="bi bi-table"></i> Maestros</a>
+          </div>
+        </section>
+
       </div>
     </aside>
 
@@ -120,23 +133,30 @@
       </div>
     </header>
 
-    <!-- Tabs (corregido: sin col sX y con aria-controls) -->
-    <div class="card tabs-card">
-      <ul id="tabs" class="tabs tabs-pad">
-        <li class="tab"><a class="active" href="#tab-gestion" aria-controls="tab-gestion">Bandeja</a></li>
-        <li class="tab"><a href="#tab-registro" aria-controls="tab-registro">Registro</a></li>
-        <li class="tab"><a href="#tab-consulta" aria-controls="tab-consulta">Consulta</a></li>
-        <li class="tab tab-hidden"><a href="#tab-contactos" aria-controls="tab-contactos">Proveedores</a></li>
-        <li class="tab tab-hidden"><a href="#tab-visitas" aria-controls="tab-visitas">Visitas a Cultivos</a></li>
-        <li class="tab tab-hidden"><a href="#tab-personas" aria-controls="tab-personas">Agenda de Contactos</a></li>
-        <li class="tab tab-hidden"><a href="#tab-muestreos" aria-controls="tab-muestreos">Muestreos</a></li>
-        <li class="tab tab-hidden"><a href="#tab-interacciones" aria-controls="tab-interacciones">Interacciones</a></li>
-        <li class="tab tab-hidden"><a href="#tab-resumen" aria-controls="tab-resumen">Resumen (semana/mes)</a></li>
-      </ul>
+    <!-- Navegación principal -->
+    <div class="maest-tabs" id="cMainTabs">
+      <button class="maest-tab-btn active" data-c-tab="tab-gestion">
+        <i class="bi bi-inbox"></i> Gestión
+      </button>
+      <button class="maest-tab-btn" data-c-tab="tab-directorio">
+        <i class="bi bi-buildings"></i> Directorio
+      </button>
+      <button class="maest-tab-btn" data-c-tab="tab-calendario">
+        <i class="bi bi-calendar3"></i> Calendario
+      </button>
+      <button class="maest-tab-btn" data-c-tab="tab-interacciones">
+        <i class="bi bi-chat-left-dots"></i> Interacciones
+      </button>
+      <button class="maest-tab-btn" data-c-tab="tab-tratos">
+        <i class="bi bi-handshake"></i> Tratos
+      </button>
+      <button class="maest-tab-btn" data-c-tab="tab-muestreos">
+        <i class="bi bi-eyedropper"></i> Muestreos
+      </button>
     </div>
 
-    <!-- GESTION: INICIO OPERATIVO -->
-    <section id="tab-gestion" class="col s12">
+    <!-- ══ PANEL: GESTIÓN ══ -->
+    <div id="tab-gestion" class="c-panel active">
       <div class="mmpp-card section-card gestion-home">
         <div class="gestion-home-head">
           <h5>Centro de Gestión</h5>
@@ -201,9 +221,406 @@
           </article>
         </div>
       </div>
-    </section>
+    </div>
 
-    <section id="tab-registro" class="col s12">
+    <!-- ══ PANEL: DIRECTORIO ══ -->
+    <div id="tab-directorio" class="c-panel">
+      <div class="panel-tabs-row">
+        <div class="maest-tabs maest-tabs--sub">
+          <button class="maest-tab-btn active" data-dir-tab="dir-empresas">
+            <i class="bi bi-buildings"></i> Empresas
+          </button>
+          <button class="maest-tab-btn" data-dir-tab="dir-personas">
+            <i class="bi bi-person-badge"></i> Personas
+          </button>
+        </div>
+        <div class="panel-actions">
+          <button id="btnQuickDisponibilidad" class="am-btn" type="button" style="background:#fff;border:1px solid #cbd5e1;color:#0f172a;">
+            <i class="bi bi-plus-lg"></i> Agregar biomasa
+          </button>
+          <button id="qaNuevoContacto" class="am-btn am-btn-primary">
+            <i class="bi bi-plus-lg"></i> Nuevo proveedor
+          </button>
+        </div>
+      </div>
+
+      <!-- Sub-panel: Empresas -->
+      <div id="tab-contactos" class="c-sub-panel active">
+        <div id="contactosV2Root"></div>
+        <div class="act-filters-bar" style="margin:10px 0 10px;">
+          <div class="act-filters-left">
+            <select id="fltSemana" class="browser-default act-select" aria-label="Filtrar por semana">
+              <option value="">Semana…</option>
+            </select>
+            <select id="fltComuna" class="browser-default act-select" aria-label="Filtrar por comuna">
+              <option value="">Comuna…</option>
+            </select>
+            <input id="searchContactos" class="mmpp-input act-input-q" placeholder="Buscar proveedor, centro, responsable…" aria-label="Buscar en la tabla">
+            <button id="dir-f-clear" class="dash-btn act-btn-clear" type="button">Limpiar</button>
+            <div class="act-export-group" aria-label="Exportar tabla">
+              <button class="act-export-btn" data-dir-export="csv" title="Exportar CSV" type="button">CSV</button>
+              <button class="act-export-btn" data-dir-export="xls" title="Exportar Excel" type="button">XLS</button>
+              <button class="act-export-btn" data-dir-export="pdf" title="Exportar PDF" type="button">PDF</button>
+            </div>
+          </div>
+          <div class="act-filters-right">
+            <select id="fltResp" class="browser-default act-select" aria-label="Filtrar por responsable">
+              <option value="">Responsable…</option>
+            </select>
+          </div>
+        </div>
+        <div class="mmpp-table-wrap">
+          <table id="tablaContactos" class="display mmpp table-full">
+            <thead>
+              <tr>
+                <th>Semana</th><th>Fecha</th><th>Proveedor</th>
+                <th>Centro</th><th>Tons</th><th>Responsable</th><th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sub-panel: Personas -->
+      <div id="tab-personas" class="c-sub-panel">
+        <div class="act-filters-bar" style="margin:10px 0 10px;">
+          <div class="act-filters-left">
+            <input id="searchPersonas" class="mmpp-input act-input-q" placeholder="Buscar contacto, empresa…" aria-label="Buscar en personas" style="max-width:360px;">
+            <button id="per-f-clear" class="dash-btn act-btn-clear" type="button">Limpiar</button>
+            <div class="act-export-group" aria-label="Exportar tabla personas">
+              <button class="act-export-btn" data-personas-export="csv" title="Exportar CSV" type="button">CSV</button>
+              <button class="act-export-btn" data-personas-export="xls" title="Exportar Excel" type="button">XLS</button>
+              <button class="act-export-btn" data-personas-export="pdf" title="Exportar PDF" type="button">PDF</button>
+            </div>
+          </div>
+        </div>
+        <div class="mmpp-table-wrap" style="margin-top:8px;">
+          <table id="tablaPersonas" class="display mmpp table-full">
+            <thead>
+              <tr>
+                <th>Fecha</th><th>Contacto</th><th>Teléfono(s)</th>
+                <th>Email</th><th>Comuna</th><th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PANEL: CALENDARIO ══ -->
+    <div id="tab-calendario" class="c-panel">
+      <div id="calendario-root"></div>
+    </div>
+
+    <!-- ══ PANEL: INTERACCIONES ══ -->
+    <div id="tab-interacciones" class="c-panel">
+      <!-- Tabla unificada: Visitas + Interacciones (header generado por mountActivityTable) -->
+      <div id="interacciones-root"></div>
+    </div>
+
+    <!-- ══ PANEL: TRATOS ══ -->
+    <div id="tab-tratos" class="c-panel">
+      <div class="mmpp-card">
+        <!-- Barra de control (estilo Interacciones) -->
+        <div class="act-period-nav" id="trt-period-nav">
+          <div class="act-period-left">
+          <div class="act-period-modes" role="group" aria-label="Modo de periodo">
+              <button class="act-period-mode is-active" data-period="all" type="button">Todo</button>
+              <button class="act-period-mode" data-period="week" type="button">Semana</button>
+              <button class="act-period-mode" data-period="month" type="button">Mes</button>
+            </div>
+            <div class="act-period-ctrl" id="trt-period-ctrl" hidden>
+              <button class="act-period-arrow" id="trt-period-prev" title="Periodo anterior" aria-label="Periodo anterior" type="button">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              <span class="act-period-label" id="trt-period-label"></span>
+              <button class="act-period-arrow" id="trt-period-next" title="Periodo siguiente" aria-label="Periodo siguiente" type="button">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+
+            <select id="trt-f-estado" class="browser-default act-select" aria-label="Estado del trato" style="max-width:190px;">
+              <option value="">Todos los estados</option>
+              <option value="disponible">Disponible</option>
+              <option value="acordado">Acordado</option>
+              <option value="semi_acordado">Semi-acordado</option>
+              <option value="descartado">Descartado</option>
+              <option value="caido">Caído</option>
+            </select>
+            <button id="trt-f-clear" class="dash-btn act-btn-clear" type="button">Limpiar</button>
+          </div>
+
+          <div class="tratos-actions">
+            <button id="btnNuevoTrato" class="am-btn am-btn-primary" type="button">
+              <i class="bi bi-plus-lg"></i> Nuevo trato
+            </button>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="tratos-kpis" id="tratosKpis">
+          <div class="trato-kpi" data-estado="activo"><div class="k">Activos</div><div class="v">—</div></div>
+          <div class="trato-kpi" data-estado="acordado"><div class="k">Acordados</div><div class="v">—</div></div>
+          <div class="trato-kpi" data-estado="cosecha_iniciada"><div class="k">En cosecha</div><div class="v">—</div></div>
+          <div class="trato-kpi" data-estado="caido"><div class="k">Caídos</div><div class="v">—</div></div>
+        </div>
+
+        <!-- ── MODAL: RESULTADO MUESTREO (SUMMARY POST-GUARDADO) ── -->
+  <!-- MODAL: RESULTADOS DE CLASIFICACION (Post-Guardado) -->
+  <div id="modalMuResultado" class="modal">
+    <div class="mu-res-header">
+      <h5 class="mu-res-title">Resumen del Muestreo</h5>
+    </div>
+    <div class="mu-res-body">
+      <!-- Info Meta -->
+      <div class="mu-res-meta">
+        <div class="mu-res-meta-item">
+          <div class="mu-res-meta-label">Fecha</div>
+          <div class="mu-res-meta-val" id="muResFecha">-</div>
+        </div>
+        <div class="mu-res-meta-item">
+          <div class="mu-res-meta-label">Línea</div>
+          <div class="mu-res-meta-val" id="muResLinea">-</div>
+        </div>
+        <div class="mu-res-meta-item" style="flex:1;">
+          <div class="mu-res-meta-label">Proveedor</div>
+          <div class="mu-res-meta-val" id="muResProv">-</div>
+        </div>
+      </div>
+
+      <!-- KPIs Principales -->
+      <div class="mu-res-kpis">
+        <div class="mu-res-kpi">
+          <div class="mu-res-kpi-label">Rendimiento (R%)</div>
+          <div class="mu-res-kpi-val" id="muResRend">-</div>
+        </div>
+        <div class="mu-res-kpi">
+          <div class="mu-res-kpi-label">U x Kg (Calibre)</div>
+          <div class="mu-res-kpi-val" id="muResUxKg">-</div>
+        </div>
+        <div class="mu-res-kpi">
+          <div class="mu-res-kpi-label">Rechazo (%)</div>
+          <div class="mu-res-kpi-val" id="muResPctRech">-</div>
+        </div>
+        <div class="mu-res-kpi">
+          <div class="mu-res-kpi-label">Procesable (%)</div>
+          <div class="mu-res-kpi-val" id="muResPctProc">-</div>
+        </div>
+      </div>
+
+      <!-- Barra de Clasificacion Destacada -->
+      <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: center;">
+        <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase;">RESULTADO DE CLASIFICACIÓN</div>
+        <div id="muResClas" style="font-size: 24px; font-weight: 800; color: #0f172a;">-</div>
+      </div>
+
+      <!-- Detalle de Evaluacion -->
+      <div class="mu-res-section-title">Análisis de Criterios (Maestros)</div>
+      <div id="muResListaEvaluacion" class="mu-res-eval-list">
+        <!-- Se puebla dinamicamente -->
+      </div>
+    </div>
+    <div class="mu-res-footer">
+      <button type="button" class="modal-close btn-flat waves-effect" style="font-weight: 700;">Cerrar Resumen</button>
+    </div>
+  </div>
+        <!-- Tabla de tratos -->
+        <div class="tratos-table-wrap">
+          <table class="tratos-table" id="tratosTable">
+            <thead>
+              <tr>
+                <th>Proveedor</th>
+                <th>Estado</th>
+                <th>Vigencia</th>
+                <th>Tons comprometidas</th>
+                <th>Precio</th>
+                <th>Condiciones</th>
+                <th>Responsable</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tratosBody">
+              <tr><td colspan="8" class="tratos-empty">Cargando tratos…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- fin tab-tratos -->
+
+    <!-- ══ PANEL: MUESTREOS ══ -->
+    <div id="tab-muestreos" class="c-panel">
+      <div class="mmpp-card">
+        <!-- Panel Semántico -->
+        <div id="muSemanticStatus" class="mu-semantic-status" style="display:none;"></div>
+
+        <!-- Barra de navegación de periodo (estilo Interacciones/Tratos) -->
+        <div class="act-period-nav" id="mu-period-nav">
+          <div class="act-period-left">
+            <div class="act-period-modes" id="mu-period-modes" role="group" aria-label="Modo de periodo">
+              <button class="act-period-mode is-active" data-period="all" type="button">Todo</button>
+              <button class="act-period-mode" data-period="week" type="button">Semana</button>
+              <button class="act-period-mode" data-period="month" type="button">Mes</button>
+            </div>
+            <div class="act-period-ctrl" id="mu-period-ctrl" hidden>
+              <button class="act-period-arrow" id="mu-period-prev" title="Periodo anterior" aria-label="Periodo anterior" type="button">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              <span class="act-period-label" id="mu-period-label"></span>
+              <button class="act-period-arrow" id="mu-period-next" title="Periodo siguiente" aria-label="Periodo siguiente" type="button">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+              <button class="act-period-today" id="mu-period-today" type="button">Hoy</button>
+            </div>
+
+            <div class="act-period-modes" id="muModeSwitch" style="margin-left:12px;" role="group" aria-label="Vista de la tabla">
+              <button class="act-period-mode is-active" data-mu-mode="flat" title="Cronológico" type="button"><i class="bi bi-list-ul"></i></button>
+              <button class="act-period-mode" data-mu-mode="grouped" title="Agrupado por proveedor" type="button"><i class="bi bi-grid-1x2"></i></button>
+            </div>
+
+            <div id="muRutaChips" class="act-period-modes" style="margin-left:12px;" role="group" aria-label="Filtrar por ruta">
+              <button type="button" class="act-period-mode is-active" data-mu-route="">Todas</button>
+              <button type="button" class="act-period-mode" data-mu-route="abastecimiento">Abastecimiento</button>
+              <button type="button" class="act-period-mode" data-mu-route="calidad">Calidad</button>
+            </div>
+          </div>
+          <div class="tratos-actions">
+            <button id="qaTomarMuestras" class="am-btn am-btn-primary" type="button">
+              <i class="bi bi-plus-lg"></i> Nuevo muestreo
+            </button>
+          </div>
+        </div>
+
+        <!-- Barra de filtros -->
+        <div class="act-filters-bar" style="margin:10px 0 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+          <div class="act-filters-left" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex: 1;">
+            <select id="muFltProveedor" class="browser-default act-select" style="min-width: 180px;" aria-label="Filtrar por proveedor">
+              <option value="">Todos los proveedores</option>
+            </select>
+            <select id="muFltContacto" class="browser-default act-select" style="min-width: 160px;" aria-label="Filtrar por contacto">
+              <option value="">Todos los contactos</option>
+            </select>
+            <select id="muFltResponsable" class="browser-default act-select" style="min-width: 160px;" aria-label="Filtrar por responsable">
+              <option value="">Todos los responsables</option>
+            </select>
+            <select id="muFltProducto" class="browser-default act-select" style="min-width: 150px;" aria-label="Filtrar por tipo de producto">
+              <option value="">Todos los productos</option>
+            </select>
+
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <input id="muFltDesde" type="date" class="mmpp-input act-input-q" style="max-width:130px; height: 38px;" title="Desde">
+              <span style="color: #94a3b8;">-</span>
+              <input id="muFltHasta" type="date" class="mmpp-input act-input-q" style="max-width:130px; height: 38px;" title="Hasta">
+            </div>
+
+            <div style="position: relative; flex: 1; min-width: 150px;">
+              <i class="bi bi-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px;"></i>
+              <input id="searchMuestreos" type="text" class="mmpp-input" placeholder="Buscar..." style="padding-left: 32px; width: 100%; height: 38px;">
+            </div>
+
+            <button id="btnMuFltClear" class="dash-btn act-btn-clear" style="height: 38px;" type="button">Limpiar</button>
+            <input id="muFltOrigen" type="hidden" value="">
+          </div>
+        </div>
+
+        <!-- Tabla de muestreos -->
+        <div class="mmpp-table-wrap">
+          <table id="tablaMuestreos" class="display mmpp">
+            <thead>
+              <tr id="muTableHeaders">
+                <!-- Los headers se inyectan dinámicamente desde JS según la vista -->
+                <th>Cargando...</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <style>
+            /* Utilidades para los Deta / Minigráficos y Acordeón */
+            .mu-semantic-status { background: #f8fafc; border-radius: 8px; border-left: 4px solid #0ea5e9; padding: 12px 18px; margin-bottom: 20px; align-items: center; justify-content: space-between; gap: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+            .mu-semantic-text { font-size: 14px; color: #334155; line-height: 1.5; margin: 0; flex: 1; }
+            .mu-semantic-text strong { color: #0f172a; font-weight: 700; }
+            .mu-semantic-alert { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px; white-space: nowrap; flex-shrink: 0; }
+            .mu-semantic-alert.is-danger { background: #fef2f2; color: #b91c1c; border: 1px solid #f87171; }
+            .mu-semantic-alert.is-safe { background: #e6f4ea; color: #1e8e3e; border: 1px solid #a5d6a7; }
+            
+            .mu-delta { font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 2px; margin-left: 4px; }
+            .mu-delta.is-pos { color: #059669; }
+            .mu-delta.is-neg { color: #dc2626; }
+            .mu-delta.is-neu { color: #6b7280; }
+            
+            .mu-grouped-detail { display: none; background: #f0f8ff; }
+            .mu-grouped-detail.is-open { display: table-row; }
+            .mu-grouped-detail > td { 
+              border-left: 4px solid #0ea5e9; 
+              border-bottom: 6px solid #94a3b8 !important; 
+              padding: 10px 24px 32px 50px !important; 
+              box-shadow: inset 0 -6px 8px -8px rgba(0,0,0,0.1);
+            }
+            .muestreo-master-row { cursor: pointer; transition: background 0.2s; }
+            .muestreo-master-row:hover { background: #f1f5f9 !important; }
+            .muestreo-master-row.is-expanded td { background: #f0f8ff !important; border-bottom: none !important; border-top: 2px solid #0ea5e9 !important; }
+            .muestreo-master-row.is-expanded td:first-child { border-left: 4px solid #0ea5e9 !important; }
+            
+            .mu-icon-expand { transition: transform 0.2s ease; display: inline-block; }
+            .muestreo-master-row.is-expanded .mu-icon-expand { transform: rotate(180deg); color: #0ea5e9 !important; }
+            .mu-master-kpi { font-weight: 700; color: #1e293b; }
+            .mu-sparkline { overflow: visible; stroke-linejoin: round; stroke-linecap: round; }
+            .mu-sparkline circle { fill: #0ea5e9; }
+            .mu-prov-stack { display: grid; gap: 2px; }
+            .mu-prov-name { font-weight: 700; color: #223a5d; font-size: 13px; }
+            .mu-prov-count { font-size: 11px; color: #64748b; }
+            
+            .mu-mini-table { width: 100%; border-collapse: collapse; margin: 0; background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,0.08); border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; }
+            .mu-mini-table th, .mu-mini-table td { padding: 8px 12px; font-size: 12px; text-align: center; border-bottom: 1px solid #e2e8f0; }
+            .mu-mini-table th { background: #f8fafc; color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; border-top: none; }
+            .mu-mini-table td:nth-child(2), .mu-mini-table th:nth-child(2) { text-align: left; }
+
+            /* Ajustes de columnas para evitar scroll horizontal */
+            /* Dropdown de Acciones en Fila */
+            .mu-action-dropdown { position: relative; display: inline-block; vertical-align: middle; }
+            .mu-action-trigger { 
+              background: none; border: 1.5px solid #e2e8f0; color: #64748b; 
+              width: 32px; height: 32px; border-radius: 8px; cursor: pointer; 
+              display: flex; align-items: center; justify-content: center; transition: all 0.2s; 
+            }
+            .mu-action-trigger:hover, .mu-action-trigger.is-active { background: #f1f5f9; color: #0ea5e9; border-color: #0ea5e9; }
+            
+            .mu-action-menu { 
+              display: none; position: absolute; right: 0; top: 100%; margin-top: 4px;
+              background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; 
+              box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+              z-index: 1000; min-width: 170px; padding: 6px;
+            }
+            .mu-action-menu.is-open { display: block; animation: muFadeScale 0.15s ease-out; }
+            
+            @keyframes muFadeScale {
+              from { opacity: 0; transform: scale(0.95) translateY(-5px); }
+              to { opacity: 1; transform: scale(1) translateY(0); }
+            }
+            
+            .mu-action-item { 
+              display: flex; align-items: center; gap: 10px; width: 100%; 
+              padding: 9px 12px; border: none; background: none; 
+              font-size: 13px; font-weight: 500; color: #334155; cursor: pointer; 
+              text-align: left; border-radius: 7px; transition: all 0.2s;
+            }
+            .mu-action-item:hover { background: #f1f5f9; color: #0ea5e9; }
+            .mu-action-item i { font-size: 18px; color: #94a3b8; transition: color 0.2s; }
+            .mu-action-item:hover i { color: #0ea5e9; }
+            .mu-action-divider { height: 1px; background: #f1f5f9; margin: 4px 6px; }
+
+            /* Ajustes celda fecha */
+            .mu-date-cell { display: flex; flex-direction: column; line-height: 1.2; }
+            .mu-date-main { font-weight: 700; color: #0f172a; font-size: 13px; }
+            .mu-date-sub { font-size: 11px; color: #64748b; }
+          </style>
+        </div>
+      </div>
+    </div><!-- fin tab-muestreos -->
+
+    <!-- Oculto: registro rápido (modales y botones usados por JS) -->
+    <div id="tab-registro" style="display:none">
       <div class="mmpp-card section-card gestion-home">
         <div class="gestion-home-head">
           <h5>Registro operativo</h5>
@@ -217,145 +634,169 @@
           <div class="registro-hint"><strong>3.</strong> Usa teléfono y correo válidos para seguimiento.</div>
         </div>
 
-        <div class="gestion-quick-grid" id="registroQuickGrid">
-          <button id="qaNuevaLlamada" class="mmpp-add qa-btn"><i class="material-icons left icon-18">phone</i>Nueva llamada</button>
-          <button id="qaNuevaVisita" class="mmpp-add qa-btn"><i class="material-icons left icon-18">directions_boat</i>Nueva visita</button>
-          <button id="qaTomarMuestras" class="mmpp-add qa-btn"><i class="material-icons left icon-18">science</i>Flujo de muestra</button>
-          <button id="qaNuevaReunion" class="mmpp-add qa-btn"><i class="material-icons left icon-18">groups</i>Nueva reunión</button>
-          <button id="qaNuevoCompromiso" class="mmpp-add qa-btn"><i class="material-icons left icon-18">event_available</i>Nuevo compromiso</button>
-          <button id="qaNuevoContacto" class="mmpp-add qa-btn"><i class="material-icons left icon-18">person_add</i>Registrar contacto</button>
-        </div>
+        <!-- botones movidos a los paneles correspondientes -->
 
-        <div id="modalMuestreo" class="modal app-modal modal-muestreo">
-          <div class="modal-content">
-        <div class="muestreo-shell" id="muestreoShell">
-          <div class="muestreo-shell-head">
-            <h6>Muestreos MMPP</h6>
-            <div class="segmented muestreo-view-switch" role="group" aria-label="Vista de muestreos">
-              <button type="button" id="btnMuestreoViewForm" class="is-active">Formulario</button>
-              <button type="button" id="btnMuestreoViewSummary">Resumen</button>
+        <div id="modalMuestreo" class="modal app-modal-modern modal-muestreo">
+          <div class="app-modal-header">
+            <div class="app-modal-header-top">
+              <h5 id="muModalTitle">Nuevo Muestreo</h5>
+              <div class="segmented muestreo-view-switch" role="group" aria-label="Vista de muestreos">
+                <button type="button" id="btnMuestreoViewForm" class="is-active">Formulario</button>
+                <button type="button" id="btnMuestreoViewSummary">Resumen</button>
+              </div>
             </div>
           </div>
 
+          <div class="app-modal-body" style="padding:0;">
+
           <section id="muestreoFormView">
-            <div class="mu-wizard-head" role="tablist" aria-label="Pasos de muestreo">
+            <!-- Wizard steps indicator -->
+            <div class="mu-wizard-head" role="tablist" aria-label="Pasos de muestreo" style="padding:0 24px;">
               <button type="button" class="mu-step-btn is-active" data-mu-step="1">1. Base</button>
               <button type="button" class="mu-step-btn" data-mu-step="2">2. Técnica</button>
               <button type="button" class="mu-step-btn" data-mu-step="3">3. Categorías</button>
             </div>
-            <div id="muStepSummary" class="mu-step-summary muestreo-hidden">
+            <div id="muStepSummary" class="mu-step-summary muestreo-hidden" style="padding:0 24px 8px;">
               <span id="muStepSummaryText">-</span>
-              <button type="button" id="btnMuEditBase" class="dash-btn">Editar</button>
+              <button type="button" id="btnMuEditBase" class="am-btn am-btn-flat" style="height:28px;padding:0 10px;font-size:12px;">Editar</button>
             </div>
+
+            <!-- Hidden fields -->
             <input id="muestreoOrigen" type="hidden" value="terreno">
+            <input id="muestreoProveedorId" type="hidden" value="">
+            <input id="muestreoProveedorKey" type="hidden" value="">
 
-            <section id="muStep1" class="mu-step-panel">
-              <div class="muestreo-route" role="group" aria-label="Ruta de muestra">
-                <button type="button" class="mu-route-btn is-active" data-mu-route="terreno">Toma en terreno</button>
-                <button type="button" class="mu-route-btn" data-mu-route="directa">Recepción directa</button>
-                <button type="button" class="mu-route-btn" data-mu-route="planta">Enviar a planta</button>
-              </div>
-            <p id="muestreoRouteHint" class="muestreo-route-hint">Ruta activa: toma en terreno. Completa datos técnicos del muestreo.</p>
+            <!-- PASO 1: BASE -->
+            <section id="muStep1" class="mu-step-panel" style="padding:16px 24px;">
 
-            <form id="muestreoForm" class="muestreo-form-grid">
-              <label>Proveedor
-                <input id="muestreoProveedor" class="mmpp-input" type="text" placeholder="Nombre proveedor" required>
-              </label>
-              <label>Centro
-                <input id="muestreoCentro" class="mmpp-input" type="text" placeholder="Centro / concesión">
-              </label>
-              <label>Línea
-                <input id="muestreoLinea" class="mmpp-input" type="text" placeholder="Ej: Línea 2 o Cosecha">
-              </label>
-              <label>Fecha
-                <input id="muestreoFecha" class="mmpp-input" type="date" required>
-              </label>
-              <label>Responsable
-                <input id="muestreoResponsable" class="mmpp-input" type="text" placeholder="Responsable PG">
-              </label>
-            </form>
-              <div class="mu-nav">
+              <!-- Toggle Abastecimiento / Calidad -->
+              <div class="mu-tipo-toggle" style="display:flex;gap:0;margin-bottom:20px;border:1.5px solid #e2e8f0;border-radius:8px;overflow:hidden;width:fit-content;">
+                <button type="button" class="mu-tipo-btn is-active" data-mu-route="terreno" style="padding:7px 20px;font-size:13px;font-weight:600;border:none;background:#0ea5e9;color:#fff;cursor:pointer;transition:all .15s;">
+                  Abastecimiento
+                </button>
+              <form id="muestreoForm" class="am-form-grid">
+                <div class="am-input-group col-12" style="margin-bottom: 20px;">
+                  <label class="am-label">Unidad muestreadora</label>
+                  <div class="mu-tipo-modes" style="display: flex; background: #f1f5f9; border-radius: 12px; padding: 4px;">
+                    <button type="button" class="mu-tipo-btn is-active" data-mu-route="abastecimiento" style="flex: 1; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Abastecimiento</button>
+                    <button type="button" class="mu-tipo-btn" data-mu-route="calidad" style="flex: 1; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Calidad</button>
+                  </div>
+                  <input type="hidden" id="muestreoOrigen" value="abastecimiento">
+                </div>
+
+                <!-- Proveedor con autocomplete (col-6 = mitad ancho) -->
+                <div class="am-input-group col-6">
+                  <label class="am-label" for="muestreoProveedor">Proveedor</label>
+                  <div style="position:relative;">
+                    <input id="muestreoProveedor" class="am-input" type="text" placeholder="Buscar proveedor..." autocomplete="off" required>
+                    <div id="muestreoProveedorDrop" class="am-dropdown"></div>
+                  </div>
+                </div>
+
+                <div class="am-input-group col-3">
+                  <label class="am-label" for="muestreoCentro">Centro</label>
+                  <select id="muestreoCentro" class="am-input browser-default" style="height:42px;padding:0 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;box-sizing:border-box;">
+                    <option value="">— Seleccionar —</option>
+                  </select>
+                </div>
+
+                <div class="am-input-group col-3">
+                  <label class="am-label" for="muestreoLinea">Línea</label>
+                  <input id="muestreoLinea" class="am-input" type="text" placeholder="Ej: 2">
+                </div>
+
+                <div class="am-input-group col-6">
+                  <label class="am-label" for="muestreoResponsable">Responsable</label>
+                  <select id="muestreoResponsable" class="am-input browser-default" style="height:42px;padding:0 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;box-sizing:border-box;">
+                    <option value="">— Seleccionar —</option>
+                  </select>
+                </div>
+
+                <div class="am-input-group col-6">
+                  <label class="am-label" for="muestreoFecha">Fecha</label>
+                  <input id="muestreoFecha" class="am-input" type="date" required>
+                </div>
+
+              </form>
+              <div class="mu-nav" style="margin-top:16px;">
                 <span></span>
-                <button type="button" id="btnMuToStep2" class="mmpp-add">Continuar</button>
+                <button type="button" id="btnMuToStep2" class="am-btn am-btn-primary">Continuar →</button>
               </div>
             </section>
 
-            <section id="muStep2" class="mu-step-panel muestreo-hidden">
-            <div id="muestreoTechnicalBlock">
-              <div class="muestreo-kpis-edit">
-                <label>U° x Kg
-                  <input id="muestreoUxKg" class="mmpp-input" type="number" min="0" step="1" placeholder="Unidades por kilo">
-                </label>
-                <label>Peso choritos vivos (kg)
-                  <input id="muestreoPesoVivo" class="mmpp-input" type="number" min="0" step="0.01" placeholder="0.00">
-                </label>
-                <label>Peso carne cocida (kg)
-                  <input id="muestreoPesoCocida" class="mmpp-input" type="number" min="0" step="0.01" placeholder="0.00">
-                </label>
-                <label>R% carne
-                  <input id="muestreoRendimiento" class="mmpp-input" type="text" readonly>
-                </label>
+
+            <!-- PASO 2: TÉCNICA -->
+            <section id="muStep2" class="mu-step-panel muestreo-hidden" style="padding:16px 24px;">
+              <div id="muestreoTechnicalBlock">
+                <div class="am-form-grid">
+                  <div class="am-input-group col-6">
+                    <label class="am-label" for="muestreoUxKg">U° × Kg</label>
+                    <input id="muestreoUxKg" class="am-input" type="number" min="0" step="1" placeholder="Unidades por kilo">
+                  </div>
+                  <div class="am-input-group col-6">
+                    <label class="am-label" for="muestreoPesoVivo">Peso choritos vivos (kg)</label>
+                    <input id="muestreoPesoVivo" class="am-input" type="number" min="0" step="0.01" placeholder="0.00">
+                  </div>
+                  <div class="am-input-group col-6">
+                    <label class="am-label" for="muestreoPesoCocida">Peso carne cocida (kg)</label>
+                    <input id="muestreoPesoCocida" class="am-input" type="number" min="0" step="0.01" placeholder="0.00">
+                  </div>
+                  <div class="am-input-group col-6">
+                    <label class="am-label" for="muestreoRendimiento">R% carne <small style="color:#0ea5e9;">(calculado)</small></label>
+                    <input id="muestreoRendimiento" class="am-input" type="text" readonly style="background:#f8fafc;color:#0ea5e9;font-weight:700;">
+                  </div>
+                </div>
+                <p class="muestreo-note" style="margin-top:8px;font-size:12px;color:#94a3b8;">R% = (peso carne cocida ÷ peso choritos vivos) × 100</p>
               </div>
-              <p class="muestreo-note">R% carne = (peso carne cocida / peso choritos vivos) x 100.</p>
-            </div>
-              <div class="mu-nav">
-                <button type="button" id="btnMuBackToStep1" class="dash-btn">Atrás</button>
-                <button type="button" id="btnMuToStep3" class="mmpp-add">Continuar</button>
+              <div class="mu-nav" style="margin-top:16px;">
+                <button type="button" id="btnMuBackToStep1" class="am-btn am-btn-flat">← Atrás</button>
+                <button type="button" id="btnMuToStep3" class="am-btn am-btn-primary">Continuar →</button>
               </div>
             </section>
 
-            <section id="muStep3" class="mu-step-panel muestreo-hidden">
-              <div class="mu-section-title">Selecciona categorías presentes</div>
+            <!-- PASO 3: CATEGORÍAS -->
+            <section id="muStep3" class="mu-step-panel muestreo-hidden" style="padding:16px 24px;">
+              <div class="mu-section-title" style="font-size:13px;font-weight:700;color:#334155;margin-bottom:10px;">Selecciona categorías presentes</div>
               <div class="muestreo-cat-selector" id="muCatSelector"></div>
-              <p class="muestreo-route-hint">El detalle se edita en el panel derecho.</p>
-
+              <p class="muestreo-route-hint" style="font-size:12px;color:#94a3b8;margin:8px 0 12px;">El detalle numérico se edita en el panel de la derecha →</p>
               <div class="muestreo-totals" id="muestreoTotals">
                 <article><span>Total muestra</span><strong id="muTotalMuestra">0.00 %</strong></article>
                 <article><span>Procesable</span><strong id="muProcesable">0.00 %</strong></article>
                 <article><span>Rechazos</span><strong id="muRechazos">0.00 %</strong></article>
                 <article><span>Defectos</span><strong id="muDefectos">0.00 %</strong></article>
               </div>
-
-            <div class="muestreo-actions">
-              <button type="button" id="btnMuBackToStep2" class="dash-btn">Atrás</button>
-              <button type="button" id="btnMuestreoClear" class="dash-btn">Limpiar</button>
-              <button type="button" id="btnMuestreoSave" class="mmpp-add">Guardar muestreo</button>
-            </div>
+              <div class="muestreo-actions" style="margin-top:16px;">
+                <button type="button" id="btnMuBackToStep2" class="am-btn am-btn-flat">← Atrás</button>
+                <button type="button" id="btnMuestreoClear" class="am-btn am-btn-flat">Limpiar</button>
+                <button type="button" id="btnMuestreoSave" class="am-btn am-btn-primary">Guardar muestreo</button>
+              </div>
             </section>
           </section>
 
-          <section id="muestreoSummaryView" class="muestreo-hidden">
-            <div class="muestreo-summary-filters">
-              <input id="muResumenBuscar" class="mmpp-input" type="text" placeholder="Buscar proveedor o centro...">
-              <select id="muResumenPeriodo" class="browser-default modern-select">
+          <!-- RESUMEN VIEW -->
+          <section id="muestreoSummaryView" class="muestreo-hidden" style="padding:16px 24px;">
+            <div class="muestreo-summary-filters" style="display:flex;gap:10px;margin-bottom:12px;">
+              <input id="muResumenBuscar" class="am-input" type="text" placeholder="Buscar proveedor o centro..." style="flex:1;">
+              <select id="muResumenPeriodo" class="am-select browser-default" style="width:160px;">
                 <option value="all">Todo</option>
                 <option value="week">Semana actual</option>
                 <option value="month">Mes actual</option>
                 <option value="year">Año actual</option>
               </select>
             </div>
-
             <div class="muestreo-summary-kpis">
               <article><span>Muestreos</span><strong id="muKpiCount">0</strong></article>
               <article><span>Prom. R% carne</span><strong id="muKpiRend">0%</strong></article>
-              <article><span>Prom. U° x Kg</span><strong id="muKpiUxKg">0</strong></article>
+              <article><span>Prom. U° × Kg</span><strong id="muKpiUxKg">0</strong></article>
               <article><span>Prom. rechazos</span><strong id="muKpiRech">0%</strong></article>
             </div>
-
             <div class="muestreo-topcats" id="muTopCats"></div>
-
             <div class="muestreo-table-wrap">
               <table class="muestreo-table">
                 <thead>
                   <tr>
-                    <th>Fecha</th>
-                    <th>Proveedor</th>
-                    <th>Centro</th>
-                    <th>Línea</th>
-                    <th>R% carne</th>
-                    <th>U° x Kg</th>
-                    <th>Procesable</th>
-                    <th>Rechazos</th>
+                    <th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Línea</th>
+                    <th>R% carne</th><th>U° × Kg</th><th>Procesable</th><th>Rechazos</th>
                   </tr>
                 </thead>
                 <tbody id="muResumenBody">
@@ -364,288 +805,60 @@
               </table>
             </div>
           </section>
-        </div>
+
+          </div><!-- app-modal-body -->
+
+          <div class="app-modal-footer">
+            <button type="button" id="btnMuestreoCloseMain" class="am-btn am-btn-flat">Cerrar</button>
           </div>
-          <div class="modal-footer modal-actions">
-            <button type="button" id="btnMuestreoCloseMain" class="btn-flat">Cerrar</button>
-          </div>
         </div>
+
         <div id="modalMuestreoItems" class="modal app-modal modal-muestreo-side">
           <div class="modal-content">
             <div class="mu-section-title">Detalle de ítems seleccionados</div>
-            <p class="mu-side-help">Ingresa valores base por item. El <strong>% se calcula automaticamente</strong> y no se puede editar.</p>
+            <p class="mu-side-help">Ingresa valores base por item. El <strong>% se calcula automáticamente</strong> y no se puede editar.</p>
             <div class="mu-cat-editor-list" id="muCatEditorList">
               <div class="muted">Selecciona una categoría para comenzar.</div>
             </div>
           </div>
           <div class="modal-footer modal-actions mu-side-actions">
-            <button type="button" id="btnMuestreoSaveSide" class="mmpp-add">Guardar muestreo</button>
-            <button type="button" id="btnMuestreoCloseSide" class="btn-flat">Cerrar panel</button>
+            <button type="button" id="btnMuestreoSaveSide" class="am-btn am-btn-primary">Guardar muestreo</button>
+            <button type="button" id="btnMuestreoCloseSide" class="am-btn am-btn-flat">Cerrar panel</button>
           </div>
         </div>
       </div>
-    </section>
+    </div>
 
-    <section id="tab-consulta" class="col s12">
-      <div class="mmpp-card section-card gestion-home">
-        <div class="gestion-home-head">
-          <h5>Consulta de información</h5>
-          <p>Abre solo la tabla que necesites para no sobrecargar la vista.</p>
-          <p class="consulta-subline">Tip: parte en Visitas pendientes para ejecutar seguimiento diario.</p>
-        </div>
-        <div class="gestion-jump-grid">
-          <a href="#tab-contactos" class="gestion-jump" data-open-consulta-panel="#tab-contactos">Proveedores <span id="consultaCountEmpresas" class="consulta-count">0</span></a>
-          <a href="#tab-visitas" class="gestion-jump" data-open-consulta-panel="#tab-visitas" data-consulta-preset="visitas-pendientes">Visitas pendientes <span id="consultaCountVisitas" class="consulta-count">0</span></a>
-          <a href="#tab-personas" class="gestion-jump" data-open-consulta-panel="#tab-personas">Agenda <span id="consultaCountAgenda" class="consulta-count">0</span></a>
-          <a href="#tab-muestreos" class="gestion-jump" data-open-consulta-panel="#tab-muestreos">Muestreos <span id="consultaCountMuestreos" class="consulta-count">0</span></a>
-          <a href="#tab-interacciones" class="gestion-jump" data-open-consulta-panel="#tab-interacciones">Interacciones remotas <span id="consultaCountInteracciones" class="consulta-count">0</span></a>
-          <a href="#tab-resumen" class="gestion-jump" data-open-consulta-panel="#tab-resumen">Resumen <span id="consultaCountResumen" class="consulta-count">0</span></a>
+
+    <div id="modalMuInfo" class="modal app-modal-modern">
+      <div class="app-modal-header">
+        <div class="app-modal-header-top">
+          <h5>Detalle de muestreo</h5>
+          <button type="button" class="modal-close" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:20px;">&times;</button>
         </div>
       </div>
-    </section>
-
-    <!-- EMPRESAS -->
-    <section id="tab-contactos" class="col s12">
-      <div class="mmpp-card section-card">
-        <div class="consulta-panel-head">
-          <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Consulta</button>
-          <h6>Proveedores</h6>
-          <span id="estadoFiltroContactos" class="consulta-filter-state">Sin filtros</span>
-        </div>
-        <div id="contactosV2Root"></div>
-
-        <div class="table-toolbar toolbar-wrap">
-          <div class="left left-actions">
-            <button id="btnOpenContactoModal" class="mmpp-add">
-              <i class="material-icons left icon-18">record_voice_over</i> Registrar contacto
-            </button>
-            <!-- (El botón general de "Asignar biomasa semi-cerrada" fue eliminado) -->
-          </div>
-          <div id="filtrosContactos" class="filtros-row filtros-grow">
-            <select id="fltSemana" class="browser-default modern-select" aria-label="Filtrar por semana">
-              <option value="">Semana…</option>
-            </select>
-            <select id="fltComuna" class="browser-default modern-select" aria-label="Filtrar por comuna">
-              <option value="">Comuna…</option>
-            </select>
-            <select id="fltResp" class="browser-default modern-select" aria-label="Filtrar por responsable">
-              <option value="">Responsable…</option>
-              <option>Claudio Alba</option>
-              <option>Patricio Alvarez</option>
-              <option>Carlos Avendaño</option>
-            </select>
-            <input id="searchContactos" class="mmpp-input" placeholder="Buscar…" aria-label="Buscar en la tabla">
-          </div>
-        </div>
-
-        <div class="mmpp-table-wrap">
-          <table id="tablaContactos" class="display mmpp table-full">
-            <thead>
-              <tr>
-                <th>Semana</th>
-                <th>Fecha</th>
-                <th>Proveedor</th>
-                <th>Centro</th>
-                <th>Tons</th>
-                <th>Responsable</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- VISITAS -->
-    <section id="tab-visitas" class="col s12">
-      <div class="mmpp-card section-card">
-        <div class="consulta-panel-head">
-          <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Consulta</button>
-          <h6>Visitas a Cultivos</h6>
-          <span id="estadoFiltroVisitas" class="consulta-filter-state">Sin filtros</span>
-        </div>
-        <div class="muted mb-8">
-          Revisión, filtros y exportación de visitas en terreno (incluye muestreo).
-        </div>
-
-        <div class="visitas-toolbar">
-          <div id="visitas-filtros-bar" class="visitas-filtros">
-            <div class="fld">
-              <label for="fltVisSem">Semana</label>
-              <select id="fltVisSem" class="browser-default" aria-label="Filtrar por semana">
-                <option value="">Todas</option>
-              </select>
-            </div>
-            <div class="fld">
-              <label for="fltVisComuna">Comuna</label>
-              <select id="fltVisComuna" class="browser-default" aria-label="Filtrar por comuna">
-                <option value="">Todas</option>
-              </select>
-            </div>
-          </div>
-          <div class="visitas-search">
-            <input id="searchVisitas" type="text" placeholder="Buscar en visitas…" aria-label="Buscar en la tabla de visitas">
-          </div>
-        </div>
-
-        <div class="mmpp-table-wrap">
-          <table id="tablaVisitas" class="display mmpp table-full">
-            <thead>
-              <tr>
-                <th>Sem.</th>
-                <th>Fecha</th>
-                <th>Proveedor</th>
-                <th>Centro</th>
-                <th>Próximo paso</th>
-                <th>Fecha prox.</th>
-                <th>Tons</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- AGENDA DE CONTACTOS -->
-    <section id="tab-personas" class="col s12">
-      <div class="mmpp-card section-card">
-        <div class="consulta-panel-head">
-          <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Consulta</button>
-          <h6>Agenda de Contactos</h6>
-          <span id="estadoFiltroPersonas" class="consulta-filter-state">Sin filtros</span>
-        </div>
-        <div class="table-toolbar">
-          <div class="left left-actions">
-            <button id="btnOpenPersonaModal" class="mmpp-add">
-              <i class="material-icons left">person_add</i> Registrar persona
-            </button>
-          </div>
-          <div class="right">
-            <div class="search">
-              <input id="searchPersonas" class="mmpp-input" placeholder="Buscar…">
-            </div>
-          </div>
-        </div>
-        <div class="mmpp-table-wrap">
-          <table id="tablaPersonas" class="display mmpp table-full">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Contacto</th>
-                <th>Teléfono(s)</th>
-                <th>Email</th>
-                <th>Comuna</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- MUESTREOS -->
-    <section id="tab-muestreos" class="col s12">
-      <div class="mmpp-card section-card">
-        <div class="consulta-panel-head">
-          <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Consulta</button>
-          <h6>Muestreos</h6>
-          <span id="estadoFiltroMuestreos" class="consulta-filter-state">Sin filtros</span>
-        </div>
-        <div class="muted mb-8">
-          Revision consolidada de resultados de muestreo para lectura rapida y comparacion por porcentaje.
-        </div>
-
-        <div class="table-toolbar mu-toolbar">
-          <div class="mu-chip-filters">
-            <div class="mu-chip-group">
-              <span class="mu-chip-title">Ruta</span>
-              <div id="muRutaChips" class="mu-chip-wrap" role="group" aria-label="Filtrar por ruta"></div>
-            </div>
-            <div class="mu-chip-group">
-              <span class="mu-chip-title">Responsable</span>
-              <div id="muRespChips" class="mu-chip-wrap" role="group" aria-label="Filtrar por responsable"></div>
-            </div>
-          </div>
-          <div id="muFiltrosBar" class="mu-filtros-grid">
-            <select id="muFltProveedor" class="browser-default modern-select" aria-label="Filtrar por proveedor">
-              <option value="">Todos los proveedores</option>
-            </select>
-            <select id="muFltContacto" class="browser-default modern-select" aria-label="Filtrar por contacto">
-              <option value="">Todos los contactos</option>
-            </select>
-            <input id="muFltResponsable" type="hidden" value="">
-            <input id="muFltOrigen" type="hidden" value="">
-            <input id="muFltDesde" class="mmpp-input" type="date" aria-label="Fecha desde">
-            <input id="muFltHasta" class="mmpp-input" type="date" aria-label="Fecha hasta">
-            <input id="searchMuestreos" class="mmpp-input" type="text" placeholder="Buscar proveedor o contacto..." aria-label="Buscar en muestreos">
-            <button id="btnMuFltClear" class="dash-btn" type="button">Limpiar</button>
-          </div>
-        </div>
-
-        <div class="mu-kpi-strip" aria-live="polite">
-          <article><span>Muestreos</span><strong id="muTabKpiTotal">0</strong></article>
-          <article><span>Proveedores</span><strong id="muTabKpiProveedores">0</strong></article>
-          <article><span>U° x Kg prom.</span><strong id="muTabKpiUxkg">0</strong></article>
-          <article><span>R% Prom.</span><strong id="muTabKpiRend">0.00 %</strong></article>
-          <article><span>Procesable prom.</span><strong id="muTabKpiProcesable">0.00 %</strong></article>
-          <article><span>Rechazos prom.</span><strong id="muTabKpiRechazos">0.00 %</strong></article>
-          <article><span>Sin asociar</span><strong id="muTabKpiPendientes">0</strong></article>
-        </div>
-
-        <div class="mmpp-table-wrap">
-          <table id="tablaMuestreos" class="display mmpp table-full">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Contacto / Proveedor</th>
-                <th>U° x Kg</th>
-                <th>R% carne</th>
-                <th>Procesable</th>
-                <th>Total rechazos</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <div id="modalMuInfo" class="modal app-modal">
-      <div class="modal-content">
-        <h6>Detalle de muestreo</h6>
+      <div class="app-modal-body">
         <div id="muInfoBody"></div>
       </div>
-      <div class="modal-footer modal-actions">
-        <button type="button" class="btn-flat modal-close">Cerrar</button>
+      <div class="app-modal-footer">
+        <button type="button" class="am-btn am-btn-flat modal-close">Cerrar</button>
       </div>
     </div>
 
-    <div id="modalMuRechazo" class="modal app-modal app-modal--wide">
-      <div class="modal-content">
-        <h6>Composicion de rechazos y defectos (%)</h6>
+    <div id="modalMuRechazo" class="modal app-modal-modern">
+      <div class="app-modal-header">
+        <div class="app-modal-header-top">
+          <h5>Composición de rechazos y defectos (%)</h5>
+          <button type="button" class="modal-close" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:20px;">&times;</button>
+        </div>
+      </div>
+      <div class="app-modal-body">
         <div id="muRechazoBody"></div>
       </div>
-      <div class="modal-footer modal-actions">
-        <button type="button" class="btn-flat modal-close">Cerrar</button>
+      <div class="app-modal-footer">
+        <button type="button" class="am-btn am-btn-flat modal-close">Cerrar</button>
       </div>
     </div>
-
-    <!-- TAB INTERACCIONES (corregido: sin display:none) -->
-    <section id="tab-interacciones" class="col s12">
-      <div class="mmpp-card section-card">
-        <div class="consulta-panel-head">
-          <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Consulta</button>
-          <h6>Interacciones remotas (no terreno)</h6>
-          <span id="estadoFiltroInteracciones" class="consulta-filter-state">Filtros en panel interno</span>
-        </div>
-        <div id="interacciones-root"></div>
-      </div>
-    </section>
 
     <!-- MODAL CONTACTO - FORMATO UNIFICADO PREMIUM -->
     <div id="modalContacto" class="modal app-modal-modern">
@@ -695,7 +908,7 @@
               </div>
 
               <div class="am-input-group col-6">
-                <label class="am-label" for="contactoResponsable">Responsable PG</label>
+                <label class="am-label" for="contactoResponsable">Responsable</label>
                 <select id="contactoResponsable" class="am-select browser-default">
                   <option value="">Seleccione...</option>
                   <option value="Claudio Alba">Claudio Alba</option>
@@ -830,99 +1043,139 @@
       </div>
     </div>
 
-    <div id="modalDetalleContacto" class="modal app-modal app-modal--wide app-modal--form">
-      <div class="modal-content">
-        <h5>Detalle del contacto</h5>
+    <div id="modalDetalleContacto" class="modal app-modal-modern">
+      <div class="app-modal-header">
+        <div class="app-modal-header-top">
+          <h5>Detalle del contacto</h5>
+          <button type="button" class="modal-close" aria-label="Cerrar" style="background:none;border:none;cursor:pointer;font-size:1.4rem;color:#94a3b8;line-height:1;">&times;</button>
+        </div>
+      </div>
+      <div class="app-modal-body">
         <div id="detalleContactoBody"></div>
       </div>
-      <div class="modal-footer modal-actions">
-        <button type="button" class="mmpp-add modal-close">Cerrar</button>
+      <div class="app-modal-footer">
+        <button id="btnDetalleNuevaVisita" type="button" class="am-btn am-btn-primary">
+          <i class="bi bi-calendar-check"></i> Registrar visita
+        </button>
+        <button type="button" class="am-btn am-btn-flat modal-close">Cerrar</button>
       </div>
     </div>
 
     <!-- MODAL VISITA -->
-    <div id="modalVisita" class="modal app-modal app-modal--wide app-modal--form modal-interaccion modal-visita">
-      <div class="modal-content">
-        <div class="inter-modal-head">
-          <div class="inter-modal-head-main">
-            <h5>Registrar visita</h5>
-            <span class="inter-type-badge"><i class="material-icons tiny">directions_boat</i>Visita</span>
-          </div>
-          <p>Registra la visita en terreno y define seguimiento en una sola vista.</p>
+    <div id="modalVisita" class="modal app-modal-modern">
+      <div class="app-modal-header">
+        <div class="app-modal-header-top">
+          <h5>Registrar visita</h5>
+          <button type="button" class="modal-close" style="background:none; border:none; color:#64748b; cursor:pointer; font-size:20px;">&times;</button>
         </div>
+      </div>
 
-        <form id="formVisita" class="inter-modal-grid visita-modal-grid" autocomplete="off">
+      <div class="app-modal-body">
+        <form id="formVisita" autocomplete="off">
           <input type="hidden" id="visita_proveedorId">
-          <label class="inter-field-fecha inter-field-short">Fecha
-            <input type="date" id="visita_fecha" class="mmpp-input" required>
-          </label>
-          <label class="inter-field-centro inter-field-short">Centro
-            <select id="visita_centroId" class="browser-default modern-select" aria-label="Centro visitado">
-              <option value="">Centro visitado (opcional)</option>
-            </select>
-          </label>
-          <label class="inter-field-contacto">Contacto
-            <input id="visita_contacto" class="mmpp-input" type="text" placeholder="Persona contactada">
-          </label>
+          <div class="am-form-grid">
 
-          <label class="inter-field-estado inter-field-short">Muestra
-            <select id="visita_enAgua" class="browser-default modern-select" aria-label="¿Toma de Muestras?">
-              <option value="">¿Toma de Muestras?</option>
-              <option>Sí</option>
-              <option>No</option>
-            </select>
-          </label>
-          <label class="inter-field-tons inter-field-short">Tons comprometidas (opcional)
-            <input id="visita_tonsComprometidas" class="mmpp-input" type="number" step="0.01" min="0" placeholder="Ej: 120">
-          </label>
-          <label class="inter-field-prox">Próximo paso
-            <select id="visita_proximoPaso" class="browser-default modern-select" aria-label="Próximo paso">
-              <option value="Nueva visita" selected>Nueva visita</option>
-              <option value="Tomar muestras">Tomar muestras</option>
-              <option value="Negociar precio/volumen">Negociar precio/volumen</option>
-              <option value="Contacto telefónico">Contacto telefónico</option>
-              <option value="Esperar disponibilidad">Esperar disponibilidad</option>
-              <option value="Reunión">Reunión</option>
-              <option value="Sin acción">Sin acción</option>
-            </select>
-          </label>
+            <!-- Fila 1: Proveedor + Persona contactada + Centro -->
+            <div class="am-input-group col-4">
+              <label class="am-label" for="visita_proveedorBuscador">Proveedor</label>
+              <div style="position:relative;">
+                <input id="visita_proveedorBuscador" class="am-input" type="text" placeholder="Buscar proveedor..." autocomplete="off">
+                <div id="visita_proveedorResultados" class="am-dropdown"></div>
+              </div>
+            </div>
 
-          <label class="inter-field-fecha-prox inter-field-short">Fecha exacta del próximo paso
-            <input type="date" id="visita_proximoPasoFecha" class="mmpp-input" aria-label="Fecha exacta del próximo paso">
-          </label>
+            <div class="am-input-group col-4">
+              <label class="am-label" for="visita_contacto">Persona contactada</label>
+              <div style="position:relative;">
+                <input id="visita_contacto" class="am-input" type="text" placeholder="Nombre del contacto">
+                <div id="visita_contactoResultados" class="am-dropdown"></div>
+              </div>
+            </div>
 
-          <label class="span-3 inter-resumen-row">Observaciones
-            <textarea id="visita_observaciones" class="materialize-textarea mmpp-input inter-modal-textarea" placeholder="Hallazgos, calidad, calibres, acuerdos..."></textarea>
-          </label>
+            <div class="am-input-group col-4">
+              <label class="am-label" for="visita_centroId">Centro</label>
+              <select id="visita_centroId" class="am-select browser-default">
+                <option value="">Sin centro (opcional)</option>
+              </select>
+            </div>
+
+            <!-- Fila 2: Fecha | Próximo paso | Fecha próximo paso -->
+            <div class="am-input-group col-2">
+              <label class="am-label" for="visita_fecha">Fecha visita</label>
+              <input type="date" id="visita_fecha" class="am-input" required>
+            </div>
+
+            <div class="am-input-group col-6">
+              <label class="am-label" for="visita_proximoPaso">Próximo paso</label>
+              <select id="visita_proximoPaso" class="am-select browser-default">
+                <option value="Nueva visita" selected>Nueva visita</option>
+                <option value="Tomar muestras">Tomar muestras</option>
+                <option value="Negociar precio/volumen">Negociar precio/volumen</option>
+                <option value="Contacto telefónico">Contacto telefónico</option>
+                <option value="Esperar disponibilidad">Esperar disponibilidad</option>
+                <option value="Reunión">Reunión</option>
+                <option value="Sin acción">Sin acción</option>
+              </select>
+            </div>
+
+            <div class="am-input-group col-4">
+              <label class="am-label" for="visita_proximoPasoFecha">Fecha prox. paso</label>
+              <input type="date" id="visita_proximoPasoFecha" class="am-input">
+            </div>
+
+            <!-- Fila 3: Toma de muestras -->
+            <div class="am-input-group col-12" style="padding: 4px 0;">
+              <label class="checkbox-label" style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="visita_enAgua" style="width:18px; height:18px; margin:0;">
+                <span style="font-size:13px; font-weight:600; color:#334155;">Toma de muestras</span>
+              </label>
+            </div>
+
+            <!-- Fila 4: Observaciones -->
+            <div class="am-input-group col-12">
+              <label class="am-label" for="visita_observaciones">Observaciones</label>
+              <textarea id="visita_observaciones" class="am-input" placeholder="Hallazgos, calidad, calibres, acuerdos..." style="height:72px; padding-top:10px; resize:none;"></textarea>
+            </div>
+
+          </div>
         </form>
       </div>
-      <div class="modal-footer modal-actions">
-        <button type="button" class="modal-close btn-flat">Cancelar</button>
-        <button class="mmpp-button" type="submit" form="formVisita">
-          <i class="material-icons left">save</i>Guardar visita
+
+      <div class="app-modal-footer">
+        <button type="button" class="am-btn am-btn-flat modal-close">CANCELAR</button>
+        <button class="am-btn am-btn-primary" type="submit" form="formVisita">
+          <i class="bi bi-check-lg"></i> GUARDAR VISITA
         </button>
       </div>
     </div>
 
-    <div id="modalAsociar" class="modal app-modal app-modal--form">
-      <div class="modal-content">
-        <h5>Asociar a proveedor</h5>
-        <div class="input-field">
-          <input id="empresaSearch" type="text" class="mmpp-input" placeholder="Buscar proveedor o codigo de centro...">
+    <div id="modalAsociar" class="modal app-modal-modern" style="width:560px !important;">
+      <div class="app-modal-header">
+        <div class="app-modal-header-top">
+          <h5>Asociar a proveedor</h5>
+          <button type="button" class="modal-close" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:20px;">&times;</button>
         </div>
-        <ul id="searchResults" class="collection search-results-list"></ul>
       </div>
-      <div class="modal-footer modal-actions">
-        <button type="button" id="btnCrearEmpresa" class="btn-flat">Crear proveedor nuevo</button>
-        <button type="button" id="btnQuitarEmpresa" class="btn-flat red-text">Quitar proveedor</button>
-        <button type="button" class="modal-close mmpp-add">Cerrar</button>
+      <div class="app-modal-body">
+        <div class="am-input-group" style="position:relative;">
+          <label class="am-label">Buscar proveedor</label>
+          <input id="empresaSearch" type="text" class="am-input" placeholder="Nombre o código de centro...">
+          <div id="searchResults" class="am-dropdown"></div>
+        </div>
+      </div>
+      <div class="app-modal-footer" style="justify-content:space-between;">
+        <div style="display:flex;gap:8px;">
+          <button type="button" id="btnCrearEmpresa" class="am-btn am-btn-flat">Crear proveedor nuevo</button>
+          <button type="button" id="btnQuitarEmpresa" class="am-btn am-btn-flat" style="color:#ef4444;">Quitar proveedor</button>
+        </div>
+        <button type="button" class="am-btn am-btn-flat modal-close">Cerrar</button>
       </div>
     </div>
 
     <!-- ====================== TAB: Resumen (semana/mes) ====================== -->
-    <div id="tab-resumen" class="section">
+    <div id="tab-resumen" class="section" style="display:none">
       <div class="consulta-panel-head">
-        <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Consulta</button>
+        <button type="button" class="dash-btn consulta-back" data-volver-consulta>Volver a Bandeja</button>
         <h6>Resumen y compromisos</h6>
         <span id="estadoFiltroResumen" class="consulta-filter-state">Filtros en panel interno</span>
       </div>
@@ -944,8 +1197,8 @@
           </div>
 
           <div>
-            <label class="grey-text text-darken-1 resumen-field-label" for="resumen_resp">Responsable PG</label>
-            <select id="resumen_resp" class="browser-default resumen-select resp" aria-label="Filtrar por Responsable PG">
+            <label class="grey-text text-darken-1 resumen-field-label" for="resumen_resp">Responsable</label>
+            <select id="resumen_resp" class="browser-default resumen-select resp" aria-label="Filtrar por Responsable">
               <option value="">Responsable…</option>
             </select>
           </div>
@@ -983,13 +1236,194 @@
       </div>
     </div>
 
-    <!-- NUEVO: contenedor del modal de Semi-cerrado -->
-    <div id="modalSemiCerrado" class="modal app-modal"></div>
+    <!-- MODAL: TRATO / NEGOCIACIÓN -->
+    <div id="modalTrato" class="modal app-modal-modern">
+      <div class="app-modal-header">
+        <div class="app-modal-header-top">
+          <h5 id="modalTratoTitle">Trato</h5>
+          <button type="button" class="modal-close" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:20px;">&times;</button>
+        </div>
+      </div>
+      <div class="app-modal-body">
+        <div class="trato-modal-grid">
+          <!-- Columna izquierda: datos base -->
+          <div class="trato-col-base">
+            <div class="trato-section">
+              <label class="trato-label">Proveedor</label>
+              <input id="tratoProveedorInput" class="am-input" type="text" placeholder="Buscar proveedor..." autocomplete="off">
+              <input id="tratoProveedorId" type="hidden">
+              <div id="tratoProveedorDrop" class="trato-autocomplete-drop" style="display:none;"></div>
+            </div>
+
+            <div class="trato-section">
+              <label class="trato-label">Estado</label>
+              <select id="tratoEstado" class="browser-default modern-select">
+                <option value="activo">Activo</option>
+                <option value="acordado">Acordado</option>
+                <option value="cosecha_iniciada">Cosecha iniciada</option>
+                <option value="completado">Completado</option>
+                <option value="caido">Caído</option>
+              </select>
+            </div>
+
+            <!-- Campo camiones: visible solo cuando estado = cosecha_iniciada -->
+            <div class="trato-section" id="tratoCamionesRow" style="display:none;">
+              <label class="trato-label">Camiones por día</label>
+              <input id="tratoCamiones" class="am-input" type="number" min="1" max="20" step="1" placeholder="Ej: 2" style="width:120px;">
+            </div>
+
+            <div class="trato-section trato-periodo-row">
+              <label class="trato-label">Vigencia (inicio / término)</label>
+              <div class="trato-periodo-inputs">
+                <input id="tratoVigenciaDesde" class="am-input" type="date" style="width:160px;">
+                <input id="tratoVigenciaHasta" class="am-input" type="date" style="width:160px;">
+              </div>
+              <small class="muted" style="display:block;margin-top:6px;color:#64748b;">
+                Se usa para filtrar por Semana/Mes/Quincena sin depender de un tipo fijo.
+              </small>
+            </div>
+
+            <div class="trato-section">
+              <label class="trato-label">Responsable</label>
+              <select id="tratoResponsable" class="browser-default modern-select" style="width:100%;">
+                <option value="">— Seleccionar —</option>
+              </select>
+            </div>
+
+            <div class="trato-section">
+              <label class="trato-label">Notas</label>
+              <textarea id="tratoNotas" class="am-input" rows="3" placeholder="Observaciones, acuerdos verbales, contexto…" style="resize:vertical;"></textarea>
+            </div>
+          </div>
+
+          <!-- Columna derecha: condiciones -->
+          <div class="trato-col-condiciones">
+            <div class="trato-condiciones-head">
+              <span class="trato-label">Condiciones de negociación</span>
+              <button id="btnAgregarCondicion" class="am-btn am-btn-flat" type="button" style="height:30px;padding:0 10px;font-size:13px;">
+                <i class="bi bi-plus-lg"></i> Agregar
+              </button>
+            </div>
+            <div id="tratoCondicionesList" class="trato-condiciones-list">
+              <p class="trato-condiciones-empty">Sin condiciones registradas.</p>
+            </div>
+
+            <!-- Responsable historial (read-only) -->
+            <div class="trato-historial-wrap" id="tratoHistorialWrap" style="display:none;">
+              <div class="trato-condiciones-head">
+                <span class="trato-label">Historial de responsable</span>
+              </div>
+              <div id="tratoHistorialList" class="trato-historial-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="app-modal-footer">
+        <button id="btnTratoDelete" type="button" class="am-btn am-btn-danger" style="display:none;">Eliminar</button>
+        <button type="button" class="am-btn am-btn-flat modal-close">Cancelar</button>
+        <button id="btnTratoSave" type="button" class="am-btn am-btn-primary">Guardar</button>
+      </div>
+    </div>
+
+    <!-- MODAL: Disponibilidad rÃ¡pida (Agregar biomasa disponible) -->
+    <div id="modalQuickDisponibilidad" class="modal app-modal-modern" style="width:520px;max-width:92vw;">
+      <div class="app-modal-header">
+        <div class="app-modal-header-top">
+          <h5>Agregar biomasa disponible</h5>
+          <button type="button" class="modal-close" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:20px;">&times;</button>
+        </div>
+      </div>
+      <div class="app-modal-body">
+        <div style="display:grid;grid-template-columns:1fr 160px;gap:12px;align-items:end;">
+          <div style="position:relative;">
+            <label class="trato-label" style="margin-bottom:6px;display:block;">Proveedor</label>
+            <input id="qdProveedorInput" class="am-input" type="text" placeholder="Buscar proveedor..." autocomplete="off">
+            <input id="qdContactoId" type="hidden">
+            <div id="qdProveedorDrop" class="trato-autocomplete-drop" style="display:none;"></div>
+            <small class="muted" style="display:block;margin-top:6px;color:#64748b;">Selecciona un proveedor del directorio.</small>
+          </div>
+          <div>
+            <label class="trato-label" style="margin-bottom:6px;display:block;">Mes</label>
+            <input id="qdMes" class="am-input" type="month" style="width:100%;">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 140px;gap:12px;align-items:end;margin-top:12px;">
+          <div>
+            <label class="trato-label" style="margin-bottom:6px;display:block;">Tons disponibles</label>
+            <input id="qdTons" class="am-input" type="number" min="0" step="0.01" placeholder="Ej: 120">
+          </div>
+          <div style="text-align:right;">
+            <small class="muted" style="display:block;margin-bottom:6px;color:#64748b;">Unidad</small>
+            <div style="font-weight:800;color:#334155;">TON</div>
+          </div>
+        </div>
+      </div>
+      <div class="app-modal-footer">
+        <button type="button" class="am-btn am-btn-flat modal-close">Cancelar</button>
+        <button id="btnQdGuardar" type="button" class="am-btn am-btn-primary">Guardar</button>
+      </div>
+    </div>
 
         </div>
       </div>
     </main>
   </div>
+
+<!-- ── Modal: Agregar condición de negociación ─────────────────────────────── -->
+<div id="condicionModalWrap" style="
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(15,23,42,.55); align-items:center; justify-content:center; padding:16px;
+">
+  <div style="
+    background:#fff; border-radius:16px; width:100%; max-width:520px;
+    display:flex; flex-direction:column;
+    box-shadow:0 24px 64px rgba(0,0,0,.22);
+  ">
+
+    <!-- Header -->
+    <div style="padding:18px 22px 14px;border-bottom:1px solid #f1f5f9;display:flex;align-items:flex-start;justify-content:space-between;">
+      <div>
+        <h5 style="margin:0;font-size:16px;font-weight:800;color:#0f172a;">Agregar condición</h5>
+        <p style="margin:3px 0 0;font-size:12px;color:#64748b;">Selecciona y define el valor acordado</p>
+      </div>
+      <button id="btnCerrarCondicion" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:24px;line-height:1;padding:0 0 0 12px;">&times;</button>
+    </div>
+
+    <!-- Lista de condiciones (scroll propio, altura fija) -->
+    <div style="padding:16px 22px 12px;">
+      <p style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin:0 0 10px;">
+        Condiciones disponibles
+      </p>
+      <div id="condicionCards" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;padding-right:2px;"></div>
+      <p id="condicionSinDisp" style="display:none;font-size:13px;color:#94a3b8;text-align:center;padding:16px 0;margin:0;">
+        <i class="bi bi-check-all" style="font-size:20px;display:block;margin-bottom:6px;"></i>
+        Todas las condiciones ya están en el trato.
+      </p>
+    </div>
+
+    <!-- Sección de valor: FUERA del scroll, siempre en viewport -->
+    <div id="condicionValorSection" style="display:none;padding:0 22px 16px;">
+      <div style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;padding:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <div id="condicionTipoBadge"></div>
+          <span id="condicionNombreSel" style="font-size:14px;font-weight:700;color:#0f172a;"></span>
+        </div>
+        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:7px;">Valor acordado</label>
+        <div id="condicionValorInput" style="position:relative;z-index:1;"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:14px 22px;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:flex-end;gap:10px;">
+      <button id="btnCancelarCondicion" class="am-btn am-btn-flat" type="button">Cancelar</button>
+      <button id="btnConfirmarCondicion" class="am-btn am-btn-primary" type="button" disabled>
+        <i class="bi bi-plus-lg"></i> Agregar al trato
+      </button>
+    </div>
+
+  </div>
+</div>
 
 <!-- Libs -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
@@ -997,14 +1431,14 @@
 <!-- Módulo Interacciones (lazy-mount al abrir la pestaña) -->
 <script type="module" src="/js/abastecimiento/contactos/interacciones/index.js?v=4"></script>
 
-<!-- Orquestador (carga e inicializa todo, incluido el Resumen) -->
-<script type="module" src="/js/abastecimiento/contactos/index.js?v=36"></script>
+<!-- Módulo de Tratos -->
+<script type="module" src="/js/abastecimiento/tratos/index.js?v=1"></script>
 
-<!-- Modal de Semi-cerrado (se mantiene porque lo usan los botones por fila) -->
-<script type="module" src="/js/abastecimiento/semi-cerrado/modal.js?v=1"></script>
+<!-- Disponibilidad rÃ¡pida (botÃ³n Agregar biomasa) -->
+<script type="module" src="/js/abastecimiento/contactos/quick-disponibilidad.js?v=1"></script>
+
+<!-- Orquestador (carga e inicializa todo, incluido el Resumen) -->
+<script type="module" src="/js/abastecimiento/contactos/index.js?v=38"></script>
 
 </body>
 </html>
-
-
-

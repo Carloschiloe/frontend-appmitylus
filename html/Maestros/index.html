@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Maestros — AppMMPP</title>
+
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+
+  <link rel="stylesheet" href="/css/index-modern.css?v=7">
+  <link rel="stylesheet" href="/css/app-shell.css?v=1">
+  <link rel="stylesheet" href="/css/mmpp-ui.css?v=1">
+  <link rel="stylesheet" href="/css/modals-modern.css?v=2">
+
+  <style>
+    /* ── Layout ── */
+    .maest-shell { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+    .maest-hero  { margin-bottom: 24px; }
+    .maest-hero h4 { margin: 0 0 4px; font-weight: 800; color: #0f172a; }
+    .maest-hero p  { margin: 0; color: #64748b; font-size: 14px; }
+
+    .mini-actions { display: flex; gap: 6px; justify-content: flex-end; }
+    .mini-actions a {
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; color: #64748b; transition: background .15s; font-size: 13px;
+    }
+    .mini-actions a:hover { background: #f1f5f9; }
+    .mini-actions a.mini-del:hover { background: #fef2f2; color: #ef4444; }
+
+    /* ── Modal fix: posicionamiento sin M.Modal.init ── */
+    #modalMaestro {
+      top: 10% !important;
+      z-index: 1000 !important;
+      max-height: 80vh !important;
+    }
+  </style>
+</head>
+<body class="contactos-page">
+  <div class="layout">
+    <aside class="sidebar" aria-label="Navegacion principal">
+      <div class="sidebar-logo">
+        <a href="/index.html"><span class="logo-mark">M</span><span class="logo-text">MMPP</span></a>
+      </div>
+      <div id="sideNav" class="menu">
+
+        <section class="menu-group" data-group="dashboard">
+          <button class="menu-head" type="button" data-toggle-group="dashboard">
+            <span class="menu-head-text"><i class="bi bi-speedometer2"></i> Inicio</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+          <div class="submenu">
+            <a href="/index.html"><i class="bi bi-house-door"></i> Dashboard</a>
+          </div>
+        </section>
+
+        <section class="menu-group" data-group="contactos">
+          <button class="menu-head" type="button" data-toggle-group="contactos">
+            <span class="menu-head-text"><i class="bi bi-person-lines-fill"></i> Proveedores MMPP</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+	          <div class="submenu">
+	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-gestion"><i class="bi bi-inbox"></i> Bandeja</a>
+	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-directorio"><i class="bi bi-buildings"></i> Directorio</a>
+	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-calendario"><i class="bi bi-calendar3"></i> Calendario</a>
+	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-interacciones"><i class="bi bi-chat-left-dots"></i> Interacciones</a>
+	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-tratos"><i class="bi bi-handshake"></i> Tratos</a>
+	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-muestreos"><i class="bi bi-eyedropper"></i> Muestreos</a>
+	          </div>
+	        </section>
+
+        <section class="menu-group" data-group="proveedores">
+          <button class="menu-head" type="button" data-toggle-group="proveedores">
+            <span class="menu-head-text"><i class="bi bi-buildings"></i> BD Cultivos</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+          <div class="submenu">
+            <a href="/html/Centros/index.html#tab-centros"><i class="bi bi-grid-1x2"></i> Centros</a>
+            <a href="/html/Centros/index.html#tab-mapa"><i class="bi bi-geo-alt"></i> Mapa</a>
+          </div>
+        </section>
+
+        <section class="menu-group" data-group="biomasa">
+          <button class="menu-head" type="button" data-toggle-group="biomasa">
+            <span class="menu-head-text"><i class="bi bi-droplet-half"></i> Biomasa</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+          <div class="submenu">
+            <a href="/#compras"><i class="bi bi-kanban"></i> Compras</a>
+            <a href="/#inventario"><i class="bi bi-box-seam"></i> Disponibilidad</a>
+            <a href="/#balance"><i class="bi bi-bar-chart-line"></i> Balance</a>
+          </div>
+        </section>
+
+        <section class="menu-group" data-group="historial">
+          <button class="menu-head" type="button" data-toggle-group="historial">
+            <span class="menu-head-text"><i class="bi bi-clock-history"></i> Historial</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+          <div class="submenu">
+            <a href="/html/Abastecimiento/historial/index.html"><i class="bi bi-journal-text"></i> Gestiones</a>
+          </div>
+        </section>
+
+        <section class="menu-group is-open has-active-link" data-group="config">
+          <button class="menu-head" type="button" data-toggle-group="config">
+            <span class="menu-head-text"><i class="bi bi-sliders"></i> Configuración</span>
+            <i class="bi bi-chevron-down caret"></i>
+          </button>
+          <div class="submenu">
+            <a href="/html/Maestros/index.html" class="is-active-link"><i class="bi bi-table"></i> Maestros</a>
+          </div>
+        </section>
+
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="maest-shell">
+        <div class="maest-hero">
+          <h4><i class="bi bi-table" style="color:#4f46e5;"></i> Maestros</h4>
+          <p>Configura los valores base utilizados en todo el sistema: categorías, pasos de gestión y responsables.</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="maest-tabs">
+          <button class="maest-tab-btn active" data-tab="tab-categorias">
+            <i class="bi bi-eyedropper"></i> Categorías de muestreo
+          </button>
+          <button class="maest-tab-btn" data-tab="tab-pasos">
+            <i class="bi bi-arrow-right-circle"></i> Próximos pasos
+          </button>
+          <button class="maest-tab-btn" data-tab="tab-responsables">
+            <i class="bi bi-person-badge"></i> Responsables
+          </button>
+          <button class="maest-tab-btn" data-tab="tab-condiciones">
+            <i class="bi bi-handshake"></i> Condiciones de negociación
+          </button>
+          <button class="maest-tab-btn" data-tab="tab-clasificaciones">
+            <i class="bi bi-tags"></i> Clasificaciones de producto
+          </button>
+        </div>
+
+        <!-- Panel: Categorías de muestreo -->
+        <div id="tab-categorias" class="maest-panel active">
+          <div class="maest-panel-head">
+            <h6>Categorías de muestreo</h6>
+            <button class="am-btn am-btn-primary" data-nuevo="categoria-muestreo">
+              <i class="bi bi-plus-lg"></i> Nueva categoría
+            </button>
+          </div>
+          <div class="maest-table-wrap">
+            <table class="maest-table" id="tbl-categorias">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Tipo</th>
+                  <th>Orden</th>
+                  <th>Estado</th>
+                  <th style="text-align:right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Panel: Próximos pasos -->
+        <div id="tab-pasos" class="maest-panel">
+          <div class="maest-panel-head">
+            <h6>Próximos pasos</h6>
+            <button class="am-btn am-btn-primary" data-nuevo="proximo-paso">
+              <i class="bi bi-plus-lg"></i> Nuevo paso
+            </button>
+          </div>
+          <div class="maest-table-wrap">
+            <table class="maest-table" id="tbl-pasos">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Orden</th>
+                  <th>Estado</th>
+                  <th style="text-align:right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Panel: Responsables -->
+        <div id="tab-responsables" class="maest-panel">
+          <div class="maest-panel-head">
+            <h6>Responsables</h6>
+            <button class="am-btn am-btn-primary" data-nuevo="responsable">
+              <i class="bi bi-plus-lg"></i> Nuevo responsable
+            </button>
+          </div>
+          <div class="maest-table-wrap">
+            <table class="maest-table" id="tbl-responsables">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Estado</th>
+                  <th style="text-align:right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Panel: Condiciones de negociación -->
+        <div id="tab-condiciones" class="maest-panel">
+          <div class="maest-panel-head">
+            <h6>Condiciones de negociación</h6>
+            <button class="am-btn am-btn-primary" data-nuevo="condicion_negociacion">
+              <i class="bi bi-plus-lg"></i> Nueva condición
+            </button>
+          </div>
+          <p style="font-size:13px;color:#64748b;margin:0 0 14px;">
+            Define las condiciones comerciales que se evaluarán en cada trato: precio por especie, volumen mínimo, días de pago, etc.
+          </p>
+          <div class="maest-table-wrap">
+            <table class="maest-table" id="tbl-condiciones">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Tipo de valor</th>
+                  <th>Opciones</th>
+                  <th>Obligatoria</th>
+                  <th>Orden</th>
+                  <th>Estado</th>
+                  <th style="text-align:right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Panel: Clasificaciones de producto -->
+        <div id="tab-clasificaciones" class="maest-panel">
+          <div class="maest-panel-head">
+            <h6>Clasificaciones de producto</h6>
+            <button class="am-btn am-btn-primary" id="btnNuevaClasificacion">
+              <i class="bi bi-plus-lg"></i> Nueva clasificación
+            </button>
+          </div>
+          <p style="font-size:13px;color:#64748b;margin:0 0 14px;">
+            Define los rangos de parámetros para clasificar automáticamente los muestreos como Entero, Media Concha o Carne. Puedes crear variantes por cliente con diferentes calibres y rendimientos.
+          </p>
+          <div class="maest-table-wrap">
+            <table class="maest-table" id="tbl-clasificaciones">
+              <thead>
+                <tr>
+                  <th style="width:140px;">Tipo</th>
+                  <th style="width:140px;">Cliente</th>
+                  <th>Criterios</th>
+                  <th style="width:90px;">Estado</th>
+                  <th style="width:90px;text-align:right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Maestro -->
+  <div id="modalMaestro" class="modal app-modal-modern" style="width:480px !important;">
+    <div class="app-modal-header">
+      <div class="app-modal-header-top">
+        <h5 id="modalMaestroTitle">Nuevo registro</h5>
+        <button type="button" class="js-modal-close" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:20px;">&times;</button>
+      </div>
+    </div>
+    <div class="app-modal-body">
+      <div class="am-form-grid">
+
+        <div class="am-input-group col-12">
+          <label class="am-label">Nombre <span style="color:#ef4444;">*</span></label>
+          <input id="m-nombre" type="text" class="am-input" placeholder="Nombre del registro">
+        </div>
+
+        <div class="am-input-group col-12" id="m-tipoCat-row">
+          <label class="am-label">Tipo de categoría</label>
+          <select id="m-tipoCat" class="am-select browser-default">
+            <option value="procesable">Procesable (se suma al procesable)</option>
+            <option value="rechazo">Rechazo (descuenta del procesable)</option>
+            <option value="defecto">Defecto (informativo)</option>
+          </select>
+        </div>
+
+        <!-- Campos específicos para condicion_negociacion -->
+        <div class="am-input-group col-12" id="m-tipoValor-row" style="display:none;">
+          <label class="am-label">Tipo de valor</label>
+          <select id="m-tipoValor" class="am-select browser-default">
+            <option value="texto">Texto libre</option>
+            <option value="moneda">Monto ($)</option>
+            <option value="porcentaje">Porcentaje (%)</option>
+            <option value="dias">Días</option>
+            <option value="numero">Número (con unidad)</option>
+            <option value="opciones">Lista de opciones</option>
+          </select>
+        </div>
+
+        <div class="am-input-group col-12" id="m-modoCondicion-row" style="display:none;">
+          <label class="am-label">Modo de condición</label>
+          <select id="m-modoCondicion" class="am-select browser-default">
+            <option value="">— No aplica —</option>
+            <option value="normal">Normal</option>
+            <option value="fijo">Fijo</option>
+          </select>
+        </div>
+
+        <div class="am-input-group col-12" id="m-unidadNombre-row" style="display:none;">
+          <label class="am-label">Unidad <span style="color:#94a3b8;font-weight:400;">(ej: camiones, tons, t/día, kg)</span></label>
+          <input id="m-unidadNombre" type="text" class="am-input" placeholder="Ej: camiones, tons, t/día…">
+        </div>
+
+        <div class="am-input-group col-12" id="m-opciones-row" style="display:none;">
+          <label class="am-label">Opciones disponibles <span style="color:#94a3b8;font-weight:400;">(una por línea)</span></label>
+          <textarea id="m-opciones" class="am-input" rows="4" placeholder="Ej:&#10;Salmón&#10;Trucha&#10;Choritos" style="resize:vertical;font-family:inherit;"></textarea>
+        </div>
+
+        <div class="am-input-group col-12" id="m-requerido-row" style="display:none;">
+          <label class="checkbox-label" style="gap:8px;cursor:pointer;">
+            <input id="m-requerido" type="checkbox" style="width:18px;height:18px;margin:0;cursor:pointer;">
+            <span style="font-size:13px;font-weight:700;color:#334155;">Condición obligatoria en el trato</span>
+          </label>
+        </div>
+
+        <div class="am-input-group col-6" id="m-orden-row">
+          <label class="am-label">Orden de aparición</label>
+          <input id="m-orden" type="number" class="am-input" min="0" step="1" value="0">
+        </div>
+
+        <div class="am-input-group col-6" style="justify-content:flex-end;padding-top:24px;">
+          <label class="checkbox-label">
+            <input id="m-activo" type="checkbox" checked style="width:18px;height:18px;margin:0;">
+            <span style="font-size:13px;font-weight:700;color:#334155;">Activo</span>
+          </label>
+        </div>
+
+      </div>
+    </div>
+    <div class="app-modal-footer">
+      <button type="button" class="am-btn am-btn-flat js-modal-close">Cancelar</button>
+      <button type="button" id="m-guardar" class="am-btn am-btn-primary">
+        <i class="bi bi-check-lg"></i> Guardar
+      </button>
+    </div>
+  </div>
+
+  <!-- Overlay backdrop para modal -->
+  <div id="modalMaestroOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"
+    onclick="document.getElementById('modalMaestro').classList.remove('open');this.style.display='none';"></div>
+
+  <!-- Modal Clasificación de Producto -->
+  <div id="modalClasificacion" class="modal app-modal-modern" style="width:580px !important;top:6% !important;z-index:1000 !important;max-height:88vh !important;overflow-y:auto;">
+    <div class="app-modal-header">
+      <div class="app-modal-header-top">
+        <h5 id="modalClasificacionTitle">Nueva clasificación</h5>
+        <button type="button" class="js-clas-close" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:20px;">&times;</button>
+      </div>
+    </div>
+    <div class="app-modal-body">
+      <div class="am-form-grid">
+
+        <div class="am-input-group col-8">
+          <label class="am-label">Tipo de producto <span style="color:#ef4444;">*</span></label>
+          <select id="cl-tipo" class="am-select browser-default" style="width:100%;min-width:200px;">
+            <option value="Entero">Entero</option>
+            <option value="Media Concha">Media Concha</option>
+            <option value="Carne">Carne</option>
+          </select>
+        </div>
+
+        <div class="am-input-group col-4" style="justify-content:flex-end;padding-top:24px;">
+          <label class="checkbox-label">
+            <input id="cl-activo" type="checkbox" checked style="width:18px;height:18px;margin:0;">
+            <span style="font-size:13px;font-weight:700;color:#334155;">Activo</span>
+          </label>
+        </div>
+
+        <div class="am-input-group col-12">
+          <label class="am-label">Cliente / Descripción <span style="color:#94a3b8;font-weight:400;">(opcional)</span></label>
+          <input id="cl-cliente" type="text" class="am-input" placeholder="Ej: Empresa X">
+        </div>
+
+        <div class="am-input-group col-12">
+          <label class="am-label" style="margin-bottom:8px;">Criterios de clasificación</label>
+          <p style="font-size:12px;color:#64748b;margin:0 0 10px;">
+            Agrega los parámetros que deben cumplirse. Deja vacío el límite que no aplique.
+          </p>
+
+          <!-- Lista de parámetros agregados -->
+          <div id="cl-params-list" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px;">
+            <!-- filas dinámicas -->
+          </div>
+          <p id="cl-params-empty" style="font-size:12px;color:#94a3b8;margin:0 0 10px;display:none;">Sin criterios agregados.</p>
+
+          <!-- Selector para agregar parámetro -->
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="cl-param-picker" class="am-select browser-default" style="flex:1;margin:0;">
+              <option value="">— Seleccionar parámetro —</option>
+            </select>
+            <button type="button" id="cl-add-param" class="am-btn am-btn-flat" style="white-space:nowrap;height:38px;">
+              <i class="bi bi-plus-lg"></i> Agregar
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="app-modal-footer">
+      <button type="button" class="am-btn am-btn-flat js-clas-close">Cancelar</button>
+      <button type="button" id="cl-guardar" class="am-btn am-btn-primary">
+        <i class="bi bi-check-lg"></i> Guardar
+      </button>
+    </div>
+  </div>
+  <div id="modalClasificacionOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script type="module" src="/js/maestros/index.js"></script>
+  <script>
+	    // Sidebar toggle
+	    const sideNav = document.getElementById('sideNav');
+	    sideNav?.querySelector('.menu-group[data-group="config"]')?.classList.add('is-open');
+	    sideNav?.addEventListener('click', (e) => {
+	      const btn = e.target.closest('[data-toggle-group]');
+	      if (!btn) return;
+	      const group = btn.closest('.menu-group');
+	      if (!group) return;
+	      if (group.dataset.group === 'config') {
+	        group.classList.add('is-open');
+	        return;
+	      }
+	      const willOpen = !group.classList.contains('is-open');
+	      sideNav.querySelectorAll('.menu-group.is-open').forEach((g) => {
+	        if (g !== group && g.dataset.group !== 'config') g.classList.remove('is-open');
+	      });
+	      group.classList.toggle('is-open', willOpen);
+	    });
+    // Sync overlay con modales
+    const mo = document.getElementById('modalMaestro');
+    const ov = document.getElementById('modalMaestroOverlay');
+    new MutationObserver(() => {
+      ov.style.display = mo.classList.contains('open') ? 'block' : 'none';
+    }).observe(mo, { attributes: true, attributeFilter: ['class'] });
+
+    const mc = document.getElementById('modalClasificacion');
+    const ovc = document.getElementById('modalClasificacionOverlay');
+    new MutationObserver(() => {
+      ovc.style.display = mc.classList.contains('open') ? 'block' : 'none';
+    }).observe(mc, { attributes: true, attributeFilter: ['class'] });
+    ovc.addEventListener('click', () => mc.classList.remove('open'));
+  </script>
+</body>
+</html>

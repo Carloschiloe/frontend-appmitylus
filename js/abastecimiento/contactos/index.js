@@ -1,13 +1,5 @@
 // /js/abastecimiento/contactos/index.js
 
-// Evita romper el build en Vercel (solo carga debug en local)
-try {
-  if (typeof window !== 'undefined' &&
-      (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
-    import('./debug-fetch.js').catch(() => {});
-  }
-} catch {}
-
 /* ======================= Imports ======================= */
 import { cargarCentros, cargarContactosGuardados } from './data.js';
 import { state } from './state.js';
@@ -17,6 +9,7 @@ import { initTablaContactos, renderTablaContactos } from './tabla.js';
 import { initAsociacionContactos } from './asociar-empresa.js';
 import { createMuestreoModule } from './muestreo.js';
 import { createMuestreosTabModule } from './muestreos-tab.js';
+import { createCalendarioTabModule } from './calendario-tab.js';
 import { createGestionBoardModule } from './gestion-board.js';
 import { createUiShellModule } from './ui-shell.js';
 import { ensureMuestreoPortals, initContactosTabs, initContactosModals } from './ui-init.js';
@@ -40,6 +33,7 @@ let listenersHooked = false;
 let visitasBooted = false;
 let personasBooted = false;
 let muestreosBooted = false;
+let calendarioBooted = false;
 const consultaFilterState = {
   visitasPreset: ''
 };
@@ -102,6 +96,11 @@ const muestreosTabModule = createMuestreosTabModule({
   }
 });
 
+const calendarioTabModule = createCalendarioTabModule({
+  openInteraccionModal,
+  openMuestreoFromSeed: (seed, opts) => muestreoModule.openFromSeed(seed, opts),
+});
+
 const uiShellModule = createUiShellModule({
   activateTab: (hash) => activarTab(hash),
   applyConsultaPreset: (target, preset) => applyConsultaPreset(target, preset)
@@ -133,11 +132,50 @@ function resetContactoExtras() {
 
 function activarTab(hash) {
   if (!hash) return;
-  const link = document.querySelector(`.tabs .tab a[href="${hash}"]`);
-  if (link) {
-    try { link.click(); } catch {}
-  } else {
-    location.hash = hash;
+  const raw = (String(hash).startsWith('#') ? hash.slice(1) : hash).toLowerCase();
+
+  // Mapeo de hashes legacy a nuevos panel IDs
+  const MAIN_MAP = {
+    'tab-contactos': 'tab-directorio',
+    'contactos': 'tab-directorio',
+	    'tab-personas': 'tab-directorio',
+	    'personas': 'tab-directorio',
+	    'calendario': 'tab-calendario',
+	    'tab-visitas': 'tab-interacciones',
+	    'visitas': 'tab-interacciones',
+    // Legacy: pestaña Buscar/Consulta removida
+    'tab-consulta': 'tab-gestion',
+    'tab-buscar': 'tab-gestion',
+    'buscar': 'tab-gestion',
+    'muestreos': 'tab-muestreos',
+  };
+  const mainId = MAIN_MAP[raw] || raw;
+
+  // Activar panel principal
+  document.querySelectorAll('.c-panel').forEach((p) => p.classList.remove('active'));
+  document.querySelectorAll('[data-c-tab]').forEach((b) => b.classList.remove('active'));
+  const panel = document.getElementById(mainId);
+  if (panel) panel.classList.add('active');
+  document.querySelector(`[data-c-tab="${mainId}"]`)?.classList.add('active');
+
+  // Activar sub-panel según el hash original
+  if (raw === 'tab-personas' || raw === 'personas') {
+    document.querySelectorAll('#tab-directorio .c-sub-panel').forEach((p) => p.classList.remove('active'));
+    document.querySelectorAll('[data-dir-tab]').forEach((b) => b.classList.remove('active'));
+    document.getElementById('tab-personas')?.classList.add('active');
+    document.querySelector('[data-dir-tab="dir-personas"]')?.classList.add('active');
+  } else if (raw === 'tab-visitas' || raw === 'visitas') {
+    document.querySelectorAll('#tab-interacciones .c-sub-panel').forEach((p) => p.classList.remove('active'));
+    document.querySelectorAll('[data-inter-tab]').forEach((b) => b.classList.remove('active'));
+    document.getElementById('inter-visitas')?.classList.add('active');
+    document.querySelector('[data-inter-tab="inter-visitas"]')?.classList.add('active');
+  }
+
+  // Actualizar hash sin recargar
+  try {
+    history.replaceState(null, '', `${location.pathname}${location.search}#${mainId}`);
+  } catch {
+    location.hash = mainId;
   }
 }
 
@@ -150,7 +188,10 @@ function ensureGestionActionsModule() {
     openVisitaModal: abrirModalVisita,
     openInteraccionModal,
     openMuestreoPanel: (opts) => muestreoModule.openPanel(opts),
-    onSavedGestion: () => renderGestionHomeBoard(),
+    onSavedGestion: () => {
+      renderGestionHomeBoard();
+      document.getElementById('interacciones-root')?._activityRefresh?.();
+    },
     setVisitasBooted: (v) => { visitasBooted = !!v; }
   });
   return gestionActionsModule;
@@ -159,6 +200,7 @@ function ensureGestionActionsModule() {
 function bindGestionHomeActions() {
   ensureGestionActionsModule().bindHomeActions();
 }
+
 
 function isVisitaPendiente(v) {
   const est = normalizeText(v?.estado || '');
@@ -411,26 +453,29 @@ function bindRegistroValidationHints() {
 
 /* ======================= UI: tabs + modales (init una vez) ======================= */
 function initUIOnce() {
-  if (!window.M) return;
   uiShellModule.bindSideNav();
   bindRegistroValidationHints();
   bindConsultaFilterStateListeners();
   muestreoModule.bindUI();
-
   ensureMuestreoPortals();
 
-  initContactosTabs({
-    onVisitas: () => {
-      if (!visitasBooted) { initVisitasTab().catch(()=>{}); visitasBooted = true; }
-      refreshVisitasTableUI();
-      bindConsultaFilterStateListeners();
-      refreshConsultaFilterStates();
-    },
-    onPersonas: () => {
-      if (!personasBooted) { initPersonasTab(); personasBooted = true; }
-      refreshPersonasTableUI();
-      refreshConsultaFilterStates();
-    },
+	  initContactosTabs({
+	    onVisitas: () => {
+	      if (!visitasBooted) { initVisitasTab().catch(()=>{}); visitasBooted = true; }
+	      refreshVisitasTableUI();
+	      bindConsultaFilterStateListeners();
+	      refreshConsultaFilterStates();
+	    },
+	    onCalendario: () => {
+	      calendarioTabModule.initTab(false).catch(() => {});
+	      calendarioBooted = true;
+	      refreshConsultaFilterStates();
+	    },
+	    onPersonas: () => {
+	      if (!personasBooted) { initPersonasTab(); personasBooted = true; }
+	      refreshPersonasTableUI();
+	      refreshConsultaFilterStates();
+	    },
     onMuestreos: () => {
       muestreosTabModule.initTab(false).catch(() => {});
       muestreosBooted = true;
@@ -471,16 +516,23 @@ function initUIOnce() {
     refreshPersonasTableUI(); nukeStuckOverlays();
   });
 
-  onAll('a[href="#tab-contactos"], a[href="#contactos"]', 'click', () => {
-    refreshContactosTableUI(); nukeStuckOverlays();
-  });
+	  onAll('a[href="#tab-contactos"], a[href="#contactos"]', 'click', () => {
+	    refreshContactosTableUI(); nukeStuckOverlays();
+	  });
 
-  onAll('a[href="#tab-muestreos"], a[href="#muestreos"]', 'click', () => {
-    muestreosTabModule.initTab(false).catch(() => {});
-    muestreosBooted = true;
-    refreshConsultaFilterStates();
-    nukeStuckOverlays();
-  });
+	  onAll('a[href="#tab-calendario"], a[href="#calendario"]', 'click', () => {
+	    calendarioTabModule.initTab(false).catch(() => {});
+	    calendarioBooted = true;
+	    refreshConsultaFilterStates();
+	    nukeStuckOverlays();
+	  });
+
+	  onAll('a[href="#tab-muestreos"], a[href="#muestreos"]', 'click', () => {
+	    muestreosTabModule.initTab(false).catch(() => {});
+	    muestreosBooted = true;
+	    refreshConsultaFilterStates();
+	    nukeStuckOverlays();
+	  });
 
   document.getElementById('btnOpenMuestreoModal')?.addEventListener('click', (e) => {
     e.preventDefault();
@@ -555,6 +607,9 @@ export async function initContactosTab(forceReload = false) {
 
     await cargarCentros();
     await cargarContactosGuardados();
+    // Exponer para módulos externos (ej. Tratos autocomplete, Muestreo centros)
+    window._contactosGuardados = state.contactosGuardados || [];
+    window._state = state; // Expone listaCentros para el selector dinámico de muestreos
 
     setupBuscadorProveedores();
     setupFormulario();
@@ -569,14 +624,19 @@ export async function initContactosTab(forceReload = false) {
     hookGlobalListeners();
 
     const h = (location.hash || '').toLowerCase();
-    if (h === '#tab-visitas' || h === '#visitas') {
-      await initVisitasTab().catch(()=>{}); visitasBooted = true;
-      refreshVisitasTableUI();
-    } else if (h === '#tab-muestreos' || h === '#muestreos') {
-      await muestreosTabModule.initTab(false).catch(() => {});
-      muestreosBooted = true;
-      refreshConsultaFilterStates();
-    } else if (h === '#tab-personas' || h === '#personas') {
+	    if (h === '#tab-visitas' || h === '#visitas') {
+	      await initVisitasTab().catch(()=>{}); visitasBooted = true;
+	      refreshVisitasTableUI();
+		    } else if (h === '#tab-calendario' || h === '#calendario') {
+		      activarTab('#tab-calendario');
+		      await calendarioTabModule.initTab(false).catch(() => {});
+		      calendarioBooted = true;
+		      refreshConsultaFilterStates();
+		    } else if (h === '#tab-muestreos' || h === '#muestreos') {
+	      await muestreosTabModule.initTab(false).catch(() => {});
+	      muestreosBooted = true;
+	      refreshConsultaFilterStates();
+	    } else if (h === '#tab-personas' || h === '#personas') {
       initPersonasTab(); personasBooted = true;
       refreshPersonasTableUI();
     } else if (!h) {
@@ -604,13 +664,17 @@ function hookGlobalListeners() {
   document.addEventListener('reload-tabla-contactos', async () => {
     try {
       await cargarContactosGuardados();
-      renderTablaContactos();
-      renderTablaPersonas?.();
-      if (muestreosBooted) {
-        await muestreosTabModule.renderTablaMuestreos(true).catch(() => {});
-      }
-      await renderGestionHomeBoard();
-      adjustDT('#tablaContactos'); hideNativeFilter('#tablaContactos');
+      window._contactosGuardados = state.contactosGuardados || [];
+	      renderTablaContactos();
+	      renderTablaPersonas?.();
+	      if (muestreosBooted) {
+	        await muestreosTabModule.renderTablaMuestreos(true).catch(() => {});
+	      }
+	      if (calendarioBooted) {
+	        await calendarioTabModule.render(true).catch(() => {});
+	      }
+	      await renderGestionHomeBoard();
+	      adjustDT('#tablaContactos'); hideNativeFilter('#tablaContactos');
       if (personasBooted) { adjustDT('#tablaPersonas'); hideNativeFilter('#tablaPersonas'); }
       if (visitasBooted)  { adjustDT('#tablaVisitas');  hideNativeFilter('#tablaVisitas'); }
       nukeStuckOverlays();
@@ -665,8 +729,3 @@ document.addEventListener('DOMContentLoaded', () => {
 window.abrirDetalleContacto = abrirDetalleContacto;
 window.abrirModalVisita = abrirModalVisita;
 window.nukeStuckOverlays = nukeStuckOverlays;
-
-
-
-
-

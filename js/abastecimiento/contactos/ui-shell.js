@@ -4,13 +4,13 @@ export function createUiShellModule({ activateTab, applyConsultaPreset }) {
   function normalizeHash(hash) {
     const h = String(hash || '').toLowerCase();
     if (!h || h === '#') return '#tab-gestion';
-    if (h === '#contactos') return '#tab-contactos';
-    if (h === '#visitas') return '#tab-visitas';
-    if (h === '#personas') return '#tab-personas';
+    if (h === '#contactos' || h === '#tab-contactos') return '#tab-directorio';
+    if (h === '#visitas' || h === '#tab-visitas') return '#tab-interacciones';
+    if (h === '#personas' || h === '#tab-personas') return '#tab-directorio';
+    if (h === '#calendario' || h === '#tab-calendario') return '#tab-calendario';
+    // Legacy: "consulta/buscar" (pestaña removida)
+    if (h === '#tab-consulta' || h === '#tab-buscar' || h === '#buscar') return '#tab-gestion';
     if (h === '#muestreos') return '#tab-muestreos';
-    if (h === '#tab-contactos' || h === '#tab-visitas' || h === '#tab-personas' || h === '#tab-muestreos' || h === '#tab-interacciones' || h === '#tab-resumen') {
-      return '#tab-consulta';
-    }
     return h;
   }
 
@@ -19,7 +19,11 @@ export function createUiShellModule({ activateTab, applyConsultaPreset }) {
     if (!nav) return;
 
     const activeHash = normalizeHash(location.hash || '#tab-gestion');
-    nav.querySelectorAll('.menu-group').forEach((g) => g.classList.remove('has-active-link'));
+    nav.querySelectorAll('.menu-group').forEach((g) => {
+      g.classList.remove('has-active-link');
+      // Mantener Configuración siempre visible (submenu "Maestros")
+      if (g.dataset.group !== 'config') g.classList.remove('is-open');
+    });
     nav.querySelectorAll('a[data-tab-link]').forEach((a) => a.classList.remove('is-active-link'));
 
     let found = false;
@@ -34,9 +38,12 @@ export function createUiShellModule({ activateTab, applyConsultaPreset }) {
     });
 
     if (!found) {
-      const g = nav.querySelector('.menu-group[data-group="gestion"]');
+      const g = nav.querySelector('.menu-group[data-group="contactos"]');
       g?.classList.add('is-open');
     }
+
+    // Configuración siempre abierto para que "Maestros" no desaparezca.
+    nav.querySelector('.menu-group[data-group="config"]')?.classList.add('is-open');
   }
 
   function bindSideNav() {
@@ -47,7 +54,17 @@ export function createUiShellModule({ activateTab, applyConsultaPreset }) {
     nav.addEventListener('click', (e) => {
       const toggle = e.target.closest('[data-toggle-group]');
       if (toggle) {
-        toggle.closest('.menu-group')?.classList.toggle('is-open');
+        const group = toggle.closest('.menu-group');
+        if (!group) return;
+        if (group.dataset.group === 'config') {
+          group.classList.add('is-open');
+          return;
+        }
+        const willOpen = !group.classList.contains('is-open');
+        nav.querySelectorAll('.menu-group.is-open').forEach((g) => {
+          if (g !== group && g.dataset.group !== 'config') g.classList.remove('is-open');
+        });
+        group.classList.toggle('is-open', willOpen);
         return;
       }
 
@@ -57,9 +74,7 @@ export function createUiShellModule({ activateTab, applyConsultaPreset }) {
       if (!href) return;
       e.preventDefault();
       activateTab(href);
-      location.hash = href;
       syncSideNavActive();
-      applyConsultaPreset(href, '').catch(() => {});
     });
 
     window.addEventListener('hashchange', syncSideNavActive, { passive: true });

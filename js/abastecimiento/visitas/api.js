@@ -51,3 +51,25 @@ export async function update(id, payload) {
 export async function remove(id) {
   return apiDeleteVisita(id);
 }
+
+function buildQuery(params = {}) {
+  const sp = new URLSearchParams();
+  Object.entries(params || {}).forEach(([k, v]) => {
+    if (v === undefined || v === null || v === '') return;
+    sp.set(k, String(v));
+  });
+  const qs = sp.toString();
+  return qs ? `?${qs}` : '';
+}
+
+/**
+ * Lista visitas con filtros opcionales (requiere backend con soporte de filtros).
+ * Ej: { monthProx:'2026-03' } o { from:'2026-03-01', to:'2026-04-01' }
+ */
+export async function list(filters = {}) {
+  const raw = await fetchJson(`/api/visitas${buildQuery(filters)}`, {
+    method: 'GET',
+    credentials: 'same-origin',
+  });
+  return normList(raw);
+}

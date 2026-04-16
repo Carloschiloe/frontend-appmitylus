@@ -41,7 +41,7 @@
 
         <section class="menu-group is-open has-active-link" data-group="proveedores">
           <button class="menu-head" type="button" data-toggle-group="proveedores">
-            <span class="menu-head-text"><i class="bi bi-buildings"></i> Proveedores</span>
+            <span class="menu-head-text"><i class="bi bi-buildings"></i> BD Cultivos</span>
             <i class="bi bi-chevron-down caret"></i>
           </button>
           <div class="submenu">
@@ -56,33 +56,46 @@
             <i class="bi bi-chevron-down caret"></i>
           </button>
           <div class="submenu">
-            <a href="/html/Abastecimiento/asignacion/inventario_mmpp.html"><i class="bi bi-box-seam"></i> Inventario MMPP</a>
+            <a href="/#inventario"><i class="bi bi-box-seam"></i> Inventario MMPP</a>
           </div>
         </section>
 
         <section class="menu-group" data-group="gestion">
           <button class="menu-head" type="button" data-toggle-group="gestion">
-            <span class="menu-head-text"><i class="bi bi-kanban"></i> Gestion</span>
+            <span class="menu-head-text"><i class="bi bi-person-lines-fill"></i> Proveedores MMPP</span>
             <i class="bi bi-chevron-down caret"></i>
           </button>
-          <div class="submenu">
-            <a href="/html/Abastecimiento/contactos/contactos.html#tab-gestion"><i class="bi bi-kanban"></i> Bandeja</a>
-            <a href="/html/Abastecimiento/contactos/contactos.html#tab-registro"><i class="bi bi-pencil-square"></i> Registro</a>
-            <a href="/html/Abastecimiento/contactos/contactos.html#tab-consulta"><i class="bi bi-table"></i> Consulta</a>
-          </div>
-        </section>
+	          <div class="submenu">
+	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-gestion"><i class="bi bi-inbox"></i> Bandeja</a>
+	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-directorio"><i class="bi bi-buildings"></i> Directorio</a>
+	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-calendario"><i class="bi bi-calendar3"></i> Calendario</a>
+	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-interacciones"><i class="bi bi-chat-left-dots"></i> Interacciones</a>
+	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-tratos"><i class="bi bi-handshake"></i> Tratos</a>
+	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-muestreos"><i class="bi bi-eyedropper"></i> Muestreos</a>
+	          </div>
+	        </section>
 
-        <section class="menu-group" data-group="historial">
-          <button class="menu-head" type="button" data-toggle-group="historial">
-            <span class="menu-head-text"><i class="bi bi-clock-history"></i> Historial</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/html/Abastecimiento/historial/index.html"><i class="bi bi-journal-text"></i> Historial de gestiones</a>
-            <a href="/html/Abastecimiento/asignacion/resumen_mmpp.html"><i class="bi bi-diagram-3"></i> Trazabilidad por proveedor</a>
-          </div>
-        </section>
-      </div>
+	        <section class="menu-group" data-group="historial">
+	          <button class="menu-head" type="button" data-toggle-group="historial">
+	            <span class="menu-head-text"><i class="bi bi-clock-history"></i> Historial</span>
+	            <i class="bi bi-chevron-down caret"></i>
+	          </button>
+	          <div class="submenu">
+	            <a href="/html/Abastecimiento/historial/index.html"><i class="bi bi-journal-text"></i> Historial de gestiones</a>
+	            <a href="/#balance"><i class="bi bi-diagram-3"></i> Trazabilidad por proveedor</a>
+	          </div>
+	        </section>
+
+	        <section class="menu-group" data-group="config">
+	          <button class="menu-head" type="button" data-toggle-group="config">
+	            <span class="menu-head-text"><i class="bi bi-sliders"></i> Configuración</span>
+	            <i class="bi bi-chevron-down caret"></i>
+	          </button>
+	          <div class="submenu">
+	            <a href="/html/Maestros/index.html"><i class="bi bi-table"></i> Maestros</a>
+	          </div>
+	        </section>
+	      </div>
     </aside>
 
     <main class="content centros-content">
@@ -345,15 +358,20 @@
         });
       }
 
-      function show(hash) {
-        if (!sections[hash]) hash = '#tab-centros';
-        Object.values(sections).forEach((el) => el && (el.style.display = 'none'));
-        sections[hash].style.display = 'block';
-        setActiveLink(hash);
+	      function show(hash) {
+	        if (!sections[hash]) hash = '#tab-centros';
+	        Object.values(sections).forEach((el) => el && (el.style.display = 'none'));
+	        sections[hash].style.display = 'block';
+	        setActiveLink(hash);
 
-        menuGroups.forEach((g) => g.classList.remove('has-active-link'));
-        const active = document.querySelector(`#sideNav a[href="${hash}"]`);
-        active?.closest('.menu-group')?.classList.add('has-active-link', 'is-open');
+	        menuGroups.forEach((g) => {
+	          g.classList.remove('has-active-link');
+	          // Mantener Configuración siempre visible (submenu "Maestros")
+	          if (g.dataset.group !== 'config') g.classList.remove('is-open');
+	        });
+	        const active = document.querySelector(`#sideNav a[href="${hash}"]`);
+	        active?.closest('.menu-group')?.classList.add('has-active-link', 'is-open');
+	        document.querySelector('#sideNav .menu-group[data-group="config"]')?.classList.add('is-open');
 
         if (hash === '#tab-mapa' && window.__mapLeaflet) {
           setTimeout(() => window.__mapLeaflet.invalidateSize(), 60);
@@ -361,11 +379,22 @@
         }
       }
 
-      document.getElementById('sideNav')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-toggle-group]');
-        if (!btn) return;
-        btn.closest('.menu-group')?.classList.toggle('is-open');
-      });
+	      document.getElementById('sideNav')?.addEventListener('click', (e) => {
+	        const btn = e.target.closest('[data-toggle-group]');
+	        if (!btn) return;
+	        const group = btn.closest('.menu-group');
+	        const nav = document.getElementById('sideNav');
+	        if (!group || !nav) return;
+	        if (group.dataset.group === 'config') {
+	          group.classList.add('is-open');
+	          return;
+	        }
+	        const willOpen = !group.classList.contains('is-open');
+	        nav.querySelectorAll('.menu-group.is-open').forEach((g) => {
+	          if (g !== group && g.dataset.group !== 'config') g.classList.remove('is-open');
+	        });
+	        group.classList.toggle('is-open', willOpen);
+	      });
 
       window.addEventListener('hashchange', () => show(location.hash));
       if (!location.hash) location.hash = '#tab-centros';

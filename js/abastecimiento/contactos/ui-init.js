@@ -10,22 +10,57 @@ export function ensureMuestreoPortals() {
   if (muSide && muSide.parentElement !== document.body) {
     document.body.appendChild(muSide);
   }
+  // modalTrato también necesita estar en body para evitar
+  // conflictos de stacking context con <main> (mismo patrón que los de muestreo)
+  const tratoModal = document.getElementById('modalTrato');
+  if (tratoModal && tratoModal.parentElement !== document.body) {
+    document.body.appendChild(tratoModal);
+  }
 }
 
-export function initContactosTabs({ onVisitas, onPersonas, onMuestreos, onContactos, onAny }) {
-  if (!window.M) return;
-  const tabs = document.querySelectorAll('.tabs');
-  if (!tabs.length) return;
-
-  M.Tabs.init(tabs, {
-    onShow: (tabEl) => {
-      const id = (tabEl?.id || '').toLowerCase();
-      if (id.includes('visita')) onVisitas?.();
-      if (id.includes('persona')) onPersonas?.();
-      if (id.includes('muestreo')) onMuestreos?.();
-      if (id.includes('contacto')) onContactos?.();
+export function initContactosTabs({ onVisitas, onPersonas, onMuestreos, onContactos, onCalendario, onAny }) {
+  // ── Tabs principales (data-c-tab) ──────────────────────────────────────────
+  document.querySelectorAll('[data-c-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-c-tab');
+      document.querySelectorAll('.c-panel').forEach((p) => p.classList.remove('active'));
+      document.querySelectorAll('[data-c-tab]').forEach((b) => b.classList.remove('active'));
+      document.getElementById(target)?.classList.add('active');
+      btn.classList.add('active');
+      if (target === 'tab-interacciones') onVisitas?.();
+      if (target === 'tab-directorio') onContactos?.();
+      if (target === 'tab-calendario') onCalendario?.();
+      if (target === 'tab-muestreos') onMuestreos?.();
       onAny?.();
-    }
+    });
+  });
+
+  // ── Sub-tabs de Directorio (data-dir-tab) ─────────────────────────────────
+  document.querySelectorAll('[data-dir-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-dir-tab');
+      document.querySelectorAll('#tab-directorio .c-sub-panel').forEach((p) => p.classList.remove('active'));
+      document.querySelectorAll('[data-dir-tab]').forEach((b) => b.classList.remove('active'));
+      const subId = target === 'dir-empresas' ? 'tab-contactos' : 'tab-personas';
+      document.getElementById(subId)?.classList.add('active');
+      btn.classList.add('active');
+      if (target === 'dir-personas') onPersonas?.();
+      if (target === 'dir-empresas') onContactos?.();
+      onAny?.();
+    });
+  });
+
+  // ── Sub-tabs de Interacciones (data-inter-tab) ────────────────────────────
+  document.querySelectorAll('[data-inter-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-inter-tab');
+      document.querySelectorAll('#tab-interacciones .c-sub-panel').forEach((p) => p.classList.remove('active'));
+      document.querySelectorAll('[data-inter-tab]').forEach((b) => b.classList.remove('active'));
+      document.getElementById(target)?.classList.add('active');
+      btn.classList.add('active');
+      if (target === 'inter-visitas') onVisitas?.();
+      onAny?.();
+    });
   });
 }
 
@@ -86,8 +121,11 @@ export function initContactosModals({
       inst?.open();
     };
 
-    document.getElementById('btnOpenContactoModal')?.addEventListener('click', openModalContacto);
-    document.getElementById('btnOpenPersonaModal')?.addEventListener('click', openModalContacto);
+    // Permite abrir el modal desde otros módulos sin depender de botones "fantasma"
+    if (modalContactoEl.dataset.openEvtBound !== '1') {
+      modalContactoEl.dataset.openEvtBound = '1';
+      document.addEventListener('mmpp:open-contacto-modal', openModalContacto);
+    }
 
     modalContactoEl.querySelectorAll('.modal-close').forEach((btn) => {
       btn.addEventListener('click', (e) => {
@@ -115,7 +153,7 @@ export function initContactosModals({
     }
   };
 
-  ['modalDetalleContacto', 'modalVisita', 'modalAsociar', 'modalMuestreo', 'modalMuestreoItems', 'modalMuInfo', 'modalMuRechazo'].forEach((id) => {
+  ['modalDetalleContacto', 'modalVisita', 'modalAsociar', 'modalMuestreo', 'modalMuestreoItems', 'modalMuInfo', 'modalMuRechazo', 'modalTrato'].forEach((id) => {
     const opts = modalConfigs[id] || { onCloseEnd: onCleanup };
     initModal(id, opts);
   });

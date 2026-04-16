@@ -1,4 +1,5 @@
 import { escapeHtml, fetchJson as fetchJsonCommon } from '../contactos/ui-common.js';
+import { slug } from '../../core/utilidades.js';
 
 const API_BASE = window.API_URL || '/api';
 
@@ -44,13 +45,6 @@ function fmtDateTime(v) {
   return `${d.toLocaleDateString('es-CL')} ${d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
-function slug(s) {
-  return String(s || '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase().trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
 
 function toArray(data) {
   if (Array.isArray(data)) return data;
@@ -311,8 +305,20 @@ function bindSidebar() {
     const btn = e.target.closest('[data-toggle-group]');
     if (!btn) return;
     const group = btn.closest('.menu-group');
-    group?.classList.toggle('is-open');
+    if (!group || !ui.nav) return;
+    if (group.dataset.group === 'config') {
+      group.classList.add('is-open');
+      return;
+    }
+    const willOpen = !group.classList.contains('is-open');
+    ui.nav.querySelectorAll('.menu-group.is-open').forEach((g) => {
+      if (g !== group && g.dataset.group !== 'config') g.classList.remove('is-open');
+    });
+    group.classList.toggle('is-open', willOpen);
   });
+
+  // Configuración siempre abierto para que "Maestros" no desaparezca.
+  ui.nav?.querySelector('.menu-group[data-group="config"]')?.classList.add('is-open');
 }
 
 function bindEvents() {
