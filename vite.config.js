@@ -35,7 +35,7 @@ export default defineConfig({
   build: {
     target: 'es2020',
     sourcemap: false,
-    minify: 'esbuild',
+    minify: true,
     cssMinify: true,
     chunkSizeWarningLimit: 800,
     assetsInlineLimit: 4096,
