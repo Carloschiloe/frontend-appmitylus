@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://REEMPLAZAR-CON-URL-RAILWAY.up.railway.app/api/$1" }
+    { "source": "/api/(.*)", "destination": "https://backend-appmitylus-production-01df.up.railway.app/api/$1" }
   ]
 }
