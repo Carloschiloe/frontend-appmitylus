@@ -1,24 +1,29 @@
 import { createModalConfirm, getModalInstance, isModalOpen as isAnyModalOpen } from './ui-common.js';
 import { listMuestreos, createMuestreo, updateMuestreo } from './muestreo-api.js';
+import { toast } from '../../ui/toast.js';
 
-const MUESTREO_CATS = [
-  { key: 'procesable', label: 'Procesable', type: 'procesable' },
-  { key: 'cholga', label: 'Cholga', type: 'rechazo' },
-  { key: 'quebrado', label: 'Quebrado', type: 'rechazo' },
-  { key: 'malton', label: 'Malton', type: 'rechazo' },
-  { key: 'semilla', label: 'Semilla (< 4,5 cm)', type: 'rechazo' },
-  { key: 'picoroco', label: 'Picoroco y/o colpa', type: 'rechazo' },
-  { key: 'basura', label: 'Basura', type: 'rechazo' },
-  { key: 'esponja_severa', label: 'Esponja Severa', type: 'rechazo' },
-  { key: 'anemonas', label: 'Anemonas', type: 'rechazo' },
-  { key: 'valvas_vacias', label: 'Valvas Vacias', type: 'rechazo' },
-  { key: 'u_muertas', label: 'U muertas', type: 'rechazo' },
-  { key: 'barbilla', label: 'Barbilla', type: 'rechazo' },
-  { key: 'cogotina', label: 'Cogotina', type: 'defecto' },
-  { key: 'trizados', label: 'Trizados', type: 'defecto' },
-  { key: 'esponja_leve', label: 'Esponja Leve', type: 'defecto' },
-  { key: 'sarro', label: 'Sarro', type: 'defecto' }
-];
+let MUESTREO_CATS = [];
+
+// Carga categorías desde Maestros (única fuente de verdad)
+async function loadCategoriasFromAPI() {
+  const res = await fetch('/api/maestros?tipo=categoria-muestreo&soloActivos=true');
+  if (!res.ok) throw new Error(`Error ${res.status} cargando categorías de muestreo`);
+  const { items } = await res.json();
+  
+  const toSlug = (txt) => String(txt || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+    .replace(/\s+/g, '_').replace(/[^\w-]+/g, '');
+
+  MUESTREO_CATS = (items || []).map((it) => {
+    const slug = toSlug(it.nombre);
+    return {
+      key: it._id,
+      slug: slug,
+      label: it.nombre,
+      type: it.tipoCat || 'procesable',
+    };
+  });
+}
+loadCategoriasFromAPI();
 
 function n2(v) {
   return Math.round((Number(v) || 0) * 100) / 100;
@@ -57,10 +62,10 @@ function validateMuestreoRanges(row = {}) {
     { field: 'pesoVivo', min: 0, max: 200000 },
     { field: 'pesoCocida', min: 0, max: 200000 },
     { field: 'rendimiento', min: 0, max: 100 },
-    { field: 'total', min: 0, max: 100 },
-    { field: 'procesable', min: 0, max: 100 },
-    { field: 'rechazos', min: 0, max: 100 },
-    { field: 'defectos', min: 0, max: 100 }
+    { field: 'total', min: 0, max: 999999 },
+    { field: 'procesable', min: 0, max: 999999 },
+    { field: 'rechazos', min: 0, max: 999999 },
+    { field: 'defectos', min: 0, max: 999999 }
   ];
 
   for (const cfg of numericLimits) {
@@ -205,12 +210,14 @@ export function createMuestreoModule({
   }
 
   function getMuestreoInputs() {
+    const centroVal = safeText(document.getElementById('muestreoCentro')?.value);
     return {
       proveedor: safeText(document.getElementById('muestreoProveedor')?.value),
-      centro: safeText(document.getElementById('muestreoCentro')?.value),
+      centro: centroVal,
+      centroCodigo: centroVal,
       linea: safeText(document.getElementById('muestreoLinea')?.value),
       fecha: safeText(document.getElementById('muestreoFecha')?.value),
-      origen: safeText(document.getElementById('muestreoOrigen')?.value || 'terreno'),
+      origen: safeText(document.getElementById('muestreoOrigen')?.value || 'abastecimiento'),
       responsable: safeText(document.getElementById('muestreoResponsable')?.value),
       uxkg: n2(document.getElementById('muestreoUxKg')?.value),
       pesoVivo: n2(document.getElementById('muestreoPesoVivo')?.value),
@@ -218,25 +225,23 @@ export function createMuestreoModule({
     };
   }
 
-  function setMuestreoRoute(route = 'terreno') {
-    const r = ['terreno', 'directa', 'planta'].includes(route) ? route : 'terreno';
+  function setMuestreoRoute(route = 'abastecimiento') {
+    const r = ['abastecimiento', 'calidad'].includes(route) ? route : 'abastecimiento';
     const inp = document.getElementById('muestreoOrigen');
     if (inp) inp.value = r;
-    document.querySelectorAll('[data-mu-route]').forEach((btn) => {
+
+    document.querySelectorAll('.mu-tipo-btn').forEach((btn) => {
+      const isActive = btn.getAttribute('data-mu-route') === r;
+      btn.classList.toggle('is-active', isActive);
+      btn.style.background = isActive ? '#0ea5e9' : '#fff';
+      btn.style.color = isActive ? '#fff' : '#64748b';
+    });
+    // Legacy support: old [data-mu-route] buttons if any remain
+    document.querySelectorAll('[data-mu-route]:not(.mu-tipo-btn)').forEach((btn) => {
       btn.classList.toggle('is-active', btn.getAttribute('data-mu-route') === r);
     });
-    const hint = document.getElementById('muestreoRouteHint');
     const tech = document.getElementById('muestreoTechnicalBlock');
-    if (r === 'planta') {
-      if (hint) hint.textContent = 'Ruta activa: enviar a planta. Solo registra envio y seguimiento de resultado.';
-      if (tech) tech.style.display = 'none';
-    } else if (r === 'directa') {
-      if (hint) hint.textContent = 'Ruta activa: recepcion directa. Completa datos tecnicos del muestreo.';
-      if (tech) tech.style.display = '';
-    } else {
-      if (hint) hint.textContent = 'Ruta activa: toma en terreno. Completa datos tecnicos del muestreo.';
-      if (tech) tech.style.display = '';
-    }
+    if (tech) tech.style.display = '';
     refreshMuestreoStepSummary();
   }
 
@@ -261,17 +266,17 @@ export function createMuestreoModule({
     muestreoMode = edit ? 'edit' : 'create';
     editingMuestreoId = edit ? safeText(seed?.muestreoId || seed?.id || '') : '';
 
-    const title = document.querySelector('#modalMuestreo .muestreo-shell-head h6');
+    const titleEl = document.getElementById('muModalTitle');
+    if (titleEl) titleEl.textContent = edit ? 'Editar muestreo MMPP' : 'Nuevo Muestreo';
+
     const saveMain = document.getElementById('btnMuestreoSave');
     const saveSide = document.getElementById('btnMuestreoSaveSide');
     const help = document.querySelector('#modalMuestreoItems .mu-side-help');
-
-    if (title) title.textContent = edit ? 'Editar muestreo MMPP' : 'Muestreos MMPP';
     if (saveMain) saveMain.textContent = edit ? 'Guardar cambios' : 'Guardar muestreo';
     if (saveSide) saveSide.textContent = edit ? 'Guardar cambios' : 'Guardar muestreo';
     if (help) help.innerHTML = edit
-      ? 'Edita valores base del muestreo. El <strong>% se calcula automaticamente</strong> y no se puede editar.'
-      : 'Ingresa valores base por item. El <strong>% se calcula automaticamente</strong> y no se puede editar.';
+      ? 'Edita valores base del muestreo. El <strong>% se calcula automáticamente</strong> y no se puede editar.'
+      : 'Ingresa valores base por item. El <strong>% se calcula automáticamente</strong> y no se puede editar.';
   }
 
   function syncMuestreoSideModal() {
@@ -361,9 +366,8 @@ export function createMuestreoModule({
   }
 
   function setMuestreoStep(step = 1) {
-    const route = safeText(document.getElementById('muestreoOrigen')?.value || 'terreno');
     const requested = Math.max(1, Math.min(Number(step) || 1, 3));
-    muestreoStep = (route === 'planta' && requested === 2) ? 3 : requested;
+    muestreoStep = requested;
     document.querySelectorAll('[data-mu-step]').forEach((btn) => {
       const n = Number(btn.getAttribute('data-mu-step') || '1');
       btn.classList.toggle('is-active', n === muestreoStep);
@@ -421,7 +425,9 @@ export function createMuestreoModule({
 
   function repaintMuestreoTable() {
     const totals = computeMuestreoTotals();
-    const base = n2(totals.procesable);
+    const base = n2(totals.total); // Base es el TOTAL de la muestra
+    
+    // Calcular % para cada item en la lista lateral
     MUESTREO_CATS.forEach((cat) => {
       const pctEl = document.querySelector(`[data-mu-pct="${cat.key}"]`);
       if (!pctEl) return;
@@ -429,18 +435,28 @@ export function createMuestreoModule({
       const pct = base > 0 ? (catValue / base) * 100 : 0;
       pctEl.textContent = `${fmtNum(pct, 2)} %`;
     });
+
+    // Actualizar tarjetas de resumen inferiores
     const totalPct = base > 0 ? 100 : 0;
     const procPct = base > 0 ? (totals.procesable / base) * 100 : 0;
     const rechPct = base > 0 ? (totals.rechazos / base) * 100 : 0;
     const defectPct = base > 0 ? (totals.defectos / base) * 100 : 0;
-    const set = (id, v) => {
+
+    const setCard = (id, weight, pct, showWeight = false) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = `${fmtNum(v, 2)} %`;
+      if (!el) return;
+      if (showWeight) {
+        const weightTxt = weight > 0 ? `${fmtNum(weight, 2)} kg` : '-';
+        el.textContent = `${weightTxt} (${fmtNum(pct, 2)}%)`;
+      } else {
+        el.textContent = `${fmtNum(pct, 2)} %`;
+      }
     };
-    set('muTotalMuestra', totalPct);
-    set('muProcesable', procPct);
-    set('muRechazos', rechPct);
-    set('muDefectos', defectPct);
+
+    setCard('muTotalMuestra', totals.total, totalPct, true);
+    setCard('muProcesable',   totals.procesable, procPct);
+    setCard('muRechazos',     totals.rechazos, rechPct);
+    setCard('muDefectos',     totals.defectos, defectPct);
   }
 
   function renderMuestreoCategorias() {
@@ -481,9 +497,9 @@ export function createMuestreoModule({
       const valueTxt = raw > 0 ? String(raw) : '';
       return `
         <div class="mu-cat-editor-item">
-          <div class="name">${cat.label}</div>
           <div class="type">${state}</div>
-          <input class="mmpp-input mu-cat-value" type="number" min="0" max="999999" step="0.01" inputmode="decimal" data-mu-cat="${cat.key}" value="${valueTxt}" placeholder="0.00" aria-label="${cat.label} valor base" title="Ingresa valor base">
+          <div class="name">${cat.label}</div>
+          <input class="am-input mu-cat-value" type="number" min="0" max="999999" step="0.01" inputmode="decimal" data-mu-cat="${cat.key}" value="${valueTxt}" placeholder="0.00" aria-label="${cat.label} valor base" title="Ingresa valor base">
           <div class="pct" data-mu-pct="${cat.key}">0.00 %</div>
         </div>
       `;
@@ -560,7 +576,7 @@ export function createMuestreoModule({
       await loadMuestreosRemote(false);
     } catch (err) {
       console.error('[muestreo] no se pudo cargar desde API', err);
-      M.toast?.({ html: 'No se pudieron cargar muestreos desde servidor.', classes: 'red' });
+      toast('No se pudieron cargar muestreos desde servidor.', { variant: 'error' });
       muestreosCache = [];
       remoteTs = Date.now();
       remoteScopeKey = getScopeKey(summaryScope);
@@ -666,7 +682,44 @@ export function createMuestreoModule({
     };
 
     set('muestreoProveedor', currentSeed.proveedor || currentSeed.proveedorNombre || '');
-    set('muestreoCentro', currentSeed.centro || currentSeed.centroCodigo || '');
+    // Sync hidden proveedorKey/Id fields
+    const hidKey = document.getElementById('muestreoProveedorKey');
+    const hidId = document.getElementById('muestreoProveedorId');
+    if (hidKey) hidKey.value = currentSeed.proveedorKey || '';
+    if (hidId) hidId.value = currentSeed.proveedorId || currentSeed.contactoId || '';
+
+    // Poblar centros dinámicamente para este proveedor
+    const seedCentro = currentSeed.centro || currentSeed.centroCodigo || '';
+    const seedKey    = currentSeed.proveedorKey || '';
+    if (seedKey) {
+      // populateCentrosForProveedor estará disponible en el closure de bindUI
+      // lo llamamos desde un helper global temporal
+      const allCentros = window._state?.listaCentros || [];
+      const centroSel  = document.getElementById('muestreoCentro');
+      if (centroSel) {
+        const centrosDelProv = allCentros.filter(c => (c.proveedorKey || '') === seedKey);
+        centroSel.innerHTML = '<option value="">— Seleccionar centro —</option>';
+        if (centrosDelProv.length) {
+          centrosDelProv.forEach(c => {
+            const codigo = c.codigo || c.code || c.Codigo || '';
+            const nombre = c.nombre || c.name || c.proveedor || codigo;
+            const label  = codigo ? `${codigo}${nombre && nombre !== codigo ? ' — ' + nombre : ''}` : nombre;
+            const selOpt = (codigo && codigo === seedCentro) ? ' selected' : '';
+            centroSel.innerHTML += `<option value="${codigo}"${selOpt}>${label}</option>`;
+          });
+          if (centrosDelProv.length === 1) centroSel.selectedIndex = 1;
+        } else if (seedCentro) {
+          centroSel.innerHTML += `<option value="${seedCentro}" selected>${seedCentro}</option>`;
+        }
+      }
+    } else if (seedCentro) {
+      // Sin key de proveedor: rellenar el select con el código que trae la seed
+      const centroSel = document.getElementById('muestreoCentro');
+      if (centroSel) {
+        centroSel.innerHTML = `<option value="">— Seleccionar centro —</option><option value="${seedCentro}" selected>${seedCentro}</option>`;
+      }
+    }
+
     set('muestreoLinea', currentSeed.linea || '');
     set('muestreoFecha', currentSeed.fecha || todayIso());
     set('muestreoResponsable', currentSeed.responsable || currentSeed.responsablePG || '');
@@ -674,6 +727,7 @@ export function createMuestreoModule({
     setNum('muestreoPesoVivo', currentSeed.pesoVivo, 2);
     setNum('muestreoPesoCocida', currentSeed.pesoCocida, 2);
     if (currentSeed.route) setMuestreoRoute(currentSeed.route);
+
 
     selectedMuestreoCats.clear();
     selectedMuestreoCats.add('procesable');
@@ -683,10 +737,16 @@ export function createMuestreoModule({
     const baseFallback = Number(currentSeed.procesable);
 
     MUESTREO_CATS.forEach((cat) => {
-      const raw = Number(cats[cat.key]);
+      // Intentar cargar por ID (cat.key) o por su slug (cat.slug) para compatibilidad
+      const valById   = cats[cat.key];
+      const valBySlug = cats[cat.slug];
+      const raw = Number(valById !== undefined ? valById : valBySlug);
+      
       const val = Number.isFinite(raw) ? n2(raw) : 0;
-      if (cat.key === 'procesable') {
-        muCatValues[cat.key] = Number.isFinite(raw) ? val : (Number.isFinite(baseFallback) ? n2(baseFallback) : 0);
+      if (cat.type === 'procesable') {
+        const pVal = Number.isFinite(raw) ? val : (Number.isFinite(baseFallback) ? n2(baseFallback) : 0);
+        muCatValues[cat.key] = pVal;
+        if (pVal > 0) selectedMuestreoCats.add(cat.key);
       } else {
         muCatValues[cat.key] = val;
         if (val > 0) selectedMuestreoCats.add(cat.key);
@@ -695,6 +755,7 @@ export function createMuestreoModule({
 
     renderMuestreoCategorias();
     computeMuestreoRendimiento();
+    repaintMuestreoTable();
     refreshMuestreoStepSummary();
   }
 
@@ -706,13 +767,12 @@ export function createMuestreoModule({
   } = {}) {
     muestreoOpening = true;
     touchScope(scope);
-    activateTab?.('#tab-registro');
     if (view === 'form') setMuestreoStep(1);
     setMuestreoRoute(route);
     setMuestreoView(view);
     const openNow = () => {
       const modal = document.getElementById('modalMuestreo');
-      if (!(modal && window.M?.Modal)) {
+      if (!modal) {
         muestreoOpening = false;
         document.getElementById('muestreoProveedor')?.focus();
         return;
@@ -724,6 +784,8 @@ export function createMuestreoModule({
       setMuestreoMode(mode, pendingSeed);
       setMuestreoRoute(route);
       currentSeed = null;
+      const seedResponsable = pendingSeed?.responsable || pendingSeed?.responsablePG || '';
+      cargarResponsablesMuestreo(seedResponsable).catch(() => {});
       applySeedToForm(pendingSeed);
       pendingSeed = null;
       resetDirty();
@@ -732,6 +794,7 @@ export function createMuestreoModule({
       setTimeout(() => document.getElementById('muestreoProveedor')?.focus(), 40);
       if (view === 'summary') renderMuestreoResumen().catch(() => {});
       setTimeout(() => { muestreoOpening = false; }, 260);
+
     };
     requestAnimationFrame(() => setTimeout(openNow, 60));
   }
@@ -762,6 +825,22 @@ export function createMuestreoModule({
     resetDirty();
   }
 
+  // ── Carga responsables desde Maestros en el select del modal ──────────────
+  async function cargarResponsablesMuestreo(selectedVal = '') {
+    const sel = document.getElementById('muestreoResponsable');
+    if (!sel) return;
+    try {
+      const r = await fetch('/api/maestros?tipo=responsable&soloActivos=true');
+      const json = await r.json();
+      const items = json.items || [];
+      sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+        items.map(i => `<option value="${i.nombre}" ${i.nombre === selectedVal ? 'selected' : ''}>${i.nombre}</option>`).join('');
+    } catch {
+      sel.innerHTML = '<option value="">— Seleccionar —</option>';
+      if (selectedVal) sel.innerHTML += `<option value="${selectedVal}" selected>${selectedVal}</option>`;
+    }
+  }
+
   function bindUI() {
     if (document.body.dataset.muestreoBound === '1') return;
     document.body.dataset.muestreoBound = '1';
@@ -776,26 +855,137 @@ export function createMuestreoModule({
     repaintMuestreoTable();
     setMuestreoMode('create');
 
-    document.querySelectorAll('[data-mu-route]').forEach((btn) => {
+    // Unidad muestreadora toggle: Abastecimiento / Calidad
+    document.querySelectorAll('.mu-tipo-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const route = btn.getAttribute('data-mu-route') || 'terreno';
+        const route = btn.getAttribute('data-mu-route') || 'abastecimiento';
         setMuestreoRoute(route);
-        if (route === 'planta') setMuestreoStep(1);
         markDirty();
       });
     });
+    // Legacy route buttons (backwards compat)
+    document.querySelectorAll('[data-mu-route]:not(.mu-tipo-btn)').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const route = btn.getAttribute('data-mu-route') || 'terreno';
+        setMuestreoRoute(route);
+        markDirty();
+      });
+    });
+
+    // ── Proveedor autocomplete (event delegation sobre document para máxima robustez) ──
+    document.addEventListener('input', (e) => {
+      if (e.target.id !== 'muestreoProveedor') return;
+      const muProvInput = e.target;
+      const muProvDrop  = document.getElementById('muestreoProveedorDrop');
+      const muProvKey   = document.getElementById('muestreoProveedorKey');
+      const muProvId    = document.getElementById('muestreoProveedorId');
+
+      const q = muProvInput.value.toLowerCase().trim();
+      if (muProvKey) muProvKey.value = '';
+      if (muProvId)  muProvId.value  = '';
+
+      if (!q || !muProvDrop) { if (muProvDrop) muProvDrop.style.display = 'none'; return; }
+
+      const contactos = window._contactosGuardados || [];
+      const matches = contactos.filter(c =>
+        (c.proveedorNombre || '').toLowerCase().includes(q) ||
+        (c.proveedorKey   || '').toLowerCase().includes(q)
+      ).slice(0, 8);
+
+      if (!matches.length) { muProvDrop.style.display = 'none'; return; }
+
+      muProvDrop.innerHTML = matches.map(c =>
+        `<div class="mu-prov-item" data-id="${c._id || c.id}" data-key="${c.proveedorKey || ''}" data-nombre="${c.proveedorNombre || ''}" data-centro="${c.centroCodigo || c.centro || ''}" data-responsable="${c.responsablePG || c.responsable || ''}" style="padding:9px 14px;cursor:pointer;font-size:13px;color:#1e293b;border-bottom:1px solid #f1f5f9;">${c.proveedorNombre} <small style="color:#94a3b8;">${c.proveedorKey || ''}</small></div>`
+      ).join('');
+      muProvDrop.style.display = 'block';
+      markDirty();
+    });
+
+    // ── Helper: poblar select de Centro con los centros del proveedor ──
+    function populateCentrosForProveedor(proveedorKey = '', selectedCodigo = '') {
+      const centroSel = document.getElementById('muestreoCentro');
+      if (!centroSel) return;
+
+      // Buscar todos los centros del proveedor en state.listaCentros
+      const allCentros = window._state?.listaCentros || [];
+      // También intentamos desde el módulo de state importado globalmente
+      const centrosDelProv = allCentros.filter(c => {
+        const pKey = c.proveedorKey || '';
+        return pKey === proveedorKey;
+      });
+
+      centroSel.innerHTML = '<option value="">— Seleccionar centro —</option>';
+
+      if (!centrosDelProv.length && !selectedCodigo) {
+        // Sin centros conocidos: dejar solo el placeholder
+        return;
+      }
+
+      if (!centrosDelProv.length && selectedCodigo) {
+        // Tenemos el código de la seed pero no centros => agregar como opción manual
+        centroSel.innerHTML += `<option value="${selectedCodigo}" selected>${selectedCodigo}</option>`;
+        return;
+      }
+
+      centrosDelProv.forEach(c => {
+        const codigo = c.codigo || c.code || c.Codigo || '';
+        const nombre = c.nombre || c.name || c.proveedor || codigo;
+        const label  = codigo ? `${codigo}${nombre && nombre !== codigo ? ' — ' + nombre : ''}` : nombre;
+        const sel    = (codigo && codigo === selectedCodigo) ? ' selected' : '';
+        centroSel.innerHTML += `<option value="${codigo}"${sel}>${label}</option>`;
+      });
+
+      // Si solo hay 1 centro, seleccionarlo automáticamente
+      if (centrosDelProv.length === 1 && !selectedCodigo) {
+        centroSel.selectedIndex = 1;
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      // Selección de ítem en proveedor dropdown
+      const item = e.target.closest('.mu-prov-item');
+      if (item) {
+        const muProvInput = document.getElementById('muestreoProveedor');
+        const muProvDrop  = document.getElementById('muestreoProveedorDrop');
+        const muProvKey   = document.getElementById('muestreoProveedorKey');
+        const muProvId    = document.getElementById('muestreoProveedorId');
+        if (muProvInput) muProvInput.value = item.dataset.nombre;
+        if (muProvKey)   muProvKey.value   = item.dataset.key  || '';
+        if (muProvId)    muProvId.value    = item.dataset.id   || '';
+
+        // Poblar centros dinámicamente para este proveedor
+        populateCentrosForProveedor(item.dataset.key || '', '');
+
+        // Autofill Responsable: seleccionar option con ese valor
+        const respEl = document.getElementById('muestreoResponsable');
+        if (respEl && item.dataset.responsable) {
+          const opt = Array.from(respEl.options).find(o => o.value === item.dataset.responsable);
+          if (opt) respEl.value = item.dataset.responsable;
+        }
+        if (muProvDrop) muProvDrop.style.display = 'none';
+        refreshMuestreoStepSummary();
+        markDirty();
+        return;
+      }
+      // Cerrar dropdown si clic fuera
+      const muProvInput = document.getElementById('muestreoProveedor');
+      const muProvDrop  = document.getElementById('muestreoProveedorDrop');
+      if (muProvDrop && muProvInput && !muProvInput.contains(e.target) && !muProvDrop.contains(e.target)) {
+        muProvDrop.style.display = 'none';
+      }
+    });
+
+
     document.querySelectorAll('[data-mu-step]').forEach((btn) => {
       btn.addEventListener('click', () => setMuestreoStep(Number(btn.getAttribute('data-mu-step') || '1')));
     });
     document.getElementById('muestreoPesoVivo')?.addEventListener('input', () => { computeMuestreoRendimiento(); markDirty(); });
     document.getElementById('muestreoPesoCocida')?.addEventListener('input', () => { computeMuestreoRendimiento(); markDirty(); });
-    ['muestreoProveedor', 'muestreoCentro', 'muestreoLinea', 'muestreoFecha', 'muestreoResponsable']
+    ['muestreoProveedor', 'muestreoCentro', 'muestreoLinea', 'muestreoFecha']
       .forEach((id) => document.getElementById(id)?.addEventListener('input', () => { refreshMuestreoStepSummary(); markDirty(); }));
+    document.getElementById('muestreoResponsable')?.addEventListener('change', () => { refreshMuestreoStepSummary(); markDirty(); });
     document.getElementById('btnMuEditBase')?.addEventListener('click', () => setMuestreoStep(1));
-    document.getElementById('btnMuToStep2')?.addEventListener('click', () => {
-      const route = safeText(document.getElementById('muestreoOrigen')?.value || 'terreno');
-      setMuestreoStep(route === 'planta' ? 3 : 2);
-    });
+    document.getElementById('btnMuToStep2')?.addEventListener('click', () => setMuestreoStep(2));
     document.getElementById('btnMuBackToStep1')?.addEventListener('click', () => setMuestreoStep(1));
     document.getElementById('btnMuToStep3')?.addEventListener('click', () => setMuestreoStep(3));
     document.getElementById('btnMuBackToStep2')?.addEventListener('click', () => setMuestreoStep(2));
@@ -803,10 +993,11 @@ export function createMuestreoModule({
     document.getElementById('btnMuestreoViewSummary')?.addEventListener('click', () => setMuestreoView('summary'));
     document.getElementById('btnMuestreoClear')?.addEventListener('click', () => clearMuestreoForm({ preserveMode: true }));
 
+
     const saveAction = async () => {
       const base = getMuestreoInputs();
       if (!base.proveedor || !base.fecha) {
-        M.toast?.({ html: 'Proveedor y fecha son obligatorios.', classes: 'red' });
+        toast('Proveedor y fecha son obligatorios.', { variant: 'error' });
         return;
       }
       const rendimiento = computeMuestreoRendimiento();
@@ -815,7 +1006,7 @@ export function createMuestreoModule({
         id: '',
         ...base,
         visitaId: safeText(currentSeed?.visitaId || ''),
-        proveedorKey: safeText(currentSeed?.proveedorKey || '').toLowerCase(),
+        proveedorKey: safeText(document.getElementById('muestreoProveedorKey')?.value || currentSeed?.proveedorKey || '').toLowerCase(),
         centroId: safeText(currentSeed?.centroId || ''),
         centroCodigo: safeText(currentSeed?.centroCodigo || base.centro),
         proveedorNombre: base.proveedor,
@@ -830,7 +1021,7 @@ export function createMuestreoModule({
 
       const rangeError = validateMuestreoRanges(row);
       if (rangeError) {
-        M.toast?.({ html: rangeError, classes: 'red' });
+        toast(rangeError, { variant: 'error' });
         return;
       }
 
@@ -864,7 +1055,7 @@ export function createMuestreoModule({
           : await createMuestreo(payloadSave);
       } catch (err) {
         console.error('[muestreo] no se pudo guardar en API', err);
-        M.toast?.({ html: 'No se pudo guardar el muestreo en servidor.', classes: 'red' });
+        toast('No se pudo guardar el muestreo en servidor.', { variant: 'error' });
         return;
       }
 
@@ -913,36 +1104,52 @@ export function createMuestreoModule({
         window.dispatchEvent(new CustomEvent('interaccion:created'));
       } catch (err) {
         console.error('[muestreo] no se pudo crear interaccion', err);
-        M.toast?.({ html: 'Muestreo guardado. Interaccion no sincronizada.', classes: 'orange' });
+        toast('Muestreo guardado. Interacción no sincronizada.', { variant: 'warning' });
       }
       }
 
-      await Promise.resolve(onSavedGestion?.());
+      // Limpieza de estados y refresco de datos en tablas
       resetDirty();
-      M.toast?.({ html: isEdit ? 'Muestreo actualizado.' : 'Muestreo guardado en servidor.', classes: 'green' });
+      try {
+        await Promise.resolve(onSavedGestion?.());
+      } catch (err) {
+        console.warn('[muestreo] error en onSavedGestion callback', err);
+      }
+      
+      // Feedback simple
+      if (savedMuestreo) {
+        try {
+          // Poblar modal de resultados simple
+          const clasificaciones = Array.isArray(savedMuestreo.clasificaciones) ? savedMuestreo.clasificaciones : [];
+          const primary = clasificaciones[0];
+          const clasEl = document.getElementById('muResClas');
+          if (clasEl) {
+            clasEl.textContent = primary ? primary.nombre : 'S/C (No clasifica)';
+            clasEl.style.color = primary ? '#0f172a' : '#dc2626';
+          }
+          const modalEl = document.getElementById('modalMuResultado');
+          if (modalEl) getModalInstance(modalEl)?.open();
+        } catch (e) {
+          toast('Muestreo guardado.', { variant: 'success' });
+        }
+      } else {
+        toast(isEdit ? 'Muestreo actualizado.' : 'Muestreo guardado.', { variant: 'success' });
+      }
+
       setMuestreoView('summary');
       renderMuestreoResumen().catch(() => {});
     };
-    const askAndSave = async () => {
-      const isEdit = muestreoMode === 'edit' && !!editingMuestreoId;
-      const ok = await askConfirm(
-        isEdit ? 'Guardar cambios' : 'Guardar muestreo',
-        isEdit ? '¿Estas seguro que deseas guardar los cambios del muestreo?' : '¿Estas seguro que deseas guardar este muestreo?',
-        isEdit ? 'Guardar cambios' : 'Guardar'
-      );
-      if (!ok) return;
+
+    const handleSave = async (e) => {
+      e.preventDefault();
       await saveAction();
     };
-    document.getElementById('btnMuestreoSave')?.addEventListener('click', askAndSave);
-    document.getElementById('btnMuestreoSaveSide')?.addEventListener('click', askAndSave);
 
-    document.getElementById('btnMuestreoCloseMain')?.addEventListener('click', async (e) => {
+    document.getElementById('btnMuestreoSave')?.addEventListener('click', handleSave);
+    document.getElementById('btnMuestreoSaveSide')?.addEventListener('click', handleSave);
+
+    document.getElementById('btnMuestreoCloseMain')?.addEventListener('click', (e) => {
       e.preventDefault();
-      e.stopPropagation();
-      if (muDirty) {
-        const ok = await askConfirm('Cancelar muestreo', 'Estas seguro que deseas cerrar/cancelar? Se perderan cambios no guardados.', 'Si, cerrar');
-        if (!ok) return;
-      }
       getModalInstance('modalMuestreoItems', { opacity: 0, dismissible: false })?.close();
       getModalInstance('modalMuestreo')?.close();
       resetDirty();
@@ -1016,5 +1223,3 @@ export function createMuestreoModule({
     isOpening: () => muestreoOpening
   };
 }
-
-

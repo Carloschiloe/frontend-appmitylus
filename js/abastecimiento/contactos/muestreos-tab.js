@@ -2,15 +2,15 @@ import { state } from './state.js';
 import { createLocalTableController } from './local-table.js';
 import { debounce, escapeHtml, getModalInstance } from './ui-common.js';
 import { listMuestreos, getMuestreosResumen } from './muestreo-api.js';
+import { toast } from '../../ui/toast.js';
 
 const PAGE_SIZE = 10;
 const esc = escapeHtml;
 
 const RUTA_OPTIONS = [
   { value: '', label: 'Todas' },
-  { value: 'terreno', label: 'Terreno' },
-  { value: 'directa', label: 'Directa' },
-  { value: 'planta', label: 'Planta' }
+  { value: 'abastecimiento', label: 'Abastecimiento' },
+  { value: 'calidad', label: 'Calidad' }
 ];
 
 const CAT_LABELS = {
@@ -56,9 +56,44 @@ const norm = (v = '') => String(v || '')
 
 const n2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
 
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MONTHS_SH = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
 function toDateSafe(v) {
   const d = v instanceof Date ? v : new Date(v);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function isoWeek(d) {
+  const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = (tmp.getUTCDay() + 6) % 7;
+  tmp.setUTCDate(tmp.getUTCDate() - day + 3);
+  const jan4 = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 4));
+  return 1 + Math.round(((tmp - jan4) / 86400000 - 3 + ((jan4.getUTCDay() + 6) % 7)) / 7);
+}
+
+function getWeekRange(offset) {
+  const now = new Date();
+  const day = (now.getDay() + 6) % 7; // 0=Lun … 6=Dom
+  const mon = new Date(now);
+  mon.setHours(0, 0, 0, 0);
+  mon.setDate(now.getDate() - day + offset * 7);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  sun.setHours(23, 59, 59, 999);
+  return { from: mon, to: sun };
+}
+
+function getMonthRange(offset) {
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth() + offset, 1, 0, 0, 0, 0);
+  const to = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0, 23, 59, 59, 999);
+  return { from, to };
+}
+
+function getPeriodCut(period) {
+  // Retained for backward compatibility if needed, but we'll use ranges now.
+  return null;
 }
 
 function fmtDate(v) {
@@ -194,11 +229,10 @@ function resolveContacto(row = {}, lookups) {
   return '';
 }
 
-function originLabel(v = '') {
-  const x = norm(v);
-  if (x === 'planta') return 'Planta';
-  if (x === 'directa') return 'Directa';
-  return 'Terreno';
+function originLabel(v) {
+  const s = String(v || '').toLowerCase();
+  if (s === 'calidad') return 'Calidad';
+  return 'Abastecimiento';
 }
 
 function numberFromCats(cats = {}, key = '') {
@@ -220,60 +254,84 @@ function calcDefectos(row = {}) {
   return n2(DEFECTO_KEYS.reduce((acc, k) => acc + numberFromCats(cats, k), 0));
 }
 
+function buildDelta(actual, prev, inverse = false) {
+  if (prev === null || prev === undefined || isNaN(prev) || isNaN(actual)) return '<span class="mu-delta is-neu">-</span>';
+  const diff = actual - prev;
+  if (Math.abs(diff) < 0.01) return '<span class="mu-delta is-neu">-</span>';
+  const val = Math.abs(diff).toFixed(1);
+  if (diff > 0) return `<span class="mu-delta ${inverse ? 'is-neg' : 'is-pos'}">▲ +${val}</span>`;
+  return `<span class="mu-delta ${inverse ? 'is-pos' : 'is-neg'}">▼ -${val}</span>`;
+}
+
+function buildSparkline(rendimientos = []) {
+  if (rendimientos.length < 2) return '';
+  const pts = rendimientos.slice().reverse();
+  if (pts.every(x => x === 0)) return '';
+  const w = 60;
+  const h = 20;
+  const min = Math.max(0, Math.min(...pts) - 1.5);
+  const max = Math.max(...pts) + 1.5;
+  const range = max === min ? 1 : max - min;
+  const stepX = w / Math.max(1, pts.length - 1);
+  const points = pts.map((val, i) => `${i * stepX},${h - ((val - min) / range) * h}`).join(' ');
+  const lastX = (pts.length - 1) * stepX;
+  const lastY = h - ((pts[pts.length - 1] - min) / range) * h;
+  return `
+    <svg class="mu-sparkline" width="${w}" height="${h}" viewBox="-2 -2 ${w+4} ${h+4}">
+      <polyline fill="none" stroke="#0ea5e9" stroke-width="2" points="${points}" />
+      <circle cx="${lastX}" cy="${lastY}" r="3" />
+    </svg>
+  `;
+}
+
 function renderRutaChips(selected = '') {
   const wrap = document.getElementById('muRutaChips');
   if (!wrap) return;
   const val = String(selected || '').trim().toLowerCase();
   wrap.innerHTML = RUTA_OPTIONS.map((opt) => `
-    <button type="button" class="mu-chip-btn${val === opt.value ? ' is-active' : ''}" data-mu-route="${esc(opt.value)}">
+    <button type="button" class="act-period-mode${val === opt.value ? ' is-active' : ''}" data-mu-route="${esc(opt.value)}">
       ${esc(opt.label)}
     </button>
   `).join('');
 }
 
 function renderResponsableChips(rows = []) {
-  const wrap = document.getElementById('muRespChips');
-  const hidden = document.getElementById('muFltResponsable');
-  if (!(wrap && hidden)) return;
+  const select = document.getElementById('muFltResponsable');
+  if (!select) return;
 
-  const current = String(hidden.value || '').trim();
+  const current = String(select.value || '').trim();
   const values = [...new Set(
     rows.map((r) => String(r.responsablePG || '').trim()).filter(Boolean)
   )].sort((a, b) => a.localeCompare(b, 'es'));
-  const selected = values.includes(current) ? current : '';
-  hidden.value = selected;
-
-  const all = [{ value: '', label: 'Todos' }, ...values.map((v) => ({ value: v, label: v }))];
-  wrap.innerHTML = all.map((opt) => `
-    <button type="button" class="mu-chip-btn${selected === opt.value ? ' is-active' : ''}" data-mu-resp="${esc(opt.value)}">
-      ${esc(opt.label)}
-    </button>
-  `).join('');
+  
+  setHtmlOptions(select, values, 'Todos los responsables');
+  if (values.includes(current)) {
+    select.value = current;
+  }
 }
 
-function filterRows(rows = []) {
-  const fProveedor = norm(document.getElementById('muFltProveedor')?.value || '');
-  const fContacto = norm(document.getElementById('muFltContacto')?.value || '');
-  const fResponsable = norm(document.getElementById('muFltResponsable')?.value || '');
-  const fOrigen = norm(document.getElementById('muFltOrigen')?.value || '');
-  const fDesde = String(document.getElementById('muFltDesde')?.value || '').trim();
-  const fHasta = String(document.getElementById('muFltHasta')?.value || '').trim();
-  const q = norm(document.getElementById('searchMuestreos')?.value || '');
+function filterRows(rows = [], { rutaId, respId, provId, contId, prodId, periodMode, periodOffset, q, fromManual, toManual }) {
+  let range = null;
+  if (periodMode === 'week') range = getWeekRange(periodOffset);
+  else if (periodMode === 'month') range = getMonthRange(periodOffset);
 
-  const from = fDesde ? new Date(`${fDesde}T00:00:00`) : null;
-  const to = fHasta ? new Date(`${fHasta}T23:59:59`) : null;
+  const from = fromManual ? new Date(`${fromManual}T00:00:00`) : (range ? range.from : null);
+  const to = toManual ? new Date(`${toManual}T23:59:59`) : (range ? range.to : null);
 
   return rows.filter((r) => {
-    if (fProveedor && norm(r.proveedorNombre) !== fProveedor) return false;
-    if (fContacto && norm(r.contactoNombre) !== fContacto) return false;
-    if (fResponsable && norm(r.responsablePG) !== fResponsable) return false;
-    if (fOrigen && norm(r.origen) !== fOrigen) return false;
+    if (rutaId && r.origen !== rutaId) return false;
+    if (respId && r.responsablePG !== respId) return false;
+    if (provId && String(r.proveedorNombre || '').trim() !== provId) return false;
+    if (contId && String(r.contactoNombre || '').trim() !== contId) return false;
+    if (prodId && String(r.productoPrincipal || '').trim() !== prodId) return false;
+    
     if (from || to) {
       const d = toDateSafe(r.fecha);
       if (!d) return false;
       if (from && d < from) return false;
       if (to && d > to) return false;
     }
+
     if (q && !norm(r.searchKey).includes(q)) return false;
     return true;
   });
@@ -282,39 +340,64 @@ function filterRows(rows = []) {
 function renderKpis(filteredRows = []) {
   const total = filteredRows.length;
   const proveedores = new Set();
-  let sumUxkg = 0;
-  let sumProcesable = 0;
+  
   let sumRend = 0;
-  let linked = 0;
-  let sumRech = 0;
+  let criticalCount = 0;
+  let minU = Infinity;
+  let maxU = -Infinity;
 
   filteredRows.forEach((r) => {
     const prov = String(r.proveedorNombre || '').trim().toLowerCase();
     if (prov) proveedores.add(prov);
-    sumUxkg += Number(r.uxkg) || 0;
-    sumProcesable += Number(r.procesable) || 0;
+    
     sumRend += Number(r.rendimiento) || 0;
-    sumRech += Number(r.rechazoTotal) || 0;
-    if (r.visitaId || r.proveedorKey) linked += 1;
+    
+    const rech = Number(r.rechazoTotal) || 0;
+    if (rech > 15) criticalCount++;
+
+    const u = Number(r.uxkg) || 0;
+    if (u > 0) {
+      if (u < minU) minU = u;
+      if (u > maxU) maxU = u;
+    }
   });
 
-  const avgUxkg = total ? sumUxkg / total : 0;
-  const avgProc = total ? sumProcesable / total : 0;
   const avgRend = total ? sumRend / total : 0;
-  const avgRech = total ? sumRech / total : 0;
 
-  setText('muTabKpiTotal', total);
-  setText('muTabKpiProveedores', proveedores.size);
-  setText('muTabKpiUxkg', fmtNum(avgUxkg, 0));
-  setText('muTabKpiProcesable', `${fmtNum(avgProc, 2)} %`);
-  setText('muTabKpiRend', `${fmtNum(avgRend, 2)} %`);
-  setText('muTabKpiRechazos', `${fmtNum(avgRech, 2)} %`);
-  setText('muTabKpiPendientes', total - linked);
-}
+  const statusEl = document.getElementById('muSemanticStatus');
+  if (!statusEl) return;
 
-function setJumpCount(summary, fallbackCount) {
-  const total = Number(summary?.total) || Number(fallbackCount) || 0;
-  setText('consultaCountMuestreos', total);
+  if (total === 0) {
+    statusEl.innerHTML = `<p class="mu-semantic-text">No hay muestreos para los filtros actuales.</p>`;
+    statusEl.style.display = 'block';
+    return;
+  }
+
+  let text = `Estás viendo <strong>${total} muestreos</strong> `;
+  if (proveedores.size > 0) text += `de <strong>${proveedores.size} proveedor${proveedores.size === 1 ? '' : 'es'}</strong>. `;
+  
+  if (minU !== Infinity && maxU !== -Infinity && minU !== maxU) {
+    text += `El calibre oscila entre <strong>${fmtNum(minU, 0)} y ${fmtNum(maxU, 0)} U/kg</strong> `;
+  } else if (minU !== Infinity && minU > 0) {
+    text += `El calibre reportado es de <strong>${fmtNum(minU, 0)} U/kg</strong> `;
+  } else {
+    text += `Sin calibres registrados, `;
+  }
+
+  text += `con un <strong>R% medio de ${fmtNum(avgRend, 1)}%</strong>.`;
+
+  let alertHtml = '';
+  if (criticalCount > 0) {
+    alertHtml = `<span class="mu-semantic-alert is-danger">⚠️ ${criticalCount} muestra${criticalCount === 1 ? '' : 's'} con rechazo > 15%</span>`;
+  } else {
+    alertHtml = `<span class="mu-semantic-alert is-safe">✅ Rechazos dentro de norma</span>`;
+  }
+
+  statusEl.innerHTML = `
+    <p class="mu-semantic-text">${text}</p>
+    ${alertHtml}
+  `;
+  statusEl.style.display = 'flex';
 }
 
 function openInfoModal(row = {}) {
@@ -342,12 +425,17 @@ function rowCatValue(row = {}, key = '') {
 }
 
 function buildCatTableRows(row, keys, className = '') {
-  return keys.map((k) => `
-    <tr class="${className}">
-      <td>${esc(CAT_LABELS[k] || k)}</td>
-      <td class="mu-num">${fmtNum(rowCatValue(row, k), 2)} %</td>
-    </tr>
-  `).join('');
+  const total = n2(Number(row.total) || 0);
+  return keys.map((k) => {
+    const val = rowCatValue(row, k);
+    const pct = (total > 0) ? (val / total) * 100 : 0;
+    return `
+      <tr class="${className}">
+        <td>${esc(CAT_LABELS[k] || k)}</td>
+        <td class="mu-num">${fmtNum(pct, 2)} %</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function openRechazoModal(row = {}) {
@@ -359,12 +447,16 @@ function openRechazoModal(row = {}) {
   const defectos = n2(Number(row.defectos) || calcDefectos(row));
   const total = n2(Number(row.total) || (procesable + rechazoTotal + defectos));
 
+  const procPct = total > 0 ? (procesable / total) * 100 : 0;
+  const rechPct = total > 0 ? (rechazoTotal / total) * 100 : 0;
+  const defectPct = total > 0 ? (defectos / total) * 100 : 0;
+
   el.innerHTML = `
     <div class="mu-rechazo-head">
-      <article><span>Procesable</span><strong>${fmtNum(procesable, 2)} %</strong></article>
-      <article><span>Total rechazos</span><strong>${fmtNum(rechazoTotal, 2)} %</strong></article>
-      <article><span>Total defectos</span><strong>${fmtNum(defectos, 2)} %</strong></article>
-      <article><span>Total muestra</span><strong>${fmtNum(total, 2)} %</strong></article>
+      <article><span>Procesable</span><strong>${fmtNum(procPct, 2)} %</strong></article>
+      <article><span>Total rechazos</span><strong>${fmtNum(rechPct, 2)} %</strong></article>
+      <article><span>Total defectos</span><strong>${fmtNum(defectPct, 2)} %</strong></article>
+      <article><span>Total muestra</span><strong>${fmtNum(total, 2)} kg</strong></article>
     </div>
     <div class="mu-rechazo-grid">
       <div class="mu-rechazo-col">
@@ -402,6 +494,9 @@ export function createMuestreosTabModule({
   let summary = null;
   let uiBound = false;
   let loadingPromise = null;
+  let viewMode = 'flat'; // flat, grouped
+  let periodMode = 'all';
+  let periodOffset = 0;
 
   async function loadRemote(forceReload = false) {
     if (loadingPromise) return loadingPromise;
@@ -415,7 +510,6 @@ export function createMuestreosTabModule({
       ]);
       rawRows = Array.isArray(rows) ? rows : [];
       summary = resumen && typeof resumen === 'object' ? resumen : null;
-      setJumpCount(summary, rawRows.length);
       return rawRows;
     })();
 
@@ -445,6 +539,11 @@ export function createMuestreosTabModule({
         const rechazoTotal = calcRechazoTotal(m);
         const rechazoClass = rechazoTotal >= 20 ? 'is-high' : (rechazoTotal >= 10 ? 'is-mid' : 'is-low');
 
+        const clasificaciones = Array.isArray(m.clasificaciones) ? m.clasificaciones : [];
+        const primaryClas = clasificaciones.length ? clasificaciones.sort((a,b) => (a.prioridad||99) - (b.prioridad||99))[0] : null;
+        const productoPrincipal = primaryClas?.nombre || '';
+        const productoTipo = primaryClas?.tipoPrincipal || '';
+
         const row = {
           id,
           visitaId: String(m.visitaId || ''),
@@ -455,7 +554,9 @@ export function createMuestreosTabModule({
           contactoNombre,
           centro,
           linea,
-          origen: String(m.origen || ''),
+          productoPrincipal,
+          productoTipo,
+          origen: String(m.origen || '').toLowerCase() === 'calidad' ? 'calidad' : 'abastecimiento',
           responsablePG,
           fecha: m.fecha,
           uxkg: Number(m.uxkg) || 0,
@@ -474,6 +575,7 @@ export function createMuestreosTabModule({
             contactoNombre,
             centro,
             linea,
+            productoPrincipal,
             responsablePG,
             originLabel(m.origen)
           ].join(' ')
@@ -502,21 +604,33 @@ export function createMuestreosTabModule({
         `.trim();
 
         const acciones = `
-          <div class="acts tbl-actions">
-            <button type="button" class="btn-flat tbl-action-btn tbl-act-view" data-mu-action="info" data-id="${esc(id)}" title="Info de muestra">
-              <i class="material-icons tiny">info</i>
+          <div class="mu-action-dropdown">
+            <button type="button" class="mu-action-trigger" data-mu-action="toggle-menu" title="Acciones de muestreo">
+              <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
             </button>
-            <button type="button" class="btn-flat tbl-action-btn tbl-act-edit" data-mu-action="edit" data-id="${esc(id)}" title="Editar muestreo">
-              <i class="material-icons tiny">edit</i>
-            </button>
-            <button type="button" class="btn-flat tbl-action-btn tbl-act-view" data-mu-action="view" data-id="${esc(id)}" title="Ver resumen relacionado">
-              <i class="material-icons tiny">visibility</i>
-            </button>
-            <button type="button" class="btn-flat tbl-action-btn tbl-act-biomasa" data-mu-action="new" data-id="${esc(id)}" title="Registrar nuevo muestreo">
-              <i class="material-icons tiny">science</i>
-            </button>
+            <div class="mu-action-menu">
+              <button class="mu-action-item" data-mu-action="info" data-id="${esc(id)}">
+                <i class="bi bi-info-circle" aria-hidden="true"></i> Info detalle
+              </button>
+              <button class="mu-action-item" data-mu-action="edit" data-id="${esc(id)}">
+                <i class="bi bi-pencil-square" aria-hidden="true"></i> Editar
+              </button>
+              <div class="mu-action-divider"></div>
+              <button class="mu-action-item" data-mu-action="view" data-id="${esc(id)}">
+                <i class="bi bi-eye" aria-hidden="true"></i> Ver relacionado
+              </button>
+              <button class="mu-action-item" data-mu-action="new" data-id="${esc(id)}">
+                <i class="bi bi-eyedropper" aria-hidden="true"></i> Nuevo muestreo
+              </button>
+            </div>
           </div>
         `.trim();
+
+        const procPct = row.total > 0 ? (row.procesable / row.total) * 100 : 0;
+        const rechPct = row.total > 0 ? (row.rechazoTotal / row.total) * 100 : 0;
+
+        const badgeClass = productoTipo.toLowerCase().includes('entero') ? 'is-entero' : (productoTipo.toLowerCase().includes('media') ? 'is-media' : (productoTipo.toLowerCase().includes('carne') ? 'is-carne' : ''));
+        const productoCell = productoPrincipal ? `<span class="mu-badge-producto ${badgeClass}">${esc(productoPrincipal)}</span>` : '<span style="color:#cbd5e1; font-size:10px;">S/C</span>';
 
         return {
           key: id,
@@ -524,10 +638,16 @@ export function createMuestreosTabModule({
           cells: [
             fechaCell,
             contactoCell,
+            esc(row.linea || '-'),
+            productoCell,
             `<span class="mu-num-main">${fmtNum(row.uxkg, 0)}</span>`,
             `<span class="mu-num-main">${fmtNum(row.rendimiento, 2)} %</span>`,
-            `<span class="mu-num-main">${fmtNum(row.procesable, 2)} %</span>`,
-            rechazoCell,
+            `<span class="mu-num-main">${fmtNum(procPct, 2)} %</span>`,
+            `
+              <button type="button" class="mu-rechazo-btn ${rechazoClass}" data-mu-action="rechazo" data-id="${esc(id)}">
+                ${fmtNum(rechPct, 2)} %
+              </button>
+            `.trim(),
             acciones
           ],
           export: [
@@ -558,7 +678,113 @@ export function createMuestreosTabModule({
       [...new Set(rows.map((r) => String(r.contactoNombre || '').trim()).filter(Boolean))],
       'Todos los contactos'
     );
+    setHtmlOptions(
+      document.getElementById('muFltProducto'),
+      [...new Set(rows.map((r) => String(r.productoPrincipal || '').trim()).filter(Boolean))],
+      'Todos los productos'
+    );
     renderResponsableChips(rows);
+  }
+
+  function toGroupedRows(filtered = []) {
+    const groups = new Map();
+    filtered.forEach(r => {
+      const gKey = r.proveedorKey || r.proveedorNombre || 'Desconocido';
+      if (!groups.has(gKey)) {
+        groups.set(gKey, {
+          key: gKey,
+          nombre: r.proveedorNombre,
+          contacto: r.contactoNombre,
+          items: []
+        });
+      }
+      groups.get(gKey).items.push(r);
+    });
+
+    const rows = [];
+    groups.forEach(g => {
+      const items = g.items.sort((a,b) => new Date(b.fecha||0) - new Date(a.fecha||0));
+      const latest = items[0];
+      const prev = items[1];
+
+      const rDelta = prev ? buildDelta(latest.rendimiento, prev.rendimiento, false) : '<span class="mu-delta is-neu">-</span>';
+      const uDelta = prev ? buildDelta(latest.uxkg, prev.uxkg, true) : '<span class="mu-delta is-neu">-</span>';
+      const sparkR = buildSparkline(items.slice(0, 10).map(x => x.rendimiento));
+
+      const nameCell = `
+        <div class="mu-prov-stack">
+          <span class="mu-prov-name">${esc(g.nombre || '-')}</span>
+          <span class="mu-prov-count">${items.length} muestras totales | Contacto: ${esc(g.contacto || '-')}</span>
+        </div>
+      `;
+
+      const detailRows = items.map(x => `
+        <tr>
+          <td>${esc(fmtDate(x.fecha))}</td>
+          <td>${esc(x.centro || '-')}</td>
+          <td>${esc(x.linea || '-')}</td>
+          <td>${fmtNum(x.rendimiento, 2)} %</td>
+          <td>${fmtNum(x.uxkg, 0)}</td>
+          <td>${fmtNum(x.procesable, 2)} %</td>
+          <td>
+            <button type="button" class="btn-flat tbl-action-btn tbl-act-view" data-mu-action="info" data-id="${esc(x.id)}" title="Info">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      const detailHtml = `
+        <tr class="mu-grouped-detail" data-detail-prov="${esc(g.key)}">
+          <td colspan="7" style="padding: 10px 16px;">
+            <table class="mu-mini-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Centro</th>
+                  <th>Línea</th>
+                  <th>R%</th>
+                  <th>U° x Kg</th>
+                  <th>Procesable</th>
+                  <th>Detalle</th>
+                </tr>
+              </thead>
+              <tbody>${detailRows}</tbody>
+            </table>
+          </td>
+        </tr>
+      `;
+
+      rows.push({
+        className: 'muestreo-master-row',
+        attrs: { 'data-grupo-prov': g.key },
+        afterHtml: detailHtml,
+        cells: [
+          `<span class="mu-master-kpi" style="font-size:12px; color:#64748b;">${esc(fmtDate(latest.fecha))}</span>`,
+          nameCell,
+          `<span class="mu-master-kpi">${fmtNum(latest.uxkg, 0)} ${uDelta}</span>`,
+          `<span class="mu-master-kpi">${fmtNum(latest.rendimiento, 2)} % ${rDelta}</span>`,
+          `<span class="mu-master-kpi">${fmtNum(latest.procesable, 2)} %</span>`,
+          `<div style="display:flex; justify-content:center;">${sparkR}</div>`,
+          `<i class="bi bi-chevron-down muted mu-icon-expand" aria-hidden="true" style="font-size:18px;vertical-align:middle;"></i>`
+        ],
+        export: [
+          'Última: ' + fmtDate(latest.fecha), // Fecha
+          '-',                                // Responsable
+          g.contacto || '-',                  // Contacto
+          g.nombre || '-',                    // Proveedor
+          String(n2(latest.uxkg)),            // U x Kg
+          String(n2(latest.rendimiento)),     // R%
+          String(n2(latest.procesable)),      // Procesable
+          '-',                                // Total rechazos %
+          `${items.length} muestras totales`, // Centro
+          '-',                                // Linea
+          '-'                                 // Ruta
+        ]
+      });
+    });
+
+    return rows;
   }
 
   async function renderTablaMuestreos(forceReload = false) {
@@ -569,16 +795,46 @@ export function createMuestreosTabModule({
       const items = await loadRemote(!!forceReload);
       const displayRows = toDisplayRows(items);
       populateFilters(displayRows);
-      const filtered = filterRows(displayRows);
-      table.setRows(filtered);
+      
+      const fRuta = document.getElementById('muFltOrigen')?.value || '';
+      const fResp = document.getElementById('muFltResponsable')?.value || '';
+      const fProv = document.getElementById('muFltProveedor')?.value || '';
+      const fCont = document.getElementById('muFltContacto')?.value || '';
+      const fProd = document.getElementById('muFltProducto')?.value || '';
+      const fQ = document.getElementById('searchMuestreos')?.value || '';
+      const fDesde = document.getElementById('muFltDesde')?.value || '';
+      const fHasta = document.getElementById('muFltHasta')?.value || '';
+      
+      const filtered = filterRows(displayRows, { 
+        rutaId: fRuta, 
+        respId: fResp, 
+        provId: fProv,
+        contId: fCont,
+        prodId: fProd,
+        periodMode,
+        periodOffset, 
+        q: norm(fQ),
+        fromManual: fDesde,
+        toManual: fHasta
+      });
+      
+      const head = document.getElementById('muTableHeaders');
+      document.getElementById('tablaMuestreos')?.classList.toggle('is-grouped', viewMode !== 'flat');
+      if (viewMode === 'flat') {
+        if (head) head.innerHTML = '<th>Fecha / Responsable</th><th>Proveedor / Contacto</th><th>Línea</th><th>Producto</th><th>U/Kg</th><th>R%</th><th>Proc.%</th><th>Rech.%</th><th>Acciones</th>';
+        table.setRows(filtered);
+      } else {
+        if (head) head.innerHTML = '<th>Última Muestra</th><th>Proveedor / Muestras totales</th><th>U° × Kg (Última)</th><th>R% (Última)</th><th>Procesable</th><th>Tendencia R%</th><th></th>';
+        table.setRows(toGroupedRows(filtered));
+      }
+
       renderKpis(filtered);
       refreshConsultaFilterStates?.();
     } catch (err) {
       console.error('[muestreos-tab] no se pudieron cargar datos', err);
       table.setRows([]);
       renderKpis([]);
-      setJumpCount(summary, 0);
-      M.toast?.({ html: 'No se pudo cargar la tabla de muestreos.', classes: 'red' });
+      toast('No se pudo cargar la tabla de muestreos.', { variant: 'error' });
     }
   }
 
@@ -644,16 +900,71 @@ export function createMuestreosTabModule({
     if (uiBound) return;
     uiBound = true;
 
-    const rerender = debounce(() => {
+    const refresh = debounce(() => {
       renderTablaMuestreos(false).catch(() => {});
     }, 140);
+
+    const fResp = document.getElementById('muFltResponsable');
+    const fQ = document.getElementById('searchMuestreos');
+
+    const periodModes = Array.from(document.querySelectorAll('.act-period-mode[data-period]'));
+    const periodCtrl = document.getElementById('mu-period-ctrl');
+    const periodLabel = document.getElementById('mu-period-label');
+    const btnPrev = document.getElementById('mu-period-prev');
+    const btnNext = document.getElementById('mu-period-next');
+    const btnToday = document.getElementById('mu-period-today');
+
+    function syncPeriodUI() {
+      const hasNav = periodMode !== 'all';
+      if (periodCtrl) periodCtrl.hidden = !hasNav;
+      if (hasNav && periodLabel) {
+        if (periodMode === 'week') {
+          const { from, to } = getWeekRange(periodOffset);
+          const wk = isoWeek(from);
+          const fStr = `${from.getDate()} ${MONTHS_SH[from.getMonth()]}`;
+          const tStr = `${to.getDate()} ${MONTHS_SH[to.getMonth()]} ${to.getFullYear()}`;
+          periodLabel.textContent = `Sem. ${wk} · ${fStr}–${tStr}`;
+        } else if (periodMode === 'month') {
+          const d = new Date(new Date().getFullYear(), new Date().getMonth() + periodOffset, 1);
+          periodLabel.textContent = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+        }
+      }
+      periodModes.forEach(b => b.classList.toggle('is-active', b.dataset.period === periodMode));
+      if (btnToday) btnToday.disabled = (periodOffset === 0);
+    }
+
+    periodModes.forEach(btn => {
+      btn.addEventListener('click', () => {
+        periodMode = btn.dataset.period;
+        periodOffset = 0;
+        syncPeriodUI();
+        refresh();
+      });
+    });
+
+    btnPrev?.addEventListener('click', () => { periodOffset--; syncPeriodUI(); refresh(); });
+    btnNext?.addEventListener('click', () => { periodOffset++; syncPeriodUI(); refresh(); });
+    btnToday?.addEventListener('click', () => { periodOffset = 0; syncPeriodUI(); refresh(); });
 
     renderRutaChips(document.getElementById('muFltOrigen')?.value || '');
     renderResponsableChips([]);
 
-    ['muFltProveedor', 'muFltContacto', 'muFltDesde', 'muFltHasta']
-      .forEach((id) => document.getElementById(id)?.addEventListener('change', rerender));
-    document.getElementById('searchMuestreos')?.addEventListener('input', rerender);
+    ['muFltProveedor', 'muFltContacto', 'muFltProducto', 'muFltDesde', 'muFltHasta']
+      .forEach((id) => document.getElementById(id)?.addEventListener('change', refresh));
+    
+    fResp?.addEventListener('change', refresh);
+    fQ?.addEventListener('input', refresh);
+
+    document.getElementById('muModeSwitch')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-mu-mode]');
+      if (!btn) return;
+      const mode = String(btn.getAttribute('data-mu-mode') || 'flat');
+      viewMode = mode;
+      document.querySelectorAll('#muModeSwitch .act-period-mode').forEach(b => {
+        b.classList.toggle('is-active', b === btn);
+      });
+      renderTablaMuestreos(false).catch(() => {});
+    });
 
     document.getElementById('muRutaChips')?.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-mu-route]');
@@ -662,23 +973,11 @@ export function createMuestreosTabModule({
       const input = document.getElementById('muFltOrigen');
       if (input) input.value = value;
       renderRutaChips(value);
-      rerender();
-    });
-
-    document.getElementById('muRespChips')?.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-mu-resp]');
-      if (!btn) return;
-      const value = String(btn.getAttribute('data-mu-resp') || '');
-      const input = document.getElementById('muFltResponsable');
-      if (input) input.value = value;
-      document.querySelectorAll('#muRespChips .mu-chip-btn').forEach((x) => {
-        x.classList.toggle('is-active', x === btn);
-      });
-      rerender();
+      refresh();
     });
 
     document.getElementById('btnMuFltClear')?.addEventListener('click', () => {
-      ['muFltProveedor', 'muFltContacto', 'muFltDesde', 'muFltHasta', 'searchMuestreos']
+      ['muFltProveedor', 'muFltContacto', 'muFltProducto', 'muFltDesde', 'muFltHasta', 'searchMuestreos']
         .forEach((id) => {
           const el = document.getElementById(id);
           if (!el) return;
@@ -687,21 +986,79 @@ export function createMuestreosTabModule({
 
       const fOrigen = document.getElementById('muFltOrigen');
       const fResp = document.getElementById('muFltResponsable');
+      const fQ = document.getElementById('searchMuestreos');
+      
       if (fOrigen) fOrigen.value = '';
       if (fResp) fResp.value = '';
-
-      renderRutaChips('');
-      renderTablaMuestreos(false).catch(() => {});
+      periodMode = 'all';
+      periodOffset = 0;
+      if (fQ) fQ.value = '';
+      syncPeriodUI();
     });
 
     document.querySelector('#tablaMuestreos tbody')?.addEventListener('click', (e) => {
+      const rowBtn = e.target.closest('.muestreo-master-row');
+      if (rowBtn && !e.target.closest('[data-mu-action]')) {
+        const provKey = rowBtn.getAttribute('data-grupo-prov');
+        const detailRow = document.querySelector(`.mu-grouped-detail[data-detail-prov="${provKey}"]`);
+        if (detailRow) {
+          detailRow.classList.toggle('is-open');
+          rowBtn.classList.toggle('is-expanded');
+        }
+        return;
+      }
+
       const btn = e.target.closest('[data-mu-action]');
       if (!btn) return;
       e.preventDefault();
-      const id = String(btn.getAttribute('data-id') || '').trim();
+      
       const action = String(btn.getAttribute('data-mu-action') || '').trim();
+      
+      // Toggle menu logic
+      if (action === 'toggle-menu') {
+        const menu = btn.nextElementSibling;
+        if (menu) {
+          const isOpen = menu.classList.contains('is-open');
+          
+          if (!isOpen) {
+            // Check vertical space to decide if open up or down
+            const rect = btn.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const menuHeight = 220; // Estimated height of the menu
+            
+            if (spaceBelow < menuHeight && rect.top > menuHeight) {
+              menu.style.top = 'auto';
+              menu.style.bottom = '100%';
+              menu.style.marginTop = '0';
+              menu.style.marginBottom = '4px';
+            } else {
+              menu.style.top = '100%';
+              menu.style.bottom = 'auto';
+              menu.style.marginTop = '4px';
+              menu.style.marginBottom = '0';
+            }
+          }
+
+          // Close all other menus first
+          document.querySelectorAll('.mu-action-menu.is-open').forEach(m => m.classList.remove('is-open'));
+          document.querySelectorAll('.mu-action-trigger.is-active').forEach(b => b.classList.remove('is-active'));
+
+          menu.classList.toggle('is-open', !isOpen);
+          btn.classList.toggle('is-active', !isOpen);
+        }
+        return;
+      }
+
+      const id = String(btn.getAttribute('data-id') || '').trim();
       const row = rowsById.get(id);
       if (!row) return;
+
+      // Close menu after action
+      const menu = btn.closest('.mu-action-menu');
+      if (menu) {
+        menu.classList.remove('is-open');
+        menu.previousElementSibling?.classList.remove('is-active');
+      }
 
       if (action === 'info') {
         openInfoModal(row);
@@ -730,6 +1087,14 @@ export function createMuestreosTabModule({
     window.addEventListener('muestreo:updated', () => {
       renderTablaMuestreos(true).catch(() => {});
     });
+
+    // Global listener to close dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.mu-action-dropdown')) {
+        document.querySelectorAll('.mu-action-menu.is-open').forEach(m => m.classList.remove('is-open'));
+        document.querySelectorAll('.mu-action-trigger.is-active').forEach(b => b.classList.remove('is-active'));
+      }
+    });
   }
 
   async function initTab(forceReload = false) {
@@ -742,4 +1107,3 @@ export function createMuestreosTabModule({
     renderTablaMuestreos
   };
 }
-

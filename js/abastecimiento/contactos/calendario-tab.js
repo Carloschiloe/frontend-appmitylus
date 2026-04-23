@@ -385,6 +385,12 @@ export function createCalendarioTabModule({
 
   function closeDrawer() {
     if (!drawer) return;
+
+    // Liberar el foco si está dentro del drawer para evitar advertencias ARIA
+    if (drawer.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
+
     drawer.classList.remove('is-open');
     drawer.setAttribute('aria-hidden', 'true');
     if (drawerOverlay) {

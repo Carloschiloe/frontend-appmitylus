@@ -4,6 +4,7 @@ import { abrirEdicion, eliminarContacto, abrirDetalleContacto } from './form-con
 import { abrirModalVisita } from '../visitas/ui.js';
 import { createModalConfirm, escapeHtml, debounce } from './ui-common.js';
 import { createLocalTableController } from './local-table.js';
+import { toast } from '../../ui/toast.js';
 
 const esc = escapeHtml;
 const PAGE_SIZE = 10;
@@ -36,7 +37,7 @@ const fmtDateYMD = (d) => {
 function ensureLocalTable() {
   if (tableCtrl) return tableCtrl;
   tableCtrl = createLocalTableController({
-    section: '#tab-personas .mmpp-card',
+    section: '#tab-personas',
     table: '#tablaPersonas',
     pageSize: PAGE_SIZE,
     emptyColspan: 6,
@@ -74,10 +75,10 @@ function buildRows() {
 
       const acciones = `
         <div class="cell-actions tbl-actions">
-          <a href="#!" class="act icon-action icon-ver tbl-action-btn tbl-act-view" title="Ver detalle" data-id="${id}"><i class="material-icons">visibility</i></a>
-          <a href="#!" class="act icon-action icon-visita tbl-action-btn tbl-act-visit" title="Registrar visita" data-id="${id}"><i class="material-icons">event_available</i></a>
-          <a href="#!" class="act icon-action icon-editar tbl-action-btn tbl-act-edit" title="Editar" data-id="${id}"><i class="material-icons">edit</i></a>
-          <a href="#!" class="act icon-action icon-eliminar tbl-action-btn tbl-act-delete" title="Eliminar" data-id="${id}"><i class="material-icons">delete</i></a>
+          <button type="button" class="tbl-action-btn tbl-act-view" data-action="ver" title="Ver detalle" data-id="${id}"><i class="bi bi-eye"></i></button>
+          <button type="button" class="tbl-action-btn tbl-act-visit" data-action="visita" title="Registrar visita" data-id="${id}"><i class="bi bi-calendar-check"></i></button>
+          <button type="button" class="tbl-action-btn tbl-act-edit" data-action="editar" title="Editar" data-id="${id}"><i class="bi bi-pencil"></i></button>
+          <button type="button" class="tbl-action-btn tbl-act-delete mu-red" data-action="eliminar" title="Eliminar" data-id="${id}"><i class="bi bi-trash"></i></button>
         </div>
       `;
 
@@ -116,33 +117,53 @@ function bindUiOnce() {
 
   const tbody = document.querySelector('#tablaPersonas tbody');
   tbody?.addEventListener('click', async (e) => {
-    const el = e.target.closest('.cell-actions .act, a.icon-action');
+    const el = e.target.closest('.tbl-action-btn[data-action]');
     if (!el) return;
     e.preventDefault();
     e.stopPropagation();
 
     const id = el.dataset.id || '';
-    const cls = String(el.className || '').toLowerCase();
+    const action = String(el.dataset.action || '').toLowerCase();
     const c = (state.contactosGuardados || []).find((x) => String(x._id) === String(id));
     if (!c) return;
 
-    if (cls.includes('icon-ver')) return abrirDetalleContacto(c);
-    if (cls.includes('icon-visita')) return abrirModalVisita(c);
-    if (cls.includes('icon-editar')) return abrirEdicion(c);
-    if (cls.includes('icon-eliminar')) {
+    if (action === 'ver') return abrirDetalleContacto(c);
+    if (action === 'visita') return abrirModalVisita(c);
+    if (action === 'editar') return abrirEdicion(c);
+    if (action === 'eliminar') {
       const ok = await askDeleteContacto('Eliminar contacto', '¿Seguro que quieres eliminar este contacto?', 'Eliminar');
       if (!ok) return;
-      eliminarContacto(id)
-        .then(() => renderTablaPersonas())
-        .catch((err) => {
-          console.error(err);
-          M.toast?.({ html: 'No se pudo eliminar', displayLength: 2000, classes: 'red' });
-        });
+        eliminarContacto(id)
+          .then(() => renderTablaPersonas())
+          .catch((err) => {
+            console.error(err);
+            toast('No se pudo eliminar', { variant: 'error', durationMs: 2000 });
+          });
     }
   });
 
   const rerender = debounce(() => renderTablaPersonas(), 120);
   document.getElementById('searchPersonas')?.addEventListener('input', rerender);
+
+  document.getElementById('per-f-clear')?.addEventListener('click', () => {
+    const q = document.getElementById('searchPersonas');
+    if (q) q.value = '';
+    ensureLocalTable()?.resetPage?.();
+    renderTablaPersonas();
+  });
+
+  document.querySelectorAll('[data-personas-export]')?.forEach((btn) => {
+    if (btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => {
+      ensureLocalTable();
+      const type = btn.getAttribute('data-personas-export');
+      const map = { csv: 'export-csv', xls: 'export-xls', pdf: 'export-pdf' };
+      const role = map[String(type || '').toLowerCase()];
+      if (!role) return;
+      document.querySelector(`#tab-personas .local-table-top [data-role="${role}"]`)?.click();
+    });
+  });
 }
 
 export function initPersonasTab() {

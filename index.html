@@ -9,94 +9,12 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
   <link rel="stylesheet" href="/css/index-modern.css">
+  <link rel="stylesheet" href="/css/base-ui.css">
+  <script src="/js/auth.js"></script>
 </head>
 <body>
   <div class="layout">
-    <aside class="sidebar" aria-label="Navegacion principal">
-      <div class="brand">
-        <span class="brand-mark">AM</span>
-        <div>
-          <p class="brand-title">Abastecimiento MMPP</p>
-          <p class="brand-sub">Control operativo</p>
-        </div>
-      </div>
-
-      <nav id="sideNav" class="menu">
-
-        <section class="menu-group is-open has-active-link" data-group="dashboard">
-          <button class="menu-head" type="button" data-toggle-group="dashboard">
-            <span class="menu-head-text"><i class="bi bi-speedometer2"></i> Inicio</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="#dashboard-home" class="is-active-link"><i class="bi bi-house-door"></i> Dashboard</a>
-          </div>
-        </section>
-
-        <section class="menu-group" data-group="contactos">
-          <button class="menu-head" type="button" data-toggle-group="contactos">
-            <span class="menu-head-text"><i class="bi bi-person-lines-fill"></i> Proveedores MMPP</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-	          <div class="submenu">
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-gestion"><i class="bi bi-inbox"></i> Bandeja</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-directorio"><i class="bi bi-buildings"></i> Directorio</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-calendario"><i class="bi bi-calendar3"></i> Calendario</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-interacciones"><i class="bi bi-chat-left-dots"></i> Interacciones</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-tratos"><i class="bi bi-handshake"></i> Tratos</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-muestreos"><i class="bi bi-eyedropper"></i> Muestreos</a>
-	          </div>
-	        </section>
-
-        <section class="menu-group" data-group="proveedores">
-          <button class="menu-head" type="button" data-toggle-group="proveedores">
-            <span class="menu-head-text"><i class="bi bi-buildings"></i> BD Cultivos</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/html/Centros/index.html#tab-centros"><i class="bi bi-grid-1x2"></i> Centros</a>
-            <a href="/html/Centros/index.html#tab-mapa"><i class="bi bi-geo-alt"></i> Mapa</a>
-          </div>
-        </section>
-
-        <section class="menu-group" data-group="biomasa">
-          <button class="menu-head" type="button" data-toggle-group="biomasa">
-            <span class="menu-head-text"><i class="bi bi-droplet-half"></i> Biomasa</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="#compras"><i class="bi bi-kanban"></i> Compras</a>
-            <a href="#inventario"><i class="bi bi-box-seam"></i> Disponibilidad</a>
-            <a href="#balance"><i class="bi bi-bar-chart-line"></i> Balance</a>
-          </div>
-        </section>
-
-	        <section class="menu-group" data-group="historial">
-	          <button class="menu-head" type="button" data-toggle-group="historial">
-	            <span class="menu-head-text"><i class="bi bi-clock-history"></i> Historial</span>
-	            <i class="bi bi-chevron-down caret"></i>
-	          </button>
-	          <div class="submenu">
-	            <a href="/html/Abastecimiento/historial/index.html"><i class="bi bi-journal-text"></i> Gestiones</a>
-	          </div>
-	        </section>
-
-	        <section class="menu-group" data-group="config">
-	          <button class="menu-head" type="button" data-toggle-group="config">
-	            <span class="menu-head-text"><i class="bi bi-sliders"></i> Configuración</span>
-	            <i class="bi bi-chevron-down caret"></i>
-	          </button>
-	          <div class="submenu">
-	            <a href="/html/Maestros/index.html"><i class="bi bi-table"></i> Maestros</a>
-	          </div>
-	        </section>
-	
-	      </nav>
-
-      <div class="sidebar-foot">
-        <p>Base lista para crecer por modulos.</p>
-      </div>
-    </aside>
+    <div id="sidebar-container"></div>
 
     <main class="content">
       <header id="dashboard-home" class="hero">
@@ -259,11 +177,12 @@
     </main>
   </div>
 
-  <script type="module" src="/js/index-modern.js?v=2"></script>
+  <script type="module" src="/js/index-modern.js"></script>
+  <script type="module" src="/js/components/Sidebar.js"></script>
   <script type="module" src="/src/main.jsx"></script>
 
   <script>
-    var REACT_PAGES = ['compras', 'inventario', 'balance'];
+    var REACT_PAGES = ['biomasa'];
     var DASHBOARD_IDS = ['dashboard-home', 'dashboard-biomasa', 'dashboard-panels-section', 'dashboard-controls-section'];
 
     function applyHash() {

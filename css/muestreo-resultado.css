@@ -1,0 +1,196 @@
+/* 
+ * muestreo-resultado.css 
+ * Estilos modernos para el modal de resultados post-guardado.
+ */
+
+#modalMuResultado {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  background: #fdfdfd;
+}
+
+.mu-res-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  padding: 24px;
+  color: #fff;
+  text-align: center;
+}
+
+.mu-res-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.mu-res-body {
+  padding: 24px;
+}
+
+/* Metadata Header */
+.mu-res-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.mu-res-meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.mu-res-meta-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.mu-res-meta-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* KPI Strip Premium */
+.mu-res-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.mu-res-kpi {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.mu-res-kpi:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+}
+
+.mu-res-kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.mu-res-kpi-val {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Lista de Evaluacion */
+.mu-res-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mu-res-section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.mu-res-eval-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mu-res-eval-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.mu-res-eval-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.mu-res-eval-item.is-ok {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.mu-res-eval-item.is-ok .mu-res-eval-icon {
+  background: #22c55e;
+  color: #fff;
+}
+
+.mu-res-eval-item.is-fail {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.mu-res-eval-item.is-fail .mu-res-eval-icon {
+  background: #ef4444;
+  color: #fff;
+}
+
+.mu-res-eval-content {
+  flex: 1;
+}
+
+.mu-res-eval-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+
+.mu-res-eval-msg {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.mu-res-footer {
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: center;
+}
+
+/* Animacion */
+@keyframes mu-res-fade-in {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+#modalMuResultado.open {
+  animation: mu-res-fade-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}

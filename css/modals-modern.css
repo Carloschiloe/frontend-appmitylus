@@ -13,14 +13,20 @@
 
 /* Contenedor Principal (Materialize Override) */
 .modal.app-modal-modern {
-  max-height: 94vh !important;
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  max-height: 92vh !important;
   width: 900px !important;
+  top: 4% !important;
   border-radius: var(--modal-radius) !important;
   box-shadow: var(--modal-shadow) !important;
   display: none !important;
   flex-direction: column !important;
   overflow: hidden !important;
   background-color: #fff !important;
+  padding: 0 !important;
+  z-index: 1001 !important;
 }
 
 .modal.app-modal-modern.open {
@@ -167,10 +173,12 @@
 }
 
 .col-12 { grid-column: span 12; }
-.col-6 { grid-column: span 6; }
-.col-4 { grid-column: span 4; }
-.col-3 { grid-column: span 3; }
-.col-2 { grid-column: span 2; }
+.col-9  { grid-column: span 9;  }
+.col-8  { grid-column: span 8;  }
+.col-6  { grid-column: span 6;  }
+.col-4  { grid-column: span 4;  }
+.col-3  { grid-column: span 3;  }
+.col-2  { grid-column: span 2;  }
 
 /* Estilo de Inputs */
 .am-input-group {
@@ -257,6 +265,54 @@
 
 .is-hidden { display: none !important; }
 
+/* ── Dropdown unificado (reutilizable en todos los modales) ── */
+.am-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  z-index: 500;
+  overflow: hidden;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
+}
+
+.am-dropdown.is-open { display: block; }
+
+.am-dropdown-item {
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.am-dropdown-item:last-child { border-bottom: none; }
+
+.am-dropdown-item:hover { background: #f8fafc; }
+
+.am-dropdown-item strong { font-weight: 700; }
+
+.am-dropdown-item span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.am-dropdown-empty {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
 /* Botones */
 .am-btn {
   height: 42px;
@@ -291,6 +347,78 @@
 .am-btn-flat:hover {
   background: #f1f5f9;
   color: #1e293b;
+}
+
+/* =========================
+   Detalle contacto (modal ojo)
+   ========================= */
+.am-detail-section { margin-bottom: 14px; }
+.am-detail-title {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+.am-detail-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.04);
+}
+.am-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+.am-detail-field { min-width: 0; }
+.am-detail-full { grid-column: 1 / -1; }
+.am-detail-label {
+  font-size: 10px;
+  font-weight: 900;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 4px;
+}
+.am-detail-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.am-detail-empty { color: #94a3b8; font-size: 13px; }
+.am-detail-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.am-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.am-pill-soft { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
+.am-pill-ok { background: #dcfce7; border-color: #86efac; color: #166534; }
+.am-pill-warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+
+.am-visit-list { display: flex; flex-direction: column; gap: 10px; }
+.am-visit-row { padding: 10px 10px; border: 1px solid #f1f5f9; border-radius: 12px; background: #f8fafc; }
+.am-visit-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.am-visit-date { font-weight: 900; color: #0f172a; font-size: 12px; }
+.am-visit-sub { margin-top: 6px; font-size: 12px; color: #475569; }
+
+@media (max-width: 640px) {
+  .am-detail-grid { grid-template-columns: 1fr; }
 }
 
 /* Estilo de Tabla de Historial Original (Materialize base override) */
@@ -355,3 +483,70 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   SISTEMA MAEST — tabs, paneles, tablas, badges (compartido)
+   Usado en Maestros y Contactos
+═══════════════════════════════════════════════════════════ */
+.maest-tabs {
+  display: flex; gap: 4px;
+  border-bottom: 2px solid #f1f5f9;
+  margin-bottom: 24px;
+}
+.maest-tabs--sub {
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 16px;
+  margin-top: 4px;
+}
+.maest-tab-btn {
+  padding: 10px 20px; border: none; background: transparent;
+  font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer;
+  border-bottom: 3px solid transparent; margin-bottom: -2px;
+  transition: color .15s; display: inline-flex; align-items: center; gap: 6px;
+}
+.maest-tabs--sub .maest-tab-btn { padding: 8px 14px; font-size: 12px; }
+.maest-tab-btn:hover { color: #1e293b; }
+.maest-tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+
+.maest-panel { display: none; }
+.maest-panel.active { display: block; }
+
+/* Panel system para páginas principales (contactos, etc.) */
+.c-panel { display: none; }
+.c-panel.active { display: block; }
+.c-sub-panel { display: none; }
+.c-sub-panel.active { display: block; }
+
+.maest-panel-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.maest-panel-head h6 {
+  margin: 0; font-weight: 800; color: #0f172a; font-size: 1rem;
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.maest-table-wrap { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+.maest-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.maest-table thead th {
+  background: #f8fafc; padding: 10px 12px; text-align: left;
+  font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;
+  letter-spacing: .05em; border-bottom: 1px solid #e2e8f0;
+}
+.maest-table tbody td {
+  padding: 12px; border-bottom: 1px solid #f1f5f9;
+  color: #334155; vertical-align: middle;
+}
+.maest-table tbody tr:last-child td { border-bottom: none; }
+.maest-table tbody tr:hover td { background: #f8fafc; }
+.maest-table .num { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+.maest-badge {
+  display: inline-block; padding: 2px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+}
+.maest-badge--on  { background: #dcfce7; color: #166534; }
+.maest-badge--off { background: #f1f5f9; color: #64748b; }
+.maest-empty { padding: 32px 16px; text-align: center; color: #94a3b8; font-size: 14px; }
+.maest-empty p { margin: 0 0 12px; }

@@ -30,7 +30,9 @@ function normalizeRow(raw = {}) {
     procesable: Number(raw.procesable) || 0,
     rechazos: Number(raw.rechazos) || 0,
     defectos: Number(raw.defectos) || 0,
-    cats: raw.cats && typeof raw.cats === 'object' ? raw.cats : {}
+    cats: raw.cats && typeof raw.cats === 'object' ? raw.cats : {},
+    clasificaciones: Array.isArray(raw.clasificaciones) ? raw.clasificaciones : [],
+    evaluacion: Array.isArray(raw.evaluacion) ? raw.evaluacion : []
   };
 }
 

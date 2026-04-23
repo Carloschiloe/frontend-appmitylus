@@ -4,6 +4,7 @@ import { esContactoNuevo, esProveedorNuevoInteraccion } from './normalizers.js';
 import { openInteraccionModal } from './modal.js';
 import { createModalConfirm, escapeHtml } from '../ui-common.js';
 import { createLocalTableController } from '../local-table.js';
+import { toast } from '../../../ui/toast.js';
 
 const esc = escapeHtml;
 const PAGE_SIZE = 10;
@@ -21,8 +22,8 @@ export async function renderTable(container, { onChanged } = {}) {
     <section class="int-modern-card">
       <div class="int-modern-filters">
         <label class="int-f-item int-f-sm">
-          <span>Responsable PG</span>
-          <select id="f-responsable" class="browser-default" aria-label="Responsable PG">
+          <span>Responsable</span>
+          <select id="f-responsable" class="browser-default" aria-label="Responsable">
             <option value="">Todos</option>
             <option value="Claudio Alba">Claudio Alba</option>
             <option value="Patricio Alvarez">Patricio Alvarez</option>
@@ -213,7 +214,7 @@ export async function renderTable(container, { onChanged } = {}) {
       if (!row) return;
       const id = String(row._id || row.id || '').trim();
       if (!id) {
-        window.M?.toast?.({ html: 'No se encontro ID para eliminar', classes: 'red' });
+        toast('No se encontró ID para eliminar', { variant: 'error' });
         return;
       }
       (async () => {
@@ -223,10 +224,10 @@ export async function renderTable(container, { onChanged } = {}) {
           await remove_(id);
           _allRows = _allRows.filter((x) => String(x._id || x.id || '') !== id);
           applyClientFilters();
-          window.M?.toast?.({ html: 'Interaccion eliminada', classes: 'green' });
+          toast('Interacción eliminada', { variant: 'success' });
         } catch (e) {
           console.error('[int] delete error', e);
-          window.M?.toast?.({ html: 'No se pudo eliminar la interaccion', classes: 'red' });
+          toast('No se pudo eliminar la interacción', { variant: 'error' });
         }
       })();
     }
@@ -261,7 +262,7 @@ export async function renderTable(container, { onChanged } = {}) {
       applyClientFilters({ resetPage: true });
     } catch (e) {
       console.error('[int] ERROR refresh():', e);
-      window.M?.toast?.({ html: 'Error al cargar interacciones', classes: 'red' });
+      toast('Error al cargar interacciones', { variant: 'error' });
       _allRows = [];
       _filteredRows = [];
       renderRows({ resetPage: true });

@@ -125,20 +125,22 @@
   padding-left: 0;
 }
 
+/* Autocomplete heredado — alineado visualmente con .am-dropdown */
 .autocomplete-menu {
   position: absolute;
   left: 0;
   right: 0;
   top: 100%;
-  margin-top: 2px;
+  margin-top: 4px;
   display: none;
-  max-height: 260px;
-  overflow: auto;
+  max-height: 200px;
+  overflow-y: auto;
   background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
-  z-index: 1002;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  z-index: 500;
+  overflow: hidden;
 }
 
 .autocomplete-menu .collection {
@@ -148,31 +150,25 @@
 }
 
 .autocomplete-menu .collection-item {
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: #1e293b;
 }
 
-.autocomplete-menu .collection-item:hover {
-  background: #f5f5f5;
-}
+.autocomplete-menu .collection-item:last-child { border-bottom: none; }
+
+.autocomplete-menu .collection-item:hover { background: #f8fafc; }
 
 .autocomplete-empty {
-  padding: 8px 12px;
-  color: #667085;
-  font-size: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #94a3b8;
 }
 
-.ac-item {
-  display: block;
-  padding: 8px 12px;
-}
-
-.ac-title {
-  font-weight: 700;
-}
-
-.ac-sub {
-  font-size: 12px;
-}
+.ac-item { display: flex; flex-direction: column; gap: 2px; }
+.ac-title { font-weight: 700; }
+.ac-sub   { font-size: 12px; color: #64748b; }
 
 .int-filters-row {
   margin-bottom: 8px;
@@ -973,6 +969,593 @@
     flex: initial;
   }
 }
+
+/* ── Activity Table (tabla unificada Visitas + Interacciones) ────────────── */
+
+.act-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+/* ── Navegación de periodo ───────────────────────────────────────────────── */
+
+.act-period-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #fff;
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  padding: 7px 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.act-period-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1 1 0;
+}
+
+/* Botones Todo / Semana / Mes */
+.act-period-modes {
+  display: inline-flex;
+  gap: 2px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.act-period-mode {
+  border: 0;
+  background: transparent;
+  color: #475569;
+  border-radius: 6px;
+  padding: 4px 13px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+
+.act-period-mode:hover:not(.is-active) {
+  background: #e2e8f0;
+}
+
+.act-period-mode.is-active {
+  background: #fff;
+  color: #0f766e;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.10);
+}
+
+/* Control de navegación (flechas + label + Hoy) */
+/* IMPORTANTE: hidden attribute necesita este override o display:flex lo anula */
+.act-period-ctrl[hidden] { display: none !important; }
+.act-period-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.act-period-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #dbe3ee;
+  border-radius: 7px;
+  background: #f8fbff;
+  color: #334155;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.1s, border-color 0.1s;
+  flex-shrink: 0;
+}
+
+.act-period-arrow:hover {
+  background: #eef4fb;
+  border-color: #a8c0da;
+}
+
+.act-period-label {
+  min-width: 200px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e3a5f;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.act-period-today {
+  border: 1px solid #c9d7ea;
+  background: #f8fbff;
+  color: #0f766e;
+  border-radius: 7px;
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: background 0.1s;
+}
+
+.act-period-today:hover:not(:disabled) {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+.act-period-today:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── Barra de filtros ────────────────────────────────────────────────────── */
+
+.act-filters-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #fff;
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.act-filters-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.act-filters-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Selects e inputs dentro de la barra */
+.act-select {
+  height: 36px !important;
+  padding: 0 10px !important;
+  border: 1px solid #c9d7ea !important;
+  border-radius: 8px !important;
+  background: #f8fbff !important;
+  font-size: 13px !important;
+  color: #1e3a5f !important;
+  cursor: pointer;
+  box-sizing: border-box;
+  /* neutralizar Materialize sin romper flex */
+  display: inline-block !important;
+  width: auto !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  vertical-align: middle;
+  padding-right: 32px !important;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 16px !important;
+}
+
+.act-select:focus {
+  border-color: #0f766e !important;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.12) !important;
+  outline: none;
+}
+
+.act-input-q {
+  min-height: 36px !important;
+  border: 1px solid #c9d7ea !important;
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+  background: #f8fbff !important;
+  font-size: 13px !important;
+  flex: 1 1 180px;
+  max-width: 260px;
+  box-sizing: border-box;
+}
+
+.act-input-q:focus {
+  border-color: #0f766e !important;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.12) !important;
+}
+
+.act-btn-clear {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* ── Badge de tipo en tabla ──────────────────────────────────────────────── */
+
+.act-tipo-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.act-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--act-color, #334155);
+  background: #f1f5f9;
+  border: 1.5px solid var(--act-color, #cbd5e1);
+  white-space: nowrap;
+}
+
+.act-foto-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #0369a1;
+  background: #e0f2fe;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+/* ── Celdas de tabla ─────────────────────────────────────────────────────── */
+
+.act-prov-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.act-prov-name {
+  font-weight: 700;
+  color: #1e3a5f;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.act-prov-contact {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.act-date {
+  font-size: 12px;
+  color: #475569;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.act-centro {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.act-tons {
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  text-align: right;
+  display: block;
+}
+
+/* botón muestreo con verde */
+.tbl-action-btn.tbl-act-biomasa.mu-green {
+  border-color: #bbf7d0;
+  background: #ecfdf5;
+}
+
+/* ── #act-table layout ─────────────────────────────────────────────────── */
+
+#act-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+#act-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f8fbff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+#act-table td {
+  vertical-align: middle;
+  padding: 7px 10px;
+  line-height: 1.35;
+}
+
+/*
+  Distribución de anchos (tabla ~900px+ mínima):
+  Col 1 Fecha        88px  fijo
+  Col 2 Tipo        106px  fijo
+  Col 3 Proveedor     22%  flexible
+  Col 4 Centro       64px  fijo
+  Col 5 Próx+Resp     23%  flexible
+  Col 6 Fecha prox.  92px  fijo
+  Col 7 Tons         56px  fijo
+  Col 8 Acciones    102px  fijo
+*/
+#act-table th:nth-child(1), #act-table td:nth-child(1) { width: 88px; }
+#act-table th:nth-child(2), #act-table td:nth-child(2) { width: 106px; }
+#act-table th:nth-child(3), #act-table td:nth-child(3) { width: 22%; }
+#act-table th:nth-child(4), #act-table td:nth-child(4) { width: 64px; }
+#act-table th:nth-child(5), #act-table td:nth-child(5) { width: 23%; }
+#act-table th:nth-child(6), #act-table td:nth-child(6) { width: 92px; }
+#act-table th:nth-child(7), #act-table td:nth-child(7) { width: 56px; text-align: right; }
+#act-table th:nth-child(8), #act-table td:nth-child(8) { width: 102px; }
+
+/* Celda próximo paso + responsable */
+.act-paso-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.act-paso {
+  font-size: 13px;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.act-resp-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.act-resp-tag .bi {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+#act-table .acts {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+#act-table .acts .tbl-action-btn {
+  min-width: 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+}
+
+/* texto largo en celdas flexibles — clip con ellipsis */
+#act-table .act-prov-name,
+#act-table .act-paso {
+  max-width: 100%;
+}
+
+/* ── Ocultar fila de exportación auto-generada por local-table-top ─────── */
+/* En la pestaña de interacciones los botones de exportación van en la barra */
+#tab-interacciones .local-table-top {
+  display: none !important;
+}
+
+/* Reducir el margen inferior del encabezado del panel en interacciones */
+#tab-interacciones .maest-panel-head {
+  margin-bottom: 10px;
+}
+
+/* ── Dropdown "Nueva actividad" ─────────────────────────────────────────── */
+
+.act-new-dropdown {
+  position: relative;
+}
+
+.act-new-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.act-new-caret {
+  font-size: 11px;
+  transition: transform 0.18s ease;
+}
+
+.act-new-trigger[aria-expanded="true"] .act-new-caret {
+  transform: rotate(180deg);
+}
+
+.act-new-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 1200;
+  min-width: 200px;
+  background: #ffffff;
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(2, 17, 37, 0.16);
+  padding: 6px;
+  animation: actMenuIn 0.14s ease;
+}
+
+.act-new-menu.is-open {
+  display: block;
+}
+
+@keyframes actMenuIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.act-new-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e3a5f;
+  transition: background 0.1s;
+}
+
+.act-new-item:hover {
+  background: #f1f5f9;
+}
+
+.act-new-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.act-new-label {
+  flex: 1;
+}
+
+.act-new-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 0;
+}
+
+/* ── Botones de exportación en barra de filtros ──────────────────────────── */
+
+.act-export-group {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.act-export-btn {
+  border: 1px solid #c9d7ea;
+  background: #f8fbff;
+  color: #475569;
+  border-radius: 7px;
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.act-export-btn:hover {
+  background: #eef4fb;
+  border-color: #a8c0da;
+  color: #1e3a5f;
+}
+
+@media (max-width: 900px) {
+  .act-period-nav {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .act-period-left {
+    width: 100%;
+  }
+  .act-period-label {
+    min-width: 140px;
+  }
+  .act-filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .act-filters-left,
+  .act-filters-right {
+    width: 100%;
+  }
+  .act-filters-right .act-select {
+    width: 100% !important;
+  }
+  .act-input-q {
+    max-width: none;
+    flex: 1 1 100%;
+  }
+  .act-export-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .act-new-menu {
+    right: auto;
+    left: 0;
+  }
+}
+
+/* ── Fila de tabs + acciones (Directorio y otros paneles) ─────────────── */
+
+.panel-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.panel-tabs-row .maest-tabs--sub {
+  flex: 1 1 0;
+}
+
+.panel-tabs-row .panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Responsive legacy ─────────────────────────────────────────────────── */
 
 @media (max-width: 640px) {
   #int-table {

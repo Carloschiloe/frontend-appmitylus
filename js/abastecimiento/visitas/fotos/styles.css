@@ -1,212 +1,386 @@
 /* /js/abastecimiento/visitas/fotos/styles.css
-   Estilos del componente de fotos (uploader + grid + visor)
-   -------------------------------------------------------- */
+   Componente de fotos – Dropzone + Grid + Visor
+   ------------------------------------------------ */
 
-/* ===== Acciones (botones) + input file ===== */
-#visita_fotos .fotos-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+/* ── Sección ────────────────────────────────────────────────────────────── */
+
+#visita_fotos {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e8eef6;
 }
 
-/* Botón para abrir explorador/cámara */
-#visita_fotos .fotos-actions button,
-#visita_fotos .fotos-actions .btn {
-  display: inline-flex;
+.fv-section-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  letter-spacing: 0.2px;
+  margin-bottom: 12px;
+}
+
+.fv-section-title .bi {
+  font-size: 15px;
+  color: #0f766e;
+}
+
+.fv-section-header {
+  display: flex;
   align-items: center;
   gap: 6px;
-  background: #009688;
-  color: #fff;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background .18s ease;
-}
-#visita_fotos .fotos-actions button:hover,
-#visita_fotos .fotos-actions .btn:hover {
-  background: #00796B;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+  margin: 14px 0 8px;
 }
 
-/* 🔧 FIX: ocultar por completo el input real (lo disparas por JS) */
-#visita_fotos_input,
-#visita_fotos .filepick-input {
-  display: none !important;
-  pointer-events: none !important;
-  opacity: 0 !important;
+.fv-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 20px;
+  padding: 1px 7px;
 }
 
-/* (Compat) wrapper anterior si existiera */
-#visita_fotos .filepick-wrap {
+/* ── Dropzone ───────────────────────────────────────────────────────────── */
+
+.fv-dropzone {
   position: relative;
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+  justify-content: center;
+  gap: 6px;
+  padding: 28px 20px;
+  border: 2px dashed #c7d7ea;
+  border-radius: 14px;
+  background: #f8fbff;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s;
+  text-align: center;
+  min-height: 110px;
 }
 
-/* ===== Contenedores de previews/galería ===== */
-#visita_fotos_preview,
-#visita_fotos_gallery {
+.fv-dropzone:hover,
+.fv-dropzone.is-dragover {
+  border-color: #0f766e;
+  background: #f0fdf9;
+}
+
+.fv-dropzone.is-dragover {
+  border-style: solid;
+}
+
+/* El input real se oculta inline en el JS (fuera del dropzone) */
+
+.fv-dz-icon {
+  font-size: 28px;
+  color: #94a3b8;
+  line-height: 1;
+  transition: color 0.18s;
+}
+
+.fv-dropzone:hover .fv-dz-icon,
+.fv-dropzone.is-dragover .fv-dz-icon {
+  color: #0f766e;
+}
+
+.fv-dz-text {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.fv-dz-link {
+  color: #0f766e;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.fv-dz-hint {
+  margin: 0;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* ── Grid de fotos ──────────────────────────────────────────────────────── */
+
+.fv-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 10px;
-  margin-top: 10px;
 }
 
-/* Miniaturas */
-#visita_fotos_preview img,
-#visita_fotos_gallery img {
-  width: 100%;
-  height: 110px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  background: #fafafa;
-  display: block;
+.fv-empty-saved {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 4px 0 0;
+  font-style: italic;
 }
 
-/* ===== Grilla “tarjetas” alternativa (si usas .fotos-grid) ===== */
-.fotos-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 10px;
-}
+/* ── Tarjeta de foto ────────────────────────────────────────────────────── */
 
-.fotos-grid-spaced {
-  margin-top: 10px;
-}
-@media (max-width:1200px){ .fotos-grid{ grid-template-columns: repeat(8, 1fr); } }
-@media (max-width:768px){  .fotos-grid{ grid-template-columns: repeat(6, 1fr); } }
-@media (max-width:600px){  .fotos-grid{ grid-template-columns: repeat(4, 1fr); } }
-
-.foto-item {
-  grid-column: span 3;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 6px rgba(0,0,0,.06);
+.fv-thumb {
   display: flex;
   flex-direction: column;
-  transition: box-shadow .15s ease, transform .15s ease;
-}
-.foto-item:hover {
-  box-shadow: 0 4px 18px rgba(0,0,0,.08);
-  transform: translateY(-1px);
+  gap: 5px;
+  transition: opacity 0.2s;
 }
 
-.foto-thumb {
-  aspect-ratio: 4/3;
-  background: #fafafa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  position: relative;
+.fv-thumb.fv-removing {
+  opacity: 0.35;
+  pointer-events: none;
 }
-.foto-thumb img {
+
+.fv-thumb.fv-uploading .fv-img-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 118, 110, 0.18);
+  border-radius: 10px;
+  animation: fvPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes fvPulse {
+  from { opacity: 0.4; }
+  to   { opacity: 0.9; }
+}
+
+.fv-img-wrap {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #e8eef6;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.08);
+}
+
+.fv-img-wrap img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.2s;
 }
 
-/* Meta + acciones de cada tarjeta */
-.foto-meta {
+.fv-img-wrap:hover img {
+  transform: scale(1.04);
+}
+
+/* Overlay con acciones — aparece al hover */
+.fv-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 17, 37, 0.5);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 6px 8px;
+  justify-content: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.18s;
 }
-.foto-meta .trunc {
-  display: inline-block;
-  max-width: 80%;
+
+.fv-img-wrap:hover .fv-overlay {
+  opacity: 1;
+}
+
+.fv-overlay button,
+.fv-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.14s, transform 0.14s;
+  color: #fff;
+}
+
+/* Ver ampliado */
+.fv-view {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.fv-view:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(1.08);
+}
+
+/* Eliminar guardada */
+.fv-del {
+  background: rgba(239, 68, 68, 0.7);
+}
+
+.fv-del:hover {
+  background: rgba(220, 38, 38, 0.9);
+  transform: scale(1.08);
+}
+
+/* Quitar pendiente (encima de la imagen) */
+.fv-remove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(2, 17, 37, 0.6);
+  font-size: 11px;
+  width: 22px;
+  height: 22px;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.14s, background 0.14s;
+}
+
+.fv-img-wrap:hover .fv-remove {
+  opacity: 1;
+}
+
+.fv-remove:hover {
+  background: rgba(220, 38, 38, 0.85);
+}
+
+.fv-name {
+  font-size: 10px;
+  color: #64748b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.foto-actions {
-  display: inline-flex;
-  gap: 6px;
-}
-.foto-actions a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #f2f5f6;
-  transition: filter .12s ease, transform .12s ease;
-}
-.foto-actions a:hover {
-  filter: brightness(.95);
-  transform: scale(1.04);
-}
-.foto-actions .material-icons {
-  font-size: 18px;
-  line-height: 1;
+  line-height: 1.2;
+  padding: 0 2px;
 }
 
-/* Botón eliminar flotante (si lo usas dentro de cada imagen) */
-#visita_fotos_gallery .foto-del {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(0,0,0,0.55);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-}
-#visita_fotos_gallery .foto-del:hover {
-  background: rgba(0,0,0,0.7);
+.fv-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border-radius: 4px;
+  padding: 1px 5px;
+  text-transform: uppercase;
+  width: fit-content;
 }
 
-/* ===== Visor fullscreen ===== */
-.foto-viewer {
+.fv-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* ── Visor fullscreen ───────────────────────────────────────────────────── */
+
+.fv-viewer {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.9);
+  z-index: 9000;
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
-}
-.foto-viewer.open { display: flex; }
-
-.foto-viewer img {
-  max-width: 95vw;
-  max-height: 95vh;
-  object-fit: contain;
-  box-shadow: 0 10px 40px rgba(0,0,0,.4);
 }
 
-.foto-viewer__close {
+.fv-viewer.is-open {
+  display: flex;
+}
+
+.fv-viewer-backdrop {
   position: absolute;
-  top: 16px;
-  right: 20px;
-  background: rgba(255,255,255,.2);
-  color: #fff;
-  border: none;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 20px;
-  border-radius: 6px;
-}
-.foto-viewer__close:hover {
-  background: rgba(255,255,255,.35);
+  inset: 0;
+  background: rgba(2, 12, 27, 0.92);
+  backdrop-filter: blur(4px);
 }
 
-/* Evita scroll en body cuando visor está abierto */
-body.viewer-open { overflow: hidden; }
+.fv-viewer-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 96vw;
+  max-height: 96vh;
+}
+
+.fv-viewer-content img {
+  max-width: 94vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.fv-viewer-close {
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
+  font-size: 18px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  z-index: 2;
+}
+
+.fv-viewer-close:hover {
+  background: rgba(255,255,255,0.28);
+}
+
+body.fv-viewer-open {
+  overflow: hidden;
+}
+
+/* ── Estados de carga ───────────────────────────────────────────────────── */
+
+.fv-dropzone.fv-dz-uploading {
+  border-style: solid;
+  border-color: #0f766e;
+  background: #f0fdf9;
+  cursor: default;
+  pointer-events: none;
+}
+
+.fv-dz-spinner {
+  font-size: 28px;
+  color: #0f766e;
+  animation: fvSpin 0.8s linear infinite;
+}
+
+@keyframes fvSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.fv-uploading-msg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+  font-style: italic;
+  margin: 4px 0 0;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .fv-grid {
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    gap: 8px;
+  }
+  .fv-dropzone {
+    padding: 20px 14px;
+    min-height: 90px;
+  }
+}

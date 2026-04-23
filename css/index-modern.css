@@ -1,15 +1,7 @@
-:root {
-  --bg: #f4f7fb;
-  --surface: #ffffff;
-  --sidebar: #0f172a;
-  --sidebar-2: #111c33;
-  --line: #dbe3ee;
-  --ink: #0f172a;
-  --muted: #5f6f86;
-  --accent: #0f766e;
-  --accent-2: #14b8a6;
-  --radius: 14px;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('./tokens.css');
+
+/* ── Reset base ── */
 
 * {
   box-sizing: border-box;
@@ -21,8 +13,9 @@ body {
   min-height: 100%;
   background: var(--bg);
   color: var(--ink);
-  font-family: "Segoe UI", "Trebuchet MS", "Verdana", sans-serif;
+  font-family: 'Inter', "Segoe UI", system-ui, sans-serif;
 }
+
 
 .layout {
   min-height: 100vh;
@@ -196,6 +189,60 @@ body {
   color: #9ca3af;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+}
+
+.sidebar-user-avatar { font-size: 22px; color: #94a3b8; line-height: 1; flex-shrink: 0; }
+
+.sidebar-user-info { min-width: 0; }
+
+.sidebar-user-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: capitalize;
+}
+
+.sidebar-logout {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 7px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.sidebar-logout:hover {
+  background: rgba(239,68,68,0.12);
+  border-color: rgba(239,68,68,0.4);
+  color: #fca5a5;
 }
 
 .content {

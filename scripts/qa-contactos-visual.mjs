@@ -167,16 +167,17 @@ async function collectTabMetrics(page, tabHash, label) {
 async function runViewport(browser, viewport, deviceName) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
-  const url = `${BASE_URL}/html/Abastecimiento/contactos/contactos.html#tab-consulta`;
+  const url = `${BASE_URL}/html/Abastecimiento/contactos/contactos.html#tab-gestion`;
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1600);
 
   await injectLongRows(page);
 
   const tabs = [
-    { hash: '#tab-contactos', label: 'Proveedores' },
-    { hash: '#tab-personas', label: 'Agenda' },
-    { hash: '#tab-interacciones', label: 'Interacciones remotas' },
+    { hash: '#tab-gestion', label: 'Bandeja' },
+    { hash: '#tab-directorio', label: 'Directorio' },
+    { hash: '#tab-interacciones', label: 'Interacciones' },
+    { hash: '#tab-tratos', label: 'Tratos' },
     { hash: '#tab-muestreos', label: 'Muestreos' }
   ];
 

@@ -7,6 +7,7 @@ import { comunaPorCodigo, centroCodigoById } from './normalizers.js';
 import { renderTablaContactos } from './tabla.js';
 import { abrirModalVisita } from '../visitas/ui.js';
 import { createModalConfirm, escapeHtml, fetchJson, getModalInstance } from './ui-common.js';
+import { toast } from '../../ui/toast.js';
 
 const isValidObjectId = (s) => typeof s === 'string' && /^[0-9a-fA-F]{24}$/.test(s);
 
@@ -15,15 +16,16 @@ const API_BASE = window.API_URL || '/api';
 const MES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const pad2 = (n)=>String(n).padStart(2,'0');
 const mesKeyFrom = (y,m)=>`${y}-${pad2(m)}`;
-const OPORT_ESTADOS = ['disponible','en_gestion','muestreo','semi_cerrado','cerrado_exitoso','perdido','descartado'];
+const OPORT_ESTADOS = ['disponible','semi_acordado','acordado','perdido','descartado'];
 const OPORT_ESTADOS_LABEL = {
-  disponible: 'Disponible',
-  en_gestion: 'En gestion',
-  muestreo: 'Muestreo',
-  semi_cerrado: 'Semi-cerrado',
-  cerrado_exitoso: 'Cerrado exitoso',
-  perdido: 'Perdido',
-  descartado: 'Descartado'
+  disponible:   'Disponible',
+  semi_acordado:'Semi-acordado',
+  acordado:     'Acordado',
+  perdido:      'Perdido',
+  descartado:   'Descartado',
+  // legacy
+  semi_cerrado: 'Semi-acordado',
+  cerrado:      'Acordado',
 };
 const OPORT_MOTIVOS = [
   'precio_no_competitivo',
@@ -322,25 +324,6 @@ async function fetchHistorialByProveedor(proveedorId){
   }
 }
 
-async function postOportunidad(payload){
-  return apiJson('/oportunidades', { method: 'POST', body: payload });
-}
-
-async function patchOportunidadEstado(id, payload){
-  return apiJson(`/oportunidades/${id}/estado`, { method: 'PATCH', body: payload });
-}
-
-async function postOportunidadEvento(id, payload){
-  return apiJson(`/oportunidades/${id}/eventos`, { method: 'POST', body: payload });
-}
-
-async function cerrarOportunidadExitoso(id, payload){
-  return apiJson(`/oportunidades/${id}/cerrar-exitoso`, { method: 'POST', body: payload });
-}
-
-async function cerrarOportunidadPerdido(id, payload){
-  return apiJson(`/oportunidades/${id}/cerrar-perdido`, { method: 'POST', body: payload });
-}
 
 /* ---------- Render helpers (grilla en el modal) ---------- */
 function renderAsignaciones(list){
@@ -426,20 +409,27 @@ function comunasDelProveedor(proveedorKey) {
 
 function miniTimelineHTML(visitas = []) {
   const arr = Array.isArray(visitas) ? visitas : ((visitas && visitas.items) || []);
-  if (!arr.length) return '<div class="text-soft">Sin visitas registradas</div>';
-  const filas = arr.slice(0, 3).map((v) => {
+  if (!arr.length) return '<div class="am-detail-empty">Sin visitas registradas</div>';
+  const rows = arr.slice(0, 3).map((v) => {
     const code = v.centroCodigo || (v.centroId ? centroCodigoById(v.centroId) : '') || '-';
     const fechaStr = (v.fecha ? String(v.fecha).slice(0,10) : '');
+    const estado = String(v.estado || '-');
+    const obs = String(v.observaciones || '').trim();
+    const tons = (v.tonsComprometidas != null && v.tonsComprometidas !== '')
+      ? `${Number(v.tonsComprometidas).toLocaleString('es-CL', { maximumFractionDigits: 2 })} t`
+      : '';
     return `
-      <div class="row mini-tl-row">
-        <div class="col s4"><strong>${fechaStr || '-'}</strong></div>
-        <div class="col s4">${esc(code)}</div>
-        <div class="col s4">${esc(v.estado || '-')}</div>
-        <div class="col s12"><span class="text-soft">${v.tonsComprometidas ? (v.tonsComprometidas + ' t " ') : ''}${esc(v.observaciones || '')}</span></div>
+      <div class="am-visit-row">
+        <div class="am-visit-top">
+          <span class="am-visit-date">${esc(fechaStr || '-')}</span>
+          <span class="am-pill am-pill-soft">${esc(code)}</span>
+          <span class="am-pill am-pill-soft">${esc(estado)}</span>
+        </div>
+        ${tons || obs ? `<div class="am-visit-sub">${tons ? `<strong>${esc(tons)}</strong>` : ''}${tons && obs ? ' · ' : ''}${obs ? esc(obs) : ''}</div>` : ''}
       </div>
-    `;
+    `.trim();
   }).join('');
-  return filas + `<a class="btn btn--ghost" id="btnVerVisitas">Ver todas</a>`;
+  return `<div class="am-visit-list">${rows}</div>`;
 }
 
 function renderAsignacionesSimple(list){
@@ -461,12 +451,40 @@ function renderAsignacionesSimple(list){
     </table>`;
 }
 
+const ESTADO_COLOR = {
+  disponible:   '#3b82f6',
+  semi_acordado:'#f59e0b',
+  acordado:     '#16a34a',
+  // legacy
+  semi_cerrado: '#f59e0b',
+  cerrado:      '#16a34a',
+  perdido:      '#ef4444',
+  descartado:   '#94a3b8',
+};
+const ESTADO_LABEL_COMPRAS = {
+  disponible:   'Disponible',
+  semi_acordado:'Semi-acordado',
+  acordado:     'Acordado',
+  // legacy
+  semi_cerrado: 'Semi-acordado',
+  cerrado:      'Acordado',
+  perdido:      'Perdido',
+  descartado:   'Descartado',
+};
+
 function renderOportunidades(list, historialMap){
-  if (!list || !list.length) return '<span class="grey-text">Sin oportunidades registradas.</span>';
+  if (!list || !list.length) return `
+    <div style="display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:13px;">
+      <span>Sin registro en Compras</span>
+      <a href="#compras" style="color:#3b82f6;font-weight:600;font-size:12px;">Ver tablero →</a>
+    </div>`;
   const rows = list.map(o => {
     const id = (o._id || o.id || '');
-    const estado = o.estado || 'disponible';
-    const isTerminal = ['cerrado_exitoso','perdido','descartado'].includes(estado);
+    const estadoRaw = o.estado || 'disponible';
+    const estado = (estadoRaw === 'semi_cerrado') ? 'semi_acordado'
+      : (estadoRaw === 'cerrado') ? 'acordado'
+      : estadoRaw;
+    const isTerminal = ['acordado','perdido','descartado'].includes(estado);
     const biomasa = (o.biomasaEstimacion != null)
       ? `${Number(o.biomasaEstimacion)} ${o.biomasaUnidad || 'tons'}`
       : '';
@@ -482,58 +500,21 @@ function renderOportunidades(list, historialMap){
         }).join('')
       : '<div class="text-soft">Sin eventos</div>';
 
-    const estadoOptions = OPORT_ESTADOS.map(s =>
-      `<option value="${s}"${s === estado ? ' selected' : ''}>${OPORT_ESTADOS_LABEL[s] || s}</option>`
-    ).join('');
-    const motivoOptions = [''].concat(OPORT_MOTIVOS).map(m =>
-      `<option value="${m}">${m ? esc(m) : 'Motivo (si aplica)'}</option>`
-    ).join('');
+    const color = ESTADO_COLOR[estado] || '#94a3b8';
+    const labelCompras = ESTADO_LABEL_COMPRAS[estado] || estado;
+    const ultimaAct = o.ultimaActividadAt ? fmtISOfechaHora(o.ultimaActividadAt) : '';
 
     return `
-      <div class="card-panel grey lighten-5 opp-item opp-item-card" data-id="${id}" data-estado="${estado}">
-        <div class="opp-meta-grid">
-          <div><strong>Estado:</strong> ${esc(OPORT_ESTADOS_LABEL[estado] || estado)}</div>
-          <div><strong>Biomasa:</strong> ${esc(biomasa)}</div>
-          <div><strong>Inicio:</strong> ${esc(fmtISOfecha(o.fechaInicio)) || ''}</div>
-          <div><strong>Ultima actividad:</strong> ${esc(fmtISOfechaHora(o.ultimaActividadAt)) || ''}</div>
-        </div>
-
-        <div class="row row-mt-8">
-          <div class="col s12 m3">
-            <label class="text-soft lbl-12">Estado</label>
-            <select class="browser-default opp-estado"${isTerminal ? ' disabled' : ''}>${estadoOptions}</select>
-          </div>
-          <div class="col s12 m3">
-            <label class="text-soft lbl-12">Motivo perdida</label>
-            <select class="browser-default opp-motivo"${isTerminal ? ' disabled' : ''}>${motivoOptions}</select>
-          </div>
-          <div class="col s12 m3">
-            <label class="text-soft lbl-12">Proximo paso</label>
-            <input class="opp-next" type="date" value="${esc(next)}"${isTerminal ? ' disabled' : ''}>
-          </div>
-          <div class="col s12 m3">
-            <label class="text-soft lbl-12">Observacion</label>
-            <input class="opp-obs" type="text" placeholder="Opcional"${isTerminal ? ' disabled' : ''}>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;"></span>
+          <div style="min-width:0;">
+            <span style="font-weight:700;font-size:13px;color:${color};">${esc(labelCompras)}</span>
+            ${biomasa ? `<span class="text-soft" style="font-size:12px;margin-left:8px;">${esc(biomasa)}</span>` : ''}
+            ${ultimaAct ? `<div class="text-soft" style="font-size:11px;margin-top:2px;">Ultima actividad: ${esc(ultimaAct)}</div>` : ''}
           </div>
         </div>
-
-        <div class="right-align mt-6">
-          <a href="javascript:;" class="btn btn--ghost opp-actualizar${isTerminal ? ' disabled' : ''}" data-id="${id}"${isTerminal ? ' aria-disabled="true"' : ''}>Actualizar estado</a>
-        </div>
-
-        <div class="row row-mt-8">
-          <div class="col s12 m9">
-            <input class="opp-nota" type="text" placeholder="Agregar nota/evento">
-          </div>
-          <div class="col s12 m3 right-align mt-6">
-            <a href="javascript:;" class="btn btn--ghost opp-evento" data-id="${id}">Guardar nota</a>
-          </div>
-        </div>
-
-        <div class="mt-6">
-          <strong>Eventos recientes</strong>
-          ${eventosHtml}
-        </div>
+        <a href="#compras" style="color:#3b82f6;font-size:12px;font-weight:600;white-space:nowrap;">Ver en Compras →</a>
       </div>
     `;
   }).join('');
@@ -574,205 +555,8 @@ async function cargarOportunidadesDetalle(contacto){
 }
 
 function bindOportunidadesActions(body){
-  if (!body || body.dataset.oppBound) return;
-  body.dataset.oppBound = '1';
-
-  body.addEventListener('click', async function(e){
-    const btnCrear = e.target && e.target.closest ? e.target.closest('#btnCrearOportunidad') : null;
-    if (btnCrear) {
-      e.preventDefault();
-      if (btnCrear.dataset.loading === '1') return;
-      btnCrear.dataset.loading = '1';
-      btnCrear.classList.add('disabled');
-      const prevText = btnCrear.textContent;
-      btnCrear.textContent = 'Creando...';
-      const c = state.detalleContacto || {};
-      const proveedorId = c._id || c.proveedorId || '';
-      if (!isValidObjectId(String(proveedorId))) {
-        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'Proveedor sin ID valido', classes:'red' });
-        btnCrear.dataset.loading = '0';
-        btnCrear.classList.remove('disabled');
-        btnCrear.textContent = prevText;
-        return;
-      }
-
-      const loggedUser = getLoggedUser();
-      const estado = (document.getElementById('oppEstadoNew') && document.getElementById('oppEstadoNew').value) || 'disponible';
-      const biomasaVal = document.getElementById('oppBiomasaNew') ? document.getElementById('oppBiomasaNew').value : '';
-      const biomasaUnidad = (document.getElementById('oppBiomasaUnidadNew') && document.getElementById('oppBiomasaUnidadNew').value) || 'tons';
-      const nextActionAt = document.getElementById('oppNextActionNew') ? document.getElementById('oppNextActionNew').value : '';
-      const responsableUserId = loggedUser?.id || (document.getElementById('oppResponsableUserId') && document.getElementById('oppResponsableUserId').value) || '';
-      const observacion = (document.getElementById('oppObservacionNew') && document.getElementById('oppObservacionNew').value) || '';
-
-      if (!responsableUserId || !isValidObjectId(String(responsableUserId))) {
-        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'No se detecto usuario logueado. Ingresa Responsable ID valido.', classes:'red' });
-        btnCrear.dataset.loading = '0';
-        btnCrear.classList.remove('disabled');
-        btnCrear.textContent = prevText;
-        return;
-      }
-
-      const payload = {
-        proveedorId,
-        proveedorKey: c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : ''),
-        proveedorNombre: c.proveedorNombre || '',
-        estado,
-        responsableUserId,
-        responsableNombre: loggedUser?.name || c.responsablePG || c.responsable || c.contactoResponsable || '',
-        centroId: c.centroId || null,
-        centroCodigo: c.centroCodigo || '',
-        biomasaEstimacion: biomasaVal ? Number(biomasaVal) : undefined,
-        biomasaUnidad,
-        biomasaVigente: !['cerrado_exitoso','perdido','descartado'].includes(estado),
-        origen: 'contacto',
-        nextActionAt: nextActionAt || undefined,
-        meta: observacion ? { observacion } : undefined
-      };
-
-      try {
-        await postOportunidad(payload);
-        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'Oportunidad creada', classes:'teal' });
-        await cargarOportunidadesDetalle(c);
-      } catch (err) {
-        try { console.error(err); } catch(_) {}
-        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'No se pudo crear oportunidad', classes:'red' });
-      } finally {
-        btnCrear.dataset.loading = '0';
-        btnCrear.classList.remove('disabled');
-        btnCrear.textContent = prevText;
-      }
-      return;
-    }
-
-    const btnActualizar = e.target && e.target.closest ? e.target.closest('.opp-actualizar') : null;
-    if (btnActualizar) {
-      e.preventDefault();
-      if (btnActualizar.classList.contains('disabled')) return;
-      if (btnActualizar.dataset.loading === '1') return;
-      btnActualizar.dataset.loading = '1';
-      btnActualizar.classList.add('disabled');
-      const prevText = btnActualizar.textContent;
-      btnActualizar.textContent = 'Actualizando...';
-      const item = btnActualizar.closest('.opp-item');
-      const id = item && item.dataset ? item.dataset.id : '';
-      const estadoActual = item && item.dataset ? item.dataset.estado : '';
-      if (!id || !isValidObjectId(String(id))) {
-        btnActualizar.dataset.loading = '0';
-        btnActualizar.classList.remove('disabled');
-        btnActualizar.textContent = prevText;
-        return;
-      }
-
-      const estado = item.querySelector('.opp-estado') ? item.querySelector('.opp-estado').value : '';
-      const motivoPerdida = item.querySelector('.opp-motivo') ? item.querySelector('.opp-motivo').value : '';
-      const nextActionAt = item.querySelector('.opp-next') ? item.querySelector('.opp-next').value : '';
-      const observacion = item.querySelector('.opp-obs') ? item.querySelector('.opp-obs').value.trim() : '';
-
-      if (!estado || estado === estadoActual) {
-        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'Selecciona un nuevo estado', classes:'orange' });
-        btnActualizar.dataset.loading = '0';
-        btnActualizar.classList.remove('disabled');
-        btnActualizar.textContent = prevText;
-        return;
-      }
-
-      try {
-        if (estado === 'cerrado_exitoso') {
-          await cerrarOportunidadExitoso(id, { observacion: observacion || undefined });
-        } else if (estado === 'perdido' || estado === 'descartado') {
-          if (!motivoPerdida) {
-            if (typeof M !== 'undefined' && M.toast) M.toast({ html:'Selecciona un motivo de perdida', classes:'red' });
-            btnActualizar.dataset.loading = '0';
-            btnActualizar.classList.remove('disabled');
-            btnActualizar.textContent = prevText;
-            return;
-          }
-          await cerrarOportunidadPerdido(id, {
-            motivoPerdida,
-            observacion: observacion || undefined,
-            estado
-          });
-        } else {
-          await patchOportunidadEstado(id, {
-            estado,
-            nextActionAt: nextActionAt || undefined,
-            observacion: observacion || undefined
-          });
-        }
-
-        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'Estado actualizado', classes:'teal' });
-        const c = state.detalleContacto || {};
-        await cargarOportunidadesDetalle(c);
-      } catch (err) {
-        try { console.error(err); } catch(_) {}
-        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'No se pudo actualizar', classes:'red' });
-      } finally {
-        btnActualizar.dataset.loading = '0';
-        btnActualizar.classList.remove('disabled');
-        btnActualizar.textContent = prevText;
-      }
-      return;
-    }
-
-    const btnEvento = e.target && e.target.closest ? e.target.closest('.opp-evento') : null;
-    if (btnEvento) {
-      e.preventDefault();
-      if (btnEvento.dataset.loading === '1') return;
-      btnEvento.dataset.loading = '1';
-      btnEvento.classList.add('disabled');
-      const prevText = btnEvento.textContent;
-      btnEvento.textContent = 'Guardando...';
-      const item = btnEvento.closest('.opp-item');
-      const id = item && item.dataset ? item.dataset.id : '';
-      if (!id || !isValidObjectId(String(id))) {
-        btnEvento.dataset.loading = '0';
-        btnEvento.classList.remove('disabled');
-        btnEvento.textContent = prevText;
-        return;
-      }
-
-      const nota = item.querySelector('.opp-nota') ? item.querySelector('.opp-nota').value.trim() : '';
-      if (!nota) {
-        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'Escribe una nota', classes:'red' });
-        btnEvento.dataset.loading = '0';
-        btnEvento.classList.remove('disabled');
-        btnEvento.textContent = prevText;
-        return;
-      }
-
-      try {
-        await postOportunidadEvento(id, { tipo: 'nota', detalle: nota });
-        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'Nota guardada', classes:'teal' });
-        const c = state.detalleContacto || {};
-        await cargarOportunidadesDetalle(c);
-      } catch (err) {
-        try { console.error(err); } catch(_) {}
-        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'No se pudo guardar nota', classes:'red' });
-      } finally {
-        btnEvento.dataset.loading = '0';
-        btnEvento.classList.remove('disabled');
-        btnEvento.textContent = prevText;
-      }
-    }
-  });
-}
-
-function syncResponsableFields(){
-  const inputId = document.getElementById('oppResponsableUserId');
-  if (!inputId) return;
-
-  const loggedUser = getLoggedUser();
-  if (loggedUser && isValidObjectId(String(loggedUser.id))) {
-    inputId.value = loggedUser.id;
-    inputId.setAttribute('disabled', 'disabled');
-    inputId.setAttribute('data-locked', '1');
-    inputId.setAttribute('title', loggedUser.name || 'Usuario logueado');
-  } else {
-    inputId.removeAttribute('disabled');
-    inputId.removeAttribute('data-locked');
-    inputId.removeAttribute('title');
-    if (!inputId.value) inputId.placeholder = 'ObjectId del responsable';
-  }
+  // Los estados se gestionan desde el tablero de Compras (#compras).
+  // El panel de contacto solo muestra lectura — sin acciones JS aquí.
 }
 
 export async function abrirDetalleContacto(c) {
@@ -782,95 +566,105 @@ export async function abrirDetalleContacto(c) {
   const fechaFmt = fmtISOfechaHora(c.createdAt || c.fecha || Date.now());
   const comunas = comunasDelProveedor(c.proveedorKey || slug(c.proveedorNombre||''));
   const chips = comunas.length
-    ? comunas.map(x => `<span class="badge chip chip-compact">${esc(x)}</span>`).join('')
-    : '<span class="text-soft">Sin centros asociados</span>';
+    ? comunas.map(x => `<span class="am-pill am-pill-soft">${esc(x)}</span>`).join('')
+    : '<span class="am-detail-empty">Sin centros asociados</span>';
 
   let visitas = [];
   try { visitas = await apiGetVisitasByContacto(c._id) || []; } catch {}
 
+  const proveedor = c.proveedorNombre || '';
+  const proveedorKey = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
+  const centro = c.centroCodigo || '-';
+  const comuna = c.centroComuna || comunaPorCodigo(c.centroCodigo) || '-';
+  const responsable = c.responsablePG || '';
+
+  const contactoNombre = c.contactoNombre || '';
+  const contactoTelefono = c.contactoTelefono || '';
+  const contactoEmail = c.contactoEmail || '';
+  const localidad = c.localidad || '';
+
+  const proxPaso = c.proximoPaso || '';
+  const proxFecha = c.proximoPasoFecha ? fmtISOfecha(c.proximoPasoFecha) : '';
+
+  const obs = c.vendeActualmenteA || '';
+  const notas = c.notas || '';
+
+  const esNuevo = !!c.proveedorNuevo;
+  const hasBio = String(c.biomasa || '').toLowerCase().includes('con') || String(c.tieneMMPP || '').toUpperCase() === 'S';
+
   body.innerHTML = `
-    <div class="mb-4">
-      <h6 class="text-soft mb-05">Comunas con centros del proveedor</h6>
-      ${chips}
+    <div class="am-detail-section">
+      <div class="am-detail-title">Comunas con centros del proveedor</div>
+      <div class="am-detail-chips">${chips}</div>
     </div>
 
-    <div class="detail-grid">
-      <div><strong>Fecha:</strong> ${esc(fechaFmt)}</div>
-      <div><strong>Proveedor:</strong> ${esc(c.proveedorNombre || '')}</div>
-      <div><strong>Centro:</strong> ${esc(c.centroCodigo || '-')}</div>
-      <div><strong>Disposicin:</strong> ${esc(c.dispuestoVender || '-')}</div>
-      <div><strong>Vende a:</strong> ${esc(c.vendeActualmenteA || '-')}</div>
-      <div class="full-col"><strong>Notas:</strong> ${c.notas ? esc(c.notas) : '<span class="text-soft">Sin notas</span>'}</div>
-      <div class="full-col"><strong>Contacto:</strong> ${[c.contactoNombre, c.contactoTelefono, c.contactoEmail].filter(Boolean).map(esc).join(' " ') || '-'}</div>
-    </div>
-
-    <div class="mb-4 mt-1">
-      <h6 class="text-soft mb-05">Disponibilidad registrada</h6>
-      <div id="detalleAsignacionesTable" class="card-panel grey lighten-4 detail-asig-box">
-        <span class="grey-text">Cargando disponibilidad...</span>
-      </div>
-    </div>
-
-    <div class="mb-4 mt-1">
-      <h6 class="text-soft mb-05">Oportunidades</h6>
-      <div class="card-panel grey lighten-4 detail-card-pad">
-        <div class="row row-m-0">
-          <div class="col s12 m3">
-            <label class="text-soft lbl-12">Estado inicial</label>
-            <select id="oppEstadoNew" class="browser-default">
-              ${OPORT_ESTADOS.map(s => `<option value="${s}">${OPORT_ESTADOS_LABEL[s] || s}</option>`).join('')}
-            </select>
+    <div class="am-detail-section">
+      <div class="am-detail-title">Proveedor</div>
+      <div class="am-detail-card">
+        <div class="am-detail-grid">
+          <div class="am-detail-field"><div class="am-detail-label">Fecha registro</div><div class="am-detail-value">${esc(fechaFmt)}</div></div>
+          <div class="am-detail-field"><div class="am-detail-label">Proveedor</div><div class="am-detail-value">${esc(proveedor || proveedorKey || '—')}</div></div>
+          <div class="am-detail-field"><div class="am-detail-label">Centro</div><div class="am-detail-value">${esc(centro)}</div></div>
+          <div class="am-detail-field"><div class="am-detail-label">Comuna</div><div class="am-detail-value">${esc(comuna)}</div></div>
+          <div class="am-detail-field"><div class="am-detail-label">Responsable</div><div class="am-detail-value">${esc(responsable || '—')}</div></div>
+          <div class="am-detail-field">
+            <div class="am-detail-label">Etiquetas</div>
+            <div class="am-detail-value">
+              ${esNuevo ? '<span class="am-pill am-pill-warn">Proveedor nuevo</span>' : ''}
+              ${hasBio ? '<span class="am-pill am-pill-ok">Con biomasa</span>' : '<span class="am-pill am-pill-soft">Sin biomasa</span>'}
+            </div>
           </div>
-          <div class="col s12 m3">
-            <label class="text-soft lbl-12">Biomasa</label>
-            <input id="oppBiomasaNew" type="number" step="0.01" min="0" placeholder="Tons">
-          </div>
-          <div class="col s12 m2">
-            <label class="text-soft lbl-12">Unidad</label>
-            <select id="oppBiomasaUnidadNew" class="browser-default">
-              <option value="tons" selected>tons</option>
-              <option value="kg">kg</option>
-            </select>
-          </div>
-          <div class="col s12 m4">
-            <label class="text-soft lbl-12">Proximo paso</label>
-            <input id="oppNextActionNew" type="date">
-          </div>
-        </div>
-        <div class="row row-m-0">
-          <div class="col s12 m6">
-            <label class="text-soft lbl-12">Responsable ID</label>
-            <input id="oppResponsableUserId" type="text" placeholder="ObjectId del responsable">
-          </div>
-          <div class="col s12 m6">
-            <label class="text-soft lbl-12">Observacion</label>
-            <input id="oppObservacionNew" type="text" placeholder="Opcional">
-          </div>
-        </div>
-        <div class="right-align mt-6">
-          <a href="javascript:;" class="btn teal" id="btnCrearOportunidad">Crear oportunidad</a>
-        </div>
-
-        <div id="oportunidadesList" class="mt-8">
-          <span class="grey-text">Cargando oportunidades...</span>
         </div>
       </div>
     </div>
 
-    <div class="mb-4 mt-1">
-      <h6 class="text-soft mb-05">Ultimas visitas</h6>
-      ${miniTimelineHTML(visitas)}
+    <div class="am-detail-section">
+      <div class="am-detail-title">Contacto</div>
+      <div class="am-detail-card">
+        <div class="am-detail-grid">
+          <div class="am-detail-field"><div class="am-detail-label">Nombre</div><div class="am-detail-value">${esc(contactoNombre || '—')}</div></div>
+          <div class="am-detail-field"><div class="am-detail-label">Teléfono</div><div class="am-detail-value">${esc(contactoTelefono || '—')}</div></div>
+          <div class="am-detail-field"><div class="am-detail-label">Email</div><div class="am-detail-value">${esc(contactoEmail || '—')}</div></div>
+          <div class="am-detail-field"><div class="am-detail-label">Localidad</div><div class="am-detail-value">${esc(localidad || '—')}</div></div>
+        </div>
+      </div>
     </div>
 
-    <div class="right-align">
-      <button class="btn teal" id="btnNuevaVisita" data-id="${c._id}">
-        <i class="material-icons left">event_available</i>Registrar visita
-      </button>
+    <div class="am-detail-section">
+      <div class="am-detail-title">Gestión</div>
+      <div class="am-detail-card">
+        <div class="am-detail-grid">
+          <div class="am-detail-field"><div class="am-detail-label">Próximo paso</div><div class="am-detail-value">${esc(proxPaso || '—')}</div></div>
+          <div class="am-detail-field"><div class="am-detail-label">Fecha próximo paso</div><div class="am-detail-value">${esc(proxFecha || '—')}</div></div>
+          <div class="am-detail-field am-detail-full"><div class="am-detail-label">Observaciones y acuerdos</div><div class="am-detail-value">${obs ? esc(obs) : '<span class="am-detail-empty">—</span>'}</div></div>
+          <div class="am-detail-field am-detail-full"><div class="am-detail-label">Notas</div><div class="am-detail-value">${notas ? esc(notas) : '<span class="am-detail-empty">Sin notas</span>'}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="am-detail-section">
+      <div class="am-detail-title">Disponibilidad registrada</div>
+      <div id="detalleAsignacionesTable" class="am-detail-card">
+        <span class="am-detail-empty">Cargando disponibilidad...</span>
+      </div>
+    </div>
+
+    <div class="am-detail-section">
+      <div class="am-detail-title">Estado en compras</div>
+      <div id="oportunidadesList" class="am-detail-card">
+        <span class="am-detail-empty">Cargando...</span>
+      </div>
+    </div>
+
+    <div class="am-detail-section">
+      <div class="am-detail-title">Últimas visitas</div>
+      <div class="am-detail-card">
+        ${miniTimelineHTML(visitas)}
+      </div>
     </div>
   `;
 
   try {
-    const proveedorKey = c.proveedorKey || (c.proveedorNombre ? slug(c.proveedorNombre) : '');
     const centroId = c.centroId || null;
     const contactoId = c._id || null;
 
@@ -893,11 +687,13 @@ export async function abrirDetalleContacto(c) {
   }
 
   bindOportunidadesActions(body);
-  syncResponsableFields();
   await cargarOportunidadesDetalle(c);
 
-  const btnNV = document.getElementById('btnNuevaVisita');
-  if (btnNV) btnNV.addEventListener('click', function(){ abrirModalVisita(c); });
+  const btnNV = document.getElementById('btnDetalleNuevaVisita');
+  if (btnNV) {
+    btnNV.onclick = () => abrirModalVisita(c);
+    btnNV.style.display = '';
+  }
 
   getModalInstance('modalDetalleContacto')?.open();
 }
@@ -941,7 +737,7 @@ export function setupFormulario() {
     }
 
     if (!id || !isValidObjectId(id)) {
-      if (typeof M !== 'undefined' && M.toast) M.toast({ html:'No hay ID valido para esta fila', classes:'red' });
+      toast('No hay ID válido para esta fila', { variant: 'error' });
       return;
     }
 
@@ -952,10 +748,10 @@ export function setupFormulario() {
         await deleteDisponibilidad(id);
         const c = state.editingContacto || state.contactoActual || {};
         await pintarHistorialEdicion(c);
-        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'Disponibilidad eliminada', classes:'teal' });
+        toast('Disponibilidad eliminada', { variant: 'success' });
       } catch (err) {
         try { console.error(err); } catch(_) {}
-        if (typeof M !== 'undefined' && M.toast) M.toast({ html:'No se pudo eliminar', classes:'red' });
+        toast('No se pudo eliminar', { variant: 'error' });
       }
       return;
     }
@@ -968,7 +764,7 @@ export function setupFormulario() {
       if (mesEl)  mesEl.value  = btn.dataset.mes  || '';
       if (tonsEl) tonsEl.value = btn.dataset.tons || '';
       state.dispEditId = id;
-      if (typeof M !== 'undefined' && M.toast) M.toast({ html:'Editando disponibilidad: recuerda presionar Guardar', displayLength: 2200 });
+      toast('Editando disponibilidad: recuerda presionar Guardar', { durationMs: 2200 });
       return;
     }
   });
@@ -990,7 +786,7 @@ export function setupFormulario() {
     const hasPersona       = !!contactoNombre && (!!contactoTelefono || !!contactoEmail);
 
     if (!hasEmpresa && !hasPersona) {
-      if (typeof M !== 'undefined' && M.toast) M.toast({ html: 'Ingresa una empresa o una persona (nombre + telfono o email).', displayLength: 2800 });
+      toast('Ingresa una empresa o una persona (nombre + teléfono o email).', { variant: 'error', durationMs: 2800 });
       const cn = document.getElementById('contactoNombre'); if (cn && cn.focus) cn.focus();
       return;
     }
@@ -1084,7 +880,7 @@ export function setupFormulario() {
             estado: 'disponible'
           });
           state.dispEditId = null;
-          if (typeof M !== 'undefined' && M.toast) M.toast({ html: 'Disponibilidad actualizada', classes: 'teal' });
+          toast('Disponibilidad actualizada', { variant: 'success' });
         } else {
           await postDisponibilidad({
             ...dispCommon,
@@ -1096,7 +892,7 @@ export function setupFormulario() {
             tons: asigTonsNum,
             estado: 'disponible'
           });
-          if (typeof M !== 'undefined' && M.toast) M.toast({ html: 'Disponibilidad registrada', classes: 'teal' });
+          toast('Disponibilidad registrada', { variant: 'success' });
         }
       }
 
@@ -1109,7 +905,7 @@ export function setupFormulario() {
         : (state.contactoActual || {});
       await pintarHistorialEdicion({ ...c, _id: (state.editId || contactoIdDoc) });
 
-      if (typeof M !== 'undefined' && M.toast) M.toast({ html: state.editId ? 'Contacto actualizado' : 'Contacto guardado', displayLength: 2000 });
+      toast(state.editId ? 'Contacto actualizado' : 'Contacto guardado', { variant: 'success', durationMs: 2000 });
 
       const modalInst = getModalInstance('modalContacto');
       form.reset();
@@ -1125,19 +921,13 @@ export function setupFormulario() {
       var n5 = document.getElementById('contacto_proximoPasoFecha'); if (n5) n5.value = '';
       updateObservacionesCounter();
 
-      if (typeof M !== 'undefined' && typeof M.updateTextFields === 'function') {
-        M.updateTextFields();
-      }
-
       if (modalInst && typeof modalInst.close === 'function') {
         modalInst.close();
       }
     } catch (err) {
       var msg = (err && (err.message || err)) || 'Error desconocido';
       try { console.error('[form-contacto] ERROR:', msg); } catch (_) {}
-      if (typeof M !== 'undefined' && M.toast) {
-        M.toast({ html: 'Error al guardar contacto', displayLength: 2500 });
-      }
+      toast('Error al guardar contacto', { variant: 'error', durationMs: 2500 });
     }
   }); // <-- cierre del addEventListener submit
 }
@@ -1196,8 +986,6 @@ export function abrirEdicion(c) {
 
   pintarHistorialEdicion(c);
   updateObservacionesCounter();
-
-  if (typeof M !== 'undefined' && typeof M.updateTextFields === 'function') M.updateTextFields();
   getModalInstance('modalContacto')?.open();
 }
 
@@ -1212,7 +1000,7 @@ export async function eliminarContacto(id) {
     await cargarContactosGuardados();
     renderTablaContactos();
     document.dispatchEvent(new Event('reload-tabla-contactos'));
-    if (typeof M !== 'undefined' && M.toast) M.toast({ html: 'Contacto ya no existe', classes: 'teal' });
+    toast('Contacto ya no existe', { variant: 'success' });
     return;
   }
 
@@ -1224,7 +1012,7 @@ export async function eliminarContacto(id) {
       try { console.warn('[deleteContacto] backend devolvio 404, tratando como exito'); } catch(_) {}
     } else {
       try { console.error(err); } catch(_) {}
-      if (typeof M !== 'undefined' && M.toast) M.toast({ html: 'No se pudo eliminar', classes: 'red' });
+      toast('No se pudo eliminar', { variant: 'error' });
       return;
     }
   }
@@ -1232,7 +1020,7 @@ export async function eliminarContacto(id) {
   await cargarContactosGuardados();
   renderTablaContactos();
   document.dispatchEvent(new Event('reload-tabla-contactos'));
-  if (typeof M !== 'undefined' && M.toast) M.toast({ html: 'Contacto eliminado', displayLength: 1800 });
+  toast('Contacto eliminado', { variant: 'success', durationMs: 1800 });
 }
 
 export function prepararNuevo() {
@@ -1255,8 +1043,6 @@ export function prepararNuevo() {
   if (anioEl) anioEl.value = hoy.getFullYear();
   if (mesEl) mesEl.value = String(hoy.getMonth() + 1);
   const box = document.getElementById('asigHist');
-  if (box) box.innerHTML = '<span class="grey-text">Sin disponibilidades registradas.</span>';
+  if (box) box.innerHTML = '<span class="am-muted">Sin disponibilidades registradas.</span>';
   const respEl = document.getElementById('contactoResponsable'); if (respEl) respEl.value = '';
-
-  if (typeof M !== 'undefined' && typeof M.updateTextFields === 'function') M.updateTextFields();
 }

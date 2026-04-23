@@ -5,6 +5,7 @@ import { abrirEdicion, eliminarContacto, abrirDetalleContacto } from './form-con
 import { abrirModalVisita } from '../visitas/ui.js';
 import { createModalConfirm, escapeHtml, fetchJson, debounce } from './ui-common.js';
 import { createLocalTableController } from './local-table.js';
+import { toast } from '../../ui/toast.js';
 
 const API_BASE = window.API_URL || '/api';
 const PAGE_SIZE = 10;
@@ -22,11 +23,52 @@ const askDeleteContacto = createModalConfirm({
 let tableCtrl = null;
 let uiBound = false;
 
+let maestrosResponsables = [];
+let maestrosResponsablesByNorm = new Map();
+let maestrosResponsablesPromise = null;
+
 const normalizeText = (v) => String(v || '')
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
   .toLowerCase()
   .trim();
+
+async function ensureMaestrosResponsables() {
+  if (maestrosResponsablesPromise) return maestrosResponsablesPromise;
+  if (maestrosResponsables.length) return maestrosResponsables;
+
+  maestrosResponsablesPromise = (async () => {
+    try {
+      const json = await apiJson('/maestros?tipo=responsable&soloActivos=true');
+      const items = Array.isArray(json?.items) ? json.items : (Array.isArray(json) ? json : []);
+      maestrosResponsables = items
+        .map((x) => String(x?.nombre || x?.label || x || '').trim())
+        .filter(Boolean);
+
+      maestrosResponsablesByNorm = new Map();
+      maestrosResponsables.forEach((name) => {
+        const key = normalizeText(name);
+        if (!key) return;
+        if (!maestrosResponsablesByNorm.has(key)) maestrosResponsablesByNorm.set(key, name);
+      });
+    } catch (e) {
+      maestrosResponsables = [];
+      maestrosResponsablesByNorm = new Map();
+    } finally {
+      maestrosResponsablesPromise = null;
+    }
+    return maestrosResponsables;
+  })();
+
+  return maestrosResponsablesPromise;
+}
+
+function canonicalResponsable(v) {
+  const raw = String(v || '').trim();
+  if (!raw) return '';
+  const key = normalizeText(raw);
+  return maestrosResponsablesByNorm.get(key) || raw;
+}
 
 const escapeSelector = (v) => {
   const s = String(v || '');
@@ -99,46 +141,13 @@ function setFooterTotal(total) {
   if (th) th.textContent = `Total pagina: ${fmtCL(total)}`;
 }
 
-async function openSemiCerradoDesdeFila(c) {
-  try {
-    const hoy = new Date();
-    const periodoYM = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
-    const tonsDisponible = await fetchTotalDisponibilidad({
-      contactoId: c._id || '',
-      proveedorKey: c.proveedorKey || '',
-      centroId: c.centroId || ''
-    });
-
-    const preset = {
-      proveedorNombre: c.proveedorNombre || '',
-      proveedorKey: c.proveedorKey || '',
-      contacto: c.contactoNombre || c.contacto || '',
-      responsablePG: c.responsablePG || c.responsable || c.contactoResponsable || '',
-      centroCodigo: (c.centroCodigo && esCodigoValido(c.centroCodigo))
-        ? c.centroCodigo
-        : (centroCodigoById(c.centroId) || ''),
-      periodoYM,
-      tonsDisponible
-    };
-
-    if (typeof window.openSemiCerradoModal === 'function') {
-      window.openSemiCerradoModal(preset);
-    } else {
-      document.dispatchEvent(new CustomEvent('semi-cerrado:open', { detail: preset }));
-    }
-  } catch (e) {
-    console.error('[semi-cerrado] no se pudo abrir con preset:', e);
-    M.toast?.({ html: 'No se pudo abrir el modal de semi-cerrado', classes: 'red' });
-  }
-}
-
 async function clickAccContacto(aEl) {
   try {
     const id = aEl?.dataset?.id;
     const action = (aEl?.dataset?.action || '').toLowerCase();
     const c = state.contactosGuardados.find((x) => String(x._id) === String(id));
     if (!c) {
-      M.toast?.({ html: 'Contacto no encontrado', classes: 'red' });
+      toast('Contacto no encontrado', { variant: 'error' });
       return;
     }
 
@@ -154,7 +163,6 @@ async function clickAccContacto(aEl) {
       return;
     }
 
-    if (action === 'semi') return openSemiCerradoDesdeFila(c);
     if (action === 'editar') return abrirEdicion(c);
 
     if (action === 'eliminar') {
@@ -166,7 +174,7 @@ async function clickAccContacto(aEl) {
         await eliminarContacto(id);
       } catch (e) {
         console.error(e);
-        M.toast?.({ html: 'No se pudo eliminar', classes: 'red' });
+        toast('No se pudo eliminar', { variant: 'error' });
       } finally {
         delete aEl.dataset.busy;
       }
@@ -195,7 +203,8 @@ function buildRows() {
 
       const proveedorNombre = String(c.proveedorNombre || '');
       const contactoNombre = String(c.contactoNombre || c.contacto || '');
-      const responsable = String(c.responsablePG || c.responsable || c.contactoResponsable || '?');
+      const responsableRaw = String(c.responsablePG || c.responsable || c.contactoResponsable || '?');
+      const responsable = canonicalResponsable(responsableRaw);
 
       const provCell = proveedorNombre
         ? `
@@ -216,12 +225,11 @@ function buildRows() {
       const tonsCell = `<span class="tons-cell" data-rowkey="${esc(rowKey)}" data-contactoid="${esc(c._id || '')}" data-provkey="${esc(c.proveedorKey || '')}" data-centroid="${esc(c.centroId || '')}" data-value=""></span>`;
 
       const acciones = `
-        <div class="actions tbl-actions">
-          <a href="#!" class="icon-action tbl-action-btn tbl-act-view" data-action="ver" title="Ver detalle" data-id="${esc(c._id || '')}"><i class="material-icons">visibility</i></a>
-          <a href="#!" class="icon-action tbl-action-btn tbl-act-visit" data-action="visita" title="Registrar visita" data-id="${esc(c._id || '')}"><i class="material-icons">event_available</i></a>
-          <a href="#!" class="icon-action tbl-action-btn tbl-act-biomasa" data-action="semi" title="Asignar biomasa semi-cerrada" data-id="${esc(c._id || '')}"><i class="material-icons">inventory</i></a>
-          <a href="#!" class="icon-action tbl-action-btn tbl-act-edit" data-action="editar" title="Editar" data-id="${esc(c._id || '')}"><i class="material-icons">edit</i></a>
-          <a href="#!" class="icon-action tbl-action-btn tbl-act-delete" data-action="eliminar" title="Eliminar" data-id="${esc(c._id || '')}"><i class="material-icons">delete</i></a>
+        <div class="acts tbl-actions">
+          <button type="button" class="tbl-action-btn tbl-act-view" data-action="ver" title="Ver detalle" data-id="${esc(c._id || '')}"><i class="bi bi-eye"></i></button>
+          <button type="button" class="tbl-action-btn tbl-act-visit" data-action="visita" title="Registrar visita" data-id="${esc(c._id || '')}"><i class="bi bi-calendar-check"></i></button>
+          <button type="button" class="tbl-action-btn tbl-act-edit" data-action="editar" title="Editar" data-id="${esc(c._id || '')}"><i class="bi bi-pencil"></i></button>
+          <button type="button" class="tbl-action-btn tbl-act-delete mu-red" data-action="eliminar" title="Eliminar" data-id="${esc(c._id || '')}"><i class="bi bi-trash"></i></button>
         </div>
       `.trim();
 
@@ -252,18 +260,39 @@ function buildRows() {
 function populateFiltrosDesdeDatos(rows) {
   const $sem = document.getElementById('fltSemana');
   const $com = document.getElementById('fltComuna');
+  const $resp = document.getElementById('fltResp');
   if (!$sem || !$com) return;
 
   const prevSem = $sem.value;
   const prevCom = $com.value;
+  const prevResp = $resp ? $resp.value : '';
   const semanas = [...new Set(rows.map((r) => r.semana))].sort((a, b) => Number(a) - Number(b));
   const comunas = [...new Set(rows.map((r) => String(r.comuna || '').trim()).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, 'es'));
+
+  const presentResp = new Set(rows.map((r) => normalizeText(r.responsable)).filter(Boolean));
+  const responsablesFuente = maestrosResponsables.length
+    ? maestrosResponsables.filter((name) => presentResp.has(normalizeText(name)))
+    : rows.map((r) => String(r.responsable || '').trim()).filter(Boolean);
+
+  const responsablesMap = new Map();
+  responsablesFuente.forEach((name) => {
+    const k = normalizeText(name);
+    if (!k) return;
+    if (!responsablesMap.has(k)) {
+      responsablesMap.set(k, maestrosResponsablesByNorm.get(k) || name);
+    }
+  });
+  const responsables = [...responsablesMap.values()].sort((a, b) => a.localeCompare(b, 'es'));
 
   $sem.innerHTML = '<option value="">Semana…</option>' + semanas.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
   $com.innerHTML = '<option value="">Comuna…</option>' + comunas.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
   $sem.value = semanas.includes(prevSem) ? prevSem : '';
   $com.value = comunas.includes(prevCom) ? prevCom : '';
+  if ($resp) {
+    $resp.innerHTML = '<option value="">Responsable…</option>' + responsables.map((r) => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+    $resp.value = responsables.includes(prevResp) ? prevResp : '';
+  }
 }
 
 function filterRows(rows) {
@@ -325,7 +354,7 @@ function hydrateVisibleTons({ pageRows }) {
 function ensureLocalTable() {
   if (tableCtrl) return tableCtrl;
   tableCtrl = createLocalTableController({
-    section: '#tab-contactos .mmpp-card',
+    section: '#tab-contactos',
     table: '#tablaContactos',
     pageSize: PAGE_SIZE,
     emptyColspan: 7,
@@ -343,11 +372,11 @@ function bindUiOnce() {
 
   const tbody = document.querySelector('#tablaContactos tbody');
   tbody?.addEventListener('click', (e) => {
-    const a = e.target.closest('a.icon-action');
-    if (!a) return;
+    const btn = e.target.closest('.tbl-action-btn[data-action]');
+    if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
-    clickAccContacto(a);
+    clickAccContacto(btn);
   });
 
   const rerender = debounce(() => renderTablaContactos(), 120);
@@ -355,12 +384,41 @@ function bindUiOnce() {
   document.getElementById('fltSemana')?.addEventListener('change', rerender);
   document.getElementById('fltComuna')?.addEventListener('change', rerender);
   document.getElementById('fltResp')?.addEventListener('change', rerender);
+
+  // Barra de filtros estilo Interacciones (limpiar + export)
+  document.getElementById('dir-f-clear')?.addEventListener('click', () => {
+    const sem = document.getElementById('fltSemana');
+    const com = document.getElementById('fltComuna');
+    const resp = document.getElementById('fltResp');
+    const q = document.getElementById('searchContactos');
+    if (sem) sem.value = '';
+    if (com) com.value = '';
+    if (resp) resp.value = '';
+    if (q) q.value = '';
+    ensureLocalTable()?.resetPage?.();
+    renderTablaContactos();
+  });
+
+  document.querySelectorAll('[data-dir-export]')?.forEach((btn) => {
+    if (btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => {
+      // Reusar la exportación existente del local-table (oculta por CSS)
+      ensureLocalTable();
+      const type = btn.getAttribute('data-dir-export');
+      const map = { csv: 'export-csv', xls: 'export-xls', pdf: 'export-pdf' };
+      const role = map[String(type || '').toLowerCase()];
+      if (!role) return;
+      document.querySelector(`#tab-contactos .local-table-top [data-role="${role}"]`)?.click();
+    });
+  });
 }
 
 export function initTablaContactos() {
   ensureFooter();
   ensureLocalTable();
   bindUiOnce();
+  ensureMaestrosResponsables().then(() => renderTablaContactos()).catch(() => {});
 }
 
 export function renderTablaContactos() {

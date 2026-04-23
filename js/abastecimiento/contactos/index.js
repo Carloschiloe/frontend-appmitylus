@@ -16,6 +16,7 @@ import { ensureMuestreoPortals, initContactosTabs, initContactosModals } from '.
 import { getModalInstance, closeModal, rafThrottle, debounce } from './ui-common.js';
 import { createGestionActionsModule } from './gestion-actions.js';
 import { createTableSearchModule } from './table-search.js';
+import { toast } from '../../ui/toast.js';
 
 //  cache-bust del modulo de Resumen (para que **SIEMPRE** te cargue la version nueva)
 import { initResumenSemanalTab } from './resumen-semanal.js';
@@ -110,12 +111,11 @@ const uiShellModule = createUiShellModule({
 function nukeStuckOverlays() {
   if (muestreoModule.isOpening()) return;
   if (document.getElementById('modalMuestreo')?.classList.contains('open')) return;
-  document.querySelectorAll('.modal-overlay, .sidenav-overlay').forEach(el => el.remove());
-  document.querySelectorAll('.modal.open').forEach(el => {
-    try { closeModal(el); } catch {}
-    el.classList.remove('open');
-    el.style.display = 'none';
-  });
+  // Si hay un modal abierto de forma legítima, no hacer limpieza agresiva.
+  if (document.querySelector('.modal.open')) return;
+  document
+    .querySelectorAll('.modal-overlay, .sidenav-overlay, .tap-target, .tap-target-wrapper, .tap-target-wave, .tap-target-origin, .tap-target-content, [class*="tap-target"]')
+    .forEach((el) => el.remove());
   document.body.style.overflow = '';
   document.body.classList.remove('mu-layout-active');
 }
@@ -127,7 +127,6 @@ function resetContactoExtras() {
   const nuevo = document.getElementById('contactoProveedorNuevo'); if (nuevo) nuevo.checked = false;
   const paso = document.getElementById('contacto_proximoPaso'); if (paso) paso.value = '';
   const pasoFecha = document.getElementById('contacto_proximoPasoFecha'); if (pasoFecha) pasoFecha.value = '';
-  try { M.updateTextFields?.(); } catch {}
 }
 
 function activarTab(hash) {
@@ -177,6 +176,10 @@ function activarTab(hash) {
   } catch {
     location.hash = mainId;
   }
+
+  try {
+    window.dispatchEvent(new CustomEvent('mmpp:navigate', { detail: { hash: `#${mainId}` } }));
+  } catch {}
 }
 
 function ensureGestionActionsModule() {
@@ -428,25 +431,25 @@ function bindRegistroValidationHints() {
 
     if (!proveedorId) {
       e.preventDefault();
-      M.toast?.({ html: 'Selecciona un proveedor antes de guardar.', classes: 'red' });
+      toast('Selecciona un proveedor antes de guardar.', { variant: 'error' });
       return;
     }
 
     if (telefono && !/^[+()\d\s-]{8,}$/.test(telefono)) {
       e.preventDefault();
-      M.toast?.({ html: 'Teléfono inválido. Revisa el formato.', classes: 'red' });
+      toast('Teléfono inválido. Revisa el formato.', { variant: 'error' });
       return;
     }
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       e.preventDefault();
-      M.toast?.({ html: 'Email inválido. Revisa el formato.', classes: 'red' });
+      toast('Email inválido. Revisa el formato.', { variant: 'error' });
       return;
     }
 
     if (paso && normalizeText(paso) !== 'sin accion' && !fechaPaso) {
       e.preventDefault();
-      M.toast?.({ html: 'Si defines próximo paso, agrega fecha compromiso.', classes: 'red' });
+      toast('Si defines próximo paso, agrega fecha compromiso.', { variant: 'error' });
     }
   }, true);
 }
@@ -500,7 +503,51 @@ function initUIOnce() {
     }
   });
 
+  const handleHashNavigation = async () => {
+    const raw = (location.hash || '').toLowerCase();
+    if (!raw || raw === '#') {
+      activarTab('#tab-gestion');
+      return;
+    }
+
+    activarTab(raw);
+    const normalized = uiShellModule.normalizeHash(raw);
+
+    if (normalized === '#tab-interacciones') {
+      if (!visitasBooted) { await initVisitasTab().catch(() => {}); visitasBooted = true; }
+      refreshVisitasTableUI();
+      refreshConsultaFilterStates();
+      return;
+    }
+
+    if (normalized === '#tab-calendario') {
+      await calendarioTabModule.initTab(false).catch(() => {});
+      calendarioBooted = true;
+      refreshConsultaFilterStates();
+      return;
+    }
+
+    if (normalized === '#tab-muestreos') {
+      await muestreosTabModule.initTab(false).catch(() => {});
+      muestreosBooted = true;
+      refreshConsultaFilterStates();
+      return;
+    }
+
+    if (normalized === '#tab-directorio') {
+      // Directorio (Empresas) por defecto; Personas se activa por sub-tab
+      refreshContactosTableUI();
+      refreshConsultaFilterStates();
+      return;
+    }
+
+    if (normalized === '#tab-gestion') {
+      refreshConsultaFilterStates();
+    }
+  };
+
   window.addEventListener('hashchange', cleanupOverlays, { passive: true });
+  window.addEventListener('hashchange', () => { handleHashNavigation().catch(() => {}); }, { passive: true });
   window.addEventListener('resize', () => {
     muestreoModule.scheduleLayout();
   }, { passive: true });
@@ -651,7 +698,7 @@ export async function initContactosTab(forceReload = false) {
     booted = true;
   } catch (err) {
     console.error('[contactos] init error', err);
-    M.toast?.({ html: 'No se pudo inicializar', classes: 'red' });
+    toast('No se pudo inicializar', { variant: 'error' });
   }
 }
 
@@ -680,7 +727,7 @@ function hookGlobalListeners() {
       nukeStuckOverlays();
     } catch (e) {
       console.error(e);
-      M.toast?.({ html: 'No se pudo refrescar', classes: 'red' });
+      toast('No se pudo refrescar', { variant: 'error' });
     }
   });
 

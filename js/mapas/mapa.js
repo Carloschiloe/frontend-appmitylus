@@ -402,7 +402,7 @@ const baseLayersDefs = (typeof L !== 'undefined') ? {
   )
 } : {};
 
-let currentBaseKey = 'mapboxSat';
+let currentBaseKey = 'esri';
 
 // ====== Datos (buscador) ======
 let centrosDataGlobal = [];
@@ -454,14 +454,14 @@ function buildCentroDetallesHtml(c) {
     .forEach(k => rows.push([k, flat[k]]));
 
   if (rows.length) {
-    html += `<h6 style="margin-top:1.5em;">Detalles</h6><table class="striped"><tbody>`;
+    html += `<h6 style="margin-top:1.5em;">Detalles</h6><table class="am-table"><tbody>`;
     rows.forEach(([k, v]) => { html += `<tr><th>${pk(k)}</th><td>${esc(String(v))}</td></tr>`; });
     html += `</tbody></table>`;
   }
 
   if (Array.isArray(c.coords) && c.coords.length) {
     html += `<h6 style="margin-top:1.5em;">Coordenadas</h6>
-      <table class="striped">
+      <table class="am-table">
         <thead><tr><th>#</th><th>Lat</th><th>Lng</th></tr></thead><tbody>`;
     c.coords.forEach((p, i) => {
       const latStr = Number.isFinite(p?.lat) ? Number(p.lat).toFixed(6) : (p?.lat ?? '');
@@ -475,9 +475,10 @@ function buildCentroDetallesHtml(c) {
 }
 
 function openCentroModal(c) {
-  const modal = document.getElementById('modalDetallesCentro');
+  const overlayModal = document.getElementById('modalDetallesCentroOverlay');
+  const legacyModal = document.getElementById('modalDetallesCentro');
   const body  = document.getElementById('detallesCentroBody');
-  if (!modal || !body) {
+  if ((!overlayModal && !legacyModal) || !body) {
     alert(`Centro: ${c.name || c.proveedor || '-'}\nCodigo: ${c.code || '-'}`);
     return;
   }
@@ -533,14 +534,43 @@ function openCentroModal(c) {
     targetEl.appendChild(panel);
   };
 
-  const doOpen = () => {
+  const doOpenOverlay = () => {
     body.innerHTML = buildCentroDetallesHtml(c);
-    try { document.querySelector('#mapShell')?.classList?.add('modal-open'); } catch {}
-    const inst = (window.M?.Modal.getInstance(modal) || window.M?.Modal.init(modal));
-    inst?.open();
-    modal.addEventListener('modal:closed', () => {
-      try { document.querySelector('#mapShell')?.classList?.remove('modal-open'); } catch {}
-    }, { once: true });
+
+    const mapShell = document.getElementById('mapShell');
+    try { mapShell?.classList?.add('modal-open'); } catch {}
+
+    if (typeof window.openDetallesModal === 'function') {
+      window.openDetallesModal();
+    } else {
+      overlayModal.style.display = 'flex';
+    }
+
+    const cleanup = () => {
+      try { mapShell?.classList?.remove('modal-open'); } catch {}
+      overlayModal?.removeEventListener('click', onOverlayClick, true);
+      document.removeEventListener('keydown', onEsc, true);
+    };
+
+    const onOverlayClick = (ev) => {
+      const t = ev.target;
+      if (t === overlayModal || t?.closest?.('.js-close-detalles-modal')) {
+        // Esperar a que el handler del HTML o la función close... oculte el overlay
+        setTimeout(() => {
+          const hidden = !overlayModal || getComputedStyle(overlayModal).display === 'none';
+          if (hidden) cleanup();
+        }, 0);
+      }
+    };
+
+    const onEsc = (ev) => {
+      if (ev.key === 'Escape' || ev.key === 'Esc') {
+        setTimeout(cleanup, 0);
+      }
+    };
+
+    overlayModal?.addEventListener('click', onOverlayClick, true);
+    document.addEventListener('keydown', onEsc, true);
   };
 
   const fsEl = getFsEl();
@@ -550,7 +580,19 @@ function openCentroModal(c) {
     return;
   }
 
-  doOpen();
+  if (overlayModal) {
+    doOpenOverlay();
+    return;
+  }
+
+  // Fallback legacy (Materialize / compat)
+  body.innerHTML = buildCentroDetallesHtml(c);
+  try { document.querySelector('#mapShell')?.classList?.add('modal-open'); } catch {}
+  const inst = (window.M?.Modal.getInstance(legacyModal) || window.M?.Modal.init(legacyModal));
+  inst?.open();
+  legacyModal?.addEventListener('modal:closed', () => {
+    try { document.querySelector('#mapShell')?.classList?.remove('modal-open'); } catch {}
+  }, { once: true });
 }
 
 // ====== Crear mapa (idempotente) ======
@@ -1181,5 +1223,4 @@ function initMapSearchUI() {
 
 // Helpers debug
 window.__MAPDBG = { L, map, setBaseLayer, baseLayersDefs, centrosSample: () => centrosDataGlobal.slice(0, 3) };
-
 

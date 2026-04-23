@@ -1,4 +1,8 @@
 // Estado compartido + helpers DOM
+export const slug = (s = '') => String(s)
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').replace(/-+/g, '-');
+
 export const state = {
   listaProveedores: [],      // [{nombreOriginal, nombreNormalizado, proveedorKey}]
   proveedoresIndex: {},      // { proveedorKey: { proveedor } }
@@ -10,9 +14,6 @@ export const state = {
 export const $  = (sel) => document.querySelector(sel);
 export const $$ = (sel) => document.querySelectorAll(sel);
 
-export const slug = (s) => (s||'')
-  .normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
-  .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').replace(/-+/g,'-');
 
 export function setVal(ids, value='') {
   for (const id of ids) {

@@ -1,5 +1,6 @@
 // estado.js
 import { claveSemana } from './utilidades.js'; // no usamos claveMes acá
+import { pad2 } from '../../core/utilidades.js';
 
 const listeners = new Map();
 export const datos = { ofertas: [], asignadoPorMes: new Map(), programaSemana: [], estadosDia: [] };
@@ -14,7 +15,6 @@ function DBGend(){ if (window.DEBUG_INV) console.groupEnd(); }
 
 /* ========= Helpers locales: YYYY-MM sin TZ ========= */
 const MES_RE = /^\d{4}-\d{2}$/;
-const pad2 = (n) => String(n).padStart(2,'0');
 
 function pickMes(r) {
   if (MES_RE.test(r?.mesKey ?? '')) return { mes: r.mesKey, source: 'mesKey' };

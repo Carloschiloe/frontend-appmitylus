@@ -3,330 +3,264 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Directorio de Centros</title>
+  <title>Directorio de Centros — AppMMPP</title>
+  <meta name="description" content="Directorio de centros mitilídos: gestión, mapa y trazabilidad operativa." />
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link rel="stylesheet" href="/css/index-modern.css?v=7">
-  <link rel="stylesheet" href="/css/centros.css?v=2" />
-  <link rel="stylesheet" href="/css/centros-modern.css?v=17" />
-
-  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
+
+  <!-- Sistema de Diseño Unificado -->
+  <link rel="stylesheet" href="/css/index-modern.css">
+  <link rel="stylesheet" href="/css/base-ui.css">
+  <link rel="stylesheet" href="/css/centros-modern.css" />
+  <script src="/js/auth.js"></script>
 </head>
 <body>
-  <div class="layout centros-layout">
-    <aside class="sidebar" aria-label="Navegacion principal">
-      <div class="brand">
-        <span class="brand-mark">AM</span>
-        <div>
-          <p class="brand-title">Abastecimiento MMPP</p>
-          <p class="brand-sub">Control operativo</p>
-        </div>
-      </div>
+  <div class="layout">
+    <div id="sidebar-container"></div>
 
-      <div id="sideNav" class="menu" role="navigation" aria-label="Menu lateral de proveedores">
-        <section class="menu-group" data-group="dashboard">
-          <button class="menu-head" type="button" data-toggle-group="dashboard">
-            <span class="menu-head-text"><i class="bi bi-speedometer2"></i> Dashboard</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/index.html#dashboard-home"><i class="bi bi-house-door"></i> Inicio</a>
+    <main class="content centros-main-shell">
+      <div class="centros-main">
+        <div class="mmpp-wrap">
+          <header class="am-hero" style="background: linear-gradient(135deg, #0f766e 0%, #1e293b 100%);">
+            <div class="am-hero-content">
+              <h1><i class="bi bi-diagram-3" style="color:var(--color-primary-light);margin-right:10px;"></i>Directorio de Centros</h1>
+              <p>Gestión de centros, consulta de mapa y trazabilidad de datos operativos.</p>
+            </div>
+            <div class="am-hero-actions">
+              <button id="btnOpenCentroModal" type="button" class="am-btn am-btn-primary">
+                <i class="bi bi-plus-lg"></i> Nuevo Centro
+              </button>
+              <button id="btnOpenImportarModal" type="button" class="am-btn am-btn-outline">
+                <i class="bi bi-file-earmark-arrow-up"></i> Importar
+              </button>
+            </div>
+          </header>
+
+          <!-- Navegación de Vistas (Unificada) -->
+          <div class="am-tabs-main" id="centrosViewTabs">
+            <button class="am-tab-btn active" data-tab-link="#tab-centros">
+              <i class="bi bi-list-ul"></i> Directorio
+            </button>
+            <button class="am-tab-btn" data-tab-link="#tab-mapa">
+              <i class="bi bi-map"></i> Mapa
+            </button>
           </div>
-        </section>
-
-        <section class="menu-group is-open has-active-link" data-group="proveedores">
-          <button class="menu-head" type="button" data-toggle-group="proveedores">
-            <span class="menu-head-text"><i class="bi bi-buildings"></i> BD Cultivos</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="#tab-centros" data-tab-link class="is-active-link"><i class="bi bi-grid-1x2"></i> Centros</a>
-            <a href="#tab-mapa" data-tab-link><i class="bi bi-geo-alt"></i> Mapa de Centros</a>
-          </div>
-        </section>
-
-        <section class="menu-group" data-group="biomasa">
-          <button class="menu-head" type="button" data-toggle-group="biomasa">
-            <span class="menu-head-text"><i class="bi bi-droplet-half"></i> Biomasa</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/#inventario"><i class="bi bi-box-seam"></i> Inventario MMPP</a>
-          </div>
-        </section>
-
-        <section class="menu-group" data-group="gestion">
-          <button class="menu-head" type="button" data-toggle-group="gestion">
-            <span class="menu-head-text"><i class="bi bi-person-lines-fill"></i> Proveedores MMPP</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-	          <div class="submenu">
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-gestion"><i class="bi bi-inbox"></i> Bandeja</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-directorio"><i class="bi bi-buildings"></i> Directorio</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-calendario"><i class="bi bi-calendar3"></i> Calendario</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-interacciones"><i class="bi bi-chat-left-dots"></i> Interacciones</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-tratos"><i class="bi bi-handshake"></i> Tratos</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-muestreos"><i class="bi bi-eyedropper"></i> Muestreos</a>
-	          </div>
-	        </section>
-
-	        <section class="menu-group" data-group="historial">
-	          <button class="menu-head" type="button" data-toggle-group="historial">
-	            <span class="menu-head-text"><i class="bi bi-clock-history"></i> Historial</span>
-	            <i class="bi bi-chevron-down caret"></i>
-	          </button>
-	          <div class="submenu">
-	            <a href="/html/Abastecimiento/historial/index.html"><i class="bi bi-journal-text"></i> Historial de gestiones</a>
-	            <a href="/#balance"><i class="bi bi-diagram-3"></i> Trazabilidad por proveedor</a>
-	          </div>
-	        </section>
-
-	        <section class="menu-group" data-group="config">
-	          <button class="menu-head" type="button" data-toggle-group="config">
-	            <span class="menu-head-text"><i class="bi bi-sliders"></i> Configuración</span>
-	            <i class="bi bi-chevron-down caret"></i>
-	          </button>
-	          <div class="submenu">
-	            <a href="/html/Maestros/index.html"><i class="bi bi-table"></i> Maestros</a>
-	          </div>
-	        </section>
-	      </div>
-    </aside>
-
-    <main class="content centros-content">
-      <header class="hero centros-hero">
-        <p class="eyebrow">Proveedores</p>
-        <h1>Directorio de Centros Mitilidos</h1>
-        <p>Gestion de centros, consulta de mapa y trazabilidad de datos operativos.</p>
-      </header>
-
-      <div class="centros-top-actions">
-        <div class="centros-tab-pills" role="tablist" aria-label="Vistas de centros">
-          <a href="#tab-centros" data-tab-link class="bio-pill is-active"><i class="bi bi-list-ul"></i> Directorio</a>
-          <a href="#tab-mapa" data-tab-link class="bio-pill"><i class="bi bi-map"></i> Mapa</a>
-        </div>
-      </div>
-
-      <section id="tab-centros">
-        <div class="kpi-cards" id="kpiCards">
-          <article class="kpi-card">
-            <header class="kpi-title"><i class="bi bi-diagram-3"></i> Centros</header>
-            <div class="kpi-value" id="kpiCentros">0</div>
-          </article>
-          <article class="kpi-card">
-            <header class="kpi-title"><i class="bi bi-rulers"></i> Hectareas</header>
-            <div class="kpi-value"><span id="kpiHect">0,00</span> <small class="kpi-suffix">ha</small></div>
-          </article>
-          <article class="kpi-card">
-            <header class="kpi-title"><i class="bi bi-geo"></i> Comunas</header>
-            <div class="kpi-value" id="kpiComunas">0</div>
-          </article>
-          <article class="kpi-card">
-            <header class="kpi-title"><i class="bi bi-droplet"></i> Tons Max</header>
-            <div class="kpi-value"><span id="kpiTonsMax">0</span> <small class="kpi-suffix">t</small></div>
-          </article>
         </div>
 
-        <div class="mmpp-card filtros-card">
-          <div class="mmpp-grid centros-filtros" id="filtrosCentros">
-            <div>
-              <select id="filtroComuna" class="mmpp-input">
+        <!-- Tab: Directorio -->
+        <section id="tab-centros" class="c-panel active">
+          <!-- KPIs con estilo unificado -->
+          <div class="am-card kpi-dashboard am-mb-16">
+            <div class="kpi-cards" id="kpiCards">
+              <article class="kpi-card">
+                <header class="kpi-title"><i class="bi bi-diagram-3"></i> Centros</header>
+                <div class="kpi-value" id="kpiCentros">0</div>
+              </article>
+              <article class="kpi-card">
+                <header class="kpi-title"><i class="bi bi-rulers"></i> Hectáreas</header>
+                <div class="kpi-value"><span id="kpiHect">0,00</span> <small class="kpi-suffix">ha</small></div>
+              </article>
+              <article class="kpi-card">
+                <header class="kpi-title"><i class="bi bi-geo"></i> Comunas</header>
+                <div class="kpi-value" id="kpiComunas">0</div>
+              </article>
+              <article class="kpi-card">
+                <header class="kpi-title"><i class="bi bi-droplet"></i> Tons Máx</header>
+                <div class="kpi-value"><span id="kpiTonsMax">0</span> <small class="kpi-suffix">t</small></div>
+              </article>
+            </div>
+          </div>
+
+          <!-- Barra de Filtros (Estilo unificado) -->
+          <div class="am-filter-bar am-mb-16">
+            <div class="am-filter-left">
+              <select id="filtroComuna" class="am-select" style="min-width:200px;">
                 <option value="">Todas las comunas</option>
               </select>
-              <div class="mmpp-help">Filtra por comuna y refleja cambio en KPIs.</div>
-            </div>
-            <div>
-              <input id="buscarProveedor" class="mmpp-input" placeholder="Buscar proveedor o codigo..." />
-              <div class="mmpp-help">Busca por proveedor o codigo de centro.</div>
-            </div>
-            <div class="centros-filtro-actions">
-              <button id="btnLimpiarFiltros" type="button" class="mmpp-ghostbtn">Limpiar filtros</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel tabla-panel">
-          <div class="centros-table-toolbar">
-            <div class="centros-export-group" role="group" aria-label="Exportar tabla de centros">
-              <button id="btnExportCopy" type="button" class="centros-export-btn">
-                <i class="bi bi-clipboard"></i> Copiar
-              </button>
-              <button id="btnExportCsv" type="button" class="centros-export-btn">
-                <i class="bi bi-filetype-csv"></i> CSV
-              </button>
-              <button id="btnExportExcel" type="button" class="centros-export-btn">
-                <i class="bi bi-file-earmark-excel"></i> Excel
-              </button>
-              <button id="btnExportPdf" type="button" class="centros-export-btn">
-                <i class="bi bi-file-earmark-pdf"></i> PDF
-              </button>
-            </div>
-          </div>
-          <table id="centrosTable" class="display" style="width:100%">
-            <thead>
-              <tr>
-                <th>Proveedor</th>
-                <th>Comuna</th>
-                <th>Codigo de Centro</th>
-                <th>Codigo de Area</th>
-                <th>Hectareas</th>
-                <th>Detalle</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tfoot>
-              <tr>
-                <th colspan="2" style="text-align:right">Totales:</th>
-                <th id="totalCentros">0</th>
-                <th></th>
-                <th id="totalHect">0,00</th>
-                <th colspan="2"></th>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </section>
-
-      <section id="tab-mapa" style="display:none;">
-        <div class="panel mapa-panel">
-          <div class="map-top">
-            <h5 class="map-title">Mapa de Centros</h5>
-            <div class="map-top-actions">
-              <div class="map-density-toggle" role="group" aria-label="Densidad de etiquetas">
-                <button type="button" class="map-density-btn" data-label-density="high">Alta</button>
-                <button type="button" class="map-density-btn is-active" data-label-density="medium">Media</button>
-                <button type="button" class="map-density-btn" data-label-density="low">Baja</button>
+              <div class="am-search-field">
+                <i class="bi bi-search"></i>
+                <input id="buscarProveedor" class="am-input" placeholder="Buscar proveedor o código..." />
               </div>
-              <button id="btnFullscreenMapa" type="button" class="btn-small teal waves-effect" aria-label="Pantalla completa">
-                <i class="material-icons left">fullscreen</i>Pantalla completa
-              </button>
+              <button id="btnLimpiarFiltros" type="button" class="am-btn am-btn-outline">Limpiar</button>
             </div>
-          </div>
-          <div class="map-legend" aria-label="Leyenda de concesiones">
-            <span class="legend-item"><i class="legend-swatch salmon"></i> Salmones</span>
-            <span class="legend-item"><i class="legend-swatch mitilidos"></i> Mitilidos / Choritos / Choros</span>
-            <span class="legend-item"><i class="legend-swatch otros"></i> Otras</span>
-            <span class="legend-item"><i class="legend-swatch otorgada"></i> Otorgada</span>
-            <span class="legend-item"><i class="legend-swatch no-otorgada"></i> No otorgada (tenue)</span>
-          </div>
-          <div class="map-type-filters" role="group" aria-label="Filtros de concesiones">
-            <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:salmon">Salmones</button>
-            <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:mitilidos">Mitilidos</button>
-            <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:otros">Otras</button>
-            <button type="button" class="map-filter-chip is-active" data-map-filter="estado:otorgada">Otorgadas</button>
-            <button type="button" class="map-filter-chip is-active" data-map-filter="estado:noOtorgada">No otorgadas</button>
+            <div class="am-export-group">
+              <button id="btnExportCopy" type="button" class="am-export-btn" title="Copiar"><i class="bi bi-clipboard" style="margin-right: 4px;"></i> Copiar</button>
+              <button id="btnExportCsv" type="button" class="am-export-btn" title="CSV">CSV</button>
+              <button id="btnExportExcel" type="button" class="am-export-btn" title="XLS">XLS</button>
+              <button id="btnExportPdf" type="button" class="am-export-btn" title="PDF">PDF</button>
+            </div>
           </div>
 
-          <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros">
-            <div class="map-search" id="mapSearchBox">
-              <div class="map-search-input">
-                <i class="bi bi-search" aria-hidden="true"></i>
-                <input type="search" id="mapSearch" placeholder="Buscar por codigo, proveedor, comuna o codigo de area..." aria-label="Buscar por codigo, proveedor, comuna o codigo de area" autocomplete="off" />
-              </div>
-              <ul id="mapSearchResults" class="map-search-results" role="listbox"></ul>
+          <div class="am-card am-p-0 table-card">
+            <div class="mmpp-table-wrap">
+              <table id="centrosTable" class="display mmpp table-full" style="width:100%">
+                <thead>
+                  <tr>
+                    <th>Proveedor</th>
+                    <th>Comuna</th>
+                    <th>Código de Centro</th>
+                    <th>Código de Área</th>
+                    <th>Hectáreas</th>
+                    <th>Detalle</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tfoot>
+                  <tr>
+                    <th colspan="2" style="text-align:right">Totales:</th>
+                    <th id="totalCentros">0</th>
+                    <th></th>
+                    <th id="totalHect">0,00</th>
+                    <th colspan="2"></th>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
-            <div id="map"></div>
-          </section>
-        </div>
-      </section>
+          </div>
+        </section>
+
+        <!-- Tab: Mapa -->
+        <section id="tab-mapa" class="c-panel" style="display:none; padding: 24px;">
+          <div class="am-card map-card" style="padding: 0; overflow: hidden; background: #fff;">
+            <div class="map-type-filters" role="group" aria-label="Filtros de concesiones" style="padding: 16px 20px 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:salmon">Salmones</button>
+              <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:mitilidos">Mitilidos</button>
+              <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:otros">Otras</button>
+              <button type="button" class="map-filter-chip is-active" data-map-filter="estado:otorgada">Otorgadas</button>
+              <button type="button" class="map-filter-chip is-active" data-map-filter="estado:noOtorgada">No otorgadas</button>
+            </div>
+
+            <div class="map-controls-modern" style="padding: 0 20px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+               <div class="am-density-group" style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; gap: 4px;">
+                  <button type="button" class="am-tab-btn" style="padding: 4px 12px; font-size: 11px;" data-label-density="high">Alta</button>
+                  <button type="button" class="am-tab-btn active" style="padding: 4px 12px; font-size: 11px;" data-label-density="medium">Media</button>
+                  <button type="button" class="am-tab-btn" style="padding: 4px 12px; font-size: 11px;" data-label-density="low">Baja</button>
+               </div>
+               <button id="btnFullscreenMapa" type="button" class="am-btn am-btn-outline am-btn-sm">
+                  <i class="bi bi-fullscreen"></i> Pantalla completa
+               </button>
+            </div>
+
+            <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros" style="height: calc(100vh - 340px); min-height: 500px; position: relative; margin: 0 20px 20px; border-radius: 16px; overflow: hidden; background: #f1f5f9; border: 1px solid var(--color-border);">
+              <div class="map-search" id="mapSearchBox" style="position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 1000; width: min(400px, 85%);">
+                <div class="am-search-field" style="background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.1);">
+                  <i class="bi bi-search"></i>
+                  <input type="search" id="mapSearch" class="am-input" placeholder="Buscar por código, comuna..." style="height: 40px;" />
+                </div>
+              </div>
+              <div id="map" style="width: 100%; height: 100%;"></div>
+            </section>
+          </div>
+        </section>
+      </div>
     </main>
+
   </div>
 
-  <div id="centroModal" class="modal modal-fixed-footer">
-    <div class="modal-content">
-      <h5 id="formTitle">Nuevo Centro</h5>
-      <form id="formCentro">
-        <input type="hidden" id="inputCentroId" />
-        <div class="row">
-          <div class="input-field col s12 m6">
-            <input id="inputProveedor" type="text" />
-            <label for="inputProveedor">Proveedor</label>
+  <!-- ══════════════════════════════════════════════════════
+       MODAL: Nuevo / Editar Centro  (CSS puro, sin Materialize)
+  ══════════════════════════════════════════════════════ -->
+  <div id="centroModalOverlay" class="am-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="centroModalTitle">
+    <div class="am-modal" style="max-width:760px;">
+      <div class="am-modal-head">
+        <h5 id="centroModalTitle" class="am-modal-title">Nuevo Centro</h5>
+        <button type="button" class="am-modal-close js-close-centro-modal" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="am-modal-body">
+        <form id="formCentro">
+          <input type="hidden" id="inputCentroId" />
+          <div class="am-form-grid">
+            <div class="am-form-group">
+              <label class="am-label" for="inputProveedor">Proveedor</label>
+              <input id="inputProveedor" type="text" class="am-input" />
+            </div>
+            <div class="am-form-group">
+              <label class="am-label" for="inputComuna">Comuna</label>
+              <input id="inputComuna" type="text" class="am-input" />
+            </div>
+            <div class="am-form-group">
+              <label class="am-label" for="inputCode">Código de Centro</label>
+              <input id="inputCode" type="text" class="am-input" />
+            </div>
+            <div class="am-form-group">
+              <label class="am-label" for="inputCodigoArea">Código de Área</label>
+              <input id="inputCodigoArea" type="text" class="am-input" />
+            </div>
+            <div class="am-form-group">
+              <label class="am-label" for="inputHectareas">Hectáreas</label>
+              <input id="inputHectareas" type="number" step="0.01" class="am-input" />
+            </div>
           </div>
-          <div class="input-field col s12 m6">
-            <input id="inputComuna" type="text" />
-            <label for="inputComuna">Comuna</label>
-          </div>
-          <div class="input-field col s12 m4">
-            <input id="inputCode" type="text" />
-            <label for="inputCode">Codigo</label>
-          </div>
-          <div class="input-field col s12 m4">
-            <input id="inputCodigoArea" type="text" />
-            <label for="inputCodigoArea">Codigo de Area</label>
-          </div>
-          <div class="input-field col s12 m4">
-            <input id="inputHectareas" type="number" step="0.01" />
-            <label for="inputHectareas">Hectareas</label>
-          </div>
-        </div>
 
-        <div class="row">
-          <div class="col s12"><h6>Puntos (poligono)</h6></div>
-          <div class="input-field col s12 m4">
-            <input id="inputLat" type="text" placeholder="Ej: 42°38'30.5&quot;S" />
-            <label for="inputLat">Latitud (DMS o decimal)</label>
-          </div>
-          <div class="input-field col s12 m4">
-            <input id="inputLng" type="text" placeholder="Ej: 73°45'12.3&quot;W" />
-            <label for="inputLng">Longitud (DMS o decimal)</label>
-          </div>
-          <div class="col s12 m4 puntos-actions">
-            <button type="button" id="btnAddPoint" class="btn teal waves-effect">
-              <i class="material-icons left">add_location</i>Agregar punto
-            </button>
-            <button type="button" id="btnClearPoints" class="btn-flat waves-effect">Limpiar</button>
-          </div>
-          <div class="col s12">
-            <table id="pointsTable" class="striped">
+          <div style="margin-top:20px;">
+            <h6 style="font-weight:700;color:#0f172a;margin-bottom:12px;">Puntos (polígono)</h6>
+            <div class="am-form-grid" style="grid-template-columns:1fr 1fr auto;">
+              <div class="am-form-group">
+                <label class="am-label" for="inputLat">Latitud (DMS o decimal)</label>
+                <input id="inputLat" type="text" class="am-input" placeholder='Ej: 42°38&apos;30.5"S' />
+              </div>
+              <div class="am-form-group">
+                <label class="am-label" for="inputLng">Longitud (DMS o decimal)</label>
+                <input id="inputLng" type="text" class="am-input" placeholder='Ej: 73°45&apos;12.3"W' />
+              </div>
+              <div class="am-form-group" style="align-self:flex-end;display:flex;gap:8px;">
+                <button type="button" id="btnAddPoint" class="am-btn am-btn-primary"><i class="bi bi-plus-circle"></i> Agregar</button>
+                <button type="button" id="btnClearPoints" class="am-btn am-btn-outline">Limpiar</button>
+              </div>
+            </div>
+            <table id="pointsTable" class="am-table" style="margin-top:8px;">
               <thead><tr><th>#</th><th>Lat</th><th>Lng</th><th></th></tr></thead>
               <tbody id="pointsBody"></tbody>
             </table>
           </div>
-        </div>
-      </form>
-    </div>
-    <div class="modal-footer">
-      <button id="btnSaveCentro" type="submit" form="formCentro" class="btn teal waves-effect">
-        <i class="material-icons left">save</i>Guardar
-      </button>
-      <button class="modal-close btn-flat">Cancelar</button>
-    </div>
-  </div>
-
-  <div id="modalDetallesCentro" class="modal" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle" tabindex="-1">
-    <div class="modal-content">
-      <h5 id="detallesCentroTitle">Detalles del Centro</h5>
-      <div id="detallesCentroBody"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-close btn grey lighten-1">Cerrar</button>
+        </form>
+      </div>
+      <div class="am-modal-foot">
+        <button type="button" class="am-btn am-btn-outline js-close-centro-modal">Cancelar</button>
+        <button id="btnSaveCentro" type="submit" form="formCentro" class="am-btn am-btn-primary">
+          <i class="bi bi-save"></i> Guardar
+        </button>
+      </div>
     </div>
   </div>
 
-  <div id="modalImportarCentros" class="modal modal-fixed-footer">
-    <div class="modal-content">
-      <h5>Importar Centros (Excel / CSV)</h5>
-      <div id="importarCentrosContainer"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-close btn grey lighten-1">Cerrar</button>
+  <!-- MODAL: Detalles del Centro -->
+  <div id="modalDetallesCentroOverlay" class="am-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle">
+    <div class="am-modal" style="max-width:640px;">
+      <div class="am-modal-head">
+        <h5 id="detallesCentroTitle" class="am-modal-title">Detalles del Centro</h5>
+        <button type="button" class="am-modal-close js-close-detalles-modal" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="am-modal-body">
+        <div id="detallesCentroBody"></div>
+      </div>
+      <div class="am-modal-foot">
+        <button type="button" class="am-btn am-btn-outline js-close-detalles-modal">Cerrar</button>
+      </div>
     </div>
   </div>
 
-  <div class="centros-fab">
-    <a id="btnOpenCentroModal" class="btn-floating btn-large teal tooltipped" data-tooltip="Agregar Centro">
-      <i class="material-icons">add</i>
-    </a>
-    <a id="btnOpenImportarModal" class="btn-floating btn-large orange darken-2 tooltipped modal-trigger" data-tooltip="Importar desde Excel/CSV" href="#modalImportarCentros">
-      <i class="material-icons">file_upload</i>
-    </a>
+  <!-- MODAL: Importar Centros -->
+  <div id="modalImportarCentrosOverlay" class="am-modal-overlay" style="display:none;" role="dialog" aria-modal="true">
+    <div class="am-modal" style="max-width:700px;">
+      <div class="am-modal-head">
+        <h5 class="am-modal-title">Importar Centros (Excel / CSV)</h5>
+        <button type="button" class="am-modal-close js-close-importar-modal" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="am-modal-body">
+        <div id="importarCentrosContainer"></div>
+      </div>
+      <div class="am-modal-foot">
+        <button type="button" class="am-btn am-btn-outline js-close-importar-modal">Cerrar</button>
+      </div>
+    </div>
   </div>
 
+  <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/colreorder/1.5.6/js/colReorder.dataTables.min.js"></script>
@@ -334,72 +268,89 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="/js/config.js"></script>
   <script src="/js/utils.js"></script>
   <script type="module" src="/js/app.js"></script>
+  <script type="module" src="/js/components/Sidebar.js"></script>
 
   <script>
-    (function () {
+    // ── Tabs de vista (Directorio / Mapa) ────────────────────────────────────
+    (function initCentrosNavigation() {
+      const tabs = document.querySelectorAll('[data-tab-link]');
       const sections = {
         '#tab-centros': document.getElementById('tab-centros'),
-        '#tab-mapa': document.getElementById('tab-mapa')
+        '#tab-mapa':    document.getElementById('tab-mapa')
       };
-      const links = Array.from(document.querySelectorAll('[data-tab-link]'));
-      const menuGroups = Array.from(document.querySelectorAll('#sideNav .menu-group'));
 
-      function setActiveLink(hash) {
-        links.forEach((a) => {
-          const on = a.getAttribute('href') === hash;
-          a.classList.toggle('is-active-link', on);
-          a.classList.toggle('is-active', on);
+      function show(targetHash) {
+        const hash = targetHash || '#tab-centros';
+        
+        // Ocultar todos
+        Object.values(sections).forEach(el => { if (el) el.style.display = 'none'; });
+        
+        // Mostrar objetivo
+        const target = sections[hash];
+        if (target) {
+          target.style.display = 'block';
+        }
+
+        // Actualizar botones
+        tabs.forEach(btn => {
+          const isActive = btn.getAttribute('data-tab-link') === hash;
+          btn.classList.toggle('active', isActive);
         });
-      }
 
-	      function show(hash) {
-	        if (!sections[hash]) hash = '#tab-centros';
-	        Object.values(sections).forEach((el) => el && (el.style.display = 'none'));
-	        sections[hash].style.display = 'block';
-	        setActiveLink(hash);
-
-	        menuGroups.forEach((g) => {
-	          g.classList.remove('has-active-link');
-	          // Mantener Configuración siempre visible (submenu "Maestros")
-	          if (g.dataset.group !== 'config') g.classList.remove('is-open');
-	        });
-	        const active = document.querySelector(`#sideNav a[href="${hash}"]`);
-	        active?.closest('.menu-group')?.classList.add('has-active-link', 'is-open');
-	        document.querySelector('#sideNav .menu-group[data-group="config"]')?.classList.add('is-open');
-
+        // Forzar redimensión de mapa Leaflet si se activa
         if (hash === '#tab-mapa' && window.__mapLeaflet) {
-          setTimeout(() => window.__mapLeaflet.invalidateSize(), 60);
-          setTimeout(() => window.__mapLeaflet.invalidateSize(), 320);
+          setTimeout(() => window.__mapLeaflet.invalidateSize(), 80);
+          setTimeout(() => window.__mapLeaflet.invalidateSize(), 400);
         }
       }
 
-	      document.getElementById('sideNav')?.addEventListener('click', (e) => {
-	        const btn = e.target.closest('[data-toggle-group]');
-	        if (!btn) return;
-	        const group = btn.closest('.menu-group');
-	        const nav = document.getElementById('sideNav');
-	        if (!group || !nav) return;
-	        if (group.dataset.group === 'config') {
-	          group.classList.add('is-open');
-	          return;
-	        }
-	        const willOpen = !group.classList.contains('is-open');
-	        nav.querySelectorAll('.menu-group.is-open').forEach((g) => {
-	          if (g !== group && g.dataset.group !== 'config') g.classList.remove('is-open');
-	        });
-	        group.classList.toggle('is-open', willOpen);
-	      });
+      tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const hash = btn.getAttribute('data-tab-link');
+          location.hash = hash;
+        });
+      });
 
       window.addEventListener('hashchange', () => show(location.hash));
       if (!location.hash) location.hash = '#tab-centros';
       show(location.hash);
     })();
+
+    // ── Helpers de Modal (Unificada) ──────────────────────────────────────────
+    function toggleOverlayModal(id, visible) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = visible ? 'flex' : 'none';
+    }
+
+    window.openCentroModal    = () => toggleOverlayModal('centroModalOverlay', true);
+    window.closeCentroModal   = () => toggleOverlayModal('centroModalOverlay', false);
+    window.openDetallesModal  = () => toggleOverlayModal('modalDetallesCentroOverlay', true);
+    window.closeDetallesModal = () => toggleOverlayModal('modalDetallesCentroOverlay', false);
+    window.openImportarModal  = () => toggleOverlayModal('modalImportarCentrosOverlay', true);
+    window.closeImportarModal = () => toggleOverlayModal('modalImportarCentrosOverlay', false);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('btnOpenCentroModal')?.addEventListener('click', window.openCentroModal);
+      document.getElementById('btnOpenImportarModal')?.addEventListener('click', window.openImportarModal);
+      
+      // Cerrar modales (clase .modal-close o .am-modal-close)
+      document.querySelectorAll('.js-close-centro-modal, .js-close-detalles-modal, .js-close-importar-modal, .modal-close, .am-modal-close').forEach(b => {
+        b.addEventListener('click', (e) => {
+          const overlay = e.target.closest('.am-modal-overlay');
+          if (overlay) overlay.style.display = 'none';
+        });
+      });
+
+      // Cerrar al hacer click en el overlay (blanco)
+      document.querySelectorAll('.am-modal-overlay').forEach(el => {
+        el.addEventListener('click', e => { if (e.target === el) el.style.display = 'none'; });
+      });
+    });
   </script>
 </body>
 </html>

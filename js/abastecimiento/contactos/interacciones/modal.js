@@ -6,22 +6,26 @@
 import { create, update, API_BASE } from './api.js';
 import { state, slug } from '../state.js';
 import { escapeHtml, fetchJson, getModalInstance } from '../ui-common.js';
+import { toast } from '../../../ui/toast.js';
 
-const RESPONSABLES = [
-  'Claudio Alba',
-  'Patricio Alvarez',
-  'Carlos Avendano',
-];
+let RESPONSABLES = [];
+let PROXIMO_PASO_OPCIONES = [];
 
-const PROXIMO_PASO_OPCIONES = [
-  'Nueva visita',
-  'Tomar muestras',
-  'Negociar precio/volumen',
-  'Contacto telefonico',
-  'Reunion',
-  'Esperar disponibilidad',
-  'Sin accion',
-];
+async function fetchMaestrosList(tipo) {
+  const res = await fetch(`${API_BASE}/maestros?tipo=${tipo}&soloActivos=true`);
+  if (!res.ok) throw new Error(`Error ${res.status} cargando ${tipo}`);
+  const { items } = await res.json();
+  return items || [];
+}
+
+async function refreshMaestros() {
+  const [resps, pasos] = await Promise.all([
+    fetchMaestrosList('responsable'),
+    fetchMaestrosList('proximo-paso'),
+  ]);
+  RESPONSABLES          = resps.map((i) => i.nombre);
+  PROXIMO_PASO_OPCIONES = pasos.map((i) => i.nombre);
+}
 
 const esc = escapeHtml;
 const apiJson = (url, options = {}) => fetchJson(url, { credentials: 'same-origin', ...options });
@@ -67,42 +71,38 @@ function getTipoMeta(tipo) {
 }
 
 function attachAutocomplete(inputEl, fetcher, onPick, { min = 2 } = {}) {
-  const field = inputEl.closest('.input-field') || inputEl.parentNode;
-  field.style.position = field.style.position || 'relative';
+  const wrap = inputEl.closest('.am-input-group') || inputEl.parentNode;
+  wrap.style.position = wrap.style.position || 'relative';
 
   const box = document.createElement('div');
-  box.className = 'autocomplete-menu card';
-  field.appendChild(box);
+  box.className = 'am-dropdown';
+  wrap.appendChild(box);
 
   let last = '';
   let timer = null;
 
-  const close = () => { box.innerHTML = ''; box.style.display = 'none'; };
-  const open = (html) => { box.innerHTML = html; box.style.display = 'block'; };
+  const close = () => { box.innerHTML = ''; box.classList.remove('is-open'); };
+  const open = (html) => { box.innerHTML = html; box.classList.add('is-open'); };
 
   async function run(q) {
     let items = [];
-    try {
-      items = await fetcher(q);
-    } catch (e) {
-      console.error('[autocomplete] error consultando', e);
-      open('<div class="autocomplete-empty">Error consultando sugerencias</div>');
+    try { items = await fetcher(q); } catch (e) {
+      open('<div class="am-dropdown-empty">Error consultando sugerencias</div>');
       return;
     }
     if (!items || !items.length) {
-      open('<div class="autocomplete-empty">Sin resultados</div>');
+      open('<div class="am-dropdown-empty">Sin resultados</div>');
       return;
     }
-    const html = items.map((it, idx) => `
-      <a href="#" data-idx="${idx}" class="collection-item ac-item">
-        <div class="ac-title">${esc(it.label)}</div>
-        ${it.sublabel ? `<div class="grey-text ac-sub">${esc(it.sublabel)}</div>` : ''}
-      </a>`).join('');
-    open(`<div class="collection">${html}</div>`);
-    box.querySelectorAll('a').forEach((a) => {
-      a.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        const i = Number(a.getAttribute('data-idx'));
+    box.innerHTML = items.map((it, idx) => `
+      <div class="am-dropdown-item ac-item" data-idx="${idx}">
+        <strong>${esc(it.label)}</strong>
+        ${it.sublabel ? `<span>${esc(it.sublabel)}</span>` : ''}
+      </div>`).join('');
+    box.classList.add('is-open');
+    box.querySelectorAll('.ac-item').forEach((el) => {
+      el.addEventListener('click', () => {
+        const i = Number(el.getAttribute('data-idx'));
         close();
         onPick?.(items[i]);
       });
@@ -115,21 +115,18 @@ function attachAutocomplete(inputEl, fetcher, onPick, { min = 2 } = {}) {
     last = q;
     if (timer) clearTimeout(timer);
     if (q.length < min) { close(); return; }
-    open('<div class="autocomplete-empty">Buscando...</div>');
+    open('<div class="am-dropdown-empty">Buscando...</div>');
     timer = setTimeout(() => run(q), 160);
   });
 
   inputEl.addEventListener('focus', () => {
     const q = inputEl.value.trim();
-    if (q.length >= min) {
-      open('<div class="autocomplete-empty">Buscando...</div>');
-      run(q);
-    }
+    if (q.length >= min) { open('<div class="am-dropdown-empty">Buscando...</div>'); run(q); }
   });
 
   document.addEventListener('click', (e) => {
     if (!box.contains(e.target) && e.target !== inputEl) close();
-  });
+  }, true);
 }
 
 function normalizeContacto(raw) {
@@ -209,108 +206,124 @@ async function fetchContactosSmart(q) {
   return [];
 }
 
-export function openInteraccionModal({ preset = {}, onSaved } = {}) {
+export async function openInteraccionModal({ preset = {}, onSaved } = {}) {
+  await refreshMaestros();
   const id = 'modal-interaccion';
   let modal = document.getElementById(id);
   if (!modal) {
     modal = document.createElement('div');
     modal.id = id;
-    modal.className = 'modal app-modal app-modal--wide app-modal--form modal-interaccion';
     document.body.appendChild(modal);
-  } else {
-    modal.className = 'modal app-modal app-modal--wide app-modal--form modal-interaccion';
   }
+  modal.className = 'modal app-modal-modern';
 
   const currentTipo = String(preset.tipo || 'llamada').toLowerCase();
   const lockTipo = !preset._id && !!preset.tipo;
   const tipoMeta = getTipoMeta(currentTipo);
-  const modalTitle = preset._id ? 'Editar interaccion' : (lockTipo ? `Nueva ${tipoMeta.label.toLowerCase()}` : 'Nueva interaccion');
+  const modalTitle = preset._id ? 'Editar interacción' : (lockTipo ? `Nueva ${tipoMeta.label.toLowerCase()}` : 'Nueva interacción');
+
   const tipoFieldHtml = lockTipo
     ? `<input id="i-tipo" type="hidden" value="${esc(currentTipo)}">`
-    : `
-      <label class="inter-field-tipo inter-field-short">Tipo
-        <select id="i-tipo" class="browser-default modern-select">
+    : `<div class="am-input-group col-3">
+        <label class="am-label">Tipo</label>
+        <select id="i-tipo" class="am-select browser-default">
           <option value="llamada">Llamada</option>
           <option value="visita">Visita</option>
           <option value="muestra">Muestra</option>
-          <option value="reunion">Reunion</option>
+          <option value="reunion">Reunión</option>
           <option value="tarea">Tarea</option>
         </select>
-      </label>`;
+      </div>`;
+
+  const fechaCol  = lockTipo ? 'col-4' : 'col-3';
+  const respCol   = lockTipo ? 'col-4' : 'col-3';
+  const estadoCol = lockTipo ? 'col-4' : 'col-3';
 
   modal.innerHTML = `
-    <div class="modal-content">
-      <div class="inter-modal-head">
-        <div class="inter-modal-head-main">
-          <h5>${modalTitle}</h5>
-          <span class="inter-type-badge"><i class="material-icons tiny">${tipoMeta.icon}</i>${tipoMeta.label}</span>
-        </div>
-        <p>Registra llamada, reunion o compromiso en una vista simple.</p>
+    <div class="app-modal-header">
+      <div class="app-modal-header-top">
+        <h5>${modalTitle}</h5>
+        <button type="button" class="modal-close" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:20px;">&times;</button>
       </div>
-      <div class="inter-modal-grid ${lockTipo ? 'inter-modal-grid--locked' : ''}">
-        <label class="inter-field-fecha inter-field-short">Fecha de la interaccion
-          <input id="i-fecha" class="mmpp-input" type="datetime-local">
-        </label>
+    </div>
+
+    <div class="app-modal-body">
+      <div class="am-form-grid">
+
+        <div class="am-input-group ${fechaCol}">
+          <label class="am-label">Fecha</label>
+          <input id="i-fecha" class="am-input" type="datetime-local">
+        </div>
         ${tipoFieldHtml}
-        <label class="inter-field-responsable">Responsable PG
-          <select id="i-responsable" class="browser-default modern-select"></select>
-        </label>
-
-        <label class="inter-field-contacto inter-contacto-row">Contacto
-          <input id="i-contacto-nombre" class="mmpp-input" placeholder="Nombre contacto" autocomplete="off">
-        </label>
-        <label class="inter-field-proveedor">Proveedor
-          <input id="i-proveedor-nombre" class="mmpp-input" placeholder="Proveedor (se autocompleta al elegir contacto)" autocomplete="off">
-        </label>
-        <label class="inter-field-centro inter-field-short">
-          <span class="inter-field-label">
-            <span>Centro (opcional)</span>
-            <button type="button" id="i-open-centro-mapa" class="inter-map-link" title="Ver centro en mapa">
-              <i class="material-icons tiny">map</i> Ver mapa
-            </button>
-          </span>
-          <select id="i-centro-id" class="browser-default modern-select">
-            <option value="">Sin centro</option>
-          </select>
-        </label>
-        <label class="inter-field-area inter-field-short">Area
-          <input id="i-area-codigo" class="mmpp-input" placeholder="Se completa al elegir centro" readonly>
-        </label>
-
-        <label class="inter-field-tons inter-field-short">Tons conversadas (opcional)
-          <input id="i-tons" class="mmpp-input" type="number" min="0" step="1">
-        </label>
-        <label class="inter-field-prox">Proximo paso
-          <select id="i-prox-paso" class="browser-default modern-select">
-            <option value="">Seleccione...</option>
-            ${PROXIMO_PASO_OPCIONES.map((op) => `<option value="${esc(op)}">${esc(op)}</option>`).join('')}
-          </select>
-        </label>
-        <label class="inter-field-fecha-prox inter-field-short">Fecha proximo paso
-          <input id="i-fecha-prox" class="mmpp-input" type="datetime-local">
-        </label>
-
-        <label class="inter-field-estado inter-field-short">Estado
-          <select id="i-estado" class="browser-default modern-select">
+        <div class="am-input-group ${respCol}">
+          <label class="am-label">Responsable</label>
+          <select id="i-responsable" class="am-select browser-default"></select>
+        </div>
+        <div class="am-input-group ${estadoCol}">
+          <label class="am-label">Estado</label>
+          <select id="i-estado" class="am-select browser-default">
             <option value="pendiente">Pendiente</option>
             <option value="agendado">Agendado</option>
             <option value="completado">Completado</option>
             <option value="cancelado">Cancelado</option>
           </select>
-        </label>
+        </div>
 
-        <label class="span-2 inter-resumen-row">
-          Resumen
-          <textarea id="i-resumen" class="mmpp-input inter-modal-textarea" placeholder="Resumen/Observaciones"></textarea>
-        </label>
+        <div class="am-input-group col-4" style="position:relative;">
+          <label class="am-label">Contacto</label>
+          <input id="i-contacto-nombre" class="am-input" placeholder="Nombre contacto" autocomplete="off">
+        </div>
+        <div class="am-input-group col-4" style="position:relative;">
+          <label class="am-label">Proveedor</label>
+          <input id="i-proveedor-nombre" class="am-input" placeholder="Se autocompleta al elegir contacto" autocomplete="off">
+        </div>
+        <div class="am-input-group col-4">
+          <label class="am-label" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>Centro (opcional)</span>
+            <button type="button" id="i-open-centro-mapa" style="background:none;border:none;color:#4f46e5;cursor:pointer;font-size:12px;font-weight:700;padding:0;display:flex;align-items:center;gap:4px;">
+              <i class="material-icons" style="font-size:14px;">map</i> Ver mapa
+            </button>
+          </label>
+          <select id="i-centro-id" class="am-select browser-default">
+            <option value="">Sin centro</option>
+          </select>
+        </div>
+
+        <div class="am-input-group col-3">
+          <label class="am-label">Área</label>
+          <input id="i-area-codigo" class="am-input" placeholder="Se completa al elegir centro" readonly>
+        </div>
+        <div class="am-input-group col-3">
+          <label class="am-label">Tons conversadas</label>
+          <input id="i-tons" class="am-input" type="number" min="0" step="1">
+        </div>
+        <div class="am-input-group col-3">
+          <label class="am-label">Próximo paso</label>
+          <select id="i-prox-paso" class="am-select browser-default">
+            <option value="">Seleccione...</option>
+            ${PROXIMO_PASO_OPCIONES.map((op) => `<option value="${esc(op)}">${esc(op)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="am-input-group col-3">
+          <label class="am-label">Fecha próximo paso</label>
+          <input id="i-fecha-prox" class="am-input" type="datetime-local">
+        </div>
+
+        <div class="am-input-group col-12">
+          <label class="am-label">Resumen / Observaciones</label>
+          <textarea id="i-resumen" class="am-input" placeholder="Resumen..." style="height:72px;resize:none;padding-top:10px;"></textarea>
+        </div>
 
         <input type="hidden" id="i-contacto-id">
         <input type="hidden" id="i-proveedor-key">
       </div>
     </div>
-    <div class="modal-footer modal-actions">
-      <button type="button" class="modal-close btn-flat">Cancelar</button>
-      <button type="button" id="i-save" class="mmpp-button">Guardar</button>
+
+    <div class="app-modal-footer">
+      <button type="button" class="am-btn am-btn-flat modal-close">Cancelar</button>
+      <button type="button" id="i-save" class="am-btn am-btn-primary">
+        <i class="bi bi-check-lg"></i> Guardar
+      </button>
     </div>`;
 
   const inst = getModalInstance(id, { dismissible: true });
@@ -470,12 +483,12 @@ export function openInteraccionModal({ preset = {}, onSaved } = {}) {
     try {
       if (preset._id) await update(preset._id, payload);
       else await create(payload);
-      M.toast?.({ html: 'Interaccion guardada', displayLength: 1500 });
+      toast('Interacción guardada', { variant: 'success', durationMs: 1500 });
       getModalInstance(id)?.close();
       onSaved?.();
     } catch (e) {
       console.error(e);
-      M.toast?.({ html: 'Error al guardar', classes: 'red' });
+      toast('Error al guardar', { variant: 'error' });
     }
   });
 }

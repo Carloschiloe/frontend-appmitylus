@@ -20,6 +20,8 @@ export function createGestionBoardModule({
   let gestionBoardFocus = 'all';
   let gestionMuestraStage = 'all';
   const gestionFilters = {
+    proveedor: '',
+    contacto: '',
     responsable: '',
     fuente: '',
     search: ''
@@ -36,6 +38,8 @@ export function createGestionBoardModule({
   function applyGestionFilters(items) {
     const q = normalizeText(gestionFilters.search);
     return items.filter((it) => {
+      if (gestionFilters.proveedor && (it.proveedor || '') !== gestionFilters.proveedor) return false;
+      if (gestionFilters.contacto && (it.contacto || '') !== gestionFilters.contacto) return false;
       if (gestionFilters.responsable && (it.responsable || '') !== gestionFilters.responsable) return false;
       if (gestionFilters.fuente && (it.source || '') !== gestionFilters.fuente) return false;
       if (!q) return true;
@@ -73,6 +77,30 @@ export function createGestionBoardModule({
     const values = [...new Set(items.map((x) => String(x.responsable || '').trim()).filter(Boolean))]
       .sort((a, b) => a.localeCompare(b, 'es'));
     const head = '<option value="">Todos los responsables</option>';
+    const opts = values.map((v) => `<option value="${v.replace(/"/g, '&quot;')}">${v}</option>`).join('');
+    sel.innerHTML = head + opts;
+    if (current && values.includes(current)) sel.value = current;
+  }
+
+  function syncGestionProveedoresOptions(items) {
+    const sel = document.getElementById('gestionFltProveedor');
+    if (!sel) return;
+    const current = sel.value || '';
+    const values = [...new Set(items.map((x) => String(x.proveedor || '').trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, 'es'));
+    const head = '<option value="">Todos los proveedores</option>';
+    const opts = values.map((v) => `<option value="${v.replace(/"/g, '&quot;')}">${v}</option>`).join('');
+    sel.innerHTML = head + opts;
+    if (current && values.includes(current)) sel.value = current;
+  }
+
+  function syncGestionContactosOptions(items) {
+    const sel = document.getElementById('gestionFltContacto');
+    if (!sel) return;
+    const current = sel.value || '';
+    const values = [...new Set(items.map((x) => String(x.contacto || '').trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, 'es'));
+    const head = '<option value="">Todos los contactos</option>';
     const opts = values.map((v) => `<option value="${v.replace(/"/g, '&quot;')}">${v}</option>`).join('');
     sel.innerHTML = head + opts;
     if (current && values.includes(current)) sel.value = current;
@@ -188,41 +216,6 @@ export function createGestionBoardModule({
     set('sbBadgeVisitas', String(visitas));
   }
 
-  function renderConsultaCounts() {
-    const set = (id, value) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = String(value);
-    };
-
-    const contactos = Array.isArray(state.contactosGuardados) ? state.contactosGuardados : [];
-    const visitas = Array.isArray(state.visitasGuardadas) ? state.visitasGuardadas : [];
-    const interacciones = Array.isArray(interaccionesCache) ? interaccionesCache : [];
-
-    const empresasSet = new Set();
-    const agendaSet = new Set();
-    for (const c of contactos) {
-      const prov = String(c.proveedorNombre || c.proveedor || '').trim();
-      if (prov) empresasSet.add(prov.toLowerCase());
-
-      const contacto = String(c.contactoNombre || c.contacto || '').trim();
-      const fono = String(c.contactoTelefono || '').trim();
-      const mail = String(c.contactoEmail || '').trim();
-      if (contacto || fono || mail) agendaSet.add(String(c._id || `${contacto}|${fono}|${mail}`));
-    }
-
-    set('consultaCountEmpresas', empresasSet.size);
-    set('consultaCountVisitas', visitas.filter(isVisitaPendiente).length);
-    set('consultaCountAgenda', agendaSet.size);
-    const muestreosAprox = visitas.reduce((acc, v) => {
-      const count = Number(v?.muestreoCount || 0);
-      if (count > 0) return acc + count;
-      return v?.hasMuestreo ? acc + 1 : acc;
-    }, 0);
-    set('consultaCountMuestreos', muestreosAprox);
-    set('consultaCountInteracciones', interacciones.length);
-    set('consultaCountResumen', contactos.length + visitas.length + interacciones.length + muestreosAprox);
-  }
-
   function applyGestionFocusView() {
     const map = {
       overdue: document.getElementById('laneWrapOverdue'),
@@ -259,8 +252,20 @@ export function createGestionBoardModule({
 
     const selResp = document.getElementById('gestionFltResponsable');
     const selFuente = document.getElementById('gestionFltFuente');
+    const selProveedor = document.getElementById('gestionFltProveedor');
+    const selContacto = document.getElementById('gestionFltContacto');
     const inputSearch = document.getElementById('gestionSearch');
     const btnClear = document.getElementById('gestionClearFilters');
+
+    selProveedor?.addEventListener('change', () => {
+      gestionFilters.proveedor = selProveedor.value || '';
+      renderBoard().catch(() => {});
+    });
+
+    selContacto?.addEventListener('change', () => {
+      gestionFilters.contacto = selContacto.value || '';
+      renderBoard().catch(() => {});
+    });
 
     selResp?.addEventListener('change', () => {
       gestionFilters.responsable = selResp.value || '';
@@ -278,9 +283,13 @@ export function createGestionBoardModule({
     }, 140));
 
     btnClear?.addEventListener('click', () => {
+      gestionFilters.proveedor = '';
+      gestionFilters.contacto = '';
       gestionFilters.responsable = '';
       gestionFilters.fuente = '';
       gestionFilters.search = '';
+      if (selProveedor) selProveedor.value = '';
+      if (selContacto) selContacto.value = '';
       if (selResp) selResp.value = '';
       if (selFuente) selFuente.value = '';
       if (inputSearch) inputSearch.value = '';
@@ -297,11 +306,11 @@ export function createGestionBoardModule({
       btn.addEventListener('click', () => {
         const focus = btn.getAttribute('data-gestion-focus') || 'all';
         gestionBoardFocus = focus;
-        document.querySelectorAll('[data-gestion-focus]').forEach((x) => x.classList.remove('is-active'));
-        btn.classList.add('is-active');
+        document.querySelectorAll('[data-gestion-focus]').forEach((x) => x.classList.remove('active'));
+        btn.classList.add('active');
         if (focus !== 'muestras') gestionMuestraStage = 'all';
         document.querySelectorAll('[data-muestra-stage]').forEach((x) => {
-          x.classList.toggle('is-active', (x.getAttribute('data-muestra-stage') || 'all') === gestionMuestraStage);
+          x.classList.toggle('active', (x.getAttribute('data-muestra-stage') || 'all') === gestionMuestraStage);
         });
         renderBoard().catch(() => {});
         applyGestionFocusView();
@@ -311,8 +320,8 @@ export function createGestionBoardModule({
     document.querySelectorAll('[data-muestra-stage]').forEach((btn) => {
       btn.addEventListener('click', () => {
         gestionMuestraStage = btn.getAttribute('data-muestra-stage') || 'all';
-        document.querySelectorAll('[data-muestra-stage]').forEach((x) => x.classList.remove('is-active'));
-        btn.classList.add('is-active');
+        document.querySelectorAll('[data-muestra-stage]').forEach((x) => x.classList.remove('active'));
+        btn.classList.add('active');
         renderBoard().catch(() => {});
         applyGestionFocusView();
       });
@@ -333,6 +342,8 @@ export function createGestionBoardModule({
     }
 
     const all = collectGestionItems();
+    syncGestionProveedoresOptions(all);
+    syncGestionContactosOptions(all);
     syncGestionResponsablesOptions(all);
     const visible = applyGestionFilters(all);
     let focused = visible;
@@ -353,7 +364,6 @@ export function createGestionBoardModule({
 
     renderGestionKpis(overdue, today, next, noDate);
     renderGestionSidebarBadges(overdue, today, next, focused);
-    renderConsultaCounts();
     renderGestionList('gestionLaneOverdue', overdue, 'overdue');
     renderGestionList('gestionLaneToday', today, 'today');
     renderGestionList('gestionLaneNext', next, 'next');
@@ -411,4 +421,3 @@ export function createGestionBoardModule({
     renderBoard
   };
 }
-

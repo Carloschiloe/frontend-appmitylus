@@ -3,185 +3,104 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Abastecimiento de MMPP – Choritos</title>
+  <title>Abastecimiento – AppMMPP</title>
 
-  <!-- Google Icons -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <!-- Iconografía -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-  <!-- Materialize -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-
-  <!-- SPA styles -->
-  <link rel="stylesheet" href="/css/index-modern.css?v=7">
-  <link rel="stylesheet" href="/css/app-shell.css?v=1">
-  <link rel="stylesheet" href="/css/mmpp-ui.css?v=1">
-  <link rel="stylesheet" href="/css/contactos.css?v=20">
-  <link rel="stylesheet" href="/css/interacciones.css?v=12">
-  <link rel="stylesheet" href="/css/contactos-tabla.css?v=8">
-  <link rel="stylesheet" href="/css/contactos-form.css?v=1">
-  <link rel="stylesheet" href="/css/resumen-semanal.css?v=2">
-  <link rel="stylesheet" href="/js/abastecimiento/visitas/fotos/styles.css?v=2">
-  <link rel="stylesheet" href="/css/modals-modern.css?v=3">
-  <link rel="stylesheet" href="/css/tratos.css?v=1">
-  <link rel="stylesheet" href="/css/muestreos-tabla.css?v=1">
-  <link rel="stylesheet" href="/css/muestreo-resultado.css?v=1">
-  <link rel="stylesheet" href="/css/calendario.css?v=1">
-
+  <!-- Sistema de Diseño Unificado -->
+  <link rel="stylesheet" href="/css/index-modern.css">
+  <link rel="stylesheet" href="/css/base-ui.css">
+  <link rel="stylesheet" href="/css/contactos.css">
+  <link rel="stylesheet" href="/css/interacciones.css">
+  <link rel="stylesheet" href="/css/contactos-tabla.css">
+  <link rel="stylesheet" href="/css/calendario.css">
+  <link rel="stylesheet" href="/css/muestreos-tabla.css">
+  <link rel="stylesheet" href="/css/muestreo-resultado.css">
+  <link rel="stylesheet" href="/css/resumen-semanal.css">
+  <link rel="stylesheet" href="/css/tratos.css">
+  <link rel="stylesheet" href="/css/modals-modern.css">
+  <script src="/js/auth.js"></script>
 </head>
 <body class="contactos-page">
   <div class="layout">
-    <aside class="sidebar" aria-label="Navegacion principal">
-      <div class="brand">
-        <span class="brand-mark">AM</span>
-        <div>
-          <p class="brand-title">Abastecimiento MMPP</p>
-          <p class="brand-sub">Control operativo</p>
-        </div>
-      </div>
-
-      <div id="sideNav" class="menu">
-
-        <section class="menu-group" data-group="dashboard">
-          <button class="menu-head" type="button" data-toggle-group="dashboard">
-            <span class="menu-head-text"><i class="bi bi-speedometer2"></i> Inicio</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/index.html#dashboard-home"><i class="bi bi-house-door"></i> Dashboard</a>
-          </div>
-        </section>
-
-        <section class="menu-group is-open has-active-link" data-group="contactos">
-          <button class="menu-head" type="button" data-toggle-group="contactos">
-            <span class="menu-head-text"><i class="bi bi-person-lines-fill"></i> Proveedores MMPP</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="#tab-gestion" data-tab-link><i class="bi bi-inbox"></i> Bandeja <span class="menu-badge-wrap"><span id="sbBadgeOverdue" class="menu-badge warn">V 0</span><span id="sbBadgeToday" class="menu-badge ok">H 0</span></span></a>
-            <a href="#tab-directorio" data-tab-link><i class="bi bi-buildings"></i> Directorio</a>
-            <a href="#tab-calendario" data-tab-link><i class="bi bi-calendar3"></i> Calendario</a>
-            <a href="#tab-interacciones" data-tab-link><i class="bi bi-chat-left-dots"></i> Interacciones</a>
-            <a href="#tab-tratos" data-tab-link><i class="bi bi-handshake"></i> Tratos</a>
-            <a href="#tab-muestreos" data-tab-link><i class="bi bi-eyedropper"></i> Muestreos</a>
-          </div>
-        </section>
-
-        <section class="menu-group" data-group="proveedores">
-          <button class="menu-head" type="button" data-toggle-group="proveedores">
-            <span class="menu-head-text"><i class="bi bi-buildings"></i> BD Cultivos</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/html/Centros/index.html#tab-centros"><i class="bi bi-grid-1x2"></i> Centros</a>
-            <a href="/html/Centros/index.html#tab-mapa"><i class="bi bi-geo-alt"></i> Mapa</a>
-          </div>
-        </section>
-
-        <section class="menu-group" data-group="biomasa">
-          <button class="menu-head" type="button" data-toggle-group="biomasa">
-            <span class="menu-head-text"><i class="bi bi-droplet-half"></i> Biomasa</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/#compras"><i class="bi bi-kanban"></i> Compras</a>
-            <a href="/#inventario"><i class="bi bi-box-seam"></i> Disponibilidad</a>
-            <a href="/#balance"><i class="bi bi-bar-chart-line"></i> Balance</a>
-          </div>
-        </section>
-
-        <section class="menu-group" data-group="historial">
-          <button class="menu-head" type="button" data-toggle-group="historial">
-            <span class="menu-head-text"><i class="bi bi-clock-history"></i> Historial</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/html/Abastecimiento/historial/index.html"><i class="bi bi-journal-text"></i> Gestiones</a>
-          </div>
-        </section>
-
-        <section class="menu-group" data-group="config">
-          <button class="menu-head" type="button" data-toggle-group="config">
-            <span class="menu-head-text"><i class="bi bi-sliders"></i> Configuración</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/html/Maestros/index.html"><i class="bi bi-table"></i> Maestros</a>
-          </div>
-        </section>
-
-      </div>
-    </aside>
+    <div id="sidebar-container"></div>
 
     <main class="content contactos-main-shell">
       <div class="contactos-main">
         <div class="mmpp-wrap">
     <!-- Header / Hero -->
-    <header class="mmpp-hero hero-spacing">
-      <div>
-        <h1>Abastecimiento de MMPP</h1>
+    <header class="am-hero">
+      <div class="am-hero-content">
+        <h1>Abastecimiento</h1>
         <p>Proveedores, visitas a cultivos y agenda de contactos</p>
       </div>
-      <div class="hero-badges">
-        <div class="mmpp-badge">
-          <i class="material-icons icon-18">inventory_2</i> Gestión unificada
-        </div>
-        <div class="mmpp-badge week-badge" id="badgeSemanaActual" aria-live="polite">
-          <i class="material-icons icon-18">event</i>
+      <div class="am-hero-actions">
+        <div class="am-badge week-badge" id="badgeSemanaActual">
+          <i class="bi bi-calendar-event"></i>
           <span>Semana —</span>
         </div>
       </div>
     </header>
 
-    <!-- Navegación principal -->
-    <div class="maest-tabs" id="cMainTabs">
-      <button class="maest-tab-btn active" data-c-tab="tab-gestion">
+    <!-- Navegación principal (Modernizada) -->
+    <div class="am-tabs-main" id="cMainTabs">
+      <button class="am-tab-btn active" data-c-tab="tab-gestion">
         <i class="bi bi-inbox"></i> Gestión
       </button>
-      <button class="maest-tab-btn" data-c-tab="tab-directorio">
+      <button class="am-tab-btn" data-c-tab="tab-directorio">
         <i class="bi bi-buildings"></i> Directorio
       </button>
-      <button class="maest-tab-btn" data-c-tab="tab-calendario">
+      <button class="am-tab-btn" data-c-tab="tab-calendario">
         <i class="bi bi-calendar3"></i> Calendario
       </button>
-      <button class="maest-tab-btn" data-c-tab="tab-interacciones">
+      <button class="am-tab-btn" data-c-tab="tab-interacciones">
         <i class="bi bi-chat-left-dots"></i> Interacciones
       </button>
-      <button class="maest-tab-btn" data-c-tab="tab-tratos">
-        <i class="bi bi-handshake"></i> Tratos
+      <button class="am-tab-btn" data-c-tab="tab-tratos">
+        <i class="bi bi-people"></i> Tratos
       </button>
-      <button class="maest-tab-btn" data-c-tab="tab-muestreos">
+      <button class="am-tab-btn" data-c-tab="tab-muestreos">
         <i class="bi bi-eyedropper"></i> Muestreos
       </button>
     </div>
+  </div>
 
     <!-- ══ PANEL: GESTIÓN ══ -->
     <div id="tab-gestion" class="c-panel active">
-      <div class="mmpp-card section-card gestion-home">
+      <div class="am-card gestion-home">
         <div class="gestion-home-head">
-          <h5>Centro de Gestión</h5>
-          <p>Acciones rápidas y navegación operacional para registrar la gestión diaria sin fricción.</p>
-          <div class="gestion-focus" role="group" aria-label="Modo de foco de bandeja">
-            <button type="button" class="gestion-focus-btn is-active" data-gestion-focus="all">Todo</button>
-            <button type="button" class="gestion-focus-btn" data-gestion-focus="urgent">Urgente</button>
-            <button type="button" class="gestion-focus-btn" data-gestion-focus="today">Hoy</button>
-            <button type="button" class="gestion-focus-btn" data-gestion-focus="next">Próximos</button>
-            <button type="button" class="gestion-focus-btn" data-gestion-focus="nodate">Sin fecha</button>
-            <button type="button" class="gestion-focus-btn" data-gestion-focus="muestras">Solo muestras</button>
+          <div class="am-section-title">
+            <h5>Centro de Gestión</h5>
+            <p>Acciones rápidas y navegación operacional para tu día a día.</p>
           </div>
-          <div id="gestionMuestraStage" class="gestion-muestra-stage is-hidden" role="group" aria-label="Etapa de muestra">
-            <button type="button" class="gestion-stage-btn is-active" data-muestra-stage="all">Todas</button>
-            <button type="button" class="gestion-stage-btn" data-muestra-stage="recibida">Recibida</button>
-            <button type="button" class="gestion-stage-btn" data-muestra-stage="enviada planta">Enviada planta</button>
-            <button type="button" class="gestion-stage-btn" data-muestra-stage="en analisis">En análisis</button>
-            <button type="button" class="gestion-stage-btn" data-muestra-stage="resultado recibido">Resultado recibido</button>
+          <div class="am-focus-group" role="group" aria-label="Filtros de bandeja">
+            <button type="button" class="am-focus-btn active" data-gestion-focus="all">Todo</button>
+            <button type="button" class="am-focus-btn" data-gestion-focus="urgent">Urgente</button>
+            <button type="button" class="am-focus-btn" data-gestion-focus="today">Hoy</button>
+            <button type="button" class="am-focus-btn" data-gestion-focus="next">Próximos</button>
+            <button type="button" class="am-focus-btn" data-gestion-focus="nodate">Sin fecha</button>
+            <button type="button" class="am-focus-btn" data-gestion-focus="muestras">Solo muestras</button>
+          </div>
+          <div id="gestionMuestraStage" class="am-stage-group is-hidden" role="group">
+            <button type="button" class="am-stage-btn active" data-muestra-stage="all">Todas</button>
+            <button type="button" class="am-stage-btn" data-muestra-stage="recibida">Recibida</button>
+            <button type="button" class="am-stage-btn" data-muestra-stage="enviada planta">Enviada planta</button>
+            <button type="button" class="am-stage-btn" data-muestra-stage="en analisis">En análisis</button>
+            <button type="button" class="am-stage-btn" data-muestra-stage="resultado recibido">Resultado recibido</button>
           </div>
           <div class="gestion-head-actions">
-            <button id="gestionResetDismissed" class="dash-btn" type="button">Mostrar gestionados</button>
+            <button id="gestionResetDismissed" class="am-btn am-btn-outline am-btn-sm" type="button">Mostrar gestionados</button>
           </div>
         </div>
 
         <div class="gestion-filters" id="gestionFilters">
+          <select id="gestionFltProveedor" class="browser-default modern-select" aria-label="Filtrar por proveedor">
+            <option value="">Todos los proveedores</option>
+          </select>
+          <select id="gestionFltContacto" class="browser-default modern-select" aria-label="Filtrar por contacto">
+            <option value="">Todos los contactos</option>
+          </select>
           <select id="gestionFltResponsable" class="browser-default modern-select" aria-label="Filtrar por responsable">
             <option value="">Todos los responsables</option>
           </select>
@@ -191,7 +110,10 @@
             <option value="contacto">Contactos</option>
             <option value="visita">Visitas</option>
           </select>
-          <input id="gestionSearch" class="mmpp-input" type="text" placeholder="Buscar proveedor, contacto o paso...">
+          <div class="am-search-field gestion-search-field">
+            <i class="bi bi-search"></i>
+            <input id="gestionSearch" class="am-input" type="text" placeholder="Buscar proveedor, contacto o paso...">
+          </div>
           <button id="gestionClearFilters" class="dash-btn" type="button">Limpiar</button>
         </div>
 
@@ -226,19 +148,16 @@
     <!-- ══ PANEL: DIRECTORIO ══ -->
     <div id="tab-directorio" class="c-panel">
       <div class="panel-tabs-row">
-        <div class="maest-tabs maest-tabs--sub">
-          <button class="maest-tab-btn active" data-dir-tab="dir-empresas">
+        <div class="am-tabs-main am-tabs-sub">
+          <button class="am-tab-btn active" data-dir-tab="dir-empresas">
             <i class="bi bi-buildings"></i> Empresas
           </button>
-          <button class="maest-tab-btn" data-dir-tab="dir-personas">
+          <button class="am-tab-btn" data-dir-tab="dir-personas">
             <i class="bi bi-person-badge"></i> Personas
           </button>
         </div>
         <div class="panel-actions">
-          <button id="btnQuickDisponibilidad" class="am-btn" type="button" style="background:#fff;border:1px solid #cbd5e1;color:#0f172a;">
-            <i class="bi bi-plus-lg"></i> Agregar biomasa
-          </button>
-          <button id="qaNuevoContacto" class="am-btn am-btn-primary">
+          <button id="qaNuevoContacto" class="am-btn am-btn-primary" type="button">
             <i class="bi bi-plus-lg"></i> Nuevo proveedor
           </button>
         </div>
@@ -246,27 +165,27 @@
 
       <!-- Sub-panel: Empresas -->
       <div id="tab-contactos" class="c-sub-panel active">
-        <div id="contactosV2Root"></div>
-        <div class="act-filters-bar" style="margin:10px 0 10px;">
-          <div class="act-filters-left">
-            <select id="fltSemana" class="browser-default act-select" aria-label="Filtrar por semana">
+        <div class="am-filter-bar dir-filter-bar">
+          <div class="dir-filter-grid">
+            <select id="fltSemana" class="am-select" aria-label="Filtrar por semana">
               <option value="">Semana…</option>
             </select>
-            <select id="fltComuna" class="browser-default act-select" aria-label="Filtrar por comuna">
+            <select id="fltComuna" class="am-select" aria-label="Filtrar por comuna">
               <option value="">Comuna…</option>
             </select>
-            <input id="searchContactos" class="mmpp-input act-input-q" placeholder="Buscar proveedor, centro, responsable…" aria-label="Buscar en la tabla">
-            <button id="dir-f-clear" class="dash-btn act-btn-clear" type="button">Limpiar</button>
-            <div class="act-export-group" aria-label="Exportar tabla">
-              <button class="act-export-btn" data-dir-export="csv" title="Exportar CSV" type="button">CSV</button>
-              <button class="act-export-btn" data-dir-export="xls" title="Exportar Excel" type="button">XLS</button>
-              <button class="act-export-btn" data-dir-export="pdf" title="Exportar PDF" type="button">PDF</button>
-            </div>
-          </div>
-          <div class="act-filters-right">
-            <select id="fltResp" class="browser-default act-select" aria-label="Filtrar por responsable">
+            <select id="fltResp" class="am-select" aria-label="Filtrar por responsable">
               <option value="">Responsable…</option>
             </select>
+            <div class="am-search-field dir-search">
+              <i class="bi bi-search"></i>
+              <input id="searchContactos" class="am-input" placeholder="Buscar proveedor, centro, responsable…">
+            </div>
+            <button id="dir-f-clear" class="am-btn am-btn-outline am-btn-sm" type="button">Limpiar</button>
+            <div class="am-export-group">
+              <button class="am-export-btn" data-dir-export="csv" title="Exportar CSV">CSV</button>
+              <button class="am-export-btn" data-dir-export="xls" title="Exportar Excel">XLS</button>
+              <button class="am-export-btn" data-dir-export="pdf" title="Exportar PDF">PDF</button>
+            </div>
           </div>
         </div>
         <div class="mmpp-table-wrap">
@@ -284,14 +203,17 @@
 
       <!-- Sub-panel: Personas -->
       <div id="tab-personas" class="c-sub-panel">
-        <div class="act-filters-bar" style="margin:10px 0 10px;">
-          <div class="act-filters-left">
-            <input id="searchPersonas" class="mmpp-input act-input-q" placeholder="Buscar contacto, empresa…" aria-label="Buscar en personas" style="max-width:360px;">
-            <button id="per-f-clear" class="dash-btn act-btn-clear" type="button">Limpiar</button>
-            <div class="act-export-group" aria-label="Exportar tabla personas">
-              <button class="act-export-btn" data-personas-export="csv" title="Exportar CSV" type="button">CSV</button>
-              <button class="act-export-btn" data-personas-export="xls" title="Exportar Excel" type="button">XLS</button>
-              <button class="act-export-btn" data-personas-export="pdf" title="Exportar PDF" type="button">PDF</button>
+        <div class="am-filter-bar">
+          <div class="am-filter-left">
+            <div class="am-search-field" style="max-width:360px;">
+              <i class="bi bi-search"></i>
+              <input id="searchPersonas" class="am-input" placeholder="Buscar contacto, empresa…">
+            </div>
+            <button id="per-f-clear" class="am-btn am-btn-outline am-btn-sm" type="button">Limpiar</button>
+            <div class="am-export-group">
+              <button class="am-export-btn" data-personas-export="csv" title="Exportar CSV">CSV</button>
+              <button class="am-export-btn" data-personas-export="xls" title="Exportar Excel">XLS</button>
+              <button class="am-export-btn" data-personas-export="pdf" title="Exportar PDF">PDF</button>
             </div>
           </div>
         </div>
@@ -361,15 +283,15 @@
 
         <!-- KPIs -->
         <div class="tratos-kpis" id="tratosKpis">
-          <div class="trato-kpi" data-estado="activo"><div class="k">Activos</div><div class="v">—</div></div>
-          <div class="trato-kpi" data-estado="acordado"><div class="k">Acordados</div><div class="v">—</div></div>
-          <div class="trato-kpi" data-estado="cosecha_iniciada"><div class="k">En cosecha</div><div class="v">—</div></div>
-          <div class="trato-kpi" data-estado="caido"><div class="k">Caídos</div><div class="v">—</div></div>
+          <div class="trato-kpi" data-estado="activo"><div class="k">Activos</div><div class="v">-</div></div>
+          <div class="trato-kpi" data-estado="acordado"><div class="k">Acordados</div><div class="v">-</div></div>
+          <div class="trato-kpi" data-estado="cosecha_iniciada"><div class="k">En cosecha</div><div class="v">-</div></div>
+          <div class="trato-kpi" data-estado="caido"><div class="k">Caídos</div><div class="v">-</div></div>
         </div>
 
         <!-- ── MODAL: RESULTADO MUESTREO (SUMMARY POST-GUARDADO) ── -->
   <!-- MODAL: RESULTADOS DE CLASIFICACION (Post-Guardado) -->
-  <div id="modalMuResultado" class="modal">
+  <div id="modalMuResultado" class="modal app-modal-modern">
     <div class="mu-res-header">
       <h5 class="mu-res-title">Resumen del Muestreo</h5>
     </div>
@@ -423,7 +345,7 @@
       </div>
     </div>
     <div class="mu-res-footer">
-      <button type="button" class="modal-close btn-flat waves-effect" style="font-weight: 700;">Cerrar Resumen</button>
+      <button type="button" class="am-btn am-btn-flat modal-close" style="font-weight: 700;">Cerrar Resumen</button>
     </div>
   </div>
         <!-- Tabla de tratos -->
@@ -576,8 +498,6 @@
             .mu-mini-table th { background: #f8fafc; color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; border-top: none; }
             .mu-mini-table td:nth-child(2), .mu-mini-table th:nth-child(2) { text-align: left; }
 
-            /* Ajustes de columnas para evitar scroll horizontal */
-            /* Dropdown de Acciones en Fila */
             .mu-action-dropdown { position: relative; display: inline-block; vertical-align: middle; }
             .mu-action-trigger { 
               background: none; border: 1.5px solid #e2e8f0; color: #64748b; 
@@ -647,16 +567,15 @@
             </div>
           </div>
 
-          <div class="app-modal-body" style="padding:0;">
-
+          <div class="app-modal-body am-p-0">
           <section id="muestreoFormView">
             <!-- Wizard steps indicator -->
-            <div class="mu-wizard-head" role="tablist" aria-label="Pasos de muestreo" style="padding:0 24px;">
+            <div class="mu-wizard-head am-px-24" role="tablist" aria-label="Pasos de muestreo">
               <button type="button" class="mu-step-btn is-active" data-mu-step="1">1. Base</button>
               <button type="button" class="mu-step-btn" data-mu-step="2">2. Técnica</button>
               <button type="button" class="mu-step-btn" data-mu-step="3">3. Categorías</button>
             </div>
-            <div id="muStepSummary" class="mu-step-summary muestreo-hidden" style="padding:0 24px 8px;">
+            <div id="muStepSummary" class="mu-step-summary muestreo-hidden am-px-24 am-mt-8">
               <span id="muStepSummaryText">-</span>
               <button type="button" id="btnMuEditBase" class="am-btn am-btn-flat" style="height:28px;padding:0 10px;font-size:12px;">Editar</button>
             </div>
@@ -667,10 +586,10 @@
             <input id="muestreoProveedorKey" type="hidden" value="">
 
             <!-- PASO 1: BASE -->
-            <section id="muStep1" class="mu-step-panel" style="padding:16px 24px;">
+            <section id="muStep1" class="mu-step-panel am-p-24">
 
               <!-- Toggle Abastecimiento / Calidad -->
-              <div class="mu-tipo-toggle" style="display:flex;gap:0;margin-bottom:20px;border:1.5px solid #e2e8f0;border-radius:8px;overflow:hidden;width:fit-content;">
+              <div class="mu-tipo-toggle am-mb-20 am-border-base" style="display:flex;gap:0;width:fit-content;">
                 <button type="button" class="mu-tipo-btn is-active" data-mu-route="terreno" style="padding:7px 20px;font-size:13px;font-weight:600;border:none;background:#0ea5e9;color:#fff;cursor:pointer;transition:all .15s;">
                   Abastecimiento
                 </button>
@@ -726,7 +645,7 @@
 
 
             <!-- PASO 2: TÉCNICA -->
-            <section id="muStep2" class="mu-step-panel muestreo-hidden" style="padding:16px 24px;">
+            <section id="muStep2" class="mu-step-panel muestreo-hidden am-p-24">
               <div id="muestreoTechnicalBlock">
                 <div class="am-form-grid">
                   <div class="am-input-group col-6">
@@ -755,7 +674,7 @@
             </section>
 
             <!-- PASO 3: CATEGORÍAS -->
-            <section id="muStep3" class="mu-step-panel muestreo-hidden" style="padding:16px 24px;">
+            <section id="muStep3" class="mu-step-panel muestreo-hidden am-p-24">
               <div class="mu-section-title" style="font-size:13px;font-weight:700;color:#334155;margin-bottom:10px;">Selecciona categorías presentes</div>
               <div class="muestreo-cat-selector" id="muCatSelector"></div>
               <p class="muestreo-route-hint" style="font-size:12px;color:#94a3b8;margin:8px 0 12px;">El detalle numérico se edita en el panel de la derecha →</p>
@@ -917,17 +836,17 @@
                 </select>
               </div>
 
-              <div class="am-input-group col-6" style="padding: 8px 0;">
-                <label class="checkbox-label" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+              <div class="am-input-group col-6 am-py-16">
+                <label class="checkbox-label am-flex-gap-8" style="cursor: pointer;">
                   <input type="checkbox" id="contactoProveedorNuevo" style="width: 18px; height: 18px; margin: 0;">
-                  <span style="font-size: 13px; font-weight: 600; color: #334155;">Proveedor Nuevo</span>
+                  <span class="am-font-bold" style="font-size: 13px; color: #334155;">Proveedor Nuevo</span>
                 </label>
               </div>
 
-              <div class="am-input-group col-6" style="padding: 8px 0;">
-                <label class="checkbox-label" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+              <div class="am-input-group col-6 am-py-16">
+                <label class="checkbox-label am-flex-gap-8" style="cursor: pointer;">
                   <input type="checkbox" id="contactoBiomasa" style="width: 18px; height: 18px; margin: 0;">
-                  <span style="font-size: 13px; font-weight: 600; color: #334155;">Tiene Biomasa</span>
+                  <span class="am-font-bold" style="font-size: 13px; color: #334155;">Tiene Biomasa</span>
                 </label>
               </div>
             </div>
@@ -1124,10 +1043,10 @@
             </div>
 
             <!-- Fila 3: Toma de muestras -->
-            <div class="am-input-group col-12" style="padding: 4px 0;">
-              <label class="checkbox-label" style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+            <div class="am-input-group col-12 am-py-16">
+              <label class="checkbox-label am-flex-gap-8" style="cursor:pointer;">
                 <input type="checkbox" id="visita_enAgua" style="width:18px; height:18px; margin:0;">
-                <span style="font-size:13px; font-weight:600; color:#334155;">Toma de muestras</span>
+                <span class="am-font-bold" style="font-size:13px; color:#334155;">Toma de muestras</span>
               </label>
             </div>
 
@@ -1187,17 +1106,17 @@
           </div>
 
           <div>
-            <label class="grey-text text-darken-1 resumen-field-label" for="resumen_semana">Semana</label>
+            <label class="resumen-field-label" for="resumen_semana">Semana</label>
             <select id="resumen_semana" class="browser-default resumen-select" aria-label="Seleccionar semana"></select>
           </div>
 
           <div>
-            <label class="grey-text text-darken-1 resumen-field-label" for="resumen_mes">Mes</label>
+            <label class="resumen-field-label" for="resumen_mes">Mes</label>
             <select id="resumen_mes" class="browser-default resumen-select" aria-label="Seleccionar mes (YYYY-MM)"></select>
           </div>
 
           <div>
-            <label class="grey-text text-darken-1 resumen-field-label" for="resumen_resp">Responsable</label>
+            <label class="resumen-field-label" for="resumen_resp">Responsable</label>
             <select id="resumen_resp" class="browser-default resumen-select resp" aria-label="Filtrar por Responsable">
               <option value="">Responsable…</option>
             </select>
@@ -1205,31 +1124,33 @@
         </div>
 
         <div>
-          <a id="resumen_copy" class="btn-flat waves-effect">Copiar</a>
-          <a id="resumen_print" class="btn waves-effect">Imprimir / PDF</a>
+          <button type="button" id="resumen_copy" class="am-btn am-btn-flat">Copiar</button>
+          <button type="button" id="resumen_print" class="am-btn am-btn-outline">Imprimir / PDF</button>
         </div>
       </div>
 
       <div id="resumen_print_area">
-        <h5 id="resumen_titulo" class="resumen-title">Informe semanal</h5>
-        <div id="resumen_kpis"></div>
-        <div class="row">
-          <div class="col s12 m7">
-            <table class="striped" aria-label="Tabla de resumen">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Proveedor</th>
-                  <th>Centro</th>
-                  <th>Comuna</th>
-                  <th>Tons</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody id="resumen_table_body"></tbody>
-            </table>
+       <h5 id="resumen_titulo" class="resumen-title">Informe semanal</h5>
+       <div id="resumen_kpis"></div>
+        <div class="resumen-grid" data-resumen-grid>
+          <div class="resumen-col resumen-col-main" data-resumen-col="main">
+            <div class="resumen-table-wrap">
+              <table class="am-table" aria-label="Tabla de resumen">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Proveedor</th>
+                    <th>Centro</th>
+                    <th>Comuna</th>
+                    <th>Tons</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="resumen_table_body"></tbody>
+              </table>
+            </div>
           </div>
-          <div class="col s12 m5">
+          <div class="resumen-col resumen-col-side" data-resumen-col="side">
             <div id="resumen_top"></div>
           </div>
         </div>
@@ -1371,51 +1292,44 @@
   </div>
 
 <!-- ── Modal: Agregar condición de negociación ─────────────────────────────── -->
-<div id="condicionModalWrap" style="
-  display:none; position:fixed; inset:0; z-index:9999;
-  background:rgba(15,23,42,.55); align-items:center; justify-content:center; padding:16px;
-">
-  <div style="
-    background:#fff; border-radius:16px; width:100%; max-width:520px;
-    display:flex; flex-direction:column;
-    box-shadow:0 24px 64px rgba(0,0,0,.22);
-  ">
+<div id="condicionModalWrap" class="condicion-modal-wrap" style="display:none;">
+  <div class="condicion-modal">
 
     <!-- Header -->
-    <div style="padding:18px 22px 14px;border-bottom:1px solid #f1f5f9;display:flex;align-items:flex-start;justify-content:space-between;">
+    <div class="condicion-modal-head">
       <div>
-        <h5 style="margin:0;font-size:16px;font-weight:800;color:#0f172a;">Agregar condición</h5>
-        <p style="margin:3px 0 0;font-size:12px;color:#64748b;">Selecciona y define el valor acordado</p>
+        <h5 class="condicion-modal-title">Agregar condición</h5>
+        <p class="condicion-modal-sub">Selecciona y define el valor acordado</p>
       </div>
-      <button id="btnCerrarCondicion" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:24px;line-height:1;padding:0 0 0 12px;">&times;</button>
+      <button id="btnCerrarCondicion" class="condicion-modal-close" type="button">&times;</button>
     </div>
 
     <!-- Lista de condiciones (scroll propio, altura fija) -->
-    <div style="padding:16px 22px 12px;">
-      <p style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin:0 0 10px;">
+    <div class="condicion-modal-section">
+      <p class="condicion-modal-kicker">
         Condiciones disponibles
       </p>
-      <div id="condicionCards" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;padding-right:2px;"></div>
-      <p id="condicionSinDisp" style="display:none;font-size:13px;color:#94a3b8;text-align:center;padding:16px 0;margin:0;">
-        <i class="bi bi-check-all" style="font-size:20px;display:block;margin-bottom:6px;"></i>
+      <div id="condicionCards" class="condicion-cards"></div>
+      <p id="condicionSinDisp" style="display:none;">
+        <i class="bi bi-check-all condicion-empty-ico"></i>
         Todas las condiciones ya están en el trato.
       </p>
     </div>
 
     <!-- Sección de valor: FUERA del scroll, siempre en viewport -->
-    <div id="condicionValorSection" style="display:none;padding:0 22px 16px;">
-      <div style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;padding:16px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+    <div id="condicionValorSection" class="condicion-valor-section" style="display:none;">
+      <div class="condicion-valor-box">
+        <div class="condicion-valor-head">
           <div id="condicionTipoBadge"></div>
-          <span id="condicionNombreSel" style="font-size:14px;font-weight:700;color:#0f172a;"></span>
+          <span id="condicionNombreSel" class="condicion-valor-nombre"></span>
         </div>
-        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:7px;">Valor acordado</label>
-        <div id="condicionValorInput" style="position:relative;z-index:1;"></div>
+        <label class="condicion-valor-label">Valor acordado</label>
+        <div id="condicionValorInput" class="condicion-valor-input"></div>
       </div>
     </div>
 
     <!-- Footer -->
-    <div style="padding:14px 22px;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:flex-end;gap:10px;">
+    <div class="condicion-modal-foot">
       <button id="btnCancelarCondicion" class="am-btn am-btn-flat" type="button">Cancelar</button>
       <button id="btnConfirmarCondicion" class="am-btn am-btn-primary" type="button" disabled>
         <i class="bi bi-plus-lg"></i> Agregar al trato
@@ -1426,19 +1340,16 @@
 </div>
 
 <!-- Libs -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-
 <!-- Módulo Interacciones (lazy-mount al abrir la pestaña) -->
-<script type="module" src="/js/abastecimiento/contactos/interacciones/index.js?v=4"></script>
+<script type="module" src="/js/abastecimiento/contactos/interacciones/index.js"></script>
 
 <!-- Módulo de Tratos -->
-<script type="module" src="/js/abastecimiento/tratos/index.js?v=1"></script>
+<script type="module" src="/js/abastecimiento/tratos/index.js"></script>
 
-<!-- Disponibilidad rÃ¡pida (botÃ³n Agregar biomasa) -->
-<script type="module" src="/js/abastecimiento/contactos/quick-disponibilidad.js?v=1"></script>
 
 <!-- Orquestador (carga e inicializa todo, incluido el Resumen) -->
-<script type="module" src="/js/abastecimiento/contactos/index.js?v=38"></script>
+<script type="module" src="/js/abastecimiento/contactos/index.js"></script>
+<script type="module" src="/js/components/Sidebar.js"></script>
 
 </body>
 </html>

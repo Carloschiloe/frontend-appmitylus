@@ -1,0 +1,192 @@
+/* 
+ * muestreos-tabla.css 
+ * Estilos dedicados y exclusivos para el modulo de Muestreos MMPP.
+ * Este archivo se carga al final para asegurar la estabilidad del layout de 9 columnas.
+ */
+
+/* Contenedor y Tabla Base */
+#tablaMuestreos {
+  display: table !important; /* Forza el comportamiento de tabla real */
+  table-layout: fixed !important;
+  width: 1120px !important;
+  min-width: 1120px !important;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0;
+  background: #fff;
+}
+
+/* Encabezados (Sticky y Robustos) */
+#tablaMuestreos thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f8fbff;
+  color: #1f3554;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  padding: 12px 10px !important;
+  text-transform: uppercase;
+  border-bottom: 2px solid #cbd5e1 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  line-height: 1.25 !important;
+  height: 60px !important;
+  vertical-align: bottom !important;
+  text-align: center !important;
+}
+
+/* Alineacion especifica para columnas de texto */
+#tablaMuestreos thead th:nth-child(2),
+#tablaMuestreos thead th:nth-child(3),
+#tablaMuestreos td:nth-child(2),
+#tablaMuestreos td:nth-child(3) {
+  text-align: left !important;
+}
+
+/* Celdas de Cuerpo */
+#tablaMuestreos td {
+  padding: 14px 10px !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  font-size: 13px;
+  color: #334155;
+  box-sizing: border-box;
+}
+
+/* anchos milimetricos para las 9 columnas (Total: 1120px) */
+#tablaMuestreos th:nth-child(1), #tablaMuestreos td:nth-child(1) { width: 110px !important; } /* Fecha / Resp */
+#tablaMuestreos th:nth-child(2), #tablaMuestreos td:nth-child(2) { width: 230px !important; } /* Proveedor / Cont */
+#tablaMuestreos th:nth-child(3), #tablaMuestreos td:nth-child(3) { width: 140px !important; } /* Linea */
+#tablaMuestreos th:nth-child(4), #tablaMuestreos td:nth-child(4) { width: 130px !important; } /* Producto */
+#tablaMuestreos th:nth-child(5), #tablaMuestreos td:nth-child(5) { width: 80px !important; }  /* U/Kg */
+#tablaMuestreos th:nth-child(6), #tablaMuestreos td:nth-child(6) { width: 85px !important; }  /* R% */
+#tablaMuestreos th:nth-child(7), #tablaMuestreos td:nth-child(7) { width: 105px !important; } /* Proc.% */
+#tablaMuestreos th:nth-child(8), #tablaMuestreos td:nth-child(8) { width: 110px !important; } /* Rech.% */
+#tablaMuestreos th:nth-child(9), #tablaMuestreos td:nth-child(9) { width: 130px !important; } /* Acciones */
+
+/* Permitir que Proveedor y Linea crezcan verticalmente */
+#tablaMuestreos td:nth-child(2),
+#tablaMuestreos td:nth-child(3) {
+  white-space: normal !important;
+  line-height: 1.4 !important;
+}
+
+/* Vista agrupada por proveedor (7 columnas) */
+#tablaMuestreos.is-grouped {
+  width: 1040px !important;
+  min-width: 1040px !important;
+}
+
+#tablaMuestreos.is-grouped th:nth-child(1), #tablaMuestreos.is-grouped td:nth-child(1) { width: 120px !important; } /* Ultima */
+#tablaMuestreos.is-grouped th:nth-child(2), #tablaMuestreos.is-grouped td:nth-child(2) { width: 360px !important; } /* Proveedor */
+#tablaMuestreos.is-grouped th:nth-child(3), #tablaMuestreos.is-grouped td:nth-child(3) { width: 150px !important; } /* UxKg */
+#tablaMuestreos.is-grouped th:nth-child(4), #tablaMuestreos.is-grouped td:nth-child(4) { width: 150px !important; } /* R% */
+#tablaMuestreos.is-grouped th:nth-child(5), #tablaMuestreos.is-grouped td:nth-child(5) { width: 140px !important; } /* Proc */
+#tablaMuestreos.is-grouped th:nth-child(6), #tablaMuestreos.is-grouped td:nth-child(6) { width: 180px !important; } /* Spark */
+#tablaMuestreos.is-grouped th:nth-child(7), #tablaMuestreos.is-grouped td:nth-child(7) { width: 60px !important; }  /* Expand */
+
+#tablaMuestreos.is-grouped td:nth-child(6) svg.mu-sparkline {
+  width: 160px;
+  height: 34px;
+}
+
+.mu-prov-stack {
+  min-width: 0;
+}
+
+.mu-prov-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mu-prov-count {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mu-contact-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mu-contact-main {
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.mu-provider-sub {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+/* Clasificacion del Producto (Badges) */
+#tablaMuestreos .mu-badge-producto {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #f1f5f9;
+  color: #475569;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+#tablaMuestreos .mu-badge-producto.is-entero { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+#tablaMuestreos .mu-badge-producto.is-media { background: #fef9c3; color: #a16207; border: 1px solid #fde68a; }
+#tablaMuestreos .mu-badge-producto.is-carne { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+
+/* Botones y Cifras */
+#tablaMuestreos .mu-num-main { font-weight: 700; color: #1f3554; font-size: 14px; }
+#tablaMuestreos .mu-rechazo-btn {
+  border: 1px solid #d5e0ef;
+  border-radius: 999px;
+  min-height: 30px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  background: #f8fbff;
+  color: #2b4e76;
+  white-space: nowrap;
+}
+
+#tablaMuestreos .mu-rechazo-btn.is-low {
+  border-color: #bbf7d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+#tablaMuestreos .mu-rechazo-btn.is-mid {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+#tablaMuestreos .mu-rechazo-btn.is-high {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+#tablaMuestreos .mu-action-trigger i {
+  font-size: 18px;
+  line-height: 18px;
+}
+
+/* Responsividad (Scroll Horizontal Forzado) */
+@media (max-width: 1200px) {
+  #tab-muestreos .mmpp-table-wrap {
+    overflow-x: auto !important;
+    padding-bottom: 10px;
+  }
+}

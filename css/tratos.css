@@ -1,0 +1,355 @@
+/* css/tratos.css — Módulo Tratos / Negociación */
+
+/* ── Toolbar (usa act-period-nav de interacciones.css) ────────────────────── */
+#trt-period-nav {
+  margin-bottom: 16px;
+}
+
+/* ── KPIs ────────────────────────────────────────────────────────────────── */
+.tratos-kpis {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.trato-kpi {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 20px;
+  min-width: 110px;
+  flex: 1 1 100px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.trato-kpi:hover { border-color: #0d9488; box-shadow: 0 2px 8px rgba(13,148,136,.08); }
+.trato-kpi.is-active { border-color: #0d9488; box-shadow: 0 2px 10px rgba(13,148,136,.12); background: #ecfdf5; }
+.trato-kpi .k { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.trato-kpi .v { font-size: 24px; font-weight: 700; color: #0f172a; margin-top: 4px; }
+
+/* Cuando hay filtro por KPI: difuminar el resto sin ocultar */
+.tratos-kpis.has-filter .trato-kpi:not(.is-active) {
+  opacity: 0.45;
+  filter: saturate(0.6);
+  background: #f8fafc;
+  box-shadow: none;
+}
+.tratos-kpis.has-filter .trato-kpi.is-active {
+  opacity: 1;
+}
+
+/* ── Tabla ───────────────────────────────────────────────────────────────── */
+.tratos-table-wrap {
+  overflow-x: auto;
+}
+
+.tratos-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tratos-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-weight: 600;
+  color: #64748b;
+  font-size: 11px;
+  text-transform: uppercase;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.tratos-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.trato-row { transition: background 0.1s; }
+.trato-row:hover { background: #f0fdf4; cursor: pointer; }
+
+.trato-td-proveedor { font-weight: 600; color: #0f172a; }
+
+.tratos-empty {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Estado badge */
+.trato-estado-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  white-space: nowrap;
+}
+
+/* Barra de completitud */
+.trato-comp-bar {
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 3px;
+  min-width: 60px;
+}
+.trato-comp-fill {
+  height: 100%;
+  background: #0d9488;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+/* ── Modal Trato ─────────────────────────────────────────────────────────── */
+.trato-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 680px) {
+  .trato-modal-grid { grid-template-columns: 1fr; }
+}
+
+.trato-col-base, .trato-col-condiciones {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.trato-section { display: flex; flex-direction: column; gap: 4px; position: relative; }
+.trato-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
+
+.trato-row { flex-direction: row; gap: 10px; }
+.trato-row > div { display: flex; flex-direction: column; gap: 4px; flex: 1 1 0; }
+
+/* Período */
+.trato-periodo-inputs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Condiciones */
+.trato-condiciones-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.trato-condicion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.trato-condicion-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.trato-condicion-nombre { font-weight: 600; color: #0f172a; }
+.trato-condicion-valor { font-size: 12px; color: #64748b; }
+.trato-condicion-ctrl { display: flex; gap: 6px; align-items: center; }
+.trato-cond-remove { padding: 0 8px; height: 26px; font-size: 16px; line-height: 1; }
+.trato-condiciones-empty { font-size: 13px; color: #94a3b8; font-style: italic; }
+
+/* Autocomplete */
+.trato-autocomplete-drop {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0; right: 0;
+  z-index: 9999;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.1);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.trato-autocomplete-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.1s;
+}
+.trato-autocomplete-item:last-child { border-bottom: none; }
+.trato-autocomplete-item:hover { background: #f0fdf4; }
+.trato-autocomplete-item small { color: #94a3b8; margin-left: 6px; }
+
+/* Historial responsable */
+.trato-historial-wrap {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+  margin-top: 4px;
+}
+.trato-hist-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.trato-hist-nombre { font-weight: 600; color: #0f172a; }
+.trato-hist-rango  { color: #64748b; }
+.trato-hist-nota   { color: #94a3b8; font-style: italic; }
+
+/* Modal custom "Agregar condición" debe quedar por encima de overlays de Materialize */
+#condicionModalWrap {
+  z-index: 20000 !important;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#condicionModalWrap .condicion-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+}
+
+#condicionModalWrap .condicion-modal-head {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#condicionModalWrap .condicion-modal-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+#condicionModalWrap .condicion-modal-sub {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+#condicionModalWrap .condicion-modal-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+  padding: 0 0 0 12px;
+}
+
+#condicionModalWrap .condicion-modal-section {
+  padding: 16px 22px 12px;
+}
+
+#condicionModalWrap .condicion-modal-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 0 0 10px;
+}
+
+#condicionModalWrap .condicion-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+#condicionModalWrap #condicionSinDisp {
+  font-size: 13px;
+  color: #94a3b8;
+  text-align: center;
+  padding: 16px 0;
+  margin: 0;
+}
+
+#condicionModalWrap .condicion-empty-ico {
+  font-size: 20px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+#condicionModalWrap .condicion-valor-section {
+  padding: 0 22px 16px;
+}
+
+#condicionModalWrap .condicion-valor-box {
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 16px;
+}
+
+#condicionModalWrap .condicion-valor-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#condicionModalWrap .condicion-valor-nombre {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+#condicionModalWrap .condicion-valor-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  display: block;
+  margin-bottom: 7px;
+}
+
+#condicionModalWrap .condicion-valor-input {
+  position: relative;
+  z-index: 1;
+}
+
+#condicionModalWrap .condicion-modal-foot {
+  padding: 14px 22px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Selector Normal/Fijo en modal de condición: reusa estilos act-period-modes (interacciones.css) */
+#condicionModoRow { margin: 0 0 10px; }
+
+/* Btn danger */
+.am-btn-danger {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+.am-btn-danger:hover { background: #fecaca; }

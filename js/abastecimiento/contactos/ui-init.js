@@ -19,6 +19,17 @@ export function ensureMuestreoPortals() {
 }
 
 export function initContactosTabs({ onVisitas, onPersonas, onMuestreos, onContactos, onCalendario, onAny }) {
+  const syncUrlHash = (targetId) => {
+    if (!targetId) return;
+    const nextHash = `#${String(targetId).replace(/^#/, '')}`;
+    try {
+      history.replaceState(null, '', `${location.pathname}${location.search}${nextHash}`);
+    } catch {
+      try { location.hash = nextHash; } catch {}
+    }
+    try { window.dispatchEvent(new CustomEvent('mmpp:navigate', { detail: { hash: nextHash } })); } catch {}
+  };
+
   // ── Tabs principales (data-c-tab) ──────────────────────────────────────────
   document.querySelectorAll('[data-c-tab]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -27,6 +38,7 @@ export function initContactosTabs({ onVisitas, onPersonas, onMuestreos, onContac
       document.querySelectorAll('[data-c-tab]').forEach((b) => b.classList.remove('active'));
       document.getElementById(target)?.classList.add('active');
       btn.classList.add('active');
+      syncUrlHash(target);
       if (target === 'tab-interacciones') onVisitas?.();
       if (target === 'tab-directorio') onContactos?.();
       if (target === 'tab-calendario') onCalendario?.();
@@ -44,6 +56,7 @@ export function initContactosTabs({ onVisitas, onPersonas, onMuestreos, onContac
       const subId = target === 'dir-empresas' ? 'tab-contactos' : 'tab-personas';
       document.getElementById(subId)?.classList.add('active');
       btn.classList.add('active');
+      syncUrlHash('tab-directorio');
       if (target === 'dir-personas') onPersonas?.();
       if (target === 'dir-empresas') onContactos?.();
       onAny?.();
@@ -58,6 +71,7 @@ export function initContactosTabs({ onVisitas, onPersonas, onMuestreos, onContac
       document.querySelectorAll('[data-inter-tab]').forEach((b) => b.classList.remove('active'));
       document.getElementById(target)?.classList.add('active');
       btn.classList.add('active');
+      syncUrlHash('tab-interacciones');
       if (target === 'inter-visitas') onVisitas?.();
       onAny?.();
     });
@@ -70,8 +84,6 @@ export function initContactosModals({
   onPrepararNuevo,
   onMuestreoClose
 }) {
-  if (!window.M) return;
-
   const initModal = (id, opts) => getModalInstance(id, opts || {});
 
   const modalContactoEl = document.getElementById('modalContacto');
@@ -107,7 +119,6 @@ export function initContactosModals({
         onResetContactoExtras?.();
         try { onPrepararNuevo?.(); } catch {}
         
-        M.updateTextFields?.();
         onCleanup?.();
       }
     });
@@ -117,7 +128,6 @@ export function initContactosModals({
       try { onPrepararNuevo?.(); } catch {}
       try { document.getElementById('formContacto')?.reset(); } catch {}
       onResetContactoExtras?.();
-      M.updateTextFields?.();
       inst?.open();
     };
 
@@ -153,8 +163,18 @@ export function initContactosModals({
     }
   };
 
-  ['modalDetalleContacto', 'modalVisita', 'modalAsociar', 'modalMuestreo', 'modalMuestreoItems', 'modalMuInfo', 'modalMuRechazo', 'modalTrato'].forEach((id) => {
+  ['modalDetalleContacto', 'modalVisita', 'modalAsociar', 'modalMuestreo', 'modalMuestreoItems', 'modalMuInfo', 'modalMuRechazo', 'modalTrato', 'modalMuResultado'].forEach((id) => {
     const opts = modalConfigs[id] || { onCloseEnd: onCleanup };
-    initModal(id, opts);
+    const inst = initModal(id, opts);
+    const root = document.getElementById(id);
+    if (!root) return;
+    if (root.dataset.modalCloseBound === '1') return;
+    root.dataset.modalCloseBound = '1';
+    root.querySelectorAll('.modal-close').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        inst?.close?.();
+      });
+    });
   });
 }

@@ -4,9 +4,10 @@ import { escapeHtml, getModalInstance, debounce } from '../contactos/ui-common.j
 import { createLocalTableController } from '../contactos/local-table.js';
 import { centroCodigoById } from './normalizers.js';
 import { getAll, create, update } from './api.js';
+import { toast } from '../../ui/toast.js';
 
 import {
-  mountFotosUIOnce,
+  setupFotosUI,
   resetFotosModal,
   handleFotosAfterSave,
   renderGallery,
@@ -14,22 +15,7 @@ import {
 
 import { wireActionsGlobalsOnce, manejarAccionVisitaEl } from './actions.js';
 
-console.log('[visitas/ui] cargado');
-
-/* ============ parche seguro para toasts que se quedan pegados ============ */
-(function patchToastOnce(){
-  if (!window.M || window.__toast_patched) return;
-  window.__toast_patched = true;
-  const orig = M.toast;
-  M.toast = (opts={})=>{
-    try{ M.Toast.dismissAll(); }catch{}
-    const o = (typeof opts==='string') ? { html:opts } : { ...opts };
-    if (o.displayLength == null) o.displayLength = 1600;
-    if (o.inDuration == null)    o.inDuration    = 120;
-    if (o.outDuration == null)   o.outDuration   = 140;
-    return orig(o);
-  };
-})();
+// console.log('[visitas/ui] cargado');
 
 /* ================= utils ================= */
 const esc = escapeHtml;
@@ -78,6 +64,133 @@ const getEl = (sel) => (typeof sel === 'string' ? document.getElementById(sel) :
 const setIf = (sel, prop, val) => { const el = getEl(sel); if (el && prop in el) el[prop] = val; return !!el; };
 const getPasoEl = () => getEl('visita_estado') || getEl('visita_proximoPaso');
 
+/* ============== Autocomplete genérico reutilizable ============== */
+function crearAutocomplete({ inputId, dropdownId, fetchItems, onPick, min = 1 }) {
+  const input = getEl(inputId);
+  const drop  = getEl(dropdownId);
+  if (!input || !drop) return;
+
+  // Posicionar el dropdown como fixed para que no quede cortado por overflow del modal
+  function posicionarDrop() {
+    const rect = input.getBoundingClientRect();
+    drop.style.position = 'fixed';
+    drop.style.top      = `${rect.bottom + 2}px`;
+    drop.style.left     = `${rect.left}px`;
+    drop.style.width    = `${rect.width}px`;
+    drop.style.zIndex   = '9999';
+  }
+
+  const cerrar = () => { drop.classList.remove('is-open'); drop.innerHTML = ''; };
+
+  const abrir = (items) => {
+    if (!items.length) {
+      drop.innerHTML = `<div class="am-dropdown-empty">Sin resultados</div>`;
+    } else {
+      drop.innerHTML = items.map((it, i) =>
+        `<div class="am-dropdown-item" data-idx="${i}">
+          <strong>${esc(it.label)}</strong>
+          ${it.sub ? `<span>${esc(it.sub)}</span>` : ''}
+        </div>`
+      ).join('');
+      drop.querySelectorAll('.am-dropdown-item').forEach(el => {
+        el.addEventListener('click', () => {
+          onPick(items[Number(el.dataset.idx)]);
+          cerrar();
+        });
+      });
+    }
+    posicionarDrop();
+    drop.classList.add('is-open');
+  };
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    cerrar();
+    if (q.length < min) return;
+    abrir(fetchItems(q));
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!input.contains(e.target) && !drop.contains(e.target)) cerrar();
+  });
+}
+
+/* ============== Lógica específica del modal Visita ============== */
+let visitaProveedorBound = false;
+
+function llenarCentrosVisita(contacto) {
+  const sel = getEl('visita_centroId');
+  if (!sel) return;
+  const key = contacto?.proveedorKey || slug(contacto?.proveedorNombre || '');
+  const centros = (state.listaCentros || []).filter(
+    c => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '')) === key
+  );
+  sel.innerHTML = `<option value="">Sin centro (opcional)</option>` +
+    centros.map(c => `<option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">${c.code || c.codigo || ''} - ${c.comuna || 's/comuna'}</option>`).join('');
+  sel.value = '';
+}
+
+function autorellenarContacto(contacto) {
+  const el = getEl('visita_contacto');
+  if (!el) return;
+  if (contacto?.contactoNombre) {
+    el.value = contacto.contactoNombre;
+  }
+}
+
+function bindVisitaProveedorSearch() {
+  if (visitaProveedorBound) return;
+  visitaProveedorBound = true;
+
+  // Autocomplete proveedor
+  crearAutocomplete({
+    inputId:    'visita_proveedorBuscador',
+    dropdownId: 'visita_proveedorResultados',
+    min: 1,
+    fetchItems: (q) => {
+      const norm = q.toLowerCase();
+      return (state.contactosGuardados || [])
+        .filter(c => (c.proveedorNombre || c.contactoNombre || '').toLowerCase().includes(norm))
+        .slice(0, 10)
+        .map(c => ({
+          label: c.proveedorNombre || c.contactoNombre || '—',
+          sub:   c.contactoNombre && c.proveedorNombre ? c.contactoNombre : '',
+          _ref:  c
+        }));
+    },
+    onPick: (item) => {
+      const contacto = item._ref;
+      const buscEl = getEl('visita_proveedorBuscador');
+      if (buscEl) { buscEl.value = contacto.proveedorNombre || contacto.contactoNombre || ''; }
+      setVal(['visita_proveedorId'], contacto._id);
+      llenarCentrosVisita(contacto);
+      autorellenarContacto(contacto);
+    }
+  });
+
+  // Autocomplete persona contactada (sugerencias de contactos del sistema)
+  crearAutocomplete({
+    inputId:    'visita_contacto',
+    dropdownId: 'visita_contactoResultados',
+    min: 2,
+    fetchItems: (q) => {
+      const norm = q.toLowerCase();
+      return (state.contactosGuardados || [])
+        .filter(c => (c.contactoNombre || '').toLowerCase().includes(norm))
+        .slice(0, 8)
+        .map(c => ({
+          label: c.contactoNombre || '—',
+          sub:   c.proveedorNombre || '',
+          _ref:  c
+        }));
+    },
+    onPick: (item) => {
+      const el = getEl('visita_contacto');
+      if (el) el.value = item._ref.contactoNombre || '';
+    }
+  });
+}
+
 /* ============== asegure infraestructura del modal ============== */
 async function ensureVisitaInfra(){
   let modal = getEl('modalVisita');
@@ -115,7 +228,7 @@ export function forceAdjustVisitas() {}
 function ensureLocalTableVisitas() {
   if (tableCtrlVisitas) return tableCtrlVisitas;
   tableCtrlVisitas = createLocalTableController({
-    section: '#tab-visitas .mmpp-card',
+    section: '#inter-visitas',
     table: '#tablaVisitas',
     pageSize: 10,
     emptyColspan: 8,
@@ -301,7 +414,7 @@ export async function abrirModalVisita(contacto){
   const ok = await ensureVisitaInfra();
   if (!ok) {
     console.warn('[visitas/ui] No se encontro infraestructura del modal de visitas.');
-    M.toast?.({ html:'No se pudo abrir el modal de visitas', classes:'red' });
+    toast('No se pudo abrir el modal de visitas', { variant: 'error' });
     return;
   }
 
@@ -309,39 +422,38 @@ export async function abrirModalVisita(contacto){
   form.dataset.editId = '';
   ensureFotosBlock();
   setVisitaModalMode(false);
+  bindVisitaProveedorSearch();
 
-  // proveedor/contacto
-  setVal(['visita_proveedorId'], contacto?._id);
-
-  const proveedorKey = contacto?.proveedorKey || slug(contacto?.proveedorNombre || '');
-
-  // centros del mismo proveedor
-  const selectVisita = getEl('visita_centroId');
-  if (selectVisita){
-    const centros = (state.listaCentros || []).filter(
-      (c) => (c.proveedorKey?.length ? c.proveedorKey : slug(c.proveedor || '')) === proveedorKey
-    );
-    let options = `<option value="">Centro visitado (opcional)</option>`;
-    options += centros.map((c)=>`
-      <option value="${c._id || c.id}" data-code="${c.code || c.codigo || ''}">
-        ${(c.code || c.codigo || '')} - ${(c.comuna || 's/comuna')}
-      </option>`).join('');
-    selectVisita.innerHTML = options;
-    selectVisita.value = '';
+  // campo de proveedor: prellenado o búsqueda libre
+  const buscEl = getEl('visita_proveedorBuscador');
+  if (contacto?._id) {
+    setVal(['visita_proveedorId'], contacto._id);
+    if (buscEl) {
+      buscEl.value = contacto.proveedorNombre || contacto.contactoNombre || '';
+      buscEl.disabled = true;
+      buscEl.style.opacity = '0.7';
+    }
+    llenarCentrosVisita(contacto);
+  } else {
+    setVal(['visita_proveedorId'], '');
+    if (buscEl) {
+      buscEl.value = '';
+      buscEl.disabled = false;
+      buscEl.style.opacity = '';
+    }
+    const selectVisita = getEl('visita_centroId');
+    if (selectVisita) selectVisita.innerHTML = '<option value="">Sin centro (opcional)</option>';
   }
 
   const hoyISO = fmtISO(new Date());
   setIf('visita_fecha', 'value', hoyISO);
 
   setIf('visita_contacto', 'value', '');
-  setIf('visita_enAgua', 'value', '');
-  setIf('visita_tonsComprometidas', 'value', '');
+  const enAguaEl = getEl('visita_enAgua'); if (enAguaEl) enAguaEl.checked = false;
   setIf('visita_estado', 'value', 'Programar nueva visita');
   setIf('visita_proximoPaso', 'value', 'Nueva visita');
   setIf('visita_observaciones', 'value', '');
   setIf('visita_proximoPasoFecha', 'value', '');
-
-  try { M.updateTextFields(); } catch {}
 
   resetFotosModal();
   toggleProximoPasoFecha();
@@ -357,7 +469,7 @@ async function abrirEditarVisita(v, readOnly=false){
   const ok = await ensureVisitaInfra();
   if (!ok) {
     console.warn('[visitas/ui] Modal/forma de visitas no disponible.');
-    M.toast?.({ html:'No se pudo abrir la visita', classes:'red' });
+    toast('No se pudo abrir la visita', { variant: 'error' });
     return;
   }
 
@@ -367,10 +479,19 @@ async function abrirEditarVisita(v, readOnly=false){
   ensureFotosBlock();
 
   setVal(['visita_proveedorId'], v.contactoId || '');
+
+  // prefill campo proveedor visible
+  const buscElEdit = getEl('visita_proveedorBuscador');
+  if (buscElEdit) {
+    const contacto = (state.contactosGuardados || []).find(c => String(c._id) === String(v.contactoId || ''));
+    buscElEdit.value = contacto ? (contacto.proveedorNombre || contacto.contactoNombre || '') : '';
+    buscElEdit.disabled = !!contacto;
+    buscElEdit.style.opacity = contacto ? '0.7' : '';
+  }
+
   setIf('visita_fecha', 'value', fmtISO(v.fecha));
   setIf('visita_contacto', 'value', v.contacto || '');
-  setIf('visita_enAgua', 'value', v.enAgua || '');
-  setIf('visita_tonsComprometidas', 'value', v.tonsComprometidas ?? '');
+  const enAguaElEdit = getEl('visita_enAgua'); if (enAguaElEdit) enAguaElEdit.checked = !!(v.enAgua && v.enAgua !== 'No' && v.enAgua !== '');
   const estadoNorm = normalizeEstado(v.estado || 'Programar nueva visita');
   setIf('visita_estado', 'value', estadoNorm);
   setIf('visita_proximoPaso', 'value', estadoNorm);
@@ -396,7 +517,6 @@ async function abrirEditarVisita(v, readOnly=false){
     }
   }
 
-  try { M.updateTextFields(); } catch {}
   resetFotosModal();
   await renderGallery(v._id);
 
@@ -429,8 +549,7 @@ export function setupFormularioVisita(){
       centroId,
       centroCodigo,
       contacto: getEl('visita_contacto')?.value || null,
-      enAgua: getEl('visita_enAgua')?.value || null,
-      tonsComprometidas: getEl('visita_tonsComprometidas')?.value ? Number(getEl('visita_tonsComprometidas')?.value) : null,
+      enAgua: getEl('visita_enAgua')?.checked ? 'Sí' : 'No',
       estado: normalizeEstado(getPasoEl()?.value || 'Programar nueva visita'),
       proximoPasoFecha: getEl('visita_proximoPasoFecha')?.value || null,
       observaciones: getEl('visita_observaciones')?.value || null
@@ -442,13 +561,13 @@ export function setupFormularioVisita(){
         await update(editId, payload);
         await renderTablaVisitas(true); forceAdjustVisitas();
         window.dispatchEvent(new CustomEvent('visita:updated', { detail:{ id: editId } }));
-        M.toast?.({ html:'Visita actualizada', classes:'teal' });
+        toast('Visita actualizada', { variant: 'success' });
         await handleFotosAfterSave(editId);
       }else{
         const nueva = await create(payload);
         await renderTablaVisitas(true); forceAdjustVisitas();
         window.dispatchEvent(new CustomEvent('visita:created', { detail:{ visita: nueva, contactoId } }));
-        M.toast?.({ html:'Visita guardada', classes:'teal' });
+        toast('Visita guardada', { variant: 'success' });
         const visitId = (nueva && (nueva._id || nueva.id)) ? (nueva._id || nueva.id) : null;
         await handleFotosAfterSave(visitId);
       }
@@ -461,7 +580,7 @@ export function setupFormularioVisita(){
       forceAdjustVisitas();
     }catch(err){
       console.warn('[visitas/ui] create/update error:', err?.message || err);
-      M.toast?.({ html:'No se pudo guardar la visita', classes:'red', displayLength:2200 });
+      toast('No se pudo guardar la visita', { variant: 'error', durationMs: 2200 });
     }
   });
 }
@@ -472,7 +591,7 @@ function setVisitaModalMode(readOnly){
 
   const inputs = form.querySelectorAll('input, select, textarea, label input');
   const btnSave = form.querySelector('button[type="submit"]');
-  const fotosActions = document.querySelector('#visita_fotos .fotos-actions');
+  const fotosDropzone = document.getElementById('visita_fotos_dropzone');
   const closeBtn = form.closest('.modal-content')?.parentElement?.querySelector('.modal-close');
   const titleEl = document.querySelector('#modalVisita .inter-modal-head h5') || document.querySelector('#modalVisita h5');
   const badgeEl = document.querySelector('#modalVisita .inter-type-badge');
@@ -480,14 +599,14 @@ function setVisitaModalMode(readOnly){
   if (readOnly){
     inputs.forEach(el => { if (el.type !== 'button') el.setAttribute('disabled','disabled'); });
     if (btnSave) btnSave.style.display = 'none';
-    if (fotosActions) fotosActions.style.display = 'none';
+    if (fotosDropzone) fotosDropzone.style.display = 'none';
     if (closeBtn) closeBtn.textContent = 'Cerrar';
     if (titleEl) titleEl.textContent = 'Detalle de visita';
     if (badgeEl) badgeEl.innerHTML = '<i class="material-icons tiny">visibility</i>Solo lectura';
   }else{
     inputs.forEach(el => el.removeAttribute('disabled'));
     if (btnSave) btnSave.style.display = '';
-    if (fotosActions) fotosActions.style.display = '';
+    if (fotosDropzone) fotosDropzone.style.display = '';
     if (closeBtn) closeBtn.textContent = 'Cancelar';
     if (titleEl) titleEl.textContent = 'Registrar visita';
     if (badgeEl) badgeEl.innerHTML = '<i class="material-icons tiny">directions_boat</i>Visita';
@@ -502,34 +621,52 @@ function ensureFotosBlock(){
 
   const wrapper = document.createElement('div');
   wrapper.id = 'visita_fotos';
-  wrapper.className = 'mb-3';
   wrapper.innerHTML = `
-    <div class="fotos-actions">
-      <span class="filepick-wrap">
-        <button type="button" id="btnPickFotos" class="btn-small teal white-text">
-          <i class="material-icons left">photo_camera</i>Agregar fotos
-        </button>
-        <input id="visita_fotos_input" class="filepick-input" type="file" accept="image/*" multiple>
-      </span>
+    <div class="fv-section-title">
+      <i class="bi bi-images"></i> Fotos
     </div>
-    <div id="visita_fotos_preview" class="fotos-grid fotos-grid-spaced"></div>
-    <div id="visita_fotos_gallery" class="fotos-grid fotos-grid-spaced"></div>
+
+    <!-- Input oculto (fuera del dropzone para evitar conflictos de click) -->
+    <input id="visita_fotos_input" type="file" accept="image/*" multiple style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none;overflow:hidden;">
+
+    <!-- Dropzone -->
+    <div class="fv-dropzone" id="visita_fotos_dropzone">
+      <i class="bi bi-cloud-upload fv-dz-icon"></i>
+      <p class="fv-dz-text">Arrastra fotos aquí o <span class="fv-dz-link">selecciona archivos</span></p>
+      <p class="fv-dz-hint">JPG, PNG, HEIC · se comprimen automáticamente</p>
+    </div>
+
+    <!-- Por subir -->
+    <div class="fv-section-header" id="fv-header-pending" style="display:none">
+      <span>Por subir</span>
+      <span id="visita_fotos_pending_count" class="fv-count"></span>
+    </div>
+    <div class="fv-grid" id="visita_fotos_pending"></div>
+
+    <!-- Guardadas -->
+    <div class="fv-section-header">
+      <span>Guardadas</span>
+      <span id="visita_fotos_gallery_count" class="fv-count"></span>
+    </div>
+    <div class="fv-grid" id="visita_fotos_gallery"></div>
   `;
 
   const submitBtn = form.querySelector('button[type="submit"]');
   if (submitBtn?.parentElement){
     submitBtn.parentElement.insertBefore(wrapper, submitBtn);
-  }else{
+  } else {
     form.appendChild(wrapper);
   }
 
-  const btn = wrapper.querySelector('#btnPickFotos');
-  const input = wrapper.querySelector('#visita_fotos_input');
-  if (btn && input){
-    btn.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); input.click(); });
-  }
+  // Mostrar/ocultar header "Por subir" cuando haya pendientes
+  const pendingGrid = wrapper.querySelector('#visita_fotos_pending');
+  const headerPending = wrapper.querySelector('#fv-header-pending');
+  const observer = new MutationObserver(() => {
+    if (headerPending) headerPending.style.display = pendingGrid?.children.length ? '' : 'none';
+  });
+  if (pendingGrid) observer.observe(pendingGrid, { childList: true });
 
-  try{ mountFotosUIOnce(); }catch{}
+  setupFotosUI();
 }
 
 /* ================= UI wiring (una sola vez) ================= */
@@ -540,13 +677,13 @@ function wireUIEventsOnce(){
   document.addEventListener('visita:open-readonly', (e)=>{
     const id = e.detail?.id;
     const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(id));
-    if (!v) return M.toast?.({ html:'Visita no encontrada', classes:'red' });
+    if (!v) return toast('Visita no encontrada', { variant: 'error' });
     abrirEditarVisita(v, true);
   });
   document.addEventListener('visita:open-edit', (e)=>{
     const id = e.detail?.id;
     const v = (state.visitasGuardadas || []).find(x => String(x._id) === String(id));
-    if (!v) return M.toast?.({ html:'Visita no encontrada', classes:'red' });
+    if (!v) return toast('Visita no encontrada', { variant: 'error' });
     abrirEditarVisita(v, false);
   });
 
@@ -602,12 +739,16 @@ function buildOrUpdateFiltros(){
 
 /* ================= Init principal ======================= */
 export async function initVisitasTab(forceReload = false) {
+  // Siempre registrar listeners de eventos (necesarios aunque no haya tabla)
+  wireActionsGlobalsOnce();
+  wireUIEventsOnce();
+
   let tabla = $('#tablaVisitas');
   if (!tabla) {
     await new Promise((r) => setTimeout(r, 50));
     tabla = $('#tablaVisitas');
   }
-  if (!tabla) { console.warn('[visitas/ui] #tablaVisitas no esta en el DOM'); return; }
+  if (!tabla) { console.debug('[visitas/ui] #tablaVisitas no está en el DOM (tab inactivo)'); return; }
 
   const HEADERS = ['Sem.', 'Fecha', 'Proveedor', 'Centro', 'Proximo paso', 'Fecha prox.', 'Tons', 'Acciones'];
   const thead   = tabla.querySelector('thead') || (() => { const t=document.createElement('thead'); tabla.prepend(t); return t; })();
@@ -618,9 +759,6 @@ export async function initVisitasTab(forceReload = false) {
     thead.innerHTML = `<tr>${HEADERS.map(h => `<th>${h}</th>`).join('')}</tr>`;
   }
 
-  wireActionsGlobalsOnce();
-  wireUIEventsOnce();
-  mountFotosUIOnce();
   ensureLocalTableVisitas();
 
   if (!visitasActionsBound) {
@@ -672,6 +810,5 @@ export async function initVisitasTab(forceReload = false) {
     });
   }
 
-  console.log('[visitas/ui] initVisitasTab listo (local table)');
+  // console.log('[visitas/ui] initVisitasTab listo (local table)');
 }
-

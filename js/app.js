@@ -1,4 +1,5 @@
-// /js/app.js — bootstrap/orquestador (versión simplificada sin “líneas”)
+// /js/app.js — orquestador Centros
+import { toast } from '/js/ui/toast.js';
 
 import { Estado } from './core/estado.js';
 
@@ -15,45 +16,41 @@ import {
 } from './mapas/mapa.js';
 
 // === Tabla ===
-import { initTablaCentros, loadCentros as loadTablaCentros } from './centros/tabla_centros.js';
+import { initTablaCentros, loadCentros as loadTablaCentros } from './centros/tabla-centros.js';
 
 // === Formularios ===
-import { openNewForm, openEditForm, renderPointsTable } from './centros/form_centros.js';
+import { openNewForm, renderPointsTable } from './centros/form-centros.js';
 
 // === API ===
-import { getCentrosAll, createCentro, updateCentro } from './core/centros_repo.js';
+import { getCentrosAll, createCentro, updateCentro } from './core/centros-repo.js';
 
 // === Utils app ===
-import { tabMapaActiva } from './core/utilidades_app.js';
+import { tabMapaActiva } from './core/utilidades-app.js';
 
-// === Utils (global de /js/utils.js)
+// Utils
 const parseDMS = (s) => {
   const fn = (window.u && window.u.parseOneDMS) || window.parseOneDMS;
   return typeof fn === 'function' ? fn(s) : NaN;
 };
 
-// jQuery (solo para workaround de Materialize + DataTables)
-const $ = window.$ || window.jQuery;
-
 const APPLOG  = (...a) => console.log('[APP]', ...a);
 const APPWARN = (...a) => console.warn('[APP]', ...a);
 const APPERR  = (...a) => console.error('[APP]', ...a);
-const CENTROS_CACHE_KEY = 'mmpp.centros.cache.v1';
+
+const CENTROS_CACHE_KEY    = 'mmpp.centros.cache.v1';
 const CENTROS_CACHE_TTL_MS = 5 * 60 * 1000;
 
+/* ── Cache ──────────────────────────────────────────────────────────────── */
 function readCentrosCache() {
   try {
     const raw = sessionStorage.getItem(CENTROS_CACHE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    const ts = Number(parsed?.ts || 0);
+    const ts   = Number(parsed?.ts || 0);
     const data = Array.isArray(parsed?.data) ? parsed.data : [];
-    if (!data.length) return [];
-    if (!ts || (Date.now() - ts) > CENTROS_CACHE_TTL_MS) return [];
+    if (!data.length || !ts || (Date.now() - ts) > CENTROS_CACHE_TTL_MS) return [];
     return data;
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 function saveCentrosCache(data = []) {
@@ -63,6 +60,7 @@ function saveCentrosCache(data = []) {
   } catch {}
 }
 
+/* ── Init ───────────────────────────────────────────────────────────────── */
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
@@ -70,90 +68,55 @@ if (document.readyState === 'loading') {
 }
 
 async function init() {
-  APPLOG('Init start. readyState=', document.readyState);
+  APPLOG('Init start.');
 
-  // ===== Materialize =====
-  const tabsEl = document.querySelector('#tabs');
-  if (tabsEl) {
-    M.Tabs.init(tabsEl, {
-      onShow: (tabElem) => {
-        APPLOG('Tabs onShow:', tabElem?.id);
-        if (tabElem.id === 'tab-mapa') {
-          try {
-            Estado.map = crearMapa(); // idempotente
-            setTimeout(() => {
-              APPLOG('Tabs→map invalidate + labels');
-              Estado.map?.invalidateSize();
-              updateLabelVisibility();
-            }, 40);
-            if (Estado.centros?.length) {
-              APPLOG('Tabs→ drawCentrosInMap con', Estado.centros.length);
-              drawCentrosInMap(Estado.centros);
-            }
-          } catch (err) {
-            APPERR('Error al crear mapa en cambio de pestaña:', err);
-          }
-        }
-      },
-    });
-  }
-  M.FormSelect.init(document.querySelectorAll('select'));
-  M.Modal.init(document.querySelectorAll('.modal'));
-  M.Tooltip.init(document.querySelectorAll('.tooltipped'));
-
-  // ===== Importador (si existe en DOM) =====
+  // Importador (lazy)
   const importCont = document.getElementById('importarCentrosContainer');
   if (importCont && importCont.dataset.inited !== '1') {
     importCont.dataset.inited = '1';
-    const { renderImportadorCentros } = await import('./centros/importar_centros.js');
+    const { renderImportadorCentros } = await import('./centros/importar-centros.js');
     renderImportadorCentros('importarCentrosContainer');
     APPLOG('Importador inicializado');
   }
 
-  // ===== Tabla y Mapa =====
+  // Tabla y mapa
   initTablaCentros();
   try {
-    APPLOG('Creando mapa (fase inicial)…');
-    Estado.map = crearMapa(); // instancia Leaflet y deja overlay de búsqueda
+    APPLOG('Creando mapa…');
+    Estado.map = crearMapa();
     initSidebarFiltro();
   } catch (err) {
-    APPERR('Error inicializando el mapa:', err);
+    APPERR('Error inicializando mapa:', err);
   }
 
-  // ===== Carga inicial =====
+  // Carga rápida desde caché
   const cached = readCentrosCache();
   if (cached.length) {
-    APPLOG('Render inmediato desde cache:', cached.length);
+    APPLOG('Render inmediato desde caché:', cached.length);
     Estado.centros = cached;
     loadTablaCentros(cached);
     try { cargarYRenderizarCentros(cached); } catch {}
   }
 
   await recargarCentros();
-
-  // ===== Formularios =====
   wireFormCentros();
 
   APPLOG('Init done.');
 }
 
+/* ── Recarga desde API ──────────────────────────────────────────────────── */
 async function recargarCentros() {
   try {
-    APPLOG('recargarCentros(): solicitando API…');
+    APPLOG('recargarCentros(): API…');
     const data = await getCentrosAll();
     Estado.centros = Array.isArray(data) ? data : [];
     saveCentrosCache(Estado.centros);
-    APPLOG('Centros recibidos:', Estado.centros.length, Estado.centros[0] || '(sin items)');
+    APPLOG('Centros recibidos:', Estado.centros.length);
 
-    // Tabla
     loadTablaCentros(Estado.centros);
-
-    // Mapa (polígonos + labels + sidebar)
     cargarYRenderizarCentros(Estado.centros);
 
-    // Si la pestaña MAPA está activa, asegura render correcto
     if (tabMapaActiva()) {
-      APPLOG('tabMapaActiva() → invalidate + draw');
       Estado.map?.invalidateSize();
       updateLabelVisibility();
       drawCentrosInMap(Estado.centros);
@@ -161,54 +124,51 @@ async function recargarCentros() {
   } catch (e) {
     APPERR('Error cargando centros:', e);
     if (!Array.isArray(Estado.centros) || !Estado.centros.length) {
-      M.toast({ html: 'Error cargando centros', classes: 'red' });
+      toast('Error cargando centros', { variant: 'danger' });
     } else {
-      APPWARN('Se mantiene data en cache por error de red.');
+      APPWARN('Se mantiene data en caché por error de red.');
     }
   }
 }
 
+/* ── Formulario de Centros ─────────────────────────────────────────────── */
 function wireFormCentros() {
   APPLOG('wireFormCentros()');
 
-  const btnNuevoCentro   = document.getElementById('btnOpenCentroModal');
-  const centroModalElem  = document.getElementById('centroModal');
-  const centroModal = centroModalElem
-    ? M.Modal.getInstance(centroModalElem) || M.Modal.init(centroModalElem)
-    : null;
+  const btnNuevoCentro = document.getElementById('btnOpenCentroModal');
 
   const els = {
-    formTitle:        document.getElementById('formTitle'),
-    inputCentroId:    document.getElementById('inputCentroId'),
-    inputProveedor:   document.getElementById('inputProveedor'),
-    inputComuna:      document.getElementById('inputComuna'),
-    inputCode:        document.getElementById('inputCode'),
-    inputHectareas:   document.getElementById('inputHectareas'),
-    inputLat:         document.getElementById('inputLat'),
-    inputLng:         document.getElementById('inputLng'),
-    btnAddPoint:      document.getElementById('btnAddPoint'),
-    btnClearPoints:   document.getElementById('btnClearPoints'),
-    btnSaveCentro:    document.getElementById('btnSaveCentro'),
-    pointsBody:       document.getElementById('pointsBody'),
+    formTitle:      document.getElementById('centroModalTitle'),
+    inputCentroId:  document.getElementById('inputCentroId'),
+    inputProveedor: document.getElementById('inputProveedor'),
+    inputComuna:    document.getElementById('inputComuna'),
+    inputCode:      document.getElementById('inputCode'),
+    inputCodigoArea:document.getElementById('inputCodigoArea'),
+    inputHectareas: document.getElementById('inputHectareas'),
+    inputLat:       document.getElementById('inputLat'),
+    inputLng:       document.getElementById('inputLng'),
+    btnAddPoint:    document.getElementById('btnAddPoint'),
+    btnClearPoints: document.getElementById('btnClearPoints'),
+    btnSaveCentro:  document.getElementById('btnSaveCentro'),
+    pointsBody:     document.getElementById('pointsBody'),
   };
 
-  // Nuevo centro
+  // Botón "Nuevo Centro"
   btnNuevoCentro?.addEventListener('click', () => {
     APPLOG('Nuevo centro → abrir modal');
     Estado.currentCentroIdx = null;
     Estado.currentPoints = [];
     openNewForm(els, Estado.map, Estado.currentPoints, (v) => (Estado.currentCentroIdx = v));
     renderPointsTable(els.pointsBody, Estado.currentPoints);
-    centroModal?.open();
+    window.openCentroModal?.();
   });
 
-  // Agregar punto (DMS → decimal)
+  // Agregar punto
   els.btnAddPoint?.addEventListener('click', () => {
     const lat = parseDMS(els.inputLat?.value?.trim());
     const lng = parseDMS(els.inputLng?.value?.trim());
-    APPLOG('AddPoint:', els.inputLat?.value, els.inputLng?.value, '→', lat, lng);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      M.toast({ html: 'Formato DMS inválido', classes: 'red' });
+      toast('Formato DMS inválido', { variant: 'danger' });
       return;
     }
     Estado.currentPoints.push({ lat, lng });
@@ -217,18 +177,16 @@ function wireFormCentros() {
     renderPointsTable(els.pointsBody, Estado.currentPoints);
     if (els.inputLat) els.inputLat.value = '';
     if (els.inputLng) els.inputLng.value = '';
-    M.updateTextFields();
   });
 
   // Limpiar puntos
   els.btnClearPoints?.addEventListener('click', () => {
-    APPLOG('ClearPoints');
     Estado.currentPoints.length = 0;
     clearMapPoints();
     renderPointsTable(els.pointsBody, Estado.currentPoints);
   });
 
-  // Guardar (crear/actualizar) — solo datos generales + polígono
+  // Guardar (crear / actualizar)
   document.getElementById('formCentro')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const proveedor = els.inputProveedor?.value?.trim();
@@ -237,66 +195,38 @@ function wireFormCentros() {
     const hectStr   = els.inputHectareas?.value?.trim();
 
     if (!proveedor || !comuna || !code) {
-      M.toast({ html: 'Proveedor, comuna y código son obligatorios', classes: 'red' });
+      toast('Proveedor, comuna y código son obligatorios', 'red');
       return;
     }
     const hect = hectStr ? Number(hectStr) : null;
     if (hectStr && Number.isNaN(hect)) {
-      M.toast({ html: 'Hectáreas inválidas', classes: 'red' });
+      toast('Hectáreas inválidas', 'red');
       return;
     }
 
-    const centroData = {
-      proveedor,
-      comuna,
-      code,
-      hectareas: hect,
-      coords: Array.from(Estado.currentPoints || []), // polígono
-    };
+    const centroData = { proveedor, comuna, code, hectareas: hect, coords: [...(Estado.currentPoints || [])] };
 
-    els.btnSaveCentro && (els.btnSaveCentro.disabled = true);
+    if (els.btnSaveCentro) els.btnSaveCentro.disabled = true;
     try {
       if (Estado.currentCentroIdx === null) {
-        APPLOG('Crear centro →', centroData);
         const creado = await createCentro(centroData);
         if (!creado?._id) throw new Error('Error al crear centro');
         Estado.centros.push(creado);
-        M.toast({ html: 'Centro creado', classes: 'green' });
+        toast('Centro creado', { variant: 'success' });
       } else {
         const id = Estado.centros[Estado.currentCentroIdx]._id;
-        APPLOG('Actualizar centro', id, '→', centroData);
         const actualizado = await updateCentro(id, centroData);
         if (!actualizado?._id) throw new Error('Error al actualizar centro');
         Estado.centros[Estado.currentCentroIdx] = actualizado;
-        M.toast({ html: 'Centro actualizado', classes: 'green' });
+        toast('Centro actualizado', { variant: 'success' });
       }
       await recargarCentros();
-      centroModal?.close();
+      window.closeCentroModal?.();
     } catch (err) {
       APPERR('Error guardando centro:', err);
-      M.toast({ html: err.message || 'Error al guardar centro', classes: 'red' });
+      toast(err.message || 'Error al guardar centro', { variant: 'danger' });
     } finally {
-      els.btnSaveCentro && (els.btnSaveCentro.disabled = false);
+      if (els.btnSaveCentro) els.btnSaveCentro.disabled = false;
     }
-  });
-
-  // Cerrar modales
-  document.querySelectorAll('.modal .modal-close').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const inst = M.Modal.getInstance(btn.closest('.modal'));
-      inst?.close();
-    });
-  });
-}
-
-// ===== Workaround selects Materialize dentro de DataTables =====
-if ($) {
-  $(document).on('mousedown focusin', '.select-wrapper input.select-dropdown', function () {
-    $(this).closest('tr').addClass('editando-select');
-  });
-  $(document).on('blur', '.select-wrapper input.select-dropdown', function () {
-    setTimeout(() => {
-      $('.editando-select').removeClass('editando-select');
-    }, 200);
   });
 }

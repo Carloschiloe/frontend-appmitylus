@@ -4,6 +4,7 @@ import { state, $, slug } from './state.js';
 import { cargarContactosGuardados } from './data.js';
 import { escapeHtml, fetchJson, getModalInstance } from './ui-common.js';
 import { buscarCoincidenciasProveedor } from './proveedores.js';
+import { toast } from '../../ui/toast.js';
 
 /* ---------------- helpers ---------------- */
 const API_BASE = (window.API_URL || '/api'); // base para POST asignaciones
@@ -74,11 +75,11 @@ async function saveAsignacionIfChecked({ proveedorKey, contactoId }){
   const centroIdSel = selCentro ? selCentro.value : '';
   const centroId = centroIdHidden || centroIdSel || '';
 
-  if (!proveedorKey) { M?.toast?.({ html:'Falta proveedor', classes:'red' }); return; }
-  if (!contactoId)   { M?.toast?.({ html:'Falta contacto', classes:'red' }); return; }
-  if (!centroId)     { M?.toast?.({ html:'Selecciona un centro', classes:'red' }); return; }
+  if (!proveedorKey) { toast('Falta proveedor', { variant: 'error' }); return; }
+  if (!contactoId)   { toast('Falta contacto', { variant: 'error' }); return; }
+  if (!centroId)     { toast('Selecciona un centro', { variant: 'error' }); return; }
   if (!anio || !mes || Number.isNaN(tons)) {
-    M?.toast?.({ html:'Completa anio, mes y cantidad (ton)', classes:'red' });
+    toast('Completa año, mes y cantidad (ton)', { variant: 'error' });
     return;
   }
 
@@ -96,7 +97,7 @@ async function saveAsignacionIfChecked({ proveedorKey, contactoId }){
   };
 
   await postAsignacion(payload);
-  M?.toast?.({ html: 'Disponibilidad registrada en asignaciones', classes:'teal' });
+  toast('Disponibilidad registrada en asignaciones', { variant: 'success' });
 }
 
 /* ====================== INIT / UI del modal Empresas ====================== */
@@ -104,13 +105,12 @@ export function initAsociacionContactos() {
   providersCache = buildProvidersIndex();
 
   const input    = $('#empresaSearch');
-  const ul       = $('#searchResults');
+  const ul       = $('#searchResults'); // div.am-dropdown
   const btnCrear = $('#btnCrearEmpresa');
   const btnQuitar= $('#btnQuitarEmpresa');
 
   // Inicializa el select de mes y toggle de bloque si existen en el modal
   const mesSel = getEl('asigMes');
-  if (mesSel && window.M?.FormSelect) M.FormSelect.init(mesSel);
 
   const chk = getEl('asigAgregarDisponibilidad');
   const block = getEl('asigDisponibilidadBlock');
@@ -121,16 +121,16 @@ export function initAsociacionContactos() {
   const render = (items = []) => {
     if (!ul) return;
     if (!items.length) {
-      ul.innerHTML = '<li class="collection-item grey-text">Sin resultados</li>';
+      ul.innerHTML = '<div class="am-dropdown-empty">Sin resultados</div>';
+      ul.classList.add('is-open');
       return;
     }
     ul.innerHTML = items.map(
-      (p) => `<li class="collection-item">
-        <a href="#!" class="sel-prov" data-key="${p.key}" data-name="${esc(p.name)}">
-          <div>${esc(p.name)}</div>
-          ${p.hint ? `<small class="grey-text">${esc(p.hint)}</small>` : ''}
-        </a>
-      </li>`).join('');
+      (p) => `<div class="am-dropdown-item sel-prov" data-key="${p.key}" data-name="${esc(p.name)}">
+        <strong>${esc(p.name)}</strong>
+        ${p.hint ? `<span>${esc(p.hint)}</span>` : ''}
+      </div>`).join('');
+    ul.classList.add('is-open');
   };
 
   /* --- search (debounced, accent-insensitive) --- */
@@ -138,7 +138,7 @@ export function initAsociacionContactos() {
     const s = norm(q || '');
     const isCenterCodeQuery = /^\d{4,8}$/.test(String(q || '').trim());
     if (s.length < 2 && !isCenterCodeQuery) {
-      if (ul) ul.innerHTML = '';
+      if (ul) { ul.innerHTML = ''; ul.classList.remove('is-open'); }
       return;
     }
 
@@ -171,18 +171,25 @@ export function initAsociacionContactos() {
 
   input?.addEventListener('input', (e) => search(e.target.value));
 
+  // Cierra dropdown al hacer clic fuera
+  document.addEventListener('click', (e) => {
+    if (!input?.contains(e.target) && !ul?.contains(e.target)) {
+      ul?.classList.remove('is-open');
+    }
+  }, true);
+
   // Enter => primer resultado
   input?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const first = ul?.querySelector('a.sel-prov');
+      const first = ul?.querySelector('.sel-prov');
       if (first) first.click();
     }
   });
 
   // click en resultado -> asocia y (si corresponde) guarda disponibilidad
   ul?.addEventListener('click', async (e) => {
-    const a = e.target.closest('a.sel-prov');
+    const a = e.target.closest('.sel-prov');
     if (!a) return;
     await asociarAProveedor(a.dataset.key, a.dataset.name);
   });
@@ -192,7 +199,7 @@ export function initAsociacionContactos() {
     e.preventDefault();
     const name = (input?.value || '').trim();
     if (name.length < 2) {
-      M.toast?.({ html: 'Escribe un nombre (min 2 letras)' });
+      toast('Escribe un nombre (min 2 letras)');
       return;
     }
     await asociarAProveedor(slug(name), name);
@@ -214,11 +221,11 @@ export function initAsociacionContactos() {
       });
       await cargarContactosGuardados();
       document.dispatchEvent(new Event('reload-tabla-contactos'));
-      M.toast?.({ html: 'Empresa quitada' });
+      toast('Empresa quitada', { variant: 'success' });
       cerrarModal();
     } catch (err) {
       console.error(err);
-      M.toast?.({ html: 'No se pudo quitar', classes: 'red' });
+      toast('No se pudo quitar', { variant: 'error' });
     }
   });
 
@@ -226,11 +233,11 @@ export function initAsociacionContactos() {
   document.addEventListener('asociar-open', () => {
     providersCache = buildProvidersIndex();       // refresca indice
     if (input) input.value = '';                  // limpia input
-    if (ul) ul.innerHTML = '';                    // limpia lista
+    if (ul) { ul.innerHTML = ''; ul.classList.remove('is-open'); }  // limpia lista
     // defaults de disponibilidad
     const now = new Date();
     if (getEl('asigAnio') && !getEl('asigAnio').value) getEl('asigAnio').value = now.getFullYear();
-    if (mesSel && !mesSel.value) { mesSel.value = String(now.getMonth()+1); M.FormSelect?.init(mesSel); }
+    if (mesSel && !mesSel.value) { mesSel.value = String(now.getMonth() + 1); }
     input?.focus();
   });
 
@@ -243,7 +250,7 @@ export function initAsociacionContactos() {
 async function asociarAProveedor(proveedorKey, proveedorNombre) {
   const id = state.asociarContactoId;
   if (!id) {
-    M.toast?.({ html: 'No hay contacto seleccionado', classes: 'red' });
+    toast('No hay contacto seleccionado', { variant: 'error' });
     return;
   }
   const key  = (proveedorKey || slug(proveedorNombre || '')).trim();
@@ -267,11 +274,11 @@ async function asociarAProveedor(proveedorKey, proveedorNombre) {
     // 3) Refresca UI
     await cargarContactosGuardados();
     document.dispatchEvent(new Event('reload-tabla-contactos'));
-    M.toast?.({ html: `Asociado a ${esc(name)}` });
+    toast(`Asociado a ${esc(name)}`, { variant: 'success' });
     cerrarModal();
   } catch (err) {
     console.error(err);
-    M.toast?.({ html: 'No se pudo asociar', classes: 'red' });
+    toast('No se pudo asociar', { variant: 'error' });
   }
 }
 

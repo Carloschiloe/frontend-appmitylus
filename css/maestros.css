@@ -1,0 +1,195 @@
+/* maestros.css - Estilos específicos para el módulo de Maestros */
+@import url('/css/tokens.css');
+
+.maest-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.maest-hero {
+  margin-bottom: 32px;
+}
+
+.maest-hero h4 {
+  margin: 0 0 8px;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.maest-hero p, .maest-description {
+  margin: 0 0 20px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 800px;
+}
+
+/* ── Pestañas (Tabs) ── */
+.maest-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+  background: #f1f5f9;
+  padding: 5px;
+  border-radius: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  width: fit-content;
+  margin-left: 0;
+}
+
+.maest-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.maest-tab-btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 9px 18px;
+  border: none;
+  background: transparent;
+  color: var(--color-slate-500);
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.maest-tab-btn i {
+  font-size: 16px;
+}
+
+.maest-tab-btn:hover {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.maest-tab-btn.active {
+  background: #ffffff;
+  color: var(--color-indigo-600);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  border-bottom: 2px solid var(--color-indigo-600);
+  border-radius: 10px 10px 0 0;
+}
+
+/* ── Paneles ── */
+.maest-panel {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.maest-panel.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.maest-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.maest-panel-head h6 {
+  margin: 0;
+  font-weight: 800;
+  color: #1e293b;
+  font-size: 18px;
+}
+
+/* ── Tablas de Maestros ── */
+.maest-table-wrap {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.maest-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.maest-table thead th {
+  background: #f8fafc;
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.maest-table tbody td {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.maest-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.maest-table tbody tr:hover td {
+  background: #fbfcfe;
+}
+
+/* ── Badges de Estado ── */
+.mu-state-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+/* ── Acciones ── */
+.mini-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.mini-actions button, .mini-actions a {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: #94a3b8;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mini-actions button:hover, .mini-actions a:hover {
+  background: #f1f5f9;
+  color: #4f46e5;
+  border-color: #cbd5e1;
+}
+
+.mini-actions button.mini-del:hover {
+  background: #fef2f2;
+  color: #ef4444;
+  border-color: #fecaca;
+}

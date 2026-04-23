@@ -3,8 +3,8 @@ import { state, $ } from './state.js';
 import { getAll as getAllVisitas } from '../visitas/api.js';
 import { normalizeVisita, centroCodigoById } from '../visitas/normalizers.js';
 import { escapeHtml, fetchJson } from './ui-common.js';
-
-console.log('[resumen] CARGADO v=2025-10-20-7');
+import { slug, pad2, weekKeyFromDate, monthKeyFromDate, getCurrentWeekKey, getCurrentMonthKey } from '../../core/utilidades.js';
+import { toast } from '../../ui/toast.js';
 
 /* ======================= Utils ======================= */
 const API_BASE = window.API_URL || '/api';
@@ -16,17 +16,7 @@ const esc = escapeHtml;
 
 /* Abreviaturas ES */
 const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-const pad2 = (n) => String(n).padStart(2,'0');
 const fmtDMYShort = (dt) => { const d = toDate(dt); return d ? `${pad2(d.getDate())}.${MES_ABBR[d.getMonth()]}.${String(d.getFullYear()).slice(-2)}` : '-'; };
-
-/* Slug robusto */
-function slug(v=''){
-  return String(v||'')
-    .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^a-z0-9]+/g,'-')
-    .replace(/^-+|-+$/g,'');
-}
 
 /* Normaliza ids (string/number/ObjectId/{$oid}) */
 function normId(v){
@@ -40,20 +30,6 @@ function normId(v){
   }
   return String(v);
 }
-
-/* ======================= Semana/Mes keys ======================= */
-function isoWeek(date){
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-  return { year: d.getUTCFullYear(), week: weekNo };
-}
-function weekKeyFromDate(dt){ if (!dt) return ''; const {year, week} = isoWeek(dt); return `${year}-W${String(week).padStart(2,'0')}`; }
-function monthKeyFromDate(dt){ if (!dt) return ''; return `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}`; }
-function getCurrentWeekKey(){ const now = new Date(); const {year, week} = isoWeek(now); return `${year}-W${String(week).padStart(2,'0')}`; }
-function getCurrentMonthKey(){ const now = new Date(); return `${now.getFullYear()}-${pad2(now.getMonth()+1)}`; }
 
 /* ======================= Resolutores ======================= */
 // VISITAS
@@ -276,9 +252,6 @@ function buildOptions(sel, items, current){
   for (const it of items){ const opt = document.createElement('option'); opt.value = it; opt.textContent = it; sel.appendChild(opt); }
   if (items.length) sel.value = current || items[0];
   sel.__sig = sig;
-
-  // reinit Materialize si corresponde
-  if (window.M?.FormSelect?.init) { try { M.FormSelect.init(sel); } catch {} }
 }
 function buildSemanaOptions(){ buildOptions(document.getElementById('resumen_semana'), allWeeks(), getCurrentWeekKey()); }
 function buildMesOptions(){ buildOptions(document.getElementById('resumen_mes'), allMonths(), getCurrentMonthKey()); }
@@ -322,10 +295,6 @@ function fillResponsableSelect(){
     sel.appendChild(op);
   }
   sel.__sig = sig;
-
-  if (window.M?.FormSelect?.init){
-    try { M.FormSelect.init(sel); } catch {}
-  }
 }
 
 /* ======================= Tablas (sin cambios visuales) ======================= */
@@ -372,7 +341,7 @@ function renderTablaVisitas(visitas){
     </tr>`;
   }).join('');
 
-  tbody.innerHTML = rowsHtml || '<tr><td colspan="7" class="grey-text">No hay visitas para este periodo.</td></tr>';
+  tbody.innerHTML = rowsHtml || '<tr><td colspan="7" class="resumen-empty">No hay visitas para este periodo.</td></tr>';
 
   // abrir visita
   tbody.querySelectorAll('.js-open-visita').forEach(a => {
@@ -417,28 +386,28 @@ async function renderTablaContactos(contactos){
     </tr>`;
   }
 
-  tbody.innerHTML = rowsHtml || '<tr><td colspan="6" class="grey-text">No hay contactos para este periodo.</td></tr>';
+  tbody.innerHTML = rowsHtml || '<tr><td colspan="6" class="resumen-empty">No hay contactos para este periodo.</td></tr>';
 
   // abrir contacto
   tbody.querySelectorAll('.js-open-contacto').forEach(a => {
     a.addEventListener('click', (e)=>{
-      e.preventDefault();
-      const id = a.getAttribute('data-id'); if (!id) return;
-      try {
-        const c = (state.contactosGuardados||[]).find(x => String(x._id) === String(id));
-        if (!c) return (window.M?.toast) && M.toast({ html:'Contacto no encontrado', classes:'red' });
-        if (typeof window.abrirDetalleContacto === 'function') window.abrirDetalleContacto(c);
-      } catch {}
+        e.preventDefault();
+        const id = a.getAttribute('data-id'); if (!id) return;
+        try {
+          const c = (state.contactosGuardados||[]).find(x => String(x._id) === String(id));
+          if (!c) return toast('Contacto no encontrado', { variant: 'error' });
+          if (typeof window.abrirDetalleContacto === 'function') window.abrirDetalleContacto(c);
+        } catch {}
+      });
     });
-  });
 
   ensureFullWidthTable();
 }
 
 /* ===== Expandir tabla si el panel esta vacio ===== */
 function ensureFullWidthTable(){
-  const tableCol = document.querySelector('#resumen_print_area .row .col.s12.m7') || document.querySelector('#resumen_print_area .row .col:first-child');
-  const rightCol = document.querySelector('#resumen_print_area .row .col.s12.m5');
+  const tableCol = document.querySelector('#resumen_print_area [data-resumen-col="main"]') || document.querySelector('#resumen_print_area [data-resumen-col]:first-child');
+  const rightCol = document.querySelector('#resumen_print_area [data-resumen-col="side"]');
   const topBox   = document.getElementById('resumen_top');
   if (topBox && rightCol){
     const isEmpty = !topBox.innerHTML.trim();
@@ -523,7 +492,7 @@ function wireControls(){
           const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
           document.execCommand('copy'); sel.removeAllRanges();
         }
-        (window.M?.toast) && M.toast({ html: 'Resumen copiado', displayLength: 1500 });
+        toast('Resumen copiado', { variant: 'success', durationMs: 1500 });
       } catch { try { await navigator.clipboard.writeText(area.innerText); } catch {} }
     });
   }

@@ -1,42 +1,41 @@
-@import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap");
+/* Estilos base para contenedores de aplicaciones (React/Modern) */
 
 :root {
-  --app-bg: #f6f7fb;
-  --app-surface: #ffffff;
-  --app-surface-2: #f9fafb;
-  --app-text: #0f172a;
-  --app-muted: #64748b;
-  --app-border: #e2e8f0;
-  --app-border-strong: #cbd5f5;
-  --app-accent: #0f766e;
-  --app-accent-strong: #0f4c5c;
-  --app-accent-soft: #e0f2f1;
-  --app-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-  --app-shadow-soft: 0 6px 16px rgba(15, 23, 42, 0.06);
-  font-family: "Manrope", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --color-primary:        #0f766e;
+  --color-primary-dark:   #0d665f;
+  --color-primary-light:  #2dd4bf;
+  --color-secondary:      #475569;
+  --color-bg:             #f4f7fb;
+  --color-surface:        #ffffff;
+  --color-sidebar:        #0f172a;
+  --color-border:         #dbe3ee;
+  --color-border-hover:   #cbd5e1;
+  --color-text:           #0f172a;
+  --color-text-muted:     #5f6f86;
+  --color-text-subtle:    #94a3b8;
+  --color-white:          #ffffff;
+  --color-success:        #10b981;
+  --color-success-bg:     #d1fae5;
+  --color-warning:        #f59e0b;
+  --color-warning-bg:     #fef3c7;
+  --color-error:          #ef4444;
+  --color-error-bg:       #fee2e2;
+  --color-info:           #3b82f6;
+  --color-info-bg:        #dbeafe;
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.16);
+  --shadow-md:  0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+}
+
+#root {
+  font-family: 'Inter', 'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+  color: var(--color-text);
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background: var(--app-bg);
-  color: var(--app-text);
-}
-
-* {
+#root *, #root *::before, #root *::after {
   box-sizing: border-box;
-}
-
-::selection {
-  background: #c7d2fe;
-  color: #1e293b;
-}
-
-:focus-visible {
-  outline: 2px solid #94a3b8;
-  outline-offset: 2px;
 }

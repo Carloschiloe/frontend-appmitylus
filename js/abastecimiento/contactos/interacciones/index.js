@@ -14,28 +14,25 @@ function emitTabHide(tabDiv) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const tabAnchor = document.querySelector('a[href="#tab-interacciones"]');
   const tabDiv = document.getElementById('tab-interacciones');
-  if (!tabAnchor || !tabDiv) return;
+  if (!tabDiv) return;
 
-  // 1) Click en la pestaña: montar una sola vez.
-  tabAnchor.addEventListener('click', mountOnce, { once: true });
+  // 1) Click en sidebar (legacy anchor) o en el nuevo botón principal
+  document.querySelector('a[href="#tab-interacciones"]')
+    ?.addEventListener('click', mountOnce);
+  document.querySelector('[data-c-tab="tab-interacciones"]')
+    ?.addEventListener('click', mountOnce);
 
-  // 2) Si llega con hash directo (#tab-interacciones), montar también.
-  if (location.hash === '#tab-interacciones') {
+  // 2) Click en sub-tab "Registros" dentro de Interacciones
+  document.querySelector('[data-inter-tab="inter-registros"]')
+    ?.addEventListener('click', mountOnce);
+
+  // 3) Si carga con hash directo
+  if (location.hash === '#tab-interacciones' || location.hash === '#inter-registros') {
     requestAnimationFrame(mountOnce);
   }
 
-  // 3) Al cambiar a otra pestaña, avisar que Interacciones se ocultó.
-  const allTabLinks = document.querySelectorAll('.tabs .tab a');
-  allTabLinks.forEach((a) => {
-    a.addEventListener('click', () => {
-      const target = a.getAttribute('href');
-      if (target !== '#tab-interacciones') emitTabHide(tabDiv);
-    });
-  });
-
-  // 4) También cubrir navegación que cambia hash sin click.
+  // 4) Cubrir navegación por hash
   window.addEventListener('hashchange', () => {
     if (location.hash === '#tab-interacciones') mountOnce();
     else emitTabHide(tabDiv);

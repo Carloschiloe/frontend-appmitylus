@@ -1,6 +1,7 @@
 // /js/abastecimiento/visitas/actions.js
 import { remove } from './api.js';
 import { createModalConfirm } from '../contactos/ui-common.js';
+import { toast } from '../../ui/toast.js';
 
 const askDeleteVisita = createModalConfirm({
   id: 'modalConfirmDeleteVisita',
@@ -36,13 +37,13 @@ export async function manejarAccionVisitaEl(el) {
       const ok = await askDeleteVisita('Eliminar visita', '¿Eliminar esta visita?', 'Eliminar');
       if (!ok) return;
       await remove(id);
-      M.toast?.({ html: 'Visita eliminada', displayLength: 1600 });
+      toast('Visita eliminada', { variant: 'success', durationMs: 1600 });
       window.dispatchEvent(new CustomEvent('visita:deleted', { detail: { id } }));
       return;
     }
   } catch (err) {
     console.error('[visitas/actions] error', err);
-    M.toast?.({ html: 'Accion no disponible', classes: 'red' });
+    toast('Acción no disponible', { variant: 'error' });
   }
 }
 

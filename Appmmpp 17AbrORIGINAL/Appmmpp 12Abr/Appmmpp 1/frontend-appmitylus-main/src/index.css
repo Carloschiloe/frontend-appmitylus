@@ -1,0 +1,14 @@
+/* Tailwind v4 — el scanner genera las clases usadas en src/
+   El preflight va en @layer base, que tiene menor prioridad
+   que los estilos sin @layer del CSS legacy (index-modern.css) */
+@import "tailwindcss";
+
+/* Tipografia para componentes React */
+#root {
+  font-family: "Manrope", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root *, #root *::before, #root *::after {
+  box-sizing: border-box;
+}

@@ -5,116 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Maestros — AppMMPP</title>
 
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
 
-  <link rel="stylesheet" href="/css/index-modern.css?v=7">
-  <link rel="stylesheet" href="/css/app-shell.css?v=1">
-  <link rel="stylesheet" href="/css/mmpp-ui.css?v=1">
-  <link rel="stylesheet" href="/css/modals-modern.css?v=2">
-
-  <style>
-    /* ── Layout ── */
-    .maest-shell { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
-    .maest-hero  { margin-bottom: 24px; }
-    .maest-hero h4 { margin: 0 0 4px; font-weight: 800; color: #0f172a; }
-    .maest-hero p  { margin: 0; color: #64748b; font-size: 14px; }
-
-    .mini-actions { display: flex; gap: 6px; justify-content: flex-end; }
-    .mini-actions a {
-      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
-      border-radius: 6px; color: #64748b; transition: background .15s; font-size: 13px;
-    }
-    .mini-actions a:hover { background: #f1f5f9; }
-    .mini-actions a.mini-del:hover { background: #fef2f2; color: #ef4444; }
-
-    /* ── Modal fix: posicionamiento sin M.Modal.init ── */
-    #modalMaestro {
-      top: 10% !important;
-      z-index: 1000 !important;
-      max-height: 80vh !important;
-    }
-  </style>
+  <!-- Sistema de Diseño Unificado -->
+  <link rel="stylesheet" href="/css/index-modern.css">
+  <link rel="stylesheet" href="/css/base-ui.css">
+  <link rel="stylesheet" href="/css/maestros.css">
+  <link rel="stylesheet" href="/css/modals-modern.css">
+  <script src="/js/auth.js"></script>
 </head>
-<body class="contactos-page">
+<body class="app-modern-v2">
   <div class="layout">
-    <aside class="sidebar" aria-label="Navegacion principal">
-      <div class="sidebar-logo">
-        <a href="/index.html"><span class="logo-mark">M</span><span class="logo-text">MMPP</span></a>
-      </div>
-      <div id="sideNav" class="menu">
-
-        <section class="menu-group" data-group="dashboard">
-          <button class="menu-head" type="button" data-toggle-group="dashboard">
-            <span class="menu-head-text"><i class="bi bi-speedometer2"></i> Inicio</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/index.html"><i class="bi bi-house-door"></i> Dashboard</a>
-          </div>
-        </section>
-
-        <section class="menu-group" data-group="contactos">
-          <button class="menu-head" type="button" data-toggle-group="contactos">
-            <span class="menu-head-text"><i class="bi bi-person-lines-fill"></i> Proveedores MMPP</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-	          <div class="submenu">
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-gestion"><i class="bi bi-inbox"></i> Bandeja</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-directorio"><i class="bi bi-buildings"></i> Directorio</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-calendario"><i class="bi bi-calendar3"></i> Calendario</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-interacciones"><i class="bi bi-chat-left-dots"></i> Interacciones</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-tratos"><i class="bi bi-handshake"></i> Tratos</a>
-	            <a href="/html/Abastecimiento/contactos/contactos.html#tab-muestreos"><i class="bi bi-eyedropper"></i> Muestreos</a>
-	          </div>
-	        </section>
-
-        <section class="menu-group" data-group="proveedores">
-          <button class="menu-head" type="button" data-toggle-group="proveedores">
-            <span class="menu-head-text"><i class="bi bi-buildings"></i> BD Cultivos</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/html/Centros/index.html#tab-centros"><i class="bi bi-grid-1x2"></i> Centros</a>
-            <a href="/html/Centros/index.html#tab-mapa"><i class="bi bi-geo-alt"></i> Mapa</a>
-          </div>
-        </section>
-
-        <section class="menu-group" data-group="biomasa">
-          <button class="menu-head" type="button" data-toggle-group="biomasa">
-            <span class="menu-head-text"><i class="bi bi-droplet-half"></i> Biomasa</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/#compras"><i class="bi bi-kanban"></i> Compras</a>
-            <a href="/#inventario"><i class="bi bi-box-seam"></i> Disponibilidad</a>
-            <a href="/#balance"><i class="bi bi-bar-chart-line"></i> Balance</a>
-          </div>
-        </section>
-
-        <section class="menu-group" data-group="historial">
-          <button class="menu-head" type="button" data-toggle-group="historial">
-            <span class="menu-head-text"><i class="bi bi-clock-history"></i> Historial</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/html/Abastecimiento/historial/index.html"><i class="bi bi-journal-text"></i> Gestiones</a>
-          </div>
-        </section>
-
-        <section class="menu-group is-open has-active-link" data-group="config">
-          <button class="menu-head" type="button" data-toggle-group="config">
-            <span class="menu-head-text"><i class="bi bi-sliders"></i> Configuración</span>
-            <i class="bi bi-chevron-down caret"></i>
-          </button>
-          <div class="submenu">
-            <a href="/html/Maestros/index.html" class="is-active-link"><i class="bi bi-table"></i> Maestros</a>
-          </div>
-        </section>
-
-      </div>
-    </aside>
+    <div id="sidebar-container"></div>
 
     <main class="content">
       <div class="maest-shell">
@@ -219,7 +121,7 @@
               <i class="bi bi-plus-lg"></i> Nueva condición
             </button>
           </div>
-          <p style="font-size:13px;color:#64748b;margin:0 0 14px;">
+          <p class="maest-description">
             Define las condiciones comerciales que se evaluarán en cada trato: precio por especie, volumen mínimo, días de pago, etc.
           </p>
           <div class="maest-table-wrap">
@@ -247,7 +149,7 @@
               <i class="bi bi-plus-lg"></i> Nueva clasificación
             </button>
           </div>
-          <p style="font-size:13px;color:#64748b;margin:0 0 14px;">
+          <p class="maest-description">
             Define los rangos de parámetros para clasificar automáticamente los muestreos como Entero, Media Concha o Carne. Puedes crear variantes por cliente con diferentes calibres y rendimientos.
           </p>
           <div class="maest-table-wrap">
@@ -357,8 +259,7 @@
   </div>
 
   <!-- Overlay backdrop para modal -->
-  <div id="modalMaestroOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"
-    onclick="document.getElementById('modalMaestro').classList.remove('open');this.style.display='none';"></div>
+  <div id="modalMaestroOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
 
   <!-- Modal Clasificación de Producto -->
   <div id="modalClasificacion" class="modal app-modal-modern" style="width:580px !important;top:6% !important;z-index:1000 !important;max-height:88vh !important;overflow-y:auto;">
@@ -426,34 +327,18 @@
   </div>
   <div id="modalClasificacionOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
   <script src="/js/config.js"></script>
   <script type="module" src="/js/maestros/index.js"></script>
+  <script type="module" src="/js/components/Sidebar.js"></script>
   <script>
-	    // Sidebar toggle
-	    const sideNav = document.getElementById('sideNav');
-	    sideNav?.querySelector('.menu-group[data-group="config"]')?.classList.add('is-open');
-	    sideNav?.addEventListener('click', (e) => {
-	      const btn = e.target.closest('[data-toggle-group]');
-	      if (!btn) return;
-	      const group = btn.closest('.menu-group');
-	      if (!group) return;
-	      if (group.dataset.group === 'config') {
-	        group.classList.add('is-open');
-	        return;
-	      }
-	      const willOpen = !group.classList.contains('is-open');
-	      sideNav.querySelectorAll('.menu-group.is-open').forEach((g) => {
-	        if (g !== group && g.dataset.group !== 'config') g.classList.remove('is-open');
-	      });
-	      group.classList.toggle('is-open', willOpen);
-	    });
     // Sync overlay con modales
     const mo = document.getElementById('modalMaestro');
     const ov = document.getElementById('modalMaestroOverlay');
     new MutationObserver(() => {
       ov.style.display = mo.classList.contains('open') ? 'block' : 'none';
     }).observe(mo, { attributes: true, attributeFilter: ['class'] });
+    ov.addEventListener('click', () => mo.classList.remove('open'));
 
     const mc = document.getElementById('modalClasificacion');
     const ovc = document.getElementById('modalClasificacionOverlay');

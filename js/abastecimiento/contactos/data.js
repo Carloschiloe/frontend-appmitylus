@@ -3,6 +3,7 @@ import { apiGetCentros, apiGetContactos } from '../../core/api.js';
 import { state } from './state.js';
 import { coerceArray, normalizeContacto } from './normalizers.js';
 import { slug } from './state.js';
+import { toast } from '../../ui/toast.js';
 
 /* =========================================================================
    Config utils
@@ -12,7 +13,7 @@ const inflight = new Map(); // de-dup promesas por clave
 
 const log = (...args) => {
   try {
-    if (window.DEBUG) console.log(...args);
+    // if (window.DEBUG) console.log(...args);
   } catch {}
 };
 
@@ -107,7 +108,7 @@ export async function cargarCentros() {
     if (!state.listaCentros) state.listaCentros = [];
     if (!state.listaProveedores) state.listaProveedores = [];
     if (!state.proveedoresIndex) state.proveedoresIndex = {};
-    M.toast?.({ html: 'Error al cargar centros', displayLength: 2500, classes: 'red' });
+    toast('Error al cargar centros', { variant: 'error', durationMs: 2500 });
   }
 }
 
@@ -141,7 +142,7 @@ export async function cargarContactosGuardados() {
   } catch (e) {
     console.error('[cargarContactosGuardados] error:', e?.message || e);
     if (!state.contactosGuardados) state.contactosGuardados = [];
-    M.toast?.({ html: 'Error al cargar contactos', displayLength: 2500, classes: 'red' });
+    toast('Error al cargar contactos', { variant: 'error', durationMs: 2500 });
   }
 }
 

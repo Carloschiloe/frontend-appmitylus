@@ -1,8 +1,8 @@
 // js/abastecimiento/asignacion/api.js
 export const API_URL = '/api';
 
-const DEBUG = true;
-const DBG  = (...a) => { if (DEBUG) console.log(...a); };
+const DEBUG = false;
+export const log = (...a) => { if (DEBUG) { /* console.log(...a); */ } };
 const DBGg = (t)     => { if (DEBUG) console.groupCollapsed(t); };
 const DBGend = ()    => { if (DEBUG) console.groupEnd(); };
 
@@ -103,38 +103,9 @@ export async function getOfertas(){
         Fuente     : it.fuente ? (it.fuente[0].toUpperCase()+it.fuente.slice(1)) : 'Disponibilidad',
       };
 
-      if (DEBUG) {
-        if (!rawMesKey && !ymFromNums) {
-          console.warn('[getOfertas] Fila sin mesKey/anio+mes; usando fallback por fecha.',
-            { idx, proveedor: row.Proveedor.slice(0,60), mes: row.Mes, fechaBase: row.FechaBase });
-        }
-        if (rawMesKey && rawMesKey !== mesKeyVal) {
-          console.warn('[getOfertas] Inconsistencia mesKey vs Mes calculado',
-            { idx, mesKey: rawMesKey, mesCalc: mesKeyVal, fechaBase: row.FechaBase, proveedor: row.Proveedor.slice(0,60) });
-        }
-      }
-
       return row;
     })
     .filter(r => r.Tons > 0);
-
-  if (DEBUG) {
-    DBGg('[getOfertas] resumen');
-    const dist = out.reduce((acc,x)=> (acc[x.Mes]=(acc[x.Mes]||0)+1, acc), {});
-    console.log('Distribución por Mes (conteo):', dist);
-    const porMes = out.reduce((acc,x)=> (acc[x.Mes]=(acc[x.Mes]||0)+x.Tons, acc), {});
-    console.table(Object.entries(porMes).map(([k,v])=>({Mes:k, Tons:v})));
-    const ago = out.filter(x => x.Mes === '2025-08');
-    if (ago.length) {
-      console.warn('[getOfertas] Filas en 2025-08:', ago.length);
-      console.table(ago.map(x => ({
-        Proveedor: x.Proveedor.slice(0,60),
-        mesKey: x.mesKey, anio: x.anio, mes: x.mes,
-        FechaBase: x.FechaBase, Tons: x.Tons
-      })));
-    }
-    DBGend();
-  }
 
   return out;
 }
@@ -147,11 +118,6 @@ export async function getAsignacionesMapa(){
     const key = it.key || it.mesKey || (it.anio && it.mes ? `${it.anio}-${String(it.mes).padStart(2,'0')}` : '');
     const val = Number(it.asignado ?? it.tons ?? it.total ?? it.valor ?? 0);
     if (key && Number.isFinite(val)) map.set(key, (map.get(key)||0) + val);
-  }
-  if (DEBUG) {
-    DBGg('[getAsignacionesMapa] resumen');
-    console.table([...map.entries()].map(([k,v])=>({Mes:k, Asignado:v})));
-    DBGend();
   }
   return map;
 }
@@ -267,7 +233,7 @@ export async function getPlanMes(mesKey, tipo='NORMAL'){
   // normalizo: devolver {mesKey, tons}
   if (!data) return null;
   if (Array.isArray(data)) return data[0] || null;   // si viene como array
-  return data;                                       // si viene como objeto
+  return data;
 }
 
 /* // Opción B (si tu backend expone /planificacionmes)

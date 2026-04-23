@@ -1,0 +1,98 @@
+/* ============================================================
+   tokens.css — Sistema de Diseño Unificado MMPP
+   FUENTE ÚNICA DE VERDAD para todas las variables CSS.
+
+   REGLA: Ningún otro archivo CSS debe declarar un bloque :root
+   con variables de diseño. Todos deben importar este archivo.
+   ============================================================ */
+
+:root {
+  /* ── Paleta de color principal (Teal/Slate) ── */
+  --color-primary:        #0f766e;
+  --color-primary-dark:   #0d665f;
+  --color-primary-light:  #2dd4bf;
+  --color-secondary:      #475569;
+
+
+  /* ── Superficies y fondos ── */
+  --color-bg:             #f4f7fb;
+  --color-surface:        #ffffff;
+  --color-sidebar:        #0f172a;
+  --color-sidebar-alt:    #111c33;
+
+  /* ── Bordes ── */
+  --color-border:         #dbe3ee;
+  --color-border-hover:   #cbd5e1;
+
+  /* ── Texto ── */
+  --color-text:           #0f172a;
+  --color-text-muted:     #5f6f86;
+  --color-text-subtle:    #94a3b8;
+  --color-white:          #ffffff;
+
+  /* ── Semánticos ── */
+  --color-success:        #10b981;
+  --color-success-bg:     #d1fae5;
+  --color-warning:        #f59e0b;
+  --color-warning-bg:     #fef3c7;
+  --color-error:          #ef4444;
+  --color-error-bg:       #fee2e2;
+  --color-info:           #3b82f6;
+  --color-info-bg:        #dbeafe;
+
+  /* ── Espaciado ── */
+  --spacing-xs:  4px;
+  --spacing-sm:  8px;
+  --spacing-md:  16px;
+  --spacing-lg:  24px;
+  --spacing-xl:  32px;
+  --spacing-2xl: 48px;
+
+  /* ── Radio de bordes ── */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-full: 999px;
+
+  /* ── Sombras ── */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.16);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  --shadow-xl: 0 20px 40px rgba(15,23,42,0.12);
+
+  /* ── Tipografía ── */
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-size-xs:   11px;
+  --font-size-sm:   12px;
+  --font-size-base: 14px;
+  --font-size-md:   15px;
+  --font-size-lg:   16px;
+  --font-size-xl:   20px;
+  --font-size-2xl:  24px;
+  --font-size-3xl:  30px;
+
+  /* ── Z-index ── */
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-modal:    3000;
+  --z-toast:    9999;
+
+  /* ────────────────────────────────────────────────────────
+     ALIASES de compatibilidad hacia atrás
+     Permiten que index-modern.css, sidebar.css, etc. sigan
+     usando sus nombres cortos sin necesidad de refactorizar
+     todo el código HTML/JS de una vez.
+     NO usar estos aliases en código nuevo — usar --color-*
+     ──────────────────────────────────────────────────────── */
+  --bg:        var(--color-bg);
+  --surface:   var(--color-surface);
+  --sidebar:   var(--color-sidebar);
+  --sidebar-2: var(--color-sidebar-alt);
+  --line:      var(--color-border);
+  --ink:       var(--color-text);
+  --muted:     var(--color-text-muted);
+  --accent:    var(--color-primary);
+  --accent-2:  var(--color-primary-light);
+  --radius:    var(--radius-md);
+}

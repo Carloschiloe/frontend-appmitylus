@@ -1,66 +1,40 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Configuración | AppMitylus</title>
+  <title>Configuración — AppMMPP</title>
+  <meta name="description" content="Parámetros maestros: criterios." />
 
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css" />
-  <link rel="stylesheet" href="/css/app-shell.css?v=1" />
-  <link rel="stylesheet" href="/css/mmpp-ui.css?v=1" />
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/css/configuracion.css?v=1" />
 
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <!-- Sistema de Diseño Unificado -->
+  <link rel="stylesheet" href="/css/index-modern.css">
+  <link rel="stylesheet" href="/css/base-ui.css">
+  <link rel="stylesheet" href="/css/configuracion.css" />
+  <script src="/js/auth.js"></script>
 </head>
 <body>
-  <nav class="teal">
-    <div class="nav-wrapper">
-      <a href="/index.html" class="btn-flat left" title="Volver"><i class="material-icons">arrow_back</i></a>
-      <a href="#" class="brand-logo center">Configuración</a>
-    </div>
-  </nav>
+  <div class="layout">
+    <div id="sidebar-container"></div>
 
-  <div class="container mmpp-wrap config-page">
-    <header class="mmpp-hero" style="margin-bottom:14px">
-      <div>
-        <h1>Configuración</h1>
-        <p>Parámetros maestros para criterios, proveedores, clientes y transporte.</p>
+    <main class="content">
+      <!-- Hero -->
+      <div class="am-hero">
+        <div class="am-hero-content">
+          <h1><i class="bi bi-sliders" style="color:#4f46e5;margin-right:10px;"></i>Configuración</h1>
+          <p>Parámetros maestros: criterios.</p>
+        </div>
       </div>
-      <div class="mmpp-badge">
-        <i class="material-icons" style="font-size:18px">tune</i> Ajustes generales
-      </div>
-    </header>
 
-    <ul id="tabs" class="tabs config-tabs">
-      <li class="tab col s3"><a class="active" href="#tab-criterios">Criterios de clasificación</a></li>
-      <li class="tab col s3"><a href="#tab-proveedores">Proveedores MMPP</a></li>
-      <li class="tab col s3"><a href="#tab-clientes">Clientes</a></li>
-      <li class="tab col s3"><a href="#tab-transporte">Empresas de transporte</a></li>
-    </ul>
-
-    <section id="tab-criterios" class="col s12 config-section" style="margin-top:1.2rem;">
-      <h5 class="config-title">Criterios de Clasificación por Cliente</h5>
-      <div id="criterios-clasificacion-content"></div>
-    </section>
-
-    <section id="tab-proveedores" class="col s12 config-section" style="display:none; margin-top:1.2rem;">
-      <h5 class="config-title">Proveedores de Materia Prima</h5>
-      <div id="proveedores-mmpp-content"></div>
-    </section>
-
-    <section id="tab-clientes" class="col s12 config-section" style="display:none; margin-top:1.2rem;">
-      <h5 class="config-title">Clientes</h5>
-      <div id="clientes-content"></div>
-    </section>
-
-    <section id="tab-transporte" class="col s12 config-section" style="display:none; margin-top:1.2rem;">
-      <h5 class="config-title">Empresas de Transporte</h5>
-      <div id="transporte-content"></div>
-    </section>
+      <!-- Paneles -->
+      <section id="tab-criterios" class="config-section">
+        <h5 class="config-title">Criterios de Clasificación por Cliente</h5>
+        <div id="criterios-clasificacion-content"></div>
+      </section>
+    </main>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
@@ -70,7 +44,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script type="module" src="../../js/configuracion/index.js"></script>
+  <script type="module" src="/js/components/Sidebar.js"></script>
 </body>
 </html>
