@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biomasa — Programa de Cosecha</title>
+  <link rel="stylesheet" href="/css/base-ui.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <script src="/js/auth.js"></script>
+  <style>
+    /* ── Layout ── */
+    .bio-page { display:flex; min-height:100vh; background:#0f172a; }
+    .bio-main  { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+    .bio-hero  { padding:28px 32px 0; }
+    .bio-hero h1 { font-size:22px; font-weight:700; color:#f1f5f9; display:flex; align-items:center; gap:10px; margin:0 0 4px; }
+    .bio-hero p  { font-size:13px; color:#64748b; margin:0 0 20px; }
+
+    /* ── Tabs ── */
+    .bio-tabs { display:flex; gap:4px; padding:0 32px; border-bottom:1px solid #1e293b; }
+    .bio-tab  { padding:10px 20px; font-size:13px; font-weight:600; color:#64748b; border:none; background:none; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s,border-color .15s; display:flex; align-items:center; gap:7px; }
+    .bio-tab:hover   { color:#94a3b8; }
+    .bio-tab.active  { color:#2dd4bf; border-bottom-color:#2dd4bf; }
+
+    /* ── Content panels ── */
+    .bio-panel { display:none; flex:1; overflow-y:auto; padding:24px 32px; }
+    .bio-panel.active { display:block; }
+
+    /* ════════════════════════ TAB 1: CALENDARIO ════════════════════════ */
+    .cal-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+    .cal-nav    { display:flex; align-items:center; gap:8px; }
+    .cal-nav button { width:32px; height:32px; border-radius:8px; border:1px solid #1e293b; background:#1e293b; color:#94a3b8; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:background .15s; }
+    .cal-nav button:hover { background:#334155; color:#f1f5f9; }
+    .cal-title  { font-size:17px; font-weight:700; color:#f1f5f9; min-width:180px; text-align:center; }
+    .cal-view-toggle { display:flex; gap:4px; margin-left:auto; }
+    .cal-view-btn { padding:6px 14px; border-radius:8px; border:1px solid #1e293b; background:#1e293b; color:#64748b; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; }
+    .cal-view-btn.active { background:#0f766e; border-color:#0f766e; color:#fff; }
+
+    .cal-summary { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+    .cal-summary-card { background:#1e293b; border:1px solid #334155; border-radius:10px; padding:12px 18px; min-width:140px; }
+    .cal-summary-card .val { font-size:22px; font-weight:800; color:#2dd4bf; }
+    .cal-summary-card .lbl { font-size:11px; color:#64748b; font-weight:600; margin-top:2px; }
+
+    /* Grid mensual */
+    .cal-grid { background:#1e293b; border-radius:12px; border:1px solid #334155; overflow:hidden; }
+    .cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); border-bottom:1px solid #334155; }
+    .cal-weekday  { padding:8px 0; text-align:center; font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.5px; }
+    .cal-days     { display:grid; grid-template-columns:repeat(7,1fr); }
+    .cal-day      { min-height:90px; border-right:1px solid #0f172a; border-bottom:1px solid #0f172a; padding:8px; cursor:pointer; transition:background .12s; position:relative; }
+    .cal-day:hover      { background:#253047; }
+    .cal-day.other-month { opacity:.3; cursor:default; }
+    .cal-day.today      { background:#1a2744; }
+    .cal-day.selected   { background:#0f2d2a; outline:2px solid #2dd4bf; outline-offset:-2px; }
+    .cal-day-num  { font-size:12px; font-weight:700; color:#94a3b8; margin-bottom:6px; }
+    .cal-day.today .cal-day-num { color:#2dd4bf; }
+    .cal-day-trucks { font-size:20px; font-weight:800; color:#f1f5f9; line-height:1; }
+    .cal-day-trucks.zero { color:#334155; font-size:14px; }
+    .cal-day-label { font-size:10px; color:#64748b; margin-top:2px; }
+    .cal-day-dots { display:flex; flex-wrap:wrap; gap:3px; margin-top:5px; }
+    .cal-day-dot  { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+    /* Semana grid */
+    .cal-week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
+    .cal-week-day  { background:#1e293b; border:1px solid #334155; border-radius:10px; padding:14px; cursor:pointer; transition:background .12s; }
+    .cal-week-day:hover { background:#253047; }
+    .cal-week-day.selected { outline:2px solid #2dd4bf; outline-offset:0; }
+    .cal-week-day.today    { background:#1a2744; }
+    .cal-week-day-name { font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.5px; }
+    .cal-week-day-num  { font-size:24px; font-weight:800; color:#f1f5f9; margin:4px 0; }
+    .cal-week-trucks   { font-size:28px; font-weight:900; color:#2dd4bf; }
+    .cal-week-trucks.zero { color:#334155; font-size:18px; }
+    .cal-week-providers { margin-top:10px; display:flex; flex-direction:column; gap:4px; }
+    .cal-week-provider  { font-size:11px; color:#94a3b8; display:flex; align-items:center; gap:5px; }
+    .cal-week-provider .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+    /* Panel lateral detalle día */
+    .cal-layout   { display:grid; grid-template-columns:1fr 320px; gap:20px; }
+    @media(max-width:1100px) { .cal-layout { grid-template-columns:1fr; } .cal-detail { display:none !important; } }
+    .cal-detail   { background:#1e293b; border:1px solid #334155; border-radius:12px; padding:20px; height:fit-content; position:sticky; top:0; }
+    .cal-detail h3 { font-size:14px; font-weight:700; color:#f1f5f9; margin:0 0 16px; }
+    .cal-detail-empty { color:#64748b; font-size:13px; text-align:center; padding:24px 0; }
+    .cal-detail-item { padding:12px; background:#0f172a; border-radius:8px; margin-bottom:8px; }
+    .cal-detail-item:last-child { margin-bottom:0; }
+    .cal-detail-proveedor { font-size:13px; font-weight:700; color:#f1f5f9; display:flex; align-items:center; gap:7px; }
+    .cal-detail-trucks { font-size:22px; font-weight:900; color:#2dd4bf; margin:4px 0; }
+    .cal-detail-meta   { font-size:11px; color:#64748b; }
+    .cal-detail-condicion { margin-top:6px; padding:6px 8px; background:#1e293b; border-left:2px solid #f59e0b; border-radius:4px; font-size:11px; color:#fbbf24; }
+    .cal-detail-nota     { margin-top:4px; font-size:11px; color:#94a3b8; font-style:italic; }
+    .badge-pausado { background:#7c3aed22; color:#a78bfa; border:1px solid #7c3aed44; padding:2px 7px; border-radius:20px; font-size:10px; font-weight:700; }
+
+    /* ════════════════════════ TAB 2: PROGRAMAS ════════════════════════ */
+    .prog-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+    .prog-header h2 { font-size:16px; font-weight:700; color:#f1f5f9; margin:0; flex:1; }
+    .prog-filters { display:flex; gap:8px; flex-wrap:wrap; }
+    .prog-filter-btn { padding:6px 14px; border-radius:20px; border:1px solid #334155; background:#1e293b; color:#64748b; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; }
+    .prog-filter-btn.active { background:#0f766e; border-color:#0f766e; color:#fff; }
+
+    .prog-table-wrap { overflow-x:auto; }
+    .prog-table { width:100%; border-collapse:collapse; }
+    .prog-table th { padding:10px 14px; text-align:left; font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid #1e293b; white-space:nowrap; }
+    .prog-table td { padding:13px 14px; font-size:13px; color:#94a3b8; border-bottom:1px solid #0f172a; vertical-align:middle; }
+    .prog-table tr:hover td { background:#1a2333; }
+    .prog-proveedor { font-weight:700; color:#f1f5f9; }
+    .prog-periodo   { color:#64748b; font-size:12px; }
+    .prog-camiones  { font-size:20px; font-weight:900; color:#2dd4bf; }
+    .prog-condicion { font-size:11px; color:#f59e0b; font-style:italic; display:flex; align-items:flex-start; gap:5px; }
+    .prog-condicion i { flex-shrink:0; margin-top:1px; }
+    .badge-activo    { background:#14532d44; color:#4ade80; border:1px solid #16a34a44; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+    .badge-pausado2  { background:#7c3aed22; color:#a78bfa; border:1px solid #7c3aed44; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+    .badge-finalizado{ background:#1e293b; color:#475569; border:1px solid #334155; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+    .prog-actions   { display:flex; gap:6px; justify-content:flex-end; }
+    .prog-btn       { width:30px; height:30px; border-radius:7px; border:1px solid #334155; background:#1e293b; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; transition:all .15s; }
+    .prog-btn:hover { background:#334155; color:#f1f5f9; }
+    .prog-btn.danger:hover { background:#7f1d1d33; border-color:#ef4444; color:#ef4444; }
+    .prog-empty     { text-align:center; color:#475569; padding:48px 0; font-size:14px; }
+
+    /* ════════════════════════ TAB 3: REGISTRO ════════════════════════ */
+    .reg-section    { margin-bottom:32px; }
+    .reg-section h2 { font-size:15px; font-weight:700; color:#f1f5f9; margin:0 0 14px; display:flex; align-items:center; gap:8px; }
+    .reg-section h2 .count { font-size:12px; font-weight:600; background:#1e293b; color:#64748b; padding:2px 8px; border-radius:20px; }
+    .reg-cards { display:flex; flex-direction:column; gap:10px; }
+    .reg-card  { background:#1e293b; border:1px solid #334155; border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+    .reg-card.efectuada { border-color:#1e3a2f; background:#0d1f1a; }
+    .reg-card-left { flex:1; min-width:200px; }
+    .reg-card-name { font-size:14px; font-weight:700; color:#f1f5f9; margin-bottom:4px; }
+    .reg-card-meta { font-size:12px; color:#64748b; display:flex; gap:12px; flex-wrap:wrap; }
+    .reg-card-meta span { display:flex; align-items:center; gap:4px; }
+    .reg-card-tons { text-align:center; min-width:100px; }
+    .reg-card-tons .val   { font-size:22px; font-weight:900; color:#2dd4bf; }
+    .reg-card-tons .val.real { color:#4ade80; }
+    .reg-card-tons .lbl   { font-size:10px; color:#64748b; font-weight:600; }
+    .reg-card-diff { text-align:center; min-width:80px; }
+    .reg-card-diff .val  { font-size:16px; font-weight:800; }
+    .reg-card-diff .val.pos { color:#4ade80; }
+    .reg-card-diff .val.neg { color:#f87171; }
+    .reg-card-diff .lbl  { font-size:10px; color:#64748b; font-weight:600; }
+    .reg-card-actions { display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+    .reg-empty { text-align:center; color:#475569; padding:32px 0; font-size:13px; }
+
+    /* ════════════════════════ MODAL PROGRAMA ════════════════════════ */
+    .bio-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:998; }
+    .bio-modal-overlay.open { display:block; }
+    .bio-modal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:560px; max-width:95vw; max-height:90vh; overflow-y:auto; background:#1e293b; border:1px solid #334155; border-radius:16px; z-index:999; padding:28px; }
+    .bio-modal.open { display:block; }
+    .bio-modal h2   { font-size:16px; font-weight:700; color:#f1f5f9; margin:0 0 20px; display:flex; align-items:center; justify-content:space-between; }
+    .bio-modal h2 button { background:none; border:none; color:#64748b; cursor:pointer; font-size:20px; line-height:1; }
+    .bio-form-grid  { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .bio-form-grid .col-2 { grid-column:1/-1; }
+    .bio-form-group { display:flex; flex-direction:column; gap:6px; }
+    .bio-label      { font-size:12px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:.5px; }
+    .bio-input, .bio-select, .bio-textarea {
+      width:100%; box-sizing:border-box; background:#0f172a; border:1px solid #334155; border-radius:8px;
+      color:#f1f5f9; font-size:13px; padding:9px 12px; outline:none; transition:border-color .15s;
+    }
+    .bio-input:focus, .bio-select:focus, .bio-textarea:focus { border-color:#2dd4bf; }
+    .bio-textarea { resize:vertical; min-height:72px; font-family:inherit; }
+    .bio-select option { background:#1e293b; }
+    .bio-modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; padding-top:20px; border-top:1px solid #334155; }
+    .bio-btn-cancel { padding:9px 20px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:#94a3b8; font-size:13px; font-weight:600; cursor:pointer; }
+    .bio-btn-save   { padding:9px 20px; border-radius:8px; border:none; background:#0f766e; color:#fff; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:7px; transition:background .15s; }
+    .bio-btn-save:hover { background:#0d9488; }
+
+    /* Días especiales */
+    .dias-esp-list  { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
+    .dia-esp-row    { display:grid; grid-template-columns:1fr 80px 1fr 28px; gap:6px; align-items:center; }
+    .dia-esp-remove { width:28px; height:28px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; }
+    .dia-esp-remove:hover { border-color:#ef4444; color:#ef4444; }
+    .btn-add-dia    { padding:6px 12px; border-radius:7px; border:1px dashed #334155; background:none; color:#64748b; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; transition:all .15s; }
+    .btn-add-dia:hover { border-color:#2dd4bf; color:#2dd4bf; }
+
+    /* Modal compra */
+    .compra-modal { width:420px; }
+
+    /* Leyenda proveedores */
+    .cal-legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .cal-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#94a3b8; }
+    .cal-legend-dot  { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+
+    /* New program FAB */
+    .bio-fab { position:fixed; bottom:28px; right:28px; width:48px; height:48px; border-radius:50%; background:#0f766e; border:none; color:#fff; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(15,118,110,.4); transition:background .15s, transform .15s; z-index:10; }
+    .bio-fab:hover { background:#0d9488; transform:scale(1.08); }
+
+    .loading-row { text-align:center; padding:40px; color:#475569; font-size:14px; }
+  </style>
+</head>
+<body>
+  <div id="sidebar-container"></div>
+  <div class="bio-page">
+    <div class="bio-main">
+      <div class="bio-hero">
+        <h1><i class="bi bi-droplet-half" style="color:#2dd4bf;"></i> Biomasa — Programa de Cosecha</h1>
+        <p>Calendario de despachos, programas activos y registro de compras realizadas.</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="bio-tabs">
+        <button class="bio-tab active" data-panel="panel-calendario">
+          <i class="bi bi-calendar3"></i> Calendario
+        </button>
+        <button class="bio-tab" data-panel="panel-programas">
+          <i class="bi bi-list-ul"></i> Programas
+        </button>
+        <button class="bio-tab" data-panel="panel-registro">
+          <i class="bi bi-bag-check"></i> Registro de Compras
+        </button>
+      </div>
+
+      <!-- ══════════════ PANEL: CALENDARIO ══════════════ -->
+      <div id="panel-calendario" class="bio-panel active">
+
+        <div class="cal-header">
+          <div class="cal-nav">
+            <button id="calPrev"><i class="bi bi-chevron-left"></i></button>
+            <span id="calTitle" class="cal-title">—</span>
+            <button id="calNext"><i class="bi bi-chevron-right"></i></button>
+          </div>
+          <div class="cal-view-toggle">
+            <button class="cal-view-btn active" data-view="month">Mes</button>
+            <button class="cal-view-btn" data-view="week">Semana</button>
+          </div>
+        </div>
+
+        <div class="cal-summary">
+          <div class="cal-summary-card">
+            <div class="val" id="calSumTotalCam">—</div>
+            <div class="lbl">Camiones en el período</div>
+          </div>
+          <div class="cal-summary-card">
+            <div class="val" id="calSumProgActivos">—</div>
+            <div class="lbl">Programas activos</div>
+          </div>
+          <div class="cal-summary-card">
+            <div class="val" id="calSumMaxDia">—</div>
+            <div class="lbl">Máx. en un día</div>
+          </div>
+        </div>
+
+        <div class="cal-layout">
+          <div>
+            <!-- Vista mensual -->
+            <div id="calMonthView">
+              <div class="cal-grid">
+                <div class="cal-weekdays">
+                  <div class="cal-weekday">Lun</div><div class="cal-weekday">Mar</div>
+                  <div class="cal-weekday">Mié</div><div class="cal-weekday">Jue</div>
+                  <div class="cal-weekday">Vie</div><div class="cal-weekday">Sáb</div>
+                  <div class="cal-weekday">Dom</div>
+                </div>
+                <div id="calDays" class="cal-days"></div>
+              </div>
+            </div>
+            <!-- Vista semanal -->
+            <div id="calWeekView" style="display:none;">
+              <div id="calWeekDays" class="cal-week-grid"></div>
+            </div>
+            <div id="calLegend" class="cal-legend" style="margin-top:14px;"></div>
+          </div>
+
+          <!-- Panel detalle día -->
+          <div class="cal-detail" id="calDetail">
+            <h3 id="calDetailTitle">Selecciona un día</h3>
+            <div id="calDetailBody">
+              <p class="cal-detail-empty"><i class="bi bi-hand-index" style="font-size:24px;display:block;margin-bottom:8px;"></i>Haz clic en un día para ver el detalle de camiones</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ PANEL: PROGRAMAS ══════════════ -->
+      <div id="panel-programas" class="bio-panel">
+        <div class="prog-header">
+          <h2>Programas de cosecha</h2>
+          <div class="prog-filters">
+            <button class="prog-filter-btn active" data-estado="">Todos</button>
+            <button class="prog-filter-btn" data-estado="activo">Activos</button>
+            <button class="prog-filter-btn" data-estado="pausado">Pausados</button>
+            <button class="prog-filter-btn" data-estado="finalizado">Finalizados</button>
+          </div>
+          <button class="am-btn am-btn-primary write-only" id="btnNuevoPrograma" style="margin-left:auto;">
+            <i class="bi bi-plus-lg"></i> Nuevo programa
+          </button>
+        </div>
+        <div class="prog-table-wrap">
+          <table class="prog-table">
+            <thead>
+              <tr>
+                <th>Proveedor</th>
+                <th>Período</th>
+                <th>Cam/día</th>
+                <th>Condición</th>
+                <th>Estado</th>
+                <th style="text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="progTableBody">
+              <tr><td colspan="6" class="loading-row"><i class="bi bi-hourglass-split"></i> Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════ PANEL: REGISTRO DE COMPRAS ══════════════ -->
+      <div id="panel-registro" class="bio-panel">
+
+        <!-- Sección: pendientes de cierre -->
+        <div class="reg-section">
+          <h2>
+            <i class="bi bi-clock-history" style="color:#f59e0b;"></i>
+            Acuerdos activos — pendientes de cierre
+            <span class="count" id="regCountAcordado">0</span>
+          </h2>
+          <div id="regAcordadoList" class="reg-cards">
+            <p class="reg-empty">Cargando…</p>
+          </div>
+        </div>
+
+        <!-- Sección: compras realizadas -->
+        <div class="reg-section">
+          <h2>
+            <i class="bi bi-bag-check-fill" style="color:#4ade80;"></i>
+            Compras realizadas
+            <span class="count" id="regCountEfectuada">0</span>
+          </h2>
+          <div id="regEfectuadaList" class="reg-cards">
+            <p class="reg-empty">Cargando…</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- FAB nuevo programa -->
+  <button class="bio-fab write-only" id="fabNuevoPrograma" title="Nuevo programa de cosecha">
+    <i class="bi bi-plus-lg"></i>
+  </button>
+
+  <!-- ══ MODAL: Programa de Cosecha ══ -->
+  <div id="overlayPrograma" class="bio-modal-overlay"></div>
+  <div id="modalPrograma" class="bio-modal">
+    <h2>
+      <span id="modalProgramaTitulo">Nuevo programa</span>
+      <button id="closeProgramaModal">&times;</button>
+    </h2>
+
+    <div class="bio-form-grid">
+      <div class="bio-form-group col-2">
+        <label class="bio-label">Proveedor / Trato <span style="color:#ef4444">*</span></label>
+        <select id="p-trato" class="bio-select">
+          <option value="">— Seleccionar trato acordado —</option>
+        </select>
+        <div id="p-trato-info" style="font-size:11px;color:#64748b;margin-top:4px;display:none;"></div>
+      </div>
+
+      <div class="bio-form-group">
+        <label class="bio-label">Desde <span style="color:#ef4444">*</span></label>
+        <input type="date" id="p-desde" class="bio-input" />
+      </div>
+      <div class="bio-form-group">
+        <label class="bio-label">Hasta <span style="color:#ef4444">*</span></label>
+        <input type="date" id="p-hasta" class="bio-input" />
+      </div>
+
+      <div class="bio-form-group">
+        <label class="bio-label">Camiones / día (base) <span style="color:#ef4444">*</span></label>
+        <input type="number" id="p-camiones" class="bio-input" min="0" max="20" value="1" />
+      </div>
+      <div class="bio-form-group">
+        <label class="bio-label">Tons estimadas</label>
+        <input type="number" id="p-tons" class="bio-input" min="0" placeholder="Opcional" />
+      </div>
+
+      <div class="bio-form-group col-2">
+        <label class="bio-label">Condición de continuidad</label>
+        <input type="text" id="p-condicion" class="bio-input" placeholder="Ej: Probemos 2 camiones y veamos cómo llega..." />
+      </div>
+
+      <div class="bio-form-group col-2">
+        <label class="bio-label">Días especiales <span style="font-size:11px;color:#64748b;font-weight:400;text-transform:none;">(excepciones al plan base)</span></label>
+        <div id="diasEspList" class="dias-esp-list"></div>
+        <button type="button" class="btn-add-dia" id="btnAddDiaEsp">
+          <i class="bi bi-plus-lg"></i> Agregar día especial
+        </button>
+      </div>
+
+      <div class="bio-form-group col-2">
+        <label class="bio-label">Notas internas</label>
+        <textarea id="p-notas" class="bio-textarea" placeholder="Observaciones..."></textarea>
+      </div>
+    </div>
+
+    <div id="p-error" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:12px;color:#fca5a5;margin-top:12px;"></div>
+
+    <div class="bio-modal-footer">
+      <button class="bio-btn-cancel" id="cancelProgramaModal">Cancelar</button>
+      <button class="bio-btn-save" id="saveProgramaModal">
+        <i class="bi bi-check-lg"></i> Guardar programa
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Registrar Compra ══ -->
+  <div id="overlayCompra" class="bio-modal-overlay"></div>
+  <div id="modalCompra" class="bio-modal compra-modal">
+    <h2>
+      <span>Registrar compra efectuada</span>
+      <button id="closeCompraModal">&times;</button>
+    </h2>
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div id="compraTratoInfo" style="background:#0f172a;border-radius:8px;padding:14px;font-size:13px;color:#94a3b8;"></div>
+
+      <div class="bio-form-group">
+        <label class="bio-label">Tons reales recibidas <span style="color:#ef4444">*</span></label>
+        <input type="number" id="c-tons-reales" class="bio-input" min="0" step="0.1" placeholder="0.0" />
+      </div>
+      <div class="bio-form-group">
+        <label class="bio-label">Notas de cierre</label>
+        <textarea id="c-notas-cierre" class="bio-textarea" placeholder="Observaciones del cierre..."></textarea>
+      </div>
+    </div>
+
+    <div id="c-error" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:12px;color:#fca5a5;margin-top:12px;"></div>
+
+    <div class="bio-modal-footer">
+      <button class="bio-btn-cancel" id="cancelCompraModal">Cancelar</button>
+      <button class="bio-btn-save" id="saveCompraModal" style="background:#16a34a;">
+        <i class="bi bi-bag-check"></i> Confirmar compra
+      </button>
+    </div>
+  </div>
+
+  <script src="/js/config.js"></script>
+  <script type="module" src="/js/biomasa/index.js"></script>
+  <script type="module" src="/js/components/Sidebar.js"></script>
+</body>
+</html>

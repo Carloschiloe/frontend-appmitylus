@@ -46,6 +46,7 @@ export default defineConfig({
         centros: resolve(__dirname, 'html/Centros/index.html'),
         contactos: resolve(__dirname, 'html/Abastecimiento/contactos/contactos.html'),
         historial: resolve(__dirname, 'html/Abastecimiento/historial/index.html'),
+      biomasa:   resolve(__dirname, 'html/Biomasa/index.html'),
       },
       output: {
         manualChunks(id) {

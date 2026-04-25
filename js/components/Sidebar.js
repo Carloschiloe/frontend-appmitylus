@@ -39,7 +39,8 @@ const MENU_STRUCTURE = [
     label: 'Biomasa',
     icon: 'bi-droplet-half',
     links: [
-      { label: 'Planificación', href: '/index.html#biomasa', icon: 'bi-bar-chart-steps' }
+      { label: 'Dashboard', href: '/index.html#biomasa', icon: 'bi-speedometer2' },
+      { label: 'Programa de Cosecha', href: '/html/Biomasa/index.html', icon: 'bi-calendar3' }
     ]
   },
   {
