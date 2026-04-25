@@ -55,7 +55,8 @@ const MENU_STRUCTURE = [
     label: 'Configuración',
     icon: 'bi-sliders',
     links: [
-      { label: 'Maestros', href: '/html/Maestros/index.html', icon: 'bi-table' }
+      { label: 'Maestros', href: '/html/Maestros/index.html', icon: 'bi-table' },
+      { label: 'Usuarios', href: '/html/Usuarios/index.html', icon: 'bi-people' }
     ]
   }
 ];
