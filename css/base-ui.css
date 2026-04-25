@@ -625,7 +625,6 @@ select.resumen-select:focus {
 /* ── Modo solo lectura (rol: lectura) ──────────────────────────────────
    Se activa añadiendo .modo-lectura al <body> desde auth.js.
    Oculta todos los controles de escritura sin tocar cada página. */
-body.modo-lectura .am-btn-primary,
 body.modo-lectura [data-edit],
 body.modo-lectura [data-toggle],
 body.modo-lectura [data-nuevo],
