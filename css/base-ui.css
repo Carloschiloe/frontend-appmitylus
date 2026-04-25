@@ -629,7 +629,14 @@ body.modo-lectura [data-edit],
 body.modo-lectura [data-toggle],
 body.modo-lectura [data-nuevo],
 body.modo-lectura [data-delete],
-body.modo-lectura .write-only {
+body.modo-lectura .write-only,
+body.modo-lectura .js-edit,
+body.modo-lectura .js-delete,
+body.modo-lectura .mini-del,
+body.modo-lectura .tbl-act-edit,
+body.modo-lectura .tbl-act-delete,
+body.modo-lectura .btn-edit,
+body.modo-lectura .trato-btn-editar {
   display: none !important;
 }
 

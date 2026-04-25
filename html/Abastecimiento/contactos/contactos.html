@@ -275,7 +275,7 @@
           </div>
 
           <div class="tratos-actions">
-            <button id="btnNuevoTrato" class="am-btn am-btn-primary" type="button">
+            <button id="btnNuevoTrato" class="am-btn am-btn-primary write-only" type="button">
               <i class="bi bi-plus-lg"></i> Nuevo trato
             </button>
           </div>
@@ -577,7 +577,7 @@
             </div>
             <div id="muStepSummary" class="mu-step-summary muestreo-hidden am-px-24 am-mt-8">
               <span id="muStepSummaryText">-</span>
-              <button type="button" id="btnMuEditBase" class="am-btn am-btn-flat" style="height:28px;padding:0 10px;font-size:12px;">Editar</button>
+              <button type="button" id="btnMuEditBase" class="am-btn am-btn-flat write-only" style="height:28px;padding:0 10px;font-size:12px;">Editar</button>
             </div>
 
             <!-- Hidden fields -->
@@ -687,7 +687,7 @@
               <div class="muestreo-actions" style="margin-top:16px;">
                 <button type="button" id="btnMuBackToStep2" class="am-btn am-btn-flat">← Atrás</button>
                 <button type="button" id="btnMuestreoClear" class="am-btn am-btn-flat">Limpiar</button>
-                <button type="button" id="btnMuestreoSave" class="am-btn am-btn-primary">Guardar muestreo</button>
+                <button type="button" id="btnMuestreoSave" class="am-btn am-btn-primary write-only">Guardar muestreo</button>
               </div>
             </section>
           </section>
@@ -741,7 +741,7 @@
             </div>
           </div>
           <div class="modal-footer modal-actions mu-side-actions">
-            <button type="button" id="btnMuestreoSaveSide" class="am-btn am-btn-primary">Guardar muestreo</button>
+            <button type="button" id="btnMuestreoSaveSide" class="am-btn am-btn-primary write-only">Guardar muestreo</button>
             <button type="button" id="btnMuestreoCloseSide" class="am-btn am-btn-flat">Cerrar panel</button>
           </div>
         </div>
@@ -973,7 +973,7 @@
         <div id="detalleContactoBody"></div>
       </div>
       <div class="app-modal-footer">
-        <button id="btnDetalleNuevaVisita" type="button" class="am-btn am-btn-primary">
+        <button id="btnDetalleNuevaVisita" type="button" class="am-btn am-btn-primary write-only">
           <i class="bi bi-calendar-check"></i> Registrar visita
         </button>
         <button type="button" class="am-btn am-btn-flat modal-close">Cerrar</button>
@@ -1084,8 +1084,8 @@
       </div>
       <div class="app-modal-footer" style="justify-content:space-between;">
         <div style="display:flex;gap:8px;">
-          <button type="button" id="btnCrearEmpresa" class="am-btn am-btn-flat">Crear proveedor nuevo</button>
-          <button type="button" id="btnQuitarEmpresa" class="am-btn am-btn-flat" style="color:#ef4444;">Quitar proveedor</button>
+          <button type="button" id="btnCrearEmpresa" class="am-btn am-btn-flat write-only">Crear proveedor nuevo</button>
+          <button type="button" id="btnQuitarEmpresa" class="am-btn am-btn-flat write-only" style="color:#ef4444;">Quitar proveedor</button>
         </div>
         <button type="button" class="am-btn am-btn-flat modal-close">Cerrar</button>
       </div>
@@ -1240,9 +1240,9 @@
         </div>
       </div>
       <div class="app-modal-footer">
-        <button id="btnTratoDelete" type="button" class="am-btn am-btn-danger" style="display:none;">Eliminar</button>
+        <button id="btnTratoDelete" type="button" class="am-btn am-btn-danger write-only" style="display:none;">Eliminar</button>
         <button type="button" class="am-btn am-btn-flat modal-close">Cancelar</button>
-        <button id="btnTratoSave" type="button" class="am-btn am-btn-primary">Guardar</button>
+        <button id="btnTratoSave" type="button" class="am-btn am-btn-primary write-only">Guardar</button>
       </div>
     </div>
 
@@ -1282,7 +1282,7 @@
       </div>
       <div class="app-modal-footer">
         <button type="button" class="am-btn am-btn-flat modal-close">Cancelar</button>
-        <button id="btnQdGuardar" type="button" class="am-btn am-btn-primary">Guardar</button>
+        <button id="btnQdGuardar" type="button" class="am-btn am-btn-primary write-only">Guardar</button>
       </div>
     </div>
 
@@ -1331,7 +1331,7 @@
     <!-- Footer -->
     <div class="condicion-modal-foot">
       <button id="btnCancelarCondicion" class="am-btn am-btn-flat" type="button">Cancelar</button>
-      <button id="btnConfirmarCondicion" class="am-btn am-btn-primary" type="button" disabled>
+      <button id="btnConfirmarCondicion" class="am-btn am-btn-primary write-only" type="button" disabled>
         <i class="bi bi-plus-lg"></i> Agregar al trato
       </button>
     </div>
