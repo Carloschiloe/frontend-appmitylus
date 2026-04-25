@@ -33,6 +33,16 @@
     window.location.replace(LOGIN_URL);
   }
 
+  /* ── Modo solo lectura: oculta controles de escritura ── */
+  if (!isLoginPage()) {
+    var u = getUser();
+    if (u && u.rol === 'lectura') {
+      document.addEventListener('DOMContentLoaded', function () {
+        document.body.classList.add('modo-lectura');
+      });
+    }
+  }
+
   /* ── Patch de fetch: inyecta Authorization en todas las llamadas /api ── */
   var _fetch = window.fetch;
   window.fetch = function (url, opts) {

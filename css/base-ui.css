@@ -621,3 +621,33 @@ select.resumen-select:focus {
 /* Ocultación de elementos específicos de módulos */
 .muestreo-hidden { display: none !important; }
 .consulta-filter-state { font-size: 13px; color: #64748b; font-weight: 500; }
+
+/* ── Modo solo lectura (rol: lectura) ──────────────────────────────────
+   Se activa añadiendo .modo-lectura al <body> desde auth.js.
+   Oculta todos los controles de escritura sin tocar cada página. */
+body.modo-lectura .am-btn-primary,
+body.modo-lectura [data-edit],
+body.modo-lectura [data-toggle],
+body.modo-lectura [data-nuevo],
+body.modo-lectura [data-delete],
+body.modo-lectura .write-only {
+  display: none !important;
+}
+
+/* Banner sutil para que Gerencia sepa que está en modo lectura */
+body.modo-lectura::after {
+  content: '👁 Solo lectura';
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(15,23,42,0.85);
+  border: 1px solid rgba(20,184,166,0.3);
+  color: #2dd4bf;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 20px;
+  z-index: 9999;
+  pointer-events: none;
+  letter-spacing: 0.04em;
+}
