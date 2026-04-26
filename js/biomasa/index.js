@@ -523,147 +523,259 @@ document.getElementById('cancelProgramaModal').addEventListener('click', closePr
 document.getElementById('overlayPrograma').addEventListener('click', closeProgramaModal);
 
 // ════════════════════════════════════════════════════════════════════════
-// TAB 3: REGISTRO DE COMPRAS
+// TAB 3: SEGUIMIENTO DE PROGRAMAS
 // ════════════════════════════════════════════════════════════════════════
+
+const SEG_ICON  = { en_plan:'✅', con_retrasos:'⚠️', en_riesgo:'🔴' };
+const SEG_LABEL = { en_plan:'En plan', con_retrasos:'Con retrasos', en_riesgo:'En riesgo' };
+const CIERRE_LABEL = {
+  completado: 'Completado normalmente',
+  proveedor_paro: 'El proveedor paró anticipadamente',
+  causa_externa: 'Causa externa',
+  decision_interna: 'Decisión interna',
+};
+
+let segProgramaId = null;
+let cierreProgramaId = null;
 
 async function loadRegistro() {
   try {
-    const res = await apiGet('/api/programa-cosecha/tratos-acordados');
-    const items = res.items || [];
-    const acordados   = items.filter(t => t.estado === 'acordado');
-    const efectuados  = items.filter(t => t.estado === 'compra_efectuada');
+    const res = await apiGet('/api/programa-cosecha');
+    const todos = res.items || [];
+    const activos   = todos.filter(p => p.estado === 'activo' || p.estado === 'pausado');
+    const cerrados  = todos.filter(p => p.estado === 'finalizado');
 
-    document.getElementById('regCountAcordado').textContent  = acordados.length;
-    document.getElementById('regCountEfectuada').textContent = efectuados.length;
+    document.getElementById('segCountActivos').textContent  = activos.length;
+    document.getElementById('segCountCerrados').textContent = cerrados.length;
 
-    renderRegList('regAcordadoList', acordados, false);
-    renderRegList('regEfectuadaList', efectuados, true);
+    renderSegList('segActivosList', activos, false);
+    renderSegList('segCerradosList', cerrados, true);
   } catch(e) {
-    document.getElementById('regAcordadoList').innerHTML = `<p class="reg-empty" style="color:#ef4444;">${esc(e.message)}</p>`;
+    document.getElementById('segActivosList').innerHTML = `<p class="reg-empty" style="color:#ef4444;">${esc(e.message)}</p>`;
   }
 }
 
-function renderRegList(containerId, items, isEfectuada) {
+function progDiasInfo(p) {
+  const hoy   = new Date(); hoy.setHours(0,0,0,0);
+  const desde = new Date(p.vigenciaDesde); desde.setHours(0,0,0,0);
+  const hasta = new Date(p.vigenciaHasta); hasta.setHours(0,0,0,0);
+  const total = Math.max(1, Math.round((hasta - desde) / 86400000) + 1);
+  const transcurridos = Math.min(total, Math.max(0, Math.round((hoy - desde) / 86400000) + 1));
+  const pct = Math.round(transcurridos / total * 100);
+  return { total, transcurridos, pct };
+}
+
+function fmtRelative(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const d = Math.floor(diff / 86400000);
+  if (d === 0) return 'hoy';
+  if (d === 1) return 'ayer';
+  if (d < 7)  return `hace ${d} días`;
+  if (d < 30) return `hace ${Math.floor(d/7)} sem.`;
+  return `hace ${Math.floor(d/30)} mes.`;
+}
+
+function renderSegList(containerId, items, isCerrado) {
   const cont = document.getElementById(containerId);
   if (!items.length) {
-    cont.innerHTML = `<p class="reg-empty">${isEfectuada ? 'Sin compras registradas aún.' : 'No hay acuerdos activos pendientes.'}</p>`;
+    cont.innerHTML = `<p class="reg-empty">${isCerrado ? 'Sin programas cerrados.' : 'No hay programas activos.'}</p>`;
     return;
   }
-  cont.innerHTML = items.map(t => {
-    const diff = isEfectuada && t.tonsAcordadas && t.tonsReales != null
-      ? ((t.tonsReales - t.tonsAcordadas) / t.tonsAcordadas * 100).toFixed(1)
-      : null;
-    const diffColor = diff === null ? '' : Number(diff) >= 0 ? 'pos' : 'neg';
-    return `<div class="reg-card${isEfectuada?' efectuada':''}">
-      <div class="reg-card-left">
-        <div class="reg-card-name">${esc(t.proveedorNombre)}</div>
-        <div class="reg-card-meta">
-          ${t.vigenciaDesde ? `<span><i class="bi bi-calendar3"></i>${fmtDateShort(t.vigenciaDesde)} — ${fmtDateShort(t.vigenciaHasta)}</span>` : ''}
-          ${t.precioAcordado ? `<span><i class="bi bi-currency-dollar"></i>${t.precioAcordado} ${t.unidadPrecio||''}</span>` : ''}
-          ${t.camionesXDia  ? `<span><i class="bi bi-truck"></i>${t.camionesXDia} cam/día</span>` : ''}
-          ${t.centroCodigo  ? `<span><i class="bi bi-geo-alt"></i>${esc(t.centroCodigo)}</span>` : ''}
+  cont.innerHTML = items.map(p => {
+    const { total, transcurridos, pct } = progDiasInfo(p);
+    const DIAS_LABELS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const diasLabel = (Array.isArray(p.diasSemana) && p.diasSemana.length ? p.diasSemana : [0,1,2,3,4])
+      .map(n => DIAS_LABELS[n]).join(', ');
+
+    const ultimo = p.seguimientos && p.seguimientos.length ? p.seguimientos[0] : null;
+    const ultimoHtml = ultimo
+      ? `<div class="seg-last-entry">
+           <span>${SEG_ICON[ultimo.estado]}</span>
+           <span class="seg-entry-date">${fmtRelative(ultimo.fecha)}</span>
+           <span style="color:#94a3b8;">—</span>
+           <span class="seg-entry-nota">${esc(ultimo.nota || SEG_LABEL[ultimo.estado])}</span>
+         </div>`
+      : `<div class="seg-last-none"><i class="bi bi-info-circle"></i> Sin seguimientos registrados aún</div>`;
+
+    const historial = (p.seguimientos || []).map(s => `
+      <div class="seg-entry">
+        <span class="seg-entry-icon">${SEG_ICON[s.estado]}</span>
+        <div style="flex:1;">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:2px;">
+            <span class="seg-entry-date">${fmtDate(s.fecha)}</span>
+            <span class="badge-${s.estado}">${SEG_LABEL[s.estado]}</span>
+          </div>
+          ${s.nota ? `<div class="seg-entry-nota">${esc(s.nota)}</div>` : ''}
         </div>
-        ${t.notasTrato ? `<div style="font-size:11px;color:#64748b;margin-top:6px;font-style:italic;">${esc(t.notasTrato)}</div>` : ''}
-        ${t.notasCierre && isEfectuada ? `<div style="font-size:11px;color:#4ade80;margin-top:4px;">${esc(t.notasCierre)}</div>` : ''}
-      </div>
+      </div>`).join('');
 
-      <div class="reg-card-tons">
-        <div class="val">${t.tonsAcordadas ?? '—'}</div>
-        <div class="lbl">TONS ACORDADAS</div>
-      </div>
+    const histCount = (p.seguimientos || []).length;
+    const estadoBadge = p.estado === 'activo' ? `<span class="badge-activo">Activo</span>`
+      : p.estado === 'pausado' ? `<span class="badge-pausado2">Pausado</span>`
+      : `<span class="badge-finalizado">Finalizado</span>`;
 
-      ${isEfectuada ? `
-        <div class="reg-card-tons">
-          <div class="val real">${t.tonsReales ?? '—'}</div>
-          <div class="lbl">TONS REALES</div>
+    return `<div class="seg-card" id="segcard-${p._id}">
+      <div class="seg-card-header">
+        <div class="seg-card-info">
+          <div class="seg-card-name">${esc(p.proveedorNombre)}</div>
+          <div class="seg-card-meta">
+            ${estadoBadge}
+            <span><i class="bi bi-calendar3"></i>${fmtDateShort(p.vigenciaDesde)} — ${fmtDateShort(p.vigenciaHasta)}</span>
+            <span><i class="bi bi-truck"></i>${p.camionesDefault} cam/día · ${diasLabel}</span>
+            ${p.tonsEstimadas ? `<span><i class="bi bi-boxes"></i>~${p.tonsEstimadas} tons est.</span>` : ''}
+          </div>
+          ${isCerrado && p.motivoCierre ? `<div style="margin-top:6px;font-size:11px;color:#94a3b8;"><i class="bi bi-flag"></i> ${esc(CIERRE_LABEL[p.motivoCierre] || p.motivoCierre)}</div>` : ''}
         </div>
-        ${diff !== null ? `
-          <div class="reg-card-diff">
-            <div class="val ${diffColor}">${diff > 0 ? '+' : ''}${diff}%</div>
-            <div class="lbl">DIFERENCIA</div>
-          </div>` : ''}
-      ` : ''}
-
-      <div class="reg-card-actions">
-        ${!isEfectuada
-          ? `<button class="am-btn am-btn-primary write-only" style="font-size:12px;padding:7px 14px;" data-action="compra" data-id="${t._id}">
-               <i class="bi bi-bag-check"></i> Registrar compra
-             </button>`
-          : `<span style="font-size:11px;color:#4ade80;font-weight:700;display:flex;align-items:center;gap:4px;">
-               <i class="bi bi-check-circle-fill"></i> Efectuada
-             </span>`}
+        ${!isCerrado ? `
+        <div class="seg-card-actions write-only">
+          <button class="am-btn am-btn-secondary" style="font-size:12px;padding:6px 12px;" data-action="seg" data-id="${p._id}">
+            <i class="bi bi-plus-lg"></i> Seguimiento
+          </button>
+          <button class="prog-btn" style="color:#64748b;" title="Cerrar programa" data-action="cerrar" data-id="${p._id}">
+            <i class="bi bi-flag"></i>
+          </button>
+        </div>` : ''}
       </div>
+
+      <div class="seg-progress">
+        <div class="seg-progress-label">
+          <span>Progreso del período</span>
+          <span>${transcurridos} / ${total} días (${pct}%)</span>
+        </div>
+        <div class="seg-progress-bar"><div class="seg-progress-fill" style="width:${pct}%;"></div></div>
+      </div>
+
+      <div class="seg-last">${ultimoHtml}</div>
+
+      ${histCount > 0 ? `
+      <div class="seg-history">
+        <button class="seg-history-toggle" data-target="hist-${p._id}">
+          <i class="bi bi-chevron-down"></i> ${histCount} entrada${histCount !== 1 ? 's' : ''} de seguimiento
+        </button>
+        <div class="seg-history-body" id="hist-${p._id}">${historial}</div>
+      </div>` : ''}
     </div>`;
   }).join('');
 
-  cont.querySelectorAll('[data-action="compra"]').forEach(btn => {
-    btn.addEventListener('click', () => openCompraModal(btn.dataset.id));
+  cont.querySelectorAll('[data-action="seg"]').forEach(btn =>
+    btn.addEventListener('click', () => openSegModal(btn.dataset.id, items.find(p => p._id === btn.dataset.id)?.proveedorNombre)));
+  cont.querySelectorAll('[data-action="cerrar"]').forEach(btn =>
+    btn.addEventListener('click', () => openCierreModal(btn.dataset.id, items.find(p => p._id === btn.dataset.id)?.proveedorNombre)));
+  cont.querySelectorAll('.seg-history-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const body = document.getElementById(btn.dataset.target);
+      body.classList.toggle('open');
+      btn.querySelector('i').className = body.classList.contains('open') ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+    });
   });
 }
 
-// Modal Registrar Compra
-function openCompraModal(tratoId) {
-  const trato = (window._tratosCache || []).find(t => t._id === tratoId);
-  compraTratoId = tratoId;
-  const info = document.getElementById('compraTratoInfo');
-  if (trato) {
-    info.innerHTML = `<strong style="color:#f1f5f9;">${esc(trato.proveedorNombre)}</strong>
-      <div style="margin-top:6px;">Tons acordadas: <strong style="color:#2dd4bf;">${trato.tonsAcordadas ?? '—'}</strong>
-      ${trato.precioAcordado ? ` · Precio: <strong>${trato.precioAcordado} ${trato.unidadPrecio||''}</strong>` : ''}</div>`;
-  } else {
-    info.textContent = '';
-  }
-  document.getElementById('c-tons-reales').value = trato?.tonsAcordadas || '';
-  document.getElementById('c-notas-cierre').value = '';
-  document.getElementById('c-error').style.display = 'none';
-  document.getElementById('overlayCompra').classList.add('open');
-  document.getElementById('modalCompra').classList.add('open');
+// ── Modal Seguimiento ─────────────────────────────────────────────────────────
+
+function openSegModal(id, nombre) {
+  segProgramaId = id;
+  document.getElementById('modalSegTitulo').textContent = `Seguimiento — ${nombre || ''}`;
+  document.querySelectorAll('.seg-opt-label').forEach(l => l.classList.remove('selected'));
+  document.getElementById('seg-nota').value = '';
+  document.getElementById('seg-error').style.display = 'none';
+  document.getElementById('overlaySegModal').classList.add('open');
+  document.getElementById('modalSeg').classList.add('open');
 }
-function closeCompraModal() {
-  document.getElementById('overlayCompra').classList.remove('open');
-  document.getElementById('modalCompra').classList.remove('open');
-  compraTratoId = null;
+function closeSegModal() {
+  document.getElementById('overlaySegModal').classList.remove('open');
+  document.getElementById('modalSeg').classList.remove('open');
+  segProgramaId = null;
 }
 
-document.getElementById('saveCompraModal').addEventListener('click', async () => {
-  const tons = document.getElementById('c-tons-reales').value;
-  const errEl = document.getElementById('c-error');
-  if (!tons || isNaN(Number(tons))) { errEl.textContent = 'Ingresa las tons reales recibidas.'; errEl.style.display = ''; return; }
+document.querySelectorAll('.seg-opt-label').forEach(lbl => {
+  lbl.addEventListener('click', () => {
+    document.querySelectorAll('.seg-opt-label').forEach(l => l.classList.remove('selected'));
+    lbl.classList.add('selected');
+    lbl.querySelector('input').checked = true;
+  });
+});
+
+document.getElementById('saveSegModal').addEventListener('click', async () => {
+  const estado = document.querySelector('.seg-opt-label.selected')?.dataset.val;
+  const nota   = document.getElementById('seg-nota').value.trim();
+  const errEl  = document.getElementById('seg-error');
+  if (!estado) { errEl.textContent = 'Selecciona cómo va el programa.'; errEl.style.display = ''; return; }
+  if (!nota)   { errEl.textContent = 'La nota es obligatoria.'; errEl.style.display = ''; return; }
   errEl.style.display = 'none';
-  const btn = document.getElementById('saveCompraModal');
+  const btn = document.getElementById('saveSegModal');
   btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando…';
   try {
-    await apiPost(`/api/programa-cosecha/tratos/${compraTratoId}/compra`, {
-      tonsReales:   Number(tons),
-      notasCierre:  document.getElementById('c-notas-cierre').value.trim(),
-    });
-    toast('Compra registrada correctamente');
-    closeCompraModal();
+    await apiPost(`/api/programa-cosecha/${segProgramaId}/seguimiento`, { estado, nota });
+    toast('Seguimiento registrado');
+    closeSegModal();
     loadRegistro();
   } catch(e) {
-    errEl.textContent = e.message;
-    errEl.style.display = '';
+    errEl.textContent = e.message; errEl.style.display = '';
   } finally {
-    btn.disabled = false; btn.innerHTML = '<i class="bi bi-bag-check"></i> Confirmar compra';
+    btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar seguimiento';
   }
 });
-document.getElementById('closeCompraModal').addEventListener('click', closeCompraModal);
-document.getElementById('cancelCompraModal').addEventListener('click', closeCompraModal);
-document.getElementById('overlayCompra').addEventListener('click', closeCompraModal);
+document.getElementById('closeSegModal').addEventListener('click', closeSegModal);
+document.getElementById('cancelSegModal').addEventListener('click', closeSegModal);
+document.getElementById('overlaySegModal').addEventListener('click', closeSegModal);
 
-// Cache tratos para el modal de compra
-async function cacheTratos() {
-  try {
-    const res = await apiGet('/api/programa-cosecha/tratos-acordados');
-    window._tratosCache = res.items || [];
-  } catch {}
+// ── Modal Cierre ──────────────────────────────────────────────────────────────
+
+function openCierreModal(id, nombre) {
+  cierreProgramaId = id;
+  document.getElementById('modalCierreTitulo').textContent = `Cerrar programa — ${nombre || ''}`;
+  document.querySelectorAll('.cierre-opt-label').forEach(l => l.classList.remove('selected'));
+  document.getElementById('cierre-nota').value = '';
+  document.getElementById('cierre-error').style.display = 'none';
+  document.getElementById('overlayCierreModal').classList.add('open');
+  document.getElementById('modalCierre').classList.add('open');
 }
+function closeCierreModal() {
+  document.getElementById('overlayCierreModal').classList.remove('open');
+  document.getElementById('modalCierre').classList.remove('open');
+  cierreProgramaId = null;
+}
+
+document.querySelectorAll('.cierre-opt-label').forEach(lbl => {
+  lbl.addEventListener('click', () => {
+    document.querySelectorAll('.cierre-opt-label').forEach(l => l.classList.remove('selected'));
+    lbl.classList.add('selected');
+    lbl.querySelector('input').checked = true;
+  });
+});
+
+document.getElementById('saveCierreModal').addEventListener('click', async () => {
+  const motivo = document.querySelector('.cierre-opt-label.selected')?.dataset.val;
+  const nota   = document.getElementById('cierre-nota').value.trim();
+  const errEl  = document.getElementById('cierre-error');
+  if (!motivo) { errEl.textContent = 'Selecciona el motivo de cierre.'; errEl.style.display = ''; return; }
+  errEl.style.display = 'none';
+  const btn = document.getElementById('saveCierreModal');
+  btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Cerrando…';
+  try {
+    await apiPost(`/api/programa-cosecha/${cierreProgramaId}/cerrar`, { motivoCierre: motivo, nota });
+    toast('Programa cerrado');
+    closeCierreModal();
+    loadRegistro();
+    loadProgramas();
+    loadCalendario();
+  } catch(e) {
+    errEl.textContent = e.message; errEl.style.display = '';
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<i class="bi bi-flag"></i> Cerrar programa';
+  }
+});
+document.getElementById('closeCierreModal').addEventListener('click', closeCierreModal);
+document.getElementById('cancelCierreModal').addEventListener('click', closeCierreModal);
+document.getElementById('overlayCierreModal').addEventListener('click', closeCierreModal);
 
 // ════════════════════════════════════════════════════════════════════════
 // TABS
 // ════════════════════════════════════════════════════════════════════════
 
 function setupTabs() {
+  const fab = document.getElementById('fabNuevoPrograma');
   document.querySelectorAll('.bio-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.bio-tab').forEach(t => t.classList.remove('active'));
@@ -671,10 +783,13 @@ function setupTabs() {
       tab.classList.add('active');
       const panel = document.getElementById(tab.dataset.panel);
       if (panel) panel.classList.add('active');
+      if (fab) fab.style.display = tab.dataset.panel === 'panel-programas' ? '' : 'none';
       if (tab.dataset.panel === 'panel-programas') loadProgramas();
-      if (tab.dataset.panel === 'panel-registro')  { cacheTratos(); loadRegistro(); }
+      if (tab.dataset.panel === 'panel-registro')  { loadRegistro(); }
     });
   });
+  // Ocultar FAB en la tab inicial (Calendario)
+  if (fab) fab.style.display = 'none';
 }
 
 function setupCalControls() {
@@ -702,9 +817,7 @@ function setupProgFilters() {
 }
 
 function setupNewProg() {
-  const openModal = () => openProgramaModal(null);
-  document.getElementById('btnNuevoPrograma')?.addEventListener('click', openModal);
-  document.getElementById('fabNuevoPrograma')?.addEventListener('click', openModal);
+  document.getElementById('fabNuevoPrograma')?.addEventListener('click', () => openProgramaModal(null));
 }
 
 // ════════════════════════════════════════════════════════════════════════

@@ -115,28 +115,66 @@
     .prog-btn.danger:hover { background:#fee2e2; border-color:#ef4444; color:#ef4444; }
     .prog-empty     { text-align:center; color:var(--text-muted,#64748b); padding:48px 0; font-size:14px; }
 
-    /* ════════════════════════ TAB 3: REGISTRO ════════════════════════ */
+    /* ════════════════════════ TAB 3: SEGUIMIENTO ════════════════════════ */
     .reg-section    { margin-bottom:32px; }
     .reg-section h2 { font-size:15px; font-weight:700; color:var(--text-primary,#1e293b); margin:0 0 14px; display:flex; align-items:center; gap:8px; }
     .reg-section h2 .count { font-size:12px; font-weight:600; background:var(--surface-alt,#f1f5f9); color:var(--text-muted,#64748b); padding:2px 8px; border-radius:20px; border:1px solid var(--border,#e2e8f0); }
-    .reg-cards { display:flex; flex-direction:column; gap:10px; }
-    .reg-card  { background:var(--surface,#fff); border:1px solid var(--border,#e2e8f0); border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
-    .reg-card.efectuada { border-color:#6ee7b7; background:#f0fdf4; }
-    .reg-card-left { flex:1; min-width:200px; }
-    .reg-card-name { font-size:14px; font-weight:700; color:var(--text-primary,#1e293b); margin-bottom:4px; }
-    .reg-card-meta { font-size:12px; color:var(--text-muted,#64748b); display:flex; gap:12px; flex-wrap:wrap; }
-    .reg-card-meta span { display:flex; align-items:center; gap:4px; }
-    .reg-card-tons { text-align:center; min-width:100px; }
-    .reg-card-tons .val   { font-size:22px; font-weight:900; color:#0d9488; }
-    .reg-card-tons .val.real { color:#16a34a; }
-    .reg-card-tons .lbl   { font-size:10px; color:var(--text-muted,#64748b); font-weight:600; }
-    .reg-card-diff { text-align:center; min-width:80px; }
-    .reg-card-diff .val  { font-size:16px; font-weight:800; }
-    .reg-card-diff .val.pos { color:#16a34a; }
-    .reg-card-diff .val.neg { color:#dc2626; }
-    .reg-card-diff .lbl  { font-size:10px; color:var(--text-muted,#64748b); font-weight:600; }
-    .reg-card-actions { display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+    .reg-cards { display:flex; flex-direction:column; gap:12px; }
     .reg-empty { text-align:center; color:var(--text-muted,#64748b); padding:32px 0; font-size:13px; }
+
+    /* Tarjeta de seguimiento */
+    .seg-card { background:var(--surface,#fff); border:1px solid var(--border,#e2e8f0); border-radius:12px; overflow:hidden; }
+    .seg-card-header { padding:16px 20px; display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; }
+    .seg-card-info   { flex:1; min-width:200px; }
+    .seg-card-name   { font-size:14px; font-weight:700; color:var(--text-primary,#1e293b); margin-bottom:3px; }
+    .seg-card-meta   { font-size:12px; color:var(--text-muted,#64748b); display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .seg-card-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
+
+    /* Barra de progreso */
+    .seg-progress { padding:0 20px 14px; }
+    .seg-progress-bar { height:6px; background:var(--surface-alt,#f1f5f9); border-radius:99px; overflow:hidden; margin:6px 0 4px; }
+    .seg-progress-fill { height:100%; background:#0d9488; border-radius:99px; transition:width .4s; }
+    .seg-progress-label { font-size:11px; color:var(--text-muted,#64748b); display:flex; justify-content:space-between; }
+
+    /* Último seguimiento */
+    .seg-last { padding:0 20px 12px; }
+    .seg-last-entry { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary,#475569); }
+    .seg-last-none  { font-size:12px; color:var(--text-muted,#94a3b8); font-style:italic; }
+
+    /* Historial desplegable */
+    .seg-history { border-top:1px solid var(--border,#e2e8f0); }
+    .seg-history-toggle { width:100%; padding:10px 20px; background:none; border:none; cursor:pointer; font-size:12px; font-weight:600; color:var(--text-muted,#64748b); text-align:left; display:flex; align-items:center; gap:6px; transition:background .12s; }
+    .seg-history-toggle:hover { background:var(--surface-alt,#f8fafc); color:var(--text-primary,#1e293b); }
+    .seg-history-body { display:none; padding:8px 20px 12px; display:flex; flex-direction:column; gap:6px; }
+    .seg-history-body.open { display:flex; }
+    .seg-entry { display:flex; align-items:flex-start; gap:10px; padding:8px 10px; border-radius:8px; background:var(--surface-alt,#f8fafc); font-size:12px; }
+    .seg-entry-icon { font-size:15px; flex-shrink:0; margin-top:1px; }
+    .seg-entry-date { font-weight:700; color:var(--text-secondary,#475569); white-space:nowrap; }
+    .seg-entry-nota { color:var(--text-secondary,#475569); flex:1; }
+
+    /* Colores estado seguimiento */
+    .st-en_plan      { color:#16a34a; }
+    .st-con_retrasos { color:#d97706; }
+    .st-en_riesgo    { color:#dc2626; }
+    .badge-en_plan      { background:#dcfce7; color:#166534; border:1px solid #86efac; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; }
+    .badge-con_retrasos { background:#fef3c7; color:#92400e; border:1px solid #fde68a; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; }
+    .badge-en_riesgo    { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; }
+
+    /* Opciones de estado en modal seguimiento */
+    .seg-opt-group { display:flex; flex-direction:column; gap:8px; }
+    .seg-opt-label { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; border:1.5px solid var(--border,#e2e8f0); cursor:pointer; font-size:13px; font-weight:600; color:var(--text-secondary,#475569); transition:all .15s; }
+    .seg-opt-label:hover { border-color:#94a3b8; background:var(--surface-alt,#f8fafc); }
+    .seg-opt-label.selected { border-color:#0d9488; background:#f0fdfa; color:#0f766e; }
+    .seg-opt-label.selected.warn { border-color:#f59e0b; background:#fffbeb; color:#92400e; }
+    .seg-opt-label.selected.danger { border-color:#ef4444; background:#fff5f5; color:#991b1b; }
+    .seg-opt-radio { display:none; }
+
+    /* Opciones motivo cierre */
+    .cierre-opt-group { display:flex; flex-direction:column; gap:6px; }
+    .cierre-opt-label { display:flex; align-items:center; gap:10px; padding:9px 14px; border-radius:8px; border:1.5px solid var(--border,#e2e8f0); cursor:pointer; font-size:13px; color:var(--text-secondary,#475569); transition:all .15s; }
+    .cierre-opt-label:hover { border-color:#94a3b8; }
+    .cierre-opt-label.selected { border-color:#0d9488; background:#f0fdfa; color:#0f766e; font-weight:600; }
+    .cierre-opt-radio { display:none; }
 
     /* ════════════════════════ MODAL PROGRAMA ════════════════════════ */
     .bio-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:998; backdrop-filter:blur(2px); }
@@ -225,7 +263,7 @@
           <i class="bi bi-list-ul"></i> Programas
         </button>
         <button class="bio-tab" data-panel="panel-registro">
-          <i class="bi bi-bag-check"></i> Registro de Compras
+          <i class="bi bi-clipboard-check"></i> Seguimiento
         </button>
       </div>
 
@@ -300,9 +338,6 @@
             <button class="prog-filter-btn" data-estado="pausado">Pausados</button>
             <button class="prog-filter-btn" data-estado="finalizado">Finalizados</button>
           </div>
-          <button class="am-btn am-btn-primary write-only" id="btnNuevoPrograma" style="margin-left:auto;">
-            <i class="bi bi-plus-lg"></i> Nuevo programa
-          </button>
         </div>
         <div class="prog-table-wrap">
           <table class="prog-table">
@@ -323,29 +358,27 @@
         </div>
       </div>
 
-      <!-- ══════════════ PANEL: REGISTRO DE COMPRAS ══════════════ -->
+      <!-- ══════════════ PANEL: SEGUIMIENTO ══════════════ -->
       <div id="panel-registro" class="bio-panel">
 
-        <!-- Sección: pendientes de cierre -->
         <div class="reg-section">
           <h2>
-            <i class="bi bi-clock-history" style="color:#f59e0b;"></i>
-            Acuerdos activos — pendientes de cierre
-            <span class="count" id="regCountAcordado">0</span>
+            <i class="bi bi-activity" style="color:#0d9488;"></i>
+            Programas en curso
+            <span class="count" id="segCountActivos">0</span>
           </h2>
-          <div id="regAcordadoList" class="reg-cards">
+          <div id="segActivosList" class="reg-cards">
             <p class="reg-empty">Cargando…</p>
           </div>
         </div>
 
-        <!-- Sección: compras realizadas -->
         <div class="reg-section">
           <h2>
-            <i class="bi bi-bag-check-fill" style="color:#4ade80;"></i>
-            Compras realizadas
-            <span class="count" id="regCountEfectuada">0</span>
+            <i class="bi bi-flag-fill" style="color:#94a3b8;"></i>
+            Programas cerrados
+            <span class="count" id="segCountCerrados">0</span>
           </h2>
-          <div id="regEfectuadaList" class="reg-cards">
+          <div id="segCerradosList" class="reg-cards">
             <p class="reg-empty">Cargando…</p>
           </div>
         </div>
@@ -437,33 +470,89 @@
     </div>
   </div>
 
-  <!-- ══ MODAL: Registrar Compra ══ -->
-  <div id="overlayCompra" class="bio-modal-overlay"></div>
-  <div id="modalCompra" class="bio-modal compra-modal">
+  <!-- ══ MODAL: Seguimiento ══ -->
+  <div id="overlaySegModal" class="bio-modal-overlay"></div>
+  <div id="modalSeg" class="bio-modal" style="width:460px;">
     <h2>
-      <span>Registrar compra efectuada</span>
-      <button id="closeCompraModal">&times;</button>
+      <span id="modalSegTitulo">Registrar seguimiento</span>
+      <button id="closeSegModal">&times;</button>
     </h2>
-
-    <div style="display:flex;flex-direction:column;gap:14px;">
-      <div id="compraTratoInfo" style="background:#0f172a;border-radius:8px;padding:14px;font-size:13px;color:#94a3b8;"></div>
-
+    <div style="display:flex;flex-direction:column;gap:16px;">
       <div class="bio-form-group">
-        <label class="bio-label">Tons reales recibidas <span style="color:#ef4444">*</span></label>
-        <input type="number" id="c-tons-reales" class="bio-input" min="0" step="0.1" placeholder="0.0" />
+        <label class="bio-label">¿Cómo va el programa? <span style="color:#ef4444">*</span></label>
+        <div class="seg-opt-group">
+          <label class="seg-opt-label" data-val="en_plan">
+            <input type="radio" class="seg-opt-radio" name="segEstado" value="en_plan" />
+            <span style="font-size:18px;">✅</span>
+            <span>En plan — el programa se está cumpliendo normalmente</span>
+          </label>
+          <label class="seg-opt-label warn" data-val="con_retrasos">
+            <input type="radio" class="seg-opt-radio" name="segEstado" value="con_retrasos" />
+            <span style="font-size:18px;">⚠️</span>
+            <span>Con retrasos — hubo días sin camión o problemas menores</span>
+          </label>
+          <label class="seg-opt-label danger" data-val="en_riesgo">
+            <input type="radio" class="seg-opt-radio" name="segEstado" value="en_riesgo" />
+            <span style="font-size:18px;">🔴</span>
+            <span>En riesgo — hay señales de que el proveedor podría parar</span>
+          </label>
+        </div>
       </div>
       <div class="bio-form-group">
-        <label class="bio-label">Notas de cierre</label>
-        <textarea id="c-notas-cierre" class="bio-textarea" placeholder="Observaciones del cierre..."></textarea>
+        <label class="bio-label">Nota <span style="color:#ef4444">*</span></label>
+        <textarea id="seg-nota" class="bio-textarea" rows="3" placeholder="¿Qué ocurrió esta semana? ¿Llegaron los camiones? ¿Hay alguna novedad?"></textarea>
       </div>
     </div>
-
-    <div id="c-error" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:12px;color:#fca5a5;margin-top:12px;"></div>
-
+    <div id="seg-error" style="display:none;background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:12px;color:#991b1b;margin-top:12px;"></div>
     <div class="bio-modal-footer">
-      <button class="bio-btn-cancel" id="cancelCompraModal">Cancelar</button>
-      <button class="bio-btn-save" id="saveCompraModal" style="background:#16a34a;">
-        <i class="bi bi-bag-check"></i> Confirmar compra
+      <button class="bio-btn-cancel" id="cancelSegModal">Cancelar</button>
+      <button class="bio-btn-save" id="saveSegModal"><i class="bi bi-check-lg"></i> Guardar seguimiento</button>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Cerrar Programa ══ -->
+  <div id="overlayCierreModal" class="bio-modal-overlay"></div>
+  <div id="modalCierre" class="bio-modal" style="width:480px;">
+    <h2>
+      <span id="modalCierreTitulo">Cerrar programa</span>
+      <button id="closeCierreModal">&times;</button>
+    </h2>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="bio-form-group">
+        <label class="bio-label">Motivo de cierre <span style="color:#ef4444">*</span></label>
+        <div class="cierre-opt-group">
+          <label class="cierre-opt-label" data-val="completado">
+            <input type="radio" class="cierre-opt-radio" name="cierreMotivo" value="completado" />
+            <i class="bi bi-check-circle" style="color:#16a34a;font-size:16px;"></i>
+            Completado normalmente — el programa terminó según lo planificado
+          </label>
+          <label class="cierre-opt-label" data-val="proveedor_paro">
+            <input type="radio" class="cierre-opt-radio" name="cierreMotivo" value="proveedor_paro" />
+            <i class="bi bi-person-x" style="color:#f59e0b;font-size:16px;"></i>
+            El proveedor paró anticipadamente
+          </label>
+          <label class="cierre-opt-label" data-val="causa_externa">
+            <input type="radio" class="cierre-opt-radio" name="cierreMotivo" value="causa_externa" />
+            <i class="bi bi-cloud-lightning" style="color:#8b5cf6;font-size:16px;"></i>
+            Causa externa — clima, falla planta, logística
+          </label>
+          <label class="cierre-opt-label" data-val="decision_interna">
+            <input type="radio" class="cierre-opt-radio" name="cierreMotivo" value="decision_interna" />
+            <i class="bi bi-building" style="color:#64748b;font-size:16px;"></i>
+            Decisión interna — cerramos nosotros anticipadamente
+          </label>
+        </div>
+      </div>
+      <div class="bio-form-group">
+        <label class="bio-label">Nota de cierre</label>
+        <textarea id="cierre-nota" class="bio-textarea" rows="2" placeholder="Observaciones adicionales sobre el cierre..."></textarea>
+      </div>
+    </div>
+    <div id="cierre-error" style="display:none;background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:12px;color:#991b1b;margin-top:12px;"></div>
+    <div class="bio-modal-footer">
+      <button class="bio-btn-cancel" id="cancelCierreModal">Cancelar</button>
+      <button class="bio-btn-save" id="saveCierreModal" style="background:#64748b;">
+        <i class="bi bi-flag"></i> Cerrar programa
       </button>
     </div>
   </div>
