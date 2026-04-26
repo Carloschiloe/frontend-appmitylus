@@ -155,27 +155,34 @@ function renderMonthView() {
   for (let i = 0; i < 42; i++) {
     const d = new Date(from); d.setDate(from.getDate() + i);
     const key = localDayKey(d);
-    const isOther = d.getMonth() !== m;
-    const isToday = key === today;
-    const isSel   = key === selectedDay;
-    const data    = calData[key] || { total:0, items:[] };
-    const dots    = data.items.slice(0,5).map(it => `<div class="cal-day-dot" style="background:${getProviderColor(it.proveedorNombre)};"></div>`).join('');
+    const isOther  = d.getMonth() !== m;
+    const isToday  = key === today;
+    const isSel    = key === selectedDay;
     const isOffDay = (i % 7 === 4 || i % 7 === 5);
 
-    const hasCancelado = data.items.some(it => it.cancelado);
-    const hasReduced   = data.items.some(it => it.esDiaEspecial && !it.cancelado && it.camiones < (it.camionesDefault ?? it.camiones));
-    const hasExtra     = data.items.some(it => it.esDiaEspecial && !it.cancelado && it.camiones > (it.camionesDefault ?? it.camiones));
-    const novDots = [
-      hasCancelado ? `<span class="nov-dot cancel" title="Cancelado"></span>` : '',
-      hasReduced   ? `<span class="nov-dot reduced" title="Reducido"></span>` : '',
-      hasExtra     ? `<span class="nov-dot extra" title="Extra"></span>` : '',
-    ].join('');
+    // Días de otro mes: solo número, sin datos
+    if (isOther) {
+      html += `<div class="cal-day other-month${isOffDay?' off-day':''}" data-key="${key}">
+        <div class="cal-day-num">${d.getDate()}</div>
+        <div class="cal-day-trucks zero">·</div>
+      </div>`;
+      continue;
+    }
 
-    html += `<div class="cal-day${isOther?' other-month':''}${isToday?' today':''}${isSel?' selected':''}${isOffDay?' off-day':''}" data-key="${key}">
+    const data = calData[key] || { total:0, items:[] };
+    const dots = data.items.slice(0,5).map(it => `<div class="cal-day-dot" style="background:${getProviderColor(it.proveedorNombre)};"></div>`).join('');
+
+    // Indicador de novedad: un solo badge "!" sobre el número de camiones
+    const hasNovedad = data.items.some(it => it.esDiaEspecial);
+    const hasCancelado = data.items.some(it => it.cancelado);
+    const novBadge = hasNovedad
+      ? `<span class="nov-badge${hasCancelado?' nov-badge-cancel':''}" title="${hasCancelado?'Cancelado/reducido':'Novedad registrada'}">!</span>`
+      : '';
+
+    html += `<div class="cal-day${isToday?' today':''}${isSel?' selected':''}${isOffDay?' off-day':''}" data-key="${key}">
       <div class="cal-day-num">${d.getDate()}</div>
-      ${novDots ? `<div class="cal-day-novedad">${novDots}</div>` : ''}
       ${data.total > 0
-        ? `<div class="cal-day-trucks">${data.total}</div><div class="cal-day-label">cam.</div><div class="cal-day-dots">${dots}</div>`
+        ? `<div class="cal-day-trucks">${data.total}${novBadge}</div><div class="cal-day-label">cam.</div><div class="cal-day-dots">${dots}</div>`
         : `<div class="cal-day-trucks zero">·</div>`}
     </div>`;
   }
@@ -210,21 +217,17 @@ function renderWeekView() {
       `<div class="cal-week-provider"><div class="dot" style="background:${getProviderColor(it.proveedorNombre)};"></div>${esc(it.proveedorNombre)} ×${it.camiones}</div>`
     ).join('');
     const isOffWeek = (i === 4 || i === 5);
-    const wCancelado = data.items.some(it => it.cancelado);
-    const wReduced   = data.items.some(it => it.esDiaEspecial && !it.cancelado && it.camiones < (it.camionesDefault ?? it.camiones));
-    const wExtra     = data.items.some(it => it.esDiaEspecial && !it.cancelado && it.camiones > (it.camionesDefault ?? it.camiones));
-    const wNovDots = [
-      wCancelado ? `<span class="nov-dot cancel" title="Cancelado"></span>` : '',
-      wReduced   ? `<span class="nov-dot reduced" title="Reducido"></span>` : '',
-      wExtra     ? `<span class="nov-dot extra" title="Extra"></span>` : '',
-    ].join('');
+    const wHasNovedad  = data.items.some(it => it.esDiaEspecial);
+    const wHasCancelado = data.items.some(it => it.cancelado);
+    const wNovBadge = wHasNovedad
+      ? `<span class="nov-badge${wHasCancelado?' nov-badge-cancel':''}" title="${wHasCancelado?'Cancelado/reducido':'Novedad registrada'}">!</span>`
+      : '';
 
     html += `<div class="cal-week-day${isToday?' today':''}${isSel?' selected':''}${isOffWeek?' off-day':''}" data-key="${key}">
       <div class="cal-week-day-name">${days[i]}</div>
       <div class="cal-week-day-num" style="color:${isToday?'#2dd4bf':'#94a3b8'}">${d.getDate()}</div>
-      <div class="cal-week-trucks${data.total===0?' zero':''}">${data.total > 0 ? data.total : '·'}</div>
+      <div class="cal-week-trucks${data.total===0?' zero':''}">${data.total > 0 ? data.total : '·'}${wNovBadge}</div>
       ${data.total > 0 ? `<div class="cal-week-day-name" style="margin-top:2px;">camiones</div>` : ''}
-      ${wNovDots ? `<div class="cal-week-novedad">${wNovDots}</div>` : ''}
       <div class="cal-week-providers">${provLines}</div>
     </div>`;
   }
@@ -237,10 +240,17 @@ function renderWeekView() {
 function renderLegend() {
   const provs = new Set();
   Object.values(calData).forEach(d => d.items.forEach(i => provs.add(i.proveedorNombre)));
+  // Tipo de producto por proveedor (del listado de programas ya cargado)
+  const tipoMap = {};
+  programas.forEach(p => { if (p.proveedorNombre && p.tipoProducto) tipoMap[p.proveedorNombre] = p.tipoProducto; });
   const html = [...provs].map(p =>
-    `<div class="cal-legend-item"><div class="cal-legend-dot" style="background:${getProviderColor(p)};"></div>${esc(p)}</div>`
+    `<div class="cal-legend-item">
+      <div class="cal-legend-dot" style="background:${getProviderColor(p)};"></div>
+      <span>${esc(p)}</span>
+      ${tipoMap[p] ? `<span class="cal-legend-tipo">${esc(tipoMap[p])}</span>` : ''}
+    </div>`
   ).join('');
-  document.getElementById('calLegend').innerHTML = html;
+  document.getElementById('calLegend').innerHTML = html || '<span style="color:var(--text-muted,#94a3b8);font-size:12px;">Sin programas activos este período</span>';
 }
 
 function selectDay(key) {
@@ -262,9 +272,14 @@ function renderDayDetail(key) {
   }
 
   let html = `<div style="font-size:28px;font-weight:900;color:#2dd4bf;margin-bottom:16px;">${data.total} <span style="font-size:14px;color:#64748b;font-weight:600;">camiones totales</span></div>`;
+  // Tipo de producto por programa (del listado ya cargado)
+  const tipoMap = {};
+  programas.forEach(p => { if (p.proveedorNombre && p.tipoProducto) tipoMap[p.proveedorNombre] = p.tipoProducto; });
+
   data.items.forEach(it => {
     const color = getProviderColor(it.proveedorNombre);
     const motivoText = it.motivo || it.nota || '';
+    const tipoProd = tipoMap[it.proveedorNombre] || '';
     const novedadData = JSON.stringify({ progId: it.programaId, fecha: key, cam: it.camiones, camPlan: it.camionesDefault ?? it.camiones, motivo: motivoText, proveedor: it.proveedorNombre }).replace(/'/g, '&#39;');
     html += `<div class="cal-detail-item"${it.cancelado?' style="opacity:.75;border-color:#fca5a5;"':''}>
       <div class="cal-detail-proveedor">
@@ -274,6 +289,7 @@ function renderDayDetail(key) {
         ${it.cancelado?' <span class="badge-cancelado">Cancelado</span>':''}
         ${it.esFueraDeTurno?' <span class="badge-fuera-turno">Fuera turno</span>':''}
       </div>
+      ${tipoProd ? `<div class="cal-detail-tipo"><i class="bi bi-tag"></i> ${esc(tipoProd)}</div>` : ''}
       <div class="cal-detail-trucks" style="${it.cancelado?'text-decoration:line-through;color:#ef4444;':''}">
         ${it.camiones} cam${it.camiones!==1?'iones':'ión'}
         ${it.esDiaEspecial&&!it.cancelado?' <span style="font-size:11px;color:#f59e0b;font-weight:600;">· especial</span>':''}
@@ -313,6 +329,8 @@ async function loadProgramas() {
     const res = await apiGet(url);
     programas = res.items || [];
     renderProgramas();
+    // Si el calendario ya tiene datos, actualizar la leyenda con tipo de producto
+    if (Object.keys(calData).length) renderLegend();
   } catch(e) {
     document.getElementById('progTableBody').innerHTML = `<tr><td colspan="7" class="prog-empty" style="color:#ef4444;">${esc(e.message)}</td></tr>`;
   }
@@ -959,5 +977,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCalControls();
   setupProgFilters();
   setupNewProg();
+  // Cargar ambos en paralelo — programas necesario para la leyenda del calendario
   loadCalendario();
+  loadProgramas();
 });

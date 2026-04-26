@@ -59,13 +59,9 @@
     .cal-day-dots { display:flex; flex-wrap:wrap; gap:3px; margin-top:5px; }
     .cal-day-dot  { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
 
-    /* Indicadores de novedad en celdas del calendario */
-    .cal-day-novedad { position:absolute; top:6px; right:6px; display:flex; gap:2px; }
-    .nov-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-    .nov-dot.cancel  { background:#ef4444; }
-    .nov-dot.reduced { background:#f59e0b; }
-    .nov-dot.extra   { background:#22c55e; }
-    .cal-week-novedad { display:flex; gap:3px; margin-top:4px; }
+    /* Indicador de novedad: badge "!" sobre número de camiones */
+    .nov-badge { display:inline-block; font-size:10px; font-weight:800; color:#fff; background:#f59e0b; border-radius:50%; width:14px; height:14px; line-height:14px; text-align:center; margin-left:3px; vertical-align:middle; }
+    .nov-badge.nov-badge-cancel { background:#ef4444; }
 
     /* Semana grid */
     .cal-week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
@@ -94,6 +90,7 @@
     .cal-detail-meta   { font-size:11px; color:var(--text-muted,#64748b); }
     .cal-detail-condicion { margin-top:6px; padding:6px 8px; background:#fffbeb; border-left:2px solid #f59e0b; border-radius:4px; font-size:11px; color:#92400e; }
     .cal-detail-nota     { margin-top:4px; font-size:11px; color:var(--text-muted,#64748b); font-style:italic; }
+    .cal-detail-tipo     { font-size:11px; color:#0d9488; font-weight:600; margin:3px 0 2px; display:flex; align-items:center; gap:4px; }
     .badge-pausado { background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd; padding:2px 7px; border-radius:20px; font-size:10px; font-weight:700; }
 
     /* ════════════════════════ TAB 2: PROGRAMAS ════════════════════════ */
@@ -243,6 +240,7 @@
     .cal-legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
     .cal-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-secondary,#475569); }
     .cal-legend-dot  { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .cal-legend-tipo { background:#f0fdfa; color:#0d9488; border:1px solid #99f6e4; border-radius:10px; padding:1px 7px; font-size:10px; font-weight:700; }
 
     /* Novedad diaria en detalle del calendario */
     .cal-detail-edit { margin-top:6px; }
