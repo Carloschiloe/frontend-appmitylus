@@ -161,10 +161,20 @@ function renderMonthView() {
     const isSel   = key === selectedDay;
     const data    = calData[key] || { total:0, items:[] };
     const dots    = data.items.slice(0,5).map(it => `<div class="cal-day-dot" style="background:${getProviderColor(it.proveedorNombre)};"></div>`).join('');
-    const isOffDay = (i % 7 === 4 || i % 7 === 5); // Vie=4, Sáb=5 in Mon-first grid
+    const isOffDay = (i % 7 === 4 || i % 7 === 5);
+
+    const hasCancelado = data.items.some(it => it.cancelado);
+    const hasReduced   = data.items.some(it => it.esDiaEspecial && !it.cancelado && it.camiones < (it.camionesDefault ?? it.camiones));
+    const hasExtra     = data.items.some(it => it.esDiaEspecial && !it.cancelado && it.camiones > (it.camionesDefault ?? it.camiones));
+    const novDots = [
+      hasCancelado ? `<span class="nov-dot cancel" title="Cancelado"></span>` : '',
+      hasReduced   ? `<span class="nov-dot reduced" title="Reducido"></span>` : '',
+      hasExtra     ? `<span class="nov-dot extra" title="Extra"></span>` : '',
+    ].join('');
 
     html += `<div class="cal-day${isOther?' other-month':''}${isToday?' today':''}${isSel?' selected':''}${isOffDay?' off-day':''}" data-key="${key}">
       <div class="cal-day-num">${d.getDate()}</div>
+      ${novDots ? `<div class="cal-day-novedad">${novDots}</div>` : ''}
       ${data.total > 0
         ? `<div class="cal-day-trucks">${data.total}</div><div class="cal-day-label">cam.</div><div class="cal-day-dots">${dots}</div>`
         : `<div class="cal-day-trucks zero">·</div>`}
@@ -200,12 +210,22 @@ function renderWeekView() {
     const provLines = data.items.map(it =>
       `<div class="cal-week-provider"><div class="dot" style="background:${getProviderColor(it.proveedorNombre)};"></div>${esc(it.proveedorNombre)} ×${it.camiones}</div>`
     ).join('');
-    const isOffWeek = (i === 4 || i === 5); // Vie=4, Sáb=5 in Mon-first week
+    const isOffWeek = (i === 4 || i === 5);
+    const wCancelado = data.items.some(it => it.cancelado);
+    const wReduced   = data.items.some(it => it.esDiaEspecial && !it.cancelado && it.camiones < (it.camionesDefault ?? it.camiones));
+    const wExtra     = data.items.some(it => it.esDiaEspecial && !it.cancelado && it.camiones > (it.camionesDefault ?? it.camiones));
+    const wNovDots = [
+      wCancelado ? `<span class="nov-dot cancel" title="Cancelado"></span>` : '',
+      wReduced   ? `<span class="nov-dot reduced" title="Reducido"></span>` : '',
+      wExtra     ? `<span class="nov-dot extra" title="Extra"></span>` : '',
+    ].join('');
+
     html += `<div class="cal-week-day${isToday?' today':''}${isSel?' selected':''}${isOffWeek?' off-day':''}" data-key="${key}">
       <div class="cal-week-day-name">${days[i]}</div>
       <div class="cal-week-day-num" style="color:${isToday?'#2dd4bf':'#94a3b8'}">${d.getDate()}</div>
       <div class="cal-week-trucks${data.total===0?' zero':''}">${data.total > 0 ? data.total : '·'}</div>
       ${data.total > 0 ? `<div class="cal-week-day-name" style="margin-top:2px;">camiones</div>` : ''}
+      ${wNovDots ? `<div class="cal-week-novedad">${wNovDots}</div>` : ''}
       <div class="cal-week-providers">${provLines}</div>
     </div>`;
   }
@@ -321,6 +341,8 @@ function renderProgramas() {
         <div style="font-size:12px;color:var(--text-secondary,#475569);">${fmtDateShort(p.vigenciaDesde)} — ${fmtDateShort(p.vigenciaHasta)}</div>
         ${p.tonsEstimadas?`<div class="prog-periodo">${p.tonsEstimadas} tons est.</div>`:''}
         <div class="prog-periodo" style="margin-top:2px;"><i class="bi bi-calendar-week" style="margin-right:3px;"></i>${diasLabel}</div>
+        ${p.totalCamionesEstimados ? `<div class="prog-periodo" style="margin-top:2px;"><i class="bi bi-truck" style="margin-right:3px;"></i>~${p.totalCamionesEstimados} cam. totales</div>` : ''}
+        ${p.tipoProducto ? `<div class="prog-periodo" style="margin-top:2px;"><i class="bi bi-tag" style="margin-right:3px;color:#0d9488;"></i>${esc(p.tipoProducto)}</div>` : ''}
       </td>
       <td><span class="prog-camiones">${p.camionesDefault}</span></td>
       <td>
@@ -636,6 +658,8 @@ function renderSegList(containerId, items, isCerrado) {
             ${estadoBadge}
             <span><i class="bi bi-calendar3"></i>${fmtDateShort(p.vigenciaDesde)} — ${fmtDateShort(p.vigenciaHasta)}</span>
             <span><i class="bi bi-truck"></i>${p.camionesDefault} cam/día · ${diasLabel}</span>
+            ${p.totalCamionesEstimados ? `<span><i class="bi bi-truck"></i>~${p.totalCamionesEstimados} cam. totales</span>` : ''}
+            ${p.tipoProducto ? `<span><i class="bi bi-tag" style="color:#0d9488;"></i>${esc(p.tipoProducto)}</span>` : ''}
             ${p.tonsEstimadas ? `<span><i class="bi bi-boxes"></i>~${p.tonsEstimadas} tons est.</span>` : ''}
           </div>
           ${isCerrado && p.motivoCierre ? `<div style="margin-top:6px;font-size:11px;color:#94a3b8;"><i class="bi bi-flag"></i> ${esc(CIERRE_LABEL[p.motivoCierre] || p.motivoCierre)}</div>` : ''}

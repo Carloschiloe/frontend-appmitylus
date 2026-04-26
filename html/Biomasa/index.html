@@ -59,6 +59,14 @@
     .cal-day-dots { display:flex; flex-wrap:wrap; gap:3px; margin-top:5px; }
     .cal-day-dot  { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
 
+    /* Indicadores de novedad en celdas del calendario */
+    .cal-day-novedad { position:absolute; top:6px; right:6px; display:flex; gap:2px; }
+    .nov-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .nov-dot.cancel  { background:#ef4444; }
+    .nov-dot.reduced { background:#f59e0b; }
+    .nov-dot.extra   { background:#22c55e; }
+    .cal-week-novedad { display:flex; gap:3px; margin-top:4px; }
+
     /* Semana grid */
     .cal-week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
     .cal-week-day  { background:var(--surface,#fff); border:1px solid var(--border,#e2e8f0); border-radius:10px; padding:14px; cursor:pointer; transition:background .12s,box-shadow .12s; }
