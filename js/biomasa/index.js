@@ -404,7 +404,7 @@ async function openProgramaModal(prog = null) {
     sel.innerHTML = '<option value="">— Seleccionar trato acordado —</option>' +
       tratosDisponibles.map(t =>
         `<option value="${t._id}" data-proveedor="${esc(t.proveedorNombre)}" data-tons="${t.tonsAcordadas||''}" data-cam="${t.camionesXDia||''}" data-desde="${t.vigenciaDesde||''}" data-hasta="${t.vigenciaHasta||''}" data-centro="${esc(t.centroNombre||t.centroCodigo||'')}">
-          ${esc(t.proveedorNombre)} — ${t.estado==='acordado'?'Acordado':'Efectuado'} ${t.tonsAcordadas?`(${t.tonsAcordadas}T)`:''}
+          ${esc(t.proveedorNombre)} — ${esc(t.estado)} ${t.tonsAcordadas?`(${t.tonsAcordadas}T)`:''}
         </option>`
       ).join('');
   } catch(e) { /* silenciar */ }
