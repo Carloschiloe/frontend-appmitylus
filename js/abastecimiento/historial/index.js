@@ -212,7 +212,7 @@ function buildTimeline(providerKey) {
     ));
 
   const interacciones = state.raw.interacciones
-    .filter((x) => providerKeyOf(x) === providerKey)
+    .filter((x) => providerKeyOf(x) === providerKey && !(x.tipo || '').toLowerCase().includes('muestreo'))
     .map((x) => makeEvent(
       'interaccion',
       dateOf(x, ['fecha', 'createdAt', 'updatedAt']),
