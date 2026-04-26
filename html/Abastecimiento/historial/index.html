@@ -1,67 +1,379 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Historial MMPP | Trazabilidad</title>
+  <title>Trazabilidad | Expediente de Proveedor</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/index-modern.css">
-  <link rel="stylesheet" href="/css/historial.css">
   <link rel="stylesheet" href="/css/base-ui.css">
   <script src="/js/auth.js"></script>
+  <style>
+    /* ── Layout base ─────────────────────────────────────────── */
+    .hst-page { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+
+    /* ── Estado 1: Pantalla de búsqueda ──────────────────────── */
+    #viewSearch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1.5rem 2rem;
+      gap: 1.5rem;
+      overflow-y: auto;
+      height: 100%;
+    }
+    .hst-search-hero { text-align: center; max-width: 560px; }
+    .hst-search-hero h1 { font-size: 1.6rem; font-weight: 700; color: var(--text-primary, #1e293b); margin: 0 0 .4rem; }
+    .hst-search-hero p  { color: var(--text-muted, #64748b); margin: 0; font-size: .9rem; }
+
+    .hst-search-box {
+      display: flex; align-items: center; gap: .5rem;
+      background: var(--surface, #fff);
+      border: 1.5px solid var(--border, #e2e8f0);
+      border-radius: 12px;
+      padding: .55rem 1rem;
+      width: 100%; max-width: 520px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      transition: border-color .15s;
+    }
+    .hst-search-box:focus-within { border-color: var(--accent, #6366f1); }
+    .hst-search-box i { color: var(--text-muted, #94a3b8); font-size: 1.1rem; flex-shrink: 0; }
+    .hst-search-box input {
+      border: none; outline: none; background: transparent;
+      font-size: .95rem; width: 100%; color: var(--text-primary, #1e293b);
+    }
+    .hst-search-box input::placeholder { color: var(--text-muted, #94a3b8); }
+
+    .hst-provider-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: .75rem;
+      width: 100%; max-width: 900px;
+    }
+    .hst-prov-card {
+      background: var(--surface, #fff);
+      border: 1.5px solid var(--border, #e2e8f0);
+      border-radius: 10px;
+      padding: .85rem 1rem;
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s, transform .1s;
+      display: flex; flex-direction: column; gap: .25rem;
+    }
+    .hst-prov-card:hover {
+      border-color: var(--accent, #6366f1);
+      box-shadow: 0 4px 12px rgba(99,102,241,.12);
+      transform: translateY(-1px);
+    }
+    .hst-prov-name { font-weight: 600; font-size: .9rem; color: var(--text-primary, #1e293b); }
+    .hst-prov-meta { font-size: .75rem; color: var(--text-muted, #94a3b8); }
+    .hst-prov-badge {
+      display: inline-flex; align-items: center; gap: .2rem;
+      font-size: .7rem; font-weight: 600; padding: .15rem .45rem;
+      border-radius: 20px; margin-top: .25rem; width: fit-content;
+    }
+    .badge-red    { background: #fee2e2; color: #b91c1c; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .badge-green  { background: #d1fae5; color: #065f46; }
+    .badge-gray   { background: #f1f5f9; color: #64748b; }
+
+    .hst-loading { color: var(--text-muted, #94a3b8); font-size: .9rem; }
+
+    /* ── Estado 2: Expediente ────────────────────────────────── */
+    #viewExpediente {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    #viewExpediente.is-visible { display: flex; }
+
+    /* Header del expediente */
+    .exp-header {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 1rem 1.5rem .75rem;
+      border-bottom: 1px solid var(--border, #e2e8f0);
+      background: var(--surface, #fff);
+      flex-shrink: 0;
+    }
+    .exp-back {
+      display: inline-flex; align-items: center; gap: .4rem;
+      font-size: .85rem; color: var(--accent, #6366f1);
+      background: none; border: none; cursor: pointer; padding: .35rem .6rem;
+      border-radius: 8px; transition: background .12s;
+    }
+    .exp-back:hover { background: rgba(99,102,241,.08); }
+    .exp-title { flex: 1; }
+    .exp-title h2 { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text-primary, #1e293b); }
+    .exp-title p  { margin: 0; font-size: .78rem; color: var(--text-muted, #64748b); }
+    .exp-actions { display: flex; gap: .5rem; }
+    .exp-btn-export {
+      display: inline-flex; align-items: center; gap: .4rem;
+      font-size: .82rem; font-weight: 600;
+      background: var(--accent, #6366f1); color: #fff;
+      border: none; border-radius: 8px; padding: .45rem .85rem;
+      cursor: pointer; transition: opacity .15s;
+    }
+    .exp-btn-export:hover { opacity: .88; }
+
+    /* Resumen KPI + alertas */
+    .exp-summary {
+      display: flex; gap: .75rem; flex-wrap: wrap;
+      padding: .85rem 1.5rem;
+      border-bottom: 1px solid var(--border, #e2e8f0);
+      background: var(--surface-alt, #f8fafc);
+      flex-shrink: 0;
+    }
+    .exp-kpi {
+      background: var(--surface, #fff);
+      border: 1px solid var(--border, #e2e8f0);
+      border-radius: 10px;
+      padding: .55rem .9rem;
+      min-width: 100px;
+      text-align: center;
+    }
+    .exp-kpi-val { font-size: 1.3rem; font-weight: 700; color: var(--text-primary, #1e293b); line-height: 1; }
+    .exp-kpi-lbl { font-size: .7rem; color: var(--text-muted, #64748b); margin-top: .2rem; }
+    .exp-alerts { display: flex; flex-direction: column; gap: .3rem; justify-content: center; }
+    .exp-alert-pill {
+      display: inline-flex; align-items: center; gap: .35rem;
+      font-size: .78rem; font-weight: 600; padding: .3rem .7rem;
+      border-radius: 20px;
+    }
+    .alert-red    { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .alert-yellow { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .alert-green  { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+
+    /* Filtros */
+    .exp-filters {
+      display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+      padding: .65rem 1.5rem;
+      border-bottom: 1px solid var(--border, #e2e8f0);
+      background: var(--surface, #fff);
+      flex-shrink: 0;
+    }
+    .exp-filters span { font-size: .78rem; color: var(--text-muted, #64748b); font-weight: 600; }
+    .exp-chip {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-size: .78rem; font-weight: 600;
+      padding: .3rem .75rem; border-radius: 20px;
+      border: 1.5px solid var(--border, #e2e8f0);
+      background: transparent; cursor: pointer;
+      color: var(--text-secondary, #475569);
+      transition: all .12s;
+    }
+    .exp-chip:hover { border-color: #94a3b8; }
+    .exp-chip.active {
+      background: var(--accent, #6366f1); color: #fff;
+      border-color: var(--accent, #6366f1);
+    }
+    .chip-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Timeline scrollable */
+    .exp-timeline-wrap {
+      flex: 1; overflow-y: auto; padding: 1.5rem 1.5rem 3rem;
+    }
+
+    /* Línea vertical */
+    .exp-timeline { position: relative; padding-left: 2rem; }
+    .exp-timeline::before {
+      content: '';
+      position: absolute; left: .65rem; top: 0; bottom: 0;
+      width: 2px; background: var(--border, #e2e8f0);
+      border-radius: 2px;
+    }
+
+    /* Tarjeta de evento */
+    .exp-event {
+      position: relative; margin-bottom: 1.1rem;
+      animation: fadeSlideIn .2s ease both;
+    }
+    .exp-event.is-hidden { display: none; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Punto en la línea */
+    .exp-event-dot {
+      position: absolute; left: -2rem;
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2.5px solid #fff;
+      top: .75rem;
+      box-shadow: 0 0 0 2px currentColor;
+    }
+
+    /* Card */
+    .exp-card {
+      background: var(--surface, #fff);
+      border: 1.5px solid var(--border, #e2e8f0);
+      border-radius: 10px;
+      padding: .75rem 1rem;
+      border-left-width: 4px;
+      transition: box-shadow .12s;
+    }
+    .exp-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,.07); }
+
+    .exp-card-top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: .5rem; margin-bottom: .25rem;
+    }
+    .exp-card-title { font-weight: 600; font-size: .88rem; color: var(--text-primary, #1e293b); }
+    .exp-card-date {
+      font-size: .73rem; color: var(--text-muted, #94a3b8);
+      white-space: nowrap; flex-shrink: 0;
+      cursor: default;
+    }
+    .exp-card-date abbr { text-decoration: none; border-bottom: 1px dashed #cbd5e1; }
+    .exp-card-sub { font-size: .8rem; color: var(--text-secondary, #475569); margin-bottom: .2rem; }
+    .exp-card-notes { font-size: .77rem; color: var(--text-muted, #64748b); font-style: italic; }
+    .exp-card-resp {
+      display: inline-flex; align-items: center; gap: .25rem;
+      font-size: .73rem; color: var(--text-muted, #94a3b8); margin-top: .35rem;
+    }
+
+    /* Colores por tipo */
+    .ev-registro    { --ev-color: #0d9488; } /* teal */
+    .ev-interaccion { --ev-color: #3b82f6; } /* blue */
+    .ev-visita      { --ev-color: #8b5cf6; } /* purple */
+    .ev-trato       { --ev-color: #f59e0b; } /* amber */
+    .ev-acordado    { --ev-color: #10b981; } /* green */
+    .ev-compra      { --ev-color: #059669; } /* emerald */
+    .ev-perdido     { --ev-color: #ef4444; } /* red */
+    .ev-muestreo    { --ev-color: #06b6d4; } /* cyan */
+    .ev-evento      { --ev-color: #6366f1; } /* indigo */
+
+    .exp-event-dot  { color: var(--ev-color, #94a3b8); background: var(--ev-color, #94a3b8); }
+    .exp-card       { border-left-color: var(--ev-color, #e2e8f0); }
+
+    /* Separador de brecha */
+    .exp-gap {
+      display: flex; align-items: center; gap: .75rem;
+      margin: .5rem 0 1rem;
+      color: var(--text-muted, #94a3b8);
+      font-size: .75rem;
+    }
+    .exp-gap::before, .exp-gap::after {
+      content: ''; flex: 1; height: 1px;
+      background: repeating-linear-gradient(90deg, #cbd5e1 0, #cbd5e1 4px, transparent 4px, transparent 8px);
+    }
+
+    /* Vacío */
+    .exp-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted, #94a3b8); font-size: .9rem; }
+
+    /* Print */
+    @media print {
+      #sidebar-container, .exp-back, .exp-actions, .exp-filters, .hst-search-box { display: none !important; }
+      #viewExpediente { display: flex !important; }
+      .exp-timeline-wrap { overflow: visible; }
+      .exp-event.is-hidden { display: block !important; }
+    }
+  </style>
 </head>
-<body>
+<body class="app-modern-v2">
   <div class="layout">
     <div id="sidebar-container"></div>
 
     <main class="content">
-      <header class="hero">
-        <p class="eyebrow">Historial</p>
-        <h1>Trazabilidad por proveedor</h1>
-        <p>Linea de tiempo unificada desde la primera gestion hasta la ultima gestion registrada.</p>
-      </header>
+      <div class="hst-page">
 
-      <section class="hist-filters">
-        <input id="histSearchProv" class="dash-input" type="text" placeholder="Buscar proveedor...">
-        <select id="histProviderSelect" class="dash-select" aria-label="Seleccionar proveedor"></select>
-        <select id="histWindow" class="dash-select" aria-label="Ventana de tiempo">
-          <option value="0">Todo el historial</option>
-          <option value="30">Ultimos 30 dias</option>
-          <option value="90" selected>Ultimos 90 dias</option>
-          <option value="365">Ultimos 12 meses</option>
-        </select>
-        <button id="histRefresh" class="dash-btn" type="button">Actualizar</button>
-      </section>
-
-      <section class="hist-kpis">
-        <article class="dw-card"><p class="dw-label">Eventos visibles</p><p id="hkEventos" class="dw-value">-</p></article>
-        <article class="dw-card"><p class="dw-label">Visitas</p><p id="hkVisitas" class="dw-value">-</p></article>
-        <article class="dw-card"><p class="dw-label">Interacciones</p><p id="hkInteracciones" class="dw-value">-</p></article>
-        <article class="dw-card"><p class="dw-label">Oportunidades</p><p id="hkOportunidades" class="dw-value">-</p></article>
-      </section>
-
-      <section class="hist-layout">
-        <aside class="panel">
-          <div class="panel-head">
-            <h3>Proveedor seleccionado</h3>
+        <!-- ══ ESTADO 1: Búsqueda ══════════════════════════════ -->
+        <div id="viewSearch">
+          <div class="hst-search-hero">
+            <h1><i class="bi bi-journal-richtext"></i> Expediente de Trazabilidad</h1>
+            <p>Selecciona un proveedor para ver su línea de tiempo completa: desde el primer contacto hasta la última compra.</p>
           </div>
-          <div id="histProviderMeta" class="hist-meta">
-            <p class="empty">Selecciona un proveedor para ver su resumen.</p>
-          </div>
-        </aside>
 
-        <section class="panel">
-          <div class="panel-head">
-            <h3>Timeline</h3>
-            <span id="histHint" class="panel-hint"></span>
+          <div class="hst-search-box">
+            <i class="bi bi-search"></i>
+            <input id="histSearch" type="text" placeholder="Buscar proveedor por nombre..." autocomplete="off">
           </div>
-          <ul id="histTimeline" class="hist-timeline">
-            <li class="empty">Cargando historial...</li>
-          </ul>
-        </section>
-      </section>
+
+          <div id="histProvGrid" class="hst-provider-grid">
+            <p class="hst-loading">Cargando proveedores...</p>
+          </div>
+        </div>
+
+        <!-- ══ ESTADO 2: Expediente ════════════════════════════ -->
+        <div id="viewExpediente">
+
+          <header class="exp-header">
+            <button id="btnBack" class="exp-back" type="button">
+              <i class="bi bi-arrow-left"></i> Volver
+            </button>
+            <div class="exp-title">
+              <h2 id="expProvName">—</h2>
+              <p id="expProvSub">Expediente de trazabilidad</p>
+            </div>
+            <div class="exp-actions">
+              <button id="btnExport" class="exp-btn-export write-only" type="button">
+                <i class="bi bi-printer"></i> Exportar
+              </button>
+            </div>
+          </header>
+
+          <div class="exp-summary">
+            <div class="exp-kpi">
+              <div id="kpiTotal" class="exp-kpi-val">—</div>
+              <div class="exp-kpi-lbl">Total eventos</div>
+            </div>
+            <div class="exp-kpi">
+              <div id="kpiVisitas" class="exp-kpi-val">—</div>
+              <div class="exp-kpi-lbl">Visitas</div>
+            </div>
+            <div class="exp-kpi">
+              <div id="kpiInteracciones" class="exp-kpi-val">—</div>
+              <div class="exp-kpi-lbl">Interacciones</div>
+            </div>
+            <div class="exp-kpi">
+              <div id="kpiTratos" class="exp-kpi-val">—</div>
+              <div class="exp-kpi-lbl">Tratos</div>
+            </div>
+            <div class="exp-kpi">
+              <div id="kpiCompras" class="exp-kpi-val">—</div>
+              <div class="exp-kpi-lbl">Compras</div>
+            </div>
+            <div id="expAlerts" class="exp-alerts"></div>
+          </div>
+
+          <div class="exp-filters">
+            <span>Filtrar:</span>
+            <button class="exp-chip active" data-filter="todos" type="button">Todos</button>
+            <button class="exp-chip" data-filter="registro" type="button">
+              <span class="chip-dot" style="background:#0d9488"></span>Registro
+            </button>
+            <button class="exp-chip" data-filter="interaccion" type="button">
+              <span class="chip-dot" style="background:#3b82f6"></span>Interacciones
+            </button>
+            <button class="exp-chip" data-filter="visita" type="button">
+              <span class="chip-dot" style="background:#8b5cf6"></span>Visitas
+            </button>
+            <button class="exp-chip" data-filter="trato" type="button">
+              <span class="chip-dot" style="background:#f59e0b"></span>Tratos
+            </button>
+            <button class="exp-chip" data-filter="compra" type="button">
+              <span class="chip-dot" style="background:#059669"></span>Compras
+            </button>
+            <button class="exp-chip" data-filter="muestreo" type="button">
+              <span class="chip-dot" style="background:#06b6d4"></span>Muestreos
+            </button>
+          </div>
+
+          <div class="exp-timeline-wrap">
+            <div id="expTimeline" class="exp-timeline">
+              <p class="exp-empty">Cargando...</p>
+            </div>
+          </div>
+
+        </div><!-- /viewExpediente -->
+
+      </div><!-- /hst-page -->
     </main>
   </div>
+
   <script type="module" src="/js/abastecimiento/historial/index.js"></script>
   <script type="module" src="/js/components/Sidebar.js"></script>
 </body>
