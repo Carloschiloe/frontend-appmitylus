@@ -450,6 +450,22 @@
         <input type="number" id="p-tons" class="bio-input" min="0" placeholder="Opcional" />
       </div>
 
+      <div class="bio-form-group">
+        <label class="bio-label">Tipo de camión</label>
+        <select id="p-tipo-camion" class="bio-select">
+          <option value="">— Sin definir —</option>
+          <option value="simple">Camión simple</option>
+          <option value="con_carro">Con carro</option>
+          <option value="con_rampa">Con rampa</option>
+          <option value="tolva_simple">Tolva simple</option>
+          <option value="tolva_doble">Tolva doble</option>
+        </select>
+      </div>
+      <div class="bio-form-group">
+        <label class="bio-label">Maxis / sacos por camión</label>
+        <input type="number" id="p-maxis" class="bio-input" min="1" max="200" placeholder="Ej: 28" />
+      </div>
+
       <div class="bio-form-group col-2">
         <label class="bio-label">Condición de continuidad</label>
         <input type="text" id="p-condicion" class="bio-input" placeholder="Ej: Probemos 2 camiones y veamos cómo llega..." />

@@ -508,6 +508,11 @@ function abrirModal(trato = null) {
   if (camRow) camRow.style.display = 'none';
   if (camInput) camInput.value = trato?.camionesXDia ?? '';
 
+  const tipoCamionEl = document.getElementById('tratoTipoCamion');
+  const maxisEl = document.getElementById('tratoMaxisPorCamion');
+  if (tipoCamionEl) tipoCamionEl.value = trato?.tipoCamionDefault || '';
+  if (maxisEl) maxisEl.value = trato?.maxisPorCamion ?? '';
+
   // Vigencia (inicio/término) — usado para filtros por calendario
   const startDefault = isNew ? new Date() : null;
   const r = getTratoVigenciaRange(trato) || {};
@@ -632,7 +637,9 @@ async function guardarTrato() {
   const estado       = document.getElementById('tratoEstado').value;
   const responsableNombre = document.getElementById('tratoResponsable').value.trim();
   const notasTrato     = document.getElementById('tratoNotas').value.trim();
-  const camionesXDia   = parseInt(document.getElementById('tratoCamiones')?.value) || null;
+  const camionesXDia       = parseInt(document.getElementById('tratoCamiones')?.value) || null;
+  const tipoCamionDefault  = document.getElementById('tratoTipoCamion')?.value || null;
+  const maxisPorCamion     = parseInt(document.getElementById('tratoMaxisPorCamion')?.value) || null;
 
   const vigDesde = inputDateToUtcNoon(document.getElementById('tratoVigenciaDesde')?.value);
   const vigHasta = inputDateToUtcNoon(document.getElementById('tratoVigenciaHasta')?.value);
@@ -670,6 +677,8 @@ async function guardarTrato() {
         vigenciaDesde: vigDesde.toISOString(),
         vigenciaHasta: vigHasta ? vigHasta.toISOString() : null,
         camionesXDia,
+        tipoCamionDefault,
+        maxisPorCamion,
         origen: 'manual',
       });
     } else {
@@ -689,6 +698,8 @@ async function guardarTrato() {
         vigenciaDesde: vigDesde.toISOString(),
         vigenciaHasta: vigHasta ? vigHasta.toISOString() : null,
         camionesXDia,
+        tipoCamionDefault,
+        maxisPorCamion,
       });
     }
 

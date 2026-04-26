@@ -1193,6 +1193,23 @@
               <input id="tratoCamiones" class="am-input" type="number" min="1" max="20" step="1" placeholder="Ej: 2" style="width:120px;">
             </div>
 
+            <div class="trato-section">
+              <label class="trato-label">Tipo de camión (default para este proveedor)</label>
+              <select id="tratoTipoCamion" class="browser-default modern-select" style="width:100%;">
+                <option value="">— Sin definir —</option>
+                <option value="simple">Camión simple</option>
+                <option value="con_carro">Con carro</option>
+                <option value="con_rampa">Con rampa</option>
+                <option value="tolva_simple">Tolva simple</option>
+                <option value="tolva_doble">Tolva doble</option>
+              </select>
+            </div>
+
+            <div class="trato-section">
+              <label class="trato-label">Maxis / sacos por camión</label>
+              <input id="tratoMaxisPorCamion" class="am-input" type="number" min="1" max="200" step="1" placeholder="Ej: 28" style="width:140px;">
+            </div>
+
             <div class="trato-section trato-periodo-row">
               <label class="trato-label">Vigencia (inicio / término)</label>
               <div class="trato-periodo-inputs">

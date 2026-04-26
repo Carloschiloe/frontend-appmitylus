@@ -2,6 +2,15 @@
 
 const API = window.APP_CONFIG?.API_BASE_URL || '';
 
+// ── Tipos de camión ───────────────────────────────────────────────────────────
+const TIPO_CAMION_LABEL = {
+  simple:       'Camión simple',
+  con_carro:    'Con carro',
+  con_rampa:    'Con rampa',
+  tolva_simple: 'Tolva simple',
+  tolva_doble:  'Tolva doble',
+};
+
 // ── Paleta de colores para proveedores en el calendario ──────────────────────
 const PROVIDER_COLORS = [
   '#2dd4bf','#60a5fa','#f59e0b','#a78bfa','#f472b6',
@@ -279,7 +288,10 @@ function renderDayDetail(key) {
   data.items.forEach(it => {
     const color = getProviderColor(it.proveedorNombre);
     const motivoText = it.motivo || it.nota || '';
-    const tipoProd = tipoMap[it.proveedorNombre] || '';
+    const tipoProd  = tipoMap[it.proveedorNombre] || '';
+    const progData  = programas.find(p => p._id === it.programaId || String(p._id) === it.programaId);
+    const tipoCam   = progData?.tipoCamion ? TIPO_CAMION_LABEL[progData.tipoCamion] || progData.tipoCamion : '';
+    const maxisCam  = progData?.maxisPorCamion || null;
     const novedadData = JSON.stringify({ progId: it.programaId, fecha: key, cam: it.camiones, camPlan: it.camionesDefault ?? it.camiones, motivo: motivoText, proveedor: it.proveedorNombre }).replace(/'/g, '&#39;');
     html += `<div class="cal-detail-item"${it.cancelado?' style="opacity:.75;border-color:#fca5a5;"':''}>
       <div class="cal-detail-proveedor">
@@ -290,6 +302,7 @@ function renderDayDetail(key) {
         ${it.esFueraDeTurno?' <span class="badge-fuera-turno">Fuera turno</span>':''}
       </div>
       ${tipoProd ? `<div class="cal-detail-tipo"><i class="bi bi-tag"></i> ${esc(tipoProd)}</div>` : ''}
+      ${tipoCam  ? `<div class="cal-detail-tipo" style="color:#475569;"><i class="bi bi-truck"></i> ${esc(tipoCam)}${maxisCam ? ` · ${maxisCam} maxis` : ''}</div>` : ''}
       <div class="cal-detail-trucks" style="${it.cancelado?'text-decoration:line-through;color:#ef4444;':''}">
         ${it.camiones} cam${it.camiones!==1?'iones':'ión'}
         ${it.esDiaEspecial&&!it.cancelado?' <span style="font-size:11px;color:#f59e0b;font-weight:600;">· especial</span>':''}
@@ -359,6 +372,7 @@ function renderProgramas() {
       <td>
         <div style="font-size:12px;color:var(--text-secondary,#475569);">${fmtDateShort(p.vigenciaDesde)} — ${fmtDateShort(p.vigenciaHasta)}</div>
         <div class="prog-periodo" style="margin-top:3px;"><i class="bi bi-calendar-week" style="margin-right:3px;"></i>${diasLabel}</div>
+        ${p.tipoCamion ? `<div class="prog-periodo" style="margin-top:3px;">${TIPO_CAMION_LABEL[p.tipoCamion] || p.tipoCamion}${p.maxisPorCamion ? ` · ${p.maxisPorCamion} maxis` : ''}</div>` : ''}
       </td>
       <td style="text-align:center;"><span class="prog-camiones">${p.camionesDefault}</span></td>
       <td style="text-align:center;"><span class="prog-camiones" style="color:#475569;">${p.totalCamionesEstimados ?? '—'}</span></td>
@@ -439,6 +453,8 @@ async function openProgramaModal(prog = null) {
     document.getElementById('p-desde').value = prog.vigenciaDesde ? prog.vigenciaDesde.substring(0,10) : '';
     document.getElementById('p-hasta').value = prog.vigenciaHasta ? prog.vigenciaHasta.substring(0,10) : '';
     document.getElementById('p-camiones').value = prog.camionesDefault ?? 1;
+    document.getElementById('p-tipo-camion').value = prog.tipoCamion || '';
+    document.getElementById('p-maxis').value = prog.maxisPorCamion || '';
     document.getElementById('p-tons').value = prog.tonsEstimadas || '';
     document.getElementById('p-condicion').value = prog.condicionContinuidad || '';
     document.getElementById('p-notas').value = prog.notas || '';
@@ -488,7 +504,7 @@ function redrawDiasEsp() {
   cont.querySelectorAll('.dia-esp-remove').forEach(el => el.addEventListener('click', e => { diasEsp.splice(+e.currentTarget.dataset.i, 1); redrawDiasEsp(); }));
 }
 
-// Al seleccionar un trato, pre-llenar datos
+// Al seleccionar un trato, pre-llenar datos del proveedor
 document.getElementById('p-trato').addEventListener('change', function() {
   const opt = this.options[this.selectedIndex];
   const desde = opt.dataset.desde; const hasta = opt.dataset.hasta;
@@ -499,6 +515,9 @@ document.getElementById('p-trato').addEventListener('change', function() {
   if (tons)  document.getElementById('p-tons').value = tons;
   if (this.value) {
     const trato = tratosDisponibles.find(t => t._id === this.value);
+    // Pre-llenar tipo de camión y maxis desde los defaults del trato
+    if (trato?.tipoCamionDefault) document.getElementById('p-tipo-camion').value = trato.tipoCamionDefault;
+    if (trato?.maxisPorCamion)    document.getElementById('p-maxis').value = trato.maxisPorCamion;
     document.getElementById('p-trato-info').style.display = '';
     document.getElementById('p-trato-info').textContent = trato
       ? `${trato.tonsAcordadas ? trato.tonsAcordadas + ' tons acordadas · ' : ''}${trato.precioAcordado ? trato.precioAcordado + ' ' + (trato.unidadPrecio||'') + ' · ' : ''}${trato.notasTrato||''}`
@@ -532,6 +551,9 @@ document.getElementById('saveProgramaModal').addEventListener('click', async () 
   const diasSemana = [...document.querySelectorAll('#diasSemanaChecks .ds-check.checked')]
     .map(lbl => Number(lbl.dataset.dia));
 
+  const tipoCamionVal = document.getElementById('p-tipo-camion').value || null;
+  const maxisVal = document.getElementById('p-maxis').value ? Number(document.getElementById('p-maxis').value) : null;
+
   const body = {
     tratoId:      tratoVal || null,
     proveedorNombre: trato?.proveedorNombre || document.getElementById('p-trato').options[document.getElementById('p-trato').selectedIndex]?.text?.split(' —')[0] || 'Sin nombre',
@@ -539,6 +561,8 @@ document.getElementById('saveProgramaModal').addEventListener('click', async () 
     vigenciaDesde: desde,
     vigenciaHasta: hasta,
     camionesDefault: camiones,
+    tipoCamion: tipoCamionVal,
+    maxisPorCamion: maxisVal,
     tonsEstimadas: document.getElementById('p-tons').value ? Number(document.getElementById('p-tons').value) : null,
     condicionContinuidad: document.getElementById('p-condicion').value.trim(),
     notas: document.getElementById('p-notas').value.trim(),
