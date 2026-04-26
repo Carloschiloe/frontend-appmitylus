@@ -246,6 +246,7 @@ function renderDayDetail(key) {
   data.items.forEach(it => {
     const color = getProviderColor(it.proveedorNombre);
     const motivoText = it.motivo || it.nota || '';
+    const novedadData = JSON.stringify({ progId: it.programaId, fecha: key, cam: it.camiones, camPlan: it.camionesDefault ?? it.camiones, motivo: motivoText, proveedor: it.proveedorNombre }).replace(/'/g, '&#39;');
     html += `<div class="cal-detail-item"${it.cancelado?' style="opacity:.75;border-color:#fca5a5;"':''}>
       <div class="cal-detail-proveedor">
         <span style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block;"></span>
@@ -260,9 +261,21 @@ function renderDayDetail(key) {
       </div>
       ${motivoText?`<div class="cal-detail-condicion" style="border-color:${it.cancelado?'#ef4444':'#f59e0b'};background:${it.cancelado?'#fff5f5':'#fffbeb'};"><i class="bi bi-chat-left-text"></i> ${esc(motivoText)}</div>`:''}
       ${it.condicion?`<div class="cal-detail-condicion"><i class="bi bi-flag-fill"></i> ${esc(it.condicion)}</div>`:''}
+      <div class="cal-detail-edit write-only">
+        <button class="btn-novedad${it.esDiaEspecial?' tiene-novedad':''}" data-novedad='${novedadData}'>
+          <i class="bi bi-pencil-square"></i> ${it.esDiaEspecial ? 'Editar novedad' : 'Registrar novedad'}
+        </button>
+      </div>
     </div>`;
   });
   document.getElementById('calDetailBody').innerHTML = html;
+
+  document.getElementById('calDetailBody').querySelectorAll('.btn-novedad').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const d = JSON.parse(btn.dataset.novedad);
+      openNovedadModal(d.progId, d.fecha, d.cam, d.camPlan, d.proveedor, d.motivo);
+    });
+  });
 }
 
 function navCal(delta) {
@@ -769,6 +782,103 @@ document.getElementById('saveCierreModal').addEventListener('click', async () =>
 document.getElementById('closeCierreModal').addEventListener('click', closeCierreModal);
 document.getElementById('cancelCierreModal').addEventListener('click', closeCierreModal);
 document.getElementById('overlayCierreModal').addEventListener('click', closeCierreModal);
+
+// ════════════════════════════════════════════════════════════════════════
+// MODAL NOVEDAD DIARIA
+// ════════════════════════════════════════════════════════════════════════
+
+let novedadProgId = null;
+let novedadFecha  = null;
+let novedadCamSel = null;
+
+function openNovedadModal(progId, fecha, camActual, camPlan, proveedor, motivoActual) {
+  novedadProgId = progId;
+  novedadFecha  = fecha;
+  novedadCamSel = camActual;
+
+  const [y, m, d] = fecha.split('-');
+  const fechaStr = new Date(Number(y), Number(m)-1, Number(d))
+    .toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long' });
+  document.getElementById('modalNovedadTitulo').textContent = fechaStr;
+  document.getElementById('novedadPlanInfo').innerHTML =
+    `<strong>${esc(proveedor)}</strong> · Planificado: <strong>${camPlan} camión${camPlan!==1?'es':''}</strong>`;
+
+  // Marcar el botón del valor actual
+  document.querySelectorAll('.cam-btn').forEach(b => {
+    b.classList.remove('sel', 'sel-0');
+    if (Number(b.dataset.cam) === camActual) {
+      b.classList.add(camActual === 0 ? 'sel-0' : 'sel');
+    }
+  });
+
+  document.getElementById('novedad-nota').value = motivoActual || '';
+  document.getElementById('novedad-error').style.display = 'none';
+  document.getElementById('overlayNovedad').classList.add('open');
+  document.getElementById('modalNovedad').classList.add('open');
+}
+
+function closeNovedadModal() {
+  document.getElementById('overlayNovedad').classList.remove('open');
+  document.getElementById('modalNovedad').classList.remove('open');
+  novedadProgId = null; novedadFecha = null; novedadCamSel = null;
+}
+
+document.getElementById('camBtns').addEventListener('click', e => {
+  const btn = e.target.closest('.cam-btn');
+  if (!btn) return;
+  novedadCamSel = Number(btn.dataset.cam);
+  document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('sel', 'sel-0'));
+  btn.classList.add(novedadCamSel === 0 ? 'sel-0' : 'sel');
+});
+
+document.getElementById('saveNovedadModal').addEventListener('click', async () => {
+  const nota  = document.getElementById('novedad-nota').value.trim();
+  const errEl = document.getElementById('novedad-error');
+  if (novedadCamSel === null) { errEl.textContent = 'Selecciona cuántos camiones llegaron.'; errEl.style.display = ''; return; }
+  if (!nota) { errEl.textContent = 'El motivo es obligatorio.'; errEl.style.display = ''; return; }
+  errEl.style.display = 'none';
+  const btn = document.getElementById('saveNovedadModal');
+  btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando…';
+  try {
+    await apiPatch(`/api/programa-cosecha/${novedadProgId}/dia-especial`, {
+      fecha:    novedadFecha,
+      camiones: novedadCamSel,
+      nota,
+    });
+    toast('Novedad registrada');
+    closeNovedadModal();
+    loadCalendario();
+  } catch(e) {
+    errEl.textContent = e.message; errEl.style.display = '';
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar';
+  }
+});
+
+document.getElementById('btnResetNovedad').addEventListener('click', async () => {
+  if (!confirm('¿Restablecer este día a lo planificado? Se borrará la novedad registrada.')) return;
+  const btn = document.getElementById('saveNovedadModal');
+  btn.disabled = true;
+  try {
+    await apiPatch(`/api/programa-cosecha/${novedadProgId}/dia-especial`, {
+      fecha:    novedadFecha,
+      camiones: null,
+      nota:     '',
+    });
+    toast('Día restablecido a lo planificado');
+    closeNovedadModal();
+    loadCalendario();
+  } catch(e) {
+    document.getElementById('novedad-error').textContent = e.message;
+    document.getElementById('novedad-error').style.display = '';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('closeNovedadModal').addEventListener('click', closeNovedadModal);
+document.getElementById('cancelNovedadModal').addEventListener('click', closeNovedadModal);
+document.getElementById('overlayNovedad').addEventListener('click', closeNovedadModal);
 
 // ════════════════════════════════════════════════════════════════════════
 // TABS
