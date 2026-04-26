@@ -103,7 +103,8 @@ function getAlerts(timeline) {
   const alerts = [];
   if (!timeline.length) return alerts;
 
-  const lastEvent = timeline[timeline.length - 1];
+  // timeline está ordenado descendente → el índice 0 es el evento más reciente
+  const lastEvent = timeline[0];
   const daysSinceLast = Math.round((Date.now() - lastEvent.date.getTime()) / 86400000);
 
   const hasCompra  = timeline.some((e) => e.type === 'compra');
