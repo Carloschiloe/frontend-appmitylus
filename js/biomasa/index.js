@@ -1,4 +1,4 @@
-// js/biomasa/index.js — Módulo Biomasa: Calendario / Programas / Registro de Compras
+// js/biomasa/index.js — Módulo Biomasa: Calendario / Programas / Seguimiento
 
 const API = window.APP_CONFIG?.API_BASE_URL || '';
 
@@ -25,7 +25,6 @@ let selectedDay  = null;
 let programas    = [];
 let progFiltro   = '';
 let editingId    = null;      // programa en edición
-let compraTratoId = null;     // trato seleccionado para registrar compra
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -401,10 +400,11 @@ async function openProgramaModal(prog = null) {
     const res = await apiGet('/api/programa-cosecha/tratos-acordados');
     tratosDisponibles = res.items || [];
     const sel = document.getElementById('p-trato');
+    const estadoLabel = { acordado:'Acordado', disponible:'Disponible', en_negociacion:'En negociación', contactado:'Contactado', compra_efectuada:'Cerrado' };
     sel.innerHTML = '<option value="">— Seleccionar trato acordado —</option>' +
       tratosDisponibles.map(t =>
         `<option value="${t._id}" data-proveedor="${esc(t.proveedorNombre)}" data-tons="${t.tonsAcordadas||''}" data-cam="${t.camionesXDia||''}" data-desde="${t.vigenciaDesde||''}" data-hasta="${t.vigenciaHasta||''}" data-centro="${esc(t.centroNombre||t.centroCodigo||'')}">
-          ${esc(t.proveedorNombre)} — ${esc(t.estado)} ${t.tonsAcordadas?`(${t.tonsAcordadas}T)`:''}
+          ${esc(t.proveedorNombre)} — ${estadoLabel[t.estado] || esc(t.estado)} ${t.tonsAcordadas?`(${t.tonsAcordadas}T)`:''}
         </option>`
       ).join('');
   } catch(e) { /* silenciar */ }
