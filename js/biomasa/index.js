@@ -161,8 +161,9 @@ function renderMonthView() {
     const isSel   = key === selectedDay;
     const data    = calData[key] || { total:0, items:[] };
     const dots    = data.items.slice(0,5).map(it => `<div class="cal-day-dot" style="background:${getProviderColor(it.proveedorNombre)};"></div>`).join('');
+    const isOffDay = (i % 7 === 4 || i % 7 === 5); // Vie=4, Sáb=5 in Mon-first grid
 
-    html += `<div class="cal-day${isOther?' other-month':''}${isToday?' today':''}${isSel?' selected':''}" data-key="${key}">
+    html += `<div class="cal-day${isOther?' other-month':''}${isToday?' today':''}${isSel?' selected':''}${isOffDay?' off-day':''}" data-key="${key}">
       <div class="cal-day-num">${d.getDate()}</div>
       ${data.total > 0
         ? `<div class="cal-day-trucks">${data.total}</div><div class="cal-day-label">cam.</div><div class="cal-day-dots">${dots}</div>`
@@ -199,7 +200,8 @@ function renderWeekView() {
     const provLines = data.items.map(it =>
       `<div class="cal-week-provider"><div class="dot" style="background:${getProviderColor(it.proveedorNombre)};"></div>${esc(it.proveedorNombre)} ×${it.camiones}</div>`
     ).join('');
-    html += `<div class="cal-week-day${isToday?' today':''}${isSel?' selected':''}" data-key="${key}">
+    const isOffWeek = (i === 4 || i === 5); // Vie=4, Sáb=5 in Mon-first week
+    html += `<div class="cal-week-day${isToday?' today':''}${isSel?' selected':''}${isOffWeek?' off-day':''}" data-key="${key}">
       <div class="cal-week-day-name">${days[i]}</div>
       <div class="cal-week-day-num" style="color:${isToday?'#2dd4bf':'#94a3b8'}">${d.getDate()}</div>
       <div class="cal-week-trucks${data.total===0?' zero':''}">${data.total > 0 ? data.total : '·'}</div>
@@ -243,11 +245,21 @@ function renderDayDetail(key) {
   let html = `<div style="font-size:28px;font-weight:900;color:#2dd4bf;margin-bottom:16px;">${data.total} <span style="font-size:14px;color:#64748b;font-weight:600;">camiones totales</span></div>`;
   data.items.forEach(it => {
     const color = getProviderColor(it.proveedorNombre);
-    html += `<div class="cal-detail-item">
-      <div class="cal-detail-proveedor"><span style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block;"></span>${esc(it.proveedorNombre)}${it.estado==='pausado'?` <span class="badge-pausado">Pausado</span>`:''}</div>
-      <div class="cal-detail-trucks">${it.camiones} cam${it.camiones!==1?'iones':'ión'}${it.esDiaEspecial?' <span style="font-size:11px;color:#f59e0b;font-weight:600;">· especial</span>':''}</div>
+    const motivoText = it.motivo || it.nota || '';
+    html += `<div class="cal-detail-item"${it.cancelado?' style="opacity:.75;border-color:#fca5a5;"':''}>
+      <div class="cal-detail-proveedor">
+        <span style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block;"></span>
+        ${esc(it.proveedorNombre)}
+        ${it.estado==='pausado'?` <span class="badge-pausado">Pausado</span>`:''}
+        ${it.cancelado?' <span class="badge-cancelado">Cancelado</span>':''}
+        ${it.esFueraDeTurno?' <span class="badge-fuera-turno">Fuera turno</span>':''}
+      </div>
+      <div class="cal-detail-trucks" style="${it.cancelado?'text-decoration:line-through;color:#ef4444;':''}">
+        ${it.camiones} cam${it.camiones!==1?'iones':'ión'}
+        ${it.esDiaEspecial&&!it.cancelado?' <span style="font-size:11px;color:#f59e0b;font-weight:600;">· especial</span>':''}
+      </div>
+      ${motivoText?`<div class="cal-detail-condicion" style="border-color:${it.cancelado?'#ef4444':'#f59e0b'};background:${it.cancelado?'#fff5f5':'#fffbeb'};"><i class="bi bi-chat-left-text"></i> ${esc(motivoText)}</div>`:''}
       ${it.condicion?`<div class="cal-detail-condicion"><i class="bi bi-flag-fill"></i> ${esc(it.condicion)}</div>`:''}
-      ${it.nota?`<div class="cal-detail-nota">${esc(it.nota)}</div>`:''}
     </div>`;
   });
   document.getElementById('calDetailBody').innerHTML = html;
@@ -284,26 +296,31 @@ function renderProgramas() {
     const estadoBadge = p.estado === 'activo' ? `<span class="badge-activo">Activo</span>`
       : p.estado === 'pausado' ? `<span class="badge-pausado2">Pausado</span>`
       : `<span class="badge-finalizado">Finalizado</span>`;
+    const DIAS_LABELS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const diasSemana  = Array.isArray(p.diasSemana) && p.diasSemana.length ? p.diasSemana : [0,1,2,3,4];
+    const diasLabel   = diasSemana.map(n => DIAS_LABELS[n]).join(', ');
     return `<tr>
       <td>
         <div class="prog-proveedor">${esc(p.proveedorNombre)}</div>
         ${p.centroNombre?`<div class="prog-periodo">${esc(p.centroNombre)}</div>`:''}
       </td>
       <td>
-        <div style="color:#f1f5f9;font-size:12px;">${fmtDateShort(p.vigenciaDesde)} — ${fmtDateShort(p.vigenciaHasta)}</div>
+        <div style="font-size:12px;color:var(--text-secondary,#475569);">${fmtDateShort(p.vigenciaDesde)} — ${fmtDateShort(p.vigenciaHasta)}</div>
         ${p.tonsEstimadas?`<div class="prog-periodo">${p.tonsEstimadas} tons est.</div>`:''}
+        <div class="prog-periodo" style="margin-top:2px;"><i class="bi bi-calendar-week" style="margin-right:3px;"></i>${diasLabel}</div>
       </td>
       <td><span class="prog-camiones">${p.camionesDefault}</span></td>
       <td>
         ${p.condicionContinuidad
           ? `<div class="prog-condicion"><i class="bi bi-flag-fill"></i>${esc(p.condicionContinuidad)}</div>`
-          : '<span style="color:#334155;">—</span>'}
+          : '<span style="color:var(--text-muted,#94a3b8);">—</span>'}
       </td>
       <td>${estadoBadge}</td>
       <td>
         <div class="prog-actions">
-          ${p.estado==='activo' ? `<button class="prog-btn write-only" title="Pausar" data-action="pausar" data-id="${p._id}"><i class="bi bi-pause-fill"></i></button>` : ''}
-          ${p.estado==='pausado' ? `<button class="prog-btn write-only" title="Reanudar" data-action="reanudar" data-id="${p._id}" style="color:#4ade80;"><i class="bi bi-play-fill"></i></button>` : ''}
+          ${p.estado==='activo'     ? `<button class="prog-btn write-only" title="Pausar" data-action="pausar" data-id="${p._id}"><i class="bi bi-pause-fill"></i></button>` : ''}
+          ${p.estado==='pausado'    ? `<button class="prog-btn write-only" title="Reanudar" data-action="reanudar" data-id="${p._id}" style="color:#4ade80;"><i class="bi bi-play-fill"></i></button>` : ''}
+          ${p.estado==='finalizado' ? `<button class="prog-btn write-only" title="Reactivar" data-action="reactivar" data-id="${p._id}" style="color:#0d9488;"><i class="bi bi-arrow-counterclockwise"></i></button>` : ''}
           ${p.estado!=='finalizado' ? `<button class="prog-btn write-only" title="Finalizar" data-action="finalizar" data-id="${p._id}" style="color:#f59e0b;"><i class="bi bi-check-square"></i></button>` : ''}
           <button class="prog-btn write-only" title="Editar" data-action="editar" data-id="${p._id}"><i class="bi bi-pencil"></i></button>
           <button class="prog-btn write-only danger" title="Eliminar" data-action="eliminar" data-id="${p._id}"><i class="bi bi-trash"></i></button>
@@ -320,13 +337,16 @@ function renderProgramas() {
 async function handleProgAction(action, id) {
   const prog = programas.find(p => p._id === id);
   if (action === 'editar') { openProgramaModal(prog); return; }
+  if (action === 'finalizar') {
+    if (!confirm(`¿Marcar como finalizado el programa de ${prog?.proveedorNombre}?\nPodrás reactivarlo si fue un error.`)) return;
+  }
   if (action === 'eliminar') {
     if (!confirm(`¿Eliminar programa de ${prog?.proveedorNombre}? Esta acción no se puede deshacer.`)) return;
     try { await apiDelete(`/api/programa-cosecha/${id}`); toast('Programa eliminado'); loadProgramas(); loadCalendario(); }
     catch(e) { toast(e.message, false); }
     return;
   }
-  const estadoMap = { pausar:'pausado', reanudar:'activo', finalizar:'finalizado' };
+  const estadoMap = { pausar:'pausado', reanudar:'activo', reactivar:'activo', finalizar:'finalizado' };
   try {
     await apiPatch(`/api/programa-cosecha/${id}/estado`, { estado: estadoMap[action] });
     toast('Estado actualizado');
@@ -357,6 +377,13 @@ async function openProgramaModal(prog = null) {
         </option>`
       ).join('');
   } catch(e) { /* silenciar */ }
+
+  const activeDias = prog?.diasSemana ?? [0, 1, 2, 3, 4];
+  document.querySelectorAll('#diasSemanaChecks .ds-check').forEach(lbl => {
+    const val = Number(lbl.dataset.dia);
+    const checked = activeDias.includes(val);
+    lbl.classList.toggle('checked', checked);
+  });
 
   if (prog) {
     document.getElementById('p-trato').value = prog.tratoId || '';
@@ -399,13 +426,16 @@ function redrawDiasEsp() {
   cont.innerHTML = diasEsp.map((d, i) => `
     <div class="dia-esp-row">
       <input type="date" class="bio-input dia-fecha" data-i="${i}" value="${d.fecha||''}" />
-      <input type="number" class="bio-input dia-cam" data-i="${i}" value="${d.camiones??1}" min="0" max="20" placeholder="Cam" />
-      <input type="text" class="bio-input dia-nota" data-i="${i}" value="${esc(d.nota||'')}" placeholder="Nota (opcional)" />
+      <input type="number" class="bio-input dia-cam" data-i="${i}" value="${d.camiones??1}" min="0" max="20" placeholder="Cam" title="0 = cancelar ese día" />
+      <input type="text" class="bio-input dia-nota" data-i="${i}" value="${esc(d.nota||'')}" placeholder="Motivo del cambio *" style="border-color:${d.nota?'var(--border,#e2e8f0)':'#f59e0b'};" />
       <button type="button" class="dia-esp-remove" data-i="${i}"><i class="bi bi-x"></i></button>
     </div>`).join('');
   cont.querySelectorAll('.dia-fecha').forEach(el => el.addEventListener('change', e => { diasEsp[+e.target.dataset.i].fecha = e.target.value; }));
   cont.querySelectorAll('.dia-cam').forEach(el => el.addEventListener('input', e => { diasEsp[+e.target.dataset.i].camiones = +e.target.value; }));
-  cont.querySelectorAll('.dia-nota').forEach(el => el.addEventListener('input', e => { diasEsp[+e.target.dataset.i].nota = e.target.value; }));
+  cont.querySelectorAll('.dia-nota').forEach(el => el.addEventListener('input', e => {
+    diasEsp[+e.target.dataset.i].nota = e.target.value;
+    el.style.borderColor = e.target.value ? 'var(--border,#e2e8f0)' : '#f59e0b';
+  }));
   cont.querySelectorAll('.dia-esp-remove').forEach(el => el.addEventListener('click', e => { diasEsp.splice(+e.currentTarget.dataset.i, 1); redrawDiasEsp(); }));
 }
 
@@ -432,6 +462,12 @@ document.getElementById('btnAddDiaEsp').addEventListener('click', () => {
   redrawDiasEsp();
 });
 
+document.getElementById('diasSemanaChecks').addEventListener('click', e => {
+  const lbl = e.target.closest('.ds-check');
+  if (!lbl) return;
+  lbl.classList.toggle('checked');
+});
+
 document.getElementById('saveProgramaModal').addEventListener('click', async () => {
   const tratoVal = document.getElementById('p-trato').value;
   const desde    = document.getElementById('p-desde').value;
@@ -444,6 +480,9 @@ document.getElementById('saveProgramaModal').addEventListener('click', async () 
   errEl.style.display = 'none';
 
   const trato = tratosDisponibles.find(t => t._id === tratoVal);
+  const diasSemana = [...document.querySelectorAll('#diasSemanaChecks .ds-check.checked')]
+    .map(lbl => Number(lbl.dataset.dia));
+
   const body = {
     tratoId:      tratoVal || null,
     proveedorNombre: trato?.proveedorNombre || document.getElementById('p-trato').options[document.getElementById('p-trato').selectedIndex]?.text?.split(' —')[0] || 'Sin nombre',
@@ -454,6 +493,7 @@ document.getElementById('saveProgramaModal').addEventListener('click', async () 
     tonsEstimadas: document.getElementById('p-tons').value ? Number(document.getElementById('p-tons').value) : null,
     condicionContinuidad: document.getElementById('p-condicion').value.trim(),
     notas: document.getElementById('p-notas').value.trim(),
+    diasSemana,
     diasEspeciales: diasEsp.filter(d => d.fecha).map(d => ({ fecha: d.fecha, camiones: d.camiones, nota: d.nota })),
   };
 

@@ -164,11 +164,30 @@
 
     /* Días especiales */
     .dias-esp-list  { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
-    .dia-esp-row    { display:grid; grid-template-columns:1fr 80px 1fr 28px; gap:6px; align-items:center; }
+    .dia-esp-row    { display:grid; grid-template-columns:130px 80px 1fr 28px; gap:6px; align-items:center; }
     .dia-esp-remove { width:28px; height:28px; border-radius:6px; border:1px solid var(--border,#e2e8f0); background:var(--surface,#fff); color:var(--text-muted,#64748b); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; }
     .dia-esp-remove:hover { border-color:#ef4444; color:#ef4444; background:#fee2e2; }
     .btn-add-dia    { padding:6px 12px; border-radius:7px; border:1px dashed var(--border,#e2e8f0); background:none; color:var(--text-muted,#64748b); font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; transition:all .15s; }
     .btn-add-dia:hover { border-color:#0d9488; color:#0d9488; background:#f0fdfa; }
+
+    /* Días semana checkboxes */
+    .ds-checks { display:flex; gap:6px; flex-wrap:wrap; padding:4px 0; }
+    .ds-check   { display:flex; align-items:center; gap:5px; padding:6px 11px; border-radius:20px; border:1.5px solid var(--border,#e2e8f0); background:var(--surface,#fff); font-size:12px; font-weight:600; color:var(--text-muted,#64748b); cursor:pointer; transition:all .15s; user-select:none; }
+    .ds-check input[type=checkbox] { display:none; }
+    .ds-check.checked   { background:#f0fdfa; border-color:#0d9488; color:#0f766e; }
+    .ds-check.off-day   { border-style:dashed; }
+    .ds-check.off-day.checked { background:#fffbeb; border-color:#f59e0b; color:#92400e; }
+
+    /* Calendar off-day subtle tint */
+    .cal-day.off-day   { background:var(--surface,#fff); }
+    .cal-day.off-day:not(.other-month) { background:#fafafa; }
+    .cal-day.today.off-day { background:#f0fdfa; }
+    .cal-week-day.off-day { background:#fafafa; }
+    .cal-week-day.today.off-day { background:#f0fdfa; }
+
+    /* Cancelado / fuera de turno badges in detail */
+    .badge-cancelado   { background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; padding:2px 7px; border-radius:20px; font-size:10px; font-weight:700; }
+    .badge-fuera-turno { background:#fef3c7; color:#92400e; border:1px solid #fde68a; padding:2px 7px; border-radius:20px; font-size:10px; font-weight:700; }
 
     /* Modal compra */
     .compra-modal { width:420px; }
@@ -381,10 +400,24 @@
       </div>
 
       <div class="bio-form-group col-2">
-        <label class="bio-label">Días especiales <span style="font-size:11px;color:#64748b;font-weight:400;text-transform:none;">(excepciones al plan base)</span></label>
+        <label class="bio-label">Días de cosecha <span style="font-size:11px;color:#64748b;font-weight:400;text-transform:none;">(turnos semanales habilitados)</span></label>
+        <div id="diasSemanaChecks" class="ds-checks">
+          <label class="ds-check" data-dia="0"><input type="checkbox" value="0" />Dom</label>
+          <label class="ds-check" data-dia="1"><input type="checkbox" value="1" />Lun</label>
+          <label class="ds-check" data-dia="2"><input type="checkbox" value="2" />Mar</label>
+          <label class="ds-check" data-dia="3"><input type="checkbox" value="3" />Mié</label>
+          <label class="ds-check" data-dia="4"><input type="checkbox" value="4" />Jue</label>
+          <label class="ds-check off-day" data-dia="5"><input type="checkbox" value="5" />Vie</label>
+          <label class="ds-check off-day" data-dia="6"><input type="checkbox" value="6" />Sáb</label>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Por defecto Dom–Jue. Vie y Sáb (punteado) se activan solo excepcionalmente.</div>
+      </div>
+
+      <div class="bio-form-group col-2">
+        <label class="bio-label">Excepciones al turno <span style="font-size:11px;color:#64748b;font-weight:400;text-transform:none;">(cancelaciones o días extra)</span></label>
         <div id="diasEspList" class="dias-esp-list"></div>
         <button type="button" class="btn-add-dia" id="btnAddDiaEsp">
-          <i class="bi bi-plus-lg"></i> Agregar día especial
+          <i class="bi bi-plus-lg"></i> Agregar excepción
         </button>
       </div>
 
