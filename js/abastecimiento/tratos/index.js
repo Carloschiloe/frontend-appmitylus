@@ -207,6 +207,37 @@ function condicionesCompletitud(condiciones) {
   return { acordadas, total: condiciones.length, pct };
 }
 
+// Auto-sincroniza el estado del trato según las condiciones:
+// - Todas acordadas + trato no terminal → cambia a "acordado"
+// - Alguna pendiente/rechazada + trato era "acordado" → vuelve a "negociando"
+async function syncTratoEstadoFromCondiciones(trato) {
+  const conds = trato?.condiciones || [];
+  if (!conds.length) return; // sin condiciones: el usuario maneja el estado manualmente
+
+  const estadoActual = estadoGrupo(trato.estado);
+  const terminales = ['perdido', 'descartado'];
+  if (terminales.includes(estadoActual)) return; // nunca tocar estados terminales
+
+  const todasAcordadas = conds.every(c => c.estado === 'acordado');
+  const hayPendiente   = conds.some(c => c.estado !== 'acordado');
+
+  try {
+    if (todasAcordadas && estadoActual !== 'acordado') {
+      const updated = await changeEstado(trato._id, 'acordado');
+      tratoActivo = updated;
+      // Actualizar el select del modal si está abierto
+      const estEl = document.getElementById('tratoEstado');
+      if (estEl) estEl.value = 'acordado';
+      toast('✓ Todas las condiciones acordadas — trato marcado como Acordado', { variant: 'success' });
+    } else if (hayPendiente && estadoActual === 'acordado') {
+      const updated = await changeEstado(trato._id, 'negociando');
+      tratoActivo = updated;
+      const estEl = document.getElementById('tratoEstado');
+      if (estEl) estEl.value = 'negociando';
+    }
+  } catch { /* transición no permitida — no hacer nada */ }
+}
+
 function estadoGrupo(estadoRaw = '') {
   const est = String(estadoRaw || '').toLowerCase();
   // → disponible
@@ -1141,6 +1172,8 @@ function bindModal() {
       const updated = await upsertCondicion(tratoActivo._id, { ...condicion, estado: select.value });
       tratoActivo = updated;
       renderCondiciones(updated.condiciones || []);
+      await syncTratoEstadoFromCondiciones(updated);
+      renderTabla(); // actualizar badge en la tabla
     } catch (e) {
       toast('Error al actualizar condición', { variant: 'error' });
     }
