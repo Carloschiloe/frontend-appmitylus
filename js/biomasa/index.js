@@ -315,14 +315,14 @@ async function loadProgramas() {
     programas = res.items || [];
     renderProgramas();
   } catch(e) {
-    document.getElementById('progTableBody').innerHTML = `<tr><td colspan="6" class="prog-empty" style="color:#ef4444;">${esc(e.message)}</td></tr>`;
+    document.getElementById('progTableBody').innerHTML = `<tr><td colspan="7" class="prog-empty" style="color:#ef4444;">${esc(e.message)}</td></tr>`;
   }
 }
 
 function renderProgramas() {
   const tbody = document.getElementById('progTableBody');
   if (!programas.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="prog-empty"><i class="bi bi-inbox" style="font-size:28px;display:block;margin-bottom:8px;"></i>No hay programas</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="prog-empty"><i class="bi bi-inbox" style="font-size:28px;display:block;margin-bottom:8px;"></i>No hay programas</td></tr>`;
     return;
   }
   tbody.innerHTML = programas.map(p => {
@@ -335,21 +335,17 @@ function renderProgramas() {
     return `<tr>
       <td>
         <div class="prog-proveedor">${esc(p.proveedorNombre)}</div>
-        ${p.centroNombre?`<div class="prog-periodo">${esc(p.centroNombre)}</div>`:''}
+        ${p.centroNombre ? `<div class="prog-periodo">${esc(p.centroNombre)}</div>` : ''}
+        ${p.tipoProducto ? `<div class="prog-periodo" style="margin-top:3px;"><i class="bi bi-tag" style="color:#0d9488;margin-right:3px;"></i>${esc(p.tipoProducto)}</div>` : ''}
+        ${p.condicionContinuidad ? `<div class="prog-condicion" style="margin-top:4px;"><i class="bi bi-flag-fill"></i>${esc(p.condicionContinuidad)}</div>` : ''}
       </td>
       <td>
         <div style="font-size:12px;color:var(--text-secondary,#475569);">${fmtDateShort(p.vigenciaDesde)} — ${fmtDateShort(p.vigenciaHasta)}</div>
-        ${p.tonsEstimadas?`<div class="prog-periodo">${p.tonsEstimadas} tons est.</div>`:''}
-        <div class="prog-periodo" style="margin-top:2px;"><i class="bi bi-calendar-week" style="margin-right:3px;"></i>${diasLabel}</div>
-        ${p.totalCamionesEstimados ? `<div class="prog-periodo" style="margin-top:2px;"><i class="bi bi-truck" style="margin-right:3px;"></i>~${p.totalCamionesEstimados} cam. totales</div>` : ''}
-        ${p.tipoProducto ? `<div class="prog-periodo" style="margin-top:2px;"><i class="bi bi-tag" style="margin-right:3px;color:#0d9488;"></i>${esc(p.tipoProducto)}</div>` : ''}
+        <div class="prog-periodo" style="margin-top:3px;"><i class="bi bi-calendar-week" style="margin-right:3px;"></i>${diasLabel}</div>
       </td>
-      <td><span class="prog-camiones">${p.camionesDefault}</span></td>
-      <td>
-        ${p.condicionContinuidad
-          ? `<div class="prog-condicion"><i class="bi bi-flag-fill"></i>${esc(p.condicionContinuidad)}</div>`
-          : '<span style="color:var(--text-muted,#94a3b8);">—</span>'}
-      </td>
+      <td style="text-align:center;"><span class="prog-camiones">${p.camionesDefault}</span></td>
+      <td style="text-align:center;"><span class="prog-camiones" style="color:#475569;">${p.totalCamionesEstimados ?? '—'}</span></td>
+      <td style="text-align:center;"><span class="prog-camiones" style="color:#475569;font-size:16px;">${p.tonsEstimadas ?? '—'}</span></td>
       <td>${estadoBadge}</td>
       <td>
         <div class="prog-actions">
