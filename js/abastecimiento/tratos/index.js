@@ -76,24 +76,23 @@ function applyCondicionModo(modo) {
   });
 }
 
-// ── Colores y labels de estado (5 estados limpios + aliases legacy) ──────────
+// ── Colores y labels de estado (5 estados + aliases legacy) ──────────────────
 const ESTADO_MAP = {
-  // ── Los 5 estados activos del flujo limpio ──
-  disponible:       { label: 'Disponible',      color: '#3b82f6' },
-  negociando:       { label: 'En negociación',  color: '#f59e0b' },
-  acordado:         { label: 'Acordado',        color: '#16a34a' },
-  perdido:          { label: 'Perdido',         color: '#ef4444' },
-  descartado:       { label: 'Descartado',      color: '#6b7280' },
-  // ── Legacy: mapean al label del estado equivalente para datos históricos ──
-  activo:           { label: 'Disponible',      color: '#3b82f6' },
-  prospecto:        { label: 'Disponible',      color: '#3b82f6' },
-  semi_acordado:    { label: 'En negociación',  color: '#f59e0b' },
-  semi_cerrado:     { label: 'En negociación',  color: '#f59e0b' },
-  cerrado:          { label: 'Acordado',        color: '#16a34a' },
-  cosecha_iniciada: { label: 'Acordado',        color: '#16a34a' },
-  compra_efectuada: { label: 'Acordado',        color: '#16a34a' },
-  completado:       { label: 'Acordado',        color: '#16a34a' },
-  caido:            { label: 'Perdido',         color: '#ef4444' },
+  disponible:       { label: 'Disponible',     color: '#3b82f6' },
+  semi_acordado:    { label: 'Semi-acordado',  color: '#f59e0b' },
+  acordado:         { label: 'Acordado',       color: '#16a34a' },
+  perdido:          { label: 'Perdido',        color: '#ef4444' },
+  descartado:       { label: 'Descartado',     color: '#6b7280' },
+  // Legacy → label equivalente para datos históricos
+  activo:           { label: 'Disponible',     color: '#3b82f6' },
+  prospecto:        { label: 'Disponible',     color: '#3b82f6' },
+  negociando:       { label: 'Semi-acordado',  color: '#f59e0b' },
+  semi_cerrado:     { label: 'Semi-acordado',  color: '#f59e0b' },
+  cerrado:          { label: 'Acordado',       color: '#16a34a' },
+  cosecha_iniciada: { label: 'Acordado',       color: '#16a34a' },
+  compra_efectuada: { label: 'Acordado',       color: '#16a34a' },
+  completado:       { label: 'Acordado',       color: '#16a34a' },
+  caido:            { label: 'Perdido',        color: '#ef4444' },
 };
 
 function estadoBadge(estado) {
@@ -225,30 +224,25 @@ async function syncTratoEstadoFromCondiciones(trato) {
     if (todasAcordadas && estadoActual !== 'acordado') {
       const updated = await changeEstado(trato._id, 'acordado');
       tratoActivo = updated;
-      // Actualizar el select del modal si está abierto
       const estEl = document.getElementById('tratoEstado');
       if (estEl) estEl.value = 'acordado';
       toast('✓ Todas las condiciones acordadas — trato marcado como Acordado', { variant: 'success' });
     } else if (hayPendiente && estadoActual === 'acordado') {
-      const updated = await changeEstado(trato._id, 'negociando');
+      const updated = await changeEstado(trato._id, 'semi_acordado');
       tratoActivo = updated;
       const estEl = document.getElementById('tratoEstado');
-      if (estEl) estEl.value = 'negociando';
+      if (estEl) estEl.value = 'semi_acordado';
     }
   } catch { /* transición no permitida — no hacer nada */ }
 }
 
 function estadoGrupo(estadoRaw = '') {
   const est = String(estadoRaw || '').toLowerCase();
-  // → disponible
-  if (['activo', 'prospecto'].includes(est)) return 'disponible';
-  // → en negociación
-  if (['negociando', 'semi_acordado', 'semi_cerrado'].includes(est)) return 'negociando';
-  // → acordado
+  if (['activo', 'prospecto'].includes(est))                              return 'disponible';
+  if (['negociando', 'semi_cerrado'].includes(est))                       return 'semi_acordado';
   if (['cerrado', 'cosecha_iniciada', 'compra_efectuada', 'completado'].includes(est)) return 'acordado';
-  // → perdido
-  if (est === 'caido') return 'perdido';
-  // disponible, acordado, perdido, descartado pasan tal cual
+  if (est === 'caido')                                                    return 'perdido';
+  // disponible, semi_acordado, acordado, perdido, descartado pasan tal cual
   return est || '';
 }
 
@@ -278,7 +272,7 @@ function renderTabla() {
   if (!tbody) return;
 
   // KPIs — cuenta también estados legacy en sus equivalentes nuevos
-  const kpis = { disponible: 0, negociando: 0, acordado: 0, perdido: 0, descartado: 0 };
+  const kpis = { disponible: 0, semi_acordado: 0, acordado: 0, perdido: 0, descartado: 0 };
   for (const t of (Array.isArray(tratosAll) ? tratosAll : [])) {
     const k = estadoGrupo(t?.estado);
     if (k && k in kpis) kpis[k]++;

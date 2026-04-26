@@ -432,7 +432,7 @@ async function openProgramaModal(prog = null) {
     const res = await apiGet('/api/programa-cosecha/tratos-acordados');
     tratosDisponibles = res.items || [];
     const sel = document.getElementById('p-trato');
-    const estadoLabel = { disponible:'Disponible', negociando:'En negociación', acordado:'Acordado', perdido:'Perdido', descartado:'Descartado', semi_acordado:'En negociación', activo:'Disponible', cerrado:'Acordado', compra_efectuada:'Acordado' };
+    const estadoLabel = { disponible:'Disponible', semi_acordado:'Semi-acordado', acordado:'Acordado', perdido:'Perdido', descartado:'Descartado', negociando:'Semi-acordado', activo:'Disponible', cerrado:'Acordado', compra_efectuada:'Acordado' };
     sel.innerHTML = '<option value="">— Seleccionar trato acordado —</option>' +
       tratosDisponibles.map(t =>
         `<option value="${t._id}" data-proveedor="${esc(t.proveedorNombre)}" data-tons="${t.tonsAcordadas||''}" data-cam="${t.camionesXDia||''}" data-desde="${t.vigenciaDesde||''}" data-hasta="${t.vigenciaHasta||''}" data-centro="${esc(t.centroNombre||t.centroCodigo||'')}">
