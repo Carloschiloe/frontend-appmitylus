@@ -206,34 +206,36 @@ function condicionesCompletitud(condiciones) {
   return { acordadas, total: condiciones.length, pct };
 }
 
-// Auto-sincroniza el estado del trato según las condiciones:
-// - Todas acordadas + trato no terminal → cambia a "acordado"
-// - Alguna pendiente/rechazada + trato era "acordado" → vuelve a "negociando"
+// Auto-sincroniza el estado del trato según el estado de sus condiciones.
+// Nunca toca estados terminales (perdido / descartado).
 async function syncTratoEstadoFromCondiciones(trato) {
   const conds = trato?.condiciones || [];
-  if (!conds.length) return; // sin condiciones: el usuario maneja el estado manualmente
+  if (!conds.length) return;
 
   const estadoActual = estadoGrupo(trato.estado);
-  const terminales = ['perdido', 'descartado'];
-  if (terminales.includes(estadoActual)) return; // nunca tocar estados terminales
+  if (['perdido', 'descartado'].includes(estadoActual)) return;
 
-  const todasAcordadas = conds.every(c => c.estado === 'acordado');
-  const hayPendiente   = conds.some(c => c.estado !== 'acordado');
+  const todasAcordadas  = conds.every(c => c.estado === 'acordado');
+  const algunaAcordada  = conds.some(c => c.estado === 'acordado');
+  const ningunaAcordada = !algunaAcordada;
+
+  let nuevoEstado = null;
+  if      (todasAcordadas  && estadoActual !== 'acordado')    nuevoEstado = 'acordado';
+  else if (algunaAcordada  && estadoActual === 'disponible')  nuevoEstado = 'semi_acordado';
+  else if (ningunaAcordada && estadoActual === 'semi_acordado') nuevoEstado = 'disponible';
+  else if (!todasAcordadas && estadoActual === 'acordado')    nuevoEstado = 'semi_acordado';
+
+  if (!nuevoEstado) return;
 
   try {
-    if (todasAcordadas && estadoActual !== 'acordado') {
-      const updated = await changeEstado(trato._id, 'acordado');
-      tratoActivo = updated;
-      const estEl = document.getElementById('tratoEstado');
-      if (estEl) estEl.value = 'acordado';
+    const updated = await changeEstado(trato._id, nuevoEstado);
+    tratoActivo = updated;
+    const estEl = document.getElementById('tratoEstado');
+    if (estEl) estEl.value = nuevoEstado;
+    if (nuevoEstado === 'acordado')
       toast('✓ Todas las condiciones acordadas — trato marcado como Acordado', { variant: 'success' });
-    } else if (hayPendiente && estadoActual === 'acordado') {
-      const updated = await changeEstado(trato._id, 'semi_acordado');
-      tratoActivo = updated;
-      const estEl = document.getElementById('tratoEstado');
-      if (estEl) estEl.value = 'semi_acordado';
-    }
-  } catch { /* transición no permitida — no hacer nada */ }
+    renderTabla();
+  } catch { /* transición no permitida — el usuario puede cambiar manualmente */ }
 }
 
 function estadoGrupo(estadoRaw = '') {
@@ -1167,7 +1169,6 @@ function bindModal() {
       tratoActivo = updated;
       renderCondiciones(updated.condiciones || []);
       await syncTratoEstadoFromCondiciones(updated);
-      renderTabla(); // actualizar badge en la tabla
     } catch (e) {
       toast('Error al actualizar condición', { variant: 'error' });
     }
