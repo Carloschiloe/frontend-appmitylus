@@ -76,24 +76,24 @@ function applyCondicionModo(modo) {
   });
 }
 
-// ── Colores y labels de estado ───────────────────────────────────────────────
+// ── Colores y labels de estado (5 estados limpios + aliases legacy) ──────────
 const ESTADO_MAP = {
-  // Flujo nuevo
-  activo:           { label: 'Activo',           color: '#f59e0b' },
-  acordado:         { label: 'Acordado',          color: '#16a34a' },
-  semi_acordado:    { label: 'Semi-acordado',     color: '#f59e0b' },
-  cosecha_iniciada: { label: 'Cosecha iniciada',  color: '#8b5cf6' },
-  completado:       { label: 'Completado',        color: '#22c55e' },
-  caido:            { label: 'Caído',             color: '#ef4444' },
-  // Legacy (para datos existentes)
-  prospecto:        { label: 'Prospecto',        color: '#64748b' },
-  negociando:       { label: 'Negociando',        color: '#f59e0b' },
-  compra_efectuada: { label: 'Compra efectuada',  color: '#22c55e' },
-  disponible:       { label: 'Disponible',        color: '#3b82f6' },
-  semi_cerrado:     { label: 'Semi-acordado',     color: '#f59e0b' },
-  cerrado:          { label: 'Acordado',          color: '#16a34a' },
-  perdido:          { label: 'Perdido',           color: '#ef4444' },
-  descartado:       { label: 'Descartado',        color: '#6b7280' },
+  // ── Los 5 estados activos del flujo limpio ──
+  disponible:       { label: 'Disponible',      color: '#3b82f6' },
+  negociando:       { label: 'En negociación',  color: '#f59e0b' },
+  acordado:         { label: 'Acordado',        color: '#16a34a' },
+  perdido:          { label: 'Perdido',         color: '#ef4444' },
+  descartado:       { label: 'Descartado',      color: '#6b7280' },
+  // ── Legacy: mapean al label del estado equivalente para datos históricos ──
+  activo:           { label: 'Disponible',      color: '#3b82f6' },
+  prospecto:        { label: 'Disponible',      color: '#3b82f6' },
+  semi_acordado:    { label: 'En negociación',  color: '#f59e0b' },
+  semi_cerrado:     { label: 'En negociación',  color: '#f59e0b' },
+  cerrado:          { label: 'Acordado',        color: '#16a34a' },
+  cosecha_iniciada: { label: 'Acordado',        color: '#16a34a' },
+  compra_efectuada: { label: 'Acordado',        color: '#16a34a' },
+  completado:       { label: 'Acordado',        color: '#16a34a' },
+  caido:            { label: 'Perdido',         color: '#ef4444' },
 };
 
 function estadoBadge(estado) {
@@ -209,19 +209,15 @@ function condicionesCompletitud(condiciones) {
 
 function estadoGrupo(estadoRaw = '') {
   const est = String(estadoRaw || '').toLowerCase();
-  // Aliases legacy → estados definitivos
-  if (est === 'semi_cerrado') return 'semi_acordado';
-  if (est === 'cerrado') return 'acordado';
-
-  // Legacy trato / flujo antiguo → disponible
-  if (est === 'activo' || est === 'prospecto' || est === 'negociando') return 'disponible';
-
-  // Estados posteriores del flujo antiguo → acordado (ya no se usan en UI)
-  if (est === 'cosecha_iniciada' || est === 'compra_efectuada' || est === 'completado') return 'acordado';
-
-  // Caído legacy → perdido
+  // → disponible
+  if (['activo', 'prospecto'].includes(est)) return 'disponible';
+  // → en negociación
+  if (['negociando', 'semi_acordado', 'semi_cerrado'].includes(est)) return 'negociando';
+  // → acordado
+  if (['cerrado', 'cosecha_iniciada', 'compra_efectuada', 'completado'].includes(est)) return 'acordado';
+  // → perdido
   if (est === 'caido') return 'perdido';
-
+  // disponible, acordado, perdido, descartado pasan tal cual
   return est || '';
 }
 
@@ -251,7 +247,7 @@ function renderTabla() {
   if (!tbody) return;
 
   // KPIs — cuenta también estados legacy en sus equivalentes nuevos
-  const kpis = { disponible: 0, semi_acordado: 0, acordado: 0, descartado: 0, perdido: 0 };
+  const kpis = { disponible: 0, negociando: 0, acordado: 0, perdido: 0, descartado: 0 };
   for (const t of (Array.isArray(tratosAll) ? tratosAll : [])) {
     const k = estadoGrupo(t?.estado);
     if (k && k in kpis) kpis[k]++;

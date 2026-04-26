@@ -266,10 +266,10 @@
             <select id="trt-f-estado" class="browser-default act-select" aria-label="Estado del trato" style="max-width:190px;">
               <option value="">Todos los estados</option>
               <option value="disponible">Disponible</option>
+              <option value="negociando">En negociación</option>
               <option value="acordado">Acordado</option>
-              <option value="semi_acordado">Semi-acordado</option>
+              <option value="perdido">Perdido</option>
               <option value="descartado">Descartado</option>
-              <option value="caido">Caído</option>
             </select>
             <button id="trt-f-clear" class="dash-btn act-btn-clear" type="button">Limpiar</button>
           </div>
@@ -283,10 +283,11 @@
 
         <!-- KPIs -->
         <div class="tratos-kpis" id="tratosKpis">
-          <div class="trato-kpi" data-estado="activo"><div class="k">Activos</div><div class="v">-</div></div>
+          <div class="trato-kpi" data-estado="disponible"><div class="k">Disponibles</div><div class="v">-</div></div>
+          <div class="trato-kpi" data-estado="negociando"><div class="k">En negociación</div><div class="v">-</div></div>
           <div class="trato-kpi" data-estado="acordado"><div class="k">Acordados</div><div class="v">-</div></div>
-          <div class="trato-kpi" data-estado="cosecha_iniciada"><div class="k">En cosecha</div><div class="v">-</div></div>
-          <div class="trato-kpi" data-estado="caido"><div class="k">Caídos</div><div class="v">-</div></div>
+          <div class="trato-kpi" data-estado="perdido"><div class="k">Perdidos</div><div class="v">-</div></div>
+          <div class="trato-kpi" data-estado="descartado"><div class="k">Descartados</div><div class="v">-</div></div>
         </div>
 
         <!-- ── MODAL: RESULTADO MUESTREO (SUMMARY POST-GUARDADO) ── -->
@@ -1179,11 +1180,11 @@
             <div class="trato-section">
               <label class="trato-label">Estado</label>
               <select id="tratoEstado" class="browser-default modern-select">
-                <option value="activo">Activo</option>
+                <option value="disponible">Disponible</option>
+                <option value="negociando">En negociación</option>
                 <option value="acordado">Acordado</option>
-                <option value="cosecha_iniciada">Cosecha iniciada</option>
-                <option value="completado">Completado</option>
-                <option value="caido">Caído</option>
+                <option value="perdido">Perdido</option>
+                <option value="descartado">Descartado</option>
               </select>
             </div>
 
