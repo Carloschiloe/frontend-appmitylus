@@ -306,6 +306,58 @@
     /* Vacío */
     .exp-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted, #94a3b8); font-size: .9rem; }
 
+    /* Fotos en tarjeta */
+    .exp-card-fotos {
+      display: flex; flex-wrap: wrap; gap: .35rem;
+      margin: .5rem 0 .25rem;
+    }
+    .exp-foto-thumb {
+      width: 60px; height: 60px; object-fit: cover;
+      border-radius: 6px; border: 1.5px solid var(--border, #e2e8f0);
+      cursor: zoom-in; transition: opacity .12s, transform .12s;
+    }
+    .exp-foto-thumb:hover { opacity: .85; transform: scale(1.04); }
+    .exp-foto-more {
+      width: 60px; height: 60px; border-radius: 6px;
+      background: var(--surface-alt, #f8fafc);
+      border: 1.5px solid var(--border, #e2e8f0);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700; color: var(--text-muted, #64748b);
+    }
+
+    /* Lightbox */
+    #lbOverlay {
+      display: none; position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,.88); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+    }
+    #lbOverlay.is-open { display: flex; }
+    .lb-inner {
+      position: relative; max-width: 90vw; max-height: 90vh;
+      display: flex; flex-direction: column; align-items: center; gap: .75rem;
+    }
+    #lbImg {
+      max-width: 88vw; max-height: 80vh;
+      object-fit: contain; border-radius: 10px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    }
+    .lb-controls {
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .lb-btn {
+      background: rgba(255,255,255,.12); color: #fff;
+      border: none; border-radius: 8px; padding: .45rem .85rem;
+      font-size: 1.1rem; cursor: pointer; transition: background .12s;
+    }
+    .lb-btn:hover { background: rgba(255,255,255,.22); }
+    #lbCount { color: #cbd5e1; font-size: .82rem; min-width: 60px; text-align: center; }
+    .lb-close {
+      position: absolute; top: -2.5rem; right: 0;
+      background: none; border: none; color: #94a3b8;
+      font-size: 1.4rem; cursor: pointer; line-height: 1;
+    }
+    .lb-close:hover { color: #fff; }
+
     /* Print */
     @media print {
       #sidebar-container, .exp-back, .exp-actions, .exp-filters, .hst-search-box { display: none !important; }
@@ -438,6 +490,21 @@
 
       </div><!-- /hst-page -->
     </main>
+  </div>
+
+  <!-- Lightbox de fotos -->
+  <div id="lbOverlay" role="dialog" aria-modal="true" aria-label="Visor de fotos">
+    <div class="lb-inner">
+      <button class="lb-close" id="lbClose" type="button" aria-label="Cerrar">
+        <i class="bi bi-x-lg"></i>
+      </button>
+      <img id="lbImg" src="" alt="Foto de visita">
+      <div class="lb-controls">
+        <button class="lb-btn" id="lbPrev" type="button"><i class="bi bi-chevron-left"></i></button>
+        <span id="lbCount">1 / 1</span>
+        <button class="lb-btn" id="lbNext" type="button"><i class="bi bi-chevron-right"></i></button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="/js/abastecimiento/historial/index.js"></script>

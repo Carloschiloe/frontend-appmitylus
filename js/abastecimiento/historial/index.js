@@ -167,8 +167,19 @@ function renderStats() {
 
 // ─── Construcción del timeline ────────────────────────────────────────────────
 
-function makeEvent(type, date, title, subtitle, notes, responsible, raw) {
-  return { type, date, title, subtitle, notes: notes || '', responsible: responsible || '', raw };
+function makeEvent(type, date, title, subtitle, notes, responsible, raw, fotos) {
+  return { type, date, title, subtitle, notes: notes || '', responsible: responsible || '', raw, fotos: fotos || [] };
+}
+
+function extractFotoSrc(f) {
+  if (!f) return null;
+  if (typeof f === 'string') return f;
+  return f.dataURL || f.url || f.src || null;
+}
+
+function extractFotos(raw) {
+  const arr = Array.isArray(raw?.fotos) ? raw.fotos : [];
+  return arr.map(extractFotoSrc).filter(Boolean);
 }
 
 function buildTimeline(providerKey) {
@@ -191,11 +202,12 @@ function buildTimeline(providerKey) {
     .map((x) => makeEvent(
       'visita',
       dateOf(x, ['fecha', 'createdAt', 'updatedAt']),
-      `Visita${x.proximoPaso ? ` — ${x.proximoPaso}` : ''}`.trim(),
+      `Visita${x.estado ? ` — ${x.estado}` : ''}`.trim(),
       x.contacto || x.contactoNombre || '—',
       x.observaciones || '',
       x.responsable || x.responsablePG || '',
-      x
+      x,
+      extractFotos(x)
     ));
 
   const interacciones = state.raw.interacciones
@@ -287,7 +299,7 @@ function buildTimeline(providerKey) {
 
   return [...contactos, ...visitas, ...interacciones, ...oportunidades, ...muestreos, ...extraEventos]
     .filter((x) => x.date)
-    .sort((a, b) => a.date - b.date);
+    .sort((a, b) => b.date - a.date);
 }
 
 // ─── Render: pantalla de búsqueda ─────────────────────────────────────────────
@@ -408,9 +420,9 @@ function renderTimeline() {
     const ev = timeline[i];
     const tClass = typeClass(ev.type);
 
-    // Brecha visible
+    // Brecha visible (orden descendente: prevDate > ev.date)
     if (prevDate) {
-      const gap = Math.round((ev.date.getTime() - prevDate.getTime()) / 86400000);
+      const gap = Math.round((prevDate.getTime() - ev.date.getTime()) / 86400000);
       if (gap >= GAP_DAYS) {
         html += `<div class="exp-gap">— ${gap} días sin actividad —</div>`;
       }
@@ -418,8 +430,21 @@ function renderTimeline() {
     prevDate = ev.date;
 
     // Visibilidad por filtro
-    const filterType = ev.type === 'acordado' ? 'trato' : (ev.type === 'perdido' ? 'trato' : ev.type);
+    const filterType = (ev.type === 'acordado' || ev.type === 'perdido') ? 'trato' : ev.type;
     const hidden = filter !== 'todos' && filterType !== filter ? ' is-hidden' : '';
+
+    // Fotos (solo visitas)
+    let fotosHtml = '';
+    if (ev.fotos && ev.fotos.length) {
+      const shown = ev.fotos.slice(0, 6);
+      const rest  = ev.fotos.length - shown.length;
+      fotosHtml = `<div class="exp-card-fotos">` +
+        shown.map((src, idx) =>
+          `<img class="exp-foto-thumb" src="${esc(src)}" data-fotos='${JSON.stringify(ev.fotos)}' data-idx="${idx}" alt="Foto visita" loading="lazy">`
+        ).join('') +
+        (rest > 0 ? `<span class="exp-foto-more">+${rest}</span>` : '') +
+        `</div>`;
+    }
 
     html += `
       <div class="exp-event ${tClass}${hidden}" data-type="${esc(filterType)}">
@@ -434,6 +459,7 @@ function renderTimeline() {
           </div>
           ${ev.subtitle ? `<div class="exp-card-sub">${esc(ev.subtitle)}</div>` : ''}
           ${ev.notes    ? `<div class="exp-card-notes">${esc(ev.notes)}</div>` : ''}
+          ${fotosHtml}
           ${ev.responsible ? `<div class="exp-card-resp"><i class="bi bi-person"></i> ${esc(ev.responsible)}</div>` : ''}
         </div>
       </div>
@@ -441,6 +467,15 @@ function renderTimeline() {
   }
 
   el.innerHTML = html;
+
+  // Lightbox — delegar click en thumbnails
+  el.querySelectorAll('.exp-foto-thumb').forEach((img) => {
+    img.addEventListener('click', () => {
+      const fotos = JSON.parse(img.dataset.fotos || '[]');
+      const idx   = Number(img.dataset.idx || 0);
+      openLightbox(fotos, idx);
+    });
+  });
 }
 
 // ─── Cambio de vista ──────────────────────────────────────────────────────────
@@ -503,6 +538,48 @@ async function loadAll() {
   renderStats();
   renderProviderGrid();
 }
+
+// ─── Lightbox de fotos ────────────────────────────────────────────────────────
+
+let _lb = { fotos: [], idx: 0 };
+
+function openLightbox(fotos, idx) {
+  _lb = { fotos, idx };
+  const lb = document.getElementById('lbOverlay');
+  if (!lb) return;
+  lb.classList.add('is-open');
+  renderLightbox();
+}
+
+function renderLightbox() {
+  const img   = document.getElementById('lbImg');
+  const count = document.getElementById('lbCount');
+  if (img) img.src = _lb.fotos[_lb.idx] || '';
+  if (count) count.textContent = `${_lb.idx + 1} / ${_lb.fotos.length}`;
+}
+
+function closeLightbox() {
+  document.getElementById('lbOverlay')?.classList.remove('is-open');
+}
+
+document.getElementById('lbOverlay')?.addEventListener('click', (e) => {
+  if (e.target.id === 'lbOverlay') closeLightbox();
+});
+document.getElementById('lbClose')?.addEventListener('click', closeLightbox);
+document.getElementById('lbPrev')?.addEventListener('click', () => {
+  _lb.idx = (_lb.idx - 1 + _lb.fotos.length) % _lb.fotos.length;
+  renderLightbox();
+});
+document.getElementById('lbNext')?.addEventListener('click', () => {
+  _lb.idx = (_lb.idx + 1) % _lb.fotos.length;
+  renderLightbox();
+});
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('lbOverlay')?.classList.contains('is-open')) return;
+  if (e.key === 'Escape')    closeLightbox();
+  if (e.key === 'ArrowLeft')  { _lb.idx = (_lb.idx - 1 + _lb.fotos.length) % _lb.fotos.length; renderLightbox(); }
+  if (e.key === 'ArrowRight') { _lb.idx = (_lb.idx + 1) % _lb.fotos.length; renderLightbox(); }
+});
 
 // ─── Eventos de UI ────────────────────────────────────────────────────────────
 
