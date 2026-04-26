@@ -62,6 +62,8 @@ const state = {
   raw: { contactos: [], visitas: [], interacciones: [], oportunidades: [] },
   providers: [],
   searchText: '',
+  statusFilter: 'todos',
+  sortBy: 'actividad',
   activeFilter: 'todos',
   currentTimeline: [],
   historialByProveedorId: new Map(),
@@ -127,12 +129,40 @@ function getAlerts(timeline) {
 
 // ─── Alerta rápida para tarjeta de proveedor ──────────────────────────────────
 
-function getProviderBadge(prov) {
-  if (!prov.lastDate) return { cls: 'badge-gray', icon: '○', text: 'Sin fechas' };
+function providerStatus(prov) {
+  if (!prov.lastDate) return 'inactivo';
   const days = Math.round((Date.now() - prov.lastDate.getTime()) / 86400000);
-  if (days >= 90) return { cls: 'badge-red',    icon: '●', text: `Inactivo ${days}d` };
-  if (days >= 30) return { cls: 'badge-yellow', icon: '●', text: `${days}d sin act.` };
-  return              { cls: 'badge-green',  icon: '●', text: `Activo` };
+  if (days >= 90) return 'inactivo';
+  if (days >= 30) return 'riesgo';
+  return 'activo';
+}
+
+function getProviderBadge(prov) {
+  const st = providerStatus(prov);
+  if (st === 'inactivo') {
+    const days = prov.lastDate ? Math.round((Date.now() - prov.lastDate.getTime()) / 86400000) : null;
+    return { cls: 'badge-red',    icon: '●', text: days ? `Inactivo ${days}d` : 'Sin fechas' };
+  }
+  if (st === 'riesgo') {
+    const days = Math.round((Date.now() - prov.lastDate.getTime()) / 86400000);
+    return { cls: 'badge-yellow', icon: '●', text: `${days}d sin act.` };
+  }
+  return { cls: 'badge-green', icon: '●', text: 'Activo' };
+}
+
+function renderStats() {
+  const el = document.getElementById('histStats');
+  if (!el) return;
+  const total    = state.providers.length;
+  const activos  = state.providers.filter((p) => providerStatus(p) === 'activo').length;
+  const riesgo   = state.providers.filter((p) => providerStatus(p) === 'riesgo').length;
+  const inactivos = state.providers.filter((p) => providerStatus(p) === 'inactivo').length;
+  el.innerHTML = `
+    <span class="hst-stat"><span class="hst-stat-dot" style="background:#94a3b8"></span>${total} proveedores</span>
+    <span class="hst-stat"><span class="hst-stat-dot" style="background:#059669"></span>${activos} activos</span>
+    <span class="hst-stat"><span class="hst-stat-dot" style="background:#d97706"></span>${riesgo} en riesgo</span>
+    <span class="hst-stat"><span class="hst-stat-dot" style="background:#dc2626"></span>${inactivos} inactivos</span>
+  `;
 }
 
 // ─── Construcción del timeline ────────────────────────────────────────────────
@@ -267,12 +297,27 @@ function renderProviderGrid() {
   if (!grid) return;
 
   const q = state.searchText.trim().toLowerCase();
-  const list = q
+  let list = q
     ? state.providers.filter((p) => (`${p.name} ${p.key}`).toLowerCase().includes(q))
-    : state.providers;
+    : [...state.providers];
+
+  if (state.statusFilter !== 'todos') {
+    list = list.filter((p) => providerStatus(p) === state.statusFilter);
+  }
+
+  if (state.sortBy === 'actividad') {
+    list.sort((a, b) => {
+      if (!a.lastDate && !b.lastDate) return 0;
+      if (!a.lastDate) return 1;
+      if (!b.lastDate) return -1;
+      return b.lastDate - a.lastDate;
+    });
+  } else {
+    list.sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  }
 
   if (!list.length) {
-    grid.innerHTML = `<p class="hst-loading">${q ? 'Sin resultados para esa búsqueda.' : 'No hay proveedores registrados.'}</p>`;
+    grid.innerHTML = `<p class="hst-loading">${q || state.statusFilter !== 'todos' ? 'Sin resultados para este filtro.' : 'No hay proveedores registrados.'}</p>`;
     return;
   }
 
@@ -383,7 +428,8 @@ function renderTimeline() {
           <div class="exp-card-top">
             <span class="exp-card-title">${esc(ev.title)}</span>
             <span class="exp-card-date">
-              <abbr title="${esc(fmtDate(ev.date))}">${esc(relativeDate(ev.date))}</abbr>
+              <span class="exp-card-date-rel">${esc(relativeDate(ev.date))}</span>
+              <span class="exp-card-date-abs">${esc(fmtDate(ev.date))}</span>
             </span>
           </div>
           ${ev.subtitle ? `<div class="exp-card-sub">${esc(ev.subtitle)}</div>` : ''}
@@ -454,6 +500,7 @@ async function loadAll() {
   state.raw.oportunidades = toArray(oportunidadesR);
 
   buildProviders();
+  renderStats();
   renderProviderGrid();
 }
 
@@ -461,6 +508,19 @@ async function loadAll() {
 
 document.getElementById('histSearch')?.addEventListener('input', (e) => {
   state.searchText = e.target.value || '';
+  renderProviderGrid();
+});
+
+document.querySelectorAll('[data-status]').forEach((chip) => {
+  chip.addEventListener('click', () => {
+    state.statusFilter = chip.dataset.status;
+    document.querySelectorAll('[data-status]').forEach((c) => c.classList.toggle('active', c === chip));
+    renderProviderGrid();
+  });
+});
+
+document.getElementById('histSort')?.addEventListener('change', (e) => {
+  state.sortBy = e.target.value;
   renderProviderGrid();
 });
 

@@ -78,6 +78,46 @@
 
     .hst-loading { color: var(--text-muted, #94a3b8); font-size: .9rem; }
 
+    /* Barra de controles: filtro estado + ordenar */
+    .hst-controls {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: .6rem;
+      width: 100%; max-width: 900px;
+    }
+    .hst-status-chips { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .hst-chip {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-size: .78rem; font-weight: 600;
+      padding: .3rem .75rem; border-radius: 20px;
+      border: 1.5px solid var(--border, #e2e8f0);
+      background: transparent; cursor: pointer;
+      color: var(--text-secondary, #475569); transition: all .12s;
+    }
+    .hst-chip:hover { border-color: #94a3b8; }
+    .hst-chip.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+    .hst-chip.active.st-activo   { background: #059669; border-color: #059669; }
+    .hst-chip.active.st-riesgo  { background: #d97706; border-color: #d97706; }
+    .hst-chip.active.st-inactivo { background: #dc2626; border-color: #dc2626; }
+    .hst-sort {
+      display: flex; align-items: center; gap: .4rem;
+      font-size: .78rem; color: var(--text-muted, #64748b);
+    }
+    .hst-sort select {
+      font-size: .78rem; border: 1.5px solid var(--border, #e2e8f0);
+      border-radius: 8px; padding: .25rem .5rem;
+      background: var(--surface, #fff); color: var(--text-primary, #1e293b);
+      cursor: pointer; outline: none;
+    }
+
+    /* Stats resumen */
+    .hst-stats {
+      display: flex; gap: 1.25rem; flex-wrap: wrap;
+      font-size: .78rem; color: var(--text-muted, #64748b);
+      width: 100%; max-width: 900px;
+    }
+    .hst-stat { display: flex; align-items: center; gap: .35rem; }
+    .hst-stat-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
     /* ── Estado 2: Expediente ────────────────────────────────── */
     #viewExpediente {
       display: none;
@@ -223,11 +263,13 @@
     }
     .exp-card-title { font-weight: 600; font-size: .88rem; color: var(--text-primary, #1e293b); }
     .exp-card-date {
+      display: flex; flex-direction: column; align-items: flex-end;
       font-size: .73rem; color: var(--text-muted, #94a3b8);
       white-space: nowrap; flex-shrink: 0;
-      cursor: default;
+      cursor: default; gap: .1rem;
     }
-    .exp-card-date abbr { text-decoration: none; border-bottom: 1px dashed #cbd5e1; }
+    .exp-card-date-rel { font-weight: 600; }
+    .exp-card-date-abs { font-size: .68rem; color: #b0bec5; }
     .exp-card-sub { font-size: .8rem; color: var(--text-secondary, #475569); margin-bottom: .2rem; }
     .exp-card-notes { font-size: .77rem; color: var(--text-muted, #64748b); font-style: italic; }
     .exp-card-resp {
@@ -290,6 +332,30 @@
           <div class="hst-search-box">
             <i class="bi bi-search"></i>
             <input id="histSearch" type="text" placeholder="Buscar proveedor por nombre..." autocomplete="off">
+          </div>
+
+          <div id="histStats" class="hst-stats"></div>
+
+          <div class="hst-controls">
+            <div class="hst-status-chips">
+              <button class="hst-chip active" data-status="todos" type="button">Todos</button>
+              <button class="hst-chip st-activo"   data-status="activo"   type="button">
+                <span class="hst-stat-dot" style="background:#059669"></span>Activos
+              </button>
+              <button class="hst-chip st-riesgo"  data-status="riesgo"  type="button">
+                <span class="hst-stat-dot" style="background:#d97706"></span>En riesgo
+              </button>
+              <button class="hst-chip st-inactivo" data-status="inactivo" type="button">
+                <span class="hst-stat-dot" style="background:#dc2626"></span>Inactivos
+              </button>
+            </div>
+            <div class="hst-sort">
+              <i class="bi bi-sort-down"></i>
+              <select id="histSort">
+                <option value="actividad">Última actividad</option>
+                <option value="nombre">Nombre A–Z</option>
+              </select>
+            </div>
           </div>
 
           <div id="histProvGrid" class="hst-provider-grid">
