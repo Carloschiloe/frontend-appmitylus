@@ -430,23 +430,86 @@ function buildCentroDetallesHtml(c) {
   const pk = k => LABELS[k] || k.replace(/([A-Z])/g,' $1').replace(/^./,m=>m.toUpperCase());
 
   const haVal = normalizeHa(c.hectareas ?? d.hectareas ?? d.ha);
-  let html = `<table class="striped"><tbody>
-    <tr><th>Titular</th><td>${esc(toTitle(c.name || c.proveedor || ''))}</td></tr>
-    <tr><th>Proveedor</th><td>${esc(toTitle(c.proveedor || ''))}</td></tr>
-    <tr><th>Comuna</th><td>${esc(toTitle(c.comuna || ''))}</td></tr>
-    <tr><th>Código</th><td>${esc(c.code || '')}</td></tr>
-    <tr><th>Hectáreas</th><td>${fmtHaCL(haVal)}</td></tr>`;
 
-  ['region','codigoArea','areaPSMB','estadoSanitario','estadoAreaSernapesca','ubicacion','grupoEspecie','especies','tonsMax'].forEach(k => {
-    let v = c[k];
-    if (k === 'especies' && Array.isArray(c.especies)) v = c.especies.join(', ');
-    if (k === 'areaPSMB') v = c.areaPSMB ?? sanitario.areaPSMB ?? v;
-    if (k === 'estadoSanitario') v = sanitario.estado ? toTitle(sanitario.estado) : v;
-    if (k === 'estadoAreaSernapesca') v = c.estadoAreaSernapesca ?? sanitario.estadoSernapesca ?? v;
-    if (v !== undefined && v !== null && String(v) !== '') html += `<tr><th>${pk(k)}</th><td>${esc(String(v))}</td></tr>`;
-  });
-  html += `</tbody></table>`;
+  // Badge de estado sanitario con color
+  const ESTADO_COLOR = { verde:'#16a34a', naranja:'#f59e0b', rojo:'#ef4444', gris:'#94a3b8', amarillo:'#eab308' };
+  const estSan = sanitario.estado ? String(sanitario.estado).toLowerCase() : (c.estadoSanitario ? String(c.estadoSanitario).toLowerCase() : '');
+  const estColor = ESTADO_COLOR[estSan] || '#94a3b8';
+  const estLabel = estSan ? (estSan.charAt(0).toUpperCase() + estSan.slice(1)) : '—';
+  const estadoBadgeHtml = estSan
+    ? `<span style="display:inline-flex;align-items:center;gap:5px;background:${estColor}18;color:${estColor};border:1px solid ${estColor}40;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;">
+        <span style="width:7px;height:7px;border-radius:50%;background:${estColor};display:inline-block;"></span>${esc(estLabel)}</span>`
+    : '<span style="color:#94a3b8;">—</span>';
 
+  // Badge estado Sernapesca
+  const SERNAPESCA_COLOR = { abierta:'#16a34a', cerrada:'#ef4444', inactiva:'#94a3b8', eliminada:'#6b7280' };
+  const estSer = (c.estadoAreaSernapesca ?? sanitario.estadoSernapesca ?? '').toLowerCase();
+  const serColor = SERNAPESCA_COLOR[estSer] || '#94a3b8';
+  const serLabel = estSer ? (estSer.charAt(0).toUpperCase() + estSer.slice(1)) : '';
+  const sernapescaBadge = serLabel
+    ? `<span style="display:inline-flex;align-items:center;gap:5px;background:${serColor}18;color:${serColor};border:1px solid ${serColor}40;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;">${esc(serLabel)}</span>`
+    : '';
+
+  // Especies como chips
+  const especiesArr = Array.isArray(c.especies) ? c.especies : (c.especies ? String(c.especies).split(',') : []);
+  const especiesHtml = especiesArr.length
+    ? especiesArr.map(e => `<span style="display:inline-block;background:#f1f5f9;color:#475569;border-radius:6px;padding:2px 8px;font-size:11px;margin:2px 2px 2px 0;">${esc(toTitle(e.trim()))}</span>`).join('')
+    : '<span style="color:#94a3b8;">—</span>';
+
+  const row = (label, val) => val
+    ? `<div class="cdet-row"><span class="cdet-label">${label}</span><span class="cdet-val">${val}</span></div>`
+    : '';
+
+  let html = `<style>
+    .cdet-section{margin-bottom:18px;}
+    .cdet-section-title{font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #f1f5f9;}
+    .cdet-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:5px 0;border-bottom:1px solid #f8fafc;font-size:13px;}
+    .cdet-row:last-child{border-bottom:none;}
+    .cdet-label{color:#64748b;font-weight:600;white-space:nowrap;min-width:110px;}
+    .cdet-val{color:#0f172a;text-align:right;word-break:break-word;}
+    .cdet-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
+    .cdet-coords{font-size:11px;width:100%;border-collapse:collapse;}
+    .cdet-coords th{color:#94a3b8;font-weight:600;text-align:left;padding:3px 8px 3px 0;border-bottom:1px solid #f1f5f9;}
+    .cdet-coords td{color:#334155;padding:3px 8px 3px 0;font-variant-numeric:tabular-nums;}
+  </style>`;
+
+  // — Sección: Identificación —
+  html += `<div class="cdet-section">
+    <div class="cdet-section-title">Identificación</div>
+    <div class="cdet-grid">
+      ${row('Titular', esc(toTitle(c.name || c.proveedor || '')))}
+      ${row('Código', esc(c.code || ''))}
+      ${row('Proveedor', esc(toTitle(c.proveedor || '')))}
+      ${row('Hectáreas', fmtHaCL(haVal) || '')}
+      ${row('Comuna', esc(toTitle(c.comuna || '')))}
+      ${row('Región', esc(toTitle(c.region || d.region || '')))}
+    </div>
+  </div>`;
+
+  // — Sección: Estado sanitario —
+  const areaPSMB = c.areaPSMB ?? sanitario.areaPSMB ?? '';
+  const codArea  = c.codigoArea ?? '';
+  const ubicacion = toTitle(c.ubicacion || d.ubicacion || '');
+  html += `<div class="cdet-section">
+    <div class="cdet-section-title">Estado sanitario</div>
+    ${row('Estado sanitario', estadoBadgeHtml)}
+    ${codArea  ? row('Código Área', esc(String(codArea))) : ''}
+    ${areaPSMB ? row('Área PSMB',   esc(String(areaPSMB))) : ''}
+    ${serLabel ? row('Estado Sernapesca', sernapescaBadge) : ''}
+    ${ubicacion ? row('Ubicación', esc(ubicacion)) : ''}
+  </div>`;
+
+  // — Sección: Especies —
+  const grupoEspecie = toTitle(c.grupoEspecie || d.grupoEspecie || '');
+  if (grupoEspecie || especiesArr.length) {
+    html += `<div class="cdet-section">
+      <div class="cdet-section-title">Especies</div>
+      ${grupoEspecie ? row('Grupo', esc(grupoEspecie)) : ''}
+      <div class="cdet-row"><span class="cdet-label">Especies</span><span class="cdet-val" style="text-align:right;">${especiesHtml}</span></div>
+    </div>`;
+  }
+
+  // — Sección: Datos legales —
   const order = ['rutTitular','nroPert','numeroResSSP','fechaResSSP','numeroResSSFFAA','fechaResSSFFAA'];
   const rows = [];
   order.forEach(k => {
@@ -454,26 +517,28 @@ function buildCentroDetallesHtml(c) {
     if (v !== undefined && v !== null && String(v) !== '') rows.push([k, k.startsWith('fecha') ? fmtDate(v) : v]);
   });
   Object.keys(flat)
-    .filter(k => !order.includes(k) && flat[k] !== '' && flat[k] != null)
+    .filter(k => !order.includes(k) && !['resSSP','resSSFFAA'].includes(k) && flat[k] !== '' && flat[k] != null)
     .sort()
     .forEach(k => rows.push([k, flat[k]]));
 
   if (rows.length) {
-    html += `<h6 style="margin-top:1.5em;">Detalles</h6><table class="am-table"><tbody>`;
-    rows.forEach(([k, v]) => { html += `<tr><th>${pk(k)}</th><td>${esc(String(v))}</td></tr>`; });
-    html += `</tbody></table>`;
+    html += `<div class="cdet-section"><div class="cdet-section-title">Datos legales</div>`;
+    rows.forEach(([k, v]) => { html += row(pk(k), esc(String(v))); });
+    html += `</div>`;
   }
 
+  // — Sección: Coordenadas —
   if (Array.isArray(c.coords) && c.coords.length) {
-    html += `<h6 style="margin-top:1.5em;">Coordenadas</h6>
-      <table class="am-table">
-        <thead><tr><th>#</th><th>Lat</th><th>Lng</th></tr></thead><tbody>`;
+    html += `<div class="cdet-section">
+      <div class="cdet-section-title">Coordenadas (${c.coords.length} puntos)</div>
+      <table class="cdet-coords">
+        <thead><tr><th>#</th><th>Latitud</th><th>Longitud</th></tr></thead><tbody>`;
     c.coords.forEach((p, i) => {
       const latStr = Number.isFinite(p?.lat) ? Number(p.lat).toFixed(6) : (p?.lat ?? '');
       const lngStr = Number.isFinite(p?.lng) ? Number(p.lng).toFixed(6) : (p?.lng ?? '');
       html += `<tr><td>${i + 1}</td><td>${latStr}</td><td>${lngStr}</td></tr>`;
     });
-    html += `</tbody></table>`;
+    html += `</tbody></table></div>`;
   }
 
   return html;
