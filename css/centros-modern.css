@@ -521,6 +521,29 @@
   transition: all 0.2s;
 }
 
+.map-density-toggle [data-label-density] {
+  padding: 4px 12px;
+  font-size: 11px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #64748b;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.map-density-toggle [data-label-density].active,
+.map-density-toggle [data-label-density].is-active {
+  background: #fff;
+  color: #0f172a;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+}
+.map-density-toggle [data-label-density]:hover:not(.active):not(.is-active) {
+  background: #e2e8f0;
+  color: #334155;
+}
+
 .map-filter-chip.is-active {
   background: var(--color-primary);
   color: #fff;
