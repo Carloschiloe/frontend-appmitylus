@@ -415,13 +415,15 @@ export function initSidebarFiltro() {
 // ====== Modal de detalles ======
 function buildCentroDetallesHtml(c) {
   const d = (c.detalles && typeof c.detalles === 'object') ? c.detalles : {};
+  const sanitario = c.sanitario || {};
   const flat = { ...d };
   if (d.resSSP)    { if (d.resSSP.numero) flat.numeroResSSP    = d.resSSP.numero;    if (d.resSSP.fecha)    flat.fechaResSSP    = d.resSSP.fecha; }
   if (d.resSSFFAA) { if (d.resSSFFAA.numero) flat.numeroResSSFFAA = d.resSSFFAA.numero; if (d.resSSFFAA.fecha) flat.fechaResSSFFAA = d.resSSFFAA.fecha; }
   const fmtDate = v => { if (!v) return ''; const s=String(v); if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; const D=new Date(s); return Number.isNaN(D.getTime()) ? s : D.toISOString().slice(0,10); };
 
   const LABELS = {
-    region:'Región', codigoArea:'Código Área', ubicacion:'Ubicación', grupoEspecie:'Grupo Especie',
+    region:'Región', codigoArea:'Código Área', areaPSMB:'Área PSMB', estadoSanitario:'Estado sanitario',
+    estadoAreaSernapesca:'Estado Sernapesca', ubicacion:'Ubicación', grupoEspecie:'Grupo Especie',
     especies:'Especies', tonsMax:'Tons Máx', numeroResSSP:'N° ResSSP', fechaResSSP:'Fecha ResSSP',
     numeroResSSFFAA:'N° ResSSFFAA', fechaResSSFFAA:'Fecha ResSSFFAA', rutTitular:'RUT Titular', nroPert:'Nro. Pert'
   };
@@ -435,9 +437,12 @@ function buildCentroDetallesHtml(c) {
     <tr><th>Código</th><td>${esc(c.code || '')}</td></tr>
     <tr><th>Hectáreas</th><td>${fmtHaCL(haVal)}</td></tr>`;
 
-  ['region','codigoArea','ubicacion','grupoEspecie','especies','tonsMax'].forEach(k => {
+  ['region','codigoArea','areaPSMB','estadoSanitario','estadoAreaSernapesca','ubicacion','grupoEspecie','especies','tonsMax'].forEach(k => {
     let v = c[k];
     if (k === 'especies' && Array.isArray(c.especies)) v = c.especies.join(', ');
+    if (k === 'areaPSMB') v = c.areaPSMB ?? sanitario.areaPSMB ?? v;
+    if (k === 'estadoSanitario') v = sanitario.estado ? toTitle(sanitario.estado) : v;
+    if (k === 'estadoAreaSernapesca') v = c.estadoAreaSernapesca ?? sanitario.estadoSernapesca ?? v;
     if (v !== undefined && v !== null && String(v) !== '') html += `<tr><th>${pk(k)}</th><td>${esc(String(v))}</td></tr>`;
   });
   html += `</tbody></table>`;
@@ -997,17 +1002,8 @@ function initMapFilterControls() {
 
 function centrarMapaEnPoligonos(centros = [], defaultLatLng = CHILOE_COORDS) {
   if (!map) return;
-  const all = [];
-  centros.forEach(c => (c.coords || []).forEach(p => {
-    const la = parseNum(p.lat), ln = parseNum(p.lng);
-    if (la !== null && ln !== null) all.push([la, ln]);
-  }));
-  if (all.length) {
-    try { map.fitBounds(all, { padding: [20, 20], maxZoom: CHILOE_ZOOM }); }
-    catch (e) { logErr('fitBounds error:', e); map.setView(defaultLatLng, CHILOE_ZOOM); }
-  } else {
-    map.setView(defaultLatLng, CHILOE_ZOOM);
-  }
+  // Mantener inicio fijo en Chiloé (evita que outliers “arrastren” el zoom/vista).
+  map.setView(defaultLatLng, CHILOE_ZOOM);
 }
 
 export function focusCentroInMap(idx) {

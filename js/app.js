@@ -14,6 +14,7 @@ import {
   drawCentrosInMap,
   updateLabelVisibility,
 } from './mapas/mapa.js';
+import { renderMapaAlways } from './mapas/control-mapa.js';
 
 // === Tabla ===
 import { initTablaCentros, loadCentros as loadTablaCentros } from './centros/tabla-centros.js';
@@ -95,10 +96,26 @@ async function init() {
     APPLOG('Render inmediato desde caché:', cached.length);
     Estado.centros = cached;
     loadTablaCentros(cached);
-    try { cargarYRenderizarCentros(cached); } catch {}
+    if (tabMapaActiva()) {
+      try { cargarYRenderizarCentros(cached); } catch {}
+    }
   }
 
   await recargarCentros();
+
+  window.addEventListener('hashchange', () => {
+    if (tabMapaActiva()) {
+      APPLOG('hashchange → tab mapa activa → renderMapaAlways(true)');
+      renderMapaAlways(true);
+    }
+  });
+
+  // Cuando se importan/sincronizan centros (SUBPESCA o Excel), refrescar tabla + mapa
+  window.addEventListener('mmpp:centros-updated', () => {
+    APPLOG('Evento mmpp:centros-updated → recargarCentros()');
+    recargarCentros();
+  });
+
   wireFormCentros();
 
   APPLOG('Init done.');
@@ -114,12 +131,10 @@ async function recargarCentros() {
     APPLOG('Centros recibidos:', Estado.centros.length);
 
     loadTablaCentros(Estado.centros);
-    cargarYRenderizarCentros(Estado.centros);
 
     if (tabMapaActiva()) {
       Estado.map?.invalidateSize();
-      updateLabelVisibility();
-      drawCentrosInMap(Estado.centros);
+      await renderMapaAlways(true);
     }
   } catch (e) {
     APPERR('Error cargando centros:', e);

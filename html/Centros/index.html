@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="/css/index-modern.css">
   <link rel="stylesheet" href="/css/base-ui.css">
   <link rel="stylesheet" href="/css/centros-modern.css" />
+  <link rel="stylesheet" href="/css/sanitario.css" />
   <script src="/js/auth.js"></script>
 </head>
 <body>
@@ -48,6 +49,9 @@
             <button class="am-tab-btn" data-tab-link="#tab-mapa">
               <i class="bi bi-map"></i> Mapa
             </button>
+            <button class="am-tab-btn" data-tab-link="#tab-sanitario">
+              <i class="bi bi-shield-check"></i> Estado Sanitario
+            </button>
           </div>
         </div>
 
@@ -77,15 +81,39 @@
 
           <!-- Barra de Filtros (Estilo unificado) -->
           <div class="am-filter-bar am-mb-16">
-            <div class="am-filter-left">
-              <select id="filtroComuna" class="am-select" style="min-width:200px;">
-                <option value="">Todas las comunas</option>
-              </select>
-              <div class="am-search-field">
-                <i class="bi bi-search"></i>
-                <input id="buscarProveedor" class="am-input" placeholder="Buscar proveedor o código..." />
+            <div class="am-filter-left centro-filter-stack">
+              <div class="am-filter-row">
+                <select id="filtroComuna" class="am-select" style="min-width:200px;">
+                  <option value="">Todas las comunas</option>
+                </select>
+                <select id="filtroEstadoArea" class="am-select" style="min-width:180px;">
+                  <option value="">Todos los estados de area</option>
+                </select>
+                <select id="filtroEstadoSanitario" class="am-select" style="min-width:180px;">
+                  <option value="">Todos los estados sanitarios</option>
+                </select>
+                <select id="filtroVinculoArea" class="am-select" style="min-width:180px;">
+                  <option value="">Todo vinculo PSMB</option>
+                  <option value="con-area">Con area PSMB</option>
+                  <option value="sin-area">Sin area PSMB</option>
+                  <option value="con-codigo-area">Con codigo de area</option>
+                  <option value="sin-codigo-area">Sin codigo de area</option>
+                </select>
               </div>
-              <button id="btnLimpiarFiltros" type="button" class="am-btn am-btn-outline">Limpiar</button>
+              <div class="am-filter-row">
+                <div class="am-search-field">
+                  <i class="bi bi-search"></i>
+                  <input id="buscarProveedor" class="am-input" placeholder="Buscar proveedor, codigo, area o comuna..." />
+                </div>
+                <div class="centro-filter-chips" id="centroQuickFilters">
+                  <button type="button" class="centro-filter-chip is-active" data-quick-filter="">Todas</button>
+                  <button type="button" class="centro-filter-chip" data-quick-filter="alerta">Con alerta</button>
+                  <button type="button" class="centro-filter-chip" data-quick-filter="seguimiento">En seguimiento</button>
+                  <button type="button" class="centro-filter-chip" data-quick-filter="suspendida">Suspendidas</button>
+                  <button type="button" class="centro-filter-chip" data-quick-filter="sin-area">Sin area PSMB</button>
+                </div>
+                <button id="btnLimpiarFiltros" type="button" class="am-btn am-btn-outline">Limpiar</button>
+              </div>
             </div>
             <div class="am-export-group">
               <button id="btnExportCopy" type="button" class="am-export-btn" title="Copiar"><i class="bi bi-clipboard" style="margin-right: 4px;"></i> Copiar</button>
@@ -101,21 +129,23 @@
                 <thead>
                   <tr>
                     <th>Proveedor</th>
-                    <th>Comuna</th>
-                    <th>Código de Centro</th>
-                    <th>Código de Área</th>
-                    <th>Hectáreas</th>
-                    <th>Detalle</th>
+                    <th>Codigo de Centro</th>
+                    <th>Area PSMB</th>
+                    <th>Estado Area</th>
+                    <th>Estado Sanitario</th>
+                    <th>Hectareas</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tfoot>
                   <tr>
-                    <th colspan="2" style="text-align:right">Totales:</th>
+                    <th style="text-align:right">Totales:</th>
                     <th id="totalCentros">0</th>
                     <th></th>
+                    <th></th>
+                    <th></th>
                     <th id="totalHect">0,00</th>
-                    <th colspan="2"></th>
+                    <th></th>
                   </tr>
                 </tfoot>
               </table>
@@ -151,9 +181,90 @@
                   <i class="bi bi-search"></i>
                   <input type="search" id="mapSearch" class="am-input" placeholder="Buscar por código, comuna..." style="height: 40px;" />
                 </div>
+                <ul id="mapSearchResults" class="map-search-results" style="display:none;"></ul>
               </div>
               <div id="map" style="width: 100%; height: 100%;"></div>
             </section>
+          </div>
+        </section>
+
+        <!-- Tab: Estado Sanitario -->
+        <section id="tab-sanitario" class="c-panel" style="display:none; padding: 24px;">
+          <!-- Banner de alerta sticky -->
+          <div id="sanAlertBanner" class="hidden">
+            <span class="san-banner-icon">🚨</span>
+            <span>Alertas sanitarias activas en Los Lagos:</span>
+            <span class="san-banner-areas" id="sanBannerAreas">—</span>
+          </div>
+
+          <div class="san-wrap">
+            <!-- Hero -->
+            <div class="san-hero">
+              <h1>
+                <span id="sanGlobalDot" class="san-dot gris" style="width:14px;height:14px;"></span>
+                Estado Sanitario — Región de Los Lagos
+              </h1>
+              <div class="san-hero-actions">
+                <span class="san-sync-info" id="sanSyncInfo">Sin sincronización</span>
+                <button class="am-btn am-btn-flat" id="btnSanSync" type="button">
+                  <i class="bi bi-arrow-clockwise"></i> Actualizar mrSAT
+                </button>
+              </div>
+            </div>
+
+      <div class="san-filter-section">
+        <div class="san-filter-title">Estado sanitario</div>
+        <div class="san-kpis san-kpis-compact">
+          <div class="san-kpi verde" data-filter="ok"><div class="kpi-num" id="kpiOk">-</div><div class="kpi-label">OK</div></div>
+          <div class="san-kpi naranja" data-filter="alerta"><div class="kpi-num" id="kpiAlerta">-</div><div class="kpi-label">Con alerta</div></div>
+          <div class="san-kpi rojo" data-filter="bloqueada"><div class="kpi-num" id="kpiBloqueada">-</div><div class="kpi-label">Bloqueada</div></div>
+        </div>
+      </div>
+
+      <div class="san-filter-section">
+        <div class="san-filter-title">Estado area Sernapesca</div>
+        <div class="san-state-filters" id="sanAreaFilters">
+          <button type="button" class="san-state-chip is-active" data-area-filter="">Todas</button>
+          <button type="button" class="san-state-chip" data-area-filter="abierta">Abiertas</button>
+          <button type="button" class="san-state-chip" data-area-filter="cerrada">Cerradas</button>
+          <button type="button" class="san-state-chip" data-area-filter="inactiva">Inactivas</button>
+          <button type="button" class="san-state-chip" data-area-filter="eliminada">Eliminadas</button>
+        </div>
+      </div>
+
+      <!-- Tab: Áreas PSMB -->
+            <div id="sanTabAreas">
+      <div class="san-toolbar">
+        <div class="san-search">
+          <i class="bi bi-search"></i>
+          <input id="sanSearchInput" type="search" placeholder="Buscar por codigo de area, area PSMB, centro, codigo de centro, comuna..." autocomplete="off" />
+        </div>
+        <div class="san-toolbar-actions">
+          <button type="button" class="am-btn am-btn-flat san-clear-filter" id="sanClearFilter">Mostrar todas</button>
+          <div class="san-search-meta" id="sanSearchMeta">-</div>
+        </div>
+      </div>
+        <div class="san-table-wrap">
+                <table class="san-table">
+                  <thead>
+                    <tr>
+                <th style="width:138px;">Estado sanitario</th>
+                      <th style="width:76px;">Cód. Área</th>
+                      <th>Área PSMB</th>
+                      <th style="width:108px;">Estado area</th>
+                      <th style="width:60px;">Centros</th>
+                      <th style="width:76px;">Alertas</th>
+                      <th style="width:110px;">Tipos análisis</th>
+                      <th style="width:92px;">Fecha</th>
+                      <th style="width:58px;"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="sanAreasBody">
+                    <tr><td colspan="9" class="muted">Cargando...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -260,6 +371,19 @@
     </div>
   </div>
 
+  <!-- Modal historial área (Sanitario) -->
+  <div id="modalSanHistorial" class="modal app-modal-modern" style="max-width:640px;width:96vw;display:none;">
+    <div class="app-modal-header" style="padding:18px 24px 14px;border-bottom:1px solid #e2e8f0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <h5 id="sanHistTitulo" style="margin:0;font-size:16px;font-weight:700;color:#0f172a;">Historial Área —</h5>
+        <button type="button" id="btnSanHistClose" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;">×</button>
+      </div>
+    </div>
+    <div class="app-modal-body" style="padding:0;max-height:60vh;overflow-y:auto;">
+      <div id="sanHistBody" style="padding:0 4px;"></div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
@@ -273,6 +397,7 @@
   <script src="/js/config.js"></script>
   <script src="/js/utils.js"></script>
   <script type="module" src="/js/app.js"></script>
+  <script type="module" src="/js/centros/sanitario/index.js"></script>
   <script type="module" src="/js/components/Sidebar.js"></script>
 
   <script>
@@ -281,7 +406,8 @@
       const tabs = document.querySelectorAll('[data-tab-link]');
       const sections = {
         '#tab-centros': document.getElementById('tab-centros'),
-        '#tab-mapa':    document.getElementById('tab-mapa')
+        '#tab-mapa':    document.getElementById('tab-mapa'),
+        '#tab-sanitario': document.getElementById('tab-sanitario')
       };
 
       function show(targetHash) {

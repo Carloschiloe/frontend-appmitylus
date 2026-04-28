@@ -101,6 +101,7 @@ export function createMuestreoModule({
   let muestreosDerivados = [];
   let derivadosTs = 0;
   let pendingSeed = null;
+  let _lastSavedMuestreo = null;
   let currentSeed = null;
   let summaryScope = null;
   let remoteScopeKey = '';
@@ -117,7 +118,7 @@ export function createMuestreoModule({
     cancelText: 'Volver',
     acceptText: 'Aceptar'
   });
-  const selectedMuestreoCats = new Set(['procesable']);
+  const selectedMuestreoCats = new Set();
   const muCatValues = Object.create(null);
 
   function buildSummaryScope(seed = null) {
@@ -270,115 +271,44 @@ export function createMuestreoModule({
     if (titleEl) titleEl.textContent = edit ? 'Editar muestreo MMPP' : 'Nuevo Muestreo';
 
     const saveMain = document.getElementById('btnMuestreoSave');
-    const saveSide = document.getElementById('btnMuestreoSaveSide');
-    const help = document.querySelector('#modalMuestreoItems .mu-side-help');
     if (saveMain) saveMain.textContent = edit ? 'Guardar cambios' : 'Guardar muestreo';
-    if (saveSide) saveSide.textContent = edit ? 'Guardar cambios' : 'Guardar muestreo';
-    if (help) help.innerHTML = edit
-      ? 'Edita valores base del muestreo. El <strong>% se calcula automáticamente</strong> y no se puede editar.'
-      : 'Ingresa valores base por item. El <strong>% se calcula automáticamente</strong> y no se puede editar.';
   }
 
-  function syncMuestreoSideModal() {
-    const sideInst = getModalInstance('modalMuestreoItems', { opacity: 0, dismissible: false });
-    if (!sideInst) return;
-    if (shouldShowMuestreoSide()) {
-      sideInst.open();
-      const side = document.getElementById('modalMuestreoItems');
-      const sideContent = side?.querySelector('.modal-content');
-      if (sideContent) sideContent.scrollTop = 0;
-    } else {
-      sideInst.close();
-    }
-  }
-
-  function syncMuestreoDualLayout() {
-    const main = document.getElementById('modalMuestreo');
-    const side = document.getElementById('modalMuestreoItems');
-    if (!(main && side)) return;
-    const mainInst = getModalInstance('modalMuestreo');
-    if (!(mainInst?.isOpen || main.style.display === 'block' || main.classList.contains('open'))) return;
-
-    const vw = Math.max(window.innerWidth || document.documentElement.clientWidth || 0, 360);
-    const margin = 16;
-    const gap = 2;
-    const wantSide = shouldShowMuestreoSide();
-
-    const mainSoloW = Math.min(980, Math.max(360, vw - (margin * 2)));
-    const sideTargetW = Math.min(420, Math.max(320, Math.floor(vw * 0.26)));
-    const minMainWithSide = 620;
-    const mainWithSideW = Math.min(920, Math.max(minMainWithSide, vw - (margin * 2) - gap - sideTargetW));
-    const canFitPair = wantSide && (mainWithSideW + gap + sideTargetW + margin * 2 <= vw);
-
-    const alignedTop = '4.5%';
-    main.style.top = alignedTop;
-    main.style.maxHeight = '84vh';
-    main.style.setProperty('transform', 'none', 'important');
-    main.style.setProperty('right', 'auto', 'important');
-    main.style.setProperty('margin', '0', 'important');
-    side.style.top = alignedTop;
-    side.style.maxHeight = '84vh';
-    side.style.setProperty('transform', 'none', 'important');
-    side.style.setProperty('right', 'auto', 'important');
-    side.style.setProperty('margin', '0', 'important');
-
-    if (canFitPair) {
-      const leftAnchorDesktop = 290;
-      const maxMainLeftAllowed = Math.max(margin, vw - margin - sideTargetW - gap - mainWithSideW);
-      const fittedMainLeft = Math.min(maxMainLeftAllowed, Math.max(margin, leftAnchorDesktop));
-      const sideLeft = fittedMainLeft + mainWithSideW + gap;
-
-      side.style.setProperty('width', `${sideTargetW}px`, 'important');
-      side.style.setProperty('max-width', `${sideTargetW}px`, 'important');
-      side.style.setProperty('left', `${sideLeft}px`, 'important');
-      main.style.setProperty('width', `${mainWithSideW}px`, 'important');
-      main.style.setProperty('max-width', `${mainWithSideW}px`, 'important');
-      main.style.setProperty('left', `${fittedMainLeft}px`, 'important');
-      side.dataset.layoutHidden = '0';
-      document.body.classList.add('mu-layout-active');
-      document.body.style.setProperty('--mu-modal-top', alignedTop);
-      document.body.style.setProperty('--mu-main-left', `${fittedMainLeft}px`);
-      document.body.style.setProperty('--mu-main-width', `${mainWithSideW}px`);
-      document.body.style.setProperty('--mu-side-left', `${sideLeft}px`);
-      document.body.style.setProperty('--mu-side-width', `${sideTargetW}px`);
-      syncMuestreoSideModal();
-      return;
-    }
-
-    main.style.setProperty('width', `${mainSoloW}px`, 'important');
-    main.style.setProperty('left', `${Math.floor((vw - mainSoloW) / 2)}px`, 'important');
-    main.style.setProperty('max-width', `${mainSoloW}px`, 'important');
-    document.body.classList.add('mu-layout-active');
-    document.body.style.setProperty('--mu-modal-top', alignedTop);
-    document.body.style.setProperty('--mu-main-left', `${Math.floor((vw - mainSoloW) / 2)}px`);
-    document.body.style.setProperty('--mu-main-width', `${mainSoloW}px`);
-    side.dataset.layoutHidden = '1';
-    getModalInstance('modalMuestreoItems', { opacity: 0, dismissible: false })?.close();
-  }
-
-  function scheduleMuestreoDualLayout() {
-    const reapply = () => syncMuestreoDualLayout();
-    requestAnimationFrame(() => {
-      reapply();
-      requestAnimationFrame(reapply);
-    });
-    [160, 320, 520].forEach((ms) => setTimeout(reapply, ms));
-  }
+  function syncMuestreoSideModal() {}
+  function syncMuestreoDualLayout() {}
+  function scheduleMuestreoDualLayout() {}
 
   function setMuestreoStep(step = 1) {
     const requested = Math.max(1, Math.min(Number(step) || 1, 3));
     muestreoStep = requested;
-    document.querySelectorAll('[data-mu-step]').forEach((btn) => {
+
+    document.querySelectorAll('.mu-step-tab[data-mu-step]').forEach((btn) => {
       const n = Number(btn.getAttribute('data-mu-step') || '1');
-      btn.classList.toggle('is-active', n === muestreoStep);
+      const active = n === muestreoStep;
+      btn.classList.toggle('is-active', active);
+      btn.style.borderBottom = active ? '2px solid #0f766e' : '2px solid transparent';
+      btn.style.color = active ? '#0f766e' : '#94a3b8';
+      const numEl = btn.querySelector('.mu-step-num');
+      if (numEl) {
+        numEl.style.background = active ? '#0f766e' : '#e2e8f0';
+        numEl.style.color = active ? '#fff' : '#64748b';
+      }
       btn.disabled = false;
     });
+
     document.getElementById('muStep1')?.classList.toggle('muestreo-hidden', muestreoStep !== 1);
     document.getElementById('muStep2')?.classList.toggle('muestreo-hidden', muestreoStep !== 2);
     document.getElementById('muStep3')?.classList.toggle('muestreo-hidden', muestreoStep !== 3);
-    document.getElementById('muStepSummary')?.classList.toggle('muestreo-hidden', muestreoStep === 1);
-    syncMuestreoSideModal();
-    scheduleMuestreoDualLayout();
+
+    const navStep1 = document.getElementById('muNavStep1');
+    const navStep2 = document.getElementById('muNavStep2');
+    const navStep3 = document.getElementById('muNavStep3');
+    const navHistorial = document.getElementById('muNavHistorial');
+    if (navStep1) navStep1.style.display = muestreoStep === 1 ? 'flex' : 'none';
+    if (navStep2) navStep2.style.display = muestreoStep === 2 ? 'flex' : 'none';
+    if (navStep3) navStep3.style.display = muestreoStep === 3 ? 'flex' : 'none';
+    if (navHistorial) navHistorial.style.display = 'none';
+
     refreshMuestreoStepSummary();
   }
 
@@ -453,59 +383,162 @@ export function createMuestreoModule({
       }
     };
 
-    setCard('muTotalMuestra', totals.total, totalPct, true);
-    setCard('muProcesable',   totals.procesable, procPct);
-    setCard('muRechazos',     totals.rechazos, rechPct);
-    setCard('muDefectos',     totals.defectos, defectPct);
+    const totalEl = document.getElementById('muTotalMuestra');
+    if (totalEl) totalEl.textContent = totals.total > 0 ? `${fmtNum(totals.total, 2)} kg` : '—';
+    setCard('muProcesable', totals.procesable, procPct);
+    setCard('muRechazos',   totals.rechazos,   rechPct);
+    setCard('muDefectos',   totals.defectos,   defectPct);
   }
 
   function renderMuestreoCategorias() {
-    const editor = document.getElementById('muCatEditorList');
+    const editor   = document.getElementById('muCatEditorList');
     const selector = document.getElementById('muCatSelector');
     if (!editor || !selector) return;
 
-    selector.innerHTML = MUESTREO_CATS.map((cat) => {
-      const active = selectedMuestreoCats.has(cat.key) ? ' is-active' : '';
-      return `<button type="button" class="mu-cat-chip${active}" data-mu-cat-toggle="${cat.key}">${cat.label}</button>`;
+    // Procesable siempre seleccionado (por tipo, desde maestros)
+    MUESTREO_CATS.filter(c => c.type === 'procesable').forEach(c => selectedMuestreoCats.add(c.key));
+
+    const tfoot = document.getElementById('muCatTotalsRow');
+
+    const CFG = [
+      { type: 'procesable', label: 'Procesable', color: '#0f766e', bg: '#f0fdf4', canRemove: false },
+      { type: 'defecto',    label: 'Defectos',   color: '#2563eb', bg: '#fff7ed', canRemove: true  },
+      { type: 'rechazo',    label: 'Rechazos',   color: '#dc2626', bg: '#fef2f2', canRemove: true  },
+    ];
+
+    const catsOf = (type) => MUESTREO_CATS.filter(c => c.type === type);
+
+    // ── Fila de 3 botones tipo Excel filter ──────────────────────────────────
+    selector.style.display = 'flex';
+    selector.innerHTML = CFG.map(({ type, label, color }) => {
+      const cats    = catsOf(type);
+      const selKeys = cats.filter(c => selectedMuestreoCats.has(c.key));
+      const badge   = selKeys.length
+        ? `<span style="background:${color};color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:2px;">${selKeys.length}</span>`
+        : '';
+      const items = cats.map(c => {
+        const chk = selectedMuestreoCats.has(c.key);
+        const disabled = type === 'procesable' ? 'disabled' : '';
+        return `<label style="display:flex;align-items:center;gap:9px;padding:7px 14px;cursor:pointer;font-size:13px;color:#1e293b;user-select:none;"
+            onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+            <input type="checkbox" data-mu-check="${c.key}" ${chk ? 'checked' : ''} ${disabled}
+              style="width:15px;height:15px;accent-color:${color};cursor:pointer;flex-shrink:0;">
+            ${c.label}
+          </label>`;
+      }).join('');
+
+      return `<div style="position:relative;flex:1;">
+        <button type="button" data-mu-group-btn="${type}"
+          style="width:100%;display:flex;align-items:center;justify-content:space-between;
+            background:#fff;border:1.5px solid ${selKeys.length ? color : '#e2e8f0'};border-radius:10px;
+            padding:8px 12px;cursor:pointer;transition:border-color .15s;color:${selKeys.length ? color : '#475569'};">
+          <span style="display:inline-flex;align-items:center;gap:6px;">
+            <span style="width:9px;height:9px;border-radius:50%;background:${color};flex-shrink:0;"></span>
+            <span style="font-size:13px;font-weight:600;">${label}</span>
+            ${badge}
+          </span>
+          <span style="font-size:10px;color:#94a3b8;margin-left:4px;">▾</span>
+        </button>
+        <div id="muGroupDrop-${type}"
+          style="display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:200;
+            background:#fff;border:1px solid #e2e8f0;border-radius:10px;
+            box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:100%;padding:4px 0 0;max-height:260px;overflow-y:auto;">
+          ${items}
+          <div style="padding:8px 12px;border-top:1px solid #f1f5f9;text-align:right;position:sticky;bottom:0;background:#fff;">
+            <button type="button" data-mu-group-apply="${type}"
+              style="background:${color};color:#fff;border:none;border-radius:7px;
+                padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">
+              Aplicar
+            </button>
+          </div>
+        </div>
+      </div>`;
     }).join('');
-    selector.querySelectorAll('[data-mu-cat-toggle]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const key = btn.getAttribute('data-mu-cat-toggle');
-        if (!key || key === 'procesable') return;
-        if (selectedMuestreoCats.has(key)) selectedMuestreoCats.delete(key);
-        else selectedMuestreoCats.add(key);
+
+    // Toggle dropdown
+    selector.querySelectorAll('[data-mu-group-btn]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = btn.getAttribute('data-mu-group-btn');
+        const drop = document.getElementById(`muGroupDrop-${type}`);
+        if (!drop) return;
+        const opening = drop.style.display === 'none';
+        document.querySelectorAll('[id^="muGroupDrop-"]').forEach(d => { d.style.display = 'none'; });
+        if (opening) drop.style.display = 'block';
+      });
+    });
+
+    // Aplicar — lee checkboxes y actualiza selección
+    selector.querySelectorAll('[data-mu-group-apply]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = btn.getAttribute('data-mu-group-apply');
+        const drop = document.getElementById(`muGroupDrop-${type}`);
+        if (!drop) return;
+        drop.querySelectorAll('[data-mu-check]').forEach(cb => {
+          const key = cb.getAttribute('data-mu-check');
+          if (!key) return;
+          if (cb.checked) selectedMuestreoCats.add(key);
+          else { selectedMuestreoCats.delete(key); muCatValues[key] = 0; }
+        });
+        drop.style.display = 'none';
         markDirty();
         renderMuestreoCategorias();
       });
     });
 
-    const selected = MUESTREO_CATS.filter((cat) => selectedMuestreoCats.has(cat.key));
+    // Evitar que clics dentro del dropdown lo cierren
+    selector.querySelectorAll('[id^="muGroupDrop-"]').forEach(d => {
+      d.addEventListener('click', e => e.stopPropagation());
+    });
+
+    // ── Tabla: filas de categorías seleccionadas ──────────────────────────────
+    const typeOrder = { procesable: 0, defecto: 1, rechazo: 2 };
+    const selected  = MUESTREO_CATS
+      .filter(c => selectedMuestreoCats.has(c.key))
+      .sort((a, b) => (typeOrder[a.type] ?? 3) - (typeOrder[b.type] ?? 3));
+
+    if (tfoot) tfoot.style.display = selected.length ? '' : 'none';
+
     if (!selected.length) {
-      editor.innerHTML = '<div class="muted">Selecciona una categoria para comenzar.</div>';
+      editor.innerHTML = '<tr><td colspan="3" style="padding:16px 10px;color:#94a3b8;font-size:13px;text-align:center;">Selecciona categorías con los botones de arriba.</td></tr>';
       repaintMuestreoTable();
       return;
     }
 
-    editor.innerHTML = selected.map((cat) => {
-      const dot = (color, label) => `<span class="mu-state-dot" title="${label}" aria-label="${label}" style="background:${color};width:14px;height:14px;border-radius:50%;display:inline-block;border:2px solid #fff;outline:1px solid #8ea6c5;box-sizing:border-box;"></span>`;
-      const state = cat.type === 'procesable'
-        ? dot('#0f766e', 'Procesable')
-        : (cat.type === 'defecto'
-          ? dot('#2563eb', 'Defecto')
-          : dot('#dc2626', 'Rechazo'));
-      const raw = n2(muCatValues[cat.key]);
-      const valueTxt = raw > 0 ? String(raw) : '';
-      return `
-        <div class="mu-cat-editor-item">
-          <div class="type">${state}</div>
-          <div class="name">${cat.label}</div>
-          <input class="am-input mu-cat-value" type="number" min="0" max="999999" step="0.01" inputmode="decimal" data-mu-cat="${cat.key}" value="${valueTxt}" placeholder="0.00" aria-label="${cat.label} valor base" title="Ingresa valor base">
-          <div class="pct" data-mu-pct="${cat.key}">0.00 %</div>
-        </div>
-      `;
+    const rowBg    = { procesable: '#f0fdf4', rechazo: '#fef2f2', defecto: '#fff7ed' };
+    const dotColor = { procesable: '#0f766e', rechazo: '#dc2626', defecto: '#2563eb' };
+    const canRemoveOf = (type) => CFG.find(c => c.type === type)?.canRemove ?? true;
+
+    editor.innerHTML = selected.map(cat => {
+      const bg    = rowBg[cat.type]    || '#f8fafc';
+      const color = dotColor[cat.type] || '#64748b';
+      const raw   = n2(muCatValues[cat.key]);
+      const removeBtn = canRemoveOf(cat.type)
+        ? `<button type="button" data-mu-cat-remove="${cat.key}" title="Quitar"
+            style="background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:16px;
+              padding:0 0 0 5px;line-height:1;flex-shrink:0;"
+            onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#cbd5e1'">×</button>`
+        : '';
+      return `<tr style="background:${bg};border-bottom:1px solid #f1f5f9;">
+        <td style="padding:5px 12px;">
+          <span style="display:inline-flex;align-items:center;gap:6px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:${color};flex-shrink:0;"></span>
+            <span style="font-size:13px;color:#1e293b;">${cat.label}</span>
+            ${removeBtn}
+          </span>
+        </td>
+        <td style="padding:5px 12px;text-align:right;">
+          <input class="am-input" type="number" min="0" max="999999" step="0.01" inputmode="decimal"
+            data-mu-cat="${cat.key}" value="${raw > 0 ? String(raw) : ''}" placeholder="0.00"
+            style="width:110px;text-align:right;padding:3px 10px;height:30px;font-size:13px;">
+        </td>
+        <td style="padding:5px 12px;text-align:right;font-weight:600;color:#475569;font-size:13px;"
+          data-mu-pct="${cat.key}">0.00 %</td>
+      </tr>`;
     }).join('');
 
-    editor.querySelectorAll('[data-mu-cat]').forEach((input) => {
+    editor.querySelectorAll('[data-mu-cat]').forEach(input => {
       input.addEventListener('input', () => {
         const key = input.getAttribute('data-mu-cat');
         if (key) muCatValues[key] = n2(input.value);
@@ -513,6 +546,18 @@ export function createMuestreoModule({
         markDirty();
       });
     });
+
+    editor.querySelectorAll('[data-mu-cat-remove]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-mu-cat-remove');
+        if (!key) return;
+        selectedMuestreoCats.delete(key);
+        muCatValues[key] = 0;
+        markDirty();
+        renderMuestreoCategorias();
+      });
+    });
+
     repaintMuestreoTable();
   }
 
@@ -571,7 +616,110 @@ export function createMuestreoModule({
     el.innerHTML = top.map((x) => `<div class="mu-topcat"><div class="title">${x.label}</div><div class="value">${fmtNum(x.value, 2)}</div></div>`).join('');
   }
 
-  async function renderMuestreoResumen() {
+  function generarInformePDF(m) {
+    if (!m) return;
+    const clasificaciones = Array.isArray(m.clasificaciones) ? m.clasificaciones : [];
+    const evaluacion      = Array.isArray(m.evaluacion)      ? m.evaluacion      : [];
+    const primary   = clasificaciones[0];
+    const rend      = Number(m.rendimiento) || 0;
+    const uxkg      = Number(m.uxkg)        || 0;
+    const total     = Number(m.total)       || 0;
+    const procesable= Number(m.procesable)  || 0;
+    const rechazos  = Number(m.rechazos)    || 0;
+    const pctProc   = fmtNum(total > 0 ? (procesable / total) * 100 : 0, 1);
+    const pctRech   = fmtNum(total > 0 ? (rechazos   / total) * 100 : 0, 1);
+    const fecha     = m.fecha || new Date().toISOString().slice(0, 10);
+
+    // Texto de recomendación automático
+    let recomendacion = '';
+    if (primary) {
+      recomendacion = `La materia prima muestreada <strong>califica como ${primary.nombre}</strong>${primary.tipoPrincipal ? ` (tipo: ${primary.tipoPrincipal})` : ''}. Los indicadores R%: <strong>${fmtNum(rend, 2)}%</strong> y calibre <strong>${fmtNum(uxkg, 0)} un/kg</strong> se encuentran dentro de los rangos requeridos.`;
+    } else {
+      const fallosPrincipales = evaluacion.filter(e => !e.cumple);
+      const detallesFallos = fallosPrincipales.length
+        ? `<ul style="margin:8px 0 0 18px;font-size:13px;color:#7f1d1d;">${fallosPrincipales.map(e => `<li><strong>${e.nombre}</strong>: ${e.razon || 'No cumple los parámetros requeridos'}</li>`).join('')}</ul>`
+        : '';
+      recomendacion = `La materia prima muestreada <strong>no clasifica en ninguna categoría</strong> según los parámetros actuales del maestro.${detallesFallos}<br><br>Se recomienda hacer seguimiento para determinar si los indicadores mejoran con el tiempo (maduración de calibre o mejora de rendimiento) antes de programar cosecha.`;
+    }
+
+    const evalHTML = evaluacion.length ? evaluacion.map(ev => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+        <div style="width:22px;height:22px;border-radius:50%;background:${ev.cumple ? '#22c55e' : '#ef4444'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px;">${ev.cumple ? '✓' : '✗'}</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#0f172a;">${ev.nombre}</div>
+          ${ev.razon ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">${ev.razon}</div>` : ''}
+        </div>
+      </div>`).join('') : '<div style="color:#94a3b8;font-size:13px;">Sin criterios configurados.</div>';
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Informe Muestreo — ${m.proveedorNombre || m.proveedor || ''}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,Helvetica,sans-serif;color:#1e293b;padding:32px;font-size:14px;line-height:1.5}
+  h1{font-size:22px;font-weight:800;color:#0f766e;margin-bottom:4px}
+  .sub{font-size:13px;color:#64748b;margin-bottom:28px}
+  .section{margin-bottom:22px}
+  .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;color:#475569;letter-spacing:.06em;margin-bottom:10px;padding-bottom:5px;border-bottom:1.5px solid #e2e8f0}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:4px}
+  .kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;text-align:center}
+  .kpi-label{font-size:11px;color:#64748b;margin-bottom:4px}
+  .kpi-val{font-size:22px;font-weight:800;color:#0f766e}
+  .clas-box{border:2px solid #16a34a;border-radius:10px;padding:16px;text-align:center;background:#f0fdf4}
+  .clas-box.fail{border-color:#ef4444;background:#fef2f2}
+  .clas-label{font-size:11px;font-weight:700;text-transform:uppercase;color:#475569}
+  .clas-val{font-size:26px;font-weight:800;color:#16a34a;margin-top:4px}
+  .clas-val.fail{color:#ef4444}
+  .rec-box{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7}
+  .footer{margin-top:32px;font-size:11px;color:#94a3b8;text-align:right;border-top:1px solid #e2e8f0;padding-top:10px}
+  @media print{body{padding:16px}.no-print{display:none}}
+</style>
+</head>
+<body>
+  <div class="no-print" style="background:#0f766e;color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-weight:700;">Informe de Muestreo MMPP — Vista preliminar</span>
+    <button onclick="window.print()" style="background:#fff;color:#0f766e;border:none;padding:6px 16px;border-radius:6px;font-weight:700;cursor:pointer;">Imprimir / Guardar PDF</button>
+  </div>
+  <h1>Informe de Muestreo MMPP</h1>
+  <div class="sub">${m.proveedorNombre || m.proveedor || '—'} &nbsp;·&nbsp; Centro: ${m.centro || m.centroCodigo || '—'} &nbsp;·&nbsp; Línea: ${m.linea || '—'} &nbsp;·&nbsp; Fecha: ${fecha} &nbsp;·&nbsp; Responsable: ${m.responsable || m.responsablePG || '—'}</div>
+  <div class="section">
+    <div class="sec-title">Indicadores del Muestreo</div>
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label">R% Carne</div><div class="kpi-val">${fmtNum(rend, 2)}%</div></div>
+      <div class="kpi"><div class="kpi-label">U × Kg (Calibre)</div><div class="kpi-val">${fmtNum(uxkg, 0)}</div></div>
+      <div class="kpi"><div class="kpi-label">Procesable</div><div class="kpi-val">${pctProc}%</div></div>
+      <div class="kpi"><div class="kpi-label">Rechazo</div><div class="kpi-val">${pctRech}%</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-title">Clasificación</div>
+    <div class="clas-box ${primary ? '' : 'fail'}">
+      <div class="clas-label">Tipo de producto</div>
+      <div class="clas-val ${primary ? '' : 'fail'}">${primary ? primary.nombre : 'S/C — No clasifica'}</div>
+      ${primary?.tipoPrincipal ? `<div style="font-size:13px;color:#64748b;margin-top:4px;">${primary.tipoPrincipal}</div>` : ''}
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-title">Evaluación por Criterio (Parámetros Maestro)</div>
+    ${evalHTML}
+  </div>
+  <div class="section">
+    <div class="sec-title">Recomendación</div>
+    <div class="rec-box">${recomendacion}</div>
+  </div>
+  <div class="footer">Generado el ${new Date().toLocaleDateString('es-CL')} · Sistema MMPP Abastecimiento</div>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=860,height=960');
+    if (!win) { toast('Habilita ventanas emergentes para generar el informe', { variant: 'warning' }); return; }
+    win.document.write(html);
+    win.document.close();
+  }
+
+  async function renderMuestreoResumen({ compact = false } = {}) {
     try {
       await loadMuestreosRemote(false);
     } catch (err) {
@@ -584,11 +732,23 @@ export function createMuestreoModule({
     }
 
     const list = filterMuestreosForResumen();
-    const derivados = summaryScope ? [] : await refreshDerivadosMuestreo();
+    const derivados = (compact || summaryScope) ? [] : await refreshDerivadosMuestreo();
     const body = document.getElementById('muResumenBody');
     if (!body) return;
-    if (!list.length && !derivados.length) {
-      body.innerHTML = '<tr><td colspan="8" class="muted">Sin muestreos registrados.</td></tr>';
+
+    // En modo compact: ajusta encabezado — sin columna Proveedor
+    const thead = body.closest('table')?.querySelector('thead tr');
+    if (thead) {
+      thead.innerHTML = compact
+        ? '<th>Fecha</th><th>Centro</th><th>Línea</th><th>R%</th><th>U×Kg</th><th>Procesable</th><th>Rechazos</th><th>Tipo</th>'
+        : '<th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Línea</th><th>R%</th><th>U×Kg</th><th>Procesable</th><th>Rechazos</th><th>Tipo</th>';
+    }
+
+    // En modo compact: muestra solo los 5 más recientes (ya vienen ordenados newest-first)
+    const displayList = compact ? list.slice(0, 5) : list;
+
+    if (!displayList.length && !derivados.length) {
+      body.innerHTML = `<tr><td colspan="${compact ? 8 : 9}" class="muted">Sin muestreos registrados.</td></tr>`;
     } else {
       const rowsDer = derivados.map((x) => `
         <tr class="mu-row-derivado">
@@ -600,23 +760,31 @@ export function createMuestreoModule({
           <td>-</td>
           <td>-</td>
           <td><button type="button" class="dash-btn mu-start-btn" data-mu-start="${x.id}" data-mu-route="${detectDerivadoRoute(x.rawPaso, x.rawResumen)}">Iniciar muestreo</button></td>
+          <td>-</td>
         </tr>
       `).join('');
-      const rowsDone = list.slice().reverse().map((x) => `
-        <tr>
+      const rowsDone = displayList.slice().reverse().map((x) => {
+        const clasif = Array.isArray(x.clasificaciones) ? x.clasificaciones : [];
+        const primClasif = clasif[0];
+        const tipoBadge = primClasif
+          ? `<span style="background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700;white-space:nowrap;">${primClasif.nombre}</span>`
+          : `<span style="background:#fee2e2;color:#ef4444;border:1px solid #fecaca;border-radius:20px;padding:1px 8px;font-size:11px;white-space:nowrap;">S/C</span>`;
+        return `<tr>
           <td>${x.fecha || '-'}</td>
-          <td>${x.proveedor || '-'}</td>
+          ${compact ? '' : `<td>${x.proveedor || '-'}</td>`}
           <td>${x.centro || '-'}</td>
           <td>${x.linea || '-'}</td>
-          <td>${fmtNum(x.rendimiento, 2)} %</td>
+          <td>${fmtNum(x.rendimiento, 1)} %</td>
           <td>${fmtNum(x.uxkg, 0)}</td>
-          <td>${fmtNum(x.procesable, 2)}</td>
-          <td>${fmtNum(x.rechazos, 2)}</td>
-        </tr>
-      `).join('');
+          <td>${fmtNum(x.total > 0 ? (x.procesable / x.total) * 100 : 0, 1)} %</td>
+          <td>${fmtNum(x.total > 0 ? (x.rechazos / x.total) * 100 : 0, 1)} %</td>
+          <td>${tipoBadge}</td>
+        </tr>`;
+      }).join('');
       body.innerHTML = rowsDer + rowsDone;
     }
 
+    // KPIs calculados sobre el historial completo del proveedor (no solo los 5 mostrados)
     const count = list.length;
     const avg = (fn) => count ? list.reduce((a, b) => a + (fn(b) || 0), 0) / count : 0;
     const totalM = list.reduce((a, b) => a + (Number(b.total) || 0), 0);
@@ -624,10 +792,10 @@ export function createMuestreoModule({
 
     const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
     set('muKpiCount', String(count));
-    set('muKpiRend', `${fmtNum(avg((x) => Number(x.rendimiento)), 2)} %`);
+    set('muKpiRend', `${fmtNum(avg((x) => Number(x.rendimiento)), 1)} %`);
     set('muKpiUxKg', fmtNum(avg((x) => Number(x.uxkg)), 0));
-    set('muKpiRech', `${fmtNum(totalM > 0 ? (totalR / totalM) * 100 : 0, 2)} %`);
-    renderMuestreoTopCats(list);
+    set('muKpiRech', `${fmtNum(totalM > 0 ? (totalR / totalM) * 100 : 0, 1)} %`);
+    if (!compact) renderMuestreoTopCats(list);
   }
 
   function setMuestreoView(mode = 'form') {
@@ -640,12 +808,41 @@ export function createMuestreoModule({
     sum?.classList.toggle('muestreo-hidden', isForm);
     bForm?.classList.toggle('is-active', isForm);
     bSum?.classList.toggle('is-active', !isForm);
-    syncMuestreoSideModal();
-    scheduleMuestreoDualLayout();
+    if (bForm) { bForm.style.background = isForm ? '#fff' : 'transparent'; bForm.style.color = isForm ? '#0f766e' : '#64748b'; bForm.style.boxShadow = isForm ? '0 1px 3px rgba(0,0,0,.1)' : 'none'; }
+    if (bSum)  { bSum.style.background  = !isForm ? '#fff' : 'transparent'; bSum.style.color  = !isForm ? '#0f766e' : '#64748b'; bSum.style.boxShadow  = !isForm ? '0 1px 3px rgba(0,0,0,.1)' : 'none'; }
+
+    const stepsIndicator = document.getElementById('muStepsIndicator');
+    if (stepsIndicator) stepsIndicator.style.display = isForm ? 'flex' : 'none';
+
     if (!isForm) {
+      ['muNavStep1', 'muNavStep2', 'muNavStep3'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      const navHistorial = document.getElementById('muNavHistorial');
+      if (navHistorial) navHistorial.style.display = 'flex';
+
+      const isEdit = muestreoMode === 'edit';
+      const filterRow = document.getElementById('muHistorialFilterRow');
+      const headerEl  = document.getElementById('muHistorialHeader');
+      const headerTxt = document.getElementById('muHistorialHeaderText');
+      const topCats   = document.getElementById('muTopCats');
+
+      if (filterRow) filterRow.style.display = isEdit ? 'none' : '';
+      if (topCats)   topCats.style.display   = isEdit ? 'none' : '';
+      if (headerEl) {
+        headerEl.style.display = isEdit ? 'flex' : 'none';
+        if (isEdit && headerTxt) {
+          const prov = document.getElementById('muestreoProveedor')?.value?.trim() || '';
+          headerTxt.textContent = prov ? `Muestreos anteriores de ${prov}` : 'Muestreos anteriores del proveedor';
+        }
+      }
+
       loadMuestreosRemote(true)
-        .then(() => renderMuestreoResumen())
-        .catch(() => renderMuestreoResumen().catch(() => {}));
+        .then(() => renderMuestreoResumen({ compact: isEdit }))
+        .catch(() => renderMuestreoResumen({ compact: isEdit }).catch(() => {}));
+    } else {
+      setMuestreoStep(muestreoStep);
     }
   }
 
@@ -730,7 +927,6 @@ export function createMuestreoModule({
 
 
     selectedMuestreoCats.clear();
-    selectedMuestreoCats.add('procesable');
     Object.keys(muCatValues).forEach((k) => { muCatValues[k] = 0; });
 
     const cats = currentSeed.cats && typeof currentSeed.cats === 'object' ? currentSeed.cats : {};
@@ -783,16 +979,14 @@ export function createMuestreoModule({
       clearMuestreoForm({ preserveMode: true });
       setMuestreoMode(mode, pendingSeed);
       setMuestreoRoute(route);
+      setMuestreoView(view);
       currentSeed = null;
       const seedResponsable = pendingSeed?.responsable || pendingSeed?.responsablePG || '';
       cargarResponsablesMuestreo(seedResponsable).catch(() => {});
       applySeedToForm(pendingSeed);
       pendingSeed = null;
       resetDirty();
-      syncMuestreoSideModal();
-      scheduleMuestreoDualLayout();
       setTimeout(() => document.getElementById('muestreoProveedor')?.focus(), 40);
-      if (view === 'summary') renderMuestreoResumen().catch(() => {});
       setTimeout(() => { muestreoOpening = false; }, 260);
 
     };
@@ -813,7 +1007,6 @@ export function createMuestreoModule({
     const f = document.getElementById('muestreoFecha');
     if (f) f.value = todayIso();
     selectedMuestreoCats.clear();
-    selectedMuestreoCats.add('procesable');
     Object.keys(muCatValues).forEach((k) => { muCatValues[k] = 0; });
     document.querySelectorAll('[data-mu-cat]').forEach((el) => { el.value = ''; });
     setMuestreoRoute('terreno');
@@ -1116,27 +1309,94 @@ export function createMuestreoModule({
         console.warn('[muestreo] error en onSavedGestion callback', err);
       }
       
-      // Feedback simple
+      // Mostrar modal de resultado con clasificación y evaluación
       if (savedMuestreo) {
         try {
-          // Poblar modal de resultados simple
+          _lastSavedMuestreo = savedMuestreo;
           const clasificaciones = Array.isArray(savedMuestreo.clasificaciones) ? savedMuestreo.clasificaciones : [];
+          const evaluacion      = Array.isArray(savedMuestreo.evaluacion)      ? savedMuestreo.evaluacion      : [];
           const primary = clasificaciones[0];
-          const clasEl = document.getElementById('muResClas');
-          if (clasEl) {
-            clasEl.textContent = primary ? primary.nombre : 'S/C (No clasifica)';
-            clasEl.style.color = primary ? '#0f172a' : '#dc2626';
+          const clasifico = !!primary;
+
+          const rend      = Number(savedMuestreo.rendimiento ?? row.rendimiento) || 0;
+          const uxkg      = Number(savedMuestreo.uxkg        ?? row.uxkg)        || 0;
+          const total     = Number(savedMuestreo.total       ?? row.total)       || 0;
+          const procesable= Number(savedMuestreo.procesable  ?? row.procesable)  || 0;
+          const rechazos  = Number(savedMuestreo.rechazos    ?? row.rechazos)    || 0;
+
+          const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = String(val ?? '-'); };
+          const setHTML = (id, html) => { const e = document.getElementById(id); if (e) e.innerHTML = html; };
+
+          // Meta línea: "Proveedor · Centro · Línea N · dd mmm yyyy"
+          const prov   = savedMuestreo.proveedorNombre || savedMuestreo.proveedor || row.proveedor || '';
+          const centro = savedMuestreo.centro || savedMuestreo.centroCodigo || row.centro || '';
+          const linea  = savedMuestreo.linea  || row.linea  || '';
+          const fecha  = (savedMuestreo.fecha || row.fecha || '').slice(0, 10);
+          const metaParts = [prov, centro ? `Centro ${centro}` : '', linea ? `Línea ${linea}` : '', fecha].filter(Boolean);
+          set('muResMeta', metaParts.join(' · '));
+
+          // KPIs
+          set('muResRend',    `${fmtNum(rend, 2)} %`);
+          set('muResUxKg',    fmtNum(uxkg, 0));
+          set('muResPctProc', `${fmtNum(total > 0 ? (procesable / total) * 100 : 0, 1)} %`);
+          set('muResPctRech', `${fmtNum(total > 0 ? (rechazos   / total) * 100 : 0, 1)} %`);
+
+          // Caja de clasificación — verde si clasificó, rojo si no
+          const clasBox  = document.getElementById('muResClasBox');
+          const iconWrap = document.getElementById('muResIconWrap');
+          const icon     = document.getElementById('muResIcon');
+          if (clasifico) {
+            if (clasBox)  { clasBox.style.borderColor = '#bbf7d0'; clasBox.style.background = '#f0fdf4'; }
+            if (iconWrap) { iconWrap.style.background = '#dcfce7'; }
+            if (icon)     { icon.textContent = '✓'; icon.style.color = '#16a34a'; }
+            setHTML('muResClas', `<span style="color:#0f766e;">${primary.nombre}</span>`);
+            set('muResTipo', primary.tipoPrincipal ? `Tipo: ${primary.tipoPrincipal}` : '');
+          } else {
+            if (clasBox)  { clasBox.style.borderColor = '#fecaca'; clasBox.style.background = '#fef2f2'; }
+            if (iconWrap) { iconWrap.style.background = '#fee2e2'; }
+            if (icon)     { icon.textContent = '✗'; icon.style.color = '#ef4444'; }
+            setHTML('muResClas', `<span style="color:#dc2626;font-size:28px;">No clasifica</span>`);
+            set('muResTipo', 'S/C — Revisar criterios abajo');
           }
+
+          // Criterios de evaluación
+          const evalEl = document.getElementById('muResListaEvaluacion');
+          if (evalEl) {
+            if (evaluacion.length) {
+              // Primero los que fallan, luego los que cumplen
+              const sorted = [...evaluacion].sort((a, b) => Number(b.cumple ?? 1) - Number(a.cumple ?? 1));
+              // Invertido: fallos primero
+              const fails = sorted.filter(e => !e.cumple);
+              const oks   = sorted.filter(e =>  e.cumple);
+              const renderEv = (ev) => {
+                const ok = ev.cumple;
+                return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:8px;background:${ok ? '#f0fdf4' : '#fef2f2'};border:1px solid ${ok ? '#bbf7d0' : '#fecaca'};">
+                  <span style="width:20px;height:20px;border-radius:50%;background:${ok ? '#22c55e' : '#ef4444'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;margin-top:1px;">${ok ? '✓' : '✗'}</span>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:700;color:${ok ? '#14532d' : '#7f1d1d'};">${ev.nombre}</div>
+                    ${ev.razon ? `<div style="font-size:12px;color:${ok ? '#15803d' : '#b91c1c'};margin-top:2px;">${ev.razon}</div>` : ''}
+                  </div>
+                </div>`;
+              };
+              evalEl.innerHTML = [...fails, ...oks].map(renderEv).join('');
+            } else {
+              evalEl.innerHTML = '<div style="font-size:13px;color:#94a3b8;padding:8px 0;">Sin criterios configurados en maestros.</div>';
+            }
+          }
+
+          // Cerrar formulario primero para evitar overlay apilado
+          getModalInstance('modalMuestreo')?.close();
           const modalEl = document.getElementById('modalMuResultado');
           if (modalEl) getModalInstance(modalEl)?.open();
         } catch (e) {
+          console.error('[muestreo] error abriendo modal resultado', e);
           toast('Muestreo guardado.', { variant: 'success' });
         }
       } else {
         toast(isEdit ? 'Muestreo actualizado.' : 'Muestreo guardado.', { variant: 'success' });
       }
 
-      setMuestreoView('summary');
+      // Refresca caché en background para que el historial esté listo si el usuario lo abre
       renderMuestreoResumen().catch(() => {});
     };
 
@@ -1147,10 +1407,10 @@ export function createMuestreoModule({
 
     document.getElementById('btnMuestreoSave')?.addEventListener('click', handleSave);
     document.getElementById('btnMuestreoSaveSide')?.addEventListener('click', handleSave);
+    document.getElementById('btnMuInformePDF')?.addEventListener('click', () => generarInformePDF(_lastSavedMuestreo));
 
     document.getElementById('btnMuestreoCloseMain')?.addEventListener('click', (e) => {
       e.preventDefault();
-      getModalInstance('modalMuestreoItems', { opacity: 0, dismissible: false })?.close();
       getModalInstance('modalMuestreo')?.close();
       resetDirty();
     });
@@ -1162,7 +1422,6 @@ export function createMuestreoModule({
         const ok = await askConfirm('Cerrar panel lateral', 'Estas seguro que deseas cerrar el panel lateral?', 'Si, cerrar');
         if (!ok) return;
       }
-      getModalInstance('modalMuestreoItems', { opacity: 0, dismissible: false })?.close();
     });
     if (document.body.dataset.muEscBound !== '1') {
       document.body.dataset.muEscBound = '1';
@@ -1176,7 +1435,6 @@ export function createMuestreoModule({
           const ok = await askConfirm('Cancelar muestreo', 'Estas seguro que deseas cerrar/cancelar? Se perderan cambios no guardados.', 'Si, cerrar');
           if (!ok) return;
         }
-        getModalInstance('modalMuestreoItems', { opacity: 0, dismissible: false })?.close();
         getModalInstance('modalMuestreo')?.close();
         resetDirty();
       }, true);
@@ -1199,6 +1457,11 @@ export function createMuestreoModule({
         scope: buildSummaryScope(pendingSeed)
       });
     });
+    // Cierra dropdowns de grupos al hacer clic fuera
+    document.addEventListener('click', () => {
+      document.querySelectorAll('[id^="muGroupDrop-"]').forEach(d => { d.style.display = 'none'; });
+    });
+
     document.getElementById('muResumenBuscar')?.addEventListener('input', () => { renderMuestreoResumen().catch(() => {}); });
     document.getElementById('muResumenPeriodo')?.addEventListener('change', () => { renderMuestreoResumen().catch(() => {}); });
     window.addEventListener('interaccion:created', () => {
@@ -1219,7 +1482,7 @@ export function createMuestreoModule({
     bindUI,
     openPanel: openMuestreoPanel,
     openFromSeed: openMuestreoFromSeed,
-    scheduleLayout: scheduleMuestreoDualLayout,
+    scheduleLayout: () => {},
     isOpening: () => muestreoOpening
   };
 }

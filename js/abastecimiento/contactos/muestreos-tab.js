@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { createLocalTableController } from './local-table.js';
 import { debounce, escapeHtml, getModalInstance } from './ui-common.js';
-import { listMuestreos, getMuestreosResumen } from './muestreo-api.js';
+import { listMuestreos, getMuestreosResumen, deleteMuestreo } from './muestreo-api.js';
 import { toast } from '../../ui/toast.js';
 
 const PAGE_SIZE = 10;
@@ -622,6 +622,10 @@ export function createMuestreosTabModule({
               <button class="mu-action-item" data-mu-action="new" data-id="${esc(id)}">
                 <i class="bi bi-eyedropper" aria-hidden="true"></i> Nuevo muestreo
               </button>
+              <div class="mu-action-divider"></div>
+              <button class="mu-action-item mu-action-item--danger" data-mu-action="delete" data-id="${esc(id)}">
+                <i class="bi bi-trash" aria-hidden="true"></i> Eliminar
+              </button>
             </div>
           </div>
         `.trim();
@@ -725,7 +729,7 @@ export function createMuestreosTabModule({
           <td>${esc(x.linea || '-')}</td>
           <td>${fmtNum(x.rendimiento, 2)} %</td>
           <td>${fmtNum(x.uxkg, 0)}</td>
-          <td>${fmtNum(x.procesable, 2)} %</td>
+          <td>${fmtNum(x.total > 0 ? (x.procesable / x.total) * 100 : 0, 2)} %</td>
           <td>
             <button type="button" class="btn-flat tbl-action-btn tbl-act-view" data-mu-action="info" data-id="${esc(x.id)}" title="Info">
               <i class="bi bi-info-circle" aria-hidden="true"></i>
@@ -764,7 +768,7 @@ export function createMuestreosTabModule({
           nameCell,
           `<span class="mu-master-kpi">${fmtNum(latest.uxkg, 0)} ${uDelta}</span>`,
           `<span class="mu-master-kpi">${fmtNum(latest.rendimiento, 2)} % ${rDelta}</span>`,
-          `<span class="mu-master-kpi">${fmtNum(latest.procesable, 2)} %</span>`,
+          `<span class="mu-master-kpi">${fmtNum(latest.total > 0 ? (latest.procesable / latest.total) * 100 : 0, 2)} %</span>`,
           `<div style="display:flex; justify-content:center;">${sparkR}</div>`,
           `<i class="bi bi-chevron-down muted mu-icon-expand" aria-hidden="true" style="font-size:18px;vertical-align:middle;"></i>`
         ],
@@ -775,7 +779,7 @@ export function createMuestreosTabModule({
           g.nombre || '-',                    // Proveedor
           String(n2(latest.uxkg)),            // U x Kg
           String(n2(latest.rendimiento)),     // R%
-          String(n2(latest.procesable)),      // Procesable
+          String(n2(latest.total > 0 ? (latest.procesable / latest.total) * 100 : 0)), // Procesable %
           '-',                                // Total rechazos %
           `${items.length} muestras totales`, // Centro
           '-',                                // Linea
@@ -996,7 +1000,7 @@ export function createMuestreosTabModule({
       syncPeriodUI();
     });
 
-    document.querySelector('#tablaMuestreos tbody')?.addEventListener('click', (e) => {
+    document.querySelector('#tablaMuestreos tbody')?.addEventListener('click', async (e) => {
       const rowBtn = e.target.closest('.muestreo-master-row');
       if (rowBtn && !e.target.closest('[data-mu-action]')) {
         const provKey = rowBtn.getAttribute('data-grupo-prov');
@@ -1078,6 +1082,19 @@ export function createMuestreosTabModule({
       }
       if (action === 'new') {
         openNewForRow(row);
+        return;
+      }
+      if (action === 'delete') {
+        const label = [row.proveedor, row.centro, row.fecha].filter(Boolean).join(' · ');
+        if (!confirm(`¿Eliminar muestreo de ${label}?\n\nEsta acción no se puede deshacer.`)) return;
+        try {
+          await deleteMuestreo(row.id);
+          toast('Muestreo eliminado.', { variant: 'success' });
+          renderTablaMuestreos(true).catch(() => {});
+        } catch (err) {
+          toast('No se pudo eliminar el muestreo.', { variant: 'error' });
+          console.error('[muestreos-tab] delete error', err);
+        }
       }
     });
 

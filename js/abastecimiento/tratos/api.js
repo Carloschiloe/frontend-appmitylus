@@ -84,6 +84,15 @@ export async function listCondicionesMaestro() {
   return data.items || [];
 }
 
+/** Cierra un trato como perdido o descartado con motivo obligatorio */
+export async function cerrarPerdido(id, { estado, motivoPerdida, observacion = '' }) {
+  const data = await req(`${BASE}/${id}/cerrar-perdido`, {
+    method: 'POST',
+    body: JSON.stringify({ estado, motivoPerdida, observacion, fechaCierre: new Date().toISOString() }),
+  });
+  return data.item || data;
+}
+
 /** Elimina un trato completo */
 export async function deleteTrato(id) {
   return req(`/api/oportunidades/${id}`, { method: 'DELETE' });

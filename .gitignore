@@ -5,3 +5,6 @@ dist/
 vite-check.log
 
 .vercel
+
+# Archivos de backup
+*.bak

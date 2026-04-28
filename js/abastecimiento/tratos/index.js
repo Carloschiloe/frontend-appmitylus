@@ -1,7 +1,7 @@
 // js/abastecimiento/tratos/index.js
 // Módulo Tratos / Negociación
 
-import { listTratos, createTrato, updateTrato, changeEstado, upsertCondicion, removeCondicion, getContacto, listCondicionesMaestro, deleteTrato } from './api.js';
+import { listTratos, createTrato, updateTrato, changeEstado, upsertCondicion, removeCondicion, getContacto, listCondicionesMaestro, deleteTrato, cerrarPerdido } from './api.js';
 import { createModalConfirm, getModalInstance } from '../contactos/ui-common.js';
 import { toast } from '../../ui/toast.js';
 
@@ -298,12 +298,21 @@ function renderTabla() {
       ? `<div class="trato-comp-bar"><div class="trato-comp-fill" style="width:${comp.pct}%"></div></div><small>${comp.acordadas}/${comp.total}</small>`
       : '<small class="muted">—</small>';
 
-    const precio = t.precioAcordado
-      ? `${Number(t.precioAcordado).toLocaleString('es-CL')} ${esc(t.unidadPrecio || '')}`
+    const conds = t.condiciones || [];
+    const findCond = (...kw) => conds.find(c =>
+      kw.some(k => String(c.nombre || '').toLowerCase().includes(k)) && c.valor != null
+    );
+
+    const precioRaw   = t.precioAcordado ?? findCond('precio')?.valor;
+    const precioUnid  = t.unidadPrecio || findCond('precio')?.unidadNombre || '';
+    const precio = precioRaw != null
+      ? `${Number(precioRaw).toLocaleString('es-CL')}${precioUnid ? ' ' + esc(precioUnid) : ''}`
       : '—';
 
-    const tons = t.tonsAcordadas != null
-      ? `${Number(t.tonsAcordadas).toLocaleString('es-CL', { maximumFractionDigits: 1 })} t`
+    const tonsRaw  = t.tonsAcordadas ?? findCond('volumen', 'ton')?.valor;
+    const tonsUnid = findCond('volumen', 'ton')?.unidadNombre || 't';
+    const tons = tonsRaw != null
+      ? `${Number(tonsRaw).toLocaleString('es-CL', { maximumFractionDigits: 1 })} ${esc(tonsUnid)}`
       : '—';
 
     return `<tr class="trato-row" data-id="${esc(t._id)}">
@@ -516,9 +525,29 @@ function abrirModal(trato = null) {
   const provIdEl = document.getElementById('tratoProveedorId');
   if (provIdEl) provIdEl.value = trato?.proveedorId || '';
 
+  // Badge de estado (solo lectura — el estado es automático)
   const estadoVal = estadoGrupo(trato?.estado || 'disponible') || 'disponible';
-  const estEl = document.getElementById('tratoEstado');
-  if (estEl) estEl.value = estadoVal;
+  const badgeEl = document.getElementById('tratoEstadoBadge');
+  if (badgeEl) badgeEl.outerHTML = estadoBadge(estadoVal).replace('<span ', '<span id="tratoEstadoBadge" ');
+
+  // Mostrar motivo si el trato está cerrado
+  const motivoWrap = document.getElementById('tratoMotivoWrap');
+  if (motivoWrap) {
+    if (trato?.motivoPerdida) {
+      motivoWrap.style.display = '';
+      motivoWrap.textContent = `Motivo: ${trato.motivoPerdida}`;
+    } else {
+      motivoWrap.style.display = 'none';
+    }
+  }
+
+  // Botones de cierre: solo visibles si el trato no está en estado terminal
+  const terminales = ['perdido', 'descartado'];
+  const esTerminal = terminales.includes(estadoVal);
+  const btnPerdido   = document.getElementById('btnTratoPerdido');
+  const btnDescartar = document.getElementById('btnTratoDescartar');
+  if (btnPerdido)   btnPerdido.style.display   = (!isNew && !esTerminal) ? '' : 'none';
+  if (btnDescartar) btnDescartar.style.display = (!isNew && !esTerminal) ? '' : 'none';
 
   cargarOpcionesResponsable(trato?.responsableNombre || '');
   
@@ -657,12 +686,11 @@ function renderHistorialResponsable(historial) {
 async function guardarTrato() {
   const proveedorId  = document.getElementById('tratoProveedorId').value.trim();
   const proveedorNom = document.getElementById('tratoProveedorInput').value.trim();
-  const estado       = document.getElementById('tratoEstado').value;
   const responsableNombre = document.getElementById('tratoResponsable').value.trim();
   const notasTrato     = document.getElementById('tratoNotas').value.trim();
-  const camionesXDia       = parseInt(document.getElementById('tratoCamiones')?.value) || null;
-  const tipoCamionDefault  = document.getElementById('tratoTipoCamion')?.value || null;
-  const maxisPorCamion     = parseInt(document.getElementById('tratoMaxisPorCamion')?.value) || null;
+  const camionesXDia      = parseInt(document.getElementById('tratoCamiones')?.value) || null;
+  const tipoCamionDefault = document.getElementById('tratoTipoCamion')?.value || null;
+  const maxisPorCamion    = parseInt(document.getElementById('tratoMaxisPorCamion')?.value) || null;
 
   const vigDesde = inputDateToUtcNoon(document.getElementById('tratoVigenciaDesde')?.value);
   const vigHasta = inputDateToUtcNoon(document.getElementById('tratoVigenciaHasta')?.value);
@@ -694,7 +722,7 @@ async function guardarTrato() {
         proveedorId,
         proveedorKey: c.proveedorKey || '',
         proveedorNombre: c.proveedorNombre || proveedorNom || '',
-        estado,
+        estado: 'disponible',
         responsableNombre,
         notasTrato,
         vigenciaDesde: vigDesde.toISOString(),
@@ -705,16 +733,7 @@ async function guardarTrato() {
         origen: 'manual',
       });
     } else {
-      // ACTUALIZAR — primero el estado si cambió
-      if (estado !== estadoGrupo(tratoActivo.estado)) {
-        try {
-          await changeEstado(tratoActivo._id, estado);
-        } catch (e) {
-          toast(`No se puede cambiar a "${estado}": transición inválida`, { variant: 'warning' });
-          return;
-        }
-      }
-      // Luego campos de trato
+      // ACTUALIZAR
       await updateTrato(tratoActivo._id, {
         responsableNombre,
         notasTrato,
@@ -1135,12 +1154,6 @@ function bindModal() {
   // Botón guardar
   document.getElementById('btnTratoSave')?.addEventListener('click', guardarTrato);
 
-  // Cambio de estado → mostrar/ocultar campo camiones
-  document.getElementById('tratoEstado')?.addEventListener('change', e => {
-    const camRow = document.getElementById('tratoCamionesRow');
-    if (camRow) camRow.style.display = e.target.value === 'cosecha_iniciada' ? '' : 'none';
-  });
-
   // Botón eliminar trato
   document.getElementById('btnTratoDelete')?.addEventListener('click', async () => {
     if (!tratoActivo) return;
@@ -1154,6 +1167,75 @@ function bindModal() {
       await cargarTratos();
     } catch (e) {
       toast('Error al eliminar', { variant: 'error' });
+    }
+  });
+
+  // Botones cerrar trato como perdido / descartado
+  let _motivoCierreEstado = null; // 'perdido' | 'descartado'
+
+  function abrirMotivoCierre(estadoDestino) {
+    _motivoCierreEstado = estadoDestino;
+    const titulo = estadoDestino === 'perdido' ? 'Marcar como perdido' : 'Descartar trato';
+    const desc   = estadoDestino === 'perdido'
+      ? '¿Por qué se perdió este trato? (requerido)'
+      : '¿Por qué se descarta este trato? (requerido)';
+    const titleEl = document.getElementById('motivoCierre-titulo');
+    const descEl  = document.getElementById('motivoCierre-desc');
+    const input   = document.getElementById('motivoCierre-input');
+    const errEl   = document.getElementById('motivoCierre-error');
+    if (titleEl) titleEl.textContent = titulo;
+    if (descEl)  descEl.textContent  = desc;
+    if (input)   input.value = '';
+    if (errEl)   errEl.style.display = 'none';
+    const modal = document.getElementById('modalMotivoCierre');
+    if (modal) modal.style.display = 'flex';
+    setTimeout(() => input?.focus(), 60);
+  }
+
+  function cerrarMotivoCierre() {
+    const modal = document.getElementById('modalMotivoCierre');
+    if (modal) modal.style.display = 'none';
+  }
+
+  document.getElementById('btnTratoPerdido')?.addEventListener('click', () => {
+    if (!tratoActivo) return;
+    abrirMotivoCierre('perdido');
+  });
+
+  document.getElementById('btnTratoDescartar')?.addEventListener('click', () => {
+    if (!tratoActivo) return;
+    abrirMotivoCierre('descartado');
+  });
+
+  document.getElementById('btnMotivoCierreCancel')?.addEventListener('click', () => {
+    cerrarMotivoCierre();
+    _motivoCierreEstado = null;
+  });
+
+  document.getElementById('btnMotivoCierreConfirm')?.addEventListener('click', async () => {
+    const motivo = (document.getElementById('motivoCierre-input')?.value || '').trim();
+    const errEl  = document.getElementById('motivoCierre-error');
+    if (!motivo) {
+      if (errEl) { errEl.textContent = 'El motivo es obligatorio.'; errEl.style.display = ''; }
+      return;
+    }
+    if (!tratoActivo || !_motivoCierreEstado) return;
+    const btn = document.getElementById('btnMotivoCierreConfirm');
+    btn.disabled = true;
+    try {
+      const updated = await cerrarPerdido(tratoActivo._id, {
+        estado: _motivoCierreEstado,
+        motivoPerdida: motivo,
+      });
+      tratoActivo = updated;
+      cerrarMotivoCierre();
+      getModal()?.close();
+      toast(`Trato marcado como ${_motivoCierreEstado}`, { variant: 'success' });
+      await cargarTratos();
+    } catch (e) {
+      if (errEl) { errEl.textContent = e?.message || 'Error al cerrar el trato.'; errEl.style.display = ''; }
+    } finally {
+      btn.disabled = false;
     }
   });
 
@@ -1341,16 +1423,6 @@ function ensureTratosEstadoUI() {
     ].join('');
   }
 
-  const estadoModal = document.getElementById('tratoEstado');
-  if (estadoModal) {
-    estadoModal.innerHTML = [
-      '<option value=\"disponible\">Disponible</option>',
-      '<option value=\"semi_acordado\">Semi-acordado</option>',
-      '<option value=\"acordado\">Acordado</option>',
-      '<option value=\"descartado\">Descartado</option>',
-      '<option value=\"perdido\">Perdido</option>',
-    ].join('');
-  }
 }
 
 function init() {

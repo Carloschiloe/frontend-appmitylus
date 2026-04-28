@@ -31,7 +31,8 @@ const MENU_STRUCTURE = [
     icon: 'bi-buildings',
     links: [
       { label: 'Centros', href: '/html/Centros/index.html#tab-centros', icon: 'bi-grid-1x2' },
-      { label: 'Mapa', href: '/html/Centros/index.html#tab-mapa', icon: 'bi-geo-alt' }
+      { label: 'Mapa', href: '/html/Centros/index.html#tab-mapa', icon: 'bi-geo-alt' },
+      { label: 'Estado Sanitario', href: '/html/Centros/index.html#tab-sanitario', icon: 'bi-shield-check', alertId: 'sanSidebarAlert' }
     ]
   },
   {
@@ -80,6 +81,7 @@ export class Sidebar {
     this.updateActiveState();
     window.addEventListener('hashchange', () => this.updateActiveState());
     window.addEventListener('mmpp:navigate', () => this.updateActiveState());
+    this.loadSanitarioAlert();
 
     // Red de seguridad: Eliminar overlays de tutoriales legados (TapTarget)
     const nuke = () => {
@@ -169,8 +171,9 @@ export class Sidebar {
         </button>
         <div class="submenu">
           ${group.links.map(link => `
-            <a href="${link.href}" data-link-id="${link.href}">
-              <i class="bi ${link.icon}"></i> ${link.label}
+            <a href="${link.href}" data-link-id="${link.href}" style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+              <span><i class="bi ${link.icon}"></i> ${link.label}</span>
+              ${link.alertId ? `<span id="${link.alertId}" style="display:none;background:#dc2626;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;flex-shrink:0;"></span>` : ''}
             </a>
           `).join('')}
         </div>
@@ -203,6 +206,31 @@ export class Sidebar {
         toggleBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
       }
     }, true);
+  }
+
+  async loadSanitarioAlert() {
+    try {
+      const r = await fetch('/api/sanitario/resumen', { headers: { 'Content-Type': 'application/json' } });
+      if (!r.ok) return;
+      const data = await r.json();
+      const criticas = (data.rojo || 0) + (data.naranja || 0);
+      const badge = this.container.querySelector('#sanSidebarAlert');
+      if (!badge) return;
+      if (criticas > 0) {
+        badge.textContent = criticas;
+        badge.style.display = 'inline-block';
+        // Abrir el grupo centros si hay alertas
+        const grupoEl = this.container.querySelector('[data-group="centros"]');
+        if (grupoEl && !grupoEl.classList.contains('is-open')) {
+          grupoEl.classList.add('is-open');
+          grupoEl.querySelector('.menu-head')?.setAttribute('aria-expanded', 'true');
+        }
+      } else {
+        badge.style.display = 'none';
+      }
+    } catch {
+      // Silencioso — no interrumpir si el backend no responde
+    }
   }
 
   updateActiveState() {

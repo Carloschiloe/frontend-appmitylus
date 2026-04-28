@@ -76,3 +76,9 @@ export async function updateMuestreo(id, payload = {}) {
   });
   return normalizeRow(data?.item || data || {});
 }
+
+export async function deleteMuestreo(id) {
+  const key = S(id);
+  if (!key) throw new Error('ID_MUESTREO_REQUERIDO');
+  return fetchJson(`${API_MUESTREOS}/${encodeURIComponent(key)}`, { method: 'DELETE' });
+}

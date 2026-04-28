@@ -290,65 +290,6 @@
           <div class="trato-kpi" data-estado="descartado"><div class="k">Descartados</div><div class="v">-</div></div>
         </div>
 
-        <!-- ── MODAL: RESULTADO MUESTREO (SUMMARY POST-GUARDADO) ── -->
-  <!-- MODAL: RESULTADOS DE CLASIFICACION (Post-Guardado) -->
-  <div id="modalMuResultado" class="modal app-modal-modern">
-    <div class="mu-res-header">
-      <h5 class="mu-res-title">Resumen del Muestreo</h5>
-    </div>
-    <div class="mu-res-body">
-      <!-- Info Meta -->
-      <div class="mu-res-meta">
-        <div class="mu-res-meta-item">
-          <div class="mu-res-meta-label">Fecha</div>
-          <div class="mu-res-meta-val" id="muResFecha">-</div>
-        </div>
-        <div class="mu-res-meta-item">
-          <div class="mu-res-meta-label">Línea</div>
-          <div class="mu-res-meta-val" id="muResLinea">-</div>
-        </div>
-        <div class="mu-res-meta-item" style="flex:1;">
-          <div class="mu-res-meta-label">Proveedor</div>
-          <div class="mu-res-meta-val" id="muResProv">-</div>
-        </div>
-      </div>
-
-      <!-- KPIs Principales -->
-      <div class="mu-res-kpis">
-        <div class="mu-res-kpi">
-          <div class="mu-res-kpi-label">Rendimiento (R%)</div>
-          <div class="mu-res-kpi-val" id="muResRend">-</div>
-        </div>
-        <div class="mu-res-kpi">
-          <div class="mu-res-kpi-label">U x Kg (Calibre)</div>
-          <div class="mu-res-kpi-val" id="muResUxKg">-</div>
-        </div>
-        <div class="mu-res-kpi">
-          <div class="mu-res-kpi-label">Rechazo (%)</div>
-          <div class="mu-res-kpi-val" id="muResPctRech">-</div>
-        </div>
-        <div class="mu-res-kpi">
-          <div class="mu-res-kpi-label">Procesable (%)</div>
-          <div class="mu-res-kpi-val" id="muResPctProc">-</div>
-        </div>
-      </div>
-
-      <!-- Barra de Clasificacion Destacada -->
-      <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: center;">
-        <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase;">RESULTADO DE CLASIFICACIÓN</div>
-        <div id="muResClas" style="font-size: 24px; font-weight: 800; color: #0f172a;">-</div>
-      </div>
-
-      <!-- Detalle de Evaluacion -->
-      <div class="mu-res-section-title">Análisis de Criterios (Maestros)</div>
-      <div id="muResListaEvaluacion" class="mu-res-eval-list">
-        <!-- Se puebla dinamicamente -->
-      </div>
-    </div>
-    <div class="mu-res-footer">
-      <button type="button" class="am-btn am-btn-flat modal-close" style="font-weight: 700;">Cerrar Resumen</button>
-    </div>
-  </div>
         <!-- Tabla de tratos -->
         <div class="tratos-table-wrap">
           <table class="tratos-table" id="tratosTable">
@@ -530,6 +471,10 @@
             .mu-action-item i { font-size: 18px; color: #94a3b8; transition: color 0.2s; }
             .mu-action-item:hover i { color: #0ea5e9; }
             .mu-action-divider { height: 1px; background: #f1f5f9; margin: 4px 6px; }
+            .mu-action-item--danger { color: #dc2626; }
+            .mu-action-item--danger i { color: #dc2626; }
+            .mu-action-item--danger:hover { background: #fef2f2; color: #b91c1c; }
+            .mu-action-item--danger:hover i { color: #b91c1c; }
 
             /* Ajustes celda fecha */
             .mu-date-cell { display: flex; flex-direction: column; line-height: 1.2; }
@@ -557,194 +502,237 @@
 
         <!-- botones movidos a los paneles correspondientes -->
 
-        <div id="modalMuestreo" class="modal app-modal-modern modal-muestreo">
-          <div class="app-modal-header">
-            <div class="app-modal-header-top">
-              <h5 id="muModalTitle">Nuevo Muestreo</h5>
-              <div class="segmented muestreo-view-switch" role="group" aria-label="Vista de muestreos">
-                <button type="button" id="btnMuestreoViewForm" class="is-active">Formulario</button>
-                <button type="button" id="btnMuestreoViewSummary">Resumen</button>
+        <!-- ══ MODAL MUESTREO (modal único, sin panel lateral) ══ -->
+        <div id="modalMuestreo" class="modal app-modal-modern modal-muestreo" style="max-width:680px;width:96vw;">
+          <!-- Cabecera con título y toggle Formulario/Resumen -->
+          <div class="app-modal-header" style="border-bottom:1px solid var(--border,#e2e8f0);padding:18px 24px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <h5 id="muModalTitle" style="margin:0;font-size:17px;font-weight:700;color:#0f172a;">Nuevo Muestreo</h5>
+              <div style="display:flex;gap:4px;background:#f1f5f9;border-radius:10px;padding:3px;">
+                <button type="button" id="btnMuestreoViewForm" class="mu-view-tab is-active" style="padding:5px 14px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:#fff;color:#0f766e;box-shadow:0 1px 3px rgba(0,0,0,.1);">Formulario</button>
+                <button type="button" id="btnMuestreoViewSummary" class="mu-view-tab" style="padding:5px 14px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:#64748b;">Historial</button>
               </div>
+            </div>
+            <!-- Indicador de pasos (solo visible en formulario) -->
+            <div id="muStepsIndicator" style="display:flex;gap:0;margin-bottom:-1px;">
+              <button type="button" class="mu-step-tab is-active" data-mu-step="1" style="flex:1;padding:10px 8px;border:none;border-bottom:2px solid #0f766e;background:transparent;font-size:13px;font-weight:600;color:#0f766e;cursor:pointer;transition:all .15s;">
+                <span style="display:inline-flex;align-items:center;gap:6px;justify-content:center;">
+                  <span class="mu-step-num" style="width:20px;height:20px;border-radius:50%;background:#0f766e;color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">1</span>
+                  Identificación
+                </span>
+              </button>
+              <button type="button" class="mu-step-tab" data-mu-step="2" style="flex:1;padding:10px 8px;border:none;border-bottom:2px solid transparent;background:transparent;font-size:13px;font-weight:600;color:#94a3b8;cursor:pointer;transition:all .15s;">
+                <span style="display:inline-flex;align-items:center;gap:6px;justify-content:center;">
+                  <span class="mu-step-num" style="width:20px;height:20px;border-radius:50%;background:#e2e8f0;color:#64748b;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">2</span>
+                  Técnica
+                </span>
+              </button>
+              <button type="button" class="mu-step-tab" data-mu-step="3" style="flex:1;padding:10px 8px;border:none;border-bottom:2px solid transparent;background:transparent;font-size:13px;font-weight:600;color:#94a3b8;cursor:pointer;transition:all .15s;">
+                <span style="display:inline-flex;align-items:center;gap:6px;justify-content:center;">
+                  <span class="mu-step-num" style="width:20px;height:20px;border-radius:50%;background:#e2e8f0;color:#64748b;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">3</span>
+                  Categorías
+                </span>
+              </button>
             </div>
           </div>
 
-          <div class="app-modal-body am-p-0">
-          <section id="muestreoFormView">
-            <!-- Wizard steps indicator -->
-            <div class="mu-wizard-head am-px-24" role="tablist" aria-label="Pasos de muestreo">
-              <button type="button" class="mu-step-btn is-active" data-mu-step="1">1. Base</button>
-              <button type="button" class="mu-step-btn" data-mu-step="2">2. Técnica</button>
-              <button type="button" class="mu-step-btn" data-mu-step="3">3. Categorías</button>
-            </div>
-            <div id="muStepSummary" class="mu-step-summary muestreo-hidden am-px-24 am-mt-8">
-              <span id="muStepSummaryText">-</span>
-              <button type="button" id="btnMuEditBase" class="am-btn am-btn-flat write-only" style="height:28px;padding:0 10px;font-size:12px;">Editar</button>
-            </div>
+          <div class="app-modal-body" style="padding:0;overflow-y:auto;max-height:calc(84vh - 160px);">
 
-            <!-- Hidden fields -->
-            <input id="muestreoOrigen" type="hidden" value="terreno">
-            <input id="muestreoProveedorId" type="hidden" value="">
-            <input id="muestreoProveedorKey" type="hidden" value="">
+            <!-- ── FORMULARIO VIEW ── -->
+            <section id="muestreoFormView">
+              <!-- Campos ocultos -->
+              <input id="muestreoOrigen" type="hidden" value="abastecimiento">
+              <input id="muestreoProveedorId" type="hidden" value="">
+              <input id="muestreoProveedorKey" type="hidden" value="">
 
-            <!-- PASO 1: BASE -->
-            <section id="muStep1" class="mu-step-panel am-p-24">
-
-              <!-- Toggle Abastecimiento / Calidad -->
-              <div class="mu-tipo-toggle am-mb-20 am-border-base" style="display:flex;gap:0;width:fit-content;">
-                <button type="button" class="mu-tipo-btn is-active" data-mu-route="terreno" style="padding:7px 20px;font-size:13px;font-weight:600;border:none;background:#0ea5e9;color:#fff;cursor:pointer;transition:all .15s;">
-                  Abastecimiento
-                </button>
-              <form id="muestreoForm" class="am-form-grid">
-                <div class="am-input-group col-12" style="margin-bottom: 20px;">
-                  <label class="am-label">Unidad muestreadora</label>
-                  <div class="mu-tipo-modes" style="display: flex; background: #f1f5f9; border-radius: 12px; padding: 4px;">
-                    <button type="button" class="mu-tipo-btn is-active" data-mu-route="abastecimiento" style="flex: 1; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Abastecimiento</button>
-                    <button type="button" class="mu-tipo-btn" data-mu-route="calidad" style="flex: 1; border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Calidad</button>
-                  </div>
-                  <input type="hidden" id="muestreoOrigen" value="abastecimiento">
-                </div>
-
-                <!-- Proveedor con autocomplete (col-6 = mitad ancho) -->
-                <div class="am-input-group col-6">
-                  <label class="am-label" for="muestreoProveedor">Proveedor</label>
-                  <div style="position:relative;">
-                    <input id="muestreoProveedor" class="am-input" type="text" placeholder="Buscar proveedor..." autocomplete="off" required>
-                    <div id="muestreoProveedorDrop" class="am-dropdown"></div>
+              <!-- PASO 1: IDENTIFICACIÓN -->
+              <section id="muStep1" class="mu-step-panel" style="padding:20px 24px;">
+                <!-- Toggle unidad muestreadora -->
+                <div style="margin-bottom:18px;">
+                  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#475569;margin-bottom:6px;">Unidad muestreadora</div>
+                  <div style="display:flex;background:#f1f5f9;border-radius:10px;padding:3px;width:fit-content;gap:2px;">
+                    <button type="button" class="mu-tipo-btn is-active" data-mu-route="abastecimiento" style="padding:7px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;background:#0f766e;color:#fff;">Abastecimiento</button>
+                    <button type="button" class="mu-tipo-btn" data-mu-route="calidad" style="padding:7px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;background:transparent;color:#64748b;">Calidad</button>
                   </div>
                 </div>
+                <form id="muestreoForm">
+                  <div style="display:grid;grid-template-columns:1fr 160px 80px;gap:12px;margin-bottom:12px;">
+                    <div>
+                      <label class="am-label" for="muestreoProveedor">Proveedor</label>
+                      <div style="position:relative;">
+                        <input id="muestreoProveedor" class="am-input" type="text" placeholder="Buscar proveedor..." autocomplete="off" required>
+                        <div id="muestreoProveedorDrop" class="am-dropdown"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="am-label" for="muestreoCentro">Centro</label>
+                      <select id="muestreoCentro" class="am-input browser-default" style="height:42px;padding:0 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;box-sizing:border-box;width:100%;">
+                        <option value="">— —</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="am-label" for="muestreoLinea">Línea</label>
+                      <input id="muestreoLinea" class="am-input" type="text" placeholder="2">
+                    </div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 160px;gap:12px;">
+                    <div>
+                      <label class="am-label" for="muestreoResponsable">Responsable</label>
+                      <select id="muestreoResponsable" class="am-input browser-default" style="height:42px;padding:0 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;box-sizing:border-box;width:100%;">
+                        <option value="">— Seleccionar —</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="am-label" for="muestreoFecha">Fecha</label>
+                      <input id="muestreoFecha" class="am-input" type="date" required>
+                    </div>
+                  </div>
+                </form>
+              </section>
 
-                <div class="am-input-group col-3">
-                  <label class="am-label" for="muestreoCentro">Centro</label>
-                  <select id="muestreoCentro" class="am-input browser-default" style="height:42px;padding:0 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;box-sizing:border-box;">
-                    <option value="">— Seleccionar —</option>
-                  </select>
+              <!-- PASO 2: TÉCNICA -->
+              <section id="muStep2" class="mu-step-panel muestreo-hidden" style="padding:20px 24px;">
+                <div id="muestreoTechnicalBlock">
+                  <!-- KPIs ingresados + R% calculado -->
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                    <div>
+                      <label class="am-label" for="muestreoUxKg">U° × Kg <small style="color:#94a3b8;font-weight:400;">(calibre)</small></label>
+                      <input id="muestreoUxKg" class="am-input" type="number" min="0" step="1" placeholder="Ej: 84">
+                    </div>
+                    <div>
+                      <label class="am-label" for="muestreoPesoVivo">Peso vivo (kg)</label>
+                      <input id="muestreoPesoVivo" class="am-input" type="number" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div>
+                      <label class="am-label" for="muestreoPesoCocida">Peso cocida (kg)</label>
+                      <input id="muestreoPesoCocida" class="am-input" type="number" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div>
+                      <label class="am-label" for="muestreoRendimiento">R% carne <small style="color:#0f766e;font-weight:600;">(auto)</small></label>
+                      <input id="muestreoRendimiento" class="am-input" type="text" readonly style="background:#f0fdf4;color:#0f766e;font-weight:800;font-size:16px;text-align:center;">
+                    </div>
+                  </div>
+                  <p style="font-size:11px;color:#94a3b8;margin:0;">R% = (peso cocida ÷ peso vivo) × 100</p>
+                </div>
+              </section>
+
+              <!-- PASO 3: CATEGORÍAS -->
+              <section id="muStep3" class="mu-step-panel muestreo-hidden" style="padding:16px 24px 8px;">
+                <!-- Fila de 3 selectores tipo Excel filter -->
+                <div id="muCatSelector" style="display:flex;gap:8px;margin-bottom:14px;"></div>
+
+                <!-- Tabla de categorías seleccionadas -->
+                <div id="muCatTableWrap">
+                  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                      <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                        <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em;">Categoría</th>
+                        <th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em;width:130px;">Peso (kg)</th>
+                        <th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em;width:70px;">%</th>
+                      </tr>
+                    </thead>
+                    <tbody id="muCatEditorList">
+                      <tr><td colspan="3" style="padding:16px 10px;color:#94a3b8;font-size:13px;text-align:center;">Selecciona categorías arriba para comenzar.</td></tr>
+                    </tbody>
+                    <tfoot id="muCatTotalsRow" style="display:none;">
+                      <tr style="background:#f0fdf4;border-top:2px solid #bbf7d0;">
+                        <td style="padding:10px;font-weight:700;color:#0f172a;font-size:13px;">Total muestra</td>
+                        <td style="padding:10px;text-align:right;font-weight:800;color:#0f172a;font-size:14px;" id="muTotalMuestra">—</td>
+                        <td style="padding:10px;text-align:right;font-weight:700;color:#0f766e;font-size:13px;">100%</td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
 
-                <div class="am-input-group col-3">
-                  <label class="am-label" for="muestreoLinea">Línea</label>
-                  <input id="muestreoLinea" class="am-input" type="text" placeholder="Ej: 2">
+                <!-- Resumen por tipo -->
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">
+                  <div style="text-align:center;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px;">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#065f46;margin-bottom:2px;">Procesable</div>
+                    <div style="font-size:18px;font-weight:800;color:#0f766e;" id="muProcesable">—</div>
+                  </div>
+                  <div style="text-align:center;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px;">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#991b1b;margin-bottom:2px;">Rechazos</div>
+                    <div style="font-size:18px;font-weight:800;color:#ef4444;" id="muRechazos">—</div>
+                  </div>
+                  <div style="text-align:center;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px;">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#9a3412;margin-bottom:2px;">Defectos</div>
+                    <div style="font-size:18px;font-weight:800;color:#ea580c;" id="muDefectos">—</div>
+                  </div>
                 </div>
+              </section>
+            </section>
 
-                <div class="am-input-group col-6">
-                  <label class="am-label" for="muestreoResponsable">Responsable</label>
-                  <select id="muestreoResponsable" class="am-input browser-default" style="height:42px;padding:0 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;box-sizing:border-box;">
-                    <option value="">— Seleccionar —</option>
-                  </select>
-                </div>
-
-                <div class="am-input-group col-6">
-                  <label class="am-label" for="muestreoFecha">Fecha</label>
-                  <input id="muestreoFecha" class="am-input" type="date" required>
-                </div>
-
-              </form>
-              <div class="mu-nav" style="margin-top:16px;">
-                <span></span>
-                <button type="button" id="btnMuToStep2" class="am-btn am-btn-primary">Continuar →</button>
+            <!-- ── HISTORIAL VIEW ── -->
+            <section id="muestreoSummaryView" class="muestreo-hidden" style="padding:16px 24px;">
+              <!-- Header solo en modo edición (proveedor) -->
+              <div id="muHistorialHeader" style="display:none;font-size:13px;font-weight:700;color:#475569;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;align-items:center;gap:6px;">
+                <span style="font-size:15px;">📋</span>
+                <span id="muHistorialHeaderText">Muestreos anteriores del proveedor</span>
+              </div>
+              <!-- Filtros (ocultos en modo edición) -->
+              <div id="muHistorialFilterRow" style="display:flex;gap:10px;margin-bottom:12px;">
+                <input id="muResumenBuscar" class="am-input" type="text" placeholder="Buscar proveedor o centro..." style="flex:1;">
+                <select id="muResumenPeriodo" class="am-input browser-default" style="width:150px;height:42px;">
+                  <option value="all">Todo</option>
+                  <option value="week">Semana actual</option>
+                  <option value="month">Mes actual</option>
+                  <option value="year">Año actual</option>
+                </select>
+              </div>
+              <div class="muestreo-summary-kpis">
+                <article><span>Muestreos</span><strong id="muKpiCount">0</strong></article>
+                <article><span>Prom. R%</span><strong id="muKpiRend">0%</strong></article>
+                <article><span>Prom. U×Kg</span><strong id="muKpiUxKg">0</strong></article>
+                <article><span>Prom. rechazo</span><strong id="muKpiRech">0%</strong></article>
+              </div>
+              <div class="muestreo-topcats" id="muTopCats"></div>
+              <div class="muestreo-table-wrap">
+                <table class="muestreo-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Línea</th>
+                      <th>R%</th><th>U×Kg</th><th>Procesable</th><th>Rechazos</th><th>Tipo</th>
+                    </tr>
+                  </thead>
+                  <tbody id="muResumenBody">
+                    <tr><td colspan="9" class="muted">Sin muestreos registrados.</td></tr>
+                  </tbody>
+                </table>
               </div>
             </section>
 
+          </div><!-- app-modal-body -->
 
-            <!-- PASO 2: TÉCNICA -->
-            <section id="muStep2" class="mu-step-panel muestreo-hidden am-p-24">
-              <div id="muestreoTechnicalBlock">
-                <div class="am-form-grid">
-                  <div class="am-input-group col-6">
-                    <label class="am-label" for="muestreoUxKg">U° × Kg</label>
-                    <input id="muestreoUxKg" class="am-input" type="number" min="0" step="1" placeholder="Unidades por kilo">
-                  </div>
-                  <div class="am-input-group col-6">
-                    <label class="am-label" for="muestreoPesoVivo">Peso choritos vivos (kg)</label>
-                    <input id="muestreoPesoVivo" class="am-input" type="number" min="0" step="0.01" placeholder="0.00">
-                  </div>
-                  <div class="am-input-group col-6">
-                    <label class="am-label" for="muestreoPesoCocida">Peso carne cocida (kg)</label>
-                    <input id="muestreoPesoCocida" class="am-input" type="number" min="0" step="0.01" placeholder="0.00">
-                  </div>
-                  <div class="am-input-group col-6">
-                    <label class="am-label" for="muestreoRendimiento">R% carne <small style="color:#0ea5e9;">(calculado)</small></label>
-                    <input id="muestreoRendimiento" class="am-input" type="text" readonly style="background:#f8fafc;color:#0ea5e9;font-weight:700;">
-                  </div>
-                </div>
-                <p class="muestreo-note" style="margin-top:8px;font-size:12px;color:#94a3b8;">R% = (peso carne cocida ÷ peso choritos vivos) × 100</p>
+          <!-- Footer con navegación -->
+          <div class="app-modal-footer" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;border-top:1px solid #e2e8f0;background:#f8fafc;">
+            <button type="button" id="btnMuestreoCloseMain" class="am-btn am-btn-flat" style="color:#64748b;">Cerrar</button>
+            <div style="display:flex;gap:8px;align-items:center;" id="muFooterNav">
+              <!-- Paso 1 -->
+              <div id="muNavStep1" style="display:flex;gap:8px;">
+                <button type="button" id="btnMuToStep2" class="am-btn am-btn-primary">Continuar →</button>
               </div>
-              <div class="mu-nav" style="margin-top:16px;">
+              <!-- Paso 2 -->
+              <div id="muNavStep2" style="display:none;gap:8px;">
                 <button type="button" id="btnMuBackToStep1" class="am-btn am-btn-flat">← Atrás</button>
                 <button type="button" id="btnMuToStep3" class="am-btn am-btn-primary">Continuar →</button>
               </div>
-            </section>
-
-            <!-- PASO 3: CATEGORÍAS -->
-            <section id="muStep3" class="mu-step-panel muestreo-hidden am-p-24">
-              <div class="mu-section-title" style="font-size:13px;font-weight:700;color:#334155;margin-bottom:10px;">Selecciona categorías presentes</div>
-              <div class="muestreo-cat-selector" id="muCatSelector"></div>
-              <p class="muestreo-route-hint" style="font-size:12px;color:#94a3b8;margin:8px 0 12px;">El detalle numérico se edita en el panel de la derecha →</p>
-              <div class="muestreo-totals" id="muestreoTotals">
-                <article><span>Total muestra</span><strong id="muTotalMuestra">0.00 %</strong></article>
-                <article><span>Procesable</span><strong id="muProcesable">0.00 %</strong></article>
-                <article><span>Rechazos</span><strong id="muRechazos">0.00 %</strong></article>
-                <article><span>Defectos</span><strong id="muDefectos">0.00 %</strong></article>
-              </div>
-              <div class="muestreo-actions" style="margin-top:16px;">
+              <!-- Paso 3 -->
+              <div id="muNavStep3" style="display:none;gap:8px;">
                 <button type="button" id="btnMuBackToStep2" class="am-btn am-btn-flat">← Atrás</button>
                 <button type="button" id="btnMuestreoClear" class="am-btn am-btn-flat">Limpiar</button>
                 <button type="button" id="btnMuestreoSave" class="am-btn am-btn-primary write-only">Guardar muestreo</button>
               </div>
-            </section>
-          </section>
-
-          <!-- RESUMEN VIEW -->
-          <section id="muestreoSummaryView" class="muestreo-hidden" style="padding:16px 24px;">
-            <div class="muestreo-summary-filters" style="display:flex;gap:10px;margin-bottom:12px;">
-              <input id="muResumenBuscar" class="am-input" type="text" placeholder="Buscar proveedor o centro..." style="flex:1;">
-              <select id="muResumenPeriodo" class="am-select browser-default" style="width:160px;">
-                <option value="all">Todo</option>
-                <option value="week">Semana actual</option>
-                <option value="month">Mes actual</option>
-                <option value="year">Año actual</option>
-              </select>
+              <!-- Historial (sin nav) -->
+              <div id="muNavHistorial" style="display:none;"></div>
             </div>
-            <div class="muestreo-summary-kpis">
-              <article><span>Muestreos</span><strong id="muKpiCount">0</strong></article>
-              <article><span>Prom. R% carne</span><strong id="muKpiRend">0%</strong></article>
-              <article><span>Prom. U° × Kg</span><strong id="muKpiUxKg">0</strong></article>
-              <article><span>Prom. rechazos</span><strong id="muKpiRech">0%</strong></article>
-            </div>
-            <div class="muestreo-topcats" id="muTopCats"></div>
-            <div class="muestreo-table-wrap">
-              <table class="muestreo-table">
-                <thead>
-                  <tr>
-                    <th>Fecha</th><th>Proveedor</th><th>Centro</th><th>Línea</th>
-                    <th>R% carne</th><th>U° × Kg</th><th>Procesable</th><th>Rechazos</th>
-                  </tr>
-                </thead>
-                <tbody id="muResumenBody">
-                  <tr><td colspan="8" class="muted">Sin muestreos registrados.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          </div><!-- app-modal-body -->
-
-          <div class="app-modal-footer">
-            <button type="button" id="btnMuestreoCloseMain" class="am-btn am-btn-flat">Cerrar</button>
           </div>
         </div>
 
-        <div id="modalMuestreoItems" class="modal app-modal modal-muestreo-side">
-          <div class="modal-content">
-            <div class="mu-section-title">Detalle de ítems seleccionados</div>
-            <p class="mu-side-help">Ingresa valores base por item. El <strong>% se calcula automáticamente</strong> y no se puede editar.</p>
-            <div class="mu-cat-editor-list" id="muCatEditorList">
-              <div class="muted">Selecciona una categoría para comenzar.</div>
-            </div>
-          </div>
-          <div class="modal-footer modal-actions mu-side-actions">
-            <button type="button" id="btnMuestreoSaveSide" class="am-btn am-btn-primary write-only">Guardar muestreo</button>
-            <button type="button" id="btnMuestreoCloseSide" class="am-btn am-btn-flat">Cerrar panel</button>
-          </div>
+        <!-- Side panel conservado pero oculto (compatibilidad con código heredado) -->
+        <div id="modalMuestreoItems" style="display:none!important;">
+          <div id="muCatEditorListLegacy"></div>
+          <button type="button" id="btnMuestreoSaveSide" style="display:none;"></button>
+          <button type="button" id="btnMuestreoCloseSide" style="display:none;"></button>
         </div>
       </div>
     </div>
@@ -761,6 +749,67 @@
         <div id="muInfoBody"></div>
       </div>
       <div class="app-modal-footer">
+        <button type="button" class="am-btn am-btn-flat modal-close">Cerrar</button>
+      </div>
+    </div>
+
+    <!-- ══ MODAL: RESULTADO DE CLASIFICACIÓN POST-MUESTREO ══ -->
+    <div id="modalMuResultado" class="modal app-modal-modern" style="max-width:500px;width:96vw;">
+      <div class="app-modal-header" style="padding:20px 24px 16px;border-bottom:1px solid #e2e8f0;">
+        <!-- Icono + meta info en una línea -->
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <div id="muResIconWrap" style="width:36px;height:36px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+            <span id="muResIcon" style="font-size:18px;line-height:1;">✓</span>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:3px;">Muestreo guardado</div>
+            <div id="muResMeta" style="font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
+          </div>
+          <button type="button" class="modal-close" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:22px;line-height:1;padding:0;flex-shrink:0;">&times;</button>
+        </div>
+      </div>
+
+      <div class="app-modal-body" style="padding:20px 24px;overflow-y:auto;max-height:calc(90vh - 160px);">
+
+        <!-- ① CLASIFICACIÓN — protagonista visual -->
+        <div id="muResClasBox" style="border-radius:14px;padding:20px;text-align:center;margin-bottom:16px;border:2px solid #bbf7d0;background:#f0fdf4;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#065f46;margin-bottom:8px;">Clasificación</div>
+          <div id="muResClas" style="font-size:38px;font-weight:900;color:#0f766e;letter-spacing:.02em;line-height:1.1;">—</div>
+          <div id="muResTipo" style="font-size:13px;color:#047857;margin-top:5px;font-weight:500;"></div>
+        </div>
+
+        <!-- ② KPIs en 4 tarjetas -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 6px;text-align:center;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:4px;">R%</div>
+            <div id="muResRend" style="font-size:20px;font-weight:800;color:#0f172a;">—</div>
+          </div>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 6px;text-align:center;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:4px;">U×Kg</div>
+            <div id="muResUxKg" style="font-size:20px;font-weight:800;color:#0f172a;">—</div>
+          </div>
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 6px;text-align:center;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#065f46;margin-bottom:4px;">Proc.</div>
+            <div id="muResPctProc" style="font-size:20px;font-weight:800;color:#0f766e;">—</div>
+          </div>
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 6px;text-align:center;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#991b1b;margin-bottom:4px;">Rech.</div>
+            <div id="muResPctRech" style="font-size:20px;font-weight:800;color:#ef4444;">—</div>
+          </div>
+        </div>
+
+        <!-- ③ Criterios de evaluación -->
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:8px;">Criterios evaluados</div>
+        <div id="muResListaEvaluacion" style="display:flex;flex-direction:column;gap:6px;">
+          <div style="color:#94a3b8;font-size:13px;padding:8px 0;">Sin criterios configurados.</div>
+        </div>
+
+      </div>
+
+      <div class="app-modal-footer" style="padding:14px 24px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#f8fafc;">
+        <button type="button" id="btnMuInformePDF" class="am-btn am-btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+          <i class="bi bi-file-earmark-pdf"></i> Informe PDF
+        </button>
         <button type="button" class="am-btn am-btn-flat modal-close">Cerrar</button>
       </div>
     </div>
@@ -1179,13 +1228,10 @@
 
             <div class="trato-section">
               <label class="trato-label">Estado</label>
-              <select id="tratoEstado" class="browser-default modern-select">
-                <option value="disponible">Disponible</option>
-                <option value="semi_acordado">Semi-acordado</option>
-                <option value="acordado">Acordado</option>
-                <option value="perdido">Perdido</option>
-                <option value="descartado">Descartado</option>
-              </select>
+              <div id="tratoEstadoBadgeWrap" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <span id="tratoEstadoBadge"></span>
+                <span id="tratoMotivoWrap" style="display:none;font-size:11px;color:#64748b;font-style:italic;"></span>
+              </div>
             </div>
 
             <!-- Campo camiones: visible solo cuando estado = cosecha_iniciada -->
@@ -1259,8 +1305,25 @@
       </div>
       <div class="app-modal-footer">
         <button id="btnTratoDelete" type="button" class="am-btn am-btn-danger write-only" style="display:none;">Eliminar</button>
+        <button id="btnTratoPerdido" type="button" class="am-btn write-only" style="display:none;background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;">Marcar como perdido</button>
+        <button id="btnTratoDescartar" type="button" class="am-btn write-only" style="display:none;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;">Descartar trato</button>
         <button type="button" class="am-btn am-btn-flat modal-close">Cancelar</button>
         <button id="btnTratoSave" type="button" class="am-btn am-btn-primary write-only">Guardar</button>
+      </div>
+    </div>
+
+    <!-- MINI-MODAL: Motivo cierre trato -->
+    <div id="modalMotivoCierre" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:14px;padding:28px;width:440px;max-width:92vw;box-shadow:0 8px 40px rgba(0,0,0,.2);">
+        <h5 id="motivoCierre-titulo" style="font-size:16px;font-weight:700;margin:0 0 6px;color:#1e293b;"></h5>
+        <p id="motivoCierre-desc" style="font-size:13px;color:#64748b;margin:0 0 16px;"></p>
+        <label style="font-size:12px;font-weight:600;color:#475569;display:block;margin-bottom:6px;">Motivo <span style="color:#ef4444">*</span></label>
+        <textarea id="motivoCierre-input" rows="3" placeholder="Describe el motivo..." style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px;font-size:13px;resize:vertical;box-sizing:border-box;"></textarea>
+        <div id="motivoCierre-error" style="display:none;color:#ef4444;font-size:12px;margin-top:6px;"></div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">
+          <button id="btnMotivoCierreCancel" type="button" class="am-btn am-btn-flat">Cancelar</button>
+          <button id="btnMotivoCierreConfirm" type="button" class="am-btn am-btn-primary">Confirmar</button>
+        </div>
       </div>
     </div>
 

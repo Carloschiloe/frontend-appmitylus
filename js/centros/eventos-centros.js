@@ -11,6 +11,7 @@ import { toast as uiToast } from '../ui/toast.js';
 const $   = (sel, ctx = document) => (ctx.querySelector ? ctx.querySelector(sel) : null);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toTitleCase = (str) => (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+const SANITARIO_LABELS = { rojo:'Suspendida', naranja:'Alerta activa', amarillo:'En seguimiento', verde:'Sin alertas', gris:'Sin datos' };
 const fmtDate = (v) => {
   if (!v) return '';
   const s = String(v);
@@ -40,13 +41,31 @@ function keyActivatesClick(e) {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget?.click?.(); }
 }
 
+function closeAllCentroMenus() {
+  document.querySelectorAll('.centro-row-menu.is-open').forEach((menu) => menu.classList.remove('is-open'));
+}
+
 /* ============ Registro de eventos de la tabla ============ */
 export function registerTablaCentrosEventos() {
   const $t = window.$('#centrosTable');
   if (!$t.length) return;
 
+  $t.off('click', '.centro-row-menu-toggle').on('click', '.centro-row-menu-toggle', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const menu = this.closest('.centro-row-menu');
+    if (!menu) return;
+    const willOpen = !menu.classList.contains('is-open');
+    closeAllCentroMenus();
+    menu.classList.toggle('is-open', willOpen);
+  });
+
+  document.removeEventListener('click', closeAllCentroMenus);
+  document.addEventListener('click', closeAllCentroMenus);
+
   /* --- Detalles / Coordenadas --- */
   $t.off('click', '.btn-coords').on('click', '.btn-coords', function () {
+    closeAllCentroMenus();
     try {
       const idx = Number(this.dataset.idx);
       const c   = Estado.centros?.[idx];
@@ -54,19 +73,21 @@ export function registerTablaCentrosEventos() {
       if (!c || !body) return;
 
       const d = (c.detalles && typeof c.detalles === 'object') ? c.detalles : {};
+      const sanitario = c.sanitario || {};
       const plan = { ...d };
       if (d.resSSP)    { if (d.resSSP.numero)    plan.numeroResSSP    = d.resSSP.numero;    if (d.resSSP.fecha)    plan.fechaResSSP    = d.resSSP.fecha;    }
       if (d.resSSFFAA) { if (d.resSSFFAA.numero)  plan.numeroResSSFFAA = d.resSSFFAA.numero; if (d.resSSFFAA.fecha) plan.fechaResSSFFAA = d.resSSFFAA.fecha; }
 
       const LABELS = {
-        region:'Región', codigoArea:'Código Área', ubicacion:'Ubicación',
+        region:'Región', codigoArea:'Código Área', areaPSMB:'Área PSMB', estadoAreaSernapesca:'Estado Sernapesca',
+        estadoSanitario:'Estado sanitario', ubicacion:'Ubicación',
         grupoEspecie:'Grupo Especie', especies:'Especies', tonsMax:'Tons Máx',
         numeroResSSP:'N° ResSSP', fechaResSSP:'Fecha ResSSP',
         numeroResSSFFAA:'N° ResSSFFAA', fechaResSSFFAA:'Fecha ResSSFFAA',
         rutTitular:'RUT Titular', nroPert:'Nro. Pert',
       };
       const prettyKey = k => LABELS[k] || k.replace(/([A-Z])/g, ' $1').replace(/^./, m => m.toUpperCase());
-      const ORDER_TOP = ['region','codigoArea','ubicacion','grupoEspecie','especies','tonsMax'];
+      const ORDER_TOP = ['region','codigoArea','areaPSMB','estadoSanitario','estadoAreaSernapesca','ubicacion','grupoEspecie','especies','tonsMax'];
       const ORDER_DET = ['rutTitular','nroPert','numeroResSSP','fechaResSSP','numeroResSSFFAA','fechaResSSFFAA'];
 
       let html = `<table class="am-table"><tbody>
@@ -79,6 +100,9 @@ export function registerTablaCentrosEventos() {
         let v = (c[k] !== undefined && c[k] !== null && String(c[k]) !== '') ? c[k] : plan[k];
         if (k === 'especies' && !v && Array.isArray(c.especies)) v = c.especies.join(', ');
         if (k === 'codigoArea') v = c.codigoArea ?? d.codigoArea ?? v;
+        if (k === 'areaPSMB') v = c.areaPSMB ?? sanitario.areaPSMB ?? v;
+        if (k === 'estadoSanitario') v = sanitario.estado ? (SANITARIO_LABELS[sanitario.estado] || toTitleCase(sanitario.estado)) : v;
+        if (k === 'estadoAreaSernapesca') v = c.estadoAreaSernapesca ?? sanitario.estadoSernapesca ?? v;
         if (v !== undefined && v !== null && String(v) !== '') {
           html += `<tr><th>${esc(prettyKey(k))}</th><td>${k.startsWith('fecha') ? fmtDate(v) : esc(v)}</td></tr>`;
         }
@@ -124,6 +148,7 @@ export function registerTablaCentrosEventos() {
 
   /* --- Ver en mapa --- */
   $t.off('click', '.btn-view-on-map').on('click', '.btn-view-on-map', async function () {
+    closeAllCentroMenus();
     const idx = Number(this.dataset.idx);
     if (!Number.isFinite(idx)) return;
     
@@ -141,6 +166,7 @@ export function registerTablaCentrosEventos() {
 
   /* --- Editar centro --- */
   $t.off('click', '.editar-centro').on('click', '.editar-centro', function () {
+    closeAllCentroMenus();
     const idx = Number(this.dataset.idx);
     if (!Number.isFinite(idx)) return;
     Estado.currentCentroIdx = idx;
@@ -170,6 +196,7 @@ export function registerTablaCentrosEventos() {
 
   /* --- Eliminar centro --- */
   $t.off('click', '.eliminar-centro').on('click', '.eliminar-centro', async function () {
+    closeAllCentroMenus();
     const idx = Number(this.dataset.idx);
     const c = Estado.centros?.[idx];
     if (!c) return;
