@@ -76,7 +76,7 @@ button{font:inherit}
 }
 .mmpp-nav .brand .logo{
   width:36px; height:36px; display:grid; place-items:center;
-  background:linear-gradient(135deg,#4f46e5,#9333ea);
+  background:linear-gradient(135deg,var(--color-brand-deep),var(--color-primary));
   border-radius:10px; font-weight:900; color:#fff;
 }
 

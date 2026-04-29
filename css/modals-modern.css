@@ -110,7 +110,7 @@
 }
 
 .am-tab-btn.active {
-  color: #4f46e5;
+  color: var(--color-primary);
 }
 
 .am-tab-btn.active::after {
@@ -120,7 +120,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: #4f46e5;
+  background: var(--color-primary);
   border-radius: 2px;
 }
 
@@ -211,8 +211,8 @@
 
 .am-input:focus, .am-select:focus {
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 168, 168, 0.1);
   background: #fcfdfe;
 }
 
@@ -224,7 +224,7 @@
   border-bottom: 1px solid #f1f5f9;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #4f46e5;
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -506,7 +506,7 @@
 }
 .maest-tabs--sub .maest-tab-btn { padding: 8px 14px; font-size: 12px; }
 .maest-tab-btn:hover { color: #1e293b; }
-.maest-tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+.maest-tab-btn.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
 
 .maest-panel { display: none; }
 .maest-panel.active { display: block; }

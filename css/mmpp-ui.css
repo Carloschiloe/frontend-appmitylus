@@ -8,7 +8,7 @@
   --panel: var(--card, #ffffff);
   --bg: var(--bg, #f6f8ff);
   --border: var(--border, #e5e7eb);
-  --brand1: var(--brand-1, #4f46e5);    /* usa brand-1 de layout si existe */
+  --brand1: var(--brand-1, var(--color-primary));    /* usa brand-1 de layout si existe */
   --brand2: var(--brand-2, #9333ea);    /* usa brand-2 de layout si existe */
   --chipBg:#ede9fe;
   --chipFg:#6d28d9;
@@ -55,10 +55,10 @@ html,body{
   height:48px; border-radius:14px; border:0;
   background:linear-gradient(90deg,var(--brand1),var(--brand2));
   color:#fff; font-weight:800; font-size:15px; cursor:pointer;
-  box-shadow:0 8px 20px rgba(79,70,229,.25);
+  box-shadow:0 8px 20px rgba(0, 168, 168,.25);
   transition:transform .04s ease, filter .2s ease, box-shadow .2s ease;
 }
-.mmpp-button:hover{ filter:brightness(1.05); box-shadow:0 10px 24px rgba(79,70,229,.28); }
+.mmpp-button:hover{ filter:brightness(1.05); box-shadow:0 10px 24px rgba(0, 168, 168,.28); }
 .mmpp-button:active{ transform:translateY(1px); }
 
 .mmpp-add{

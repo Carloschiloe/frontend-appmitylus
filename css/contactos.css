@@ -842,8 +842,8 @@
   color: #23405f;
 }
 .mu-step-btn.is-active {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
   color: #fff;
 }
 .mu-step-summary {
@@ -893,8 +893,8 @@
   cursor: pointer;
 }
 .mu-route-btn.is-active {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
   color: #fff;
 }
 .muestreo-route-hint {
@@ -946,7 +946,7 @@
 .mu-section-title {
   font-size: .82rem;
   font-weight: 700;
-  color: #4f46e5;
+  color: var(--color-primary);
   margin-bottom: 8px;
 }
 .mu-cat-chip {
@@ -1133,8 +1133,8 @@
 .modal.modal-muestreo input.am-input:focus,
 .modal.modal-muestreo select.am-select:focus,
 .modal.modal-muestreo-side input.am-input:focus {
-  border-color: #4f46e5 !important;
-  box-shadow: 0 0 0 3px rgba(79,70,229,.1) !important;
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(0, 168, 168,.1) !important;
 }
 .modal.modal-muestreo input[type="date"].am-input {
   padding-right: 8px !important;

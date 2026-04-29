@@ -243,8 +243,8 @@
 
 .am-tab-btn.active {
   background: #ffffff;
-  color: #4f46e5;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.12);
+  color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0, 168, 168, 0.15);
 }
 
 /* Títulos de Sección */
@@ -373,8 +373,8 @@ select.resumen-select {
 .am-input:focus,
 select.modern-select:focus,
 select.resumen-select:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 168, 168, 0.12);
 }
 
 .am-search-field {

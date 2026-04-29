@@ -80,7 +80,7 @@
 .am-tabs-main#centrosViewTabs .am-tab-btn.active {
   background: var(--color-primary);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 168, 168, 0.25);
 }
 
 .am-tabs-main#centrosViewTabs .am-tab-btn:hover:not(.active) {
