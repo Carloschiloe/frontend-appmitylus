@@ -241,11 +241,13 @@ body {
 }
 
 .hero {
-  background: linear-gradient(120deg, #0f766e 0%, #155e75 100%);
-  color: #ecfeff;
-  border-radius: 16px;
-  padding: 22px;
-  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.16);
+  background: transparent;
+  color: var(--color-text);
+  border-radius: 0;
+  padding: 4px 0 20px;
+  box-shadow: none;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 4px;
 }
 
 .hero .eyebrow {
@@ -254,19 +256,22 @@ body {
   letter-spacing: 0.12em;
   font-size: 11px;
   font-weight: 700;
-  opacity: 0.85;
+  color: var(--color-primary);
 }
 
 .hero h1 {
-  margin: 8px 0;
-  font-size: 30px;
-  line-height: 1.1;
+  margin: 6px 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text);
 }
 
 .hero p {
   margin: 0;
   max-width: 72ch;
-  color: #d1fae5;
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 
 .dashboard-controls {
