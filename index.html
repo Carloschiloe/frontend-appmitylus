@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Abastecimiento MMPP | Control Operativo</title>
-  <meta name="description" content="Plataforma de Abastecimiento MMPP con gestion de proveedores, biomasa, gestiones e historial.">
+  <title>Dashboard — Mitynex</title>
+  <meta name="description" content="Mitynex — Plataforma integral para la gestión de choritos.">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
@@ -18,10 +19,21 @@
 
     <main class="content">
       <header id="dashboard-home" class="hero">
-        <p class="eyebrow">Panel principal</p>
-        <h1>Dashboard · Mitynex</h1>
+        <p class="eyebrow" id="dash-welcome">Panel principal</p>
+        <h1>Dashboard</h1>
         <p>Gestión integral de abastecimiento de choritos — proveedores, biomasa e historial operativo.</p>
       </header>
+      <script>
+        (function () {
+          try {
+            var u = window.__AUTH__ && window.__AUTH__.getUser ? window.__AUTH__.getUser() : null;
+            if (u) {
+              var name = u.nombre || u.email.split('@')[0] || '';
+              if (name) document.getElementById('dash-welcome').textContent = 'Bienvenido, ' + name;
+            }
+          } catch (e) {}
+        })();
+      </script>
 
       <section class="dashboard-controls" aria-label="Filtros globales de dashboard">
         <select id="dashFiltroResp" class="dash-select" aria-label="Filtrar por responsable">
