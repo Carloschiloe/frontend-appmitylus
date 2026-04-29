@@ -21,8 +21,8 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #f8fbff;
-  color: #1f3554;
+  background: #f8fafc;
+  color: #475569;
   font-size: 11px !important;
   font-weight: 800 !important;
   padding: 12px 10px !important;
@@ -146,7 +146,7 @@
 #tablaMuestreos .mu-badge-producto.is-carne { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
 
 /* Botones y Cifras */
-#tablaMuestreos .mu-num-main { font-weight: 700; color: #1f3554; font-size: 14px; }
+#tablaMuestreos .mu-num-main { font-weight: 700; color: #475569; font-size: 14px; }
 #tablaMuestreos .mu-rechazo-btn {
   border: 1px solid #d5e0ef;
   border-radius: 999px;
@@ -155,7 +155,7 @@
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
-  background: #f8fbff;
+  background: #f8fafc;
   color: #2b4e76;
   white-space: nowrap;
 }

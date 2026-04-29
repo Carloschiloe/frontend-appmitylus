@@ -24,7 +24,7 @@
   align-items: center;
   border: 1px solid #dbe3ee;
   border-radius: 10px;
-  background: #f8fbff;
+  background: #f8fafc;
   padding: 4px;
   max-width: 100%;
 }
@@ -284,7 +284,7 @@
 
 .int-status-chip {
   border: 1px solid #c9d7ea;
-  background: #f8fbff;
+  background: #f8fafc;
   color: #2f4f73;
   border-radius: 999px;
   min-height: 28px;
@@ -324,7 +324,7 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  background: #f8fbff;
+  background: #f8fafc;
 }
 
 #int-table th:nth-child(1),
@@ -389,9 +389,9 @@
 #int-table .int-type-chip {
   display: inline-flex;
   align-items: center;
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
-  color: #1e40af;
+  border: 1px solid rgba(0, 168, 168, 0.3);
+  background: #f0fdfa;
+  color: var(--color-primary-dark);
   border-radius: 999px;
   min-height: 24px;
   padding: 0 8px;
@@ -474,9 +474,9 @@
   padding: 8px 10px;
   font-size: 12px;
   font-weight: 800;
-  color: #1e3a5f;
+  color: #475569;
   border-bottom: 1px solid #dbe3ee;
-  background: #f8fbff;
+  background: #f8fafc;
 }
 
 .int-info-pop-body {
@@ -537,7 +537,7 @@
   font-size: 16px;
   letter-spacing: 0.2px;
   font-weight: 700;
-  color: #123150;
+  color: #0f172a;
 }
 
 .ag-scope .ag-head-actions {
@@ -613,7 +613,7 @@
   font-weight: 800;
   letter-spacing: 0.3px;
   font-size: 13px;
-  color: #1e3a5f;
+  color: #475569;
 }
 
 .ag-scope .ag-nav {
@@ -748,7 +748,7 @@
   border: 1px solid #dbe3ee;
   border-radius: 8px;
   padding: 6px;
-  background: #f8fbff;
+  background: #f8fafc;
 }
 
 .ag-scope .ag-item-top {
@@ -1051,7 +1051,7 @@
   height: 30px;
   border: 1px solid #dbe3ee;
   border-radius: 7px;
-  background: #f8fbff;
+  background: #f8fafc;
   color: #334155;
   cursor: pointer;
   font-size: 13px;
@@ -1069,14 +1069,14 @@
   text-align: center;
   font-size: 13px;
   font-weight: 700;
-  color: #1e3a5f;
+  color: #475569;
   padding: 0 6px;
   white-space: nowrap;
 }
 
 .act-period-today {
   border: 1px solid #c9d7ea;
-  background: #f8fbff;
+  background: #f8fafc;
   color: #0f766e;
   border-radius: 7px;
   min-height: 30px;
@@ -1134,9 +1134,9 @@
   padding: 0 10px !important;
   border: 1px solid #c9d7ea !important;
   border-radius: 8px !important;
-  background: #f8fbff !important;
+  background: #f8fafc !important;
   font-size: 13px !important;
-  color: #1e3a5f !important;
+  color: #475569 !important;
   cursor: pointer;
   box-sizing: border-box;
   /* neutralizar Materialize sin romper flex */
@@ -1164,7 +1164,7 @@
   border: 1px solid #c9d7ea !important;
   border-radius: 8px !important;
   padding: 6px 10px !important;
-  background: #f8fbff !important;
+  background: #f8fafc !important;
   font-size: 13px !important;
   flex: 1 1 180px;
   max-width: 260px;
@@ -1230,7 +1230,7 @@
 
 .act-prov-name {
   font-weight: 700;
-  color: #1e3a5f;
+  color: #475569;
   font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
@@ -1282,7 +1282,7 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  background: #f8fbff;
+  background: #f8fafc;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1439,7 +1439,7 @@
   text-align: left;
   font-size: 13px;
   font-weight: 600;
-  color: #1e3a5f;
+  color: #475569;
   transition: background 0.1s;
 }
 
@@ -1478,7 +1478,7 @@
 
 .act-export-btn {
   border: 1px solid #c9d7ea;
-  background: #f8fbff;
+  background: #f8fafc;
   color: #475569;
   border-radius: 7px;
   min-height: 32px;
@@ -1493,7 +1493,7 @@
 .act-export-btn:hover {
   background: #eef4fb;
   border-color: #a8c0da;
-  color: #1e3a5f;
+  color: #475569;
 }
 
 @media (max-width: 900px) {

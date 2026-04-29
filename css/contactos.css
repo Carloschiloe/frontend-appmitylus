@@ -649,8 +649,8 @@
 }
 
 .muestra-chip.muestra-resultado-recibido {
-  background: #eef2ff;
-  border-color: #c7d2fe;
+  background: #f0fdfa;
+  border-color: rgba(0,168,168,0.3);
   color: #4338ca;
 }
 

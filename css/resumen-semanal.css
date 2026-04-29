@@ -178,8 +178,8 @@
 }
 
 .chip-tel {
-  background: #eef2ff;
-  border-color: #c7d2fe;
+  background: #f0fdfa;
+  border-color: rgba(0,168,168,0.3);
   color: #3730a3;
 }
 
@@ -216,8 +216,8 @@
 }
 
 .segmented button.is-active {
-  background: #eef2ff;
-  color: #1e40af;
+  background: #f0fdfa;
+  color: var(--color-primary-dark);
 }
 
 @media print {

@@ -305,9 +305,9 @@
 .am-stage-btn {
   padding: 4px 12px;
   border-radius: 8px;
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
-  color: #1e40af;
+  border: 1px solid rgba(0, 168, 168, 0.3);
+  background: #f0fdfa;
+  color: var(--color-primary-dark);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -315,9 +315,9 @@
 }
 
 .am-stage-btn.active {
-  background: #1d4ed8;
+  background: var(--color-primary);
   color: #ffffff;
-  border-color: #1d4ed8;
+  border-color: var(--color-primary);
 }
 
 /* Barra de Filtros y Búsqueda */
