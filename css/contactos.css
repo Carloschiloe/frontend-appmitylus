@@ -101,7 +101,7 @@
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-  color: #123150;
+  color: #0f172a;
 }
 
 .consulta-filter-state {
@@ -111,7 +111,7 @@
   border-radius: 999px;
   border: 1px solid #c9d7ea;
   background: #f7fbff;
-  color: #375a7f;
+  color: #5f6f86;
   font-size: 11px;
   font-weight: 700;
   display: inline-flex;
@@ -121,7 +121,7 @@
 .consulta-filter-state[data-level="none"] {
   background: #f7fbff;
   border-color: #c9d7ea;
-  color: #375a7f;
+  color: #5f6f86;
 }
 
 .consulta-filter-state[data-level="low"] {
@@ -233,7 +233,7 @@
   gap: 6px;
   border: 1px solid #bfd0e5;
   background: #f5f9ff;
-  color: #23415f;
+  color: #475569;
   border-radius: 999px;
   font-weight: 700;
   font-size: 0.84rem;
@@ -265,7 +265,7 @@
 .gestion-focus-btn {
   border: 1px solid #c9d7ea;
   background: #fff;
-  color: #314e6e;
+  color: #5f6f86;
   border-radius: 999px;
   min-height: 28px;
   padding: 4px 10px;
@@ -292,9 +292,9 @@
 }
 
 .gestion-stage-btn {
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
-  color: #1e40af;
+  border: 1px solid rgba(0, 168, 168, 0.3);
+  background: #f0fdfa;
+  color: var(--color-primary-dark);
   border-radius: 999px;
   min-height: 26px;
   padding: 3px 9px;
@@ -304,8 +304,8 @@
 }
 
 .gestion-stage-btn.is-active {
-  border-color: #1d4ed8;
-  background: #1d4ed8;
+  border-color: var(--color-primary);
+  background: var(--color-primary);
   color: #fff;
 }
 
@@ -325,7 +325,7 @@
   border: 1px dashed #c9d7ea;
   border-radius: 10px;
   background: #f7fbff;
-  color: #314e6e;
+  color: #5f6f86;
   font-size: 12px;
   padding: 7px 10px;
 }
@@ -334,7 +334,7 @@
 .consulta-subline {
   margin-top: 6px !important;
   font-size: 12px;
-  color: #4f6783 !important;
+  color: #5f6f86 !important;
 }
 
 .helper {
@@ -370,7 +370,7 @@
   border-radius: 10px;
   border: 1px solid #c9d7ea;
   background: #fff;
-  color: #1e3a5f;
+  color: #475569;
   text-decoration: none;
   font-weight: 700;
 }
@@ -383,7 +383,7 @@
   border-radius: 999px;
   border: 1px solid #c9d7ea;
   background: #f4f8ff;
-  color: #1e3a5f;
+  color: #475569;
   font-size: 11px;
   font-weight: 800;
   display: inline-flex;
@@ -551,8 +551,8 @@
 }
 
 .gestion-item.is-next {
-  border-color: #bfdbfe;
-  background: #f0f7ff;
+  border-color: rgba(0, 168, 168, 0.3);
+  background: #f0fdfa;
 }
 
 .gestion-item.is-nodate {
@@ -602,9 +602,9 @@
   color: #2f4f73;
 }
 .gestion-src-chip.src-interaccion {
-  background: #eef6ff;
+  background: #dbeafe;
   border-color: #c8ddff;
-  color: #1f4f96;
+  color: #3b82f6;
 }
 .gestion-src-chip.src-visita {
   background: #ecfdf5;
@@ -637,9 +637,9 @@
 }
 
 .muestra-chip.muestra-enviada-planta {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+  background: var(--color-info-bg);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: var(--color-info);
 }
 
 .muestra-chip.muestra-en-analisis {
@@ -809,7 +809,7 @@
 .mu-side-help {
   margin: -2px 0 8px;
   font-size: .78rem;
-  color: #4f6783;
+  color: #5f6f86;
 }
 .mu-side-actions {
   display: flex;
