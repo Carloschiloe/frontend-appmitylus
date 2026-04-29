@@ -117,6 +117,7 @@
   border: 1px solid var(--color-border);
   margin-left: 24px;
   margin-right: 24px;
+  position: relative;
 }
 
 .am-filter-left {
@@ -124,39 +125,177 @@
   align-items: center;
   gap: 12px;
   flex: 1;
+  min-width: 0;
 }
 
 .centro-filter-stack {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  width: auto;
+  flex: 1;
+  min-width: 0;
 }
 
 .am-filter-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.am-filter-row .am-search-field {
+  flex: 1 1 auto;
+  min-width: 280px;
+}
+
+.centro-select-comuna {
+  max-width: 220px;
+  flex: 0 0 220px;
+}
+
+.centro-filter-popover-wrap {
+  position: relative;
+}
+
+.centro-filter-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.centro-filter-trigger i {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.centro-filter-trigger.is-open i {
+  transform: rotate(180deg);
+}
+
+.centro-filter-trigger.is-active {
+  border-color: rgba(14, 116, 144, 0.22);
+  color: #0f766e;
+  background: rgba(14, 116, 144, 0.06);
+}
+
+.centro-filter-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.centro-filter-panel {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.centro-filter-panel[hidden] {
+  display: none;
+}
+
+.centro-filter-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: max-content;
+  min-width: 560px;
+  max-width: min(88vw, 720px);
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #dbe3ef;
+  background: #fff;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.10);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.am-filter-bar.has-open-panel {
+  padding-bottom: 72px;
+}
+
+.centro-filter-popover-wrap.align-right .centro-filter-popover {
+  left: auto;
+  right: 0;
+}
+
+.centro-filter-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+  flex: 0 0 auto;
+}
+
+.centro-filter-panel-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.centro-filter-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 0;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.centro-filter-mini {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.centro-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.centro-filter-label {
+  min-width: unset;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  white-space: nowrap;
 }
 
 .centro-filter-chips {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 5px;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .centro-filter-chip {
-  padding: 7px 12px;
+  padding: 5px 9px;
   border-radius: 999px;
   border: 1px solid #dbe3ef;
   background: #fff;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .centro-filter-chip:hover {
@@ -168,6 +307,45 @@
   background: rgba(14, 116, 144, 0.10);
   border-color: rgba(14, 116, 144, 0.18);
   color: #0f766e;
+}
+
+.centro-active-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.centro-active-filters:empty {
+  display: none;
+}
+
+.centro-active-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid #dbe3ef;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.centro-active-filter button {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  font-size: 14px;
+}
+
+.centro-active-filter button:hover {
+  color: #0f172a;
 }
 
 /* TABLES */
@@ -455,15 +633,34 @@
     align-items: stretch;
   }
 
+  .centro-filter-stack {
+    width: 100%;
+  }
+
   .am-export-group {
     align-self: flex-end;
   }
 }
 
 @media (max-width: 768px) {
+  .centro-filter-stack {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
   .am-filter-row {
     flex-direction: column;
     align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .centro-filter-group {
+    align-items: stretch;
+  }
+
+  .centro-filter-label {
+    min-width: unset;
   }
 
   .centro-filter-chips {
@@ -472,6 +669,44 @@
 
   .centro-filter-chip {
     justify-content: center;
+  }
+
+  .centro-select-comuna {
+    max-width: none;
+  }
+
+  .centro-filter-popover-wrap {
+    width: 100%;
+  }
+
+  .centro-filter-trigger {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .centro-filter-popover {
+    position: static;
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    margin-top: 8px;
+    box-shadow: none;
+    display: block;
+  }
+
+  .am-filter-bar.has-open-panel {
+    padding-bottom: 16px;
+  }
+
+  .centro-filter-panel-head,
+  .centro-filter-panel-actions,
+  .centro-filter-group,
+  .centro-filter-chips {
+    flex-wrap: wrap;
+  }
+
+  .centro-filter-panel-actions {
+    margin-top: 12px;
   }
 
   .am-export-group {

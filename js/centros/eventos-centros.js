@@ -11,7 +11,7 @@ import { toast as uiToast } from '../ui/toast.js';
 const $   = (sel, ctx = document) => (ctx.querySelector ? ctx.querySelector(sel) : null);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toTitleCase = (str) => (str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-const SANITARIO_LABELS = { rojo:'Suspendida', naranja:'Alerta activa', amarillo:'En seguimiento', verde:'Sin alertas', gris:'Sin datos' };
+const SANITARIO_LABELS = { ok:'OK', alerta:'Con alerta', bloqueada:'Bloqueada', sin_datos:'Sin datos' };
 const fmtDate = (v) => {
   if (!v) return '';
   const s = String(v);
@@ -22,6 +22,26 @@ const fmtDate = (v) => {
 
 function toast(msg, variant = 'success') {
   uiToast(msg, { variant: variant === 'red' ? 'error' : variant });
+}
+
+function normalizeEstadoArea(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return 'Sin estado';
+  if (['abierta', 'activo', 'activa', 'vigente'].includes(raw)) return 'Abierta';
+  if (['cerrada', 'suspendida', 'bloqueada'].includes(raw)) return 'Cerrada';
+  if (['inactiva', 'inactivo'].includes(raw)) return 'Inactiva';
+  if (['eliminada', 'eliminado'].includes(raw)) return 'Eliminada';
+  return 'Sin estado';
+}
+
+function getSanitaryState(sanitario = {}, estadoAreaSernapesca = '') {
+  const areaState = normalizeEstadoArea(estadoAreaSernapesca || sanitario.estadoSernapesca || '');
+  if (areaState === 'Cerrada') return 'bloqueada';
+  const raw = String(sanitario.estado || '').trim().toLowerCase();
+  if (raw === 'rojo') return 'bloqueada';
+  if (raw === 'naranja' || raw === 'amarillo') return 'alerta';
+  if (raw === 'verde') return 'ok';
+  return 'sin_datos';
 }
 
 /* Refresca tabla + mapa desde API */
@@ -101,8 +121,8 @@ export function registerTablaCentrosEventos() {
         if (k === 'especies' && !v && Array.isArray(c.especies)) v = c.especies.join(', ');
         if (k === 'codigoArea') v = c.codigoArea ?? d.codigoArea ?? v;
         if (k === 'areaPSMB') v = c.areaPSMB ?? sanitario.areaPSMB ?? v;
-        if (k === 'estadoSanitario') v = sanitario.estado ? (SANITARIO_LABELS[sanitario.estado] || toTitleCase(sanitario.estado)) : v;
-        if (k === 'estadoAreaSernapesca') v = c.estadoAreaSernapesca ?? sanitario.estadoSernapesca ?? v;
+        if (k === 'estadoSanitario') v = SANITARIO_LABELS[getSanitaryState(sanitario, c.estadoAreaSernapesca)] || v;
+        if (k === 'estadoAreaSernapesca') v = normalizeEstadoArea(c.estadoAreaSernapesca ?? sanitario.estadoSernapesca ?? v);
         if (v !== undefined && v !== null && String(v) !== '') {
           html += `<tr><th>${esc(prettyKey(k))}</th><td>${k.startsWith('fecha') ? fmtDate(v) : esc(v)}</td></tr>`;
         }

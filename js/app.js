@@ -38,7 +38,7 @@ const APPLOG  = (...a) => console.log('[APP]', ...a);
 const APPWARN = (...a) => console.warn('[APP]', ...a);
 const APPERR  = (...a) => console.error('[APP]', ...a);
 
-const CENTROS_CACHE_KEY    = 'mmpp.centros.cache.v1';
+const CENTROS_CACHE_KEY    = 'mmpp.centros.cache.v2';
 const CENTROS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 /* ── Cache ──────────────────────────────────────────────────────────────── */
