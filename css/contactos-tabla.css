@@ -213,13 +213,13 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  background: #f8fbff;
-  color: #1f3554;
+  background: #f8fafc;
+  color: #475569;
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  border-bottom: 1px solid #dbe3ee !important;
+  border-bottom: 1px solid #e2e8f0 !important;
   white-space: normal !important;
   overflow: visible !important;
   text-overflow: clip !important;
@@ -265,7 +265,7 @@
 #tablaVisitas tbody tr:hover,
 #tablaPersonas tbody tr:hover,
 #tablaMuestreos tbody tr:hover {
-  background: #f8fbff !important;
+  background: #f1f5f9 !important;
 }
 
 /* ---------------- Contactos ---------------- */
@@ -431,7 +431,7 @@
 
 #tablaContactos tfoot th {
   font-weight: 800;
-  background: #f8fbff;
+  background: #f8fafc;
   border-top: 1px solid #dbe3ee !important;
 }
 

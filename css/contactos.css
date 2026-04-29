@@ -212,7 +212,7 @@
   border-radius: 16px;
   border: 1px solid #d4deed;
   box-shadow: 0 22px 60px rgba(2, 17, 37, 0.22);
-  background: #f8fbff;
+  background: #f8fafc;
 }
 
 .app-modal .modal-content {
@@ -221,7 +221,7 @@
 
 .app-modal .modal-footer {
   border-top: 1px solid #d9e2f1;
-  background: #f8fbff;
+  background: #f8fafc;
   padding: 10px 14px;
 }
 
@@ -536,7 +536,7 @@
 .gestion-item {
   border: 1px solid #e5ebf3;
   border-radius: 8px;
-  background: #f8fbff;
+  background: #f8fafc;
   padding: 8px;
 }
 
@@ -886,7 +886,7 @@
   border: 1px solid #c8d3e5;
   border-radius: 999px;
   background: #fff;
-  color: #1f3554;
+  color: #0f172a;
   font-weight: 700;
   min-height: 30px;
   padding: 0 10px;
@@ -908,7 +908,7 @@
 .muestreo-advanced > summary {
   cursor: pointer;
   font-weight: 700;
-  color: #1f3554;
+  color: #0f172a;
   margin-bottom: 6px;
   font-size: .92rem;
 }
@@ -1044,14 +1044,17 @@
 .muestreo-table th,
 .muestreo-table td {
   padding: 6px 8px;
-  border-bottom: 1px solid #e7edf8;
+  border-bottom: 1px solid #e2e8f0;
   text-align: left;
   font-size: .9rem;
 }
 .muestreo-table th {
-  background: #f2f6ff;
-  color: #21344f;
+  background: #f8fafc;
+  color: #475569;
   font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 .muestreo-table td .am-input {
   margin: 0;

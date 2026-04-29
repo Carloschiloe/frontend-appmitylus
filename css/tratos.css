@@ -42,6 +42,9 @@
 /* ── Tabla ───────────────────────────────────────────────────────────────── */
 .tratos-table-wrap {
   overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
 }
 
 .tratos-table {
@@ -68,7 +71,7 @@
 }
 
 .trato-row { transition: background 0.1s; }
-.trato-row:hover { background: #f0fdf4; cursor: pointer; }
+.trato-row:hover { background: #f1f5f9; cursor: pointer; }
 
 .trato-td-proveedor { font-weight: 600; color: #0f172a; }
 
@@ -185,7 +188,7 @@
   transition: background 0.1s;
 }
 .trato-autocomplete-item:last-child { border-bottom: none; }
-.trato-autocomplete-item:hover { background: #f0fdf4; }
+.trato-autocomplete-item:hover { background: #f1f5f9; }
 .trato-autocomplete-item small { color: #94a3b8; margin-left: 6px; }
 
 /* Historial responsable */
