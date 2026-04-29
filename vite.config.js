@@ -14,7 +14,7 @@ const EXCLUDE_FROM_COPY = [
 const copyStaticAssets = {
   name: 'copy-static-assets',
   closeBundle() {
-    for (const dir of ['html', 'css', 'js']) {
+    for (const dir of ['html', 'css', 'js', 'img']) {
       if (existsSync(dir)) {
         cpSync(dir, `dist/${dir}`, {
           recursive: true,

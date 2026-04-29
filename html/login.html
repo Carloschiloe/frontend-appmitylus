@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
+  <link rel="icon" type="image/png" href="/img/favicon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Iniciar sesión — AppMMPP</title>
+  <title>Iniciar sesión — Mitynex</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -159,40 +160,22 @@
     .login-brand {
       display: flex;
       align-items: center;
-      gap: 14px;
-      margin-bottom: 32px;
+      justify-content: center;
+      margin-bottom: 28px;
       animation: fadeUp 0.6s 0.15s both;
     }
 
-    .login-brand-mark {
-      width: 48px; height: 48px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #0f766e, #14b8a6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 17px;
-      font-weight: 800;
-      color: #fff;
-      flex-shrink: 0;
-      box-shadow: 0 0 20px var(--teal-glow);
+    .login-brand-logo {
+      width: 220px;
+      max-width: 100%;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 0 18px rgba(0,168,168,0.35));
       animation: logoPulse 4s ease-in-out infinite;
     }
     @keyframes logoPulse {
-      0%, 100% { box-shadow: 0 0 20px var(--teal-glow); }
-      50%       { box-shadow: 0 0 35px rgba(20,184,166,0.55); }
-    }
-
-    .login-brand-text h1 {
-      font-size: 15px;
-      font-weight: 700;
-      color: #f1f5f9;
-      line-height: 1.2;
-    }
-    .login-brand-text p {
-      font-size: 12px;
-      color: #64748b;
-      margin-top: 2px;
+      0%, 100% { filter: drop-shadow(0 0 18px rgba(0,168,168,0.35)); }
+      50%       { filter: drop-shadow(0 0 32px rgba(0,168,168,0.6)); }
     }
 
     .login-title {
@@ -399,11 +382,7 @@
   <!-- Card -->
   <div class="login-card">
     <div class="login-brand">
-      <div class="login-brand-mark">AM</div>
-      <div class="login-brand-text">
-        <h1>Abastecimiento MMPP</h1>
-        <p>Control operativo</p>
-      </div>
+      <img src="/img/logo-login.png" alt="Mitynex" class="login-brand-logo" />
     </div>
 
     <h2 class="login-title">Bienvenido</h2>
@@ -442,7 +421,7 @@
       </div>
     </form>
 
-    <p class="login-footer">Abastecimiento MMPP · Sistema interno</p>
+    <p class="login-footer">Mitynex · Plataforma integral para la gestión de choritos</p>
   </div>
 
   <script>

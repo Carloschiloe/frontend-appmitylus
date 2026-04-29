@@ -14,7 +14,7 @@ const MENU_STRUCTURE = [
   },
   {
     id: 'contactos',
-    label: 'Proveedores MMPP',
+    label: 'Proveedores',
     icon: 'bi-person-lines-fill',
     links: [
       { label: 'Bandeja', href: '/html/Abastecimiento/contactos/contactos.html#tab-gestion', icon: 'bi-inbox' },
@@ -121,11 +121,7 @@ export class Sidebar {
     this.container.innerHTML = `
       <aside class="sidebar" aria-label="Navegacion principal">
         <div class="brand">
-          <span class="brand-mark">AM</span>
-          <div>
-            <p class="brand-title">Abastecimiento MMPP</p>
-            <p class="brand-sub">Control operativo</p>
-          </div>
+          <img src="/img/logo-sidebar.png" alt="Mitynex" class="brand-logo" />
         </div>
 
         <nav id="sideNav" class="menu">

@@ -1,5 +1,5 @@
 /* ============================================================
-   tokens.css — Sistema de Diseño Unificado MMPP
+   tokens.css — Sistema de Diseño Mitynex
    FUENTE ÚNICA DE VERDAD para todas las variables CSS.
 
    REGLA: Ningún otro archivo CSS debe declarar un bloque :root
@@ -7,18 +7,19 @@
    ============================================================ */
 
 :root {
-  /* ── Paleta de color principal (Teal/Slate) ── */
-  --color-primary:        #0f766e;
-  --color-primary-dark:   #0d665f;
-  --color-primary-light:  #2dd4bf;
-  --color-secondary:      #475569;
-
+  /* ── Paleta Mitynex (Azul Profundo + Aqua marino) ── */
+  --color-primary:        #00A8A8;   /* Aqua — acento principal */
+  --color-primary-dark:   #007f7f;   /* Aqua oscuro — hover/pressed */
+  --color-primary-light:  #33cccc;   /* Aqua claro — highlights */
+  --color-secondary:      #4A5568;   /* Gris Texto */
+  --color-brand-deep:     #0B3C5D;   /* Azul Profundo — sidebar/headers */
+  --color-brand-deep-alt: #082d47;   /* Azul más oscuro — sidebar fondo alt */
 
   /* ── Superficies y fondos ── */
-  --color-bg:             #f4f7fb;
+  --color-bg:             #f4f6f8;   /* Gris Claro Mitynex */
   --color-surface:        #ffffff;
-  --color-sidebar:        #0f172a;
-  --color-sidebar-alt:    #111c33;
+  --color-sidebar:        #0B3C5D;   /* Azul Profundo marino */
+  --color-sidebar-alt:    #082d47;   /* Más oscuro para degradado */
 
   /* ── Bordes ── */
   --color-border:         #dbe3ee;
