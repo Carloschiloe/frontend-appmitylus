@@ -261,10 +261,11 @@ body {
 
 .hero h1 {
   margin: 6px 0 4px;
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   line-height: 1.2;
   color: var(--color-text);
+  letter-spacing: -0.02em;
 }
 
 .hero p {

@@ -19,21 +19,32 @@
 
     <main class="content">
       <header id="dashboard-home" class="hero">
-        <p class="eyebrow" id="dash-welcome">Panel principal</p>
-        <h1>Dashboard</h1>
+        <p class="eyebrow">Panel principal · Mitynex</p>
+        <h1 id="dash-welcome">Dashboard</h1>
         <p>Gestión integral de abastecimiento de choritos — proveedores, biomasa e historial operativo.</p>
       </header>
       <script>
         (function () {
+          function applyWelcome(u) {
+            if (!u) return;
+            var nombre = (u.nombre || '').trim();
+            var emailPrefix = u.email ? u.email.split('@')[0] : '';
+            var genericos = ['administrador', 'admin', 'usuario', 'user'];
+            var name = (nombre && !genericos.includes(nombre.toLowerCase())) ? nombre : emailPrefix;
+            if (name) document.getElementById('dash-welcome').textContent = 'Bienvenido, ' + name;
+          }
           try {
             var u = window.__AUTH__ && window.__AUTH__.getUser ? window.__AUTH__.getUser() : null;
-            if (u) {
-              var nombre = (u.nombre || '').trim();
-              var emailPrefix = u.email ? u.email.split('@')[0] : '';
-              var genericos = ['administrador', 'admin', 'usuario', 'user'];
-              var name = (nombre && !genericos.includes(nombre.toLowerCase())) ? nombre : emailPrefix;
-              if (name) document.getElementById('dash-welcome').textContent = 'Bienvenido, ' + name;
-            }
+            applyWelcome(u);
+            /* Sincronizar con el servidor para tener nombre actualizado */
+            fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ammpp_token') || '') } })
+              .then(function(r){ return r.ok ? r.json() : null; })
+              .then(function(data){
+                if (data && data.usuario) {
+                  localStorage.setItem('ammpp_user', JSON.stringify(data.usuario));
+                  applyWelcome(data.usuario);
+                }
+              }).catch(function(){});
           } catch (e) {}
         })();
       </script>
