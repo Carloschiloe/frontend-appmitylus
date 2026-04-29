@@ -96,16 +96,16 @@
         </div>
 
         <div class="gestion-filters" id="gestionFilters">
-          <select id="gestionFltProveedor" class="browser-default modern-select" aria-label="Filtrar por proveedor">
+          <select id="gestionFltProveedor" class="modern-select" aria-label="Filtrar por proveedor">
             <option value="">Todos los proveedores</option>
           </select>
-          <select id="gestionFltContacto" class="browser-default modern-select" aria-label="Filtrar por contacto">
+          <select id="gestionFltContacto" class="modern-select" aria-label="Filtrar por contacto">
             <option value="">Todos los contactos</option>
           </select>
-          <select id="gestionFltResponsable" class="browser-default modern-select" aria-label="Filtrar por responsable">
+          <select id="gestionFltResponsable" class="modern-select" aria-label="Filtrar por responsable">
             <option value="">Todos los responsables</option>
           </select>
-          <select id="gestionFltFuente" class="browser-default modern-select" aria-label="Filtrar por origen de dato">
+          <select id="gestionFltFuente" class="modern-select" aria-label="Filtrar por origen de dato">
             <option value="">Todas las fuentes</option>
             <option value="interaccion">Interacciones remotas</option>
             <option value="contacto">Contactos</option>
@@ -264,7 +264,7 @@
               </button>
             </div>
 
-            <select id="trt-f-estado" class="browser-default act-select" aria-label="Estado del trato" style="max-width:190px;">
+            <select id="trt-f-estado" class="act-select" aria-label="Estado del trato" style="max-width:190px;">
               <option value="">Todos los estados</option>
               <option value="disponible">Disponible</option>
               <option value="semi_acordado">Semi-acordado</option>
@@ -360,16 +360,16 @@
         <!-- Barra de filtros -->
         <div class="act-filters-bar" style="margin:10px 0 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
           <div class="act-filters-left" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex: 1;">
-            <select id="muFltProveedor" class="browser-default act-select" style="min-width: 180px;" aria-label="Filtrar por proveedor">
+            <select id="muFltProveedor" class="act-select" style="min-width: 180px;" aria-label="Filtrar por proveedor">
               <option value="">Todos los proveedores</option>
             </select>
-            <select id="muFltContacto" class="browser-default act-select" style="min-width: 160px;" aria-label="Filtrar por contacto">
+            <select id="muFltContacto" class="act-select" style="min-width: 160px;" aria-label="Filtrar por contacto">
               <option value="">Todos los contactos</option>
             </select>
-            <select id="muFltResponsable" class="browser-default act-select" style="min-width: 160px;" aria-label="Filtrar por responsable">
+            <select id="muFltResponsable" class="act-select" style="min-width: 160px;" aria-label="Filtrar por responsable">
               <option value="">Todos los responsables</option>
             </select>
-            <select id="muFltProducto" class="browser-default act-select" style="min-width: 150px;" aria-label="Filtrar por tipo de producto">
+            <select id="muFltProducto" class="act-select" style="min-width: 150px;" aria-label="Filtrar por tipo de producto">
               <option value="">Todos los productos</option>
             </select>
 
@@ -567,7 +567,7 @@
                     </div>
                     <div>
                       <label class="am-label" for="muestreoCentro">Centro</label>
-                      <select id="muestreoCentro" class="am-input browser-default" style="height:42px;padding:0 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;box-sizing:border-box;width:100%;">
+                      <select id="muestreoCentro" class="am-select">
                         <option value="">— —</option>
                       </select>
                     </div>
@@ -579,7 +579,7 @@
                   <div style="display:grid;grid-template-columns:1fr 160px;gap:12px;">
                     <div>
                       <label class="am-label" for="muestreoResponsable">Responsable</label>
-                      <select id="muestreoResponsable" class="am-input browser-default" style="height:42px;padding:0 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;box-sizing:border-box;width:100%;">
+                      <select id="muestreoResponsable" class="am-select">
                         <option value="">— Seleccionar —</option>
                       </select>
                     </div>
@@ -673,7 +673,7 @@
               <!-- Filtros (ocultos en modo edición) -->
               <div id="muHistorialFilterRow" style="display:flex;gap:10px;margin-bottom:12px;">
                 <input id="muResumenBuscar" class="am-input" type="text" placeholder="Buscar proveedor o centro..." style="flex:1;">
-                <select id="muResumenPeriodo" class="am-input browser-default" style="width:150px;height:42px;">
+                <select id="muResumenPeriodo" class="am-select" style="width:150px;">
                   <option value="all">Todo</option>
                   <option value="week">Semana actual</option>
                   <option value="month">Mes actual</option>
@@ -872,14 +872,14 @@
 
               <div class="am-input-group col-6">
                 <label class="am-label" for="selectCentro">Centro operativo</label>
-                <select id="selectCentro" class="am-select browser-default" disabled>
+                <select id="selectCentro" class="am-select" disabled>
                   <option value="">Sin centro</option>
                 </select>
               </div>
 
               <div class="am-input-group col-6">
                 <label class="am-label" for="contactoResponsable">Responsable</label>
-                <select id="contactoResponsable" class="am-select browser-default">
+                <select id="contactoResponsable" class="am-select">
                   <option value="">Seleccione...</option>
                   <option value="Claudio Alba">Claudio Alba</option>
                   <option value="Patricio Alvarez">Patricio Alvarez</option>
@@ -936,7 +936,7 @@
                 <div class="am-form-grid" style="display: grid !important; grid-template-columns: repeat(12, 1fr) !important; gap: 16px 12px !important;">
                   <div class="am-input-group col-6">
                     <label class="am-label" for="contacto_proximoPaso" style="font-size: 10px;">Próximo paso</label>
-                    <select id="contacto_proximoPaso" class="am-select browser-default" style="height: 36px; padding: 0 8px;">
+                    <select id="contacto_proximoPaso" class="am-select" style="height: 36px; padding: 0 8px;">
                       <option value="">Ninguno</option>
                       <option value="Nueva visita">Nueva visita</option>
                       <option value="Tomar muestras">Tomar muestras</option>
@@ -972,7 +972,7 @@
                   
                   <div class="am-input-group col-4">
                     <label class="am-label" style="font-size: 10px;">Mes</label>
-                    <select id="asigMes" class="am-select browser-default" style="height: 36px; padding: 0 8px;">
+                    <select id="asigMes" class="am-select" style="height: 36px; padding: 0 8px;">
                       <option value="1">Enero</option>
                       <option value="2">Febrero</option>
                       <option value="3">Marzo</option>
@@ -1064,7 +1064,7 @@
 
             <div class="am-input-group col-4">
               <label class="am-label" for="visita_centroId">Centro</label>
-              <select id="visita_centroId" class="am-select browser-default">
+              <select id="visita_centroId" class="am-select">
                 <option value="">Sin centro (opcional)</option>
               </select>
             </div>
@@ -1077,7 +1077,7 @@
 
             <div class="am-input-group col-6">
               <label class="am-label" for="visita_proximoPaso">Próximo paso</label>
-              <select id="visita_proximoPaso" class="am-select browser-default">
+              <select id="visita_proximoPaso" class="am-select">
                 <option value="Nueva visita" selected>Nueva visita</option>
                 <option value="Tomar muestras">Tomar muestras</option>
                 <option value="Negociar precio/volumen">Negociar precio/volumen</option>
@@ -1158,17 +1158,17 @@
 
           <div>
             <label class="resumen-field-label" for="resumen_semana">Semana</label>
-            <select id="resumen_semana" class="browser-default resumen-select" aria-label="Seleccionar semana"></select>
+            <select id="resumen_semana" class="resumen-select" aria-label="Seleccionar semana"></select>
           </div>
 
           <div>
             <label class="resumen-field-label" for="resumen_mes">Mes</label>
-            <select id="resumen_mes" class="browser-default resumen-select" aria-label="Seleccionar mes (YYYY-MM)"></select>
+            <select id="resumen_mes" class="resumen-select" aria-label="Seleccionar mes (YYYY-MM)"></select>
           </div>
 
           <div>
             <label class="resumen-field-label" for="resumen_resp">Responsable</label>
-            <select id="resumen_resp" class="browser-default resumen-select resp" aria-label="Filtrar por Responsable">
+            <select id="resumen_resp" class="resumen-select resp" aria-label="Filtrar por Responsable">
               <option value="">Responsable…</option>
             </select>
           </div>
@@ -1243,7 +1243,7 @@
 
             <div class="trato-section">
               <label class="trato-label">Tipo de camión (default para este proveedor)</label>
-              <select id="tratoTipoCamion" class="browser-default modern-select" style="width:100%;">
+              <select id="tratoTipoCamion" class="modern-select" style="width:100%;">
                 <option value="">— Sin definir —</option>
                 <option value="simple">Camión simple</option>
                 <option value="con_carro">Con carro</option>
@@ -1271,7 +1271,7 @@
 
             <div class="trato-section">
               <label class="trato-label">Responsable</label>
-              <select id="tratoResponsable" class="browser-default modern-select" style="width:100%;">
+              <select id="tratoResponsable" class="modern-select" style="width:100%;">
                 <option value="">— Seleccionar —</option>
               </select>
             </div>
