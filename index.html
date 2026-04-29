@@ -28,7 +28,10 @@
           try {
             var u = window.__AUTH__ && window.__AUTH__.getUser ? window.__AUTH__.getUser() : null;
             if (u) {
-              var name = u.nombre || u.email.split('@')[0] || '';
+              var nombre = (u.nombre || '').trim();
+              var emailPrefix = u.email ? u.email.split('@')[0] : '';
+              var genericos = ['administrador', 'admin', 'usuario', 'user'];
+              var name = (nombre && !genericos.includes(nombre.toLowerCase())) ? nombre : emailPrefix;
               if (name) document.getElementById('dash-welcome').textContent = 'Bienvenido, ' + name;
             }
           } catch (e) {}
