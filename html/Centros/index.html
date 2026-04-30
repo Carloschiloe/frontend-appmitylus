@@ -3,19 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <link rel="icon" type="image/png" href="/img/favicon.png">
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Directorio de Centros — Mitynex</title>
-  <meta name="description" content="Directorio de centros mitilídos: gestión, mapa y trazabilidad operativa." />
+  <title>Directorio de Centros &mdash; Mitynex</title>
+  <meta name="description" content="Directorio de centros mit&iacute;lidos: gesti&oacute;n, mapa y trazabilidad operativa." />
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"/>
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
+  <!-- Sistema de Dise&ntilde;o Unificado -->
 
-  <!-- Sistema de Diseño Unificado -->
   <link rel="stylesheet" href="/css/index-modern.css">
   <link rel="stylesheet" href="/css/base-ui.css">
+  <link rel="stylesheet" href="/css/mitynex-brand.css">
   <link rel="stylesheet" href="/css/centros-modern.css" />
   <link rel="stylesheet" href="/css/sanitario.css" />
   <script src="/js/auth.js"></script>
@@ -25,12 +24,11 @@
     <div id="sidebar-container"></div>
 
     <main class="content centros-main-shell">
-      <div class="centros-main">
-        <div class="mmpp-wrap">
-          <header class="am-hero">
+      <div class="centros-main mx-page-frame mx-page-stack">
+          <header class="am-hero mx-hero">
             <div class="am-hero-content">
               <h1><i class="bi bi-diagram-3"></i>Directorio de Centros</h1>
-              <p>Gestión de centros, consulta de mapa y trazabilidad de datos operativos.</p>
+              <p>Gesti&oacute;n de centros, consulta de mapa y trazabilidad de datos operativos.</p>
             </div>
             <div class="am-hero-actions">
               <button id="btnOpenCentroModal" type="button" class="am-btn am-btn-primary write-only">
@@ -42,8 +40,8 @@
             </div>
           </header>
 
-          <!-- Navegación de Vistas (Unificada) -->
-          <div class="am-tabs-main" id="centrosViewTabs">
+          <!-- Navegaci&oacute;n de Vistas (Unificada) -->
+          <div class="am-tabs-main mx-tabs" id="centrosViewTabs">
             <button class="am-tab-btn active" data-tab-link="#tab-centros">
               <i class="bi bi-list-ul"></i> Directorio
             </button>
@@ -54,7 +52,6 @@
               <i class="bi bi-shield-check"></i> Estado Sanitario
             </button>
           </div>
-        </div>
 
         <!-- Tab: Directorio -->
         <section id="tab-centros" class="c-panel active">
@@ -66,7 +63,7 @@
                 <div class="kpi-value" id="kpiCentros">0</div>
               </article>
               <article class="kpi-card">
-                <header class="kpi-title"><i class="bi bi-rulers"></i> Hectáreas</header>
+                <header class="kpi-title"><i class="bi bi-rulers"></i> Hect&aacute;reas</header>
                 <div class="kpi-value"><span id="kpiHect">0,00</span> <small class="kpi-suffix">ha</small></div>
               </article>
               <article class="kpi-card">
@@ -74,7 +71,7 @@
                 <div class="kpi-value" id="kpiComunas">0</div>
               </article>
               <article class="kpi-card">
-                <header class="kpi-title"><i class="bi bi-droplet"></i> Tons Máx</header>
+                <header class="kpi-title"><i class="bi bi-droplet"></i> Tons M&aacute;x</header>
                 <div class="kpi-value"><span id="kpiTonsMax">0</span> <small class="kpi-suffix">t</small></div>
               </article>
             </div>
@@ -88,7 +85,7 @@
                   <i class="bi bi-search"></i>
                   <input id="buscarProveedor" class="am-input" placeholder="Buscar proveedor, codigo, area o comuna..." />
                 </div>
-                <select id="filtroComuna" class="am-select centro-select-comuna" style="min-width:220px;">
+                <select id="filtroComuna" class="am-select centro-select-comuna">
                   <option value="">Todas las comunas</option>
                 </select>
                 <div class="centro-filter-popover-wrap">
@@ -142,7 +139,7 @@
               </div>
             </div>
             <div class="am-export-group">
-              <button id="btnExportCopy" type="button" class="am-export-btn" title="Copiar"><i class="bi bi-clipboard" style="margin-right: 4px;"></i> Copiar</button>
+              <button id="btnExportCopy" type="button" class="am-export-btn" title="Copiar"><i class="bi bi-clipboard export-icon-leading"></i> Copiar</button>
               <button id="btnExportCsv" type="button" class="am-export-btn" title="CSV">CSV</button>
               <button id="btnExportExcel" type="button" class="am-export-btn" title="XLS">XLS</button>
               <button id="btnExportPdf" type="button" class="am-export-btn" title="PDF">PDF</button>
@@ -151,7 +148,7 @@
 
           <div class="am-card am-p-0 table-card">
             <div class="mmpp-table-wrap">
-              <table id="centrosTable" class="display mmpp table-full" style="width:100%">
+              <table id="centrosTable" class="display mmpp table-full centros-table">
                 <thead>
                   <tr>
                     <th>Proveedor</th>
@@ -165,7 +162,7 @@
                 </thead>
                 <tfoot>
                   <tr>
-                    <th style="text-align:right">Totales:</th>
+                    <th class="centros-total-label">Totales:</th>
                     <th id="totalCentros">0</th>
                     <th></th>
                     <th></th>
@@ -180,108 +177,108 @@
         </section>
 
         <!-- Tab: Mapa -->
-        <section id="tab-mapa" class="c-panel" style="display:none; padding: 24px;">
-          <div class="am-card map-card" style="padding: 0; overflow: hidden; background: #fff;">
-            <div class="map-type-filters" role="group" aria-label="Filtros de concesiones" style="padding: 16px 20px 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <section id="tab-mapa" class="c-panel centros-panel-padded">
+          <div class="am-card map-card map-card-shell">
+            <div class="map-type-filters map-type-filters-shell" role="group" aria-label="Filtros de concesiones">
               <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:salmon">Salmones</button>
-              <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:mitilidos">Mitilidos</button>
+              <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:mitilidos">Mit&iacute;lidos</button>
               <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:otros">Otras</button>
               <button type="button" class="map-filter-chip is-active" data-map-filter="estado:otorgada">Otorgadas</button>
               <button type="button" class="map-filter-chip is-active" data-map-filter="estado:noOtorgada">No otorgadas</button>
             </div>
 
-            <div class="map-controls-modern" style="padding: 0 20px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-               <div class="am-density-group map-density-toggle" style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; gap: 4px;">
-                  <button type="button" class="am-tab-btn" style="padding: 4px 12px; font-size: 11px;" data-label-density="high">Alta</button>
-                  <button type="button" class="am-tab-btn active" style="padding: 4px 12px; font-size: 11px;" data-label-density="medium">Media</button>
-                  <button type="button" class="am-tab-btn" style="padding: 4px 12px; font-size: 11px;" data-label-density="low">Baja</button>
-               </div>
-               <button id="btnFullscreenMapa" type="button" class="am-btn am-btn-outline am-btn-sm">
-                  <i class="bi bi-fullscreen"></i> Pantalla completa
-               </button>
+            <div class="map-controls-modern map-controls-shell">
+              <div class="am-density-group map-density-toggle map-density-group">
+                <button type="button" class="am-tab-btn map-density-btn" data-label-density="high">Alta</button>
+                <button type="button" class="am-tab-btn active map-density-btn" data-label-density="medium">Media</button>
+                <button type="button" class="am-tab-btn map-density-btn" data-label-density="low">Baja</button>
+              </div>
+              <button id="btnFullscreenMapa" type="button" class="am-btn am-btn-outline am-btn-sm">
+                <i class="bi bi-fullscreen"></i> Pantalla completa
+              </button>
             </div>
 
-            <section id="mapShell" tabindex="0" aria-label="Mapa interactivo de centros" style="height: calc(100vh - 340px); min-height: 500px; position: relative; margin: 0 20px 20px; border-radius: 16px; overflow: hidden; background: #f1f5f9; border: 1px solid var(--color-border);">
-              <div class="map-search" id="mapSearchBox" style="position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 1000; width: min(400px, 85%);">
-                <div class="am-search-field" style="background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.1);">
+            <section id="mapShell" class="map-shell-frame" tabindex="0" aria-label="Mapa interactivo de centros">
+              <div class="map-search map-search-shell" id="mapSearchBox">
+                <div class="am-search-field map-search-field-glass">
                   <i class="bi bi-search"></i>
-                  <input type="search" id="mapSearch" class="am-input" placeholder="Buscar por código, comuna..." style="height: 40px;" />
+                  <input type="search" id="mapSearch" class="am-input map-search-input" placeholder="Buscar por c&oacute;digo, comuna..." />
                 </div>
-                <ul id="mapSearchResults" class="map-search-results" style="display:none;"></ul>
+                <ul id="mapSearchResults" class="map-search-results map-search-results-hidden"></ul>
               </div>
-              <div id="map" style="width: 100%; height: 100%;"></div>
+              <div id="map" class="map-canvas"></div>
             </section>
           </div>
         </section>
 
         <!-- Tab: Estado Sanitario -->
-        <section id="tab-sanitario" class="c-panel" style="display:none; padding: 24px;">
+        <section id="tab-sanitario" class="c-panel centros-panel-padded">
           <!-- Banner de alerta sticky -->
           <div id="sanAlertBanner" class="hidden">
-            <span class="san-banner-icon">🚨</span>
+            <span class="san-banner-icon">&#128680;</span>
             <span>Alertas sanitarias activas en Los Lagos:</span>
-            <span class="san-banner-areas" id="sanBannerAreas">—</span>
+            <span class="san-banner-areas" id="sanBannerAreas">&mdash;</span>
           </div>
 
           <div class="san-wrap">
             <!-- Hero -->
             <div class="san-hero">
               <h1>
-                <span id="sanGlobalDot" class="san-dot gris" style="width:14px;height:14px;"></span>
-                Estado Sanitario — Región de Los Lagos
+                <span id="sanGlobalDot" class="san-dot gris san-dot-lg"></span>
+                Estado Sanitario &mdash; Regi&oacute;n de Los Lagos
               </h1>
               <div class="san-hero-actions">
-                <span class="san-sync-info" id="sanSyncInfo">Sin sincronización</span>
+                <span class="san-sync-info" id="sanSyncInfo">Sin sincronizaci&oacute;n</span>
                 <button class="am-btn am-btn-flat" id="btnSanSync" type="button">
                   <i class="bi bi-arrow-clockwise"></i> Actualizar mrSAT
                 </button>
               </div>
             </div>
 
-      <div class="san-filter-section">
-        <div class="san-filter-title">Estado sanitario</div>
-        <div class="san-kpis san-kpis-compact">
-          <div class="san-kpi verde" data-filter="ok"><div class="kpi-num" id="kpiOk">-</div><div class="kpi-label">OK</div></div>
-          <div class="san-kpi naranja" data-filter="alerta"><div class="kpi-num" id="kpiAlerta">-</div><div class="kpi-label">Con alerta</div></div>
-          <div class="san-kpi rojo" data-filter="bloqueada"><div class="kpi-num" id="kpiBloqueada">-</div><div class="kpi-label">Bloqueada</div></div>
-        </div>
-      </div>
+            <div class="san-filter-section">
+              <div class="san-filter-title">Estado sanitario</div>
+              <div class="san-kpis san-kpis-compact">
+                <div class="san-kpi verde" data-filter="ok"><div class="kpi-num" id="kpiOk">-</div><div class="kpi-label">OK</div></div>
+                <div class="san-kpi naranja" data-filter="alerta"><div class="kpi-num" id="kpiAlerta">-</div><div class="kpi-label">Con alerta</div></div>
+                <div class="san-kpi rojo" data-filter="bloqueada"><div class="kpi-num" id="kpiBloqueada">-</div><div class="kpi-label">Bloqueada</div></div>
+              </div>
+            </div>
 
-      <div class="san-filter-section">
-        <div class="san-filter-title">Estado area Sernapesca</div>
-        <div class="san-state-filters" id="sanAreaFilters">
-          <button type="button" class="san-state-chip is-active" data-area-filter="">Todas</button>
-          <button type="button" class="san-state-chip" data-area-filter="abierta">Abiertas</button>
-          <button type="button" class="san-state-chip" data-area-filter="inactiva">Inactivas</button>
-          <button type="button" class="san-state-chip" data-area-filter="eliminada">Eliminadas</button>
-        </div>
-      </div>
+            <div class="san-filter-section">
+              <div class="san-filter-title">Estado &aacute;rea Sernapesca</div>
+              <div class="san-state-filters" id="sanAreaFilters">
+                <button type="button" class="san-state-chip is-active" data-area-filter="">Todas</button>
+                <button type="button" class="san-state-chip" data-area-filter="abierta">Abiertas</button>
+                <button type="button" class="san-state-chip" data-area-filter="inactiva">Inactivas</button>
+                <button type="button" class="san-state-chip" data-area-filter="eliminada">Eliminadas</button>
+              </div>
+            </div>
 
-      <!-- Tab: Áreas PSMB -->
+            <!-- Tab: &Aacute;reas PSMB -->
             <div id="sanTabAreas">
-      <div class="san-toolbar">
-        <div class="san-search">
-          <i class="bi bi-search"></i>
-          <input id="sanSearchInput" type="search" placeholder="Buscar por codigo de area, area PSMB, centro, codigo de centro, comuna..." autocomplete="off" />
-        </div>
-        <div class="san-toolbar-actions">
-          <button type="button" class="am-btn am-btn-flat san-clear-filter" id="sanClearFilter">Mostrar todas</button>
-          <div class="san-search-meta" id="sanSearchMeta">-</div>
-        </div>
-      </div>
-        <div class="san-table-wrap">
+              <div class="san-toolbar">
+                <div class="san-search">
+                  <i class="bi bi-search"></i>
+                  <input id="sanSearchInput" type="search" placeholder="Buscar por c&oacute;digo de &aacute;rea, &aacute;rea PSMB, centro, c&oacute;digo de centro, comuna..." autocomplete="off" />
+                </div>
+                <div class="san-toolbar-actions">
+                  <button type="button" class="am-btn am-btn-flat san-clear-filter" id="sanClearFilter">Mostrar todas</button>
+                  <div class="san-search-meta" id="sanSearchMeta">-</div>
+                </div>
+              </div>
+              <div class="san-table-wrap">
                 <table class="san-table">
                   <thead>
                     <tr>
-                <th style="width:138px;">Estado sanitario</th>
-                      <th style="width:76px;">Cód. Área</th>
-                      <th>Área PSMB</th>
-                      <th style="width:108px;">Estado area</th>
-                      <th style="width:60px;">Centros</th>
-                      <th style="width:76px;">Alertas</th>
-                      <th style="width:110px;">Tipos análisis</th>
-                      <th style="width:92px;">Fecha</th>
-                      <th style="width:58px;"></th>
+                      <th class="san-col-status">Estado sanitario</th>
+                      <th class="san-col-code">C&oacute;d. &aacute;rea</th>
+                      <th>&Aacute;rea PSMB</th>
+                      <th class="san-col-area-state">Estado &aacute;rea</th>
+                      <th class="san-col-centros">Centros</th>
+                      <th class="san-col-alertas">Alertas</th>
+                      <th class="san-col-types">Tipos an&aacute;lisis</th>
+                      <th class="san-col-date">Fecha</th>
+                      <th class="san-col-toggle"></th>
                     </tr>
                   </thead>
                   <tbody id="sanAreasBody">
@@ -297,11 +294,9 @@
 
   </div>
 
-  <!-- ══════════════════════════════════════════════════════
-       MODAL: Nuevo / Editar Centro  (CSS puro, sin Materialize)
-  ══════════════════════════════════════════════════════ -->
-  <div id="centroModalOverlay" class="am-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="centroModalTitle">
-    <div class="am-modal" style="max-width:760px;">
+  <!-- MODAL: Nuevo / Editar Centro -->
+  <div id="centroModalOverlay" class="am-modal-overlay centro-modal-overlay-hidden" role="dialog" aria-modal="true" aria-labelledby="centroModalTitle">
+    <div class="am-modal centro-modal-lg">
       <div class="am-modal-head">
         <h5 id="centroModalTitle" class="am-modal-title">Nuevo Centro</h5>
         <button type="button" class="am-modal-close js-close-centro-modal" aria-label="Cerrar">&times;</button>
@@ -319,36 +314,36 @@
               <input id="inputComuna" type="text" class="am-input" />
             </div>
             <div class="am-form-group">
-              <label class="am-label" for="inputCode">Código de Centro</label>
+              <label class="am-label" for="inputCode">C&oacute;digo de Centro</label>
               <input id="inputCode" type="text" class="am-input" />
             </div>
             <div class="am-form-group">
-              <label class="am-label" for="inputCodigoArea">Código de Área</label>
+              <label class="am-label" for="inputCodigoArea">C&oacute;digo de &Aacute;rea</label>
               <input id="inputCodigoArea" type="text" class="am-input" />
             </div>
             <div class="am-form-group">
-              <label class="am-label" for="inputHectareas">Hectáreas</label>
+              <label class="am-label" for="inputHectareas">Hect&aacute;reas</label>
               <input id="inputHectareas" type="number" step="0.01" class="am-input" />
             </div>
           </div>
 
-          <div style="margin-top:20px;">
-            <h6 style="font-weight:700;color:#0f172a;margin-bottom:12px;">Puntos (polígono)</h6>
-            <div class="am-form-grid" style="grid-template-columns:1fr 1fr auto;">
+          <div class="centro-points-section">
+            <h6 class="centro-points-title">Puntos (pol&iacute;gono)</h6>
+            <div class="am-form-grid centro-points-grid">
               <div class="am-form-group">
                 <label class="am-label" for="inputLat">Latitud (DMS o decimal)</label>
-                <input id="inputLat" type="text" class="am-input" placeholder='Ej: 42°38&apos;30.5"S' />
+                <input id="inputLat" type="text" class="am-input" placeholder='Ej: 42&deg;38&apos;30.5&quot;S' />
               </div>
               <div class="am-form-group">
                 <label class="am-label" for="inputLng">Longitud (DMS o decimal)</label>
-                <input id="inputLng" type="text" class="am-input" placeholder='Ej: 73°45&apos;12.3"W' />
+                <input id="inputLng" type="text" class="am-input" placeholder='Ej: 73&deg;45&apos;12.3&quot;W' />
               </div>
-              <div class="am-form-group" style="align-self:flex-end;display:flex;gap:8px;">
+              <div class="am-form-group centro-points-actions">
                 <button type="button" id="btnAddPoint" class="am-btn am-btn-primary"><i class="bi bi-plus-circle"></i> Agregar</button>
                 <button type="button" id="btnClearPoints" class="am-btn am-btn-outline">Limpiar</button>
               </div>
             </div>
-            <table id="pointsTable" class="am-table" style="margin-top:8px;">
+            <table id="pointsTable" class="am-table centro-points-table">
               <thead><tr><th>#</th><th>Lat</th><th>Lng</th><th></th></tr></thead>
               <tbody id="pointsBody"></tbody>
             </table>
@@ -365,8 +360,8 @@
   </div>
 
   <!-- MODAL: Detalles del Centro -->
-  <div id="modalDetallesCentroOverlay" class="am-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle">
-    <div class="am-modal" style="max-width:640px;">
+  <div id="modalDetallesCentroOverlay" class="am-modal-overlay centro-detalle-modal-hidden" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle">
+    <div class="am-modal centro-modal-md">
       <div class="am-modal-head">
         <h5 id="detallesCentroTitle" class="am-modal-title">Detalles del Centro</h5>
         <button type="button" class="am-modal-close js-close-detalles-modal" aria-label="Cerrar">&times;</button>
@@ -381,8 +376,8 @@
   </div>
 
   <!-- MODAL: Importar Centros -->
-  <div id="modalImportarCentrosOverlay" class="am-modal-overlay" style="display:none;" role="dialog" aria-modal="true">
-    <div class="am-modal" style="max-width:700px;">
+  <div id="modalImportarCentrosOverlay" class="am-modal-overlay centro-import-modal-hidden" role="dialog" aria-modal="true">
+    <div class="am-modal centro-modal-import">
       <div class="am-modal-head">
         <h5 class="am-modal-title">Importar Centros (Excel / CSV)</h5>
         <button type="button" class="am-modal-close js-close-importar-modal" aria-label="Cerrar">&times;</button>
@@ -396,17 +391,18 @@
     </div>
   </div>
 
-  <!-- Modal historial área (Sanitario) -->
-  <div id="modalSanHistorial" class="modal app-modal-modern" style="max-width:640px;width:96vw;display:none;">
-    <div class="app-modal-header" style="padding:18px 24px 14px;border-bottom:1px solid #e2e8f0;">
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <h5 id="sanHistTitulo" style="margin:0;font-size:16px;font-weight:700;color:#0f172a;">Historial Área —</h5>
-        <button type="button" id="btnSanHistClose" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;">×</button>
+  <!-- Modal historial &aacute;rea (Sanitario) -->
+  <div id="modalSanHistorial" class="modal app-modal-modern san-hist-modal">
+    <div class="app-modal-header san-hist-head">
+      <div class="san-hist-head-row">
+        <h5 id="sanHistTitulo" class="san-hist-title">Historial &Aacute;rea &mdash;</h5>
+        <button type="button" id="btnSanHistClose" class="san-hist-close">&times;</button>
       </div>
     </div>
-    <div class="app-modal-body" style="padding:0;max-height:60vh;overflow-y:auto;">
-      <div id="sanHistBody" style="padding:0 4px;"></div>
+    <div class="app-modal-body san-hist-body">
+      <div id="sanHistBody" class="san-hist-body-inner"></div>
     </div>
+  </div>
   </div>
 
   <!-- Scripts -->
@@ -427,7 +423,7 @@
   <script type="module" src="/js/components/Sidebar.js"></script>
 
   <script>
-    // ── Tabs de vista (Directorio / Mapa) ────────────────────────────────────
+    // Tabs de vista (Directorio / Mapa / Estado Sanitario)
     (function initCentrosNavigation() {
       const tabs = document.querySelectorAll('[data-tab-link]');
       const sections = {
@@ -454,7 +450,7 @@
           btn.classList.toggle('active', isActive);
         });
 
-        // Forzar redimensión de mapa Leaflet si se activa
+        // Forzar redimensi&oacute;n de mapa Leaflet si se activa
         if (hash === '#tab-mapa' && window.__mapLeaflet) {
           setTimeout(() => window.__mapLeaflet.invalidateSize(), 80);
           setTimeout(() => window.__mapLeaflet.invalidateSize(), 400);
@@ -473,7 +469,7 @@
       show(location.hash);
     })();
 
-    // ── Helpers de Modal (Unificada) ──────────────────────────────────────────
+    // Helpers de modal (unificada)
     function toggleOverlayModal(id, visible) {
       const el = document.getElementById(id);
       if (el) el.style.display = visible ? 'flex' : 'none';

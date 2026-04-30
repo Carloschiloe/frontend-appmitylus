@@ -8,7 +8,7 @@ import {
 } from '../../api/api-mmpp.js';
 import './biomasa.css';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 
 const mesActual = () => {
   const d = new Date();
@@ -16,7 +16,7 @@ const mesActual = () => {
 };
 
 const mesLabel = (mk = '', largo = false) => {
-  if (!mk) return '—';
+  if (!mk) return '\u2014';
   const CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const LARGO  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto',
                   'Septiembre','Octubre','Noviembre','Diciembre'];
@@ -27,13 +27,13 @@ const mesLabel = (mk = '', largo = false) => {
 
 const fmtTons = (n) => {
   const v = Number(n);
-  if (!Number.isFinite(v)) return '—';
+  if (!Number.isFinite(v)) return '\u2014';
   return v.toLocaleString('es-CL', { maximumFractionDigits: 1 }) + ' t';
 };
 
 const clamp = (v, min, max) => Math.min(Math.max(Number(v) || 0, min), max);
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// Sub-components
 
 function PctBar({ pct }) {
   const p = clamp(pct, 0, 200);
@@ -51,7 +51,7 @@ function PctBar({ pct }) {
 
 function SaldoChip({ saldo }) {
   const v = Number(saldo);
-  if (!Number.isFinite(v)) return <span>—</span>;
+  if (!Number.isFinite(v)) return <span>{'\\u2014'}</span>;
   const ok = v >= 0;
   return (
     <span style={{ color: ok ? 'var(--color-success)' : 'var(--color-error)', fontWeight: 600 }}>
@@ -77,7 +77,7 @@ function FuenteBadge({ fuente }) {
   if (fuente !== 'auto-trato') return null;
   return (
     <span
-      title="Generado automáticamente al acordar el trato"
+      title="Generado autom&aacute;ticamente al acordar el trato"
       style={{
         fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 999,
         background: 'var(--color-info-bg)', color: 'var(--color-info)',
@@ -97,7 +97,7 @@ const emptyAsig = (mes) => ({
   contactoNombre: '', estado: 'confirmado',
 });
 
-// ── Componente principal ──────────────────────────────────────────────────────
+// Componente principal
 
 export default function Biomasa() {
   const [mes, setMes]           = useState(mesActual);
@@ -118,7 +118,7 @@ export default function Biomasa() {
   const [confirmId, setConfirmId] = useState(null);
   const [deleting, setDeleting]   = useState(false);
 
-  // ── Carga paralela ──
+  // Carga paralela
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -138,7 +138,7 @@ export default function Biomasa() {
 
   useEffect(() => { load(); }, [load]);
 
-  // ── KPIs ──
+  // KPIs
   const kpis = useMemo(() => {
     const disponible = disp.reduce((s, i) => s + (i.tons || 0), 0);
     // Separar asig auto (de tratos) de manuales
@@ -158,7 +158,7 @@ export default function Biomasa() {
     return { disponible, acordado, ejecutado, manual, totalAsignado, saldo, pct };
   }, [disp, asig]);
 
-  // ── Filtros ──
+  // Filtros
   const visibleDisp = useMemo(() => {
     if (!provFilter.trim()) return disp;
     const q = provFilter.trim().toLowerCase();
@@ -178,7 +178,7 @@ export default function Biomasa() {
     );
   }, [asig, provFilter]);
 
-  // ── Modal (solo para Compras manuales) ──
+  // Modal (solo para compras manuales)
   const openAdd = () => {
     setForm(emptyAsig(mes));
     setSaveError(null);
@@ -251,131 +251,124 @@ export default function Biomasa() {
     }
   };
 
-  // ── Render ──
+  // Render
   return (
     <div className="bio-page">
 
-      {/* ── Header ── */}
-      <div className="bio-header">
-        <div className="bio-header-left">
-          <div className="bio-header-icon">
-            <i className="bi bi-droplet-half" />
-          </div>
-          <div>
-            <h1>Biomasa</h1>
-            <p>Planificación mensual · {mesLabel(mes, true)}</p>
-          </div>
+      <div className="am-hero mx-hero bio-hero-shell">
+        <div className="am-hero-content">
+          <h1><i className="bi bi-droplet-half" /> Biomasa - Programa de Cosecha</h1>
+          <p>Calendario de despachos, programas activos y seguimiento semanal.</p>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="am-hero-actions bio-hero-controls">
           <input
             type="month"
             value={mes}
             onChange={(e) => setMes(e.target.value)}
-            style={{
-              height: 36, padding: '0 10px', border: '1px solid var(--color-border)',
-              borderRadius: 8, fontSize: 13, fontFamily: 'inherit',
-              background: 'var(--color-surface)', color: 'var(--color-text)',
-            }}
+            className="bio-hero-month"
+            aria-label="Seleccionar mes"
           />
-          <button className="bio-btn-secondary" onClick={load} title="Actualizar">
+          <button className="bio-btn-secondary bio-hero-refresh" onClick={load} title="Actualizar">
             <i className="bi bi-arrow-clockwise" />
           </button>
           {tab === 'compras' && (
-            <button className="bio-btn-primary" onClick={openAdd}>
+            <button className="bio-btn-primary bio-hero-primary" onClick={openAdd}>
               <i className="bi bi-plus-lg" /> Compra manual
             </button>
           )}
         </div>
       </div>
 
-      {/* ── Error ── */}
-      {error && (
-        <div className="bio-error-bar">
-          <i className="bi bi-exclamation-triangle-fill" />
-          {error}
-          <button onClick={() => setError(null)}>×</button>
-        </div>
-      )}
-
-      {/* ── KPIs ── */}
-      <div className="bio-kpis" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
-        <div className="bio-kpi">
-          <div className="bio-kpi-label">Disponible declarado</div>
-          <div className="bio-kpi-value accent">{fmtTons(kpis.disponible)}</div>
-          <div className="bio-kpi-sub">{disp.length} proveedor{disp.length !== 1 ? 'es' : ''}</div>
-        </div>
-        <div className="bio-kpi">
-          <div className="bio-kpi-label">Comprometido (tratos)</div>
-          <div className="bio-kpi-value">{fmtTons(kpis.acordado)}</div>
-          <div className="bio-kpi-sub">pendiente ejecución</div>
-        </div>
-        <div className="bio-kpi">
-          <div className="bio-kpi-label">Ejecutado</div>
-          <div className="bio-kpi-value success">{fmtTons(kpis.ejecutado)}</div>
-          <div className="bio-kpi-sub">compras efectuadas</div>
-        </div>
-        <div className="bio-kpi">
-          <div className="bio-kpi-label">Saldo</div>
-          <div className={`bio-kpi-value ${kpis.saldo >= 0 ? 'success' : 'danger'}`}>
-            {kpis.saldo >= 0 ? '+' : ''}{fmtTons(kpis.saldo)}
+      <div className="bio-content-frame">
+        {/* Error */}
+        {error && (
+          <div className="bio-error-bar">
+            <i className="bi bi-exclamation-triangle-fill" />
+            {error}
+            <button onClick={() => setError(null)}>&times;</button>
           </div>
-          <div style={{ marginTop: 8 }}><PctBar pct={kpis.pct} /></div>
-        </div>
-      </div>
+        )}
 
-      {/* ── Tabla con tabs ── */}
-      <div className="bio-table-card">
-        <div className="bio-table-head">
-          <div className="bio-tabs">
-            <button
-              className={`bio-tab${tab === 'pipeline' ? ' active' : ''}`}
-              onClick={() => { setTab('pipeline'); setProvFilter(''); }}
-            >
-              <i className="bi bi-box-seam" /> Disponibilidad
-              <span className="bio-tab-count">{disp.length}</span>
-            </button>
-            <button
-              className={`bio-tab${tab === 'compras' ? ' active' : ''}`}
-              onClick={() => { setTab('compras'); setProvFilter(''); }}
-            >
-              <i className="bi bi-cart3" /> Compras
-              <span className="bio-tab-count">{asig.length}</span>
-            </button>
+        {/* KPIs */}
+        <div className="bio-kpis" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+          <div className="bio-kpi">
+            <div className="bio-kpi-label">Disponible declarado</div>
+            <div className="bio-kpi-value accent">{fmtTons(kpis.disponible)}</div>
+            <div className="bio-kpi-sub">{disp.length} proveedor{disp.length !== 1 ? 'es' : ''}</div>
           </div>
-          <input
-            type="text"
-            className="bio-search"
-            placeholder="Buscar proveedor..."
-            value={provFilter}
-            onChange={(e) => setProvFilter(e.target.value)}
-          />
-        </div>
-
-        <div className="bio-table-wrap">
-          {loading ? (
-            <div className="bio-state">
-              <div className="bio-spinner" />
-              <p>Cargando datos de {mesLabel(mes)}...</p>
+          <div className="bio-kpi">
+            <div className="bio-kpi-label">Comprometido (tratos)</div>
+            <div className="bio-kpi-value">{fmtTons(kpis.acordado)}</div>
+            <div className="bio-kpi-sub">pendiente ejecuci&oacute;n</div>
+          </div>
+          <div className="bio-kpi">
+            <div className="bio-kpi-label">Ejecutado</div>
+            <div className="bio-kpi-value success">{fmtTons(kpis.ejecutado)}</div>
+            <div className="bio-kpi-sub">compras efectuadas</div>
+          </div>
+          <div className="bio-kpi">
+            <div className="bio-kpi-label">Saldo</div>
+            <div className={`bio-kpi-value ${kpis.saldo >= 0 ? 'success' : 'danger'}`}>
+              {kpis.saldo >= 0 ? '+' : ''}{fmtTons(kpis.saldo)}
             </div>
-          ) : tab === 'pipeline' ? (
-            <TablaPipeline items={visibleDisp} />
-          ) : (
-            <TablaCompras
-              items={visibleAsig}
-              onEdit={openEdit}
-              onDelete={setConfirmId}
+            <div style={{ marginTop: 8 }}><PctBar pct={kpis.pct} /></div>
+          </div>
+        </div>
+
+        {/* Tabla con tabs */}
+        <div className="bio-table-card">
+          <div className="bio-table-head">
+            <div className="bio-tabs">
+              <button
+                className={`bio-tab${tab === 'pipeline' ? ' active' : ''}`}
+                onClick={() => { setTab('pipeline'); setProvFilter(''); }}
+              >
+                <i className="bi bi-box-seam" /> Disponibilidad
+                <span className="bio-tab-count">{disp.length}</span>
+              </button>
+              <button
+                className={`bio-tab${tab === 'compras' ? ' active' : ''}`}
+                onClick={() => { setTab('compras'); setProvFilter(''); }}
+              >
+                <i className="bi bi-cart3" /> Compras
+                <span className="bio-tab-count">{asig.length}</span>
+              </button>
+            </div>
+            <input
+              type="text"
+              className="bio-search"
+              placeholder="Buscar proveedor..."
+              value={provFilter}
+              onChange={(e) => setProvFilter(e.target.value)}
             />
-          )}
+          </div>
+
+          <div className="bio-table-wrap">
+            {loading ? (
+              <div className="bio-state">
+                <div className="bio-spinner" />
+                <p>Cargando datos de {mesLabel(mes)}...</p>
+              </div>
+            ) : tab === 'pipeline' ? (
+              <TablaPipeline items={visibleDisp} />
+            ) : (
+              <TablaCompras
+                items={visibleAsig}
+                onEdit={openEdit}
+                onDelete={setConfirmId}
+              />
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── Modal compra manual ── */}
+      {/* Modal compra manual */}
       {modal.open && (
         <div className="bio-modal-overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>
           <div className="bio-modal">
             <div className="bio-modal-header">
               <h3>{modal.mode === 'add' ? 'Nueva compra manual' : 'Editar compra'}</h3>
-              <button className="bio-modal-close" onClick={closeModal}>×</button>
+              <button className="bio-modal-close" onClick={closeModal}>&times;</button>
             </div>
             <div className="bio-modal-body">
               <div className="bio-field">
@@ -402,7 +395,7 @@ export default function Biomasa() {
               </div>
               <div className="bio-field-row">
                 <div className="bio-field">
-                  <label>Código centro</label>
+                  <label>C&oacute;digo centro</label>
                   <input name="centroCodigo" value={form.centroCodigo || ''} onChange={handleField} placeholder="C-101" />
                 </div>
                 <div className="bio-field">
@@ -432,16 +425,16 @@ export default function Biomasa() {
         </div>
       )}
 
-      {/* ── Confirmar eliminación ── */}
+      {/* Confirmar eliminaci&oacute;n */}
       {confirmId && (
         <div className="bio-modal-overlay">
           <div className="bio-modal bio-confirm">
             <div className="bio-modal-header">
-              <h3>Confirmar eliminación</h3>
-              <button className="bio-modal-close" onClick={() => setConfirmId(null)}>×</button>
+              <h3>Confirmar eliminaci&oacute;n</h3>
+              <button className="bio-modal-close" onClick={() => setConfirmId(null)}>&times;</button>
             </div>
             <div className="bio-modal-body">
-              <p>¿Eliminar esta compra? Esta acción no se puede deshacer.</p>
+              <p>&iquest;Eliminar esta compra? Esta acci&oacute;n no se puede deshacer.</p>
             </div>
             <div className="bio-modal-footer">
               <button className="bio-btn-secondary" onClick={() => setConfirmId(null)} disabled={deleting}>Cancelar</button>
@@ -461,7 +454,7 @@ export default function Biomasa() {
   );
 }
 
-// ── Tab: Pipeline / Disponibilidad (solo lectura) ─────────────────────────────
+// Tab: Pipeline / Disponibilidad (solo lectura)
 
 function TablaPipeline({ items }) {
   if (items.length === 0) {
@@ -470,7 +463,7 @@ function TablaPipeline({ items }) {
         <div className="bio-state-icon"><i className="bi bi-inbox" /></div>
         <p>Sin disponibilidades declaradas para este mes</p>
         <p className="hint">
-          Declara disponibilidad desde <strong>Proveedores MMPP → Tratos</strong>
+          Declara disponibilidad desde <strong>Proveedores MMPP &rarr; Tratos</strong>
         </p>
       </div>
     );
@@ -481,7 +474,7 @@ function TablaPipeline({ items }) {
         <i className="bi bi-info-circle" style={{ color: 'var(--color-info)', fontSize: 13 }} />
         <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
           Vista de lectura. Para declarar disponibilidad ve a{' '}
-          <strong>Proveedores MMPP → Tratos</strong>.
+          <strong>Proveedores MMPP &rarr; Tratos</strong>.
         </span>
       </div>
       <table className="bio-tbl">
@@ -498,15 +491,15 @@ function TablaPipeline({ items }) {
           {items.map((item) => (
             <tr key={item._id}>
               <td>
-                <strong>{item.proveedorNombre || item.proveedorKey || '—'}</strong>
+                <strong>{item.proveedorNombre || item.proveedorKey || '\u2014'}</strong>
                 {item.proveedorKey && item.proveedorNombre && (
                   <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{item.proveedorKey}</div>
                 )}
               </td>
               <td className="muted">{mesLabel(item.mesKey)}</td>
               <td className="tons">{fmtTons(item.tons)}</td>
-              <td className="muted">{item.centroCodigo || '—'}</td>
-              <td className="muted">{item.contactoNombre || '—'}</td>
+              <td className="muted">{item.centroCodigo || '\u2014'}</td>
+              <td className="muted">{item.contactoNombre || '\u2014'}</td>
             </tr>
           ))}
         </tbody>
@@ -515,7 +508,7 @@ function TablaPipeline({ items }) {
   );
 }
 
-// ── Tab: Compras ──────────────────────────────────────────────────────────────
+// Tab: Compras
 
 function TablaCompras({ items, onEdit, onDelete }) {
   const autoItems   = items.filter(i => i.fuente === 'auto-trato');
@@ -527,7 +520,7 @@ function TablaCompras({ items, onEdit, onDelete }) {
         <div className="bio-state-icon"><i className="bi bi-cart-x" /></div>
         <p>Sin compras para este mes</p>
         <p className="hint">
-          Las compras se generan automáticamente al acordar un trato, o puedes agregar una manual.
+          Las compras se generan autom&aacute;ticamente al acordar un trato, o puedes agregar una manual.
         </p>
       </div>
     );
@@ -550,7 +543,7 @@ function TablaCompras({ items, onEdit, onDelete }) {
         {autoItems.map((item) => (
           <tr key={item._id}>
             <td>
-              <strong>{item.proveedorNombre || item.empresaNombre || item.proveedorKey || '—'}</strong>
+              <strong>{item.proveedorNombre || item.empresaNombre || item.proveedorKey || '\u2014'}</strong>
               {item.contactoNombre && (
                 <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{item.contactoNombre}</div>
               )}
@@ -574,7 +567,7 @@ function TablaCompras({ items, onEdit, onDelete }) {
         {manualItems.map((item) => (
           <tr key={item._id}>
             <td>
-              <strong>{item.proveedorNombre || item.empresaNombre || item.proveedorKey || '—'}</strong>
+              <strong>{item.proveedorNombre || item.empresaNombre || item.proveedorKey || '\u2014'}</strong>
               {item.contactoNombre && (
                 <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{item.contactoNombre}</div>
               )}
@@ -599,3 +592,6 @@ function TablaCompras({ items, onEdit, onDelete }) {
     </table>
   );
 }
+
+
+

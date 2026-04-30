@@ -1,0 +1,224 @@
+@import url('./tokens.css');
+
+.mx-hero {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 30px 32px;
+  margin-bottom: 22px;
+  border-radius: 26px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #082d47 0%, #0b3c5d 46%, #0f766e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 36px rgba(11, 60, 93, 0.18);
+}
+
+.mx-hero::before,
+.mx-hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.mx-hero::before {
+  width: 280px;
+  height: 280px;
+  top: -140px;
+  right: -70px;
+  background: radial-gradient(circle, rgba(51, 204, 204, 0.26) 0%, rgba(51, 204, 204, 0) 72%);
+}
+
+.mx-hero::after {
+  width: 220px;
+  height: 220px;
+  left: -90px;
+  bottom: -120px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 72%);
+}
+
+.mx-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.mx-hero .am-hero-content,
+.mx-hero .mx-hero-copy {
+  max-width: 760px;
+}
+
+.mx-hero .am-hero-content h1,
+.mx-hero .mx-hero-title,
+.mx-hero h1 {
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ffffff;
+  font-size: clamp(1.8rem, 2vw, 2.35rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.mx-hero .am-hero-content h1 i,
+.mx-hero .mx-hero-title i,
+.mx-hero h1 i {
+  color: #67e8f9;
+}
+
+.mx-hero .am-hero-content p,
+.mx-hero .mx-hero-copy p,
+.mx-hero p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.mx-hero .am-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mx-hero .am-btn-primary {
+  background: #00a8a8;
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 10px 20px rgba(0, 168, 168, 0.18);
+}
+
+.mx-hero .am-btn-primary:hover {
+  background: #00b9b9;
+}
+
+.mx-hero .am-btn-outline {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
+}
+
+.mx-hero .am-btn-outline:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.mx-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin: -6px 0 24px;
+  padding: 8px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mx-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mx-tabs .am-tab-btn,
+.mx-tabs .bio-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.mx-tabs .am-tab-btn:hover,
+.mx-tabs .bio-tab:hover {
+  background: rgba(0, 168, 168, 0.08);
+  color: var(--color-brand-deep);
+}
+
+.mx-tabs .am-tab-btn.active,
+.mx-tabs .bio-tab.active {
+  background: linear-gradient(135deg, #0b3c5d 0%, #0f766e 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(11, 60, 93, 0.18);
+}
+
+.mx-tabs .am-tab-btn.active i,
+.mx-tabs .bio-tab.active i {
+  color: #67e8f9;
+}
+
+.mx-tabs .am-tab-btn i,
+.mx-tabs .bio-tab i {
+  font-size: 16px;
+}
+
+.mx-page-block {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(219, 227, 238, 0.9);
+  border-radius: 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.mx-page-frame {
+  width: 100%;
+  max-width: 1520px;
+  margin: 0 auto;
+}
+
+.mx-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+@media (max-width: 1024px) {
+  .mx-hero {
+    padding: 26px 24px;
+  }
+
+  .mx-tabs {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .mx-hero {
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 20px;
+    border-radius: 22px;
+  }
+
+  .mx-tabs {
+    width: 100%;
+    margin-top: 0;
+    margin-bottom: 20px;
+  }
+
+  .mx-tabs .am-tab-btn,
+  .mx-tabs .bio-tab {
+    min-height: 42px;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+}

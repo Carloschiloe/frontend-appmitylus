@@ -187,8 +187,198 @@
 }
 
 .centro-select-comuna {
+  min-width: 220px;
   max-width: 220px;
   flex: 0 0 220px;
+}
+
+.export-icon-leading {
+  margin-right: 4px;
+}
+
+.centros-table {
+  width: 100%;
+}
+
+.centros-total-label {
+  text-align: right;
+}
+
+.centros-panel-padded {
+  display: none;
+  padding: 24px;
+}
+
+.map-card-shell {
+  padding: 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.map-type-filters-shell {
+  padding: 16px 20px 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.map-controls-shell {
+  padding: 0 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.map-density-group {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 10px;
+  gap: 4px;
+}
+
+.map-density-btn {
+  padding: 4px 12px;
+  font-size: 11px;
+}
+
+.map-shell-frame {
+  height: calc(100vh - 340px);
+  min-height: 500px;
+  position: relative;
+  margin: 0 20px 20px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f1f5f9;
+  border: 1px solid var(--color-border);
+}
+
+.map-search-shell {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: min(400px, 85%);
+}
+
+.map-search-field-glass {
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+.map-search-input {
+  height: 40px;
+}
+
+.map-search-results-hidden {
+  display: none;
+}
+
+.map-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.san-dot-lg {
+  width: 14px;
+  height: 14px;
+}
+
+.san-col-status { width: 138px; }
+.san-col-code { width: 76px; }
+.san-col-area-state { width: 108px; }
+.san-col-centros { width: 60px; }
+.san-col-alertas { width: 76px; }
+.san-col-types { width: 110px; }
+.san-col-date { width: 92px; }
+.san-col-toggle { width: 58px; }
+
+.centro-modal-overlay-hidden,
+.centro-import-modal-hidden,
+.centro-detalle-modal-hidden {
+  display: none;
+}
+
+.centro-modal-lg {
+  max-width: 760px;
+}
+
+.centro-modal-md {
+  max-width: 640px;
+}
+
+.centro-modal-import {
+  max-width: 700px;
+}
+
+.centro-points-section {
+  margin-top: 20px;
+}
+
+.centro-points-title {
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+.centro-points-grid {
+  grid-template-columns: 1fr 1fr auto;
+}
+
+.centro-points-actions {
+  align-self: flex-end;
+  display: flex;
+  gap: 8px;
+}
+
+.centro-points-table {
+  margin-top: 8px;
+}
+
+.san-hist-modal {
+  max-width: 640px;
+  width: 96vw;
+  display: none;
+}
+
+.san-hist-head {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.san-hist-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.san-hist-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.san-hist-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.san-hist-body {
+  padding: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.san-hist-body-inner {
+  padding: 0 4px;
 }
 
 .centro-filter-popover-wrap {

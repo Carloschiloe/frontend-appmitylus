@@ -1,4 +1,4 @@
-// js/biomasa/index.js — Módulo Biomasa: Calendario / Programas / Seguimiento
+﻿// js/biomasa/index.js — Módulo Biomasa: Calendario / Programas / Seguimiento
 
 const API = window.APP_CONFIG?.API_BASE_URL || '';
 
@@ -958,10 +958,26 @@ function setupTabs() {
       if (fab) fab.style.display = tab.dataset.panel === 'panel-programas' ? '' : 'none';
       if (tab.dataset.panel === 'panel-programas') loadProgramas();
       if (tab.dataset.panel === 'panel-registro')  { loadRegistro(); }
+      resetViewport();
     });
   });
   // Ocultar FAB en la tab inicial (Calendario)
   if (fab) fab.style.display = 'none';
+}
+
+function resetViewport() {
+  try {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  } catch {}
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.documentElement.scrollLeft = 0;
+  document.body.scrollTop = 0;
+  document.body.scrollLeft = 0;
+  document.querySelectorAll('.content, .bio-main, .bio-panel').forEach(el => {
+    el.scrollTop = 0;
+    el.scrollLeft = 0;
+  });
 }
 
 function setupCalControls() {
@@ -997,6 +1013,8 @@ function setupNewProg() {
 // ════════════════════════════════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
+  resetViewport();
+  requestAnimationFrame(resetViewport);
   setupTabs();
   setupCalControls();
   setupProgFilters();

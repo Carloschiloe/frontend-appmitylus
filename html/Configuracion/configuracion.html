@@ -12,29 +12,30 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css" />
 
   <!-- Sistema de Diseño Unificado -->
-  <link rel="stylesheet" href="/css/index-modern.css">
-  <link rel="stylesheet" href="/css/base-ui.css">
-  <link rel="stylesheet" href="/css/configuracion.css" />
+<link rel="stylesheet" href="/css/index-modern.css">
+<link rel="stylesheet" href="/css/base-ui.css">
+<link rel="stylesheet" href="/css/mitynex-brand.css">
+<link rel="stylesheet" href="/css/configuracion.css" />
   <script src="/js/auth.js"></script>
 </head>
 <body>
   <div class="layout">
     <div id="sidebar-container"></div>
 
-    <main class="content">
-      <!-- Hero -->
-      <div class="am-hero">
-        <div class="am-hero-content">
-          <h1><i class="bi bi-sliders" style="color:var(--color-primary);margin-right:10px;"></i>Configuración</h1>
-          <p>Parámetros del sistema: criterios de clasificación y opciones maestras.</p>
-        </div>
-      </div>
+    <main class="content config-main-shell">
+      <div class="config-main mx-page-frame mx-page-stack">
+        <header class="am-hero mx-hero">
+          <div class="am-hero-content">
+            <h1><i class="bi bi-sliders"></i>Configuración</h1>
+            <p>Parámetros del sistema: criterios de clasificación y opciones maestras.</p>
+          </div>
+        </header>
 
-      <!-- Paneles -->
-      <section id="tab-criterios" class="config-section">
-        <h5 class="config-title">Criterios de Clasificación por Cliente</h5>
-        <div id="criterios-clasificacion-content"></div>
-      </section>
+        <section id="tab-criterios" class="config-section">
+          <h5 class="config-title">Criterios de Clasificación por Cliente</h5>
+          <div id="criterios-clasificacion-content"></div>
+        </section>
+      </div>
     </main>
   </div>
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
@@ -8,36 +8,35 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="/css/index-modern.css" />
   <link rel="stylesheet" href="/css/base-ui.css" />
+  <link rel="stylesheet" href="/css/mitynex-brand.css" />
   <script src="/js/auth.js"></script>
   <style>
     /* ── Layout ── */
     .bio-page { display:flex; flex-direction:column; flex:1; overflow:hidden; }
     .bio-main  { flex:1; display:flex; flex-direction:column; overflow-y:auto; }
-    .bio-hero  { padding:28px 32px 0; }
-    .bio-hero h1 { font-size:22px; font-weight:700; color:var(--text-primary,#1e293b); display:flex; align-items:center; gap:10px; margin:0 0 4px; }
-    .bio-hero p  { font-size:13px; color:var(--text-muted,#64748b); margin:0 0 20px; }
+    .bio-hero  { margin-bottom:0; }
 
     /* ── Tabs ── */
-    .bio-tabs { display:flex; gap:4px; padding:0 32px; border-bottom:1px solid var(--border,#e2e8f0); }
-    .bio-tab  { padding:10px 20px; font-size:13px; font-weight:600; color:var(--text-muted,#64748b); border:none; background:none; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s,border-color .15s; display:flex; align-items:center; gap:7px; }
-    .bio-tab:hover  { color:var(--text-secondary,#475569); }
-    .bio-tab.active { color:#0d9488; border-bottom-color:#0d9488; }
+    .bio-tabs { margin:0 0 24px; }
+    .bio-tab  { margin:0; }
 
     /* ── Content panels ── */
-    .bio-panel { display:none; flex:1; overflow-y:auto; padding:24px 32px; }
+    .bio-panel { display:none; flex:1; overflow-y:auto; padding:24px 0 32px; }
     .bio-panel.active { display:block; }
 
     /* ════════════════════════ TAB 1: CALENDARIO ════════════════════════ */
-    .cal-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+    .cal-toolbar { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:20px; flex-wrap:wrap; padding-right:340px; }
+    .cal-toolbar-main { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
     .cal-nav    { display:flex; align-items:center; gap:8px; }
     .cal-nav button { width:32px; height:32px; border-radius:8px; border:1px solid var(--border,#e2e8f0); background:var(--surface,#fff); color:var(--text-secondary,#475569); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:background .15s; }
     .cal-nav button:hover { background:var(--surface-alt,#f8fafc); color:var(--text-primary,#1e293b); }
     .cal-title  { font-size:17px; font-weight:700; color:var(--text-primary,#1e293b); min-width:180px; text-align:center; }
-    .cal-view-toggle { display:flex; gap:4px; margin-left:auto; }
+    .cal-view-toggle { display:flex; gap:4px; }
     .cal-view-btn { padding:6px 14px; border-radius:8px; border:1px solid var(--border,#e2e8f0); background:var(--surface,#fff); color:var(--text-muted,#64748b); font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; }
     .cal-view-btn.active { background:#0f766e; border-color:#0f766e; color:#fff; }
 
     .cal-summary { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+    .cal-summary-inline { margin-bottom:0; margin-left:auto; justify-content:flex-end; }
     .cal-summary-card { background:var(--surface,#fff); border:1px solid var(--border,#e2e8f0); border-radius:10px; padding:12px 18px; min-width:140px; }
     .cal-summary-card .val { font-size:22px; font-weight:800; color:#0d9488; }
     .cal-summary-card .lbl { font-size:11px; color:var(--text-muted,#64748b); font-weight:600; margin-top:2px; }
@@ -80,7 +79,7 @@
 
     /* Panel lateral detalle día */
     .cal-layout   { display:grid; grid-template-columns:1fr 320px; gap:20px; }
-    @media(max-width:1100px) { .cal-layout { grid-template-columns:1fr; } .cal-detail { display:none !important; } }
+    @media(max-width:1100px) { .cal-layout { grid-template-columns:1fr; } .cal-detail { display:none !important; } .cal-toolbar { align-items:stretch; padding-right:0; } .cal-summary-inline { width:100%; margin-left:0; justify-content:flex-start; } }
     .cal-detail   { background:var(--surface,#fff); border:1px solid var(--border,#e2e8f0); border-radius:12px; padding:20px; height:fit-content; position:sticky; top:0; }
     .cal-detail h3 { font-size:14px; font-weight:700; color:var(--text-primary,#1e293b); margin:0 0 16px; }
     .cal-detail-empty { color:var(--text-muted,#64748b); font-size:13px; text-align:center; padding:24px 0; }
@@ -272,13 +271,15 @@
     <main class="content">
   <div class="bio-page">
     <div class="bio-main">
-      <div class="bio-hero">
-        <h1><i class="bi bi-droplet-half" style="color:#2dd4bf;"></i> Biomasa — Programa de Cosecha</h1>
-        <p>Calendario de despachos, programas activos y seguimiento semanal.</p>
+      <div class="bio-hero am-hero mx-hero">
+        <div class="am-hero-content">
+          <h1><i class="bi bi-droplet-half" style="color:#2dd4bf;"></i> Biomasa — Programa de Cosecha</h1>
+          <p>Calendario de despachos, programas activos y seguimiento semanal.</p>
+        </div>
       </div>
 
       <!-- Tabs -->
-      <div class="bio-tabs">
+      <div class="bio-tabs am-tabs-main mx-tabs">
         <button class="bio-tab active" data-panel="panel-calendario">
           <i class="bi bi-calendar3"></i> Calendario
         </button>
@@ -293,30 +294,32 @@
       <!-- ══════════════ PANEL: CALENDARIO ══════════════ -->
       <div id="panel-calendario" class="bio-panel active">
 
-        <div class="cal-header">
-          <div class="cal-nav">
-            <button id="calPrev"><i class="bi bi-chevron-left"></i></button>
-            <span id="calTitle" class="cal-title">—</span>
-            <button id="calNext"><i class="bi bi-chevron-right"></i></button>
+        <div class="cal-toolbar">
+          <div class="cal-toolbar-main">
+            <div class="cal-view-toggle">
+              <button class="cal-view-btn active" data-view="month">Mes</button>
+              <button class="cal-view-btn" data-view="week">Semana</button>
+            </div>
+            <div class="cal-nav">
+              <button id="calPrev"><i class="bi bi-chevron-left"></i></button>
+              <span id="calTitle" class="cal-title">—</span>
+              <button id="calNext"><i class="bi bi-chevron-right"></i></button>
+            </div>
           </div>
-          <div class="cal-view-toggle">
-            <button class="cal-view-btn active" data-view="month">Mes</button>
-            <button class="cal-view-btn" data-view="week">Semana</button>
-          </div>
-        </div>
 
-        <div class="cal-summary">
-          <div class="cal-summary-card">
-            <div class="val" id="calSumTotalCam">—</div>
-            <div class="lbl">Camiones en el período</div>
-          </div>
-          <div class="cal-summary-card">
-            <div class="val" id="calSumProgActivos">—</div>
-            <div class="lbl">Programas activos</div>
-          </div>
-          <div class="cal-summary-card">
-            <div class="val" id="calSumMaxDia">—</div>
-            <div class="lbl">Máx. en un día</div>
+          <div class="cal-summary cal-summary-inline">
+            <div class="cal-summary-card">
+              <div class="val" id="calSumTotalCam">—</div>
+              <div class="lbl">Camiones en el período</div>
+            </div>
+            <div class="cal-summary-card">
+              <div class="val" id="calSumProgActivos">—</div>
+              <div class="lbl">Programas activos</div>
+            </div>
+            <div class="cal-summary-card">
+              <div class="val" id="calSumMaxDia">—</div>
+              <div class="lbl">Máx. en un día</div>
+            </div>
           </div>
         </div>
 

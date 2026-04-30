@@ -1,3 +1,11 @@
+.config-main-shell {
+  padding: 18px 18px 24px;
+}
+
+.config-main .am-hero {
+  margin-bottom: 0;
+}
+
 .config-section {
   margin-top: 16px;
 }
@@ -183,4 +191,10 @@
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 8px;
+}
+
+@media (max-width: 760px) {
+  .config-main-shell {
+    padding: 16px 14px 20px;
+  }
 }

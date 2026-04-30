@@ -2,22 +2,15 @@
 @import url('/css/tokens.css');
 
 .maest-shell {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 32px 24px;
+  padding: 0;
+}
+
+.maest-main-shell {
+  padding: 18px 18px 24px;
 }
 
 .maest-hero {
-  margin-bottom: 32px;
-}
-
-.maest-hero h4 {
-  margin: 0 0 8px;
-  font-weight: 800;
-  color: #0f172a;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  margin-bottom: 0;
 }
 
 .maest-hero p, .maest-description {
@@ -30,55 +23,15 @@
 
 /* ── Pestañas (Tabs) ── */
 .maest-tabs {
-  display: flex;
-  gap: 6px;
   margin-bottom: 24px;
-  background: #f1f5f9;
-  padding: 5px;
-  border-radius: 14px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  width: fit-content;
-  margin-left: 0;
-}
-
-.maest-tabs::-webkit-scrollbar {
-  display: none;
 }
 
 .maest-tab-btn {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 9px 18px;
-  border: none;
-  background: transparent;
-  color: var(--color-slate-500);
-  font-weight: 600;
-  font-size: 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
+  border-bottom: 0;
 }
 
 .maest-tab-btn i {
   font-size: 16px;
-}
-
-.maest-tab-btn:hover {
-  color: #0f172a;
-  background: rgba(255, 255, 255, 0.5);
-}
-
-.maest-tab-btn.active {
-  background: #ffffff;
-  color: var(--color-indigo-600);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-  border-bottom: 2px solid var(--color-indigo-600);
-  border-radius: 10px 10px 0 0;
 }
 
 /* ── Paneles ── */
@@ -134,6 +87,20 @@
   letter-spacing: 0.05em;
   color: #64748b;
   border-bottom: 1px solid #e2e8f0;
+}
+
+.maest-th-actions {
+  text-align: right !important;
+}
+
+.maest-th-type,
+.maest-th-client {
+  width: 140px;
+}
+
+.maest-th-state,
+.maest-th-actions-sm {
+  width: 90px;
 }
 
 .maest-table tbody td {
@@ -192,4 +159,123 @@
   background: #fef2f2;
   color: #ef4444;
   border-color: #fecaca;
+}
+
+.maest-modal-sm {
+  width: 480px !important;
+}
+
+.maest-modal-md {
+  width: 580px !important;
+  top: 6% !important;
+  z-index: 1000 !important;
+  max-height: 88vh !important;
+  overflow-y: auto;
+}
+
+.maest-modal-close {
+  border: none;
+  background: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.maest-required {
+  color: #ef4444;
+}
+
+.maest-muted-note {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.maest-hidden-row {
+  display: none;
+}
+
+.maest-textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.maest-check-row {
+  justify-content: flex-end;
+  padding-top: 24px;
+}
+
+.maest-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.maest-check-input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.maest-check-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.maest-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: none;
+  background: rgba(0,0,0,.45);
+}
+
+.maest-select-wide {
+  width: 100%;
+  min-width: 200px;
+}
+
+.maest-copy {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.maest-label-spaced {
+  margin-bottom: 8px;
+}
+
+.maest-copy-hidden {
+  display: none;
+}
+
+.maest-param-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.maest-inline-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.maest-inline-add .am-select {
+  flex: 1;
+  margin: 0;
+}
+
+.maest-inline-add .am-btn {
+  height: 38px;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .maest-main-shell {
+    padding: 16px 14px 20px;
+  }
 }

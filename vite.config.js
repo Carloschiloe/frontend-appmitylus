@@ -5,7 +5,6 @@ import { resolve } from 'path';
 
 // Copia los directorios estáticos a dist/ después del build
 const EXCLUDE_FROM_COPY = [
-  'Appmmpp 17AbrORIGINAL',
   'Appmmpp 12Abr',
   '.git',
   'node_modules',

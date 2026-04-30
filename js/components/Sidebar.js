@@ -79,8 +79,11 @@ export class Sidebar {
     this.render();
     this.setupEventListeners();
     this.updateActiveState();
+    this.resetViewport();
     window.addEventListener('hashchange', () => this.updateActiveState());
+    window.addEventListener('hashchange', () => this.resetViewport());
     window.addEventListener('mmpp:navigate', () => this.updateActiveState());
+    window.addEventListener('mmpp:navigate', () => this.resetViewport());
     this.loadSanitarioAlert();
 
     // Red de seguridad: Eliminar overlays de tutoriales legados (TapTarget)
@@ -109,6 +112,25 @@ export class Sidebar {
     if (hasVisibleOpenModal) return;
     document.querySelectorAll('.modal-overlay, .sidenav-overlay').forEach((el) => el.remove());
     document.body.style.overflow = '';
+  }
+
+  resetViewport() {
+    try {
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    } catch {}
+    const reset = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.documentElement.scrollLeft = 0;
+      document.body.scrollTop = 0;
+      document.body.scrollLeft = 0;
+      document.querySelectorAll('.content, .bio-main, .bio-panel, .bio-table-wrap').forEach((el) => {
+        el.scrollTop = 0;
+        el.scrollLeft = 0;
+      });
+    };
+    reset();
+    requestAnimationFrame(reset);
   }
 
   render() {
@@ -200,6 +222,11 @@ export class Sidebar {
 
         group.classList.toggle('is-open', willOpen);
         toggleBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      }
+
+      const navLink = target.closest('.submenu a[href]');
+      if (navLink) {
+        setTimeout(() => this.resetViewport(), 0);
       }
     }, true);
   }
