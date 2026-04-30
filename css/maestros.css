@@ -15,7 +15,7 @@
 
 .maest-hero p, .maest-description {
   margin: 0 0 20px;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 14px;
   line-height: 1.5;
   max-width: 800px;
@@ -59,15 +59,15 @@
 .maest-panel-head h6 {
   margin: 0;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--color-text);
   font-size: 18px;
 }
 
 /* ── Tablas de Maestros ── */
 .maest-table-wrap {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
@@ -78,15 +78,15 @@
 }
 
 .maest-table thead th {
-  background: #f8fafc;
+  background: var(--color-bg);
   padding: 14px 20px;
   text-align: left;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #64748b;
-  border-bottom: 1px solid #e2e8f0;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .maest-th-actions {
@@ -106,8 +106,8 @@
 .maest-table tbody td {
   padding: 16px 20px;
   font-size: 14px;
-  color: #334155;
-  border-bottom: 1px solid #f1f5f9;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-bg);
   vertical-align: middle;
 }
 
@@ -116,7 +116,7 @@
 }
 
 .maest-table tbody tr:hover td {
-  background: #fbfcfe;
+  background: var(--color-bg);
 }
 
 /* ── Badges de Estado ── */
@@ -141,24 +141,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  color: #94a3b8;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-subtle);
   background: transparent;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .mini-actions button:hover, .mini-actions a:hover {
-  background: #f1f5f9;
+  background: var(--color-bg);
   color: var(--color-primary);
   border-color: #cbd5e1;
 }
 
 .mini-actions button.mini-del:hover {
-  background: #fef2f2;
-  color: #ef4444;
-  border-color: #fecaca;
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border-color: #fca5a5;
 }
 
 .maest-modal-sm {
@@ -176,17 +176,17 @@
 .maest-modal-close {
   border: none;
   background: none;
-  color: #64748b;
+  color: var(--color-text-muted);
   cursor: pointer;
   font-size: 20px;
 }
 
 .maest-required {
-  color: #ef4444;
+  color: var(--color-error);
 }
 
 .maest-muted-note {
-  color: #94a3b8;
+  color: var(--color-text-subtle);
   font-weight: 400;
 }
 
@@ -221,7 +221,7 @@
 .maest-check-text {
   font-size: 13px;
   font-weight: 700;
-  color: #334155;
+  color: var(--color-text);
 }
 
 .maest-overlay {
@@ -240,7 +240,7 @@
 .maest-copy {
   margin: 0 0 10px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .maest-label-spaced {

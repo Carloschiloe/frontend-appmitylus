@@ -1,36 +1,18 @@
 /* /spa-mmpp/layout.css */
-/* ========== TOKENS GLOBALES ========== */
-:root{
-  /* Brand & UI */
-  --brand-1:#0ea5a8;      /* turquesa principal */
-  --brand-2:#0b6c6e;      /* turquesa oscura */
-  --bg:#f6f8ff;           /* fondo app */
-  --card:#ffffff;         /* paneles/tarjetas */
-  --text:#0f172a;         /* texto principal */
-  --muted:#64748b;        /* texto secundario */
-  --border:#e5e7eb;       /* bordes suaves */
-  --shadow:0 10px 24px rgba(2,6,23,.06);
-
-  /* Navegación lateral */
-  --nav-w: 240px;
-  --nav-bg: #0f172a;
-  --nav-fg: #e5e7eb;
-  --nav-fg-dim: #9ca3af;
-  --nav-accent: #6366f1;
-}
+/* Tokens: importados desde tokens.css (fuente única de verdad) */
 
 /* ========== RESET SUAVE / BASE ========== */
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", Arial;
+  background:var(--color-bg);
+  color:var(--color-text);
+  font-family:var(--font-sans);
   -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
 }
 img{max-width:100%; display:block}
-a{color:var(--brand-1); text-decoration:none}
+a{color:var(--color-primary); text-decoration:none}
 a:hover{text-decoration:underline}
 button{font:inherit}
 
@@ -38,7 +20,7 @@ button{font:inherit}
 .mmpp-layout{
   min-height:100vh;
   display:grid;
-  grid-template-columns: var(--nav-w) 1fr;
+  grid-template-columns: var(--nav-width) 1fr;
 }
 
 /* Área principal */
@@ -52,10 +34,10 @@ button{font:inherit}
 
 /* Tarjetas básicas (para cabeceras o bloques) */
 .card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:16px;
-  box-shadow:var(--shadow);
+  background:var(--color-surface);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-sm);
   padding:16px;
 }
 
@@ -69,6 +51,7 @@ button{font:inherit}
   padding:16px 12px;
   border-right:1px solid rgba(255,255,255,.06);
 }
+/* nav-bg, nav-fg, nav-fg-dim, nav-accent definidos en tokens.css */
 
 .mmpp-nav .brand{
   display:flex; align-items:center; gap:10px;
@@ -91,8 +74,8 @@ button{font:inherit}
 .mmpp-nav a:hover{ background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.08); }
 .mmpp-nav a:active{ transform:translateY(1px); }
 .mmpp-nav a.is-active{
-  background:rgba(99,102,241,.18);
-  border-color:rgba(99,102,241,.35);
+  background:rgba(0,168,168,.18);
+  border-color:rgba(0,168,168,.35);
   color:#fff;
 }
 .mmpp-nav .section{ margin-top:12px; color:var(--nav-fg-dim); font-size:12px; text-transform:uppercase; letter-spacing:.08em; padding:0 8px; }

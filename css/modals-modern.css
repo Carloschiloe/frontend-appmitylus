@@ -1,15 +1,8 @@
-/* 
-  MODALS MODERN SYSTEM - AppMMPP 
+/*
+  MODALS MODERN SYSTEM - AppMMPP
   Sistema de diseño unificado para todos los modales.
+  Tokens: --modal-radius y --modal-shadow definidos en tokens.css
 */
-
-:root {
-  --modal-header-bg: #ffffff;
-  --modal-footer-bg: #f8fafc;
-  --modal-border: #e2e8f0;
-  --modal-radius: 20px;
-  --modal-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
 
 /* Contenedor Principal (Materialize Override) */
 .modal.app-modal-modern {
@@ -64,8 +57,8 @@
 /* Cabecera con Tabs */
 .app-modal-header {
   padding: 16px 24px 0; /* Padding inferior 0 para que los tabs toquen el borde */
-  background: var(--modal-header-bg);
-  border-bottom: 1px solid var(--modal-border);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 
@@ -161,8 +154,8 @@
 /* Footer Fijo (Sticky) */
 .app-modal-footer {
   padding: 14px 32px;
-  background: var(--modal-footer-bg);
-  border-top: 1px solid var(--modal-border);
+  background: #f8fafc;
+  border-top: 1px solid var(--color-border);
   display: flex !important;
   justify-content: flex-end;
   gap: 12px;

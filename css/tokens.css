@@ -79,6 +79,23 @@
   --z-modal:    3000;
   --z-toast:    9999;
 
+  /* ── Texto semántico para badges/estados ── */
+  --color-success-text: #065f46;
+  --color-warning-text: #92400e;
+  --color-error-text:   #991b1b;
+  --color-info-text:    #1e40af;
+
+  /* ── Navegación lateral (módulo mmpp/app-shell) ── */
+  --nav-width:  240px;
+  --nav-bg:     #0f172a;
+  --nav-fg:     #e5e7eb;
+  --nav-fg-dim: #9ca3af;
+  --nav-accent: var(--color-primary);
+
+  /* ── Modal (sistema legacy Materialize) ── */
+  --modal-radius: var(--radius-xl);
+  --modal-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+
   /* ────────────────────────────────────────────────────────
      ALIASES de compatibilidad hacia atrás
      Permiten que index-modern.css, sidebar.css, etc. sigan
@@ -86,14 +103,21 @@
      todo el código HTML/JS de una vez.
      NO usar estos aliases en código nuevo — usar --color-*
      ──────────────────────────────────────────────────────── */
-  --bg:        var(--color-bg);
-  --surface:   var(--color-surface);
-  --sidebar:   var(--color-sidebar);
+  --bg:      var(--color-bg);
+  --surface: var(--color-surface);
+  --sidebar: var(--color-sidebar);
   --sidebar-2: var(--color-sidebar-alt);
-  --line:      var(--color-border);
-  --ink:       var(--color-text);
-  --muted:     var(--color-text-muted);
-  --accent:    var(--color-primary);
-  --accent-2:  var(--color-primary-light);
-  --radius:    var(--radius-md);
+  --line:    var(--color-border);
+  --border:  var(--color-border);
+  --ink:     var(--color-text);
+  --text:    var(--color-text);
+  --muted:   var(--color-text-muted);
+  --accent:  var(--color-primary);
+  --accent-2: var(--color-primary-light);
+  --radius:  var(--radius-md);
+  --card:    var(--color-surface);
+  --panel:   var(--color-surface);
+  --brand-1: var(--color-primary);
+  --brand-2: var(--color-primary-dark);
+  --shadow:  var(--shadow-sm);
 }
