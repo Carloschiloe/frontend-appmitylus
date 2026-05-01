@@ -85,25 +85,25 @@
   flex-wrap: wrap;
 }
 
-.mx-hero .am-btn-primary {
+.mx-hero .mx-btn-primary {
   background: #00a8a8;
   color: #ffffff;
   border-color: transparent;
   box-shadow: 0 10px 20px rgba(0, 168, 168, 0.18);
 }
 
-.mx-hero .am-btn-primary:hover {
+.mx-hero .mx-btn-primary:hover {
   background: #00b9b9;
 }
 
-.mx-hero .am-btn-outline {
+.mx-hero .mx-btn-outline {
   background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(10px);
 }
 
-.mx-hero .am-btn-outline:hover {
+.mx-hero .mx-btn-outline:hover {
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.3);
@@ -130,6 +130,7 @@
 }
 
 .mx-tabs .am-tab-btn,
+.mx-tabs .mx-tab,
 .mx-tabs .bio-tab {
   position: relative;
   display: inline-flex;
@@ -150,12 +151,14 @@
 }
 
 .mx-tabs .am-tab-btn:hover,
+.mx-tabs .mx-tab:hover,
 .mx-tabs .bio-tab:hover {
   background: rgba(0, 168, 168, 0.08);
   color: var(--color-brand-deep);
 }
 
 .mx-tabs .am-tab-btn.active,
+.mx-tabs .mx-tab.active,
 .mx-tabs .bio-tab.active {
   background: linear-gradient(135deg, #0b3c5d 0%, #0f766e 100%);
   color: #ffffff;

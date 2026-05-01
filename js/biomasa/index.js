@@ -704,7 +704,7 @@ function renderSegList(containerId, items, isCerrado) {
         </div>
         ${!isCerrado ? `
         <div class="seg-card-actions write-only">
-          <button class="am-btn am-btn-secondary" style="font-size:12px;padding:6px 12px;" data-action="seg" data-id="${p._id}">
+          <button class="mx-btn mx-btn-secondary" style="font-size:12px;padding:6px 12px;" data-action="seg" data-id="${p._id}">
             <i class="bi bi-plus-lg"></i> Seguimiento
           </button>
           <button class="prog-btn" style="color:#64748b;" title="Cerrar programa" data-action="cerrar" data-id="${p._id}">
@@ -866,7 +866,7 @@ function openNovedadModal(progId, fecha, camActual, camPlan, proveedor, motivoAc
     `<strong>${esc(proveedor)}</strong> · Planificado: <strong>${camPlan} camión${camPlan!==1?'es':''}</strong>`;
 
   // Marcar el botón del valor actual
-  document.querySelectorAll('.cam-btn').forEach(b => {
+  document.querySelectorAll('.cmx-btn').forEach(b => {
     b.classList.remove('sel', 'sel-0');
     if (Number(b.dataset.cam) === camActual) {
       b.classList.add(camActual === 0 ? 'sel-0' : 'sel');
@@ -886,10 +886,10 @@ function closeNovedadModal() {
 }
 
 document.getElementById('camBtns').addEventListener('click', e => {
-  const btn = e.target.closest('.cam-btn');
+  const btn = e.target.closest('.cmx-btn');
   if (!btn) return;
   novedadCamSel = Number(btn.dataset.cam);
-  document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('sel', 'sel-0'));
+  document.querySelectorAll('.cmx-btn').forEach(b => b.classList.remove('sel', 'sel-0'));
   btn.classList.add(novedadCamSel === 0 ? 'sel-0' : 'sel');
 });
 

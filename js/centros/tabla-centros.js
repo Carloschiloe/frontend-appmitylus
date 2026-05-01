@@ -1,4 +1,4 @@
-﻿import { Estado } from '../core/estado.js';
+import { Estado } from '../core/estado.js';
 import { getCentrosAll } from '../core/centros-repo.js';
 import { registerTablaCentrosEventos } from './eventos-centros.js';
 import { tabMapaActiva } from '../core/utilidades-app.js';
@@ -17,10 +17,10 @@ const SANITARIO_LABELS = {
 };
 
 const SANITARIO_TONE = {
-  ok: 'verde',
-  alerta: 'naranja',
-  bloqueada: 'rojo',
-  sin_datos: 'gris',
+  ok: 'success',
+  alerta: 'warning',
+  bloqueada: 'danger',
+  sin_datos: 'muted',
 };
 
 const SANITARIO_ORDER = ['ok', 'alerta', 'bloqueada', 'sin_datos'];
@@ -124,7 +124,7 @@ function renderProveedorCell(centro) {
 }
 
 function renderCodeCell(code) {
-  return `<span class="centro-code-pill">${esc(code || '-')}</span>`;
+  return `<span class="mx-code-pill">${esc(code || '-')}</span>`;
 }
 
 function renderAreaCell(areaPSMB, delimitacion) {
@@ -139,22 +139,28 @@ function renderAreaCell(areaPSMB, delimitacion) {
 
 function renderEstadoAreaCell(estadoArea, codigoArea) {
   const label = normalizeEstadoArea(estadoArea);
+  // Mapeo dinámico a tonos mx-badge
+  let tone = 'muted';
+  if (label === 'Abierta') tone = 'success';
+  if (label === 'Cerrada' || label === 'Eliminada') tone = 'danger';
+  if (label === 'Inactiva') tone = 'warning';
+
   const codigo = String(codigoArea || '').trim();
   return `
     <div class="centro-state-cell">
-      <span class="centro-status-badge ${esc(normalizeEstadoAreaClass(label))}">${esc(label)}</span>
-      <div class="centro-state-meta">${codigo ? `Codigo area ${esc(codigo)}` : '<span class="centro-empty">Sin codigo de area</span>'}</div>
+      <span class="mx-badge mx-badge-${tone}"><span class="mx-badge-dot"></span>${esc(label)}</span>
+      <div class="centro-state-meta">${codigo ? `Código área ${esc(codigo)}` : '<span class="centro-empty">Sin código de área</span>'}</div>
     </div>`;
 }
 
 function renderEstadoSanitarioCell(estado, linked) {
   const key = normalizeSanitarioEstado(estado);
   const label = SANITARIO_LABELS[key];
-  const tone = SANITARIO_TONE[key] || 'gris';
+  const tone = SANITARIO_TONE[key] || 'muted';
   return `
     <div class="centro-state-cell">
-      <span class="centro-status-badge ${esc(tone)}">${esc(label)}</span>
-      <div class="centro-state-meta">${linked ? 'Con vinculo PSMB' : '<span class="centro-empty">Sin vinculo PSMB</span>'}</div>
+      <span class="mx-badge mx-badge-${tone}">${esc(label)}</span>
+      <div class="centro-state-meta">${linked ? 'Con vínculo PSMB' : '<span class="centro-empty">Sin vínculo PSMB</span>'}</div>
     </div>`;
 }
 
@@ -412,7 +418,7 @@ function exportCentrosPdf() {
   if (!api) return;
   const pdfMake = window.pdfMake;
   if (!pdfMake?.createPdf) {
-    toast('No se pudo inicializar la exportacion PDF', { variant: 'error' });
+    toast('No se pudo inicializar la exportación PDF', { variant: 'error' });
     return;
   }
 
@@ -424,12 +430,21 @@ function exportCentrosPdf() {
 
   const headerRow = [
     { text: 'Proveedor', style: 'tableHeader' },
-    { text: 'Codigo de centro', style: 'tableHeader' },
-    { text: 'Area PSMB', style: 'tableHeader' },
-    { text: 'Estado area', style: 'tableHeader' },
+    { text: 'Código de centro', style: 'tableHeader' },
+    { text: 'Área PSMB', style: 'tableHeader' },
+    { text: 'Estado área', style: 'tableHeader' },
     { text: 'Estado sanitario', style: 'tableHeader' },
-    { text: 'Hectareas', style: 'tableHeader', alignment: 'right' },
+    { text: 'Hectáreas', style: 'tableHeader', alignment: 'right' },
   ];
+
+  const LABELS = {
+    region:'Región', codigoArea:'Código Área', areaPSMB:'Área PSMB', estadoAreaSernapesca:'Estado Sernapesca',
+    estadoSanitario:'Estado Sanitario', ubicacion:'Ubicación',
+    grupoEspecie:'Grupo Especie', especies:'Especies', tonsMax:'Tons Máx',
+    numeroResSSP:'N° ResSSP', fechaResSSP:'Fecha ResSSP',
+    numeroResSSFFAA:'N° ResSSFFAA', fechaResSSFFAA:'Fecha ResSSFFAA',
+    rutTitular:'RUT Titular', nroPert:'Nro. Pert',
+  };
 
   const doc = {
     pageOrientation: 'landscape',
@@ -588,7 +603,7 @@ function resetFilterState() {
 
 function syncChipGroup(selector, activeValue, dataAttr) {
   document.querySelectorAll(selector).forEach((btn) => {
-    btn.classList.toggle('is-active', (btn.dataset[dataAttr] || '') === activeValue);
+    btn.classList.toggle('active', (btn.dataset[dataAttr] || '') === activeValue);
   });
 }
 
@@ -633,9 +648,9 @@ function syncFilterTriggers() {
     : 'Estado area';
 
   const sanitaryTrigger = document.getElementById('btnToggleSanitarioFilters');
-  sanitaryTrigger?.classList.toggle('is-active', Boolean(filterState.estadoSanitario));
+  sanitaryTrigger?.classList.toggle('active', Boolean(filterState.estadoSanitario));
   const areaTrigger = document.getElementById('btnToggleAreaFilters');
-  areaTrigger?.classList.toggle('is-active', Boolean(filterState.estadoArea));
+  areaTrigger?.classList.toggle('active', Boolean(filterState.estadoArea));
 }
 
 function renderActiveFilters() {
@@ -705,7 +720,7 @@ export function initTablaCentros() {
   const jq = window.$;
   $t = jq('#centrosTable');
   if (!$t.length) {
-    console.error('No se encontro #centrosTable');
+    console.error('No se encontró #centrosTable');
     return;
   }
 
@@ -741,7 +756,7 @@ export function initTablaCentros() {
 
 export async function loadCentros(data) {
   if (!api) {
-    console.warn('DataTable no inicializada aun');
+    console.warn('DataTable no inicializada aún');
     return;
   }
 

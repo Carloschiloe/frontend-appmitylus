@@ -105,56 +105,60 @@ export async function mountActivityTable(root) {
   root.innerHTML = `
     <div class="act-wrap">
 
-      <!-- Navegación de periodo + botón nueva actividad -->
-      <div class="act-period-nav" id="act-period-nav">
-        <div class="act-period-left">
-          <div class="act-period-modes" role="group" aria-label="Modo de periodo">
-            <button class="act-period-mode is-active" data-period="all">Todo</button>
-            <button class="act-period-mode" data-period="week">Semana</button>
-            <button class="act-period-mode" data-period="month">Mes</button>
-          </div>
-          <div class="act-period-ctrl" id="act-period-ctrl" hidden>
-            <button class="act-period-arrow" id="act-period-prev" title="Periodo anterior" aria-label="Periodo anterior">
-              <i class="bi bi-chevron-left"></i>
-            </button>
-            <span class="act-period-label" id="act-period-label"></span>
-            <button class="act-period-arrow" id="act-period-next" title="Periodo siguiente" aria-label="Periodo siguiente">
-              <i class="bi bi-chevron-right"></i>
-            </button>
-            <button class="act-period-today" id="act-period-today">Hoy</button>
+      <div class="mx-table-head am-mb-16">
+        <div class="mx-table-title">
+          <div class="mx-header-icon"><i class="bi bi-chat-right-dots"></i></div>
+          <div>
+            <h2>Historial de Interacciones</h2>
+            <p>Registro unificado de llamadas, reuniones y visitas a terreno</p>
           </div>
         </div>
-        <div class="act-new-dropdown" id="actNewDropdown">
-          <button class="am-btn am-btn-primary act-new-trigger" id="actNewTrigger" type="button" aria-haspopup="true" aria-expanded="false">
-            <i class="bi bi-plus-lg"></i> Nueva actividad
-            <i class="bi bi-chevron-down act-new-caret"></i>
-          </button>
-          <div class="act-new-menu" id="actNewMenu" role="menu">
-            <button class="act-new-item" id="qaNuevaLlamada" type="button" role="menuitem">
-              <span class="act-new-icon" style="background:#ede9fe;color:#7c3aed"><i class="bi bi-telephone-fill"></i></span>
-              <span class="act-new-label">Llamada</span>
+
+        <div class="mx-table-actions">
+          <div class="mx-toggle-group" role="group">
+            <button class="mx-toggle-btn active" data-period="all">Todo</button>
+            <button class="mx-toggle-btn" data-period="week">Semana</button>
+            <button class="mx-toggle-btn" data-period="month">Mes</button>
+          </div>
+          
+          <div class="am-period-nav" id="act-period-ctrl" hidden>
+            <button class="mx-nav-btn" id="act-period-prev" title="Anterior"><i class="bi bi-chevron-left"></i></button>
+            <span class="am-period-label" id="act-period-label"></span>
+            <button class="mx-nav-btn" id="act-period-next" title="Siguiente"><i class="bi bi-chevron-right"></i></button>
+            <button class="mx-btn mx-btn-outline mx-btn-sm" style="margin-left: 8px;" id="act-period-today">Hoy</button>
+          </div>
+
+          <div class="act-new-dropdown" id="actNewDropdown">
+            <button class="mx-btn mx-btn-primary act-new-trigger" id="actNewTrigger" type="button">
+              <i class="bi bi-plus-lg"></i> Nueva actividad
+              <i class="bi bi-chevron-down act-new-caret" style="margin-left:4px; font-size:10px;"></i>
             </button>
-            <button class="act-new-item" id="qaNuevaReunion" type="button" role="menuitem">
-              <span class="act-new-icon" style="background:#fef3c7;color:#d97706"><i class="bi bi-people-fill"></i></span>
-              <span class="act-new-label">Reunión</span>
-            </button>
-            <button class="act-new-item" id="qaNuevoCompromiso" type="button" role="menuitem">
-              <span class="act-new-icon" style="background:#d1fae5;color:#059669"><i class="bi bi-check-square-fill"></i></span>
-              <span class="act-new-label">Compromiso</span>
-            </button>
-            <div class="act-new-divider"></div>
-            <button class="act-new-item" id="qaNuevaVisita" type="button" role="menuitem">
-              <span class="act-new-icon" style="background:#e0f2fe;color:#0284c7"><i class="bi bi-geo-alt-fill"></i></span>
-              <span class="act-new-label">Visita terreno</span>
-            </button>
+            <div class="act-new-menu" id="actNewMenu" role="menu">
+              <button class="act-new-item" id="qaNuevaLlamada" type="button" role="menuitem">
+                <span class="act-new-icon" style="background:#ede9fe;color:#7c3aed"><i class="bi bi-telephone-fill"></i></span>
+                <span class="act-new-label">Llamada</span>
+              </button>
+              <button class="act-new-item" id="qaNuevaReunion" type="button" role="menuitem">
+                <span class="act-new-icon" style="background:#fef3c7;color:#d97706"><i class="bi bi-people-fill"></i></span>
+                <span class="act-new-label">Reunión</span>
+              </button>
+              <button class="act-new-item" id="qaNuevoCompromiso" type="button" role="menuitem">
+                <span class="act-new-icon" style="background:#d1fae5;color:#059669"><i class="bi bi-check-square-fill"></i></span>
+                <span class="act-new-label">Compromiso</span>
+              </button>
+              <div class="act-new-divider"></div>
+              <button class="act-new-item" id="qaNuevaVisita" type="button" role="menuitem">
+                <span class="act-new-icon" style="background:#e0f2fe;color:#0284c7"><i class="bi bi-geo-alt-fill"></i></span>
+                <span class="act-new-label">Visita terreno</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Barra de filtros -->
-      <div class="act-filters-bar">
-        <div class="act-filters-left">
-          <select id="act-f-tipo" class="browser-default act-select" aria-label="Tipo de actividad">
+      <div class="am-filter-bar am-mb-16">
+        <div class="am-filter-left">
+          <select id="act-f-tipo" class="mx-select" style="width:160px;">
             <option value="">Todos los tipos</option>
             <option value="visita">Visitas</option>
             <option value="llamada">Llamadas</option>
@@ -162,44 +166,47 @@ export async function mountActivityTable(root) {
             <option value="tarea">Compromisos</option>
             <option value="muestra">Muestras</option>
           </select>
-          <select id="act-f-estado" class="browser-default act-select" aria-label="Estado">
+          <select id="act-f-estado" class="mx-select" style="width:140px;">
             <option value="">Todo estado</option>
             <option value="pendiente">Pendiente</option>
             <option value="cumplido">Cumplido</option>
             <option value="vencido">Vencido</option>
           </select>
-          <input id="act-f-q" type="text" class="mmpp-input act-input-q" placeholder="Buscar proveedor, contacto, paso…">
-          <button id="act-f-clear" class="dash-btn act-btn-clear" type="button">Limpiar</button>
-          <div class="act-export-group">
-            <button class="act-export-btn" data-act-export="csv" title="Exportar CSV">CSV</button>
-            <button class="act-export-btn" data-act-export="xls" title="Exportar Excel">XLS</button>
-            <button class="act-export-btn" data-act-export="pdf" title="Exportar PDF">PDF</button>
-          </div>
-        </div>
-        <div class="act-filters-right">
-          <select id="act-f-resp" class="browser-default act-select" aria-label="Responsable">
-            <option value="">Todos los responsables</option>
+          <select id="act-f-resp" class="mx-select" style="width:180px;">
+            <option value="">Responsable...</option>
           </select>
+          <div class="am-search-field">
+            <i class="bi bi-search"></i>
+            <input id="act-f-q" type="text" class="mx-input" placeholder="Buscar por proveedor, contacto..." style="width:260px;">
+          </div>
+          <button id="act-f-clear" class="mx-btn mx-btn-flat mx-btn-sm" type="button">Limpiar</button>
+          
+          <div class="mx-toggle-group" style="margin-left: 8px;">
+            <button class="mx-toggle-btn" data-act-export="csv" title="CSV">CSV</button>
+            <button class="mx-toggle-btn" data-act-export="xls" title="Excel">XLS</button>
+            <button class="mx-toggle-btn" data-act-export="pdf" title="PDF">PDF</button>
+          </div>
         </div>
       </div>
 
-      <!-- Tabla -->
-      <div class="mmpp-table-wrap">
-        <table id="act-table" class="mmpp table-full">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Tipo</th>
-              <th>Proveedor / Contacto</th>
-              <th>Centro</th>
-              <th>Próximo paso</th>
-              <th>Fecha prox.</th>
-              <th style="text-align:right">Tons</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div class="mx-table-card">
+        <div class="mx-table-wrap">
+          <table id="act-table" class="mx-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Proveedor / Contacto</th>
+                <th>Centro</th>
+                <th>Próximo paso</th>
+                <th>Fecha prox.</th>
+                <th style="text-align:right">Tons</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
 
     </div>
@@ -243,7 +250,12 @@ export async function mountActivityTable(root) {
   }
 
   function delimited(rows, sep) {
-    return rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(sep)).join('\n');
+    return rows.map((r) => {
+      return r.map((v) => {
+        const str = String(v === null || v === undefined ? '' : v);
+        return `"${str.replace(/"/g, '""')}"`;
+      }).join(sep);
+    }).join('\n');
   }
 
   root.querySelector('[data-act-export="csv"]')?.addEventListener('click', () => {
@@ -324,7 +336,7 @@ export async function mountActivityTable(root) {
 
   // ── Periodo: elementos DOM ────────────────────────────────────────────────────
 
-  const periodModes  = Array.from(root.querySelectorAll('.act-period-mode'));
+  const periodModes  = Array.from(root.querySelectorAll('[data-period]'));
   const periodCtrl   = root.querySelector('#act-period-ctrl');
   const periodLabel  = root.querySelector('#act-period-label');
   const btnPrev      = root.querySelector('#act-period-prev');
@@ -336,7 +348,7 @@ export async function mountActivityTable(root) {
     periodCtrl.hidden = !hasNav;
     if (hasNav) periodLabel.textContent = getPeriodLabel();
     // resaltar botón de modo activo
-    periodModes.forEach(b => b.classList.toggle('is-active', b.dataset.period === periodMode));
+    periodModes.forEach(b => b.classList.toggle('active', b.dataset.period === periodMode));
     // desactivar "Hoy" cuando ya estamos en offset 0
     if (btnToday) btnToday.disabled = periodOffset === 0;
   }

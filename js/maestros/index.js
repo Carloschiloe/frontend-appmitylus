@@ -130,33 +130,31 @@ function esc(str) {
 
 function activoBadge(activo) {
   return activo
-    ? `<span class="maest-badge maest-badge--on">Activo</span>`
-    : `<span class="maest-badge maest-badge--off">Inactivo</span>`;
+    ? `<span class="mx-badge mx-badge-success"><span class="mx-badge-dot"></span> Activo</span>`
+    : `<span class="mx-badge mx-badge-muted"><span class="mx-badge-dot"></span> Inactivo</span>`;
 }
 
 function tipoCatBadge(tipo) {
   const map = {
-    procesable: ['am-label-green', 'Procesable'],
-    rechazo:    ['am-label-red', 'Rechazo'],
-    defecto:    ['am-label-blue', 'Defecto'],
+    procesable: ['success', 'Procesable'],
+    rechazo:    ['danger', 'Rechazo'],
+    defecto:    ['info', 'Defecto'],
   };
-  const [cls, label] = map[tipo] || ['am-label-gray', '—'];
-  return `<span class="am-indicator-label ${cls}">
-    <span class="am-indicator-dot"></span>${label}
-  </span>`;
+  const [tone, label] = map[tipo] || ['muted', '—'];
+  return `<span class="mx-badge mx-badge-${tone}"><span class="mx-badge-dot"></span>${label}</span>`;
 }
 
 function tipoValorBadge(tipo) {
   const map = {
-    moneda:     ['am-tag-teal', '$'],
-    porcentaje: ['am-tag-purple', '%'],
-    dias:       ['am-tag-blue', 'Días'],
-    numero:     ['am-tag-amber', 'Núm.'],
-    opciones:   ['am-tag-orange', 'Lista'],
-    texto:      ['am-tag-slate', 'Texto'],
+    moneda:     ['info', '$'],
+    porcentaje: ['accent', '%'],
+    dias:       ['info', 'Días'],
+    numero:     ['warning', 'Núm.'],
+    opciones:   ['warning', 'Lista'],
+    texto:      ['muted', 'Texto'],
   };
-  const [cls, label] = map[tipo] || ['am-tag-gray', '—'];
-  return `<span class="am-tag ${cls}">${label}</span>`;
+  const [tone, label] = map[tipo] || ['muted', '—'];
+  return `<span class="mx-badge mx-badge-${tone}">${label}</span>`;
 }
 
 const askDeleteMaestro = createModalConfirm({
@@ -174,6 +172,7 @@ function abrirModal(tipo, item = null) {
   modalState = { tipo, id: item?._id || null };
 
   const modal = $('#modalMaestro');
+  const overlay = $('#modalMaestroOverlay');
   const titulo = item ? 'Editar' : 'Nuevo';
   const tipoLabel = {
     'categoria-muestreo':  'Categoría de muestreo',
@@ -228,12 +227,14 @@ function abrirModal(tipo, item = null) {
   $('#m-orden-row').style.display = tipo === 'responsable' ? 'none' : '';
 
   // Abrir
-  getModalInstance(modal, { dismissible: true })?.open();
+  modal.classList.add('open');
+  overlay.style.display = 'flex';
   $('#m-nombre').focus();
 }
 
 function cerrarModal() {
-  getModalInstance('modalMaestro')?.close();
+  $('#modalMaestro').classList.remove('open');
+  $('#modalMaestroOverlay').style.display = 'none';
 }
 
 // ── Seed de datos por defecto ────────────────────────────────────────────────
@@ -257,7 +258,7 @@ async function cargarSeccion(sec) {
         <tr>
           <td colspan="${cols}" style="padding:28px 16px;text-align:center;">
             <p style="color:#94a3b8;margin:0 0 12px;font-size:13px;">${sec.emptyMsg}</p>
-            <button class="am-btn am-btn-flat js-seed-btn" style="font-size:12px;height:34px;padding:0 16px;border:1px solid #e2e8f0;">
+            <button class="mx-btn mx-btn-flat js-seed-btn" style="font-size:12px;height:34px;padding:0 16px;border:1px solid #e2e8f0;">
               <i class="bi bi-download"></i> Cargar valores por defecto
             </button>
           </td>
@@ -472,10 +473,10 @@ function agregarParamRow(p, min = '', max = '') {
   row.style.cssText     = 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;';
   row.innerHTML = `
     <span style="flex:1;font-size:13px;font-weight:600;color:#334155;">${esc(p.nombre)}</span>
-    <input type="number" class="am-input p-min" placeholder="Mín" value="${min}"
+    <input type="number" class="mx-input p-min" placeholder="Mín" value="${min}"
       style="width:74px;text-align:center;padding:4px 6px;height:32px;" step="0.1" min="0">
     <span style="font-size:11px;color:#94a3b8;">a</span>
-    <input type="number" class="am-input p-max" placeholder="Máx" value="${max}"
+    <input type="number" class="mx-input p-max" placeholder="Máx" value="${max}"
       style="width:74px;text-align:center;padding:4px 6px;height:32px;" step="0.1" min="0">
     <span style="font-size:11px;color:#64748b;min-width:36px;">${esc(p.unidad)}</span>
     <button type="button" class="js-rm-param" title="Quitar"
@@ -515,11 +516,13 @@ async function abrirModalClasificacion(item = null) {
 
   actualizarEmptyState();
   refreshParamPicker();
-  getModalInstance('modalClasificacion', { dismissible: true })?.open();
+  $('#modalClasificacion').classList.add('open');
+  $('#modalClasificacionOverlay').style.display = 'flex';
 }
 
 function cerrarModalClasificacion() {
-  getModalInstance('modalClasificacion')?.close();
+  $('#modalClasificacion').classList.remove('open');
+  $('#modalClasificacionOverlay').style.display = 'none';
 }
 
 async function guardarClasificacion() {
@@ -569,19 +572,23 @@ async function guardarClasificacion() {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function initTabs() {
-  const tabs = $$('.maest-tab-btn');
-  const panels = $$('.maest-panel');
+  const tabs = $$('.mx-tab');
+  const panels = $$('.mx-panel');
 
   tabs.forEach((btn) => {
     btn.addEventListener('click', () => {
+      const targetId = btn.dataset.cTab;
+      if (!targetId) return;
+
       tabs.forEach((t) => t.classList.remove('active'));
       panels.forEach((p) => p.classList.remove('active'));
+      
       btn.classList.add('active');
-      const panel = $(`#${btn.dataset.tab}`);
+      const panel = $(`#${targetId}`);
       panel?.classList.add('active');
 
       // Carga lazy
-      const sec = SECCIONES.find((s) => s.tabId === btn.dataset.tab);
+      const sec = SECCIONES.find((s) => s.tabId === targetId);
       if (sec && !panel?.dataset.loaded) {
         cargarSeccion(sec);
         panel.dataset.loaded = '1';

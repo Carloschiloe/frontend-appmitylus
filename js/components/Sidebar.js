@@ -14,8 +14,8 @@ const MENU_STRUCTURE = [
   },
   {
     id: 'contactos',
-    label: 'Proveedores',
-    icon: 'bi-person-lines-fill',
+    label: 'Gesti\u00f3n',
+    icon: 'bi-inbox',
     links: [
       { label: 'Bandeja', href: '/html/Abastecimiento/contactos/contactos.html#tab-gestion', icon: 'bi-inbox' },
       { label: 'Directorio', href: '/html/Abastecimiento/contactos/contactos.html#tab-directorio', icon: 'bi-buildings' },
@@ -54,7 +54,7 @@ const MENU_STRUCTURE = [
   },
   {
     id: 'config',
-    label: 'Configuración',
+    label: 'Configuraci\u00f3n',
     icon: 'bi-sliders',
     links: [
       { label: 'Maestros', href: '/html/Maestros/index.html', icon: 'bi-table' },
@@ -93,14 +93,13 @@ export class Sidebar {
         .forEach((el) => el.remove());
     };
     nuke();
-    setTimeout(nuke, 1000); // Reintento por si se inyecta tarde
+    setTimeout(nuke, 1000); 
 
-    // Red de seguridad: si quedÃ³ un overlay pegado sin ningÃºn modal abierto, lo removemos
     this.cleanupStuckOverlays();
   }
 
   cleanupStuckOverlays() {
-    const hasVisibleOpenModal = [...document.querySelectorAll('.modal.open')].some((el) => {
+    const hasVisibleOpenModal = [...document.querySelectorAll('.modal.open, .mx-modal-overlay')].some((el) => {
       try {
         const cs = getComputedStyle(el);
         if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
@@ -121,13 +120,7 @@ export class Sidebar {
     const reset = () => {
       window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
-      document.documentElement.scrollLeft = 0;
       document.body.scrollTop = 0;
-      document.body.scrollLeft = 0;
-      document.querySelectorAll('.content, .bio-main, .bio-panel, .bio-table-wrap').forEach((el) => {
-        el.scrollTop = 0;
-        el.scrollLeft = 0;
-      });
     };
     reset();
     requestAnimationFrame(reset);
@@ -141,7 +134,7 @@ export class Sidebar {
     const userRole = user ? (user.rol || '') : '';
 
     this.container.innerHTML = `
-      <aside class="sidebar" aria-label="Navegacion principal">
+      <aside class="sidebar" aria-label="Navegación principal">
         <div class="brand">
           <img src="/img/logo-sidebar.png" alt="Mitynex" class="brand-logo" />
         </div>
@@ -159,7 +152,7 @@ export class Sidebar {
               ${userRole ? `<p class="sidebar-user-role">${userRole}</p>` : ''}
             </div>
           </div>` : ''}
-          <button id="btnLogout" class="sidebar-logout" type="button">
+          <button id="btnLogout" class="mx-btn mx-btn-flat" style="width:100%; justify-content:flex-start; padding:0 12px; font-size:12px; color:#94a3b8;" type="button">
             <i class="bi bi-box-arrow-right"></i> Cerrar sesión
           </button>
         </div>
@@ -212,7 +205,6 @@ export class Sidebar {
         if (!group) return;
         const willOpen = !group.classList.contains('is-open');
 
-        // Cerrar otros (opcional, según comportamiento deseado)
         this.container.querySelectorAll('.menu-group.is-open').forEach((g) => {
           if (g !== group) {
             g.classList.remove('is-open');
@@ -242,7 +234,6 @@ export class Sidebar {
       if (criticas > 0) {
         badge.textContent = criticas;
         badge.style.display = 'inline-block';
-        // Abrir el grupo centros si hay alertas
         const grupoEl = this.container.querySelector('[data-group="centros"]');
         if (grupoEl && !grupoEl.classList.contains('is-open')) {
           grupoEl.classList.add('is-open');
@@ -251,9 +242,7 @@ export class Sidebar {
       } else {
         badge.style.display = 'none';
       }
-    } catch {
-      // Silencioso — no interrumpir si el backend no responde
-    }
+    } catch {}
   }
 
   updateActiveState() {
@@ -276,7 +265,6 @@ export class Sidebar {
   }
 }
 
-// Auto-inicialización si el contenedor existe
 document.addEventListener('DOMContentLoaded', () => {
   const c = document.getElementById('sidebar-container');
   if (c && c.dataset.sidebarInited !== '1') {

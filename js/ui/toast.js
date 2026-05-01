@@ -1,56 +1,56 @@
 // js/ui/toast.js
-// Toast moderno (sin Materialize). Texto plano por defecto para evitar XSS.
+// Toast unificado Mitynex Core (mx-)
 
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
-function getVariantColor(variant) {
-  const v = String(variant || 'info').toLowerCase();
-  if (v === 'success') return '#059669';
-  if (v === 'warning') return '#d97706';
-  if (v === 'danger' || v === 'error') return '#dc2626';
-  return '#1e293b';
+function getContainer() {
+  let container = document.getElementById('mx-toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'mx-toast-container';
+    container.className = 'mx-toast-container';
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+function getIcon(variant) {
+  if (variant === 'success') return '<i class="bi bi-check-circle-fill"></i>';
+  if (variant === 'warning') return '<i class="bi bi-exclamation-triangle-fill"></i>';
+  if (variant === 'danger' || variant === 'error') return '<i class="bi bi-x-circle-fill"></i>';
+  return '<i class="bi bi-info-circle-fill"></i>';
 }
 
 /**
- * @param {string} text
- * @param {{variant?: 'info'|'success'|'warning'|'danger'|'error', durationMs?: number}} opts
+ * Muestra una notificación flotante.
+ * @param {string} text 
+ * @param {{variant?: 'info'|'success'|'warning'|'danger'|'error', durationMs?: number}} opts 
  */
 export function toast(text, opts = {}) {
   const msg = String(text ?? '').trim();
   if (!msg) return;
 
   const variant = opts.variant || 'info';
-  const bg = getVariantColor(variant);
-  const durationMs = clamp(Number(opts.durationMs || 2600), 900, 8000);
-
-  document.querySelectorAll('[data-am-toast]').forEach((n) => n.remove());
+  const durationMs = clamp(Number(opts.durationMs || 3500), 1000, 10000);
+  const container = getContainer();
 
   const el = document.createElement('div');
-  el.dataset.amToast = '1';
+  el.className = `mx-toast mx-toast-${variant === 'error' ? 'danger' : variant}`;
   el.setAttribute('role', 'status');
   el.setAttribute('aria-live', 'polite');
-  el.textContent = msg;
+  
+  el.innerHTML = `
+    <span class="mx-toast-icon">${getIcon(variant)}</span>
+    <span class="mx-toast-text">${msg}</span>
+  `;
 
-  el.style.cssText = [
-    'position:fixed',
-    'left:50%',
-    'bottom:24px',
-    'transform:translateX(-50%)',
-    `background:${bg}`,
-    'color:#fff',
-    'padding:10px 16px',
-    'border-radius:12px',
-    'font-size:14px',
-    'font-weight:800',
-    'z-index:10060',
-    'box-shadow:0 10px 30px rgba(0,0,0,.22)',
-    'max-width:min(720px, 92vw)',
-    'text-align:center',
-    'white-space:pre-wrap',
-    'animation:fadeInUp .16s ease',
-  ].join(';');
+  container.appendChild(el);
 
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), durationMs);
+  // Auto-remove
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-10px) scale(0.95)';
+    el.style.transition = 'all 0.3s ease';
+    setTimeout(() => el.remove(), 300);
+  }, durationMs);
 }
-

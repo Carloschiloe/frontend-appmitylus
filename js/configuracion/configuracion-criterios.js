@@ -1,4 +1,4 @@
-import { openAmModal, closeAmModal } from '../ui/am-modal.js';
+import { openAmModal, closeAmModal, createMxConfirm } from '../ui/am-modal.js';
 import { toast } from '../ui/toast.js';
 
 const LS_KEY = 'criteriosClasif';
@@ -6,6 +6,12 @@ const LS_KEY = 'criteriosClasif';
 let criterios = safeParseJson(localStorage.getItem(LS_KEY), []);
 let editIdx = null;
 let dt = null;
+
+const askDelete = createMxConfirm({
+  defaultTitle: 'Eliminar criterio',
+  defaultMessage: '¿Seguro de eliminar este criterio de clasificación? Esta acción no se puede deshacer.',
+  acceptLabel: 'Eliminar'
+});
 
 function safeParseJson(raw, fallback) {
   try {
@@ -34,7 +40,8 @@ function ensureModal() {
 
   modal = document.createElement('div');
   modal.id = 'criterioModal';
-  modal.className = 'am-modal';
+  modal.className = 'mx-modal-overlay'; // Now treating the root as overlay for consistency
+  modal.style.display = 'none'; // Initial state
   modal.style.maxWidth = '920px';
   modal.setAttribute('aria-hidden', 'true');
   document.body.appendChild(modal);
@@ -46,53 +53,56 @@ function renderModalContent(modal, data) {
   const title = isEdit ? 'Editar criterio' : 'Nuevo criterio';
 
   modal.innerHTML = `
-    <div class="am-modal-head">
-      <h3 class="am-modal-title">${esc(title)}</h3>
-      <button type="button" class="am-modal-close" data-am-modal-close aria-label="Cerrar">×</button>
-    </div>
-    <div class="am-modal-body">
-      <form id="formCriterio" class="am-form-grid" autocomplete="off">
-        <div class="am-form-group" style="grid-column: span 2;">
-          <label class="am-label" for="m-cliente">Cliente</label>
-          <input id="m-cliente" class="am-input" type="text" value="${esc(data?.cliente || '')}" required />
-        </div>
+    <div class="mx-modal" style="max-width: 800px;">
+      <div class="mx-modal-head">
+        <h3 class="mx-modal-title">${esc(title)}</h3>
+        <button type="button" class="mx-btn mx-btn-flat" data-am-modal-close aria-label="Cerrar">×</button>
+      </div>
+      <div class="mx-modal-body">
+        <form id="formCriterio" class="mx-form-stack" autocomplete="off">
+          <div class="mx-field">
+            <label class="mx-label" for="m-cliente"><i class="bi bi-person-badge"></i>Cliente</label>
+            <input id="m-cliente" class="mx-input" type="text" value="${esc(data?.cliente || '')}" placeholder="Nombre del cliente o planta" required />
+          </div>
 
-        <div class="am-form-group">
-          <label class="am-label" for="m-unKgMin">Un/Kg mín.</label>
-          <input id="m-unKgMin" class="am-input" type="number" min="0" step="1" value="${esc(data?.unKgMin ?? '')}" required />
-        </div>
-        <div class="am-form-group">
-          <label class="am-label" for="m-unKgMax">Un/Kg máx.</label>
-          <input id="m-unKgMax" class="am-input" type="number" min="0" step="1" value="${esc(data?.unKgMax ?? '')}" required />
-        </div>
+          <div class="mx-form-grid">
+            <div class="mx-field">
+              <label class="mx-label" for="m-unKgMin">Un/Kg mín.</label>
+              <input id="m-unKgMin" class="mx-input" type="number" min="0" step="1" value="${esc(data?.unKgMin ?? '')}" required />
+            </div>
+            <div class="mx-field">
+              <label class="mx-label" for="m-unKgMax">Un/Kg máx.</label>
+              <input id="m-unKgMax" class="mx-input" type="number" min="0" step="1" value="${esc(data?.unKgMax ?? '')}" required />
+            </div>
 
-        <div class="am-form-group">
-          <label class="am-label" for="m-rechazoMin">% Rechazo mín.</label>
-          <input id="m-rechazoMin" class="am-input" type="number" min="0" max="100" step="0.01" value="${esc(data?.rechazoMin ?? '')}" required />
-        </div>
-        <div class="am-form-group">
-          <label class="am-label" for="m-rechazoMax">% Rechazo máx.</label>
-          <input id="m-rechazoMax" class="am-input" type="number" min="0" max="100" step="0.01" value="${esc(data?.rechazoMax ?? '')}" required />
-        </div>
+            <div class="mx-field">
+              <label class="mx-label" for="m-rechazoMin">% Rechazo mín.</label>
+              <input id="m-rechazoMin" class="mx-input" type="number" min="0" max="100" step="0.01" value="${esc(data?.rechazoMin ?? '')}" required />
+            </div>
+            <div class="mx-field">
+              <label class="mx-label" for="m-rechazoMax">% Rechazo máx.</label>
+              <input id="m-rechazoMax" class="mx-input" type="number" min="0" max="100" step="0.01" value="${esc(data?.rechazoMax ?? '')}" required />
+            </div>
 
-        <div class="am-form-group">
-          <label class="am-label" for="m-rdmtoMin">% Rdmto mín.</label>
-          <input id="m-rdmtoMin" class="am-input" type="number" min="0" max="100" step="0.01" value="${esc(data?.rdmtoMin ?? '')}" required />
-        </div>
-        <div class="am-form-group">
-          <label class="am-label" for="m-rdmtoMax">% Rdmto máx.</label>
-          <input id="m-rdmtoMax" class="am-input" type="number" min="0" max="100" step="0.01" value="${esc(data?.rdmtoMax ?? '')}" required />
-        </div>
-      </form>
-      <p class="am-muted" style="margin:12px 0 0;">Se guarda en este navegador (localStorage) hasta integrar maestro central.</p>
-    </div>
-    <div class="am-modal-foot">
-      <button type="button" class="am-btn am-btn-outline" data-am-modal-close>Cancelar</button>
-      <button type="submit" form="formCriterio" class="am-btn am-btn-primary">
-        <i class="bi bi-check-lg"></i> ${isEdit ? 'Actualizar' : 'Guardar'}
-      </button>
-    </div>
-  `;
+            <div class="mx-field">
+              <label class="mx-label" for="m-rdmtoMin">% Rdmto mín.</label>
+              <input id="m-rdmtoMin" class="mx-input" type="number" min="0" max="100" step="0.01" value="${esc(data?.rdmtoMin ?? '')}" required />
+            </div>
+            <div class="mx-field">
+              <label class="mx-label" for="m-rdmtoMax">% Rdmto máx.</label>
+              <input id="m-rdmtoMax" class="mx-input" type="number" min="0" max="100" step="0.01" value="${esc(data?.rdmtoMax ?? '')}" required />
+            </div>
+          </div>
+        </form>
+        <p class="mx-helper am-mt-12">Se guarda en este navegador (localStorage) hasta integrar maestro central.</p>
+      </div>
+      <div class="mx-modal-foot">
+        <button type="button" class="mx-btn mx-btn-outline" data-am-modal-close>Cancelar</button>
+        <button type="submit" form="formCriterio" class="mx-btn mx-btn-primary">
+          <i class="bi bi-check-lg"></i> ${isEdit ? 'Actualizar' : 'Guardar'}
+        </button>
+      </div>
+    </div>  `;
 
   const form = modal.querySelector('#formCriterio');
   form?.addEventListener('submit', (e) => {
@@ -140,11 +150,11 @@ function renderTable() {
       <td>${esc(c.rechazoMax)}</td>
       <td>${esc(c.rdmtoMin)}</td>
       <td>${esc(c.rdmtoMax)}</td>
-      <td class="config-actions-cell">
-        <button type="button" class="am-btn am-btn-outline am-btn-sm am-btn-icon btn-edit" data-idx="${idx}" aria-label="Editar">
+      <td class="config-actions-cell" style="text-align:right;">
+        <button type="button" class="mx-btn mx-btn-outline mx-btn-sm btn-edit" data-idx="${idx}" aria-label="Editar">
           <i class="bi bi-pencil"></i>
         </button>
-        <button type="button" class="am-btn am-btn-danger am-btn-sm am-btn-icon btn-del" data-idx="${idx}" aria-label="Eliminar">
+        <button type="button" class="mx-btn mx-btn-danger mx-btn-sm btn-del" data-idx="${idx}" aria-label="Eliminar">
           <i class="bi bi-trash"></i>
         </button>
       </td>
@@ -185,10 +195,10 @@ function renderTable() {
   });
 
   tbody.querySelectorAll('.btn-del').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const idx = Number(btn.dataset.idx);
       if (!Number.isFinite(idx)) return;
-      if (!confirm('¿Seguro de eliminar este criterio?')) return;
+      if (!await askDelete()) return;
       criterios.splice(idx, 1);
       save();
       renderTable();
@@ -202,31 +212,33 @@ export function renderCriteriosClasificacion() {
   if (!cont) return;
 
   cont.innerHTML = `
-    <div class="am-card config-card">
-      <div class="config-card-head">
-        <div>
-          <h6 class="config-card-title">Criterios</h6>
-          <p class="config-card-sub">Rangos base para clasificación por cliente.</p>
+    <div class="mx-table-card">
+      <div class="mx-table-head">
+        <div class="mx-table-title">
+          <div class="mx-header-icon"><i class="bi bi-person-badge"></i></div>
+          <div>
+            <h2>Criterios de Clasificación</h2>
+            <p>Rangos base para clasificación automática por cliente/planta.</p>
+          </div>
         </div>
-        <div class="config-card-actions">
-          <button id="btnAddCriterio" class="am-btn am-btn-primary" type="button">
+        <div class="mx-table-actions">
+          <button id="btnAddCriterio" class="mx-btn mx-btn-primary" type="button">
             <i class="bi bi-plus-lg"></i> Nuevo criterio
           </button>
         </div>
       </div>
 
-      <div class="config-table-wrap">
-        <table id="criteriosTable" class="am-table display" aria-describedby="tablaCriteriosDescripcion">
-          <caption id="tablaCriteriosDescripcion" class="sr-only">Tabla con criterios de clasificación</caption>
+      <div class="mx-table-wrap">
+        <table id="criteriosTable" class="mx-table">
           <thead>
             <tr>
               <th>Cliente</th>
-              <th>Un/Kg min</th>
-              <th>Un/Kg max</th>
-              <th>% Rechazo min</th>
-              <th>% Rechazo max</th>
-              <th>% Rdmto min</th>
-              <th>% Rdmto max</th>
+              <th>Un/Kg mín.</th>
+              <th>Un/Kg máx.</th>
+              <th>% Rechazo mín.</th>
+              <th>% Rechazo máx.</th>
+              <th>% Rdmto mín.</th>
+              <th>% Rdmto máx.</th>
               <th style="text-align:right;">Acciones</th>
             </tr>
           </thead>

@@ -350,9 +350,4 @@
 #condicionModoRow { margin: 0 0 10px; }
 
 /* Btn danger */
-.am-btn-danger {
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fca5a5;
-}
-.am-btn-danger:hover { background: #fecaca; }
+/* .am-btn-danger removed: no consumers remain */

@@ -142,13 +142,13 @@ function getProviderBadge(prov) {
   const st = providerStatus(prov);
   if (st === 'inactivo') {
     const days = prov.lastDate ? Math.round((Date.now() - prov.lastDate.getTime()) / 86400000) : null;
-    return { cls: 'badge-red',    icon: '●', text: days ? `Inactivo ${days}d` : 'Sin fechas' };
+    return { tone: 'danger', icon: 'bi-exclamation-circle', text: days ? `Inactivo ${days}d` : 'Sin fechas' };
   }
   if (st === 'riesgo') {
     const days = Math.round((Date.now() - prov.lastDate.getTime()) / 86400000);
-    return { cls: 'badge-yellow', icon: '●', text: `${days}d sin act.` };
+    return { tone: 'warning', icon: 'bi-clock', text: `${days}d sin act.` };
   }
-  return { cls: 'badge-green', icon: '●', text: 'Activo' };
+  return { tone: 'success', icon: 'bi-check-circle', text: 'Activo' };
 }
 
 function renderStats() {
@@ -335,13 +335,19 @@ function renderProviderGrid() {
   }
 
   grid.innerHTML = list.map((p) => {
-    const badge = getProviderBadge(p);
+    const b = getProviderBadge(p);
     const fuentes = Array.from(p.fuentes).join(', ');
     return `
-      <div class="hst-prov-card" data-key="${esc(p.key)}" role="button" tabindex="0" aria-label="Ver expediente de ${esc(p.name)}">
-        <div class="hst-prov-name">${esc(p.name)}</div>
-        <div class="hst-prov-meta">${fmtN(p.total)} registros · ${esc(fuentes)}</div>
-        <span class="hst-prov-badge ${badge.cls}">${badge.icon} ${badge.text}</span>
+      <div class="mx-list-item hst-prov-card" data-key="${esc(p.key)}" role="button" tabindex="0">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+          <div>
+            <div class="mx-field-label mx-mb-4" style="font-size:15px; font-weight:700;">${esc(p.name)}</div>
+            <div class="mx-helper">${fmtN(p.total)} registros · ${esc(fuentes)}</div>
+          </div>
+          <span class="mx-badge mx-badge-${b.tone}">
+            <i class="bi ${b.icon}"></i> ${b.text}
+          </span>
+        </div>
       </div>
     `;
   }).join('');
@@ -448,21 +454,17 @@ function renderTimeline() {
     }
 
     html += `
-      <div class="exp-event ${tClass}${hidden}" data-type="${esc(filterType)}">
-        <div class="exp-event-dot"></div>
-        <div class="exp-card">
-          <div class="exp-card-top">
-            <span class="exp-card-title">${esc(ev.title)}</span>
-            <span class="exp-card-date">
-              <span class="exp-card-date-rel">${esc(relativeDate(ev.date))}</span>
-              <span class="exp-card-date-abs">${esc(fmtDate(ev.date))}</span>
-            </span>
-          </div>
-          ${ev.subtitle ? `<div class="exp-card-sub">${esc(ev.subtitle)}</div>` : ''}
-          ${ev.notes    ? `<div class="exp-card-notes">${esc(ev.notes)}</div>` : ''}
-          ${fotosHtml}
-          ${ev.responsible ? `<div class="exp-card-resp"><i class="bi bi-person"></i> ${esc(ev.responsible)}</div>` : ''}
+      <div class="mx-list-item exp-event ${tClass}${hidden}" data-type="${esc(filterType)}" style="border-left: 4px solid var(--color-${ev.type === 'compra' ? 'success' : (ev.type === 'visita' ? 'secondary' : 'info')});">
+        <div class="mx-field-label" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+          <span>${esc(ev.title)}</span>
+          <span class="mx-helper">
+            <b>${esc(relativeDate(ev.date))}</b> (${esc(fmtDate(ev.date))})
+          </span>
         </div>
+        ${ev.subtitle ? `<div class="mx-mb-4" style="font-size:13px; font-weight:600; color:var(--color-text);">${esc(ev.subtitle)}</div>` : ''}
+        ${ev.notes    ? `<div class="mx-helper" style="margin-bottom:8px; line-height:1.4;">${esc(ev.notes)}</div>` : ''}
+        ${fotosHtml}
+        ${ev.responsible ? `<div class="mx-helper" style="margin-top:8px;"><i class="bi bi-person"></i> ${esc(ev.responsible)}</div>` : ''}
       </div>
     `;
   }
@@ -487,7 +489,7 @@ function openExpediente(providerKey) {
   if (!viewSearch || !viewExp) return;
 
   viewSearch.style.display = 'none';
-  viewExp.classList.add('is-visible');
+  viewExp.style.display = 'flex';
 
   state.activeFilter = 'todos';
   document.querySelectorAll('.exp-chip').forEach((c) => c.classList.toggle('active', c.dataset.filter === 'todos'));
@@ -502,8 +504,8 @@ function openExpediente(providerKey) {
 }
 
 function closeExpediente() {
-  document.getElementById('viewSearch').style.display = '';
-  document.getElementById('viewExpediente').classList.remove('is-visible');
+  document.getElementById('viewSearch').style.display = 'flex';
+  document.getElementById('viewExpediente').style.display = 'none';
 }
 
 // ─── Historial detallado por proveedor ────────────────────────────────────────

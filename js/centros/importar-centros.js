@@ -131,7 +131,7 @@ export function renderImportadorCentros(containerId = 'importarCentrosContainer'
           Descarga el directorio oficial de concesiones de acuicultura de Los Lagos desde el Geoportal de SUBPESCA.<br>
           <strong>No requiere archivo.</strong> Puede tardar hasta 60 segundos.
         </div>
-        <button id="btnSyncSubpesca" type="button" class="am-btn am-btn-primary" style="width:100%;font-size:14px;">
+        <button id="btnSyncSubpesca" type="button" class="mx-btn mx-btn-primary" style="width:100%;font-size:14px;">
           <i class="bi bi-cloud-download"></i> Actualizar directorio desde SUBPESCA
         </button>
         <div id="resultadoSubpesca" style="margin-top:10px;font-size:13px;font-weight:600;padding:10px 12px;border-radius:8px;display:none;"></div>

@@ -194,7 +194,7 @@ function renderBiomasaTable(totals) {
 
 export function renderBiomasaChart(totals) {
   if (!ui.bioChart || typeof Chart === 'undefined') return;
-  const colors = { disponible: '#0ea5e9', semi_acordado: '#f59e0b', acordado: '#16a34a', descartado: '#94a3b8', perdido: '#ef4444' };
+  const colors = { disponible: '#0d9488', semi_acordado: '#f59e0b', acordado: '#10b981', descartado: '#94a3b8', perdido: '#ef4444' };
   if (state.chart) state.chart.destroy();
   state.chart = new Chart(ui.bioChart, {
     type: 'bar',

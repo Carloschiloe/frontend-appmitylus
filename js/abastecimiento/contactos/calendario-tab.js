@@ -71,18 +71,18 @@ function toRange(d) {
 function isSameDay(a, b) {
   return a && b && ymd(a) === ymd(b);
 }
-
 const TYPE_META = {
-  interaccion: { icon: 'bi-chat-left-dots-fill', color: '#a78bfa' },
-  llamada:     { icon: 'bi-telephone-fill',      color: '#a78bfa' },
-  reunion:     { icon: 'bi-people-fill',         color: '#fbbf24' },
-  tarea:       { icon: 'bi-check-square-fill',   color: '#34d399' },
-  muestra:     { icon: 'bi-eyedropper',          color: '#c4b5fd' }, // interaccion tipo "muestra"
-  visita:      { icon: 'bi-geo-alt-fill',        color: '#7dd3fc' },
-  muestreo:    { icon: 'bi-eyedropper-fill',     color: '#fca5a5' },
-  muestras:    { icon: 'bi-eyedropper',          color: '#fca5a5' }, // "Tomar muestras" (agenda)
-  otro:        { icon: 'bi-three-dots',          color: '#94a3b8' },
+  interaccion: { icon: 'bi-chat-left-text-fill', color: '#6366f1' }, // Indigo
+  llamada:     { icon: 'bi-telephone-fill',      color: '#6366f1' },
+  reunion:     { icon: 'bi-people-fill',         color: '#f59e0b' }, // Amber
+  tarea:       { icon: 'bi-check-square-fill',   color: '#10b981' }, // Emerald
+  muestra:     { icon: 'bi-eyedropper',          color: '#8b5cf6' }, // Violet
+  visita:      { icon: 'bi-geo-alt-fill',        color: '#0ea5e9' }, // Sky
+  muestreo:    { icon: 'bi-eyedropper-fill',     color: '#f43f5e' }, // Rose
+  muestras:    { icon: 'bi-eyedropper',          color: '#f43f5e' }, 
+  otro:        { icon: 'bi-three-dots',          color: '#64748b' },
 };
+
 
 function metaFor(key) {
   return TYPE_META[key] || TYPE_META.otro;
@@ -717,63 +717,62 @@ export function createCalendarioTabModule({
     const root = rootEl();
     if (!root) return;
     root.innerHTML = `
-      <div class="cal-wrap">
-        <div class="cal-head">
-          <div class="cal-title">
-            <div>
-              <h5>Calendario</h5>
-              <div class="cal-subtitle">Interacciones, visitas y muestreos (todos los proveedores)</div>
+        <div class="cal-wrap">
+          <div class="mx-table-head am-mb-16">
+            <div class="mx-table-title">
+              <div class="mx-header-icon"><i class="bi bi-calendar3"></i></div>
+              <div>
+                <h2>Calendario de Gestión</h2>
+                <p>Interacciones, visitas y muestreos de todos los proveedores</p>
+              </div>
+            </div>
+
+            <div class="mx-table-actions">
+              <div class="mx-toggle-group" role="group">
+                <button class="mx-toggle-btn active" data-cal-mode="agenda" type="button">Agenda</button>
+                <button class="mx-toggle-btn" data-cal-mode="historial" type="button">Historial</button>
+              </div>
+              <div class="mx-toggle-group" role="group">
+                <button class="mx-toggle-btn active" data-cal-view="calendar" type="button"><i class="bi bi-calendar3"></i></button>
+                <button class="mx-toggle-btn" data-cal-view="list" type="button"><i class="bi bi-list-ul"></i></button>
+              </div>
+              
+              <div class="am-period-nav">
+                <button class="mx-nav-btn" id="cal-period-prev" title="Anterior"><i class="bi bi-chevron-left"></i></button>
+                <span class="am-period-label" id="cal-period-label"></span>
+                <button class="mx-nav-btn" id="cal-period-next" title="Siguiente"><i class="bi bi-chevron-right"></i></button>
+                <button class="mx-btn mx-btn-outline mx-btn-sm" style="margin-left:8px;" id="cal-period-today">Hoy</button>
+              </div>
             </div>
           </div>
 
-          <div class="act-period-nav" style="margin:0; padding: 0; border: none;">
-            <div class="act-period-left">
-              <div class="act-period-modes" role="group" aria-label="Modo del calendario">
-                <button class="act-period-mode is-active" data-cal-mode="agenda" type="button">Agenda</button>
-                <button class="act-period-mode" data-cal-mode="historial" type="button">Historial</button>
+          <div class="am-filter-bar am-mb-16">
+            <div class="am-filter-left">
+              <select id="cal-f-type" class="mx-select" style="width:180px;">
+                <option value="">Todos los tipos</option>
+                <option value="muestras">Tomar muestras</option>
+                <option value="visita">Visitas</option>
+                <option value="llamada">Llamadas</option>
+                <option value="reunion">Reuniones</option>
+                <option value="muestra">Muestras</option>
+                <option value="tarea">Compromisos</option>
+                <option value="muestreo">Muestreos</option>
+              </select>
+              <div class="am-search-field">
+                <i class="bi bi-search"></i>
+                <input id="cal-f-q" type="text" class="mx-input" placeholder="Buscar por proveedor, centro..." style="width:280px;">
               </div>
-              <div class="act-period-modes" role="group" aria-label="Vista">
-                <button class="act-period-mode is-active" data-cal-view="calendar" type="button"><i class="bi bi-calendar3"></i> Calendario</button>
-                <button class="act-period-mode" data-cal-view="list" type="button"><i class="bi bi-list-ul"></i> Lista</button>
-              </div>
-              <div class="act-period-ctrl" id="cal-period-ctrl">
-                <button class="act-period-arrow" id="cal-period-prev" title="Mes anterior" aria-label="Mes anterior" type="button">
-                  <i class="bi bi-chevron-left"></i>
-                </button>
-                <span class="act-period-label" id="cal-period-label"></span>
-                <button class="act-period-arrow" id="cal-period-next" title="Mes siguiente" aria-label="Mes siguiente" type="button">
-                  <i class="bi bi-chevron-right"></i>
-                </button>
-                <button class="act-period-today" id="cal-period-today" type="button">Hoy</button>
-              </div>
+              <button id="cal-f-clear" class="mx-btn mx-btn-flat mx-btn-sm" type="button">Limpiar</button>
+            </div>
+            <div class="am-filter-right">
+              <span data-cal-role="busy" hidden class="am-muted">Cargando...</span>
             </div>
           </div>
+
+          <div id="cal-grid"></div>
+          <div id="cal-list" hidden></div>
         </div>
 
-        <div class="act-filters-bar" style="margin:0;">
-          <div class="act-filters-left">
-            <select id="cal-f-type" class="browser-default act-select" aria-label="Tipo">
-              <option value="">Todos</option>
-              <option value="muestras">Tomar muestras</option>
-              <option value="visita">Visitas</option>
-              <option value="llamada">Llamadas</option>
-              <option value="reunion">Reuniones</option>
-              <option value="muestra">Muestras (interacción)</option>
-              <option value="tarea">Compromisos</option>
-              <option value="interaccion">Otros</option>
-              <option value="muestreo">Muestreos (historial)</option>
-            </select>
-            <input id="cal-f-q" type="text" class="mmpp-input act-input-q" placeholder="Buscar proveedor, centro o paso…" aria-label="Buscar">
-            <button id="cal-f-clear" class="dash-btn act-btn-clear" type="button">Limpiar</button>
-          </div>
-          <div class="act-filters-right">
-            <span data-cal-role="busy" hidden style="font-size:12px;color:#64748b;font-weight:700;">Cargando…</span>
-          </div>
-        </div>
-
-        <div id="cal-grid"></div>
-        <div id="cal-list" hidden></div>
-      </div>
     `.trim();
   }
 
@@ -781,11 +780,11 @@ export function createCalendarioTabModule({
     const root = rootEl();
     if (!root) return;
     root.querySelectorAll('[data-cal-mode]')?.forEach((b) => {
-      b.classList.toggle('is-active', String(b.dataset.calMode) === mode);
+      b.classList.toggle('active', String(b.dataset.calMode) === mode);
     });
 
     root.querySelectorAll('[data-cal-view]')?.forEach((b) => {
-      b.classList.toggle('is-active', String(b.dataset.calView) === view);
+      b.classList.toggle('active', String(b.dataset.calView) === view);
     });
 
     const typeSel = root.querySelector('#cal-f-type');

@@ -8,9 +8,9 @@
 
 :root {
   /* ── Paleta Mitynex (Azul Profundo + Aqua marino) ── */
-  --color-primary:        #00A8A8;   /* Aqua — acento principal */
-  --color-primary-dark:   #007f7f;   /* Aqua oscuro — hover/pressed */
-  --color-primary-light:  #33cccc;   /* Aqua claro — highlights */
+  --color-primary:        #0d9488;   /* Teal 600 — acento principal Biomasa */
+  --color-primary-dark:   #0f766e;   /* Teal 700 — hover/pressed */
+  --color-primary-light:  #2dd4bf;   /* Teal 400 — highlights */
   --color-secondary:      #4A5568;   /* Gris Texto */
   --color-brand-deep:     #0B3C5D;   /* Azul Profundo — sidebar/headers */
   --color-brand-deep-alt: #082d47;   /* Azul más oscuro — sidebar fondo alt */
@@ -40,6 +40,7 @@
   --color-error-bg:       #fee2e2;
   --color-info:           #3b82f6;
   --color-info-bg:        #dbeafe;
+  --color-primary-bg:     #f0fdfa;   /* Teal 50 — fondos de acento Biomasa */
 
   /* ── Espaciado ── */
   --spacing-xs:  4px;
@@ -87,7 +88,7 @@
 
   /* ── Navegación lateral (módulo mmpp/app-shell) ── */
   --nav-width:  240px;
-  --nav-bg:     #0f172a;
+  --nav-bg:     var(--color-sidebar);
   --nav-fg:     #e5e7eb;
   --nav-fg-dim: #9ca3af;
   --nav-accent: var(--color-primary);
@@ -120,4 +121,10 @@
   --brand-1: var(--color-primary);
   --brand-2: var(--color-primary-dark);
   --shadow:  var(--shadow-sm);
+
+  /* ── Tokens Mitynex (Nuevos) ── */
+  --mx-gradient-primary: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  --mx-gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+  --mx-shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --mx-shadow-popover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }

@@ -1,4 +1,4 @@
-﻿// js/centros/sanitario/index.js
+// js/centros/sanitario/index.js
 import { Sidebar } from '../../components/Sidebar.js';
 import { toast }   from '../../ui/toast.js';
 import {
@@ -97,7 +97,7 @@ function tiempoRelativo(val) {
   if (h < 1) return 'hace < 1 hora';
   if (h < 24) return `hace ${h}h`;
   const d = Math.floor(h / 24);
-  return `hace ${d} dia${d !== 1 ? 's' : ''}`;
+  return `hace ${d} día${d !== 1 ? 's' : ''}`;
 }
 
 function renderBanner(areas) {
@@ -147,15 +147,15 @@ function renderKpis(areas, ultimaSync) {
     if (el) el.textContent = resumen[estado] ?? 0;
     const card = el?.closest('.san-kpi');
     if (card) {
-      card.classList.toggle('is-active', currentKpiFilter === estado);
+      card.classList.toggle('active', currentKpiFilter === estado);
     }
   });
 
   const syncInfo = $('sanSyncInfo');
   if (syncInfo) {
     syncInfo.textContent = ultimaSync
-      ? `Ultima sync mrSAT: ${tiempoRelativo(ultimaSync)}`
-      : 'Sin sincronizacion aun';
+      ? `Última sync mrSAT: ${tiempoRelativo(ultimaSync)}`
+      : 'Sin sincronización aún';
   }
 
   const dot = $('sanGlobalDot');
@@ -218,8 +218,8 @@ function renderSearchMeta(filtered, total, term) {
   if (currentAreaFilter) filtros.push(AREA_LABELS[currentAreaFilter]);
   if (resumen.sin_datos > 0) filtros.push(`${resumen.sin_datos} sin datos`);
   meta.textContent = term || currentKpiFilter || currentAreaFilter
-    ? `${filtered} de ${total} areas${filtros.length ? ` · ${filtros.join(' · ')}` : ''}`
-    : `${total} areas${resumen.sin_datos > 0 ? ` · ${resumen.sin_datos} sin datos` : ''}`;
+    ? `${filtered} de ${total} áreas${filtros.length ? ` · ${filtros.join(' · ')}` : ''}`
+    : `${total} áreas${resumen.sin_datos > 0 ? ` · ${resumen.sin_datos} sin datos` : ''}`;
 }
 
 function syncClearFilterButton() {
@@ -232,7 +232,7 @@ function syncClearFilterButton() {
 
 function syncAreaFilterButtons() {
   document.querySelectorAll('#sanAreaFilters .san-state-chip').forEach((btn) => {
-    btn.classList.toggle('is-active', (btn.dataset.areaFilter || '') === currentAreaFilter);
+    btn.classList.toggle('active', (btn.dataset.areaFilter || '') === currentAreaFilter);
   });
 }
 
@@ -277,8 +277,8 @@ function renderDetalleRegistros(registros) {
       <table style="width:100%;border-collapse:collapse;">
         <thead>
           <tr style="background:#f1f5f9;">
-            <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#475569;white-space:nowrap;">Analisis</th>
-            <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#475569;">Categoria</th>
+            <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#475569;white-space:nowrap;">Análisis</th>
+            <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#475569;">Categoría</th>
             <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#475569;">Recurso</th>
             <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#475569;white-space:nowrap;">Valor</th>
             <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#475569;">Resultado</th>
@@ -349,7 +349,7 @@ function renderAreas(areas) {
         <td style="overflow:hidden;">${renderTiposPills(registros)}</td>
         <td style="font-size:12px;color:#475569;white-space:nowrap;">${fmtFecha(ultimaFecha, true)}</td>
         <td>
-          <button type="button" class="am-btn am-btn-flat san-btn-detalle" data-san-id="${id}" style="padding:3px 7px;font-size:11px;white-space:nowrap;width:100%;">
+          <button type="button" class="mx-btn mx-btn-flat san-btn-detalle" data-san-id="${id}" style="padding:3px 7px;font-size:11px;white-space:nowrap;width:100%;">
             ${isExpanded ? '▲ Cerrar' : '▼ Ver'}
           </button>
         </td>
@@ -375,7 +375,7 @@ function renderAreas(areas) {
             </div>
             ${renderDetalleRegistros(registros)}
             <div style="margin-top:8px;text-align:right;">
-              <button type="button" class="am-btn am-btn-flat san-btn-hist" data-area="${area.areaPSMB}" style="font-size:12px;">
+              <button type="button" class="mx-btn mx-btn-flat san-btn-hist" data-area="${area.areaPSMB}" style="font-size:12px;">
                 <i class="bi bi-clock-history"></i> Ver historial completo
               </button>
             </div>
@@ -419,8 +419,8 @@ async function abrirHistorial(areaPSMB) {
         </div>
         <div style="margin-top:5px;font-size:12px;${item.resultadoPositivo ? 'color:#dc2626;font-weight:600;' : 'color:#475569;'}">${esc(item.glosaResultado || '-')}</div>
         <div class="san-hist-fecha" style="margin-top:4px;">
-          Extraccion: ${fmtFecha(item.fechaExtraccion)}
-          ${item.categoriaTipo ? ` · Categoria: ${esc(item.categoriaTipo)}` : ''}
+          Extracción: ${fmtFecha(item.fechaExtraccion)}
+          ${item.categoriaTipo ? ` · Categoría: ${esc(item.categoriaTipo)}` : ''}
           ${item.bancaNatural ? ` · Banca: ${esc(item.bancaNatural)}` : ''}
           ${item.laboratorio ? ` · Lab: ${esc(item.laboratorio)}` : ''}
         </div>

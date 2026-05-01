@@ -16,10 +16,12 @@
   <div id="sidebar-container"></div>
   <main class="content">
     <!-- Banner de alerta sticky -->
-    <div id="sanAlertBanner" class="hidden">
-      <span class="san-banner-icon">🚨</span>
-      <span>Alertas sanitarias activas en Los Lagos:</span>
-      <span class="san-banner-areas" id="sanBannerAreas">—</span>
+    <div id="sanAlertBanner" class="mx-alert mx-alert-danger hidden">
+      <i class="bi bi-exclamation-triangle-fill mx-alert-icon"></i>
+      <div class="mx-alert-content">
+        <strong>Alertas sanitarias activas en Los Lagos:</strong>
+        <span id="sanBannerAreas">—</span>
+      </div>
     </div>
 
     <div class="san-wrap">
@@ -31,7 +33,7 @@
         </h1>
         <div class="san-hero-actions">
           <span class="san-sync-info" id="sanSyncInfo">Sin sincronización</span>
-          <button class="am-btn am-btn-flat" id="btnSanSync" type="button">
+          <button class="mx-btn mx-btn-flat" id="btnSanSync" type="button">
             <i class="bi bi-arrow-clockwise"></i> Actualizar mrSAT
           </button>
         </div>
@@ -64,7 +66,7 @@
           <input id="sanSearchInput" type="search" placeholder="Buscar por codigo de area, area PSMB, centro, codigo de centro, comuna..." autocomplete="off" />
         </div>
         <div class="san-toolbar-actions">
-          <button type="button" class="am-btn am-btn-flat san-clear-filter" id="sanClearFilter">Mostrar todas</button>
+          <button type="button" class="mx-btn mx-btn-flat san-clear-filter" id="sanClearFilter">Mostrar todas</button>
           <div class="san-search-meta" id="sanSearchMeta">-</div>
         </div>
       </div>
@@ -96,15 +98,15 @@
 </div>
 
 <!-- Modal historial área -->
-<div id="modalSanHistorial" class="modal app-modal-modern" style="max-width:640px;width:96vw;display:none;">
-  <div class="app-modal-header" style="padding:18px 24px 14px;border-bottom:1px solid #e2e8f0;">
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <h5 id="sanHistTitulo" style="margin:0;font-size:16px;font-weight:700;color:#0f172a;">Historial Área —</h5>
-      <button type="button" id="btnSanHistClose" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;">×</button>
+<div id="modalSanHistorial" class="mx-modal-overlay" style="display:none;">
+  <div class="mx-modal" style="max-width: 640px;">
+    <div class="mx-modal-head">
+      <h3 id="sanHistTitulo">Historial Área —</h3>
+      <button type="button" id="btnSanHistClose" class="mx-modal-close js-modal-close">&times;</button>
     </div>
-  </div>
-  <div class="app-modal-body" style="padding:0;max-height:60vh;overflow-y:auto;">
-    <div id="sanHistBody" style="padding:0 4px;"></div>
+    <div class="mx-modal-body" style="padding: 0;">
+      <div id="sanHistBody"></div>
+    </div>
   </div>
 </div>
 

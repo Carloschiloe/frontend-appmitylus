@@ -1,6 +1,7 @@
 import { state } from './state.js';
 import { createLocalTableController } from './local-table.js';
 import { debounce, escapeHtml, getModalInstance } from './ui-common.js';
+import { createMxConfirm } from '../../ui/am-modal.js';
 import { listMuestreos, getMuestreosResumen, deleteMuestreo } from './muestreo-api.js';
 import { toast } from '../../ui/toast.js';
 
@@ -140,7 +141,7 @@ function buildScopeFromRow(row = {}) {
 function ensureLocalTable(tableCtrlRef) {
   if (tableCtrlRef.current) return tableCtrlRef.current;
   tableCtrlRef.current = createLocalTableController({
-    section: '#tab-muestreos .mmpp-card',
+    section: '#tab-muestreos .mx-table-card',
     table: '#tablaMuestreos',
     pageSize: PAGE_SIZE,
     emptyColspan: 7,
@@ -289,7 +290,7 @@ function renderRutaChips(selected = '') {
   if (!wrap) return;
   const val = String(selected || '').trim().toLowerCase();
   wrap.innerHTML = RUTA_OPTIONS.map((opt) => `
-    <button type="button" class="act-period-mode${val === opt.value ? ' is-active' : ''}" data-mu-route="${esc(opt.value)}">
+    <button type="button" class="mx-toggle-btn${val === opt.value ? ' active' : ''}" data-mu-route="${esc(opt.value)}">
       ${esc(opt.label)}
     </button>
   `).join('');
@@ -497,6 +498,12 @@ export function createMuestreosTabModule({
   let viewMode = 'flat'; // flat, grouped
   let periodMode = 'all';
   let periodOffset = 0;
+
+  const askDelete = createMxConfirm({
+    defaultTitle: 'Eliminar muestreo',
+    defaultMessage: '¿Seguro de eliminar este muestreo? Esta acción no se puede deshacer.',
+    acceptLabel: 'Eliminar'
+  });
 
   async function loadRemote(forceReload = false) {
     if (loadingPromise) return loadingPromise;
@@ -911,7 +918,7 @@ export function createMuestreosTabModule({
     const fResp = document.getElementById('muFltResponsable');
     const fQ = document.getElementById('searchMuestreos');
 
-    const periodModes = Array.from(document.querySelectorAll('.act-period-mode[data-period]'));
+    const periodModes = Array.from(document.querySelectorAll('.mx-toggle-btn[data-period]'));
     const periodCtrl = document.getElementById('mu-period-ctrl');
     const periodLabel = document.getElementById('mu-period-label');
     const btnPrev = document.getElementById('mu-period-prev');
@@ -933,7 +940,7 @@ export function createMuestreosTabModule({
           periodLabel.textContent = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
         }
       }
-      periodModes.forEach(b => b.classList.toggle('is-active', b.dataset.period === periodMode));
+      periodModes.forEach(b => b.classList.toggle('active', b.dataset.period === periodMode));
       if (btnToday) btnToday.disabled = (periodOffset === 0);
     }
 
@@ -964,8 +971,8 @@ export function createMuestreosTabModule({
       if (!btn) return;
       const mode = String(btn.getAttribute('data-mu-mode') || 'flat');
       viewMode = mode;
-      document.querySelectorAll('#muModeSwitch .act-period-mode').forEach(b => {
-        b.classList.toggle('is-active', b === btn);
+      document.querySelectorAll('#muModeSwitch .mx-toggle-btn').forEach(b => {
+        b.classList.toggle('active', b === btn);
       });
       renderTablaMuestreos(false).catch(() => {});
     });
@@ -1045,10 +1052,10 @@ export function createMuestreosTabModule({
 
           // Close all other menus first
           document.querySelectorAll('.mu-action-menu.is-open').forEach(m => m.classList.remove('is-open'));
-          document.querySelectorAll('.mu-action-trigger.is-active').forEach(b => b.classList.remove('is-active'));
+          document.querySelectorAll('.mu-action-trigger.is-active').forEach(b => b.classList.remove('active'));
 
           menu.classList.toggle('is-open', !isOpen);
-          btn.classList.toggle('is-active', !isOpen);
+          btn.classList.toggle('active', !isOpen);
         }
         return;
       }
@@ -1061,7 +1068,7 @@ export function createMuestreosTabModule({
       const menu = btn.closest('.mu-action-menu');
       if (menu) {
         menu.classList.remove('is-open');
-        menu.previousElementSibling?.classList.remove('is-active');
+        menu.previousElementSibling?.classList.remove('active');
       }
 
       if (action === 'info') {
@@ -1085,8 +1092,8 @@ export function createMuestreosTabModule({
         return;
       }
       if (action === 'delete') {
-        const label = [row.proveedor, row.centro, row.fecha].filter(Boolean).join(' · ');
-        if (!confirm(`¿Eliminar muestreo de ${label}?\n\nEsta acción no se puede deshacer.`)) return;
+        const label = [row.proveedorNombre, row.centro, fmtDate(row.fecha)].filter(Boolean).join(' · ');
+        if (!await askDelete('Eliminar muestreo', `¿Eliminar muestreo de ${label}?`)) return;
         try {
           await deleteMuestreo(row.id);
           toast('Muestreo eliminado.', { variant: 'success' });
@@ -1109,7 +1116,7 @@ export function createMuestreosTabModule({
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.mu-action-dropdown')) {
         document.querySelectorAll('.mu-action-menu.is-open').forEach(m => m.classList.remove('is-open'));
-        document.querySelectorAll('.mu-action-trigger.is-active').forEach(b => b.classList.remove('is-active'));
+        document.querySelectorAll('.mu-action-trigger.is-active').forEach(b => b.classList.remove('active'));
       }
     });
   }

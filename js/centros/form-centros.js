@@ -4,7 +4,7 @@ import { clearMapPoints, redrawPolygon, addPointMarker } from '../mapas/control-
 
 // Abre el form para NUEVO centro
 export function openNewForm(els, map, currentPoints, setIdxCb) {
-  els.formTitle.textContent = 'Nuevo centro';
+  els.formTitle.textContent = 'Nuevo Centro';
   els.inputCentroId.value   = '';
   els.inputProveedor.value  = '';
   els.inputComuna.value     = '';
@@ -38,7 +38,7 @@ export function openEditForm(els, map, currentPoints, setIdxCb, idx) {
     return;
   }
 
-  els.formTitle.textContent = `Editar centro: ${c.proveedor || c.code || c.comuna || '-'}`;
+  els.formTitle.textContent = `Editar Centro: ${c.proveedor || c.code || c.comuna || '-'}`;
   els.inputCentroId.value   = idx; // seguimos usando el índice como referencia
   els.inputProveedor.value  = c.proveedor || '';
   els.inputComuna.value     = c.comuna   || '';
@@ -104,7 +104,7 @@ export function renderPointsTable(pointsBody, currentPoints) {
         <td>${lngStr}</td>
         <td>
           <button
-            class="am-btn am-btn-sm" style="background:#ef4444;color:#fff;border:none;width:28px;height:28px;padding:0;border-radius:6px;"
+            class="mx-btn mx-btn-sm" style="background:#ef4444;color:#fff;border:none;width:28px;height:28px;padding:0;border-radius:6px;"
             data-idx="${i}"
             aria-label="Eliminar punto ${i + 1}"
             type="button"

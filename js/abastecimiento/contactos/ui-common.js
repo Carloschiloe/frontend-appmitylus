@@ -119,24 +119,20 @@ function openModalEl(modalEl, opts = {}) {
   const dismissible = opts.dismissible !== false;
 
   if (shouldUseBackdrop(modalEl, opts)) {
-    const overlay = document.createElement('div');
-    overlay.className = 'am-modal-overlay';
-    overlay.dataset.amModalOverlay = '1';
-    // Importante: los modales `.modal.app-modal-modern` ya traen su propio z-index (ej: 1001).
-    // El overlay debe quedar debajo del modal para no taparlo.
-    try {
-      const z = Number.parseInt(getComputedStyle(modalEl).zIndex || '', 10);
-      overlay.style.zIndex = Number.isFinite(z) ? String(Math.max(0, z - 1)) : '1000';
-    } catch {
-      overlay.style.zIndex = '1000';
+    let overlay = document.querySelector(`.mx-modal-overlay[data-for="${modalEl.id}"]`);
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'mx-modal-overlay';
+      overlay.dataset.for = modalEl.id;
+      document.body.appendChild(overlay);
     }
-    overlay.addEventListener('mousedown', (e) => {
-      if (!dismissible) return;
-      if (e.target !== overlay) return;
-      closeModalEl(modalEl);
-    });
-    document.body.appendChild(overlay);
+    overlay.style.display = 'flex';
     st.overlayEl = overlay;
+
+    // Si el modal no está dentro del overlay, lo movemos (patrón mx-modal)
+    if (modalEl.parentElement !== overlay) {
+      overlay.appendChild(modalEl);
+    }
   }
 
   st.escHandler = (e) => {
@@ -171,7 +167,9 @@ function closeModalEl(modalEl) {
   modalEl.classList.remove('open');
   modalEl.setAttribute('aria-hidden', 'true');
 
-  try { st.overlayEl?.remove?.(); } catch {}
+  if (st.overlayEl) {
+    st.overlayEl.style.display = 'none';
+  }
   st.overlayEl = null;
 
   if (st.escHandler) {
@@ -233,20 +231,20 @@ export function createModalConfirm({
     if (!el) {
       el = document.createElement('div');
       el.id = id;
-      el.className = className;
-      el.style.width = '420px';
+      el.className = 'mx-modal-overlay';
+      el.style.display = 'none';
       el.innerHTML = `
-        <div class="app-modal-header">
-          <div class="app-modal-header-top">
-            <h5 data-role="confirm-title">${defaultTitle}</h5>
+        <div class="mx-modal" style="max-width: 420px;">
+          <div class="mx-modal-head">
+            <h3 data-role="confirm-title">${defaultTitle}</h3>
           </div>
-        </div>
-        <div class="app-modal-body">
-          <p data-role="confirm-message" style="margin:0;color:#475569;font-size:14px;">${defaultMessage}</p>
-        </div>
-        <div class="app-modal-footer">
-          <button type="button" data-role="confirm-cancel" class="am-btn am-btn-flat">${cancelText}</button>
-          <button type="button" data-role="confirm-accept" class="am-btn am-btn-primary">${acceptText}</button>
+          <div class="mx-modal-body">
+            <p data-role="confirm-message" style="margin:0; color:var(--color-text-muted); font-size:14px;">${defaultMessage}</p>
+          </div>
+          <div class="mx-modal-foot">
+            <button type="button" data-role="confirm-cancel" class="mx-btn mx-btn-outline">${cancelText}</button>
+            <button type="button" data-role="confirm-accept" class="mx-btn mx-btn-primary">${acceptText}</button>
+          </div>
         </div>
       `;
       document.body.appendChild(el);
@@ -276,7 +274,7 @@ export function createModalConfirm({
       if (m) m.textContent = message || defaultMessage;
       if (y) y.textContent = acceptOverride || acceptText;
       resolveFn = resolve;
-      inst?.open();
+      if (root) root.style.display = 'flex';
     });
   };
 }

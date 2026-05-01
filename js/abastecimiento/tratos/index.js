@@ -55,9 +55,9 @@ function renderModoToggleHTML(selected = 'normal') {
   const isNormal = selected === 'normal';
   const isFijo = selected === 'fijo';
   return `
-    <div class="act-period-modes" id="condicionModoRow" role="group" aria-label="Modo de descuento">
-      <button type="button" class="act-period-mode ${isNormal ? 'is-active' : ''}" data-modo="normal">Normal</button>
-      <button type="button" class="act-period-mode ${isFijo ? 'is-active' : ''}" data-modo="fijo">Fijo</button>
+    <div class="mx-toggle-group" id="condicionModoRow" role="group" aria-label="Modo de descuento">
+      <button type="button" class="mx-toggle-btn ${isNormal ? 'is-active' : ''}" data-modo="normal">Normal</button>
+      <button type="button" class="mx-toggle-btn ${isFijo ? 'is-active' : ''}" data-modo="fijo">Fijo</button>
     </div>
   `.trim();
 }
@@ -71,33 +71,33 @@ function applyCondicionModo(modo) {
     try { el.value = ''; } catch {}
   }
   const row = document.getElementById('condicionModoRow');
-  row?.querySelectorAll('.act-period-mode')?.forEach((b) => {
-    b.classList.toggle('is-active', b.dataset.modo === _condicionModoSel);
+  row?.querySelectorAll('.mx-toggle-btn')?.forEach((b) => {
+    b.classList.toggle('active', b.dataset.modo === _condicionModoSel);
   });
 }
 
 // ── Colores y labels de estado (5 estados + aliases legacy) ──────────────────
 const ESTADO_MAP = {
-  disponible:       { label: 'Disponible',     color: '#3b82f6' },
-  semi_acordado:    { label: 'Semi-acordado',  color: '#f59e0b' },
-  acordado:         { label: 'Acordado',       color: '#16a34a' },
-  perdido:          { label: 'Perdido',        color: '#ef4444' },
-  descartado:       { label: 'Descartado',     color: '#6b7280' },
+  disponible:       { label: 'Disponible',     tone: 'info' },
+  semi_acordado:    { label: 'Semi-acordado',  tone: 'warning' },
+  acordado:         { label: 'Acordado',       tone: 'success' },
+  perdido:          { label: 'Perdido',        tone: 'danger' },
+  descartado:       { label: 'Descartado',     tone: 'muted' },
   // Legacy → label equivalente para datos históricos
-  activo:           { label: 'Disponible',     color: '#3b82f6' },
-  prospecto:        { label: 'Disponible',     color: '#3b82f6' },
-  negociando:       { label: 'Semi-acordado',  color: '#f59e0b' },
-  semi_cerrado:     { label: 'Semi-acordado',  color: '#f59e0b' },
-  cerrado:          { label: 'Acordado',       color: '#16a34a' },
-  cosecha_iniciada: { label: 'Acordado',       color: '#16a34a' },
-  compra_efectuada: { label: 'Acordado',       color: '#16a34a' },
-  completado:       { label: 'Acordado',       color: '#16a34a' },
-  caido:            { label: 'Perdido',        color: '#ef4444' },
+  activo:           { label: 'Disponible',     tone: 'info' },
+  prospecto:        { label: 'Disponible',     tone: 'info' },
+  negociando:       { label: 'Semi-acordado',  tone: 'warning' },
+  semi_cerrado:     { label: 'Semi-acordado',  tone: 'warning' },
+  cerrado:          { label: 'Acordado',       tone: 'success' },
+  cosecha_iniciada: { label: 'Acordado',       tone: 'success' },
+  compra_efectuada: { label: 'Acordado',       tone: 'success' },
+  completado:       { label: 'Acordado',       tone: 'success' },
+  caido:            { label: 'Perdido',        tone: 'danger' },
 };
 
 function estadoBadge(estado) {
-  const cfg = ESTADO_MAP[estado] || { label: estado, color: '#94a3b8' };
-  return `<span class="trato-estado-badge" style="background:${cfg.color}20;color:${cfg.color};border:1px solid ${cfg.color}40;">${cfg.label}</span>`;
+  const cfg = ESTADO_MAP[estado] || { label: estado, tone: 'muted' };
+  return `<span class="mx-badge mx-badge-${cfg.tone}">${esc(cfg.label)}</span>`;
 }
 
 function esc(s) {
@@ -264,7 +264,7 @@ function syncTratosKpiActive() {
   const wrap = document.getElementById('tratosKpis');
   wrap?.classList.toggle('has-filter', !!selected);
   document.querySelectorAll('#tratosKpis .trato-kpi').forEach((el) => {
-    el.classList.toggle('is-active', !!selected && el.dataset.estado === selected);
+    el.classList.toggle('active', !!selected && el.dataset.estado === selected);
   });
 }
 
@@ -279,9 +279,9 @@ function renderTabla() {
     const k = estadoGrupo(t?.estado);
     if (k && k in kpis) kpis[k]++;
   }
-  document.querySelectorAll('#tratosKpis .trato-kpi').forEach(el => {
+  document.querySelectorAll('#tratosKpis .trato-kpi, #tratosKpis .mx-kpi').forEach(el => {
     const est = el.dataset.estado;
-    const vEl = el.querySelector('.v');
+    const vEl = el.querySelector('.mx-kpi-value, .v');
     if (vEl && est in kpis) vEl.textContent = kpis[est];
   });
   syncTratosKpiActive();
@@ -323,7 +323,7 @@ function renderTabla() {
       <td>${esc(precio)}</td>
       <td>${compHTML}</td>
       <td>${esc(t.responsableNombre || '—')}</td>
-      <td><button class="dash-btn trato-btn-editar" data-id="${esc(t._id)}">Editar</button></td>
+      <td><button class="mx-btn trato-btn-editar" data-id="${esc(t._id)}">Editar</button></td>
     </tr>`;
   }).join('');
 }
@@ -386,13 +386,13 @@ function syncTrtPeriodUI() {
 
   const ctrl = document.getElementById('trt-period-ctrl');
   const label = document.getElementById('trt-period-label');
-  const modes = Array.from(nav.querySelectorAll('.act-period-mode[data-period]'));
+  const modes = Array.from(nav.querySelectorAll('[data-period]'));
 
   const hasNav = trtPeriodMode !== 'all';
   if (ctrl) ctrl.hidden = !hasNav;
   if (label && hasNav) label.textContent = getTrtPeriodLabel();
 
-  modes.forEach((b) => b.classList.toggle('is-active', b.dataset.period === trtPeriodMode));
+  modes.forEach((b) => b.classList.toggle('active', b.dataset.period === trtPeriodMode));
 }
 
 async function cargarTratos() {
@@ -432,14 +432,14 @@ function bindFiltros() {
   const nav = document.getElementById('trt-period-nav');
   if (!nav) return;
 
-  const modes = Array.from(nav.querySelectorAll('.act-period-mode[data-period]'));
+  const modes = Array.from(nav.querySelectorAll('.mx-toggle-btn[data-period]'));
   const prev = document.getElementById('trt-period-prev');
   const next = document.getElementById('trt-period-next');
   const estado = document.getElementById('trt-f-estado');
   const clear = document.getElementById('trt-f-clear');
 
   // Inicial desde el HTML (por defecto "Semana")
-  trtPeriodMode = modes.find((b) => b.classList.contains('is-active'))?.dataset.period || 'week';
+  trtPeriodMode = modes.find((b) => b.classList.contains('active'))?.dataset.period || 'week';
   trtPeriodOffset = 0;
   syncTrtPeriodUI();
 
@@ -653,8 +653,8 @@ function renderCondiciones(condiciones) {
           <option value="acordado"  ${c.estado === 'acordado'  ? 'selected' : ''}>Acordado</option>
           <option value="rechazado" ${c.estado === 'rechazado' ? 'selected' : ''}>Rechazado</option>
         </select>
-        <button class="trato-cond-edit dash-btn" data-cid="${esc(c._id)}" title="Editar valor">✎</button>
-        <button class="trato-cond-remove dash-btn" data-cid="${esc(c._id)}" title="Eliminar condición">×</button>
+        <button class="trato-cond-edit mx-btn" data-cid="${esc(c._id)}" title="Editar valor">✎</button>
+        <button class="trato-cond-remove mx-btn" data-cid="${esc(c._id)}" title="Eliminar condición">×</button>
       </div>
     </div>`;
   }).join('');
@@ -780,10 +780,10 @@ function renderValorInputCondicion(m) {
       </select>`;
     }
     // Fallback si el maestro no trae opciones (o está inactivo): permitir texto libre.
-    return `<input id="condicionValorEl" type="text" class="am-input" placeholder="Escribe la opción…" style="width:100%;">`;
+    return `<input id="condicionValorEl" type="text" class="mx-input" placeholder="Escribe la opción…" style="width:100%;">`;
   }
   if (m.tipoValor === 'texto') {
-    return `<input id="condicionValorEl" type="text" class="am-input" placeholder="Escribe el valor…" style="width:100%;">`;
+    return `<input id="condicionValorEl" type="text" class="mx-input" placeholder="Escribe el valor…" style="width:100%;">`;
   }
   // Tipos numéricos: moneda, porcentaje, dias, numero
   const step = m.tipoValor === 'porcentaje' ? '0.1' : '1';
@@ -796,7 +796,7 @@ function renderValorInputCondicion(m) {
              : m.tipoValor === 'dias'       ? 'días'
              : (m.unidadNombre || '');
   return `<div style="display:flex;align-items:center;gap:10px;">
-    <input id="condicionValorEl" type="number" class="am-input" min="0" step="${step}" placeholder="${esc(ph)}" style="flex:1;">
+    <input id="condicionValorEl" type="number" class="mx-input" min="0" step="${step}" placeholder="${esc(ph)}" style="flex:1;">
     ${unid ? `<span style="font-size:13px;font-weight:700;color:#475569;white-space:nowrap;">${esc(unid)}</span>` : ''}
   </div>`;
 }
@@ -908,7 +908,7 @@ function seleccionarCondicionCard(card, m, cards) {
     inputWrap.innerHTML = `${renderModoToggleHTML(defaultModo)}<div id="condicionValorInner">${renderValorInputCondicion(m)}</div>`;
     applyCondicionModo(defaultModo);
     document.getElementById('condicionModoRow')?.addEventListener('click', (e) => {
-      const btn = e.target.closest('.act-period-mode');
+      const btn = e.target.closest('.mx-toggle-btn');
       if (!btn) return;
       applyCondicionModo(btn.dataset.modo);
     });
@@ -1122,7 +1122,7 @@ async function abrirModalEditarCondicion(condItem) {
     }
     applyCondicionModo(initialModo);
     document.getElementById('condicionModoRow')?.addEventListener('click', (e) => {
-      const btn = e.target.closest('.act-period-mode');
+      const btn = e.target.closest('.mx-toggle-btn');
       if (!btn) return;
       applyCondicionModo(btn.dataset.modo);
     });
@@ -1325,7 +1325,7 @@ function bindTabActivation() {
   const maybeLoad = async () => {
     const hash = String(window.location.hash || '');
     const panel = document.getElementById('tab-tratos');
-    const isActive = !!(panel && (panel.classList.contains('active') || panel.classList.contains('is-active')));
+    const isActive = !!(panel && (panel.classList.contains('active') || panel.classList.contains('active')));
     if (hash !== '#tab-tratos' && !isActive) return;
     syncTrtPeriodUI();
     await cargarTratos();

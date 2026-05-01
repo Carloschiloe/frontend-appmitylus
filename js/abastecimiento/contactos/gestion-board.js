@@ -112,7 +112,7 @@ export function createGestionBoardModule({
       id: String(c._id || ''),
       proveedor: c.proveedorNombre || '-',
       contacto: c.contactoNombre || c.contacto || '',
-      paso: c.proximoPaso || 'Sin accion',
+      paso: c.proximoPaso || 'Sin acción',
       fechaProximo: toDateSafe(c.proximoPasoFecha),
       responsable: c.responsablePG || c.responsable || c.contactoResponsable || '',
       rawEstado: c.estado || '',
@@ -126,7 +126,7 @@ export function createGestionBoardModule({
       id: String(r._id || r.id || ''),
       proveedor: r.proveedorNombre || '-',
       contacto: r.contactoNombre || '',
-      paso: r.proximoPaso || r.tipo || 'Interaccion',
+      paso: r.proximoPaso || r.tipo || 'Interacción',
       fechaProximo: toDateSafe(r.fechaProximo || r.proximoPasoFecha || r.fecha),
       responsable: r.responsablePG || r.responsable || '',
       rawEstado: r.estado || '',
@@ -156,7 +156,7 @@ export function createGestionBoardModule({
     const title = `${it.paso || 'Gestion'} - ${it.proveedor || '-'}`;
     const sub = [it.contacto || '', it.responsable ? `Resp: ${it.responsable}` : ''].filter(Boolean).join(' | ');
     const muestraEstado = detectMuestraEstado(it);
-    const sourceLabel = it.source === 'visita' ? 'Visita' : (it.source === 'interaccion' ? 'Interaccion' : 'Contacto');
+    const sourceLabel = it.source === 'visita' ? 'Visita' : (it.source === 'interaccion' ? 'Interacción' : 'Contacto');
     const sourceClass = it.source === 'visita' ? 'src-visita' : (it.source === 'interaccion' ? 'src-interaccion' : 'src-contacto');
     const laneClass = laneType ? `is-${laneType}` : '';
     return `
@@ -166,13 +166,13 @@ export function createGestionBoardModule({
           <span class="gestion-item-date">${fmtDateShort(it.fechaProximo)}</span>
         </div>
         <div class="gestion-item-sub">${sub || 'Sin detalle'}</div>
-        <div class="gestion-item-sub gestion-item-tags">
-          <span class="gestion-src-chip ${sourceClass}">${sourceLabel}</span>
-          ${muestraEstado ? `<span class="muestra-chip muestra-${muestraEstado.replace(/\s+/g, '-')}">Muestreo: ${muestraEstado}</span>` : ''}
+        <div class="gestion-item-sub gestion-item-tags" style="display: flex; gap: 6px; margin-top: 8px;">
+          <span class="mx-badge mx-badge-info">${sourceLabel}</span>
+          ${muestraEstado ? `<span class="mx-badge mx-badge-accent"><span class="mx-badge-dot"></span>Muestreo: ${muestraEstado}</span>` : ''}
         </div>
         <div class="gestion-item-actions">
-          <button class="dash-btn gestion-mini" data-gestion-open="${it.source}" data-id="${it.id}">Abrir</button>
-          <button class="dash-btn gestion-mini" data-gestion-dismiss="${it.source}:${it.id}">Gestionado</button>
+          <button class="mx-btn gestion-mini" data-gestion-open="${it.source}" data-id="${it.id}">Abrir</button>
+          <button class="mx-btn gestion-mini" data-gestion-dismiss="${it.source}:${it.id}">Gestionado</button>
         </div>
       </li>
     `;
@@ -192,7 +192,8 @@ export function createGestionBoardModule({
     const root = document.getElementById('gestionKpis');
     if (!root) return;
     const vals = [overdue.length, today.length, next.length, noDate.length];
-    root.querySelectorAll('.gestion-kpi .v').forEach((el, idx) => {
+    // Soporta tanto la clase antigua .v como la nueva .mx-kpi-value
+    root.querySelectorAll('.mx-kpi-value, .gestion-kpi .v').forEach((el, idx) => {
       el.textContent = String(vals[idx] ?? 0);
     });
   }

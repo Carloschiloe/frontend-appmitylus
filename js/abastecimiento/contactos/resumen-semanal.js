@@ -425,7 +425,7 @@ function ensureModeSwitcher(){
     seg.className = 'segmented';
     seg.id = 'resumen_mode';
     seg.innerHTML = `
-      <button data-mode="visitas" class="is-active">Visitas</button>
+      <button data-mode="visitas" class='active'>Visitas</button>
       <button data-mode="contactos">Contactos</button>
     `;
     toolbar.insertBefore(seg, toolbar.lastElementChild);
@@ -434,7 +434,7 @@ function ensureModeSwitcher(){
       const mode = btn.getAttribute('data-mode');
       if (_cache.mode === mode) return;
       _cache.mode = mode;
-      seg.querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b===btn));
+      seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b===btn));
       await refreshResumen();
     });
   }
@@ -456,7 +456,7 @@ function ensureModeSwitcher(){
       const period = btn.getAttribute('data-period');
       if (_cache.periodMode === period) return;
       _cache.periodMode = period;
-      (segPeriod.querySelectorAll('button[data-period]') || []).forEach(b => b.classList.toggle('is-active', b===btn));
+      (segPeriod.querySelectorAll('button[data-period]') || []).forEach(b => b.classList.toggle('active', b===btn));
       applyVisibility();
       await refreshResumen();
     });
@@ -530,7 +530,7 @@ export function setResumenMode(mode, opts = {}){
   const seg = document.getElementById('resumen_mode');
   if (seg){
     seg.querySelectorAll('button').forEach(b => {
-      b.classList.toggle('is-active', b.getAttribute('data-mode') === mode);
+      b.classList.toggle('active', b.getAttribute('data-mode') === mode);
     });
   }
   if (!opts.silentRewire) refreshResumen();

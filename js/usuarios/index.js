@@ -16,15 +16,15 @@ function formatDate(iso) {
 }
 
 function rolBadge(rol) {
-  const map = { admin: ['admin', 'Administrador'], usuario: ['usuario', 'Usuario'], lectura: ['lectura', 'Solo lectura'] };
-  const [cls, label] = map[rol] || ['usuario', rol];
-  return `<span class="usr-badge usr-badge-${cls}"><i class="bi bi-shield-check"></i> ${label}</span>`;
+  const map = { admin: ['info', 'Administrador'], usuario: ['success', 'Usuario'], lectura: ['muted', 'Solo lectura'] };
+  const [tone, label] = map[rol] || ['success', rol];
+  return `<span class="mx-badge mx-badge-${tone}"><i class="bi bi-shield-check"></i> ${label}</span>`;
 }
 
 function estadoBadge(activo) {
   return activo
-    ? `<span class="usr-badge usr-badge-activo"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Activo</span>`
-    : `<span class="usr-badge usr-badge-inactivo"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Inactivo</span>`;
+    ? `<span class="mx-badge mx-badge-success"><span class="mx-badge-dot"></span> Activo</span>`
+    : `<span class="mx-badge mx-badge-danger"><span class="mx-badge-dot"></span> Inactivo</span>`;
 }
 
 // ── Render tabla ─────────────────────────────────────────────────────
@@ -53,10 +53,10 @@ function renderTabla() {
       <td>${estadoBadge(u.activo)}</td>
       <td style="font-size:12px;color:#64748b;">${formatDate(u.ultimoLogin)}</td>
       <td style="text-align:right;">
-        <button class="am-btn am-btn-flat" style="padding:4px 10px;font-size:12px;" data-edit="${u._id}" title="Editar">
+        <button class="mx-btn mx-btn-flat" style="padding:4px 10px;font-size:12px;" data-edit="${u._id}" title="Editar">
           <i class="bi bi-pencil"></i>
         </button>
-        <button class="am-btn am-btn-flat" style="padding:4px 10px;font-size:12px;${u.activo ? 'color:#f87171;' : 'color:#4ade80;'}"
+        <button class="mx-btn mx-btn-flat" style="padding:4px 10px;font-size:12px;${u.activo ? 'color:#f87171;' : 'color:#4ade80;'}"
                 data-toggle="${u._id}" data-activo="${u.activo}" title="${u.activo ? 'Desactivar' : 'Activar'}">
           <i class="bi bi-${u.activo ? 'person-slash' : 'person-check'}"></i>
         </button>
@@ -104,12 +104,12 @@ function openModal(usuario = null) {
   document.getElementById('u-activo').checked = usuario ? usuario.activo : true;
   ocultarError();
 
-  modal.classList.add('open');
+  modal.style.display = 'flex';
   document.getElementById('u-nombre').focus();
 }
 
 function closeModal() {
-  document.getElementById('modalUsuario').classList.remove('open');
+  document.getElementById('modalUsuario').style.display = 'none';
   editingId = null;
 }
 

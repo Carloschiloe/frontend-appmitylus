@@ -511,7 +511,7 @@ function renderOportunidades(list, historialMap){
           <div style="min-width:0;">
             <span style="font-weight:700;font-size:13px;color:${color};">${esc(labelCompras)}</span>
             ${biomasa ? `<span class="text-soft" style="font-size:12px;margin-left:8px;">${esc(biomasa)}</span>` : ''}
-            ${ultimaAct ? `<div class="text-soft" style="font-size:11px;margin-top:2px;">Ultima actividad: ${esc(ultimaAct)}</div>` : ''}
+            ${ultimaAct ? `<div class="text-soft" style="font-size:11px;margin-top:2px;">Última actividad: ${esc(ultimaAct)}</div>` : ''}
           </div>
         </div>
         <a href="#compras" style="color:#3b82f6;font-size:12px;font-weight:600;white-space:nowrap;">Ver en Compras →</a>
@@ -528,7 +528,7 @@ async function cargarOportunidadesDetalle(contacto){
 
   const proveedorId = contacto && (contacto._id || contacto.proveedorId);
   if (!proveedorId || !isValidObjectId(String(proveedorId))) {
-    cont.innerHTML = '<span class="grey-text">Proveedor sin ID valido para oportunidades.</span>';
+    cont.innerHTML = '<span class="grey-text">Proveedor sin ID válido para oportunidades.</span>';
     return;
   }
 

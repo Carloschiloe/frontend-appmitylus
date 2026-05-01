@@ -1002,37 +1002,7 @@
   flex: 1 1 0;
 }
 
-/* Botones Todo / Semana / Mes */
-.act-period-modes {
-  display: inline-flex;
-  gap: 2px;
-  background: #f1f5f9;
-  border-radius: 8px;
-  padding: 3px;
-}
-
-.act-period-mode {
-  border: 0;
-  background: transparent;
-  color: #475569;
-  border-radius: 6px;
-  padding: 4px 13px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.12s, color 0.12s;
-}
-
-.act-period-mode:hover:not(.is-active) {
-  background: #e2e8f0;
-}
-
-.act-period-mode.is-active {
-  background: #fff;
-  color: #0f766e;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.10);
-}
+/* act-period-modes/act-period-mode removed: replaced by .mx-toggle-group / .mx-toggle-btn */
 
 /* Control de navegación (flechas + label + Hoy) */
 /* IMPORTANTE: hidden attribute necesita este override o display:flex lo anula */

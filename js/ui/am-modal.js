@@ -98,3 +98,66 @@ export function openAmModal(modalEl, opts = {}) {
   }, 0);
 }
 
+/**
+ * Crea un diálogo de confirmación dinámico usando el sistema mx-modal.
+ * @returns {Function} (title, message, acceptLabel) => Promise<boolean>
+ */
+export function createMxConfirm({
+  id = 'mxConfirm',
+  defaultTitle = 'Confirmar acción',
+  defaultMessage = '¿Deseas continuar con esta operación?',
+  cancelLabel = 'Cancelar',
+  acceptLabel = 'Aceptar'
+} = {}) {
+  let resolveFn = null;
+
+  function ensureModal() {
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      el.className = 'mx-modal-overlay';
+      el.style.display = 'none';
+      el.innerHTML = `
+        <div class="mx-modal" style="max-width: 400px;">
+          <div class="mx-modal-head">
+            <h3 data-role="confirm-title">${defaultTitle}</h3>
+          </div>
+          <div class="mx-modal-body">
+            <p data-role="confirm-message" style="margin:0; color:var(--color-text-muted); font-size:14px; line-height:1.5;">${defaultMessage}</p>
+          </div>
+          <div class="mx-modal-foot">
+            <button type="button" data-role="confirm-cancel" class="mx-btn mx-btn-outline">${cancelLabel}</button>
+            <button type="button" data-role="confirm-accept" class="mx-btn mx-btn-primary">${acceptLabel}</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(el);
+
+      el.querySelector('[data-role="confirm-cancel"]').addEventListener('click', () => {
+        resolveFn?.(false);
+        el.style.display = 'none';
+        document.body.style.overflow = '';
+      });
+
+      el.querySelector('[data-role="confirm-accept"]').addEventListener('click', () => {
+        resolveFn?.(true);
+        el.style.display = 'none';
+        document.body.style.overflow = '';
+      });
+    }
+    return el;
+  }
+
+  return function ask(title, message, okLabel) {
+    return new Promise((resolve) => {
+      const el = ensureModal();
+      el.querySelector('[data-role="confirm-title"]').textContent = title || defaultTitle;
+      el.querySelector('[data-role="confirm-message"]').textContent = message || defaultMessage;
+      el.querySelector('[data-role="confirm-accept"]').textContent = okLabel || acceptLabel;
+      resolveFn = resolve;
+      el.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    });
+  };
+}

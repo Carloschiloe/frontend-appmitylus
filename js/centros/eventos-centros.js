@@ -100,7 +100,7 @@ export function registerTablaCentrosEventos() {
 
       const LABELS = {
         region:'Región', codigoArea:'Código Área', areaPSMB:'Área PSMB', estadoAreaSernapesca:'Estado Sernapesca',
-        estadoSanitario:'Estado sanitario', ubicacion:'Ubicación',
+        estadoSanitario:'Estado Sanitario', ubicacion:'Ubicación',
         grupoEspecie:'Grupo Especie', especies:'Especies', tonsMax:'Tons Máx',
         numeroResSSP:'N° ResSSP', fechaResSSP:'Fecha ResSSP',
         numeroResSSFFAA:'N° ResSSFFAA', fechaResSSFFAA:'Fecha ResSSFFAA',

@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <link rel="icon" type="image/png" href="/img/favicon.png">
-  <title>Directorio de Centros &mdash; Mitynex</title>
-  <meta name="description" content="Directorio de centros mit&iacute;lidos: gesti&oacute;n, mapa y trazabilidad operativa." />
+  <title>Directorio de Centros — Mitynex</title>
+  <meta name="description" content="Directorio de centros mitílidos: gestión, mapa y trazabilidad operativa." />
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.6/css/colReorder.dataTables.min.css"/>
-  <!-- Sistema de Dise&ntilde;o Unificado -->
-
+  
+  <!-- Sistema de Diseño Unificado -->
   <link rel="stylesheet" href="/css/index-modern.css">
   <link rel="stylesheet" href="/css/base-ui.css">
   <link rel="stylesheet" href="/css/mitynex-brand.css">
@@ -25,56 +25,54 @@
 
     <main class="content centros-main-shell">
       <div class="centros-main mx-page-frame mx-page-stack">
-          <header class="am-hero mx-hero">
-            <div class="am-hero-content">
-              <h1><i class="bi bi-diagram-3"></i>Directorio de Centros</h1>
-              <p>Gesti&oacute;n de centros, consulta de mapa y trazabilidad de datos operativos.</p>
+          <header class="mx-hero">
+            <div class="mx-hero-content">
+              <h1><i class="bi bi-diagram-3"></i> Directorio de Centros</h1>
+              <p>Gestión de centros, consulta de mapa y trazabilidad de datos operativos.</p>
             </div>
             <div class="am-hero-actions">
-              <button id="btnOpenCentroModal" type="button" class="am-btn am-btn-primary write-only">
+              <button id="btnOpenCentroModal" type="button" class="mx-btn mx-btn-primary write-only">
                 <i class="bi bi-plus-lg"></i> Nuevo Centro
               </button>
-              <button id="btnOpenImportarModal" type="button" class="am-btn am-btn-outline">
+              <button id="btnOpenImportarModal" type="button" class="mx-btn mx-btn-outline">
                 <i class="bi bi-file-earmark-arrow-up"></i> Importar
               </button>
             </div>
           </header>
-
-          <!-- Navegaci&oacute;n de Vistas (Unificada) -->
-          <div class="am-tabs-main mx-tabs" id="centrosViewTabs">
-            <button class="am-tab-btn active" data-tab-link="#tab-centros">
+ 
+          <!-- Navegación de Vistas (Unificada) -->
+          <div class="mx-tabs" id="centrosViewTabs">
+            <button class="mx-tab active" data-c-tab="tab-centros">
               <i class="bi bi-list-ul"></i> Directorio
             </button>
-            <button class="am-tab-btn" data-tab-link="#tab-mapa">
+            <button class="mx-tab" data-c-tab="tab-mapa">
               <i class="bi bi-map"></i> Mapa
             </button>
-            <button class="am-tab-btn" data-tab-link="#tab-sanitario">
+            <button class="mx-tab" data-c-tab="tab-sanitario">
               <i class="bi bi-shield-check"></i> Estado Sanitario
             </button>
           </div>
 
         <!-- Tab: Directorio -->
-        <section id="tab-centros" class="c-panel active">
+        <section id="tab-centros" class="mx-panel active">
           <!-- KPIs con estilo unificado -->
-          <div class="am-card kpi-dashboard am-mb-16">
-            <div class="kpi-cards" id="kpiCards">
-              <article class="kpi-card">
-                <header class="kpi-title"><i class="bi bi-diagram-3"></i> Centros</header>
-                <div class="kpi-value" id="kpiCentros">0</div>
-              </article>
-              <article class="kpi-card">
-                <header class="kpi-title"><i class="bi bi-rulers"></i> Hect&aacute;reas</header>
-                <div class="kpi-value"><span id="kpiHect">0,00</span> <small class="kpi-suffix">ha</small></div>
-              </article>
-              <article class="kpi-card">
-                <header class="kpi-title"><i class="bi bi-geo"></i> Comunas</header>
-                <div class="kpi-value" id="kpiComunas">0</div>
-              </article>
-              <article class="kpi-card">
-                <header class="kpi-title"><i class="bi bi-droplet"></i> Tons M&aacute;x</header>
-                <div class="kpi-value"><span id="kpiTonsMax">0</span> <small class="kpi-suffix">t</small></div>
-              </article>
-            </div>
+          <div class="mx-kpis am-mb-20" id="kpiCards">
+            <article class="mx-kpi">
+              <header class="mx-kpi-label"><i class="bi bi-diagram-3"></i> Centros</header>
+              <div class="mx-kpi-value" id="kpiCentros">0</div>
+            </article>
+            <article class="mx-kpi">
+              <header class="mx-kpi-label"><i class="bi bi-rulers"></i> Hectáreas</header>
+              <div class="mx-kpi-value"><span id="kpiHect">0,00</span> <small class="mx-kpi-sub">ha</small></div>
+            </article>
+            <article class="mx-kpi">
+              <header class="mx-kpi-label"><i class="bi bi-geo"></i> Comunas</header>
+              <div class="mx-kpi-value" id="kpiComunas">0</div>
+            </article>
+            <article class="mx-kpi">
+              <header class="mx-kpi-label"><i class="bi bi-droplet"></i> Tons Máx</header>
+              <div class="mx-kpi-value"><span id="kpiTonsMax">0</span> <small class="mx-kpi-sub">t</small></div>
+            </article>
           </div>
 
           <!-- Barra de Filtros (Estilo unificado) -->
@@ -83,13 +81,13 @@
               <div class="am-filter-row">
                 <div class="am-search-field">
                   <i class="bi bi-search"></i>
-                  <input id="buscarProveedor" class="am-input" placeholder="Buscar proveedor, codigo, area o comuna..." />
+                  <input id="buscarProveedor" class="mx-input" placeholder="Buscar proveedor, código, área o comuna..." />
                 </div>
                 <select id="filtroComuna" class="am-select centro-select-comuna">
                   <option value="">Todas las comunas</option>
                 </select>
                 <div class="centro-filter-popover-wrap">
-                  <button id="btnToggleSanitarioFilters" type="button" class="am-btn am-btn-outline centro-filter-trigger" aria-expanded="false" aria-controls="panelSanitarioFilters">
+                  <button id="btnToggleSanitarioFilters" type="button" class="mx-btn mx-btn-outline centro-filter-trigger" aria-expanded="false" aria-controls="panelSanitarioFilters">
                     <span id="centroSanitarioTriggerText">Sanitario</span>
                     <i class="bi bi-chevron-down"></i>
                   </button>
@@ -100,26 +98,26 @@
                     <div class="centro-filter-group">
                       <div class="centro-filter-chips" id="centroSanitarioFilters">
                         <button type="button" class="centro-filter-chip is-active" data-sanitary-filter="">Todas</button>
-                        <button type="button" class="centro-filter-chip" data-sanitary-filter="ok">OK</button>
-                        <button type="button" class="centro-filter-chip" data-sanitary-filter="alerta">Con alerta</button>
-                        <button type="button" class="centro-filter-chip" data-sanitary-filter="bloqueada">Bloqueada</button>
-                        <button type="button" class="centro-filter-chip" data-sanitary-filter="sin_datos">Sin datos</button>
+                        <button type="button" class="centro-filter-chip" data-sanitary-filter="PSMB">PSMB</button>
+                        <button type="button" class="centro-filter-chip" data-sanitary-filter="ABIERTA">Abierta</button>
+                        <button type="button" class="centro-filter-chip" data-sanitary-filter="CERRADA">Cerrada</button>
+                        <button type="button" class="centro-filter-chip" data-sanitary-filter="PRECAUTORIA">Precautoria</button>
                       </div>
                     </div>
                     <div class="centro-filter-panel-actions">
-                      <button type="button" class="am-btn am-btn-outline centro-filter-mini" data-clear-panel="sanitario">Limpiar</button>
-                      <button type="button" class="am-btn am-btn-flat centro-filter-mini" data-close-panel="panelSanitarioFilters">Cerrar</button>
+                      <button type="button" class="mx-btn mx-btn-outline centro-filter-mini" data-clear-panel="sanitario">Limpiar</button>
+                      <button type="button" class="mx-btn mx-btn-flat centro-filter-mini" data-close-panel="panelSanitarioFilters">Cerrar</button>
                     </div>
                   </div>
                 </div>
                 <div class="centro-filter-popover-wrap align-right">
-                  <button id="btnToggleAreaFilters" type="button" class="am-btn am-btn-outline centro-filter-trigger" aria-expanded="false" aria-controls="panelAreaFilters">
-                    <span id="centroAreaTriggerText">Estado area</span>
+                  <button id="btnToggleAreaFilters" type="button" class="mx-btn mx-btn-outline centro-filter-trigger" aria-expanded="false" aria-controls="panelAreaFilters">
+                    <span id="centroAreaTriggerText">Estado área</span>
                     <i class="bi bi-chevron-down"></i>
                   </button>
                   <div class="centro-filter-panel centro-filter-popover" id="panelAreaFilters" hidden>
                     <div class="centro-filter-panel-head">
-                      <span class="centro-filter-panel-title">Filtrar por estado area</span>
+                      <span class="centro-filter-panel-title">Filtrar por estado área</span>
                     </div>
                     <div class="centro-filter-group">
                       <div class="centro-filter-chips" id="centroAreaFilters">
@@ -130,12 +128,12 @@
                       </div>
                     </div>
                     <div class="centro-filter-panel-actions">
-                      <button type="button" class="am-btn am-btn-outline centro-filter-mini" data-clear-panel="area">Limpiar</button>
-                      <button type="button" class="am-btn am-btn-flat centro-filter-mini" data-close-panel="panelAreaFilters">Cerrar</button>
+                      <button type="button" class="mx-btn mx-btn-outline centro-filter-mini" data-clear-panel="area">Limpiar</button>
+                      <button type="button" class="mx-btn mx-btn-flat centro-filter-mini" data-close-panel="panelAreaFilters">Cerrar</button>
                     </div>
                   </div>
                 </div>
-                <button id="btnLimpiarFiltros" type="button" class="am-btn am-btn-outline">Limpiar</button>
+                <button id="btnLimpiarFiltros" type="button" class="mx-btn mx-btn-outline">Limpiar</button>
               </div>
             </div>
             <div class="am-export-group">
@@ -146,20 +144,38 @@
             </div>
           </div>
 
-          <div class="am-card am-p-0 table-card">
+          <div class="mx-table-card am-p-0">
             <div class="mmpp-table-wrap">
-              <table id="centrosTable" class="display mmpp table-full centros-table">
+              <table id="centrosTable" class="mx-table centros-table">
                 <thead>
                   <tr>
                     <th>Proveedor</th>
-                    <th>Codigo de Centro</th>
-                    <th>Area PSMB</th>
-                    <th>Estado Area</th>
+                    <th>Código de Centro</th>
+                    <th>Área PSMB</th>
+                    <th>Estado Área</th>
                     <th>Estado Sanitario</th>
-                    <th>Hectareas</th>
+                    <th>Hectáreas</th>
                     <th>Acciones</th>
+                    <!-- Hidden columns for DataTables compatibility (15 total) -->
+                    <th class="dt-hidden">H1</th>
+                    <th class="dt-hidden">H2</th>
+                    <th class="dt-hidden">H3</th>
+                    <th class="dt-hidden">H4</th>
+                    <th class="dt-hidden">H5</th>
+                    <th class="dt-hidden">H6</th>
+                    <th class="dt-hidden">H7</th>
+                    <th class="dt-hidden">H8</th>
                   </tr>
                 </thead>
+                <tbody id="tbodyCentros">
+                  <tr class="dt-init-row">
+                    <td>Cargando...</td>
+                    <td></td><td></td><td></td><td></td><td></td><td></td>
+                    <td class="dt-hidden"></td><td class="dt-hidden"></td><td class="dt-hidden"></td>
+                    <td class="dt-hidden"></td><td class="dt-hidden"></td><td class="dt-hidden"></td>
+                    <td class="dt-hidden"></td><td class="dt-hidden"></td>
+                  </tr>
+                </tbody>
                 <tfoot>
                   <tr>
                     <th class="centros-total-label">Totales:</th>
@@ -169,6 +185,14 @@
                     <th></th>
                     <th id="totalHect">0,00</th>
                     <th></th>
+                    <th style="display:none;"></th>
+                    <th style="display:none;"></th>
+                    <th style="display:none;"></th>
+                    <th style="display:none;"></th>
+                    <th style="display:none;"></th>
+                    <th style="display:none;"></th>
+                    <th style="display:none;"></th>
+                    <th style="display:none;"></th>
                   </tr>
                 </tfoot>
               </table>
@@ -177,232 +201,212 @@
         </section>
 
         <!-- Tab: Mapa -->
-        <section id="tab-mapa" class="c-panel centros-panel-padded">
-          <div class="am-card map-card map-card-shell">
-            <div class="map-type-filters map-type-filters-shell" role="group" aria-label="Filtros de concesiones">
+        <section id="tab-mapa" class="mx-panel">
+          <div class="am-card map-card am-p-0">
+            <div class="map-type-filters" role="group" aria-label="Filtros de concesiones" style="padding: 12px;">
               <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:salmon">Salmones</button>
-              <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:mitilidos">Mit&iacute;lidos</button>
+              <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:mitilidos">Mitílidos</button>
               <button type="button" class="map-filter-chip is-active" data-map-filter="tipo:otros">Otras</button>
               <button type="button" class="map-filter-chip is-active" data-map-filter="estado:otorgada">Otorgadas</button>
               <button type="button" class="map-filter-chip is-active" data-map-filter="estado:noOtorgada">No otorgadas</button>
             </div>
 
-            <div class="map-controls-modern map-controls-shell">
-              <div class="am-density-group map-density-toggle map-density-group">
+            <div class="map-controls-modern" style="padding: 0 12px 12px;">
+              <div class="am-density-group map-density-toggle">
                 <button type="button" class="am-tab-btn map-density-btn" data-label-density="high">Alta</button>
                 <button type="button" class="am-tab-btn active map-density-btn" data-label-density="medium">Media</button>
                 <button type="button" class="am-tab-btn map-density-btn" data-label-density="low">Baja</button>
               </div>
-              <button id="btnFullscreenMapa" type="button" class="am-btn am-btn-outline am-btn-sm">
+              <button id="btnFullscreenMapa" type="button" class="mx-btn mx-btn-outline mx-btn-sm">
                 <i class="bi bi-fullscreen"></i> Pantalla completa
               </button>
             </div>
 
-            <section id="mapShell" class="map-shell-frame" tabindex="0" aria-label="Mapa interactivo de centros">
-              <div class="map-search map-search-shell" id="mapSearchBox">
-                <div class="am-search-field map-search-field-glass">
+            <section id="mapShell" class="map-shell-frame" style="height: 600px; position: relative;">
+              <div class="map-search" id="mapSearchBox" style="position: absolute; top: 12px; left: 12px; z-index: 1000;">
+                <div class="am-search-field" style="background: rgba(255,255,255,0.9); backdrop-filter: blur(4px);">
                   <i class="bi bi-search"></i>
-                  <input type="search" id="mapSearch" class="am-input map-search-input" placeholder="Buscar por c&oacute;digo, comuna..." />
+                  <input type="search" id="mapSearch" class="mx-input" placeholder="Buscar por código..." />
                 </div>
                 <ul id="mapSearchResults" class="map-search-results map-search-results-hidden"></ul>
               </div>
-              <div id="map" class="map-canvas"></div>
+              <div id="map" class="map-canvas" style="height: 100%;"></div>
             </section>
           </div>
         </section>
 
         <!-- Tab: Estado Sanitario -->
-        <section id="tab-sanitario" class="c-panel centros-panel-padded">
-          <!-- Banner de alerta sticky -->
-          <div id="sanAlertBanner" class="hidden">
-            <span class="san-banner-icon">&#128680;</span>
-            <span>Alertas sanitarias activas en Los Lagos:</span>
-            <span class="san-banner-areas" id="sanBannerAreas">&mdash;</span>
+        <section id="tab-sanitario" class="mx-panel">
+          <div id="sanAlertBanner" class="mx-alert mx-alert-danger hidden am-mb-16">
+            <i class="bi bi-exclamation-triangle-fill mx-alert-icon"></i>
+            <div class="mx-alert-content">
+              <strong>Alertas sanitarias activas:</strong>
+              <span id="sanBannerAreas">—</span>
+            </div>
           </div>
 
-          <div class="san-wrap">
-            <!-- Hero -->
-            <div class="san-hero">
-              <h1>
+          <div class="mx-table-card am-p-24">
+            <div class="san-hero am-mb-24" style="display:flex; justify-content:space-between; align-items:center;">
+              <h2 style="font-size: 20px; font-weight: 800; display:flex; align-items:center; gap:12px; margin:0;">
                 <span id="sanGlobalDot" class="san-dot gris san-dot-lg"></span>
-                Estado Sanitario &mdash; Regi&oacute;n de Los Lagos
-              </h1>
-              <div class="san-hero-actions">
-                <span class="san-sync-info" id="sanSyncInfo">Sin sincronizaci&oacute;n</span>
-                <button class="am-btn am-btn-flat" id="btnSanSync" type="button">
+                Estado Sanitario — Región de Los Lagos
+              </h2>
+              <div style="display:flex; align-items:center; gap:16px;">
+                <span class="san-sync-info" id="sanSyncInfo" style="font-size:12px; color:var(--color-text-subtle);">Sin sincronización</span>
+                <button class="mx-btn mx-btn-outline" id="btnSanSync" type="button">
                   <i class="bi bi-arrow-clockwise"></i> Actualizar mrSAT
                 </button>
               </div>
             </div>
 
-            <div class="san-filter-section">
-              <div class="san-filter-title">Estado sanitario</div>
-              <div class="san-kpis san-kpis-compact">
-                <div class="san-kpi verde" data-filter="ok"><div class="kpi-num" id="kpiOk">-</div><div class="kpi-label">OK</div></div>
-                <div class="san-kpi naranja" data-filter="alerta"><div class="kpi-num" id="kpiAlerta">-</div><div class="kpi-label">Con alerta</div></div>
-                <div class="san-kpi rojo" data-filter="bloqueada"><div class="kpi-num" id="kpiBloqueada">-</div><div class="kpi-label">Bloqueada</div></div>
+            <div class="mx-form-grid am-mb-24">
+              <div class="mx-field">
+                <label class="mx-label am-mb-8">Estado sanitario</label>
+                <div class="san-kpis san-kpis-compact" style="display:flex; gap:12px;">
+                  <div class="san-kpi verde" data-filter="ok" style="cursor:pointer;"><div class="kpi-num" id="kpiOk">-</div><div class="kpi-label">OK</div></div>
+                  <div class="san-kpi naranja" data-filter="alerta" style="cursor:pointer;"><div class="kpi-num" id="kpiAlerta">-</div><div class="kpi-label">Alerta</div></div>
+                  <div class="san-kpi rojo" data-filter="bloqueada" style="cursor:pointer;"><div class="kpi-num" id="kpiBloqueada">-</div><div class="kpi-label">Bloqueada</div></div>
+                </div>
+              </div>
+              <div class="mx-field">
+                <label class="mx-label am-mb-8">Estado área Sernapesca</label>
+                <div class="mx-tabs mx-tabs-sm" id="sanAreaFilters" style="border:none; background:transparent; padding:0;">
+                  <button type="button" class="mx-tab active" data-area-filter="">Todas</button>
+                  <button type="button" class="mx-tab" data-area-filter="abierta">Abiertas</button>
+                  <button type="button" class="mx-tab" data-area-filter="inactiva">Inactivas</button>
+                  <button type="button" class="mx-tab" data-area-filter="eliminada">Eliminadas</button>
+                </div>
               </div>
             </div>
 
-            <div class="san-filter-section">
-              <div class="san-filter-title">Estado &aacute;rea Sernapesca</div>
-              <div class="san-state-filters" id="sanAreaFilters">
-                <button type="button" class="san-state-chip is-active" data-area-filter="">Todas</button>
-                <button type="button" class="san-state-chip" data-area-filter="abierta">Abiertas</button>
-                <button type="button" class="san-state-chip" data-area-filter="inactiva">Inactivas</button>
-                <button type="button" class="san-state-chip" data-area-filter="eliminada">Eliminadas</button>
+            <div class="san-toolbar am-mb-16" style="display:flex; gap:12px; align-items:center;">
+              <div class="am-search-field" style="flex:1;">
+                <i class="bi bi-search"></i>
+                <input id="sanSearchInput" type="search" placeholder="Buscar por código de área, PSMB, centro..." autocomplete="off" />
               </div>
+              <button type="button" class="mx-btn mx-btn-flat" id="sanClearFilter">Mostrar todas</button>
+              <div id="sanSearchMeta" style="font-size:12px; color:var(--color-text-subtle);">-</div>
             </div>
 
-            <!-- Tab: &Aacute;reas PSMB -->
-            <div id="sanTabAreas">
-              <div class="san-toolbar">
-                <div class="san-search">
-                  <i class="bi bi-search"></i>
-                  <input id="sanSearchInput" type="search" placeholder="Buscar por c&oacute;digo de &aacute;rea, &aacute;rea PSMB, centro, c&oacute;digo de centro, comuna..." autocomplete="off" />
-                </div>
-                <div class="san-toolbar-actions">
-                  <button type="button" class="am-btn am-btn-flat san-clear-filter" id="sanClearFilter">Mostrar todas</button>
-                  <div class="san-search-meta" id="sanSearchMeta">-</div>
-                </div>
-              </div>
-              <div class="san-table-wrap">
-                <table class="san-table">
-                  <thead>
-                    <tr>
-                      <th class="san-col-status">Estado sanitario</th>
-                      <th class="san-col-code">C&oacute;d. &aacute;rea</th>
-                      <th>&Aacute;rea PSMB</th>
-                      <th class="san-col-area-state">Estado &aacute;rea</th>
-                      <th class="san-col-centros">Centros</th>
-                      <th class="san-col-alertas">Alertas</th>
-                      <th class="san-col-types">Tipos an&aacute;lisis</th>
-                      <th class="san-col-date">Fecha</th>
-                      <th class="san-col-toggle"></th>
-                    </tr>
-                  </thead>
-                  <tbody id="sanAreasBody">
-                    <tr><td colspan="9" class="muted">Cargando...</td></tr>
-                  </tbody>
-                </table>
-              </div>
+            <div class="mx-table-wrap">
+              <table class="mx-table san-table">
+                <thead>
+                  <tr>
+                    <th>Estado</th>
+                    <th>Cód. área</th>
+                    <th>Área PSMB</th>
+                    <th>Estado área</th>
+                    <th>Centros</th>
+                    <th>Alertas</th>
+                    <th>Análisis</th>
+                    <th>Fecha</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="sanAreasBody">
+                  <tr><td colspan="9" class="am-empty-table">Cargando datos sanitarios...</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </section>
       </div>
     </main>
-
   </div>
 
   <!-- MODAL: Nuevo / Editar Centro -->
-  <div id="centroModalOverlay" class="am-modal-overlay centro-modal-overlay-hidden" role="dialog" aria-modal="true" aria-labelledby="centroModalTitle">
-    <div class="am-modal centro-modal-lg">
-      <div class="am-modal-head">
-        <h5 id="centroModalTitle" class="am-modal-title">Nuevo Centro</h5>
-        <button type="button" class="am-modal-close js-close-centro-modal" aria-label="Cerrar">&times;</button>
+  <div id="centroModalOverlay" class="mx-modal-overlay">
+    <div class="mx-modal" style="max-width: 800px;">
+      <div class="mx-modal-head">
+        <h3 id="centroModalTitle">Nuevo Centro</h3>
+        <button type="button" class="mx-modal-close js-close-centro-modal">&times;</button>
       </div>
-      <div class="am-modal-body">
-        <form id="formCentro">
+      <div class="mx-modal-body">
+        <form id="formCentro" class="mx-form-stack">
           <input type="hidden" id="inputCentroId" />
-          <div class="am-form-grid">
-            <div class="am-form-group">
-              <label class="am-label" for="inputProveedor">Proveedor</label>
-              <input id="inputProveedor" type="text" class="am-input" />
+          <div class="mx-form-grid">
+            <div class="mx-field">
+              <label class="mx-label"><i class="bi bi-buildings"></i> Proveedor</label>
+              <input id="inputProveedor" type="text" class="mx-input" placeholder="Nombre de la empresa" />
             </div>
-            <div class="am-form-group">
-              <label class="am-label" for="inputComuna">Comuna</label>
-              <input id="inputComuna" type="text" class="am-input" />
+            <div class="mx-field">
+              <label class="mx-label"><i class="bi bi-geo-alt"></i> Comuna</label>
+              <input id="inputComuna" type="text" class="mx-input" placeholder="Ej: Puerto Montt" />
             </div>
-            <div class="am-form-group">
-              <label class="am-label" for="inputCode">C&oacute;digo de Centro</label>
-              <input id="inputCode" type="text" class="am-input" />
+            <div class="mx-field">
+              <label class="mx-label"><i class="bi bi-hash"></i> Código Centro</label>
+              <input id="inputCode" type="text" class="mx-input" placeholder="101234" />
             </div>
-            <div class="am-form-group">
-              <label class="am-label" for="inputCodigoArea">C&oacute;digo de &Aacute;rea</label>
-              <input id="inputCodigoArea" type="text" class="am-input" />
+            <div class="mx-field">
+              <label class="mx-label"><i class="bi bi-layers"></i> Código Área</label>
+              <input id="inputCodigoArea" type="text" class="mx-input" placeholder="10A" />
             </div>
-            <div class="am-form-group">
-              <label class="am-label" for="inputHectareas">Hect&aacute;reas</label>
-              <input id="inputHectareas" type="number" step="0.01" class="am-input" />
+            <div class="mx-field">
+              <label class="mx-label"><i class="bi bi-aspect-ratio"></i> Hectáreas</label>
+              <input id="inputHectareas" type="number" step="0.01" class="mx-input" placeholder="0.00" />
             </div>
           </div>
 
-          <div class="centro-points-section">
-            <h6 class="centro-points-title">Puntos (pol&iacute;gono)</h6>
-            <div class="am-form-grid centro-points-grid">
-              <div class="am-form-group">
-                <label class="am-label" for="inputLat">Latitud (DMS o decimal)</label>
-                <input id="inputLat" type="text" class="am-input" placeholder='Ej: 42&deg;38&apos;30.5&quot;S' />
+          <div class="am-mt-24">
+            <h6 class="mx-label am-mb-12"><i class="bi bi-bounding-box-circles"></i> Puntos de concesión (Polígono)</h6>
+            <div class="mx-form-grid" style="align-items: flex-end; grid-template-columns: 1fr 1fr auto;">
+              <div class="mx-field">
+                <label class="mx-label">Latitud</label>
+                <input id="inputLat" type="text" class="mx-input" placeholder='42°38&apos;30.5"S' />
               </div>
-              <div class="am-form-group">
-                <label class="am-label" for="inputLng">Longitud (DMS o decimal)</label>
-                <input id="inputLng" type="text" class="am-input" placeholder='Ej: 73&deg;45&apos;12.3&quot;W' />
+              <div class="mx-field">
+                <label class="mx-label">Longitud</label>
+                <input id="inputLng" type="text" class="mx-input" placeholder='73°45&apos;12.3"W' />
               </div>
-              <div class="am-form-group centro-points-actions">
-                <button type="button" id="btnAddPoint" class="am-btn am-btn-primary"><i class="bi bi-plus-circle"></i> Agregar</button>
-                <button type="button" id="btnClearPoints" class="am-btn am-btn-outline">Limpiar</button>
+              <div style="display:flex; gap:8px;">
+                <button type="button" id="btnAddPoint" class="mx-btn mx-btn-primary">Agregar</button>
+                <button type="button" id="btnClearPoints" class="mx-btn mx-btn-outline">Limpiar</button>
               </div>
             </div>
-            <table id="pointsTable" class="am-table centro-points-table">
-              <thead><tr><th>#</th><th>Lat</th><th>Lng</th><th></th></tr></thead>
-              <tbody id="pointsBody"></tbody>
-            </table>
+            <div class="mx-table-card am-mt-16 am-p-0">
+              <table class="mx-table" id="pointsTable">
+                <thead><tr><th style="width:50px;">#</th><th>Latitud</th><th>Longitud</th><th style="width:50px;"></th></tr></thead>
+                <tbody id="pointsBody"></tbody>
+              </table>
+            </div>
           </div>
         </form>
       </div>
-      <div class="am-modal-foot">
-        <button type="button" class="am-btn am-btn-outline js-close-centro-modal">Cancelar</button>
-        <button id="btnSaveCentro" type="submit" form="formCentro" class="am-btn am-btn-primary write-only">
-          <i class="bi bi-save"></i> Guardar
+      <div class="mx-modal-foot">
+        <button type="button" class="mx-btn mx-btn-outline js-close-centro-modal">Cancelar</button>
+        <button id="btnSaveCentro" type="submit" form="formCentro" class="mx-btn mx-btn-primary write-only">
+          <i class="bi bi-save"></i> Guardar Centro
         </button>
       </div>
     </div>
   </div>
 
   <!-- MODAL: Detalles del Centro -->
-  <div id="modalDetallesCentroOverlay" class="am-modal-overlay centro-detalle-modal-hidden" role="dialog" aria-modal="true" aria-labelledby="detallesCentroTitle">
-    <div class="am-modal centro-modal-md">
-      <div class="am-modal-head">
-        <h5 id="detallesCentroTitle" class="am-modal-title">Detalles del Centro</h5>
-        <button type="button" class="am-modal-close js-close-detalles-modal" aria-label="Cerrar">&times;</button>
+  <div id="modalDetallesCentroOverlay" class="mx-modal-overlay">
+    <div class="mx-modal" style="max-width: 600px;">
+      <div class="mx-modal-head">
+        <h3 id="detallesCentroTitle">Detalles del Centro</h3>
+        <button type="button" class="mx-modal-close js-close-detalles-modal">&times;</button>
       </div>
-      <div class="am-modal-body">
-        <div id="detallesCentroBody"></div>
-      </div>
-      <div class="am-modal-foot">
-        <button type="button" class="am-btn am-btn-outline js-close-detalles-modal">Cerrar</button>
+      <div class="mx-modal-body" id="detallesCentroBody"></div>
+      <div class="mx-modal-foot">
+        <button type="button" class="mx-btn mx-btn-outline js-close-detalles-modal">Cerrar</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL: Importar Centros -->
-  <div id="modalImportarCentrosOverlay" class="am-modal-overlay centro-import-modal-hidden" role="dialog" aria-modal="true">
-    <div class="am-modal centro-modal-import">
-      <div class="am-modal-head">
-        <h5 class="am-modal-title">Importar Centros (Excel / CSV)</h5>
-        <button type="button" class="am-modal-close js-close-importar-modal" aria-label="Cerrar">&times;</button>
+  <div id="modalImportarCentrosOverlay" class="mx-modal-overlay">
+    <div class="mx-modal" style="max-width: 900px;">
+      <div class="mx-modal-head">
+        <h3 id="importarModalTitle">Importar Centros</h3>
+        <button type="button" class="mx-modal-close js-close-importar-modal">&times;</button>
       </div>
-      <div class="am-modal-body">
-        <div id="importarCentrosContainer"></div>
-      </div>
-      <div class="am-modal-foot">
-        <button type="button" class="am-btn am-btn-outline js-close-importar-modal">Cerrar</button>
+      <div class="mx-modal-body" id="importarCentrosContainer"></div>
+      <div class="mx-modal-foot">
+        <button type="button" class="mx-btn mx-btn-outline js-close-importar-modal">Cerrar</button>
       </div>
     </div>
-  </div>
-
-  <!-- Modal historial &aacute;rea (Sanitario) -->
-  <div id="modalSanHistorial" class="modal app-modal-modern san-hist-modal">
-    <div class="app-modal-header san-hist-head">
-      <div class="san-hist-head-row">
-        <h5 id="sanHistTitulo" class="san-hist-title">Historial &Aacute;rea &mdash;</h5>
-        <button type="button" id="btnSanHistClose" class="san-hist-close">&times;</button>
-      </div>
-    </div>
-    <div class="app-modal-body san-hist-body">
-      <div id="sanHistBody" class="san-hist-body-inner"></div>
-    </div>
-  </div>
   </div>
 
   <!-- Scripts -->
@@ -423,53 +427,41 @@
   <script type="module" src="/js/components/Sidebar.js"></script>
 
   <script>
-    // Tabs de vista (Directorio / Mapa / Estado Sanitario)
     (function initCentrosNavigation() {
-      const tabs = document.querySelectorAll('[data-tab-link]');
-      const sections = {
-        '#tab-centros': document.getElementById('tab-centros'),
-        '#tab-mapa':    document.getElementById('tab-mapa'),
-        '#tab-sanitario': document.getElementById('tab-sanitario')
-      };
+      const tabs = document.querySelectorAll('.mx-tab');
+      const panels = document.querySelectorAll('.mx-panel');
 
       function show(targetHash) {
         const hash = targetHash || '#tab-centros';
+        const targetId = hash.replace('#', '');
         
-        // Ocultar todos
-        Object.values(sections).forEach(el => { if (el) el.style.display = 'none'; });
-        
-        // Mostrar objetivo
-        const target = sections[hash];
-        if (target) {
-          target.style.display = 'block';
-        }
+        tabs.forEach(t => t.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
 
-        // Actualizar botones
-        tabs.forEach(btn => {
-          const isActive = btn.getAttribute('data-tab-link') === hash;
-          btn.classList.toggle('active', isActive);
-        });
+        const activeTab = Array.from(tabs).find(t => t.getAttribute('data-c-tab') === targetId);
+        const activePanel = document.getElementById(targetId);
 
-        // Forzar redimensi&oacute;n de mapa Leaflet si se activa
-        if (hash === '#tab-mapa' && window.__mapLeaflet) {
-          setTimeout(() => window.__mapLeaflet.invalidateSize(), 80);
-          setTimeout(() => window.__mapLeaflet.invalidateSize(), 400);
+        if (activeTab) activeTab.classList.add('active');
+        if (activePanel) activePanel.classList.add('active');
+
+        if (targetId === 'tab-mapa' && window.__mapLeaflet) {
+          setTimeout(() => window.__mapLeaflet.invalidateSize(), 100);
         }
       }
 
       tabs.forEach(btn => {
         btn.addEventListener('click', () => {
-          const hash = btn.getAttribute('data-tab-link');
-          location.hash = hash;
+          const targetId = btn.getAttribute('data-c-tab');
+          if (targetId) location.hash = `#${targetId}`;
         });
       });
 
       window.addEventListener('hashchange', () => show(location.hash));
-      if (!location.hash) location.hash = '#tab-centros';
+      if (!location.hash || location.hash === '#') location.hash = '#tab-centros';
       show(location.hash);
     })();
 
-    // Helpers de modal (unificada)
+    // Bridge para modales unificados
     function toggleOverlayModal(id, visible) {
       const el = document.getElementById(id);
       if (el) el.style.display = visible ? 'flex' : 'none';
@@ -486,16 +478,14 @@
       document.getElementById('btnOpenCentroModal')?.addEventListener('click', window.openCentroModal);
       document.getElementById('btnOpenImportarModal')?.addEventListener('click', window.openImportarModal);
       
-      // Cerrar modales (clase .modal-close o .am-modal-close)
-      document.querySelectorAll('.js-close-centro-modal, .js-close-detalles-modal, .js-close-importar-modal, .modal-close, .am-modal-close').forEach(b => {
+      document.querySelectorAll('.js-close-centro-modal, .js-close-detalles-modal, .js-close-importar-modal').forEach(b => {
         b.addEventListener('click', (e) => {
-          const overlay = e.target.closest('.am-modal-overlay');
+          const overlay = e.target.closest('.mx-modal-overlay');
           if (overlay) overlay.style.display = 'none';
         });
       });
 
-      // Cerrar al hacer click en el overlay (blanco)
-      document.querySelectorAll('.am-modal-overlay').forEach(el => {
+      document.querySelectorAll('.mx-modal-overlay').forEach(el => {
         el.addEventListener('click', e => { if (e.target === el) el.style.display = 'none'; });
       });
     });

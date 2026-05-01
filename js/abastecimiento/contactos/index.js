@@ -132,48 +132,64 @@ function resetContactoExtras() {
 function activarTab(hash) {
   if (!hash) return;
   const raw = (String(hash).startsWith('#') ? hash.slice(1) : hash).toLowerCase();
-
-  // Mapeo de hashes legacy a nuevos panel IDs
+  
   const MAIN_MAP = {
     'tab-contactos': 'tab-directorio',
     'contactos': 'tab-directorio',
-	    'tab-personas': 'tab-directorio',
-	    'personas': 'tab-directorio',
-	    'calendario': 'tab-calendario',
-	    'tab-visitas': 'tab-interacciones',
-	    'visitas': 'tab-interacciones',
-    // Legacy: pestaña Buscar/Consulta removida
+    'tab-personas': 'tab-directorio',
+    'personas': 'tab-directorio',
+    'calendario': 'tab-calendario',
+    'tab-visitas': 'tab-interacciones',
+    'visitas': 'tab-interacciones',
     'tab-consulta': 'tab-gestion',
     'tab-buscar': 'tab-gestion',
     'buscar': 'tab-gestion',
     'muestreos': 'tab-muestreos',
   };
+
   const mainId = MAIN_MAP[raw] || raw;
 
-  // Activar panel principal
-  document.querySelectorAll('.c-panel').forEach((p) => p.classList.remove('active'));
+  // 1. Limpiar todos los paneles y botones principales
+  document.querySelectorAll('.mx-panel').forEach((p) => p.classList.remove('active'));
   document.querySelectorAll('[data-c-tab]').forEach((b) => b.classList.remove('active'));
-  const panel = document.getElementById(mainId);
-  if (panel) panel.classList.add('active');
-  document.querySelector(`[data-c-tab="${mainId}"]`)?.classList.add('active');
 
-  // Activar sub-panel según el hash original
+  // 2. Activar panel y botón
+  const panel = document.getElementById(mainId);
+  const btn = document.querySelector(`[data-c-tab="${mainId}"]`);
+
+  if (panel) {
+    panel.classList.add('active');
+    // Scroll al inicio del panel para evitar que se vea el anterior si el scroll estaba abajo
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+  if (btn) btn.classList.add('active');
+
+  // 3. Activar sub-panel si aplica
   if (raw === 'tab-personas' || raw === 'personas') {
-    document.querySelectorAll('#tab-directorio .c-sub-panel').forEach((p) => p.classList.remove('active'));
+    document.querySelectorAll('#tab-directorio .mx-sub-panel').forEach((p) => p.classList.remove('active'));
     document.querySelectorAll('[data-dir-tab]').forEach((b) => b.classList.remove('active'));
     document.getElementById('tab-personas')?.classList.add('active');
     document.querySelector('[data-dir-tab="dir-personas"]')?.classList.add('active');
-  } else if (raw === 'tab-visitas' || raw === 'visitas') {
-    document.querySelectorAll('#tab-interacciones .c-sub-panel').forEach((p) => p.classList.remove('active'));
+  } else if (raw === 'tab-visitas' || raw === 'visitas' || raw === 'tab-interacciones') {
+    document.querySelectorAll('#tab-interacciones .mx-sub-panel').forEach((p) => p.classList.remove('active'));
     document.querySelectorAll('[data-inter-tab]').forEach((b) => b.classList.remove('active'));
     document.getElementById('inter-visitas')?.classList.add('active');
     document.querySelector('[data-inter-tab="inter-visitas"]')?.classList.add('active');
+  } else if (mainId === 'tab-directorio') {
+    // Por defecto mostrar contactos si se entra a directorio general
+    document.querySelectorAll('#tab-directorio .mx-sub-panel').forEach((p) => p.classList.remove('active'));
+    document.querySelectorAll('[data-dir-tab]').forEach((b) => b.classList.remove('active'));
+    document.getElementById('tab-contactos')?.classList.add('active');
+    document.querySelector('[data-dir-tab="dir-empresas"]')?.classList.add('active');
   }
 
-  // Actualizar hash sin recargar
+  // 4. Sincronizar URL
   try {
-    history.replaceState(null, '', `${location.pathname}${location.search}#${mainId}`);
-  } catch {
+    const nextHash = `#${mainId}`;
+    if (window.location.hash !== nextHash) {
+      history.replaceState(null, '', `${location.pathname}${location.search}${nextHash}`);
+    }
+  } catch (e) {
     location.hash = mainId;
   }
 

@@ -125,7 +125,7 @@ export async function mountActivityTable(root) {
           </div>
         </div>
         <div class="act-new-dropdown" id="actNewDropdown">
-          <button class="am-btn am-btn-primary act-new-trigger" id="actNewTrigger" type="button" aria-haspopup="true" aria-expanded="false">
+          <button class="mx-btn mx-btn-primary act-new-trigger" id="actNewTrigger" type="button" aria-haspopup="true" aria-expanded="false">
             <i class="bi bi-plus-lg"></i> Nueva actividad
             <i class="bi bi-chevron-down act-new-caret"></i>
           </button>
@@ -169,7 +169,7 @@ export async function mountActivityTable(root) {
             <option value="vencido">Vencido</option>
           </select>
           <input id="act-f-q" type="text" class="mmpp-input act-input-q" placeholder="Buscar proveedor, contacto, paso…">
-          <button id="act-f-clear" class="dash-btn act-btn-clear" type="button">Limpiar</button>
+          <button id="act-f-clear" class="mx-btn act-btn-clear" type="button">Limpiar</button>
           <div class="act-export-group">
             <button class="act-export-btn" data-act-export="csv" title="Exportar CSV">CSV</button>
             <button class="act-export-btn" data-act-export="xls" title="Exportar Excel">XLS</button>

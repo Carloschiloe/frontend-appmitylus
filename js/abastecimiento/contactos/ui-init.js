@@ -30,28 +30,51 @@ export function initContactosTabs({ onVisitas, onPersonas, onMuestreos, onContac
     try { window.dispatchEvent(new CustomEvent('mmpp:navigate', { detail: { hash: nextHash } })); } catch {}
   };
 
-  // ── Tabs principales (data-c-tab) ──────────────────────────────────────────
-  document.querySelectorAll('[data-c-tab]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const target = btn.getAttribute('data-c-tab');
-      document.querySelectorAll('.c-panel').forEach((p) => p.classList.remove('active'));
-      document.querySelectorAll('[data-c-tab]').forEach((b) => b.classList.remove('active'));
-      document.getElementById(target)?.classList.add('active');
-      btn.classList.add('active');
-      syncUrlHash(target);
-      if (target === 'tab-interacciones') onVisitas?.();
-      if (target === 'tab-directorio') onContactos?.();
-      if (target === 'tab-calendario') onCalendario?.();
-      if (target === 'tab-muestreos') onMuestreos?.();
-      onAny?.();
+  const activateTabById = (targetId) => {
+    if (!targetId) return;
+    
+    // 1. Limpiar todos los paneles y botones
+    document.querySelectorAll('.mx-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('[data-c-tab]').forEach(b => b.classList.remove('active'));
+    
+    // 2. Activar el panel y botón objetivo
+    const panel = document.getElementById(targetId);
+    const btn = document.querySelector(`[data-c-tab="${targetId}"]`);
+    
+    if (panel) panel.classList.add('active');
+    if (btn) btn.classList.add('active');
+    
+    // 3. Sincronizar URL
+    syncUrlHash(targetId);
+    
+    // 4. Disparar callbacks
+    if (targetId === 'tab-interacciones') onVisitas?.();
+    if (targetId === 'tab-directorio') onContactos?.();
+    if (targetId === 'tab-calendario') onCalendario?.();
+    if (targetId === 'tab-muestreos') onMuestreos?.();
+    onAny?.();
+  };
+
+  // ── Tabs principales (Delegación en contenedor) ──────────────────────────
+  const mainTabs = document.getElementById('cMainTabs');
+  if (mainTabs) {
+    mainTabs.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-c-tab]');
+      if (!btn) return;
+      activateTabById(btn.getAttribute('data-c-tab'));
     });
-  });
+  } else {
+    // Fallback manual si el ID no se encuentra
+    document.querySelectorAll('[data-c-tab]').forEach((btn) => {
+      btn.addEventListener('click', () => activateTabById(btn.getAttribute('data-c-tab')));
+    });
+  }
 
   // ── Sub-tabs de Directorio (data-dir-tab) ─────────────────────────────────
   document.querySelectorAll('[data-dir-tab]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = btn.getAttribute('data-dir-tab');
-      document.querySelectorAll('#tab-directorio .c-sub-panel').forEach((p) => p.classList.remove('active'));
+      document.querySelectorAll('#tab-directorio .mx-sub-panel').forEach((p) => p.classList.remove('active'));
       document.querySelectorAll('[data-dir-tab]').forEach((b) => b.classList.remove('active'));
       const subId = target === 'dir-empresas' ? 'tab-contactos' : 'tab-personas';
       document.getElementById(subId)?.classList.add('active');
@@ -67,7 +90,7 @@ export function initContactosTabs({ onVisitas, onPersonas, onMuestreos, onContac
   document.querySelectorAll('[data-inter-tab]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = btn.getAttribute('data-inter-tab');
-      document.querySelectorAll('#tab-interacciones .c-sub-panel').forEach((p) => p.classList.remove('active'));
+      document.querySelectorAll('#tab-interacciones .mx-sub-panel').forEach((p) => p.classList.remove('active'));
       document.querySelectorAll('[data-inter-tab]').forEach((b) => b.classList.remove('active'));
       document.getElementById(target)?.classList.add('active');
       btn.classList.add('active');

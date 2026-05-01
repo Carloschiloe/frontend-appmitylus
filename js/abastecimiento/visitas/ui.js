@@ -234,7 +234,7 @@ function ensureLocalTableVisitas() {
     emptyColspan: 8,
     emptyText: 'No hay visitas registradas.',
     fileName: 'Visitas_Abastecimiento',
-    exportHeaders: ['Semana', 'Fecha', 'Proveedor', 'Contacto', 'Centro', 'Comuna', 'Proximo paso', 'Fecha prox.', 'Tons']
+    exportHeaders: ['Semana', 'Fecha', 'Proveedor', 'Contacto', 'Centro', 'Comuna', 'Próximo paso', 'Fecha prox.', 'Tons']
   });
   return tableCtrlVisitas;
 }
@@ -288,19 +288,19 @@ function buildRowsVisitas(visitas) {
         <div class="acts tbl-actions">
           <a href="#!" class="tbl-action-btn tbl-act-biomasa ${muClase}" data-action="muestreo" title="${muTitle}" data-id="${vid}"
              onpointerdown="window.__visAction && window.__visAction(this,event)" ontouchstart="window.__visAction && window.__visAction(this,event)" onclick="return false;">
-            <i class="material-icons">science</i>
+            <i class="bi bi-eyedropper"></i>
           </a>
           <a href="#!" class="tbl-action-btn tbl-act-view" data-action="ver" title="Ver visita" data-id="${vid}"
              onpointerdown="window.__visAction && window.__visAction(this,event)" ontouchstart="window.__visAction && window.__visAction(this,event)" onclick="return false;">
-            <i class="material-icons">visibility</i>
+            <i class="bi bi-eye"></i>
           </a>
           <a href="#!" class="tbl-action-btn tbl-act-edit" data-action="editar" title="Editar visita" data-id="${vid}"
              onpointerdown="window.__visAction && window.__visAction(this,event)" ontouchstart="window.__visAction && window.__visAction(this,event)" onclick="return false;">
-            <i class="material-icons">edit</i>
+            <i class="bi bi-pencil"></i>
           </a>
-          <a href="#!" class="tbl-action-btn tbl-act-delete" data-action="eliminar" title="Eliminar visita" data-id="${vid}"
+          <a href="#!" class="tbl-action-btn tbl-act-delete mu-red" data-action="eliminar" title="Eliminar visita" data-id="${vid}"
              onpointerdown="window.__visAction && window.__visAction(this,event)" ontouchstart="window.__visAction && window.__visAction(this,event)" onclick="return false;">
-            <i class="material-icons">delete</i>
+            <i class="bi bi-trash"></i>
           </a>
         </div>
       `.trim();
@@ -750,7 +750,7 @@ export async function initVisitasTab(forceReload = false) {
   }
   if (!tabla) { console.debug('[visitas/ui] #tablaVisitas no está en el DOM (tab inactivo)'); return; }
 
-  const HEADERS = ['Sem.', 'Fecha', 'Proveedor', 'Centro', 'Proximo paso', 'Fecha prox.', 'Tons', 'Acciones'];
+  const HEADERS = ['Sem.', 'Fecha', 'Proveedor', 'Centro', 'Próximo paso', 'Fecha prox.', 'Tons', 'Acciones'];
   const thead   = tabla.querySelector('thead') || (() => { const t=document.createElement('thead'); tabla.prepend(t); return t; })();
   const trHead  = thead.querySelector('tr');
   const thCount = trHead ? trHead.children.length : 0;

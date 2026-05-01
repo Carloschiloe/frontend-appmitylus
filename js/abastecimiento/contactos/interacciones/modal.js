@@ -71,7 +71,7 @@ function getTipoMeta(tipo) {
 }
 
 function attachAutocomplete(inputEl, fetcher, onPick, { min = 2 } = {}) {
-  const wrap = inputEl.closest('.am-input-group') || inputEl.parentNode;
+  const wrap = inputEl.closest('.mx-input-group') || inputEl.parentNode;
   wrap.style.position = wrap.style.position || 'relative';
 
   const box = document.createElement('div');
@@ -224,9 +224,9 @@ export async function openInteraccionModal({ preset = {}, onSaved } = {}) {
 
   const tipoFieldHtml = lockTipo
     ? `<input id="i-tipo" type="hidden" value="${esc(currentTipo)}">`
-    : `<div class="am-input-group col-3">
+    : `<div class="mx-input-group col-3">
         <label class="am-label">Tipo</label>
-        <select id="i-tipo" class="am-select browser-default">
+        <select id="i-tipo" class="mx-select browser-default">
           <option value="llamada">Llamada</option>
           <option value="visita">Visita</option>
           <option value="muestra">Muestra</option>
@@ -250,18 +250,18 @@ export async function openInteraccionModal({ preset = {}, onSaved } = {}) {
     <div class="app-modal-body">
       <div class="am-form-grid">
 
-        <div class="am-input-group ${fechaCol}">
+        <div class="mx-input-group ${fechaCol}">
           <label class="am-label">Fecha</label>
-          <input id="i-fecha" class="am-input" type="datetime-local">
+          <input id="i-fecha" class="mx-input" type="datetime-local">
         </div>
         ${tipoFieldHtml}
-        <div class="am-input-group ${respCol}">
+        <div class="mx-input-group ${respCol}">
           <label class="am-label">Responsable</label>
-          <select id="i-responsable" class="am-select browser-default"></select>
+          <select id="i-responsable" class="mx-select browser-default"></select>
         </div>
-        <div class="am-input-group ${estadoCol}">
+        <div class="mx-input-group ${estadoCol}">
           <label class="am-label">Estado</label>
-          <select id="i-estado" class="am-select browser-default">
+          <select id="i-estado" class="mx-select browser-default">
             <option value="pendiente">Pendiente</option>
             <option value="agendado">Agendado</option>
             <option value="completado">Completado</option>
@@ -269,49 +269,49 @@ export async function openInteraccionModal({ preset = {}, onSaved } = {}) {
           </select>
         </div>
 
-        <div class="am-input-group col-4" style="position:relative;">
+        <div class="mx-input-group col-4" style="position:relative;">
           <label class="am-label">Contacto</label>
-          <input id="i-contacto-nombre" class="am-input" placeholder="Nombre contacto" autocomplete="off">
+          <input id="i-contacto-nombre" class="mx-input" placeholder="Nombre contacto" autocomplete="off">
         </div>
-        <div class="am-input-group col-4" style="position:relative;">
+        <div class="mx-input-group col-4" style="position:relative;">
           <label class="am-label">Proveedor</label>
-          <input id="i-proveedor-nombre" class="am-input" placeholder="Se autocompleta al elegir contacto" autocomplete="off">
+          <input id="i-proveedor-nombre" class="mx-input" placeholder="Se autocompleta al elegir contacto" autocomplete="off">
         </div>
-        <div class="am-input-group col-4">
+        <div class="mx-input-group col-4">
           <label class="am-label" style="display:flex;justify-content:space-between;align-items:center;">
             <span>Centro (opcional)</span>
             <button type="button" id="i-open-centro-mapa" style="background:none;border:none;color:#4f46e5;cursor:pointer;font-size:12px;font-weight:700;padding:0;display:flex;align-items:center;gap:4px;">
               <i class="material-icons" style="font-size:14px;">map</i> Ver mapa
             </button>
           </label>
-          <select id="i-centro-id" class="am-select browser-default">
+          <select id="i-centro-id" class="mx-select browser-default">
             <option value="">Sin centro</option>
           </select>
         </div>
 
-        <div class="am-input-group col-3">
+        <div class="mx-input-group col-3">
           <label class="am-label">Área</label>
-          <input id="i-area-codigo" class="am-input" placeholder="Se completa al elegir centro" readonly>
+          <input id="i-area-codigo" class="mx-input" placeholder="Se completa al elegir centro" readonly>
         </div>
-        <div class="am-input-group col-3">
+        <div class="mx-input-group col-3">
           <label class="am-label">Tons conversadas</label>
-          <input id="i-tons" class="am-input" type="number" min="0" step="1">
+          <input id="i-tons" class="mx-input" type="number" min="0" step="1">
         </div>
-        <div class="am-input-group col-3">
+        <div class="mx-input-group col-3">
           <label class="am-label">Próximo paso</label>
-          <select id="i-prox-paso" class="am-select browser-default">
+          <select id="i-prox-paso" class="mx-select browser-default">
             <option value="">Seleccione...</option>
             ${PROXIMO_PASO_OPCIONES.map((op) => `<option value="${esc(op)}">${esc(op)}</option>`).join('')}
           </select>
         </div>
-        <div class="am-input-group col-3">
+        <div class="mx-input-group col-3">
           <label class="am-label">Fecha próximo paso</label>
-          <input id="i-fecha-prox" class="am-input" type="datetime-local">
+          <input id="i-fecha-prox" class="mx-input" type="datetime-local">
         </div>
 
-        <div class="am-input-group col-12">
+        <div class="mx-input-group col-12">
           <label class="am-label">Resumen / Observaciones</label>
-          <textarea id="i-resumen" class="am-input" placeholder="Resumen..." style="height:72px;resize:none;padding-top:10px;"></textarea>
+          <textarea id="i-resumen" class="mx-input" placeholder="Resumen..." style="height:72px;resize:none;padding-top:10px;"></textarea>
         </div>
 
         <input type="hidden" id="i-contacto-id">
@@ -320,8 +320,8 @@ export async function openInteraccionModal({ preset = {}, onSaved } = {}) {
     </div>
 
     <div class="app-modal-footer">
-      <button type="button" class="am-btn am-btn-flat modal-close">Cancelar</button>
-      <button type="button" id="i-save" class="am-btn am-btn-primary">
+      <button type="button" class="mx-btn mx-btn-flat modal-close">Cancelar</button>
+      <button type="button" id="i-save" class="mx-btn mx-btn-primary">
         <i class="bi bi-check-lg"></i> Guardar
       </button>
     </div>`;

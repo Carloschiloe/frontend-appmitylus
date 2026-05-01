@@ -12,7 +12,7 @@ function resolveEl(ref) {
 function ensureButton(label, role) {
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'dash-btn tbl-ctrl-btn';
+  btn.className = 'mx-btn tbl-ctrl-btn';
   btn.dataset.role = role;
   btn.textContent = label;
   return btn;
@@ -26,9 +26,9 @@ function ensureTopControls(sectionEl, tableId) {
   top.dataset.localTop = tableId;
   top.innerHTML = `
     <div class="local-export-group">
-      <button type="button" class="dash-btn tbl-ctrl-btn" data-role="export-csv">CSV</button>
-      <button type="button" class="dash-btn tbl-ctrl-btn" data-role="export-xls">Excel</button>
-      <button type="button" class="dash-btn tbl-ctrl-btn" data-role="export-pdf">PDF</button>
+      <button type="button" class="mx-btn tbl-ctrl-btn" data-role="export-csv">CSV</button>
+      <button type="button" class="mx-btn tbl-ctrl-btn" data-role="export-xls">Excel</button>
+      <button type="button" class="mx-btn tbl-ctrl-btn" data-role="export-pdf">PDF</button>
     </div>
   `;
   const tableWrap = sectionEl.querySelector('.mmpp-table-wrap');

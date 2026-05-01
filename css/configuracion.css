@@ -109,11 +109,7 @@
 }
 
 /* Icon buttons */
-.config-section .am-btn-icon {
-  width: 34px;
-  height: 34px;
-  padding: 0;
-}
+/* .config-section .am-btn-icon removed: no consumers remain */
 
 /* DataTables theme (scoped) */
 .config-section .dataTables_wrapper {

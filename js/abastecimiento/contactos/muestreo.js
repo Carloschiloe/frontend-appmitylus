@@ -233,13 +233,13 @@ export function createMuestreoModule({
 
     document.querySelectorAll('.mu-tipo-btn').forEach((btn) => {
       const isActive = btn.getAttribute('data-mu-route') === r;
-      btn.classList.toggle('is-active', isActive);
+      btn.classList.toggle('active', isActive);
       btn.style.background = isActive ? '#0ea5e9' : '#fff';
       btn.style.color = isActive ? '#fff' : '#64748b';
     });
     // Legacy support: old [data-mu-route] buttons if any remain
     document.querySelectorAll('[data-mu-route]:not(.mu-tipo-btn)').forEach((btn) => {
-      btn.classList.toggle('is-active', btn.getAttribute('data-mu-route') === r);
+      btn.classList.toggle('active', btn.getAttribute('data-mu-route') === r);
     });
     const tech = document.getElementById('muestreoTechnicalBlock');
     if (tech) tech.style.display = '';
@@ -285,7 +285,7 @@ export function createMuestreoModule({
     document.querySelectorAll('.mu-step-tab[data-mu-step]').forEach((btn) => {
       const n = Number(btn.getAttribute('data-mu-step') || '1');
       const active = n === muestreoStep;
-      btn.classList.toggle('is-active', active);
+      btn.classList.toggle('active', active);
       btn.style.borderBottom = active ? '2px solid #0f766e' : '2px solid transparent';
       btn.style.color = active ? '#0f766e' : '#94a3b8';
       const numEl = btn.querySelector('.mu-step-num');
@@ -529,7 +529,7 @@ export function createMuestreoModule({
           </span>
         </td>
         <td style="padding:5px 12px;text-align:right;">
-          <input class="am-input" type="number" min="0" max="999999" step="0.01" inputmode="decimal"
+          <input class="mx-input" type="number" min="0" max="999999" step="0.01" inputmode="decimal"
             data-mu-cat="${cat.key}" value="${raw > 0 ? String(raw) : ''}" placeholder="0.00"
             style="width:110px;text-align:right;padding:3px 10px;height:30px;font-size:13px;">
         </td>
@@ -759,7 +759,7 @@ export function createMuestreoModule({
           <td>-</td>
           <td>-</td>
           <td>-</td>
-          <td><button type="button" class="dash-btn mu-start-btn" data-mu-start="${x.id}" data-mu-route="${detectDerivadoRoute(x.rawPaso, x.rawResumen)}">Iniciar muestreo</button></td>
+          <td><button type="button" class="mx-btn mu-start-btn" data-mu-start="${x.id}" data-mu-route="${detectDerivadoRoute(x.rawPaso, x.rawResumen)}">Iniciar muestreo</button></td>
           <td>-</td>
         </tr>
       `).join('');
@@ -806,8 +806,8 @@ export function createMuestreoModule({
     const isForm = mode === 'form';
     form?.classList.toggle('muestreo-hidden', !isForm);
     sum?.classList.toggle('muestreo-hidden', isForm);
-    bForm?.classList.toggle('is-active', isForm);
-    bSum?.classList.toggle('is-active', !isForm);
+    bForm?.classList.toggle('active', isForm);
+    bSum?.classList.toggle('active', !isForm);
     if (bForm) { bForm.style.background = isForm ? '#fff' : 'transparent'; bForm.style.color = isForm ? '#0f766e' : '#64748b'; bForm.style.boxShadow = isForm ? '0 1px 3px rgba(0,0,0,.1)' : 'none'; }
     if (bSum)  { bSum.style.background  = !isForm ? '#fff' : 'transparent'; bSum.style.color  = !isForm ? '#0f766e' : '#64748b'; bSum.style.boxShadow  = !isForm ? '0 1px 3px rgba(0,0,0,.1)' : 'none'; }
 

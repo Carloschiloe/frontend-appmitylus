@@ -59,7 +59,7 @@ export async function renderTable(container, { onChanged } = {}) {
           <label class="int-check-inline">
             <input type="checkbox" id="f-solo-nuevos"><span>Solo contactos nuevos</span>
           </label>
-          <button id="btn-int-clear" type="button" class="dash-btn">Limpiar</button>
+          <button id="btn-int-clear" type="button" class="mx-btn">Limpiar</button>
         </div>
       </div>
 
@@ -151,8 +151,8 @@ export async function renderTable(container, { onChanged } = {}) {
 
   chips.forEach((chip) => {
     chip.addEventListener('click', () => {
-      chips.forEach((c) => c.classList.remove('is-active'));
-      chip.classList.add('is-active');
+      chips.forEach((c) => c.classList.remove('active'));
+      chip.classList.add('active');
       _status = chip.dataset.status || '';
       applyClientFilters({ resetPage: true });
     });
@@ -164,8 +164,8 @@ export async function renderTable(container, { onChanged } = {}) {
     fPaso.value = '';
     fQ.value = '';
     fNuevo.checked = false;
-    chips.forEach((c) => c.classList.remove('is-active'));
-    chips[0]?.classList.add('is-active');
+    chips.forEach((c) => c.classList.remove('active'));
+    chips[0]?.classList.add('active');
     _status = '';
     _quickFilter = '';
     refresh();

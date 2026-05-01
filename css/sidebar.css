@@ -1,7 +1,7 @@
 /* sidebar.css - Estilos para el componente de navegación lateral */
 
 .sidebar {
-  background-color: #0f172a; /* Slate 900 profundo */
+  background: linear-gradient(180deg, var(--color-sidebar) 0%, var(--color-sidebar-alt) 100%);
   color: #f1f5f9;
   height: 100vh;
   position: sticky;

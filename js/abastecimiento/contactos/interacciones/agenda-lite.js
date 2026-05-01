@@ -21,10 +21,10 @@ export function mountAgendaLite(rootEl, items = []) {
         <div class="ag-header">
           <h5 class="ag-title">Calendario de actividades (Interacciones)</h5>
           <div class="ag-head-actions">
-            <button class="dash-btn ag-nav" id="agPrev" aria-label="Mes anterior">‹</button>
+            <button class="mx-btn ag-nav" id="agPrev" aria-label="Mes anterior">‹</button>
             <div class="ag-month" id="agMonthLabel"></div>
-            <button class="dash-btn ag-nav" id="agNext" aria-label="Mes siguiente">›</button>
-            <button class="dash-btn" id="agToday" title="Ir al mes actual">Hoy</button>
+            <button class="mx-btn ag-nav" id="agNext" aria-label="Mes siguiente">›</button>
+            <button class="mx-btn" id="agToday" title="Ir al mes actual">Hoy</button>
           </div>
         </div>
 

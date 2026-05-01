@@ -21,27 +21,9 @@
   max-width: 800px;
 }
 
-/* ── Pestañas (Tabs) ── */
-.maest-tabs {
-  margin-bottom: 24px;
-}
-
-.maest-tab-btn {
-  border-bottom: 0;
-}
-
-.maest-tab-btn i {
-  font-size: 16px;
-}
-
-/* ── Paneles ── */
-.maest-panel {
-  display: none;
+/* ── Paneles de Maestros ── */
+.c-panel {
   animation: fadeIn 0.3s ease;
-}
-
-.maest-panel.active {
-  display: block;
 }
 
 @keyframes fadeIn {
@@ -166,10 +148,8 @@
 }
 
 .maest-modal-md {
-  width: 580px !important;
-  top: 6% !important;
-  z-index: 1000 !important;
-  max-height: 88vh !important;
+  width: 580px;
+  max-height: 88vh;
   overflow-y: auto;
 }
 
@@ -269,7 +249,7 @@
   margin: 0;
 }
 
-.maest-inline-add .am-btn {
+.maest-inline-add .mx-btn {
   height: 38px;
   white-space: nowrap;
 }

@@ -1003,7 +1003,7 @@ function initLabelDensityControls() {
     root.querySelectorAll('[data-label-density]').forEach((btn) => {
       const on = btn.getAttribute('data-label-density') === labelDensity;
       btn.classList.toggle('active', on);
-      btn.classList.toggle('is-active', on);
+      btn.classList.toggle('active', on);
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
   };
@@ -1037,7 +1037,7 @@ function initMapFilterControls() {
         const v = key.split(':')[1];
         on = !!mapFilterState.estado[v];
       }
-      btn.classList.toggle('is-active', on);
+      btn.classList.toggle('active', on);
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
   };
