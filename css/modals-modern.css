@@ -542,3 +542,196 @@
 .maest-badge--off { background: #f1f5f9; color: #64748b; }
 .maest-empty { padding: 32px 16px; text-align: center; color: #94a3b8; font-size: 14px; }
 .maest-empty p { margin: 0 0 12px; }
+
+/* ════════════════════════════════════════════════════════════
+   mx-modal: fixes de layout y diseño moderno
+   ════════════════════════════════════════════════════════════ */
+
+/* Header: flex entre título y botón cierre */
+.mx-modal-head-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.mx-modal-head-top h5,
+.mx-modal-head h5 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+/* Botón × limpio, sin estilos inline que se van acumulando */
+.mx-modal .modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mx-modal .modal-close:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+/* Grid 12 columnas dentro de mx-modal (override del auto-fit de base-ui.css) */
+.mx-modal .am-form-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px 12px;
+}
+
+/* Footer: blanco, no gris */
+.mx-modal .mx-modal-foot {
+  background: #ffffff;
+}
+
+/* modalVisita: más ancho para acomodar 3 columnas sin truncar labels */
+#modalVisita {
+  max-width: 680px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   fv-* — bloque de Fotos en modal de visita
+   ════════════════════════════════════════════════════════════ */
+
+#visita_fotos {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.fv-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+
+.fv-dropzone {
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 22px 16px;
+  text-align: center;
+  cursor: pointer;
+  background: #fafbfc;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.fv-dropzone:hover,
+.fv-dropzone.is-over {
+  border-color: #0d9488;
+  background: #f0fdfa;
+}
+
+.fv-dz-icon {
+  display: block;
+  font-size: 26px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.fv-dz-text {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.fv-dz-link {
+  color: #0d9488;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.fv-dz-hint {
+  margin: 0;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.fv-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.fv-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.fv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 8px;
+}
+
+.fv-thumb {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 1;
+  background: #f1f5f9;
+}
+
+.fv-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fv-thumb-del {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(15,23,42,0.65);
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  padding: 0;
+}
+
+.fv-thumb:hover .fv-thumb-del {
+  opacity: 1;
+}
