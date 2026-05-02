@@ -596,14 +596,48 @@
   gap: 16px 12px;
 }
 
-/* Footer: blanco, no gris */
+/* Footer: blanco, alineado a la derecha, sticky */
 .mx-modal .mx-modal-foot {
   background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px;
+  border-top: 1px solid #f1f5f9;
+  flex-shrink: 0;
 }
 
-/* modalVisita: más ancho para acomodar 3 columnas sin truncar labels */
+/* Botón cancelar en footer: texto sutil, no bloque grande */
+.mx-modal-cancel {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+}
+
+.mx-modal-cancel:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+/* modalVisita: más ancho para acomodar 3 columnas, con max-height para que el footer no se vaya */
 #modalVisita {
   max-width: 680px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#modalVisita .mx-modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
 }
 
 /* ════════════════════════════════════════════════════════════
