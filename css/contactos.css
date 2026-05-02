@@ -1881,3 +1881,49 @@
   .muestreo-summary-filters { grid-template-columns: 1fr; }
   .mu-wizard-head { grid-template-columns: 1fr; }
 }
+
+/* =========================================================
+   Modernización pestañas Gestión, Tratos, Muestreos y
+   Calendario — elimina el panel gris legacy de am-filter-bar
+   ========================================================= */
+
+/* Filter bar dentro de card (Gestión bandeja) → transparente */
+.gestion-home .am-filter-bar {
+  background: transparent;
+  border: none;
+  border-top: 1px solid #f1f5f9;
+  border-radius: 0;
+  padding: 10px 20px;
+  margin-bottom: 0;
+}
+
+/* Filter bar standalone en Tratos y Muestreos → sin caja gris */
+#tab-tratos > .am-filter-bar,
+#tab-muestreos > .am-filter-bar {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  border-radius: 0;
+  padding: 8px 0 12px;
+  margin-bottom: 12px;
+}
+
+/* Selects dentro de filter bars → tamaño intrínseco, no 100% */
+.am-filter-bar .mx-select {
+  width: auto;
+  min-width: 120px;
+}
+
+/* Calendario → envolver root en card para evitar vista "pantalla completa" */
+#tab-calendario #calendario-root {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* cal-cell → reducir altura para grilla más compacta */
+.cal-cell {
+  min-height: 90px;
+}
