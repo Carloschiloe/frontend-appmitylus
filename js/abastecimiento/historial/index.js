@@ -64,6 +64,7 @@ const state = {
   searchText: '',
   statusFilter: 'todos',
   sortBy: 'actividad',
+  viewMode: 'grid',
   activeFilter: 'todos',
   currentTimeline: [],
   historialByProveedorId: new Map(),
@@ -334,25 +335,65 @@ function renderProviderGrid() {
     return;
   }
 
-  grid.innerHTML = list.map((p) => {
-    const b = getProviderBadge(p);
+  const isGrid = state.viewMode === 'grid';
+  grid.className = isGrid ? 'hst-provider-grid' : 'hst-provider-list';
+
+  if (!isGrid && !list.length) {
+    grid.innerHTML = `<p class="hst-loading">Sin resultados para este filtro.</p>`;
+    return;
+  }
+
+  const header = isGrid ? '' : `
+    <div class="hst-list-header">
+      <span></span>
+      <span>Proveedor</span>
+      <span>Última actividad</span>
+      <span>Eventos</span>
+      <span>Fuentes</span>
+      <span>Estado</span>
+    </div>`;
+
+  grid.innerHTML = header + list.map((p) => {
+    const b       = getProviderBadge(p);
     const fuentes = Array.from(p.fuentes).join(', ');
-    return `
-      <div class="mx-list-item hst-prov-card" data-key="${esc(p.key)}" role="button" tabindex="0">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
-          <div>
-            <div class="mx-field-label mx-mb-4" style="font-size:15px; font-weight:700;">${esc(p.name)}</div>
-            <div class="mx-helper">${fmtN(p.total)} registros · ${esc(fuentes)}</div>
+    const st      = providerStatus(p);
+    const dotCls  = st === 'activo' ? 'dot-activo' : st === 'riesgo' ? 'dot-riesgo' : 'dot-inactivo';
+
+    if (isGrid) {
+      const lastAct = p.lastDate
+        ? `<span class="hst-pc-last-rel">${relativeDate(p.lastDate)}</span><span class="hst-pc-last-abs">${fmtDate(p.lastDate)}</span>`
+        : '<span class="hst-pc-last-none">Sin actividad registrada</span>';
+      return `
+        <div class="hst-prov-card" data-key="${esc(p.key)}" role="button" tabindex="0">
+          <div class="hst-pc-top">
+            <div class="hst-pc-name">${esc(p.name)}</div>
+            <span class="mx-badge mx-badge-${b.tone}"><i class="bi ${b.icon}"></i> ${b.text}</span>
           </div>
-          <span class="mx-badge mx-badge-${b.tone}">
-            <i class="bi ${b.icon}"></i> ${b.text}
+          <div class="hst-pc-last">${lastAct}</div>
+          <div class="hst-pc-footer">
+            <span class="hst-pc-count"><i class="bi bi-collection"></i> ${fmtN(p.total)} eventos</span>
+            <span class="hst-pc-sources">${esc(fuentes)}</span>
+          </div>
+        </div>`;
+    } else {
+      const lastTxt = p.lastDate ? relativeDate(p.lastDate) : '—';
+      const absTxt  = p.lastDate ? fmtDate(p.lastDate) : '';
+      return `
+        <div class="hst-list-row" data-key="${esc(p.key)}" role="button" tabindex="0">
+          <span class="hst-lr-dot ${dotCls}"></span>
+          <span class="hst-lr-name">${esc(p.name)}</span>
+          <span class="hst-lr-last">
+            <b>${esc(lastTxt)}</b>
+            <span class="hst-lr-abs">${esc(absTxt)}</span>
           </span>
-        </div>
-      </div>
-    `;
+          <span class="hst-lr-count"><i class="bi bi-collection"></i> ${fmtN(p.total)}</span>
+          <span class="hst-lr-sources">${esc(fuentes)}</span>
+          <span class="mx-badge mx-badge-${b.tone} hst-lr-badge"><i class="bi ${b.icon}"></i> ${b.text}</span>
+        </div>`;
+    }
   }).join('');
 
-  grid.querySelectorAll('.hst-prov-card').forEach((card) => {
+  grid.querySelectorAll('.hst-prov-card, .hst-list-row').forEach((card) => {
     const handler = () => openExpediente(card.dataset.key);
     card.addEventListener('click', handler);
     card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') handler(); });
@@ -371,7 +412,20 @@ function renderExpediente(providerKey) {
   // Header
   document.getElementById('expProvName').textContent = provider.name;
   document.getElementById('expProvSub').textContent =
-    `${fmtN(timeline.length)} eventos · ${Array.from(provider.fuentes).join(', ')}`;
+    `${fmtN(timeline.length)} eventos registrados`;
+
+  // Meta bar: primer contacto, última compra, fuentes
+  const metaBar = document.getElementById('expMetaBar');
+  if (metaBar) {
+    const firstEv   = timeline.length ? timeline[timeline.length - 1] : null;
+    const lastCompra = timeline.find((e) => e.type === 'compra');
+    const fuentes   = Array.from(provider.fuentes).join(', ');
+    const items = [];
+    if (firstEv)    items.push(`<span><i class="bi bi-clock-history"></i> Primer contacto: <b>${fmtDate(firstEv.date)}</b></span>`);
+    if (lastCompra) items.push(`<span><i class="bi bi-cart-check-fill"></i> Última compra: <b>${fmtDate(lastCompra.date)}</b></span>`);
+    items.push(`<span><i class="bi bi-collection"></i> Fuentes: <b>${esc(fuentes)}</b></span>`);
+    metaBar.innerHTML = items.join('');
+  }
 
   // KPIs
   const count = (t) => timeline.filter((e) => e.type === t).length;
@@ -407,6 +461,21 @@ function typeClass(type) {
   return map[type] || 'ev-evento';
 }
 
+function typeIcon(type) {
+  const map = {
+    registro:    'bi-person-plus-fill',
+    interaccion: 'bi-telephone-fill',
+    visita:      'bi-geo-alt-fill',
+    trato:       'bi-handshake-fill',
+    acordado:    'bi-check-circle-fill',
+    compra:      'bi-cart-check-fill',
+    perdido:     'bi-x-circle-fill',
+    muestreo:    'bi-eyedropper-fill',
+    evento:      'bi-pin-fill',
+  };
+  return map[type] || 'bi-circle-fill';
+}
+
 function renderTimeline() {
   const el = document.getElementById('expTimeline');
   if (!el) return;
@@ -419,20 +488,33 @@ function renderTimeline() {
     return;
   }
 
-  const GAP_DAYS = 60;
   let html = '';
-  let prevDate = null;
+  let prevDate  = null;
+  let prevMonth = null;
 
   for (let i = 0; i < timeline.length; i++) {
     const ev = timeline[i];
     const tClass = typeClass(ev.type);
+    const icon   = typeIcon(ev.type);
 
-    // Brecha visible (orden descendente: prevDate > ev.date)
-    if (prevDate) {
-      const gap = Math.round((prevDate.getTime() - ev.date.getTime()) / 86400000);
-      if (gap >= GAP_DAYS) {
-        html += `<div class="exp-gap">— ${gap} días sin actividad —</div>`;
-      }
+    // Encabezado de mes cuando cambia
+    const monthKey = `${ev.date.getFullYear()}-${ev.date.getMonth()}`;
+    if (monthKey !== prevMonth) {
+      const label = ev.date.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+      const cap   = label.charAt(0).toUpperCase() + label.slice(1);
+      const gapPill = prevDate
+        ? (() => {
+            const g = Math.round((prevDate.getTime() - ev.date.getTime()) / 86400000);
+            return g >= 60 ? `<span class="exp-month-gap">${g} días sin actividad</span>` : '';
+          })()
+        : '';
+      html += `
+        <div class="exp-month-sep">
+          <div class="exp-month-node"><i class="bi bi-calendar3"></i></div>
+          <span class="exp-month-label">${cap}</span>
+          ${gapPill}
+        </div>`;
+      prevMonth = monthKey;
     }
     prevDate = ev.date;
 
@@ -453,20 +535,29 @@ function renderTimeline() {
         `</div>`;
     }
 
+    const metaParts = [
+      ev.subtitle    ? `<span><i class="bi bi-person"></i> ${esc(ev.subtitle)}</span>` : '',
+      ev.responsible ? `<span><i class="bi bi-person-badge"></i> ${esc(ev.responsible)}</span>` : '',
+    ].filter(Boolean).join('');
+
     html += `
-      <div class="mx-list-item exp-event ${tClass}${hidden}" data-type="${esc(filterType)}" style="border-left: 4px solid var(--color-${ev.type === 'compra' ? 'success' : (ev.type === 'visita' ? 'secondary' : 'info')});">
-        <div class="mx-field-label" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-          <span>${esc(ev.title)}</span>
-          <span class="mx-helper">
-            <b>${esc(relativeDate(ev.date))}</b> (${esc(fmtDate(ev.date))})
-          </span>
+      <div class="exp-event ${tClass}${hidden}" data-type="${esc(filterType)}">
+        <div class="exp-tl-dot"><i class="bi ${icon}"></i></div>
+        <div class="exp-tl-body">
+          <div class="exp-ev-row">
+            <div class="exp-ev-main">
+              <span class="exp-ev-title">${esc(ev.title)}</span>
+              ${metaParts ? `<div class="exp-ev-meta">${metaParts}</div>` : ''}
+            </div>
+            <div class="exp-ev-when">
+              <span class="exp-ev-rel">${esc(relativeDate(ev.date))}</span>
+              <span class="exp-ev-abs">${esc(fmtDate(ev.date))}</span>
+            </div>
+          </div>
+          ${ev.notes ? `<div class="exp-ev-note">${esc(ev.notes)}</div>` : ''}
+          ${fotosHtml}
         </div>
-        ${ev.subtitle ? `<div class="mx-mb-4" style="font-size:13px; font-weight:600; color:var(--color-text);">${esc(ev.subtitle)}</div>` : ''}
-        ${ev.notes    ? `<div class="mx-helper" style="margin-bottom:8px; line-height:1.4;">${esc(ev.notes)}</div>` : ''}
-        ${fotosHtml}
-        ${ev.responsible ? `<div class="mx-helper" style="margin-top:8px;"><i class="bi bi-person"></i> ${esc(ev.responsible)}</div>` : ''}
-      </div>
-    `;
+      </div>`;
   }
 
   el.innerHTML = html;
@@ -601,6 +692,20 @@ document.querySelectorAll('[data-status]').forEach((chip) => {
 
 document.getElementById('histSort')?.addEventListener('change', (e) => {
   state.sortBy = e.target.value;
+  renderProviderGrid();
+});
+
+// Toggle vista grid / lista
+document.getElementById('btnViewGrid')?.addEventListener('click', () => {
+  state.viewMode = 'grid';
+  document.getElementById('btnViewGrid')?.classList.add('active');
+  document.getElementById('btnViewList')?.classList.remove('active');
+  renderProviderGrid();
+});
+document.getElementById('btnViewList')?.addEventListener('click', () => {
+  state.viewMode = 'list';
+  document.getElementById('btnViewList')?.classList.add('active');
+  document.getElementById('btnViewGrid')?.classList.remove('active');
   renderProviderGrid();
 });
 

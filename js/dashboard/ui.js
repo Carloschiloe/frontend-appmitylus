@@ -6,7 +6,6 @@
 export const ui = {
   nav: document.getElementById('sideNav'),
   activity: document.getElementById('dashboardActivity'),
-  tasks: document.getElementById('dashboardTasks'),
   hint: document.getElementById('dashboardDateHint'),
   refresh: document.getElementById('btnRefreshDashboard'),
   fResp: document.getElementById('dashFiltroResp'),
@@ -15,6 +14,26 @@ export const ui = {
   fTexto: document.getElementById('dashFiltroProveedor'),
   fClear: document.getElementById('dashClear'),
   goHistorial: document.getElementById('dashGoHistorial'),
+
+  // KPIs prospectivos
+  kpiAcordada:    document.getElementById('kpiAcordada'),
+  kpiProxMes:     document.getElementById('kpiProxMes'),
+  kpiNegociacion: document.getElementById('kpiNegociacion'),
+  kpiAlertas:     document.getElementById('kpiAlertas'),
+
+  // Horizonte de abastecimiento
+  dshHorizonte: document.getElementById('dshHorizonte'),
+
+  // Pipeline y top proveedores
+  dshPipeline:       document.getElementById('dshPipeline'),
+  dshPipelineHint:   document.getElementById('dshPipelineHint'),
+  dshTopProveedores: document.getElementById('dshTopProveedores'),
+  dshTopHint:        document.getElementById('dshTopHint'),
+
+  // Pendientes
+  dshPendientes: document.getElementById('dshPendientes'),
+
+  // Biomasa detalle
   bioCardDisponible: document.getElementById('bioCardDisponible'),
   bioCardSemi: document.getElementById('bioCardSemi'),
   bioCardConfirmado: document.getElementById('bioCardConfirmado'),

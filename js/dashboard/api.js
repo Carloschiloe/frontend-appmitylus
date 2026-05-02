@@ -27,6 +27,7 @@ export async function fetchAllDashboardData() {
     fetchJson('/visitas').catch(() => []),
     fetchJson('/interacciones').catch(() => []),
     fetchJson(`/disponibilidades?${qStr}`).catch(() => []),
-    fetchJson('/oportunidades').catch(() => [])
+    fetchJson('/oportunidades').catch(() => []),
+    fetch('/api/sanitario/resumen').then(r => r.ok ? r.json() : null).catch(() => null)
   ]);
 }

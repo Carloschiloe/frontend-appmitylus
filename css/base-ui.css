@@ -941,13 +941,16 @@ body.modo-lectura::after {
   overflow: hidden;
 }
 
-.mx-table-head {
+.mx-table-head,
+.mx-table-card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 16px 20px;
   border-bottom: 1px solid var(--color-border);
   background: #ffffff;
+  flex-wrap: wrap;
 }
 
 .mx-table-head h2 {
