@@ -548,3 +548,175 @@
 }
 
 /* El modulo de Muestreos ahora usa su propio archivo: muestreos-tabla.css */
+
+/* ═══════════════════════════════════════════════════════════
+   MODERNIZACIÓN DIRECTORIO — alineación con sistema mx-*
+   ═══════════════════════════════════════════════════════════ */
+
+/* Filtros: integrados visualmente en la card, sin panel gris propio */
+#tab-contactos .am-filter-bar,
+#tab-personas .am-filter-bar {
+  background: transparent;
+  border: none;
+  border-top: 1px solid #f1f5f9;
+  border-radius: 0;
+  margin-bottom: 0;
+  padding: 10px 20px;
+}
+
+/* Selects dentro del filtro: ancho por contenido, no al 100% */
+#tab-contactos .am-filter-bar .mx-select,
+#tab-personas .am-filter-bar .mx-select {
+  width: auto;
+  flex-shrink: 0;
+}
+
+/* El buscador ocupa el espacio restante */
+#tab-contactos .am-filter-bar .am-search-field,
+#tab-personas .am-filter-bar .am-search-field {
+  min-width: 180px;
+  max-width: 300px;
+}
+
+/* Botón limpiar con ícono de basura → sutil y consistente */
+#tab-contactos #dir-f-clear,
+#tab-personas #per-f-clear {
+  color: #94a3b8;
+  border-color: transparent;
+  background: transparent;
+}
+
+#tab-contactos #dir-f-clear:hover,
+#tab-personas #per-f-clear:hover {
+  color: #dc2626;
+  background: #fff1f2;
+  border-color: #fecaca;
+}
+
+/* ── Botones de acción: flat icon-only ── */
+.tbl-action-btn {
+  width: 30px;
+  height: 30px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 8px;
+  transition: background 0.12s ease;
+}
+
+.tbl-action-btn i {
+  font-size: 15px !important;
+  color: #94a3b8 !important;
+}
+
+.tbl-action-btn:hover {
+  transform: none !important;
+  background: #f1f5f9 !important;
+  box-shadow: none !important;
+}
+
+.tbl-action-btn:hover i {
+  color: #334155 !important;
+}
+
+/* Ver: hover en teal */
+.tbl-act-view:hover { background: #f0fdfa !important; }
+.tbl-act-view:hover i { color: #0d9488 !important; }
+
+/* Visita: hover en violeta */
+.tbl-act-visit:hover { background: #f5f3ff !important; }
+.tbl-act-visit:hover i { color: #7c3aed !important; }
+
+/* Editar: hover en azul */
+.tbl-act-edit:hover { background: #eff6ff !important; }
+.tbl-act-edit:hover i { color: #2563eb !important; }
+
+/* Eliminar: neutral, rojo solo en hover */
+.tbl-action-btn.mu-red,
+#tablaVisitas td .acts a.mu-red {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tbl-action-btn.mu-red i,
+#tablaVisitas td .acts a.mu-red i {
+  color: #94a3b8 !important;
+}
+
+.tbl-action-btn.mu-red:hover,
+#tablaVisitas td .acts a.mu-red:hover {
+  background: #fff1f2 !important;
+}
+
+.tbl-action-btn.mu-red:hover i,
+#tablaVisitas td .acts a.mu-red:hover i {
+  color: #dc2626 !important;
+}
+
+/* Export buttons: más sutiles */
+#tab-contactos .am-export-group,
+#tab-personas .am-export-group {
+  border-color: #e2e8f0;
+  border-radius: 8px;
+}
+
+#tab-contactos .am-export-btn,
+#tab-personas .am-export-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  padding: 0 10px;
+  height: 32px;
+}
+
+#tab-contactos .am-export-btn:hover,
+#tab-personas .am-export-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+/* Título de la card: jerarquía más compacta */
+#tab-contactos .mx-table-head h2,
+#tab-personas .mx-table-head h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Fila hover con transición suave */
+#tablaContactos tbody tr,
+#tablaPersonas tbody tr {
+  transition: background 0.1s ease;
+}
+
+/* Tons: color teal para destacar el número clave */
+#tablaContactos .tons-cell {
+  font-weight: 700;
+  color: #0f766e;
+}
+
+/* Centro: código en bold, comuna en muted */
+.centro-top {
+  font-weight: 700;
+  color: #0f172a;
+  display: block;
+}
+
+.centro-sub {
+  font-size: 11px;
+  color: #64748b;
+  display: block;
+}
+
+/* Proveedor: nombre bold, contacto muted */
+.prov-top {
+  font-weight: 600;
+  color: #0f172a;
+  display: block;
+}
+
+.prov-sub {
+  font-size: 11px;
+  color: #64748b;
+  display: block;
+}
