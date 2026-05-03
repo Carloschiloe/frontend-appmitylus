@@ -627,17 +627,33 @@
   color: #1e293b;
 }
 
-/* modalVisita: más ancho para acomodar 3 columnas, con max-height para que el footer no se vaya */
+/* modalVisita: sin scroll — todo el contenido cabe en pantalla */
 #modalVisita {
   max-width: 680px;
-  max-height: 90vh;
+  width: min(680px, 96vw);
+  max-height: 94vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
+/* Eliminar el max-height:70vh del body que genera el scrollbar */
 #modalVisita .mx-modal-body {
   flex: 1 1 auto;
-  overflow-y: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  padding: 16px 24px;
+}
+
+/* Reducir padding del dropzone de fotos para que todo quepa sin scroll */
+#visita_fotos .fv-dropzone {
+  padding: 14px 16px;
+}
+
+#visita_fotos {
+  margin-top: 14px;
+  padding-top: 12px;
 }
 
 /* ════════════════════════════════════════════════════════════
