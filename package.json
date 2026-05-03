@@ -2,8 +2,7 @@
   "name": "frontend-appmitylus-main",
   "version": "1.0.0",
   "scripts": {
-    "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev-vite.ps1 -Port 5173",
-    "dev:raw": "vite",
+    "dev": "vite --port 5173",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src",
@@ -15,10 +14,18 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@tanstack/react-query": "^5.100.9",
+    "bootstrap-icons": "^1.13.1",
+    "chart.js": "^4.5.1",
+    "chartjs-plugin-datalabels": "^2.2.0",
     "esbuild": "^0.27.7",
-    "lucide-react": "^1.7.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^1.14.0",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^19.2.4",
+    "react-leaflet": "^5.0.0",
+    "react-router-dom": "^7.14.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

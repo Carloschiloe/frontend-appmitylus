@@ -1,0 +1,32 @@
+import { apiClient } from './apiClient';
+
+const BASE = '/centros';
+
+export async function getCentros(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v) params.set(k, v);
+  });
+
+  const res = await apiClient.get(`${BASE}${params.size ? `?${params}` : ''}`);
+  return Array.isArray(res) ? res : (res.items || []);
+}
+
+export async function getCentroById(id) {
+  return apiClient.get(`${BASE}/${id}`);
+}
+
+
+export async function upsertCentro(payload) {
+  const method = payload._id ? 'put' : 'post';
+  const url = payload._id ? `${BASE}/${payload._id}` : BASE;
+  return apiClient[method](url, payload);
+}
+
+export async function deleteCentro(id) {
+  return apiClient.delete(`${BASE}/${id}`);
+}
+
+export async function syncSubpesca() {
+  return apiClient.post(`${BASE}/sync-subpesca`);
+}

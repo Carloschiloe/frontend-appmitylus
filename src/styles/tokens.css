@@ -1,0 +1,133 @@
+/* ============================================================
+   tokens.css — Sistema de Diseño Mitynex
+   FUENTE ÚNICA DE VERDAD para todas las variables CSS.
+
+   REGLA: Ningún otro archivo CSS debe declarar un bloque :root
+   con variables de diseño. Todos deben importar este archivo.
+   ============================================================ */
+
+:root {
+  /* ── Paleta Mitynex (Azul Profundo + Aqua marino) ── */
+  --color-primary:        #0d9488;   /* Teal 600 — acento principal Biomasa */
+  --color-primary-dark:   #0f766e;   /* Teal 700 — hover/pressed */
+  --color-primary-light:  #2dd4bf;   /* Teal 400 — highlights */
+  --color-secondary:      #4A5568;   /* Gris Texto */
+  --color-brand-deep:     #0B3C5D;   /* Azul Profundo — sidebar/headers */
+  --color-brand-deep-alt: #082d47;   /* Azul más oscuro — sidebar fondo alt */
+
+  /* ── Superficies y fondos ── */
+  --color-bg:             #f4f6f8;   /* Gris Claro Mitynex */
+  --color-surface:        #ffffff;
+  --color-sidebar:        #0B3C5D;   /* Azul Profundo marino */
+  --color-sidebar-alt:    #082d47;   /* Más oscuro para degradado */
+
+  /* ── Bordes ── */
+  --color-border:         #dbe3ee;
+  --color-border-hover:   #cbd5e1;
+
+  /* ── Texto ── */
+  --color-text:           #0f172a;
+  --color-text-muted:     #5f6f86;
+  --color-text-subtle:    #94a3b8;
+  --color-white:          #ffffff;
+
+  /* ── Semánticos ── */
+  --color-success:        #10b981;
+  --color-success-bg:     #d1fae5;
+  --color-warning:        #f59e0b;
+  --color-warning-bg:     #fef3c7;
+  --color-error:          #ef4444;
+  --color-error-bg:       #fee2e2;
+  --color-info:           #3b82f6;
+  --color-info-bg:        #dbeafe;
+  --color-primary-bg:     #f0fdfa;   /* Teal 50 — fondos de acento Biomasa */
+
+  /* ── Espaciado ── */
+  --spacing-xs:  4px;
+  --spacing-sm:  8px;
+  --spacing-md:  16px;
+  --spacing-lg:  24px;
+  --spacing-xl:  32px;
+  --spacing-2xl: 48px;
+  --page-padding: 32px;
+
+  --color-bg-card:        #ffffff;
+
+  /* ── Radio de bordes ── */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-full: 999px;
+
+  /* ── Sombras ── */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.16);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  --shadow-xl: 0 20px 40px rgba(15,23,42,0.12);
+
+  /* ── Tipografía ── */
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-size-xs:   11px;
+  --font-size-sm:   12px;
+  --font-size-base: 14px;
+  --font-size-md:   15px;
+  --font-size-lg:   16px;
+  --font-size-xl:   20px;
+  --font-size-2xl:  24px;
+  --font-size-3xl:  30px;
+
+  /* ── Z-index ── */
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-modal:    3000;
+  --z-toast:    9999;
+
+  /* ── Texto semántico para badges/estados ── */
+  --color-success-text: #065f46;
+  --color-warning-text: #92400e;
+  --color-error-text:   #991b1b;
+  --color-info-text:    #1e40af;
+
+  /* ── Navegación lateral (módulo mmpp/app-shell) ── */
+  --nav-width:  240px;
+  --nav-bg:     var(--color-sidebar);
+  --nav-fg:     #e5e7eb;
+  --nav-fg-dim: #9ca3af;
+  --nav-accent: var(--color-primary);
+
+  /* ── Modal (sistema legacy Materialize) ── */
+  --modal-radius: var(--radius-xl);
+  --modal-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+
+  /* ────────────────────────────────────────────────────────
+     ALIASES de compatibilidad hacia atrás
+     Permiten que index-modern.css, sidebar.css, etc. sigan
+     usando sus nombres cortos sin necesidad de refactorizar
+     todo el código HTML/JS de una vez.
+     NO usar estos aliases en código nuevo — usar --color-*
+     ──────────────────────────────────────────────────────── */
+  --bg:      var(--color-bg);
+  --surface: var(--color-surface);
+  --sidebar: var(--color-sidebar);
+  --sidebar-2: var(--color-sidebar-alt);
+  --line:    var(--color-border);
+  --border:  var(--color-border);
+  --ink:     var(--color-text);
+  --text:    var(--color-text);
+  --muted:   var(--color-text-muted);
+  --accent:  var(--color-primary);
+  --accent-2: var(--color-primary-light);
+  --radius:  var(--radius-md);
+  --card:    var(--color-surface);
+  --panel:   var(--color-surface);
+  --brand-1: var(--color-primary);
+  --brand-2: var(--color-primary-dark);
+  --shadow:  var(--shadow-sm);
+
+  /* ── Tokens Mitynex (Nuevos) ── */
+  --mx-gradient-primary: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  --mx-gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+  --mx-shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --mx-shadow-popover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}

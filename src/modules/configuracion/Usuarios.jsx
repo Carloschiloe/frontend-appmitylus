@@ -1,0 +1,298 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Users, 
+  ShieldCheck, 
+  Mail, 
+  Edit, 
+  Trash2, 
+  UserPlus, 
+  Search, 
+  MoreVertical,
+  Shield,
+  ShieldAlert,
+  UserX,
+  UserCheck,
+  Clock,
+  X,
+  AlertTriangle,
+  Key,
+  Lock
+} from 'lucide-react';
+
+import { usuariosApi } from '../../api/api-usuarios';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import './usuarios.css';
+
+export default function Usuarios() {
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // React Query: Obtener usuarios
+  const { data: usuarios = [], isLoading: loading } = useQuery({
+    queryKey: ['usuarios'],
+    queryFn: usuariosApi.getUsuarios,
+  });
+
+  // React Query: Mutaciones
+  const saveMutation = useMutation({
+    mutationFn: (body) => editingUser 
+      ? usuariosApi.actualizarUsuario(editingUser._id, body)
+      : usuariosApi.crearUsuario(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] });
+      setIsModalOpen(false);
+    },
+    onError: (err) => {
+      console.error('Error guardando usuario:', err);
+      alert('Error al guardar el usuario. Revisa la consola.');
+    }
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: ({ id, activo }) => usuariosApi.toggleEstado(id, activo),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] });
+      setIsConfirmStatusOpen(false);
+    },
+    onError: (err) => console.error('Error cambiando estado:', err)
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => usuariosApi.eliminarUsuario(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['usuarios'] }),
+    onError: (err) => console.error('Error eliminando usuario:', err)
+  });
+
+  // Modales y estados locales
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [isConfirmStatusOpen, setIsConfirmStatusOpen] = useState(false);
+  const [userToToggle, setUserToToggle] = useState(null);
+  const [activeMenu, setActiveMenu] = useState(null);
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const body = Object.fromEntries(formData.entries());
+    body.activo = formData.get('activo') === 'on';
+
+    saveMutation.mutate(body);
+  };
+
+  const handleToggleStatus = () => {
+    if (!userToToggle) return;
+    toggleStatusMutation.mutate({ id: userToToggle._id, activo: !userToToggle.activo });
+  };
+
+  const resetPassword = (u) => {
+    if (window.confirm(`¿Restablecer contraseña para ${u.nombre}? Se enviará un correo con la nueva clave temporal.`)) {
+      alert('Funcionalidad de restablecimiento en desarrollo (Backend integration required)');
+    }
+    setActiveMenu(null);
+  };
+
+  const deleteUser = (u) => {
+    if (window.confirm(`¿ELIMINAR PERMANENTEMENTE a ${u.nombre}? Esta acción no se puede deshacer.`)) {
+      deleteMutation.mutate(u._id);
+    }
+    setActiveMenu(null);
+  };
+
+  const filteredUsuarios = usuarios.filter(u => 
+    u.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    u.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const initials = (nombre) => nombre?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
+
+  const getRolConfig = (rol) => {
+    const configs = {
+      admin: { label: 'ADMINISTRADOR', color: '#1d4ed8', icon: ShieldAlert, bg: '#dbeafe' },
+      usuario: { label: 'USUARIO', color: '#059669', icon: ShieldCheck, bg: '#d1fae5' },
+      lectura: { label: 'SOLO LECTURA', color: '#475569', icon: Shield, bg: '#f1f5f9' }
+    };
+    return configs[rol] || configs.usuario;
+  };
+
+  return (
+    <div className="usuarios-page" onClick={() => setActiveMenu(null)}>
+      <header className="mx-hero">
+        <div className="mx-hero-content">
+          <p className="mx-eyebrow">Configuración · Accesos</p>
+          <h1>Gestión de Usuarios</h1>
+          <p>Control de acceso, roles y permisos de la plataforma.</p>
+        </div>
+        <div className="mx-hero-actions">
+          <button className="mx-btn mx-btn-primary" onClick={(e) => { e.stopPropagation(); setEditingUser(null); setIsModalOpen(true); }}>
+            <UserPlus size={18} /> Nuevo Usuario
+          </button>
+        </div>
+      </header>
+
+      <div className="usuarios-content-frame">
+        <div className="centros-filters usuarios-toolbar">
+          <div className="centros-search-wrap usuarios-search-box">
+            <Search size={18} />
+            <input 
+              type="text" 
+              placeholder="Buscar usuarios..." 
+              className="centros-search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="mx-badge-muted usuarios-count-badge">
+            <Users size={16} /> <span>{filteredUsuarios.length} Usuarios</span>
+          </div>
+        </div>
+
+        <div className="mx-table-card am-mt-16">
+          <div className="mx-table-wrap">
+            <table className="mx-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '30%' }}>Usuario</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th>Último Acceso</th>
+                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan="5" className="usuarios-empty-state"><div className="mx-spinner usuarios-spinner-center"></div></td></tr>
+                ) : (
+                  filteredUsuarios.map(u => {
+                    const rol = getRolConfig(u.rol);
+                    return (
+                      <tr key={u._id}>
+                        <td>
+                          <div className="usuarios-avatar-wrapper">
+                            <div className="usuarios-avatar">
+                              {initials(u.nombre)}
+                            </div>
+                            <div>
+                              <div className="usuarios-name">{u.nombre}</div>
+                              <div className="usuarios-email">{u.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="mx-badge usuarios-rol-badge" style={{ background: rol.bg, color: rol.color }}>
+                            <rol.icon size={12} /> {rol.label}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`mx-badge usuarios-status-badge ${u.activo ? 'mx-badge-success' : 'mx-badge-muted'}`}>
+                            <span className="usuarios-status-dot"></span>
+                            {u.activo ? 'ACTIVO' : 'INACTIVO'}
+                          </span>
+                        </td>
+                        <td className="usuarios-date">
+                           {u.ultimoLogin ? new Date(u.ultimoLogin).toLocaleString('es-CL') : '—'}
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div className="mx-table-actions-cell" style={{ display: 'inline-flex', justifyContent: 'flex-end', width: '100%', position: 'relative' }}>
+                            <button className="mx-action-btn edit" onClick={() => { setEditingUser(u); setIsModalOpen(true); }}><Edit size={14} /></button>
+                            <button className="mx-action-btn delete" onClick={() => { setUserToToggle(u); setIsConfirmStatusOpen(true); }}>
+                              {u.activo ? <UserX size={14} /> : <UserCheck size={14} style={{ color: 'var(--color-success)' }} />}
+                            </button>
+                            <button className="mx-action-btn" onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === u._id ? null : u._id); }}>
+                              <MoreVertical size={14} />
+                            </button>
+
+                            {activeMenu === u._id && (
+                              <div className="usuarios-dropdown-menu">
+                                <button className="usuarios-dropdown-item" onClick={() => resetPassword(u)}>
+                                  <Lock size={14} /> Restablecer Clave
+                                </button>
+                                <button className="usuarios-dropdown-item error" onClick={() => deleteUser(u)}>
+                                  <Trash2 size={14} /> Eliminar Usuario
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal Usuario - Usar key para forzar reset al cambiar entre nuevo/edit */}
+      {isModalOpen && (
+        <div className="mx-modal-overlay">
+          <div className="mx-modal" style={{ maxWidth: '500px' }}>
+            <div className="mx-modal-head">
+              <h3 className="mx-modal-title">{editingUser ? 'Editar' : 'Nuevo'} Usuario</h3>
+              <button className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleSave} key={editingUser?._id || 'nuevo-usuario'} autoComplete="off">
+              <div className="mx-modal-body">
+                <div className="mx-field">
+                  <label className="mx-label">Nombre Completo</label>
+                  <input name="nombre" className="mx-input" defaultValue={editingUser?.nombre || ''} placeholder="Ej: Juan Pérez" required autoComplete="none" />
+                </div>
+                <div className="mx-field">
+                  <label className="mx-label">Email</label>
+                  <input name="email" type="email" className="mx-input" defaultValue={editingUser?.email || ''} placeholder="usuario@appmitylus.com" required autoComplete="off" />
+                </div>
+                <div className="mx-field">
+                  <label className="mx-label">Rol de Sistema</label>
+                  <select name="rol" className="mx-input" defaultValue={editingUser?.rol || 'usuario'}>
+                    <option value="admin">Administrador</option>
+                    <option value="usuario">Usuario</option>
+                    <option value="lectura">Solo Lectura</option>
+                  </select>
+                </div>
+                {!editingUser && (
+                  <div className="mx-field">
+                    <label className="mx-label">Contraseña Temporal</label>
+                    <input name="password" type="password" className="mx-input" placeholder="Min. 6 caracteres" required autoComplete="new-password" />
+                  </div>
+                )}
+                <div className="mx-field usuarios-modal-checkbox">
+                  <input type="checkbox" name="activo" defaultChecked={editingUser ? editingUser.activo : true} />
+                  <label className="mx-label">Usuario Activo</label>
+                </div>
+              </div>
+              <div className="mx-modal-foot">
+                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="mx-btn mx-btn-primary">
+                  {editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmar Cambio de Estado */}
+      {isConfirmStatusOpen && (
+        <div className="mx-modal-overlay">
+          <div className="mx-modal" style={{ maxWidth: '400px' }}>
+            <div className="mx-modal-body" style={{ textAlign: 'center', padding: '40px 32px' }}>
+              <div className="usuarios-confirm-icon" style={{ background: userToToggle?.activo ? 'var(--color-error-bg)' : 'var(--color-success-bg)', color: userToToggle?.activo ? 'var(--color-error)' : 'var(--color-success)' }}>
+                {userToToggle?.activo ? <UserX size={32} /> : <UserCheck size={32} />}
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>¿{userToToggle?.activo ? 'Desactivar' : 'Activar'} usuario?</h3>
+              <p style={{ color: 'var(--color-text-muted)', marginTop: '8px' }}>
+                Esto cambiará los permisos de acceso para <strong>{userToToggle?.nombre}</strong>.
+              </p>
+            </div>
+            <div className="mx-modal-foot">
+              <button className="mx-btn mx-btn-outline" style={{ flex: 1 }} onClick={() => setIsConfirmStatusOpen(false)}>Cancelar</button>
+              <button className="mx-btn" style={{ flex: 1, background: userToToggle?.activo ? 'var(--color-error)' : 'var(--color-success)', color: 'white' }} onClick={handleToggleStatus}>
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

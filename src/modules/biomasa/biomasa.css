@@ -1,692 +1,314 @@
-/* ── Biomasa module styles ── */
+/* src/modules/biomasa/biomasa.css */
 
-.bio-page {
-  padding: 0;
-  min-height: 100%;
-  background: var(--color-bg);
+.biomasa-container {
+  animation: fadeIn 0.2s ease-out;
 }
 
-.bio-hero-shell {
+/* Header / Hero */
+.biomasa-hero {
+  background: linear-gradient(135deg, #006666 0%, #004d4d 100%);
+  padding: 40px 32px;
+  color: white;
   margin-bottom: 0;
 }
 
-.bio-hero-controls {
-  justify-content: flex-end;
-}
-
-.bio-content-frame {
-  padding: 24px 0 0;
-}
-
-.bio-hero-month {
-  height: 42px;
-  min-width: 190px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  font-size: 14px;
-  font-family: inherit;
-  backdrop-filter: blur(10px);
-  outline: none;
-}
-
-.bio-hero-month::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-  opacity: 0.9;
-}
-
-.bio-hero-month:focus {
-  border-color: rgba(103, 232, 249, 0.95);
-  box-shadow: 0 0 0 3px rgba(103, 232, 249, 0.15);
-}
-
-.bio-hero-refresh {
-  height: 42px;
-  min-width: 42px;
-  padding: 0 14px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.18);
-}
-
-.bio-hero-refresh:hover {
-  background: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.28);
-}
-
-.bio-hero-primary {
-  height: 42px;
-  box-shadow: 0 10px 20px rgba(0, 168, 168, 0.18);
-}
-
-/* ── Page header ── */
-.bio-header {
+.biomasa-hero-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
-  gap: 12px;
-  flex-wrap: wrap;
+  align-items: flex-start;
 }
 
-.bio-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.bio-header-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 17px;
-  flex-shrink: 0;
-}
-
-.bio-header h1 {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0;
-  line-height: 1.2;
-}
-
-.bio-header p {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  margin: 2px 0 0;
-}
-
-@media (max-width: 920px) {
-  .bio-hero-controls {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .bio-hero-month {
-    min-width: 170px;
-  }
-
-  .bio-content-frame {
-    padding: 20px 0 0;
-  }
-}
-
-@media (max-width: 768px) {
-  .bio-content-frame {
-    padding: 18px 0 0;
-  }
-}
-
-/* ── Filters bar ── */
-.bio-filters {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.bio-filters input,
-.bio-filters select {
-  height: 36px;
-  padding: 0 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-.bio-filters input:focus,
-.bio-filters select:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
-}
-
-.bio-filters input[type="month"] { min-width: 150px; }
-.bio-filters input[type="text"]  { min-width: 200px; }
-
-/* ── KPI cards ── */
-.bio-kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.bio-kpi {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 16px 18px;
-  box-shadow: var(--shadow-sm);
-}
-
-.bio-kpi-label {
-  font-size: 11px;
+.biomasa-eyebrow {
+  color: rgba(255,255,255,0.7);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-muted);
-  margin-bottom: 6px;
-}
-
-.bio-kpi-value {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--color-text);
-  line-height: 1.1;
-}
-
-.bio-kpi-value.accent { color: var(--color-primary); }
-.bio-kpi-value.success { color: var(--color-success); }
-.bio-kpi-value.warning { color: var(--color-warning); }
-.bio-kpi-value.danger  { color: var(--color-error); }
-
-.bio-kpi-sub {
-  font-size: 11px;
-  color: var(--color-text-subtle);
-  margin-top: 2px;
-}
-
-/* ── Table card ── */
-.bio-table-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.bio-table-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--color-border);
-  gap: 10px;
-}
-
-.bio-table-head h2 {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0;
-}
-
-.bio-table-wrap {
-  overflow-x: auto;
-}
-
-table.bio-tbl {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-table.bio-tbl thead tr {
-  background: #f8fafc;
-  border-bottom: 1px solid var(--color-border);
-}
-
-table.bio-tbl th {
-  padding: 10px 14px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-table.bio-tbl td {
-  padding: 11px 14px;
-  color: var(--color-text);
-  border-bottom: 1px solid #f1f5f9;
-  vertical-align: middle;
-}
-
-table.bio-tbl tbody tr:last-child td {
-  border-bottom: none;
-}
-
-table.bio-tbl tbody tr:hover td {
-  background: #f8fafc;
-}
-
-table.bio-tbl td.muted {
-  color: var(--color-text-muted);
+  letter-spacing: 1px;
   font-size: 12px;
 }
 
-table.bio-tbl td.tons {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-table.bio-tbl td.center-text {
-  text-align: center;
-}
-
-/* ── Estado badges ── */
-.bio-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.bio-badge.confirmado  { background: var(--color-success-bg); color: #065f46; }
-.bio-badge.pendiente   { background: var(--color-warning-bg); color: #92400e; }
-.bio-badge.cancelado   { background: var(--color-error-bg);   color: #991b1b; }
-.bio-badge.default     { background: #f1f5f9; color: var(--color-text-muted); }
-
-/* ── Actions column ── */
-td.bio-actions {
-  text-align: right;
-  white-space: nowrap;
-}
-
-.bio-btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.15s;
-  line-height: 1;
-}
-
-.bio-btn-icon:hover {
-  background: var(--color-bg);
-  color: var(--color-text);
-  border-color: var(--color-border-hover);
-}
-
-.bio-btn-icon.danger:hover {
-  background: var(--color-error-bg);
-  color: var(--color-error);
-  border-color: #fca5a5;
-}
-
-.bio-btn-gap { margin-left: 4px; }
-
-/* ── Primary button ── */
-.bio-btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 16px;
-  height: 36px;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.15s;
-  white-space: nowrap;
-}
-
-.bio-btn-primary:hover { background: var(--color-primary-dark); }
-
-.bio-btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 14px;
-  height: 36px;
-  background: transparent;
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.bio-btn-secondary:hover {
-  background: var(--color-bg);
-  color: var(--color-text);
-  border-color: var(--color-border-hover);
-}
-
-/* ── Empty / loading / error states ── */
-.bio-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 52px 24px;
-  color: var(--color-text-muted);
-  gap: 10px;
-  text-align: center;
-}
-
-.bio-state-icon {
+.biomasa-title {
+  font-weight: 900;
   font-size: 32px;
-  opacity: 0.4;
+  margin: 8px 0 0 0;
+  color: white;
 }
 
-.bio-state p {
-  margin: 0;
-  font-size: 14px;
-}
-
-.bio-state .hint {
-  font-size: 12px;
-  color: var(--color-text-subtle);
-  margin: 0;
-}
-
-.bio-error-bar {
+.biomasa-actions {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--color-error-bg);
-  border: 1px solid #fca5a5;
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
-  margin-bottom: 16px;
-  font-size: 13px;
-  color: #991b1b;
-}
-
-.bio-error-bar button {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: #991b1b;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  padding: 0 2px;
-  opacity: 0.7;
-}
-
-.bio-error-bar button:hover { opacity: 1; }
-
-/* ── Modal ── */
-.bio-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 3000;
-  padding: 16px;
-}
-
-.bio-modal {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 20px 40px rgba(15,23,42,0.18);
-  width: 100%;
-  max-width: 480px;
-  overflow: hidden;
-  animation: bioModalIn 0.18s ease-out;
-}
-
-@keyframes bioModalIn {
-  from { opacity: 0; transform: scale(0.96) translateY(-8px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.bio-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.bio-modal-header h3 {
-  font-size: 15px;
-  font-weight: 700;
-  margin: 0;
-  color: var(--color-text);
-}
-
-.bio-modal-close {
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: none;
-  border-radius: 6px;
-  font-size: 18px;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-
-.bio-modal-close:hover { background: var(--color-error-bg); color: var(--color-error); }
-
-.bio-modal-body {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.bio-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.bio-field label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.bio-field input,
-.bio-field select {
-  height: 38px;
-  padding: 0 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 14px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.15s;
-  width: 100%;
-}
-
-.bio-field input:focus,
-.bio-field select:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
-}
-
-.bio-field input.error { border-color: var(--color-error); }
-
-.bio-field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-.bio-modal-footer {
+.biomasa-date-picker {
+  background: rgba(255,255,255,0.1);
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.2);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 14px 20px;
-  border-top: 1px solid var(--color-border);
+  gap: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.biomasa-date-picker input {
+  background: none;
+  border: none;
+  font-weight: 700;
+  outline: none;
+  color: white;
+  font-size: 15px;
+}
+
+/* Chrome/Safari fixes for month picker */
+.biomasa-date-picker input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+.biomasa-btn-reload {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  width: 42px;
+  height: 42px;
+}
+
+.biomasa-btn-reload:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Tabs */
+.biomasa-content {
+  margin-top: -24px;
+}
+
+.biomasa-sub-tabs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  background: white;
+  padding: 12px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+/* KPIs */
+.biomasa-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.biomasa-kpi-card {
+  background: white;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+
+.biomasa-kpi-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.biomasa-kpi-val {
+  margin: 8px 0;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.biomasa-table-card {
+  border-radius: 24px;
+  background: white;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+
+/* Calendario Grid */
+.cal-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: #f1f5f9;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #f1f5f9;
+}
+
+.cal-header-day {
+  background: #f8fafc;
+  padding: 12px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.cal-pad-day {
+  background: #f8fafc;
+  min-height: 95px;
+}
+
+.cal-day-cell {
+  background: white;
+  min-height: 95px;
+  padding: 10px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.cal-day-cell:hover {
   background: #f8fafc;
 }
 
-.bio-modal-footer .save-error {
-  margin-right: auto;
+.cal-day-cell.selected {
+  border: 2px solid #006666;
+  z-index: 10;
+}
+
+.cal-day-num {
   font-size: 12px;
-  color: var(--color-error);
+  font-weight: 800;
+  color: #64748b;
 }
 
-/* ── Confirm dialog ── */
-.bio-confirm {
-  max-width: 360px;
-}
-
-.bio-confirm .bio-modal-body {
-  gap: 8px;
-}
-
-.bio-confirm p {
-  margin: 0;
-  font-size: 14px;
-  color: var(--color-text-muted);
-  line-height: 1.5;
-}
-
-/* ── Balance pct bar ── */
-.bio-pct-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.bio-pct-track {
-  flex: 1;
-  height: 5px;
-  background: var(--color-border);
-  border-radius: 999px;
-  overflow: hidden;
-  min-width: 60px;
-}
-
-.bio-pct-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: var(--color-primary);
-  transition: width 0.3s;
-}
-
-.bio-pct-fill.over { background: var(--color-error); }
-.bio-pct-fill.warn { background: var(--color-warning); }
-
-.bio-pct-label {
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-muted);
-  min-width: 34px;
-  text-align: right;
-}
-
-/* ── Tabs ── */
-.bio-tabs {
-  display: flex;
-  gap: 2px;
-}
-
-.bio-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.bio-tab:hover {
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-
-.bio-tab.active {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.bio-tab-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  background: rgba(255,255,255,0.2);
-  color: inherit;
-}
-
-.bio-tab:not(.active) .bio-tab-count {
-  background: var(--color-border);
-  color: var(--color-text-muted);
-}
-
-/* ── Inline search in table head ── */
-.bio-search {
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  min-width: 180px;
-  transition: border-color 0.15s;
-}
-
-.bio-search:focus {
-  border-color: var(--color-primary);
-  background: var(--color-surface);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
-}
-
-/* ── Spinner ── */
-.bio-spinner {
+.cal-day-badge {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
   width: 32px;
   height: 32px;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: bioSpin 0.7s linear infinite;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #006666 0%, #00b3b3 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 15px;
+  box-shadow: 0 4px 10px rgba(0,102,102,0.3);
 }
 
-@keyframes bioSpin { to { transform: rotate(360deg); } }
+/* Seguimiento Cards */
+.seg-card {
+  border-radius: 24px;
+  border: none;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+  transition: transform 0.2s;
+  cursor: default;
+}
+
+.seg-card-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 18px;
+  box-shadow: 0 8px 16px rgba(37,99,235,0.2);
+}
+
+.seg-badge-active {
+  background: #f0fdf4;
+  color: #10b981;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.seg-nota-box {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid #f1f5f9;
+  position: relative;
+}
+
+.seg-nota-text {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+/* Biomasa Table Specifics */
+.biomasa-prov-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.biomasa-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #006666 0%, #00b3b3 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.biomasa-prov-name {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.biomasa-centro-name {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.biomasa-date-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.biomasa-camiones-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f0fdfa;
+  color: #006666;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.biomasa-action-bar {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.biomasa-action-bar .mx-btn-icon.pause { background: #f1f5f9; color: #64748b; }
+.biomasa-action-bar .mx-btn-icon.pause:hover { background: #e2e8f0; color: #475569; }
+
+.biomasa-action-bar .mx-btn-icon.play { background: #ecfdf5; color: #10b981; }
+.biomasa-action-bar .mx-btn-icon.play:hover { background: #d1fae5; color: #059669; }
+
+.biomasa-action-bar .mx-btn-icon.edit { background: #f1f5f9; color: #0ea5e9; }
+.biomasa-action-bar .mx-btn-icon.edit:hover { background: #e0f2fe; color: #0284c7; }
+
+.biomasa-action-bar .mx-btn-icon.delete { background: #fef2f2; color: #ef4444; }
+.biomasa-action-bar .mx-btn-icon.delete:hover { background: #fee2e2; color: #dc2626; }
+

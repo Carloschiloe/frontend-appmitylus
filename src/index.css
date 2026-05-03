@@ -1,41 +1,438 @@
-/* Estilos base para contenedores de aplicaciones (React/Modern) */
-
-:root {
-  --color-primary:        #0f766e;
-  --color-primary-dark:   #0d665f;
-  --color-primary-light:  #2dd4bf;
-  --color-secondary:      #475569;
-  --color-bg:             #f4f7fb;
-  --color-surface:        #ffffff;
-  --color-sidebar:        #0B3C5D;
-  --color-border:         #dbe3ee;
-  --color-border-hover:   #cbd5e1;
-  --color-text:           #0f172a;
-  --color-text-muted:     #5f6f86;
-  --color-text-subtle:    #94a3b8;
-  --color-white:          #ffffff;
-  --color-success:        #10b981;
-  --color-success-bg:     #d1fae5;
-  --color-warning:        #f59e0b;
-  --color-warning-bg:     #fef3c7;
-  --color-error:          #ef4444;
-  --color-error-bg:       #fee2e2;
-  --color-info:           #3b82f6;
-  --color-info-bg:        #dbeafe;
-  --radius-sm:  8px;
-  --radius-md:  12px;
-  --radius-lg:  16px;
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.16);
-  --shadow-md:  0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-}
+/* 
+   index.css — Estilos base y Layout Global
+   Basado en el Mitynex Design System (tokens.css)
+*/
+@import url('./styles/tokens.css');
 
 #root {
-  font-family: 'Inter', 'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   color: var(--color-text);
+  background-color: var(--color-bg);
+  min-height: 100vh;
 }
 
 #root *, #root *::before, #root *::after {
   box-sizing: border-box;
 }
+
+/* ── Global Layout Utilities ── */
+ul, ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mx-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* Espaciado Atómico (am- prefix for consistency) */
+.am-p-24   { padding: var(--spacing-lg) !important; }
+.am-mt-8   { margin-top: var(--spacing-sm) !important; }
+.am-mt-16  { margin-top: var(--spacing-md) !important; }
+.am-mt-24  { margin-top: var(--spacing-lg) !important; }
+.am-mt-32  { margin-top: var(--spacing-xl) !important; }
+.am-mb-12  { margin-bottom: 12px !important; }
+.am-mb-16  { margin-bottom: var(--spacing-md) !important; }
+.am-mb-20  { margin-bottom: 20px !important; }
+.am-mb-24  { margin-bottom: var(--spacing-lg) !important; }
+
+/* ── Placeholders & Empty States ── */
+.mx-state-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--color-border);
+}
+
+.mx-state-placeholder svg {
+  margin-bottom: 20px;
+  opacity: 0.5;
+  color: var(--color-primary);
+}
+
+.mx-state-placeholder h3 {
+  color: var(--color-text);
+  margin-bottom: 8px;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* ── Progress Bars ── */
+.mx-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.mx-progress-track {
+  flex: 1;
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.mx-progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mx-progress-fill.success { background: var(--color-success); }
+.mx-progress-fill.warning { background: var(--color-warning); }
+.mx-progress-fill.error   { background: var(--color-error); }
+
+/* ── Spinner ── */
+.mx-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── App Shell Layout ── */
+.mx-app-shell {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+}
+
+.mx-main-content {
+  flex: 1;
+  margin-left: var(--nav-width);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Hero Sections (Premium) ── */
+.mx-hero {
+  background: linear-gradient(135deg, var(--color-brand-deep) 0%, #164e63 100%);
+  color: white;
+  padding: 48px 32px;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.mx-hero-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mx-hero h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+
+.mx-hero .mx-eyebrow {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-primary-light);
+  opacity: 0.9;
+}
+
+.mx-hero-actions {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+/* ── Tabs / Toggle Groups ── */
+.mx-tabs-container {
+  margin-bottom: var(--spacing-lg);
+}
+
+.mx-tabs {
+  display: inline-flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  gap: 4px;
+}
+
+.mx-tab {
+  border: none;
+  background: none;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.mx-tab:hover {
+  background: rgba(255,255,255,0.5);
+  color: var(--color-text);
+}
+
+.mx-tab.active {
+  background: #ffffff;
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Modals & Overlay ── */
+.mx-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.mx-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--modal-shadow);
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.mx-modal-head {
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mx-modal-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.mx-modal-sub {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.mx-modal-body {
+  padding: 32px;
+}
+
+.mx-modal-foot {
+  padding: 20px 32px;
+  background: #f8fafc;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+/* ── Form Components ── */
+.mx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: var(--spacing-lg);
+}
+
+.mx-field-row {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.mx-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mx-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background: var(--color-surface);
+}
+
+.mx-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-bg);
+}
+
+/* ── Premium Buttons ── */
+.mx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.mx-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.mx-btn:active {
+  transform: translateY(0);
+}
+
+.mx-btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.mx-btn-primary:hover {
+  background: var(--color-primary-dark);
+}
+
+.mx-btn-outline {
+  background: white;
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.mx-btn-outline:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.mx-btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  color: var(--color-text-muted);
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.mx-btn-icon:hover {
+  background: #e2e8f0;
+  color: var(--color-text);
+  transform: scale(1.05);
+}
+
+/* ── Tables Modern ── */
+.mx-table-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--mx-shadow-card);
+  overflow: hidden;
+}
+
+.mx-table-wrap {
+  overflow-x: auto;
+}
+
+.mx-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.mx-table th {
+  background: #f8fafc;
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mx-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.mx-table tr:hover td {
+  background: #fafafa;
+}
+
+.mx-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: #f1f5f9;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mx-action-btn:hover {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.mx-action-btn.edit:hover { background: #e0f2fe; color: #0ea5e9; }
+.mx-action-btn.print:hover { background: #f0fdf4; color: #10b981; }
+.mx-action-btn.delete:hover { background: #fef2f2; color: #ef4444; }

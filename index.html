@@ -3,317 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard — Mitynex</title>
+  <title>Mitynex Prime</title>
   <meta name="description" content="Mitynex — Plataforma integral para la gestión de choritos.">
   <link rel="icon" type="image/png" href="/img/favicon.png">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-  <link rel="stylesheet" href="/css/index-modern.css">
-  <link rel="stylesheet" href="/css/base-ui.css">
-  <link rel="stylesheet" href="/css/mitynex-brand.css">
-  <script src="/js/auth.js"></script>
 </head>
 <body>
-  <div class="layout">
-    <div id="sidebar-container"></div>
-
-    <main class="content">
-
-      <!-- Hero -->
-      <header id="dashboard-home" class="mx-hero">
-        <div class="mx-hero-content">
-          <p class="mx-eyebrow">Panel principal · Mitynex</p>
-          <h1 id="dash-welcome">Dashboard</h1>
-          <p>Gestión integral de abastecimiento de choritos — proveedores, biomasa e historial operativo.</p>
-        </div>
-      </header>
-      <script>
-        (function () {
-          function applyWelcome(u) {
-            if (!u) return;
-            var nombre = (u.nombre || '').trim();
-            var emailPrefix = u.email ? u.email.split('@')[0] : '';
-            var genericos = ['administrador', 'admin', 'usuario', 'user'];
-            var name = (nombre && !genericos.includes(nombre.toLowerCase())) ? nombre : emailPrefix;
-            if (name) document.getElementById('dash-welcome').textContent = 'Bienvenido, ' + name;
-          }
-          try {
-            var u = window.__AUTH__ && window.__AUTH__.getUser ? window.__AUTH__.getUser() : null;
-            applyWelcome(u);
-            fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ammpp_token') || '') } })
-              .then(function(r){ return r.ok ? r.json() : null; })
-              .then(function(data){
-                if (data && data.usuario) {
-                  localStorage.setItem('ammpp_user', JSON.stringify(data.usuario));
-                  applyWelcome(data.usuario);
-                }
-              }).catch(function(){});
-          } catch (e) {}
-        })();
-      </script>
-
-      <!-- Filtros compactos -->
-      <div class="mx-table-card am-mb-16">
-        <div class="mx-table-card-head">
-          <div class="dsh-filter-row">
-            <select id="dashFiltroResp" class="mx-select" aria-label="Filtrar por responsable">
-              <option value="">Todos los responsables</option>
-            </select>
-            <select id="dashFiltroPeriodo" class="mx-select" aria-label="Ventana de periodo">
-              <option value="7">Últ. 7 días</option>
-              <option value="30" selected>Últ. 30 días</option>
-              <option value="90">Últ. 90 días</option>
-              <option value="365">Últ. 12 meses</option>
-            </select>
-            <div class="am-search-field">
-              <i class="bi bi-search"></i>
-              <input id="dashFiltroProveedor" class="mx-input" type="text" placeholder="Buscar proveedor...">
-            </div>
-            <button id="dashClear" class="mx-btn mx-btn-ghost mx-btn-sm" type="button" style="display:none;">
-              <i class="bi bi-x-circle"></i> Limpiar
-            </button>
-          </div>
-          <a id="dashGoHistorial" class="mx-btn mx-btn-outline mx-btn-sm" href="/html/Abastecimiento/historial/index.html">
-            <i class="bi bi-journal-richtext"></i> Historial
-          </a>
-        </div>
-      </div>
-
-      <!-- Zona 1: KPIs prospectivos -->
-      <div class="dsh-kpi-row">
-        <div class="dsh-kpi-card" id="kpiCardAcordada">
-          <div class="dsh-kpi-icon" style="background:#d1fae5; color:#059669;"><i class="bi bi-check2-circle"></i></div>
-          <div class="dsh-kpi-body">
-            <div class="dsh-kpi-val" id="kpiAcordada">—</div>
-            <div class="dsh-kpi-lbl">Acordado · este mes</div>
-          </div>
-        </div>
-        <div class="dsh-kpi-card" id="kpiCardProxMes">
-          <div class="dsh-kpi-icon" style="background:#dbeafe; color:#2563eb;"><i class="bi bi-calendar-check"></i></div>
-          <div class="dsh-kpi-body">
-            <div class="dsh-kpi-val" id="kpiProxMes">—</div>
-            <div class="dsh-kpi-lbl">Acordado · próx. mes</div>
-          </div>
-        </div>
-        <div class="dsh-kpi-card" id="kpiCardNegociacion">
-          <div class="dsh-kpi-icon" style="background:#fef3c7; color:#d97706;"><i class="bi bi-hourglass-split"></i></div>
-          <div class="dsh-kpi-body">
-            <div class="dsh-kpi-val" id="kpiNegociacion">—</div>
-            <div class="dsh-kpi-lbl">En negociación (semi-acord.)</div>
-          </div>
-        </div>
-        <div class="dsh-kpi-card" id="kpiCardAlertas">
-          <div class="dsh-kpi-icon" style="background:#fee2e2; color:#dc2626;"><i class="bi bi-shield-exclamation"></i></div>
-          <div class="dsh-kpi-body">
-            <div class="dsh-kpi-val" id="kpiAlertas">—</div>
-            <div class="dsh-kpi-lbl">Alertas sanitarias</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Zona 2: Horizonte de abastecimiento (3 meses) -->
-      <div id="dshHorizonte" class="dsh-hor-grid"></div>
-
-      <!-- Zona 3: Pipeline + Top proveedores -->
-      <div class="dsh-mid-grid">
-        <article class="panel">
-          <div class="panel-head">
-            <h3><i class="bi bi-funnel" style="color:#0d9488; margin-right:6px;"></i>Pipeline comercial</h3>
-            <span id="dshPipelineHint" class="panel-hint"></span>
-          </div>
-          <div id="dshPipeline" class="dsh-pipeline">
-            <p class="empty">Cargando...</p>
-          </div>
-        </article>
-        <article class="panel">
-          <div class="panel-head">
-            <h3><i class="bi bi-bar-chart-line" style="color:#0d9488; margin-right:6px;"></i>Top proveedores · Disponible</h3>
-            <span class="panel-hint" id="dshTopHint">Este mes</span>
-          </div>
-          <ul id="dshTopProveedores" class="dsh-top-list">
-            <li class="empty">Cargando...</li>
-          </ul>
-        </article>
-      </div>
-
-      <!-- Zona 3: Actividad + Pendientes -->
-      <div class="dashboard-panels" style="margin-bottom:16px;">
-        <article class="panel">
-          <div class="panel-head">
-            <h3><i class="bi bi-activity" style="color:#0d9488; margin-right:6px;"></i>Actividad reciente</h3>
-            <button id="btnRefreshDashboard" class="mx-btn mx-btn-outline mx-btn-sm" type="button">
-              <i class="bi bi-arrow-clockwise"></i>
-            </button>
-          </div>
-          <ul id="dashboardActivity" class="timeline-list">
-            <li class="empty">Cargando actividad...</li>
-          </ul>
-        </article>
-        <article class="panel">
-          <div class="panel-head">
-            <h3><i class="bi bi-exclamation-circle" style="color:#f59e0b; margin-right:6px;"></i>Pendientes</h3>
-            <span id="dashboardDateHint" class="panel-hint"></span>
-          </div>
-          <ul id="dshPendientes" class="dsh-pending-list">
-            <li class="empty">Cargando...</li>
-          </ul>
-        </article>
-      </div>
-
-      <!-- Zona 4: Detalle biomasa (colapsable) -->
-      <section id="dashboard-biomasa" class="biomasa-kpi" aria-label="KPIs de biomasa">
-        <div class="panel">
-          <div class="panel-head">
-            <h3><i class="bi bi-speedometer2" style="color:#0d9488; margin-right:6px;"></i>Detalle biomasa</h3>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span class="panel-hint">Disponible · Semi-acordado · Acordado · Descartado · Perdido</span>
-              <button id="btnToggleBiomasa" class="mx-btn mx-btn-ghost mx-btn-sm" type="button">
-                <i class="bi bi-chevron-down" id="iconToggleBiomasa"></i>
-              </button>
-            </div>
-          </div>
-
-          <div id="biomasaContent" style="display:none;">
-            <div class="bio-period-controls am-mb-16">
-              <div class="mx-toggle-group" role="tablist" aria-label="Escala de tiempo biomasa">
-                <button id="bioScaleWeek" class="mx-toggle-btn active" type="button" data-bio-scale="week">Semana</button>
-                <button id="bioScaleMonth" class="mx-toggle-btn" type="button" data-bio-scale="month">Mes</button>
-                <button id="bioScaleYear" class="mx-toggle-btn" type="button" data-bio-scale="year">Año</button>
-              </div>
-              <div class="am-period-nav">
-                <button id="bioPrev" class="mx-nav-btn" type="button" aria-label="Periodo anterior">
-                  <i class="bi bi-chevron-left"></i>
-                </button>
-                <span id="bioPeriodLabel" class="am-period-label">-</span>
-                <button id="bioNext" class="mx-nav-btn" type="button" aria-label="Periodo siguiente">
-                  <i class="bi bi-chevron-right"></i>
-                </button>
-              </div>
-            </div>
-
-            <div class="bio-cards">
-              <article class="dw-card bio-status-card" data-status="disponible"><p class="dw-label">Disponible</p><p class="dw-value" id="bioCardDisponible">-</p></article>
-              <article class="dw-card bio-status-card" data-status="semi_acordado"><p class="dw-label">Semi-acordado</p><p class="dw-value" id="bioCardSemi">-</p></article>
-              <article class="dw-card bio-status-card" data-status="acordado"><p class="dw-label">Acordado</p><p class="dw-value" id="bioCardConfirmado">-</p></article>
-              <article class="dw-card bio-status-card" data-status="descartado"><p class="dw-label">Descartado</p><p class="dw-value" id="bioCardDescartado">-</p></article>
-              <article class="dw-card bio-status-card" data-status="perdido"><p class="dw-label">Perdido</p><p class="dw-value" id="bioCardPerdido">-</p></article>
-            </div>
-
-            <div class="bio-layout">
-              <div class="bio-table-wrap">
-                <table class="bio-table" aria-label="Tabla KPI biomasa">
-                  <thead><tr><th>Estado</th><th>Tons</th></tr></thead>
-                  <tbody id="bioTableBody">
-                    <tr><td colspan="2" class="empty">Cargando...</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="bio-chart-wrap">
-                <div class="bio-chart-canvas">
-                  <canvas id="bioChart"></canvas>
-                </div>
-                <div class="bio-providers">
-                  <div class="bio-providers-head">
-                    <strong id="bioProvidersTitle">Proveedores involucrados</strong>
-                    <span id="bioProvidersHint" class="panel-hint"></span>
-                  </div>
-                  <ul id="bioProvidersList" class="bio-providers-list">
-                    <li class="empty">Cargando proveedores...</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div class="bio-annual panel-lite">
-              <div class="panel-head">
-                <h3 id="bioAnnualTitle">Tons por mes (año)</h3>
-                <div class="bio-annual-head-actions">
-                  <span class="panel-hint" id="bioAnnualHint">Filtrado por estados activos</span>
-                  <div class="mx-toggle-group" role="tablist" aria-label="Modo grafico anual">
-                    <button id="bioAnnualModeLine" class="mx-toggle-btn active" type="button" data-annual-mode="line">Línea</button>
-                    <button id="bioAnnualModeBar" class="mx-toggle-btn" type="button" data-annual-mode="bar">Barras</button>
-                  </div>
-                </div>
-              </div>
-              <div class="bio-annual-canvas">
-                <canvas id="bioAnnualChart"></canvas>
-              </div>
-              <div class="bio-annual-providers">
-                <div class="bio-providers-head">
-                  <strong id="bioAnnualProvidersTitle">Proveedores anuales</strong>
-                  <div class="bio-annual-providers-actions">
-                    <span id="bioAnnualProvidersHint" class="panel-hint"></span>
-                    <button id="bioAnnualProviderClear" class="mx-btn mx-btn-flat mx-btn-sm" type="button" hidden>Limpiar selección</button>
-                  </div>
-                </div>
-                <div class="bio-annual-search-wrap am-mb-16">
-                  <input id="bioAnnualProvidersSearch" class="mx-input" type="text" placeholder="Buscar proveedor/contacto en tabla anual...">
-                </div>
-                <div class="bio-table-wrap">
-                  <table class="bio-table" aria-label="Proveedores por mes del grafico anual">
-                    <thead><tr><th>Proveedor / Contacto</th><th>Tons</th></tr></thead>
-                    <tbody id="bioAnnualProvidersBody">
-                      <tr><td colspan="2" class="empty">Selecciona un mes para ver detalle.</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- React SPA -->
-      <div id="root" style="display:none;"></div>
-
-    </main>
+  <div id="root">
+    <!-- Loader de arranque: React lo destruye al montar -->
+    <div id="app-loader" class="am-flex-center" style="height: 100vh; flex-direction: column; gap: 20px;">
+      <div class="mx-loader"></div>
+      <p style="color: #64748b; font-family: sans-serif; font-size: 14px;">Iniciando Mitynex Prime...</p>
+    </div>
   </div>
 
-  <script type="module" src="/js/index-modern.js"></script>
-  <script type="module" src="/js/components/Sidebar.js"></script>
   <script type="module" src="/src/main.jsx"></script>
-
-  <script>
-    var REACT_PAGES = ['biomasa'];
-
-    function applyHash() {
-      var h = location.hash.replace('#', '');
-      var isReact = REACT_PAGES.includes(h);
-      var main = document.querySelector('.content');
-      if (main) {
-        main.querySelectorAll(':scope > *:not(#root)').forEach(function(el) {
-          el.style.display = isReact ? 'none' : '';
-        });
-      }
-      var root = document.getElementById('root');
-      if (root) root.style.display = isReact ? 'block' : 'none';
-      document.querySelectorAll('.submenu a').forEach(function(a) {
-        var href = a.getAttribute('href');
-        a.classList.toggle('is-active-link', href === '#' + h);
-      });
+  
+  <style>
+    .am-flex-center { display: flex; align-items: center; justify-content: center; }
+    .mx-loader {
+      width: 48px;
+      height: 48px;
+      border: 5px solid #00a8a8;
+      border-bottom-color: transparent;
+      border-radius: 50%;
+      display: inline-block;
+      box-sizing: border-box;
+      animation: rotation 1s linear infinite;
     }
-
-    window.addEventListener('hashchange', applyHash);
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', applyHash);
-    } else {
-      applyHash();
+    @keyframes rotation {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
-
-    // Toggle detalle biomasa
-    document.addEventListener('DOMContentLoaded', function() {
-      var btn = document.getElementById('btnToggleBiomasa');
-      var content = document.getElementById('biomasaContent');
-      var icon = document.getElementById('iconToggleBiomasa');
-      if (btn && content) {
-        btn.addEventListener('click', function() {
-          var visible = content.style.display !== 'none';
-          content.style.display = visible ? 'none' : '';
-          icon.className = visible ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
-        });
-      }
-    });
-  </script>
+  </style>
 </body>
 </html>

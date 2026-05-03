@@ -1,0 +1,182 @@
+/* src/modules/configuracion/maestros.css */
+
+.maestros-content-frame {
+  padding: 0 var(--page-padding) 40px var(--page-padding);
+  margin-top: -20px;
+}
+
+.maestros-toolbar {
+  margin-top: 24px;
+  flex-wrap: nowrap;
+  gap: 12px;
+}
+
+.maestros-toggle-wrap {
+  flex-shrink: 0;
+}
+
+.maestros-toggle-btn {
+  white-space: nowrap;
+}
+
+.maestros-search-box {
+  flex: 1;
+  min-width: 200px;
+}
+
+.maestros-table-head-nombre {
+  width: 30%;
+}
+
+.maestros-table-head-orden {
+  text-align: center;
+  width: 80px;
+}
+
+.maestros-table-head-estado {
+  width: 120px;
+}
+
+.maestros-table-head-acciones {
+  text-align: right;
+  width: 100px;
+}
+
+.maestros-empty-state {
+  text-align: center;
+  padding: 40px;
+}
+
+.maestros-spinner-state {
+  text-align: center;
+  padding: 60px;
+}
+
+.maestros-spinner-center {
+  margin: 0 auto;
+}
+
+.maestros-item-nombre {
+  font-weight: 600;
+}
+
+.maestros-params-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.maestros-param-tag {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  border: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.maestros-item-orden {
+  text-align: center;
+}
+
+.maestros-item-acciones {
+  text-align: right;
+}
+
+.maestros-actions-wrapper {
+  display: inline-flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+
+
+.maestros-modal-param-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.maestros-modal-param-select {
+  width: auto;
+  font-size: 11px;
+  height: 28px;
+  padding: 0 8px;
+}
+
+.maestros-modal-params-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.maestros-modal-param-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.maestros-modal-param-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.maestros-modal-param-input {
+  width: 70px;
+  height: 30px;
+  text-align: center;
+}
+
+.maestros-modal-param-delete {
+  color: #ef4444;
+}
+
+.maestros-modal-checkbox-row {
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+}
+
+.maestros-modal-checkbox-margin {
+  margin-top: 20px;
+}
+
+.maestros-modal-label-mb0 {
+  margin-bottom: 0;
+}
+
+.maestros-delete-modal-body {
+  text-align: center;
+  padding: 40px 32px;
+}
+
+.maestros-delete-modal-icon {
+  color: var(--color-error);
+  margin: 0 auto 20px;
+}
+
+.maestros-delete-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.maestros-delete-modal-desc {
+  color: var(--color-text-muted);
+  margin-top: 8px;
+}
+
+.maestros-delete-modal-btn {
+  flex: 1;
+}
+
+.maestros-delete-modal-btn-confirm {
+  flex: 1;
+  background: var(--color-error);
+  color: white;
+}
