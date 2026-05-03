@@ -371,12 +371,12 @@
           <table class="mx-table" id="tratosTable">
             <thead>
               <tr>
-                <th>Proveedor</th><th>Estado</th><th>Vigencia</th>
+                <th>Proveedor</th><th>Negocio</th><th>Operación</th><th>Vigencia</th>
                 <th style="text-align:right">Tons</th><th>Precio</th><th>Condiciones</th><th>Responsable</th><th>Acciones</th>
               </tr>
             </thead>
             <tbody id="tratosBody">
-              <tr><td colspan="8" class="am-empty-table">Cargando tratos...</td></tr>
+              <tr><td colspan="9" class="am-empty-table">Cargando tratos...</td></tr>
             </tbody>
           </table>
         </div>
@@ -988,7 +988,7 @@
       <div class="mx-modal-head">
         <div class="mx-modal-head-top">
           <h5>Registrar visita</h5>
-          <button type="button" class="modal-close" style="background:none; border:none; color:#64748b; cursor:pointer; font-size:20px;">&times;</button>
+          <button type="button" class="modal-close">&times;</button>
         </div>
       </div>
 
@@ -1179,9 +1179,10 @@
             </div>
 
             <div class="trato-section">
-              <label class="trato-label">Estado</label>
+              <label class="trato-label">Estados</label>
               <div id="tratoEstadoBadgeWrap" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                <span id="tratoEstadoBadge"></span>
+                <span id="tratoEstadoNegocioBadge"></span>
+                <span id="tratoEstadoOperacionBadge"></span>
                 <span id="tratoMotivoWrap" style="display:none;font-size:11px;color:#64748b;font-style:italic;"></span>
               </div>
             </div>
@@ -1257,6 +1258,10 @@
       </div>
       <div class="mx-modal-foot">
         <button id="btnTratoDelete" type="button" class="mx-btn mx-btn-danger write-only" style="display:none;">Eliminar</button>
+        <button id="btnTratoCompra" type="button" class="mx-btn write-only" style="display:none;background:#dcfce7;color:#166534;border:1px solid #86efac;">Registrar compra</button>
+        <button id="btnTratoCosecha" type="button" class="mx-btn write-only" style="display:none;background:#ecfeff;color:#155e75;border:1px solid #67e8f9;">Iniciar cosecha</button>
+        <button id="btnTratoCompletar" type="button" class="mx-btn write-only" style="display:none;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;">Completar</button>
+        <button id="btnTratoCaido" type="button" class="mx-btn write-only" style="display:none;background:#ffedd5;color:#c2410c;border:1px solid #fdba74;">Marcar como caído</button>
         <button id="btnTratoPerdido" type="button" class="mx-btn write-only" style="display:none;background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;">Marcar como perdido</button>
         <button id="btnTratoDescartar" type="button" class="mx-btn write-only" style="display:none;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;">Descartar trato</button>
         <button type="button" class="mx-btn mx-btn-flat modal-close">Cancelar</button>
