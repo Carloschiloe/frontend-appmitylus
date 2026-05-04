@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './dashboard.css';
+import './Dashboard.css';
 import {
   Chart as ChartJS,
   ArcElement,
