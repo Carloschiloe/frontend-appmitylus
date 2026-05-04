@@ -1,9 +1,9 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { ToastProvider } from './context/ToastContext';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { ToastProvider } from './context/ToastContext.jsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Sidebar from './components/Layout/Sidebar';
+import Sidebar from './components/Layout/Sidebar.jsx';
 import 'leaflet/dist/leaflet.css';
 
 const queryClient = new QueryClient({
@@ -17,15 +17,15 @@ const queryClient = new QueryClient({
 });
 
 // Lazy loading para optimizar el bundle inicial
-const Dashboard = lazy(() => import('./modules/dashboard/Dashboard'));
-const Biomasa   = lazy(() => import('./modules/biomasa/Biomasa'));
-const Centros   = lazy(() => import('./modules/centros/Centros'));
-const Gestion   = lazy(() => import('./modules/gestion/Gestion'));
-const Maestros  = lazy(() => import('./modules/configuracion/Maestros'));
-const Usuarios  = lazy(() => import('./modules/configuracion/Usuarios'));
-const Historial = lazy(() => import('./modules/historial/Historial'));
-const Login     = lazy(() => import('./modules/auth/Login'));
-const Empresas  = lazy(() => import('./modules/configuracion/Empresas'));
+const Dashboard = lazy(() => import('./modules/dashboard/Dashboard.jsx'));
+const Biomasa   = lazy(() => import('./modules/biomasa/Biomasa.jsx'));
+const Centros   = lazy(() => import('./modules/centros/Centros.jsx'));
+const Gestion   = lazy(() => import('./modules/gestion/Gestion.jsx'));
+const Maestros  = lazy(() => import('./modules/configuracion/Maestros.jsx'));
+const Usuarios  = lazy(() => import('./modules/configuracion/Usuarios.jsx'));
+const Historial = lazy(() => import('./modules/historial/Historial.jsx'));
+const Login     = lazy(() => import('./modules/auth/Login.jsx'));
+const Empresas  = lazy(() => import('./modules/configuracion/Empresas.jsx'));
 
 // Componente para proteger rutas (Integración con AuthContext)
 const PrivateRoute = ({ children }) => {

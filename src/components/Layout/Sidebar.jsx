@@ -20,10 +20,10 @@ import {
   TableProperties,
   Search
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useToast } from '../../context/ToastContext';
-import { apiClient } from '../../api/apiClient';
-import TenantSelector from './TenantSelector';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
+import { apiClient } from '../../api/apiClient.js';
+import TenantSelector from './TenantSelector.jsx';
 import './Sidebar.css';
 
 const MENU_STRUCTURE = [
