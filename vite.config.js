@@ -37,11 +37,7 @@ export default defineConfig({
     minify: true,
     cssMinify: true,
     chunkSizeWarningLimit: 800,
-    assetsInlineLimit: 4096,
     rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html'),
-      },
       output: {
         manualChunks(id) {
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
