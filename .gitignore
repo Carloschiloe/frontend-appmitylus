@@ -8,3 +8,4 @@ vite-check.log
 
 # Archivos de backup
 *.bak
+check.js

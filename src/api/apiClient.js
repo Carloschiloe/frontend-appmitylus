@@ -71,7 +71,10 @@ async function request(endpoint, options = {}) {
 
     return data;
   } catch (error) {
-    console.error(`[API Client Error] ${options.method || 'GET'} ${url}`, error);
+    // AbortError es normal (cleanup de useEffect en React StrictMode)
+    if (error.name !== 'AbortError') {
+      console.error(`[API Client Error] ${options.method || 'GET'} ${url}`, error);
+    }
     throw error;
   }
 }

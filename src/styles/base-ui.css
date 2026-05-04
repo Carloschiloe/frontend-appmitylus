@@ -130,43 +130,6 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* ── Buscadores y Filtros ── */
-.centros-filters {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.centros-search-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  color: var(--color-text-subtle);
-}
-
-.centros-search-wrap svg {
-  position: absolute;
-  left: 12px;
-  pointer-events: none;
-}
-
-.centros-search {
-  width: 100%;
-  padding: 10px 12px 10px 40px;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
-  font-size: 13.5px;
-  background: #fff;
-  transition: all 0.2s;
-}
-
-.centros-search:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-bg);
-}
-
 /* ── Bandeja / Carriles (Lanes) ── */
 .mx-lanes {
   display: grid;

@@ -12,7 +12,7 @@
 
 .toast-card {
   pointer-events: auto;
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 16px;
   display: flex;
