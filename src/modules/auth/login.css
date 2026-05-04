@@ -11,7 +11,7 @@
   flex: 1.2;
   position: relative;
   background: var(--color-brand-deep);
-  background-image: url('/img/hero-bg.jpg'); /* Si existe, si no usa el color sólido */
+  /* background-image: url('/img/hero-bg.jpg'); */
   background-size: cover;
   background-position: center;
   display: flex;
