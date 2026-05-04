@@ -22,7 +22,7 @@
 .calendario-month-nav {
   display: flex;
   align-items: center;
-  background: #f1f5f9;
+  background: var(--color-bg);
   padding: 4px;
   border-radius: 12px;
   border: 1px solid var(--color-border);
@@ -56,7 +56,7 @@
 .calendario-dow-row {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  background: #f8fafc;
+  background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -105,7 +105,7 @@
 .calendario-day-count {
   font-size: 10px;
   font-weight: 800;
-  color: #94a3b8;
+  color: var(--color-text-subtle);
 }
 
 .calendario-events-wrapper {
@@ -129,7 +129,7 @@
 
 .calendario-event-more {
   font-size: 8px;
-  color: #94a3b8;
+  color: var(--color-text-subtle);
   text-align: center;
 }
 
@@ -163,7 +163,7 @@
   padding: 16px;
   border-radius: 16px;
   border: 1px solid var(--color-border);
-  background: white;
+  background: var(--color-surface);
   position: relative;
 }
 

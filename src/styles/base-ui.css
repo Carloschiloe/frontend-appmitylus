@@ -20,10 +20,10 @@
   flex-shrink: 0;
 }
 
-.am-label-green { color: #059669; } .am-label-green .am-indicator-dot { background: #059669; }
-.am-label-red { color: #dc2626; }   .am-label-red .am-indicator-dot { background: #dc2626; }
-.am-label-blue { color: #2563eb; }  .am-label-blue .am-indicator-dot { background: #2563eb; }
-.am-label-gray { color: #94a3b8; }  .am-label-gray .am-indicator-dot { background: #94a3b8; }
+.am-label-green { color: var(--color-success); } .am-label-green .am-indicator-dot { background: var(--color-success); }
+.am-label-red { color: var(--color-error); }   .am-label-red .am-indicator-dot { background: var(--color-error); }
+.am-label-blue { color: var(--color-info); }  .am-label-blue .am-indicator-dot { background: var(--color-info); }
+.am-label-gray { color: var(--color-text-subtle); }  .am-label-gray .am-indicator-dot { background: var(--color-text-subtle); }
 
 .am-tag {
   display: inline-flex;
@@ -42,7 +42,7 @@
 .am-tag-amber { background: #f59e0b15; color: #f59e0b; border-color: #f59e0b30; }
 .am-tag-orange { background: #d9770615; color: #d97706; border-color: #d9770630; }
 .am-tag-slate { background: #64748b15; color: #64748b; border-color: #64748b30; }
-.am-tag-gray { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
+.am-tag-gray { background: var(--color-bg); color: var(--color-text-subtle); border-color: var(--color-border-hover); }
 
 /* ── Mitynex List Stack ── */
 .mx-list-stack {
@@ -81,9 +81,9 @@
   gap: 4px;
 }
 
-.mx-badge-success { background: #dcfce7; color: #15803d; }
-.mx-badge-muted   { background: #f1f5f9; color: #64748b; }
-.mx-badge-warning { background: #fef3c7; color: #b45309; }
+.mx-badge-success { background: var(--color-success-bg); color: var(--color-success-text); }
+.mx-badge-muted   { background: var(--color-bg); color: var(--color-text-muted); }
+.mx-badge-warning { background: var(--color-warning-bg); color: var(--color-warning-text); }
 
 .mx-badge-sm {
   padding: 2px 8px;
@@ -102,7 +102,7 @@
 /* ── Toggle Groups (Tabs Modern) ── */
 .mx-toggle-group {
   display: inline-flex;
-  background: #f1f5f9;
+  background: var(--color-bg);
   padding: 4px;
   border-radius: 12px;
   gap: 4px;
@@ -115,7 +115,7 @@
   border-radius: 8px;
   font-size: 13px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -125,7 +125,7 @@
 
 .mx-toggle-btn:hover { color: var(--color-text); }
 .mx-toggle-btn.active {
-  background: #ffffff;
+  background: var(--color-surface);
   color: var(--color-primary);
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
@@ -142,7 +142,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  color: #94a3b8;
+  color: var(--color-text-subtle);
 }
 
 .centros-search-wrap svg {

@@ -359,7 +359,7 @@ export default function Maestros() {
             <div className="maestros-delete-modal-body">
               <AlertTriangle size={48} className="maestros-delete-modal-icon" />
               <h3 className="maestros-delete-modal-title">¿Eliminar registro?</h3>
-              <p className="maestros-delete-modal-desc">Estás a punto de borrar "{itemToDelete?.nombre}". Esta acción es irreversible.</p>
+              <p className="maestros-delete-modal-desc">Estás a punto de borrar &quot;{itemToDelete?.nombre}&quot;. Esta acción es irreversible.</p>
             </div>
             <div className="mx-modal-foot">
               <button className="mx-btn mx-btn-outline maestros-delete-modal-btn" onClick={() => setIsConfirmDeleteOpen(false)}>Cancelar</button>

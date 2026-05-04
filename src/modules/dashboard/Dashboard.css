@@ -54,8 +54,8 @@
   border-radius: 20px;
 }
 
-.mx-kpi-trend.positive { background: #dcfce7; color: #15803d; }
-.mx-kpi-trend.negative { background: #fee2e2; color: #b91c1c; }
+.mx-kpi-trend.positive { background: var(--color-success-bg); color: var(--color-success-text); }
+.mx-kpi-trend.negative { background: var(--color-error-bg); color: var(--color-error-text); }
 
 .mx-kpi-card-value {
   font-size: 1.75rem;
@@ -94,7 +94,7 @@
 }
 
 .dsh-card {
-  background: white;
+  background: var(--color-surface);
   border-radius: 20px;
   padding: 24px;
   border: 1px solid var(--color-border);
@@ -145,13 +145,13 @@
 }
 
 .dsh-activity-item:hover {
-  background: #f8fafc;
+  background: var(--color-bg);
 }
 
 .activity-icon {
   width: 32px;
   height: 32px;
-  background: #f1f5f9;
+  background: var(--color-bg);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -220,7 +220,7 @@
 .area-bar-wrap {
   flex: 1;
   height: 6px;
-  background: #f1f5f9;
+  background: var(--color-bg);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -238,7 +238,7 @@
 
 /* Gradient Card */
 .bg-primary-gradient {
-  background: linear-gradient(135deg, var(--color-brand-deep) 0%, #1e293b 100%);
+  background: linear-gradient(135deg, var(--color-brand-deep) 0%, var(--color-text) 100%);
   border: none;
 }
 
