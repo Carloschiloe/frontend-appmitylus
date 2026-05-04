@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   Plus, 
   Search, 
@@ -25,32 +25,31 @@ import {
   ArrowRight,
   ArrowLeft,
   Settings2,
+  RotateCcw,
   Target
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
+import { useMuestreosData } from '../../../hooks/useMuestreosData';
 
 const fmtNum = (v, d = 2) => (Number(v) || 0).toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
 
 export default function Muestreos() {
   const { addToast } = useToast();
-  const [muestreos, setMuestreos] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'grouped'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isResultOpen, setIsResultOpen] = useState(false);
   const [resultData, setResultData] = useState(null);
-  const [step, setStep] = useState(1); 
+  const [step, setStep] = useState(1);
   const [editingId, setEditingId] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
-
-  // Maestros
-  const [maestros, setMaestros] = useState({ cats: [], rules: [] });
   const [selectedCats, setSelectedCats] = useState(new Set());
   const [activeDropdown, setActiveDropdown] = useState(null); // 'procesable' | 'rechazo' | 'defecto'
 
-  // Formulario Completo (Restaurado)
+  const { muestreos, maestros, loading, page, setPage, pagination, refresh: loadData } = useMuestreosData(viewMode);
+
+  // Formulario
   const [form, setForm] = useState({
     proveedorNombre: '',
     centroCodigo: '',
@@ -63,28 +62,6 @@ export default function Muestreos() {
     pesoCocida: '',
     cats: {}
   });
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [muRes, catsRes, rulesRes] = await Promise.all([
-        apiClient.get('/muestreos?limit=2000').catch(() => ({ items: [] })),
-        apiClient.get('/maestros?tipo=categoria-muestreo&soloActivos=true').catch(() => ({ items: [] })),
-        apiClient.get('/maestros?tipo=clasificacion_producto&soloActivos=true').catch(() => ({ items: [] }))
-      ]);
-      setMuestreos(Array.isArray(muRes) ? muRes : (muRes.items || []));
-      setMaestros({ 
-        cats: catsRes.items || [], 
-        rules: rulesRes.items || [] 
-      });
-    } catch (err) { 
-      console.error('Error cargando datos:', err);
-      addToast({ title: 'Error', message: 'No se pudieron cargar los datos.', type: 'error' });
-    }
-    finally { setLoading(false); }
-  }, [addToast]);
-
-  useEffect(() => { loadData(); }, [loadData]);
 
   // Cálculos Automáticos
   const totals = useMemo(() => {
@@ -187,13 +164,12 @@ export default function Muestreos() {
       const method = editingId ? 'patch' : 'post';
       
       const data = await apiClient[method](endpoint, payload);
-      setResultData(data.item || data); 
-      setIsModalOpen(false); 
-      setIsResultOpen(true); 
-      loadData();
+      setResultData(data.item || data);
+      setIsModalOpen(false);
+      setIsResultOpen(true);
+      loadData(page);
       addToast({ title: 'Éxito', message: `Muestreo ${editingId ? 'actualizado' : 'guardado'} correctamente.`, type: 'success' });
-    } catch (err) { 
-      console.error(err);
+    } catch (err) {
       addToast({ title: 'Error', message: 'No se pudo guardar el muestreo.', type: 'error' });
     }
   };
@@ -368,29 +344,19 @@ export default function Muestreos() {
 
   return (
     <div className="muestreos-container am-p-24" style={{ animation: 'fadeIn 0.3s ease-out' }}>
-      <div className="mx-table-head">
-        <div className="mx-table-title">
-          <div className="mx-header-icon"><Beaker size={20} /></div>
-          <div>
-            <h2>Gestión de Muestreos MMPP</h2>
-            <p>Análisis técnico, clasificación y control de rendimientos.</p>
-          </div>
-        </div>
-        <div className="mx-table-actions">
-          <div className="mx-toggle-group am-mr-12">
-            <button className={`mx-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}><List size={16} /> Historial</button>
-            <button className={`mx-toggle-btn ${viewMode === 'grouped' ? 'active' : ''}`} onClick={() => setViewMode('grouped')}><LayoutGrid size={16} /> Agrupado</button>
-          </div>
-          <button className="mx-btn mx-btn-primary" onClick={() => { setEditingId(null); setStep(1); setForm({...form, cats: {}}); setSelectedCats(new Set(maestros.cats.filter(c => c.tipoCat === 'procesable').map(c => c._id))); setIsModalOpen(true); }}>
-            <Plus size={18} /> Nuevo Muestreo
-          </button>
-        </div>
-      </div>
 
-      <div className="centros-filters am-mt-32">
+      <div className="centros-filters am-mt-16">
+        <div className="mx-toggle-group">
+          <button className={`mx-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => { setViewMode('list'); setPage(1); }}><List size={14} /> Historial</button>
+          <button className={`mx-toggle-btn ${viewMode === 'grouped' ? 'active' : ''}`} onClick={() => { setViewMode('grouped'); setPage(1); }}><LayoutGrid size={14} /> Agrupado</button>
+        </div>
         <div className="centros-search-wrap" style={{ flex: 1 }}>
           <Search size={18} /><input type="text" placeholder="Buscar por proveedor o centro..." className="centros-search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
+        <button className="mx-btn mx-btn-outline sm" onClick={() => { setPage(1); loadData(1); }}><RotateCcw size={18} /></button>
+        <button className="mx-btn mx-btn-primary sm" onClick={() => { setEditingId(null); setStep(1); setForm({...form, cats: {}}); setSelectedCats(new Set(maestros.cats.filter(c => c.tipoCat === 'procesable').map(c => c._id))); setIsModalOpen(true); }}>
+          <Plus size={18} /> Muestreo
+        </button>
       </div>
 
       {loading ? (
@@ -480,6 +446,31 @@ export default function Muestreos() {
               </tbody>
             </table>
           </div>
+
+          {/* Paginación — solo vista lista */}
+          {viewMode === 'list' && pagination && pagination.pages > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--color-border)' }}>
+              <span style={{ fontSize: '13px', color: 'var(--color-text-subtle)' }}>
+                {pagination.total} muestreos &nbsp;·&nbsp; Pág. {pagination.page} / {pagination.pages}
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className="mx-btn mx-btn-outline sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                >
+                  <ArrowLeft size={14} /> Anterior
+                </button>
+                <button
+                  className="mx-btn mx-btn-outline sm"
+                  disabled={page >= pagination.pages}
+                  onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
+                >
+                  Siguiente <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

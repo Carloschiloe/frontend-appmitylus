@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import './biomasa.css';
 import { 
@@ -25,14 +25,8 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
-import { 
-  getDisponibilidades,
-  getAsignaciones,
-  crearAsignacion,
-  editarAsignacion,
-  borrarAsignacion,
-} from '../../api/api-mmpp.js';
 import { useToast } from '../../context/ToastContext';
+import { useBiomasaData } from '../../hooks/useBiomasaData';
 
 const mesActual = () => {
   const d = new Date();
@@ -61,12 +55,7 @@ export default function Biomasa() {
   const [progSubTab, setProgSubTab] = useState('programa');
   
   const [mes, setMes] = useState(mesActual);
-  const [loading, setLoading] = useState(true);
-  const [disp, setDisp] = useState([]);
-  const [asig, setAsig] = useState([]);
-  const [programas, setProgramas] = useState([]);
-  const [tratosAcordados, setTratosAcordados] = useState([]);
-  const [calData, setCalData] = useState({});
+  const { loading, disp, asig, programas, calData, tratosAcordados, reload: load } = useBiomasaData(mes);
   const [calDate, setCalDate] = useState(new Date());
 
   // Modal State
@@ -115,27 +104,6 @@ export default function Biomasa() {
       padding
     };
   }, [mes]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [d, a, progRes, calRes, tratosRes] = await Promise.all([
-        getDisponibilidades({ mesKey: mes }),
-        getAsignaciones({ mesKey: mes }),
-        apiClient.get('/programa-cosecha').catch(() => ({ items: [] })),
-        apiClient.get(`/programa-cosecha/calendario?from=${mes}-01&to=${mes}-31`).catch(() => ({ calendario: {} })),
-        apiClient.get('/programa-cosecha/tratos-acordados').catch(() => ({ items: [] }))
-      ]);
-      setDisp(d || []);
-      setAsig(a || []);
-      setProgramas(progRes.items || []);
-      setCalData(calRes.calendario || {});
-      setTratosAcordados(tratosRes.items || []);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }, [mes]);
-
-  useEffect(() => { load(); }, [load]);
 
   // Lógica de Semanas
   const weekDays = useMemo(() => {
@@ -266,24 +234,23 @@ export default function Biomasa() {
   if (!isStatusView && !isProgramView) return <Navigate to="/biomasa/status" replace />;
 
   return (
-    <div className="biomasa-container">
-      <header className="mx-hero biomasa-hero">
-        <div className="biomasa-hero-header">
-          <div>
-            <p className="mx-eyebrow biomasa-eyebrow">Biomasa · {isStatusView ? 'Status Comercial' : 'Programa de Cosecha'}</p>
-            <h1 className="biomasa-title">{isStatusView ? 'Status de Toneladas' : 'Programa de Cosecha'}</h1>
+    <div className="mx-page">
+      <header className="mx-hero">
+        <div className="mx-hero-content">
+          <p className="mx-eyebrow">Biomasa · {isStatusView ? 'Status Comercial' : 'Programa de Cosecha'}</p>
+          <h1 className="biomasa-title">{isStatusView ? 'Status de Toneladas' : 'Programa de Cosecha'}</h1>
+        </div>
+        <div className="mx-hero-actions">
+          <div className="mx-input-group biomasa-date-picker" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', padding: '0 12px' }}>
+            <CalendarIcon size={18} color="rgba(255,255,255,0.8)" />
+            <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} style={{ background: 'transparent', color: 'white', border: 'none', padding: '8px', outline: 'none' }} />
           </div>
-          <div className="mx-hero-actions biomasa-actions">
-            <div className="mx-input-group biomasa-date-picker">
-              <CalendarIcon size={18} color="rgba(255,255,255,0.8)" />
-              <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
-            </div>
-            <button className="mx-btn-icon biomasa-btn-reload" onClick={load}><RotateCcw size={20} /></button>
-          </div>
+          <button className="mx-btn-icon" onClick={load} style={{ color: 'white', background: 'rgba(255,255,255,0.1)' }}><RotateCcw size={20} /></button>
         </div>
       </header>
 
-      <div className="am-p-24 biomasa-content">
+      <div className="mx-content-frame">
+
         <div className="sub-tabs-row biomasa-sub-tabs">
         <div className="mx-toggle-group">
           {isStatusView ? (

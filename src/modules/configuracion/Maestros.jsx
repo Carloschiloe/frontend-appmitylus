@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { maestrosApi } from '../../api/api-maestros';
+import { useToast } from '../../context/ToastContext';
 import './maestros.css';
 
 const TIPO_COLORES = {
@@ -34,6 +35,7 @@ const PARAMS_FIJOS = [
 
 export default function Maestros() {
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const [tipo, setTipo] = useState('categoria-muestreo');
   
   // React Query: Data Fetching
@@ -57,7 +59,7 @@ export default function Maestros() {
       queryClient.invalidateQueries({ queryKey: ['maestros'] });
       setIsModalOpen(false);
     },
-    onError: (err) => console.error('Error guardando maestro:', err)
+    onError: (err) => { console.error('Error guardando maestro:', err); addToast({ title: 'Error', message: 'No se pudo guardar el maestro.', type: 'error' }); }
   });
 
   const deleteMutation = useMutation({
@@ -66,7 +68,7 @@ export default function Maestros() {
       queryClient.invalidateQueries({ queryKey: ['maestros'] });
       setIsConfirmDeleteOpen(false);
     },
-    onError: (err) => console.error('Error eliminando maestro:', err)
+    onError: (err) => { console.error('Error eliminando maestro:', err); addToast({ title: 'Error', message: 'No se pudo eliminar el maestro.', type: 'error' }); }
   });
   
   // Modales
@@ -136,7 +138,7 @@ export default function Maestros() {
   ];
 
   return (
-    <div className="maestros-page">
+    <div className="mx-page">
       <header className="mx-hero">
         <div className="mx-hero-content">
           <p className="mx-eyebrow">Configuración · Parámetros</p>
@@ -144,14 +146,15 @@ export default function Maestros() {
           <p>Administración dinámica de categorías y parámetros operativos.</p>
         </div>
         <div className="mx-hero-actions">
-          <button className="mx-btn mx-btn-outline"><Download size={18} /> Exportar</button>
+          <button className="mx-btn mx-btn-outline" style={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}><Download size={18} /> Exportar</button>
           <button className="mx-btn mx-btn-primary" onClick={handleNuevo}>
             <Plus size={18} /> Nuevo Registro
           </button>
         </div>
       </header>
 
-      <div className="maestros-content-frame">
+      <div className="mx-content-frame">
+
         <div className="centros-filters maestros-toolbar">
           <div className="mx-toggle-group maestros-toggle-wrap">
             {TIPOS.map(t => (

@@ -10,7 +10,7 @@
 .login-visual {
   flex: 1.2;
   position: relative;
-  background: #0B3C5D;
+  background: var(--color-brand-deep);
   background-image: url('/img/hero-bg.jpg'); /* Si existe, si no usa el color sólido */
   background-size: cover;
   background-position: center;
@@ -100,9 +100,9 @@
 }
 
 .login-error-alert {
-  background: #fee2e2;
-  border: 1px solid #ef4444;
-  color: #b91c1c;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error);
+  color: var(--color-error-text);
   padding: 12px 16px;
   border-radius: 12px;
   margin-bottom: 24px;

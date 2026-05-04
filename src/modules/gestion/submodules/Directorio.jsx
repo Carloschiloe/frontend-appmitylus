@@ -20,8 +20,10 @@ import {
 
 import { useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../../api/apiClient';
+import { useToast } from '../../../context/ToastContext';
 
 export default function Directorio() {
+  const { addToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
 
@@ -34,7 +36,9 @@ export default function Directorio() {
   const [editingItem, setEditingItem] = useState(null);
 
   useEffect(() => {
-    loadData();
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
   }, []);
 
   // Update query string when search term changes, or viceversa
@@ -55,12 +59,12 @@ export default function Directorio() {
     }
   }, [searchParams]);
 
-  async function loadData() {
+  async function loadData(signal) {
     setLoading(true);
     try {
       const [centrosRes, contactosRes] = await Promise.all([
-        apiClient.get('/centros'),
-        apiClient.get('/contactos')
+        apiClient.get('/centros', { signal }),
+        apiClient.get('/contactos', { signal })
       ]);
 
       // Extraer proveedores únicos de los centros
@@ -70,9 +74,9 @@ export default function Directorio() {
         const name = c.proveedor || 'Sin nombre';
         const key = (c.proveedorKey || name).toLowerCase();
         if (!provMap.has(key)) {
-          provMap.set(key, { 
-            nombre: name, 
-            key: c.proveedorKey || '', 
+          provMap.set(key, {
+            nombre: name,
+            key: c.proveedorKey || '',
             centros: 0,
             comuna: c.comuna || '—'
           });
@@ -85,7 +89,8 @@ export default function Directorio() {
         contactos: Array.isArray(contactosRes) ? contactosRes : (contactosRes.items || [])
       });
     } catch (err) {
-      console.error('Error cargando directorio:', err);
+      if (err.name === 'AbortError') return;
+      addToast({ title: 'Error', message: 'No se pudo cargar el directorio.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -104,21 +109,6 @@ export default function Directorio() {
 
   return (
     <div className="directorio-container">
-      <div className="mx-table-head">
-        <div className="mx-table-title">
-          <div className="mx-header-icon"><Building2 size={20} /></div>
-          <div>
-            <h2>Directorio Comercial</h2>
-            <p>Gestión de empresas proveedoras y red de contactos directos.</p>
-          </div>
-        </div>
-        
-        <div className="mx-table-actions">
-          <button className="mx-btn mx-btn-primary" onClick={() => setIsModalOpen(true)}>
-            <Plus size={18} /> {tab === 'proveedores' ? 'Nueva Empresa' : 'Nuevo Contacto'}
-          </button>
-        </div>
-      </div>
 
       <div className="centros-filters am-mt-16">
         <div className="mx-toggle-group">
@@ -139,6 +129,9 @@ export default function Directorio() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <button className="mx-btn mx-btn-primary sm" onClick={() => setIsModalOpen(true)}>
+          <Plus size={18} /> {tab === 'proveedores' ? 'Empresa' : 'Contacto'}
+        </button>
       </div>
 
       <div className="mx-table-card am-mt-16">
@@ -238,6 +231,7 @@ export default function Directorio() {
                 loadData();
               } catch (err) {
                 console.error('Error al guardar:', err);
+                addToast({ title: 'Error', message: 'No se pudo guardar. Intenta de nuevo.', type: 'error' });
               }
             }}>
               <div className="mx-modal-body">

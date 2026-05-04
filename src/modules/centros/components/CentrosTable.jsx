@@ -13,8 +13,10 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { getCentros } from '../../../api/api-centros';
+import { useToast } from '../../../context/ToastContext';
 
 export default function CentrosTable() {
+  const { addToast } = useToast();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,6 +33,7 @@ export default function CentrosTable() {
       setData(Array.isArray(result) ? result : (result.items || []));
     } catch (err) {
       console.error('Error cargando centros:', err);
+      addToast({ title: 'Error', message: 'No se pudieron cargar los centros.', type: 'error' });
     } finally {
       setLoading(false);
     }

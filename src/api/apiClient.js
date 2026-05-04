@@ -28,6 +28,12 @@ async function request(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  // Soporte Multi-tenant para SuperAdmin: Inyectar DB seleccionada si existe
+  const tenantDb = localStorage.getItem('selected_tenant_db');
+  if (tenantDb) {
+    headers['x-tenant-db'] = tenantDb;
+  }
+
   const config = {
     ...options,
     headers,

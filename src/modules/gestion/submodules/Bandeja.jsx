@@ -13,6 +13,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
+import { useToast } from '../../../context/ToastContext';
 
 const LANES = [
   { id: 'overdue', label: 'Vencidos', color: '#ef4444' },
@@ -22,31 +23,35 @@ const LANES = [
 ];
 
 export default function Bandeja() {
+  const { addToast } = useToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
-    loadBandeja();
+    const controller = new AbortController();
+    loadBandeja(controller.signal);
+    return () => controller.abort();
   }, []);
 
-  async function loadBandeja() {
+  async function loadBandeja(signal) {
     setLoading(true);
     try {
       const [interacciones, visitas] = await Promise.all([
-        apiClient.get('/interacciones?limit=100'),
-        apiClient.get('/visitas?limit=100')
+        apiClient.get('/interacciones?limit=100', { signal }),
+        apiClient.get('/visitas?limit=100', { signal })
       ]);
 
       const merged = [
         ...(interacciones.items || []).map(i => ({ ...i, type: 'interaccion' })),
-        ...(visitas.items || []).map(v => ({ ...v, type: 'visita' }))
+        ...(Array.isArray(visitas) ? visitas : (visitas.items || [])).map(v => ({ ...v, type: 'visita' }))
       ];
 
       setItems(merged);
     } catch (err) {
-      console.error('Error cargando bandeja:', err);
+      if (err.name === 'AbortError') return;
+      addToast({ title: 'Error', message: 'No se pudo cargar la bandeja.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -78,22 +83,12 @@ export default function Bandeja() {
 
   return (
     <div className="bandeja-container">
-      <div className="mx-table-head">
-        <div className="mx-table-title">
-          <div className="mx-header-icon"><Inbox size={20} /></div>
-          <div>
-            <h2>Bandeja de Operaciones</h2>
-            <p>Seguimiento de compromisos, visitas y muestras en tiempo real.</p>
-          </div>
+      <div className="mx-table-actions am-mb-16">
+        <div className="mx-toggle-group">
+          <button className={`mx-toggle-btn ${activeFilter === 'all' ? 'active' : ''}`} onClick={() => setActiveFilter('all')}>Todo</button>
+          <button className={`mx-toggle-btn ${activeFilter === 'urgent' ? 'active' : ''}`} onClick={() => setActiveFilter('urgent')}>Urgente</button>
         </div>
-        
-        <div className="mx-table-actions">
-          <div className="mx-toggle-group">
-            <button className={`mx-toggle-btn ${activeFilter === 'all' ? 'active' : ''}`} onClick={() => setActiveFilter('all')}>Todo</button>
-            <button className={`mx-toggle-btn ${activeFilter === 'urgent' ? 'active' : ''}`} onClick={() => setActiveFilter('urgent')}>Urgente</button>
-          </div>
-          <button className="mx-btn mx-btn-outline" onClick={loadBandeja}><RotateCcw size={18} /></button>
-        </div>
+        <button className="mx-btn mx-btn-outline sm" onClick={loadBandeja}><RotateCcw size={18} /></button>
       </div>
 
       <div className="centros-filters am-mt-16">

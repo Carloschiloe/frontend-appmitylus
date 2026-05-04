@@ -1,0 +1,218 @@
+import React, { useState } from 'react';
+import { 
+  Building2, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Search, 
+  MoreVertical,
+  CheckCircle2,
+  XCircle,
+  X,
+  Globe,
+  Database,
+  Hash
+} from 'lucide-react';
+
+import { empresasApi } from '../../api/api-empresas';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '../../context/ToastContext';
+import './usuarios.css'; // Reutilizamos estilos de usuarios para consistencia
+
+export default function Empresas() {
+  const queryClient = useQueryClient();
+  const { addToast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // React Query: Obtener empresas
+  const { data: empresas = [], isLoading: loading } = useQuery({
+    queryKey: ['empresas'],
+    queryFn: empresasApi.getEmpresas,
+  });
+
+  // React Query: Mutaciones
+  const saveMutation = useMutation({
+    mutationFn: (body) => editingEmpresa 
+      ? empresasApi.updateEmpresa(editingEmpresa._id, body)
+      : empresasApi.createEmpresa(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['empresas'] });
+      setIsModalOpen(false);
+      addToast({ title: 'Éxito', message: 'Empresa guardada correctamente.', type: 'success' });
+    },
+    onError: (err) => {
+      console.error('Error guardando empresa:', err);
+      addToast({ title: 'Error', message: 'No se pudo guardar la empresa.', type: 'error' });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => empresasApi.deleteEmpresa(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['empresas'] });
+      addToast({ title: 'Éxito', message: 'Empresa desactivada.', type: 'success' });
+    },
+    onError: (err) => {
+      console.error('Error desactivando empresa:', err);
+      addToast({ title: 'Error', message: 'No se pudo desactivar la empresa.', type: 'error' });
+    }
+  });
+
+  // Modales y estados locales
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEmpresa, setEditingEmpresa] = useState(null);
+  const [activeMenu, setActiveMenu] = useState(null);
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const body = Object.fromEntries(formData.entries());
+    body.activo = formData.get('activo') === 'on';
+
+    saveMutation.mutate(body);
+  };
+
+  const filteredEmpresas = empresas.filter(e => 
+    e.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    e.rut?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    e.slug?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="mx-page" onClick={() => setActiveMenu(null)}>
+      <header className="mx-hero">
+        <div className="mx-hero-content">
+          <p className="mx-eyebrow">Administración Global · SaaS</p>
+          <h1>Gestión de Empresas</h1>
+          <p>Control de clientes, bases de datos y estados de suscripción.</p>
+        </div>
+        <div className="mx-hero-actions">
+          <button className="mx-btn mx-btn-primary" onClick={(e) => { e.stopPropagation(); setEditingEmpresa(null); setIsModalOpen(true); }}>
+            <Plus size={18} /> Nueva Empresa
+          </button>
+        </div>
+      </header>
+
+      <div className="mx-content-frame">
+        <div className="centros-filters usuarios-toolbar">
+          <div className="centros-search-wrap usuarios-search-box">
+            <Search size={18} />
+            <input 
+              type="text" 
+              placeholder="Buscar empresas..." 
+              className="centros-search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="mx-badge-muted usuarios-count-badge">
+            <Building2 size={16} /> <span>{filteredEmpresas.length} Empresas</span>
+          </div>
+        </div>
+
+        <div className="mx-table-card am-mt-16">
+          <div className="mx-table-wrap">
+            <table className="mx-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '30%' }}>Empresa</th>
+                  <th>ID / Slug</th>
+                  <th>Base de Datos</th>
+                  <th>Estado</th>
+                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan="5" className="usuarios-empty-state"><div className="mx-spinner usuarios-spinner-center"></div></td></tr>
+                ) : (
+                  filteredEmpresas.map(emp => (
+                    <tr key={emp._id}>
+                      <td>
+                        <div className="usuarios-avatar-wrapper">
+                          <div className="usuarios-avatar" style={{ background: 'var(--color-primary-bg)', color: 'var(--color-primary)' }}>
+                            <Building2 size={20} />
+                          </div>
+                          <div>
+                            <div className="usuarios-name">{emp.nombre}</div>
+                            <div className="usuarios-email">{emp.rut || 'Sin RUT'}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                          <Globe size={14} /> {emp.slug}
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)', fontSize: '0.85rem', fontWeight: 500 }}>
+                          <Database size={14} /> {emp.dbName}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`mx-badge ${emp.activo ? 'mx-badge-success' : 'mx-badge-muted'}`}>
+                          {emp.activo ? 'ACTIVA' : 'INACTIVA'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div className="mx-table-actions-cell" style={{ display: 'inline-flex', justifyContent: 'flex-end', width: '100%' }}>
+                          <button className="mx-action-btn edit" onClick={() => { setEditingEmpresa(emp); setIsModalOpen(true); }}><Edit size={14} /></button>
+                          <button className="mx-action-btn delete" onClick={() => { if(window.confirm('¿Desactivar esta empresa?')) deleteMutation.mutate(emp._id) }}>
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal Empresa */}
+      {isModalOpen && (
+        <div className="mx-modal-overlay">
+          <div className="mx-modal" style={{ maxWidth: '500px' }}>
+            <div className="mx-modal-head">
+              <h3 className="mx-modal-title">{editingEmpresa ? 'Editar' : 'Nueva'} Empresa</h3>
+              <button className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleSave} autoComplete="off">
+              <div className="mx-modal-body">
+                <div className="mx-field">
+                  <label className="mx-label">Nombre de la Empresa</label>
+                  <input name="nombre" className="mx-input" defaultValue={editingEmpresa?.nombre || ''} placeholder="Ej: Pacific Gold Chile" required />
+                </div>
+                <div className="mx-field">
+                  <label className="mx-label">RUT</label>
+                  <input name="rut" className="mx-input" defaultValue={editingEmpresa?.rut || ''} placeholder="Ej: 77.123.456-7" />
+                </div>
+                
+                <div className="mx-field">
+                  <label className="mx-label">Base de Datos (Nombre Físico)</label>
+                  <input name="dbName" className="mx-input" defaultValue={editingEmpresa?.dbName || ''} placeholder="Ej: mitynex_db_original" />
+                  <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                    Si dejas este campo vacío, se generará uno automáticamente basado en el nombre.
+                  </p>
+                </div>
+
+                <div className="mx-field usuarios-modal-checkbox">
+                  <input type="checkbox" name="activo" defaultChecked={editingEmpresa ? editingEmpresa.activo : true} />
+                  <label className="mx-label">Empresa Activa</label>
+                </div>
+              </div>
+              <div className="mx-modal-foot">
+                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="mx-btn mx-btn-primary">
+                  {editingEmpresa ? 'Guardar Cambios' : 'Crear Empresa'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -20,17 +20,29 @@ import {
 } from 'lucide-react';
 
 import { usuariosApi } from '../../api/api-usuarios';
+import { empresasApi } from '../../api/api-empresas';
+import { useAuth } from '../../context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '../../context/ToastContext';
 import './usuarios.css';
 
 export default function Usuarios() {
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   
-  // React Query: Obtener usuarios
+  const { user: currentUser } = useAuth();
+  
+  // React Query: Obtener usuarios y empresas
   const { data: usuarios = [], isLoading: loading } = useQuery({
     queryKey: ['usuarios'],
     queryFn: usuariosApi.getUsuarios,
+  });
+
+  const { data: empresas = [] } = useQuery({
+    queryKey: ['empresas'],
+    queryFn: empresasApi.getEmpresas,
+    enabled: currentUser?.rol === 'superadmin' // Solo superadmin necesita cargar todas las empresas
   });
 
   // React Query: Mutaciones
@@ -44,7 +56,7 @@ export default function Usuarios() {
     },
     onError: (err) => {
       console.error('Error guardando usuario:', err);
-      alert('Error al guardar el usuario. Revisa la consola.');
+      addToast({ title: 'Error', message: 'No se pudo guardar el usuario.', type: 'error' });
     }
   });
 
@@ -54,13 +66,26 @@ export default function Usuarios() {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
       setIsConfirmStatusOpen(false);
     },
-    onError: (err) => console.error('Error cambiando estado:', err)
+    onError: (err) => { console.error('Error cambiando estado:', err); addToast({ title: 'Error', message: 'No se pudo cambiar el estado del usuario.', type: 'error' }); }
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => usuariosApi.eliminarUsuario(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['usuarios'] }),
-    onError: (err) => console.error('Error eliminando usuario:', err)
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] });
+      addToast({ title: 'Éxito', message: 'Usuario eliminado correctamente.', type: 'success' });
+      setConfirmModal({ isOpen: false });
+    },
+    onError: (err) => { console.error('Error eliminando usuario:', err); addToast({ title: 'Error', message: 'No se pudo eliminar el usuario.', type: 'error' }); }
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: (id) => usuariosApi.restablecerPassword(id),
+    onSuccess: () => {
+      addToast({ title: 'Éxito', message: 'Contraseña restablecida y correo enviado.', type: 'success' });
+      setConfirmModal({ isOpen: false });
+    },
+    onError: (err) => { console.error('Error restableciendo contraseña:', err); addToast({ title: 'Error', message: 'No se pudo restablecer la contraseña.', type: 'error' }); }
   });
 
   // Modales y estados locales
@@ -69,6 +94,7 @@ export default function Usuarios() {
   const [isConfirmStatusOpen, setIsConfirmStatusOpen] = useState(false);
   const [userToToggle, setUserToToggle] = useState(null);
   const [activeMenu, setActiveMenu] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', user: null, title: '', message: '', actionLabel: '', isDestructive: false });
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -85,17 +111,37 @@ export default function Usuarios() {
   };
 
   const resetPassword = (u) => {
-    if (window.confirm(`¿Restablecer contraseña para ${u.nombre}? Se enviará un correo con la nueva clave temporal.`)) {
-      alert('Funcionalidad de restablecimiento en desarrollo (Backend integration required)');
-    }
+    setConfirmModal({
+      isOpen: true,
+      type: 'reset',
+      user: u,
+      title: 'Restablecer Contraseña',
+      message: `¿Estás seguro que deseas restablecer la contraseña de ${u.nombre}? Se enviará un correo con la nueva clave temporal.`,
+      actionLabel: 'Sí, Restablecer',
+      isDestructive: false
+    });
     setActiveMenu(null);
   };
 
   const deleteUser = (u) => {
-    if (window.confirm(`¿ELIMINAR PERMANENTEMENTE a ${u.nombre}? Esta acción no se puede deshacer.`)) {
-      deleteMutation.mutate(u._id);
-    }
+    setConfirmModal({
+      isOpen: true,
+      type: 'delete',
+      user: u,
+      title: 'Eliminar Usuario',
+      message: `¿ELIMINAR PERMANENTEMENTE a ${u.nombre}? Esta acción no se puede deshacer.`,
+      actionLabel: 'Sí, Eliminar',
+      isDestructive: true
+    });
     setActiveMenu(null);
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmModal.type === 'reset') {
+      resetPasswordMutation.mutate(confirmModal.user._id);
+    } else if (confirmModal.type === 'delete') {
+      deleteMutation.mutate(confirmModal.user._id);
+    }
   };
 
   const filteredUsuarios = usuarios.filter(u => 
@@ -109,13 +155,20 @@ export default function Usuarios() {
     const configs = {
       admin: { label: 'ADMINISTRADOR', color: '#1d4ed8', icon: ShieldAlert, bg: '#dbeafe' },
       usuario: { label: 'USUARIO', color: '#059669', icon: ShieldCheck, bg: '#d1fae5' },
-      lectura: { label: 'SOLO LECTURA', color: '#475569', icon: Shield, bg: '#f1f5f9' }
+      lectura: { label: 'SOLO LECTURA', color: '#475569', icon: Shield, bg: '#f1f5f9' },
+      superadmin: { label: 'SUPERADMIN', color: '#7c3aed', icon: ShieldAlert, bg: '#f5f3ff' }
     };
     return configs[rol] || configs.usuario;
   };
 
+  const getEmpresaNombre = (empresaId) => {
+    if (!empresaId) return 'N/A';
+    const emp = empresas.find(e => e._id === empresaId);
+    return emp ? emp.nombre : 'Cargando...';
+  };
+
   return (
-    <div className="usuarios-page" onClick={() => setActiveMenu(null)}>
+    <div className="mx-page" onClick={() => setActiveMenu(null)}>
       <header className="mx-hero">
         <div className="mx-hero-content">
           <p className="mx-eyebrow">Configuración · Accesos</p>
@@ -129,7 +182,8 @@ export default function Usuarios() {
         </div>
       </header>
 
-      <div className="usuarios-content-frame">
+      <div className="mx-content-frame">
+
         <div className="centros-filters usuarios-toolbar">
           <div className="centros-search-wrap usuarios-search-box">
             <Search size={18} />
@@ -151,8 +205,9 @@ export default function Usuarios() {
             <table className="mx-table">
               <thead>
                 <tr>
-                  <th style={{ width: '30%' }}>Usuario</th>
+                  <th style={{ width: '25%' }}>Usuario</th>
                   <th>Rol</th>
+                  <th>Empresa</th>
                   <th>Estado</th>
                   <th>Último Acceso</th>
                   <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -181,6 +236,11 @@ export default function Usuarios() {
                           <span className="mx-badge usuarios-rol-badge" style={{ background: rol.bg, color: rol.color }}>
                             <rol.icon size={12} /> {rol.label}
                           </span>
+                        </td>
+                        <td>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>
+                            {getEmpresaNombre(u.empresaId)}
+                          </div>
                         </td>
                         <td>
                           <span className={`mx-badge usuarios-status-badge ${u.activo ? 'mx-badge-success' : 'mx-badge-muted'}`}>
@@ -242,13 +302,25 @@ export default function Usuarios() {
                   <input name="email" type="email" className="mx-input" defaultValue={editingUser?.email || ''} placeholder="usuario@appmitylus.com" required autoComplete="off" />
                 </div>
                 <div className="mx-field">
-                  <label className="mx-label">Rol de Sistema</label>
                   <select name="rol" className="mx-input" defaultValue={editingUser?.rol || 'usuario'}>
-                    <option value="admin">Administrador</option>
-                    <option value="usuario">Usuario</option>
+                    <option value="superadmin">SuperAdmin (Global)</option>
+                    <option value="admin">Administrador Empresa</option>
+                    <option value="usuario">Usuario Operativo</option>
                     <option value="lectura">Solo Lectura</option>
                   </select>
                 </div>
+
+                {currentUser?.rol === 'superadmin' && (
+                  <div className="mx-field">
+                    <label className="mx-label">Asignar Empresa</label>
+                    <select name="empresaId" className="mx-input" defaultValue={editingUser?.empresaId || ''}>
+                      <option value="">Global / Sin Empresa</option>
+                      {empresas.map(e => (
+                        <option key={e._id} value={e._id}>{e.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 {!editingUser && (
                   <div className="mx-field">
                     <label className="mx-label">Contraseña Temporal</label>
@@ -293,6 +365,31 @@ export default function Usuarios() {
           </div>
         </div>
       )}
+      {/* Modal de Confirmación Genérico */}
+      {confirmModal.isOpen && (
+        <div className="mx-modal-overlay">
+          <div className="mx-modal" style={{ maxWidth: '400px' }}>
+            <div className="mx-modal-head">
+              <h3 className="mx-modal-title">{confirmModal.title}</h3>
+              <button className="mx-btn-icon" onClick={() => setConfirmModal({ isOpen: false })}><X size={20} /></button>
+            </div>
+            <div className="mx-modal-body">
+              <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>{confirmModal.message}</p>
+            </div>
+            <div className="mx-modal-foot">
+              <button className="mx-btn" onClick={() => setConfirmModal({ isOpen: false })}>Cancelar</button>
+              <button 
+                className={`mx-btn ${confirmModal.isDestructive ? 'mx-btn-danger' : 'mx-btn-primary'}`} 
+                onClick={handleConfirmAction}
+                disabled={resetPasswordMutation.isPending || deleteMutation.isPending}
+              >
+                {resetPasswordMutation.isPending || deleteMutation.isPending ? 'Procesando...' : confirmModal.actionLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

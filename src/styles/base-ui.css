@@ -111,7 +111,7 @@
 .mx-toggle-btn {
   border: none;
   background: none;
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 700;
@@ -251,7 +251,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .mx-table-title {

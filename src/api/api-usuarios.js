@@ -41,5 +41,13 @@ export const usuariosApi = {
   toggleEstado: async (id, isActive) => {
     const data = await apiClient.patch(`${BASE_URL}/${id}`, { activo: isActive });
     return data.item || data;
+  },
+
+  /**
+   * Restablece la contraseña de un usuario
+   */
+  restablecerPassword: async (id) => {
+    const data = await apiClient.post(`${BASE_URL}/${id}/reset-password`);
+    return data;
   }
 };

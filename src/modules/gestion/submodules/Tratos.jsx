@@ -39,7 +39,9 @@ export default function Tratos() {
   });
 
   useEffect(() => {
-    loadData();
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -55,13 +57,14 @@ export default function Tratos() {
     }
   }, [isModalOpen, editingId, maestrosCondiciones]);
 
-  async function loadData() {
+  async function loadData(signal) {
     setLoading(true);
     try {
-      const res = await apiClient.get('/oportunidades?limit=200');
+      const res = await apiClient.get('/oportunidades?limit=200', { signal });
       setItems(res.items || []);
     } catch (err) {
-      console.error(err);
+      if (err.name === 'AbortError') return;
+      addToast({ title: 'Error', message: 'No se pudieron cargar los tratos.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -121,20 +124,6 @@ export default function Tratos() {
 
   return (
     <div className="tratos-container">
-      <div className="mx-table-head">
-        <div className="mx-table-title">
-          <div className="mx-header-icon"><Handshake size={20} /></div>
-          <div>
-            <h2>Negociaciones y Tratos</h2>
-            <p>Seguimiento de volúmenes acordados, precios y estados de cierre.</p>
-          </div>
-        </div>
-        <div className="mx-table-actions">
-          <button className="mx-btn mx-btn-primary" onClick={() => { setEditingId(null); setIsModalOpen(true); }}>
-            <Plus size={18} /> Nueva Negociación
-          </button>
-        </div>
-      </div>
 
       <div className="centros-filters am-mt-16">
         <div className="centros-search-wrap" style={{ flex: 1 }}>
@@ -148,6 +137,9 @@ export default function Tratos() {
           />
         </div>
         <button className="mx-btn mx-btn-outline" onClick={loadData}><RotateCcw size={18} /></button>
+        <button className="mx-btn mx-btn-primary sm" onClick={() => { setEditingId(null); setIsModalOpen(true); }}>
+          <Plus size={18} /> Nueva Negociación
+        </button>
       </div>
 
       <div className="mx-table-card am-mt-16">

@@ -121,29 +121,55 @@ ul, ol {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: var(--color-bg);
+}
+
+/* ── Standard Page Layout ── */
+.mx-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  max-width: 1440px; /* Evita que se estire demasiado en pantallas ultra-wide */
+  margin: 0 auto;
+  position: relative;
+}
+
+.mx-content-frame {
+  padding: var(--page-padding);
+  padding-top: 0; /* Hero usually has bottom margin/padding */
+  margin-top: -30px; /* Overlap effect for cards over Hero */
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.mx-content-body {
+  padding: var(--page-padding);
 }
 
 /* ── Hero Sections (Premium) ── */
 .mx-hero {
   background: linear-gradient(135deg, var(--color-brand-deep) 0%, #164e63 100%);
   color: white;
-  padding: 48px 32px;
+  padding: 12px var(--page-padding) 24px var(--page-padding); /* Máxima compactación */
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-  margin-bottom: var(--spacing-lg);
   box-shadow: var(--shadow-md);
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  position: relative;
 }
 
 .mx-hero-content {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
 }
 
 .mx-hero h1 {
-  font-size: 2.25rem;
+  font-size: 1.5rem;
   font-weight: 800;
   margin: 0;
   letter-spacing: -0.025em;
@@ -165,7 +191,7 @@ ul, ol {
 
 /* ── Tabs / Toggle Groups ── */
 .mx-tabs-container {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
 }
 
 .mx-tabs {
@@ -434,5 +460,5 @@ ul, ol {
 }
 
 .mx-action-btn.edit:hover { background: #e0f2fe; color: #0ea5e9; }
-.mx-action-btn.print:hover { background: #f0fdf4; color: #10b981; }
-.mx-action-btn.delete:hover { background: #fef2f2; color: #ef4444; }
+.mx-action-btn.print:hover { background: var(--color-success-bg); color: var(--color-success); }
+.mx-action-btn.delete:hover { background: var(--color-error-bg); color: var(--color-error); }

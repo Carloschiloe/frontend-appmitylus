@@ -4,27 +4,7 @@
   animation: fadeIn 0.2s ease-out;
 }
 
-/* Header / Hero */
-.biomasa-hero {
-  background: linear-gradient(135deg, #006666 0%, #004d4d 100%);
-  padding: 40px 32px;
-  color: white;
-  margin-bottom: 0;
-}
-
-.biomasa-hero-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.biomasa-eyebrow {
-  color: rgba(255,255,255,0.7);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: 12px;
-}
+/* Header / Hero - Usando mx-hero global */
 
 .biomasa-title {
   font-weight: 900;
@@ -218,8 +198,8 @@
 }
 
 .seg-badge-active {
-  background: #f0fdf4;
-  color: #10b981;
+  background: var(--color-success-bg);
+  color: var(--color-success);
   padding: 6px 12px;
   border-radius: 10px;
   font-size: 11px;
@@ -303,12 +283,12 @@
 .biomasa-action-bar .mx-btn-icon.pause { background: #f1f5f9; color: #64748b; }
 .biomasa-action-bar .mx-btn-icon.pause:hover { background: #e2e8f0; color: #475569; }
 
-.biomasa-action-bar .mx-btn-icon.play { background: #ecfdf5; color: #10b981; }
+.biomasa-action-bar .mx-btn-icon.play { background: var(--color-success-bg); color: var(--color-success); }
 .biomasa-action-bar .mx-btn-icon.play:hover { background: #d1fae5; color: #059669; }
 
 .biomasa-action-bar .mx-btn-icon.edit { background: #f1f5f9; color: #0ea5e9; }
 .biomasa-action-bar .mx-btn-icon.edit:hover { background: #e0f2fe; color: #0284c7; }
 
-.biomasa-action-bar .mx-btn-icon.delete { background: #fef2f2; color: #ef4444; }
+.biomasa-action-bar .mx-btn-icon.delete { background: var(--color-error-bg); color: var(--color-error); }
 .biomasa-action-bar .mx-btn-icon.delete:hover { background: #fee2e2; color: #dc2626; }
 

@@ -134,7 +134,7 @@
 }
 
 .maestros-modal-param-delete {
-  color: #ef4444;
+  color: var(--color-error);
 }
 
 .maestros-modal-checkbox-row {

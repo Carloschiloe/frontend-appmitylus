@@ -51,23 +51,18 @@ export default function Calendario() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const { data: events = [], isLoading: loading } = useQuery({
-    queryKey: ['calendario-eventos'],
+    queryKey: ['calendario-eventos', currentDate.getMonth(), currentDate.getFullYear()],
     queryFn: async () => {
-      const [intRes, visRes, muRes] = await Promise.all([
-        apiClient.get('/interacciones?limit=300'),
-        apiClient.get('/visitas?limit=300'),
-        apiClient.get('/muestreos?limit=200')
-      ]);
-
-      const merged = [
-        ...(intRes.items || []).map(i => ({ ...i, kind: i.tipo?.toLowerCase() || 'interaccion', date: i.fechaProx || i.fecha })),
-        ...(Array.isArray(visRes) ? visRes : (visRes.items || [])).map(v => ({ ...v, kind: 'visita', date: v.proximoPasoFecha || v.fecha })),
-        ...(Array.isArray(muRes) ? muRes : (muRes.items || [])).map(m => ({ ...m, kind: 'muestreo', date: m.fecha }))
-      ];
-
-      return merged;
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const from = new Date(year, month - 1, 1).toISOString(); // Un mes antes para padding
+      const to = new Date(year, month + 2, 0).toISOString();   // Un mes después
+      
+      const res = await apiClient.get(`/dashboard/calendario?from=${from}&to=${to}`);
+      return Array.isArray(res) ? res : (res.items || []);
     }
   });
+
 
   const calendarGrid = useMemo(() => {
     const year = currentDate.getFullYear();
@@ -111,27 +106,18 @@ export default function Calendario() {
   }, [selectedDay, getDayEvents]);
 
   return (
-    <div className="calendario-container am-p-24 calendario-main-wrapper">
-      <div className="mx-table-head calendario-header-bar">
-        <div className="mx-table-title">
-          <div className="mx-header-icon"><CalendarIcon size={20} /></div>
-          <div>
-            <h2 className="calendario-title-text">Agenda Comercial</h2>
-            <p>Planificación de visitas, compromisos y auditorías en terreno.</p>
-          </div>
+    <div className="calendario-container calendario-main-wrapper">
+
+      <div className="mx-table-actions calendario-actions-bar am-mb-16">
+        <div className="calendario-month-nav">
+          <button className="mx-action-btn calendario-nav-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
+          <span className="calendario-nav-label">
+            {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
+          </span>
+          <button className="mx-action-btn calendario-nav-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
         </div>
-        
-        <div className="mx-table-actions calendario-actions-bar">
-          <div className="calendario-month-nav">
-            <button className="mx-action-btn calendario-nav-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
-            <span className="calendario-nav-label">
-              {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </span>
-            <button className="mx-action-btn calendario-nav-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
-          </div>
-          <button className="mx-btn mx-btn-outline" onClick={() => setCurrentDate(new Date())}>Hoy</button>
-          <button className="mx-btn mx-btn-primary"><Plus size={18} /> Nueva Cita</button>
-        </div>
+        <button className="mx-btn mx-btn-outline sm" onClick={() => setCurrentDate(new Date())}>Hoy</button>
+        <button className="mx-btn mx-btn-primary sm"><Plus size={18} /> Nueva Cita</button>
       </div>
 
       <div className="calendario-layout-grid">

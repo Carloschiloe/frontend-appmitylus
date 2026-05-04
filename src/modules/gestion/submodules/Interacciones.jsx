@@ -33,16 +33,19 @@ export default function Interacciones() {
   });
 
   useEffect(() => {
-    loadData();
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
   }, []);
 
-  async function loadData() {
+  async function loadData(signal) {
     setLoading(true);
     try {
-      const res = await apiClient.get('/interacciones?limit=200');
+      const res = await apiClient.get('/interacciones?limit=200', { signal });
       setItems(res.items || []);
     } catch (err) {
-      console.error('Error:', err);
+      if (err.name === 'AbortError') return;
+      addToast({ title: 'Error', message: 'No se pudieron cargar las interacciones.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -67,20 +70,6 @@ export default function Interacciones() {
 
   return (
     <div className="interacciones-container">
-      <div className="mx-table-head">
-        <div className="mx-table-title">
-          <div className="mx-header-icon"><MessageSquare size={20} /></div>
-          <div>
-            <h2>Registro de Interacciones</h2>
-            <p>Bitácora comercial de gestiones, llamadas y acuerdos con proveedores.</p>
-          </div>
-        </div>
-        <div className="mx-table-actions">
-          <button className="mx-btn mx-btn-primary" onClick={() => setIsModalOpen(true)}>
-            <Plus size={18} /> Nueva Gestión
-          </button>
-        </div>
-      </div>
 
       <div className="centros-filters am-mt-16">
         <div className="centros-search-wrap" style={{ flex: 1 }}>
@@ -94,6 +83,9 @@ export default function Interacciones() {
           />
         </div>
         <button className="mx-btn mx-btn-outline" onClick={loadData}><RotateCcw size={18} /></button>
+        <button className="mx-btn mx-btn-primary sm" onClick={() => setIsModalOpen(true)}>
+          <Plus size={18} /> Nueva Gestión
+        </button>
       </div>
 
       <div className="mx-table-card am-mt-16">

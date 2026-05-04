@@ -9,28 +9,33 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
+import { useToast } from '../../../context/ToastContext';
 
 export default function SanitarioDashboard() {
+  const { addToast } = useToast();
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resumen, setResumen] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    loadData();
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
   }, []);
 
-  async function loadData() {
+  async function loadData(signal) {
     setLoading(true);
     try {
       const [resAreas, resResumen] = await Promise.all([
-        apiClient.get('/sanitario/areas'),
-        apiClient.get('/sanitario/resumen')
+        apiClient.get('/sanitario/areas', { signal }),
+        apiClient.get('/sanitario/resumen', { signal })
       ]);
       setAreas(resAreas.items || []);
       setResumen(resResumen);
     } catch (err) {
-      console.error('Error cargando datos sanitarios:', err);
+      if (err.name === 'AbortError') return;
+      addToast({ title: 'Error', message: 'No se pudieron cargar los datos sanitarios.', type: 'error' });
     } finally {
       setLoading(false);
     }

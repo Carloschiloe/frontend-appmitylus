@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { apiClient } from '../../api/apiClient';
+import TenantSelector from './TenantSelector';
 import './Sidebar.css';
 
 const MENU_STRUCTURE = [
@@ -77,9 +78,19 @@ const MENU_STRUCTURE = [
     id: 'configuracion',
     label: 'Configuración',
     icon: Settings,
+    requiereRol: 'admin',
     links: [
       { label: 'Maestros', to: '/configuracion/maestros', icon: Settings },
       { label: 'Usuarios', to: '/configuracion/usuarios', icon: Users }
+    ]
+  },
+  {
+    id: 'saas',
+    label: 'Administración SaaS',
+    icon: ShieldCheck,
+    requiereRol: 'superadmin',
+    links: [
+      { label: 'Empresas', to: '/configuracion/empresas', icon: Building2 }
     ]
   }
 ];
@@ -96,20 +107,22 @@ export default function Sidebar() {
     // Cargar alertas sanitarias solo si hay usuario
     if (!user) return;
 
-    apiClient.get('/sanitario/resumen')
+    const controller = new AbortController();
+
+    apiClient.get('/sanitario/resumen', { signal: controller.signal })
       .then(data => {
         if (!data) return;
         const criticas = (data.rojo || 0) + (data.naranja || 0);
         if (criticas > 0) {
           setAlerts(prev => ({ ...prev, sanitario: criticas }));
-          setOpenGroups(prev => ({ ...prev, centros: true }));
+          setOpenGroups({ centros: true });
         }
       })
       .catch(err => {
-        if (err.status === 401) {
-          console.warn('[Sidebar] Sesión inválida detectada al cargar alertas');
-        }
+        if (err.name === 'AbortError' || err.status === 401) return;
       });
+
+    return () => controller.abort();
   }, [user]);
 
   // Abrir automáticamente el grupo que contiene la ruta activa
@@ -118,12 +131,14 @@ export default function Sidebar() {
       group.links.some(link => location.pathname.startsWith(link.to))
     );
     if (activeGroup) {
-      setOpenGroups(prev => ({ ...prev, [activeGroup.id]: true }));
+      setOpenGroups({ [activeGroup.id]: true }); // Solo el grupo activo se mantiene abierto
     }
   }, [location.pathname]);
 
   const toggleGroup = (id) => {
-    setOpenGroups(prev => ({ ...prev, [id]: !prev[id] }));
+    setOpenGroups(prev => ({
+      [id]: !prev[id]
+    }));
   };
 
   return (
@@ -131,6 +146,8 @@ export default function Sidebar() {
       <div className="mx-sidebar-brand">
         <img src="/img/logo-sidebar.png" alt="Mitynex" />
       </div>
+
+      <TenantSelector />
 
       <div className="mx-global-search">
         <Search size={16} className="search-icon" />
@@ -152,7 +169,14 @@ export default function Sidebar() {
       </div>
 
       <nav className="mx-sidebar-menu">
-        {MENU_STRUCTURE.map(group => (
+        {MENU_STRUCTURE.filter(group => {
+          if (!group.requiereRol) return true;
+          // Superadmin ve todo
+          if (user?.rol === 'superadmin') return true;
+          // Admin ve configuración y lo demás (excepto saas que requiere explícitamente superadmin)
+          if (user?.rol === 'admin' && group.requiereRol === 'admin') return true;
+          return false;
+        }).map(group => (
           <div key={group.id} className={`mx-menu-group ${openGroups[group.id] ? 'is-open' : ''}`}>
             <button className="mx-menu-head" onClick={() => toggleGroup(group.id)}>
               <span className="mx-menu-head-label">

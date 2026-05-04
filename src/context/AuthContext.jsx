@@ -3,22 +3,33 @@ import { apiClient } from '../api/apiClient';
 
 const AuthContext = createContext(null);
 
+function getTokenExpMs(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('ammpp_token');
-        
+
         if (!token) {
           setLoading(false);
           return;
         }
 
         // Validar token contra el servidor
-        const data = await apiClient.get('/auth/me');
+        const data = await apiClient.get('/auth/me', { signal: controller.signal });
         if (data?.ok && data.usuario) {
           setUser(data.usuario);
           // Actualizar cache local con datos frescos
@@ -29,6 +40,7 @@ export const AuthProvider = ({ children }) => {
           localStorage.removeItem('ammpp_user');
         }
       } catch (e) {
+        if (e.name === 'AbortError') return;
         // Token expirado o error de red: limpiar
         localStorage.removeItem('ammpp_token');
         localStorage.removeItem('ammpp_user');
@@ -38,7 +50,42 @@ export const AuthProvider = ({ children }) => {
     };
 
     checkAuth();
+    return () => controller.abort();
   }, []);
+
+  // Auto-refresh: renueva el token 30 min antes de que expire
+  useEffect(() => {
+    if (!user) return;
+
+    const scheduleRefresh = () => {
+      const token = localStorage.getItem('ammpp_token');
+      if (!token) return null;
+      const expMs = getTokenExpMs(token);
+      if (!expMs) return null;
+      const delay = Math.max(expMs - Date.now() - 30 * 60 * 1000, 0);
+
+      return setTimeout(async () => {
+        try {
+          const refreshToken = localStorage.getItem('ammpp_refresh_token');
+          if (!refreshToken) return;
+          const data = await apiClient.post('/auth/refresh', { refreshToken });
+          if (data?.token) {
+            localStorage.setItem('ammpp_token', data.token);
+            if (data.usuario) {
+              setUser(data.usuario);
+              localStorage.setItem('ammpp_user', JSON.stringify(data.usuario));
+            }
+            scheduleRefresh();
+          }
+        } catch {
+          // Silencioso: el usuario verá 401 en la próxima acción
+        }
+      }, delay);
+    };
+
+    const timerId = scheduleRefresh();
+    return () => { if (timerId) clearTimeout(timerId); };
+  }, [user]);
 
   const login = async (email, password) => {
     try {
@@ -46,6 +93,7 @@ export const AuthProvider = ({ children }) => {
       const usuario = data.usuario || data.user || data.item;
 
       localStorage.setItem('ammpp_token', data.token);
+      if (data.refreshToken) localStorage.setItem('ammpp_refresh_token', data.refreshToken);
       localStorage.setItem('ammpp_user', JSON.stringify(usuario));
       setUser(usuario);
       
@@ -56,8 +104,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await apiClient.post('/auth/logout', {});
+    } catch { /* ignorar errores de red al cerrar sesión */ }
     localStorage.removeItem('ammpp_token');
+    localStorage.removeItem('ammpp_refresh_token');
     localStorage.removeItem('ammpp_user');
     setUser(null);
     window.location.href = '/login';

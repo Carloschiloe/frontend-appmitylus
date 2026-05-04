@@ -30,16 +30,15 @@ export default function Gestion() {
   const location = useLocation();
 
   return (
-    <div className="gestion-page">
+    <div className="mx-page">
       <header className="mx-hero">
         <div className="mx-hero-content">
           <p className="mx-eyebrow">Abastecimiento · Operaciones</p>
           <h1>Gestión de Proveedores</h1>
-          <p>Bandeja de compromisos, agenda comercial y control de calidad.</p>
         </div>
       </header>
 
-      <div className="gestion-content-frame">
+      <div className="mx-content-frame">
         <div className="mx-tabs-container">
           <div className="mx-tabs">
             {GESTION_TABS.map(tab => (
@@ -55,7 +54,7 @@ export default function Gestion() {
           </div>
         </div>
 
-        <div className="gestion-submodule-body">
+        <div className="mx-submodule-body">
           <Suspense fallback={
             <div className="mx-loading-placeholder">
               <div className="mx-spinner"></div>
@@ -76,4 +75,5 @@ export default function Gestion() {
       </div>
     </div>
   );
+
 }

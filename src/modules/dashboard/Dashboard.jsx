@@ -1,81 +1,128 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Calendar, CheckCircle, ShieldAlert, Hourglass, RotateCcw, TrendingUp } from 'lucide-react';
-import { apiClient } from '../../api/apiClient';
-import { 
-  Chart as ChartJS, 
-  ArcElement, 
-  Tooltip, 
-  Legend, 
-  CategoryScale, 
-  LinearScale, 
-  BarElement, 
-  Title 
+import './dashboard.css';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Filler
 } from 'chart.js';
-import { Doughnut, Bar } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
+import {
+  Activity,
+  CheckCircle,
+  ShieldAlert,
+  RotateCcw,
+  TrendingUp,
+  Users,
+  ChevronRight,
+  ArrowUpRight,
+  Handshake,
+  AlertTriangle
+} from 'lucide-react';
+import { apiClient } from '../../api/apiClient';
 
-// Registro de componentes de Chart.js
 ChartJS.register(
-  ArcElement, 
-  Tooltip, 
-  Legend, 
-  CategoryScale, 
-  LinearScale, 
-  BarElement, 
-  Title
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Filler
 );
 
-const KpiCard = ({ title, value, icon: Icon, color, bgColor }) => (
-  <div className="mx-kpi">
-    <div className="dsh-kpi-row" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-      <div className="dsh-kpi-icon" style={{ backgroundColor: bgColor, color: color, padding: '12px', borderRadius: '12px', display: 'flex' }}>
-        <Icon size={24} />
+const KpiCard = ({ title, value, sub, icon: Icon, color, trend }) => (
+  <div className="mx-kpi-card-new">
+    <div className="mx-kpi-card-header">
+      <div className="mx-kpi-card-icon" style={{ backgroundColor: `${color}15`, color }}>
+        <Icon size={20} />
       </div>
-      <div className="dsh-kpi-body">
-        <div className="mx-kpi-value">{value || '0'}</div>
-        <div className="mx-kpi-label">{title}</div>
-      </div>
+      {trend != null && (
+        <div className={`mx-kpi-trend ${trend >= 0 ? 'positive' : 'negative'}`}>
+          <ArrowUpRight size={14} /> {Math.abs(trend)}%
+        </div>
+      )}
+    </div>
+    <div className="mx-kpi-card-body">
+      <h4 className="mx-kpi-card-value">{value ?? '—'}</h4>
+      <p className="mx-kpi-card-title">{title}</p>
+      {sub && <p className="mx-kpi-card-sub">{sub}</p>}
     </div>
   </div>
 );
 
+function formatTons(n) {
+  if (n == null) return '—';
+  if (n >= 1000) return `${(n / 1000).toFixed(1)} kt`;
+  return `${n} t`;
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `Hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Hace ${hrs} h`;
+  return `Hace ${Math.floor(hrs / 24)} días`;
+}
+
+const ESTADO_COLOR = {
+  acordado: '#0d9488',
+  negociando: '#3b82f6',
+  compra_efectuada: '#10b981',
+  caido: '#ef4444',
+  prospecto: '#6366f1',
+};
+
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  async function loadData(signal) {
+    setLoading(true);
+    setError(null);
+    try {
+      const json = await apiClient.get('/dashboard/summary', { signal });
+      setData(json);
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      setError('No se pudieron cargar las métricas. Verifica tu conexión.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const json = await apiClient.get('/dashboard/summary');
-        setData(json);
-      } catch (err) {
-        console.error('Error cargando dashboard:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
   }, []);
 
-  const doughnutData = {
-    labels: ['Acordado', 'En Negociación'],
+  const speciesData = {
+    labels: ['Disponible', 'Semicerrada', 'Cerrada', 'Descartada', 'Perdida'],
     datasets: [
       {
-        data: [data?.acordadoMes || 0, (data?.enNegociacion || 0) * 10], 
-        backgroundColor: ['#10b981', '#f59e0b'],
+        data: [
+          data?.biomasa?.disponible || 0,
+          data?.biomasa?.semi_cerrado || 0,
+          data?.biomasa?.cerrado || 0,
+          data?.biomasa?.descartado || 0,
+          data?.biomasa?.perdido || 0
+        ],
+        backgroundColor: ['#10b981', '#f59e0b', '#dc2626', '#94a3b8', '#1e293b'],
         borderWidth: 0,
-        hoverOffset: 4,
-      },
-    ],
-  };
-
-  const barData = {
-    labels: data?.topProveedores?.map(p => p.nombre.substring(0, 10)) || [],
-    datasets: [
-      {
-        label: 'Toneladas Disponibles',
-        data: data?.topProveedores?.map(p => p.tons) || [],
-        backgroundColor: 'rgba(99, 102, 241, 0.8)',
-        borderRadius: 6,
       },
     ],
   };
@@ -89,78 +136,172 @@ export default function Dashboard() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="mx-page dsh-premium">
+        <div className="mx-content-frame" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>
+            <AlertTriangle size={48} style={{ marginBottom: '16px', color: '#ef4444' }} />
+            <h3 style={{ marginBottom: '8px' }}>{error}</h3>
+            <button className="mx-btn mx-btn-primary" onClick={loadData} style={{ marginTop: '16px' }}>
+              <RotateCcw size={16} /> Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="dashboard-page">
+    <div className="mx-page dsh-premium">
       <header className="mx-hero">
         <div className="mx-hero-content">
-          <p className="mx-eyebrow">Panel principal · Mitynex Prime</p>
-          <h1>Resumen Operativo</h1>
-          <p>Control de abastecimiento y alertas sanitarias en tiempo real.</p>
+          <p className="mx-eyebrow">Panel Central · Mitynex Prime</p>
+          <h1>Monitor de Operaciones</h1>
+          <p>Visión consolidada de abastecimiento, logística y biomasa.</p>
+        </div>
+        <div className="mx-hero-actions">
+          <button className="mx-btn mx-btn-outline" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white' }} onClick={loadData}>
+            <RotateCcw size={18} /> Actualizar
+          </button>
         </div>
       </header>
 
-      <div className="dsh-content-frame" style={{ padding: '0 var(--page-padding) 40px var(--page-padding)', marginTop: '-30px' }}>
+      <div className="mx-content-frame">
         <div className="mx-page-stack">
-          {/* KPIs Principales */}
-          <section className="mx-kpis">
-            <KpiCard 
-              title="Acordado · este mes" 
-              value={data?.acordadoMes ? `${data.acordadoMes} t` : '0 t'} 
-              icon={CheckCircle} 
-              color="#059669" 
-              bgColor="#d1fae5" 
+
+          {/* KPIs reales de la API */}
+          <section className="dsh-kpi-grid">
+            <KpiCard
+              title="Tons Acordadas (mes)"
+              value={formatTons(data?.acordadoMes)}
+              sub="Acumulado este mes"
+              icon={CheckCircle}
+              color="#0d9488"
             />
-            <KpiCard 
-              title="Acordado · próx. mes" 
-              value={data?.acordadoProxMes ? `${data.acordadoProxMes} t` : '0 t'} 
-              icon={Calendar} 
-              color="#2563eb" 
-              bgColor="#dbeafe" 
+            <KpiCard
+              title="Tons Próximo Mes"
+              value={formatTons(data?.acordadoProxMes)}
+              sub="Proyección siguiente mes"
+              icon={TrendingUp}
+              color="#3b82f6"
             />
-            <KpiCard 
-              title="En negociación" 
-              value={data?.enNegociacion} 
-              icon={Hourglass} 
-              color="#d97706" 
-              bgColor="#fef3c7" 
+            <KpiCard
+              title="En Negociación"
+              value={data?.enNegociacion ?? '—'}
+              sub="Oportunidades activas"
+              icon={Handshake}
+              color="#6366f1"
             />
-            <KpiCard 
-              title="Alertas sanitarias" 
-              value={data?.alertas} 
-              icon={ShieldAlert} 
-              color="#dc2626" 
-              bgColor="#fee2e2" 
+            <KpiCard
+              title="Alertas Sanitarias"
+              value={data?.alertas ?? '—'}
+              sub="Áreas naranja/rojo activas"
+              icon={ShieldAlert}
+              color="#ef4444"
             />
           </section>
 
-          <div className="dsh-mid-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-            <article className="mx-kpi" style={{ padding: '24px' }}>
-              <h3 className="mx-kpi-label" style={{ fontSize: '1rem', marginBottom: '20px' }}>
-                <TrendingUp size={18} style={{ marginRight: '8px' }} /> Distribución de Carga
-              </h3>
-              <div style={{ height: '240px', display: 'flex', justifyContent: 'center' }}>
-                <Doughnut data={doughnutData} options={{ maintainAspectRatio: false }} />
+          <div className="dsh-main-grid">
+
+            {/* Feed de actividad real */}
+            <article className="dsh-card activity-feed">
+              <div className="dsh-card-header">
+                <h3 className="dsh-card-title">Actividad Reciente</h3>
+              </div>
+              <div className="dsh-activity-list">
+                {!data?.actividad?.length ? (
+                  <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
+                    <Activity size={32} style={{ marginBottom: '8px', opacity: 0.4 }} />
+                    <p style={{ fontSize: '13px' }}>Sin actividad reciente</p>
+                  </div>
+                ) : data.actividad.map(item => (
+                  <div key={item.id} className="dsh-activity-item">
+                    <div className="activity-icon" style={{ color: ESTADO_COLOR[item.tipo] || '#64748b' }}>
+                      <Activity size={16} />
+                    </div>
+                    <div className="activity-content">
+                      <p className="activity-text">{item.titulo}</p>
+                      <span className="activity-time">{item.descripcion} · {timeAgo(item.fecha)}</span>
+                    </div>
+                    <ChevronRight size={14} className="activity-arrow" />
+                  </div>
+                ))}
               </div>
             </article>
 
-            <article className="mx-kpi" style={{ padding: '24px' }}>
-              <h3 className="mx-kpi-label" style={{ fontSize: '1rem', marginBottom: '20px' }}>
-                <Activity size={18} style={{ marginRight: '8px' }} /> Top Proveedores (t)
-              </h3>
-              <div style={{ height: '240px' }}>
-                <Bar data={barData} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
+            {/* Top proveedores reales */}
+            <article className="dsh-card">
+              <div className="dsh-card-header">
+                <h3 className="dsh-card-title">Top Proveedores</h3>
               </div>
-            </article>
-
-            <article className="mx-kpi" style={{ padding: '24px' }}>
-              <h3 className="mx-kpi-label" style={{ fontSize: '1rem', marginBottom: '20px' }}>
-                <RotateCcw size={18} style={{ marginRight: '8px' }} /> Actividad Reciente
-              </h3>
-              <div className="mx-state-placeholder" style={{ border: 'none', padding: '20px' }}>
-                <p style={{ fontSize: '0.9rem' }}>No hay eventos recientes</p>
-              </div>
+              {!data?.topProveedores?.length ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
+                  <Users size={32} style={{ marginBottom: '8px', opacity: 0.4 }} />
+                  <p style={{ fontSize: '13px' }}>Sin datos de proveedores</p>
+                </div>
+              ) : (
+                <div className="dsh-area-stats" style={{ marginTop: '16px' }}>
+                  {data.topProveedores.map((p, i) => {
+                    const max = data.topProveedores[0]?.tons || 1;
+                    const pct = max > 0 ? Math.round((p.tons / max) * 100) : 0;
+                    return (
+                      <div key={i} className="area-stat-row">
+                        <span style={{ fontSize: '12px', flex: '0 0 120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</span>
+                        <div className="area-bar-wrap">
+                          <div className="area-bar" style={{ width: `${pct}%`, background: '#0d9488' }}></div>
+                        </div>
+                        <span className="area-val">{p.tons ?? 0} t</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </article>
           </div>
+
+          <div className="dsh-secondary-grid">
+            <article className="dsh-card">
+              <h3 className="dsh-card-title sm">Estado de Biomasa</h3>
+              <div style={{ height: '200px', marginTop: '16px' }}>
+                <Doughnut data={speciesData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }} />
+              </div>
+            </article>
+
+            <article className="dsh-card bg-primary-gradient">
+              <h3 className="dsh-card-title sm text-white">Resumen Mensual</h3>
+              <div className="dsh-white-box">
+                <div className="white-box-kpi">
+                  <span className="label">Acordado Mes</span>
+                  <span className="value">{formatTons(data?.acordadoMes)}</span>
+                </div>
+                <div className="white-box-divider"></div>
+                <div className="white-box-kpi">
+                  <span className="label">En negociación</span>
+                  <span className="value">{data?.enNegociacion ?? '—'}</span>
+                </div>
+              </div>
+            </article>
+
+            <article className="dsh-card">
+              <div className="dsh-card-header">
+                <h3 className="dsh-card-title sm">Áreas Sanitarias</h3>
+              </div>
+              {data?.alertas === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: '#10b981' }}>
+                  <CheckCircle size={32} style={{ marginBottom: '8px' }} />
+                  <p style={{ fontSize: '13px', fontWeight: 600 }}>Sin alertas activas</p>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '24px', color: '#ef4444' }}>
+                  <ShieldAlert size={32} style={{ marginBottom: '8px' }} />
+                  <p style={{ fontSize: '24px', fontWeight: 700 }}>{data?.alertas ?? '—'}</p>
+                  <p style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>áreas en estado crítico</p>
+                </div>
+              )}
+            </article>
+          </div>
+
         </div>
       </div>
     </div>

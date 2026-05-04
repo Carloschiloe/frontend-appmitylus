@@ -24,15 +24,14 @@ const CENTROS_TABS = [
 
 export default function Centros() {
   return (
-    <div className="centros-page">
-      <header className="mx-hero centros-hero-shell">
+    <div className="mx-page">
+      <header className="mx-hero">
         <div className="mx-hero-content">
           <p className="mx-eyebrow">Operaciones · Centros</p>
           <h1>Directorio de Centros</h1>
-          <p>Gestión de concesiones, consulta de mapa y trazabilidad de datos sanitarios.</p>
         </div>
-        <div className="centros-hero-actions">
-          <button className="mx-btn mx-btn-outline">
+        <div className="mx-hero-actions">
+          <button className="mx-btn mx-btn-outline" style={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}>
             <FileUp size={18} /> Importar
           </button>
           <button className="mx-btn mx-btn-primary">
@@ -41,7 +40,7 @@ export default function Centros() {
         </div>
       </header>
 
-      <div className="centros-content-frame">
+      <div className="mx-content-frame">
         <div className="mx-tabs-container">
           <div className="mx-tabs">
             {CENTROS_TABS.map(tab => (
@@ -57,7 +56,7 @@ export default function Centros() {
           </div>
         </div>
 
-        <div className="centros-module-body">
+        <div className="mx-submodule-body">
           <Suspense fallback={
             <div className="mx-loading-placeholder am-flex-center" style={{ height: '200px', flexDirection: 'column', gap: '12px' }}>
               <div className="mx-spinner"></div>
@@ -75,4 +74,5 @@ export default function Centros() {
       </div>
     </div>
   );
+
 }

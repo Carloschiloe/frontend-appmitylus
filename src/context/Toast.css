@@ -26,9 +26,9 @@
   transition: all 0.2s ease-in-out;
 }
 
-.toast-card.success { border-left-color: #10b981; }
-.toast-card.error { border-left-color: #ef4444; }
-.toast-card.info { border-left-color: #0ea5e9; }
+.toast-card.success { border-left-color: var(--color-success); }
+.toast-card.error { border-left-color: var(--color-error); }
+.toast-card.info { border-left-color: var(--color-info); }
 
 .toast-icon-wrapper {
   display: flex;
@@ -37,9 +37,9 @@
   flex-shrink: 0;
 }
 
-.toast-icon.success { color: #10b981; }
-.toast-icon.error { color: #ef4444; }
-.toast-icon.info { color: #0ea5e9; }
+.toast-icon.success { color: var(--color-success); }
+.toast-icon.error { color: var(--color-error); }
+.toast-icon.info { color: var(--color-info); }
 
 .toast-content {
   flex: 1;
