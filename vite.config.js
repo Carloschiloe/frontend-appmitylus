@@ -37,21 +37,7 @@ export default defineConfig({
     minify: true,
     cssMinify: true,
     chunkSizeWarningLimit: 800,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
-            return 'vendor-react';
-          }
-          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-')) {
-            return 'vendor-charts';
-          }
-          if (id.includes('node_modules/')) {
-            return 'vendor';
-          }
-        },
-      },
-    },
+    rollupOptions: {},
   },
   server: {
     port: 5173,
