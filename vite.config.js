@@ -41,11 +41,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        maestros: resolve(__dirname, 'html/Maestros/index.html'),
-        centros: resolve(__dirname, 'html/Centros/index.html'),
-        contactos: resolve(__dirname, 'html/Abastecimiento/contactos/contactos.html'),
-        historial: resolve(__dirname, 'html/Abastecimiento/historial/index.html'),
-      biomasa:   resolve(__dirname, 'html/Biomasa/index.html'),
       },
       output: {
         manualChunks(id) {
