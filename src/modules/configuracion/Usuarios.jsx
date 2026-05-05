@@ -116,7 +116,7 @@ export default function Usuarios() {
       type: 'reset',
       user: u,
       title: 'Restablecer Contraseña',
-      message: `¿Estás seguro que deseas restablecer la contraseña de ${u.nombre}? Se enviará un correo con la nueva clave temporal.`,
+      message: `¿Restablecer la contraseña de ${u.nombre}? Se enviará un correo con un link de activación válido por 24 horas.`,
       actionLabel: 'Sí, Restablecer',
       isDestructive: false
     });
@@ -323,8 +323,8 @@ export default function Usuarios() {
                 )}
                 {!editingUser && (
                   <div className="mx-field">
-                    <label className="mx-label">Contraseña Temporal</label>
-                    <input name="password" type="password" className="mx-input" placeholder="Min. 6 caracteres" required autoComplete="new-password" />
+                    <label className="mx-label">Contraseña inicial <span style={{ fontWeight: 400, color: 'var(--color-text-subtle)' }}>(opcional — el usuario la cambia al activar su cuenta)</span></label>
+                    <input name="password" type="password" className="mx-input" placeholder="Dejar vacío para generar automáticamente" autoComplete="new-password" />
                   </div>
                 )}
                 <div className="mx-field usuarios-modal-checkbox">

@@ -24,8 +24,9 @@ const Gestion   = lazy(() => import('./modules/gestion/Gestion.jsx'));
 const Maestros  = lazy(() => import('./modules/configuracion/Maestros.jsx'));
 const Usuarios  = lazy(() => import('./modules/configuracion/Usuarios.jsx'));
 const Historial = lazy(() => import('./modules/historial/Historial.jsx'));
-const Login     = lazy(() => import('./modules/auth/Login.jsx'));
-const Empresas  = lazy(() => import('./modules/configuracion/Empresas.jsx'));
+const Login          = lazy(() => import('./modules/auth/Login.jsx'));
+const ActivarCuenta  = lazy(() => import('./modules/auth/ActivarCuenta.jsx'));
+const Empresas       = lazy(() => import('./modules/configuracion/Empresas.jsx'));
 
 // Componente para proteger rutas (Integración con AuthContext)
 const PrivateRoute = ({ children }) => {
@@ -119,6 +120,7 @@ export default function App() {
           <Routes>
             {/* Rutas Públicas */}
             <Route path="/login" element={<Login />} />
+            <Route path="/activar-cuenta" element={<ActivarCuenta />} />
 
             {/* Rutas Privadas */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
