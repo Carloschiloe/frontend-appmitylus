@@ -1,15 +1,14 @@
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
-import { 
-  Inbox, 
-  Building2, 
-  Calendar, 
-  MessageSquare, 
-  Users, 
-  TestTube2 
+import { Routes, Route, Navigate, NavLink } from 'react-router-dom';
+import {
+  Inbox,
+  Building2,
+  Calendar,
+  MessageSquare,
+  Users,
+  TestTube2
 } from 'lucide-react';
 
-// Lazy loading de sub-módulos
 const Bandeja = lazy(() => import('./submodules/Bandeja'));
 const Directorio = lazy(() => import('./submodules/Directorio'));
 const Calendario = lazy(() => import('./submodules/Calendario'));
@@ -18,17 +17,15 @@ const Tratos = lazy(() => import('./submodules/Tratos'));
 const Muestreos = lazy(() => import('./submodules/Muestreos'));
 
 const GESTION_TABS = [
-  { id: 'bandeja',      label: 'Gestión',      to: '/gestion/bandeja',      icon: Inbox },
-  { id: 'directorio',   label: 'Directorio',   to: '/gestion/directorio',   icon: Building2 },
-  { id: 'calendario',   label: 'Calendario',   to: '/gestion/calendario',   icon: Calendar },
+  { id: 'bandeja', label: 'Resumen', to: '/gestion/bandeja', icon: Inbox },
+  { id: 'directorio', label: 'Directorio', to: '/gestion/directorio', icon: Building2 },
+  { id: 'calendario', label: 'Calendario', to: '/gestion/calendario', icon: Calendar },
   { id: 'interacciones', label: 'Interacciones', to: '/gestion/interacciones', icon: MessageSquare },
-  { id: 'tratos',       label: 'Tratos',       to: '/gestion/tratos',       icon: Users },
-  { id: 'muestreos',    label: 'Muestreos',    to: '/gestion/muestreos',    icon: TestTube2 }
+  { id: 'tratos', label: 'Tratos', to: '/gestion/tratos', icon: Users },
+  { id: 'muestreos', label: 'Muestreos', to: '/gestion/muestreos', icon: TestTube2 }
 ];
 
 export default function Gestion() {
-  const location = useLocation();
-
   return (
     <div className="mx-page">
       <header className="mx-hero">
@@ -41,7 +38,7 @@ export default function Gestion() {
       <div className="mx-content-frame">
         <div className="mx-tabs-container">
           <div className="mx-tabs">
-            {GESTION_TABS.map(tab => (
+            {GESTION_TABS.map((tab) => (
               <NavLink
                 key={tab.id}
                 to={tab.to}
@@ -55,12 +52,14 @@ export default function Gestion() {
         </div>
 
         <div className="mx-submodule-body">
-          <Suspense fallback={
-            <div className="mx-loading-placeholder">
-              <div className="mx-spinner"></div>
-              <p>Cargando sub-módulo...</p>
-            </div>
-          }>
+          <Suspense
+            fallback={
+              <div className="mx-loading-placeholder">
+                <div className="mx-spinner"></div>
+                <p>Cargando sub-módulo...</p>
+              </div>
+            }
+          >
             <Routes>
               <Route path="/" element={<Navigate to="bandeja" replace />} />
               <Route path="bandeja" element={<Bandeja />} />
@@ -75,5 +74,4 @@ export default function Gestion() {
       </div>
     </div>
   );
-
 }

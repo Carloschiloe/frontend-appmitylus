@@ -41,6 +41,7 @@ const MENU_STRUCTURE = [
     icon: Inbox,
     links: [
       { label: 'Bandeja', to: '/gestion/bandeja', icon: Inbox },
+      { label: 'Directorio', to: '/gestion/directorio', icon: Building2 },
       { label: 'Calendario', to: '/gestion/calendario', icon: Calendar },
       { label: 'Interacciones', to: '/gestion/interacciones', icon: MessageSquare },
       { label: 'Tratos', to: '/gestion/tratos', icon: Users },
