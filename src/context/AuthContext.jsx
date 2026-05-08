@@ -21,24 +21,9 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = async () => {
       try {
-        const token = localStorage.getItem('ammpp_token');
+        // En modo Cookies, no dependemos de la presencia del token en localStorage 
+        // para intentar recuperar la sesión. Simplemente preguntamos al servidor.
         const cachedUserRaw = localStorage.getItem('ammpp_user');
-
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-
-        const tokenParts = token.split('.');
-        const expMs = getTokenExpMs(token);
-        if (tokenParts.length !== 3 || (expMs && expMs <= Date.now())) {
-          localStorage.removeItem('ammpp_token');
-          localStorage.removeItem('ammpp_refresh_token');
-          localStorage.removeItem('ammpp_user');
-          localStorage.removeItem('selected_tenant_db');
-          setLoading(false);
-          return;
-        }
 
         if (cachedUserRaw) {
           try {
@@ -52,14 +37,12 @@ export const AuthProvider = ({ children }) => {
         const data = await apiClient.get('/auth/me', { signal: controller.signal });
         if (data?.ok && data.usuario) {
           setUser(data.usuario);
-          // Actualizar cache local con datos frescos
           localStorage.setItem('ammpp_user', JSON.stringify(data.usuario));
         } else {
-          // Token inválido: limpiar sesión
+          // Si el servidor dice que no hay sesión, limpiamos todo
           localStorage.removeItem('ammpp_token');
           localStorage.removeItem('ammpp_refresh_token');
           localStorage.removeItem('ammpp_user');
-          localStorage.removeItem('selected_tenant_db');
           setUser(null);
         }
       } catch (e) {
@@ -92,9 +75,11 @@ export const AuthProvider = ({ children }) => {
 
       return setTimeout(async () => {
         try {
+          // El refresh ahora es automático vía cookies, pero enviamos el legacy 
+          // si existe para máxima compatibilidad con el backend actual.
           const refreshToken = localStorage.getItem('ammpp_refresh_token');
-          if (!refreshToken) return;
           const data = await apiClient.post('/auth/refresh', { refreshToken });
+          
           if (data?.token) {
             localStorage.setItem('ammpp_token', data.token);
             if (data.usuario) {
@@ -104,7 +89,7 @@ export const AuthProvider = ({ children }) => {
             scheduleRefresh();
           }
         } catch {
-          // Silencioso: el usuario verá 401 en la próxima acción
+          // Silencioso
         }
       }, delay);
     };

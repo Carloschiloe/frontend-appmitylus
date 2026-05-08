@@ -24,10 +24,9 @@ async function request(endpoint, options = {}) {
     ...options.headers,
   };
 
-  const token = localStorage.getItem('ammpp_token');
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+  // El token ahora se maneja vía Cookies seguras (HttpOnly)
+  // No inyectamos Authorization header por defecto para evitar redundancia y mejorar seguridad.
+
 
   // Soporte Multi-tenant para SuperAdmin: Inyectar DB seleccionada si existe
   const tenantDb = localStorage.getItem('selected_tenant_db');
@@ -38,6 +37,7 @@ async function request(endpoint, options = {}) {
   const config = {
     ...options,
     headers,
+    credentials: 'include', // Permite envío de cookies seguras (Fase 2)
   };
 
   if (config.body && typeof config.body === 'object') {
