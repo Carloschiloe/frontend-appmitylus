@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, X, RotateCcw, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { apiClient } from '../../../api/apiClient';
+import { 
+  useInteracciones, 
+  useCentros, 
+  useContactos 
+} from '../hooks/useGestionQueries';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 
 function buildProviderDirectory(centros = [], contactos = []) {
@@ -51,9 +56,9 @@ const TIPOS = [
 ];
 
 export default function Interacciones() {
+  const queryClient = useQueryClient();
   const { addToast } = useToast();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({
@@ -66,72 +71,38 @@ export default function Interacciones() {
     fechaProxima: '',
   });
 
-  const [loadingProviders, setLoadingProviders] = useState(false);
-  const [providers, setProviders] = useState([]);
   const [providerSearch, setProviderSearch] = useState('');
   const [selectedProvider, setSelectedProvider] = useState(null);
-  const [providersLoaded, setProvidersLoaded] = useState(false);
   const [confirmDeleteInteraccion, setConfirmDeleteInteraccion] = useState(null);
 
-  const loadData = useCallback(async (signal) => {
-    setLoading(true);
-    try {
-      const res = await apiClient.get('/interacciones?limit=200', { signal });
-      setItems(res.items || []);
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-      addToast({ title: 'Error', message: 'No se pudieron cargar las interacciones.', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  }, [addToast]);
+  // 1. Carga de datos con React Query
+  const { data: interaccionesRes, isLoading: loadingItems } = useInteracciones({ limit: 200 });
+  const { data: centrosRaw, isLoading: loadingCentros } = useCentros({ enabled: isModalOpen });
+  const { data: contactosRaw, isLoading: loadingContactos } = useContactos({ conEmpresa: 1 }, { enabled: isModalOpen });
+
+  const items = useMemo(() => {
+    if (!interaccionesRes) return [];
+    return Array.isArray(interaccionesRes) ? interaccionesRes : (interaccionesRes.items || []);
+  }, [interaccionesRes]);
+
+  const providers = useMemo(() => {
+    if (!isModalOpen) return [];
+    const centros = Array.isArray(centrosRaw) ? centrosRaw : (centrosRaw?.items || []);
+    const contactos = Array.isArray(contactosRaw) ? contactosRaw : (contactosRaw?.items || []);
+    return buildProviderDirectory(centros, contactos);
+  }, [isModalOpen, centrosRaw, contactosRaw]);
+
+  const loading = loadingItems;
+  const loadingProviders = loadingCentros || loadingContactos;
+
+  const handleRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['interacciones'] });
+  }, [queryClient]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    loadData(controller.signal);
-    return () => controller.abort();
-  }, [loadData]);
-
-  useEffect(() => {
-    const handleRefresh = () => loadData();
     window.addEventListener('gestion:quick-capture-saved', handleRefresh);
     return () => window.removeEventListener('gestion:quick-capture-saved', handleRefresh);
-  }, [loadData]);
-
-  useEffect(() => {
-    if (!isModalOpen || providersLoaded) return;
-
-    let cancelled = false;
-    const controller = new AbortController();
-
-    async function loadProviders() {
-      setLoadingProviders(true);
-      try {
-        const [centrosRes, contactosRes] = await Promise.all([
-          apiClient.get('/centros', { signal: controller.signal }),
-          apiClient.get('/contactos?conEmpresa=1', { signal: controller.signal }),
-        ]);
-
-        if (!cancelled) {
-          const centros = Array.isArray(centrosRes) ? centrosRes : (centrosRes.items || []);
-          const contactos = Array.isArray(contactosRes) ? contactosRes : (contactosRes.items || []);
-          setProviders(buildProviderDirectory(centros, contactos));
-          setProvidersLoaded(true);
-        }
-      } catch (error) {
-        if (error.name === 'AbortError') return;
-        addToast({ title: 'Error', message: 'No se pudo cargar el directorio de proveedores.', type: 'error' });
-      } finally {
-        if (!cancelled) setLoadingProviders(false);
-      }
-    }
-
-    loadProviders();
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [isModalOpen, providersLoaded, addToast]);
+  }, [handleRefresh]);
 
   const filteredProviders = useMemo(() => {
     const query = providerSearch.toLowerCase();
@@ -179,7 +150,7 @@ export default function Interacciones() {
        await apiClient.post('/interacciones', form);
        addToast({ title: 'Éxito', message: 'Interacción registrada', type: 'success' });
        closeModal();
-       loadData();
+       handleRefresh();
      } catch {
        addToast({ title: 'Error', message: 'No se pudo guardar', type: 'error' });
      }
@@ -190,7 +161,7 @@ export default function Interacciones() {
      onSuccess: () => {
        addToast({ title: 'Éxito', message: 'Interacción eliminada correctamente.', type: 'success' });
        setConfirmDeleteInteraccion(null);
-       loadData();
+       handleRefresh();
      },
      onError: () => {
        addToast({ title: 'Error', message: 'No se pudo eliminar la interacción.', type: 'error' });
@@ -220,7 +191,9 @@ export default function Interacciones() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="mx-btn mx-btn-outline" onClick={() => loadData()}><RotateCcw size={18} /></button>
+        <button className="mx-btn mx-btn-outline sm" onClick={handleRefresh}>
+          <RotateCcw size={18} />
+        </button>
         <button className="mx-btn mx-btn-primary sm" onClick={() => setIsModalOpen(true)}>
           <Plus size={18} /> Nueva Gestión
         </button>

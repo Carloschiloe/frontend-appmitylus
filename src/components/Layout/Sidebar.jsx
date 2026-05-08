@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -137,11 +137,20 @@ export default function Sidebar() {
     }
   }, [location.pathname]);
 
-  const toggleGroup = (id) => {
+  const toggleGroup = useCallback((id) => {
     setOpenGroups(prev => ({
       [id]: !prev[id]
     }));
-  };
+  }, []);
+
+  const filteredMenu = useMemo(() => {
+    return MENU_STRUCTURE.filter(group => {
+      if (!group.requiereRol) return true;
+      if (user?.rol === 'superadmin') return true;
+      if (user?.rol === 'admin' && group.requiereRol === 'admin') return true;
+      return false;
+    });
+  }, [user?.rol]);
 
   return (
     <aside className="mx-sidebar">
@@ -197,14 +206,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="mx-sidebar-menu">
-        {MENU_STRUCTURE.filter(group => {
-          if (!group.requiereRol) return true;
-          // Superadmin ve todo
-          if (user?.rol === 'superadmin') return true;
-          // Admin ve configuración y lo demás (excepto SaaS, que requiere explícitamente superadmin)
-          if (user?.rol === 'admin' && group.requiereRol === 'admin') return true;
-          return false;
-        }).map(group => (
+        {filteredMenu.map(group => (
           <div key={group.id} className={`mx-menu-group ${openGroups[group.id] ? 'is-open' : ''}`}>
             <button className="mx-menu-head" onClick={() => toggleGroup(group.id)}>
               <span className="mx-menu-head-label">

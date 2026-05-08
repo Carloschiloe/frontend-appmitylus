@@ -65,7 +65,7 @@ ul, ol {
   color: var(--color-text);
   margin-bottom: 8px;
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 /* ── Progress Bars ── */
@@ -170,7 +170,7 @@ ul, ol {
 
 .mx-hero h1 {
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: var(--weight-bold);
   margin: 0;
   letter-spacing: -0.025em;
 }
@@ -178,7 +178,7 @@ ul, ol {
 .mx-hero .mx-eyebrow {
   text-transform: uppercase;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   letter-spacing: 0.1em;
   color: var(--color-primary-light);
   opacity: 0.9;
@@ -227,6 +227,7 @@ ul, ol {
   background: var(--color-surface);
   color: var(--color-primary);
   box-shadow: var(--shadow-sm);
+  font-weight: var(--weight-bold);
 }
 
 /* ── Modals & Overlay ── */
@@ -269,7 +270,7 @@ ul, ol {
 
 .mx-modal-title {
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: var(--weight-bold);
   margin: 0;
   color: var(--color-text);
 }
@@ -339,16 +340,17 @@ ul, ol {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 24px;
+  padding: 10px 20px;
   height: 42px;
   border-radius: var(--radius-md);
-  font-weight: 700;
+  font-weight: var(--weight-semibold);
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid transparent;
   text-decoration: none;
   white-space: nowrap;
+  outline: none;
 }
 
 .mx-btn:hover {
@@ -358,6 +360,10 @@ ul, ol {
 
 .mx-btn:active {
   transform: translateY(0);
+}
+
+.mx-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-primary);
 }
 
 .mx-btn-primary {
@@ -376,8 +382,29 @@ ul, ol {
 }
 
 .mx-btn-outline:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: var(--color-border-hover);
+  background: var(--color-bg);
+}
+
+.mx-btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.mx-btn-ghost:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.mx-btn-danger {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.mx-btn-danger:hover {
+  background: var(--color-error);
+  color: white;
 }
 
 .mx-btn-icon {

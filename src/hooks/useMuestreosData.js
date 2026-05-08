@@ -1,47 +1,45 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/apiClient';
-import { useToast } from '../context/ToastContext';
+import { useMuestreos } from '../modules/gestion/hooks/useGestionQueries';
 
 export function useMuestreosData(viewMode) {
-  const { addToast } = useToast();
-  const [muestreos, setMuestreos] = useState([]);
-  const [maestros, setMaestros] = useState({ cats: [], rules: [] });
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState(null);
+  const lim = viewMode === 'grouped' ? 500 : 50;
 
-  const load = useCallback(async (targetPage = 1, mode = viewMode) => {
-    setLoading(true);
-    const lim = mode === 'grouped' ? 500 : 50;
-    const controller = new AbortController();
+  // 1. Muestreos con React Query
+  const { 
+    data: muestreosRes, 
+    isLoading: loadingMue, 
+    refetch: refresh 
+  } = useMuestreos({ limit: lim, page });
 
-    try {
-      const [muRes, catsRes, rulesRes] = await Promise.all([
-        apiClient.get(`/muestreos?limit=${lim}&page=${targetPage}`, { signal: controller.signal })
-          .catch(() => ({ items: [], pagination: null })),
-        apiClient.get('/maestros?tipo=categoria-muestreo&soloActivos=true', { signal: controller.signal })
-          .catch(() => ({ items: [] })),
-        apiClient.get('/maestros?tipo=clasificacion_producto&soloActivos=true', { signal: controller.signal })
-          .catch(() => ({ items: [] })),
-      ]);
-      setMuestreos(Array.isArray(muRes) ? muRes : (muRes.items || []));
-      setPagination(muRes.pagination || null);
-      setMaestros({ cats: catsRes.items || [], rules: rulesRes.items || [] });
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-      addToast({ title: 'Error', message: 'No se pudieron cargar los datos.', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  }, [addToast, viewMode]);
+  // 2. Maestros con React Query (específico para muestreos)
+  const { data: catsRes } = useQuery({
+    queryKey: ['maestros', 'categoria-muestreo'],
+    queryFn: () => apiClient.get('/maestros?tipo=categoria-muestreo&soloActivos=true'),
+    staleTime: 15 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    load(page);
-  }, [load, page]);
+  const { data: rulesRes } = useQuery({
+    queryKey: ['maestros', 'clasificacion_producto'],
+    queryFn: () => apiClient.get('/maestros?tipo=clasificacion_producto&soloActivos=true'),
+    staleTime: 15 * 60 * 1000,
+  });
 
-  const refresh = useCallback((targetPage) => {
-    load(targetPage ?? page);
-  }, [load, page]);
+  const muestreos = useMemo(() => {
+    if (!muestreosRes) return [];
+    return Array.isArray(muestreosRes) ? muestreosRes : (muestreosRes.items || []);
+  }, [muestreosRes]);
+
+  const pagination = useMemo(() => muestreosRes?.pagination || null, [muestreosRes]);
+
+  const maestros = useMemo(() => ({
+    cats: catsRes?.items || [],
+    rules: rulesRes?.items || [],
+  }), [catsRes, rulesRes]);
+
+  const loading = loadingMue;
 
   return { muestreos, maestros, loading, page, setPage, pagination, refresh };
 }

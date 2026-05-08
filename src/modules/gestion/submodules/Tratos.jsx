@@ -1,10 +1,11 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Search, Plus, Edit, Trash2, X, RotateCcw
 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { apiClient } from '../../../api/apiClient';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTratos } from '../hooks/useGestionQueries';
 import { maestrosApi } from '../../../api/api-maestros';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import './tratos.css';
@@ -34,6 +35,11 @@ const API_TO_UI_ESTADO = {
   perdido: 'rechazado',
   descartado: 'rechazado',
 };
+
+function toList(payload) {
+  if (Array.isArray(payload)) return payload;
+  return payload?.items || payload?.data || [];
+}
 
 function getUiEstadoFromApi(estado) {
   return API_TO_UI_ESTADO[String(estado || '').toLowerCase()] || 'pendiente';
@@ -69,7 +75,6 @@ function getDateOnlyParts(value) {
     day: date.getUTCDate(),
   };
 }
-
 
 function formatDateOnlySafe(value) {
   const parts = getDateOnlyParts(value);
@@ -107,18 +112,41 @@ function isEquivalentEstado(actualApi, nextUi) {
 }
 
 export default function Tratos() {
+  const queryClient = useQueryClient();
   const { addToast } = useToast();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-   const [searchTerm, setSearchTerm] = useState('');
-   const [isModalOpen, setIsModalOpen] = useState(false);
-   const [editingId, setEditingId] = useState(null);
-   const [editingEstadoApi, setEditingEstadoApi] = useState('');
-   const [confirmDeleteTrato, setConfirmDeleteTrato] = useState(null);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editingEstadoApi, setEditingEstadoApi] = useState('');
+  const [confirmDeleteTrato, setConfirmDeleteTrato] = useState(null);
+
+  // 1. Carga de datos con React Query
+  const { data: tratosRes, isLoading: loadingTratos } = useTratos();
+  
+  const items = useMemo(() => {
+    const raw = toList(tratosRes);
+    return raw.map((item) => ({
+      ...item,
+      fechaCierre: normalizeDateOnlyForUiSafe(item.fechaCierre),
+    }));
+  }, [tratosRes]);
+
+  const loading = loadingTratos;
+
+  const handleRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['tratos'] });
+  }, [queryClient]);
+
+  useEffect(() => {
+    window.addEventListener('gestion:quick-capture-saved', handleRefresh);
+    return () => window.removeEventListener('gestion:quick-capture-saved', handleRefresh);
+  }, [handleRefresh]);
 
   const { data: maestrosCondiciones = [] } = useQuery({
     queryKey: ['maestros', 'condicion_negociacion', 'activos'],
     queryFn: () => maestrosApi.getMaestrosActivos('condicion_negociacion'),
+    staleTime: 10 * 60 * 1000,
   });
 
   const [form, setForm] = useState({
@@ -130,28 +158,6 @@ export default function Tratos() {
     notas: '',
     condiciones: []
   });
-
-  const loadData = useCallback(async (signal) => {
-    setLoading(true);
-    try {
-      const res = await apiClient.get('/oportunidades/tratos', { signal });
-      setItems((res.items || []).map((item) => ({
-        ...item,
-        fechaCierre: normalizeDateOnlyForUiSafe(item.fechaCierre),
-      })));
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-      addToast({ title: 'Error', message: 'No se pudieron cargar los tratos.', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  }, [addToast]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadData(controller.signal);
-    return () => controller.abort();
-  }, [loadData]);
 
   useEffect(() => {
     if (isModalOpen && !editingId && maestrosCondiciones.length > 0) {
@@ -201,23 +207,23 @@ export default function Tratos() {
         addToast({ title: 'Creado', message: 'Nuevo trato registrado', type: 'success' });
       }
       setIsModalOpen(false);
-      loadData();
+      handleRefresh();
     } catch {
       addToast({ title: 'Error', message: 'No se pudo guardar el trato', type: 'error' });
     }
   };
 
-    const handleDelete = async () => {
-      if (!confirmDeleteTrato?._id) return;
-      try {
-        await apiClient.delete(`/oportunidades/${confirmDeleteTrato._id}`);
-        addToast({ title: 'Eliminado', message: 'Trato eliminado', type: 'success' });
-        setConfirmDeleteTrato(null);
-        loadData();
-      } catch {
-        addToast({ title: 'Error', message: 'No se pudo eliminar', type: 'error' });
-      }
-    };
+  const handleDelete = async () => {
+    if (!confirmDeleteTrato?._id) return;
+    try {
+      await apiClient.delete(`/oportunidades/${confirmDeleteTrato._id}`);
+      addToast({ title: 'Eliminado', message: 'Trato eliminado', type: 'success' });
+      setConfirmDeleteTrato(null);
+      handleRefresh();
+    } catch {
+      addToast({ title: 'Error', message: 'No se pudo eliminar', type: 'error' });
+    }
+  };
 
   const openEdit = (item) => {
     setEditingId(item._id);
@@ -246,7 +252,6 @@ export default function Tratos() {
 
   return (
     <div className="tratos-container">
-
       <div className="centros-filters am-mt-16">
         <div className="tratos-search-wrap" style={{ flex: 1 }}>
           <Search size={18} className="tratos-search-icon" />
@@ -258,7 +263,7 @@ export default function Tratos() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="mx-btn mx-btn-outline" onClick={loadData}><RotateCcw size={18} /></button>
+        <button className="mx-btn mx-btn-outline" onClick={handleRefresh}><RotateCcw size={18} /></button>
         <button className="mx-btn mx-btn-primary sm" onClick={() => { setEditingId(null); setEditingEstadoApi(''); setIsModalOpen(true); }}>
           <Plus size={18} /> Nueva Negociación
         </button>
@@ -338,7 +343,6 @@ export default function Tratos() {
                         <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: idx < form.condiciones.length - 1 ? '1px solid #e2e8f0' : 'none', flexWrap: 'wrap' }}>
                           <span style={{ fontSize: '13px', fontWeight: 600, flex: '1 1 120px' }}>{c.nombre}</span>
                           
-                          {/* Modo (Normal/Fijo) para porcentajes como Descuento Planta */}
                           {c.tipoValor === 'porcentaje' && (
                             <select 
                               className="mx-input" 
@@ -356,7 +360,6 @@ export default function Tratos() {
                             </select>
                           )}
 
-                          {/* Campo de Valor */}
                           {!(c.tipoValor === 'porcentaje' && (!c.modoCondicion || c.modoCondicion === 'normal')) && (
                             <input 
                               type={['numero', 'moneda', 'porcentaje', 'dias'].includes(c.tipoValor) ? 'number' : 'text'}
@@ -372,7 +375,6 @@ export default function Tratos() {
                             />
                           )}
 
-                          {/* Selector de Estado */}
                           <select 
                             className="mx-input" 
                             style={{ width: 'auto', padding: '4px 8px', fontSize: '12px', height: '28px' }}

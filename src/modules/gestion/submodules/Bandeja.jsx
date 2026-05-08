@@ -11,6 +11,14 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { 
+  useGestionSummary, 
+  useOportunidades, 
+  useInteracciones, 
+  useVisitas, 
+  useMuestreos 
+} from '../hooks/useGestionQueries';
 import './bandeja.css';
 
 const PIPELINE_ORDER = [
@@ -112,60 +120,37 @@ function getPauseReasonLabel(value) {
 }
 
 export default function Bandeja() {
+  const queryClient = useQueryClient();
   const { addToast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState(null);
-  const [oportunidades, setOportunidades] = useState([]);
-  const [interacciones, setInteracciones] = useState([]);
-  const [visitas, setVisitas] = useState([]);
-  const [muestreos, setMuestreos] = useState([]);
 
-  const loadPanel = useCallback(async (signal) => {
-    setLoading(true);
-    try {
-      const requestOptions = signal ? { signal } : {};
-      const [
-        summaryRes,
-        oportunidadesRes,
-        interaccionesRes,
-        visitasRes,
-        muestreosRes,
-      ] = await Promise.all([
-        apiClient.get('/dashboard/summary', requestOptions),
-        apiClient.get('/oportunidades?limit=200', requestOptions),
-        apiClient.get('/interacciones?limit=200', requestOptions),
-        apiClient.get('/visitas', requestOptions),
-        apiClient.get('/muestreos?limit=50&page=1', requestOptions),
-      ]);
+  // 1. Carga de datos con React Query
+  // El uso de hooks permite que cada recurso se gestione de forma independiente
+  const { data: summary, isLoading: loadingSummary } = useGestionSummary();
+  const { data: oportunidadesData, isLoading: loadingOpp } = useOportunidades({ limit: 200 });
+  const { data: interaccionesData, isLoading: loadingInt } = useInteracciones({ limit: 200 });
+  const { data: visitasData, isLoading: loadingVis } = useVisitas();
+  const { data: muestreosRes, isLoading: loadingMue } = useMuestreos({ limit: 50, page: 1 });
 
-      setSummary(summaryRes || null);
-      setOportunidades(toList(oportunidadesRes));
-      setInteracciones(toList(interaccionesRes));
-      setVisitas(toList(visitasRes));
-      setMuestreos(toList(muestreosRes));
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-      addToast({
-        title: 'Error',
-        message: 'No se pudo construir el panel de gestión.',
-        type: 'error',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [addToast]);
+  // Estabilización de datos para los memos
+  const oportunidades = useMemo(() => toList(oportunidadesData), [oportunidadesData]);
+  const interacciones = useMemo(() => toList(interaccionesData), [interaccionesData]);
+  const visitas = useMemo(() => toList(visitasData), [visitasData]);
+  const muestreos = useMemo(() => toList(muestreosRes), [muestreosRes]);
+
+  const loading = loadingSummary || loadingOpp || loadingInt || loadingVis || loadingMue;
+
+  const handleRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['gestion-summary'] });
+    queryClient.invalidateQueries({ queryKey: ['oportunidades'] });
+    queryClient.invalidateQueries({ queryKey: ['interacciones'] });
+    queryClient.invalidateQueries({ queryKey: ['visitas'] });
+    queryClient.invalidateQueries({ queryKey: ['muestreos'] });
+  }, [queryClient]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    loadPanel(controller.signal);
-    return () => controller.abort();
-  }, [loadPanel]);
-
-  useEffect(() => {
-    const handleRefresh = () => loadPanel();
     window.addEventListener('gestion:quick-capture-saved', handleRefresh);
     return () => window.removeEventListener('gestion:quick-capture-saved', handleRefresh);
-  }, [loadPanel]);
+  }, [handleRefresh]);
 
   const seguimiento = useMemo(() => {
     const active = [];
@@ -360,9 +345,9 @@ export default function Bandeja() {
         </div>
 
         <div className="gs-overview-actions">
-          <button className="mx-btn mx-btn-outline" onClick={() => loadPanel()}>
-            <RotateCcw size={18} /> Actualizar
-          </button>
+          <button className="mx-btn mx-btn-outline sm" onClick={handleRefresh}>
+          <RotateCcw size={18} /> Actualizar
+        </button>
           <div className="gs-highlight-pills">
             <span className="gs-highlight-pill is-deep">
               {formatTons(summary?.acordadoMes)} este mes

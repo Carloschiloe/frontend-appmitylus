@@ -7,7 +7,7 @@
 /* Header / Hero - Usando mx-hero global */
 
 .biomasa-title {
-  font-weight: 900;
+  font-weight: var(--weight-bold);
   font-size: 28px;
   margin: 6px 0 0 0;
   color: white;
@@ -97,7 +97,7 @@
   min-width: 160px;
   color: #334155;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: var(--weight-bold);
   text-transform: uppercase;
   text-align: center;
 }
@@ -156,7 +156,7 @@
 .biomasa-kpi-val {
   margin: 6px 0;
   font-size: 24px;
-  font-weight: 900;
+  font-weight: var(--weight-bold);
 }
 
 .biomasa-table-card {
@@ -207,7 +207,7 @@
   padding: 12px;
   text-align: center;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--weight-bold);
   color: var(--color-text-subtle);
 }
 
@@ -236,7 +236,7 @@
 
 .cal-day-num {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--weight-bold);
   color: var(--color-text-muted);
 }
 
@@ -252,7 +252,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 900;
+  font-weight: var(--weight-bold);
   font-size: 15px;
   box-shadow: 0 4px 10px rgba(15,118,110,0.3);
 }
@@ -275,7 +275,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 900;
+  font-weight: var(--weight-bold);
   font-size: 18px;
   box-shadow: 0 8px 16px rgba(37,99,235,0.2);
 }
@@ -286,7 +286,7 @@
   padding: 6px 12px;
   border-radius: 10px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--weight-bold);
 }
 
 .seg-nota-box {
@@ -354,7 +354,7 @@
   border-radius: 8px;
   background: var(--color-primary-bg);
   color: var(--color-primary-dark);
-  font-weight: 800;
+  font-weight: var(--weight-bold);
   font-size: 14px;
 }
 

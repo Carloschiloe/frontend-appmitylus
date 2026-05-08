@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 import { useToast } from '../../context/ToastContext';
+import { useQuery } from '@tanstack/react-query';
 
 const EVENT_META = {
   contacto: { label: 'Contacto', color: '#6366f1', icon: User },
@@ -601,8 +602,8 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
 export default function Historial() {
   const { addToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({ contactos: [], visitas: [], interacciones: [], oportunidades: [], muestreos: [] });
+
+  // Filtros de UI
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProviderKey, setSelectedProviderKey] = useState('');
   const [typeFilter, setTypeFilter] = useState('todos');
@@ -612,37 +613,81 @@ export default function Historial() {
   const [teamTypeFilter, setTeamTypeFilter] = useState('todos');
   const [teamUserFilter, setTeamUserFilter] = useState('todos');
 
-  const loadAllData = useCallback(async (signal) => {
-    setLoading(true);
-    try {
-      const [contactosRes, visitasRes, interaccionesRes, oportunidadesRes, muestreosRes] = await Promise.all([
-        apiClient.get('/contactos', { signal }),
-        apiClient.get('/visitas', { signal }),
-        apiClient.get('/interacciones?limit=500', { signal }),
-        apiClient.get('/oportunidades', { signal }),
-        apiClient.get('/muestreos?limit=200&page=1', { signal }),
-      ]);
+  // React Query: Carga Granular e Independiente
+  const isExpediente = historyView === 'expediente';
+  const isEquipo = historyView === 'equipo';
 
-      setData({
-        contactos: Array.isArray(contactosRes) ? contactosRes : (contactosRes.items || []),
-        visitas: Array.isArray(visitasRes) ? visitasRes : (visitasRes.items || []),
-        interacciones: Array.isArray(interaccionesRes) ? interaccionesRes : (interaccionesRes.items || []),
-        oportunidades: Array.isArray(oportunidadesRes) ? oportunidadesRes : (oportunidadesRes.items || []),
-        muestreos: Array.isArray(muestreosRes) ? muestreosRes : (muestreosRes.items || []),
-      });
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-      addToast({ title: 'Error', message: 'No se pudo cargar el historial.', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  }, [addToast]);
+  // 1. Contactos (Base para Expediente)
+  const { data: contactosRes, isLoading: loadingContactos } = useQuery({
+    queryKey: ['historial', 'contactos'],
+    queryFn: () => apiClient.get('/contactos'),
+    enabled: isExpediente,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    const controller = new AbortController();
-    loadAllData(controller.signal);
-    return () => controller.abort();
-  }, [loadAllData]);
+  // 2. Interacciones
+  const { data: interaccionesRes, isLoading: loadingInteracciones } = useQuery({
+    queryKey: ['historial', 'interacciones', selectedProviderKey, historyView],
+    queryFn: () => {
+      let url = '/interacciones?limit=500';
+      if (selectedProviderKey && isExpediente) {
+        url = `/interacciones?proveedorKey=${encodeURIComponent(selectedProviderKey)}&limit=500`;
+      }
+      return apiClient.get(url);
+    },
+    enabled: isEquipo || isExpediente,
+    staleTime: 3 * 60 * 1000,
+  });
+
+  // 3. Visitas
+  const { data: visitasRes, isLoading: loadingVisitas } = useQuery({
+    queryKey: ['historial', 'visitas', selectedProviderKey, historyView],
+    queryFn: () => {
+      let url = '/visitas';
+      if (selectedProviderKey && isExpediente) {
+        url = `/visitas?proveedorKey=${encodeURIComponent(selectedProviderKey)}`;
+      }
+      return apiClient.get(url);
+    },
+    enabled: isEquipo || isExpediente,
+    staleTime: 3 * 60 * 1000,
+  });
+
+  // 4. Oportunidades
+  const { data: oportunidadesRes, isLoading: loadingOportunidades } = useQuery({
+    queryKey: ['historial', 'oportunidades', selectedProviderKey, historyView],
+    queryFn: () => {
+      let url = '/oportunidades';
+      if (selectedProviderKey && isExpediente) {
+        url = `/oportunidades?proveedorKey=${encodeURIComponent(selectedProviderKey)}`;
+      }
+      return apiClient.get(url);
+    },
+    enabled: isEquipo || isExpediente,
+    staleTime: 3 * 60 * 1000,
+  });
+
+  // 5. Muestreos (Solo para vista de equipo)
+  const { data: muestreosRes, isLoading: loadingMuestreos } = useQuery({
+    queryKey: ['historial', 'muestreos'],
+    queryFn: () => apiClient.get('/muestreos?limit=200&page=1'),
+    enabled: isEquipo,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Normalización de datos para los procesos de construcción
+  const data = useMemo(() => {
+    const extractItems = (res) => (Array.isArray(res) ? res : res?.items || []);
+    return {
+      contactos: extractItems(contactosRes),
+      visitas: extractItems(visitasRes),
+      interacciones: extractItems(interaccionesRes),
+      oportunidades: extractItems(oportunidadesRes),
+      muestreos: extractItems(muestreosRes),
+    };
+  }, [contactosRes, visitasRes, interaccionesRes, oportunidadesRes, muestreosRes]);
+
+  const loading = loadingContactos || loadingVisitas || loadingInteracciones || loadingOportunidades || loadingMuestreos;
 
   useEffect(() => {
     const requestedView = String(searchParams.get('view') || '').toLowerCase();

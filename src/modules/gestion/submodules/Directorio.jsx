@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Building2,
   User,
@@ -19,6 +19,12 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
+import { 
+  useCentros, 
+  useContactos, 
+  useOportunidades, 
+  useInteracciones 
+} from '../hooks/useGestionQueries';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import './directorio.css';
 
@@ -181,8 +187,6 @@ export default function Directorio() {
   const queryFromUrl = searchParams.get('q') || '';
 
   const [tab, setTab] = useState('proveedores');
-  const [data, setData] = useState({ proveedores: [], contactos: [], centros: [] });
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(queryFromUrl);
   const [modalState, setModalState] = useState({ open: false, mode: 'create', item: null });
   const [confirmDeleteContact, setConfirmDeleteContact] = useState(null);
@@ -190,39 +194,36 @@ export default function Directorio() {
   const [contactCenterValue, setContactCenterValue] = useState('');
   const [contactSelectedProviderKey, setContactSelectedProviderKey] = useState('');
 
-  const loadData = useCallback(async (signal) => {
-    setLoading(true);
-    try {
-      const [centrosRes, contactosRes, oportunidadesRes, interaccionesRes] = await Promise.all([
-        apiClient.get('/centros', { signal }),
-        apiClient.get('/contactos', { signal }),
-        apiClient.get('/oportunidades', { signal }),
-        apiClient.get('/interacciones?limit=500', { signal }),
-      ]);
+  // 1. Carga de datos con React Query
+  const { data: centrosRaw, isLoading: loadingCentros, refetch: refetchCentros } = useCentros();
+  const { data: contactosRaw, isLoading: loadingContactos, refetch: refetchContactos } = useContactos({ conEmpresa: 1 });
+  const { data: oportunidadesRaw, isLoading: loadingOpp, refetch: refetchOpp } = useOportunidades();
+  const { data: interaccionesRaw, isLoading: loadingInt, refetch: refetchInt } = useInteracciones({ limit: 500 });
 
-      const centrosList = Array.isArray(centrosRes) ? centrosRes : (centrosRes.items || []);
-      const contactosList = Array.isArray(contactosRes) ? contactosRes : (contactosRes.items || []);
-      const oportunidadesList = Array.isArray(oportunidadesRes) ? oportunidadesRes : (oportunidadesRes.items || []);
-      const interaccionesList = Array.isArray(interaccionesRes) ? interaccionesRes : (interaccionesRes.items || []);
+  const loading = loadingCentros || loadingContactos || loadingOpp || loadingInt;
 
-      setData({
-        proveedores: buildProviderRows(centrosList, contactosList, oportunidadesList, interaccionesList),
-        contactos: contactosList,
-        centros: centrosList,
-      });
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-      addToast({ title: 'Error', message: 'No se pudo cargar el directorio.', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  }, [addToast]);
+  const loadData = useCallback(async () => {
+    await Promise.all([
+      refetchCentros(),
+      refetchContactos(),
+      refetchOpp(),
+      refetchInt(),
+    ]);
+  }, [refetchCentros, refetchContactos, refetchOpp, refetchInt]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    loadData(controller.signal);
-    return () => controller.abort();
-  }, [loadData]);
+  // 2. Procesamiento de datos
+  const data = useMemo(() => {
+    const centros = Array.isArray(centrosRaw) ? centrosRaw : (centrosRaw?.items || []);
+    const contactos = Array.isArray(contactosRaw) ? contactosRaw : (contactosRaw?.items || []);
+    const oportunidades = Array.isArray(oportunidadesRaw) ? oportunidadesRaw : (oportunidadesRaw?.items || []);
+    const interacciones = Array.isArray(interaccionesRaw) ? interaccionesRaw : (interaccionesRaw?.items || []);
+
+    return {
+      proveedores: buildProviderRows(centros, contactos, oportunidades, interacciones),
+      contactos,
+      centros,
+    };
+  }, [centrosRaw, contactosRaw, oportunidadesRaw, interaccionesRaw]);
 
   useEffect(() => {
     if (!queryFromUrl) return;
@@ -863,41 +864,32 @@ export default function Directorio() {
                       <label className="mx-label">Centro asociado</label>
                       {!selectedProvider ? (
                         <div className="gs-contact-provider-empty">Selecciona primero la empresa para cargar sus centros.</div>
+                      ) : associatedCenters.length === 0 ? (
+                        <div className="gs-contact-provider-empty">Esta empresa no tiene centros registrados.</div>
                       ) : (
-                        <div className="gs-contact-center-results">
-                          <button
-                            type="button"
-                            className={`gs-contact-center-option ${!contactCenterValue ? 'selected' : ''}`}
-                            onClick={() => setContactCenterValue('')}
-                          >
-                            <strong>Sin centro asociado</strong>
-                            <span>Deja el contacto ligado solo a la empresa.</span>
-                          </button>
-                          {associatedCenters.map((centro) => {
-                            const isCenterSelected = selectedCenter && (selectedCenter.id === centro.id || selectedCenter.code === centro.code);
-                            return (
-                              <button
-                                key={centro.id || centro.code}
-                                type="button"
-                                className={`gs-contact-center-option ${isCenterSelected ? 'selected' : ''}`}
-                                onClick={() => setContactCenterValue(centro.id || centro.code)}
-                              >
-                                <strong>{centro.code || 'Centro sin codigo'}</strong>
-                                <span>{centro.comuna || 'Comuna sin registro'}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
+                        <select
+                          className="mx-input"
+                          value={contactCenterValue}
+                          onChange={(e) => setContactCenterValue(e.target.value)}
+                        >
+                          <option value="">-- Sin centro específico --</option>
+                          {associatedCenters.map((centro) => (
+                            <option key={centro.id} value={centro.id || centro.code}>
+                              {centro.label}
+                            </option>
+                          ))}
+                        </select>
                       )}
                     </div>
+
                     <div className="mx-field-row" style={{ display: 'flex', gap: '16px' }}>
                       <div className="mx-field" style={{ flex: 1 }}>
-                        <label className="mx-label">Correo electronico</label>
+                        <label className="mx-label">Correo electrónico</label>
                         <input
                           name="email"
                           type="email"
                           className="mx-input"
-                          placeholder="juan@empresa.cl"
+                          placeholder="ejemplo@correo.com"
                           defaultValue={modalState.item?.email || modalState.item?.contactoEmail || ''}
                         />
                       </div>

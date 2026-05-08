@@ -16,31 +16,31 @@
   --color-brand-deep-alt: #082d47;   /* Azul más oscuro — sidebar fondo alt */
 
   /* ── Superficies y fondos ── */
-  --color-bg:             #f4f6f8;   /* Gris Claro Mitynex */
+  --color-bg:             #f8fafc;   /* Slate 50 — Fondo general */
   --color-surface:        #ffffff;
-  --color-sidebar:        #0B3C5D;   /* Azul Profundo marino */
-  --color-sidebar-alt:    #082d47;   /* Más oscuro para degradado */
+  --color-sidebar:        #0f172a;   /* Slate 900 — Sidebar */
+  --color-sidebar-alt:    #1e293b;   /* Slate 800 */
 
   /* ── Bordes ── */
-  --color-border:         #dbe3ee;
-  --color-border-hover:   #cbd5e1;
+  --color-border:         #e2e8f0;   /* Slate 200 */
+  --color-border-hover:   #cbd5e1;   /* Slate 300 */
 
   /* ── Texto ── */
-  --color-text:           #0f172a;
-  --color-text-muted:     #5f6f86;
-  --color-text-subtle:    #94a3b8;
+  --color-text:           #0f172a;   /* Slate 900 */
+  --color-text-muted:     #475569;   /* Slate 600 */
+  --color-text-subtle:    #94a3b8;   /* Slate 400 */
   --color-white:          #ffffff;
 
   /* ── Semánticos ── */
   --color-success:        #10b981;
-  --color-success-bg:     #d1fae5;
+  --color-success-bg:     #ecfdf5;
   --color-warning:        #f59e0b;
-  --color-warning-bg:     #fef3c7;
+  --color-warning-bg:     #fffbeb;
   --color-error:          #ef4444;
-  --color-error-bg:       #fee2e2;
+  --color-error-bg:       #fef2f2;
   --color-info:           #3b82f6;
-  --color-info-bg:        #dbeafe;
-  --color-primary-bg:     #f0fdfa;   /* Teal 50 — fondos de acento Biomasa */
+  --color-info-bg:        #eff6ff;
+  --color-primary-bg:     #f0fdfa;
 
   /* ── Espaciado ── */
   --spacing-xs:  4px;
@@ -60,13 +60,13 @@
   --radius-xl:   20px;
   --radius-full: 999px;
 
-  /* ── Sombras ── */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.16);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
-  --shadow-xl: 0 20px 40px rgba(15,23,42,0.12);
+  /* ── Sombras (Suavizadas para SaaS) ── */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 
-  /* ── Tipografía ── */
+  /* ── Tipografía (Capped at 700) ── */
   --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-size-xs:   11px;
   --font-size-sm:   12px;
@@ -76,6 +76,11 @@
   --font-size-xl:   20px;
   --font-size-2xl:  24px;
   --font-size-3xl:  30px;
+
+  --weight-normal:  400;
+  --weight-medium:  500;
+  --weight-semibold: 600;
+  --weight-bold:    700;
 
   /* ── Z-index ── */
   --z-dropdown: 100;

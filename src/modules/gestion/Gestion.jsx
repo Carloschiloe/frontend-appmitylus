@@ -6,6 +6,7 @@ import {
   Calendar,
   History,
   MessageSquare,
+  Handshake,
 } from 'lucide-react';
 import QuickCaptureModal from './components/QuickCaptureModal';
 
@@ -13,10 +14,12 @@ const Bandeja = lazy(() => import('./submodules/Bandeja'));
 const Directorio = lazy(() => import('./submodules/Directorio'));
 const Calendario = lazy(() => import('./submodules/Calendario'));
 const Interacciones = lazy(() => import('./submodules/Interacciones'));
+const Tratos = lazy(() => import('./submodules/Tratos'));
 
 const GESTION_TABS = [
   { id: 'bandeja', label: 'Resumen', to: '/gestion/bandeja', icon: Inbox },
   { id: 'proveedores', label: 'Proveedores', to: '/gestion/proveedores', icon: Building2 },
+  { id: 'tratos', label: 'Negociaciones', to: '/gestion/tratos', icon: Handshake },
   { id: 'agenda', label: 'Agenda', to: '/gestion/agenda', icon: Calendar },
   { id: 'historial', label: 'Historial', to: '/historial', icon: History },
 ];
@@ -119,7 +122,7 @@ export default function Gestion() {
               <Route path="agenda" element={<Calendario />} />
               <Route path="calendario" element={<Navigate to="/gestion/agenda" replace />} />
               <Route path="interacciones" element={<Interacciones />} />
-              <Route path="tratos" element={<Navigate to="/biomasa/status?tab=negociacion&mode=comercial" replace />} />
+              <Route path="tratos" element={<Tratos />} />
               <Route path="muestreos" element={<Navigate to="/biomasa/muestreos" replace />} />
             </Routes>
           </Suspense>

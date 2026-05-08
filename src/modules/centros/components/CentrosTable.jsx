@@ -43,7 +43,7 @@ export default function CentrosTable() {
     setProviderFilter(searchParams.get('proveedor') || '');
   }, [searchParams]);
 
-  function syncUrl(next = {}) {
+  const syncUrl = useCallback((next = {}) => {
     const q = next.q ?? searchTerm;
     const comuna = next.comuna ?? comunaFilter;
     const proveedor = next.proveedor ?? providerFilter;
@@ -52,7 +52,7 @@ export default function CentrosTable() {
     if (comuna) params.set('comuna', comuna);
     if (proveedor) params.set('proveedor', proveedor);
     setSearchParams(params, { replace: true });
-  }
+  }, [searchTerm, comunaFilter, providerFilter, setSearchParams]);
 
   useEffect(() => {
     const openCreate = () => setModalState({ open: true, item: null });

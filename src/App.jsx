@@ -28,14 +28,21 @@ const Login          = lazy(() => import('./modules/auth/Login.jsx'));
 const ActivarCuenta  = lazy(() => import('./modules/auth/ActivarCuenta.jsx'));
 const Empresas       = lazy(() => import('./modules/configuracion/Empresas.jsx'));
 
-const AppShell = ({ children }) => (
-  <div className="mx-app-shell">
-    <Sidebar />
-    <main className="mx-main-content">
-      {children}
-    </main>
-  </div>
-);
+const MainLayout = ({ children }) => {
+  const { user } = useAuth();
+  
+  // Si no hay usuario, es una ruta pública (Login/Activar), no mostramos Sidebar
+  if (!user) return children;
+
+  return (
+    <div className="mx-app-shell">
+      <Sidebar />
+      <main className="mx-main-content">
+        {children}
+      </main>
+    </div>
+  );
+};
 
 const TenantContextRequired = ({ title = 'Selecciona una empresa', description }) => (
   <div className="mx-card" style={{ maxWidth: 760, margin: '48px auto', padding: '32px 28px' }}>
@@ -73,7 +80,7 @@ const PrivateRoute = ({ children }) => {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  return <AppShell>{children}</AppShell>;
+  return children;
 };
 
 const TenantScopedRoute = ({ children, title, description }) => {
@@ -94,14 +101,10 @@ const TenantScopedRoute = ({ children, title, description }) => {
   if (!user) return <Navigate to="/login" replace />;
 
   if (user.rol === 'superadmin' && !selectedTenantDb) {
-    return (
-      <AppShell>
-        <TenantContextRequired title={title} description={description} />
-      </AppShell>
-    );
+    return <TenantContextRequired title={title} description={description} />;
   }
 
-  return <AppShell>{children}</AppShell>;
+  return children;
 };
 
 // Rutas exclusivas para administradores
@@ -120,7 +123,7 @@ const AdminRoute = ({ children }) => {
   if (!user) return <Navigate to="/login" replace />;
   if (user.rol !== 'admin' && user.rol !== 'superadmin') return <Navigate to="/dashboard" replace />;
 
-  return <AppShell>{children}</AppShell>;
+  return children;
 };
 
 // Rutas exclusivas para SuperAdministradores (SaaS Management)
@@ -139,7 +142,7 @@ const SuperAdminRoute = ({ children }) => {
   if (!user) return <Navigate to="/login" replace />;
   if (user.rol !== 'superadmin') return <Navigate to="/dashboard" replace />;
 
-  return <AppShell>{children}</AppShell>;
+  return children;
 };
 
 export default function App() {
@@ -148,87 +151,89 @@ export default function App() {
       <AuthProvider>
         <ToastProvider>
           <Router>
-            <Suspense fallback={
-          <div className="mx-loading-screen">
-            <div className="mx-spinner"></div>
-            <p>Cargando módulo...</p>
-          </div>
-        }>
-          <Routes>
-            {/* Rutas Públicas */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/activar-cuenta" element={<ActivarCuenta />} />
+            <MainLayout>
+              <Suspense fallback={
+                <div className="mx-loading-screen">
+                  <div className="mx-spinner"></div>
+                  <p>Cargando módulo...</p>
+                </div>
+              }>
+                <Routes>
+                  {/* Rutas Públicas */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/activar-cuenta" element={<ActivarCuenta />} />
 
-            {/* Rutas Privadas */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            
-            <Route path="/dashboard" element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            } />
+                  {/* Rutas Privadas */}
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  
+                  <Route path="/dashboard" element={
+                    <PrivateRoute>
+                      <Dashboard />
+                    </PrivateRoute>
+                  } />
 
-            <Route path="/biomasa/*" element={
-              <TenantScopedRoute
-                title="Selecciona una empresa para trabajar Biomasa"
-                description="Debes elegir una empresa en el selector lateral antes de revisar negociación, muestreos o programas."
-              >
-                <Biomasa />
-              </TenantScopedRoute>
-            } />
+                  <Route path="/biomasa/*" element={
+                    <TenantScopedRoute
+                      title="Selecciona una empresa para trabajar Biomasa"
+                      description="Debes elegir una empresa en el selector lateral antes de revisar negociación, muestreos o programas."
+                    >
+                      <Biomasa />
+                    </TenantScopedRoute>
+                  } />
 
-            <Route path="/centros/*" element={
-              <TenantScopedRoute
-                title="Selecciona una empresa para revisar Centros"
-                description="Debes elegir una empresa en el selector lateral antes de abrir el directorio, mapa o estado sanitario."
-              >
-                <Centros />
-              </TenantScopedRoute>
-            } />
+                  <Route path="/centros/*" element={
+                    <TenantScopedRoute
+                      title="Selecciona una empresa para revisar Centros"
+                      description="Debes elegir una empresa en el selector lateral antes de abrir el directorio, mapa o estado sanitario."
+                    >
+                      <Centros />
+                    </TenantScopedRoute>
+                  } />
 
-            <Route path="/gestion/*" element={
-              <TenantScopedRoute
-                title="Selecciona una empresa para trabajar en Gestión"
-                description="Debes elegir una empresa en el selector lateral antes de revisar seguimiento, proveedores, agenda e historial del equipo."
-              >
-                <Gestion />
-              </TenantScopedRoute>
-            } />
+                  <Route path="/gestion/*" element={
+                    <TenantScopedRoute
+                      title="Selecciona una empresa para trabajar en Gestión"
+                      description="Debes elegir una empresa en el selector lateral antes de revisar seguimiento, proveedores, agenda e historial del equipo."
+                    >
+                      <Gestion />
+                    </TenantScopedRoute>
+                  } />
 
-            <Route path="/configuracion/maestros" element={
-              <AdminRoute>
-                <Maestros />
-              </AdminRoute>
-            } />
+                  <Route path="/configuracion/maestros" element={
+                    <AdminRoute>
+                      <Maestros />
+                    </AdminRoute>
+                  } />
 
-            <Route path="/configuracion/usuarios" element={
-              <AdminRoute>
-                <Usuarios />
-              </AdminRoute>
-            } />
+                  <Route path="/configuracion/usuarios" element={
+                    <AdminRoute>
+                      <Usuarios />
+                    </AdminRoute>
+                  } />
 
-            <Route path="/configuracion/empresas" element={
-              <SuperAdminRoute>
-                <Empresas />
-              </SuperAdminRoute>
-            } />
+                  <Route path="/configuracion/empresas" element={
+                    <SuperAdminRoute>
+                      <Empresas />
+                    </SuperAdminRoute>
+                  } />
 
-            <Route path="/historial" element={
-              <TenantScopedRoute
-                title="Selecciona una empresa para revisar Historial"
-                description="Debes elegir una empresa en el selector lateral antes de consultar expedientes o la actividad del equipo."
-              >
-                <Historial />
-              </TenantScopedRoute>
-            } />
+                  <Route path="/historial" element={
+                    <TenantScopedRoute
+                      title="Selecciona una empresa para revisar Historial"
+                      description="Debes elegir una empresa en el selector lateral antes de consultar expedientes o la actividad del equipo."
+                    >
+                      <Historial />
+                    </TenantScopedRoute>
+                  } />
 
-            {/* Fallback global */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </Suspense>
-      </Router>
-    </ToastProvider>
-  </AuthProvider>
-  </QueryClientProvider>
+                  {/* Fallback global */}
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+              </Suspense>
+            </MainLayout>
+          </Router>
+        </ToastProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
