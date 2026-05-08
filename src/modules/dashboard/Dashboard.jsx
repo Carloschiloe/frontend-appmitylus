@@ -143,7 +143,7 @@ export default function Dashboard() {
           <div style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>
             <AlertTriangle size={48} style={{ marginBottom: '16px', color: '#ef4444' }} />
             <h3 style={{ marginBottom: '8px' }}>{error}</h3>
-            <button className="mx-btn mx-btn-primary" onClick={loadData} style={{ marginTop: '16px' }}>
+            <button className="mx-btn mx-btn-primary" onClick={() => loadData()} style={{ marginTop: '16px' }}>
               <RotateCcw size={16} /> Reintentar
             </button>
           </div>
@@ -161,7 +161,7 @@ export default function Dashboard() {
           <p>Visión consolidada de abastecimiento, logística y biomasa.</p>
         </div>
         <div className="mx-hero-actions">
-          <button className="mx-btn mx-btn-outline" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white' }} onClick={loadData}>
+          <button className="mx-btn mx-btn-outline" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white' }} onClick={() => loadData()}>
             <RotateCcw size={18} /> Actualizar
           </button>
         </div>
