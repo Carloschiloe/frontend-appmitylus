@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import './biomasa.css';
 import { 
@@ -25,6 +25,7 @@ import { apiClient } from '../../api/apiClient';
 import { useToast } from '../../context/ToastContext';
 import { useBiomasaData } from '../../hooks/useBiomasaData';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
+import Muestreos from '../gestion/submodules/Muestreos';
 
 const mesActual = () => {
   const d = new Date();
@@ -64,6 +65,7 @@ export default function Biomasa() {
   const location = useLocation();
   const isStatusView = location.pathname.includes('/status');
   const isProgramView = location.pathname.includes('/programa');
+  const isMuestreosView = location.pathname.includes('/muestreos');
 
   const [statusSubTab, setStatusSubTab] = useState('disponibilidad');
   const [progSubTab, setProgSubTab] = useState('programa');
@@ -281,14 +283,14 @@ export default function Biomasa() {
     };
   }, [biomasaPendiente, perdidasBiomasa, tratosBiomasa]);
 
-  if (!isStatusView && !isProgramView) return <Navigate to="/biomasa/status" replace />;
+  if (!isStatusView && !isProgramView && !isMuestreosView) return <Navigate to="/biomasa/status" replace />;
 
   return (
     <div className="mx-page">
       <header className="mx-hero">
         <div className="mx-hero-content">
-          <p className="mx-eyebrow">Biomasa · {isStatusView ? 'Disponibilidad y negociación' : 'Programa de cosecha'}</p>
-          <h1 className="biomasa-title">{isStatusView ? 'Disponibilidad de biomasa' : 'Programa de Cosecha'}</h1>
+          <p className="mx-eyebrow">Biomasa · {isStatusView ? 'Disponibilidad y negociación' : isProgramView ? 'Programa de cosecha' : 'Muestreos Técnicos'}</p>
+          <h1 className="biomasa-title">{isStatusView ? 'Disponibilidad de biomasa' : isProgramView ? 'Programa de Cosecha' : 'Muestreos Técnicos'}</h1>
         </div>
         <div className="mx-hero-actions">
           <div className="mx-input-group biomasa-date-picker" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', padding: '0 12px' }}>
@@ -308,13 +310,13 @@ export default function Biomasa() {
               <button className={`mx-toggle-btn ${statusSubTab === 'disponibilidad' ? 'active' : ''}`} onClick={() => setStatusSubTab('disponibilidad')}><Inbox size={14} /> Disponibilidad</button>
               <button className={`mx-toggle-btn ${statusSubTab === 'negociacion' ? 'active' : ''}`} onClick={() => setStatusSubTab('negociacion')}><ShoppingCart size={14} /> Negociación</button>
             </>
-          ) : (
+          ) : isProgramView ? (
             <>
               <button className={`mx-toggle-btn ${progSubTab === 'programa' ? 'active' : ''}`} onClick={() => setProgSubTab('programa')}><ListIcon size={14} /> Programa</button>
               <button className={`mx-toggle-btn ${progSubTab === 'calendario' ? 'active' : ''}`} onClick={() => setProgSubTab('calendario')}><LayoutGrid size={14} /> Calendario</button>
               <button className={`mx-toggle-btn ${progSubTab === 'seguimiento' ? 'active' : ''}`} onClick={() => setProgSubTab('seguimiento')}><Activity size={14} /> Seguimiento</button>
             </>
-          )}
+          ) : null}
         </div>
         {(isProgramView && progSubTab === 'programa') && (
           <button className="mx-btn mx-btn-primary" style={{ padding: '8px 20px' }} onClick={() => handleOpenModal()}>
@@ -652,6 +654,7 @@ export default function Biomasa() {
             )}
           </div>
         )}
+        {isMuestreosView && <Muestreos />}
       </div>
 
       {/* MODAL REGISTRO SEGUIMIENTO */}
