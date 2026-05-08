@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -12,16 +12,14 @@ import {
   LogOut, 
   User,
   Calendar,
-  MessageSquare,
   Users,
-  TestTube2,
   Map,
   ShieldCheck,
   TableProperties,
-  Search
+  Search,
+  TestTube2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { useToast } from '../../context/ToastContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
 import TenantSelector from './TenantSelector.jsx';
 import './Sidebar.css';
@@ -40,12 +38,9 @@ const MENU_STRUCTURE = [
     label: 'Gestión',
     icon: Inbox,
     links: [
-      { label: 'Bandeja', to: '/gestion/bandeja', icon: Inbox },
-      { label: 'Directorio', to: '/gestion/directorio', icon: Building2 },
-      { label: 'Calendario', to: '/gestion/calendario', icon: Calendar },
-      { label: 'Interacciones', to: '/gestion/interacciones', icon: MessageSquare },
-      { label: 'Tratos', to: '/gestion/tratos', icon: Users },
-      { label: 'Muestreos', to: '/gestion/muestreos', icon: TestTube2 }
+      { label: 'Resumen', to: '/gestion/bandeja', icon: Inbox },
+      { label: 'Proveedores', to: '/gestion/proveedores', icon: Building2 },
+      { label: 'Agenda', to: '/gestion/agenda', icon: Calendar }
     ]
   },
   {
@@ -64,7 +59,8 @@ const MENU_STRUCTURE = [
     icon: Droplet,
     links: [
       { label: 'Status', to: '/biomasa/status', icon: LayoutDashboard },
-      { label: 'Programa', to: '/biomasa/programa', icon: Calendar }
+      { label: 'Programa', to: '/biomasa/programa', icon: Calendar },
+      { label: 'Muestreos', to: '/biomasa/muestreos', icon: TestTube2 }
     ]
   },
   {
@@ -72,7 +68,8 @@ const MENU_STRUCTURE = [
     label: 'Historial',
     icon: History,
     links: [
-      { label: 'Gestiones', to: '/historial', icon: History }
+      { label: 'Expediente', to: '/historial', icon: History },
+      { label: 'Actividad del equipo', to: '/historial?view=equipo', icon: Users }
     ]
   },
   {
@@ -98,15 +95,19 @@ const MENU_STRUCTURE = [
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
-  const { addToast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
   const [openGroups, setOpenGroups] = useState({ dashboard: true });
   const [alerts, setAlerts] = useState({});
+  const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
 
   useEffect(() => {
     // Cargar alertas sanitarias solo si hay usuario
     if (!user) return;
+    if (user.rol === 'superadmin' && !selectedTenantDb) {
+      setAlerts({});
+      return;
+    }
 
     const controller = new AbortController();
 
@@ -124,7 +125,7 @@ export default function Sidebar() {
       });
 
     return () => controller.abort();
-  }, [user]);
+  }, [selectedTenantDb, user]);
 
   // Abrir automáticamente el grupo que contiene la ruta activa
   useEffect(() => {
@@ -150,6 +151,32 @@ export default function Sidebar() {
 
       <TenantSelector />
 
+      {/* Badge de empresa para usuarios no-superadmin */}
+      {user?.rol !== 'superadmin' && user?.empresaId && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          padding: '8px 14px', margin: '0 8px 4px',
+          background: 'rgba(255,255,255,0.06)', borderRadius: '8px',
+          minWidth: 0
+        }}>
+          {user.empresaId.config?.logo ? (
+            <img
+              src={user.empresaId.config.logo}
+              alt={user.empresaId.nombre}
+              style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '4px', flexShrink: 0 }}
+            />
+          ) : (
+            <Building2 size={16} style={{ flexShrink: 0, opacity: 0.7 }} />
+          )}
+          <span style={{
+            fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.85)',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+          }}>
+            {user.empresaId.nombre}
+          </span>
+        </div>
+      )}
+
       <div className="mx-global-search">
         <Search size={16} className="search-icon" />
         <input 
@@ -160,13 +187,13 @@ export default function Sidebar() {
             if (e.key === 'Enter') {
               const val = e.target.value.trim();
               if (val) {
-                navigate(`/gestion/directorio?q=${encodeURIComponent(val)}`);
+                navigate(`/gestion/proveedores?q=${encodeURIComponent(val)}`);
                 e.target.value = ''; // clean up input
               }
             }
           }}
         />
-        <div className="search-shortcut">⌘K</div>
+        <div className="search-shortcut">Ctrl+K</div>
       </div>
 
       <nav className="mx-sidebar-menu">
@@ -174,7 +201,7 @@ export default function Sidebar() {
           if (!group.requiereRol) return true;
           // Superadmin ve todo
           if (user?.rol === 'superadmin') return true;
-          // Admin ve configuración y lo demás (excepto saas que requiere explícitamente superadmin)
+          // Admin ve configuración y lo demás (excepto SaaS, que requiere explícitamente superadmin)
           if (user?.rol === 'admin' && group.requiereRol === 'admin') return true;
           return false;
         }).map(group => (
@@ -225,3 +252,4 @@ export default function Sidebar() {
     </aside>
   );
 }
+

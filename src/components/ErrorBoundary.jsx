@@ -14,6 +14,7 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     // Aquí podríamos conectar con un servicio de monitoreo como Sentry
+    // eslint-disable-next-line no-console
     console.error("ErrorBoundary atrapó un error crítico:", error, errorInfo);
   }
 

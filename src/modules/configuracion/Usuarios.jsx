@@ -1,22 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  ShieldCheck, 
-  Mail, 
-  Edit, 
-  Trash2, 
-  UserPlus, 
-  Search, 
+import React, { useState } from 'react';
+import {
+  Users,
+  ShieldCheck,
+  Edit,
+  Trash2,
+  UserPlus,
+  Search,
   MoreVertical,
   Shield,
   ShieldAlert,
   UserX,
   UserCheck,
-  Clock,
   X,
-  AlertTriangle,
-  Key,
-  Lock
+  Lock,
 } from 'lucide-react';
 
 import { usuariosApi } from '../../api/api-usuarios';
@@ -24,16 +20,32 @@ import { empresasApi } from '../../api/api-empresas';
 import { useAuth } from '../../context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../context/ToastContext';
+import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
 import './usuarios.css';
+
+const EMPTY_CONFIRM = {
+  isOpen: false,
+  type: '',
+  user: null,
+  title: '',
+  message: '',
+  actionLabel: '',
+  isDestructive: false,
+};
 
 export default function Usuarios() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
-  
   const { user: currentUser } = useAuth();
-  
-  // React Query: Obtener usuarios y empresas
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [isConfirmStatusOpen, setIsConfirmStatusOpen] = useState(false);
+  const [userToToggle, setUserToToggle] = useState(null);
+  const [activeMenu, setActiveMenu] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(EMPTY_CONFIRM);
+
   const { data: usuarios = [], isLoading: loading } = useQuery({
     queryKey: ['usuarios'],
     queryFn: usuariosApi.getUsuarios,
@@ -42,22 +54,25 @@ export default function Usuarios() {
   const { data: empresas = [] } = useQuery({
     queryKey: ['empresas'],
     queryFn: empresasApi.getEmpresas,
-    enabled: currentUser?.rol === 'superadmin' // Solo superadmin necesita cargar todas las empresas
+    enabled: currentUser?.rol === 'superadmin',
   });
 
-  // React Query: Mutaciones
+  const closeConfirmModal = () => setConfirmModal(EMPTY_CONFIRM);
+
   const saveMutation = useMutation({
-    mutationFn: (body) => editingUser 
-      ? usuariosApi.actualizarUsuario(editingUser._id, body)
-      : usuariosApi.crearUsuario(body),
+    mutationFn: (body) =>
+      editingUser
+        ? usuariosApi.actualizarUsuario(editingUser._id, body)
+        : usuariosApi.crearUsuario(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
       setIsModalOpen(false);
+      setEditingUser(null);
+      addToast({ title: 'Éxito', message: 'Usuario guardado correctamente.', type: 'success' });
     },
-    onError: (err) => {
-      console.error('Error guardando usuario:', err);
+    onError: () => {
       addToast({ title: 'Error', message: 'No se pudo guardar el usuario.', type: 'error' });
-    }
+    },
   });
 
   const toggleStatusMutation = useMutation({
@@ -65,8 +80,12 @@ export default function Usuarios() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
       setIsConfirmStatusOpen(false);
+      setUserToToggle(null);
+      addToast({ title: 'Éxito', message: 'Estado del usuario actualizado.', type: 'success' });
     },
-    onError: (err) => { console.error('Error cambiando estado:', err); addToast({ title: 'Error', message: 'No se pudo cambiar el estado del usuario.', type: 'error' }); }
+    onError: () => {
+      addToast({ title: 'Error', message: 'No se pudo cambiar el estado del usuario.', type: 'error' });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -74,34 +93,29 @@ export default function Usuarios() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
       addToast({ title: 'Éxito', message: 'Usuario eliminado correctamente.', type: 'success' });
-      setConfirmModal({ isOpen: false });
+      closeConfirmModal();
     },
-    onError: (err) => { console.error('Error eliminando usuario:', err); addToast({ title: 'Error', message: 'No se pudo eliminar el usuario.', type: 'error' }); }
+    onError: () => {
+      addToast({ title: 'Error', message: 'No se pudo eliminar el usuario.', type: 'error' });
+    },
   });
 
   const resetPasswordMutation = useMutation({
     mutationFn: (id) => usuariosApi.restablecerPassword(id),
     onSuccess: () => {
       addToast({ title: 'Éxito', message: 'Contraseña restablecida y correo enviado.', type: 'success' });
-      setConfirmModal({ isOpen: false });
+      closeConfirmModal();
     },
-    onError: (err) => { console.error('Error restableciendo contraseña:', err); addToast({ title: 'Error', message: 'No se pudo restablecer la contraseña.', type: 'error' }); }
+    onError: () => {
+      addToast({ title: 'Error', message: 'No se pudo restablecer la contraseña.', type: 'error' });
+    },
   });
-
-  // Modales y estados locales
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
-  const [isConfirmStatusOpen, setIsConfirmStatusOpen] = useState(false);
-  const [userToToggle, setUserToToggle] = useState(null);
-  const [activeMenu, setActiveMenu] = useState(null);
-  const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', user: null, title: '', message: '', actionLabel: '', isDestructive: false });
 
   const handleSave = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const body = Object.fromEntries(formData.entries());
     body.activo = formData.get('activo') === 'on';
-
     saveMutation.mutate(body);
   };
 
@@ -118,7 +132,7 @@ export default function Usuarios() {
       title: 'Restablecer Contraseña',
       message: `¿Restablecer la contraseña de ${u.nombre}? Se enviará un correo con un link de activación válido por 24 horas.`,
       actionLabel: 'Sí, Restablecer',
-      isDestructive: false
+      isDestructive: false,
     });
     setActiveMenu(null);
   };
@@ -131,7 +145,7 @@ export default function Usuarios() {
       title: 'Eliminar Usuario',
       message: `¿ELIMINAR PERMANENTEMENTE a ${u.nombre}? Esta acción no se puede deshacer.`,
       actionLabel: 'Sí, Eliminar',
-      isDestructive: true
+      isDestructive: true,
     });
     setActiveMenu(null);
   };
@@ -139,31 +153,35 @@ export default function Usuarios() {
   const handleConfirmAction = () => {
     if (confirmModal.type === 'reset') {
       resetPasswordMutation.mutate(confirmModal.user._id);
-    } else if (confirmModal.type === 'delete') {
+      return;
+    }
+    if (confirmModal.type === 'delete') {
       deleteMutation.mutate(confirmModal.user._id);
     }
   };
 
-  const filteredUsuarios = usuarios.filter(u => 
-    u.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsuarios = usuarios.filter(
+    (u) =>
+      u.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const initials = (nombre) => nombre?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
+  const initials = (nombre) =>
+    nombre?.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2) || '??';
 
   const getRolConfig = (rol) => {
     const configs = {
       admin: { label: 'ADMINISTRADOR', color: '#1d4ed8', icon: ShieldAlert, bg: '#dbeafe' },
       usuario: { label: 'USUARIO', color: '#059669', icon: ShieldCheck, bg: '#d1fae5' },
       lectura: { label: 'SOLO LECTURA', color: '#475569', icon: Shield, bg: '#f1f5f9' },
-      superadmin: { label: 'SUPERADMIN', color: '#7c3aed', icon: ShieldAlert, bg: '#f5f3ff' }
+      superadmin: { label: 'SUPERADMIN', color: '#7c3aed', icon: ShieldAlert, bg: '#f5f3ff' },
     };
     return configs[rol] || configs.usuario;
   };
 
   const getEmpresaNombre = (empresaId) => {
     if (!empresaId) return 'N/A';
-    const emp = empresas.find(e => e._id === empresaId);
+    const emp = empresas.find((e) => e._id === empresaId);
     return emp ? emp.nombre : 'Cargando...';
   };
 
@@ -176,20 +194,26 @@ export default function Usuarios() {
           <p>Control de acceso, roles y permisos de la plataforma.</p>
         </div>
         <div className="mx-hero-actions">
-          <button className="mx-btn mx-btn-primary" onClick={(e) => { e.stopPropagation(); setEditingUser(null); setIsModalOpen(true); }}>
+          <button
+            className="mx-btn mx-btn-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditingUser(null);
+              setIsModalOpen(true);
+            }}
+          >
             <UserPlus size={18} /> Nuevo Usuario
           </button>
         </div>
       </header>
 
       <div className="mx-content-frame">
-
         <div className="centros-filters usuarios-toolbar">
           <div className="centros-search-wrap usuarios-search-box">
             <Search size={18} />
-            <input 
-              type="text" 
-              placeholder="Buscar usuarios..." 
+            <input
+              type="text"
+              placeholder="Buscar usuarios..."
               className="centros-search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -215,17 +239,19 @@ export default function Usuarios() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="5" className="usuarios-empty-state"><div className="mx-spinner usuarios-spinner-center"></div></td></tr>
+                  <tr>
+                    <td colSpan="6" className="usuarios-empty-state">
+                      <div className="mx-spinner usuarios-spinner-center"></div>
+                    </td>
+                  </tr>
                 ) : (
-                  filteredUsuarios.map(u => {
+                  filteredUsuarios.map((u) => {
                     const rol = getRolConfig(u.rol);
                     return (
                       <tr key={u._id}>
                         <td>
                           <div className="usuarios-avatar-wrapper">
-                            <div className="usuarios-avatar">
-                              {initials(u.nombre)}
-                            </div>
+                            <div className="usuarios-avatar">{initials(u.nombre)}</div>
                             <div>
                               <div className="usuarios-name">{u.nombre}</div>
                               <div className="usuarios-email">{u.email}</div>
@@ -249,15 +275,26 @@ export default function Usuarios() {
                           </span>
                         </td>
                         <td className="usuarios-date">
-                           {u.ultimoLogin ? new Date(u.ultimoLogin).toLocaleString('es-CL') : '—'}
+                          {u.ultimoLogin ? new Date(u.ultimoLogin).toLocaleString('es-CL') : '—'}
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          <div className="mx-table-actions-cell" style={{ display: 'inline-flex', justifyContent: 'flex-end', width: '100%', position: 'relative' }}>
-                            <button className="mx-action-btn edit" onClick={() => { setEditingUser(u); setIsModalOpen(true); }}><Edit size={14} /></button>
+                          <div
+                            className="mx-table-actions-cell"
+                            style={{ display: 'inline-flex', justifyContent: 'flex-end', width: '100%', position: 'relative' }}
+                          >
+                            <button className="mx-action-btn edit" onClick={() => { setEditingUser(u); setIsModalOpen(true); }}>
+                              <Edit size={14} />
+                            </button>
                             <button className="mx-action-btn delete" onClick={() => { setUserToToggle(u); setIsConfirmStatusOpen(true); }}>
                               {u.activo ? <UserX size={14} /> : <UserCheck size={14} style={{ color: 'var(--color-success)' }} />}
                             </button>
-                            <button className="mx-action-btn" onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === u._id ? null : u._id); }}>
+                            <button
+                              className="mx-action-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenu(activeMenu === u._id ? null : u._id);
+                              }}
+                            >
                               <MoreVertical size={14} />
                             </button>
 
@@ -283,23 +320,39 @@ export default function Usuarios() {
         </div>
       </div>
 
-      {/* Modal Usuario - Usar key para forzar reset al cambiar entre nuevo/edit */}
       {isModalOpen && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '500px' }}>
             <div className="mx-modal-head">
               <h3 className="mx-modal-title">{editingUser ? 'Editar' : 'Nuevo'} Usuario</h3>
-              <button className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
+              <button className="mx-btn-icon" onClick={() => setIsModalOpen(false)}>
+                <X size={20} />
+              </button>
             </div>
             <form onSubmit={handleSave} key={editingUser?._id || 'nuevo-usuario'} autoComplete="off">
               <div className="mx-modal-body">
                 <div className="mx-field">
                   <label className="mx-label">Nombre Completo</label>
-                  <input name="nombre" className="mx-input" defaultValue={editingUser?.nombre || ''} placeholder="Ej: Juan Pérez" required autoComplete="none" />
+                  <input
+                    name="nombre"
+                    className="mx-input"
+                    defaultValue={editingUser?.nombre || ''}
+                    placeholder="Ej: Juan Pérez"
+                    required
+                    autoComplete="none"
+                  />
                 </div>
                 <div className="mx-field">
                   <label className="mx-label">Email</label>
-                  <input name="email" type="email" className="mx-input" defaultValue={editingUser?.email || ''} placeholder="usuario@appmitylus.com" required autoComplete="off" />
+                  <input
+                    name="email"
+                    type="email"
+                    className="mx-input"
+                    defaultValue={editingUser?.email || ''}
+                    placeholder="usuario@appmitylus.com"
+                    required
+                    autoComplete="off"
+                  />
                 </div>
                 <div className="mx-field">
                   <select name="rol" className="mx-input" defaultValue={editingUser?.rol || 'usuario'}>
@@ -315,25 +368,42 @@ export default function Usuarios() {
                     <label className="mx-label">Asignar Empresa</label>
                     <select name="empresaId" className="mx-input" defaultValue={editingUser?.empresaId || ''}>
                       <option value="">Global / Sin Empresa</option>
-                      {empresas.map(e => (
-                        <option key={e._id} value={e._id}>{e.nombre}</option>
+                      {empresas.map((e) => (
+                        <option key={e._id} value={e._id}>
+                          {e.nombre}
+                        </option>
                       ))}
                     </select>
                   </div>
                 )}
+
                 {!editingUser && (
                   <div className="mx-field">
-                    <label className="mx-label">Contraseña inicial <span style={{ fontWeight: 400, color: 'var(--color-text-subtle)' }}>(opcional — el usuario la cambia al activar su cuenta)</span></label>
-                    <input name="password" type="password" className="mx-input" placeholder="Dejar vacío para generar automáticamente" autoComplete="new-password" />
+                    <label className="mx-label">
+                      Contraseña inicial{' '}
+                      <span style={{ fontWeight: 400, color: 'var(--color-text-subtle)' }}>
+                        (opcional — el usuario la cambia al activar su cuenta)
+                      </span>
+                    </label>
+                    <input
+                      name="password"
+                      type="password"
+                      className="mx-input"
+                      placeholder="Dejar vacío para generar automáticamente"
+                      autoComplete="new-password"
+                    />
                   </div>
                 )}
+
                 <div className="mx-field usuarios-modal-checkbox">
                   <input type="checkbox" name="activo" defaultChecked={editingUser ? editingUser.activo : true} />
                   <label className="mx-label">Usuario Activo</label>
                 </div>
               </div>
               <div className="mx-modal-foot">
-                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setIsModalOpen(false)}>
+                  Cancelar
+                </button>
                 <button type="submit" className="mx-btn mx-btn-primary">
                   {editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
                 </button>
@@ -343,12 +413,17 @@ export default function Usuarios() {
         </div>
       )}
 
-      {/* Confirmar Cambio de Estado */}
       {isConfirmStatusOpen && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '400px' }}>
             <div className="mx-modal-body" style={{ textAlign: 'center', padding: '40px 32px' }}>
-              <div className="usuarios-confirm-icon" style={{ background: userToToggle?.activo ? 'var(--color-error-bg)' : 'var(--color-success-bg)', color: userToToggle?.activo ? 'var(--color-error)' : 'var(--color-success)' }}>
+              <div
+                className="usuarios-confirm-icon"
+                style={{
+                  background: userToToggle?.activo ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
+                  color: userToToggle?.activo ? 'var(--color-error)' : 'var(--color-success)',
+                }}
+              >
                 {userToToggle?.activo ? <UserX size={32} /> : <UserCheck size={32} />}
               </div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>¿{userToToggle?.activo ? 'Desactivar' : 'Activar'} usuario?</h3>
@@ -357,29 +432,47 @@ export default function Usuarios() {
               </p>
             </div>
             <div className="mx-modal-foot">
-              <button className="mx-btn mx-btn-outline" style={{ flex: 1 }} onClick={() => setIsConfirmStatusOpen(false)}>Cancelar</button>
-              <button className="mx-btn" style={{ flex: 1, background: userToToggle?.activo ? 'var(--color-error)' : 'var(--color-success)', color: 'white' }} onClick={handleToggleStatus}>
+              <button className="mx-btn mx-btn-outline" style={{ flex: 1 }} onClick={() => setIsConfirmStatusOpen(false)}>
+                Cancelar
+              </button>
+              <button
+                className="mx-btn"
+                style={{ flex: 1, background: userToToggle?.activo ? 'var(--color-error)' : 'var(--color-success)', color: 'white' }}
+                onClick={handleToggleStatus}
+              >
                 Confirmar
               </button>
             </div>
           </div>
         </div>
       )}
-      {/* Modal de Confirmación Genérico */}
-      {confirmModal.isOpen && (
+
+      <ConfirmDeleteModal
+        isOpen={confirmModal.isOpen && confirmModal.type === 'delete'}
+        onClose={closeConfirmModal}
+        onConfirm={handleConfirmAction}
+        title="¿Eliminar usuario?"
+        itemName={confirmModal.user?.nombre}
+      />
+
+      {confirmModal.isOpen && confirmModal.type !== 'delete' && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '400px' }}>
             <div className="mx-modal-head">
               <h3 className="mx-modal-title">{confirmModal.title}</h3>
-              <button className="mx-btn-icon" onClick={() => setConfirmModal({ isOpen: false })}><X size={20} /></button>
+              <button className="mx-btn-icon" onClick={closeConfirmModal}>
+                <X size={20} />
+              </button>
             </div>
             <div className="mx-modal-body">
               <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>{confirmModal.message}</p>
             </div>
             <div className="mx-modal-foot">
-              <button className="mx-btn" onClick={() => setConfirmModal({ isOpen: false })}>Cancelar</button>
-              <button 
-                className={`mx-btn ${confirmModal.isDestructive ? 'mx-btn-danger' : 'mx-btn-primary'}`} 
+              <button className="mx-btn" onClick={closeConfirmModal}>
+                Cancelar
+              </button>
+              <button
+                className={`mx-btn ${confirmModal.isDestructive ? 'mx-btn-danger' : 'mx-btn-primary'}`}
                 onClick={handleConfirmAction}
                 disabled={resetPasswordMutation.isPending || deleteMutation.isPending}
               >
@@ -389,7 +482,6 @@ export default function Usuarios() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

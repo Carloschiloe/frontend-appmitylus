@@ -150,33 +150,3 @@
 .maestros-modal-label-mb0 {
   margin-bottom: 0;
 }
-
-.maestros-delete-modal-body {
-  text-align: center;
-  padding: 40px 32px;
-}
-
-.maestros-delete-modal-icon {
-  color: var(--color-error);
-  margin: 0 auto 20px;
-}
-
-.maestros-delete-modal-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.maestros-delete-modal-desc {
-  color: var(--color-text-muted);
-  margin-top: 8px;
-}
-
-.maestros-delete-modal-btn {
-  flex: 1;
-}
-
-.maestros-delete-modal-btn-confirm {
-  flex: 1;
-  background: var(--color-error);
-  color: white;
-}

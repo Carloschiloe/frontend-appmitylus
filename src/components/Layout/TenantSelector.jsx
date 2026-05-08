@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Building2, ChevronDown, Check } from 'lucide-react';
 import { empresasApi } from '../../api/api-empresas';
 import { useQuery } from '@tanstack/react-query';
@@ -18,15 +18,18 @@ export default function TenantSelector() {
 
   const handleSelect = (dbName) => {
     if (dbName === selectedDb) {
-      // Deseleccionar
       localStorage.removeItem('selected_tenant_db');
+      localStorage.removeItem('selected_tenant_nombre');
+      localStorage.removeItem('selected_tenant_logo');
       setSelectedDb('');
     } else {
+      const emp = empresas.find(e => e.dbName === dbName);
       localStorage.setItem('selected_tenant_db', dbName);
+      localStorage.setItem('selected_tenant_nombre', emp?.nombre || '');
+      localStorage.setItem('selected_tenant_logo', emp?.config?.logo || '');
       setSelectedDb(dbName);
     }
     setIsOpen(false);
-    // Recargar la página para limpiar estados de query y forzar refetch con el nuevo header
     window.location.reload();
   };
 
@@ -34,10 +37,14 @@ export default function TenantSelector() {
 
   const currentEmpresa = empresas.find(e => e.dbName === selectedDb);
 
+  const EmpresaIcon = ({ emp, size = 16 }) => emp?.config?.logo
+    ? <img src={emp.config.logo} alt={emp.nombre} style={{ width: size, height: size, objectFit: 'contain', borderRadius: '3px', flexShrink: 0 }} />
+    : <Building2 size={size} />;
+
   return (
     <div className="mx-tenant-selector">
       <button className="mx-tenant-btn" onClick={() => setIsOpen(!isOpen)}>
-        <Building2 size={16} />
+        <EmpresaIcon emp={currentEmpresa} size={16} />
         <span className="mx-tenant-label">
           {currentEmpresa ? currentEmpresa.nombre : 'Seleccionar Empresa'}
         </span>
@@ -47,7 +54,7 @@ export default function TenantSelector() {
       {isOpen && (
         <div className="mx-tenant-dropdown">
           <div className="mx-tenant-dropdown-header">Cambiar Contexto</div>
-          <button 
+          <button
             className={`mx-tenant-item ${!selectedDb ? 'is-active' : ''}`}
             onClick={() => handleSelect('')}
           >
@@ -56,11 +63,12 @@ export default function TenantSelector() {
           </button>
           <div className="mx-tenant-divider"></div>
           {empresas.map(emp => (
-            <button 
-              key={emp._id} 
+            <button
+              key={emp._id}
               className={`mx-tenant-item ${selectedDb === emp.dbName ? 'is-active' : ''}`}
               onClick={() => handleSelect(emp.dbName)}
             >
+              <EmpresaIcon emp={emp} size={20} />
               <div>
                 <div className="mx-tenant-name">{emp.nombre}</div>
                 <div className="mx-tenant-db">{emp.dbName}</div>

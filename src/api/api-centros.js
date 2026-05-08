@@ -18,7 +18,7 @@ export async function getCentroById(id) {
 
 
 export async function upsertCentro(payload) {
-  const method = payload._id ? 'put' : 'post';
+  const method = payload._id ? 'patch' : 'post';
   const url = payload._id ? `${BASE}/${payload._id}` : BASE;
   return apiClient[method](url, payload);
 }

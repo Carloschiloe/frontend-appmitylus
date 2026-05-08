@@ -17,6 +17,7 @@ class ApiError extends Error {
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  const isAuthEndpoint = endpoint.startsWith('/auth/');
   
   const headers = {
     'Content-Type': 'application/json',
@@ -30,7 +31,7 @@ async function request(endpoint, options = {}) {
 
   // Soporte Multi-tenant para SuperAdmin: Inyectar DB seleccionada si existe
   const tenantDb = localStorage.getItem('selected_tenant_db');
-  if (tenantDb) {
+  if (tenantDb && !isAuthEndpoint) {
     headers['x-tenant-db'] = tenantDb;
   }
 
@@ -72,7 +73,11 @@ async function request(endpoint, options = {}) {
     return data;
   } catch (error) {
     // AbortError es normal (cleanup de useEffect en React StrictMode)
-    if (error.name !== 'AbortError') {
+    const isExpectedBootstrapAuthFailure =
+      endpoint === '/auth/me' && (error?.status === 401 || error?.status === 500);
+
+    if (error.name !== 'AbortError' && !isExpectedBootstrapAuthFailure) {
+      // eslint-disable-next-line no-console
       console.error(`[API Client Error] ${options.method || 'GET'} ${url}`, error);
     }
     throw error;

@@ -25,7 +25,7 @@ export default function Login() {
       } else {
         setError(result.error || 'Credenciales inválidas');
       }
-    } catch (err) {
+    } catch {
       setError('Error de conexión con el servidor');
     } finally {
       setIsSubmitting(false);

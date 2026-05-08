@@ -28,6 +28,36 @@ const Login          = lazy(() => import('./modules/auth/Login.jsx'));
 const ActivarCuenta  = lazy(() => import('./modules/auth/ActivarCuenta.jsx'));
 const Empresas       = lazy(() => import('./modules/configuracion/Empresas.jsx'));
 
+const AppShell = ({ children }) => (
+  <div className="mx-app-shell">
+    <Sidebar />
+    <main className="mx-main-content">
+      {children}
+    </main>
+  </div>
+);
+
+const TenantContextRequired = ({ title = 'Selecciona una empresa', description }) => (
+  <div className="mx-card" style={{ maxWidth: 760, margin: '48px auto', padding: '32px 28px' }}>
+    <p
+      style={{
+        margin: 0,
+        color: 'var(--mx-muted, #6b7a90)',
+        fontSize: '0.82rem',
+        fontWeight: 700,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase'
+      }}
+    >
+      Contexto requerido
+    </p>
+    <h2 style={{ margin: '10px 0 12px', fontSize: '2rem', lineHeight: 1.1 }}>{title}</h2>
+    <p style={{ margin: 0, color: 'var(--mx-muted, #6b7a90)', fontSize: '1rem', lineHeight: 1.7 }}>
+      {description || 'Debes elegir una empresa en el selector lateral para trabajar en este módulo sin errores de contexto.'}
+    </p>
+  </div>
+);
+
 // Componente para proteger rutas (Integración con AuthContext)
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -43,14 +73,35 @@ const PrivateRoute = ({ children }) => {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  return (
-    <div className="mx-app-shell">
-      <Sidebar />
-      <main className="mx-main-content">
-        {children}
-      </main>
-    </div>
-  );
+  return <AppShell>{children}</AppShell>;
+};
+
+const TenantScopedRoute = ({ children, title, description }) => {
+  const { user, loading } = useAuth();
+  const selectedTenantDb = typeof window !== 'undefined'
+    ? window.localStorage.getItem('selected_tenant_db') || ''
+    : '';
+
+  if (loading) {
+    return (
+      <div className="mx-loading-screen">
+        <div className="mx-spinner"></div>
+        <p>Verificando contexto...</p>
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/login" replace />;
+
+  if (user.rol === 'superadmin' && !selectedTenantDb) {
+    return (
+      <AppShell>
+        <TenantContextRequired title={title} description={description} />
+      </AppShell>
+    );
+  }
+
+  return <AppShell>{children}</AppShell>;
 };
 
 // Rutas exclusivas para administradores
@@ -69,14 +120,7 @@ const AdminRoute = ({ children }) => {
   if (!user) return <Navigate to="/login" replace />;
   if (user.rol !== 'admin' && user.rol !== 'superadmin') return <Navigate to="/dashboard" replace />;
 
-  return (
-    <div className="mx-app-shell">
-      <Sidebar />
-      <main className="mx-main-content">
-        {children}
-      </main>
-    </div>
-  );
+  return <AppShell>{children}</AppShell>;
 };
 
 // Rutas exclusivas para SuperAdministradores (SaaS Management)
@@ -95,14 +139,7 @@ const SuperAdminRoute = ({ children }) => {
   if (!user) return <Navigate to="/login" replace />;
   if (user.rol !== 'superadmin') return <Navigate to="/dashboard" replace />;
 
-  return (
-    <div className="mx-app-shell">
-      <Sidebar />
-      <main className="mx-main-content">
-        {children}
-      </main>
-    </div>
-  );
+  return <AppShell>{children}</AppShell>;
 };
 
 export default function App() {
@@ -132,21 +169,30 @@ export default function App() {
             } />
 
             <Route path="/biomasa/*" element={
-              <PrivateRoute>
+              <TenantScopedRoute
+                title="Selecciona una empresa para trabajar Biomasa"
+                description="Debes elegir una empresa en el selector lateral antes de revisar negociación, muestreos o programas."
+              >
                 <Biomasa />
-              </PrivateRoute>
+              </TenantScopedRoute>
             } />
 
             <Route path="/centros/*" element={
-              <PrivateRoute>
+              <TenantScopedRoute
+                title="Selecciona una empresa para revisar Centros"
+                description="Debes elegir una empresa en el selector lateral antes de abrir el directorio, mapa o estado sanitario."
+              >
                 <Centros />
-              </PrivateRoute>
+              </TenantScopedRoute>
             } />
 
             <Route path="/gestion/*" element={
-              <PrivateRoute>
+              <TenantScopedRoute
+                title="Selecciona una empresa para trabajar en Gestión"
+                description="Debes elegir una empresa en el selector lateral antes de revisar seguimiento, proveedores, agenda e historial del equipo."
+              >
                 <Gestion />
-              </PrivateRoute>
+              </TenantScopedRoute>
             } />
 
             <Route path="/configuracion/maestros" element={
@@ -168,9 +214,12 @@ export default function App() {
             } />
 
             <Route path="/historial" element={
-              <PrivateRoute>
+              <TenantScopedRoute
+                title="Selecciona una empresa para revisar Historial"
+                description="Debes elegir una empresa en el selector lateral antes de consultar expedientes o la actividad del equipo."
+              >
                 <Historial />
-              </PrivateRoute>
+              </TenantScopedRoute>
             } />
 
             {/* Fallback global */}

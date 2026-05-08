@@ -1,15 +1,13 @@
-import React, { useState, useMemo } from 'react';
-import { useLocation, useNavigate, Navigate } from 'react-router-dom';
+﻿import React, { useState, useMemo } from 'react';
+import { useLocation, Navigate } from 'react-router-dom';
 import './biomasa.css';
 import { 
   Plus, 
   RotateCcw, 
   Calendar as CalendarIcon, 
-  Search, 
   Inbox, 
   ShoppingCart, 
   Edit, 
-  Trash2, 
   X, 
   Activity, 
   Truck, 
@@ -22,11 +20,11 @@ import {
   Play,
   CheckCircle2,
   Trash,
-  AlertTriangle
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 import { useToast } from '../../context/ToastContext';
 import { useBiomasaData } from '../../hooks/useBiomasaData';
+import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
 
 const mesActual = () => {
   const d = new Date();
@@ -43,11 +41,27 @@ const mesLabel = (mk = '', largo = false) => {
 
 const fmtTons = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 1 }) + ' t';
 
+const asText = (value, fallback = '') => {
+  if (value == null) return fallback;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => asText(item)).filter(Boolean).join(', ') || fallback;
+  }
+  if (typeof value === 'object') {
+    if ('label' in value) return asText(value.label, fallback);
+    if ('nombre' in value) return asText(value.nombre, fallback);
+    if ('name' in value) return asText(value.name, fallback);
+    if ('value' in value) return asText(value.value, fallback);
+    return fallback;
+  }
+  return fallback;
+};
+
 export default function Biomasa() {
   const { addToast } = useToast();
   const location = useLocation();
-  const navigate = useNavigate();
-  
   const isStatusView = location.pathname.includes('/status');
   const isProgramView = location.pathname.includes('/programa');
 
@@ -55,8 +69,7 @@ export default function Biomasa() {
   const [progSubTab, setProgSubTab] = useState('programa');
   
   const [mes, setMes] = useState(mesActual);
-  const { loading, disp, asig, programas, calData, tratosAcordados, reload: load } = useBiomasaData(mes);
-  const [calDate, setCalDate] = useState(new Date());
+  const { disp, asig, programas, calData, tratosAcordados, tratosBiomasa, perdidasBiomasa, reload: load } = useBiomasaData(mes);
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -231,14 +244,51 @@ export default function Biomasa() {
     return { disponible, totalAsignado, saldo: disponible - totalAsignado, pct };
   }, [disp, asig]);
 
+  const getSituacionBiomasaLabel = (item) => {
+    const raw = asText(item?.situacionBiomasa || item?.estado, '').toLowerCase();
+    if (raw === 'en_conversacion' || raw === 'negociando') return 'En conversación';
+    if (raw === 'reservada' || raw === 'semi_acordado' || raw === 'semi_cerrado') return 'Reservada';
+    if (raw === 'acordada' || raw === 'acordado' || raw === 'cerrado' || raw === 'compra_efectuada') return 'Acordada';
+    return asText(item?.situacionBiomasa || item?.estado, 'Sin definir');
+  };
+
+  const getProgramaLabel = (item) => {
+    const raw = asText(item?.programaEstado, '').toLowerCase();
+    if (raw === 'activo') return 'Programada';
+    if (raw === 'pausado') return 'Programada pausada';
+    if (raw === 'finalizado') return 'Ejecutada';
+    return 'Sin programa';
+  };
+
+  const biomasaPendiente = useMemo(
+    () => tratosBiomasa.filter((item) => !asText(item?.programaEstado, '').trim()),
+    [tratosBiomasa]
+  );
+
+  const biomasaVinculada = useMemo(
+    () => tratosBiomasa.filter((item) => asText(item?.programaEstado, '').trim()),
+    [tratosBiomasa]
+  );
+
+  const negociacionKpis = useMemo(() => {
+    const sumTons = (items) => items.reduce((acc, item) => acc + (Number(item?.tonsAcordadas || item?.tons || item?.biomasaEstimacion || 0)), 0);
+    const enConversacion = biomasaPendiente.filter((item) => getSituacionBiomasaLabel(item) === 'En conversación');
+    const acordadas = tratosBiomasa.filter((item) => getSituacionBiomasaLabel(item) === 'Acordada');
+    return {
+      enConversacionTons: sumTons(enConversacion),
+      acordadasTons: sumTons(acordadas),
+      perdidasTons: sumTons(perdidasBiomasa),
+    };
+  }, [biomasaPendiente, perdidasBiomasa, tratosBiomasa]);
+
   if (!isStatusView && !isProgramView) return <Navigate to="/biomasa/status" replace />;
 
   return (
     <div className="mx-page">
       <header className="mx-hero">
         <div className="mx-hero-content">
-          <p className="mx-eyebrow">Biomasa · {isStatusView ? 'Status Comercial' : 'Programa de Cosecha'}</p>
-          <h1 className="biomasa-title">{isStatusView ? 'Status de Toneladas' : 'Programa de Cosecha'}</h1>
+          <p className="mx-eyebrow">Biomasa · {isStatusView ? 'Disponibilidad y negociación' : 'Programa de cosecha'}</p>
+          <h1 className="biomasa-title">{isStatusView ? 'Disponibilidad de biomasa' : 'Programa de Cosecha'}</h1>
         </div>
         <div className="mx-hero-actions">
           <div className="mx-input-group biomasa-date-picker" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', padding: '0 12px' }}>
@@ -256,7 +306,7 @@ export default function Biomasa() {
           {isStatusView ? (
             <>
               <button className={`mx-toggle-btn ${statusSubTab === 'disponibilidad' ? 'active' : ''}`} onClick={() => setStatusSubTab('disponibilidad')}><Inbox size={14} /> Disponibilidad</button>
-              <button className={`mx-toggle-btn ${statusSubTab === 'compras' ? 'active' : ''}`} onClick={() => setStatusSubTab('compras')}><ShoppingCart size={14} /> Compras</button>
+              <button className={`mx-toggle-btn ${statusSubTab === 'negociacion' ? 'active' : ''}`} onClick={() => setStatusSubTab('negociacion')}><ShoppingCart size={14} /> Negociación</button>
             </>
           ) : (
             <>
@@ -276,6 +326,7 @@ export default function Biomasa() {
       <div className="tab-content-area">
         {isStatusView && (
           <div className="status-view">
+            {statusSubTab === 'disponibilidad' ? (
              <div className="biomasa-kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
               <div className="biomasa-kpi-card">
                 <div className="biomasa-kpi-label">Disponible</div>
@@ -293,16 +344,42 @@ export default function Biomasa() {
                 </div>
               </div>
             </div>
+            ) : (
+              <div className="biomasa-kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                <div className="biomasa-kpi-card">
+                  <div className="biomasa-kpi-label">En conversación</div>
+                  <div className="biomasa-kpi-val" style={{ color: '#0ea5e9' }}>{fmtTons(negociacionKpis.enConversacionTons)}</div>
+                </div>
+                <div className="biomasa-kpi-card">
+                  <div className="biomasa-kpi-label">Acordadas</div>
+                  <div className="biomasa-kpi-val" style={{ color: '#10b981' }}>{fmtTons(negociacionKpis.acordadasTons)}</div>
+                </div>
+                <div className="biomasa-kpi-card">
+                  <div className="biomasa-kpi-label">Pérdidas del mes</div>
+                  <div className="biomasa-kpi-val" style={{ color: '#ef4444' }}>{fmtTons(negociacionKpis.perdidasTons)}</div>
+                </div>
+              </div>
+            )}
             <div className="mx-table-card">
               <table className="mx-table">
-                <thead><tr><th>Proveedor</th><th>Mes</th><th style={{ textAlign: 'center' }}>Tons</th>{statusSubTab === 'disponibilidad' ? <th>Centro</th> : <th>Estado</th>}</tr></thead>
+                <thead><tr><th>Proveedor</th><th>{statusSubTab === 'disponibilidad' ? 'Mes' : 'Situación biomasa'}</th><th style={{ textAlign: 'center' }}>Tons</th>{statusSubTab === 'disponibilidad' ? <th>Centro</th> : <th>Programa</th>}</tr></thead>
                 <tbody>
-                  {(statusSubTab === 'disponibilidad' ? disp : asig).map(item => (
+                  {(statusSubTab === 'disponibilidad' ? disp : [...biomasaPendiente, ...biomasaVinculada]).map(item => (
                     <tr key={item._id}>
                       <td style={{ fontWeight: 700 }}>{item.proveedorNombre}</td>
-                      <td>{mesLabel(item.mesKey)}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 800 }}>{fmtTons(item.tons)}</td>
-                      {statusSubTab === 'disponibilidad' ? <td>{item.centroCodigo || '—'}</td> : <td><span className="mx-badge mx-badge-success">Confirmado</span></td>}
+                      <td>{statusSubTab === 'disponibilidad' ? mesLabel(item.mesKey) : getSituacionBiomasaLabel(item)}</td>
+                      <td style={{ textAlign: 'center', fontWeight: 800 }}>{fmtTons(statusSubTab === 'disponibilidad' ? item.tons : (item.tonsAcordadas || item.tons || item.biomasaEstimacion || 0))}</td>
+                      {statusSubTab === 'disponibilidad' ? <td>{item.centroCodigo || '—'}</td> : <td>{getProgramaLabel(item)}</td>}
+                    </tr>
+                  ))}
+                  {statusSubTab !== 'disponibilidad' && perdidasBiomasa.map((item) => (
+                    <tr key={`perdida-${item._id}`}>
+                      <td style={{ fontWeight: 700 }}>{item.proveedorNombre}</td>
+                      <td>{item.motivoCierre || 'Pérdida'}</td>
+                      <td style={{ textAlign: 'center', fontWeight: 800, color: '#ef4444' }}>
+                        {fmtTons(item.tonsAcordadas || item.tons || item.biomasaEstimacion || 0)}
+                      </td>
+                      <td>Pérdida real</td>
                     </tr>
                   ))}
                 </tbody>
@@ -602,7 +679,7 @@ export default function Biomasa() {
                     <option value="">— Seleccionar estado —</option>
                     <option value="en_plan">🟢 En Plan (Operación normal)</option>
                     <option value="con_retrasos">🟡 Con Retrasos (Inconvenientes logísticos menores)</option>
-                    <option value="en_riesgo">🔴 En Riesgo (Alerta crítica / Posible cancelación)</option>
+                    <option value="detenido">🔴 Detenido (Alerta crítica / posible cancelación)</option>
                   </select>
                 </div>
                 <div className="mx-field" style={{ marginTop: '16px' }}>
@@ -660,7 +737,7 @@ export default function Biomasa() {
                     >
                       <option value="">— Seleccionar trato acordado —</option>
                       {tratosAcordados.map(t => (
-                        <option key={t._id} value={t._id}>{t.proveedorNombre} — {t.tonsAcordadas}T ({t.estado})</option>
+                        <option key={t._id} value={t._id}>{t.proveedorNombre} — {t.tonsAcordadas}T ({t.centroCodigo || t.centroNombre || 'Sin centro'})</option>
                       ))}
                     </select>
                   </div>
@@ -718,31 +795,19 @@ export default function Biomasa() {
         </div>
       )}
 
-      {/* MODAL CONFIRMACIÓN ELIMINACIÓN */}
-      {confirmDelete && (
-        <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '400px' }}>
-            <div className="mx-modal-body" style={{ textAlign: 'center', padding: '40px 32px' }}>
-              <div style={{ background: '#fef2f2', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                <AlertTriangle size={32} style={{ color: '#ef4444' }} />
-              </div>
-              <h3 style={{ fontWeight: 800, fontSize: '20px', marginBottom: '8px' }}>¿Eliminar Programa?</h3>
-              <p style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.5 }}>
-                Estás a punto de eliminar el programa de cosecha de <strong style={{ color: '#1e293b' }}>{confirmDelete.proveedorNombre}</strong>. Esta acción no se puede deshacer.
-              </p>
-            </div>
-            <div className="mx-modal-foot" style={{ background: '#f8fafc', gap: '12px' }}>
-              <button className="mx-btn mx-btn-outline" style={{ flex: 1 }} onClick={() => setConfirmDelete(null)}>
-                Cancelar
-              </button>
-              <button className="mx-btn" style={{ flex: 1, background: '#ef4444', color: 'white', fontWeight: 700 }} onClick={handleDelete}>
-                Sí, Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDeleteModal
+        isOpen={Boolean(confirmDelete)}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleDelete}
+        title="¿Eliminar programa?"
+        description={
+          confirmDelete
+            ? `Estás a punto de borrar el programa de cosecha de "${confirmDelete.proveedorNombre || 'este proveedor'}". Esta acción es irreversible.`
+            : ''
+        }
+      />
     </div>
   </div>
   );
 }
+

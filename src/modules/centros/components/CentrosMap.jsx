@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Maximize, Layers, Ruler, Map as MapIcon, X, Info } from 'lucide-react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Maximize, Ruler, X } from 'lucide-react';
 import { MapContainer, TileLayer, Polygon, Popup, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
 import { getCentros } from '../../../api/api-centros';
@@ -44,6 +44,7 @@ function ZoomHandler({ setZoom }) {
 }
 
 export default function CentrosMap() {
+  const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSpecies, setActiveSpecies] = useState('all');
   const [mapType, setMapType] = useState('street');
@@ -56,6 +57,7 @@ export default function CentrosMap() {
   const { data = [], isLoading: loading } = useQuery({
     queryKey: ['centros', 'mapa'],
     queryFn: () => getCentros(),
+    enabled: Boolean(selectedTenantDb),
   });
 
   // Efecto para manejar el scroll y sidebar en fullscreen
@@ -188,7 +190,11 @@ export default function CentrosMap() {
       </div>
 
       <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
-        {loading ? (
+        {!selectedTenantDb ? (
+          <div className="mx-loading-placeholder">
+            <p>Selecciona una empresa para ver el mapa de centros.</p>
+          </div>
+        ) : loading ? (
           <div className="mx-loading-placeholder">
             <div className="mx-spinner"></div>
             <p>Preparando cartografía...</p>
@@ -325,3 +331,6 @@ export default function CentrosMap() {
     </div>
   );
 }
+
+
+

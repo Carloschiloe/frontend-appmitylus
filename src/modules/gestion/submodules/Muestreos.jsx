@@ -2,15 +2,11 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { 
   Plus, 
   Search, 
-  FileText, 
   X,
   CheckCircle2,
   AlertTriangle,
-  Beaker,
   Award,
-  TrendingUp,
   Edit,
-  Trash2,
   LayoutGrid,
   List,
   ChevronDown,
@@ -169,7 +165,7 @@ export default function Muestreos() {
       setIsResultOpen(true);
       loadData(page);
       addToast({ title: 'Éxito', message: `Muestreo ${editingId ? 'actualizado' : 'guardado'} correctamente.`, type: 'success' });
-    } catch (err) {
+    } catch {
       addToast({ title: 'Error', message: 'No se pudo guardar el muestreo.', type: 'error' });
     }
   };

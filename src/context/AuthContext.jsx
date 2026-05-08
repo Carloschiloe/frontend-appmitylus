@@ -22,10 +22,30 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('ammpp_token');
+        const cachedUserRaw = localStorage.getItem('ammpp_user');
 
         if (!token) {
           setLoading(false);
           return;
+        }
+
+        const tokenParts = token.split('.');
+        const expMs = getTokenExpMs(token);
+        if (tokenParts.length !== 3 || (expMs && expMs <= Date.now())) {
+          localStorage.removeItem('ammpp_token');
+          localStorage.removeItem('ammpp_refresh_token');
+          localStorage.removeItem('ammpp_user');
+          localStorage.removeItem('selected_tenant_db');
+          setLoading(false);
+          return;
+        }
+
+        if (cachedUserRaw) {
+          try {
+            setUser(JSON.parse(cachedUserRaw));
+          } catch {
+            localStorage.removeItem('ammpp_user');
+          }
         }
 
         // Validar token contra el servidor
@@ -37,13 +57,19 @@ export const AuthProvider = ({ children }) => {
         } else {
           // Token inválido: limpiar sesión
           localStorage.removeItem('ammpp_token');
+          localStorage.removeItem('ammpp_refresh_token');
           localStorage.removeItem('ammpp_user');
+          localStorage.removeItem('selected_tenant_db');
+          setUser(null);
         }
       } catch (e) {
         if (e.name === 'AbortError') return;
         // Token expirado o error de red: limpiar
         localStorage.removeItem('ammpp_token');
+        localStorage.removeItem('ammpp_refresh_token');
         localStorage.removeItem('ammpp_user');
+        localStorage.removeItem('selected_tenant_db');
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -99,7 +125,6 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
-      console.error('Login error:', error);
       return { success: false, error: error.message };
     }
   };
@@ -111,6 +136,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('ammpp_token');
     localStorage.removeItem('ammpp_refresh_token');
     localStorage.removeItem('ammpp_user');
+    localStorage.removeItem('selected_tenant_db');
     setUser(null);
     window.location.href = '/login';
   };

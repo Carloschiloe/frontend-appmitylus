@@ -1,8 +1,10 @@
 # Gestion + Biomasa Replatform Plan
 
 Status: `draft operativo`
-Updated: `2026-05-04`
+Updated: `2026-05-06`
 Scope: `frontend-appmitylus-main + backend-appmitylus-main`
+Companion handoff:
+- `frontend-appmitylus-main/docs/app-operational-handoff.md`
 
 ## Purpose
 - separar seguimiento comercial de estado de biomasa
@@ -60,6 +62,13 @@ Responde:
 Responde:
 - que ya paso con este proveedor/caso
 
+Tambien debe responder, para jefaturas:
+- quien llamo
+- quien visito
+- quien tomo muestras
+- que resultado obtuvo el equipo
+- que proxima accion dejo cada gestion
+
 ## Recommended source of truth
 En Fase 1 se recomienda extender `OportunidadAbastecimiento` en vez de crear una entidad nueva.
 
@@ -108,7 +117,6 @@ Campos sugeridos:
 - `No califica`
 - `Sin respuesta`
 - `No interesa`
-- `Acordado`
 
 Explicitly removed:
 - `En riesgo`
@@ -132,6 +140,9 @@ No usar `Sin informacion` como estado de negocio. Si hace falta, mostrarlo solo 
 - `Cerrado` exige motivo de cierre
 - `Acordado` sale de agenda de Gestion
 - un caso `Cerrado` no vuelve a bandeja por una actividad historica, solo si el usuario lo reabre
+- si cambia empresa/proveedor desde el maestro de centros, el rename debe propagarse a las colecciones relacionadas
+- si cambia codigo o comuna de centro, el contexto denormalizado debe resincronizarse aguas abajo
+- no se debe permitir eliminar un centro con contactos, oportunidades activas o programas activos/pausados
 
 ### Agenda rules
 - la agenda muestra solo `Activos`
@@ -142,6 +153,28 @@ No usar `Sin informacion` como estado de negocio. Si hace falta, mostrarlo solo 
 ### Biomasa rules
 - `Tome muestra` puede mover biomasa a `En evaluacion`
 - `Vendida a otro`, `Sin biomasa` y `Descartada` no generan pendientes humanos automaticos
+- `Programa` representa una etapa operativa cerrada, no toda la vida del proveedor
+- si cambian condiciones base del programa, se debe `finalizar` la etapa actual y `crear un programa nuevo`
+- si solo cambian ajustes operativos menores, se puede editar el mismo programa
+- `finalizar programa` no siempre significa `ejecutado`: `cumplido` ejecuta, `sin_biomasa` cierra como perdida, y `cambio_condiciones` / `pausa_operacional` / `reemplazado_por_nuevo` mantienen la biomasa operativamente coherente para continuidad
+
+### Program rules
+Editar el mismo programa:
+- ajuste menor de dias de cosecha
+- ajuste menor de camiones por dia
+- nota o observacion
+- pausa temporal dentro de la misma etapa
+
+Finalizar y crear nuevo:
+- cambio de vigencia
+- cambio relevante de volumen
+- cambio de condiciones comerciales u operativas
+- corte del suministro y reinicio posterior
+- cambio de centro o reconfiguracion material del acuerdo
+
+Resguardos implementados:
+- `reabrir programa` solo si no existe continuidad creada
+- `eliminar programa` bloqueado si ya existe continuidad creada
 
 ## Target navigation
 
@@ -152,10 +185,20 @@ Dejar solo:
 - `Proveedores`
 - `Historial`
 
-Mover fuera del primer nivel:
+Mantener visible como herramienta operativa:
 - `Interacciones`
+
+Mover fuera del primer nivel central:
 - `Calendario`
 - `Tratos`
+
+Estado de transicion ya aplicado:
+- `Interacciones` sigue visible como herramienta de registro del equipo
+- la vista oficial para supervisiÃ³n y jefaturas es `Historial > Actividad del equipo`
+- `Tratos` legacy redirige a `Biomasa > Negociacion`
+- `Tratos` legacy ya abre la subvista `Gestion comercial` dentro de `Biomasa > Negociacion`
+- `Muestreos` legacy redirige a `Biomasa > Muestreos`
+- `Muestreos` ya esta visible como navegacion principal dentro de `Biomasa`
 
 ### Biomasa
 Dejar:
@@ -216,6 +259,48 @@ Si el usuario entra desde la ficha del proveedor, abrir prellenado.
 - definir validaciones por `seguimientoEstado`
 - preparar contratos API simples
 
+Implementado adicionalmente:
+- resincronizacion `Contacto -> Oportunidad` con proveedor y centro
+- navegacion `Gestion > Proveedores -> Ver centros` con filtro aplicado sobre `Centros > Directorio`
+- `Centros > Directorio` con alta/edicion de centros desde modal
+
+#### Phase 1 API contract
+Nuevo endpoint base:
+- `PATCH /oportunidades/:id/seguimiento`
+
+Body segun estado:
+- `activo`
+  - `seguimientoEstado: "activo"`
+  - `proximaAccion`
+  - `fechaProximaAccion`
+  - `observacion` opcional
+- `pausado`
+  - `seguimientoEstado: "pausado"`
+  - `motivoPausa`
+  - `fechaRevision`
+  - `proximaAccion`
+  - `observacion` opcional
+- `cerrado`
+  - `seguimientoEstado: "cerrado"`
+  - `motivoCierre`
+  - `observacion` opcional
+- `acordado`
+  - `seguimientoEstado: "acordado"`
+  - `observacion` opcional
+
+Compatibilidad:
+- el backend mantiene `estado` por compatibilidad con vistas actuales
+- el backend expone ademas:
+  - `seguimientoEstado`
+  - `motivoPausa`
+  - `motivoCierre`
+  - `proximaAccion`
+  - `fechaProximaAccion`
+  - `fechaRevision`
+  - `reabierto`
+- `GET /oportunidades` ahora puede filtrar por `seguimientoEstado`
+- los cierres nuevos sincronizan un estado legacy compatible para no romper tratos ni dashboards existentes
+
 ### Phase 2
 - construir flujo rapido movil
 - endpoint combinado para registrar evento + actualizar seguimiento
@@ -232,38 +317,38 @@ Si el usuario entra desde la ficha del proveedor, abrir prellenado.
 ## Live checklist
 
 ### Phase 0
-- [ ] estados de Gestion aprobados
-- [ ] motivos de pausa aprobados
-- [ ] motivos de cierre aprobados
-- [ ] estados de Biomasa aprobados
-- [ ] nueva navegacion aprobada
+- [x] estados de Gestion aprobados
+- [x] motivos de pausa aprobados
+- [x] motivos de cierre aprobados
+- [x] estados de Biomasa aprobados
+- [x] nueva navegacion aprobada
 
 ### Phase 1
-- [ ] fuente de verdad del seguimiento definida
-- [ ] campos nuevos creados en backend
-- [ ] validaciones por estado implementadas
-- [ ] contratos API documentados
+- [x] fuente de verdad del seguimiento definida
+- [x] campos nuevos creados en backend
+- [x] validaciones por estado implementadas
+- [x] contratos API documentados
 
 ### Phase 2
-- [ ] flujo movil rapido disenado
-- [ ] flujo movil implementado
-- [ ] endpoint combinado disponible
+- [x] flujo movil rapido disenado
+- [x] flujo movil implementado
+- [x] endpoint combinado disponible
 - [ ] prueba real de uso en movil realizada
 
 ### Phase 3
-- [ ] resumen nuevo implementado
-- [ ] agenda nueva implementada
-- [ ] ficha de proveedor simplificada
-- [ ] historial limpio separado
+- [x] resumen nuevo implementado
+- [x] agenda nueva implementada
+- [x] ficha de proveedor simplificada
+- [x] historial limpio separado
 
 ### Phase 4
-- [ ] biomasa desacoplada
-- [ ] estados visibles consistentes
-- [ ] perdidas de biomasa reflejadas correctamente
+- [x] biomasa desacoplada
+- [x] estados visibles consistentes
+- [x] perdidas de biomasa reflejadas correctamente
 
 ### Phase 5
 - [ ] textos finales revisados
-- [ ] navegacion final simplificada
+- [x] navegacion final simplificada
 - [ ] automatizaciones finas validadas
 
 ## Continuity prompt
@@ -292,3 +377,42 @@ When continuing:
 4. document new decisions in this same file
 5. think mobile-first before any UI decision
 ```
+
+## Progress log
+
+### 2026-05-04
+- se extendio `OportunidadAbastecimiento` con los campos de seguimiento
+- se implemento validacion por `activo`, `pausado`, `cerrado` y `acordado`
+- se creo `PATCH /oportunidades/:id/seguimiento`
+- se dejo compatibilidad con `estado` legacy para no romper frontend actual
+- `GET /oportunidades` ya puede filtrar por `seguimientoEstado`
+- pendiente siguiente: conectar este nuevo modelo a la captura movil y a las vistas de Gestion
+
+### 2026-05-06
+- `Gestion` paso a usar labels `Proveedores` y `Agenda` como aliases visibles
+- `Resumen` ya prioriza `seguimientoEstado` en vez de depender solo de interacciones y visitas
+- `Agenda` ahora mezcla calendario operativo con oportunidades `activo` y `pausado`
+- se elimino lenguaje ambiguo de riesgo en la vista de `Gestion`
+- se agrego `POST /oportunidades/quick-capture` para registrar interaccion + actualizar seguimiento en una sola llamada
+- se agrego `Registro rapido` en `Gestion` con foco movil y recarga automatica de Resumen, Agenda e Interacciones
+- `Proveedores` ahora muestra contacto principal, seguimiento, ultima interaccion, responsable y proxima accion en una sola vista
+- `Historial` ahora funciona como expediente por proveedor y timeline de eventos pasados, separado de la operacion pendiente
+- se hizo visible el boton `Volver` en el expediente de `Historial`
+- `Biomasa` dejo de exponer `En riesgo` en seguimiento de programa y ahora usa `Detenido` como estado operativo claro
+- la vista de `Biomasa` empezo a alinearse con lenguaje de `Disponibilidad`, `Negociacion` y `Programa`
+- la navegacion principal de `Gestion` se simplifico a `Resumen`, `Proveedores`, `Agenda` e ingreso a `Historial`, manteniendo rutas legacy internas sin exponerlas como primer nivel
+- `Biomasa > Negociacion` ahora separa negociaciones reales de perdidas reales del periodo
+- las perdidas se leen desde oportunidades cerradas con motivos de negocio (`vendido_a_otro`, `sin_biomasa`, `descartado`, `no_califica`)
+- Phase 4 queda funcionalmente cerrada; siguiente foco: limpieza final de textos y automatizaciones finas
+- se limpiaron labels visibles de `Biomasa` para negociacion, perdidas y vistas de programa, dejando la lectura mas clara
+- en `Biomasa` se empezo a separar el lenguaje visible del estado comercial interno: la UI ahora habla de `En conversacion`, `Reservada` y `Acordada`
+- el selector de `Programa` ahora se alimenta solo con biomasa programable y deja de exponer el estado comercial crudo como referencia principal
+- `Programa` ya trabaja por etapas: se puede finalizar, crear continuidad y reabrir de forma segura si no existe una continuidad hija
+- `Finalizar programa` ya no siempre significa biomasa `Ejecutada`; ahora depende del `motivoCierre`
+- la oportunidad automatica creada desde `Contacto` ahora hereda y resincroniza `empresa/proveedor`, `centroId`, `centroCodigo`, `centroComuna` y estimacion de biomasa
+- los `tratos programables` ahora exponen mejor el centro vinculado para que `Programa` deje de mostrar tantos `Sin Centro Definido` cuando la relacion ya existe
+
+### 2026-05-07
+- `Gestion > Resumen` ya no enlaza a `Tratos` ni `Muestreos` como destino principal dentro de `Gestion`; ambos accesos ahora llevan a `Biomasa`
+- `Biomasa` ya expone `Muestreos` como navegacion principal
+- las rutas legacy `/gestion/tratos` y `/gestion/muestreos` se mantienen solo como redireccion para no romper accesos antiguos

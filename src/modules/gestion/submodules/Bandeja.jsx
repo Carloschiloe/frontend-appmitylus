@@ -1,17 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
-  Calendar,
   ChevronRight,
   Clock,
-  Handshake,
   MessageSquare,
-  Phone,
   RotateCcw,
   Target,
-  TestTube2,
-  Users
+  PauseCircle,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
@@ -22,15 +18,29 @@ const PIPELINE_ORDER = [
   { key: 'negociando', label: 'Negociando', color: '#2563eb' },
   { key: 'acordado', label: 'Acordados', color: '#0d9488' },
   { key: 'compra_efectuada', label: 'Compras', color: '#10b981' },
-  { key: 'caido', label: 'Caidos', color: '#ef4444' }
+  { key: 'caido', label: 'Caídos', color: '#ef4444' },
 ];
 
+const FOLLOWUP_META = {
+  activo: { label: 'Seguimiento activo', icon: Target, tone: 'primary' },
+  pausado: { label: 'Pausado', icon: PauseCircle, tone: 'warning' },
+};
+
+const PAUSE_REASON_LABELS = {
+  esperando_crecimiento: 'Esperando crecimiento',
+  esperando_disponibilidad: 'Esperando disponibilidad',
+  esperando_respuesta: 'Esperando respuesta',
+  esperando_resultado_muestra: 'Esperando resultado de muestra',
+  esperando_decision_interna: 'Esperando decisión interna',
+};
+
 const EVENT_META = {
-  interaccion: { label: 'Interaccion', icon: MessageSquare, tone: 'info' },
-  llamada: { label: 'Llamada', icon: Phone, tone: 'info' },
-  reunion: { label: 'Reunion', icon: Users, tone: 'warning' },
-  visita: { label: 'Visita', icon: Calendar, tone: 'primary' },
-  muestreo: { label: 'Muestreo', icon: TestTube2, tone: 'success' }
+  interaccion: { label: 'Interacción', tone: 'info' },
+  llamada: { label: 'Llamada', tone: 'info' },
+  reunion: { label: 'Reunión', tone: 'warning' },
+  visita: { label: 'Visita', tone: 'primary' },
+  muestreo: { label: 'Muestreo', tone: 'success' },
+  seguimiento: { label: 'Seguimiento', tone: 'primary' },
 };
 
 function toList(payload) {
@@ -61,7 +71,7 @@ function formatShortDate(value) {
   if (!date) return 'Sin fecha';
   return new Intl.DateTimeFormat('es-CL', {
     day: '2-digit',
-    month: 'short'
+    month: 'short',
   }).format(date);
 }
 
@@ -71,7 +81,7 @@ function formatLongDate(value) {
   return new Intl.DateTimeFormat('es-CL', {
     weekday: 'short',
     day: '2-digit',
-    month: 'short'
+    month: 'short',
   }).format(date);
 }
 
@@ -89,12 +99,16 @@ function dueText(value) {
 
   if (diffDays < 0) return `Vencido hace ${Math.abs(diffDays)} d`;
   if (diffDays === 0) return 'Hoy';
-  if (diffDays === 1) return 'Manana';
-  return `En ${diffDays} dias`;
+  if (diffDays === 1) return 'Mañana';
+  return `En ${diffDays} días`;
 }
 
 function toneClass(tone) {
   return `is-${tone || 'muted'}`;
+}
+
+function getPauseReasonLabel(value) {
+  return PAUSE_REASON_LABELS[value] || 'En espera';
 }
 
 export default function Bandeja() {
@@ -105,21 +119,10 @@ export default function Bandeja() {
   const [interacciones, setInteracciones] = useState([]);
   const [visitas, setVisitas] = useState([]);
   const [muestreos, setMuestreos] = useState([]);
-  const [agenda, setAgenda] = useState([]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    loadPanel(controller.signal);
-    return () => controller.abort();
-  }, []);
-
-  async function loadPanel(signal) {
+  const loadPanel = useCallback(async (signal) => {
     setLoading(true);
     try {
-      const today = startOfDay();
-      const nextWeek = new Date(today);
-      nextWeek.setDate(nextWeek.getDate() + 7);
-
       const requestOptions = signal ? { signal } : {};
       const [
         summaryRes,
@@ -127,17 +130,12 @@ export default function Bandeja() {
         interaccionesRes,
         visitasRes,
         muestreosRes,
-        agendaRes
       ] = await Promise.all([
         apiClient.get('/dashboard/summary', requestOptions),
         apiClient.get('/oportunidades?limit=200', requestOptions),
         apiClient.get('/interacciones?limit=200', requestOptions),
         apiClient.get('/visitas', requestOptions),
         apiClient.get('/muestreos?limit=50&page=1', requestOptions),
-        apiClient.get(
-          `/dashboard/calendario?from=${today.toISOString()}&to=${nextWeek.toISOString()}`,
-          requestOptions
-        )
       ]);
 
       setSummary(summaryRes || null);
@@ -145,18 +143,46 @@ export default function Bandeja() {
       setInteracciones(toList(interaccionesRes));
       setVisitas(toList(visitasRes));
       setMuestreos(toList(muestreosRes));
-      setAgenda(toList(agendaRes));
     } catch (error) {
       if (error.name === 'AbortError') return;
       addToast({
         title: 'Error',
-        message: 'No se pudo construir el panel de gestion.',
-        type: 'error'
+        message: 'No se pudo construir el panel de gestión.',
+        type: 'error',
       });
     } finally {
       setLoading(false);
     }
-  }
+  }, [addToast]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadPanel(controller.signal);
+    return () => controller.abort();
+  }, [loadPanel]);
+
+  useEffect(() => {
+    const handleRefresh = () => loadPanel();
+    window.addEventListener('gestion:quick-capture-saved', handleRefresh);
+    return () => window.removeEventListener('gestion:quick-capture-saved', handleRefresh);
+  }, [loadPanel]);
+
+  const seguimiento = useMemo(() => {
+    const active = [];
+    const paused = [];
+    const closed = [];
+    const agreed = [];
+
+    oportunidades.forEach((item) => {
+      const estado = item.seguimientoEstado || 'activo';
+      if (estado === 'activo') active.push(item);
+      else if (estado === 'pausado') paused.push(item);
+      else if (estado === 'cerrado') closed.push(item);
+      else if (estado === 'acordado') agreed.push(item);
+    });
+
+    return { active, paused, closed, agreed };
+  }, [oportunidades]);
 
   const taskBoard = useMemo(() => {
     const todayStart = startOfDay();
@@ -164,38 +190,36 @@ export default function Bandeja() {
     const nextWeek = new Date(todayEnd);
     nextWeek.setDate(nextWeek.getDate() + 6);
 
-    const tasks = [
-      ...interacciones.map((item) => ({
-        id: `int-${item._id}`,
-        source: 'interaccion',
-        provider: item.proveedorNombre || item.contactoNombre || 'Proveedor sin nombre',
-        title: item.resumen || item.proximoPaso || 'Gestion sin resumen',
-        subtitle: item.proximoPaso || item.resultado || 'Sin detalle adicional',
-        dueAt: item.fechaProximo || item.proximoPasoFecha || item.fecha,
-        owner: item.responsablePG || item.responsable || 'Sin responsable'
-      })),
-      ...visitas.map((item) => ({
-        id: `vis-${item._id}`,
-        source: 'visita',
-        provider: item.proveedorNombre || item.contacto || 'Proveedor sin nombre',
-        title: item.estado || 'Visita programada',
-        subtitle: item.observaciones || item.centroCodigo || 'Sin observaciones',
-        dueAt: item.proximoPasoFecha || item.fecha,
-        owner: item.responsablePG || 'Sin responsable'
-      }))
-    ].map((task) => {
-      const dueDate = toDate(task.dueAt);
-      let bucket = 'nodate';
+    const tasks = oportunidades
+      .filter((item) => item.seguimientoEstado === 'activo' || item.seguimientoEstado === 'pausado')
+      .map((item) => {
+        const source = item.seguimientoEstado === 'pausado' ? 'pausado' : 'activo';
+        const dueAt = item.fechaProximaAccion || item.fechaRevision || item.nextActionAt || null;
+        const dueDate = toDate(dueAt);
+        let bucket = 'nodate';
 
-      if (dueDate) {
-        if (dueDate < todayStart) bucket = 'overdue';
-        else if (dueDate >= todayStart && dueDate < todayEnd) bucket = 'today';
-        else if (dueDate < nextWeek) bucket = 'next';
-        else bucket = 'later';
-      }
+        if (dueDate) {
+          if (dueDate < todayStart) bucket = 'overdue';
+          else if (dueDate >= todayStart && dueDate < todayEnd) bucket = 'today';
+          else if (dueDate < nextWeek) bucket = 'next';
+          else bucket = 'later';
+        }
 
-      return { ...task, dueDate, bucket };
-    });
+        return {
+          id: `opp-${item._id}`,
+          source,
+          provider: item.proveedorNombre || 'Proveedor sin nombre',
+          title: item.proximaAccion || (source === 'pausado' ? 'Revisar caso pausado' : 'Definir próximo paso'),
+          subtitle: source === 'pausado'
+            ? getPauseReasonLabel(item.motivoPausa)
+            : (item.notasTrato || 'Seguimiento pendiente'),
+          dueAt,
+          dueDate,
+          bucket,
+          owner: item.responsableNombre || 'Sin responsable',
+          estadoComercial: item.estado || '',
+        };
+      });
 
     const sortByDueDate = (left, right) => {
       if (!left.dueDate && !right.dueDate) return left.provider.localeCompare(right.provider);
@@ -215,14 +239,14 @@ export default function Bandeja() {
       today,
       next,
       later,
-      spotlight: [...overdue, ...today, ...next].slice(0, 7)
+      spotlight: [...overdue, ...today, ...next].slice(0, 7),
     };
-  }, [interacciones, visitas]);
+  }, [oportunidades]);
 
   const pipeline = useMemo(() => {
     const counts = PIPELINE_ORDER.map((item) => ({
       ...item,
-      count: oportunidades.filter((oportunidad) => oportunidad.estado === item.key).length
+      count: oportunidades.filter((oportunidad) => oportunidad.estado === item.key).length,
     }));
     const max = Math.max(...counts.map((item) => item.count), 1);
     return { counts, max };
@@ -233,7 +257,7 @@ export default function Bandeja() {
     return oportunidades
       .map((item) => ({
         ...item,
-        closeDate: toDate(item.fechaCierre || item.vigenciaDesde || item.vigenciaHasta)
+        closeDate: toDate(item.vigenciaDesde || item.vigenciaHasta || item.fechaCierre),
       }))
       .filter((item) => item.closeDate && item.closeDate >= today)
       .sort((left, right) => left.closeDate - right.closeDate)
@@ -246,9 +270,9 @@ export default function Bandeja() {
         id: `a-int-${item._id}`,
         kind: item.tipo || 'interaccion',
         provider: item.proveedorNombre || item.contactoNombre || 'Proveedor sin nombre',
-        title: item.resumen || 'Interaccion registrada',
+        title: item.resumen || 'Interacción registrada',
         date: item.updatedAt || item.createdAt || item.fecha,
-        caption: item.proximoPaso || item.resultado || item.responsablePG || 'Sin detalle'
+        caption: item.proximoPaso || item.resultado || item.responsablePG || 'Sin detalle',
       })),
       ...visitas.map((item) => ({
         id: `a-vis-${item._id}`,
@@ -256,8 +280,8 @@ export default function Bandeja() {
         provider: item.proveedorNombre || item.contacto || 'Proveedor sin nombre',
         title: item.estado || 'Visita registrada',
         date: item.updatedAt || item.createdAt || item.fecha,
-        caption: item.observaciones || item.centroCodigo || item.responsablePG || 'Sin detalle'
-      }))
+        caption: item.observaciones || item.centroCodigo || item.responsablePG || 'Sin detalle',
+      })),
     ]
       .map((item) => ({ ...item, parsedDate: toDate(item.date) }))
       .filter((item) => item.parsedDate)
@@ -273,59 +297,51 @@ export default function Bandeja() {
       return {
         key: date.toISOString().slice(0, 10),
         date,
-        items: []
+        items: [],
       };
     });
 
     const buckets = new Map(days.map((day) => [day.key, day]));
 
-    agenda.forEach((item) => {
-      const date = toDate(item.date);
+    taskBoard.all.forEach((item) => {
+      const date = toDate(item.dueAt);
       if (!date) return;
       const key = date.toISOString().slice(0, 10);
       const bucket = buckets.get(key);
       if (!bucket) return;
-      bucket.items.push(item);
-    });
-
-    days.forEach((day) => {
-      day.items.sort((left, right) => {
-        const leftDate = toDate(left.date);
-        const rightDate = toDate(right.date);
-        if (!leftDate || !rightDate) return 0;
-        return leftDate - rightDate;
+      bucket.items.push({
+        kind: 'seguimiento',
+        proveedorNombre: item.provider,
+        title: item.title,
+        source: item.source,
+        date,
       });
     });
 
+    days.forEach((day) => {
+      day.items.sort((left, right) => new Date(left.date) - new Date(right.date));
+    });
+
     return days;
-  }, [agenda]);
+  }, [taskBoard]);
 
   const recentSamples = useMemo(() => {
     return [...muestreos]
       .map((item) => ({
         ...item,
         sampleDate: toDate(item.fecha),
-        mainClass: item.clasificaciones?.[0]?.nombre || 'Sin clasificacion'
+        mainClass: item.clasificaciones?.[0]?.nombre || 'Sin clasificación',
       }))
       .filter((item) => item.sampleDate)
       .sort((left, right) => right.sampleDate - left.sampleDate)
       .slice(0, 5);
   }, [muestreos]);
 
-  const sevenDaySampleCount = useMemo(() => {
-    const since = startOfDay();
-    since.setDate(since.getDate() - 6);
-    return muestreos.filter((item) => {
-      const date = toDate(item.fecha);
-      return date && date >= since;
-    }).length;
-  }, [muestreos]);
-
   if (loading) {
     return (
       <div className="mx-state-placeholder">
         <div className="mx-spinner"></div>
-        <p>Construyendo panel de gestion...</p>
+        <p>Construyendo panel de gestión...</p>
       </div>
     );
   }
@@ -335,11 +351,11 @@ export default function Bandeja() {
       <section className="gs-overview-card">
         <div className="gs-overview-copy">
           <p className="gs-section-kicker">Vista consolidada</p>
-          <h2>Resumen operativo de proveedores</h2>
+          <h2>Resumen operativo de seguimiento</h2>
           <p>
-            Reunimos lo mas importante de bandeja, calendario, tratos e inspecciones
-            para que el equipo vea prioridades, cierres y actividad reciente sin saltar
-            entre pestañas.
+            Priorizamos los proveedores que realmente requieren movimiento,
+            distinguimos lo que está pausado y mantenemos el contexto comercial
+            a la vista sin mezclarlo con tareas que ya no corresponden.
           </p>
         </div>
 
@@ -352,7 +368,7 @@ export default function Bandeja() {
               {formatTons(summary?.acordadoMes)} este mes
             </span>
             <span className="gs-highlight-pill">
-              {formatTons(summary?.acordadoProxMes)} proximo mes
+              {formatTons(summary?.acordadoProxMes)} próximo mes
             </span>
           </div>
         </div>
@@ -381,21 +397,21 @@ export default function Bandeja() {
 
         <article className="gs-kpi-card">
           <div className="gs-kpi-icon is-info">
-            <Handshake size={18} />
+            <Target size={18} />
           </div>
           <div>
-            <div className="gs-kpi-value">{summary?.enNegociacion ?? 0}</div>
-            <div className="gs-kpi-label">Tratos en negociacion</div>
+            <div className="gs-kpi-value">{seguimiento.active.length}</div>
+            <div className="gs-kpi-label">Seguimiento activo</div>
           </div>
         </article>
 
         <article className="gs-kpi-card">
-          <div className="gs-kpi-icon is-success">
-            <TestTube2 size={18} />
+          <div className="gs-kpi-icon is-warning">
+            <PauseCircle size={18} />
           </div>
           <div>
-            <div className="gs-kpi-value">{sevenDaySampleCount}</div>
-            <div className="gs-kpi-label">Muestreos ultimos 7 dias</div>
+            <div className="gs-kpi-value">{seguimiento.paused.length}</div>
+            <div className="gs-kpi-label">Casos pausados</div>
           </div>
         </article>
       </section>
@@ -405,10 +421,10 @@ export default function Bandeja() {
           <div className="gs-card-head">
             <div>
               <p className="gs-section-kicker">Prioridades</p>
-              <h3>Que requiere atencion hoy</h3>
+              <h3>Qué debemos mover ahora</h3>
             </div>
-            <Link className="gs-card-link" to="/gestion/interacciones">
-              Ver gestiones <ChevronRight size={15} />
+            <Link className="gs-card-link" to="/gestion/agenda">
+              Abrir agenda <ChevronRight size={15} />
             </Link>
           </div>
 
@@ -432,7 +448,7 @@ export default function Bandeja() {
               <div className="gs-empty-inline">No hay compromisos urgentes por ahora.</div>
             ) : (
               taskBoard.spotlight.map((item) => {
-                const meta = EVENT_META[item.source] || EVENT_META.interaccion;
+                const meta = FOLLOWUP_META[item.source] || FOLLOWUP_META.activo;
                 const Icon = meta.icon;
 
                 return (
@@ -454,6 +470,10 @@ export default function Bandeja() {
                         <span>{item.owner}</span>
                         <span>{formatShortDate(item.dueAt)}</span>
                       </div>
+                      <div className="gs-priority-meta">
+                        <span>{item.subtitle}</span>
+                        <span>{item.estadoComercial || 'Sin estado comercial'}</span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -469,8 +489,8 @@ export default function Bandeja() {
                 <p className="gs-section-kicker">Pipeline</p>
                 <h3>Estado comercial</h3>
               </div>
-              <Link className="gs-card-link" to="/gestion/tratos">
-                Abrir tratos <ChevronRight size={15} />
+              <Link className="gs-card-link" to="/biomasa/status?tab=negociacion&mode=comercial">
+                Ir a negociación <ChevronRight size={15} />
               </Link>
             </div>
 
@@ -486,7 +506,7 @@ export default function Bandeja() {
                       className="gs-pipeline-fill"
                       style={{
                         width: `${Math.max((item.count / pipeline.max) * 100, item.count > 0 ? 12 : 0)}%`,
-                        backgroundColor: item.color
+                        backgroundColor: item.color,
                       }}
                     ></div>
                   </div>
@@ -498,14 +518,14 @@ export default function Bandeja() {
           <article className="mx-table-card gs-panel-card">
             <div className="gs-card-head">
               <div>
-                <p className="gs-section-kicker">Cierres</p>
-                <h3>Proximos hitos comerciales</h3>
+              <p className="gs-section-kicker">Biomasa</p>
+                <h3>Próximos hitos comerciales</h3>
               </div>
             </div>
 
             <div className="gs-mini-list">
               {upcomingDeals.length === 0 ? (
-                <div className="gs-empty-inline">No hay cierres proximos cargados.</div>
+                <div className="gs-empty-inline">No hay hitos comerciales próximos cargados.</div>
               ) : (
                 upcomingDeals.map((item) => (
                   <div key={item._id} className="gs-mini-item">
@@ -529,10 +549,10 @@ export default function Bandeja() {
           <div className="gs-card-head">
             <div>
               <p className="gs-section-kicker">Agenda</p>
-              <h3>Proximos 7 dias</h3>
+              <h3>Seguimiento próximos 7 días</h3>
             </div>
-            <Link className="gs-card-link" to="/gestion/calendario">
-              Ver calendario <ChevronRight size={15} />
+            <Link className="gs-card-link" to="/gestion/agenda">
+              Ver agenda <ChevronRight size={15} />
             </Link>
           </div>
 
@@ -541,20 +561,20 @@ export default function Bandeja() {
               <div key={day.key} className="gs-agenda-day">
                 <div className="gs-agenda-date">
                   <strong>{formatLongDate(day.date)}</strong>
-                  <span>{day.items.length} actividades</span>
+                  <span>{day.items.length} seguimientos</span>
                 </div>
                 <div className="gs-agenda-items">
                   {day.items.length === 0 ? (
                     <span className="gs-agenda-empty">Sin actividad</span>
                   ) : (
-                    day.items.slice(0, 2).map((item, index) => {
-                      const meta = EVENT_META[item.kind] || EVENT_META.interaccion;
-                      return (
-                        <span key={`${day.key}-${index}`} className={`gs-chip ${toneClass(meta.tone)}`}>
-                          {meta.label}: {item.proveedorNombre || item.title || 'Actividad'}
-                        </span>
-                      );
-                    })
+                    day.items.slice(0, 2).map((item, index) => (
+                      <span
+                        key={`${day.key}-${index}`}
+                        className={`gs-chip ${item.source === 'pausado' ? 'is-warning' : 'is-primary'}`}
+                      >
+                        {item.proveedorNombre}: {item.title}
+                      </span>
+                    ))
                   )}
                 </div>
               </div>
@@ -566,7 +586,7 @@ export default function Bandeja() {
           <div className="gs-card-head">
             <div>
               <p className="gs-section-kicker">Actividad reciente</p>
-              <h3>Ultimo movimiento comercial</h3>
+              <h3>Último movimiento comercial</h3>
             </div>
             <Link className="gs-card-link" to="/historial">
               Ver historial <ChevronRight size={15} />
@@ -575,25 +595,20 @@ export default function Bandeja() {
 
           <div className="gs-activity-list">
             {activityFeed.length === 0 ? (
-              <div className="gs-empty-inline">Todavia no hay actividad reciente.</div>
+              <div className="gs-empty-inline">Todavía no hay actividad reciente.</div>
             ) : (
-              activityFeed.map((item) => {
-                const meta = EVENT_META[item.kind] || EVENT_META.interaccion;
-                const Icon = meta.icon;
-
-                return (
-                  <div key={item.id} className="gs-activity-item">
-                    <div className={`gs-priority-badge ${toneClass(meta.tone)}`}>
-                      <Icon size={14} />
-                    </div>
-                    <div className="gs-activity-copy">
-                      <strong>{item.provider}</strong>
-                      <p>{item.title}</p>
-                      <span>{item.caption} · {formatShortDate(item.date)}</span>
-                    </div>
+              activityFeed.map((item) => (
+                <div key={item.id} className="gs-activity-item">
+                  <div className={`gs-priority-badge ${toneClass((EVENT_META[item.kind] || EVENT_META.interaccion).tone)}`}>
+                    <MessageSquare size={14} />
                   </div>
-                );
-              })
+                  <div className="gs-activity-copy">
+                    <strong>{item.provider}</strong>
+                    <p>{item.title}</p>
+                    <span>{item.caption} · {formatShortDate(item.date)}</span>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </article>
@@ -602,9 +617,9 @@ export default function Bandeja() {
           <div className="gs-card-head">
             <div>
               <p className="gs-section-kicker">Muestreos</p>
-              <h3>Ultimos resultados</h3>
+              <h3>Últimos resultados</h3>
             </div>
-            <Link className="gs-card-link" to="/gestion/muestreos">
+            <Link className="gs-card-link" to="/biomasa/muestreos">
               Ver muestreos <ChevronRight size={15} />
             </Link>
           </div>
@@ -617,7 +632,7 @@ export default function Bandeja() {
                 <div key={item._id} className="gs-sample-item">
                   <div className="gs-sample-topline">
                     <strong>{item.proveedorNombre || 'Proveedor sin nombre'}</strong>
-                    <span className={`gs-chip ${item.mainClass === 'Sin clasificacion' ? 'is-warning' : 'is-success'}`}>
+                    <span className={`gs-chip ${item.mainClass === 'Sin clasificación' ? 'is-warning' : 'is-success'}`}>
                       {item.mainClass}
                     </span>
                   </div>
@@ -637,9 +652,8 @@ export default function Bandeja() {
       <section className="gs-footer-note">
         <Target size={16} />
         <span>
-          Este resumen concentra la informacion relevante de las pestañas internas para
-          ayudarte a decidir mas rapido que revisar, con quien hacer seguimiento y donde
-          hay riesgo operativo.
+          Este resumen separa lo que requiere seguimiento, lo que está pausado y lo que ya avanzó comercialmente,
+          para ayudarte a decidir más rápido qué sigue con cada proveedor y cuándo debe reactivarse.
         </span>
       </section>
     </div>

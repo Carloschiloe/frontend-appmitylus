@@ -1,7 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, NavLink } from 'react-router-dom';
 import { 
-  Building2, 
   Map as MapIcon, 
   ShieldCheck, 
   Plus, 
@@ -23,6 +22,10 @@ const CENTROS_TABS = [
 ];
 
 export default function Centros() {
+  const notifyCreateCentro = () => {
+    window.dispatchEvent(new CustomEvent('centros:open-create'));
+  };
+
   return (
     <div className="mx-page">
       <header className="mx-hero">
@@ -34,7 +37,7 @@ export default function Centros() {
           <button className="mx-btn mx-btn-outline" style={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}>
             <FileUp size={18} /> Importar
           </button>
-          <button className="mx-btn mx-btn-primary">
+          <button className="mx-btn mx-btn-primary" onClick={notifyCreateCentro}>
             <Plus size={20} /> Nuevo Centro
           </button>
         </div>

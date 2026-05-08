@@ -1,0 +1,47 @@
+.tratos-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid #cfe0f2;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.tratos-search-wrap:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(15, 166, 161, 0.12);
+}
+
+.tratos-search-icon {
+  flex: 0 0 auto;
+  color: #7b8ba7;
+}
+
+.tratos-search-input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #1e293b;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.tratos-search-input::placeholder {
+  color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .tratos-search-wrap {
+    min-height: 48px;
+    padding: 0 14px;
+    border-radius: 14px;
+  }
+
+  .tratos-search-input {
+    font-size: 14px;
+  }
+}
