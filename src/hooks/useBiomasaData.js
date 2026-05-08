@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../api/apiClient';
 import { getDisponibilidades, getAsignaciones } from '../api/api-mmpp.js';
 import { useToast } from '../context/ToastContext';
@@ -11,7 +11,14 @@ function isSameMonth(value, mesKey) {
   return date.getFullYear() === year && date.getMonth() + 1 === month;
 }
 
-export function useBiomasaData(mes) {
+export function useBiomasaData(mes, viewContext = {}) {
+  const {
+    isStatusView = false,
+    isProgramView = false,
+    isMuestreosView = false,
+    statusSubTab = '',
+    progSubTab = ''
+  } = viewContext;
   const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [disp, setDisp] = useState([]);
@@ -23,39 +30,76 @@ export function useBiomasaData(mes) {
   const [perdidasBiomasa, setPerdidasBiomasa] = useState([]);
 
   const load = useCallback(async (signal) => {
+    if (isMuestreosView) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const [d, a, progRes, calRes, tratosRes, tratosBiomasaRes, oportunidadesCerradasRes] = await Promise.all([
-        getDisponibilidades({ mesKey: mes }),
-        getAsignaciones({ mesKey: mes }),
-        apiClient.get('/programa-cosecha', { signal }).catch(() => ({ items: [] })),
-        apiClient.get(`/programa-cosecha/calendario?from=${mes}-01&to=${mes}-31`, { signal }).catch(() => ({ calendario: {} })),
-        apiClient.get('/programa-cosecha/tratos-acordados', { signal }).catch(() => ({ items: [] })),
-        apiClient.get(`/oportunidades/biomasa-situacion?from=${mes}-01&to=${mes}-31`, { signal }).catch(() => ({ items: [] })),
-        apiClient.get('/oportunidades?seguimientoEstado=cerrado', { signal }).catch(() => ({ items: [] })),
-      ]);
-      const tratosItems = (tratosBiomasaRes.items || []).filter((item) =>
-        ['en_conversacion', 'reservada', 'acordada'].includes(String(item?.situacionBiomasa || '').toLowerCase())
-      );
-      const perdidasItems = (oportunidadesCerradasRes.items || []).filter((item) => {
-        const motivo = String(item?.motivoCierre || '').toLowerCase();
-        if (!['vendido_a_otro', 'sin_biomasa', 'descartado', 'no_califica'].includes(motivo)) return false;
-        return isSameMonth(item?.fechaCierre || item?.updatedAt || item?.ultimaActividadAt, mes);
-      });
-      setDisp(d || []);
-      setAsig(a || []);
-      setProgramas(progRes.items || []);
-      setCalData(calRes.calendario || {});
-      setTratosAcordados(tratosRes.items || []);
-      setTratosBiomasa(tratosItems);
-      setPerdidasBiomasa(perdidasItems);
+      const promises = [];
+      const keys = [];
+
+      if (isStatusView && statusSubTab === 'disponibilidad') {
+        promises.push(getDisponibilidades({ mesKey: mes }));
+        keys.push('disp');
+        promises.push(getAsignaciones({ mesKey: mes }));
+        keys.push('asig');
+      }
+
+      if (isStatusView && statusSubTab === 'negociacion') {
+        promises.push(apiClient.get(`/oportunidades/biomasa-situacion?from=${mes}-01&to=${mes}-31`, { signal }).catch(() => ({ items: [] })));
+        keys.push('tratosBiomasaRes');
+        promises.push(apiClient.get('/oportunidades?seguimientoEstado=cerrado', { signal }).catch(() => ({ items: [] })));
+        keys.push('oportunidadesCerradasRes');
+      }
+
+      if (isProgramView && (progSubTab === 'programa' || progSubTab === 'seguimiento')) {
+        promises.push(apiClient.get('/programa-cosecha', { signal }).catch(() => ({ items: [] })));
+        keys.push('progRes');
+        if (progSubTab === 'programa') {
+          promises.push(apiClient.get('/programa-cosecha/tratos-acordados', { signal }).catch(() => ({ items: [] })));
+          keys.push('tratosRes');
+        }
+      }
+
+      if (isProgramView && progSubTab === 'calendario') {
+        promises.push(apiClient.get(`/programa-cosecha/calendario?from=${mes}-01&to=${mes}-31`, { signal }).catch(() => ({ calendario: {} })));
+        keys.push('calRes');
+      }
+
+      const results = await Promise.all(promises);
+      const resMap = {};
+      keys.forEach((k, i) => { resMap[k] = results[i]; });
+
+      if (resMap.disp) setDisp(resMap.disp || []);
+      if (resMap.asig) setAsig(resMap.asig || []);
+      if (resMap.progRes) setProgramas(resMap.progRes.items || []);
+      if (resMap.calRes) setCalData(resMap.calRes.calendario || {});
+      if (resMap.tratosRes) setTratosAcordados(resMap.tratosRes.items || []);
+
+      if (resMap.tratosBiomasaRes) {
+        const tratosItems = (resMap.tratosBiomasaRes.items || []).filter((item) =>
+          ['en_conversacion', 'reservada', 'acordada'].includes(String(item?.situacionBiomasa || '').toLowerCase())
+        );
+        setTratosBiomasa(tratosItems);
+      }
+      
+      if (resMap.oportunidadesCerradasRes) {
+        const perdidasItems = (resMap.oportunidadesCerradasRes.items || []).filter((item) => {
+          const motivo = String(item?.motivoCierre || '').toLowerCase();
+          if (!['vendido_a_otro', 'sin_biomasa', 'descartado', 'no_califica'].includes(motivo)) return false;
+          return isSameMonth(item?.fechaCierre || item?.updatedAt || item?.ultimaActividadAt, mes);
+        });
+        setPerdidasBiomasa(perdidasItems);
+      }
     } catch (e) {
       if (e.name === 'AbortError') return;
       addToast({ title: 'Error', message: 'No se pudo cargar el módulo de biomasa.', type: 'error' });
     } finally {
       setLoading(false);
     }
-  }, [mes, addToast]);
+  }, [mes, addToast, isStatusView, isProgramView, isMuestreosView, statusSubTab, progSubTab]);
 
   useEffect(() => {
     const controller = new AbortController();

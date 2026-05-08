@@ -71,7 +71,13 @@ export default function Biomasa() {
   const [progSubTab, setProgSubTab] = useState('programa');
   
   const [mes, setMes] = useState(mesActual);
-  const { disp, asig, programas, calData, tratosAcordados, tratosBiomasa, perdidasBiomasa, reload: load } = useBiomasaData(mes);
+  const { disp, asig, programas, calData, tratosAcordados, tratosBiomasa, perdidasBiomasa, reload: load } = useBiomasaData(mes, {
+    isStatusView,
+    isProgramView,
+    isMuestreosView,
+    statusSubTab,
+    progSubTab
+  });
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
