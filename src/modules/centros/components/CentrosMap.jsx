@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Maximize, Ruler, X } from 'lucide-react';
 import { MapContainer, TileLayer, Polygon, Popup, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
@@ -56,7 +56,7 @@ export default function CentrosMap() {
 
   const { data = [], isLoading: loading } = useQuery({
     queryKey: ['centros', 'mapa'],
-    queryFn: () => getCentros(),
+    queryFn: ({ signal }) => getCentros({}, { signal }),
     enabled: Boolean(selectedTenantDb),
   });
 

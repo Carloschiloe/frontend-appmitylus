@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Search,
   Eye,
@@ -19,9 +20,17 @@ import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 export default function CentrosTable() {
   const { addToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  const { data: rawData = [], isLoading: loading } = useQuery({
+    queryKey: ['centros', 'mapa'],
+    queryFn: ({ signal }) => getCentros({}, { signal }),
+    enabled: Boolean(selectedTenantDb),
+  });
+
+  const data = useMemo(() => Array.isArray(rawData) ? rawData : (rawData.items || []), [rawData]);
+
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [comunaFilter, setComunaFilter] = useState(searchParams.get('comuna') || '');
   const [providerFilter, setProviderFilter] = useState(searchParams.get('proveedor') || '');
@@ -45,31 +54,6 @@ export default function CentrosTable() {
     setSearchParams(params, { replace: true });
   }
 
-  const loadData = useCallback(async () => {
-    if (!selectedTenantDb) {
-      setData([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const result = await getCentros({
-        ...(providerFilter ? { proveedor: providerFilter } : {}),
-        ...(comunaFilter ? { comuna: comunaFilter } : {}),
-        ...(searchTerm ? { q: searchTerm } : {}),
-      });
-      setData(Array.isArray(result) ? result : (result.items || []));
-    } catch {
-      addToast({ title: 'Error', message: 'No se pudieron cargar los centros.', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  }, [addToast, providerFilter, comunaFilter, searchTerm, selectedTenantDb]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   useEffect(() => {
     const openCreate = () => setModalState({ open: true, item: null });
     window.addEventListener('centros:open-create', openCreate);
@@ -86,7 +70,7 @@ export default function CentrosTable() {
         type: 'success',
       });
       setConfirmDelete(null);
-      loadData();
+      queryClient.invalidateQueries({ queryKey: ['centros', 'mapa'] });
     } catch (err) {
       addToast({
         title: 'No se pudo eliminar',
@@ -119,7 +103,7 @@ export default function CentrosTable() {
         type: 'success',
       });
       setModalState({ open: false, item: null });
-      loadData();
+      queryClient.invalidateQueries({ queryKey: ['centros', 'mapa'] });
     } catch (err) {
       addToast({
         title: 'Error',

@@ -2,13 +2,13 @@ import { apiClient } from './apiClient';
 
 const BASE = '/centros';
 
-export async function getCentros(filters = {}) {
+export async function getCentros(filters = {}, options = {}) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => {
     if (v) params.set(k, v);
   });
 
-  const res = await apiClient.get(`${BASE}${params.size ? `?${params}` : ''}`);
+  const res = await apiClient.get(`${BASE}${params.size ? `?${params}` : ''}`, options);
   return Array.isArray(res) ? res : (res.items || []);
 }
 
