@@ -102,7 +102,8 @@ export default function Muestreos() {
     uxkg: '',
     pesoVivo: '',
     pesoCocida: '',
-    cats: {}
+    cats: {},
+    unidadPeso: 'kg'
   });
 
   const resetForm = useCallback(() => {
@@ -118,7 +119,8 @@ export default function Muestreos() {
       uxkg: '',
       pesoVivo: '',
       pesoCocida: '',
-      cats: {}
+      cats: {},
+      unidadPeso: 'kg'
     });
     setEditingId(null);
     setStep(1);
@@ -210,8 +212,11 @@ export default function Muestreos() {
 
   // Cálculos Automáticos
   const totals = useMemo(() => {
-    const vivo = Number(form.pesoVivo) || 0;
-    const cocida = Number(form.pesoCocida) || 0;
+    const isG = form.unidadPeso === 'g';
+    const mult = isG ? 0.001 : 1;
+
+    const vivo = (Number(form.pesoVivo) || 0) * mult;
+    const cocida = (Number(form.pesoCocida) || 0) * mult;
     const rend = vivo > 0 ? (cocida / vivo) * 100 : 0;
 
     let totalMuestra = 0;
@@ -220,16 +225,16 @@ export default function Muestreos() {
     let defectos = 0;
 
     selectedCats.forEach(id => {
-      const val = Number(form.cats[id]) || 0;
+      const val = (Number(form.cats[id]) || 0) * mult;
       const cat = maestros.cats.find(c => c._id === id);
       totalMuestra += val;
-      if (cat?.tipoCat === 'procesable') procesable = val;
+      if (cat?.tipoCat === 'procesable') procesable += val;
       else if (cat?.tipoCat === 'rechazo') rechazos += val;
       else defectos += val;
     });
 
     return { rend, totalMuestra, procesable, rechazos, defectos };
-  }, [form.pesoVivo, form.pesoCocida, form.cats, selectedCats, maestros.cats]);
+  }, [form.pesoVivo, form.pesoCocida, form.cats, selectedCats, maestros.cats, form.unidadPeso]);
 
   const filtered = useMemo(() => {
     return muestreos.filter(m => 
@@ -297,7 +302,8 @@ export default function Muestreos() {
       uxkg: m.uxkg || '',
       pesoVivo: m.pesoVivo || '',
       pesoCocida: m.pesoCocida || '',
-      cats: mCats
+      cats: mCats,
+      unidadPeso: m.unidadPeso || 'kg'
     });
 
     // Intentar restaurar contexto de proveedor/centros si el directorio ya existe
@@ -779,7 +785,22 @@ export default function Muestreos() {
               {step === 2 && (
                 <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out' }}>
                   <div className="am-mb-24">
-                    <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '12px', color: 'var(--color-text)' }}>Datos base de la muestra</h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>Datos base de la muestra</h4>
+                      <div className="mx-form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
+                        <label className="mx-label" style={{ margin: 0, fontSize: '0.8rem' }}>Unidad de peso:</label>
+                        <select 
+                          className="mx-select" 
+                          value={form.unidadPeso || 'kg'} 
+                          onChange={e => setForm({...form, unidadPeso: e.target.value})} 
+                          style={{ width: 'auto', padding: '4px 8px', fontSize: '0.8rem', minWidth: '60px' }}
+                          tabIndex={-1}
+                        >
+                          <option value="kg">kg</option>
+                          <option value="g">g</option>
+                        </select>
+                      </div>
+                    </div>
                     <div className="mx-form-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
                       <div className="mx-form-group">
                         <label className="mx-label">Unidades por kilo</label>
@@ -794,29 +815,29 @@ export default function Muestreos() {
                         />
                       </div>
                       <div className="mx-form-group">
-                        <label className="mx-label">Peso vivo (kg)</label>
+                        <label className="mx-label">Peso vivo ({form.unidadPeso || 'kg'})</label>
                         <input 
                           type="number" 
                           className="mx-input" 
                           value={form.pesoVivo} 
                           onChange={e => setForm({...form, pesoVivo: e.target.value})} 
                           onKeyDown={handleAdvanceOnEnter}
-                          placeholder="0.00" 
+                          placeholder={form.unidadPeso === 'g' ? "0" : "0.00"}
                           min="0" 
-                          step="0.01"
+                          step={form.unidadPeso === 'g' ? "1" : "0.01"}
                         />
                       </div>
                       <div className="mx-form-group">
-                        <label className="mx-label">Peso carne (kg)</label>
+                        <label className="mx-label">Peso carne ({form.unidadPeso || 'kg'})</label>
                         <input 
                           type="number" 
                           className="mx-input" 
                           value={form.pesoCocida} 
                           onChange={e => setForm({...form, pesoCocida: e.target.value})} 
                           onKeyDown={handleAdvanceOnEnter}
-                          placeholder="0.00" 
+                          placeholder={form.unidadPeso === 'g' ? "0" : "0.00"}
                           min="0" 
-                          step="0.01"
+                          step={form.unidadPeso === 'g' ? "1" : "0.01"}
                         />
                       </div>
                       <div className="mx-form-group">
@@ -879,7 +900,7 @@ export default function Muestreos() {
                       <thead>
                         <tr>
                           <th>Categoría Seleccionada</th>
-                          <th style={{ textAlign: 'right' }}>Peso (kg)</th>
+                          <th style={{ textAlign: 'right' }}>Peso ({form.unidadPeso || 'kg'})</th>
                           <th style={{ textAlign: 'right' }}>%</th>
                         </tr>
                       </thead>
@@ -914,7 +935,7 @@ export default function Muestreos() {
                                   value={form.cats[id] || ''} 
                                   onChange={e => setForm({...form, cats: {...form.cats, [id]: e.target.value}})}
                                   onKeyDown={handleAdvanceOnEnter}
-                                  placeholder="0.00"
+                                  placeholder={form.unidadPeso === 'g' ? "0" : "0.00"}
                                 />
                               </td>
                               <td style={{ textAlign: 'right', fontWeight: 700, opacity: 0.7 }}>{fmtNum(pct, 1)}%</td>
@@ -958,7 +979,7 @@ export default function Muestreos() {
                   <div className="mu-result-grid">
                     <div className="mu-res-item">
                       <label>Rendimiento Carne</label>
-                      <div className="val">{fmtNum(totals.rend, 2)}%</div>
+                      <div className="val">{fmtNum(totals.rend, 1)}%</div>
                     </div>
                     <div className="mu-res-item">
                       <label>Unidades por kilo</label>
