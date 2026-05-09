@@ -366,7 +366,7 @@ export default function QuickCaptureModal() {
 
       {open && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '620px', width: 'min(100%, 620px)', margin: '24px auto' }}>
+          <div className="mx-modal" style={{ maxWidth: '620px', width: 'min(100%, 620px)' }}>
             <div className="mx-modal-header">
               <div>
                 <h3 className="mx-modal-title">Registro rápido en terreno</h3>
@@ -378,7 +378,7 @@ export default function QuickCaptureModal() {
             </div>
 
             <form onSubmit={handleSubmit} className="mx-form">
-              <div className="mx-modal-body" style={{ display: 'grid', gap: '18px', maxHeight: '72vh', overflowY: 'auto' }}>
+              <div className="mx-modal-body" style={{ display: 'grid', gap: '18px' }}>
                 <section className="mx-form-group">
                   <label className="mx-label">1. Proveedor</label>
                   <div
