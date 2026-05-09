@@ -251,13 +251,13 @@ export default function Interacciones() {
       {isModalOpen && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '550px' }}>
-            <div className="mx-modal-head">
-              <h3 className="mx-modal-title">Registrar Nueva Gestión</h3>
-              <button className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
+            <div className="mx-modal-header">
+              <h2>Registrar Nueva Gestión</h2>
+              <button type="button" className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
             </div>
-            <form onSubmit={handleSave}>
+            <form onSubmit={handleSave} className="mx-form">
               <div className="mx-modal-body">
-                <div className="mx-field">
+                <div className="mx-form-group">
                   <label className="mx-label">Proveedor / Empresa</label>
                   <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, border: '1px solid var(--color-border)', borderRadius: 14, padding: '12px 14px', background: '#fff' }}>
                     <Search size={18} style={{ color: 'var(--color-text-subtle)', flexShrink: 0 }} />
@@ -303,28 +303,28 @@ export default function Interacciones() {
                     )}
                   </div>
                 </div>
-                <div className="mx-field-row" style={{ display: 'flex', gap: '16px' }}>
-                  <div className="mx-field" style={{ flex: 1 }}>
+                <div className="mx-form-row" style={{ display: 'flex', gap: '16px' }}>
+                  <div className="mx-form-group" style={{ flex: 1 }}>
                     <label className="mx-label">Tipo de Gestión</label>
-                    <select className="mx-input" value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
+                    <select className="mx-select" value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
                       {TIPOS.map((t) => <option key={t.val} value={t.val}>{t.label}</option>)}
                     </select>
                   </div>
-                  <div className="mx-field" style={{ flex: 1 }}>
+                  <div className="mx-form-group" style={{ flex: 1 }}>
                     <label className="mx-label">Fecha</label>
                     <input type="date" className="mx-input" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} />
                   </div>
                 </div>
-                <div className="mx-field">
+                <div className="mx-form-group">
                   <label className="mx-label">Resumen Ejecutivo</label>
                   <input className="mx-input" value={form.resumen} onChange={(e) => setForm({ ...form, resumen: e.target.value })} placeholder="Ej: Llamada de seguimiento de precio" required />
                 </div>
-                <div className="mx-field">
+                <div className="mx-form-group">
                   <label className="mx-label">Detalle y Compromisos</label>
-                  <textarea className="mx-input" value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} rows="4" />
+                  <textarea className="mx-textarea" value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} rows="4" />
                 </div>
               </div>
-              <div className="mx-modal-foot">
+              <div className="mx-modal-footer">
                 <button type="button" className="mx-btn mx-btn-outline" onClick={closeModal}>Cancelar</button>
                 <button type="submit" className="mx-btn mx-btn-primary">Guardar Gestión</button>
               </div>

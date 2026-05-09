@@ -328,15 +328,15 @@ export default function Usuarios() {
       {isModalOpen && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '500px' }}>
-            <div className="mx-modal-head">
-              <h3 className="mx-modal-title">{editingUser ? 'Editar' : 'Nuevo'} Usuario</h3>
-              <button className="mx-btn-icon" onClick={() => setIsModalOpen(false)}>
+            <div className="mx-modal-header">
+              <h2>{editingUser ? 'Editar' : 'Nuevo'} Usuario</h2>
+              <button type="button" className="mx-btn-icon" onClick={() => setIsModalOpen(false)}>
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleSave} key={editingUser?._id || 'nuevo-usuario'} autoComplete="off">
+            <form onSubmit={handleSave} key={editingUser?._id || 'nuevo-usuario'} autoComplete="off" className="mx-form">
               <div className="mx-modal-body">
-                <div className="mx-field">
+                <div className="mx-form-group">
                   <label className="mx-label">Nombre Completo</label>
                   <input
                     name="nombre"
@@ -347,7 +347,7 @@ export default function Usuarios() {
                     autoComplete="none"
                   />
                 </div>
-                <div className="mx-field">
+                <div className="mx-form-group">
                   <label className="mx-label">Email</label>
                   <input
                     name="email"
@@ -359,8 +359,8 @@ export default function Usuarios() {
                     autoComplete="off"
                   />
                 </div>
-                <div className="mx-field">
-                  <select name="rol" className="mx-input" defaultValue={editingUser?.rol || 'usuario'}>
+                <div className="mx-form-group">
+                  <select name="rol" className="mx-select" defaultValue={editingUser?.rol || 'usuario'}>
                     <option value="superadmin">SuperAdmin (Global)</option>
                     <option value="admin">Administrador Empresa</option>
                     <option value="usuario">Usuario Operativo</option>
@@ -369,9 +369,9 @@ export default function Usuarios() {
                 </div>
 
                 {currentUser?.rol === 'superadmin' && (
-                  <div className="mx-field">
+                  <div className="mx-form-group">
                     <label className="mx-label">Asignar Empresa</label>
-                    <select name="empresaId" className="mx-input" defaultValue={editingUser?.empresaId || ''}>
+                    <select name="empresaId" className="mx-select" defaultValue={editingUser?.empresaId || ''}>
                       <option value="">Global / Sin Empresa</option>
                       {empresas.map((e) => (
                         <option key={e._id} value={e._id}>
@@ -383,7 +383,7 @@ export default function Usuarios() {
                 )}
 
                 {!editingUser && (
-                  <div className="mx-field">
+                  <div className="mx-form-group">
                     <label className="mx-label">
                       Contraseña inicial{' '}
                       <span style={{ fontWeight: 400, color: 'var(--color-text-subtle)' }}>
@@ -400,12 +400,14 @@ export default function Usuarios() {
                   </div>
                 )}
 
-                <div className="mx-field usuarios-modal-checkbox">
-                  <input type="checkbox" name="activo" defaultChecked={editingUser ? editingUser.activo : true} />
-                  <label className="mx-label">Usuario Activo</label>
+                <div className="mx-form-group usuarios-modal-checkbox">
+                  <label className="mx-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="checkbox" name="activo" defaultChecked={editingUser ? editingUser.activo : true} />
+                    Usuario Activo
+                  </label>
                 </div>
               </div>
-              <div className="mx-modal-foot">
+              <div className="mx-modal-footer">
                 <button type="button" className="mx-btn mx-btn-outline" onClick={() => setIsModalOpen(false)}>
                   Cancelar
                 </button>
@@ -436,8 +438,8 @@ export default function Usuarios() {
                 Esto cambiará los permisos de acceso para <strong>{userToToggle?.nombre}</strong>.
               </p>
             </div>
-            <div className="mx-modal-foot">
-              <button className="mx-btn mx-btn-outline" style={{ flex: 1 }} onClick={() => setIsConfirmStatusOpen(false)}>
+            <div className="mx-modal-footer">
+              <button type="button" className="mx-btn mx-btn-outline" style={{ flex: 1 }} onClick={() => setIsConfirmStatusOpen(false)}>
                 Cancelar
               </button>
               <button
@@ -463,17 +465,17 @@ export default function Usuarios() {
       {confirmModal.isOpen && confirmModal.type !== 'delete' && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '400px' }}>
-            <div className="mx-modal-head">
-              <h3 className="mx-modal-title">{confirmModal.title}</h3>
-              <button className="mx-btn-icon" onClick={closeConfirmModal}>
+            <div className="mx-modal-header">
+              <h2>{confirmModal.title}</h2>
+              <button type="button" className="mx-btn-icon" onClick={closeConfirmModal}>
                 <X size={20} />
               </button>
             </div>
             <div className="mx-modal-body">
               <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>{confirmModal.message}</p>
             </div>
-            <div className="mx-modal-foot">
-              <button className="mx-btn" onClick={closeConfirmModal}>
+            <div className="mx-modal-footer">
+              <button type="button" className="mx-btn mx-btn-outline" onClick={closeConfirmModal}>
                 Cancelar
               </button>
               <button

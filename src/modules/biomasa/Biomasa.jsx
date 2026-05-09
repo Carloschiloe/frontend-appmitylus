@@ -678,6 +678,141 @@ export default function Biomasa() {
         </div>
       </div>
 
+      {/* MODAL SEGUIMIENTO / NOVEDAD (Stage 3 Refactor) */}
+      {showSegModal && (
+        <div className="mx-modal-overlay">
+          <div className="mx-modal" style={{ maxWidth: '500px' }}>
+            <div className="mx-modal-header">
+              <h2>Registrar Novedad</h2>
+              <button className="mx-btn-icon" onClick={() => setShowSegModal(false)}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleSegSave} className="mx-form">
+              <div className="mx-modal-body">
+                <div className="mx-form-group">
+                  <label className="mx-label">Estado de Cosecha</label>
+                  <select 
+                    className="mx-select" 
+                    value={segEstado} 
+                    onChange={e => setSegEstado(e.target.value)} 
+                    required
+                  >
+                    <option value="">— Seleccionar —</option>
+                    <option value="activo">🟢 Activo (Cosecha normal)</option>
+                    <option value="pausado">🟡 Pausado (Retrasos climáticos/logísticos)</option>
+                    <option value="detenido">🔴 Detenido (Alerta crítica / posible cancelación)</option>
+                  </select>
+                </div>
+                <div className="mx-form-group">
+                  <label className="mx-label">Nota / Observación de Cosecha</label>
+                  <textarea 
+                    className="mx-textarea" 
+                    value={segNota} 
+                    onChange={e => setSegNota(e.target.value)} 
+                    placeholder="Describe lo ocurrido (ej: retraso por clima, cambio de logística...)"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="mx-modal-footer">
+                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setShowSegModal(false)}>Cancelar</button>
+                <button type="submit" className="mx-btn mx-btn-primary">
+                  <CheckCircle2 size={18} /> Registrar Novedad
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PROGRAMA (Stage 3 Refactor) */}
+      {showModal && (
+        <div className="mx-modal-overlay">
+          <div className="mx-modal" style={{ maxWidth: '600px' }}>
+            <div className="mx-modal-header">
+              <h2>{editingId ? 'Editar Programa' : 'Nuevo Programa de Cosecha'}</h2>
+              <button className="mx-btn-icon" onClick={() => setShowModal(false)}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleSave} className="mx-form">
+              <div className="mx-modal-body">
+                <div className="mx-form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                  <div className="mx-form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="mx-label">Proveedor / Trato Acordado</label>
+                    <select 
+                      className="mx-select" 
+                      value={formData.tratoId} 
+                      onChange={(e) => {
+                        const t = tratosAcordados.find(x => x._id === e.target.value);
+                        setFormData({
+                          ...formData,
+                          tratoId: e.target.value,
+                          vigenciaDesde: t?.vigenciaDesde?.split('T')[0] || formData.vigenciaDesde,
+                          vigenciaHasta: t?.vigenciaHasta?.split('T')[0] || formData.vigenciaHasta,
+                          camionesDefault: t?.camionesXDia || formData.camionesDefault,
+                          tonsEstimadas: t?.tonsAcordadas || formData.tonsEstimadas
+                        });
+                      }}
+                      required
+                    >
+                      <option value="">— Seleccionar trato acordado —</option>
+                      {tratosAcordados.map(t => (
+                        <option key={t._id} value={t._id}>{t.proveedorNombre} — {t.tonsAcordadas}T ({t.centroCodigo || t.centroNombre || 'Sin centro'})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Desde</label>
+                    <input type="date" className="mx-input" value={formData.vigenciaDesde} onChange={e => setFormData({...formData, vigenciaDesde: e.target.value})} required />
+                  </div>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Hasta</label>
+                    <input type="date" className="mx-input" value={formData.vigenciaHasta} onChange={e => setFormData({...formData, vigenciaHasta: e.target.value})} required />
+                  </div>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Camiones / día</label>
+                    <input type="number" className="mx-input" value={formData.camionesDefault} onChange={e => setFormData({...formData, camionesDefault: e.target.value})} min="0" required />
+                  </div>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Tons estimadas</label>
+                    <input type="number" className="mx-input" value={formData.tonsEstimadas} onChange={e => setFormData({...formData, tonsEstimadas: e.target.value})} />
+                  </div>
+                  <div className="mx-form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="mx-label">Días de Cosecha</label>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d, i) => (
+                        <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', background: formData.diasSemana.includes(i) ? 'var(--color-primary-light, #f0fdfa)' : 'white', borderColor: formData.diasSemana.includes(i) ? 'var(--color-primary)' : 'var(--color-border)' }}>
+                          <input 
+                            type="checkbox" 
+                            style={{ display: 'none' }}
+                            checked={formData.diasSemana.includes(i)}
+                            onChange={() => {
+                              const next = formData.diasSemana.includes(i) 
+                                ? formData.diasSemana.filter(x => x !== i)
+                                : [...formData.diasSemana, i];
+                              setFormData({...formData, diasSemana: next});
+                            }}
+                          />
+                          {d}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mx-form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="mx-label">Notas / Observaciones</label>
+                    <textarea className="mx-textarea" value={formData.notas} onChange={e => setFormData({...formData, notas: e.target.value})} rows="2" />
+                  </div>
+                </div>
+              </div>
+              <div className="mx-modal-footer">
+                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setShowModal(false)}>Cancelar</button>
+                <button type="submit" className="mx-btn mx-btn-primary">
+                  <CheckCircle2 size={18} /> {editingId ? 'Guardar Cambios' : 'Crear Programa'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <ConfirmDeleteModal
         isOpen={Boolean(confirmDelete)}
         onClose={() => setConfirmDelete(null)}

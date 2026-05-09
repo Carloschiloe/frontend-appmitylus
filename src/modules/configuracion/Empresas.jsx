@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   Building2, 
   Plus, 
@@ -208,15 +208,15 @@ export default function Empresas() {
       {isModalOpen && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '500px' }}>
-            <div className="mx-modal-head">
-              <h3 className="mx-modal-title">{editingEmpresa ? 'Editar' : 'Nueva'} Empresa</h3>
-              <button className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
+            <div className="mx-modal-header">
+              <h2>{editingEmpresa ? 'Editar' : 'Nueva'} Empresa</h2>
+              <button type="button" className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
             </div>
-            <form onSubmit={handleSave} autoComplete="off">
+            <form onSubmit={handleSave} autoComplete="off" className="mx-form">
               <div className="mx-modal-body">
 
                 {/* Logo */}
-                <div className="mx-field">
+                <div className="mx-form-group">
                   <label className="mx-label">Logo de la empresa</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{
@@ -249,16 +249,16 @@ export default function Empresas() {
                   </div>
                 </div>
 
-                <div className="mx-field">
+                <div className="mx-form-group">
                   <label className="mx-label">Nombre de la Empresa</label>
                   <input name="nombre" className="mx-input" defaultValue={editingEmpresa?.nombre || ''} placeholder="Ej: Pacific Gold Chile" required />
                 </div>
-                <div className="mx-field">
+                <div className="mx-form-group">
                   <label className="mx-label">RUT</label>
                   <input name="rut" className="mx-input" defaultValue={editingEmpresa?.rut || ''} placeholder="Ej: 77.123.456-7" />
                 </div>
 
-                <div className="mx-field">
+                <div className="mx-form-group">
                   <label className="mx-label">Base de Datos (Nombre Físico)</label>
                   <input name="dbName" className="mx-input" defaultValue={editingEmpresa?.dbName || ''} placeholder="Ej: mitynex_db_original" />
                   <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
@@ -266,12 +266,14 @@ export default function Empresas() {
                   </p>
                 </div>
 
-                <div className="mx-field usuarios-modal-checkbox">
-                  <input type="checkbox" name="activo" defaultChecked={editingEmpresa ? editingEmpresa.activo : true} />
-                  <label className="mx-label">Empresa Activa</label>
+                <div className="mx-form-group usuarios-modal-checkbox">
+                  <label className="mx-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="checkbox" name="activo" defaultChecked={editingEmpresa ? editingEmpresa.activo : true} />
+                    Empresa Activa
+                  </label>
                 </div>
               </div>
-              <div className="mx-modal-foot">
+              <div className="mx-modal-footer">
                 <button type="button" className="mx-btn mx-btn-outline" onClick={() => setIsModalOpen(false)}>Cancelar</button>
                 <button type="submit" className="mx-btn mx-btn-primary" disabled={saveMutation.isPending}>
                   {saveMutation.isPending ? 'Guardando...' : editingEmpresa ? 'Guardar Cambios' : 'Crear Empresa'}

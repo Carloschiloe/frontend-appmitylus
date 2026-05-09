@@ -367,19 +367,19 @@ export default function QuickCaptureModal() {
       {open && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '620px', width: 'min(100%, 620px)', margin: '24px auto' }}>
-            <div className="mx-modal-head">
+            <div className="mx-modal-header">
               <div>
                 <h3 className="mx-modal-title">Registro rápido en terreno</h3>
                 <p style={{ margin: '6px 0 0', color: 'var(--color-text-subtle)', fontSize: '0.92rem' }}>
                   Selecciona proveedor, qué pasó y cómo quedó el seguimiento.
                 </p>
               </div>
-              <button className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
+              <button type="button" className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="mx-form">
               <div className="mx-modal-body" style={{ display: 'grid', gap: '18px', maxHeight: '72vh', overflowY: 'auto' }}>
-                <section className="mx-field">
+                <section className="mx-form-group">
                   <label className="mx-label">1. Proveedor</label>
                   <div
                     style={{
@@ -541,7 +541,7 @@ export default function QuickCaptureModal() {
                   )}
                 </section>
 
-                <section className="mx-field">
+                <section className="mx-form-group">
                   <label className="mx-label">2. Qué pasó</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginTop: 8 }}>
                     {ACTION_OPTIONS.map((option) => {
@@ -572,7 +572,7 @@ export default function QuickCaptureModal() {
                   </div>
                 </section>
 
-                <section className="mx-field">
+                <section className="mx-form-group">
                   <label className="mx-label">3. Cómo quedó</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginTop: 8 }}>
                     {RESULT_OPTIONS.map((option) => {
@@ -621,7 +621,7 @@ export default function QuickCaptureModal() {
                         Cargamos como sugerencia la ultima proxima accion del estado pausado. Puedes editarla antes de guardar.
                       </div>
                     )}
-                    <div className="mx-field">
+                    <div className="mx-form-group">
                       <label className="mx-label">Próxima acción</label>
                       <input
                         className="mx-input"
@@ -631,7 +631,7 @@ export default function QuickCaptureModal() {
                         required
                       />
                     </div>
-                    <div className="mx-field">
+                    <div className="mx-form-group">
                       <label className="mx-label">{form.resultadoSeguimiento === 'pausar' ? 'Fecha revisión' : 'Fecha próxima'}</label>
                       <input
                         type="date"
@@ -649,10 +649,10 @@ export default function QuickCaptureModal() {
                 )}
 
                 {form.resultadoSeguimiento === 'pausar' && (
-                  <section className="mx-field">
+                  <section className="mx-form-group">
                     <label className="mx-label">Motivo de pausa</label>
                     <select
-                      className="mx-input"
+                      className="mx-select"
                       value={form.motivoPausa}
                       onChange={(e) => setForm((prev) => ({ ...prev, motivoPausa: e.target.value }))}
                     >
@@ -664,10 +664,10 @@ export default function QuickCaptureModal() {
                 )}
 
                 {form.resultadoSeguimiento === 'cerrar' && (
-                  <section className="mx-field">
+                  <section className="mx-form-group">
                     <label className="mx-label">Motivo de cierre</label>
                     <select
-                      className="mx-input"
+                      className="mx-select"
                       value={form.motivoCierre}
                       onChange={(e) => setForm((prev) => ({ ...prev, motivoCierre: e.target.value }))}
                     >
@@ -678,7 +678,7 @@ export default function QuickCaptureModal() {
                   </section>
                 )}
 
-                <section className="mx-field">
+                <section className="mx-form-group">
                   <label className="mx-label">Resumen corto</label>
                   <input
                     className="mx-input"
@@ -688,10 +688,10 @@ export default function QuickCaptureModal() {
                   />
                 </section>
 
-                <section className="mx-field">
+                <section className="mx-form-group">
                   <label className="mx-label">Nota opcional</label>
                   <textarea
-                    className="mx-input"
+                    className="mx-textarea"
                     rows="3"
                     value={form.detalle}
                     onChange={(e) => setForm((prev) => ({ ...prev, detalle: e.target.value }))}
@@ -710,7 +710,7 @@ export default function QuickCaptureModal() {
                 )}
               </div>
 
-              <div className="mx-modal-foot">
+              <div className="mx-modal-footer">
                 <button type="button" className="mx-btn mx-btn-outline" onClick={closeModal}>Cancelar</button>
                 <button type="submit" className="mx-btn mx-btn-primary" disabled={saving || !selected}>
                   {saving ? 'Guardando...' : 'Guardar gestión'}

@@ -257,21 +257,21 @@ export default function Maestros() {
       {isModalOpen && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: tipo === 'clasificacion_producto' ? '650px' : '500px' }}>
-            <div className="mx-modal-head">
-              <h3 className="mx-modal-title">{editingItem ? 'Editar' : 'Nuevo'} Registro</h3>
-              <button className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
+            <div className="mx-modal-header">
+              <h2>{editingItem ? 'Editar' : 'Nuevo'} Registro</h2>
+              <button type="button" className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
             </div>
-            <form onSubmit={handleSave} key={editingItem?._id || 'nuevo'}>
+            <form onSubmit={handleSave} key={editingItem?._id || 'nuevo'} className="mx-form">
               <div className="mx-modal-body">
-                <div className="mx-field">
+                <div className="mx-form-group">
                   <label className="mx-label">Nombre / Etiqueta</label>
                   <input name="nombre" className="mx-input" defaultValue={editingItem?.nombre} required />
                 </div>
 
                 {tipo === 'categoria-muestreo' && (
-                  <div className="mx-field">
+                  <div className="mx-form-group">
                     <label className="mx-label">Tipo Categoría</label>
-                    <select name="tipoCat" className="mx-input" defaultValue={editingItem?.tipoCat || 'procesable'}>
+                    <select name="tipoCat" className="mx-select" defaultValue={editingItem?.tipoCat || 'procesable'}>
                       <option value="procesable">Procesable</option>
                       <option value="rechazo">Rechazo</option>
                       <option value="defecto">Defecto</option>
@@ -281,19 +281,19 @@ export default function Maestros() {
 
                 {tipo === 'clasificacion_producto' && (
                   <>
-                    <div className="mx-field">
+                    <div className="mx-form-group">
                       <label className="mx-label">Tipo Principal</label>
-                      <select name="tipoPrincipal" className="mx-input" defaultValue={editingItem?.tipoPrincipal || 'Entero'}>
+                      <select name="tipoPrincipal" className="mx-select" defaultValue={editingItem?.tipoPrincipal || 'Entero'}>
                         <option value="Entero">Entero</option>
                         <option value="Media Concha">Media Concha</option>
                         <option value="Carne">Carne</option>
                       </select>
                     </div>
-                    <div className="mx-field">
+                    <div className="mx-form-group">
                       <label className="mx-label maestros-modal-param-header">
                         Rangos de Calidad
                         <select
-                          className="mx-input maestros-modal-param-select"
+                          className="mx-select maestros-modal-param-select"
                           onChange={(e) => {
                             const val = e.target.value;
                             if (!val) return;
@@ -352,9 +352,9 @@ export default function Maestros() {
 
                 {tipo === 'condicion_negociacion' && (
                   <>
-                    <div className="mx-field">
+                    <div className="mx-form-group">
                       <label className="mx-label">Tipo Valor</label>
-                      <select name="tipoValor" className="mx-input" defaultValue={editingItem?.tipoValor || 'texto'}>
+                      <select name="tipoValor" className="mx-select" defaultValue={editingItem?.tipoValor || 'texto'}>
                         <option value="moneda">Moneda ($)</option>
                         <option value="porcentaje">Porcentaje (%)</option>
                         <option value="dias">Días</option>
@@ -363,26 +363,30 @@ export default function Maestros() {
                         <option value="texto">Texto</option>
                       </select>
                     </div>
-                    <div className="mx-field maestros-modal-checkbox-row">
-                      <input type="checkbox" name="requerido" defaultChecked={editingItem?.requerido} />
-                      <label className="mx-label maestros-modal-label-mb0">Campo Requerido</label>
+                    <div className="mx-form-group maestros-modal-checkbox-row">
+                      <label className="mx-label maestros-modal-label-mb0" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="checkbox" name="requerido" defaultChecked={editingItem?.requerido} />
+                        Campo Requerido
+                      </label>
                     </div>
                   </>
                 )}
 
                 {tipo !== 'responsable' && (
-                  <div className="mx-field">
+                  <div className="mx-form-group">
                     <label className="mx-label">Orden</label>
                     <input name="orden" type="number" className="mx-input" defaultValue={editingItem?.orden || 0} />
                   </div>
                 )}
 
-                <div className="mx-field maestros-modal-checkbox-row maestros-modal-checkbox-margin">
-                  <input type="checkbox" name="activo" defaultChecked={editingItem ? editingItem.activo : true} />
-                  <label className="mx-label maestros-modal-label-mb0">Registro Activo</label>
+                <div className="mx-form-group maestros-modal-checkbox-row maestros-modal-checkbox-margin">
+                  <label className="mx-label maestros-modal-label-mb0" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="checkbox" name="activo" defaultChecked={editingItem ? editingItem.activo : true} />
+                    Registro Activo
+                  </label>
                 </div>
               </div>
-              <div className="mx-modal-foot">
+              <div className="mx-modal-footer">
                 <button type="button" className="mx-btn mx-btn-outline" onClick={() => setIsModalOpen(false)}>
                   Cancelar
                 </button>

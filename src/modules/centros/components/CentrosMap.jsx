@@ -283,12 +283,12 @@ export default function CentrosMap() {
       {selectedCentro && (
         <div className="mx-modal-overlay" style={{ zIndex: 100000 }}>
           <div className="mx-modal" style={{ maxWidth: '500px' }}>
-            <div className="mx-modal-head">
+            <div className="mx-modal-header">
               <div>
-                <h3 className="mx-modal-title">{selectedCentro.proveedor}</h3>
-                <p className="mx-modal-sub">Centro de Cultivo {selectedCentro.code}</p>
+                <h2>{selectedCentro.proveedor}</h2>
+                <p className="mx-modal-sub" style={{ margin: 0, color: 'var(--color-text-muted)' }}>Centro de Cultivo {selectedCentro.code}</p>
               </div>
-              <button className="mx-btn-icon" onClick={() => setSelectedCentro(null)}><X size={20} /></button>
+              <button type="button" className="mx-btn-icon" onClick={() => setSelectedCentro(null)}><X size={20} /></button>
             </div>
             <div className="mx-modal-body">
               <div className="centros-detail-grid">
@@ -320,8 +320,8 @@ export default function CentrosMap() {
                 </div>
               </div>
             </div>
-            <div className="mx-modal-foot">
-              <button className="mx-btn mx-btn-primary" style={{ width: '100%' }} onClick={() => setSelectedCentro(null)}>
+            <div className="mx-modal-footer">
+              <button type="button" className="mx-btn mx-btn-primary" style={{ width: '100%' }} onClick={() => setSelectedCentro(null)}>
                 Cerrar Detalles
               </button>
             </div>

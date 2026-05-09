@@ -705,20 +705,20 @@ export default function Directorio() {
       {modalState.open && (
         <div className="mx-modal-overlay">
             <div className="mx-modal" style={{ maxWidth: '500px' }}>
-            <div className="mx-modal-head">
-              <h3 className="mx-modal-title">
+            <div className="mx-modal-header">
+              <h2>
                 {tab === 'proveedores'
                   ? (modalState.mode === 'edit' ? 'Editar Empresa' : 'Nueva Empresa')
                   : (modalState.mode === 'edit' ? 'Editar Contacto' : 'Nuevo Contacto')}
-              </h3>
-              <button className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
+              </h2>
+              <button type="button" className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
             </div>
 
-            <form onSubmit={submitModal}>
-              <div className="mx-modal-body" style={{ maxHeight: '66vh', overflowY: 'auto' }}>
+            <form onSubmit={submitModal} className="mx-form">
+              <div className="mx-modal-body">
                 {tab === 'proveedores' ? (
                   <>
-                    <div className="mx-field">
+                    <div className="mx-form-group">
                       <label className="mx-label">Razon social / nombre empresa</label>
                       <input
                         name="nombre"
@@ -728,7 +728,7 @@ export default function Directorio() {
                         defaultValue={modalState.item?.nombre || ''}
                       />
                     </div>
-                    <div className="mx-field">
+                    <div className="mx-form-group">
                       <label className="mx-label">Codigo interno (Key)</label>
                       <input
                         name="proveedorKey"
@@ -739,7 +739,7 @@ export default function Directorio() {
                         readOnly={modalState.mode === 'edit'}
                       />
                     </div>
-                    <div className="mx-field">
+                    <div className="mx-form-group">
                       <label className="mx-label">Comuna / ubicacion principal</label>
                       <input
                         name="comuna"
@@ -751,7 +751,7 @@ export default function Directorio() {
                   </>
                 ) : (
                   <>
-                    <div className="mx-field">
+                    <div className="mx-form-group">
                       <label className="mx-label">Nombre completo</label>
                       <input
                         name="nombre"
@@ -761,7 +761,7 @@ export default function Directorio() {
                         defaultValue={modalState.item?.nombre || modalState.item?.contactoNombre || ''}
                       />
                     </div>
-                    <div className="mx-field gs-contact-provider-field">
+                    <div className="mx-form-group gs-contact-provider-field">
                       <label className="mx-label">Empresa asociada</label>
                       <div className="gs-contact-provider-search">
                         <Search size={18} />
@@ -831,7 +831,7 @@ export default function Directorio() {
                       )}
                     </div>
 
-                    <div className="mx-field">
+                    <div className="mx-form-group">
                       <label className="mx-label">Centro asociado</label>
                       {!selectedProvider ? (
                         <div className="gs-contact-provider-empty">Selecciona primero la empresa para cargar sus centros.</div>
@@ -839,7 +839,7 @@ export default function Directorio() {
                         <div className="gs-contact-provider-empty">Esta empresa no tiene centros registrados.</div>
                       ) : (
                         <select
-                          className="mx-input"
+                          className="mx-select"
                           value={contactCenterValue}
                           onChange={(e) => setContactCenterValue(e.target.value)}
                         >
@@ -853,8 +853,8 @@ export default function Directorio() {
                       )}
                     </div>
 
-                    <div className="mx-field-row" style={{ display: 'flex', gap: '16px' }}>
-                      <div className="mx-field" style={{ flex: 1 }}>
+                    <div className="mx-form-row" style={{ display: 'flex', gap: '16px' }}>
+                      <div className="mx-form-group" style={{ flex: 1 }}>
                         <label className="mx-label">Correo electrónico</label>
                         <input
                           name="email"
@@ -864,7 +864,7 @@ export default function Directorio() {
                           defaultValue={modalState.item?.email || modalState.item?.contactoEmail || ''}
                         />
                       </div>
-                      <div className="mx-field" style={{ flex: 1 }}>
+                      <div className="mx-form-group" style={{ flex: 1 }}>
                         <label className="mx-label">Telefono</label>
                         <input
                           name="telefono"
@@ -878,7 +878,7 @@ export default function Directorio() {
                 )}
               </div>
 
-              <div className="mx-modal-foot" style={{ position: 'sticky', bottom: 0, background: '#fff', borderTop: '1px solid #e2e8f0' }}>
+              <div className="mx-modal-footer">
                 <button type="button" className="mx-btn mx-btn-outline" onClick={closeModal}>Cancelar</button>
                 <button type="submit" className="mx-btn mx-btn-primary">
                   {modalState.mode === 'edit'

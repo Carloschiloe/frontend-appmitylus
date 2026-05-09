@@ -325,17 +325,17 @@ export default function Tratos() {
       {isModalOpen && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '600px' }}>
-            <div className="mx-modal-head">
-              <h3 className="mx-modal-title">{editingId ? 'Editar Trato' : 'Nuevo Trato'}</h3>
-              <button className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
+            <div className="mx-modal-header">
+              <h2>{editingId ? 'Editar Trato' : 'Nuevo Trato'}</h2>
+              <button type="button" className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
             </div>
-            <form onSubmit={handleSave}>
-              <div className="mx-modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-                <div className="mx-field">
+            <form onSubmit={handleSave} className="mx-form">
+              <div className="mx-modal-body">
+                <div className="mx-form-group">
                   <label className="mx-label">Proveedor</label>
                   <input className="mx-input" value={form.proveedorNombre} onChange={e => setForm({...form, proveedorNombre: e.target.value})} required />
                 </div>
-                <div className="mx-field">
+                <div className="mx-form-group">
                   <label className="mx-label">Tons Acordadas</label>
                   <input type="number" className="mx-input" value={form.tonsAcordadas} onChange={e => setForm({...form, tonsAcordadas: e.target.value})} required />
                 </div>
@@ -400,24 +400,24 @@ export default function Tratos() {
                   </div>
                 </div>
 
-                <div className="mx-field-row am-mt-16" style={{ display: 'flex', gap: '16px' }}>
-                  <div className="mx-field" style={{ flex: 1 }}>
+                <div className="mx-form-row am-mt-16" style={{ display: 'flex', gap: '16px' }}>
+                  <div className="mx-form-group" style={{ flex: 1 }}>
                     <label className="mx-label">Fecha Cierre</label>
                     <input type="date" className="mx-input" value={form.fechaCierre} onChange={e => setForm({...form, fechaCierre: e.target.value})} />
                   </div>
-                  <div className="mx-field" style={{ flex: 1 }}>
+                  <div className="mx-form-group" style={{ flex: 1 }}>
                     <label className="mx-label">Estado General</label>
-                    <select className="mx-input" value={form.estado} onChange={e => setForm({...form, estado: e.target.value})}>
+                    <select className="mx-select" value={form.estado} onChange={e => setForm({...form, estado: e.target.value})}>
                       {ESTADOS_TRATO.map(e => <option key={e.val} value={e.val}>{e.label}</option>)}
                     </select>
                   </div>
                 </div>
-                <div className="mx-field">
+                <div className="mx-form-group">
                   <label className="mx-label">Notas</label>
-                  <textarea className="mx-input" value={form.notas} onChange={e => setForm({...form, notas: e.target.value})} rows="3" />
+                  <textarea className="mx-textarea" value={form.notas} onChange={e => setForm({...form, notas: e.target.value})} rows="3" />
                 </div>
               </div>
-              <div className="mx-modal-foot">
+              <div className="mx-modal-footer">
                 <button type="button" className="mx-btn mx-btn-outline" onClick={() => setIsModalOpen(false)}>Cancelar</button>
                 <button type="submit" className="mx-btn mx-btn-primary">Guardar Negociación</button>
               </div>

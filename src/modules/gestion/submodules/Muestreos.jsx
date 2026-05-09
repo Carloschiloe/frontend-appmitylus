@@ -319,7 +319,7 @@ export default function Muestreos() {
   );
 
   const renderOrigenSelector = () => (
-    <div className="mx-field">
+    <div className="mx-form-group">
       <label className="mx-label">Origen / Responsable del Muestreo</label>
       <div className="mu-origen-group">
         <button 
@@ -474,7 +474,7 @@ export default function Muestreos() {
       {isModalOpen && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '800px', width: '95%' }}>
-            <div className="mx-modal-head">
+            <div className="mx-modal-header">
               <div>
                 <h3 className="mx-modal-title">{editingId ? 'Editar' : 'Nuevo'} Muestreo Técnico</h3>
                 <p className="mx-modal-sub">{step === 1 ? 'Datos de origen y contexto' : step === 2 ? 'Análisis de categorías y mermas' : 'Resultados y clasificación'}</p>
@@ -488,27 +488,27 @@ export default function Muestreos() {
               {/* FASE 1: CONTEXTO */}
               {step === 1 && (
                 <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out' }}>
-                  <div className="mx-field-row">
-                    <div className="mx-field" style={{ flex: 2 }}>
+                  <div className="mx-form-row">
+                    <div className="mx-form-group" style={{ flex: 2 }}>
                       <label className="mx-label"><User size={14} /> Proveedor</label>
                       <input className="mx-input" placeholder="Nombre del proveedor..." value={form.proveedorNombre} onChange={e => setForm({...form, proveedorNombre: e.target.value})} />
                     </div>
-                    <div className="mx-field" style={{ flex: 1 }}>
+                    <div className="mx-form-group" style={{ flex: 1 }}>
                       <label className="mx-label"><Calendar size={14} /> Fecha</label>
                       <input type="date" className="mx-input" value={form.fecha} onChange={e => setForm({...form, fecha: e.target.value})} />
                     </div>
                   </div>
 
-                  <div className="mx-field-row am-mt-16">
-                    <div className="mx-field" style={{ flex: 1 }}>
+                  <div className="mx-form-row am-mt-16">
+                    <div className="mx-form-group" style={{ flex: 1 }}>
                       <label className="mx-label"><MapPin size={14} /> Centro</label>
                       <input className="mx-input" placeholder="Código centro..." value={form.centroCodigo} onChange={e => setForm({...form, centroCodigo: e.target.value})} />
                     </div>
-                    <div className="mx-field" style={{ flex: 1 }}>
+                    <div className="mx-form-group" style={{ flex: 1 }}>
                       <label className="mx-label"><Layers size={14} /> Línea</label>
                       <input className="mx-input" placeholder="N° Línea..." value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} />
                     </div>
-                    <div className="mx-field" style={{ flex: 1 }}>
+                    <div className="mx-form-group" style={{ flex: 1 }}>
                       <label className="mx-label"><Settings2 size={14} /> Responsable</label>
                       <input className="mx-input" placeholder="Nombre..." value={form.responsable} onChange={e => setForm({...form, responsable: e.target.value})} />
                     </div>
@@ -670,7 +670,7 @@ export default function Muestreos() {
               )}
             </div>
 
-            <div className="mx-modal-foot" style={{ justifyContent: 'space-between' }}>
+            <div className="mx-modal-footer" style={{ justifyContent: 'space-between' }}>
               <button 
                 className="mx-btn mx-btn-outline" 
                 onClick={() => setStep(s => Math.max(1, s - 1))}

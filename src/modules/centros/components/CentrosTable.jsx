@@ -311,44 +311,44 @@ export default function CentrosTable() {
       {modalState.open && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '760px' }}>
-            <button className="mx-modal-close" onClick={() => setModalState({ open: false, item: null })}>
-              <X size={20} />
-            </button>
-            <form onSubmit={handleSubmitCentro}>
-              <div className="mx-modal-head">
-                <h3>{modalState.item?._id ? 'Editar Centro' : 'Nuevo Centro'}</h3>
-              </div>
+            <div className="mx-modal-header">
+              <h2>{modalState.item?._id ? 'Editar Centro' : 'Nuevo Centro'}</h2>
+              <button type="button" className="mx-btn-icon" onClick={() => setModalState({ open: false, item: null })}>
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmitCentro} className="mx-form">
               <div className="mx-modal-body" style={{ display: 'grid', gap: '18px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '16px' }}>
-                  <div className="am-form-group">
-                    <label>Proveedor</label>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Proveedor</label>
                     <input className="mx-input" name="proveedor" defaultValue={modalState.item?.proveedor || ''} required />
                   </div>
-                  <div className="am-form-group">
-                    <label>Código Centro</label>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Código Centro</label>
                     <input className="mx-input" name="code" defaultValue={modalState.item?.code || ''} required />
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="am-form-group">
-                    <label>Comuna</label>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Comuna</label>
                     <input className="mx-input" name="comuna" defaultValue={modalState.item?.comuna || ''} required />
                   </div>
-                  <div className="am-form-group">
-                    <label>Región</label>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Región</label>
                     <input className="mx-input" name="region" defaultValue={modalState.item?.region || ''} />
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="am-form-group">
-                    <label>Área PSMB</label>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Área PSMB</label>
                     <input className="mx-input" name="areaPSMB" defaultValue={modalState.item?.areaPSMB || ''} />
                   </div>
-                  <div className="am-form-group">
-                    <label>Estado Área</label>
-                    <select className="mx-input" name="estadoAreaSernapesca" defaultValue={modalState.item?.estadoAreaSernapesca || ''}>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Estado Área</label>
+                    <select className="mx-select" name="estadoAreaSernapesca" defaultValue={modalState.item?.estadoAreaSernapesca || ''}>
                       <option value="">Seleccionar</option>
                       <option value="Abierta">Abierta</option>
                       <option value="Cerrada">Cerrada</option>
@@ -358,17 +358,17 @@ export default function CentrosTable() {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="am-form-group">
-                    <label>Hectáreas</label>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Hectáreas</label>
                     <input className="mx-input" name="hectareas" type="number" step="0.01" defaultValue={modalState.item?.hectareas ?? ''} />
                   </div>
-                  <div className="am-form-group">
-                    <label>Tons Máx</label>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Tons Máx</label>
                     <input className="mx-input" name="tonsMax" type="number" step="0.01" defaultValue={modalState.item?.tonsMax ?? ''} />
                   </div>
                 </div>
               </div>
-              <div className="mx-modal-foot">
+              <div className="mx-modal-footer">
                 <button type="button" className="mx-btn mx-btn-outline" onClick={() => setModalState({ open: false, item: null })}>
                   Cancelar
                 </button>
