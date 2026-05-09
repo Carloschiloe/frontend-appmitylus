@@ -765,22 +765,59 @@ export default function Muestreos() {
               {/* FASE 2: ANÁLISIS DE CATEGORÍAS */}
               {step === 2 && (
                 <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out' }}>
-                  <div className="mu-kpi-inputs am-mb-24">
-                    <div className="mu-input-card">
-                      <label>Calibre (U x Kg)</label>
-                      <input type="number" value={form.uxkg} onChange={e => setForm({...form, uxkg: e.target.value})} placeholder="0" />
-                    </div>
-                    <div className="mu-input-card">
-                      <label>Peso Vivo (kg)</label>
-                      <input type="number" value={form.pesoVivo} onChange={e => setForm({...form, pesoVivo: e.target.value})} placeholder="0.00" />
-                    </div>
-                    <div className="mu-input-card">
-                      <label>Peso Carne (kg)</label>
-                      <input type="number" value={form.pesoCocida} onChange={e => setForm({...form, pesoCocida: e.target.value})} placeholder="0.00" />
-                    </div>
-                    <div className="mu-input-card highlight">
-                      <label>Rendimiento %</label>
-                      <div className="val" style={{ fontSize: '1.25rem', fontWeight: 900, marginTop: '4px' }}>{fmtNum(totals.rend, 1)}%</div>
+                  <div className="am-mb-24">
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '12px', color: 'var(--color-text)' }}>Datos base de la muestra</h4>
+                    <div className="mx-form-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
+                      <div className="mx-form-group">
+                        <label className="mx-label">Unidades por kilo</label>
+                        <input 
+                          type="number" 
+                          className="mx-input" 
+                          value={form.uxkg} 
+                          onChange={e => setForm({...form, uxkg: e.target.value})} 
+                          placeholder="0" 
+                          min="0"
+                        />
+                      </div>
+                      <div className="mx-form-group">
+                        <label className="mx-label">Peso vivo (kg)</label>
+                        <input 
+                          type="number" 
+                          className="mx-input" 
+                          value={form.pesoVivo} 
+                          onChange={e => setForm({...form, pesoVivo: e.target.value})} 
+                          placeholder="0.00" 
+                          min="0" 
+                          step="0.01"
+                        />
+                      </div>
+                      <div className="mx-form-group">
+                        <label className="mx-label">Peso carne (kg)</label>
+                        <input 
+                          type="number" 
+                          className="mx-input" 
+                          value={form.pesoCocida} 
+                          onChange={e => setForm({...form, pesoCocida: e.target.value})} 
+                          placeholder="0.00" 
+                          min="0" 
+                          step="0.01"
+                        />
+                      </div>
+                      <div className="mx-form-group">
+                        <label className="mx-label">Rendimiento %</label>
+                        <input 
+                          type="text" 
+                          className="mx-input" 
+                          value={`${fmtNum(totals.rend, 1)}%`} 
+                          readOnly 
+                          style={{ 
+                            background: 'var(--color-bg)', 
+                            cursor: 'default', 
+                            fontWeight: 700, 
+                            color: 'var(--color-primary)' 
+                          }} 
+                        />
+                      </div>
                     </div>
                   </div>
 
