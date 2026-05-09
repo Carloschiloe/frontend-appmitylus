@@ -172,7 +172,7 @@ export default function Calendario() {
     <div className="calendario-main-wrapper">
       <div className="calendario-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 className="calendario-title-text" style={{ margin: 0 }}>Agenda y Calendario</h2>
+          <h2 className="calendario-title-text" style={{ margin: 0 }}>Calendario de Actividades</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
             Gestiona compromisos, visitas y seguimientos.
           </p>

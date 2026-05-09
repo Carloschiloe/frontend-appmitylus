@@ -18,7 +18,7 @@ const GESTION_TABS = [
   { id: 'bandeja', label: 'Resumen', to: '/gestion/bandeja', icon: Inbox },
   { id: 'proveedores', label: 'Proveedores', to: '/gestion/proveedores', icon: Building2 },
   { id: 'tratos', label: 'Negociaciones', to: '/gestion/tratos', icon: Handshake },
-  { id: 'agenda', label: 'Agenda', to: '/gestion/agenda', icon: Calendar },
+  { id: 'agenda', label: 'Calendario actividades', to: '/gestion/agenda', icon: Calendar },
 ];
 export default function Gestion() {
   return (

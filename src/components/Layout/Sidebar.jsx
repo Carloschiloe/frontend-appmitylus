@@ -40,7 +40,7 @@ const MENU_STRUCTURE = [
     links: [
       { label: 'Resumen', to: '/gestion/bandeja', icon: Inbox },
       { label: 'Proveedores', to: '/gestion/proveedores', icon: Building2 },
-      { label: 'Agenda', to: '/gestion/agenda', icon: Calendar }
+      { label: 'Calendario actividades', to: '/gestion/agenda', icon: Calendar }
     ]
   },
   {
@@ -59,7 +59,7 @@ const MENU_STRUCTURE = [
     icon: Droplet,
     links: [
       { label: 'Status', to: '/biomasa/status', icon: LayoutDashboard },
-      { label: 'Programa', to: '/biomasa/programa', icon: Calendar },
+      { label: 'Calendario cosechas', to: '/biomasa/programa', icon: Calendar },
       { label: 'Muestreos', to: '/biomasa/muestreos', icon: TestTube2 }
     ]
   },
