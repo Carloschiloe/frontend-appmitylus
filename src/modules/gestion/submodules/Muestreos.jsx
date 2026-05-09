@@ -839,7 +839,7 @@ export default function Muestreos() {
                   </div>
 
                   <div className="mu-cat-selector-bar">
-                    {['procesable', 'defecto', 'rechazo'].map(type => (
+                    {['procesable', 'rechazo', 'defecto'].map(type => (
                       <div key={type} className="mu-cat-group-wrap">
                         <button 
                           type="button"
@@ -884,7 +884,14 @@ export default function Muestreos() {
                         </tr>
                       </thead>
                       <tbody>
-                        {[...selectedCats].map(id => {
+                        {[...selectedCats]
+                          .sort((a, b) => {
+                            const order = { procesable: 1, rechazo: 2, defecto: 3 };
+                            const catA = maestros.cats.find(c => c._id === a);
+                            const catB = maestros.cats.find(c => c._id === b);
+                            return (order[catA?.tipoCat] || 4) - (order[catB?.tipoCat] || 4);
+                          })
+                          .map(id => {
                           const cat = maestros.cats.find(c => c._id === id);
                           if (!cat) return null;
                           const val = Number(form.cats[id]) || 0;
@@ -927,13 +934,13 @@ export default function Muestreos() {
                       <label>Procesable %</label>
                       <div className="val">{fmtNum(totals.totalMuestra > 0 ? 100 - ((totals.rechazos / totals.totalMuestra) * 100) : 0, 1)}%</div>
                     </div>
-                    <div className="mu-total-card defecto">
-                      <label>Defectos %</label>
-                      <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.defectos / totals.totalMuestra) * 100 : 0, 1)}%</div>
-                    </div>
                     <div className="mu-total-card rechazo">
                       <label>Rechazos %</label>
                       <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.rechazos / totals.totalMuestra) * 100 : 0, 1)}%</div>
+                    </div>
+                    <div className="mu-total-card defecto">
+                      <label>Defectos %</label>
+                      <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.defectos / totals.totalMuestra) * 100 : 0, 1)}%</div>
                     </div>
                   </div>
                 </div>
