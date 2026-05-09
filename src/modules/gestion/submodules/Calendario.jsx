@@ -169,92 +169,115 @@ export default function Calendario() {
   }, [selectedDay, getDayEvents]);
 
   return (
-    <div className="mx-calendario-wrap">
-      <div className="mx-calendario-main">
-        <div className="mx-calendario-header">
-          <div className="mx-cal-nav">
-            <h2 className="mx-cal-title">
-              {MONTHS[currentDate.getMonth()]} <span>{currentDate.getFullYear()}</span>
-            </h2>
-            <div className="mx-cal-arrows">
-              <button className="mx-btn-icon" onClick={() => changeMonth(-1)}><ChevronLeft size={20} /></button>
-              <button className="mx-btn-icon" onClick={() => changeMonth(1)}><ChevronRight size={20} /></button>
-              <button className="mx-btn mx-btn-outline sm" style={{ marginLeft: 8 }} onClick={() => setCurrentDate(new Date())}>Hoy</button>
-            </div>
-          </div>
-
-          <div className="mx-cal-stats">
-            <div className="mx-cal-stat is-active">
-              <Target size={14} /> <strong>{data?.activeCount || 0}</strong> Seguimientos
-            </div>
-            <div className="mx-cal-stat is-paused">
-              <PauseCircle size={14} /> <strong>{data?.pausedCount || 0}</strong> Pausados
-            </div>
-          </div>
+    <div className="calendario-main-wrapper">
+      <div className="calendario-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 className="calendario-title-text" style={{ margin: 0 }}>Agenda y Calendario</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+            Gestiona compromisos, visitas y seguimientos.
+          </p>
         </div>
-
-        <div className="mx-cal-grid">
-          {DOW.map(d => <div key={d} className="mx-cal-dow">{d}</div>)}
-          {calendarGrid.map((day, idx) => {
-            const dayEvs = getDayEvents(day.day, day.month, day.year);
-            const isToday = new Date().getDate() === day.day && new Date().getMonth() === day.month && new Date().getFullYear() === day.year;
-            const isSelected = selectedDay?.day === day.day && selectedDay?.month === day.month && selectedDay?.year === day.year;
-
-            return (
-              <div 
-                key={idx} 
-                className={`mx-cal-day ${day.isCurrentMonth ? '' : 'is-prev'} ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}`}
-                onClick={() => setSelectedDay(day)}
-              >
-                <span className="mx-cal-day-num">{day.day}</span>
-                <div className="mx-cal-day-events">
-                  {dayEvs.slice(0, 3).map((ev, i) => {
-                    const cfg = TYPE_CONFIG[ev.kind] || TYPE_CONFIG.default;
-                    return (
-                      <div key={i} className="mx-cal-event-dot" style={{ backgroundColor: cfg.color }} title={ev.title} />
-                    );
-                  })}
-                  {dayEvs.length > 3 && <span className="mx-cal-more">+{dayEvs.length - 3}</span>}
-                </div>
-              </div>
-            );
-          })}
+        <div className="calendario-actions-bar" style={{ display: 'flex', alignItems: 'center' }}>
+          <div className="mx-badge mx-badge-info" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Target size={14} /> <strong>{data?.activeCount || 0}</strong> Seguimientos
+          </div>
+          <div className="mx-badge mx-badge-warning" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <PauseCircle size={14} /> <strong>{data?.pausedCount || 0}</strong> Pausados
+          </div>
         </div>
       </div>
 
-      <div className="mx-calendario-side">
-        <div className="mx-cal-side-head">
-          <h3>{selectedDay ? `${selectedDay.day} de ${MONTHS[selectedDay.month]}` : 'Agenda del día'}</h3>
-          {!selectedDay && <p>Selecciona un día para ver detalles</p>}
-        </div>
-
-        <div className="mx-cal-side-list">
-          {daySelectedEvents.length === 0 ? (
-            <div className="mx-cal-empty">
-              <Clock size={32} />
-              <p>No hay eventos para este día</p>
+      <div className="calendario-layout-grid">
+        <div className="mx-card calendario-grid-card">
+          <div style={{ padding: '20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="calendario-month-nav">
+              <button className="calendario-nav-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={20} /></button>
+              <div className="calendario-nav-label">
+                {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
+              </div>
+              <button className="calendario-nav-btn" onClick={() => changeMonth(1)}><ChevronRight size={20} /></button>
             </div>
-          ) : (
-            daySelectedEvents.map((ev, i) => {
-              const cfg = TYPE_CONFIG[ev.kind] || TYPE_CONFIG.default;
-              const Icon = cfg.icon;
+            <button className="mx-btn mx-btn-outline sm" onClick={() => setCurrentDate(new Date())}>Hoy</button>
+          </div>
+
+          <div className="calendario-dow-row">
+            {DOW.map(d => <div key={d} className="calendario-dow-cell">{d}</div>)}
+          </div>
+          <div className="calendario-days-grid">
+            {calendarGrid.map((day, idx) => {
+              const dayEvs = getDayEvents(day.day, day.month, day.year);
+              const isToday = new Date().getDate() === day.day && new Date().getMonth() === day.month && new Date().getFullYear() === day.year;
+              const isSelected = selectedDay?.day === day.day && selectedDay?.month === day.month && selectedDay?.year === day.year;
+
               return (
-                <div key={i} className="mx-cal-item">
-                  <div className="mx-cal-item-icon" style={{ backgroundColor: cfg.color }}>
-                    <Icon size={16} />
-                  </div>
-                  <div className="mx-cal-item-info">
-                    <div className="mx-cal-item-meta">
-                      <span style={{ color: cfg.color }}>{cfg.label}</span>
-                      {ev.proveedorNombre && <strong>{ev.proveedorNombre}</strong>}
+                <div 
+                  key={idx} 
+                  className="calendario-day-cell"
+                  style={{ 
+                    background: isSelected ? 'var(--color-primary-50)' : day.isCurrentMonth ? 'var(--color-surface)' : '#f8fafc',
+                    boxShadow: isSelected ? 'inset 0 0 0 2px var(--color-primary)' : 'none'
+                  }}
+                  onClick={() => setSelectedDay(day)}
+                >
+                  <div className="calendario-day-header">
+                    <div className="calendario-day-number" style={{ 
+                      background: isToday ? 'var(--color-primary)' : 'transparent',
+                      color: isToday ? '#fff' : (day.isCurrentMonth ? 'var(--color-text)' : 'var(--color-text-muted)')
+                    }}>
+                      {day.day}
                     </div>
-                    <div className="mx-cal-item-title">{ev.title}</div>
-                    {ev.resumen && <div className="mx-cal-item-desc">{ev.resumen}</div>}
+                    {dayEvs.length > 0 && <div className="calendario-day-count">{dayEvs.length} act</div>}
+                  </div>
+                  <div className="calendario-events-wrapper">
+                    {dayEvs.slice(0, 3).map((ev, i) => {
+                      const cfg = TYPE_CONFIG[ev.kind] || TYPE_CONFIG.default;
+                      return (
+                        <div key={i} className="calendario-event-badge" style={{ backgroundColor: cfg.color, color: '#fff' }} title={ev.title}>
+                          {ev.title}
+                        </div>
+                      );
+                    })}
+                    {dayEvs.length > 3 && <div className="calendario-event-more">+{dayEvs.length - 3} más</div>}
                   </div>
                 </div>
               );
-            })
-          )}
+            })}
+          </div>
+        </div>
+
+        <div className="mx-card calendario-aside">
+          <div className="calendario-aside-header">
+            <h3 className="calendario-aside-title">{selectedDay ? `${selectedDay.day} de ${MONTHS[selectedDay.month]}` : 'Agenda del día'}</h3>
+            <p className="calendario-aside-subtitle">{selectedDay ? 'Detalles de la fecha' : 'Selecciona un día en el calendario'}</p>
+          </div>
+
+          <div className="calendario-aside-list">
+            {daySelectedEvents.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-subtle)' }}>
+                <Clock size={32} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+                <p style={{ margin: 0 }}>No hay eventos para este día</p>
+              </div>
+            ) : (
+              daySelectedEvents.map((ev, i) => {
+                const cfg = TYPE_CONFIG[ev.kind] || TYPE_CONFIG.default;
+                const Icon = cfg.icon;
+                return (
+                  <div key={i} className="calendario-event-card">
+                    <div className="calendario-event-card-border" style={{ backgroundColor: cfg.color }} />
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                      <div style={{ color: cfg.color, marginTop: '2px' }}><Icon size={18} /></div>
+                      <div>
+                        <div className="calendario-event-card-type" style={{ color: cfg.color }}>{cfg.label}</div>
+                        <div className="calendario-event-card-title">{ev.title}</div>
+                        {ev.proveedorNombre && <div style={{ fontSize: '0.85rem', fontWeight: 600, marginTop: '4px' }}>{ev.proveedorNombre}</div>}
+                        {ev.resumen && <div className="calendario-event-card-desc">{ev.resumen}</div>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
     </div>
