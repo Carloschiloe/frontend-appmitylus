@@ -348,9 +348,33 @@ export default function Bandeja() {
               {formatTons(summary?.acordadoProxMes)} próx. mes
             </span>
           </div>
-          <button className="mx-btn-icon" onClick={handleRefresh} style={{ color: 'white', background: 'rgba(255,255,255,0.1)' }}>
-            <RotateCcw size={20} />
-          </button>
+          <div className="gs-hero-buttons" style={{ display: 'flex', gap: '8px' }}>
+            <Link 
+              to="/gestion/interacciones" 
+              className="mx-btn" 
+              style={{ 
+                background: 'rgba(255,255,255,0.1)', 
+                color: 'white', 
+                border: '1px solid rgba(255,255,255,0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0 16px',
+                height: '40px',
+                fontSize: '0.9rem'
+              }}
+            >
+              <MessageSquare size={18} />
+              Ver interacciones
+            </Link>
+            <button 
+              className="mx-btn-icon" 
+              onClick={handleRefresh} 
+              style={{ color: 'white', background: 'rgba(255,255,255,0.1)', height: '40px', width: '40px' }}
+            >
+              <RotateCcw size={20} />
+            </button>
+          </div>
         </div>
       </header>
 
