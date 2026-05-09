@@ -483,24 +483,14 @@ export default function Muestreos() {
   const renderOrigenSelector = () => (
     <div className="mx-form-group">
       <label className="mx-label">Origen del Muestreo</label>
-      <div className="mx-toggle-group" style={{ width: '100%', display: 'flex' }}>
-        <button 
-          type="button"
-          className={`mx-toggle-btn ${form.origen === 'abastecimiento' ? 'active' : ''}`}
-          style={{ flex: 1, justifyContent: 'center' }}
-          onClick={() => setForm({...form, origen: 'abastecimiento'})}
-        >
-          Abastecimiento
-        </button>
-        <button 
-          type="button"
-          className={`mx-toggle-btn ${form.origen === 'calidad' ? 'active' : ''}`}
-          style={{ flex: 1, justifyContent: 'center' }}
-          onClick={() => setForm({...form, origen: 'calidad'})}
-        >
-          Control Calidad
-        </button>
-      </div>
+      <select 
+        className="mx-select"
+        value={form.origen}
+        onChange={e => setForm({...form, origen: e.target.value})}
+      >
+        <option value="abastecimiento">Abastecimiento</option>
+        <option value="calidad">Control Calidad</option>
+      </select>
     </div>
   );
 
@@ -655,17 +645,18 @@ export default function Muestreos() {
               {step === 1 && (
                 <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out' }}>
                   <div className="mx-form-row">
-                    <div className="mx-form-group" style={{ flex: 2, position: 'relative' }}>
+                    <div className="mx-form-group" style={{ flex: 1, position: 'relative' }}>
                       <label className="mx-label"><User size={14} /> 1. Proveedor</label>
                       {!selectedProvider ? (
                         <div style={{ position: 'relative' }}>
-                          <div className="mx-search-box" style={{ minWidth: '100%' }}>
+                          <div className="mx-search-box" style={{ width: '100%' }}>
                             <Search size={16} />
                             <input 
                               className="mx-input" 
                               placeholder="Buscar proveedor..." 
                               value={searchProviders} 
                               onChange={e => setSearchProviders(e.target.value)} 
+                              style={{ minWidth: 0 }}
                             />
                           </div>
                           
@@ -720,14 +711,10 @@ export default function Muestreos() {
                         </div>
                       )}
                     </div>
-                    <div className="mx-form-group" style={{ flex: 1 }}>
-                      <label className="mx-label"><Calendar size={14} /> Fecha</label>
-                      <input type="date" className="mx-input" value={form.fecha} onChange={e => setForm({...form, fecha: e.target.value})} />
-                    </div>
                   </div>
 
                   <div className="mx-form-row am-mt-16">
-                    <div className="mx-form-group" style={{ flex: 1 }}>
+                    <div className="mx-form-group" style={{ flex: 2 }}>
                       <label className="mx-label"><MapPin size={14} /> 2. Centro</label>
                       <select 
                         className="mx-select"
@@ -746,14 +733,14 @@ export default function Muestreos() {
                     </div>
                     <div className="mx-form-group" style={{ flex: 1 }}>
                       <label className="mx-label"><Layers size={14} /> Línea</label>
-                      <input className="mx-input" placeholder="N° Línea..." value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} />
+                      <input className="mx-input" placeholder="N° Línea..." value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} style={{ minWidth: 0 }} />
                     </div>
                   </div>
 
                   <div className="mx-form-row am-mt-16">
                     <div className="mx-form-group" style={{ flex: 1 }}>
                       <label className="mx-label"><Calendar size={14} /> Fecha</label>
-                      <input type="date" className="mx-input" value={form.fecha} onChange={e => setForm({...form, fecha: e.target.value})} />
+                      <input type="date" className="mx-input" value={form.fecha} onChange={e => setForm({...form, fecha: e.target.value})} style={{ minWidth: 0 }} />
                     </div>
                     <div className="mx-form-group" style={{ flex: 2 }}>
                       <label className="mx-label"><User size={14} /> Responsable</label>
@@ -763,12 +750,12 @@ export default function Muestreos() {
                         value={form.responsable} 
                         onChange={e => setForm({...form, responsable: e.target.value})}
                         readOnly
-                        style={{ background: 'var(--color-bg)', cursor: 'default' }}
+                        style={{ background: 'var(--color-bg)', cursor: 'default', minWidth: 0 }}
                       />
                     </div>
                   </div>
 
-                  <div className="am-mt-24">
+                  <div className="am-mt-16" style={{ maxWidth: '300px' }}>
                     {renderOrigenSelector()}
                   </div>
                 </div>
