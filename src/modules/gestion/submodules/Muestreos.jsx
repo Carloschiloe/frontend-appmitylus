@@ -321,20 +321,32 @@ export default function Muestreos() {
   }, [maestros.cats, directory, allCentros]);
 
   const handleSave = useCallback(async () => {
+    const isG = form.unidadPeso === 'g';
+    const mult = isG ? 0.001 : 1;
+
     const finalCats = {};
     selectedCats.forEach(id => {
-      finalCats[id] = Number(form.cats[id]) || 0;
+      finalCats[id] = (Number(form.cats[id]) || 0) * mult;
     });
 
     const payload = { 
-      ...form, 
-      rendimiento: totals.rend, 
-      total: totals.totalMuestra, 
-      procesable: totals.procesable, 
-      rechazos: totals.rechazos, 
-      defectos: totals.defectos, 
+      ...form,
+      uxkg: Number(form.uxkg) || 0,
+      pesoVivo: (Number(form.pesoVivo) || 0) * mult,
+      pesoCocida: (Number(form.pesoCocida) || 0) * mult,
+      rendimiento: Number(totals.rend) || 0, 
+      total: Number(totals.totalMuestra) || 0, 
+      procesable: Number(totals.procesable) || 0, 
+      rechazos: Number(totals.rechazos) || 0, 
+      defectos: Number(totals.defectos) || 0, 
       cats: finalCats 
     };
+
+    if (payload.fecha && payload.fecha.length === 10) {
+      payload.fecha = new Date(payload.fecha + 'T12:00:00Z').toISOString();
+    }
+    
+    delete payload.unidadPeso;
 
     try {
       const endpoint = editingId ? `/muestreos/${editingId}` : '/muestreos';
