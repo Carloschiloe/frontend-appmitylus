@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import './biomasa.css';
 import { 
@@ -230,7 +230,7 @@ export default function Biomasa() {
     }
   }, [confirmDelete, addToast, load]);
 
-  const handleSaveSeguimiento = useCallback(async (e) => {
+  const handleSegSave = useCallback(async (e) => {
     e.preventDefault();
     if (!segNota.trim() || !segEstado) return;
     try {
