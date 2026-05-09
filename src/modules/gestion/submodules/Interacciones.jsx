@@ -196,9 +196,7 @@ export default function Interacciones() {
         <button className="mx-btn mx-btn-outline sm" onClick={handleRefresh}>
           <RotateCcw size={18} />
         </button>
-        <button className="mx-btn mx-btn-primary sm" onClick={() => setIsModalOpen(true)}>
-          <Plus size={18} /> Nueva Gestión
-        </button>
+
       </div>
 
       <div className="mx-table-card am-mt-16">
