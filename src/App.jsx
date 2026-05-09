@@ -193,7 +193,7 @@ export default function App() {
                   <Route path="/gestion/*" element={
                     <TenantScopedRoute
                       title="Selecciona una empresa para trabajar en Gestión"
-                      description="Debes elegir una empresa en el selector lateral antes de revisar seguimiento, proveedores, agenda e historial del equipo."
+                      description="Debes elegir una empresa en el selector lateral antes de revisar seguimiento, proveedores y agenda."
                     >
                       <Gestion />
                     </TenantScopedRoute>

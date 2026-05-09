@@ -4,7 +4,6 @@ import {
   Inbox,
   Building2,
   Calendar,
-  History,
   MessageSquare,
   Handshake,
 } from 'lucide-react';
@@ -21,7 +20,6 @@ const GESTION_TABS = [
   { id: 'proveedores', label: 'Proveedores', to: '/gestion/proveedores', icon: Building2 },
   { id: 'tratos', label: 'Negociaciones', to: '/gestion/tratos', icon: Handshake },
   { id: 'agenda', label: 'Agenda', to: '/gestion/agenda', icon: Calendar },
-  { id: 'historial', label: 'Historial', to: '/historial', icon: History },
 ];
 
 const GESTION_TOOL_LINKS = [
@@ -99,9 +97,7 @@ export default function Gestion() {
               lineHeight: 1.5,
             }}
           >
-            <strong style={{ color: '#0f172a' }}>Interacciones</strong> se mantiene como herramienta de registro y carga manual.
-            La vista oficial para revisar el trabajo del equipo y supervisar llamadas, visitas y muestreos vive en{' '}
-            <strong style={{ color: '#0f172a' }}>Historial &gt; Actividad del equipo</strong>.
+            <strong style={{ color: '#0f172a' }}>Interacciones</strong> se mantiene como herramienta de registro y carga manual para el equipo operativo.
           </p>
         </div>
 
