@@ -629,8 +629,8 @@ export default function Muestreos() {
       {/* MODAL PRINCIPAL (3 FASES RESTAURADAS) */}
       {isModalOpen && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '800px', width: '95%' }}>
-            <div className="mx-modal-header">
+          <div className="mx-modal" style={{ maxWidth: '800px', width: '95%', boxSizing: 'border-box' }}>
+            <div className="mx-modal-header" style={{ width: '100%', boxSizing: 'border-box' }}>
               <div>
                 <h3 className="mx-modal-title">{editingId ? 'Editar' : 'Nuevo'} Muestreo Técnico</h3>
                 <p className="mx-modal-sub">{step === 1 ? 'Datos de origen y contexto' : step === 2 ? 'Análisis de categorías y mermas' : 'Resultados y clasificación'}</p>
@@ -638,7 +638,7 @@ export default function Muestreos() {
               <button className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
             </div>
 
-            <div className="mx-modal-body">
+            <div className="mx-modal-body" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflowX: 'clip', minWidth: 0 }}>
               {renderStepIndicator()}
 
               {/* FASE 1: CONTEXTO */}
@@ -913,7 +913,7 @@ export default function Muestreos() {
               )}
             </div>
 
-            <div className="mx-modal-footer" style={{ justifyContent: 'space-between' }}>
+            <div className="mx-modal-footer" style={{ justifyContent: 'space-between', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
               <button 
                 className="mx-btn mx-btn-outline" 
                 onClick={() => setStep(s => Math.max(1, s - 1))}
@@ -973,8 +973,8 @@ export default function Muestreos() {
       )}
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .mu-steps-header { display: flex; align-items: center; justify-content: space-between; position: relative; }
-        .mu-step-item { display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 1; cursor: pointer; flex: 1; }
+        .mu-steps-header { display: flex; align-items: center; justify-content: space-between; position: relative; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; }
+        .mu-step-item { display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 1; cursor: pointer; flex: 1; position: relative; }
         .mu-step-circle { width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #64748b; transition: all 0.3s; }
         .mu-step-item.active .mu-step-circle { background: var(--color-primary); color: white; transform: scale(1.1); box-shadow: 0 0 15px var(--color-primary-bg); }
         .mu-step-item.completed .mu-step-circle { background: var(--color-success); color: white; }
