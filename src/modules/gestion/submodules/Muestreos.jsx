@@ -126,6 +126,7 @@ export default function Muestreos() {
     setProviderCenters([]);
     setSearchProviders('');
     setSelectedCats(new Set(maestros.cats.filter(c => c.tipoCat === 'procesable').map(c => c._id)));
+    setIsModalOpen(true);
   }, [user, maestros.cats]);
 
   // Buscador de Proveedor (Patrón Registro Rápido)
