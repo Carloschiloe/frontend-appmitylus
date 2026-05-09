@@ -643,20 +643,20 @@ export default function Muestreos() {
 
               {/* FASE 1: CONTEXTO */}
               {step === 1 && (
-                <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out' }}>
-                  <div className="mx-form-row">
-                    <div className="mx-form-group" style={{ flex: 1, position: 'relative' }}>
+                <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out', width: '100%', maxWidth: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
+                  <div className="mx-form-row" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                    <div className="mx-form-group" style={{ flex: 1, position: 'relative', minWidth: 0, boxSizing: 'border-box' }}>
                       <label className="mx-label"><User size={14} /> 1. Proveedor</label>
                       {!selectedProvider ? (
-                        <div style={{ position: 'relative' }}>
-                          <div className="mx-search-box" style={{ width: '100%' }}>
+                        <div style={{ position: 'relative', width: '100%', boxSizing: 'border-box' }}>
+                          <div className="mx-search-box" style={{ width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
                             <Search size={16} />
                             <input 
                               className="mx-input" 
                               placeholder="Buscar proveedor..." 
                               value={searchProviders} 
                               onChange={e => setSearchProviders(e.target.value)} 
-                              style={{ minWidth: 0 }}
+                              style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
                             />
                           </div>
                           
@@ -713,8 +713,8 @@ export default function Muestreos() {
                     </div>
                   </div>
 
-                  <div className="mx-form-row am-mt-16">
-                    <div className="mx-form-group" style={{ flex: 2 }}>
+                  <div className="mx-form-row am-mt-16" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                    <div className="mx-form-group" style={{ flex: 2, minWidth: 0, boxSizing: 'border-box' }}>
                       <label className="mx-label"><MapPin size={14} /> 2. Centro</label>
                       <select 
                         className="mx-select"
@@ -724,6 +724,7 @@ export default function Muestreos() {
                           setForm(prev => ({ ...prev, centroId: e.target.value, centroCodigo: c?.code || '' }));
                         }}
                         disabled={!selectedProvider || providerCenters.length === 0}
+                        style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
                       >
                         <option value="">{!selectedProvider ? 'Selecciona proveedor primero' : providerCenters.length === 0 ? 'Sin centros registrados' : 'Selecciona un centro...'}</option>
                         {providerCenters.map(c => (
@@ -731,18 +732,18 @@ export default function Muestreos() {
                         ))}
                       </select>
                     </div>
-                    <div className="mx-form-group" style={{ flex: 1 }}>
+                    <div className="mx-form-group" style={{ flex: 1, minWidth: 0, boxSizing: 'border-box' }}>
                       <label className="mx-label"><Layers size={14} /> Línea</label>
-                      <input className="mx-input" placeholder="N° Línea..." value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} style={{ minWidth: 0 }} />
+                      <input className="mx-input" placeholder="N° Línea..." value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }} />
                     </div>
                   </div>
 
-                  <div className="mx-form-row am-mt-16">
-                    <div className="mx-form-group" style={{ flex: 1 }}>
+                  <div className="mx-form-row am-mt-16" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                    <div className="mx-form-group" style={{ flex: 1, minWidth: 0, boxSizing: 'border-box' }}>
                       <label className="mx-label"><Calendar size={14} /> Fecha</label>
-                      <input type="date" className="mx-input" value={form.fecha} onChange={e => setForm({...form, fecha: e.target.value})} style={{ minWidth: 0 }} />
+                      <input type="date" className="mx-input" value={form.fecha} onChange={e => setForm({...form, fecha: e.target.value})} style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }} />
                     </div>
-                    <div className="mx-form-group" style={{ flex: 2 }}>
+                    <div className="mx-form-group" style={{ flex: 2, minWidth: 0, boxSizing: 'border-box' }}>
                       <label className="mx-label"><User size={14} /> Responsable</label>
                       <input 
                         className="mx-input" 
@@ -750,7 +751,7 @@ export default function Muestreos() {
                         value={form.responsable} 
                         onChange={e => setForm({...form, responsable: e.target.value})}
                         readOnly
-                        style={{ background: 'var(--color-bg)', cursor: 'default', minWidth: 0 }}
+                        style={{ background: 'var(--color-bg)', cursor: 'default', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
                       />
                     </div>
                   </div>
