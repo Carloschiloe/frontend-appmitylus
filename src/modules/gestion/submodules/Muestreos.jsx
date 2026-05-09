@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../../context/AuthContext';
 import { useMuestreosData } from '../../../hooks/useMuestreosData';
 
 const fmtNum = (v, d = 2) => (Number(v) || 0).toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -74,6 +75,7 @@ function buildProviderDirectory(centros = [], contactos = []) {
 
 export default function Muestreos() {
   const { addToast } = useToast();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'grouped'
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -102,6 +104,29 @@ export default function Muestreos() {
     pesoCocida: '',
     cats: {}
   });
+
+  const resetForm = useCallback(() => {
+    setForm({
+      proveedorNombre: '',
+      proveedorKey: '',
+      centroId: '',
+      centroCodigo: '',
+      linea: '',
+      fecha: new Date().toISOString().slice(0, 10),
+      origen: 'abastecimiento',
+      responsable: user?.nombre || '',
+      uxkg: '',
+      pesoVivo: '',
+      pesoCocida: '',
+      cats: {}
+    });
+    setEditingId(null);
+    setStep(1);
+    setSelectedProvider(null);
+    setProviderCenters([]);
+    setSearchProviders('');
+    setSelectedCats(new Set(maestros.cats.filter(c => c.tipoCat === 'procesable').map(c => c._id)));
+  }, [user, maestros.cats]);
 
   // Buscador de Proveedor (Patrón Registro Rápido)
   const [searchProviders, setSearchProviders] = useState('');
@@ -456,16 +481,20 @@ export default function Muestreos() {
 
   const renderOrigenSelector = () => (
     <div className="mx-form-group">
-      <label className="mx-label">Origen / Responsable del Muestreo</label>
-      <div className="mu-origen-group">
+      <label className="mx-label">Origen del Muestreo</label>
+      <div className="mx-toggle-group" style={{ width: '100%', display: 'flex' }}>
         <button 
-          className={`mu-origen-btn ${form.origen === 'abastecimiento' ? 'active' : ''}`}
+          type="button"
+          className={`mx-toggle-btn ${form.origen === 'abastecimiento' ? 'active' : ''}`}
+          style={{ flex: 1, justifyContent: 'center' }}
           onClick={() => setForm({...form, origen: 'abastecimiento'})}
         >
           Abastecimiento
         </button>
         <button 
-          className={`mu-origen-btn ${form.origen === 'calidad' ? 'active' : ''}`}
+          type="button"
+          className={`mx-toggle-btn ${form.origen === 'calidad' ? 'active' : ''}`}
+          style={{ flex: 1, justifyContent: 'center' }}
           onClick={() => setForm({...form, origen: 'calidad'})}
         >
           Control Calidad
@@ -486,7 +515,7 @@ export default function Muestreos() {
           <Search size={18} /><input type="text" placeholder="Buscar por proveedor o centro..." className="centros-search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
         <button className="mx-btn mx-btn-outline sm" onClick={() => { setPage(1); loadData(1); }}><RotateCcw size={18} /></button>
-        <button className="mx-btn mx-btn-primary sm" onClick={() => { setEditingId(null); setStep(1); setForm({...form, cats: {}}); setSelectedCats(new Set(maestros.cats.filter(c => c.tipoCat === 'procesable').map(c => c._id))); setIsModalOpen(true); }}>
+        <button className="mx-btn mx-btn-primary sm" onClick={resetForm}>
           <Plus size={18} /> Muestreo
         </button>
       </div>
@@ -718,16 +747,36 @@ export default function Muestreos() {
                       <label className="mx-label"><Layers size={14} /> Línea</label>
                       <input className="mx-input" placeholder="N° Línea..." value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} />
                     </div>
+                  </div>
+
+                  <div className="mx-form-row am-mt-16">
                     <div className="mx-form-group" style={{ flex: 1 }}>
+                      <label className="mx-label"><Calendar size={14} /> Fecha</label>
+                      <input type="date" className="mx-input" value={form.fecha} onChange={e => setForm({...form, fecha: e.target.value})} />
+                    </div>
+                    <div className="mx-form-group" style={{ flex: 2 }}>
                       <label className="mx-label"><User size={14} /> Responsable</label>
-                      <input className="mx-input" placeholder="Nombre..." value={form.responsable} onChange={e => setForm({...form, responsable: e.target.value})} />
+                      <input 
+                        className="mx-input" 
+                        placeholder="Nombre..." 
+                        value={form.responsable} 
+                        onChange={e => setForm({...form, responsable: e.target.value})}
+                        readOnly
+                        style={{ background: 'var(--color-bg)', cursor: 'default' }}
+                      />
                     </div>
                   </div>
 
-                  <hr className="am-my-24" style={{ opacity: 0.1 }} />
-                  {renderOrigenSelector()}
+                  <div className="am-mt-24">
+                    {renderOrigenSelector()}
+                  </div>
+                </div>
+              )}
 
-                  <div className="mu-kpi-inputs am-mt-24">
+              {/* FASE 2: ANÁLISIS DE CATEGORÍAS */}
+              {step === 2 && (
+                <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out' }}>
+                  <div className="mu-kpi-inputs am-mb-24">
                     <div className="mu-input-card">
                       <label>Calibre (U x Kg)</label>
                       <input type="number" value={form.uxkg} onChange={e => setForm({...form, uxkg: e.target.value})} placeholder="0" />
@@ -742,15 +791,10 @@ export default function Muestreos() {
                     </div>
                     <div className="mu-input-card highlight">
                       <label>Rendimiento %</label>
-                      <div className="val">{fmtNum(totals.rend, 1)}%</div>
+                      <div className="val" style={{ fontSize: '1.25rem', fontWeight: 900, marginTop: '4px' }}>{fmtNum(totals.rend, 1)}%</div>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* FASE 2: ANÁLISIS DE CATEGORÍAS */}
-              {step === 2 && (
-                <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out' }}>
                   <div className="mu-cat-selector-bar">
                     {['procesable', 'defecto', 'rechazo'].map(type => (
                       <div key={type} className="mu-cat-group-wrap">
