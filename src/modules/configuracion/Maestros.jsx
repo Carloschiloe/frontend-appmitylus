@@ -42,6 +42,8 @@ export default function Maestros() {
     queryFn: () => maestrosApi.getMaestros(tipo),
   });
 
+  const maestrosList = Array.isArray(maestros) ? maestros : [];
+
   const { data: catMuestreo = [] } = useQuery({
     queryKey: ['maestros', 'categoria-muestreo', 'activos'],
     queryFn: () => maestrosApi.getMaestrosActivos('categoria-muestreo'),
@@ -194,14 +196,14 @@ export default function Maestros() {
                       </div>
                     </td>
                   </tr>
-                ) : maestros.length === 0 ? (
+                ) : maestrosList.length === 0 ? (
                   <tr>
                     <td colSpan="10">
                       <div className="mx-state-placeholder">No hay registros.</div>
                     </td>
                   </tr>
                 ) : (
-                  maestros.map((item) => (
+                  maestrosList.map((item) => (
                     <tr key={item._id}>
                       <td><span style={{ fontWeight: 'var(--weight-bold)' }}>{item.nombre}</span></td>
                       {tipo === 'categoria-muestreo' && (
