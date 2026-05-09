@@ -264,6 +264,19 @@ export default function Muestreos() {
   }, [filtered]);
 
   // Handlers
+  const handleAdvanceOnEnter = useCallback((e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const container = e.target.closest('.mu-step-container');
+      if (!container) return;
+      const focusable = Array.from(container.querySelectorAll('input:not([disabled]):not([readonly]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"])'));
+      const index = focusable.indexOf(e.target);
+      if (index > -1 && index < focusable.length - 1) {
+        focusable[index + 1].focus();
+      }
+    }
+  }, []);
+
   const handleEdit = useCallback((m) => {
     setEditingId(m._id || m.id);
     const mCats = m.cats || {};
@@ -775,6 +788,7 @@ export default function Muestreos() {
                           className="mx-input" 
                           value={form.uxkg} 
                           onChange={e => setForm({...form, uxkg: e.target.value})} 
+                          onKeyDown={handleAdvanceOnEnter}
                           placeholder="0" 
                           min="0"
                         />
@@ -786,6 +800,7 @@ export default function Muestreos() {
                           className="mx-input" 
                           value={form.pesoVivo} 
                           onChange={e => setForm({...form, pesoVivo: e.target.value})} 
+                          onKeyDown={handleAdvanceOnEnter}
                           placeholder="0.00" 
                           min="0" 
                           step="0.01"
@@ -798,6 +813,7 @@ export default function Muestreos() {
                           className="mx-input" 
                           value={form.pesoCocida} 
                           onChange={e => setForm({...form, pesoCocida: e.target.value})} 
+                          onKeyDown={handleAdvanceOnEnter}
                           placeholder="0.00" 
                           min="0" 
                           step="0.01"
@@ -816,6 +832,7 @@ export default function Muestreos() {
                             fontWeight: 700, 
                             color: 'var(--color-primary)' 
                           }} 
+                          tabIndex={-1}
                         />
                       </div>
                     </div>
@@ -825,6 +842,8 @@ export default function Muestreos() {
                     {['procesable', 'defecto', 'rechazo'].map(type => (
                       <div key={type} className="mu-cat-group-wrap">
                         <button 
+                          type="button"
+                          tabIndex={-1}
                           className={`mu-cat-group-btn ${type} ${activeDropdown === type ? 'open' : ''}`}
                           onClick={() => setActiveDropdown(activeDropdown === type ? null : type)}
                         >
@@ -843,6 +862,7 @@ export default function Muestreos() {
                                   type="checkbox" 
                                   checked={selectedCats.has(c._id)} 
                                   disabled={type === 'procesable'}
+                                  tabIndex={-1}
                                   onChange={() => toggleCatSelection(c._id)} 
                                 />
                                 <span>{c.nombre}</span>
@@ -876,7 +896,7 @@ export default function Muestreos() {
                                   <span className={`dot ${cat.tipoCat}`}></span>
                                   {cat.nombre}
                                   {cat.tipoCat !== 'procesable' && (
-                                    <button className="mu-remove" onClick={() => toggleCatSelection(id)}>×</button>
+                                    <button type="button" tabIndex={-1} className="mu-remove" onClick={() => toggleCatSelection(id)}>×</button>
                                   )}
                                 </div>
                               </td>
@@ -886,6 +906,7 @@ export default function Muestreos() {
                                   className="mu-cat-input" 
                                   value={form.cats[id] || ''} 
                                   onChange={e => setForm({...form, cats: {...form.cats, [id]: e.target.value}})}
+                                  onKeyDown={handleAdvanceOnEnter}
                                   placeholder="0.00"
                                 />
                               </td>
