@@ -135,4 +135,18 @@
   --mx-gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
   --mx-shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
   --mx-shadow-popover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  /* ── Transiciones (UX Stage 5) ── */
+  --transition-fast:   all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base:   all 0.2s  cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow:   all 0.3s  cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── Colores de acento derivados (UX Stage 5) ── */
+  --color-primary-50:  #f0fdfa;   /* Teal 50 — fondo hover suave */
+  --color-primary-100: #ccfbf1;   /* Teal 100 — hover accent */
+  --color-primary-ring: rgba(13, 148, 136, 0.20); /* ring focus */
+  --color-surface-hover: #f8fafc; /* hover row / card */
+  --color-success-ring: rgba(16, 185, 129, 0.20);
+  --color-warning-ring: rgba(245, 158, 11, 0.20);
+  --color-error-ring:   rgba(239, 68, 68, 0.20);
 }

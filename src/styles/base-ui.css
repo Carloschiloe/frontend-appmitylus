@@ -59,13 +59,15 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  transition: all 0.2s ease;
+  transition: var(--transition-spring);
+  cursor: default;
 }
 
 .mx-list-item:hover {
-  border-color: var(--color-primary-light);
-  box-shadow: var(--shadow-sm);
-  transform: translateX(4px);
+  border-color: var(--color-primary-100);
+  box-shadow: 0 4px 12px -2px rgba(13, 148, 136, 0.10);
+  transform: translateX(3px);
+  background: #fafffe;
 }
 
 /* ── Badges & Indicators ── */
@@ -111,7 +113,7 @@
 .mx-toggle-btn {
   border: none;
   background: none;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: var(--weight-bold);
@@ -120,14 +122,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s;
+  transition: var(--transition-base);
+  position: relative;
 }
 
-.mx-toggle-btn:hover { color: var(--color-text); }
+.mx-toggle-btn:hover { color: var(--color-text); background: rgba(255,255,255,0.6); }
 .mx-toggle-btn.active {
   background: var(--color-surface);
   color: var(--color-primary);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 /* ── KPI & Summary Cards ── */
@@ -140,44 +143,64 @@
 
 .mx-kpi-card {
   background: var(--color-surface);
-  padding: 24px;
+  padding: 22px 24px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
+  transition: var(--transition-spring);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.mx-kpi-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  background: radial-gradient(circle at top right, var(--color-primary-50) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .mx-kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--color-border-hover);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px -4px rgba(13, 148, 136, 0.12), var(--shadow-md);
+  border-color: var(--color-primary-100);
 }
 
+.mx-kpi-card:hover::before { opacity: 1; }
+
 .mx-kpi-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: var(--weight-bold);
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .mx-kpi-value {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: var(--weight-bold);
   color: var(--color-text);
   margin: 0;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .mx-kpi-sub {
   font-size: 0.75rem;
   color: var(--color-text-subtle);
-  margin-top: -4px;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* ── Bandeja / Carriles (Lanes) ── */
