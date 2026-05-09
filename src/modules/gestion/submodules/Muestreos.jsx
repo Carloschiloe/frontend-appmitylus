@@ -30,6 +30,48 @@ import { useMuestreosData } from '../../../hooks/useMuestreosData';
 
 const fmtNum = (v, d = 2) => (Number(v) || 0).toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
 
+function buildProviderDirectory(centros = [], contactos = []) {
+  const firstContactByKey = new Map();
+  contactos.forEach((item) => {
+    const key = String(item.proveedorKey || '').trim().toLowerCase();
+    if (!key || firstContactByKey.has(key)) return;
+    firstContactByKey.set(key, item);
+  });
+
+  const providers = new Map();
+  centros.forEach((centro, index) => {
+    const proveedorNombre = String(centro.proveedor || '').trim() || 'Proveedor sin nombre';
+    const proveedorKey = String(centro.proveedorKey || proveedorNombre).trim().toLowerCase();
+    if (!proveedorKey) return;
+
+    const linkedContact = firstContactByKey.get(proveedorKey);
+    const existing = providers.get(proveedorKey);
+
+    if (!existing) {
+      providers.set(proveedorKey, {
+        id: `prov-${proveedorKey || index}`,
+        contactoId: linkedContact?._id || '',
+        proveedorKey,
+        proveedorNombre,
+        contactoNombre: linkedContact?.contactoNombre || '',
+        contactoTelefono: linkedContact?.contactoTelefono || '',
+        contactoEmail: linkedContact?.contactoEmail || '',
+        comuna: centro.comuna || '',
+        centros: 1,
+      });
+      return;
+    }
+
+    existing.centros += 1;
+    if (!existing.contactoNombre && linkedContact?.contactoNombre) existing.contactoNombre = linkedContact.contactoNombre;
+    if (!existing.contactoTelefono && linkedContact?.contactoTelefono) existing.contactoTelefono = linkedContact.contactoTelefono;
+    if (!existing.contactoEmail && linkedContact?.contactoEmail) existing.contactoEmail = linkedContact.contactoEmail;
+    if (!existing.comuna && centro.comuna) existing.comuna = centro.comuna;
+  });
+
+  return Array.from(providers.values()).sort((a, b) => a.proveedorNombre.localeCompare(b.proveedorNombre));
+}
+
 export default function Muestreos() {
   const { addToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,6 +90,8 @@ export default function Muestreos() {
   // Formulario
   const [form, setForm] = useState({
     proveedorNombre: '',
+    proveedorKey: '',
+    centroId: '',
     centroCodigo: '',
     linea: '',
     fecha: new Date().toISOString().slice(0, 10),
@@ -58,6 +102,85 @@ export default function Muestreos() {
     pesoCocida: '',
     cats: {}
   });
+
+  // Buscador de Proveedor (Patrón Registro Rápido)
+  const [searchProviders, setSearchProviders] = useState('');
+  const [directory, setDirectory] = useState([]);
+  const [allCentros, setAllCentros] = useState([]);
+  const [loadingProviders, setLoadingProviders] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState(null);
+  const [providerCenters, setProviderCenters] = useState([]);
+
+  // Carga de directorio (al abrir modal)
+  React.useEffect(() => {
+    if (!isModalOpen || directory.length > 0) return;
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function loadDirectory() {
+      setLoadingProviders(true);
+      try {
+        const [centrosRes, contactosRes] = await Promise.all([
+          apiClient.get('/centros', { signal: controller.signal }),
+          apiClient.get('/contactos?conEmpresa=1', { signal: controller.signal }),
+        ]);
+
+        if (!cancelled) {
+          const rawCentros = Array.isArray(centrosRes) ? centrosRes : (centrosRes.items || []);
+          const rawContactos = Array.isArray(contactosRes) ? contactosRes : (contactosRes.items || []);
+          setAllCentros(rawCentros);
+          setDirectory(buildProviderDirectory(rawCentros, rawContactos));
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+        addToast({ title: 'Error', message: 'No se pudo cargar el directorio de proveedores.', type: 'error' });
+      } finally {
+        if (!cancelled) setLoadingProviders(false);
+      }
+    }
+
+    loadDirectory();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [isModalOpen, directory.length, addToast]);
+
+  const filteredProviders = useMemo(() => {
+    if (!searchProviders.trim()) return [];
+    const q = searchProviders.toLowerCase();
+    return directory.filter(p => 
+      (p.proveedorNombre || '').toLowerCase().includes(q) ||
+      (p.proveedorKey || '').toLowerCase().includes(q) ||
+      (p.contactoNombre || '').toLowerCase().includes(q)
+    ).slice(0, 10);
+  }, [directory, searchProviders]);
+
+  const handleSelectProvider = (provider) => {
+    setSelectedProvider(provider);
+    setForm(prev => ({
+      ...prev,
+      proveedorNombre: provider.proveedorNombre,
+      proveedorKey: provider.proveedorKey,
+      centroId: '',
+      centroCodigo: ''
+    }));
+    setSearchProviders('');
+
+    // Filtrar centros de este proveedor
+    const centers = allCentros.filter(c => c.proveedorKey === provider.proveedorKey);
+    setProviderCenters(centers);
+
+    // Autoselección si hay solo uno
+    if (centers.length === 1) {
+      setForm(prev => ({
+        ...prev,
+        centroId: centers[0]._id,
+        centroCodigo: centers[0].code
+      }));
+    }
+  };
 
   // Cálculos Automáticos
   const totals = useMemo(() => {
@@ -125,6 +248,8 @@ export default function Muestreos() {
     setSelectedCats(newSelected);
     setForm({
       proveedorNombre: m.proveedorNombre || m.proveedor || '',
+      proveedorKey: m.proveedorKey || '',
+      centroId: m.centroId || '',
       centroCodigo: m.centroCodigo || m.centro || '',
       linea: m.linea || '',
       fecha: (m.fecha || '').slice(0, 10),
@@ -135,9 +260,20 @@ export default function Muestreos() {
       pesoCocida: m.pesoCocida || '',
       cats: mCats
     });
+
+    // Intentar restaurar contexto de proveedor/centros si el directorio ya existe
+    if (directory.length > 0) {
+      const pKey = (m.proveedorKey || '').toLowerCase();
+      const p = directory.find(it => it.proveedorKey === pKey);
+      if (p) {
+        setSelectedProvider(p);
+        setProviderCenters(allCentros.filter(c => c.proveedorKey === pKey));
+      }
+    }
+
     setStep(1);
     setIsModalOpen(true);
-  }, [maestros.cats]);
+  }, [maestros.cats, directory, allCentros]);
 
   const handleSave = useCallback(async () => {
     const finalCats = {};
@@ -489,9 +625,70 @@ export default function Muestreos() {
               {step === 1 && (
                 <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out' }}>
                   <div className="mx-form-row">
-                    <div className="mx-form-group" style={{ flex: 2 }}>
-                      <label className="mx-label"><User size={14} /> Proveedor</label>
-                      <input className="mx-input" placeholder="Nombre del proveedor..." value={form.proveedorNombre} onChange={e => setForm({...form, proveedorNombre: e.target.value})} />
+                    <div className="mx-form-group" style={{ flex: 2, position: 'relative' }}>
+                      <label className="mx-label"><User size={14} /> 1. Proveedor</label>
+                      {!selectedProvider ? (
+                        <div style={{ position: 'relative' }}>
+                          <div className="mx-search-box" style={{ minWidth: '100%' }}>
+                            <Search size={16} />
+                            <input 
+                              className="mx-input" 
+                              placeholder="Buscar proveedor..." 
+                              value={searchProviders} 
+                              onChange={e => setSearchProviders(e.target.value)} 
+                            />
+                          </div>
+                          
+                          {filteredProviders.length > 0 && (
+                            <div style={{ 
+                              position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, 
+                              background: 'white', borderRadius: '12px', border: '1px solid var(--color-border)',
+                              boxShadow: '0 10px 25px rgba(0,0,0,0.1)', marginTop: '4px', overflow: 'hidden'
+                            }}>
+                              {filteredProviders.map(p => (
+                                <button
+                                  key={p.id}
+                                  type="button"
+                                  onClick={() => handleSelectProvider(p)}
+                                  style={{ 
+                                    width: '100%', textAlign: 'left', padding: '10px 14px', border: 'none', 
+                                    background: 'none', borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
+                                    display: 'flex', flexDirection: 'column'
+                                  }}
+                                  className="mu-provider-opt"
+                                >
+                                  <strong style={{ fontSize: '0.9rem' }}>{p.proveedorNombre}</strong>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-subtle)' }}>{p.comuna} · {p.contactoNombre || 'Sin contacto'}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {searchProviders.trim() && filteredProviders.length === 0 && !loadingProviders && (
+                            <div style={{ padding: '12px', textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-text-subtle)' }}>
+                              Sin proveedores encontrados.
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ 
+                          padding: '10px 14px', borderRadius: '12px', background: 'var(--color-primary-bg)', 
+                          border: '1px solid var(--color-primary-100)', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                        }}>
+                          <div>
+                            <strong style={{ color: 'var(--color-primary)', fontSize: '0.95rem' }}>{selectedProvider.proveedorNombre}</strong>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-subtle)' }}>{selectedProvider.comuna}</div>
+                          </div>
+                          <button 
+                            type="button" 
+                            className="mx-btn-icon" 
+                            style={{ width: '24px', height: '24px' }}
+                            onClick={() => { setSelectedProvider(null); setProviderCenters([]); setForm(prev => ({ ...prev, proveedorNombre: '', proveedorKey: '', centroId: '', centroCodigo: '' })); }}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="mx-form-group" style={{ flex: 1 }}>
                       <label className="mx-label"><Calendar size={14} /> Fecha</label>
@@ -501,15 +698,28 @@ export default function Muestreos() {
 
                   <div className="mx-form-row am-mt-16">
                     <div className="mx-form-group" style={{ flex: 1 }}>
-                      <label className="mx-label"><MapPin size={14} /> Centro</label>
-                      <input className="mx-input" placeholder="Código centro..." value={form.centroCodigo} onChange={e => setForm({...form, centroCodigo: e.target.value})} />
+                      <label className="mx-label"><MapPin size={14} /> 2. Centro</label>
+                      <select 
+                        className="mx-select"
+                        value={form.centroId}
+                        onChange={e => {
+                          const c = providerCenters.find(it => it._id === e.target.value);
+                          setForm(prev => ({ ...prev, centroId: e.target.value, centroCodigo: c?.code || '' }));
+                        }}
+                        disabled={!selectedProvider || providerCenters.length === 0}
+                      >
+                        <option value="">{!selectedProvider ? 'Selecciona proveedor primero' : providerCenters.length === 0 ? 'Sin centros registrados' : 'Selecciona un centro...'}</option>
+                        {providerCenters.map(c => (
+                          <option key={c._id} value={c._id}>{c.code} - {c.comuna} {c.areaPSMB ? `(${c.areaPSMB})` : ''}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className="mx-form-group" style={{ flex: 1 }}>
                       <label className="mx-label"><Layers size={14} /> Línea</label>
                       <input className="mx-input" placeholder="N° Línea..." value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} />
                     </div>
                     <div className="mx-form-group" style={{ flex: 1 }}>
-                      <label className="mx-label"><Settings2 size={14} /> Responsable</label>
+                      <label className="mx-label"><User size={14} /> Responsable</label>
                       <input className="mx-input" placeholder="Nombre..." value={form.responsable} onChange={e => setForm({...form, responsable: e.target.value})} />
                     </div>
                   </div>
