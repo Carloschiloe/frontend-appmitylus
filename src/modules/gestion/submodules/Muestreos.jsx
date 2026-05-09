@@ -904,7 +904,11 @@ export default function Muestreos() {
                     </div>
                     <div className="mu-total-card procesable">
                       <label>Procesable %</label>
-                      <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.procesable / totals.totalMuestra) * 100 : 0, 1)}%</div>
+                      <div className="val">{fmtNum(totals.totalMuestra > 0 ? 100 - ((totals.rechazos / totals.totalMuestra) * 100) : 0, 1)}%</div>
+                    </div>
+                    <div className="mu-total-card defecto">
+                      <label>Defectos %</label>
+                      <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.defectos / totals.totalMuestra) * 100 : 0, 1)}%</div>
                     </div>
                     <div className="mu-total-card rechazo">
                       <label>Rechazos %</label>
@@ -929,7 +933,7 @@ export default function Muestreos() {
                       <div className="val">{fmtNum(totals.rend, 2)}%</div>
                     </div>
                     <div className="mu-res-item">
-                      <label>Calibre (UxKg)</label>
+                      <label>Unidades por kilo</label>
                       <div className="val">{form.uxkg || 0}</div>
                     </div>
                     <div className="mu-res-item">
@@ -938,7 +942,7 @@ export default function Muestreos() {
                     </div>
                     <div className="mu-res-item">
                       <label>Procesable</label>
-                      <div className="val success">{fmtNum(totals.totalMuestra > 0 ? (totals.procesable/totals.totalMuestra*100) : 0, 1)}%</div>
+                      <div className="val success">{fmtNum(totals.totalMuestra > 0 ? 100 - ((totals.rechazos / totals.totalMuestra) * 100) : 0, 1)}%</div>
                     </div>
                   </div>
 
@@ -1059,11 +1063,12 @@ export default function Muestreos() {
         .mu-remove { border: none; background: transparent; color: #94a3b8; cursor: pointer; font-size: 18px; margin-left: auto; }
         .mu-remove:hover { color: var(--color-error); }
 
-        .mu-totals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .mu-totals-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         .mu-total-card { background: #f1f5f9; padding: 16px; border-radius: 16px; text-align: center; }
         .mu-total-card label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; }
         .mu-total-card .val { font-size: 20px; font-weight: 900; margin-top: 4px; }
         .mu-total-card.procesable { background: #dcfce7; color: #16a34a; }
+        .mu-total-card.defecto { background: #fff7ed; color: #ea580c; }
         .mu-total-card.rechazo { background: #fee2e2; color: #ef4444; }
 
         .mu-result-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 500px; margin: 0 auto; }
