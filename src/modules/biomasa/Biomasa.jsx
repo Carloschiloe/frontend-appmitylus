@@ -299,524 +299,392 @@ export default function Biomasa() {
           <h1 className="biomasa-title">{isStatusView ? 'Disponibilidad de biomasa' : isProgramView ? 'Programa de Cosecha' : 'Muestreos Técnicos'}</h1>
         </div>
         <div className="mx-hero-actions">
-          <div className="mx-input-group biomasa-date-picker" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', padding: '0 12px' }}>
-            <CalendarIcon size={18} color="rgba(255,255,255,0.8)" />
-            <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} style={{ background: 'transparent', color: 'white', border: 'none', padding: '8px', outline: 'none' }} />
+          <div className="mx-search-box" style={{ minWidth: 'auto' }}>
+            <CalendarIcon size={18} />
+            <input 
+              type="month" 
+              value={mes} 
+              onChange={(e) => setMes(e.target.value)} 
+              style={{ paddingLeft: '42px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} 
+            />
           </div>
-          <button className="mx-btn-icon" onClick={load} style={{ color: 'white', background: 'rgba(255,255,255,0.1)' }}><RotateCcw size={20} /></button>
+          <button className="mx-btn-icon" onClick={load} style={{ color: 'white', background: 'rgba(255,255,255,0.1)' }}>
+            <RotateCcw size={20} />
+          </button>
         </div>
       </header>
 
       <div className="mx-content-frame">
-
-        <div className="sub-tabs-row biomasa-sub-tabs">
-        <div className="mx-toggle-group">
-          {isStatusView ? (
-            <>
-              <button className={`mx-toggle-btn ${statusSubTab === 'disponibilidad' ? 'active' : ''}`} onClick={() => setStatusSubTab('disponibilidad')}><Inbox size={14} /> Disponibilidad</button>
-              <button className={`mx-toggle-btn ${statusSubTab === 'negociacion' ? 'active' : ''}`} onClick={() => setStatusSubTab('negociacion')}><ShoppingCart size={14} /> Negociación</button>
-            </>
-          ) : isProgramView ? (
-            <>
-              <button className={`mx-toggle-btn ${progSubTab === 'programa' ? 'active' : ''}`} onClick={() => setProgSubTab('programa')}><ListIcon size={14} /> Programa</button>
-              <button className={`mx-toggle-btn ${progSubTab === 'calendario' ? 'active' : ''}`} onClick={() => setProgSubTab('calendario')}><LayoutGrid size={14} /> Calendario</button>
-              <button className={`mx-toggle-btn ${progSubTab === 'seguimiento' ? 'active' : ''}`} onClick={() => setProgSubTab('seguimiento')}><Activity size={14} /> Seguimiento</button>
-            </>
-          ) : null}
-        </div>
-        {(isProgramView && progSubTab === 'programa') && (
-          <button className="mx-btn mx-btn-primary" style={{ padding: '8px 20px' }} onClick={() => handleOpenModal()}>
-            <Plus size={18} /> Crear Programa
-          </button>
-        )}
-      </div>
-
-      <div className="tab-content-area">
-        {isStatusView && (
-          <div className="status-view">
-            {statusSubTab === 'disponibilidad' ? (
-             <div className="biomasa-kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-              <div className="biomasa-kpi-card">
-                <div className="biomasa-kpi-label">Disponible</div>
-                <div className="biomasa-kpi-val" style={{ color: '#0ea5e9' }}>{fmtTons(kpis.disponible)}</div>
-              </div>
-              <div className="biomasa-kpi-card">
-                <div className="biomasa-kpi-label">Asignado</div>
-                <div className="biomasa-kpi-val" style={{ color: '#10b981' }}>{fmtTons(kpis.totalAsignado)}</div>
-              </div>
-              <div className="biomasa-kpi-card">
-                <div className="biomasa-kpi-label">Saldo Mensual</div>
-                <div className="biomasa-kpi-val" style={{ color: kpis.saldo >= 0 ? '#10b981' : '#ef4444' }}>{fmtTons(kpis.saldo)}</div>
-                <div className="mx-progress am-mt-12" style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div className="mx-progress-fill" style={{ width: `${Math.min(kpis.pct, 100)}%`, height: '100%', background: 'var(--color-primary)', borderRadius: '4px', transition: 'width 0.5s ease-out' }}></div>
-                </div>
-              </div>
-            </div>
-            ) : (
-              <div className="biomasa-kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-                <div className="biomasa-kpi-card">
-                  <div className="biomasa-kpi-label">En conversación</div>
-                  <div className="biomasa-kpi-val" style={{ color: '#0ea5e9' }}>{fmtTons(negociacionKpis.enConversacionTons)}</div>
-                </div>
-                <div className="biomasa-kpi-card">
-                  <div className="biomasa-kpi-label">Acordadas</div>
-                  <div className="biomasa-kpi-val" style={{ color: '#10b981' }}>{fmtTons(negociacionKpis.acordadasTons)}</div>
-                </div>
-                <div className="biomasa-kpi-card">
-                  <div className="biomasa-kpi-label">Pérdidas del mes</div>
-                  <div className="biomasa-kpi-val" style={{ color: '#ef4444' }}>{fmtTons(negociacionKpis.perdidasTons)}</div>
-                </div>
-              </div>
-            )}
-            <div className="mx-table-card">
-              <table className="mx-table">
-                <thead><tr><th>Proveedor</th><th>{statusSubTab === 'disponibilidad' ? 'Mes' : 'Situación biomasa'}</th><th style={{ textAlign: 'center' }}>Tons</th>{statusSubTab === 'disponibilidad' ? <th>Centro</th> : <th>Programa</th>}</tr></thead>
-                <tbody>
-                  {(statusSubTab === 'disponibilidad' ? disp : [...biomasaPendiente, ...biomasaVinculada]).map(item => (
-                    <tr key={item._id}>
-                      <td style={{ fontWeight: 700 }}>{item.proveedorNombre}</td>
-                      <td>{statusSubTab === 'disponibilidad' ? mesLabel(item.mesKey) : getSituacionBiomasaLabel(item)}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 800 }}>{fmtTons(statusSubTab === 'disponibilidad' ? item.tons : (item.tonsAcordadas || item.tons || item.biomasaEstimacion || 0))}</td>
-                      {statusSubTab === 'disponibilidad' ? <td>{item.centroCodigo || '—'}</td> : <td>{getProgramaLabel(item)}</td>}
-                    </tr>
-                  ))}
-                  {statusSubTab !== 'disponibilidad' && perdidasBiomasa.map((item) => (
-                    <tr key={`perdida-${item._id}`}>
-                      <td style={{ fontWeight: 700 }}>{item.proveedorNombre}</td>
-                      <td>{item.motivoCierre || 'Pérdida'}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 800, color: '#ef4444' }}>
-                        {fmtTons(item.tonsAcordadas || item.tons || item.biomasaEstimacion || 0)}
-                      </td>
-                      <td>Pérdida real</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <div className="mx-toolbar">
+          <div className="mx-toggle-group">
+            {isStatusView ? (
+              <>
+                <button className={`mx-toggle-btn ${statusSubTab === 'disponibilidad' ? 'active' : ''}`} onClick={() => setStatusSubTab('disponibilidad')}><Inbox size={14} /> Disponibilidad</button>
+                <button className={`mx-toggle-btn ${statusSubTab === 'negociacion' ? 'active' : ''}`} onClick={() => setStatusSubTab('negociacion')}><ShoppingCart size={14} /> Negociación</button>
+              </>
+            ) : isProgramView ? (
+              <>
+                <button className={`mx-toggle-btn ${progSubTab === 'programa' ? 'active' : ''}`} onClick={() => setProgSubTab('programa')}><ListIcon size={14} /> Programa</button>
+                <button className={`mx-toggle-btn ${progSubTab === 'calendario' ? 'active' : ''}`} onClick={() => setProgSubTab('calendario')}><LayoutGrid size={14} /> Calendario</button>
+                <button className={`mx-toggle-btn ${progSubTab === 'seguimiento' ? 'active' : ''}`} onClick={() => setProgSubTab('seguimiento')}><Activity size={14} /> Seguimiento</button>
+              </>
+            ) : null}
           </div>
-        )}
+          {(isProgramView && progSubTab === 'programa') && (
+            <button className="mx-btn mx-btn-primary" onClick={() => handleOpenModal()}>
+              <Plus size={18} /> Crear Programa
+            </button>
+          )}
+        </div>
 
-               {isProgramView && (
-          <div className="program-view">
-            {progSubTab === 'programa' && (
-              <div className="mx-table-card" style={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}>
-                <div className="mx-table-wrap">
-                  <table className="mx-table">
-                    <thead>
-                      <tr>
-                        <th style={{ padding: '16px 24px' }}>Proveedor / Centro</th>
-                        <th>Vigencia</th>
-                        <th style={{ textAlign: 'center' }}>Cam/Día</th>
-                        <th>Estado</th>
-                        <th style={{ textAlign: 'right', paddingRight: '24px' }}>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {programas.map(p => (
-                        <tr key={p._id}>
-                          <td style={{ padding: '16px 24px' }}>
-                            <div className="biomasa-prov-cell">
-                              <div className="biomasa-avatar">
-                                {p.proveedorNombre ? p.proveedorNombre.substring(0, 2).toUpperCase() : 'NA'}
-                              </div>
-                              <div>
-                                <div className="biomasa-prov-name">{p.proveedorNombre || 'Proveedor Desconocido'}</div>
-                                <div className="biomasa-centro-name">{p.centroNombre || 'Sin Centro Definido'}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="biomasa-date-range">
-                              <CalendarIcon size={14} />
-                              {p.vigenciaDesde ? new Date(p.vigenciaDesde).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'} - {p.vigenciaHasta ? new Date(p.vigenciaHasta).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}
-                            </div>
-                          </td>
-                          <td style={{ textAlign: 'center' }}>
-                            <div className="biomasa-camiones-badge">
-                              {p.camionesDefault}
-                            </div>
-                          </td>
-                          <td>
-                            <span className={`mx-badge mx-badge-${p.estado === 'activo' ? 'success' : p.estado === 'pausado' ? 'warning' : 'muted'}`} style={{ padding: '6px 12px', borderRadius: '8px', fontWeight: 700, fontSize: '11px', letterSpacing: '0.5px' }}>
-                              {(p.estado || 'desconocido').toUpperCase()}
-                            </span>
-                          </td>
-                          <td style={{ textAlign: 'right', paddingRight: '24px' }}>
-                            <div className="biomasa-action-bar">
-                              {p.estado === 'activo' ? (
-                                <button className="mx-btn-icon sm pause" onClick={() => handleStatusChange(p._id, 'pausado')}><Pause size={14} /></button>
-                              ) : p.estado === 'pausado' ? (
-                                <button className="mx-btn-icon sm play" onClick={() => handleStatusChange(p._id, 'activo')}><Play size={14} /></button>
-                              ) : null}
-                              <button className="mx-btn-icon sm edit" onClick={() => handleOpenModal(p)}><Edit size={14} /></button>
-                              <button className="mx-btn-icon sm delete" onClick={() => setConfirmDelete(p)}><Trash size={14} /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-            
-            {progSubTab === 'calendario' && (
-              <div style={{ display: 'grid', gridTemplateColumns: calView === 'month' ? '1fr 340px' : '1fr', gap: '24px', animation: 'fadeIn 0.3s ease' }}>
-                <div className="mx-table-card am-p-24" style={{ borderRadius: '24px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <div className="mx-toggle-group">
-                        <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => setCalView('month')}>Vista Mes</button>
-                        <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => setCalView('week')}>Vista Semana</button>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <button className="mx-btn-icon sm" onClick={() => {
-                          if (calView === 'month') {
-                            setMes(prev => {
-                              const [y, m] = prev.split('-');
-                              const d = new Date(parseInt(y, 10), parseInt(m, 10) - 2, 1); // -2 porque es 0-indexed y queremos restar 1
-                              return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                            });
-                          } else {
-                            setCurrentWeekOffset(o => o-1);
-                          }
-                        }}><ChevronLeft size={16} /></button>
-                        <span style={{ fontWeight: 800, fontSize: '15px', color: '#1e293b', minWidth: '150px', textAlign: 'center', textTransform: 'uppercase' }}>
-                          {calView === 'month' ? mesLabel(mes, true) : `Semana ${new Date(weekDays[0] + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}`}
-                        </span>
-                        <button className="mx-btn-icon sm" onClick={() => {
-                          if (calView === 'month') {
-                            setMes(prev => {
-                              const [y, m] = prev.split('-');
-                              const d = new Date(parseInt(y, 10), parseInt(m, 10), 1);
-                              return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                            });
-                          } else {
-                            setCurrentWeekOffset(o => o+1);
-                          }
-                        }}><ChevronRight size={16} /></button>
-                      </div>
-                    </div>
-                    {calView === 'week' && <button className="mx-btn mx-btn-outline sm" onClick={() => setCurrentWeekOffset(0)}>Volver a Hoy</button>}
+        <div className="tab-content-area">
+          {isStatusView && (
+            <div className="status-view">
+              {statusSubTab === 'disponibilidad' ? (
+                <div className="mx-kpi-grid">
+                  <div className="mx-kpi-card">
+                    <div className="mx-kpi-label">Disponible</div>
+                    <div className="mx-kpi-value" style={{ color: 'var(--color-info)' }}>{fmtTons(kpis.disponible)}</div>
                   </div>
-
-                  {calView === 'month' ? (
-                    <div className="cal-month-grid">
-                      {['LUN','MAR','MIE','JUE','VIE','SAB','DOM'].map(d => (
-                        <div key={d} className="cal-header-day">{d}</div>
-                      ))}
-                      {Array.from({ length: monthData.padding }).map((_, i) => (
-                        <div key={`pad-${i}`} className="cal-pad-day" />
-                      ))}
-                      {monthData.days.map((dayNum) => {
-                        const dateKey = `${mes}-${String(dayNum).padStart(2, '0')}`;
-                        const dayDataObj = calData[dateKey] || { total: 0, items: [] };
-                        const dayItems = dayDataObj.items || [];
-                        const total = dayDataObj.total || 0;
-                        const isSelected = selectedDay?.key === dateKey;
-
-                        return (
-                          <div 
-                            key={dayNum} 
-                            onClick={() => setSelectedDay({ key: dateKey, items: dayItems, total })}
-                            className={`cal-day-cell ${isSelected ? 'selected' : ''}`}
-                          >
-                            <span className="cal-day-num">{dayNum}</span>
-                            {total > 0 && (
-                              <div className="cal-day-badge">
-                                {total}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                  <div className="mx-kpi-card">
+                    <div className="mx-kpi-label">Asignado</div>
+                    <div className="mx-kpi-value" style={{ color: 'var(--color-success)' }}>{fmtTons(kpis.totalAsignado)}</div>
+                  </div>
+                  <div className="mx-kpi-card">
+                    <div className="mx-kpi-label">Saldo Mensual</div>
+                    <div className="mx-kpi-value" style={{ color: kpis.saldo >= 0 ? 'var(--color-success)' : 'var(--color-error)' }}>{fmtTons(kpis.saldo)}</div>
+                    <div className="mx-progress am-mt-12">
+                      <div className="mx-progress-fill" style={{ width: `${Math.min(kpis.pct, 100)}%` }}></div>
                     </div>
-                  ) : (
-                    <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr style={{ background: '#f8fafc' }}>
-                            <th style={{ textAlign: 'left', padding: '16px 24px', borderBottom: '2px solid #f1f5f9', color: '#64748b', fontSize: '11px', fontWeight: 800 }}>PROVEEDOR / CENTRO</th>
-                            {weekDays.map(d => (
-                              <th key={d} style={{ padding: '16px', borderBottom: '2px solid #f1f5f9', textAlign: 'center' }}>
-                                <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 800 }}>{new Date(d + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short' }).toUpperCase()}</div>
-                                <div style={{ fontSize: '15px', color: '#1e293b', fontWeight: 900 }}>{d.split('-')[2]}</div>
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Object.entries(weekData).map(([id, data]) => (
-                            <tr key={id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                              <td style={{ padding: '16px 24px' }}>
-                                <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>{data.nombre}</div>
-                                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>{data.centro}</div>
-                              </td>
-                              {data.dias.map((c, i) => (
-                                <td key={i} style={{ padding: '16px', textAlign: 'center' }}>
-                                  {c > 0 ? (
-                                    <div style={{ background: '#f0fdf4', color: '#006666', fontWeight: 900, padding: '8px', borderRadius: '12px', border: '1px solid #ccfbf1', fontSize: '14px' }}>
-                                      {c}
-                                    </div>
-                                  ) : <span style={{ color: '#e2e8f0' }}>—</span>}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                  </div>
                 </div>
+              ) : (
+                <div className="mx-kpi-grid">
+                  <div className="mx-kpi-card">
+                    <div className="mx-kpi-label">En conversación</div>
+                    <div className="mx-kpi-value" style={{ color: 'var(--color-info)' }}>{fmtTons(negociacionKpis.enConversacionTons)}</div>
+                  </div>
+                  <div className="mx-kpi-card">
+                    <div className="mx-kpi-label">Acordadas</div>
+                    <div className="mx-kpi-value" style={{ color: 'var(--color-success)' }}>{fmtTons(negociacionKpis.acordadasTons)}</div>
+                  </div>
+                  <div className="mx-kpi-card">
+                    <div className="mx-kpi-label">Pérdidas del mes</div>
+                    <div className="mx-kpi-value" style={{ color: 'var(--color-error)' }}>{fmtTons(negociacionKpis.perdidasTons)}</div>
+                  </div>
+                </div>
+              )}
+              <div className="mx-table-card">
+                <table className="mx-table">
+                  <thead>
+                    <tr>
+                      <th>Proveedor</th>
+                      <th>{statusSubTab === 'disponibilidad' ? 'Mes' : 'Situación biomasa'}</th>
+                      <th style={{ textAlign: 'center' }}>Tons</th>
+                      {statusSubTab === 'disponibilidad' ? <th>Centro</th> : <th>Programa</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(statusSubTab === 'disponibilidad' ? disp : [...biomasaPendiente, ...biomasaVinculada]).map(item => (
+                      <tr key={item._id}>
+                        <td style={{ fontWeight: 'var(--weight-bold)' }}>{item.proveedorNombre}</td>
+                        <td>{statusSubTab === 'disponibilidad' ? mesLabel(item.mesKey) : getSituacionBiomasaLabel(item)}</td>
+                        <td style={{ textAlign: 'center', fontWeight: 'var(--weight-bold)' }}>{fmtTons(statusSubTab === 'disponibilidad' ? item.tons : (item.tonsAcordadas || item.tons || item.biomasaEstimacion || 0))}</td>
+                        {statusSubTab === 'disponibilidad' ? <td>{item.centroCodigo || '—'}</td> : <td>{getProgramaLabel(item)}</td>}
+                      </tr>
+                    ))}
+                    {statusSubTab !== 'disponibilidad' && perdidasBiomasa.map((item) => (
+                      <tr key={`perdida-${item._id}`}>
+                        <td style={{ fontWeight: 'var(--weight-bold)' }}>{item.proveedorNombre}</td>
+                        <td>{item.motivoCierre || 'Pérdida'}</td>
+                        <td style={{ textAlign: 'center', fontWeight: 'var(--weight-bold)', color: 'var(--color-error)' }}>
+                          {fmtTons(item.tonsAcordadas || item.tons || item.biomasaEstimacion || 0)}
+                        </td>
+                        <td>Pérdida real</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
-                {calView === 'month' && (
-                  <aside className="mx-table-card am-p-24" style={{ borderRadius: '24px', animation: 'fadeInRight 0.3s ease' }}>
-                    <h4 style={{ fontWeight: 900, fontSize: '15px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Truck size={18} style={{ color: '#006666' }} /> DETALLE DEL DÍA
-                    </h4>
-                    {selectedDay ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ padding: '8px 12px', background: '#f1f5f9', borderRadius: '8px', fontSize: '12px', fontWeight: 800, color: '#64748b', textAlign: 'center', marginBottom: '8px' }}>
-                          {new Date(selectedDay.key + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
-                        </div>
-                        {selectedDay.items.map((it, idx) => (
-                          <div key={idx} style={{ padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #f1f5f9', position: 'relative', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                            <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: 'linear-gradient(to bottom, #006666, #00b3b3)' }}></div>
-                            <div style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b', marginBottom: '4px' }}>{it.proveedorNombre}</div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>{it.centroNombre}</span>
-                              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                                <span style={{ fontSize: '20px', fontWeight: 900, color: '#006666' }}>{it.camiones}</span>
-                                <span style={{ fontSize: '10px', fontWeight: 800, color: '#94a3b8' }}>CAM</span>
+          {isProgramView && (
+            <div className="program-view">
+              {progSubTab === 'programa' && (
+                <div className="mx-table-card">
+                  <div className="mx-table-wrap">
+                    <table className="mx-table">
+                      <thead>
+                        <tr>
+                          <th>Proveedor / Centro</th>
+                          <th>Vigencia</th>
+                          <th style={{ textAlign: 'center' }}>Cam/Día</th>
+                          <th>Estado</th>
+                          <th style={{ textAlign: 'right' }}>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {programas.map(p => (
+                          <tr key={p._id}>
+                            <td>
+                              <div className="biomasa-prov-cell">
+                                <div className="biomasa-avatar">
+                                  {p.proveedorNombre ? p.proveedorNombre.substring(0, 2).toUpperCase() : 'NA'}
+                                </div>
+                                <div>
+                                  <div className="biomasa-prov-name">{p.proveedorNombre || 'Proveedor Desconocido'}</div>
+                                  <div className="biomasa-centro-name">{p.centroNombre || 'Sin Centro Definido'}</div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
+                            </td>
+                            <td>
+                              <div className="biomasa-date-range">
+                                <CalendarIcon size={14} />
+                                {p.vigenciaDesde ? new Date(p.vigenciaDesde).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'} - {p.vigenciaHasta ? new Date(p.vigenciaHasta).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}
+                              </div>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <div className="biomasa-camiones-badge">
+                                {p.camionesDefault}
+                              </div>
+                            </td>
+                            <td>
+                              <span className={`mx-badge mx-badge-${p.estado === 'activo' ? 'success' : p.estado === 'pausado' ? 'warning' : 'muted'}`}>
+                                {(p.estado || 'desconocido').toUpperCase()}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <div className="biomasa-action-bar">
+                                {p.estado === 'activo' ? (
+                                  <button className="mx-btn-icon sm pause" onClick={() => handleStatusChange(p._id, 'pausado')}><Pause size={14} /></button>
+                                ) : p.estado === 'pausado' ? (
+                                  <button className="mx-btn-icon sm play" onClick={() => handleStatusChange(p._id, 'activo')}><Play size={14} /></button>
+                                ) : null}
+                                <button className="mx-btn-icon sm edit" onClick={() => handleOpenModal(p)}><Edit size={14} /></button>
+                                <button className="mx-btn-icon sm delete" onClick={() => setConfirmDelete(p)}><Trash size={14} /></button>
+                              </div>
+                            </td>
+                          </tr>
                         ))}
-                        {selectedDay.total === 0 && (
-                          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
-                            <Activity size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-                            <p style={{ fontSize: '14px', fontWeight: 500 }}>Sin despachos programados.</p>
-                          </div>
-                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              
+              {progSubTab === 'calendario' && (
+                <div style={{ display: 'grid', gridTemplateColumns: calView === 'month' ? '1fr 340px' : '1fr', gap: '24px' }}>
+                  <div className="mx-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div className="mx-toggle-group">
+                          <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => setCalView('month')}>Vista Mes</button>
+                          <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => setCalView('week')}>Vista Semana</button>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <button className="mx-btn-icon sm" onClick={() => {
+                            if (calView === 'month') {
+                              setMes(prev => {
+                                const [y, m] = prev.split('-');
+                                const d = new Date(parseInt(y, 10), parseInt(m, 10) - 2, 1);
+                                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                              });
+                            } else {
+                              setCurrentWeekOffset(o => o-1);
+                            }
+                          }}><ChevronLeft size={16} /></button>
+                          <span style={{ fontWeight: 'var(--weight-bold)', fontSize: '15px', color: 'var(--color-text)', minWidth: '150px', textAlign: 'center', textTransform: 'uppercase' }}>
+                            {calView === 'month' ? mesLabel(mes, true) : `Semana ${new Date(weekDays[0] + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}`}
+                          </span>
+                          <button className="mx-btn-icon sm" onClick={() => {
+                            if (calView === 'month') {
+                              setMes(prev => {
+                                const [y, m] = prev.split('-');
+                                const d = new Date(parseInt(y, 10), parseInt(m, 10), 1);
+                                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                              });
+                            } else {
+                              setCurrentWeekOffset(o => o+1);
+                            }
+                          }}><ChevronRight size={16} /></button>
+                        </div>
+                      </div>
+                      {calView === 'week' && <button className="mx-btn mx-btn-outline sm" onClick={() => setCurrentWeekOffset(0)}>Volver a Hoy</button>}
+                    </div>
+
+                    {calView === 'month' ? (
+                      <div className="cal-month-grid">
+                        {['LUN','MAR','MIE','JUE','VIE','SAB','DOM'].map(d => (
+                          <div key={d} className="cal-header-day">{d}</div>
+                        ))}
+                        {Array.from({ length: monthData.padding }).map((_, i) => (
+                          <div key={`pad-${i}`} className="cal-pad-day" />
+                        ))}
+                        {monthData.days.map((dayNum) => {
+                          const dateKey = `${mes}-${String(dayNum).padStart(2, '0')}`;
+                          const dayDataObj = calData[dateKey] || { total: 0, items: [] };
+                          const dayItems = dayDataObj.items || [];
+                          const total = dayDataObj.total || 0;
+                          const isSelected = selectedDay?.key === dateKey;
+
+                          return (
+                            <div 
+                              key={dayNum} 
+                              onClick={() => setSelectedDay({ key: dateKey, items: dayItems, total })}
+                              className={`cal-day-cell ${isSelected ? 'selected' : ''}`}
+                            >
+                              <span className="cal-day-num">{dayNum}</span>
+                              {total > 0 && (
+                                <div className="cal-day-badge">
+                                  {total}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : (
-                      <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
-                        <CalendarIcon size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-                        <p style={{ fontSize: '14px', fontWeight: 500 }}>Selecciona un día para ver el desglose operativo.</p>
+                      <div className="mx-table-wrap">
+                        <table className="mx-table">
+                          <thead>
+                            <tr>
+                              <th>PROVEEDOR / CENTRO</th>
+                              {weekDays.map(d => (
+                                <th key={d} style={{ textAlign: 'center' }}>
+                                  <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 'var(--weight-bold)' }}>{new Date(d + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short' }).toUpperCase()}</div>
+                                  <div style={{ fontSize: '15px', color: 'var(--color-text)', fontWeight: 'var(--weight-bold)' }}>{d.split('-')[2]}</div>
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.entries(weekData).map(([id, data]) => (
+                              <tr key={id}>
+                                <td>
+                                  <div style={{ fontWeight: 'var(--weight-bold)', fontSize: '14px' }}>{data.nombre}</div>
+                                  <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{data.centro}</div>
+                                </td>
+                                {data.dias.map((c, i) => (
+                                  <td key={i} style={{ textAlign: 'center' }}>
+                                    {c > 0 ? (
+                                      <div style={{ background: 'var(--color-success-bg)', color: 'var(--color-success)', fontWeight: 'var(--weight-bold)', padding: '8px', borderRadius: '12px', border: '1px solid var(--color-success)', fontSize: '14px' }}>
+                                        {c}
+                                      </div>
+                                    ) : <span style={{ color: 'var(--color-border)' }}>—</span>}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     )}
-                  </aside>
-                )}
-              </div>
-            )}
-
-            {progSubTab === 'seguimiento' && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '24px' }}>
-                {programas.filter(p => p.estado === 'activo').map(p => (
-                  <div key={p._id} className="mx-table-card am-p-24" style={{ borderRadius: '24px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.04)', transition: 'transform 0.2s', cursor: 'default' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '18px', boxShadow: '0 8px 16px rgba(37,99,235,0.2)' }}>
-                          {p.proveedorNombre.substring(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <h4 style={{ margin: 0, fontWeight: 800, color: '#1e293b', fontSize: '16px' }}>{p.proveedorNombre}</h4>
-                          <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{p.centroNombre || 'Sin Centro'}</p>
-                        </div>
-                      </div>
-                      <div style={{ background: '#f0fdf4', color: '#10b981', padding: '6px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: 800 }}>ACTIVO</div>
-                    </div>
-
-                    <div className="seg-progress am-mb-20">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, marginBottom: '8px', color: '#475569' }}>
-                        <span>Avance de Vigencia</span>
-                        <span style={{ color: '#2563eb' }}>65%</span>
-                      </div>
-                      <div style={{ height: '10px', background: '#f1f5f9', borderRadius: '5px', overflow: 'hidden' }}>
-                        <div style={{ width: '65%', height: '100%', background: 'linear-gradient(90deg, #2563eb 0%, #0ea5e9 100%)', borderRadius: '5px' }}></div>
-                      </div>
-                    </div>
-
-                    <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #f1f5f9', position: 'relative' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                        <MessageSquare size={14} style={{ color: '#2563eb' }} />
-                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Última Novedad</span>
-                      </div>
-                      <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6, fontWeight: 500 }}>
-                        {p.seguimientos?.[0]?.nota || 'Sin novedades registradas recientemente.'}
-                      </div>
-                      <button 
-                        className="mx-btn-icon sm" 
-                        title="Registrar novedad"
-                        style={{ position: 'absolute', top: '12px', right: '12px', background: 'white', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', color: '#2563eb' }}
-                        onClick={() => { setSegProg(p); setShowSegModal(true); }}
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        {isMuestreosView && <Muestreos />}
+
+                  {calView === 'month' && (
+                    <aside className="mx-card">
+                      <header className="mx-card-header">
+                        <h4 className="mx-card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Truck size={18} /> DETALLE DEL DÍA
+                        </h4>
+                      </header>
+                      {selectedDay ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ padding: '8px 12px', background: 'var(--color-bg)', borderRadius: '8px', fontSize: '12px', fontWeight: 'var(--weight-bold)', color: 'var(--color-text-muted)', textAlign: 'center', marginBottom: '8px' }}>
+                            {new Date(selectedDay.key + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
+                          </div>
+                          {selectedDay.items.map((it, idx) => (
+                            <div key={idx} className="mx-card" style={{ padding: '16px', boxShadow: 'none', border: '1px solid var(--color-border)' }}>
+                              <div style={{ fontWeight: 'var(--weight-bold)', fontSize: '13px', marginBottom: '4px' }}>{it.proveedorNombre}</div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{it.centroNombre}</span>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                                  <span style={{ fontSize: '20px', fontWeight: 'var(--weight-bold)', color: 'var(--color-primary)' }}>{it.camiones}</span>
+                                  <span style={{ fontSize: '10px', color: 'var(--color-text-subtle)' }}>CAM</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          {selectedDay.total === 0 && (
+                            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
+                              <Activity size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+                              <p>Sin despachos programados.</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
+                          <CalendarIcon size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+                          <p>Selecciona un día para ver el desglose operativo.</p>
+                        </div>
+                      )}
+                    </aside>
+                  )}
+                </div>
+              )}
+
+              {progSubTab === 'seguimiento' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
+                  {programas.filter(p => p.estado === 'activo').map(p => (
+                    <div key={p._id} className="mx-card">
+                      <header className="mx-card-header">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <div className="biomasa-avatar">
+                            {p.proveedorNombre.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="mx-card-title">{p.proveedorNombre}</h4>
+                            <p className="mx-card-description">{p.centroNombre || 'Sin Centro'}</p>
+                          </div>
+                        </div>
+                        <span className="mx-badge mx-badge-success">ACTIVO</span>
+                      </header>
+
+                      <div className="mx-progress-section am-mb-20">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'var(--weight-bold)', marginBottom: '8px' }}>
+                          <span>Avance de Vigencia</span>
+                          <span style={{ color: 'var(--color-primary)' }}>65%</span>
+                        </div>
+                        <div className="mx-progress">
+                          <div className="mx-progress-fill" style={{ width: '65%' }}></div>
+                        </div>
+                      </div>
+
+                      <div className="mx-card" style={{ padding: '16px', background: 'var(--color-bg)', border: 'none', boxShadow: 'none' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                          <MessageSquare size={14} style={{ color: 'var(--color-primary)' }} />
+                          <span style={{ fontSize: '11px', fontWeight: 'var(--weight-bold)', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Última Novedad</span>
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'var(--color-text)', lineHeight: 1.6 }}>
+                          {p.seguimientos?.[0]?.nota || 'Sin novedades registradas recientemente.'}
+                        </div>
+                        <button 
+                          className="mx-btn-icon sm" 
+                          title="Registrar novedad"
+                          style={{ position: 'absolute', top: '12px', right: '12px' }}
+                          onClick={() => { setSegProg(p); setShowSegModal(true); }}
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {isMuestreosView && <Muestreos />}
+        </div>
       </div>
-
-      {/* MODAL REGISTRO SEGUIMIENTO */}
-      {showSegModal && (
-        <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '450px' }}>
-            <div className="mx-modal-head">
-              <div>
-                <h2 style={{ fontWeight: 900, fontSize: '20px' }}>Registrar Novedad</h2>
-                <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{segProg?.proveedorNombre}</p>
-              </div>
-              <button className="mx-btn-icon" onClick={() => setShowSegModal(false)}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleSaveSeguimiento}>
-              <div className="mx-modal-body" style={{ padding: '24px' }}>
-                <div className="mx-field">
-                  <label className="mx-label">Estado de Ejecución</label>
-                  <select 
-                    className="mx-input" 
-                    value={segEstado}
-                    onChange={e => setSegEstado(e.target.value)}
-                    required
-                    style={{ background: '#f8fafc', fontWeight: 600 }}
-                  >
-                    <option value="">— Seleccionar estado —</option>
-                    <option value="en_plan">🟢 En Plan (Operación normal)</option>
-                    <option value="con_retrasos">🟡 Con Retrasos (Inconvenientes logísticos menores)</option>
-                    <option value="detenido">🔴 Detenido (Alerta crítica / posible cancelación)</option>
-                  </select>
-                </div>
-                <div className="mx-field" style={{ marginTop: '16px' }}>
-                  <label className="mx-label">Nota / Observación de Cosecha</label>
-                  <textarea 
-                    className="mx-input" 
-                    value={segNota} 
-                    onChange={e => setSegNota(e.target.value)} 
-                    placeholder="Describe lo ocurrido (ej: retraso por clima, cambio de logística...)"
-                    rows="4"
-                    required
-                    style={{ resize: 'none', padding: '16px', borderRadius: '12px', fontSize: '14px', lineHeight: 1.5, background: '#f8fafc' }}
-                  />
-                </div>
-              </div>
-              <div className="mx-modal-foot" style={{ background: '#f1f5f9', padding: '16px 24px', borderTop: '1px solid #e2e8f0' }}>
-                <button type="button" className="mx-btn" style={{ background: 'white', color: '#64748b', border: '1px solid #cbd5e1' }} onClick={() => setShowSegModal(false)}>Cancelar</button>
-                <button type="submit" className="mx-btn mx-btn-primary" style={{ padding: '0 24px', background: 'linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%)', border: 'none', fontWeight: 800 }}>
-                  <CheckCircle2 size={18} /> Registrar Novedad
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL PROGRAMA (ORIGINAL PORT) */}
-      {showModal && (
-        <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '600px' }}>
-            <div className="mx-modal-head">
-              <h3 className="mx-modal-title">{editingId ? 'Editar Programa' : 'Nuevo Programa de Cosecha'}</h3>
-              <button className="mx-btn-icon" onClick={() => setShowModal(false)}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleSave}>
-              <div className="mx-modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-                <div className="mx-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="mx-field" style={{ gridColumn: '1 / -1' }}>
-                    <label className="mx-label">Proveedor / Trato Acordado</label>
-                    <select 
-                      className="mx-input" 
-                      value={formData.tratoId} 
-                      onChange={(e) => {
-                        const t = tratosAcordados.find(x => x._id === e.target.value);
-                        setFormData({
-                          ...formData,
-                          tratoId: e.target.value,
-                          vigenciaDesde: t?.vigenciaDesde?.split('T')[0] || formData.vigenciaDesde,
-                          vigenciaHasta: t?.vigenciaHasta?.split('T')[0] || formData.vigenciaHasta,
-                          camionesDefault: t?.camionesXDia || formData.camionesDefault,
-                          tonsEstimadas: t?.tonsAcordadas || formData.tonsEstimadas
-                        });
-                      }}
-                      required
-                    >
-                      <option value="">— Seleccionar trato acordado —</option>
-                      {tratosAcordados.map(t => (
-                        <option key={t._id} value={t._id}>{t.proveedorNombre} — {t.tonsAcordadas}T ({t.centroCodigo || t.centroNombre || 'Sin centro'})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="mx-field">
-                    <label className="mx-label">Desde</label>
-                    <input type="date" className="mx-input" value={formData.vigenciaDesde} onChange={e => setFormData({...formData, vigenciaDesde: e.target.value})} required />
-                  </div>
-                  <div className="mx-field">
-                    <label className="mx-label">Hasta</label>
-                    <input type="date" className="mx-input" value={formData.vigenciaHasta} onChange={e => setFormData({...formData, vigenciaHasta: e.target.value})} required />
-                  </div>
-                  <div className="mx-field">
-                    <label className="mx-label">Camiones / día</label>
-                    <input type="number" className="mx-input" value={formData.camionesDefault} onChange={e => setFormData({...formData, camionesDefault: e.target.value})} min="0" required />
-                  </div>
-                  <div className="mx-field">
-                    <label className="mx-label">Tons estimadas</label>
-                    <input type="number" className="mx-input" value={formData.tonsEstimadas} onChange={e => setFormData({...formData, tonsEstimadas: e.target.value})} />
-                  </div>
-                  <div className="mx-field" style={{ gridColumn: '1 / -1' }}>
-                    <label className="mx-label">Días de Cosecha</label>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d, i) => (
-                        <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', background: formData.diasSemana.includes(i) ? 'var(--color-primary-light, #f0fdfa)' : 'white', borderColor: formData.diasSemana.includes(i) ? 'var(--color-primary)' : 'var(--color-border)' }}>
-                          <input 
-                            type="checkbox" 
-                            style={{ display: 'none' }}
-                            checked={formData.diasSemana.includes(i)}
-                            onChange={() => {
-                              const next = formData.diasSemana.includes(i) 
-                                ? formData.diasSemana.filter(x => x !== i)
-                                : [...formData.diasSemana, i];
-                              setFormData({...formData, diasSemana: next});
-                            }}
-                          />
-                          {d}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mx-field" style={{ gridColumn: '1 / -1' }}>
-                    <label className="mx-label">Notas / Observaciones</label>
-                    <textarea className="mx-input" value={formData.notas} onChange={e => setFormData({...formData, notas: e.target.value})} rows="2" />
-                  </div>
-                </div>
-              </div>
-              <div className="mx-modal-foot">
-                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="mx-btn mx-btn-primary">
-                  <CheckCircle2 size={18} /> {editingId ? 'Guardar Cambios' : 'Crear Programa'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       <ConfirmDeleteModal
         isOpen={Boolean(confirmDelete)}
         onClose={() => setConfirmDelete(null)}
         onConfirm={handleDelete}
         title="¿Eliminar programa?"
-        description={
-          confirmDelete
-            ? `Estás a punto de borrar el programa de cosecha de "${confirmDelete.proveedorNombre || 'este proveedor'}". Esta acción es irreversible.`
-            : ''
-        }
+        description={confirmDelete ? `Estás a punto de borrar el programa de cosecha de "${confirmDelete.proveedorNombre}". Esta acción es irreversible.` : ''}
       />
     </div>
-  </div>
   );
 }
-

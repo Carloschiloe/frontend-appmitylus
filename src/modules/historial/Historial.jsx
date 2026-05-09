@@ -378,7 +378,7 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
 
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12, marginTop: 16 }}>
+      <div className="mx-kpi-grid" style={{ marginTop: '16px' }}>
         {[
           { label: 'Llamadas', value: kpis.llamadas },
           { label: 'Visitas', value: kpis.visitas },
@@ -386,16 +386,14 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
           { label: 'Gestiones del día', value: kpis.gestionesHoy },
           { label: 'Usuarios activos', value: kpis.usuariosActivos },
         ].map((stat) => (
-          <div key={stat.label} className="mx-table-card" style={{ padding: 16 }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-subtle)', textTransform: 'uppercase' }}>
-              {stat.label}
-            </div>
-            <div style={{ marginTop: 10, fontSize: '1.7rem', fontWeight: 800 }}>{stat.value}</div>
+          <div key={stat.label} className="mx-kpi-card">
+            <div className="mx-kpi-label">{stat.label}</div>
+            <div className="mx-kpi-value">{stat.value}</div>
           </div>
         ))}
       </div>
 
-      <div className="centros-filters" style={{ marginTop: 18 }}>
+      <div className="mx-toolbar" style={{ marginTop: '18px' }}>
         <div className="mx-toggle-group">
           {[
             { value: 'todos', label: 'Todos' },
@@ -419,7 +417,7 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
           className="mx-input"
           value={teamUserFilter}
           onChange={(e) => setTeamUserFilter(e.target.value)}
-          style={{ maxWidth: 260, marginLeft: 'auto' }}
+          style={{ maxWidth: '260px' }}
         >
           <option value="todos">Todos los usuarios</option>
           {teamUsers.map((user) => (
@@ -447,15 +445,15 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
               const Icon = meta.icon;
               const seguimiento = STATUS_META[item.seguimientoEstado || 'none'] || STATUS_META.none;
               return (
-                <div key={item.id} className="mx-table-card" style={{ padding: 18, display: 'grid', gap: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                      <div style={{ width: 42, height: 42, borderRadius: 12, background: `${meta.color}15`, color: meta.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div key={item.id} className="mx-card" style={{ padding: '18px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <div className="mx-btn-icon sm" style={{ background: `${meta.color}15`, color: meta.color }}>
                         <Icon size={18} />
                       </div>
                       <div>
-                        <div style={{ fontWeight: 800, color: '#0f172a' }}>{item.user}</div>
-                        <div style={{ color: '#64748b', fontSize: '0.86rem' }}>
+                        <div style={{ fontWeight: 'var(--weight-bold)' }}>{item.user}</div>
+                        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.86rem' }}>
                           {meta.label} · {formatDateTime(item.date)}
                         </div>
                       </div>
@@ -465,21 +463,21 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
                     </span>
                   </div>
 
-                  <div style={{ display: 'grid', gap: 6 }}>
-                    <div style={{ fontWeight: 800, fontSize: '1rem' }}>{item.provider}</div>
-                    <div style={{ color: '#475569' }}>{item.summary}</div>
-                    <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                  <div style={{ marginTop: '12px', display: 'grid', gap: '4px' }}>
+                    <div style={{ fontWeight: 'var(--weight-bold)', fontSize: '1rem' }}>{item.provider}</div>
+                    <div style={{ color: 'var(--color-text)' }}>{item.summary}</div>
+                    <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
                       Resultado: {item.result || 'Sin resultado'}
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', color: '#64748b', fontSize: '0.86rem' }}>
-                    <span>{item.center || 'Sin centro asociado'}</span>
-                    {item.nextAction ? <span>Próxima acción: {item.nextAction}</span> : null}
-                    {item.nextDate ? <span>Fecha próxima: {formatDate(item.nextDate)}</span> : null}
+                  <div style={{ marginTop: '12px', display: 'flex', gap: '10px', flexWrap: 'wrap', color: 'var(--color-text-subtle)', fontSize: '0.86rem', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
+                    <span>{item.center || 'Sin centro'}</span>
+                    {item.nextAction ? <span>Próxima: {item.nextAction}</span> : null}
+                    {item.nextDate ? <span>{formatDate(item.nextDate)}</span> : null}
                     {item.seguimientoEstado ? (
-                      <span style={{ color: seguimiento.color, fontWeight: 700 }}>
-                        Seguimiento: {seguimiento.label}
+                      <span style={{ color: seguimiento.color, fontWeight: 'var(--weight-bold)' }}>
+                        {seguimiento.label}
                       </span>
                     ) : null}
                   </div>
@@ -510,18 +508,16 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
 
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginTop: 16 }}>
+      <div className="mx-kpi-grid" style={{ marginTop: '16px' }}>
         {[
           { label: 'Proveedores con historial', value: providers.length },
           { label: 'Eventos registrados', value: providers.reduce((sum, item) => sum + item.totalEventos, 0) },
           { label: 'Contactos en directorio', value: providers.reduce((sum, item) => sum + item.totalContactos, 0) },
           { label: 'Últimas 24h', value: providers.filter((item) => item.lastActivity && (Date.now() - item.lastActivity.getTime()) <= 24 * 60 * 60 * 1000).length },
         ].map((stat) => (
-          <div key={stat.label} className="mx-table-card" style={{ padding: 16 }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-subtle)', textTransform: 'uppercase' }}>
-              {stat.label}
-            </div>
-            <div style={{ marginTop: 10, fontSize: '1.7rem', fontWeight: 800 }}>{stat.value}</div>
+          <div key={stat.label} className="mx-kpi-card">
+            <div className="mx-kpi-label">{stat.label}</div>
+            <div className="mx-kpi-value">{stat.value}</div>
           </div>
         ))}
       </div>
@@ -539,7 +535,7 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
             <p>Prueba con otro proveedor o ajusta la búsqueda.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' }}>
             {filteredProviders.map((provider) => {
               const status = STATUS_META[provider.status || 'none'] || STATUS_META.none;
               const StatusIcon = status.icon;
@@ -547,28 +543,15 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
                 <button
                   key={provider.key}
                   type="button"
-                  className="mx-table-card"
+                  className="mx-card"
                   onClick={() => onSelectProvider(provider.key)}
-                  style={{ textAlign: 'left', padding: 20, border: '1px solid var(--color-border)', cursor: 'pointer' }}
+                  style={{ textAlign: 'left', padding: '20px', cursor: 'pointer' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                    <div
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 12,
-                        background: 'rgba(8, 145, 178, 0.10)',
-                        color: '#0f766e',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                    <div className="mx-btn-icon" style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>
                       <Building2 size={20} />
                     </div>
-
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 999, fontSize: '0.8rem', fontWeight: 800, color: status.color, background: status.bg }}>
+                    <span className="mx-badge" style={{ color: status.color, background: status.bg }}>
                       <StatusIcon size={14} />
                       {status.label}
                     </span>
@@ -579,15 +562,14 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
                     {provider.totalEventos} eventos · {provider.totalContactos} contacto{provider.totalContactos === 1 ? '' : 's'}
                   </p>
 
-                  <div style={{ marginTop: 14, display: 'grid', gap: 8, color: 'var(--color-text-muted)', fontSize: '0.86rem' }}>
-                    <span>{provider.lastInteraction || 'Sin interacciones registradas'}</span>
-                    <span>{provider.lastActivity ? `${formatDate(provider.lastActivity)} · ${relativeText(provider.lastActivity)}` : 'Sin actividad reciente'}</span>
-                    <span>{provider.proximaAccion ? `Última acción pendiente: ${provider.proximaAccion}` : 'Sin acción pendiente en seguimiento'}</span>
+                  <div style={{ marginTop: '14px', display: 'grid', gap: '8px', color: 'var(--color-text-muted)', fontSize: '0.86rem' }}>
+                    <span className="am-line-clamp-1">{provider.lastInteraction || 'Sin interacciones'}</span>
+                    <span>{provider.lastActivity ? `${formatDate(provider.lastActivity)} · ${relativeText(provider.lastActivity)}` : 'Sin actividad'}</span>
                   </div>
 
-                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #eef2f7', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--color-text-subtle)', fontSize: '0.84rem' }}>
-                    <span>{provider.contactoPrincipal || 'Sin contacto principal'}</span>
-                    <span>Ver expediente</span>
+                  <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--color-text-subtle)', fontSize: '0.84rem' }}>
+                    <span className="am-line-clamp-1">{provider.contactoPrincipal || 'Sin contacto'}</span>
+                    <span style={{ color: 'var(--color-primary)', fontWeight: 'var(--weight-bold)' }}>Expediente</span>
                   </div>
                 </button>
               );
@@ -756,47 +738,41 @@ export default function Historial() {
         </header>
 
         <div className="mx-content-frame">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginTop: 16 }}>
-            <div className="mx-table-card" style={{ padding: 16 }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-subtle)', textTransform: 'uppercase' }}>
-                Seguimiento actual
-              </div>
-              <div style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 999, color: status.color, background: status.bg, fontWeight: 800 }}>
-                <StatusIcon size={14} />
-                {status.label}
-              </div>
-            </div>
-
-            <div className="mx-table-card" style={{ padding: 16 }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-subtle)', textTransform: 'uppercase' }}>
-                Última actividad
-              </div>
-              <div style={{ marginTop: 10, fontSize: '1rem', fontWeight: 700 }}>{formatDate(selectedProvider.lastActivity)}</div>
-              <div style={{ marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.85rem' }}>{relativeText(selectedProvider.lastActivity)}</div>
-            </div>
-
-            <div className="mx-table-card" style={{ padding: 16 }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-subtle)', textTransform: 'uppercase' }}>
-                Próxima acción conocida
-              </div>
-              <div style={{ marginTop: 10, fontSize: '1rem', fontWeight: 700 }}>{selectedProvider.proximaAccion || 'Sin acción pendiente'}</div>
-              <div style={{ marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.85rem' }}>
-                {selectedProvider.fechaProximaAccion ? formatDate(selectedProvider.fechaProximaAccion) : 'Sin fecha programada'}
+          <div className="mx-kpi-grid" style={{ marginTop: '16px' }}>
+            <div className="mx-kpi-card">
+              <div className="mx-kpi-label">Seguimiento actual</div>
+              <div style={{ marginTop: '10px' }}>
+                <span className="mx-badge" style={{ color: status.color, background: status.bg }}>
+                  <StatusIcon size={14} />
+                  {status.label}
+                </span>
               </div>
             </div>
 
-            <div className="mx-table-card" style={{ padding: 16 }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-subtle)', textTransform: 'uppercase' }}>
-                Contacto principal
+            <div className="mx-kpi-card">
+              <div className="mx-kpi-label">Última actividad</div>
+              <div className="mx-kpi-value" style={{ fontSize: '1.2rem' }}>{formatDate(selectedProvider.lastActivity)}</div>
+              <div style={{ marginTop: '4px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>{relativeText(selectedProvider.lastActivity)}</div>
+            </div>
+
+            <div className="mx-kpi-card">
+              <div className="mx-kpi-label">Próxima acción conocida</div>
+              <div className="mx-kpi-value" style={{ fontSize: '1.2rem' }}>{selectedProvider.proximaAccion || 'Sin acción'}</div>
+              <div style={{ marginTop: '4px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                {selectedProvider.fechaProximaAccion ? formatDate(selectedProvider.fechaProximaAccion) : 'Sin fecha'}
               </div>
-              <div style={{ marginTop: 10, fontSize: '1rem', fontWeight: 700 }}>{selectedProvider.contactoPrincipal || 'Sin contacto principal'}</div>
-              <div style={{ marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.85rem' }}>
-                {selectedProvider.contactoTelefono || selectedProvider.contactoEmail || 'Sin datos de contacto'}
+            </div>
+
+            <div className="mx-kpi-card">
+              <div className="mx-kpi-label">Contacto principal</div>
+              <div className="mx-kpi-value" style={{ fontSize: '1.2rem' }}>{selectedProvider.contactoPrincipal || 'Sin contacto'}</div>
+              <div style={{ marginTop: '4px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                {selectedProvider.contactoTelefono || selectedProvider.contactoEmail || '—'}
               </div>
             </div>
           </div>
 
-          <div className="centros-filters" style={{ marginTop: 24 }}>
+          <div className="mx-toolbar" style={{ marginTop: '24px' }}>
             <div className="mx-toggle-group">
               {[
                 { value: 'todos', label: 'Todos' },

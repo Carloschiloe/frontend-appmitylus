@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -163,77 +163,77 @@ export default function CentrosTable() {
         </div>
       ) : null}
 
-      <div className="centros-kpis">
-        <article className="centros-kpi">
-          <header className="centros-kpi-label"><Building2 size={16} /> Centros</header>
-          <div className="centros-kpi-value">{stats.count}</div>
+      <div className="mx-kpi-grid">
+        <article className="mx-kpi-card">
+          <header className="mx-kpi-label"><Building2 size={16} /> Centros</header>
+          <div className="mx-kpi-value">{stats.count}</div>
         </article>
-        <article className="centros-kpi">
-          <header className="centros-kpi-label"><Ruler size={16} /> Hectáreas</header>
-          <div className="centros-kpi-value">{stats.hectareas} <small>ha</small></div>
+        <article className="mx-kpi-card">
+          <header className="mx-kpi-label"><Ruler size={16} /> Hectáreas</header>
+          <div className="mx-kpi-value">{stats.hectareas} <small className="mx-kpi-sub">ha</small></div>
         </article>
-        <article className="centros-kpi">
-          <header className="centros-kpi-label"><MapPin size={16} /> Comunas</header>
-          <div className="centros-kpi-value">{stats.comunas}</div>
+        <article className="mx-kpi-card">
+          <header className="mx-kpi-label"><MapPin size={16} /> Comunas</header>
+          <div className="mx-kpi-value">{stats.comunas}</div>
         </article>
       </div>
 
-      <div className="centros-filters">
-        <div className="centros-search-wrap">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Buscar por proveedor o código..."
-            className="centros-search"
-            value={searchTerm}
+      <div className="mx-toolbar">
+        <div className="mx-toolbar-group">
+          <div className="mx-search-box">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Buscar por proveedor o código..."
+              value={searchTerm}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSearchTerm(value);
+                syncUrl({ q: value });
+              }}
+            />
+          </div>
+
+          <select
+            className="mx-input"
+            style={{ width: 'auto' }}
+            value={comunaFilter}
             onChange={(e) => {
               const value = e.target.value;
-              setSearchTerm(value);
-              syncUrl({ q: value });
+              setComunaFilter(value);
+              syncUrl({ comuna: value });
             }}
-          />
+          >
+            <option value="">Todas las comunas</option>
+            {comunas.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+
+          <button
+            className="mx-btn mx-btn-outline"
+            onClick={() => {
+              setSearchTerm('');
+              setComunaFilter('');
+              setProviderFilter('');
+              setSearchParams(new URLSearchParams(), { replace: true });
+            }}
+          >
+            Limpiar
+          </button>
         </div>
 
-        <select
-          className="mx-input"
-          style={{ width: 'auto' }}
-          value={comunaFilter}
-          onChange={(e) => {
-            const value = e.target.value;
-            setComunaFilter(value);
-            syncUrl({ comuna: value });
-          }}
-        >
-          <option value="">Todas las comunas</option>
-          {comunas.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-
-        <button
-          className="mx-btn mx-btn-outline"
-          onClick={() => {
-            setSearchTerm('');
-            setComunaFilter('');
-            setProviderFilter('');
-            setSearchParams(new URLSearchParams(), { replace: true });
-          }}
-        >
-          Limpiar
-        </button>
-
-        <div style={{ flex: 1 }}></div>
-
-        <button className="mx-btn mx-btn-primary" onClick={() => setModalState({ open: true, item: null })}>
-          <Plus size={18} /> Nuevo Centro
-        </button>
-
-        <button className="mx-btn mx-btn-flat">
-          <Download size={18} /> Exportar
-        </button>
+        <div className="mx-toolbar-group">
+          <button className="mx-btn mx-btn-outline" style={{ height: 42 }}>
+            <Download size={18} /> Exportar
+          </button>
+          <button className="mx-btn mx-btn-primary" onClick={() => setModalState({ open: true, item: null })}>
+            <Plus size={18} /> Nuevo Centro
+          </button>
+        </div>
       </div>
 
-      <div className="centros-table-card">
-        <div className="centros-table-wrap">
-          <table className="centros-tbl">
+      <div className="mx-table-card">
+        <div className="mx-table-wrap">
+          <table className="mx-table">
             <thead>
               <tr>
                 <th>Proveedor</th>
@@ -269,14 +269,14 @@ export default function CentrosTable() {
                   <tr key={centro._id}>
                     <td>
                       <div className="centros-cell-main">
-                        <span style={{ fontWeight: 600 }}>{centro.proveedor}</span>
+                        <span style={{ fontWeight: 'var(--weight-bold)' }}>{centro.proveedor}</span>
                         <span className="centros-cell-sub">{centro.comuna}</span>
                       </div>
                     </td>
                     <td><code>{centro.code}</code></td>
                     <td>{centro.areaPSMB || '—'}</td>
                     <td>
-                      <span className={`centros-badge-area ${centro.estadoAreaSernapesca === 'Abierta' ? 'verde' : 'gris'}`}>
+                      <span className={`mx-badge ${centro.estadoAreaSernapesca === 'Abierta' ? 'mx-badge-success' : 'mx-badge-muted'}`}>
                         {centro.estadoAreaSernapesca || 'Desconocido'}
                       </span>
                     </td>

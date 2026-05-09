@@ -153,21 +153,21 @@ export default function Maestros() {
       </header>
 
       <div className="mx-content-frame">
-        <div className="centros-filters maestros-toolbar">
-          <div className="mx-toggle-group maestros-toggle-wrap">
+        <div className="mx-toolbar am-mt-16">
+          <div className="mx-toggle-group">
             {TIPOS.map((t) => (
               <button
                 key={t.id}
-                className={`mx-toggle-btn maestros-toggle-btn ${tipo === t.id ? 'active' : ''}`}
+                className={`mx-toggle-btn ${tipo === t.id ? 'active' : ''}`}
                 onClick={() => setTipo(t.id)}
               >
                 <t.icon size={14} /> {t.label}
               </button>
             ))}
           </div>
-          <div className="centros-search-wrap maestros-search-box">
+          <div className="mx-search-box" style={{ maxWidth: '300px' }}>
             <Search size={18} />
-            <input type="text" className="centros-search" placeholder="Filtrar registros..." />
+            <input type="text" placeholder="Filtrar registros..." />
           </div>
         </div>
 
@@ -176,43 +176,45 @@ export default function Maestros() {
             <table className="mx-table">
               <thead>
                 <tr>
-                  <th className="maestros-table-head-nombre">Nombre / Valor</th>
+                  <th style={{ width: '30%' }}>Nombre / Valor</th>
                   {tipo === 'categoria-muestreo' && <th>Tipo Categoría</th>}
-                  {tipo === 'clasificacion_producto' && <th>Configuración Mín/Máx</th>}
+                  {tipo === 'clasificacion_producto' && <th>Configuración</th>}
                   {tipo === 'condicion_negociacion' && <th>Tipo Valor</th>}
-                  {tipo !== 'responsable' && <th className="maestros-table-head-orden">Orden</th>}
-                  <th className="maestros-table-head-estado">Estado</th>
-                  <th className="maestros-table-head-acciones">Acciones</th>
+                  {tipo !== 'responsable' && <th style={{ width: '80px', textAlign: 'center' }}>Orden</th>}
+                  <th style={{ width: '120px' }}>Estado</th>
+                  <th style={{ width: '100px', textAlign: 'right' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="10" className="maestros-spinner-state">
-                      <div className="mx-spinner maestros-spinner-center"></div>
+                    <td colSpan="10">
+                      <div className="mx-state-placeholder">
+                        <div className="mx-spinner"></div>
+                      </div>
                     </td>
                   </tr>
                 ) : maestros.length === 0 ? (
                   <tr>
-                    <td colSpan="10" className="maestros-empty-state">
-                      No hay registros.
+                    <td colSpan="10">
+                      <div className="mx-state-placeholder">No hay registros.</div>
                     </td>
                   </tr>
                 ) : (
                   maestros.map((item) => (
                     <tr key={item._id}>
-                      <td><span className="maestros-item-nombre">{item.nombre}</span></td>
+                      <td><span style={{ fontWeight: 'var(--weight-bold)' }}>{item.nombre}</span></td>
                       {tipo === 'categoria-muestreo' && (
                         <td>
                           <span
-                            className={`mx-badge ${
+                            className={`mx-badge mx-badge-${
                               item.tipoCat === 'procesable'
-                                ? 'mx-badge-success'
+                                ? 'success'
                                 : item.tipoCat === 'rechazo'
-                                  ? 'mx-badge-error'
+                                  ? 'danger'
                                   : item.tipoCat === 'defecto'
-                                    ? 'mx-badge-info'
-                                    : 'mx-badge-muted'
+                                    ? 'info'
+                                    : 'muted'
                             }`}
                           >
                             {item.tipoCat?.toUpperCase()}
@@ -221,9 +223,9 @@ export default function Maestros() {
                       )}
                       {tipo === 'clasificacion_producto' && (
                         <td>
-                          <div className="maestros-params-container">
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                             {item.parametros?.map((p, i) => (
-                              <span key={i} className="maestros-param-tag">
+                              <span key={i} className="mx-badge" style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
                                 <strong>{p.nombre}</strong>: {p.min ?? '∞'}–{p.max ?? '∞'}
                               </span>
                             ))}
@@ -231,14 +233,14 @@ export default function Maestros() {
                         </td>
                       )}
                       {tipo === 'condicion_negociacion' && <td><code>{item.tipoValor}</code></td>}
-                      {tipo !== 'responsable' && <td className="maestros-item-orden">{item.orden ?? 0}</td>}
+                      {tipo !== 'responsable' && <td style={{ textAlign: 'center' }}>{item.orden ?? 0}</td>}
                       <td>
-                        <span className={`mx-badge ${item.activo ? 'mx-badge-success' : 'mx-badge-muted'}`}>
+                        <span className={`mx-badge mx-badge-${item.activo ? 'success' : 'muted'}`}>
                           {item.activo ? 'ACTIVO' : 'INACTIVO'}
                         </span>
                       </td>
-                      <td className="maestros-item-acciones">
-                        <div className="mx-table-actions-cell maestros-actions-wrapper">
+                      <td style={{ textAlign: 'right' }}>
+                        <div className="mx-table-actions-cell" style={{ justifyContent: 'flex-end' }}>
                           <button className="mx-action-btn edit" onClick={() => handleEdit(item)}><Edit size={14} /></button>
                           <button className="mx-action-btn delete" onClick={() => askDelete(item)}><Trash2 size={14} /></button>
                         </div>

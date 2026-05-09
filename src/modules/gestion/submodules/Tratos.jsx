@@ -251,20 +251,19 @@ export default function Tratos() {
   );
 
   return (
-    <div className="tratos-container">
-      <div className="centros-filters am-mt-16">
-        <div className="tratos-search-wrap" style={{ flex: 1 }}>
-          <Search size={18} className="tratos-search-icon" />
+    <div className="mx-page am-p-0">
+      <div className="mx-toolbar am-mt-16">
+        <div className="mx-search-box" style={{ flex: 1 }}>
+          <Search size={18} />
           <input 
             type="text" 
             placeholder="Buscar por proveedor..." 
-            className="tratos-search-input"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="mx-btn mx-btn-outline" onClick={handleRefresh}><RotateCcw size={18} /></button>
-        <button className="mx-btn mx-btn-primary sm" onClick={() => { setEditingId(null); setEditingEstadoApi(''); setIsModalOpen(true); }}>
+        <button className="mx-btn-icon sm" onClick={handleRefresh} title="Actualizar"><RotateCcw size={18} /></button>
+        <button className="mx-btn mx-btn-primary" onClick={() => { setEditingId(null); setEditingEstadoApi(''); setIsModalOpen(true); }}>
           <Plus size={18} /> Nueva Negociación
         </button>
       </div>
@@ -274,33 +273,43 @@ export default function Tratos() {
           <table className="mx-table">
             <thead>
               <tr>
-                <th>Proveedor</th>
-                <th style={{ textAlign: 'center' }}>Tons</th>
-                <th style={{ textAlign: 'center' }}>Precio Est.</th>
+                <th style={{ width: '30%' }}>Proveedor</th>
+                <th style={{ textAlign: 'center', width: '100px' }}>Tons</th>
+                <th style={{ textAlign: 'center', width: '120px' }}>Precio Est.</th>
                 <th>Cierre Previsto</th>
-                <th>Estado</th>
-                <th style={{ textAlign: 'right' }}>Acciones</th>
+                <th style={{ width: '140px' }}>Estado</th>
+                <th style={{ textAlign: 'right', width: '100px' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '60px' }}><div className="mx-spinner" style={{ margin: '0 auto' }}></div></td></tr>
+                <tr>
+                  <td colSpan="6">
+                    <div className="mx-state-placeholder">
+                      <div className="mx-spinner"></div>
+                    </div>
+                  </td>
+                </tr>
               ) : filteredItems.length === 0 ? (
-                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '60px' }}>No hay negociaciones activas.</td></tr>
+                <tr>
+                  <td colSpan="6">
+                    <div className="mx-state-placeholder">No hay negociaciones activas.</div>
+                  </td>
+                </tr>
               ) : (
                 filteredItems.map(item => (
                   <tr key={item._id}>
-                    <td style={{ fontWeight: 700 }}>{item.proveedorNombre}</td>
-                    <td style={{ textAlign: 'center', fontWeight: 800 }}>{item.tonsAcordadas} t</td>
+                    <td><span style={{ fontWeight: 'var(--weight-bold)' }}>{item.proveedorNombre}</span></td>
+                    <td style={{ textAlign: 'center', fontWeight: 'var(--weight-bold)' }}>{item.tonsAcordadas} t</td>
                     <td style={{ textAlign: 'center' }}>${Number(item.precioAcordado ?? item.precioBase ?? 0).toLocaleString()}</td>
-                    <td>{formatDateOnlySafe(item.fechaCierre)}</td>
+                    <td style={{ color: 'var(--color-text-subtle)', fontSize: '0.85rem' }}>{formatDateOnlySafe(item.fechaCierre)}</td>
                     <td>
-                      <span className={`mx-badge mx-badge-${getUiEstadoFromApi(item.estado) === 'acordado' || getUiEstadoFromApi(item.estado) === 'cerrado_ok' ? 'success' : getUiEstadoFromApi(item.estado) === 'rechazado' ? 'error' : 'info'}`}>
+                      <span className={`mx-badge mx-badge-${getUiEstadoFromApi(item.estado) === 'acordado' || getUiEstadoFromApi(item.estado) === 'cerrado_ok' ? 'success' : getUiEstadoFromApi(item.estado) === 'rechazado' ? 'danger' : 'info'}`}>
                         {ESTADOS_TRATO.find(e => e.val === getUiEstadoFromApi(item.estado))?.label || item.estado}
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <div className="mx-table-actions-cell" style={{ display: 'inline-flex' }}>
+                      <div className="mx-table-actions-cell" style={{ justifyContent: 'flex-end' }}>
                          <button className="mx-action-btn edit" onClick={() => openEdit(item)}><Edit size={14} /></button>
                          <button className="mx-action-btn delete" onClick={() => setConfirmDeleteTrato(item)}><Trash2 size={14} /></button>
                       </div>

@@ -506,8 +506,8 @@ export default function Directorio() {
   };
 
   return (
-    <div className="directorio-container">
-      <div className="centros-filters am-mt-16">
+    <div className="mx-page am-p-0">
+      <div className="mx-toolbar am-mt-16">
         <div className="mx-toggle-group">
           <button className={`mx-toggle-btn ${tab === 'proveedores' ? 'active' : ''}`} onClick={() => setTab('proveedores')}>
             <Building2 size={14} /> Proveedores
@@ -517,37 +517,32 @@ export default function Directorio() {
           </button>
         </div>
 
-        <div className="gs-directory-search" style={{ flex: 1 }}>
+        <div className="mx-search-box" style={{ flex: 1 }}>
           <Search size={18} />
           <input
             type="text"
             placeholder={tab === 'proveedores' ? 'Buscar proveedor, accion o comuna...' : 'Buscar contacto, empresa o correo...'}
-            className="gs-directory-search-input"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <button className="mx-btn mx-btn-primary sm" onClick={openCreateModal}>
+        <button className="mx-btn mx-btn-primary" onClick={openCreateModal}>
           <Plus size={18} /> {tab === 'proveedores' ? 'Empresa' : 'Contacto'}
         </button>
       </div>
 
       {tab === 'proveedores' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginTop: 16 }}>
+        <div className="mx-kpi-grid am-mt-16">
           {[
-            { label: 'Activos', value: providerStats.activos, tone: '#0f766e', bg: 'rgba(13, 148, 136, 0.10)' },
-            { label: 'Pausados', value: providerStats.pausados, tone: '#d97706', bg: 'rgba(217, 119, 6, 0.10)' },
-            { label: 'Acordados', value: providerStats.acordados, tone: '#0891b2', bg: 'rgba(8, 145, 178, 0.10)' },
-            { label: 'Sin seguimiento', value: providerStats.sinSeguimiento, tone: '#64748b', bg: 'rgba(100, 116, 139, 0.10)' },
+            { label: 'Activos', value: providerStats.activos, color: 'var(--color-success)' },
+            { label: 'Pausados', value: providerStats.pausados, color: 'var(--color-warning)' },
+            { label: 'Acordados', value: providerStats.acordados, color: 'var(--color-primary)' },
+            { label: 'Sin seguimiento', value: providerStats.sinSeguimiento, color: 'var(--color-text-subtle)' },
           ].map((stat) => (
-            <div key={stat.label} className="mx-table-card" style={{ padding: 16, background: stat.bg, borderColor: 'rgba(15, 23, 42, 0.06)' }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: stat.tone, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                {stat.label}
-              </div>
-              <div style={{ marginTop: 8, fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-text)' }}>
-                {stat.value}
-              </div>
+            <div key={stat.label} className="mx-kpi-card">
+              <p className="mx-eyebrow">{stat.label}</p>
+              <h2 className="mx-kpi-value" style={{ color: stat.color }}>{stat.value}</h2>
             </div>
           ))}
         </div>
@@ -598,27 +593,15 @@ export default function Directorio() {
                   return (
                     <tr key={provider.providerKey}>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div
-                            style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: 10,
-                              background: 'rgba(8, 145, 178, 0.10)',
-                              color: '#0f766e',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                            }}
-                          >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div className="mx-btn-icon sm" style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>
                             <Building2 size={16} />
                           </div>
                           <div>
-                            <div style={{ fontWeight: 700 }}>{provider.nombre}</div>
-                            <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text-subtle)', fontSize: '0.82rem' }}>
-                              <code style={{ fontSize: '11px', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{provider.key || 'sin-key'}</code>
-                              <span><MapPin size={12} style={{ marginRight: 4 }} />{provider.comuna}</span>
+                            <div style={{ fontWeight: 'var(--weight-bold)' }}>{provider.nombre}</div>
+                            <div style={{ marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                              <span className="mx-badge" style={{ fontSize: '10px', padding: '1px 6px' }}>{provider.key || 'sin-key'}</span>
+                              <span><MapPin size={10} /> {provider.comuna}</span>
                               <span>{provider.centros} centro{provider.centros === 1 ? '' : 's'}</span>
                             </div>
                           </div>
@@ -626,34 +609,22 @@ export default function Directorio() {
                       </td>
 
                       <td>
-                        <div style={{ fontWeight: 600 }}>{provider.contactoPrincipal}</div>
-                        <div style={{ marginTop: 4, display: 'grid', gap: 2, color: 'var(--color-text-subtle)', fontSize: '0.82rem' }}>
-                          <span>{provider.totalContactos} contacto{provider.totalContactos === 1 ? '' : 's'} en directorio</span>
-                          {provider.contactoTelefono ? <span><Phone size={12} style={{ marginRight: 4 }} />{provider.contactoTelefono}</span> : null}
-                          {provider.contactoEmail ? <span><Mail size={12} style={{ marginRight: 4 }} />{provider.contactoEmail}</span> : null}
+                        <div style={{ fontWeight: 'var(--weight-bold)' }}>{provider.contactoPrincipal}</div>
+                        <div style={{ marginTop: '4px', display: 'grid', gap: '2px', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                          <span>{provider.totalContactos} contacto{provider.totalContactos === 1 ? '' : 's'}</span>
+                          {provider.contactoTelefono ? <span><Phone size={10} style={{ marginRight: '4px' }} />{provider.contactoTelefono}</span> : null}
+                          {provider.contactoEmail ? <span><Mail size={10} style={{ marginRight: '4px' }} />{provider.contactoEmail}</span> : null}
                         </div>
                       </td>
 
                       <td>
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            padding: '8px 12px',
-                            borderRadius: 999,
-                            fontSize: '0.82rem',
-                            fontWeight: 800,
-                            color: status.tone,
-                            background: status.bg,
-                          }}
-                        >
-                          <StatusIcon size={14} />
+                        <span className={`mx-badge mx-badge-${provider.seguimientoEstado === 'activo' ? 'success' : provider.seguimientoEstado === 'pausado' ? 'warning' : provider.seguimientoEstado === 'acordado' ? 'primary' : 'muted'}`}>
+                          <StatusIcon size={12} style={{ marginRight: '6px' }} />
                           {status.label}
                         </span>
                         {provider.estadoComercial ? (
-                          <div style={{ marginTop: 8, color: 'var(--color-text-subtle)', fontSize: '0.82rem' }}>
-                            Estado comercial: {provider.estadoComercial}
+                          <div style={{ marginTop: '8px', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                            {provider.estadoComercial}
                           </div>
                         ) : null}
                       </td>

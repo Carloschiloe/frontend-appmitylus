@@ -208,18 +208,17 @@ export default function Usuarios() {
       </header>
 
       <div className="mx-content-frame">
-        <div className="centros-filters usuarios-toolbar">
-          <div className="centros-search-wrap usuarios-search-box">
+        <div className="mx-toolbar am-mt-16">
+          <div className="mx-search-box" style={{ maxWidth: '300px' }}>
             <Search size={18} />
             <input
               type="text"
               placeholder="Buscar usuarios..."
-              className="centros-search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="mx-badge-muted usuarios-count-badge">
+          <div className="mx-badge mx-badge-muted" style={{ marginLeft: 'auto' }}>
             <Users size={16} /> <span>{filteredUsuarios.length} Usuarios</span>
           </div>
         </div>
@@ -229,19 +228,27 @@ export default function Usuarios() {
             <table className="mx-table">
               <thead>
                 <tr>
-                  <th style={{ width: '25%' }}>Usuario</th>
+                  <th style={{ width: '30%' }}>Usuario</th>
                   <th>Rol</th>
                   <th>Empresa</th>
-                  <th>Estado</th>
+                  <th style={{ width: '120px' }}>Estado</th>
                   <th>Último Acceso</th>
-                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                  <th style={{ width: '120px', textAlign: 'right' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="usuarios-empty-state">
-                      <div className="mx-spinner usuarios-spinner-center"></div>
+                    <td colSpan="6">
+                      <div className="mx-state-placeholder">
+                        <div className="mx-spinner"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredUsuarios.length === 0 ? (
+                  <tr>
+                    <td colSpan="6">
+                      <div className="mx-state-placeholder">No hay resultados.</div>
                     </td>
                   </tr>
                 ) : (
@@ -250,16 +257,18 @@ export default function Usuarios() {
                     return (
                       <tr key={u._id}>
                         <td>
-                          <div className="usuarios-avatar-wrapper">
-                            <div className="usuarios-avatar">{initials(u.nombre)}</div>
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <div className="mx-btn-icon sm" style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)', fontWeight: 'var(--weight-bold)' }}>
+                              {initials(u.nombre)}
+                            </div>
                             <div>
-                              <div className="usuarios-name">{u.nombre}</div>
-                              <div className="usuarios-email">{u.email}</div>
+                              <div style={{ fontWeight: 'var(--weight-bold)' }}>{u.nombre}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{u.email}</div>
                             </div>
                           </div>
                         </td>
                         <td>
-                          <span className="mx-badge usuarios-rol-badge" style={{ background: rol.bg, color: rol.color }}>
+                          <span className="mx-badge" style={{ background: rol.bg, color: rol.color }}>
                             <rol.icon size={12} /> {rol.label}
                           </span>
                         </td>
@@ -269,23 +278,19 @@ export default function Usuarios() {
                           </div>
                         </td>
                         <td>
-                          <span className={`mx-badge usuarios-status-badge ${u.activo ? 'mx-badge-success' : 'mx-badge-muted'}`}>
-                            <span className="usuarios-status-dot"></span>
+                          <span className={`mx-badge mx-badge-${u.activo ? 'success' : 'muted'}`}>
                             {u.activo ? 'ACTIVO' : 'INACTIVO'}
                           </span>
                         </td>
-                        <td className="usuarios-date">
+                        <td style={{ fontSize: '0.85rem', color: 'var(--color-text-subtle)' }}>
                           {u.ultimoLogin ? new Date(u.ultimoLogin).toLocaleString('es-CL') : '—'}
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          <div
-                            className="mx-table-actions-cell"
-                            style={{ display: 'inline-flex', justifyContent: 'flex-end', width: '100%', position: 'relative' }}
-                          >
-                            <button className="mx-action-btn edit" onClick={() => { setEditingUser(u); setIsModalOpen(true); }}>
+                          <div className="mx-table-actions-cell" style={{ justifyContent: 'flex-end', position: 'relative' }}>
+                            <button className="mx-action-btn edit" onClick={(e) => { e.stopPropagation(); setEditingUser(u); setIsModalOpen(true); }}>
                               <Edit size={14} />
                             </button>
-                            <button className="mx-action-btn delete" onClick={() => { setUserToToggle(u); setIsConfirmStatusOpen(true); }}>
+                            <button className="mx-action-btn delete" onClick={(e) => { e.stopPropagation(); setUserToToggle(u); setIsConfirmStatusOpen(true); }}>
                               {u.activo ? <UserX size={14} /> : <UserCheck size={14} style={{ color: 'var(--color-success)' }} />}
                             </button>
                             <button
