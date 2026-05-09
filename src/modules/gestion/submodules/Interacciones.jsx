@@ -124,7 +124,7 @@ export default function Interacciones() {
     );
   }, [items, searchTerm]);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setIsModalOpen(false);
     setProviderSearch('');
     setSelectedProvider(null);
@@ -137,7 +137,7 @@ export default function Interacciones() {
       proximaAccion: '',
       fechaProxima: '',
     });
-  };
+  }, []);
 
   const handleSelectProvider = useCallback((provider) => {
     setSelectedProvider(provider);
@@ -145,7 +145,7 @@ export default function Interacciones() {
     setForm((prev) => ({ ...prev, proveedorNombre: provider.proveedorNombre }));
   }, []);
 
-   const handleSave = async (e) => {
+   const handleSave = useCallback(async (e) => {
      e.preventDefault();
      try {
        await apiClient.post('/interacciones', form);
@@ -155,7 +155,7 @@ export default function Interacciones() {
      } catch {
        addToast({ title: 'Error', message: 'No se pudo guardar', type: 'error' });
      }
-   };
+   }, [form, addToast, handleRefresh, closeModal]);
 
    const deleteMutation = useMutation({
      mutationFn: (id) => apiClient.delete(`/interacciones/${id}`),

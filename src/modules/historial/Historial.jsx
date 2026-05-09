@@ -506,14 +506,24 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
     });
   }, [providers, searchTerm]);
 
+  const kpiStats = useMemo(() => {
+    const MS_24H = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    return {
+      totalEventos: providers.reduce((sum, item) => sum + item.totalEventos, 0),
+      totalContactos: providers.reduce((sum, item) => sum + item.totalContactos, 0),
+      ultimas24h: providers.filter((item) => item.lastActivity && (now - item.lastActivity.getTime()) <= MS_24H).length,
+    };
+  }, [providers]);
+
   return (
     <>
       <div className="mx-kpi-grid" style={{ marginTop: '16px' }}>
         {[
           { label: 'Proveedores con historial', value: providers.length },
-          { label: 'Eventos registrados', value: providers.reduce((sum, item) => sum + item.totalEventos, 0) },
-          { label: 'Contactos en directorio', value: providers.reduce((sum, item) => sum + item.totalContactos, 0) },
-          { label: 'Últimas 24h', value: providers.filter((item) => item.lastActivity && (Date.now() - item.lastActivity.getTime()) <= 24 * 60 * 60 * 1000).length },
+          { label: 'Eventos registrados',       value: kpiStats.totalEventos },
+          { label: 'Contactos en directorio',   value: kpiStats.totalContactos },
+          { label: 'Últimas 24h',               value: kpiStats.ultimas24h },
         ].map((stat) => (
           <div key={stat.label} className="mx-kpi-card">
             <div className="mx-kpi-label">{stat.label}</div>

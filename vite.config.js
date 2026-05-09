@@ -37,7 +37,18 @@ export default defineConfig({
     minify: true,
     cssMinify: true,
     chunkSizeWarningLimit: 800,
-    rollupOptions: {},
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core — cambia muy raramente, cache-able
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // Tanstack — separado para invalidar solo cuando se actualiza
+          'vendor-query': ['@tanstack/react-query'],
+          // Lucide icons — gran superficie, se cachea sola
+          'vendor-lucide': ['lucide-react'],
+        },
+      },
+    },
   },
   server: {
     port: 5173,

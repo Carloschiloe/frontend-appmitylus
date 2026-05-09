@@ -115,7 +115,7 @@ export default function Muestreos() {
   }, [filtered]);
 
   // Handlers
-  const handleEdit = (m) => {
+  const handleEdit = useCallback((m) => {
     setEditingId(m._id || m.id);
     const mCats = m.cats || {};
     const newSelected = new Set();
@@ -137,9 +137,9 @@ export default function Muestreos() {
     });
     setStep(1);
     setIsModalOpen(true);
-  };
+  }, [maestros.cats]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     const finalCats = {};
     selectedCats.forEach(id => {
       finalCats[id] = Number(form.cats[id]) || 0;
@@ -168,9 +168,9 @@ export default function Muestreos() {
     } catch {
       addToast({ title: 'Error', message: 'No se pudo guardar el muestreo.', type: 'error' });
     }
-  };
+  }, [selectedCats, form, totals, editingId, page, addToast, loadData]);
 
-  const toggleCatSelection = (id) => {
+  const toggleCatSelection = useCallback((id) => {
     const next = new Set(selectedCats);
     if (next.has(id)) {
       const cat = maestros.cats.find(c => c._id === id);
@@ -184,14 +184,14 @@ export default function Muestreos() {
       next.add(id);
     }
     setSelectedCats(next);
-  };
+  }, [selectedCats, maestros.cats, form]);
 
-  const toggleGroup = (key) => {
+  const toggleGroup = useCallback((key) => {
     const next = new Set(expandedGroups);
     if (next.has(key)) next.delete(key);
     else next.add(key);
     setExpandedGroups(next);
-  };
+  }, [expandedGroups]);
 
   const generarInformePDF = useCallback((m) => {
     if (!m) return;

@@ -60,7 +60,7 @@ export default function CentrosTable() {
     return () => window.removeEventListener('centros:open-create', openCreate);
   }, []);
 
-  async function handleDeleteCentro() {
+  const handleDeleteCentro = useCallback(async () => {
     if (!confirmDelete?._id) return;
     try {
       await deleteCentro(confirmDelete._id);
@@ -78,9 +78,9 @@ export default function CentrosTable() {
         type: 'error',
       });
     }
-  }
+  }, [confirmDelete, addToast, queryClient]);
 
-  async function handleSubmitCentro(event) {
+  const handleSubmitCentro = useCallback(async (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const payload = {
@@ -111,7 +111,7 @@ export default function CentrosTable() {
         type: 'error',
       });
     }
-  }
+  }, [modalState.item, addToast, queryClient]);
 
   const filteredData = useMemo(() => {
     return data.filter((c) => {
@@ -210,12 +210,12 @@ export default function CentrosTable() {
 
           <button
             className="mx-btn mx-btn-outline"
-            onClick={() => {
+            onClick={useCallback(() => {
               setSearchTerm('');
               setComunaFilter('');
               setProviderFilter('');
               setSearchParams(new URLSearchParams(), { replace: true });
-            }}
+            }, [setSearchParams])}
           >
             Limpiar
           </button>
@@ -225,7 +225,7 @@ export default function CentrosTable() {
           <button className="mx-btn mx-btn-outline" style={{ height: 42 }}>
             <Download size={18} /> Exportar
           </button>
-          <button className="mx-btn mx-btn-primary" onClick={() => setModalState({ open: true, item: null })}>
+          <button className="mx-btn mx-btn-primary" onClick={useCallback(() => setModalState({ open: true, item: null }), [])}>
             <Plus size={18} /> Nuevo Centro
           </button>
         </div>

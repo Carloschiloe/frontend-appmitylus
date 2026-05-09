@@ -376,38 +376,34 @@ export default function Directorio() {
     [associatedCenters, contactCenterValue]
   );
 
-  const openCreateModal = () => {
+  const openCreateModal = useCallback(() => {
     setModalState({ open: true, mode: 'create', item: null });
     setContactCompanyQuery('');
     setContactCenterValue('');
     setContactSelectedProviderKey('');
-  };
+  }, []);
 
-  const openEditModal = (item) => {
+  const openEditModal = useCallback((item) => {
     setModalState({ open: true, mode: 'edit', item });
     setContactCompanyQuery(item?.proveedorNombre || item?.nombre || '');
     setContactCenterValue(item?.centroId || item?.centroCodigo || '');
     setContactSelectedProviderKey(item?.proveedorKey || '');
-  };
+  }, []);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setModalState({ open: false, mode: 'create', item: null });
     setContactCompanyQuery('');
     setContactCenterValue('');
     setContactSelectedProviderKey('');
-  };
+  }, []);
 
-  const openProviderCenters = (provider) => {
+  const openProviderCenters = useCallback((provider) => {
     const params = new URLSearchParams();
     const providerKey = provider?.key || provider?.providerKey || '';
-    if (providerKey) {
-      params.set('proveedor', providerKey);
-    }
-    if (provider?.nombre) {
-      params.set('q', provider.nombre);
-    }
+    if (providerKey) params.set('proveedor', providerKey);
+    if (provider?.nombre) params.set('q', provider.nombre);
     navigate(`/centros/directorio?${params.toString()}`);
-  };
+  }, [navigate]);
 
   const handleDeleteContact = async () => {
     if (!confirmDeleteContact?._id) return;

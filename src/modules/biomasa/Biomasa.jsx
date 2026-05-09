@@ -150,7 +150,7 @@ export default function Biomasa() {
   }, [programas, calData, weekDays]);
 
   // Handlers CRUD
-  const handleOpenModal = (item = null) => {
+  const handleOpenModal = useCallback((item = null) => {
     if (item) {
       setEditingId(item._id);
       setFormData({
@@ -183,9 +183,9 @@ export default function Biomasa() {
       });
     }
     setShowModal(true);
-  };
+  }, [tratosAcordados, mes]);
 
-  const handleSave = async (e) => {
+  const handleSave = useCallback(async (e) => {
     e.preventDefault();
     const selectedTrato = tratosAcordados.find(t => t._id === formData.tratoId);
     const payload = {
@@ -205,9 +205,9 @@ export default function Biomasa() {
     } catch (e) { 
       addToast({ title: 'Error', message: e.message, type: 'error' });
     }
-  };
+  }, [formData, tratosAcordados, programas, editingId, addToast, load]);
 
-  const handleStatusChange = async (id, nuevoEstado) => {
+  const handleStatusChange = useCallback(async (id, nuevoEstado) => {
     try {
       await apiClient.patch(`/programa-cosecha/${id}/estado`, { estado: nuevoEstado });
       addToast({ title: nuevoEstado === 'activo' ? 'Programa Reanudado' : 'Programa Pausado', message: `El estado fue cambiado a ${nuevoEstado}.`, type: 'success' });
@@ -215,9 +215,9 @@ export default function Biomasa() {
     } catch (e) { 
       addToast({ title: 'Error', message: e.message, type: 'error' });
     }
-  };
+  }, [addToast, load]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!confirmDelete) return;
     const nombre = confirmDelete.proveedorNombre;
     try {
@@ -228,9 +228,9 @@ export default function Biomasa() {
     } catch (e) { 
       addToast({ title: 'Error', message: e.message, type: 'error' });
     }
-  };
+  }, [confirmDelete, addToast, load]);
 
-  const handleSaveSeguimiento = async (e) => {
+  const handleSaveSeguimiento = useCallback(async (e) => {
     e.preventDefault();
     if (!segNota.trim() || !segEstado) return;
     try {
@@ -243,7 +243,7 @@ export default function Biomasa() {
     } catch (e) { 
       addToast({ title: 'Error', message: e.message, type: 'error' }); 
     }
-  };
+  }, [segNota, segEstado, segProg, addToast, load]);
 
   const kpis = useMemo(() => {
     const disponible = disp.reduce((s, i) => s + (i.tons || 0), 0);
