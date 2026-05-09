@@ -31,15 +31,24 @@ ul, ol {
 }
 
 /* Espaciado Atómico (am- prefix for consistency) */
+.am-p-0    { padding: 0 !important; }
 .am-p-24   { padding: var(--spacing-lg) !important; }
+.am-p-64   { padding: 64px !important; }
 .am-mt-8   { margin-top: var(--spacing-sm) !important; }
+.am-mt-12  { margin-top: 12px !important; }
 .am-mt-16  { margin-top: var(--spacing-md) !important; }
 .am-mt-24  { margin-top: var(--spacing-lg) !important; }
 .am-mt-32  { margin-top: var(--spacing-xl) !important; }
+.am-mb-8   { margin-bottom: var(--spacing-sm) !important; }
 .am-mb-12  { margin-bottom: 12px !important; }
 .am-mb-16  { margin-bottom: var(--spacing-md) !important; }
 .am-mb-20  { margin-bottom: 20px !important; }
 .am-mb-24  { margin-bottom: var(--spacing-lg) !important; }
+.am-mb-32  { margin-bottom: var(--spacing-xl) !important; }
+.am-my-24  { margin-top: var(--spacing-lg) !important; margin-bottom: var(--spacing-lg) !important; }
+.am-py-32  { padding-top: var(--spacing-xl) !important; padding-bottom: var(--spacing-xl) !important; }
+.am-text-center { text-align: center !important; }
+.am-line-clamp-1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Placeholders & Empty States ── */
 .mx-state-placeholder {

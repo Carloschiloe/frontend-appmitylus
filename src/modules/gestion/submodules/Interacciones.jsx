@@ -9,6 +9,7 @@ import {
   useContactos 
 } from '../hooks/useGestionQueries';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
+import './interacciones.css';
 
 function buildProviderDirectory(centros = [], contactos = []) {
   const firstContactByKey = new Map();
@@ -180,13 +181,14 @@ export default function Interacciones() {
 
   return (
     <div className="interacciones-container">
-      <div className="centros-filters am-mt-16">
-        <div className="centros-search-wrap" style={{ flex: 1 }}>
-          <Search size={18} />
+      <div className="interacciones-filters">
+        <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', gap: 8, border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0 12px', background: 'var(--color-surface)' }}>
+          <Search size={18} style={{ color: 'var(--color-text-subtle)', flexShrink: 0 }} />
           <input
             type="text"
             placeholder="Buscar por proveedor o contenido..."
-            className="centros-search"
+            className="mx-input"
+            style={{ border: 'none', boxShadow: 'none', padding: '8px 0', background: 'transparent' }}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

@@ -1,0 +1,27 @@
+/* src/modules/gestion/submodules/interacciones.css */
+
+/* ── Barra de filtros ── */
+.interacciones-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px);
+  margin-top: var(--spacing-md, 16px);
+}
+
+.interacciones-filters select,
+.interacciones-filters input {
+  min-width: 160px;
+}
+
+/* ── Estado vacío inline (autocontenido, sin depender de bandeja.css) ── */
+.interacciones-empty-inline {
+  border: 1px dashed var(--color-border-hover, #cbd5e1);
+  border-radius: var(--radius-md, 12px);
+  padding: 18px;
+  color: var(--color-text-muted, #64748b);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fbfcfe;
+}
