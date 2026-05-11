@@ -438,7 +438,7 @@ export default function Muestreos() {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('category', id);
-        formData.append('samplingId', editItem?._id || 'temp');
+        formData.append('samplingId', editingId || 'temp');
 
         const res = await apiClient.post('/muestreos/evidencias/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
@@ -461,7 +461,7 @@ export default function Muestreos() {
         addToast('Error al subir imagen', 'error');
       }
     }
-  }, [editItem, addToast]);
+  }, [editingId, addToast]);
 
   const removePhoto = useCallback(async (id, idx, isLegacy = false) => {
     setCatDetails(prev => {
