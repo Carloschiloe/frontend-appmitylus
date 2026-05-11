@@ -584,7 +584,8 @@ export default function Muestreos() {
                   <th style={{ textAlign: 'center' }}>U x Kg</th>
                   <th style={{ textAlign: 'center' }}>Procesable %</th>
                   <th style={{ textAlign: 'center' }}>% Rechazo</th>
-                  <th style={{ textAlign: 'right' }}>{viewMode === 'list' ? 'Calificación' : ''}</th>
+                  <th style={{ textAlign: 'center' }}>{viewMode === 'list' ? 'Calificación' : ''}</th>
+                  <th style={{ textAlign: 'right' }}>{viewMode === 'list' ? 'Acciones' : ''}</th>
                 </tr>
               </thead>
               <tbody>
@@ -609,9 +610,11 @@ export default function Muestreos() {
                           {m.total > 0 ? (m.rechazos / m.total * 100).toFixed(1) : 0}%
                         </span>
                       </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {m.clasificaciones?.[0] ? <span className="mx-badge mx-badge-success">{m.clasificaciones[0].nombre}</span> : <span className="mx-badge mx-badge-muted">S/C</span>}
+                      </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                          {m.clasificaciones?.[0] ? <span className="mx-badge mx-badge-success">{m.clasificaciones[0].nombre}</span> : <span className="mx-badge mx-badge-muted">S/C</span>}
                           <button className="mx-action-btn print" title="Informe PDF" onClick={() => generarInformePDF(m)}><Printer size={14} /></button>
                           <button className="mx-action-btn edit" title="Editar" onClick={() => handleEdit(m)}><Edit size={14} /></button>
                           <button className="mx-action-btn delete" title="Eliminar" onClick={() => { setDeleteTarget(m); setDeleteOpen(true); }}><Trash2 size={14} /></button>
@@ -634,6 +637,7 @@ export default function Muestreos() {
                         <td style={{ textAlign: 'center', fontWeight: 700, color: (g.rechazosSum / g.totalSum * 100) > 5 ? 'var(--color-error)' : 'inherit' }}>
                           {(g.totalSum > 0 ? (g.rechazosSum / g.totalSum * 100).toFixed(1) : 0)}%
                         </td>
+                        <td style={{ textAlign: 'center' }}>—</td>
                         <td style={{ textAlign: 'right' }}><ChevronRight size={14} style={{ opacity: 0.2 }} /></td>
                       </tr>
                       {expandedGroups.has(g.key) && g.items.map(m => (
@@ -652,9 +656,11 @@ export default function Muestreos() {
                             {m.total > 0 ? (m.procesable / m.total * 100).toFixed(1) : '0.0'}%
                           </td>
                           <td style={{ textAlign: 'center', fontSize: '13px' }}>{m.total > 0 ? (m.rechazos / m.total * 100).toFixed(1) : 0}%</td>
+                          <td style={{ textAlign: 'center' }}>
+                            {m.clasificaciones?.[0] ? <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-success)' }}>{m.clasificaciones[0].nombre}</span> : <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>S/C</span>}
+                          </td>
                           <td style={{ textAlign: 'right' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
-                              {m.clasificaciones?.[0] ? <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-success)' }}>{m.clasificaciones[0].nombre}</span> : <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>S/C</span>}
                               <button className="mx-action-btn print" style={{ width: '28px', height: '28px' }} title="Informe PDF" onClick={(e) => { e.stopPropagation(); generarInformePDF(m); }}><Printer size={12} /></button>
                               <button className="mx-action-btn edit" style={{ width: '28px', height: '28px' }} title="Editar" onClick={(e) => { e.stopPropagation(); handleEdit(m); }}><Edit size={12} /></button>
                               <button className="mx-action-btn delete" style={{ width: '28px', height: '28px' }} title="Eliminar" onClick={(e) => { e.stopPropagation(); setDeleteTarget(m); setDeleteOpen(true); }}><Trash2 size={12} /></button>
