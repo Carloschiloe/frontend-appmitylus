@@ -23,7 +23,9 @@ import {
   Settings2,
   RotateCcw,
   Target,
-  Trash2
+  Trash2,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
@@ -107,8 +109,6 @@ export default function Muestreos() {
   const [selectedCats, setSelectedCats] = useState(new Set());
   const [activeDropdown, setActiveDropdown] = useState(null); // 'procesable' | 'rechazo' | 'defecto'
 
-
-
   // Formulario
   const [form, setForm] = useState({
     proveedorNombre: '',
@@ -123,8 +123,14 @@ export default function Muestreos() {
     pesoVivo: '',
     pesoCocida: '',
     cats: {},
-    unidadPeso: 'kg'
+    unidadPeso: 'kg',
+    comentarios: ''
   });
+
+  const [catDetails, setCatDetails] = useState({}); // { [id]: { obs: '', fotos: [] } }
+  const [activeTab, setActiveTab] = useState('procesable'); // 'procesable', 'rechazo', 'defecto'
+  const [expandedItems, setExpandedItems] = useState(new Set());
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const resetForm = useCallback(() => {
     setForm({
@@ -140,8 +146,10 @@ export default function Muestreos() {
       pesoVivo: '',
       pesoCocida: '',
       cats: {},
-      unidadPeso: 'kg'
+      unidadPeso: 'kg',
+      comentarios: ''
     });
+    setCatDetails({});
     setEditingId(null);
     setStep(1);
     setSelectedProvider(null);
@@ -230,16 +238,13 @@ export default function Muestreos() {
     }
   };
 
-  // Cálculos Automáticos
   const totals = useMemo(() => {
     const isG = form.unidadPeso === 'g';
     const mult = isG ? 0.001 : 1;
-
     const vivo = Number(form.pesoVivo) || 0;
     const cocida = Number(form.pesoCocida) || 0;
     const rend = vivo > 0 ? (cocida / vivo) * 100 : 0;
 
-    let totalMuestra = 0;
     let procesable = 0;
     let rechazos = 0;
     let defectos = 0;
@@ -247,12 +252,12 @@ export default function Muestreos() {
     selectedCats.forEach(id => {
       const val = (Number(form.cats[id]) || 0) * mult;
       const cat = maestros.cats.find(c => c._id === id);
-      totalMuestra += val;
       if (cat?.tipoCat === 'procesable') procesable += val;
       else if (cat?.tipoCat === 'rechazo') rechazos += val;
-      else defectos += val;
+      else if (cat?.tipoCat === 'defecto') defectos += val;
     });
 
+    const totalMuestra = procesable + rechazos;
     return { rend, totalMuestra, procesable, rechazos, defectos };
   }, [form.pesoVivo, form.pesoCocida, form.cats, selectedCats, maestros.cats, form.unidadPeso]);
 
@@ -323,10 +328,16 @@ export default function Muestreos() {
       pesoVivo: m.pesoVivo || '',
       pesoCocida: m.pesoCocida || '',
       cats: mCats,
-      unidadPeso: m.unidadPeso || 'kg'
+      unidadPeso: m.unidadPeso || 'kg',
+      comentarios: m.comentarios || ''
     });
 
-    // Intentar restaurar contexto de proveedor/centros si el directorio ya existe
+    if (m.catDetails) {
+      setCatDetails(m.catDetails);
+    } else {
+      setCatDetails({});
+    }
+
     if (directory.length > 0) {
       const pKey = (m.proveedorKey || '').toLowerCase();
       const p = directory.find(it => it.proveedorKey === pKey);
@@ -359,7 +370,9 @@ export default function Muestreos() {
       procesable: Number(totals.procesable) || 0, 
       rechazos: Number(totals.rechazos) || 0, 
       defectos: Number(totals.defectos) || 0, 
-      cats: finalCats 
+      cats: finalCats,
+      comentarios: form.comentarios,
+      catDetails 
     };
 
     if (payload.fecha && payload.fecha.length === 10) {
@@ -406,6 +419,39 @@ export default function Muestreos() {
     setExpandedGroups(next);
   }, [expandedGroups]);
 
+  const handleFileUpload = useCallback((id, files) => {
+    if (!files) return;
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCatDetails(prev => {
+          const current = prev[id] || { obs: '', fotos: [] };
+          return {
+            ...prev,
+            [id]: {
+              ...current,
+              fotos: [...(current.fotos || []), e.target.result]
+            }
+          };
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  const removePhoto = useCallback((id, idx) => {
+    setCatDetails(prev => {
+      const current = prev[id];
+      if (!current) return prev;
+      const nextFotos = [...(current.fotos || [])];
+      nextFotos.splice(idx, 1);
+      return {
+        ...prev,
+        [id]: { ...current, fotos: nextFotos }
+      };
+    });
+  }, []);
+
   const generarInformePDF = useCallback((m) => {
     if (!m) return;
     const clasificaciones = Array.isArray(m.clasificaciones) ? m.clasificaciones : [];
@@ -420,7 +466,6 @@ export default function Muestreos() {
     const pctRech   = fmtNum(total > 0 ? (rechazos   / total) * 100 : 0, 1);
     const fecha     = m.fecha || new Date().toISOString().slice(0, 10);
 
-    // Texto de recomendación automático
     let recomendacion = '';
     if (primary) {
       recomendacion = `La materia prima muestreada <strong>califica como ${primary.nombre}</strong>${primary.tipoPrincipal ? ` (tipo: ${primary.tipoPrincipal})` : ''}. Los indicadores R%: <strong>${fmtNum(rend, 2)}%</strong> y calibre <strong>${fmtNum(uxkg, 0)} un/kg</strong> se encuentran dentro de los rangos requeridos.`;
@@ -511,39 +556,6 @@ export default function Muestreos() {
     win.document.write(html);
     win.document.close();
   }, [addToast]);
-
-  // Render Helpers
-  const renderStepIndicator = () => (
-    <div className="mu-steps-header am-mb-24">
-      {[1, 2, 3].map(n => (
-        <div 
-          key={n} 
-          className={`mu-step-item ${step === n ? 'active' : ''} ${step > n ? 'completed' : ''}`}
-          onClick={() => n < step && setStep(n)}
-        >
-          <div className="mu-step-circle">{step > n ? <Check size={14} /> : n}</div>
-          <span className="mu-step-label">
-            {n === 1 ? 'Contexto' : n === 2 ? 'Análisis' : 'Resultado'}
-          </span>
-          {n < 3 && <div className="mu-step-line" />}
-        </div>
-      ))}
-    </div>
-  );
-
-  const renderOrigenSelector = () => (
-    <div className="mx-form-group">
-      <label className="mx-label">Origen del Muestreo</label>
-      <select 
-        className="mx-select"
-        value={form.origen}
-        onChange={e => setForm({...form, origen: e.target.value})}
-      >
-        <option value="abastecimiento">Abastecimiento</option>
-        <option value="calidad">Control Calidad</option>
-      </select>
-    </div>
-  );
 
   return (
     <div className="muestreos-container am-p-24" style={{ animation: 'fadeIn 0.3s ease-out' }}>
@@ -675,7 +687,6 @@ export default function Muestreos() {
             </table>
           </div>
 
-          {/* Paginación — solo vista lista */}
           {viewMode === 'list' && pagination && pagination.pages > 1 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--color-border)' }}>
               <span style={{ fontSize: '13px', color: 'var(--color-text-subtle)' }}>
@@ -702,7 +713,6 @@ export default function Muestreos() {
         </div>
       )}
 
-      {/* Reutilización del modal de confirmación existente */}
       <ConfirmDeleteModal
         isOpen={isDeleteOpen}
         onClose={() => { setDeleteOpen(false); setDeleteTarget(null); }}
@@ -712,339 +722,300 @@ export default function Muestreos() {
         description={deleteTarget ? `Estás por eliminar el muestreo del ${new Date(deleteTarget.fecha).toLocaleDateString('es-CL')}${deleteTarget.centroCodigo ? ` en el centro ${deleteTarget.centroCodigo}` : ''}. Esta acción no se puede deshacer.` : ''}
       />
 
-      {/* MODAL PRINCIPAL (3 FASES RESTAURADAS) */}
       {isModalOpen && (
-        <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '800px', width: '95%', boxSizing: 'border-box' }}>
-            <div className="mx-modal-header" style={{ width: '100%', boxSizing: 'border-box' }}>
-              <div>
-                <h3 className="mx-modal-title">{editingId ? 'Editar' : 'Nuevo'} Muestreo Técnico</h3>
-                <p className="mx-modal-sub">{step === 1 ? 'Datos de origen y contexto' : step === 2 ? 'Análisis de categorías y mermas' : 'Resultados y clasificación'}</p>
+        <div className="mx-modal-overlay mu-modal-overlay">
+          <div className="mx-modal mu-main-modal">
+            <div className="mx-modal-header" style={{ width: '100%', boxSizing: 'border-box', padding: '12px 20px', minHeight: 'auto' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
+                <h3 className="mx-modal-title" style={{ fontSize: '1rem', whiteSpace: 'nowrap' }}>
+                  {editingId ? 'Editar' : 'Nuevo'} Muestreo Técnico
+                </h3>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', padding: '3px 10px', borderRadius: '16px' }}>
+                  {[1, 2, 3].map(n => (
+                    <React.Fragment key={n}>
+                      <div 
+                        onClick={() => n < step && setStep(n)}
+                        style={{ 
+                          display: 'flex', alignItems: 'center', gap: '4px', cursor: n < step ? 'pointer' : 'default',
+                          opacity: step === n ? 1 : 0.6
+                        }}
+                      >
+                        <div style={{ 
+                          width: '16px', height: '16px', borderRadius: '50%', background: step === n ? 'var(--color-primary)' : step > n ? '#22c55e' : '#cbd5e1',
+                          color: 'white', fontSize: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900
+                        }}>
+                          {step > n ? <Check size={10} /> : n}
+                        </div>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: step === n ? 'var(--color-primary)' : '#64748b' }}>
+                          {n === 1 ? 'Contexto' : n === 2 ? 'Análisis' : 'Resultado'}
+                        </span>
+                      </div>
+                      {n < 3 && <div style={{ width: '8px', height: '1px', background: '#cbd5e1' }} />}
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
-              <button className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
+              <button className="mx-btn-icon" onClick={() => setIsModalOpen(false)} style={{ width: '28px', height: '28px' }}><X size={16} /></button>
             </div>
 
-            <div className="mx-modal-body" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflowX: 'clip', minWidth: 0 }}>
-              {renderStepIndicator()}
-
-              {/* FASE 1: CONTEXTO */}
+            <div className="mx-modal-body" style={{ flex: 1, padding: 0, overflowY: 'auto', boxSizing: 'border-box' }}>
+              
               {step === 1 && (
-                <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out', width: '100%', maxWidth: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
-                  <div className="mx-form-row" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-                    <div className="mx-form-group" style={{ flex: 1, position: 'relative', minWidth: 0, boxSizing: 'border-box' }}>
+                <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out', padding: '24px', boxSizing: 'border-box' }}>
+                  <div className="mx-form-row">
+                    <div className="mx-form-group" style={{ flex: 1 }}>
                       <label className="mx-label"><User size={14} /> 1. Proveedor</label>
                       {!selectedProvider ? (
-                        <div style={{ position: 'relative', width: '100%', boxSizing: 'border-box' }}>
-                          <div className="mx-search-box" style={{ width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
-                            <Search size={16} />
-                            <input 
-                              className="mx-input" 
-                              placeholder="Buscar proveedor..." 
-                              value={searchProviders} 
-                              onChange={e => setSearchProviders(e.target.value)} 
-                              style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
-                            />
-                          </div>
-                          
+                        <div className="mx-search-box">
+                          <Search size={16} />
+                          <input 
+                            className="mx-input" 
+                            placeholder="Buscar proveedor..." 
+                            value={searchProviders} 
+                            onChange={e => setSearchProviders(e.target.value)} 
+                          />
                           {filteredProviders.length > 0 && (
-                            <div style={{ 
-                              position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, 
-                              background: 'white', borderRadius: '12px', border: '1px solid var(--color-border)',
-                              boxShadow: '0 10px 25px rgba(0,0,0,0.1)', marginTop: '4px', overflow: 'hidden'
-                            }}>
+                            <div className="mu-dropdown shadow-lg">
                               {filteredProviders.map(p => (
-                                <button
-                                  key={p.id}
-                                  type="button"
-                                  onClick={() => handleSelectProvider(p)}
-                                  style={{ 
-                                    width: '100%', textAlign: 'left', padding: '10px 14px', border: 'none', 
-                                    background: 'none', borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
-                                    display: 'flex', flexDirection: 'column'
-                                  }}
-                                  className="mu-provider-opt"
-                                >
-                                  <strong style={{ fontSize: '0.9rem' }}>{p.proveedorNombre}</strong>
-                                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-subtle)' }}>{p.comuna} · {p.contactoNombre || 'Sin contacto'}</span>
+                                <button key={p.id} type="button" onClick={() => handleSelectProvider(p)} className="mu-opt">
+                                  <strong>{p.proveedorNombre}</strong>
+                                  <span>{p.comuna} · {p.contactoNombre}</span>
                                 </button>
                               ))}
                             </div>
                           )}
-                          
-                          {searchProviders.trim() && filteredProviders.length === 0 && !loadingProviders && (
-                            <div style={{ padding: '12px', textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-text-subtle)' }}>
-                              Sin proveedores encontrados.
-                            </div>
-                          )}
                         </div>
                       ) : (
-                        <div style={{ 
-                          padding: '10px 14px', borderRadius: '12px', background: 'var(--color-primary-bg)', 
-                          border: '1px solid var(--color-primary-100)', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-                        }}>
+                        <div className="mu-selected-pill">
                           <div>
-                            <strong style={{ color: 'var(--color-primary)', fontSize: '0.95rem' }}>{selectedProvider.proveedorNombre}</strong>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-subtle)' }}>{selectedProvider.comuna}</div>
+                            <strong>{selectedProvider.proveedorNombre}</strong>
+                            <span>{selectedProvider.comuna}</span>
                           </div>
-                          <button 
-                            type="button" 
-                            className="mx-btn-icon" 
-                            style={{ width: '24px', height: '24px' }}
-                            onClick={() => { setSelectedProvider(null); setProviderCenters([]); setForm(prev => ({ ...prev, proveedorNombre: '', proveedorKey: '', centroId: '', centroCodigo: '' })); }}
-                          >
-                            <X size={14} />
-                          </button>
+                          <button type="button" className="mx-btn-icon" onClick={() => { setSelectedProvider(null); setProviderCenters([]); }}><X size={14} /></button>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="mx-form-row am-mt-16" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-                    <div className="mx-form-group" style={{ flex: 2, minWidth: 0, boxSizing: 'border-box' }}>
+                  <div className="mx-form-row am-mt-16">
+                    <div className="mx-form-group" style={{ flex: 1.5 }}>
                       <label className="mx-label"><MapPin size={14} /> 2. Centro</label>
-                      <select 
-                        className="mx-select"
-                        value={form.centroId}
-                        onChange={e => {
-                          const c = providerCenters.find(it => it._id === e.target.value);
-                          setForm(prev => ({ ...prev, centroId: e.target.value, centroCodigo: c?.code || '' }));
-                        }}
-                        disabled={!selectedProvider || providerCenters.length === 0}
-                        style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
-                      >
-                        <option value="">{!selectedProvider ? 'Selecciona proveedor primero' : providerCenters.length === 0 ? 'Sin centros registrados' : 'Selecciona un centro...'}</option>
-                        {providerCenters.map(c => (
-                          <option key={c._id} value={c._id}>{c.code} - {c.comuna} {c.areaPSMB ? `(${c.areaPSMB})` : ''}</option>
-                        ))}
+                      <select className="mx-select" value={form.centroId} onChange={e => { const c = providerCenters.find(it => it._id === e.target.value); setForm(prev => ({ ...prev, centroId: e.target.value, centroCodigo: c?.code || '' })); }} disabled={!selectedProvider}>
+                        <option value="">Selecciona centro...</option>
+                        {providerCenters.map(c => <option key={c._id} value={c._id}>{c.code} - {c.comuna}</option>)}
                       </select>
                     </div>
-                    <div className="mx-form-group" style={{ flex: 1, minWidth: 0, boxSizing: 'border-box' }}>
-                      <label className="mx-label"><Layers size={14} /> Línea</label>
-                      <input className="mx-input" placeholder="N° Línea..." value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }} />
+                    <div className="mx-form-group" style={{ flex: 1 }}>
+                      <label className="mx-label">Línea</label>
+                      <input className="mx-input" placeholder="N°" value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} />
                     </div>
                   </div>
 
-                  <div className="mx-form-row am-mt-16" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-                    <div className="mx-form-group" style={{ flex: 1, minWidth: 0, boxSizing: 'border-box' }}>
-                      <label className="mx-label"><Calendar size={14} /> Fecha</label>
-                      <input type="date" className="mx-input" value={form.fecha} onChange={e => setForm({...form, fecha: e.target.value})} style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }} />
+                  <div className="mx-form-row am-mt-16">
+                    <div className="mx-form-group" style={{ flex: 1 }}>
+                      <label className="mx-label">Fecha</label>
+                      <input type="date" className="mx-input" value={form.fecha} onChange={e => setForm({...form, fecha: e.target.value})} />
                     </div>
-                    <div className="mx-form-group" style={{ flex: 2, minWidth: 0, boxSizing: 'border-box' }}>
-                      <label className="mx-label"><User size={14} /> Responsable</label>
-                      <input 
-                        className="mx-input" 
-                        placeholder="Nombre..." 
-                        value={form.responsable} 
-                        onChange={e => setForm({...form, responsable: e.target.value})}
-                        readOnly
-                        style={{ background: 'var(--color-bg)', cursor: 'default', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
-                      />
+                    <div className="mx-form-group" style={{ flex: 1.5 }}>
+                      <label className="mx-label">Responsable</label>
+                      <input className="mx-input" value={form.responsable} onChange={e => setForm({...form, responsable: e.target.value})} />
                     </div>
-                  </div>
-
-                  <div className="am-mt-16" style={{ maxWidth: '300px' }}>
-                    {renderOrigenSelector()}
                   </div>
                 </div>
               )}
 
-              {/* FASE 2: ANÁLISIS DE CATEGORÍAS */}
               {step === 2 && (
-                <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out' }}>
-                  <div className="am-mb-24">
-                    <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '12px', color: 'var(--color-text)' }}>Datos base de la muestra</h4>
-                    <div className="mx-form-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
-                      <div className="mx-form-group">
-                        <label className="mx-label">Unidades por kilo</label>
-                        <input 
-                          type="number" 
-                          className="mx-input" 
-                          value={form.uxkg} 
-                          onChange={e => setForm({...form, uxkg: e.target.value})} 
-                          onKeyDown={handleAdvanceOnEnter}
-                          placeholder="0" 
-                          min="0"
-                        />
-                      </div>
-                      <div className="mx-form-group">
-                        <label className="mx-label">Peso vivo (kg)</label>
-                        <input 
-                          type="number" 
-                          className="mx-input" 
-                          value={form.pesoVivo} 
-                          onChange={e => setForm({...form, pesoVivo: e.target.value})} 
-                          onKeyDown={handleAdvanceOnEnter}
-                          placeholder="0.00" 
-                          min="0" 
-                          step="0.01"
-                        />
-                      </div>
-                      <div className="mx-form-group">
-                        <label className="mx-label">Peso carne (kg)</label>
-                        <input 
-                          type="number" 
-                          className="mx-input" 
-                          value={form.pesoCocida} 
-                          onChange={e => setForm({...form, pesoCocida: e.target.value})} 
-                          onKeyDown={handleAdvanceOnEnter}
-                          placeholder="0.00" 
-                          min="0" 
-                          step="0.01"
-                        />
-                      </div>
-                      <div className="mx-form-group">
-                        <label className="mx-label">Rendimiento %</label>
-                        <input 
-                          type="text" 
-                          className="mx-input" 
-                          value={`${fmtNum(totals.rend, 1)}%`} 
-                          readOnly 
-                          style={{ 
-                            background: 'var(--color-bg)', 
-                            cursor: 'default', 
-                            fontWeight: 700, 
-                            color: 'var(--color-primary)' 
-                          }} 
-                          tabIndex={-1}
-                        />
-                      </div>
+                <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out', padding: '20px', display: 'flex', gap: '20px', boxSizing: 'border-box' }}>
+                  <div style={{ flex: '0 0 200px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', color: 'var(--color-primary)' }}>
+                      <Target size={14} />
+                      <h4 style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800 }}>Parámetros</h4>
+                    </div>
+
+                    <div className="mx-form-group">
+                      <label className="mx-label" style={{ fontSize: '0.75rem' }}>U x Kg</label>
+                      <input type="number" className="mx-input" style={{ height: '32px', fontSize: '0.9rem' }} value={form.uxkg} onChange={e => setForm({...form, uxkg: e.target.value})} onKeyDown={handleAdvanceOnEnter} placeholder="0" />
+                    </div>
+
+                    <div className="mx-form-group am-mt-10">
+                      <label className="mx-label" style={{ fontSize: '0.75rem' }}>Peso Vivo</label>
+                      <input type="number" className="mx-input" style={{ height: '32px', fontSize: '0.9rem' }} value={form.pesoVivo} onChange={e => setForm({...form, pesoVivo: e.target.value})} onKeyDown={handleAdvanceOnEnter} placeholder="0.00" />
+                    </div>
+
+                    <div className="mx-form-group am-mt-10">
+                      <label className="mx-label" style={{ fontSize: '0.75rem' }}>Peso Carne</label>
+                      <input type="number" className="mx-input" style={{ height: '32px', fontSize: '0.9rem' }} value={form.pesoCocida} onChange={e => setForm({...form, pesoCocida: e.target.value})} onKeyDown={handleAdvanceOnEnter} placeholder="0.00" />
+                    </div>
+
+                    <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px dashed #e2e8f0' }}>
+                      <label className="mx-label" style={{ marginBottom: '4px', fontSize: '0.7rem' }}>Obs. Muestreo</label>
+                      <textarea 
+                        className="mx-input" 
+                        style={{ minHeight: '100px', resize: 'none', fontSize: '0.75rem', padding: '6px' }}
+                        placeholder="Notas..."
+                        value={form.comentarios}
+                        onChange={e => setForm({...form, comentarios: e.target.value})}
+                      />
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>Categorías</h4>
-                    <div className="mx-form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
-                      <label className="mx-label" style={{ margin: 0, fontSize: '0.8rem' }}>Unidad de peso:</label>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16a34a' }}>
+                        <Layers size={14} />
+                        <h4 style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800 }}>Análisis Técnico</h4>
+                      </div>
                       <select 
                         className="mx-select" 
                         value={form.unidadPeso || 'kg'} 
                         onChange={e => setForm({...form, unidadPeso: e.target.value})} 
-                        style={{ width: 'auto', padding: '4px 8px', fontSize: '0.8rem', minWidth: '60px' }}
-                        tabIndex={-1}
+                        style={{ width: 'auto', border: 'none', background: '#f8fafc', padding: '2px 8px', fontWeight: 800, color: 'var(--color-primary)', fontSize: '0.7rem', height: '24px', borderRadius: '6px' }}
                       >
                         <option value="kg">kg</option>
                         <option value="g">g</option>
                       </select>
                     </div>
-                  </div>
-                  <div className="mu-cat-selector-bar">
-                    {['procesable', 'rechazo', 'defecto'].map(type => (
-                      <div key={type} className="mu-cat-group-wrap">
+
+                    <div style={{ display: 'flex', padding: '2px', background: '#f1f5f9', borderRadius: '8px', marginBottom: '12px' }}>
+                      {['procesable', 'rechazo', 'defecto'].map(type => {
+                        const count = maestros.cats.filter(c => c.tipoCat === type && selectedCats.has(c._id)).length;
+                        const isActive = activeTab === type;
+                        return (
+                          <button key={type} type="button" onClick={() => setActiveTab(type)} style={{ flex: 1, padding: '5px', borderRadius: '6px', border: 'none', fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: isActive ? 'white' : 'transparent', color: isActive ? 'var(--color-primary)' : '#64748b', boxShadow: isActive ? '0 1px 2px rgba(0,0,0,0.05)' : 'none' }}>
+                            <span style={{ textTransform: 'capitalize' }}>{type}s</span>
+                            {count > 0 && <span style={{ fontSize: '8px', background: isActive ? 'var(--color-primary)' : '#cbd5e1', color: 'white', padding: '0 4px', borderRadius: '6px' }}>{count}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {activeTab !== 'procesable' && (
+                      <div style={{ marginBottom: '10px', position: 'relative' }}>
                         <button 
                           type="button"
-                          tabIndex={-1}
-                          className={`mu-cat-group-btn ${type} ${activeDropdown === type ? 'open' : ''}`}
-                          onClick={() => setActiveDropdown(activeDropdown === type ? null : type)}
+                          className="mx-btn mx-btn-outline"
+                          style={{ width: '100%', height: '32px', fontSize: '0.8rem', justifyContent: 'space-between', padding: '0 12px' }}
+                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         >
-                          <span>{type.charAt(0).toUpperCase() + type.slice(1)}s</span>
-                          <ChevronDown size={14} />
-                          {maestros.cats.filter(c => c.tipoCat === type && selectedCats.has(c._id)).length > 0 && (
-                            <span className="count">{maestros.cats.filter(c => c.tipoCat === type && selectedCats.has(c._id)).length}</span>
-                          )}
+                          <span>+ Añadir {activeTab}s...</span>
+                          <ChevronDown size={14} style={{ transform: isDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                         </button>
-                        
-                        {activeDropdown === type && (
-                          <div className="mu-cat-dropdown shadow-lg">
-                            {maestros.cats.filter(c => c.tipoCat === type).map(c => (
-                              <label key={c._id} className="mu-cat-option">
-                                <input 
-                                  type="checkbox" 
-                                  checked={selectedCats.has(c._id)} 
-                                  disabled={type === 'procesable'}
-                                  tabIndex={-1}
-                                  onChange={() => toggleCatSelection(c._id)} 
-                                />
-                                <span>{c.nombre}</span>
-                              </label>
-                            ))}
-                          </div>
+
+                        {isDropdownOpen && (
+                          <>
+                            <div 
+                              style={{ position: 'fixed', inset: 0, zIndex: 90 }} 
+                              onClick={() => setIsDropdownOpen(false)} 
+                            />
+                            <div style={{ 
+                              position: 'absolute', top: '100%', left: 0, width: '100%', 
+                              background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', 
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', zIndex: 100,
+                              marginTop: '4px', maxHeight: '200px', overflowY: 'auto', padding: '4px'
+                            }}>
+                              {maestros.cats.filter(c => c.tipoCat === activeTab && !selectedCats.has(c._id)).length === 0 ? (
+                                <div style={{ padding: '8px', textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8' }}>
+                                  No hay más ítems disponibles
+                                </div>
+                              ) : (
+                                maestros.cats.filter(c => c.tipoCat === activeTab && !selectedCats.has(c._id)).map(c => (
+                                  <button 
+                                    key={c._id} 
+                                    type="button"
+                                    onClick={() => toggleCatSelection(c._id)}
+                                    style={{ 
+                                      width: '100%', textAlign: 'left', padding: '8px 12px', border: 'none', 
+                                      background: 'transparent', cursor: 'pointer', borderRadius: '6px',
+                                      fontSize: '0.8rem', fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: '8px'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                  >
+                                    <Plus size={12} color="var(--color-primary)" />
+                                    {c.nombre}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          </>
                         )}
                       </div>
-                    ))}
-                  </div>
+                    )}
 
-                  <div className="mu-cat-table-wrap am-mt-16">
-                    <table className="mu-cat-table">
-                      <thead>
-                        <tr>
-                          <th>Categoría Seleccionada</th>
-                          <th style={{ textAlign: 'right' }}>Peso ({form.unidadPeso || 'kg'})</th>
-                          <th style={{ textAlign: 'right' }}>%</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #f1f5f9', borderRadius: '8px', padding: '4px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 50px 30px 30px', gap: '4px', padding: '4px 8px', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Item</span>
+                        <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', textAlign: 'right' }}>Peso</span>
+                        <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', textAlign: 'right' }}>%</span>
+                        <span /><span />
+                      </div>
+
+                      <div style={{ marginTop: '4px' }}>
                         {[...selectedCats]
-                          .sort((a, b) => {
-                            const order = { procesable: 1, rechazo: 2, defecto: 3 };
-                            const catA = maestros.cats.find(c => c._id === a);
-                            const catB = maestros.cats.find(c => c._id === b);
-                            return (order[catA?.tipoCat] || 4) - (order[catB?.tipoCat] || 4);
-                          })
-                          .map(id => {
-                          const cat = maestros.cats.find(c => c._id === id);
-                          if (!cat) return null;
-                          const val = Number(form.cats[id]) || 0;
-                          const pct = totals.totalMuestra > 0 ? (val / totals.totalMuestra) * 100 : 0;
-                          return (
-                            <tr key={id} className={`mu-row-${cat.tipoCat}`}>
-                              <td>
-                                <div className="mu-cat-name">
-                                  <span className={`dot ${cat.tipoCat}`}></span>
-                                  {cat.nombre}
-                                  {cat.tipoCat !== 'procesable' && (
-                                    <button type="button" tabIndex={-1} className="mu-remove" onClick={() => toggleCatSelection(id)}>×</button>
-                                  )}
+                          .map(id => maestros.cats.find(c => c._id === id))
+                          .filter(c => c && c.tipoCat === activeTab)
+                          .map(cat => {
+                            const id = cat._id;
+                            const val = Number(form.cats[id]) || 0;
+                            const pct = totals.totalMuestra > 0 ? (val / totals.totalMuestra) * 100 : 0;
+                            const isExpanded = expandedItems.has(id);
+                            return (
+                              <div key={id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 60px 30px 30px', gap: '6px', alignItems: 'center', padding: '8px 10px', background: isExpanded ? '#f8fafc' : 'transparent', borderRadius: '6px' }}>
+                                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cat.nombre}</span>
+                                  <input type="number" className="mx-input" style={{ height: '28px', textAlign: 'right', fontWeight: 800, padding: '0 6px', fontSize: '0.9rem' }} value={form.cats[id] || ''} onChange={e => setForm({ ...form, cats: { ...form.cats, [id]: e.target.value } })} onKeyDown={handleAdvanceOnEnter} placeholder="0" />
+                                  <div style={{ textAlign: 'right', fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-primary)' }}>{fmtNum(pct, 1)}%</div>
+                                  <button type="button" className="mx-btn-icon" style={{ width: '26px', height: '26px' }} onClick={() => { const next = new Set(expandedItems); if (next.has(id)) next.delete(id); else next.add(id); setExpandedItems(next); }}><Settings2 size={12} /></button>
+                                  {activeTab !== 'procesable' ? <button type="button" className="mx-btn-icon" style={{ width: '26px', height: '26px', color: '#ef4444' }} onClick={() => toggleCatSelection(id)}><X size={12} /></button> : <div />}
                                 </div>
-                              </td>
-                              <td style={{ textAlign: 'right' }}>
-                                <input 
-                                  type="number" 
-                                  className="mu-cat-input" 
-                                  value={form.cats[id] || ''} 
-                                  onChange={e => setForm({...form, cats: {...form.cats, [id]: e.target.value}})}
-                                  onKeyDown={handleAdvanceOnEnter}
-                                  placeholder={form.unidadPeso === 'g' ? "0" : "0.00"}
-                                />
-                              </td>
-                              <td style={{ textAlign: 'right', fontWeight: 700, opacity: 0.7 }}>{fmtNum(pct, 1)}%</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="mu-totals-grid am-mt-24">
-                    <div className="mu-total-card">
-                      <label>Total Muestra</label>
-                      <div className="val">{fmtNum(totals.totalMuestra, 2)} kg</div>
-                    </div>
-                    <div className="mu-total-card procesable">
-                      <label>Procesable %</label>
-                      <div className="val">{fmtNum(totals.totalMuestra > 0 ? 100 - ((totals.rechazos / totals.totalMuestra) * 100) : 0, 1)}%</div>
-                    </div>
-                    <div className="mu-total-card rechazo">
-                      <label>Rechazos %</label>
-                      <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.rechazos / totals.totalMuestra) * 100 : 0, 1)}%</div>
-                    </div>
-                    <div className="mu-total-card defecto">
-                      <label>Defectos %</label>
-                      <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.defectos / totals.totalMuestra) * 100 : 0, 1)}%</div>
+                                {isExpanded && (
+                                  <div style={{ padding: '0 10px 10px 10px', animation: 'fadeIn 0.2s ease-out' }}>
+                                    <textarea 
+                                      className="mx-input" 
+                                      style={{ height: '40px', fontSize: '0.8rem', padding: '8px', marginBottom: '8px' }} 
+                                      placeholder="Observaciones de calidad..." 
+                                      value={catDetails[id]?.obs || ''} 
+                                      onChange={e => setCatDetails({...catDetails, [id]: { ...catDetails[id], obs: e.target.value }})} 
+                                    />
+                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                      <label style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1.5px dashed #cbd5e1', transition: 'all 0.2s' }}>
+                                        <Camera size={18} color="#64748b" />
+                                        <input type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={e => handleFileUpload(id, e.target.files)} />
+                                      </label>
+                                      {(catDetails[id]?.fotos || []).map((foto, fIdx) => (
+                                        <div key={fIdx} style={{ position: 'relative', width: '42px', height: '42px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                          <img src={foto} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                          <button 
+                                            type="button" 
+                                            onClick={() => removePhoto(id, fIdx)}
+                                            style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', width: '16px', height: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                          >
+                                            <X size={10} />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* FASE 3: RESULTADO FINAL */}
               {step === 3 && (
-                <div className="mu-step-container am-text-center am-py-32" style={{ animation: 'slideInRight 0.3s ease-out' }}>
+                <div className="mu-step-container am-text-center am-py-32" style={{ animation: 'slideInRight 0.3s ease-out', padding: '24px' }}>
                   <div className="mu-result-hero">
                     <Target size={48} color="var(--color-primary)" />
                     <h3 className="am-mt-16">Resumen del Análisis</h3>
                     <p className="am-mb-32">Verifica los datos antes de guardar la calificación oficial.</p>
                   </div>
 
-                  <div className="mu-result-grid">
+                  <div className="mu-result-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', maxWidth: '800px' }}>
                     <div className="mu-res-item">
                       <label>Rendimiento Carne</label>
                       <div className="val">{fmtNum(totals.rend, 1)}%</div>
@@ -1059,7 +1030,15 @@ export default function Muestreos() {
                     </div>
                     <div className="mu-res-item">
                       <label>Procesable</label>
-                      <div className="val success">{fmtNum(totals.totalMuestra > 0 ? 100 - ((totals.rechazos / totals.totalMuestra) * 100) : 0, 1)}%</div>
+                      <div className="val success">{fmtNum(totals.totalMuestra > 0 ? (totals.procesable / totals.totalMuestra * 100) : 0, 1)}%</div>
+                    </div>
+                    <div className="mu-res-item">
+                      <label>% Rechazo</label>
+                      <div className="val error">{fmtNum(totals.totalMuestra > 0 ? (totals.rechazos / totals.totalMuestra * 100) : 0, 1)}%</div>
+                    </div>
+                    <div className="mu-res-item">
+                      <label>% Defectos</label>
+                      <div className="val warning">{fmtNum(totals.totalMuestra > 0 ? (totals.defectos / totals.totalMuestra * 100) : 0, 1)}%</div>
                     </div>
                   </div>
 
@@ -1093,10 +1072,40 @@ export default function Muestreos() {
               </div>
             </div>
           </div>
+
+          {step === 2 && (
+            <div className="mu-side-car">
+              <div className="mu-side-car-header">Métricas Resumen</div>
+              
+              <div className="mu-side-car-item primary">
+                <div className="label">R% Carne</div>
+                <div className="val">{fmtNum(totals.rend, 1)}%</div>
+              </div>
+
+              <div className="mu-side-car-item">
+                <div className="label">Muestra Total</div>
+                <div className="val">{fmtNum(totals.totalMuestra, 2)}<span className="unit">kg</span></div>
+              </div>
+
+              <div className="mu-side-car-item success">
+                <div className="label">Procesable</div>
+                <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.procesable / totals.totalMuestra * 100) : 0, 1)}%</div>
+              </div>
+
+              <div className="mu-side-car-item error">
+                <div className="label">Rechazo</div>
+                <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.rechazos / totals.totalMuestra * 100) : 0, 1)}%</div>
+              </div>
+
+              <div className="mu-side-car-item warning">
+                <div className="label">Defectos</div>
+                <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.defectos / totals.totalMuestra * 100) : 0, 1)}%</div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* RESULTADO (POPUP DE CLASIFICACIÓN) */}
       {isResultOpen && resultData && (
         <div className="mx-modal-overlay">
           <div className="mx-modal shadow-2xl" style={{ maxWidth: '400px', textAlign: 'center', borderRadius: '24px', padding: '24px' }}>
@@ -1131,6 +1140,42 @@ export default function Muestreos() {
       )}
 
       <style dangerouslySetInnerHTML={{ __html: `
+        .mu-modal-overlay { 
+          display: flex !important; align-items: center; justify-content: center; gap: 8px; 
+          z-index: 1000; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
+        }
+        .mu-main-modal { 
+          max-width: 800px; width: 95%; box-sizing: border-box; display: flex; flex-direction: column; 
+          position: relative; margin: 0; flex-shrink: 0;
+        }
+        
+        .mu-side-car { 
+          width: 190px; flex-shrink: 0; display: flex !important; flex-direction: column !important; gap: 12px;
+          animation: slideInRight 0.4s ease-out; z-index: 10;
+        }
+        .mu-side-car-header { font-size: 0.7rem; font-weight: 900; color: white; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; text-align: center; opacity: 0.8; }
+        
+        .mu-side-car-item { 
+          background: white; padding: 14px; border-radius: 16px; border: 1px solid #e2e8f0; 
+          display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: all 0.2s;
+        }
+        .mu-side-car-item .label { font-size: 10px; color: #64748b; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
+        .mu-side-car-item .val { font-size: 1.4rem; font-weight: 900; color: #1e293b; line-height: 1; }
+        .mu-side-car-item .unit { font-size: 12px; margin-left: 2px; color: #94a3b8; }
+        
+        .mu-side-car-item.primary { border-top: 4px solid var(--color-primary); }
+        .mu-side-car-item.primary .val { color: var(--color-primary); }
+        
+        .mu-side-car-item.success { border-top: 4px solid #22c55e; }
+        .mu-side-car-item.success .val { color: #16a34a; }
+        
+        .mu-side-car-item.error { border-top: 4px solid #ef4444; }
+        .mu-side-car-item.error .val { color: #dc2626; }
+        
+        .mu-side-car-item.warning { border-top: 4px solid #f59e0b; }
+        .mu-side-car-item.warning .val { color: #d97706; }
+
         .mu-steps-header { display: flex; align-items: center; justify-content: space-between; position: relative; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; }
         .mu-step-item { display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 1; cursor: pointer; flex: 1; position: relative; }
         .mu-step-circle { width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #64748b; transition: all 0.3s; }
@@ -1144,64 +1189,51 @@ export default function Muestreos() {
         .mu-origen-btn { flex: 1; border: none; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748b; }
         .mu-origen-btn.active { background: white; color: var(--color-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-        .mu-kpi-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        .mu-input-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; }
-        .mu-input-card label { display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; }
-        .mu-input-card input { width: 100%; border: none; background: transparent; font-size: 18px; font-weight: 800; color: var(--color-text); outline: none; }
-        .mu-input-card.highlight { background: var(--color-primary); border-color: var(--color-primary); }
-        .mu-input-card.highlight label { color: rgba(255,255,255,0.8); }
-        .mu-input-card.highlight .val { font-size: 20px; font-weight: 900; color: white; }
-
-        .mu-cat-selector-bar { display: flex; gap: 12px; }
-        .mu-cat-group-wrap { position: relative; flex: 1; }
         .mu-cat-group-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; background: white; cursor: pointer; font-weight: 700; font-size: 14px; transition: all 0.2s; }
-        .mu-cat-group-btn.procesable { color: var(--color-success); }
-        .mu-cat-group-btn.defecto { color: var(--color-info); }
-        .mu-cat-group-btn.rechazo { color: var(--color-error); }
-        .mu-cat-group-btn.open { border-color: currentColor; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .mu-cat-group-btn .count { background: currentColor; color: white; font-size: 10px; padding: 2px 6px; border-radius: 20px; }
-
-        .mu-cat-dropdown { position: absolute; top: calc(100% + 8px); left: 0; width: 100%; background: white; border-radius: 12px; border: 1px solid #e2e8f0; z-index: 100; max-height: 250px; overflow-y: auto; padding: 8px; }
-        .mu-cat-option { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 13px; }
-        .mu-cat-option:hover { background: #f8fafc; }
 
         .mu-cat-table { width: 100%; border-collapse: collapse; }
         .mu-cat-table th { font-size: 11px; text-transform: uppercase; color: #94a3b8; padding: 12px; border-bottom: 1px solid #f1f5f9; }
         .mu-cat-table td { padding: 8px 12px; border-bottom: 1px solid #f8fafc; }
-        .mu-row-procesable { background: #f0fdf4; }
-        .mu-row-defecto { background: #eff6ff; }
-        .mu-row-rechazo { background: #fef2f2; }
         .mu-cat-name { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
-        .mu-cat-name .dot { width: 8px; height: 8px; border-radius: 50%; }
-        .mu-cat-name .dot.procesable { background: var(--color-success); }
-        .mu-cat-name .dot.defecto { background: var(--color-info); }
-        .mu-cat-name .dot.rechazo { background: var(--color-error); }
         .mu-cat-input { width: 100px; height: 32px; border: 1.5px solid #e2e8f0; border-radius: 8px; text-align: right; padding: 0 8px; font-weight: 700; font-size: 14px; }
-        .mu-remove { border: none; background: transparent; color: #94a3b8; cursor: pointer; font-size: 18px; margin-left: auto; }
-        .mu-remove:hover { color: var(--color-error); }
 
-        .mu-totals-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-        .mu-total-card { background: #f1f5f9; padding: 16px; border-radius: 16px; text-align: center; }
-        .mu-total-card label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; }
-        .mu-total-card .val { font-size: 20px; font-weight: 900; margin-top: 4px; }
-        .mu-total-card.procesable { background: #dcfce7; color: #16a34a; }
-        .mu-total-card.defecto { background: #fff7ed; color: #ea580c; }
-        .mu-total-card.rechazo { background: #fee2e2; color: #ef4444; }
-
-        .mu-result-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 500px; margin: 0 auto; }
-        .mu-res-item { background: white; border: 1.5px solid #f1f5f9; padding: 20px; border-radius: 20px; }
-        .mu-res-item label { font-size: 12px; color: #94a3b8; font-weight: 600; }
-        .mu-res-item .val { font-size: 24px; font-weight: 900; color: var(--color-text); margin-top: 8px; }
-        .mu-res-item .val.success { color: var(--color-success); }
+        .mu-result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 800px; margin: 0 auto; }
+        .mu-res-item { background: white; border: 1.5px solid #f1f5f9; padding: 16px; border-radius: 16px; text-align: center; }
+        .mu-res-item label { font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        .mu-res-item .val { font-size: 20px; font-weight: 900; color: var(--color-text); }
+        .mu-res-item .val.success { color: #16a34a; }
+        .mu-res-item .val.error { color: #ef4444; }
+        .mu-res-item .val.warning { color: #f59e0b; }
 
         .mu-result-mini-kpis { display: flex; justify-content: center; gap: 24px; background: #f8fafc; padding: 16px; border-radius: 16px; }
-        .mu-result-mini-kpis .kpi { display: flex; flex-direction: column; }
-        .mu-result-mini-kpis .kpi span { font-size: 11px; font-weight: 800; color: #94a3b8; }
         .mu-result-mini-kpis .kpi strong { font-size: 18px; color: var(--color-primary); }
 
         @keyframes slideInRight {
           from { opacity: 0; transform: translateX(20px); }
           to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+          .mu-modal-overlay { flex-direction: column; padding: 10px; gap: 10px; overflow-y: auto; }
+          .mu-main-modal { width: 100%; max-width: 100%; margin: 0; }
+          .mu-step-container { flex-direction: column !important; padding: 16px !important; gap: 24px !important; }
+          .mu-step-container > div { flex: none !important; width: 100% !important; }
+          .mu-side-car { 
+            width: 100%; flex-direction: column !important; padding: 10px; gap: 8px; 
+            animation: slideInDown 0.4s ease-out;
+          }
+          .mu-side-car-header { display: block; color: #64748b; }
+          .mu-side-car-item { flex: none; padding: 10px; border-radius: 12px; }
+          .mu-side-car-item .val { font-size: 1.2rem; }
+          .mu-modal-header { padding: 10px 16px; }
+          .mu-modal-header h3 { font-size: 0.9rem !important; }
+          .mx-modal-footer { padding: 12px 16px; }
+        }
+        @keyframes slideInDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}} />
     </div>
