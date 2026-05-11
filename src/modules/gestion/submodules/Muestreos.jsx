@@ -442,14 +442,14 @@ export default function Muestreos() {
 
         const res = await apiClient.post('/muestreos/evidencias/upload', formData);
 
-        if (res.data?.ok) {
+        if (res.ok) {
           setCatDetails(prev => {
             const current = prev[id] || { obs: '', photos: [], fotos: [] };
             return {
               ...prev,
               [id]: {
                 ...current,
-                photos: [...(current.photos || []), res.data.metadata]
+                photos: [...(current.photos || []), res.metadata]
               }
             };
           });
