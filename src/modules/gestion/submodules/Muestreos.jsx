@@ -548,13 +548,20 @@ export default function Muestreos() {
   return (
     <div className="muestreos-container am-p-24" style={{ animation: 'fadeIn 0.3s ease-out' }}>
 
-      <div className="centros-filters am-mt-16">
+      <div className="mx-toolbar am-mt-16">
         <div className="mx-toggle-group">
           <button className={`mx-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => { setViewMode('list'); setPage(1); }}><List size={14} /> Historial</button>
           <button className={`mx-toggle-btn ${viewMode === 'grouped' ? 'active' : ''}`} onClick={() => { setViewMode('grouped'); setPage(1); }}><LayoutGrid size={14} /> Agrupado</button>
         </div>
-        <div className="centros-search-wrap" style={{ flex: 1 }}>
-          <Search size={18} /><input type="text" placeholder="Buscar por proveedor o centro..." className="centros-search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <div className="mx-search-box" style={{ flex: 1 }}>
+          <Search size={18} />
+          <input 
+            type="text" 
+            placeholder="Buscar por proveedor o centro..." 
+            className="mx-input" 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+          />
         </div>
         <button className="mx-btn mx-btn-outline sm" onClick={() => { setPage(1); loadData(1); }}><RotateCcw size={18} /></button>
         <button className="mx-btn mx-btn-primary sm" onClick={resetForm}>
@@ -584,7 +591,7 @@ export default function Muestreos() {
                 {viewMode === 'list' ? (
                   filtered.map(m => (
                     <tr key={m._id || m.id}>
-                      <td style={{ fontWeight: 600 }}>{m.fecha ? new Date(m.fecha).toLocaleDateString('es-CL') : '—'}</td>
+                      <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{m.fecha ? new Date(m.fecha).toLocaleDateString('es-CL') : '—'}</td>
                       <td>
                         <div style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{m.proveedorNombre || m.proveedor}</div>
                         <div style={{ fontSize: '11px', color: 'var(--color-text-subtle)', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -633,7 +640,7 @@ export default function Muestreos() {
                         <tr key={m._id} style={{ background: '#fafafa' }}>
                           <td style={{ textAlign: 'right', borderRight: '2px solid var(--color-primary)' }}></td>
                           <td style={{ paddingLeft: '24px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', whiteSpace: 'nowrap' }}>
                               <span style={{ fontSize: '12px', fontWeight: 700 }}>{new Date(m.fecha).toLocaleDateString('es-CL')}</span>
                               <span style={{ fontSize: '11px', color: 'var(--color-text-subtle)' }}>{m.centroCodigo || 'Sin Centro'} {m.linea && `· L: ${m.linea}`}</span>
                             </div>
