@@ -29,6 +29,7 @@ import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useMuestreosData } from '../../../hooks/useMuestreosData';
+import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 
 const fmtNum = (v, d = 2) => (Number(v) || 0).toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
 
@@ -688,23 +689,15 @@ export default function Muestreos() {
         </div>
       )}
 
-      {/* Confirmation modal for delete */}
-      {isDeleteOpen && deleteTarget && (
-        <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '400px', width: '90%', padding: '24px', textAlign: 'center' }}>
-            <h3 className="mx-modal-title">¿Eliminar este muestreo?</h3>
-            <p style={{ marginTop: '8px', color: 'var(--color-text-subtle)' }}>
-              <strong>{deleteTarget.proveedorNombre || deleteTarget.proveedor}</strong> – {new Date(deleteTarget.fecha).toLocaleDateString('es-CL')}
-              <br />
-              {deleteTarget.centroCodigo || 'Sin Centro'} {deleteTarget.linea && `· L: ${deleteTarget.linea}`}
-            </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
-              <button className="mx-btn mx-btn-outline" onClick={() => { setDeleteOpen(false); setDeleteTarget(null); }}>Cancelar</button>
-              <button className="mx-btn mx-btn-primary" style={{ background: 'var(--color-error)' }} onClick={handleDeleteConfirm}>Eliminar</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Reutilización del modal de confirmación existente */}
+      <ConfirmDeleteModal
+        isOpen={isDeleteOpen}
+        onClose={() => { setDeleteOpen(false); setDeleteTarget(null); }}
+        onConfirm={handleDeleteConfirm}
+        title="¿Eliminar este muestreo?"
+        itemName={deleteTarget?.proveedorNombre || deleteTarget?.proveedor}
+        description={deleteTarget ? `Estás por eliminar el muestreo del ${new Date(deleteTarget.fecha).toLocaleDateString('es-CL')}${deleteTarget.centroCodigo ? ` en el centro ${deleteTarget.centroCodigo}` : ''}. Esta acción no se puede deshacer.` : ''}
+      />
 
       {/* MODAL PRINCIPAL (3 FASES RESTAURADAS) */}
       {isModalOpen && (
