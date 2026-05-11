@@ -19,8 +19,10 @@ async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const isAuthEndpoint = endpoint.startsWith('/auth/');
   
+  const isFormData = options.body instanceof FormData;
+  
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...options.headers,
   };
 
@@ -40,7 +42,7 @@ async function request(endpoint, options = {}) {
     credentials: 'include', // Permite envío de cookies seguras (Fase 2)
   };
 
-  if (config.body && typeof config.body === 'object') {
+  if (config.body && typeof config.body === 'object' && !isFormData) {
     config.body = JSON.stringify(config.body);
   }
 

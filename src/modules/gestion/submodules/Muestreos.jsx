@@ -440,9 +440,7 @@ export default function Muestreos() {
         formData.append('category', id);
         formData.append('samplingId', editingId || 'temp');
 
-        const res = await apiClient.post('/muestreos/evidencias/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        const res = await apiClient.post('/muestreos/evidencias/upload', formData);
 
         if (res.data?.ok) {
           setCatDetails(prev => {
