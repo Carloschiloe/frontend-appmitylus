@@ -203,6 +203,16 @@ export default function Muestreos() {
     };
   }, [isModalOpen, directory.length, addToast]);
 
+  // Bloquear scroll y ocultar sidebar en mobile cuando el modal está abierto
+  React.useEffect(() => {
+    if (isModalOpen) {
+      document.body.classList.add('mu-modal-open');
+    } else {
+      document.body.classList.remove('mu-modal-open');
+    }
+    return () => document.body.classList.remove('mu-modal-open');
+  }, [isModalOpen]);
+
   const filteredProviders = useMemo(() => {
     if (!searchProviders.trim()) return [];
     const q = searchProviders.toLowerCase();
@@ -1142,11 +1152,14 @@ export default function Muestreos() {
       <style dangerouslySetInnerHTML={{ __html: `
         .mu-modal-overlay { 
           display: flex !important; align-items: center; justify-content: center; gap: 8px; 
-          z-index: 1000; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
+          z-index: 2500; position: fixed; inset: 0 !important; left: 0 !important; top: 0 !important; 
+          background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px);
+          padding: 12px; box-sizing: border-box;
         }
         .mu-main-modal { 
-          max-width: 800px; width: 95%; box-sizing: border-box; display: flex; flex-direction: column; 
-          position: relative; margin: 0; flex-shrink: 0;
+          max-width: 800px; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; 
+          position: relative; margin: 0; flex-shrink: 0; border-radius: 24px; overflow: hidden;
+          background: white; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
         }
         
         .mu-side-car { 
@@ -1214,23 +1227,64 @@ export default function Muestreos() {
           to { opacity: 1; transform: translateX(0); }
         }
 
-        /* RESPONSIVE */
+        /* RESPONSIVE FIXES */
         @media (max-width: 768px) {
-          .mu-modal-overlay { flex-direction: column; padding: 10px; gap: 10px; overflow-y: auto; }
-          .mu-main-modal { width: 100%; max-width: 100%; margin: 0; }
-          .mu-step-container { flex-direction: column !important; padding: 16px !important; gap: 24px !important; }
-          .mu-step-container > div { flex: none !important; width: 100% !important; }
-          .mu-side-car { 
-            width: 100%; flex-direction: column !important; padding: 10px; gap: 8px; 
-            animation: slideInDown 0.4s ease-out;
+          /* Ocultar sidebar y elementos externos */
+          body.mu-modal-open { overflow: hidden; }
+          body.mu-modal-open .mx-sidebar, 
+          body.mu-modal-open .sidebar-overlay,
+          body.mu-modal-open .mx-header { 
+            display: none !important; 
           }
-          .mu-side-car-header { display: block; color: #64748b; }
-          .mu-side-car-item { flex: none; padding: 10px; border-radius: 12px; }
-          .mu-side-car-item .val { font-size: 1.2rem; }
-          .mu-modal-header { padding: 10px 16px; }
-          .mu-modal-header h3 { font-size: 0.9rem !important; }
-          .mx-modal-footer { padding: 12px 16px; }
+          body.mu-modal-open .mx-main-content { margin-left: 0 !important; padding: 0 !important; }
+
+          .mu-modal-overlay { 
+            align-items: flex-start; padding: 8px; overflow-y: auto; 
+            justify-content: flex-start;
+          }
+          .mu-main-modal { 
+            width: 100%; max-width: 100%; border-radius: 16px; margin: 0;
+            max-height: none; height: auto;
+          }
+          
+          .mu-step-container { flex-direction: column !important; padding: 12px !important; gap: 16px !important; }
+          .mu-step-container > div { flex: none !important; width: 100% !important; }
+          
+          /* KPI Sidecar as Top Bar */
+          .mu-side-car { 
+            width: 100% !important; flex-direction: row !important; overflow-x: auto; 
+            padding: 8px; gap: 8px; background: #f8fafc; border-radius: 0;
+            border-left: none; border-right: none; border-top: 1px solid #e2e8f0;
+            position: sticky; bottom: 0; z-index: 20; box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+          }
+          .mu-side-car-header { display: none; }
+          .mu-side-car-item { 
+            flex: 0 0 110px; padding: 8px; border-radius: 10px; border-top-width: 3px;
+          }
+          .mu-side-car-item .val { font-size: 1rem; }
+          
+          /* Categories Table as Cards */
+          .mu-cat-table thead { display: none; }
+          .mu-cat-table tbody { display: flex; flex-direction: column; gap: 8px; padding: 4px; }
+          .mu-cat-table tr { 
+            display: grid; grid-template-columns: 1fr auto; 
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
+            padding: 12px; gap: 8px; align-items: center;
+          }
+          .mu-cat-table td { padding: 0 !important; border: none !important; }
+          .mu-cat-input { width: 90px !important; height: 38px !important; }
+          
+          /* Step 3 Grid */
+          .mu-result-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+          .mu-res-item { padding: 12px; }
+          .mu-res-item .val { font-size: 1.1rem; }
+          
+          .mu-modal-header { padding: 12px; }
+          .mu-modal-header h3 { font-size: 0.85rem !important; }
+          .mx-modal-footer { padding: 12px; flex-direction: column; gap: 8px; }
+          .mx-modal-footer button { width: 100%; }
         }
+        
         @keyframes slideInDown {
           from { opacity: 0; transform: translateY(-20px); }
           to { opacity: 1; transform: translateY(0); }
