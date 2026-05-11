@@ -429,36 +429,67 @@ export default function Muestreos() {
     setExpandedGroups(next);
   }, [expandedGroups]);
 
-  const handleFileUpload = useCallback((id, files) => {
+  const handleFileUpload = useCallback(async (id, files) => {
     if (!files) return;
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setCatDetails(prev => {
-          const current = prev[id] || { obs: '', fotos: [] };
-          return {
-            ...prev,
-            [id]: {
-              ...current,
-              fotos: [...(current.fotos || []), e.target.result]
-            }
-          };
-        });
-      };
-      reader.readAsDataURL(file);
-    });
-  }, []);
+    const fileList = Array.from(files);
+    
+    for (const file of fileList) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('category', id);
+        formData.append('samplingId', editItem?._id || 'temp');
+        formData.append('tenantId', 'default'); // TODO: Obtener del contexto si es necesario
 
-  const removePhoto = useCallback((id, idx) => {
+        const res = await apiClient.post('/muestreos/evidencias/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        if (res.data?.ok) {
+          setCatDetails(prev => {
+            const current = prev[id] || { obs: '', photos: [], fotos: [] };
+            return {
+              ...prev,
+              [id]: {
+                ...current,
+                photos: [...(current.photos || []), res.data.metadata]
+              }
+            };
+          });
+        }
+      } catch (err) {
+        console.error('Error al subir evidencia:', err);
+        addToast('Error al subir imagen', 'error');
+      }
+    }
+  }, [editItem, addToast]);
+
+  const removePhoto = useCallback(async (id, idx, isLegacy = false) => {
     setCatDetails(prev => {
       const current = prev[id];
       if (!current) return prev;
-      const nextFotos = [...(current.fotos || [])];
-      nextFotos.splice(idx, 1);
-      return {
-        ...prev,
-        [id]: { ...current, fotos: nextFotos }
-      };
+      
+      const nextDetails = { ...current };
+      
+      if (isLegacy) {
+        const nextFotos = [...(current.fotos || [])];
+        nextFotos.splice(idx, 1);
+        nextDetails.fotos = nextFotos;
+      } else {
+        const nextPhotos = [...(current.photos || [])];
+        const photoToDelete = nextPhotos[idx];
+        
+        // Llamar al delete en background
+        if (photoToDelete?.path) {
+          apiClient.delete(`/muestreos/evidencias?path=${encodeURIComponent(photoToDelete.path)}`)
+            .catch(err => console.error('Error al eliminar de Supabase:', err));
+        }
+        
+        nextPhotos.splice(idx, 1);
+        nextDetails.photos = nextPhotos;
+      }
+      
+      return { ...prev, [id]: nextDetails };
     });
   }, []);
 
@@ -994,11 +1025,23 @@ export default function Muestreos() {
                                         <input type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={e => handleFileUpload(id, e.target.files)} />
                                       </label>
                                       {(catDetails[id]?.fotos || []).map((foto, fIdx) => (
-                                        <div key={fIdx} style={{ position: 'relative', width: '42px', height: '42px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                        <div key={`legacy-${fIdx}`} style={{ position: 'relative', width: '42px', height: '42px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                                           <img src={foto} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                           <button 
                                             type="button" 
-                                            onClick={() => removePhoto(id, fIdx)}
+                                            onClick={() => removePhoto(id, fIdx, true)}
+                                            style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', width: '16px', height: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                          >
+                                            <X size={10} />
+                                          </button>
+                                        </div>
+                                      ))}
+                                      {(catDetails[id]?.photos || []).map((photo, pIdx) => (
+                                        <div key={`supabase-${pIdx}`} style={{ position: 'relative', width: '42px', height: '42px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                          <img src={photo.publicUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                          <button 
+                                            type="button" 
+                                            onClick={() => removePhoto(id, pIdx, false)}
                                             style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', width: '16px', height: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                           >
                                             <X size={10} />
