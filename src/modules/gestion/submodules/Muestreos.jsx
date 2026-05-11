@@ -22,7 +22,8 @@ import {
   ArrowLeft,
   Settings2,
   RotateCcw,
-  Target
+  Target,
+  Trash2
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
@@ -78,7 +79,25 @@ export default function Muestreos() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'grouped'
+  const { muestreos, maestros, loading, page, setPage, pagination, refresh: loadData } = useMuestreosData(viewMode);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    try {
+      await apiClient.delete(`/muestreos/${deleteTarget._id}`);
+      addToast({ title: 'Éxito', message: 'Muestreo eliminado.', type: 'success' });
+      loadData(page);
+    } catch {
+      addToast({ title: 'Error', message: 'No se pudo eliminar.', type: 'error' });
+    } finally {
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, page, addToast, loadData]);
   const [isResultOpen, setIsResultOpen] = useState(false);
   const [resultData, setResultData] = useState(null);
   const [step, setStep] = useState(1);
@@ -87,7 +106,7 @@ export default function Muestreos() {
   const [selectedCats, setSelectedCats] = useState(new Set());
   const [activeDropdown, setActiveDropdown] = useState(null); // 'procesable' | 'rechazo' | 'defecto'
 
-  const { muestreos, maestros, loading, page, setPage, pagination, refresh: loadData } = useMuestreosData(viewMode);
+
 
   // Formulario
   const [form, setForm] = useState({
@@ -555,6 +574,7 @@ export default function Muestreos() {
                   <th style={{ textAlign: 'center' }}>Muestras</th>
                   <th style={{ textAlign: 'center' }}>R% Prom.</th>
                   <th style={{ textAlign: 'center' }}>U x Kg</th>
+                  <th style={{ textAlign: 'center' }}>Procesable %</th>
                   <th style={{ textAlign: 'center' }}>% Rechazo</th>
                   <th style={{ textAlign: 'right' }}>{viewMode === 'list' ? 'Calificación' : ''}</th>
                 </tr>
@@ -570,9 +590,12 @@ export default function Muestreos() {
                           <MapPin size={10} /> {m.centroCodigo || 'Sin Centro'} {m.linea && `· L: ${m.linea}`}
                         </div>
                       </td>
-                      <td style={{ textAlign: 'center' }}>—</td>
+                      <td style={{ textAlign: 'center' }}>1</td>
                       <td style={{ textAlign: 'center' }}><span className="mx-badge mx-badge-info" style={{ fontWeight: 700 }}>{Number(m.rendimiento || 0).toFixed(1)}%</span></td>
                       <td style={{ textAlign: 'center', fontWeight: 800 }}>{m.uxkg || 0}</td>
+                      <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--color-success)' }}>
+                        {m.total > 0 ? (m.procesable / m.total * 100).toFixed(1) : '0.0'}%
+                      </td>
                       <td style={{ textAlign: 'center' }}>
                         <span style={{ color: (m.total > 0 && m.rechazos/m.total > 0.05) ? 'var(--color-error)' : 'inherit' }}>
                           {m.total > 0 ? (m.rechazos / m.total * 100).toFixed(1) : 0}%
@@ -583,6 +606,7 @@ export default function Muestreos() {
                           {m.clasificaciones?.[0] ? <span className="mx-badge mx-badge-success">{m.clasificaciones[0].nombre}</span> : <span className="mx-badge mx-badge-muted">S/C</span>}
                           <button className="mx-action-btn print" title="Informe PDF" onClick={() => generarInformePDF(m)}><Printer size={14} /></button>
                           <button className="mx-action-btn edit" title="Editar" onClick={() => handleEdit(m)}><Edit size={14} /></button>
+                          <button className="mx-action-btn delete" title="Eliminar" onClick={() => { setDeleteTarget(m); setDeleteOpen(true); }}><Trash2 size={14} /></button>
                         </div>
                       </td>
                     </tr>
@@ -596,6 +620,9 @@ export default function Muestreos() {
                         <td style={{ textAlign: 'center' }}><span className="mx-badge mx-badge-muted" style={{ fontWeight: 700 }}>{g.muestras}</span></td>
                         <td style={{ textAlign: 'center', fontWeight: 800, color: 'var(--color-primary)' }}>{(g.rendSum / g.muestras).toFixed(1)}%</td>
                         <td style={{ textAlign: 'center', fontWeight: 800 }}>{(g.uxkgSum / g.muestras).toFixed(0)}</td>
+                        <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--color-success)' }}>
+                          {g.totalSum > 0 ? ( (g.totalSum - g.rechazosSum) / g.totalSum * 100).toFixed(1) : '0.0'}%
+                        </td>
                         <td style={{ textAlign: 'center', fontWeight: 700, color: (g.rechazosSum / g.totalSum * 100) > 5 ? 'var(--color-error)' : 'inherit' }}>
                           {(g.totalSum > 0 ? (g.rechazosSum / g.totalSum * 100).toFixed(1) : 0)}%
                         </td>
@@ -610,15 +637,19 @@ export default function Muestreos() {
                               <span style={{ fontSize: '11px', color: 'var(--color-text-subtle)' }}>{m.centroCodigo || 'Sin Centro'} {m.linea && `· L: ${m.linea}`}</span>
                             </div>
                           </td>
-                          <td style={{ textAlign: 'center' }}>—</td>
+                          <td style={{ textAlign: 'center' }}>1</td>
                           <td style={{ textAlign: 'center', fontSize: '13px' }}>{Number(m.rendimiento).toFixed(1)}%</td>
                           <td style={{ textAlign: 'center', fontSize: '13px' }}>{m.uxkg}</td>
+                          <td style={{ textAlign: 'center', fontSize: '13px', color: 'var(--color-success)', fontWeight: 700 }}>
+                            {m.total > 0 ? (m.procesable / m.total * 100).toFixed(1) : '0.0'}%
+                          </td>
                           <td style={{ textAlign: 'center', fontSize: '13px' }}>{m.total > 0 ? (m.rechazos / m.total * 100).toFixed(1) : 0}%</td>
                           <td style={{ textAlign: 'right' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
                               {m.clasificaciones?.[0] ? <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-success)' }}>{m.clasificaciones[0].nombre}</span> : <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>S/C</span>}
                               <button className="mx-action-btn print" style={{ width: '28px', height: '28px' }} title="Informe PDF" onClick={(e) => { e.stopPropagation(); generarInformePDF(m); }}><Printer size={12} /></button>
                               <button className="mx-action-btn edit" style={{ width: '28px', height: '28px' }} title="Editar" onClick={(e) => { e.stopPropagation(); handleEdit(m); }}><Edit size={12} /></button>
+                              <button className="mx-action-btn delete" style={{ width: '28px', height: '28px' }} title="Eliminar" onClick={(e) => { e.stopPropagation(); setDeleteTarget(m); setDeleteOpen(true); }}><Trash2 size={12} /></button>
                             </div>
                           </td>
                         </tr>
@@ -654,6 +685,24 @@ export default function Muestreos() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Confirmation modal for delete */}
+      {isDeleteOpen && deleteTarget && (
+        <div className="mx-modal-overlay">
+          <div className="mx-modal" style={{ maxWidth: '400px', width: '90%', padding: '24px', textAlign: 'center' }}>
+            <h3 className="mx-modal-title">¿Eliminar este muestreo?</h3>
+            <p style={{ marginTop: '8px', color: 'var(--color-text-subtle)' }}>
+              <strong>{deleteTarget.proveedorNombre || deleteTarget.proveedor}</strong> – {new Date(deleteTarget.fecha).toLocaleDateString('es-CL')}
+              <br />
+              {deleteTarget.centroCodigo || 'Sin Centro'} {deleteTarget.linea && `· L: ${deleteTarget.linea}`}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
+              <button className="mx-btn mx-btn-outline" onClick={() => { setDeleteOpen(false); setDeleteTarget(null); }}>Cancelar</button>
+              <button className="mx-btn mx-btn-primary" style={{ background: 'var(--color-error)' }} onClick={handleDeleteConfirm}>Eliminar</button>
+            </div>
+          </div>
         </div>
       )}
 
