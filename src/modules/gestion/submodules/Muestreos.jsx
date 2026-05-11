@@ -439,7 +439,6 @@ export default function Muestreos() {
         formData.append('file', file);
         formData.append('category', id);
         formData.append('samplingId', editItem?._id || 'temp');
-        formData.append('tenantId', 'default'); // TODO: Obtener del contexto si es necesario
 
         const res = await apiClient.post('/muestreos/evidencias/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
@@ -480,9 +479,9 @@ export default function Muestreos() {
         const photoToDelete = nextPhotos[idx];
         
         // Llamar al delete en background
-        if (photoToDelete?.path) {
-          apiClient.delete(`/muestreos/evidencias?path=${encodeURIComponent(photoToDelete.path)}`)
-            .catch(err => console.error('Error al eliminar de Supabase:', err));
+        if (photoToDelete?.key) {
+          apiClient.delete(`/muestreos/evidencias?key=${encodeURIComponent(photoToDelete.key)}`)
+            .catch(err => console.error('Error al eliminar del storage:', err));
         }
         
         nextPhotos.splice(idx, 1);
@@ -1037,8 +1036,8 @@ export default function Muestreos() {
                                         </div>
                                       ))}
                                       {(catDetails[id]?.photos || []).map((photo, pIdx) => (
-                                        <div key={`supabase-${pIdx}`} style={{ position: 'relative', width: '42px', height: '42px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                                          <img src={photo.publicUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <div key={`s3-${pIdx}`} style={{ position: 'relative', width: '42px', height: '42px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                          <img src={photo.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                           <button 
                                             type="button" 
                                             onClick={() => removePhoto(id, pIdx, false)}
