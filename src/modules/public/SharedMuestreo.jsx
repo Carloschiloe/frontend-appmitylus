@@ -23,8 +23,8 @@ const SharedMuestreo = () => {
         const reportHtml = generarHTMLReporte(data, {
           logoUrl: data.branding?.logo || '',
           empresaNom: data.branding?.nombre || 'Mitynex',
-          isPublic: false, // Mantener idéntico al privado
-          maestros: { cats: [] } // El backend ya trae nombres en catDetails
+          isPublic: false, // FORZAR PARIDAD 1:1 (mostrar barra verde y botón imprimir)
+          maestros: { cats: [] } // El backend ya trae nombres en catDetails.nombre
         });
         console.log('[PUBLIC REPORT HTML CHECK]', reportHtml.slice(0, 1000));
 

@@ -697,7 +697,7 @@ export default function Muestreos() {
       if (!id) return;
 
       setIsLoadingDetails(true);
-      const detalle = await apiClient.get(`/muestreos/${id}`);
+      const detalle = await apiClient.get(`/muestreos/${id}?audit=1`);
       
       const logoUrl    = user?.empresaId?.config?.logo || localStorage.getItem('selected_tenant_logo') || '';
       const empresaNom = user?.empresaId?.nombre || 'Mitynex';
