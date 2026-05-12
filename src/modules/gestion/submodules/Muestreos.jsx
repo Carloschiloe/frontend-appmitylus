@@ -25,7 +25,8 @@ import {
   Target,
   Trash2,
   Camera,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Loader
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
@@ -124,13 +125,27 @@ export default function Muestreos() {
     pesoCocida: '',
     cats: {},
     unidadPeso: 'kg',
-    comentarios: ''
+    comentarios: '',
   });
 
   const [catDetails, setCatDetails] = useState({}); // { [id]: { obs: '', fotos: [] } }
   const [activeTab, setActiveTab] = useState('procesable'); // 'procesable', 'rechazo', 'defecto'
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [generalPhotos, setGeneralPhotos] = useState([]);
+  const [deletedPhotoKeys, setDeletedPhotoKeys] = useState([]);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+
+  React.useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && previewImage) {
+        setPreviewImage(null);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [previewImage]);
 
   const resetForm = useCallback(() => {
     setForm({
@@ -150,6 +165,8 @@ export default function Muestreos() {
       comentarios: ''
     });
     setCatDetails({});
+    setGeneralPhotos([]);
+    setDeletedPhotoKeys([]);
     setEditingId(null);
     setStep(1);
     setSelectedProvider(null);
@@ -222,6 +239,16 @@ export default function Muestreos() {
       (p.contactoNombre || '').toLowerCase().includes(q)
     ).slice(0, 10);
   }, [directory, searchProviders]);
+
+  const filteredAvailableCats = useMemo(() => {
+    return maestros.cats.filter(c => c.tipoCat === activeTab && !selectedCats.has(c._id));
+  }, [maestros.cats, activeTab, selectedCats]);
+
+  const filteredSelectedCats = useMemo(() => {
+    return [...selectedCats]
+      .map(id => maestros.cats.find(c => c._id === id))
+      .filter(c => c && c.tipoCat === activeTab);
+  }, [selectedCats, maestros.cats, activeTab]);
 
   const handleSelectProvider = (provider) => {
     setSelectedProvider(provider);
@@ -317,49 +344,94 @@ export default function Muestreos() {
     }
   }, []);
 
-  const handleEdit = useCallback((m) => {
-    setEditingId(m._id || m.id);
-    const mCats = m.cats || {};
-    const newSelected = new Set();
-    Object.keys(mCats).forEach(id => { if (Number(mCats[id]) > 0) newSelected.add(id); });
-    maestros.cats.filter(c => c.tipoCat === 'procesable').forEach(c => newSelected.add(c._id));
-    
-    setSelectedCats(newSelected);
-    setForm({
-      proveedorNombre: m.proveedorNombre || m.proveedor || '',
-      proveedorKey: m.proveedorKey || '',
-      centroId: m.centroId || '',
-      centroCodigo: m.centroCodigo || m.centro || '',
-      linea: m.linea || '',
-      fecha: (m.fecha || '').slice(0, 10),
-      origen: m.origen || 'abastecimiento',
-      responsable: m.responsable || '',
-      uxkg: m.uxkg || '',
-      pesoVivo: m.pesoVivo || '',
-      pesoCocida: m.pesoCocida || '',
-      cats: mCats,
-      unidadPeso: m.unidadPeso || 'kg',
-      comentarios: m.comentarios || ''
-    });
+  const handleEdit = useCallback(async (summaryItem) => {
+    const id = summaryItem._id || summaryItem.id;
+    if (!id) return;
 
-    if (m.catDetails) {
-      setCatDetails(m.catDetails);
-    } else {
-      setCatDetails({});
-    }
+    setEditingId(id);
+    setIsModalOpen(true);
+    setStep(1);
+    setIsLoadingDetails(true);
 
-    if (directory.length > 0) {
+    try {
+      const m = await apiClient.get(`/muestreos/${id}`);
+
+      const mCats = m.cats || {};
+      
+      setForm({
+        proveedorKey: m.proveedorKey || '',
+        proveedorNombre: m.proveedorNombre || m.proveedor || '',
+        centroId: m.centroId || '',
+        centroCodigo: m.centroCodigo || m.centro || '',
+        centroNombre: m.centroNombre || '',
+        linea: m.linea || '',
+        fecha: (m.fecha || '').slice(0, 10),
+        origen: m.origen || 'abastecimiento',
+        responsable: m.responsable || '',
+        uxkg: m.uXKg || m.uxkg || '',
+        pesoVivo: m.pesoVivo || '',
+        pesoCocida: m.pesoCocida || m.pesoCarne || '',
+        cats: mCats,
+        unidadPeso: m.unidadPeso || 'kg',
+        comentarios: m.comentarios || m.observaciones || ''
+      });
+
+      const normalizedCatDetails = { ...(m.catDetails || {}) };
+      setCatDetails(normalizedCatDetails);
+      setGeneralPhotos(Array.isArray(m.generalPhotos) ? m.generalPhotos : []);
+      setDeletedPhotoKeys([]);
+
+      const catIds = new Set();
+      Object.keys(m.cats || {}).forEach(cId => {
+        if (Number(m.cats[cId]) > 0) catIds.add(cId);
+      });
+      Object.entries(normalizedCatDetails).forEach(([cId, data]) => {
+        if (data.obs || data.photos?.length > 0 || data.fotos?.length > 0) {
+          catIds.add(cId);
+        }
+      });
+      maestros.cats.filter(c => c.tipoCat === 'procesable').forEach(c => catIds.add(c._id));
+
+      setSelectedCats(catIds);
+
       const pKey = (m.proveedorKey || '').toLowerCase();
-      const p = directory.find(it => it.proveedorKey === pKey);
+      let p = directory.find(it => (it.proveedorKey || '').toLowerCase() === pKey);
+      
+      if (!p && (m.proveedorNombre || m.proveedor)) {
+        p = {
+          proveedorKey: m.proveedorKey,
+          proveedorNombre: m.proveedorNombre || m.proveedor,
+          contactoNombre: 'Legacy',
+          comuna: ''
+        };
+      }
+      
       if (p) {
         setSelectedProvider(p);
-        setProviderCenters(allCentros.filter(c => c.proveedorKey === pKey));
+        const pCenters = allCentros.filter(c => (c.proveedorKey || '').toLowerCase() === (p.proveedorKey || '').toLowerCase());
+        
+        if (m.centroId && !pCenters.some(c => c._id === m.centroId)) {
+          pCenters.push({
+            _id: m.centroId,
+            code: m.centroCodigo || m.centro || 'N/A',
+            comuna: 'Legacy',
+            proveedorKey: p.proveedorKey
+          });
+        }
+        
+        setProviderCenters(pCenters);
+      } else {
+        setSelectedProvider(null);
+        setProviderCenters([]);
       }
+    } catch (err) {
+      console.error('Error al cargar muestreo completo:', err);
+      addToast('Error al cargar muestreo completo', 'error');
+      setIsModalOpen(false);
+    } finally {
+      setIsLoadingDetails(false);
     }
-
-    setStep(1);
-    setIsModalOpen(true);
-  }, [maestros.cats, directory, allCentros]);
+  }, [maestros.cats, directory, allCentros, addToast]);
 
   const handleSave = useCallback(async () => {
     const isG = form.unidadPeso === 'g';
@@ -369,6 +441,8 @@ export default function Muestreos() {
     selectedCats.forEach(id => {
       finalCats[id] = (Number(form.cats[id]) || 0) * mult;
     });
+
+    console.log('[STATE CATDETAILS BEFORE SAVE]', catDetails);
 
     const payload = { 
       ...form,
@@ -382,7 +456,9 @@ export default function Muestreos() {
       defectos: Number(totals.defectos) || 0, 
       cats: finalCats,
       comentarios: form.comentarios,
-      catDetails 
+      catDetails,
+      generalPhotos,
+      deletedPhotoKeys
     };
 
     if (payload.fecha && payload.fecha.length === 10) {
@@ -404,7 +480,7 @@ export default function Muestreos() {
     } catch {
       addToast({ title: 'Error', message: 'No se pudo guardar el muestreo.', type: 'error' });
     }
-  }, [selectedCats, form, totals, editingId, page, addToast, loadData]);
+  }, [selectedCats, form, totals, editingId, page, addToast, loadData, catDetails, generalPhotos]);
 
   const toggleCatSelection = useCallback((id) => {
     const next = new Set(selectedCats);
@@ -431,6 +507,7 @@ export default function Muestreos() {
 
   const handleFileUpload = useCallback(async (id, files) => {
     if (!files) return;
+    
     const fileList = Array.from(files);
     
     for (const file of fileList) {
@@ -476,8 +553,10 @@ export default function Muestreos() {
         const nextPhotos = [...(current.photos || [])];
         const photoToDelete = nextPhotos[idx];
         
-        // Llamar al delete en background
         if (photoToDelete?.key) {
+          setDeletedPhotoKeys(prevKeys => [...prevKeys, photoToDelete.key]);
+          
+          // Llamar al delete en background
           apiClient.delete(`/muestreos/evidencias?key=${encodeURIComponent(photoToDelete.key)}`)
             .catch(err => console.error('Error al eliminar del storage:', err));
         }
@@ -487,6 +566,44 @@ export default function Muestreos() {
       }
       
       return { ...prev, [id]: nextDetails };
+    });
+  }, []);
+
+  const handleGeneralFileUpload = useCallback(async (files) => {
+    if (!files) return;
+    const fileList = Array.from(files);
+    
+    for (const file of fileList) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('category', 'general');
+        formData.append('samplingId', editingId || 'temp');
+
+        const res = await apiClient.post('/muestreos/evidencias/upload', formData);
+
+        if (res.ok) {
+          setGeneralPhotos(prev => [...prev, res.metadata]);
+        }
+      } catch (err) {
+        console.error('Error al subir evidencia general:', err);
+        addToast('Error al subir imagen', 'error');
+      }
+    }
+  }, [editingId, addToast]);
+
+  const removeGeneralPhoto = useCallback(async (idx) => {
+    setGeneralPhotos(prev => {
+      const nextPhotos = [...prev];
+      const photoToDelete = nextPhotos[idx];
+      if (photoToDelete?.key) {
+        setDeletedPhotoKeys(prevKeys => [...prevKeys, photoToDelete.key]);
+        
+        apiClient.delete(`/muestreos/evidencias?key=${encodeURIComponent(photoToDelete.key)}`)
+          .catch(err => console.error('Error al eliminar del storage:', err));
+      }
+      nextPhotos.splice(idx, 1);
+      return nextPhotos;
     });
   }, []);
 
@@ -712,7 +829,7 @@ export default function Muestreos() {
                           <td style={{ textAlign: 'right' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
                               <button className="mx-action-btn print" style={{ width: '28px', height: '28px' }} title="Informe PDF" onClick={(e) => { e.stopPropagation(); generarInformePDF(m); }}><Printer size={12} /></button>
-                              <button className="mx-action-btn edit" style={{ width: '28px', height: '28px' }} title="Editar" onClick={(e) => { e.stopPropagation(); handleEdit(m); }}><Edit size={12} /></button>
+                              <button className="mx-action-btn edit" style={{ width: '28px', height: '28px', opacity: isLoadingDetails && editingId === (m._id || m.id) ? 0.5 : 1 }} title="Editar" disabled={isLoadingDetails} onClick={(e) => { e.stopPropagation(); if (!isLoadingDetails) handleEdit(m); }}><Edit size={12} /></button>
                               <button className="mx-action-btn delete" style={{ width: '28px', height: '28px' }} title="Eliminar" onClick={(e) => { e.stopPropagation(); setDeleteTarget(m); setDeleteOpen(true); }}><Trash2 size={12} /></button>
                             </div>
                           </td>
@@ -799,7 +916,14 @@ export default function Muestreos() {
 
             <div className="mx-modal-body" style={{ flex: 1, padding: 0, overflowY: 'auto', boxSizing: 'border-box' }}>
               
-              {step === 1 && (
+              {isLoadingDetails ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '300px', width: '100%', padding: '64px', color: '#64748b' }}>
+                  <Loader className="am-icon-spin" size={32} style={{ marginBottom: '16px', color: 'var(--color-primary)' }} />
+                  <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>Cargando muestreo...</p>
+                </div>
+              ) : (
+                <>
+                  {step === 1 && (
                 <div className="mu-step-container" style={{ animation: 'slideInRight 0.3s ease-out', padding: '24px', boxSizing: 'border-box' }}>
                   <div className="mx-form-row">
                     <div className="mx-form-group" style={{ flex: 1 }}>
@@ -952,12 +1076,12 @@ export default function Muestreos() {
                               boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', zIndex: 100,
                               marginTop: '4px', maxHeight: '200px', overflowY: 'auto', padding: '4px'
                             }}>
-                              {maestros.cats.filter(c => c.tipoCat === activeTab && !selectedCats.has(c._id)).length === 0 ? (
+                              {filteredAvailableCats.length === 0 ? (
                                 <div style={{ padding: '8px', textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8' }}>
                                   No hay más ítems disponibles
                                 </div>
                               ) : (
-                                maestros.cats.filter(c => c.tipoCat === activeTab && !selectedCats.has(c._id)).map(c => (
+                                filteredAvailableCats.map(c => (
                                   <button 
                                     key={c._id} 
                                     type="button"
@@ -990,14 +1114,12 @@ export default function Muestreos() {
                       </div>
 
                       <div style={{ marginTop: '4px' }}>
-                        {[...selectedCats]
-                          .map(id => maestros.cats.find(c => c._id === id))
-                          .filter(c => c && c.tipoCat === activeTab)
-                          .map(cat => {
+                        {filteredSelectedCats.map(cat => {
                             const id = cat._id;
                             const val = Number(form.cats[id]) || 0;
                             const pct = totals.totalMuestra > 0 ? (val / totals.totalMuestra) * 100 : 0;
                             const isExpanded = expandedItems.has(id);
+
                             return (
                               <div key={id} style={{ borderBottom: '1px solid #f8fafc' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 60px 30px 30px', gap: '6px', alignItems: 'center', padding: '8px 10px', background: isExpanded ? '#f8fafc' : 'transparent', borderRadius: '6px' }}>
@@ -1021,30 +1143,56 @@ export default function Muestreos() {
                                         <Camera size={18} color="#64748b" />
                                         <input type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={e => handleFileUpload(id, e.target.files)} />
                                       </label>
-                                      {(catDetails[id]?.fotos || []).map((foto, fIdx) => (
-                                        <div key={`legacy-${fIdx}`} style={{ position: 'relative', width: '42px', height: '42px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                                          <img src={foto} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                          <button 
-                                            type="button" 
-                                            onClick={() => removePhoto(id, fIdx, true)}
-                                            style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', width: '16px', height: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                          >
-                                            <X size={10} />
-                                          </button>
-                                        </div>
-                                      ))}
-                                      {(catDetails[id]?.photos || []).map((photo, pIdx) => (
-                                        <div key={`s3-${pIdx}`} style={{ position: 'relative', width: '42px', height: '42px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                                          <img src={photo.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                          <button 
-                                            type="button" 
-                                            onClick={() => removePhoto(id, pIdx, false)}
-                                            style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', width: '16px', height: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                          >
-                                            <X size={10} />
-                                          </button>
-                                        </div>
-                                      ))}
+                                      {(() => {
+                                        const legacyFotos = catDetails[id]?.fotos || [];
+                                        const s3Photos = catDetails[id]?.photos || [];
+                                        return (
+                                          <>
+                                            {legacyFotos.map((foto, fIdx) => (
+                                              <div 
+                                                key={`legacy-${fIdx}`} 
+                                                style={{ position: 'relative', width: '46px', height: '46px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', cursor: 'zoom-in' }}
+                                              >
+                                                <img 
+                                                  src={foto} 
+                                                  onClick={() => setPreviewImage(foto)}
+                                                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} 
+                                                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
+                                                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                                />
+                                                <button 
+                                                  type="button" 
+                                                  onClick={(e) => { e.stopPropagation(); removePhoto(id, fIdx, true); }}
+                                                  style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(15, 23, 42, 0.6)', color: 'white', border: 'none', width: '18px', height: '18px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+                                                >
+                                                  <X size={10} strokeWidth={3} />
+                                                </button>
+                                              </div>
+                                            ))}
+                                            {s3Photos.map((photo, pIdx) => (
+                                              <div 
+                                                key={`s3-${pIdx}`} 
+                                                style={{ position: 'relative', width: '46px', height: '46px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', cursor: 'zoom-in' }}
+                                              >
+                                                <img 
+                                                  src={photo.url} 
+                                                  onClick={() => setPreviewImage(photo.url)}
+                                                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} 
+                                                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
+                                                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                                />
+                                                <button 
+                                                  type="button" 
+                                                  onClick={(e) => { e.stopPropagation(); removePhoto(id, pIdx, false); }}
+                                                  style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(15, 23, 42, 0.6)', color: 'white', border: 'none', width: '18px', height: '18px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+                                                >
+                                                  <X size={10} strokeWidth={3} />
+                                                </button>
+                                              </div>
+                                            ))}
+                                          </>
+                                        );
+                                      })()}
                                     </div>
                                   </div>
                                 )}
@@ -1053,6 +1201,39 @@ export default function Muestreos() {
                           })}
                       </div>
                     </div>
+
+                    {/* EVIDENCIAS GENERALES */}
+                    <div style={{ marginTop: '16px', background: '#f8fafc', borderRadius: '8px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '12px' }}>Evidencias generales del muestreo</h4>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <label style={{ width: '46px', height: '46px', borderRadius: '10px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1.5px dashed #cbd5e1', transition: 'all 0.2s' }}>
+                          <Camera size={20} color="#64748b" />
+                          <input type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={e => handleGeneralFileUpload(e.target.files)} />
+                        </label>
+                        {generalPhotos.map((photo, pIdx) => (
+                          <div 
+                            key={`gen-${pIdx}`} 
+                            style={{ position: 'relative', width: '46px', height: '46px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', cursor: 'zoom-in' }}
+                          >
+                            <img 
+                              src={photo.url} 
+                              onClick={() => setPreviewImage(photo.url)}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} 
+                              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
+                              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                            />
+                            <button 
+                              type="button" 
+                              onClick={(e) => { e.stopPropagation(); removeGeneralPhoto(pIdx); }}
+                              style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(15, 23, 42, 0.6)', color: 'white', border: 'none', width: '18px', height: '18px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+                            >
+                              <X size={10} strokeWidth={3} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               )}
@@ -1098,24 +1279,26 @@ export default function Muestreos() {
                   </div>
                 </div>
               )}
+              </>
+              )}
             </div>
 
             <div className="mx-modal-footer" style={{ justifyContent: 'space-between', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
               <button 
                 className="mx-btn mx-btn-outline" 
                 onClick={() => setStep(s => Math.max(1, s - 1))}
-                disabled={step === 1}
+                disabled={step === 1 || isLoadingDetails}
               >
                 <ArrowLeft size={16} /> Atrás
               </button>
               
               <div style={{ display: 'flex', gap: '12px' }}>
                 {step < 3 ? (
-                  <button className="mx-btn mx-btn-primary" onClick={() => setStep(s => s + 1)}>
+                  <button className="mx-btn mx-btn-primary" onClick={() => setStep(s => s + 1)} disabled={isLoadingDetails}>
                     Siguiente <ArrowRight size={16} />
                   </button>
                 ) : (
-                  <button className="mx-btn mx-btn-primary" onClick={handleSave}>
+                  <button className="mx-btn mx-btn-primary" onClick={handleSave} disabled={isLoadingDetails}>
                     <CheckCircle2 size={16} /> Guardar Calificación
                   </button>
                 )}
@@ -1330,6 +1513,28 @@ export default function Muestreos() {
           to { opacity: 1; transform: translateY(0); }
         }
       `}} />
+      {previewImage && (
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(6px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}
+          onClick={() => setPreviewImage(null)}
+        >
+          <button 
+            style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.2s', backdropFilter: 'blur(4px)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            onClick={() => setPreviewImage(null)}
+          >
+            <X size={24} />
+          </button>
+          <img 
+            src={previewImage} 
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} 
+            onClick={(e) => e.stopPropagation()}
+            alt="Preview"
+          />
+        </div>
+      )}
+
     </div>
   );
 }
