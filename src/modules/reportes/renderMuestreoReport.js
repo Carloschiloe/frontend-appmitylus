@@ -125,14 +125,9 @@ export const generarHTMLReporte = (m, options = {}) => {
     auditoriaHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px 18px;"><div style="font-size:14px;font-weight:800;color:#991b1b;margin-bottom:6px;">❌ No clasifica en ninguna categoría del maestro vigente</div>${auditNoClasificaHTML}</div>`;
   }
 
-  const evalHTML = evaluacionCriterios.length ? evaluacionCriterios.map(ev => `
-    <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;">
-      <div style="width:20px;height:20px;border-radius:50%;background:${ev.cumple ? '#22c55e' : '#ef4444'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">${ev.cumple ? '✓' : '✗'}</div>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:700;color:#0f172a;">${ev.nombre}</div>
-        ${ev.razon ? ev.razon.split(', ').map(r => `<div style="font-size:11px;color:#ef4444;margin-top:2px;">• ${r}</div>`).join('') : '<div style="font-size:11px;color:#22c55e;margin-top:2px;">Sin observaciones</div>'}
-      </div>
-    </div>`).join('') : '<div style="color:#94a3b8;font-size:13px;">Sin criterios configurados.</div>';
+    auditoriaHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px 18px;"><div style="font-size:14px;font-weight:800;color:#991b1b;margin-bottom:6px;">❌ No clasifica en ninguna categoría del maestro vigente</div>${auditNoClasificaHTML}</div>`;
+  }
+
 
   // --- Fotos ---
   const catMap = {};
@@ -292,13 +287,8 @@ export const generarHTMLReporte = (m, options = {}) => {
   </div>
 
   <div class="section">
-    <div class="sec-title">Auditoría Técnica de Clasificación</div>
+    <div class="sec-title">Resultado de la Auditoría Técnica</div>
     ${auditoriaHTML}
-  </div>
-
-  <div class="section">
-    <div class="sec-title">Evaluación por Criterio</div>
-    ${evalHTML}
   </div>
 
   <!-- Desglose de Calidad Detallado -->
