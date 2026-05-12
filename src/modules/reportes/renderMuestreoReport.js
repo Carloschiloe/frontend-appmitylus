@@ -188,7 +188,7 @@ export const generarHTMLReporte = (m, options = {}) => {
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-top:10px;">
         ${allPhotos.map(p => `
           <div style="text-align:center;">
-            <img src="${p.url}" alt="Evidencia" style="width:100%;height:130px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;" />
+            <img src="${p.url}" class="img-zoomable" alt="Evidencia" onclick="openLightbox(this.src)" style="width:100%;height:130px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;" />
             <div style="font-size:11px;font-weight:600;color:#475569;margin-top:5px;">${p.label}</div>
           </div>`).join('')}
       </div>
@@ -223,7 +223,25 @@ export const generarHTMLReporte = (m, options = {}) => {
   .clas-val.fail{color:#ef4444}
   .footer{margin-top:32px;font-size:11px;color:#94a3b8;display:flex;justify-content:space-between;border-top:1px solid #e2e8f0;padding-top:10px;}
   .no-print{display:flex}
-  @media print{body{padding:16px}.no-print{display:none!important}}
+  
+  /* Lightbox Styles */
+  .img-zoomable { cursor: zoom-in; transition: transform 0.2s; }
+  .img-zoomable:hover { transform: scale(1.02); }
+  #lightbox {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px);
+    display: none; align-items: center; justify-content: center; z-index: 9999;
+    padding: 40px; cursor: zoom-out;
+  }
+  #lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+  #lightbox .close-btn {
+    position: absolute; top: 20px; right: 20px; color: white; font-size: 30px;
+    font-weight: bold; cursor: pointer; background: rgba(255,255,255,0.1);
+    width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+  }
+
+  @media print{body{padding:16px}.no-print{display:none!important} #lightbox{display:none!important}}
 </style>
 </head>
 <body>
@@ -286,6 +304,24 @@ export const generarHTMLReporte = (m, options = {}) => {
     <span>${empresaNom}</span>
     <span>Sistema MMPP · ${new Date().toLocaleDateString('es-CL')}</span>
   </div>
+
+  <div id="lightbox" onclick="this.style.display='none'">
+    <div class="close-btn">&times;</div>
+    <img id="lightbox-img" src="" alt="Zoom" />
+  </div>
+
+  <script>
+    function openLightbox(src) {
+      const lb = document.getElementById('lightbox');
+      const img = document.getElementById('lightbox-img');
+      img.src = src;
+      lb.style.display = 'flex';
+    }
+    // Cerrar con escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') document.getElementById('lightbox').style.display = 'none';
+    });
+  </script>
 </body>
 </html>`;
 };
