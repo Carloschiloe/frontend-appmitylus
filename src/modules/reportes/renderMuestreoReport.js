@@ -181,7 +181,7 @@ export const generarHTMLReporte = (m, options = {}) => {
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-top:10px;">
         ${allPhotos.map(p => `
           <div style="text-align:center;">
-            <img src="${p.url}" class="img-zoomable" alt="Evidencia" onclick="openLightbox(this.src)" style="width:100%;height:130px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;" />
+            <img src="${p.url.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" class="img-zoomable" alt="Evidencia" onclick="openLightbox(this.src)" style="width:100%;height:130px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;" />
             <div style="font-size:11px;font-weight:600;color:#475569;margin-top:5px;">${p.label}</div>
           </div>`).join('')}
       </div>
