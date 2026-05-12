@@ -27,6 +27,7 @@ const Historial = lazy(() => import('./modules/historial/Historial.jsx'));
 const Login          = lazy(() => import('./modules/auth/Login.jsx'));
 const ActivarCuenta  = lazy(() => import('./modules/auth/ActivarCuenta.jsx'));
 const Empresas       = lazy(() => import('./modules/configuracion/Empresas.jsx'));
+const SharedMuestreo = lazy(() => import('./modules/public/SharedMuestreo.jsx'));
 
 const MainLayout = ({ children }) => {
   const { user } = useAuth();
@@ -68,6 +69,14 @@ const TenantContextRequired = ({ title = 'Selecciona una empresa', description }
 // Componente para proteger rutas (Integración con AuthContext)
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/');
+
+  console.log('[AUTH REDIRECT CHECK] PrivateRoute', {
+    path: window.location.pathname,
+    isPublicReport,
+    isAuthenticated: !!user,
+    loading
+  });
 
   if (loading) {
     return (
@@ -78,13 +87,22 @@ const PrivateRoute = ({ children }) => {
     );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user && !isPublicReport) return <Navigate to="/login" replace />;
 
   return children;
 };
 
 const TenantScopedRoute = ({ children, title, description }) => {
   const { user, loading } = useAuth();
+  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/');
+
+  console.log('[AUTH REDIRECT CHECK] TenantScopedRoute', {
+    path: window.location.pathname,
+    isPublicReport,
+    isAuthenticated: !!user,
+    loading
+  });
+
   const selectedTenantDb = typeof window !== 'undefined'
     ? window.localStorage.getItem('selected_tenant_db') || ''
     : '';
@@ -98,7 +116,7 @@ const TenantScopedRoute = ({ children, title, description }) => {
     );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user && !isPublicReport) return <Navigate to="/login" replace />;
 
   if (user.rol === 'superadmin' && !selectedTenantDb) {
     return <TenantContextRequired title={title} description={description} />;
@@ -110,6 +128,14 @@ const TenantScopedRoute = ({ children, title, description }) => {
 // Rutas exclusivas para administradores
 const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/');
+
+  console.log('[AUTH REDIRECT CHECK] AdminRoute', {
+    path: window.location.pathname,
+    isPublicReport,
+    isAuthenticated: !!user,
+    loading
+  });
 
   if (loading) {
     return (
@@ -129,6 +155,14 @@ const AdminRoute = ({ children }) => {
 // Rutas exclusivas para SuperAdministradores (SaaS Management)
 const SuperAdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/');
+
+  console.log('[AUTH REDIRECT CHECK] SuperAdminRoute', {
+    path: window.location.pathname,
+    isPublicReport,
+    isAuthenticated: !!user,
+    loading
+  });
 
   if (loading) {
     return (
@@ -146,6 +180,35 @@ const SuperAdminRoute = ({ children }) => {
 };
 
 export default function App() {
+  const path = window.location.pathname;
+  const isPublicReportRoute = path.toLowerCase().startsWith('/r/muestreo');
+  
+  console.log('--- APP.JSX BOOTING ---');
+  console.log('[BOOT PATH]', path);
+  console.log('[BOOT PUBLIC CHECK]', isPublicReportRoute);
+
+  // VISTA PÚBLICA AISLADA (Sin Auth, Sin Sidebar, Sin contexto privado)
+  if (isPublicReportRoute) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <Suspense fallback={
+            <div className="mx-loading-screen">
+              <div className="mx-spinner"></div>
+              <p>Cargando reporte público...</p>
+            </div>
+          }>
+            <Routes>
+              <Route path="/r/muestreo/:token" element={<SharedMuestreo />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </Router>
+      </QueryClientProvider>
+    );
+  }
+
+  // VISTA PRIVADA NORMAL
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -159,11 +222,11 @@ export default function App() {
                 </div>
               }>
                 <Routes>
-                  {/* Rutas Públicas */}
+                  {/* Rutas Públicas (Auth) */}
                   <Route path="/login" element={<Login />} />
                   <Route path="/activar-cuenta" element={<ActivarCuenta />} />
 
-                  {/* Rutas Privadas */}
+                  {/* Rutas Privadas Protegidas */}
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   
                   <Route path="/dashboard" element={

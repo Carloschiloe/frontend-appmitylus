@@ -26,7 +26,8 @@ import {
   Trash2,
   Camera,
   Image as ImageIcon,
-  Loader
+  Loader,
+  Share2
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
@@ -949,6 +950,7 @@ export default function Muestreos() {
   <div class="no-print" style="background:#0f766e;color:#fff;padding:10px 14px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
     <span style="font-weight:700;font-size:13px;">Informe de Muestreo MMPP &mdash; Vista preliminar</span>
     <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button id="btnCompartirPublico" title="Generar link público compartido" style="background:#0d9488;color:#fff;border:1px solid #0f766e;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;">📤 Compartir</button>
       <button onclick="window.print()" title="Imprime o guarda como PDF desde el navegador" style="background:#fff;color:#0f766e;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;">🖨️ Imprimir</button>
       <button id="btnCopiarEnlace" title="Copia el enlace de este reporte al portapapeles" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.4);padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;">🔗 Copiar enlace</button>
       <!-- PDF beta: oculto hasta resolver incrustación de evidencias -->
@@ -1045,8 +1047,8 @@ export default function Muestreos() {
       if (!html) return;
 
       const activeTenant = localStorage.getItem('selected_tenant_db') || '';
-      const publicBaseUrl = import.meta.env.VITE_PUBLIC_APP_URL || (window.location.hostname === 'localhost' ? 'https://mitynex.cl' : window.location.origin);
-      const reportUrl = `${publicBaseUrl}/biomasa/muestreos?reporteId=${id}${activeTenant ? `&tenant=${encodeURIComponent(activeTenant)}` : ''}`;
+      // El reportUrl interno ya no se usará para compartir públicamente
+      const reportUrlInternal = `${window.location.origin}/biomasa/muestreos?reporteId=${id}${activeTenant ? `&tenant=${encodeURIComponent(activeTenant)}` : ''}`;
 
       const win = window.open('', '_blank', 'width=900,height=1000');
       if (!win) {
@@ -1061,32 +1063,52 @@ export default function Muestreos() {
       setTimeout(() => {
         const btn = win.document.getElementById('btnCopiarEnlace');
         if (btn) {
-          btn.addEventListener('click', () => {
-            const doc = win.document;
-            const textarea = doc.createElement('textarea');
-            textarea.value = reportUrl;
-            textarea.style.position = 'fixed';
-            textarea.style.left = '-9999px';
-            textarea.style.top = '0';
-            doc.body.appendChild(textarea);
-            textarea.focus();
-            textarea.select();
-
-            let ok = false;
+          btn.addEventListener('click', async () => {
             try {
-              ok = doc.execCommand('copy');
-            } catch (e) {
-              ok = false;
+              btn.innerText = '⏳...';
+              const res = await apiClient.post(`/muestreos/${id}/share`);
+              
+              const doc = win.document;
+              const textarea = doc.createElement('textarea');
+              textarea.value = res.url;
+              doc.body.appendChild(textarea);
+              textarea.select();
+              doc.execCommand('copy');
+              doc.body.removeChild(textarea);
+
+              btn.innerText = '✅ ¡Copiado!';
+              setTimeout(() => { btn.innerText = '🔗 Copiar enlace'; }, 2500);
+            } catch (err) {
+              console.error('Copy link error:', err);
+              btn.innerText = '❌ Error';
+              setTimeout(() => { btn.innerText = '🔗 Copiar enlace'; }, 2500);
             }
+          });
+        }
 
-            doc.body.removeChild(textarea);
+        const btnShare = win.document.getElementById('btnCompartirPublico');
+        if (btnShare) {
+          btnShare.addEventListener('click', async () => {
+            try {
+              btnShare.innerText = '⏳ Generando...';
+              const res = await apiClient.post(`/muestreos/${id}/share`);
+              
+              console.log('[PUBLIC SHARE URL COPIED] (popup)', res.url);
 
-            if (ok) {
-              const prevText = btn.innerText;
-              btn.innerText = '✅ Enlace copiado';
-              setTimeout(() => { btn.innerText = prevText; }, 2500);
-            } else {
-              win.prompt('Copia este enlace:', reportUrl);
+              const doc = win.document;
+              const textarea = doc.createElement('textarea');
+              textarea.value = res.url;
+              doc.body.appendChild(textarea);
+              textarea.select();
+              doc.execCommand('copy');
+              doc.body.removeChild(textarea);
+
+              btnShare.innerText = '✅ ¡Copiado!';
+              setTimeout(() => { btnShare.innerText = '📤 Compartir'; }, 2500);
+            } catch (err) {
+              console.error('Share error:', err);
+              btnShare.innerText = '❌ Error';
+              setTimeout(() => { btnShare.innerText = '📤 Compartir'; }, 2500);
             }
           });
         }
@@ -1101,6 +1123,7 @@ export default function Muestreos() {
   }, [generarHTMLReporte, addToast]);
 
   const descargarPDF = useCallback(async (m) => {
+    // ... (sin cambios en la lógica interna)
     try {
       const id = m._id || m.id;
       if (!id) return;
@@ -1130,6 +1153,41 @@ export default function Muestreos() {
       setIsLoadingDetails(false);
     }
   }, [generarHTMLReporte, addToast]);
+
+  const compartirReporte = useCallback(async (m) => {
+    try {
+      const id = m._id || m.id;
+      if (!id) return;
+
+      setIsLoadingDetails(true);
+      const res = await apiClient.post(`/muestreos/${id}/share`);
+      
+      console.log('[PUBLIC SHARE URL COPIED] (table)', res.url);
+
+      // Copiar al portapapeles
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(res.url);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = res.url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+
+      addToast({ 
+        title: '¡Enlace generado!', 
+        message: `El enlace público ha sido copiado: ${res.url}`, 
+        type: 'success' 
+      });
+    } catch (err) {
+      console.error('Error al compartir reporte:', err);
+      addToast({ title: 'Error', message: 'No se pudo generar el enlace para compartir.', type: 'error' });
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  }, [addToast]);
 
   // Alias para compatibilidad con el modal de resultado
   const generarInformePDF = verReporte;
@@ -1224,6 +1282,7 @@ export default function Muestreos() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                          <button className="mx-action-btn share" style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bcf0da' }} title="Compartir enlace público" onClick={() => compartirReporte(m)}><Share2 size={14} /></button>
                           <button className="mx-action-btn print" title="Ver reporte" onClick={() => verReporte(m)}><Printer size={14} /></button>
                           <button className="mx-action-btn edit" title="Editar" onClick={() => handleEdit(m)}><Edit size={14} /></button>
                           <button className="mx-action-btn delete" title="Eliminar" onClick={() => { setDeleteTarget(m); setDeleteOpen(true); }}><Trash2 size={14} /></button>
@@ -1270,6 +1329,7 @@ export default function Muestreos() {
                           </td>
                           <td style={{ textAlign: 'right' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
+                              <button className="mx-action-btn share" style={{ width: '28px', height: '28px', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bcf0da' }} title="Compartir enlace público" onClick={(e) => { e.stopPropagation(); compartirReporte(m); }}><Share2 size={12} /></button>
                               <button className="mx-action-btn print" style={{ width: '28px', height: '28px' }} title="Ver reporte" onClick={(e) => { e.stopPropagation(); verReporte(m); }}><Printer size={12} /></button>
                               <button className="mx-action-btn edit" style={{ width: '28px', height: '28px', opacity: isLoadingDetails && editingId === (m._id || m.id) ? 0.5 : 1 }} title="Editar" disabled={isLoadingDetails} onClick={(e) => { e.stopPropagation(); if (!isLoadingDetails) handleEdit(m); }}><Edit size={12} /></button>
                               <button className="mx-action-btn delete" style={{ width: '28px', height: '28px' }} title="Eliminar" onClick={(e) => { e.stopPropagation(); setDeleteTarget(m); setDeleteOpen(true); }}><Trash2 size={12} /></button>

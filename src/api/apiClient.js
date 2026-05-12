@@ -50,9 +50,13 @@ async function request(endpoint, options = {}) {
     const response = await fetch(url, config);
 
     // Interceptar 401: sesión expirada → redirigir a login
+    // Interceptar 401: sesión expirada → redirigir a login
     if (response.status === 401) {
-      // Evitar loop: solo redirigir si NO estamos ya en /login o /auth
-      if (!endpoint.startsWith('/auth/')) {
+      // Evitar loop: solo redirigir si NO estamos ya en /login, /auth o rutas públicas
+      const isPublicPath = endpoint.startsWith('/auth/') || endpoint.startsWith('/public/');
+      console.log('[API 401 DETECTED]', { endpoint, isPublicPath });
+      
+      if (!isPublicPath) {
         localStorage.removeItem('ammpp_token');
         localStorage.removeItem('ammpp_user');
         window.location.href = '/login';
