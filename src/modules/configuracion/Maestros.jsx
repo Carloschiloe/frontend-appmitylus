@@ -376,30 +376,35 @@ export default function Maestros() {
                         {modalParams.map((p, idx) => (
                           <div key={idx} className="maestros-modal-param-row">
                             <span className="maestros-modal-param-name">{p.nombre}</span>
-                            <input
-                              type="number"
-                              step="0.1"
-                              placeholder="Mín"
-                              className="mx-input maestros-modal-param-input"
-                              value={p.min ?? ''}
-                              onChange={(e) => {
-                                const next = [...modalParams];
-                                next[idx].min = e.target.value === '' ? null : Number(e.target.value);
-                                setModalParams(next);
-                              }}
-                            />
-                            <input
-                              type="number"
-                              step="0.1"
-                              placeholder="Máx"
-                              className="mx-input maestros-modal-param-input"
-                              value={p.max ?? ''}
-                              onChange={(e) => {
-                                const next = [...modalParams];
-                                next[idx].max = e.target.value === '' ? null : Number(e.target.value);
-                                setModalParams(next);
-                              }}
-                            />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <input
+                                type="number"
+                                step="0.1"
+                                placeholder="Mín"
+                                className="mx-input maestros-modal-param-input"
+                                value={p.min ?? ''}
+                                onChange={(e) => {
+                                  const next = [...modalParams];
+                                  next[idx].min = e.target.value === '' ? null : Number(e.target.value);
+                                  setModalParams(next);
+                                }}
+                              />
+                              <input
+                                type="number"
+                                step="0.1"
+                                placeholder="Máx"
+                                className="mx-input maestros-modal-param-input"
+                                value={p.max ?? ''}
+                                onChange={(e) => {
+                                  const next = [...modalParams];
+                                  next[idx].max = e.target.value === '' ? null : Number(e.target.value);
+                                  setModalParams(next);
+                                }}
+                              />
+                              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', minWidth: '35px' }}>
+                                {p.unidad || (p.campo === 'uxkg' ? 'un/kg' : '%')}
+                              </span>
+                            </div>
                             <button type="button" className="mx-btn-icon" onClick={() => setModalParams(modalParams.filter((_, i) => i !== idx))}>
                               <MinusCircle size={14} className="maestros-modal-param-delete" />
                             </button>
