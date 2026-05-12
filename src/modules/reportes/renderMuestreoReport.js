@@ -125,8 +125,6 @@ export const generarHTMLReporte = (m, options = {}) => {
     auditoriaHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px 18px;"><div style="font-size:14px;font-weight:800;color:#991b1b;margin-bottom:6px;">❌ No clasifica en ninguna categoría del maestro vigente</div>${auditNoClasificaHTML}</div>`;
   }
 
-    auditoriaHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px 18px;"><div style="font-size:14px;font-weight:800;color:#991b1b;margin-bottom:6px;">❌ No clasifica en ninguna categoría del maestro vigente</div>${auditNoClasificaHTML}</div>`;
-  }
 
 
   // --- Fotos ---
