@@ -136,13 +136,35 @@ export const generarHTMLReporte = (m, options = {}) => {
 
   // --- Fotos ---
   const catMap = {};
+  // MAPEO DE EMERGENCIA: Fallback directo para IDs conocidos si el backend falla
+  const emergencyMap = {
+    '69d717dfd8ed1240f446cec2': 'Procesable',
+    '69d717dfd8ed1240f446cec3': 'Cholga',
+    '69d717dfd8ed1240f446cec4': 'Quebrado',
+    '69d717dfd8ed1240f446cec5': 'Malton',
+    '69d717dfd8ed1240f446cec6': 'Semilla (< 4,5 cm)',
+    '69d717dfd8ed1240f446cec7': 'Picoroco y/o colpa',
+    '69d717dfd8ed1240f446cec8': 'Basura',
+    '69d717dfd8ed1240f446cec9': 'Esponja Severa',
+    '69d717dfd8ed1240f446ceca': 'Anemonas',
+    '69d717dfd8ed1240f446cecb': 'Valvas Vacias',
+    '69d717dfd8ed1240f446cecc': 'U muertas',
+    '69d717dfd8ed1240f446cecd': 'Barbilla',
+    '69d717dfd8ed1240f446cece': 'Cogotina',
+    '69d717dfd8ed1240f446cecf': 'Trizados',
+    '69d717dfd8ed1240f446ced0': 'Esponja Leve',
+    '69d717dfd8ed1240f446ced1': 'Sarro'
+  };
   (maestros?.cats || []).forEach(c => { catMap[String(c._id)] = c.nombre; });
 
   const allPhotos = [];
   if (m.catDetails) {
     Object.entries(m.catDetails).forEach(([catId, data]) => {
       if (!data?.photos) return;
-      const nombreCat = catMap[catId] || data.nombre || 'Ítem';
+      // Prioridad: 1. data.nombre (backend), 2. maestros (frontend), 3. emergencyMap (hardcoded), 4. fallback 'Ítem'
+      const nombreCat = (data.nombre && data.nombre !== 'Ítem') 
+        ? data.nombre 
+        : (catMap[catId] || emergencyMap[catId] || 'Ítem');
       const pesoItem  = Number(m.cats?.[catId]) || 0;
       const pctItem   = total > 0 && pesoItem > 0 ? `${fmtNum((pesoItem / total) * 100, 1)}%` : null;
       const label     = pctItem ? `${nombreCat} — ${pctItem}` : nombreCat;

@@ -17,17 +17,21 @@ const SharedMuestreo = () => {
         // Obtener datos del reporte público
         const data = await apiClient.get(`/public/reportes/${token}`);
         
-        // Generar el mismo HTML que el reporte privado
-        // TODO: [REPORT] Diagnostic logs for parity validation
-        console.log('[PUBLIC REPORT PAYLOAD RAW]', data);
+        console.log('[DEBUG FRONTEND] Data recibida de la API:', {
+          id: data._id,
+          catDetailsCount: Object.keys(data.catDetails || {}).length,
+          branding: data.branding,
+          firstCat: Object.entries(data.catDetails || {})[0]?.[1]
+        });
+
         const reportHtml = generarHTMLReporte(data, {
           logoUrl: data.branding?.logo || '',
           empresaNom: data.branding?.nombre || 'Mitynex',
-          isPublic: false, // FORZAR PARIDAD 1:1 (mostrar barra verde y botón imprimir)
-          maestros: { cats: [] } // El backend ya trae nombres en catDetails.nombre
+          isPublic: false, 
+          maestros: { cats: [] } 
         });
-        console.log('[PUBLIC REPORT HTML CHECK]', reportHtml.slice(0, 1000));
 
+        console.log('[DEBUG FRONTEND] HTML generado (primeros 500 chars):', reportHtml.substring(0, 500));
         setHtml(reportHtml);
       } catch (err) {
         console.error('Error fetching public report:', err);
