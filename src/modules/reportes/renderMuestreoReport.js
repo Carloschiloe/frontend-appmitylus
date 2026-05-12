@@ -1,0 +1,269 @@
+/**
+ * Generador de Reporte Técnico de Muestreo (Versión HTML compartible)
+ * Reutilizado por la vista privada y la vista pública.
+ */
+
+export const generarHTMLReporte = (m, options = {}) => {
+  if (!m) return '';
+
+  const {
+    logoUrl = '',
+    empresaNom = 'Mitynex',
+    appOrigin = window.location.origin,
+    isPublic = false,
+    maestros = { cats: [] }
+  } = options;
+
+  const fmtNum = (v, dec = 0) => {
+    const n = Number(v);
+    return isNaN(n) ? '0' : n.toLocaleString('es-CL', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  };
+
+  const clasificaciones = Array.isArray(m.clasificaciones) ? m.clasificaciones : [];
+  const evaluacionCriterios = Array.isArray(m.evaluacionCriterios) ? m.evaluacionCriterios : [];
+  const primary   = clasificaciones[0];
+  
+  // Normalización de campos para soportar variaciones legacy o de hidratación
+  const rend      = Number(m.rendimiento ?? m.rendimientoPct ?? 0);
+  const uxkg      = Number(m.uxkg ?? m.uXKg ?? 0);
+  const total     = Number(m.total ?? 0);
+  const procesable= Number(m.procesable ?? 0);
+  const rechazos  = Number(m.rechazos ?? m.rechazo ?? 0);
+  const defectos  = Number(m.defectos ?? m.defecto ?? 0);
+  
+  const pctProc   = fmtNum(total > 0 ? (procesable / total) * 100 : 0, 1);
+  const pctRech   = fmtNum(total > 0 ? (rechazos   / total) * 100 : 0, 1);
+  const pctDef    = fmtNum(total > 0 ? (defectos   / total) * 100 : 0, 1);
+  const fecha     = (m.fecha || new Date().toISOString()).slice(0, 10);
+
+  const logoBlock = logoUrl
+    ? `<img src="${logoUrl}" alt="${empresaNom}" style="height:52px;max-width:180px;object-fit:contain;" />`
+    : `<div style="font-size:20px;font-weight:900;color:#0f766e;letter-spacing:-0.5px;">${empresaNom}</div>`;
+
+  // --- Análisis de auditoría técnica ---
+  const parsearFallo = (razon) => {
+    if (!razon) return null;
+    const mExcede = razon.match(/^(.+?)\s*\((.+?)\)\s+excede el m[áa]ximo\s*\((.+?)\)$/i);
+    const mMenor  = razon.match(/^(.+?)\s*\((.+?)\)\s+es menor al m[íi]nimo\s*\((.+?)\)$/i);
+    
+    let p, v, t, u;
+    if (mExcede) { p = mExcede[1].trim(); v = mExcede[2]; t = 'max'; u = mExcede[3]; }
+    else if (mMenor) { p = mMenor[1].trim(); v = mMenor[2]; t = 'min'; u = mMenor[3]; }
+    else { return { param: razon.trim(), valor: null, tipo: null, umbral: null }; }
+
+    if (p.toLowerCase() === 'calibre') p = 'U x Kg';
+    return { param: p, valor: v, tipo: t, umbral: u };
+  };
+
+  const fallosMap = new Map();
+  evaluacionCriterios
+    .filter(ev => !ev.cumple && ev.razon)
+    .forEach(ev => {
+      ev.razon.split(', ').forEach(r => {
+        const f = parsearFallo(r);
+        if (!f) return;
+        const key = `${f.param}|${f.tipo}|${f.umbral}`;
+        if (!fallosMap.has(key)) fallosMap.set(key, f);
+      });
+    });
+  const fallosUnicos = Array.from(fallosMap.values());
+  const cumplidores = evaluacionCriterios.filter(ev => ev.cumple);
+
+  let auditNoClasificaHTML = '';
+  if (fallosUnicos.length > 0) {
+    const filas = fallosUnicos.map(f => {
+      let desc = '';
+      if (f.tipo === 'max' && f.valor)        desc = `${f.valor} — rango permitido: <strong>${f.umbral}</strong>`;
+      else if (f.tipo === 'min' && f.valor)   desc = `${f.valor} — rango permitido: <strong>${f.umbral}</strong>`;
+      else if (f.valor)                        desc = `valor actual: ${f.valor}`;
+      else                                     desc = f.param;
+      return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #fee2e2;">
+        <div style="min-width:14px;height:14px;border-radius:50%;background:#ef4444;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0;margin-top:2px;">✗</div>
+        <div style="font-size:12px;color:#7f1d1d;line-height:1.5;"><strong>${f.param}</strong> — ${desc}</div>
+      </div>`;
+    }).join('');
+    auditNoClasificaHTML = `<div style="margin-top:10px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#991b1b;margin-bottom:6px;">Parámetros fuera de rango</div>${filas}</div>`;
+  } else {
+    auditNoClasificaHTML = `<div style="margin-top:8px;font-size:12px;color:#7f1d1d;font-style:italic;">No se clasificó por parámetros técnicos detallados.</div>`;
+  }
+
+  const auditCumpleHTML = cumplidores.length > 0 ? `
+    <div style="margin-top:10px;">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#166534;margin-bottom:6px;">Criterios aprobados</div>
+      ${cumplidores.map(ev => `
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #dcfce7;">
+          <div style="min-width:14px;height:14px;border-radius:50%;background:#22c55e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0;">✓</div>
+          <div style="font-size:12px;color:#14532d;"><strong>${ev.nombre}</strong> — Todos los parámetros dentro del rango</div>
+        </div>`).join('')}
+    </div>` : '';
+
+  let auditoriaHTML = '';
+  if (primary) {
+    auditoriaHTML = `
+      <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:16px 18px;">
+        <div style="font-size:14px;font-weight:800;color:#166534;margin-bottom:4px;">
+          ✅ Clasifica como: ${primary.nombre}${primary.tipoPrincipal ? ` <span style="font-weight:600;font-size:12px;color:#15803d;">(${primary.tipoPrincipal})</span>` : ''}
+        </div>
+        <div style="font-size:12px;color:#16a34a;margin-bottom:12px;">La materia prima cumple los parámetros establecidos en el maestro vigente.</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+          <div style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:10px;color:#6b7280;margin-bottom:2px;">R% Carne</div>
+            <div style="font-size:18px;font-weight:800;color:#16a34a;">${fmtNum(rend, 2)}%</div>
+          </div>
+          <div style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:10px;color:#6b7280;margin-bottom:2px;">U × Kg</div>
+            <div style="font-size:18px;font-weight:800;color:#16a34a;">${fmtNum(uxkg, 0)}</div>
+          </div>
+          <div style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:10px;color:#6b7280;margin-bottom:2px;">% Rechazo</div>
+            <div style="font-size:18px;font-weight:800;color:#16a34a;">${pctRech}%</div>
+          </div>
+        </div>
+        ${auditCumpleHTML}
+      </div>`;
+  } else {
+    auditoriaHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px 18px;"><div style="font-size:14px;font-weight:800;color:#991b1b;margin-bottom:6px;">❌ No clasifica en ninguna categoría del maestro vigente</div>${auditNoClasificaHTML}</div>`;
+  }
+
+  const evalHTML = evaluacionCriterios.length ? evaluacionCriterios.map(ev => `
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+      <div style="width:20px;height:20px;border-radius:50%;background:${ev.cumple ? '#22c55e' : '#ef4444'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">${ev.cumple ? '✓' : '✗'}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;color:#0f172a;">${ev.nombre}</div>
+        ${ev.razon ? ev.razon.split(', ').map(r => `<div style="font-size:11px;color:#ef4444;margin-top:2px;">• ${r}</div>`).join('') : '<div style="font-size:11px;color:#22c55e;margin-top:2px;">Sin observaciones</div>'}
+      </div>
+    </div>`).join('') : '<div style="color:#94a3b8;font-size:13px;">Sin criterios configurados.</div>';
+
+  // --- Fotos ---
+  const catMap = {};
+  (maestros?.cats || []).forEach(c => { catMap[String(c._id)] = c.nombre; });
+
+  const allPhotos = [];
+  if (m.catDetails) {
+    Object.entries(m.catDetails).forEach(([catId, data]) => {
+      if (!data?.photos) return;
+      const nombreCat = catMap[catId] || data.nombre || 'Ítem';
+      const pesoItem  = Number(m.cats?.[catId]) || 0;
+      const pctItem   = total > 0 && pesoItem > 0 ? `${fmtNum((pesoItem / total) * 100, 1)}%` : null;
+      const label     = pctItem ? `${nombreCat} — ${pctItem}` : nombreCat;
+      const photos = Array.isArray(data.photos) ? data.photos : [];
+      photos.forEach(p => {
+        const url = p.url || p.signedUrl;
+        if (url && url !== logoUrl) allPhotos.push({ url, label });
+      });
+    });
+  }
+  if (Array.isArray(m.generalPhotos)) {
+    m.generalPhotos.forEach(p => {
+      const url = p.url || p.signedUrl;
+      if (url && url !== logoUrl) allPhotos.push({ url, label: 'Evidencia general' });
+    });
+  }
+
+  const photosHTML = allPhotos.length > 0 ? `
+    <div class="section">
+      <div class="sec-title">Evidencias Fotográficas</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-top:10px;">
+        ${allPhotos.map(p => `
+          <div style="text-align:center;">
+            <img src="${p.url}" alt="Evidencia" style="width:100%;height:130px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;" />
+            <div style="font-size:11px;font-weight:600;color:#475569;margin-top:5px;">${p.label}</div>
+          </div>`).join('')}
+      </div>
+    </div>` : '';
+
+  const pdfFilename = `reporte-muestreo-${(m.proveedorNombre || 'reporte').replace(/[^a-z0-9]/gi, '-')}.pdf`;
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Informe Muestreo — ${m.proveedorNombre || ''}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,Helvetica,sans-serif;color:#1e293b;padding:32px;font-size:14px;line-height:1.5}
+  .header{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:2px solid #0f766e;margin-bottom:24px;}
+  .header-title{font-size:20px;font-weight:800;color:#0f172a;}
+  .header-sub{font-size:12px;color:#64748b;margin-top:2px;}
+  .meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:22px;}
+  .meta-item label{font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;display:block;margin-bottom:2px;}
+  .meta-item span{font-size:13px;font-weight:700;color:#0f172a;}
+  .section{margin-bottom:22px}
+  .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;color:#475569;letter-spacing:.06em;margin-bottom:10px;padding-bottom:5px;border-bottom:1.5px solid #e2e8f0}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:4px}
+  .kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;text-align:center}
+  .kpi-label{font-size:10px;color:#64748b;margin-bottom:4px}
+  .kpi-val{font-size:20px;font-weight:800;color:#0f766e}
+  .clas-box{border:2px solid #16a34a;border-radius:10px;padding:16px;text-align:center;background:#f0fdf4}
+  .clas-box.fail{border-color:#ef4444;background:#fef2f2}
+  .clas-label{font-size:11px;font-weight:700;text-transform:uppercase;color:#475569}
+  .clas-val{font-size:26px;font-weight:800;color:#16a34a;margin-top:4px}
+  .clas-val.fail{color:#ef4444}
+  .footer{margin-top:32px;font-size:11px;color:#94a3b8;display:flex;justify-content:space-between;border-top:1px solid #e2e8f0;padding-top:10px;}
+  .no-print{display:flex}
+  @media print{body{padding:16px}.no-print{display:none!important}}
+</style>
+</head>
+<body>
+  ${!isPublic ? `
+  <div class="no-print" style="background:#0f766e;color:#fff;padding:10px 14px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+    <span style="font-weight:700;font-size:13px;">Informe Técnico &mdash; Vista Previa</span>
+    <button onclick="window.print()" style="background:#fff;color:#0f766e;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;">🖨️ Imprimir / PDF</button>
+  </div>` : ''}
+
+  <div class="header">
+    <div>${logoBlock}</div>
+    <div style="text-align:right;">
+      <div class="header-title">Informe de Muestreo MMPP</div>
+      <div class="header-sub">${empresaNom} · ${isPublic ? 'Consulta Pública' : 'Auditoría Interna'}</div>
+    </div>
+  </div>
+
+  <div class="meta-grid">
+    <div class="meta-item"><label>Proveedor</label><span>${m.proveedorNombre || '—'}</span></div>
+    <div class="meta-item"><label>Centro</label><span>${m.centroCodigo || '—'}</span></div>
+    <div class="meta-item"><label>Línea</label><span>${m.linea || '—'}</span></div>
+    <div class="meta-item"><label>Fecha</label><span>${fecha}</span></div>
+    <div class="meta-item"><label>Responsable</label><span>${m.responsable || '—'}</span></div>
+    <div class="meta-item"><label>Origen</label><span>${m.origen || '—'}</span></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Indicadores del Muestreo</div>
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label">R% Carne</div><div class="kpi-val">${fmtNum(rend, 2)}%</div></div>
+      <div class="kpi"><div class="kpi-label">U × Kg (Calibre)</div><div class="kpi-val">${fmtNum(uxkg, 0)}</div></div>
+      <div class="kpi"><div class="kpi-label">Procesable</div><div class="kpi-val">${pctProc}%</div></div>
+      <div class="kpi"><div class="kpi-label">Rechazo</div><div class="kpi-val">${pctRech}%</div></div>
+      <div class="kpi"><div class="kpi-label">Defectos</div><div class="kpi-val">${pctDef}%</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Clasificación</div>
+    <div class="clas-box ${primary ? '' : 'fail'}">
+      <div class="clas-label">Tipo de producto</div>
+      <div class="clas-val ${primary ? '' : 'fail'}">${primary ? primary.nombre : 'No Clasifica'}</div>
+      ${primary?.tipoPrincipal ? `<div style="font-size:13px;color:#64748b;margin-top:4px;">${primary.tipoPrincipal}</div>` : ''}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Auditoría Técnica de Clasificación</div>
+    ${auditoriaHTML}
+  </div>
+
+  <div class="section">
+    <div class="sec-title">Evaluación por Criterio</div>
+    ${evalHTML}
+  </div>
+
+  ${photosHTML}
+
+  <div class="footer">
+    <span>${empresaNom}</span>
+    <span>Sistema MMPP · ${new Date().toLocaleDateString('es-CL')}</span>
+  </div>
+</body>
+</html>`;
+};
