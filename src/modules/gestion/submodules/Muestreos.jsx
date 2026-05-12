@@ -137,6 +137,38 @@ export default function Muestreos() {
   const [deletedPhotoKeys, setDeletedPhotoKeys] = useState([]);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
+  // === Efecto para Deep Linking del Reporte ===
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reporteId = params.get('reporteId');
+    const tenantUrl = params.get('tenant'); // slug o dbName
+
+    console.log('[ACTIVE TENANT]:', localStorage.getItem('selected_tenant_db') || 'Ninguno');
+    console.log('[REPORTE ID]:', reporteId || 'Ninguno');
+
+    if (reporteId) {
+      // Si viene un tenant en la URL, lo priorizamos para SuperAdmins
+      if (tenantUrl) {
+        console.log('[TENANT FROM URL]:', tenantUrl);
+        localStorage.setItem('selected_tenant_db', tenantUrl);
+      }
+
+      const fetchReport = async () => {
+        try {
+          setIsLoadingDetails(true);
+          // verReporte ahora se encarga de hacer el fetch si se le pasa el ID
+          await verReporte({ _id: reporteId });
+        } catch (err) {
+          console.error('[REPORT FETCH ERROR]:', err);
+          addToast({ title: 'Error', message: 'No se pudo cargar el reporte. Verifique su acceso.', type: 'error' });
+        } finally {
+          setIsLoadingDetails(false);
+        }
+      };
+      fetchReport();
+    }
+  }, []); // Solo al montar
+
   React.useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape' && previewImage) {
@@ -172,7 +204,13 @@ export default function Muestreos() {
     setSelectedProvider(null);
     setProviderCenters([]);
     setSearchProviders('');
-    setSelectedCats(new Set(maestros.cats.filter(c => c.tipoCat === 'procesable').map(c => c._id)));
+    
+    // Al resetear para un NUEVO muestreo, seleccionamos por defecto los procesables activos
+    const defaultCats = maestros.cats
+      .filter(c => c.tipoCat === 'procesable')
+      .map(c => c._id);
+    setSelectedCats(new Set(defaultCats));
+    
     setIsModalOpen(true);
   }, [user, maestros.cats]);
 
@@ -241,14 +279,50 @@ export default function Muestreos() {
   }, [directory, searchProviders]);
 
   const filteredAvailableCats = useMemo(() => {
-    return maestros.cats.filter(c => c.tipoCat === activeTab && !selectedCats.has(c._id));
+    // 1. Solo categorías de muestreo del tab activo
+    // 2. Que estén activas (ya vienen filtradas del hook, pero por seguridad)
+    // 3. Que NO estén ya seleccionadas
+    const res = maestros.cats.filter(c => 
+      c.tipoCat === activeTab && 
+      !selectedCats.has(c._id)
+    );
+    
+    console.log('[MUESTREO CATS RAW]', maestros.cats);
+    console.log('[MUESTREO ACTIVE TAB]', activeTab);
+    console.log('[MUESTREO AVAILABLE CATS]', res);
+    console.log('[MUESTREO SELECTED CATS IDS]', Array.from(selectedCats));
+    
+    return res;
   }, [maestros.cats, activeTab, selectedCats]);
 
   const filteredSelectedCats = useMemo(() => {
-    return [...selectedCats]
-      .map(id => maestros.cats.find(c => c._id === id))
-      .filter(c => c && c.tipoCat === activeTab);
-  }, [selectedCats, maestros.cats, activeTab]);
+    // Reconstruimos la lista de objetos seleccionados para el tab activo.
+    // Importante: Si un ítem está en selectedCats pero NO en maestros.cats (ej: desactivado o legacy),
+    // debemos intentar mostrarlo igual si tiene datos en el formulario.
+    
+    const selectedList = [];
+    selectedCats.forEach(id => {
+      let cat = maestros.cats.find(c => c._id === id);
+      
+      // Si no está en el maestro, creamos un placeholder para no perder los datos del formulario
+      if (!cat) {
+        const val = Number(form.cats[id]) || 0;
+        const details = catDetails[id];
+        // Solo lo incluimos si tiene datos reales (peso, obs o fotos)
+        if (val > 0 || details?.obs || details?.photos?.length > 0) {
+          cat = { _id: id, nombre: `(Inactivo) ${id.slice(-4)}`, tipoCat: 'unknown' };
+          // Intentar adivinar el tipoCat si es posible, o dejarlo visible en todos los tabs si es unknown
+        }
+      }
+
+      if (cat && (cat.tipoCat === activeTab || cat.tipoCat === 'unknown')) {
+        selectedList.push(cat);
+      }
+    });
+
+    console.log('[MUESTREO FILTERED SELECTED CATS]', selectedList);
+    return selectedList;
+  }, [selectedCats, maestros.cats, activeTab, form.cats, catDetails]);
 
   const handleSelectProvider = (provider) => {
     setSelectedProvider(provider);
@@ -382,16 +456,22 @@ export default function Muestreos() {
       setDeletedPhotoKeys([]);
 
       const catIds = new Set();
+      // 1. Añadir procesables del maestro (siempre visibles)
+      maestros.cats.filter(c => c.tipoCat === 'procesable').forEach(c => catIds.add(c._id));
+      
+      // 2. Añadir categorías guardadas en m.cats
       Object.keys(m.cats || {}).forEach(cId => {
-        if (Number(m.cats[cId]) > 0) catIds.add(cId);
+        catIds.add(cId);
       });
+
+      // 3. Añadir categorías que tienen detalles (fotos/obs)
       Object.entries(normalizedCatDetails).forEach(([cId, data]) => {
-        if (data.obs || data.photos?.length > 0 || data.fotos?.length > 0) {
+        if (data.obs || (data.photos && data.photos.length > 0)) {
           catIds.add(cId);
         }
       });
-      maestros.cats.filter(c => c.tipoCat === 'procesable').forEach(c => catIds.add(c._id));
 
+      console.log('[MUESTREO EDIT RECONSTRUCTED IDS]', Array.from(catIds));
       setSelectedCats(catIds);
 
       const pKey = (m.proveedorKey || '').toLowerCase();
@@ -607,73 +687,293 @@ export default function Muestreos() {
     });
   }, []);
 
-  const generarInformePDF = useCallback((m) => {
-    if (!m) return;
+  const generarHTMLReporte = useCallback((m) => {
+    if (!m) return '';
+    console.log('[REPORT RECEIVED]', {
+      clasificacion: m.clasificacion,
+      evaluacion: m.evaluacion,
+      evaluacionCriterios: m.evaluacionCriterios,
+      criterios: m.criterios
+    });
+
     const clasificaciones = Array.isArray(m.clasificaciones) ? m.clasificaciones : [];
-    const evaluacion      = Array.isArray(m.evaluacion)      ? m.evaluacion      : [];
+    const evaluacionCriterios = Array.isArray(m.evaluacionCriterios) ? m.evaluacionCriterios : [];
     const primary   = clasificaciones[0];
     const rend      = Number(m.rendimiento) || 0;
     const uxkg      = Number(m.uxkg)        || 0;
     const total     = Number(m.total)       || 0;
     const procesable= Number(m.procesable)  || 0;
     const rechazos  = Number(m.rechazos)    || 0;
+    const defectos  = Number(m.defectos)    || 0;
     const pctProc   = fmtNum(total > 0 ? (procesable / total) * 100 : 0, 1);
     const pctRech   = fmtNum(total > 0 ? (rechazos   / total) * 100 : 0, 1);
-    const fecha     = m.fecha || new Date().toISOString().slice(0, 10);
+    const pctDef    = fmtNum(total > 0 ? (defectos   / total) * 100 : 0, 1);
+    const fecha     = (m.fecha || new Date().toISOString()).slice(0, 10);
 
-    let recomendacion = '';
-    if (primary) {
-      recomendacion = `La materia prima muestreada <strong>califica como ${primary.nombre}</strong>${primary.tipoPrincipal ? ` (tipo: ${primary.tipoPrincipal})` : ''}. Los indicadores R%: <strong>${fmtNum(rend, 2)}%</strong> y calibre <strong>${fmtNum(uxkg, 0)} un/kg</strong> se encuentran dentro de los rangos requeridos.`;
+    // Logo SOLO para encabezado — nunca para evidencias
+    const logoUrl    = user?.empresaId?.config?.logo || localStorage.getItem('selected_tenant_logo') || '';
+    const empresaNom = user?.empresaId?.nombre || 'Mitynex';
+    const logoBlock  = logoUrl
+      ? `<img src="${logoUrl}" alt="${empresaNom}" style="height:52px;max-width:180px;object-fit:contain;" />`
+      : `<div style="font-size:20px;font-weight:900;color:#0f766e;letter-spacing:-0.5px;">${empresaNom}</div>`;
+
+    // Origin embebido desde la app para copiar enlace (no depende de window.opener)
+    const appOrigin = window.location.origin;
+
+    // --- Análisis de auditoría técnica ---
+    // El backend ya genera evaluacion[].razon con el texto de fallo completo.
+    // Aquí lo presentamos de forma visual limpia sin textos hardcodeados.
+
+    // Parsear el string del backend. Formato exacto del service:
+    // "Nombre (valor%) excede el máximo (umbral)"
+    // "Nombre (valor%) es menor al mínimo (umbral)"
+    // También puede venir concatenado con ", " si hay varios fallos en un mismo criterio.
+    const parsearFallo = (razon) => {
+      if (!razon) return null;
+      const mExcede = razon.match(/^(.+?)\s*\((.+?)\)\s+excede el m[áa]ximo\s*\((.+?)\)$/i);
+      const mMenor  = razon.match(/^(.+?)\s*\((.+?)\)\s+es menor al m[íi]nimo\s*\((.+?)\)$/i);
+      
+      let p, v, t, u;
+      if (mExcede) { p = mExcede[1].trim(); v = mExcede[2]; t = 'max'; u = mExcede[3]; }
+      else if (mMenor) { p = mMenor[1].trim(); v = mMenor[2]; t = 'min'; u = mMenor[3]; }
+      else { return { param: razon.trim(), valor: null, tipo: null, umbral: null }; }
+
+      if (p.toLowerCase() === 'calibre') p = 'U x Kg';
+
+      return { param: p, valor: v, tipo: t, umbral: u };
+    };
+
+    const fallosMap = new Map();
+    const todosLosFallosRaw = evaluacionCriterios
+      .filter(ev => !ev.cumple && ev.razon)
+      .map(ev => ev.razon.split(', '))
+      .flat();
+      
+    evaluacionCriterios
+      .filter(ev => !ev.cumple && ev.razon)
+      .forEach(ev => {
+        ev.razon.split(', ').forEach(r => {
+          const f = parsearFallo(r);
+          if (!f) return;
+          const key = `${f.param}|${f.tipo}|${f.umbral}`;
+          if (!fallosMap.has(key)) fallosMap.set(key, f);
+        });
+      });
+    const fallosUnicos = Array.from(fallosMap.values());
+
+    const cumplidores = evaluacionCriterios.filter(ev => ev.cumple);
+
+    let auditNoClasificaHTML = '';
+    if (fallosUnicos.length > 0) {
+      const filas = fallosUnicos.map(f => {
+        let desc = '';
+        if (f.tipo === 'max' && f.valor)        desc = `${f.valor} — rango permitido: <strong>${f.umbral}</strong>`;
+        else if (f.tipo === 'min' && f.valor)   desc = `${f.valor} — rango permitido: <strong>${f.umbral}</strong>`;
+        else if (f.valor)                        desc = `valor actual: ${f.valor}`;
+        else                                     desc = f.param;
+        return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #fee2e2;">
+          <div style="min-width:14px;height:14px;border-radius:50%;background:#ef4444;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0;margin-top:2px;">✗</div>
+          <div style="font-size:12px;color:#7f1d1d;line-height:1.5;">
+            <strong>${f.param}</strong> — ${desc}
+          </div>
+        </div>`;
+      }).join('');
+      auditNoClasificaHTML = `
+        <div style="margin-top:10px;">
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#991b1b;margin-bottom:6px;">Parámetros fuera de rango</div>
+          ${filas}
+        </div>`;
+    } else if (evaluacionCriterios.length > 0) {
+      const razonesLiterales = evaluacionCriterios
+        .filter(ev => !ev.cumple && ev.razon)
+        .map(ev => `<div style="font-size:12px;color:#7f1d1d;padding:4px 0;border-bottom:1px solid #fee2e2;">• <strong>${ev.nombre}:</strong> ${ev.razon}</div>`)
+        .join('');
+      auditNoClasificaHTML = razonesLiterales
+        ? `<div style="margin-top:10px;">${razonesLiterales}</div>`
+        : `<div style="margin-top:8px;font-size:12px;color:#7f1d1d;font-style:italic;">No se encontraron criterios detallados. Revisar configuración del maestro de clasificación.</div>`;
     } else {
-      const fallosPrincipales = evaluacion.filter(e => !e.cumple);
-      const detallesFallos = fallosPrincipales.length
-        ? `<ul style="margin:8px 0 0 18px;font-size:13px;color:#7f1d1d;">${fallosPrincipales.map(e => `<li><strong>${e.nombre}</strong>: ${e.razon || 'No cumple los parámetros requeridos'}</li>`).join('')}</ul>`
-        : '';
-      recomendacion = `La materia prima muestreada <strong>no clasifica en ninguna categoría</strong> según los parámetros actuales del maestro.${detallesFallos}<br><br>Se recomienda hacer seguimiento para determinar si los indicadores mejoran con el tiempo (maduración de calibre o mejora de rendimiento) antes de programar cosecha.`;
+      auditNoClasificaHTML = `<div style="margin-top:8px;font-size:12px;color:#7f1d1d;font-style:italic;">No se encontraron criterios detallados. Revisar configuración del maestro de clasificación.</div>`;
     }
 
-    const evalHTML = evaluacion.length ? evaluacion.map(ev => `
+    const auditCumpleHTML = cumplidores.length > 0 ? `
+      <div style="margin-top:10px;">
+        <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#166534;margin-bottom:6px;">Criterios aprobados</div>
+        ${cumplidores.map(ev => `
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #dcfce7;">
+            <div style="min-width:14px;height:14px;border-radius:50%;background:#22c55e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0;">✓</div>
+            <div style="font-size:12px;color:#14532d;"><strong>${ev.nombre}</strong> — Todos los parámetros dentro del rango</div>
+          </div>`).join('')}
+      </div>` : '';
+
+    let auditoriaHTML = '';
+    if (primary) {
+      auditoriaHTML = `
+        <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:16px 18px;">
+          <div style="font-size:14px;font-weight:800;color:#166534;margin-bottom:4px;">
+            ✅ Clasifica como: ${primary.nombre}${primary.tipoPrincipal ? ` <span style="font-weight:600;font-size:12px;color:#15803d;">(${primary.tipoPrincipal})</span>` : ''}
+          </div>
+          <div style="font-size:12px;color:#16a34a;margin-bottom:12px;">
+            La materia prima cumple los parámetros establecidos en el maestro vigente.
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+            <div style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:10px;text-align:center;">
+              <div style="font-size:10px;color:#6b7280;margin-bottom:2px;">R% Carne</div>
+              <div style="font-size:18px;font-weight:800;color:#16a34a;">${fmtNum(rend, 2)}%</div>
+            </div>
+            <div style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:10px;text-align:center;">
+              <div style="font-size:10px;color:#6b7280;margin-bottom:2px;">U × Kg</div>
+              <div style="font-size:18px;font-weight:800;color:#16a34a;">${fmtNum(uxkg, 0)}</div>
+            </div>
+            <div style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:10px;text-align:center;">
+              <div style="font-size:10px;color:#6b7280;margin-bottom:2px;">% Rechazo</div>
+              <div style="font-size:18px;font-weight:800;color:#16a34a;">${pctRech}%</div>
+            </div>
+          </div>
+          ${auditCumpleHTML}
+        </div>`;
+    } else {
+      auditoriaHTML = `
+        <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px 18px;">
+          <div style="font-size:14px;font-weight:800;color:#991b1b;margin-bottom:6px;">
+            ❌ No clasifica en ninguna categoría del maestro vigente
+          </div>
+          ${auditNoClasificaHTML}
+          <div style="margin-top:14px;font-size:12px;color:#7f1d1d;background:#fff5f5;border:1px solid #fca5a5;border-radius:8px;padding:10px 12px;line-height:1.7;">
+            <strong>Recomendación:</strong> Revisar los parámetros fuera de rango indicados y evaluar una nueva toma de muestra antes de programar cosecha o tomar decisiones comerciales.
+          </div>
+        </div>`;
+    }
+    // Tabla de evaluación completa por clasificación (auditoría completa)
+    const evalHTML = evaluacionCriterios.length ? evaluacionCriterios.map(ev => `
       <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;">
-        <div style="width:22px;height:22px;border-radius:50%;background:${ev.cumple ? '#22c55e' : '#ef4444'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px;">${ev.cumple ? '✓' : '✗'}</div>
-        <div>
+        <div style="width:20px;height:20px;border-radius:50%;background:${ev.cumple ? '#22c55e' : '#ef4444'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">${ev.cumple ? '✓' : '✗'}</div>
+        <div style="flex:1;">
           <div style="font-size:13px;font-weight:700;color:#0f172a;">${ev.nombre}</div>
-          ${ev.razon ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">${ev.razon}</div>` : ''}
+          ${ev.razon
+            ? ev.razon.split(', ').map(r => {
+                const p = parsearFallo(r);
+                if (p && p.tipo === 'max') return `<div style="font-size:11px;color:#ef4444;margin-top:2px;">• ${p.param}: ${p.valor} — rango permitido: ${p.umbral}</div>`;
+                if (p && p.tipo === 'min') return `<div style="font-size:11px;color:#ef4444;margin-top:2px;">• ${p.param}: ${p.valor} — rango permitido: ${p.umbral}</div>`;
+                return `<div style="font-size:11px;color:#ef4444;margin-top:2px;">• ${r}</div>`;
+              }).join('')
+            : '<div style="font-size:11px;color:#22c55e;margin-top:2px;">Todos los parámetros dentro del rango establecido</div>'}
         </div>
       </div>`).join('') : '<div style="color:#94a3b8;font-size:13px;">Sin criterios configurados.</div>';
 
-    const html = `<!DOCTYPE html>
+    // --- Evidencias: SOLO fotos reales, NUNCA el logo ---
+    // Resolver nombre de ítem desde maestros.cats por catId
+    const catMap = {};
+    (maestros?.cats || []).forEach(c => { catMap[String(c._id)] = c.nombre || 'Ítem sin nombre'; });
+
+    const allPhotos = [];
+    const mCatsWeights = m.cats || {};
+
+    if (m.catDetails && typeof m.catDetails === 'object') {
+      Object.entries(m.catDetails).forEach(([catId, data]) => {
+        if (!data || !Array.isArray(data.photos)) return;
+        const nombreCat = catMap[catId] || data.nombre || 'Ítem sin nombre';
+        const pesoItem  = Number(mCatsWeights[catId]) || 0;
+        const pctItem   = total > 0 && pesoItem > 0 ? `${fmtNum((pesoItem / total) * 100, 1)}%` : null;
+        const sublabel  = pctItem ? `${nombreCat} — ${pctItem}` : nombreCat;
+        data.photos.forEach(p => {
+          const url = p?.url || p?.signedUrl;
+          // Excluir explícitamente cualquier URL que sea el logo corporativo
+          if (!url || url === logoUrl) return;
+          allPhotos.push({ url, label: sublabel });
+        });
+      });
+    }
+
+    if (Array.isArray(m.generalPhotos)) {
+      m.generalPhotos.forEach(p => {
+        const url = p?.url || p?.signedUrl;
+        if (!url || url === logoUrl) return;
+        allPhotos.push({ url, label: 'Evidencia general' });
+      });
+    }
+
+    const photosHTML = allPhotos.length > 0 ? `
+      <div class="section">
+        <div class="sec-title">Evidencias Fotográficas</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-top:10px;">
+          ${allPhotos.map(p => `
+            <div style="text-align:center;">
+              <img src="${p.url}" alt="Evidencia" style="width:100%;height:130px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;" />
+              <div style="font-size:11px;font-weight:600;color:#475569;margin-top:5px;">${p.label}</div>
+            </div>`).join('')}
+        </div>
+      </div>` : '';
+
+    const pdfFilename = `reporte-muestreo-${(m.proveedorNombre || m.proveedor || 'proveedor').replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${(m.centroCodigo || m.centro || 'centro').replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${fecha}.pdf`;
+    const muestreoId  = m._id || m.id || '';
+    const activeTenant = localStorage.getItem('selected_tenant_db') || '';
+    const reportUrl   = muestreoId 
+      ? `${appOrigin}/biomasa/muestreos?reporteId=${muestreoId}${activeTenant ? `&tenant=${activeTenant}` : ''}` 
+      : `${appOrigin}/biomasa/muestreos`;
+    const shareTitle  = `Informe de Muestreo — ${m.proveedorNombre || m.proveedor || 'Proveedor'} — ${fecha}`;
+    const shareText   = encodeURIComponent(`Muestreo MMPP\nProveedor: ${m.proveedorNombre || m.proveedor || '—'}\nCentro: ${m.centroCodigo || m.centro || '—'}\nFecha: ${fecha}\n\n${reportUrl}`);
+
+    return `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <title>Informe Muestreo — ${m.proveedorNombre || m.proveedor || ''}</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:Arial,Helvetica,sans-serif;color:#1e293b;padding:32px;font-size:14px;line-height:1.5}
-  h1{font-size:22px;font-weight:800;color:#0f766e;margin-bottom:4px}
-  .sub{font-size:13px;color:#64748b;margin-bottom:28px}
+  .header{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:2px solid #0f766e;margin-bottom:24px;}
+  .header-title{font-size:20px;font-weight:800;color:#0f172a;}
+  .header-sub{font-size:12px;color:#64748b;margin-top:2px;}
+  .meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:22px;}
+  .meta-item label{font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;display:block;margin-bottom:2px;}
+  .meta-item span{font-size:13px;font-weight:700;color:#0f172a;}
   .section{margin-bottom:22px}
   .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;color:#475569;letter-spacing:.06em;margin-bottom:10px;padding-bottom:5px;border-bottom:1.5px solid #e2e8f0}
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:4px}
-  .kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;text-align:center}
-  .kpi-label{font-size:11px;color:#64748b;margin-bottom:4px}
-  .kpi-val{font-size:22px;font-weight:800;color:#0f766e}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:4px}
+  .kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;text-align:center}
+  .kpi-label{font-size:10px;color:#64748b;margin-bottom:4px}
+  .kpi-val{font-size:20px;font-weight:800;color:#0f766e}
   .clas-box{border:2px solid #16a34a;border-radius:10px;padding:16px;text-align:center;background:#f0fdf4}
   .clas-box.fail{border-color:#ef4444;background:#fef2f2}
   .clas-label{font-size:11px;font-weight:700;text-transform:uppercase;color:#475569}
   .clas-val{font-size:26px;font-weight:800;color:#16a34a;margin-top:4px}
   .clas-val.fail{color:#ef4444}
   .rec-box{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7}
-  .footer{margin-top:32px;font-size:11px;color:#94a3b8;text-align:right;border-top:1px solid #e2e8f0;padding-top:10px}
-  @media print{body{padding:16px}.no-print{display:none}}
+  .footer{margin-top:32px;font-size:11px;color:#94a3b8;display:flex;justify-content:space-between;border-top:1px solid #e2e8f0;padding-top:10px;}
+  .no-print{display:flex}
+  @media print{body{padding:16px}.no-print{display:none!important}}
 </style>
 </head>
 <body>
-  <div class="no-print" style="background:#0f766e;color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
-    <span style="font-weight:700;">Informe de Muestreo MMPP — Vista preliminar</span>
-    <button onclick="window.print()" style="background:#fff;color:#0f766e;border:none;padding:6px 16px;border-radius:6px;font-weight:700;cursor:pointer;">Imprimir / Guardar PDF</button>
+  <div class="no-print" style="background:#0f766e;color:#fff;padding:10px 14px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span style="font-weight:700;font-size:13px;">Informe de Muestreo MMPP &mdash; Vista preliminar</span>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button onclick="window.print()" title="Imprime o guarda como PDF desde el navegador" style="background:#fff;color:#0f766e;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;">🖨️ Imprimir</button>
+      <button id="btnCopiarEnlace" title="Copia el enlace de este reporte al portapapeles" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.4);padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;">🔗 Copiar enlace</button>
+      <!-- PDF beta: oculto hasta resolver incrustación de evidencias -->
+      <button id="btn-download" onclick="descargarPDFReal()" style="display:none;"></button>
+    </div>
   </div>
-  <h1>Informe de Muestreo MMPP</h1>
-  <div class="sub">${m.proveedorNombre || m.proveedor || '—'} &nbsp;·&nbsp; Centro: ${m.centro || m.centroCodigo || '—'} &nbsp;·&nbsp; Línea: ${m.linea || '—'} &nbsp;·&nbsp; Fecha: ${fecha} &nbsp;·&nbsp; Responsable: ${m.responsable || m.responsablePG || '—'}</div>
+  <div id="reporte-muestreo">
+
+  <div class="header">
+    <div>${logoBlock}</div>
+    <div style="text-align:right;">
+      <div class="header-title">Informe de Muestreo MMPP</div>
+      <div class="header-sub">${empresaNom} · Generado el ${new Date().toLocaleDateString('es-CL')}</div>
+    </div>
+  </div>
+
+  <div class="meta-grid">
+    <div class="meta-item"><label>Proveedor</label><span>${m.proveedorNombre || m.proveedor || '—'}</span></div>
+    <div class="meta-item"><label>Centro</label><span>${m.centroCodigo || m.centro || '—'}</span></div>
+    <div class="meta-item"><label>Línea</label><span>${m.linea || '—'}</span></div>
+    <div class="meta-item"><label>Fecha</label><span>${fecha}</span></div>
+    <div class="meta-item"><label>Responsable</label><span>${m.responsable || '—'}</span></div>
+    <div class="meta-item"><label>Origen</label><span>${m.origen || '—'}</span></div>
+  </div>
+
   <div class="section">
     <div class="sec-title">Indicadores del Muestreo</div>
     <div class="kpis">
@@ -681,6 +981,7 @@ export default function Muestreos() {
       <div class="kpi"><div class="kpi-label">U × Kg (Calibre)</div><div class="kpi-val">${fmtNum(uxkg, 0)}</div></div>
       <div class="kpi"><div class="kpi-label">Procesable</div><div class="kpi-val">${pctProc}%</div></div>
       <div class="kpi"><div class="kpi-label">Rechazo</div><div class="kpi-val">${pctRech}%</div></div>
+      <div class="kpi"><div class="kpi-label">Defectos</div><div class="kpi-val">${pctDef}%</div></div>
     </div>
   </div>
   <div class="section">
@@ -696,21 +997,162 @@ export default function Muestreos() {
     ${evalHTML}
   </div>
   <div class="section">
-    <div class="sec-title">Recomendación</div>
-    <div class="rec-box">${recomendacion}</div>
+    <div class="sec-title">Resultado y Auditoría de Clasificación</div>
+    ${auditoriaHTML}
   </div>
-  <div class="footer">Generado el ${new Date().toLocaleDateString('es-CL')} · Sistema MMPP Abastecimiento</div>
+  ${photosHTML}
+  <div class="footer">
+    <span>${empresaNom}</span>
+    <span>Generado el ${new Date().toLocaleDateString('es-CL')} · Sistema MMPP Abastecimiento</span>
+  </div>
+  </div><!-- /#reporte-muestreo -->
+  <script>
+    // === Descargar PDF (beta) — las imágenes externas pueden no incrustarse ===
+    // TODO (Etapa 3): convertir imágenes a base64 antes de llamar html2pdf,
+    // o generar el PDF en el backend con Puppeteer para garantizar evidencias.
+    function descargarPDFReal() {
+      const btn = document.getElementById('btn-download');
+      if (btn) { btn.disabled = true; btn.textContent = 'Generando...'; }
+      const el = document.getElementById('reporte-muestreo');
+      const opt = {
+        margin: 8,
+        filename: '${pdfFilename}',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(el).save().then(() => {
+        if (btn) { btn.disabled = false; btn.textContent = '⬇️ PDF (beta)'; }
+      }).catch(() => {
+        if (btn) { btn.disabled = false; btn.textContent = '⬇️ PDF (beta)'; }
+        alert('No se pudo generar el PDF.\nUsa \"Imprimir\" como alternativa (Ctrl+P → Guardar como PDF).');
+      });
+    }
+  </script>
 </body>
 </html>`;
+  }, [user, maestros]);
 
-    const win = window.open('', '_blank', 'width=860,height=960');
-    if (!win) { 
-      addToast({ title: 'Bloqueo Detectado', message: 'Habilita ventanas emergentes para generar el informe', type: 'warning' });
-      return; 
+  const verReporte = useCallback(async (m) => {
+    const id = m._id || m.id;
+    try {
+      if (!id) return;
+
+      setIsLoadingDetails(true);
+      const detalle = await apiClient.get(`/muestreos/${id}`);
+      
+      const html = generarHTMLReporte(detalle);
+      if (!html) return;
+
+      const activeTenant = localStorage.getItem('selected_tenant_db') || '';
+      const publicBaseUrl = import.meta.env.VITE_PUBLIC_APP_URL || (window.location.hostname === 'localhost' ? 'https://mitynex.cl' : window.location.origin);
+      const reportUrl = `${publicBaseUrl}/biomasa/muestreos?reporteId=${id}${activeTenant ? `&tenant=${encodeURIComponent(activeTenant)}` : ''}`;
+
+      const win = window.open('', '_blank', 'width=900,height=1000');
+      if (!win) {
+        addToast({ title: 'Bloqueo Detectado', message: 'Habilita ventanas emergentes para generar el informe', type: 'warning' });
+        return;
+      }
+      
+      win.document.write(html);
+      win.document.close();
+
+      // Pequeño delay para asegurar que el DOM de la nueva ventana esté listo
+      setTimeout(() => {
+        const btn = win.document.getElementById('btnCopiarEnlace');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            const doc = win.document;
+            const textarea = doc.createElement('textarea');
+            textarea.value = reportUrl;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '0';
+            doc.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+
+            let ok = false;
+            try {
+              ok = doc.execCommand('copy');
+            } catch (e) {
+              ok = false;
+            }
+
+            doc.body.removeChild(textarea);
+
+            if (ok) {
+              const prevText = btn.innerText;
+              btn.innerText = '✅ Enlace copiado';
+              setTimeout(() => { btn.innerText = prevText; }, 2500);
+            } else {
+              win.prompt('Copia este enlace:', reportUrl);
+            }
+          });
+        }
+      }, 300);
+
+    } catch (err) {
+      console.error('Error al generar reporte:', err);
+      addToast({ title: 'Error', message: 'No se pudo cargar el detalle del reporte.', type: 'error' });
+    } finally {
+      setIsLoadingDetails(false);
     }
-    win.document.write(html);
-    win.document.close();
-  }, [addToast]);
+  }, [generarHTMLReporte, addToast]);
+
+  const descargarPDF = useCallback(async (m) => {
+    try {
+      const id = m._id || m.id;
+      if (!id) return;
+
+      setIsLoadingDetails(true);
+      const detalle = await apiClient.get(`/muestreos/${id}`);
+      
+      const html = generarHTMLReporte(detalle);
+      if (!html) return;
+
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const proveedor = (detalle.proveedorNombre || detalle.proveedor || 'proveedor').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      const centro = (detalle.centroCodigo || detalle.centro || 'centro').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      const fecha = (detalle.fecha || '').slice(0, 10);
+      link.href = url;
+      link.download = `reporte-muestreo-${proveedor}-${centro}-${fecha}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error al descargar reporte:', err);
+      addToast({ title: 'Error', message: 'No se pudo descargar el reporte.', type: 'error' });
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  }, [generarHTMLReporte, addToast]);
+
+  // Alias para compatibilidad con el modal de resultado
+  const generarInformePDF = verReporte;
+
+  const activeTenant = localStorage.getItem('selected_tenant_db');
+  const reporteId = new URLSearchParams(window.location.search).get('reporteId');
+  const isEnabled = !!activeTenant || !!reporteId;
+
+  if (!isEnabled) {
+    return (
+      <div className="muestreos-container am-p-24" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div className="am-text-center" style={{ maxWidth: '400px' }}>
+          <div style={{ background: '#f1f5f9', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <MapPin size={32} style={{ color: '#64748b' }} />
+          </div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Empresa no seleccionada</h2>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.6 }}>
+            Como administrador global, debes seleccionar una empresa en el panel superior para visualizar y gestionar sus registros de muestreo.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="muestreos-container am-p-24" style={{ animation: 'fadeIn 0.3s ease-out' }}>
@@ -782,7 +1224,7 @@ export default function Muestreos() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                          <button className="mx-action-btn print" title="Informe PDF" onClick={() => generarInformePDF(m)}><Printer size={14} /></button>
+                          <button className="mx-action-btn print" title="Ver reporte" onClick={() => verReporte(m)}><Printer size={14} /></button>
                           <button className="mx-action-btn edit" title="Editar" onClick={() => handleEdit(m)}><Edit size={14} /></button>
                           <button className="mx-action-btn delete" title="Eliminar" onClick={() => { setDeleteTarget(m); setDeleteOpen(true); }}><Trash2 size={14} /></button>
                         </div>
@@ -828,7 +1270,7 @@ export default function Muestreos() {
                           </td>
                           <td style={{ textAlign: 'right' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
-                              <button className="mx-action-btn print" style={{ width: '28px', height: '28px' }} title="Informe PDF" onClick={(e) => { e.stopPropagation(); generarInformePDF(m); }}><Printer size={12} /></button>
+                              <button className="mx-action-btn print" style={{ width: '28px', height: '28px' }} title="Ver reporte" onClick={(e) => { e.stopPropagation(); verReporte(m); }}><Printer size={12} /></button>
                               <button className="mx-action-btn edit" style={{ width: '28px', height: '28px', opacity: isLoadingDetails && editingId === (m._id || m.id) ? 0.5 : 1 }} title="Editar" disabled={isLoadingDetails} onClick={(e) => { e.stopPropagation(); if (!isLoadingDetails) handleEdit(m); }}><Edit size={12} /></button>
                               <button className="mx-action-btn delete" style={{ width: '28px', height: '28px' }} title="Eliminar" onClick={(e) => { e.stopPropagation(); setDeleteTarget(m); setDeleteOpen(true); }}><Trash2 size={12} /></button>
                             </div>

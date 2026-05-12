@@ -79,8 +79,8 @@ export default function Maestros() {
   });
 
   const TIPOS = [
-    { id: 'categoria-muestreo', label: 'Clasificación Producto', icon: Table },
-    { id: 'clasificacion_producto', label: 'Tipos de Producto', icon: Award },
+    { id: 'categoria-muestreo', label: 'Categorías de Muestreo', icon: Table },
+    { id: 'clasificacion_producto', label: 'Reglas de Calidad', icon: Award },
     { id: 'proximo-paso', label: 'Próximos Pasos', icon: CheckSquare },
     { id: 'condicion_negociacion', label: 'Acuerdo de Tratos', icon: ClipboardList },
     { id: 'responsable', label: 'Responsables', icon: Users },
@@ -135,6 +135,32 @@ export default function Maestros() {
     ...PARAMS_FIJOS,
     ...catMuestreo.map((c) => ({ campo: 'cats', campoId: c._id, nombre: c.nombre, unidad: '%' })),
   ];
+
+  const activeTenant = localStorage.getItem('selected_tenant_db');
+
+  if (!activeTenant) {
+    return (
+      <div className="mx-page">
+        <header className="mx-hero">
+          <div className="mx-hero-content">
+            <p className="mx-eyebrow">Configuración · Parámetros</p>
+            <h1>Maestros del Sistema</h1>
+          </div>
+        </header>
+        <div className="mx-content-frame" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', background: 'white', borderRadius: '12px', marginTop: '24px' }}>
+          <div className="am-text-center" style={{ maxWidth: '400px', padding: '40px' }}>
+            <div style={{ background: '#f1f5f9', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <Settings2 size={32} style={{ color: '#64748b' }} />
+            </div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Empresa no seleccionada</h2>
+            <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.6 }}>
+              Para configurar categorías, reglas de calidad y otros maestros, primero debes seleccionar una empresa en el panel superior.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-page">
