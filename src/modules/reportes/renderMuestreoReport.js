@@ -21,20 +21,20 @@ export const generarHTMLReporte = (m, options = {}) => {
 
   const clasificaciones = Array.isArray(m.clasificaciones) ? m.clasificaciones : [];
   const evaluacionCriterios = Array.isArray(m.evaluacionCriterios) ? m.evaluacionCriterios : [];
-  const primary   = clasificaciones[0];
-  
+  const primary = clasificaciones[0];
+
   // Normalización de campos para soportar variaciones legacy o de hidratación
-  const rend      = Number(m.rendimiento ?? m.rendimientoPct ?? 0);
-  const uxkg      = Number(m.uxkg ?? m.uXKg ?? 0);
-  const total     = Number(m.total ?? 0);
-  const procesable= Number(m.procesable ?? 0);
-  const rechazos  = Number(m.rechazos ?? m.rechazo ?? 0);
-  const defectos  = Number(m.defectos ?? m.defecto ?? 0);
-  
-  const pctProc   = fmtNum(total > 0 ? (procesable / total) * 100 : 0, 1);
-  const pctRech   = fmtNum(total > 0 ? (rechazos   / total) * 100 : 0, 1);
-  const pctDef    = fmtNum(total > 0 ? (defectos   / total) * 100 : 0, 1);
-  const fecha     = (m.fecha || new Date().toISOString()).slice(0, 10);
+  const rend = Number(m.rendimiento ?? m.rendimientoPct ?? 0);
+  const uxkg = Number(m.uxkg ?? m.uXKg ?? 0);
+  const total = Number(m.total ?? 0);
+  const procesable = Number(m.procesable ?? 0);
+  const rechazos = Number(m.rechazos ?? m.rechazo ?? 0);
+  const defectos = Number(m.defectos ?? m.defecto ?? 0);
+
+  const pctProc = fmtNum(total > 0 ? (procesable / total) * 100 : 0, 1);
+  const pctRech = fmtNum(total > 0 ? (rechazos / total) * 100 : 0, 1);
+  const pctDef = fmtNum(total > 0 ? (defectos / total) * 100 : 0, 1);
+  const fecha = (m.fecha || new Date().toISOString()).slice(0, 10);
 
   const logoBlock = logoUrl
     ? `<img src="${logoUrl}" alt="${empresaNom}" style="height:52px;max-width:180px;object-fit:contain;" />`
@@ -44,8 +44,8 @@ export const generarHTMLReporte = (m, options = {}) => {
   const parsearFallo = (razon) => {
     if (!razon) return null;
     const mExcede = razon.match(/^(.+?)\s*\((.+?)\)\s+excede el m[áa]ximo\s*\((.+?)\)$/i);
-    const mMenor  = razon.match(/^(.+?)\s*\((.+?)\)\s+es menor al m[íi]nimo\s*\((.+?)\)$/i);
-    
+    const mMenor = razon.match(/^(.+?)\s*\((.+?)\)\s+es menor al m[íi]nimo\s*\((.+?)\)$/i);
+
     let p, v, t, u;
     if (mExcede) { p = mExcede[1].trim(); v = mExcede[2]; t = 'max'; u = mExcede[3]; }
     else if (mMenor) { p = mMenor[1].trim(); v = mMenor[2]; t = 'min'; u = mMenor[3]; }
@@ -73,10 +73,10 @@ export const generarHTMLReporte = (m, options = {}) => {
   if (fallosUnicos.length > 0) {
     const filas = fallosUnicos.map(f => {
       let desc = '';
-      if (f.tipo === 'max' && f.valor)        desc = `${f.valor} — rango permitido: <strong>${f.umbral}</strong>`;
-      else if (f.tipo === 'min' && f.valor)   desc = `${f.valor} — rango permitido: <strong>${f.umbral}</strong>`;
-      else if (f.valor)                        desc = `valor actual: ${f.valor}`;
-      else                                     desc = f.param;
+      if (f.tipo === 'max' && f.valor) desc = `${f.valor} — rango permitido: <strong>${f.umbral}</strong>`;
+      else if (f.tipo === 'min' && f.valor) desc = `${f.valor} — rango permitido: <strong>${f.umbral}</strong>`;
+      else if (f.valor) desc = `valor actual: ${f.valor}`;
+      else desc = f.param;
       return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #fee2e2;">
         <div style="min-width:14px;height:14px;border-radius:50%;background:#ef4444;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0;margin-top:2px;">✗</div>
         <div style="font-size:12px;color:#7f1d1d;line-height:1.5;"><strong>${f.param}</strong> — ${desc}</div>
@@ -162,12 +162,12 @@ export const generarHTMLReporte = (m, options = {}) => {
     Object.entries(m.catDetails).forEach(([catId, data]) => {
       if (!data?.photos) return;
       // Prioridad: 1. data.nombre (backend), 2. maestros (frontend), 3. emergencyMap (hardcoded), 4. fallback 'Ítem'
-      const nombreCat = (data.nombre && data.nombre !== 'Ítem') 
-        ? data.nombre 
+      const nombreCat = (data.nombre && data.nombre !== 'Ítem')
+        ? data.nombre
         : (catMap[catId] || emergencyMap[catId] || 'Ítem');
-      const pesoItem  = Number(m.cats?.[catId]) || 0;
-      const pctItem   = total > 0 && pesoItem > 0 ? `${fmtNum((pesoItem / total) * 100, 1)}%` : null;
-      const label     = pctItem ? `${nombreCat} — ${pctItem}` : nombreCat;
+      const pesoItem = Number(m.cats?.[catId]) || 0;
+      const pctItem = total > 0 && pesoItem > 0 ? `${fmtNum((pesoItem / total) * 100, 1)}%` : null;
+      const label = pctItem ? `${nombreCat} — ${pctItem}` : nombreCat;
       const photos = Array.isArray(data.photos) ? data.photos : [];
       photos.forEach(p => {
         const url = p.url || p.signedUrl;
@@ -298,19 +298,24 @@ export const generarHTMLReporte = (m, options = {}) => {
     ${evalHTML}
   </div>
 
-  <!-- DESGLOSE DE CALIDAD (SÓLO ÍTEMS PRESENTES) -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+  <!-- Desglose de Calidad Detallado -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;">
     <!-- Columna Procesables -->
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;">
       <div style="font-size:10px;font-weight:800;color:#166534;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #bbf7d0;padding-bottom:4px;">Detalle Procesables</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
-        ${Object.values(m.catDetails || {})
-          .filter(c => (c.tipo === 'PROCESABLE' || c.tipo === 'procesable') && (c.valor > 0))
-          .map(c => `
-          <tr>
-            <td style="padding:3px 0;color:#1e293b;">${c.nombre}</td>
-            <td style="padding:3px 0;text-align:right;font-weight:700;color:#166534;">${fmtNum(c.valor, 1)}%</td>
-          </tr>`).join('') || '<tr><td colspan="2" style="font-style:italic;color:#94a3b8;font-size:11px;">Sin datos presentes</td></tr>'}
+        ${(() => {
+          const totalPeso = Number(m.total) || 1;
+          const items = Object.entries(m.catDetails || {}).filter(([cid, d]) => {
+            const t = String(d?.tipo || d?.tipoCat || '').toLowerCase();
+            const val = Number(d?.valor || (m.cats instanceof Map ? m.cats.get(cid) : m.cats?.[cid]) || 0);
+            return t === 'procesable' && val > 0;
+          });
+          return items.map(([cid, d]) => {
+            const porc = d?.porcentaje || d?.porc || ((Number(d?.valor || m.cats?.[cid] || 0) / totalPeso) * 100);
+            return `<tr><td style="padding:3px 0;color:#1e293b;">${d?.nombre || 'Procesable'}</td><td style="padding:3px 0;text-align:right;font-weight:700;color:#166534;">${fmtNum(porc, 1)}%</td></tr>`;
+          }).join('') || '<tr><td colspan="2" style="font-style:italic;color:#94a3b8;font-size:11px;">Sin datos</td></tr>';
+        })()}
       </table>
     </div>
 
@@ -318,13 +323,37 @@ export const generarHTMLReporte = (m, options = {}) => {
     <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;">
       <div style="font-size:10px;font-weight:800;color:#991b1b;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #fecaca;padding-bottom:4px;">Detalle Rechazos</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
-        ${Object.values(m.catDetails || {})
-          .filter(c => (c.tipo === 'RECHAZO' || c.tipo === 'rechazo') && (c.valor > 0))
-          .map(c => `
-          <tr>
-            <td style="padding:3px 0;color:#1e293b;">${c.nombre}</td>
-            <td style="padding:3px 0;text-align:right;font-weight:700;color:#991b1b;">${fmtNum(c.valor, 1)}%</td>
-          </tr>`).join('') || '<tr><td colspan="2" style="font-style:italic;color:#94a3b8;font-size:11px;">Sin datos presentes</td></tr>'}
+        ${(() => {
+          const totalPeso = Number(m.total) || 1;
+          const items = Object.entries(m.catDetails || {}).filter(([cid, d]) => {
+            const t = String(d?.tipo || d?.tipoCat || '').toLowerCase();
+            const val = Number(d?.valor || (m.cats instanceof Map ? m.cats.get(cid) : m.cats?.[cid]) || 0);
+            return t === 'rechazo' && val > 0;
+          });
+          return items.map(([cid, d]) => {
+            const porc = d?.porcentaje || d?.porc || ((Number(d?.valor || m.cats?.[cid] || 0) / totalPeso) * 100);
+            return `<tr><td style="padding:3px 0;color:#1e293b;">${d?.nombre || 'Rechazo'}</td><td style="padding:3px 0;text-align:right;font-weight:700;color:#991b1b;">${fmtNum(porc, 1)}%</td></tr>`;
+          }).join('') || '<tr><td colspan="2" style="font-style:italic;color:#94a3b8;font-size:11px;">Sin datos</td></tr>';
+        })()}
+      </table>
+    </div>
+
+    <!-- Columna Defectos -->
+    <div style="background:#fffbeb;border:1px solid #fef3c7;border-radius:10px;padding:12px;">
+      <div style="font-size:10px;font-weight:800;color:#92400e;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #fef3c7;padding-bottom:4px;">Detalle Defectos</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        ${(() => {
+          const totalPeso = Number(m.total) || 1;
+          const items = Object.entries(m.catDetails || {}).filter(([cid, d]) => {
+            const t = String(d?.tipo || d?.tipoCat || '').toLowerCase();
+            const val = Number(d?.valor || (m.cats instanceof Map ? m.cats.get(cid) : m.cats?.[cid]) || 0);
+            return t === 'defecto' && val > 0;
+          });
+          return items.map(([cid, d]) => {
+            const porc = d?.porcentaje || d?.porc || ((Number(d?.valor || m.cats?.[cid] || 0) / totalPeso) * 100);
+            return `<tr><td style="padding:3px 0;color:#1e293b;">${d?.nombre || 'Defecto'}</td><td style="padding:3px 0;text-align:right;font-weight:700;color:#92400e;">${fmtNum(porc, 1)}%</td></tr>`;
+          }).join('') || '<tr><td colspan="2" style="font-style:italic;color:#94a3b8;font-size:11px;">Sin datos</td></tr>';
+        })()}
       </table>
     </div>
   </div>

@@ -30,6 +30,7 @@ const PARAMS_FIJOS = [
 export default function Maestros() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
   const [tipo, setTipo] = useState('categoria-muestreo');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
@@ -37,17 +38,43 @@ export default function Maestros() {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [modalParams, setModalParams] = useState([]);
 
+  // Prefetch de todas las categorías para carga instantánea
+  React.useEffect(() => {
+    const tiposArr = [
+      'categoria-muestreo', 
+      'regla_calidad', 
+      'proximo-paso', 
+      'condicion_negociacion', 
+      'responsable'
+    ];
+    tiposArr.forEach(t => {
+      queryClient.prefetchQuery({
+        queryKey: ['maestros', t],
+        queryFn: () => maestrosApi.getMaestros(t),
+        staleTime: 5 * 60 * 1000,
+      });
+    });
+  }, [queryClient]);
+
   const { data: maestros = [], isLoading: loading } = useQuery({
     queryKey: ['maestros', tipo],
     queryFn: () => maestrosApi.getMaestros(tipo),
+    staleTime: 5 * 60 * 1000,
   });
 
-  const maestrosList = Array.isArray(maestros) ? maestros : [];
+  // Filtro de búsqueda local (ultra rápido)
+  const maestrosList = React.useMemo(() => {
+    const list = Array.isArray(maestros) ? maestros : [];
+    if (!searchTerm) return list;
+    const s = searchTerm.toLowerCase();
+    return list.filter(m => m.nombre?.toLowerCase().includes(s));
+  }, [maestros, searchTerm]);
 
   const { data: catMuestreo = [] } = useQuery({
     queryKey: ['maestros', 'categoria-muestreo', 'activos'],
     queryFn: () => maestrosApi.getMaestrosActivos('categoria-muestreo'),
-    enabled: tipo === 'clasificacion_producto',
+    enabled: tipo === 'regla_calidad',
+    staleTime: 5 * 60 * 1000,
   });
 
   const saveMutation = useMutation({
@@ -80,7 +107,7 @@ export default function Maestros() {
 
   const TIPOS = [
     { id: 'categoria-muestreo', label: 'Categorías de Muestreo', icon: Table },
-    { id: 'clasificacion_producto', label: 'Reglas de Calidad', icon: Award },
+    { id: 'regla_calidad', label: 'Reglas de Calidad', icon: Award },
     { id: 'proximo-paso', label: 'Próximos Pasos', icon: CheckSquare },
     { id: 'condicion_negociacion', label: 'Acuerdo de Tratos', icon: ClipboardList },
     { id: 'responsable', label: 'Responsables', icon: Users },
@@ -118,7 +145,7 @@ export default function Maestros() {
     if (body.orden !== undefined) body.orden = Number(body.orden);
     if (body.requerido !== undefined) body.requerido = formData.get('requerido') === 'on';
 
-    if (tipo === 'clasificacion_producto') {
+    if (tipo === 'regla_calidad') {
       body.parametros = modalParams;
       body.prioridad = { Entero: 1, 'Media Concha': 2, Carne: 3 }[body.tipoPrincipal] || 99;
     }
@@ -195,7 +222,12 @@ export default function Maestros() {
           </div>
           <div className="mx-search-box" style={{ maxWidth: '300px' }}>
             <Search size={18} />
-            <input type="text" placeholder="Filtrar registros..." />
+            <input 
+              type="text" 
+              placeholder="Filtrar registros..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
 
@@ -206,7 +238,7 @@ export default function Maestros() {
                 <tr>
                   <th style={{ width: '30%' }}>Nombre / Valor</th>
                   {tipo === 'categoria-muestreo' && <th>Tipo Categoría</th>}
-                  {tipo === 'clasificacion_producto' && <th>Configuración</th>}
+                  {tipo === 'regla_calidad' && <th>Configuración</th>}
                   {tipo === 'condicion_negociacion' && <th>Tipo Valor</th>}
                   {tipo !== 'responsable' && <th style={{ width: '80px', textAlign: 'center' }}>Orden</th>}
                   <th style={{ width: '120px' }}>Estado</th>
@@ -249,7 +281,7 @@ export default function Maestros() {
                           </span>
                         </td>
                       )}
-                      {tipo === 'clasificacion_producto' && (
+                      {tipo === 'regla_calidad' && (
                         <td>
                           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                             {item.parametros?.map((p, i) => (
@@ -268,7 +300,7 @@ export default function Maestros() {
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <div className="mx-table-actions-cell" style={{ justifyContent: 'flex-end' }}>
+                        <div className="mx-table-actions-cell" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
                           <button className="mx-action-btn edit" onClick={() => handleEdit(item)}><Edit size={14} /></button>
                           <button className="mx-action-btn delete" onClick={() => askDelete(item)}><Trash2 size={14} /></button>
                         </div>
@@ -284,7 +316,7 @@ export default function Maestros() {
 
       {isModalOpen && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: tipo === 'clasificacion_producto' ? '650px' : '500px' }}>
+          <div className="mx-modal" style={{ maxWidth: tipo === 'regla_calidad' ? '650px' : '500px' }}>
             <div className="mx-modal-header">
               <h2>{editingItem ? 'Editar' : 'Nuevo'} Registro</h2>
               <button type="button" className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
@@ -307,7 +339,7 @@ export default function Maestros() {
                   </div>
                 )}
 
-                {tipo === 'clasificacion_producto' && (
+                {tipo === 'regla_calidad' && (
                   <>
                     <div className="mx-form-group">
                       <label className="mx-label">Tipo Principal</label>

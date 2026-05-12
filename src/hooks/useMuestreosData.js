@@ -27,8 +27,8 @@ export function useMuestreosData(viewMode) {
   });
 
   const { data: rulesRes } = useQuery({
-    queryKey: ['maestros', 'clasificacion_producto'],
-    queryFn: () => apiClient.get('/maestros?tipo=clasificacion_producto&soloActivos=true'),
+    queryKey: ['maestros', 'regla_calidad'],
+    queryFn: () => apiClient.get('/maestros?tipo=regla_calidad&soloActivos=true'),
     staleTime: 15 * 60 * 1000,
     enabled: isEnabled,
   });
