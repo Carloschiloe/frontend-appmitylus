@@ -269,13 +269,16 @@ export const generarHTMLReporte = (m, options = {}) => {
   </div>
 
   <div class="section">
-    <div class="sec-title">Indicadores del Muestreo</div>
-    <div class="kpis">
-      <div class="kpi"><div class="kpi-label">R% Carne</div><div class="kpi-val">${fmtNum(rend, 2)}%</div></div>
-      <div class="kpi"><div class="kpi-label">U × Kg (Calibre)</div><div class="kpi-val">${fmtNum(uxkg, 0)}</div></div>
-      <div class="kpi"><div class="kpi-label">Procesable</div><div class="kpi-val">${pctProc}%</div></div>
-      <div class="kpi"><div class="kpi-label">Rechazo</div><div class="kpi-val">${pctRech}%</div></div>
-      <div class="kpi"><div class="kpi-label">Defectos</div><div class="kpi-val">${pctDef}%</div></div>
+    <div class="sec-title">Indicadores Técnicos de la Materia Prima</div>
+    <div class="kpis" style="grid-template-columns: repeat(2, 1fr);">
+      <div class="kpi" style="background:#f0f9ff; border-color:#bae6fd;">
+        <div class="kpi-label" style="color:#0369a1;">Rendimiento (R% Carne)</div>
+        <div class="kpi-val" style="color:#0369a1;">${fmtNum(rend, 2)}%</div>
+      </div>
+      <div class="kpi" style="background:#f0fdf4; border-color:#bbf7d0;">
+        <div class="kpi-label" style="color:#15803d;">U × Kg (Calibre)</div>
+        <div class="kpi-val" style="color:#15803d;">${fmtNum(uxkg, 0)}</div>
+      </div>
     </div>
   </div>
 
@@ -302,7 +305,10 @@ export const generarHTMLReporte = (m, options = {}) => {
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;">
     <!-- Columna Procesables -->
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;">
-      <div style="font-size:10px;font-weight:800;color:#166534;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #bbf7d0;padding-bottom:4px;">Detalle Procesables</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:1px solid #bbf7d0;padding-bottom:4px;">
+        <div style="font-size:10px;font-weight:800;color:#166534;text-transform:uppercase;">Detalle Procesables</div>
+        <div style="font-size:12px;font-weight:800;color:#166534;">${pctProc}%</div>
+      </div>
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
         ${(() => {
           const totalPeso = Number(m.total) || 1;
@@ -321,7 +327,10 @@ export const generarHTMLReporte = (m, options = {}) => {
 
     <!-- Columna Rechazos -->
     <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;">
-      <div style="font-size:10px;font-weight:800;color:#991b1b;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #fecaca;padding-bottom:4px;">Detalle Rechazos</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:1px solid #fecaca;padding-bottom:4px;">
+        <div style="font-size:10px;font-weight:800;color:#991b1b;text-transform:uppercase;">Detalle Rechazos</div>
+        <div style="font-size:12px;font-weight:800;color:#991b1b;">${pctRech}%</div>
+      </div>
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
         ${(() => {
           const totalPeso = Number(m.total) || 1;
@@ -340,7 +349,10 @@ export const generarHTMLReporte = (m, options = {}) => {
 
     <!-- Columna Defectos -->
     <div style="background:#fffbeb;border:1px solid #fef3c7;border-radius:10px;padding:12px;">
-      <div style="font-size:10px;font-weight:800;color:#92400e;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #fef3c7;padding-bottom:4px;">Detalle Defectos</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:1px solid #fef3c7;padding-bottom:4px;">
+        <div style="font-size:10px;font-weight:800;color:#92400e;text-transform:uppercase;">Detalle Defectos</div>
+        <div style="font-size:12px;font-weight:800;color:#92400e;">${pctDef}%</div>
+      </div>
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
         ${(() => {
           const totalPeso = Number(m.total) || 1;
