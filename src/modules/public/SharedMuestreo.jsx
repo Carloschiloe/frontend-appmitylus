@@ -11,27 +11,21 @@ const SharedMuestreo = () => {
   const [html, setHtml] = useState('');
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchHtml = async () => {
       try {
         setLoading(true);
-        const data = await apiClient.get(`/public/reportes/${token}`);
-        
-        const reportHtml = generarHTMLReporte(data, {
-          logoUrl: data.branding?.logo || '',
-          empresaNom: data.branding?.nombre || 'Mitynex',
-          isPublic: true, 
-          maestros: { cats: [] } 
-        });
-
-        setHtml(reportHtml);
+        // LEY ÚNICA: El servidor nos entrega el HTML ya cocinado con el archivo de la impresora
+        const response = await fetch(`/api/public/reportes/${token}`);
+        if (!response.ok) throw new Error('Reporte no encontrado');
+        const htmlContent = await response.text();
+        setHtml(htmlContent);
       } catch (err) {
-        console.error('Error fetching public report:', err);
-        setError(err.response?.data?.message || 'No se pudo cargar el reporte. El enlace podría haber expirado o ser inválido.');
+        setError('No se pudo cargar el reporte.');
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchHtml();
   }, [token]);
 
   if (loading) {

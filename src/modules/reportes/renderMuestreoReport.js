@@ -298,6 +298,37 @@ export const generarHTMLReporte = (m, options = {}) => {
     ${evalHTML}
   </div>
 
+  <!-- DESGLOSE DE CALIDAD (SÓLO ÍTEMS PRESENTES) -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+    <!-- Columna Procesables -->
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;">
+      <div style="font-size:10px;font-weight:800;color:#166534;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #bbf7d0;padding-bottom:4px;">Detalle Procesables</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        ${Object.values(m.catDetails || {})
+          .filter(c => (c.tipo === 'PROCESABLE' || c.tipo === 'procesable') && (c.valor > 0))
+          .map(c => `
+          <tr>
+            <td style="padding:3px 0;color:#1e293b;">${c.nombre}</td>
+            <td style="padding:3px 0;text-align:right;font-weight:700;color:#166534;">${fmtNum(c.valor, 1)}%</td>
+          </tr>`).join('') || '<tr><td colspan="2" style="font-style:italic;color:#94a3b8;font-size:11px;">Sin datos presentes</td></tr>'}
+      </table>
+    </div>
+
+    <!-- Columna Rechazos -->
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;">
+      <div style="font-size:10px;font-weight:800;color:#991b1b;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #fecaca;padding-bottom:4px;">Detalle Rechazos</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        ${Object.values(m.catDetails || {})
+          .filter(c => (c.tipo === 'RECHAZO' || c.tipo === 'rechazo') && (c.valor > 0))
+          .map(c => `
+          <tr>
+            <td style="padding:3px 0;color:#1e293b;">${c.nombre}</td>
+            <td style="padding:3px 0;text-align:right;font-weight:700;color:#991b1b;">${fmtNum(c.valor, 1)}%</td>
+          </tr>`).join('') || '<tr><td colspan="2" style="font-style:italic;color:#94a3b8;font-size:11px;">Sin datos presentes</td></tr>'}
+      </table>
+    </div>
+  </div>
+
   ${photosHTML}
 
   <div class="footer">
