@@ -9,7 +9,7 @@ export const generarHTMLReporte = (m, options = {}) => {
   const {
     logoUrl = '',
     empresaNom = 'Mitynex',
-    appOrigin = window.location.origin,
+    appOrigin = typeof window !== 'undefined' ? window.location.origin : '',
     isPublic = false,
     maestros = { cats: [] }
   } = options;
