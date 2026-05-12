@@ -14,24 +14,15 @@ const SharedMuestreo = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Obtener datos del reporte público
         const data = await apiClient.get(`/public/reportes/${token}`);
         
-        console.log('[DEBUG FRONTEND] Data recibida de la API:', {
-          id: data._id,
-          catDetailsCount: Object.keys(data.catDetails || {}).length,
-          branding: data.branding,
-          firstCat: Object.entries(data.catDetails || {})[0]?.[1]
-        });
-
         const reportHtml = generarHTMLReporte(data, {
           logoUrl: data.branding?.logo || '',
           empresaNom: data.branding?.nombre || 'Mitynex',
-          isPublic: false, 
+          isPublic: true, 
           maestros: { cats: [] } 
         });
 
-        console.log('[DEBUG FRONTEND] HTML generado (primeros 500 chars):', reportHtml.substring(0, 500));
         setHtml(reportHtml);
       } catch (err) {
         console.error('Error fetching public report:', err);
