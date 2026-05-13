@@ -265,15 +265,16 @@ export default function Tratos() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const { data: centrosRaw, isLoading: loadingCentros } = useCentros({ enabled: isModalOpen });
-  const { data: contactosRaw, isLoading: loadingContactos } = useContactos({ conEmpresa: 1 }, { enabled: isModalOpen });
+  const isCreatingTrato = isModalOpen && !editingId;
+  const { data: centrosRaw, isLoading: loadingCentros } = useCentros({ enabled: isCreatingTrato });
+  const { data: contactosRaw, isLoading: loadingContactos } = useContactos({ conEmpresa: 1 }, { enabled: isCreatingTrato });
 
   const providers = useMemo(() => {
-    if (!isModalOpen) return [];
+    if (!isCreatingTrato) return [];
     const centros = Array.isArray(centrosRaw) ? centrosRaw : (centrosRaw?.items || []);
     const contactos = Array.isArray(contactosRaw) ? contactosRaw : (contactosRaw?.items || []);
     return buildProviderDirectory(centros, contactos);
-  }, [isModalOpen, centrosRaw, contactosRaw]);
+  }, [isCreatingTrato, centrosRaw, contactosRaw]);
 
   const loadingProviders = loadingCentros || loadingContactos;
 
@@ -585,46 +586,58 @@ export default function Tratos() {
               <div className="mx-modal-body">
                 <div className="mx-form-group">
                   <label className="mx-label">Proveedor</label>
-                  <div className="tratos-provider-search">
-                    <Search size={18} className="tratos-search-icon" />
-                    <input
-                      type="text"
-                      placeholder="Buscar empresa, comuna o contacto..."
-                      value={providerSearch}
-                      onChange={(e) => {
-                        const nextValue = e.target.value;
-                        setProviderSearch(nextValue);
-                        setForm({ ...form, proveedorNombre: nextValue });
-                        if (selectedProvider && nextValue.trim() !== (selectedProvider.proveedorNombre || '').trim()) {
-                          setSelectedProvider(null);
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className="tratos-provider-results">
-                    {loadingProviders ? (
-                      <div className="gs-empty-inline">Cargando proveedores...</div>
-                    ) : filteredProviders.length === 0 ? (
-                      <div className="gs-empty-inline">No encontramos coincidencias en el directorio.</div>
-                    ) : (
-                      filteredProviders.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          className={`tratos-provider-option ${selectedProvider?.id === item.id ? 'is-selected' : ''}`}
-                          onClick={() => handleSelectProvider(item)}
-                        >
-                          <strong>{item.proveedorNombre || 'Proveedor'}</strong>
-                          <span>
-                            {item.contactoNombre || 'Primer contacto'}
-                            {item.contactoTelefono ? ` - ${item.contactoTelefono}` : ''}
-                            {item.comuna ? ` - ${item.comuna}` : ''}
-                            {item.centros ? ` - ${item.centros} centro${item.centros > 1 ? 's' : ''}` : ''}
-                          </span>
-                        </button>
-                      ))
-                    )}
-                  </div>
+                  {editingId ? (
+                    <div className="tratos-provider-readonly">
+                      <strong>{form.proveedorNombre || 'Proveedor sin nombre'}</strong>
+                      <span>
+                        {selectedProvider?.contactoNombre || 'Proveedor ya asociado'}
+                        {selectedProvider?.comuna ? ` - ${selectedProvider.comuna}` : ''}
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="tratos-provider-search">
+                        <Search size={18} className="tratos-search-icon" />
+                        <input
+                          type="text"
+                          placeholder="Buscar empresa, comuna o contacto..."
+                          value={providerSearch}
+                          onChange={(e) => {
+                            const nextValue = e.target.value;
+                            setProviderSearch(nextValue);
+                            setForm({ ...form, proveedorNombre: nextValue });
+                            if (selectedProvider && nextValue.trim() !== (selectedProvider.proveedorNombre || '').trim()) {
+                              setSelectedProvider(null);
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="tratos-provider-results">
+                        {loadingProviders ? (
+                          <div className="gs-empty-inline">Cargando proveedores...</div>
+                        ) : filteredProviders.length === 0 ? (
+                          <div className="gs-empty-inline">No encontramos coincidencias en el directorio.</div>
+                        ) : (
+                          filteredProviders.map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className={`tratos-provider-option ${selectedProvider?.id === item.id ? 'is-selected' : ''}`}
+                              onClick={() => handleSelectProvider(item)}
+                            >
+                              <strong>{item.proveedorNombre || 'Proveedor'}</strong>
+                              <span>
+                                {item.contactoNombre || 'Primer contacto'}
+                                {item.contactoTelefono ? ` - ${item.contactoTelefono}` : ''}
+                                {item.comuna ? ` - ${item.comuna}` : ''}
+                                {item.centros ? ` - ${item.centros} centro${item.centros > 1 ? 's' : ''}` : ''}
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="mx-form-group">
                   <label className="mx-label">Tons Acordadas</label>
