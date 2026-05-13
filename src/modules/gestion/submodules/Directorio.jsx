@@ -229,6 +229,8 @@ export default function Directorio() {
     };
   }, [centrosRaw, contactosRaw, oportunidadesRaw, interaccionesRaw]);
 
+  const [detailModal, setDetailModal] = useState({ open: false, provider: null });
+
   useEffect(() => {
     if (!queryFromUrl) return;
     setSearchTerm((prev) => prev || queryFromUrl);
@@ -630,35 +632,59 @@ export default function Directorio() {
                       </td>
 
                       <td>
-                        <div style={{ fontWeight: 600, color: 'var(--color-text)' }}>
+                        <div 
+                          style={{ 
+                            fontWeight: 600, 
+                            color: 'var(--color-text)', 
+                            fontSize: '0.85rem',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            lineHeight: '1.4'
+                          }}
+                          title={provider.ultimaInteraccionResumen}
+                        >
                           {provider.ultimaInteraccionResumen || 'Sin interaccion registrada'}
                         </div>
-                        <div style={{ marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.82rem' }}>
+                        <div style={{ marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.75rem' }}>
                           {provider.ultimaInteraccionFecha ? `${formatShortDate(provider.ultimaInteraccionFecha)} · ${formatDaysAgo(provider.ultimaInteraccionFecha)}` : 'Aún sin actividad'}
                         </div>
-                        {provider.ultimoResponsable ? (
-                          <div style={{ marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.82rem' }}>
-                            Responsable: {provider.ultimoResponsable}
-                          </div>
-                        ) : null}
                       </td>
 
                       <td>
-                        <div style={{ fontWeight: 600, color: 'var(--color-text)' }}>
+                        <div 
+                          style={{ 
+                            fontWeight: 600, 
+                            color: 'var(--color-text)', 
+                            fontSize: '0.85rem',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            lineHeight: '1.4'
+                          }}
+                          title={provider.proximaAccion}
+                        >
                           {provider.proximaAccion || 'Sin accion definida'}
                         </div>
-                        <div style={{ marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.82rem' }}>
+                        <div style={{ marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.75rem' }}>
                           {provider.fechaProximaAccion ? formatShortDate(provider.fechaProximaAccion) : 'Sin fecha programada'}
                         </div>
                       </td>
 
                       <td style={{ textAlign: 'right' }}>
                         <div className="mx-table-actions-cell" style={{ display: 'inline-flex' }}>
+                          <button 
+                            className="mx-action-btn" 
+                            title="Ver Detalles" 
+                            onClick={() => setDetailModal({ open: true, provider })}
+                            style={{ color: 'var(--color-primary)' }}
+                          >
+                            <ExternalLink size={14} />
+                          </button>
                           <button className="mx-action-btn edit" title="Editar" onClick={() => openEditModal(provider)}>
                             <Edit size={14} />
-                          </button>
-                          <button className="mx-action-btn" title="Ver centros" onClick={() => openProviderCenters(provider)}>
-                            <ExternalLink size={14} />
                           </button>
                         </div>
                       </td>
@@ -891,12 +917,81 @@ export default function Directorio() {
         </div>
        )}
 
-       <ConfirmDeleteModal
-         isOpen={Boolean(confirmDeleteContact)}
-         onClose={() => setConfirmDeleteContact(null)}
-         onConfirm={handleDeleteContact}
-         itemName={confirmDeleteContact?.nombre || confirmDeleteContact?.contactoNombre || 'este contacto'}
-       />
+      {/* Modal de Detalle Moderno */}
+      {detailModal.open && detailModal.provider && (
+        <div className="mx-modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="mx-modal" style={{ maxWidth: '600px', width: '90%' }}>
+            <div className="mx-modal-header" style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Building2 size={24} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>{detailModal.provider.nombre}</h2>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}>{detailModal.provider.comuna} · {detailModal.provider.centros} centros</div>
+                </div>
+              </div>
+              <button type="button" className="mx-btn-icon" onClick={() => setDetailModal({ open: false, provider: null })}><X size={20} /></button>
+            </div>
+
+            <div className="mx-modal-body" style={{ padding: '24px 0' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                  <div className="mx-eyebrow" style={{ marginBottom: '8px' }}>Estado Comercial</div>
+                  <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{detailModal.provider.seguimientoEstado?.toUpperCase() || 'SIN SEGUIMIENTO'}</div>
+                  {detailModal.provider.estadoComercial && <div style={{ fontSize: '0.85rem', marginTop: '4px', color: '#64748b' }}>{detailModal.provider.estadoComercial}</div>}
+                </div>
+                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                  <div className="mx-eyebrow" style={{ marginBottom: '8px' }}>Contacto Principal</div>
+                  <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{detailModal.provider.contactoPrincipal}</div>
+                  <div style={{ fontSize: '0.85rem', marginTop: '4px', color: '#64748b' }}>{detailModal.provider.contactoTelefono || 'Sin teléfono'}</div>
+                </div>
+              </div>
+
+              <div style={{ padding: '0 4px' }}>
+                <h3 style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#475569', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Clock3 size={16} /> Última Actividad Registrada
+                </h3>
+                
+                <div style={{ borderLeft: '2px solid #e2e8f0', marginLeft: '8px', paddingLeft: '20px', position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '-6px', top: '0', width: '10px', height: '10px', borderRadius: '50%', background: 'var(--color-primary)' }}></div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '6px' }}>{detailModal.provider.ultimaInteraccionFecha ? formatShortDate(detailModal.provider.ultimaInteraccionFecha) : 'Sin fecha'}</div>
+                  <div style={{ background: '#fff', border: '1.5px solid #f1f5f9', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                    <p style={{ margin: 0, color: 'var(--color-text)', lineHeight: '1.6', fontSize: '0.95rem' }}>
+                      {detailModal.provider.ultimaInteraccionResumen || 'No hay notas registradas para este proveedor.'}
+                    </p>
+                  </div>
+                </div>
+
+                {detailModal.provider.proximaAccion && (
+                  <div style={{ marginTop: '32px', borderLeft: '2px dashed #cbd5e1', marginLeft: '8px', paddingLeft: '20px', position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: '-6px', top: '0', width: '10px', height: '10px', borderRadius: '50%', background: '#94a3b8' }}></div>
+                    <div className="mx-eyebrow" style={{ color: '#94a3b8', marginBottom: '6px' }}>Próxima Acción Programada</div>
+                    <div style={{ fontWeight: 600, color: 'var(--color-text)' }}>{detailModal.provider.proximaAccion}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', marginTop: '4px' }}>{formatShortDate(detailModal.provider.fechaProximaAccion)}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mx-modal-footer" style={{ borderTop: '1px solid #f1f5f9', marginTop: '20px', display: 'flex', gap: '12px' }}>
+              <button type="button" className="mx-btn mx-btn-outline" style={{ flex: 1 }} onClick={() => openProviderCenters(detailModal.provider)}>
+                <ExternalLink size={16} /> Ver Centros
+              </button>
+              <button type="button" className="mx-btn mx-btn-primary" style={{ flex: 1 }} onClick={() => { setDetailModal({ open: false, provider: null }); openEditModal(detailModal.provider); }}>
+                <Edit size={16} /> Editar Proveedor
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDeleteModal
+        isOpen={Boolean(confirmDeleteContact)}
+        onClose={() => setConfirmDeleteContact(null)}
+        onConfirm={handleDeleteContact}
+        itemName={confirmDeleteContact?.nombre || confirmDeleteContact?.contactoNombre || 'este contacto'}
+      />
 
      </div>
    );
