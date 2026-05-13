@@ -39,8 +39,7 @@ export default function Centros() {
         </div>
         <div className="mx-hero-actions">
           <button
-            className="mx-btn mx-btn-outline"
-            style={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
+            className="mx-btn mx-btn-outline centros-import-btn"
             onClick={notifyImportCentros}
           >
             <FileUp size={18} /> Importar

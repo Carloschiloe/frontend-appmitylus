@@ -1,28 +1,54 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Maximize, Ruler, X } from 'lucide-react';
-import { MapContainer, TileLayer, Polygon, Popup, Tooltip, useMap, useMapEvents } from 'react-leaflet';
+import { Maximize, Ruler, Search, Trash2, X } from 'lucide-react';
+import {
+  CircleMarker,
+  MapContainer,
+  Polygon,
+  Polyline,
+  Popup,
+  TileLayer,
+  Tooltip,
+  useMap,
+  useMapEvents,
+} from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
 import { getCentros } from '../../../api/api-centros';
+import { apiClient } from '../../../api/apiClient';
 
-const SPECIES_CONFIG = {
-  mitilidos: { label: 'En Cosecha', color: '#22c55e', keys: ['mitilidos', 'choritos', 'mejillon', 'moluscos'] },
-  semilla:   { label: 'Semilla',    color: '#3b82f6', keys: ['semilla', 'recoleccion'] },
-  otros:     { label: 'Otros',      color: '#94a3b8', keys: ['otros', 'varios'] }
+const CONCESSION_COLOR = '#22c55e';
+const HARVEST_COLOR = '#f59e0b';
+const SATELLITE_LAYER = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+
+const ALLOWED_SPECIES_KEYS = [
+  'mitilido',
+  'mitilidos',
+  'mitílido',
+  'chorito',
+  'mejillon',
+  'mejillón',
+  'molusco',
+  'alga',
+  'huiro',
+  'pelillo',
+  'luga',
+];
+
+const EXCLUDED_SPECIES_KEYS = ['salmon', 'salmón', 'salmonido', 'salmónido', 'trucha'];
+
+const LABEL_CONFIG = {
+  alta: { label: 'Alta', showZoom: 10, providerZoom: 13 },
+  media: { label: 'Media', showZoom: 12, providerZoom: 14 },
+  baja: { label: 'Baja', showZoom: 14, providerZoom: 99 },
 };
 
-const MAP_LAYERS = {
-  street: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  satellite: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-};
-
-// Componente para invalidar el tamaño del mapa cuando cambia la vista
 function InvalidateSize({ trigger }) {
   const map = useMap();
+
   useEffect(() => {
     const timer = setTimeout(() => {
       map.invalidateSize();
-    }, 150); // Reducido para mayor agilidad
+    }, 150);
     return () => clearTimeout(timer);
   }, [map, trigger]);
 
@@ -35,6 +61,66 @@ function InvalidateSize({ trigger }) {
   return null;
 }
 
+function getCentroText(centro) {
+  return [
+    centro.grupoEspecie,
+    ...(Array.isArray(centro.especies) ? centro.especies : []),
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+
+function isAllowedConcession(centro) {
+  const text = getCentroText(centro);
+  if (!text) return true;
+  if (EXCLUDED_SPECIES_KEYS.some((key) => text.includes(key))) return false;
+  return ALLOWED_SPECIES_KEYS.some((key) => text.includes(key));
+}
+
+function normalizeText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function startOfWeek(date = new Date()) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfWeek(date = new Date()) {
+  const d = startOfWeek(date);
+  d.setDate(d.getDate() + 6);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function isProgramActiveThisWeek(program) {
+  const from = program?.vigenciaDesde ? new Date(program.vigenciaDesde) : null;
+  const to = program?.vigenciaHasta ? new Date(program.vigenciaHasta) : null;
+  if (!from || !to || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return false;
+  const weekStart = startOfWeek();
+  const weekEnd = endOfWeek();
+  return from <= weekEnd && to >= weekStart;
+}
+
+function distanceMeters(a, b) {
+  const radius = 6371000;
+  const lat1 = a.lat * Math.PI / 180;
+  const lat2 = b.lat * Math.PI / 180;
+  const deltaLat = (b.lat - a.lat) * Math.PI / 180;
+  const deltaLng = (b.lng - a.lng) * Math.PI / 180;
+  const h = Math.sin(deltaLat / 2) ** 2
+    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
+  return 2 * radius * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+function formatDistance(meters) {
+  if (!meters) return '0 m';
+  if (meters < 1000) return `${Math.round(meters)} m`;
+  return `${(meters / 1000).toLocaleString('es-CL', { maximumFractionDigits: 2 })} km`;
+}
+
 function ZoomHandler({ setZoom }) {
   const map = useMapEvents({
     zoomend: () => {
@@ -44,14 +130,101 @@ function ZoomHandler({ setZoom }) {
   return null;
 }
 
+function MeasureLayer({ enabled, points, onAddPoint }) {
+  useMapEvents({
+    click: (event) => {
+      if (!enabled) return;
+      onAddPoint({ lat: event.latlng.lat, lng: event.latlng.lng });
+    },
+  });
+
+  if (!points.length) return null;
+
+  const positions = points.map((point) => [point.lat, point.lng]);
+
+  return (
+    <>
+      <Polyline positions={positions} pathOptions={{ color: '#f97316', weight: 3, dashArray: '6 6' }} />
+      {points.map((point, index) => (
+        <CircleMarker
+          key={`${point.lat}-${point.lng}-${index}`}
+          center={[point.lat, point.lng]}
+          radius={5}
+          pathOptions={{ color: '#f97316', fillColor: '#fff7ed', fillOpacity: 1, weight: 2 }}
+        />
+      ))}
+    </>
+  );
+}
+
+const CentroPolygon = memo(function CentroPolygon({
+  centro,
+  color,
+  labelLevel,
+  zoom,
+  isHarvestActive,
+  onSelect,
+}) {
+  const labelSettings = LABEL_CONFIG[labelLevel] || LABEL_CONFIG.media;
+  const showLabel = zoom >= labelSettings.showZoom;
+  const showProvider = zoom >= labelSettings.providerZoom;
+
+  return (
+    <Polygon
+      positions={centro.coords.map((point) => [point.lat, point.lng])}
+      pathOptions={{
+        color,
+        fillColor: color,
+        fillOpacity: isHarvestActive ? 0.34 : 0.22,
+        weight: isHarvestActive ? 3 : 2,
+      }}
+      eventHandlers={{
+        click: () => onSelect(centro),
+      }}
+    >
+      {showLabel && (
+        <Tooltip
+          key={`tooltip-${centro._id}-${labelLevel}-${showProvider}`}
+          permanent
+          direction="center"
+          className={`map-tooltip-custom label-${labelLevel}`}
+        >
+          <div className="tooltip-inner">
+            <div className="tooltip-code">{centro.code}</div>
+            {showProvider && <div className="tooltip-provider">{centro.proveedor}</div>}
+          </div>
+        </Tooltip>
+      )}
+      <Popup>
+        <div className="map-popup-content">
+          <h4 style={{ margin: '0 0 4px 0', color }}>{centro.proveedor}</h4>
+          <p style={{ margin: 0, fontSize: '0.85rem' }}>
+            <strong>Codigo:</strong> {centro.code}<br />
+            <strong>Hectareas:</strong> {centro.hectareas} ha<br />
+            <strong>Cosecha:</strong> {isHarvestActive ? 'Activa esta semana' : 'Sin programa activo'}
+          </p>
+          <button
+            className="mx-btn mx-btn-primary sm am-mt-8"
+            style={{ width: '100%', padding: '4px' }}
+            onClick={() => onSelect(centro)}
+          >
+            Ver Detalle
+          </button>
+        </div>
+      </Popup>
+    </Polygon>
+  );
+});
+
 export default function CentrosMap() {
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeSpecies, setActiveSpecies] = useState('all');
-  const [mapType, setMapType] = useState('street');
+  const [concessionFilter, setConcessionFilter] = useState('all');
+  const [labelLevel, setLabelLevel] = useState('media');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
+  const [measurePoints, setMeasurePoints] = useState([]);
   const [selectedCentro, setSelectedCentro] = useState(null);
   const [zoom, setZoom] = useState(9);
   const [mapInstance, setMapInstance] = useState(null);
@@ -61,9 +234,32 @@ export default function CentrosMap() {
     queryKey: ['centros', 'mapa'],
     queryFn: ({ signal }) => getCentros({}, { signal }),
     enabled: Boolean(selectedTenantDb),
+    staleTime: 60_000,
   });
 
-  // Efecto para manejar el scroll y sidebar en fullscreen
+  const { data: programasRes = { items: [] } } = useQuery({
+    queryKey: ['programa-cosecha', 'mapa-centros'],
+    queryFn: ({ signal }) => apiClient.get('/programa-cosecha?estado=activo', { signal }),
+    enabled: Boolean(selectedTenantDb),
+    staleTime: 60_000,
+  });
+
+  const harvestKeys = useMemo(() => {
+    const programas = Array.isArray(programasRes?.items) ? programasRes.items : [];
+    const activePrograms = programas.filter(isProgramActiveThisWeek);
+    return {
+      codes: new Set(activePrograms.map((program) => normalizeText(program.centroCodigo)).filter(Boolean)),
+      providers: new Set(activePrograms.map((program) => normalizeText(program.proveedorNombre)).filter(Boolean)),
+    };
+  }, [programasRes]);
+
+  const measuredDistance = useMemo(() => {
+    return measurePoints.reduce((total, point, index) => {
+      if (index === 0) return total;
+      return total + distanceMeters(measurePoints[index - 1], point);
+    }, 0);
+  }, [measurePoints]);
+
   useEffect(() => {
     if (isFullscreen) {
       document.body.style.overflow = 'hidden';
@@ -81,29 +277,51 @@ export default function CentrosMap() {
     };
   }, [isFullscreen]);
 
+  const allowedCentros = useMemo(() => {
+    return data.filter((centro) => {
+      const hasCoords = Array.isArray(centro.coords) && centro.coords.length >= 3;
+      return hasCoords && isAllowedConcession(centro);
+    });
+  }, [data]);
+
   const searchSuggestions = useMemo(() => {
     if (searchTerm.length < 2) return [];
-    return data.filter(c => 
-      c.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.proveedor?.toLowerCase().includes(searchTerm.toLowerCase())
+    const query = searchTerm.toLowerCase();
+    return allowedCentros.filter((centro) =>
+      centro.code?.toLowerCase().includes(query) ||
+      centro.proveedor?.toLowerCase().includes(query)
     ).slice(0, 8);
-  }, [data, searchTerm]);
+  }, [allowedCentros, searchTerm]);
 
-  const handleSelectSuggestion = (centro) => {
+  const handleSelectSuggestion = useCallback((centro) => {
     setSearchTerm(centro.code);
     setSelectedCentro(centro);
     setSearchParams({ centro: centro.code }, { replace: true });
     if (mapInstance && centro.coords?.length > 0) {
       const firstCoord = [centro.coords[0].lat, centro.coords[0].lng];
-      mapInstance.flyTo(firstCoord, 16, { duration: 0.8 }); // Animación más rápida
+      mapInstance.flyTo(firstCoord, 16, { duration: 0.8 });
     }
-  };
+  }, [mapInstance, setSearchParams]);
+
+  const handleToggleMeasure = useCallback(() => {
+    setIsMeasuring((value) => !value);
+    setMeasurePoints([]);
+  }, []);
+
+  const handleAddMeasurePoint = useCallback((point) => {
+    setMeasurePoints((points) => [...points, point]);
+  }, []);
+
+  const handleSelectCentro = useCallback((centro) => {
+    if (isMeasuring) return;
+    setSelectedCentro(centro);
+  }, [isMeasuring]);
 
   useEffect(() => {
     const centroCode = String(selectedCentroCode || '').trim().toUpperCase();
-    if (!centroCode || !data.length) return;
+    if (!centroCode || !allowedCentros.length) return;
 
-    const target = data.find((centro) => String(centro.code || '').trim().toUpperCase() === centroCode);
+    const target = allowedCentros.find((centro) => String(centro.code || '').trim().toUpperCase() === centroCode);
     if (!target) {
       setSearchTerm(centroCode);
       return;
@@ -115,52 +333,47 @@ export default function CentrosMap() {
       const firstCoord = [target.coords[0].lat, target.coords[0].lng];
       mapInstance.flyTo(firstCoord, 16, { duration: 0.8 });
     }
-  }, [data, mapInstance, selectedCentroCode]);
+  }, [allowedCentros, mapInstance, selectedCentroCode]);
 
   const mapCentros = useMemo(() => {
-    return data.filter(c => {
-      const hasCoords = Array.isArray(c.coords) && c.coords.length >= 3;
-      const matchesSearch = searchTerm === '' || 
-        c.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.proveedor?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const grupo = (c.grupoEspecie || '').toLowerCase();
-      const especies = Array.isArray(c.especies) ? c.especies.map(e => e.toLowerCase()) : [];
-      
-      let matchesSpecies = activeSpecies === 'all';
-      if (!matchesSpecies) {
-        const config = SPECIES_CONFIG[activeSpecies];
-        matchesSpecies = config.keys.some(k => grupo.includes(k) || especies.some(e => e.includes(k)));
-      }
+    const query = searchTerm.toLowerCase();
+    return allowedCentros.filter((centro) => {
+      const matchesSearch = !query ||
+        centro.code?.toLowerCase().includes(query) ||
+        centro.proveedor?.toLowerCase().includes(query);
 
-      return hasCoords && matchesSearch && matchesSpecies;
+      const inHarvest = harvestKeys.codes.has(normalizeText(centro.code))
+        || harvestKeys.providers.has(normalizeText(centro.proveedor));
+      const matchesHarvest = concessionFilter === 'all' || inHarvest;
+
+      return matchesSearch && matchesHarvest;
     });
-  }, [data, searchTerm, activeSpecies]);
+  }, [allowedCentros, searchTerm, concessionFilter, harvestKeys]);
 
-  const centerPosition = [-42.5, -73.5]; // Centro aproximado de Chiloé
+  const centerPosition = [-42.5, -73.5];
 
   return (
     <div className={`centros-map-container ${isFullscreen ? 'is-fullscreen' : ''}`}>
       <div className="map-toolbar">
-        <div className="centros-search-wrap" style={{ maxWidth: '320px' }}>
+        <div className="centros-search-wrap map-search">
           <Search size={18} />
-          <input 
-            type="text" 
-            placeholder="Buscar código o proveedor..." 
+          <input
+            type="text"
+            placeholder="Buscar codigo o proveedor..."
             className="centros-search"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(event) => setSearchTerm(event.target.value)}
           />
           {searchSuggestions.length > 0 && (
             <div className="mx-search-dropdown">
-              {searchSuggestions.map(c => (
-                <div 
-                  key={c._id} 
+              {searchSuggestions.map((centro) => (
+                <div
+                  key={centro._id}
                   className="mx-search-item"
-                  onClick={() => handleSelectSuggestion(c)}
+                  onClick={() => handleSelectSuggestion(centro)}
                 >
-                  <div className="search-item-main">{c.code}</div>
-                  <div className="search-item-sub">{c.proveedor}</div>
+                  <div className="search-item-main">{centro.code}</div>
+                  <div className="search-item-sub">{centro.proveedor}</div>
                 </div>
               ))}
             </div>
@@ -168,50 +381,60 @@ export default function CentrosMap() {
         </div>
 
         <div className="mx-toggle-group">
-          <button 
-            className={`mx-toggle-btn ${activeSpecies === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveSpecies('all')}
-          >Todo</button>
-          {Object.entries(SPECIES_CONFIG).map(([id, cfg]) => (
-            <button 
+          <button
+            className={`mx-toggle-btn ${concessionFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setConcessionFilter('all')}
+          >
+            Todas
+          </button>
+          <button
+            className={`mx-toggle-btn ${concessionFilter === 'harvest' ? 'active' : ''}`}
+            onClick={() => setConcessionFilter('harvest')}
+          >
+            En Cosecha
+          </button>
+        </div>
+
+        <div className="map-toolbar-spacer" />
+
+        <div className="mx-toggle-group label-toggle" aria-label="Nivel de etiquetas">
+          {Object.entries(LABEL_CONFIG).map(([id, cfg]) => (
+            <button
               key={id}
-              className={`mx-toggle-btn ${activeSpecies === id ? 'active' : ''}`}
-              onClick={() => setActiveSpecies(id)}
-              style={{ borderLeft: activeSpecies === id ? `3px solid ${cfg.color}` : '' }}
+              className={`mx-toggle-btn ${labelLevel === id ? 'active' : ''}`}
+              onClick={() => setLabelLevel(id)}
+              title={`Etiquetas ${cfg.label.toLowerCase()}`}
             >
               {cfg.label}
             </button>
           ))}
         </div>
 
-        <div style={{ flex: 1 }}></div>
-
-        <div className="mx-toggle-group">
-          <button 
-            className={`mx-toggle-btn ${mapType === 'street' ? 'active' : ''}`}
-            onClick={() => setMapType('street')}
-          >Calles</button>
-          <button 
-            className={`mx-toggle-btn ${mapType === 'satellite' ? 'active' : ''}`}
-            onClick={() => setMapType('satellite')}
-          >Satélite</button>
-        </div>
-
-        <button 
-          className={`mx-btn mx-btn-outline ${isMeasuring ? 'active' : ''}`}
-          onClick={() => setIsMeasuring(!isMeasuring)}
+        <button
+          className={`mx-btn mx-btn-outline map-icon-btn ${isMeasuring ? 'active' : ''}`}
+          onClick={handleToggleMeasure}
           title="Medir distancia"
         >
           <Ruler size={18} />
         </button>
 
-        <button className="mx-btn mx-btn-outline" onClick={() => setIsFullscreen(!isFullscreen)}>
+        {measurePoints.length > 0 && (
+          <button
+            className="mx-btn mx-btn-outline map-icon-btn"
+            onClick={() => setMeasurePoints([])}
+            title="Limpiar medicion"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+
+        <button className="mx-btn mx-btn-outline map-fullscreen-btn" onClick={() => setIsFullscreen(!isFullscreen)}>
           {isFullscreen ? <X size={18} /> : <Maximize size={18} />}
           {isFullscreen ? 'Salir' : 'Pantalla completa'}
         </button>
       </div>
 
-      <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
+      <div className="map-frame">
         {!selectedTenantDb ? (
           <div className="mx-loading-placeholder">
             <p>Selecciona una empresa para ver el mapa de centros.</p>
@@ -219,89 +442,62 @@ export default function CentrosMap() {
         ) : loading ? (
           <div className="mx-loading-placeholder">
             <div className="mx-spinner"></div>
-            <p>Preparando cartografía...</p>
+            <p>Preparando cartografia...</p>
           </div>
         ) : (
-          <MapContainer 
-            key={`${isFullscreen}-${mapType}`}
-            center={centerPosition} 
-            zoom={zoom} 
-            scrollWheelZoom={true}
-            style={{ height: isFullscreen ? 'calc(100vh - 100px)' : '650px', width: '100%', borderRadius: '12px', background: '#f8fafc' }}
+          <MapContainer
+            center={centerPosition}
+            zoom={zoom}
+            preferCanvas
+            scrollWheelZoom
+            style={{
+              height: isFullscreen ? 'calc(100vh - 100px)' : '650px',
+              width: '100%',
+              borderRadius: '12px',
+              background: '#0f172a',
+            }}
             ref={setMapInstance}
           >
-            <TileLayer
-              attribution={mapType === 'street' ? '&copy; OpenStreetMap' : 'Tiles &copy; Esri'}
-              url={MAP_LAYERS[mapType]}
-              maxZoom={mapType === 'satellite' ? 18 : 19}
-            />
+            <TileLayer attribution="Tiles &copy; Esri" url={SATELLITE_LAYER} maxZoom={18} />
             <InvalidateSize trigger={isFullscreen} />
             <ZoomHandler setZoom={setZoom} />
-            
-            {mapCentros.map(centro => {
-              // Si hay un filtro activo, forzamos ese color para evitar confusión
-              let especieKey = activeSpecies !== 'all' ? activeSpecies : null;
-              
-              if (!especieKey) {
-                especieKey = Object.keys(SPECIES_CONFIG).find(k => 
-                  SPECIES_CONFIG[k].keys.some(key => 
-                    (centro.grupoEspecie || '').toLowerCase().includes(key) || 
-                    (centro.especies || []).some(e => e.toLowerCase().includes(key))
-                  )
-                ) || 'mitilidos';
-              }
-              
-              const color = SPECIES_CONFIG[especieKey]?.color || '#6366f1';
+            <MeasureLayer enabled={isMeasuring} points={measurePoints} onAddPoint={handleAddMeasurePoint} />
+
+            {mapCentros.map((centro) => {
+              const isHarvestActive = harvestKeys.codes.has(normalizeText(centro.code))
+                || harvestKeys.providers.has(normalizeText(centro.proveedor));
+              const color = isHarvestActive ? HARVEST_COLOR : CONCESSION_COLOR;
 
               return (
-                <Polygon
+                <CentroPolygon
                   key={centro._id}
-                  positions={centro.coords.map(p => [p.lat, p.lng])}
-                  pathOptions={{
-                    color: color,
-                    fillColor: color,
-                    fillOpacity: mapType === 'satellite' ? 0.2 : 0.4,
-                    weight: 2
-                  }}
-                  eventHandlers={{
-                    click: () => setSelectedCentro(centro)
-                  }}
-                >
-                  <Tooltip 
-                    key={`tooltip-${centro._id}-${zoom > 10}`}
-                    permanent={zoom > 10} 
-                    direction="center" 
-                    className="map-tooltip-custom"
-                  >
-                    <div className="tooltip-inner">
-                      <div className="tooltip-code">{centro.code}</div>
-                      {zoom > 13 && <div className="tooltip-provider">{centro.proveedor}</div>}
-                    </div>
-                  </Tooltip>
-                  <Popup>
-                    <div className="map-popup-content">
-                      <h4 style={{ margin: '0 0 4px 0', color: color }}>{centro.proveedor}</h4>
-                      <p style={{ margin: 0, fontSize: '0.85rem' }}>
-                        <strong>Código:</strong> {centro.code}<br />
-                        <strong>Hectáreas:</strong> {centro.hectareas} ha
-                      </p>
-                      <button 
-                        className="mx-btn mx-btn-primary sm am-mt-8" 
-                        style={{ width: '100%', padding: '4px' }}
-                        onClick={() => setSelectedCentro(centro)}
-                      >
-                        Ver Detalle
-                      </button>
-                    </div>
-                  </Popup>
-                </Polygon>
+                  centro={centro}
+                  color={color}
+                  labelLevel={labelLevel}
+                  zoom={zoom}
+                  isHarvestActive={isHarvestActive}
+                  onSelect={handleSelectCentro}
+                />
               );
             })}
           </MapContainer>
         )}
+
+        {isMeasuring && (
+          <div className="map-measure-panel">
+            <strong>Medicion activa</strong>
+            <span>Haz clic en el mapa para trazar puntos.</span>
+            <b>{formatDistance(measuredDistance)}</b>
+          </div>
+        )}
+
+        {!loading && selectedTenantDb && (
+          <div className="map-count-chip">
+            {mapCentros.length.toLocaleString('es-CL')} concesiones visibles
+          </div>
+        )}
       </div>
 
-      {/* MODAL DE DETALLES */}
       {selectedCentro && (
         <div className="mx-modal-overlay" style={{ zIndex: 100000 }}>
           <div className="mx-modal" style={{ maxWidth: '500px' }}>
@@ -319,11 +515,11 @@ export default function CentrosMap() {
                   <span>{selectedCentro.comuna}</span>
                 </div>
                 <div className="detail-item">
-                  <label>Región</label>
-                  <span>{selectedCentro.region || 'X Región'}</span>
+                  <label>Region</label>
+                  <span>{selectedCentro.region || 'X Region'}</span>
                 </div>
                 <div className="detail-item">
-                  <label>Hectáreas</label>
+                  <label>Hectareas</label>
                   <span>{selectedCentro.hectareas} ha</span>
                 </div>
                 <div className="detail-item">
@@ -335,8 +531,8 @@ export default function CentrosMap() {
                 <div className="detail-item" style={{ gridColumn: 'span 2' }}>
                   <label>Especies Autorizadas</label>
                   <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
-                    {(selectedCentro.especies || [selectedCentro.grupoEspecie]).map(e => (
-                      <span key={e} className="mx-badge mx-badge-info">{e}</span>
+                    {(selectedCentro.especies || [selectedCentro.grupoEspecie]).map((especie) => (
+                      <span key={especie} className="mx-badge mx-badge-info">{especie}</span>
                     ))}
                   </div>
                 </div>
@@ -353,6 +549,3 @@ export default function CentrosMap() {
     </div>
   );
 }
-
-
-
