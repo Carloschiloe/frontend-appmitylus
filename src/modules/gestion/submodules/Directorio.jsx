@@ -177,7 +177,11 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     provider.ultimoResponsable = latestInteraction?.responsablePG || latestInteraction?.responsable || '';
   });
 
-  return Array.from(providers.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
+  // 4. Filtrar para mostrar solo los que tienen alguna actividad (contactos, oportunidades o interacciones)
+  // Esto evita mostrar el "directorio global" de 1000+ empresas sin relacion.
+  return Array.from(providers.values())
+    .filter(p => p.totalContactos > 0 || p.seguimientoEstado || p.ultimaInteraccionFecha)
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
 
 export default function Directorio() {
