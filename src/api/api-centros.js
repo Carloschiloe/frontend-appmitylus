@@ -12,6 +12,18 @@ export async function getCentros(filters = {}, options = {}) {
   return Array.isArray(res) ? res : (res.items || []);
 }
 
+export async function getCentrosMapa(options = {}) {
+  try {
+    const res = await apiClient.get(`${BASE}/mapa`, options);
+    return Array.isArray(res) ? res : (res.items || []);
+  } catch (error) {
+    if (error?.status === 404) {
+      return getCentros({}, options);
+    }
+    throw error;
+  }
+}
+
 export async function getCentroById(id) {
   return apiClient.get(`${BASE}/${id}`);
 }

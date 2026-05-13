@@ -13,7 +13,7 @@ import {
   useMapEvents,
 } from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
-import { getCentros } from '../../../api/api-centros';
+import { getCentrosMapa } from '../../../api/api-centros';
 import { apiClient } from '../../../api/apiClient';
 
 const CONCESSION_COLOR = '#22c55e';
@@ -121,12 +121,22 @@ function formatDistance(meters) {
   return `${(meters / 1000).toLocaleString('es-CL', { maximumFractionDigits: 2 })} km`;
 }
 
-function ZoomHandler({ setZoom }) {
+function MapViewportHandler({ onViewportChange, setZoom }) {
   const map = useMapEvents({
+    moveend: () => {
+      onViewportChange(map.getBounds().pad(0.35));
+    },
     zoomend: () => {
       setZoom(map.getZoom());
+      onViewportChange(map.getBounds().pad(0.35));
     },
   });
+
+  useEffect(() => {
+    setZoom(map.getZoom());
+    onViewportChange(map.getBounds().pad(0.35));
+  }, [map, onViewportChange, setZoom]);
+
   return null;
 }
 
@@ -171,7 +181,7 @@ const CentroPolygon = memo(function CentroPolygon({
 
   return (
     <Polygon
-      positions={centro.coords.map((point) => [point.lat, point.lng])}
+      positions={centro.coordsPositions}
       pathOptions={{
         color,
         fillColor: color,
@@ -228,13 +238,14 @@ export default function CentrosMap() {
   const [selectedCentro, setSelectedCentro] = useState(null);
   const [zoom, setZoom] = useState(9);
   const [mapInstance, setMapInstance] = useState(null);
+  const [viewportBounds, setViewportBounds] = useState(null);
   const selectedCentroCode = searchParams.get('centro') || '';
 
   const { data = [], isLoading: loading } = useQuery({
     queryKey: ['centros', 'mapa'],
-    queryFn: ({ signal }) => getCentros({}, { signal }),
+    queryFn: ({ signal }) => getCentrosMapa({ signal }),
     enabled: Boolean(selectedTenantDb),
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
   });
 
   const { data: programasRes = { items: [] } } = useQuery({
@@ -278,11 +289,33 @@ export default function CentrosMap() {
   }, [isFullscreen]);
 
   const allowedCentros = useMemo(() => {
-    return data.filter((centro) => {
+    return data.map((centro) => {
+      const coords = Array.isArray(centro.coords) ? centro.coords : [];
+      const latSum = coords.reduce((sum, point) => sum + Number(point.lat || 0), 0);
+      const lngSum = coords.reduce((sum, point) => sum + Number(point.lng || 0), 0);
+      return {
+        ...centro,
+        coords,
+        coordsPositions: coords.map((point) => [point.lat, point.lng]),
+        centerLat: coords.length ? latSum / coords.length : null,
+        centerLng: coords.length ? lngSum / coords.length : null,
+        codeNorm: normalizeText(centro.code),
+        proveedorNorm: normalizeText(centro.proveedor),
+      };
+    }).filter((centro) => {
       const hasCoords = Array.isArray(centro.coords) && centro.coords.length >= 3;
       return hasCoords && isAllowedConcession(centro);
     });
   }, [data]);
+
+  const handleViewportChange = useCallback((bounds) => {
+    setViewportBounds({
+      south: bounds.getSouth(),
+      north: bounds.getNorth(),
+      west: bounds.getWest(),
+      east: bounds.getEast(),
+    });
+  }, []);
 
   const searchSuggestions = useMemo(() => {
     if (searchTerm.length < 2) return [];
@@ -294,7 +327,7 @@ export default function CentrosMap() {
   }, [allowedCentros, searchTerm]);
 
   const handleSelectSuggestion = useCallback((centro) => {
-    setSearchTerm(centro.code);
+    setSearchTerm('');
     setSelectedCentro(centro);
     setSearchParams({ centro: centro.code }, { replace: true });
     if (mapInstance && centro.coords?.length > 0) {
@@ -323,17 +356,15 @@ export default function CentrosMap() {
 
     const target = allowedCentros.find((centro) => String(centro.code || '').trim().toUpperCase() === centroCode);
     if (!target) {
-      setSearchTerm(centroCode);
       return;
     }
-
-    setSearchTerm(target.code || centroCode);
 
     if (mapInstance && target.coords?.length > 0) {
       const firstCoord = [target.coords[0].lat, target.coords[0].lng];
       mapInstance.flyTo(firstCoord, 16, { duration: 0.8 });
+      setSearchParams({}, { replace: true });
     }
-  }, [allowedCentros, mapInstance, selectedCentroCode]);
+  }, [allowedCentros, mapInstance, selectedCentroCode, setSearchParams]);
 
   const mapCentros = useMemo(() => {
     const query = searchTerm.toLowerCase();
@@ -342,13 +373,19 @@ export default function CentrosMap() {
         centro.code?.toLowerCase().includes(query) ||
         centro.proveedor?.toLowerCase().includes(query);
 
-      const inHarvest = harvestKeys.codes.has(normalizeText(centro.code))
-        || harvestKeys.providers.has(normalizeText(centro.proveedor));
+      const inHarvest = harvestKeys.codes.has(centro.codeNorm)
+        || harvestKeys.providers.has(centro.proveedorNorm);
       const matchesHarvest = concessionFilter === 'all' || inHarvest;
+      const inViewport = query || !viewportBounds || (
+        centro.centerLat >= viewportBounds.south &&
+        centro.centerLat <= viewportBounds.north &&
+        centro.centerLng >= viewportBounds.west &&
+        centro.centerLng <= viewportBounds.east
+      );
 
-      return matchesSearch && matchesHarvest;
+      return matchesSearch && matchesHarvest && inViewport;
     });
-  }, [allowedCentros, searchTerm, concessionFilter, harvestKeys]);
+  }, [allowedCentros, searchTerm, concessionFilter, harvestKeys, viewportBounds]);
 
   const centerPosition = [-42.5, -73.5];
 
@@ -364,6 +401,16 @@ export default function CentrosMap() {
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
+          {searchTerm && (
+            <button
+              type="button"
+              className="map-search-clear"
+              onClick={() => setSearchTerm('')}
+              title="Limpiar busqueda"
+            >
+              <X size={14} />
+            </button>
+          )}
           {searchSuggestions.length > 0 && (
             <div className="mx-search-dropdown">
               {searchSuggestions.map((centro) => (
@@ -460,12 +507,12 @@ export default function CentrosMap() {
           >
             <TileLayer attribution="Tiles &copy; Esri" url={SATELLITE_LAYER} maxZoom={18} />
             <InvalidateSize trigger={isFullscreen} />
-            <ZoomHandler setZoom={setZoom} />
+            <MapViewportHandler onViewportChange={handleViewportChange} setZoom={setZoom} />
             <MeasureLayer enabled={isMeasuring} points={measurePoints} onAddPoint={handleAddMeasurePoint} />
 
             {mapCentros.map((centro) => {
-              const isHarvestActive = harvestKeys.codes.has(normalizeText(centro.code))
-                || harvestKeys.providers.has(normalizeText(centro.proveedor));
+              const isHarvestActive = harvestKeys.codes.has(centro.codeNorm)
+                || harvestKeys.providers.has(centro.proveedorNorm);
               const color = isHarvestActive ? HARVEST_COLOR : CONCESSION_COLOR;
 
               return (
@@ -493,7 +540,7 @@ export default function CentrosMap() {
 
         {!loading && selectedTenantDb && (
           <div className="map-count-chip">
-            {mapCentros.length.toLocaleString('es-CL')} concesiones visibles
+            {mapCentros.length.toLocaleString('es-CL')} visibles de {allowedCentros.length.toLocaleString('es-CL')}
           </div>
         )}
       </div>
