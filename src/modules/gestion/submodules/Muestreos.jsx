@@ -865,9 +865,9 @@ export default function Muestreos() {
       const centro = m.centroCodigo || m.centroNombre || 'Sin Centro';
       const fecha = m.fecha ? new Date(m.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
-      const shareText = `*REPORTE MMPP* 📊\n` + 
+      const shareText = `📌 *REPORTE MMPP*\n` + 
                         `*${proveedor}*\n` +
-                        `📍 Centro: ${centro}\n` +
+                        `🔹 Centro: ${centro}\n` +
                         `📅 Fecha: ${fecha}\n\n` +
                         `🔗 *Ver Muestreo:* \n${res.url}`;
 
@@ -1817,6 +1817,16 @@ export default function Muestreos() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <Copy size={16} /> Copiar Mensaje
+                </div>
+              </button>
+
+              <button 
+                className="mx-btn" 
+                disabled
+                style={{ height: '44px', borderRadius: '12px', fontSize: '14px', fontWeight: 600, background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0', cursor: 'not-allowed', opacity: 0.7 }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <Target size={16} /> Ping (Próximamente)
                 </div>
               </button>
             </div>
