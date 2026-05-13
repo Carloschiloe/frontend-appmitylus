@@ -69,7 +69,7 @@ const TenantContextRequired = ({ title = 'Selecciona una empresa', description }
 // Componente para proteger rutas (Integración con AuthContext)
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/');
+  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/') || window.location.pathname.startsWith('/r/trato/');
 
   console.log('[AUTH REDIRECT CHECK] PrivateRoute', {
     path: window.location.pathname,
@@ -94,7 +94,7 @@ const PrivateRoute = ({ children }) => {
 
 const TenantScopedRoute = ({ children, title, description }) => {
   const { user, loading } = useAuth();
-  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/');
+  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/') || window.location.pathname.startsWith('/r/trato/');
 
   console.log('[AUTH REDIRECT CHECK] TenantScopedRoute', {
     path: window.location.pathname,
@@ -128,7 +128,7 @@ const TenantScopedRoute = ({ children, title, description }) => {
 // Rutas exclusivas para administradores
 const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/');
+  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/') || window.location.pathname.startsWith('/r/trato/');
 
   console.log('[AUTH REDIRECT CHECK] AdminRoute', {
     path: window.location.pathname,
@@ -155,7 +155,7 @@ const AdminRoute = ({ children }) => {
 // Rutas exclusivas para SuperAdministradores (SaaS Management)
 const SuperAdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/');
+  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/') || window.location.pathname.startsWith('/r/trato/');
 
   console.log('[AUTH REDIRECT CHECK] SuperAdminRoute', {
     path: window.location.pathname,
@@ -181,7 +181,7 @@ const SuperAdminRoute = ({ children }) => {
 
 export default function App() {
   const path = window.location.pathname;
-  const isPublicReportRoute = path.toLowerCase().startsWith('/r/muestreo');
+  const isPublicReportRoute = path.toLowerCase().startsWith('/r/muestreo') || path.toLowerCase().startsWith('/r/trato');
   
   console.log('--- APP.JSX BOOTING ---');
   console.log('[BOOT PATH]', path);
@@ -200,6 +200,7 @@ export default function App() {
           }>
             <Routes>
               <Route path="/r/muestreo/:token" element={<SharedMuestreo />} />
+              <Route path="/r/trato/:token" element={<SharedMuestreo />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
