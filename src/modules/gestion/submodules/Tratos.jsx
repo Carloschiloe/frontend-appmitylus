@@ -159,6 +159,7 @@ export default function Tratos() {
     return raw.map((item) => ({
       ...item,
       fechaCierre: normalizeDateOnlyForUiSafe(item.fechaCierre),
+      vigenciaDesde: normalizeDateOnlyForUiSafe(item.vigenciaDesde),
     }));
   }, [tratosRes]);
 
@@ -183,7 +184,7 @@ export default function Tratos() {
     proveedorNombre: '',
     tonsAcordadas: '',
     precioBase: '',
-    fechaCierre: '',
+    fechaInicioCosecha: '',
     estado: 'pendiente',
     notas: '',
     condiciones: []
@@ -212,7 +213,7 @@ export default function Tratos() {
           precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
           notasTrato: form.notas || '',
           camionesXDia: deriveCamionesXDia(form.condiciones),
-          fechaCierre: form.fechaCierre || null,
+          vigenciaDesde: form.fechaInicioCosecha || null,
         };
 
         await apiClient.patch(`/oportunidades/${editingId}/trato`, tratoPayload);
@@ -263,7 +264,9 @@ export default function Tratos() {
       proveedorNombre: item.proveedorNombre || '',
       tonsAcordadas: item.tonsAcordadas || '',
       precioBase: '',
-      fechaCierre: item.fechaCierre ? item.fechaCierre.slice(0, 10) : '',
+      fechaInicioCosecha: item.vigenciaDesde
+        ? item.vigenciaDesde.slice(0, 10)
+        : (item.fechaCierre ? item.fechaCierre.slice(0, 10) : ''),
       estado: getUiEstadoFromApi(item.estado),
       notas: item.notasTrato || item.notas || '',
       condiciones: item.condiciones || []
@@ -321,7 +324,7 @@ export default function Tratos() {
                 <th style={{ width: '30%' }}>Proveedor</th>
                 <th style={{ textAlign: 'center', width: '100px' }}>Tons</th>
                 <th style={{ textAlign: 'center', width: '120px' }}>Precio Est.</th>
-                <th>Cierre Previsto</th>
+                <th>Inicio Cosecha</th>
                 <th style={{ width: '140px' }}>Estado</th>
                 <th style={{ textAlign: 'right', width: '100px' }}>Acciones</th>
               </tr>
@@ -348,6 +351,7 @@ export default function Tratos() {
                   const displayTons = item.tonsAcordadas || deriveVolumenDesdeCondiciones(item.condiciones) || 0;
                   const displayPlazo = derivePlazoDesdeCondiciones(item.condiciones);
                   const displayCamiones = item.camionesXDia || deriveCamionesXDia(item.condiciones);
+                  const displayInicioCosecha = item.vigenciaDesde || item.fechaCierre;
 
                   return (
                     <tr key={item._id} className="tratos-row">
@@ -372,8 +376,8 @@ export default function Tratos() {
                         <div className="tratos-metric-label">x kg</div>
                       </td>
                       <td style={{ color: 'var(--color-text-subtle)', fontSize: '0.85rem' }}>
-                        <div style={{ fontWeight: 600 }}>{formatDateOnlySafe(item.fechaCierre)}</div>
-                        <div style={{ fontSize: '10px' }}>Fecha estimada</div>
+                        <div style={{ fontWeight: 600 }}>{formatDateOnlySafe(displayInicioCosecha)}</div>
+                        <div style={{ fontSize: '10px' }}>Probable</div>
                       </td>
                       <td>
                         <span className={`mx-badge mx-badge-${uiEstado === 'acordado' || uiEstado === 'cerrado_ok' ? 'success' : uiEstado === 'rechazado' ? 'danger' : 'info'}`}>
@@ -483,8 +487,8 @@ export default function Tratos() {
 
                 <div className="mx-form-row am-mt-16" style={{ display: 'flex', gap: '16px' }}>
                   <div className="mx-form-group" style={{ flex: 1 }}>
-                    <label className="mx-label">Fecha Cierre</label>
-                    <input type="date" className="mx-input" value={form.fechaCierre} onChange={e => setForm({...form, fechaCierre: e.target.value})} />
+                    <label className="mx-label">Fecha probable inicio cosecha</label>
+                    <input type="date" className="mx-input" value={form.fechaInicioCosecha} onChange={e => setForm({...form, fechaInicioCosecha: e.target.value})} />
                   </div>
                   <div className="mx-form-group" style={{ flex: 1 }}>
                     <label className="mx-label">Estado General</label>
