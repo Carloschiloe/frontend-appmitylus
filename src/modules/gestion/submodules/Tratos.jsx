@@ -5,7 +5,7 @@ import {
 import { useToast } from '../../../context/ToastContext';
 import { apiClient } from '../../../api/apiClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTratos } from '../hooks/useGestionQueries';
+import { useContactos, useCentros, useTratos } from '../hooks/useGestionQueries';
 import { maestrosApi } from '../../../api/api-maestros';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import './tratos.css';
@@ -72,6 +72,89 @@ function formatMoney(value) {
   const number = Number(value);
   if (!Number.isFinite(number) || number === 0) return '-';
   return `$${number.toLocaleString('es-CL', { maximumFractionDigits: 0 })}`;
+}
+
+function createEmptyForm(condiciones = []) {
+  return {
+    proveedorNombre: '',
+    tonsAcordadas: '',
+    precioBase: '',
+    fechaInicioCosecha: '',
+    estado: 'pendiente',
+    notas: '',
+    condiciones,
+  };
+}
+
+function buildInitialConditions(maestros = []) {
+  return maestros.map((m) => ({
+    condicionId: m._id,
+    nombre: m.nombre,
+    tipoValor: m.tipoValor,
+    estado: 'pendiente',
+    valor: null,
+  }));
+}
+
+function buildProviderDirectory(centros = [], contactos = []) {
+  const firstContactByKey = new Map();
+  contactos.forEach((item) => {
+    const key = String(item.proveedorKey || item.proveedorNombre || '').trim().toLowerCase();
+    if (!key || firstContactByKey.has(key)) return;
+    firstContactByKey.set(key, item);
+  });
+
+  const providers = new Map();
+  centros.forEach((centro, index) => {
+    const proveedorNombre = String(centro.proveedor || '').trim() || 'Proveedor sin nombre';
+    const proveedorKey = String(centro.proveedorKey || proveedorNombre).trim().toLowerCase();
+    if (!proveedorKey) return;
+
+    const linkedContact = firstContactByKey.get(proveedorKey);
+    const existing = providers.get(proveedorKey);
+
+    if (!existing) {
+      providers.set(proveedorKey, {
+        id: `prov-${proveedorKey || index}`,
+        contactoId: linkedContact?._id || '',
+        proveedorKey,
+        proveedorNombre,
+        contactoNombre: linkedContact?.contactoNombre || '',
+        contactoTelefono: linkedContact?.contactoTelefono || '',
+        contactoEmail: linkedContact?.contactoEmail || '',
+        comuna: centro.comuna || '',
+        centros: 1,
+      });
+      return;
+    }
+
+    existing.centros += 1;
+    if (!existing.contactoId && linkedContact?._id) existing.contactoId = linkedContact._id;
+    if (!existing.contactoNombre && linkedContact?.contactoNombre) existing.contactoNombre = linkedContact.contactoNombre;
+    if (!existing.contactoTelefono && linkedContact?.contactoTelefono) existing.contactoTelefono = linkedContact.contactoTelefono;
+    if (!existing.contactoEmail && linkedContact?.contactoEmail) existing.contactoEmail = linkedContact.contactoEmail;
+    if (!existing.comuna && centro.comuna) existing.comuna = centro.comuna;
+  });
+
+  contactos.forEach((contacto, index) => {
+    const proveedorNombre = String(contacto.proveedorNombre || '').trim() || 'Proveedor sin nombre';
+    const proveedorKey = String(contacto.proveedorKey || proveedorNombre).trim().toLowerCase();
+    if (!proveedorKey || providers.has(proveedorKey)) return;
+
+    providers.set(proveedorKey, {
+      id: `contact-${contacto._id || proveedorKey || index}`,
+      contactoId: contacto._id || '',
+      proveedorKey,
+      proveedorNombre,
+      contactoNombre: contacto.contactoNombre || '',
+      contactoTelefono: contacto.contactoTelefono || '',
+      contactoEmail: contacto.contactoEmail || '',
+      comuna: contacto.centroComuna || contacto.comuna || '',
+      centros: 0,
+    });
+  });
+
+  return Array.from(providers.values()).sort((a, b) => a.proveedorNombre.localeCompare(b.proveedorNombre));
 }
 
 function getDateOnlyParts(value) {
@@ -150,6 +233,8 @@ export default function Tratos() {
   const [editingEstadoApi, setEditingEstadoApi] = useState('');
   const [confirmDeleteTrato, setConfirmDeleteTrato] = useState(null);
   const [shareModal, setShareModal] = useState({ open: false, url: '', item: null });
+  const [providerSearch, setProviderSearch] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState(null);
 
   // 1. Carga de datos con React Query
   const { data: tratosRes, isLoading: loadingTratos } = useTratos();
@@ -180,28 +265,62 @@ export default function Tratos() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const [form, setForm] = useState({
-    proveedorNombre: '',
-    tonsAcordadas: '',
-    precioBase: '',
-    fechaInicioCosecha: '',
-    estado: 'pendiente',
-    notas: '',
-    condiciones: []
-  });
+  const { data: centrosRaw, isLoading: loadingCentros } = useCentros({ enabled: isModalOpen });
+  const { data: contactosRaw, isLoading: loadingContactos } = useContactos({ conEmpresa: 1 }, { enabled: isModalOpen });
+
+  const providers = useMemo(() => {
+    if (!isModalOpen) return [];
+    const centros = Array.isArray(centrosRaw) ? centrosRaw : (centrosRaw?.items || []);
+    const contactos = Array.isArray(contactosRaw) ? contactosRaw : (contactosRaw?.items || []);
+    return buildProviderDirectory(centros, contactos);
+  }, [isModalOpen, centrosRaw, contactosRaw]);
+
+  const loadingProviders = loadingCentros || loadingContactos;
+
+  const filteredProviders = useMemo(() => {
+    const query = providerSearch.trim().toLowerCase();
+    return providers
+      .filter((item) => {
+        if (!query) return true;
+        const providerText = `${item.proveedorNombre || ''} ${item.proveedorKey || ''} ${item.comuna || ''}`.toLowerCase();
+        const contactText = `${item.contactoNombre || ''} ${item.contactoTelefono || ''} ${item.contactoEmail || ''}`.toLowerCase();
+        return providerText.includes(query) || contactText.includes(query);
+      })
+      .slice(0, 10);
+  }, [providers, providerSearch]);
+
+  const [form, setForm] = useState(() => createEmptyForm());
 
   useEffect(() => {
     if (isModalOpen && !editingId && maestrosCondiciones.length > 0) {
-      const initialCond = maestrosCondiciones.map(m => ({
-        condicionId: m._id,
-        nombre: m.nombre,
-        tipoValor: m.tipoValor,
-        estado: 'pendiente',
-        valor: null
-      }));
+      const initialCond = buildInitialConditions(maestrosCondiciones);
       setForm(prev => ({ ...prev, condiciones: initialCond }));
     }
   }, [isModalOpen, editingId, maestrosCondiciones]);
+
+  const openNew = useCallback(() => {
+    setEditingId(null);
+    setEditingEstadoApi('');
+    setProviderSearch('');
+    setSelectedProvider(null);
+    setForm(createEmptyForm(buildInitialConditions(maestrosCondiciones)));
+    setIsModalOpen(true);
+  }, [maestrosCondiciones]);
+
+  const closeModal = useCallback(() => {
+    setIsModalOpen(false);
+    setEditingId(null);
+    setEditingEstadoApi('');
+    setProviderSearch('');
+    setSelectedProvider(null);
+    setForm(createEmptyForm(buildInitialConditions(maestrosCondiciones)));
+  }, [maestrosCondiciones]);
+
+  const handleSelectProvider = useCallback((provider) => {
+    setSelectedProvider(provider);
+    setProviderSearch(provider.proveedorNombre || '');
+    setForm((prev) => ({ ...prev, proveedorNombre: provider.proveedorNombre || '' }));
+  }, []);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -235,10 +354,46 @@ export default function Tratos() {
         }
         addToast({ title: 'Actualizado', message: 'Trato actualizado con éxito', type: 'success' });
       } else {
-        await apiClient.post('/oportunidades', form);
+        if (!selectedProvider?.proveedorKey || !selectedProvider?.proveedorNombre) {
+          addToast({ title: 'Falta proveedor', message: 'Selecciona un proveedor del listado antes de guardar.', type: 'warning' });
+          return;
+        }
+
+        if (!selectedProvider.contactoId) {
+          addToast({
+            title: 'Proveedor sin contacto',
+            message: 'Este proveedor no tiene un contacto asociado. Crea o asocia un contacto antes de registrar el trato.',
+            type: 'warning',
+          });
+          return;
+        }
+
+        const volumenDesdeCondiciones = deriveVolumenDesdeCondiciones(form.condiciones);
+        await apiClient.post('/oportunidades', {
+          proveedorId: selectedProvider.contactoId,
+          proveedorKey: selectedProvider.proveedorKey,
+          proveedorNombre: selectedProvider.proveedorNombre,
+          estado: getApiEstadoFromUi(form.estado),
+          origen: 'manual',
+          tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
+          precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
+          notasTrato: form.notas || '',
+          camionesXDia: deriveCamionesXDia(form.condiciones),
+          vigenciaDesde: form.fechaInicioCosecha || null,
+          condiciones: (form.condiciones || []).map((condicion) => ({
+            ...condicion,
+            valor: condicion.valor === '' ? null : condicion.valor,
+          })),
+          meta: {
+            contactoNombre: selectedProvider.contactoNombre || '',
+            contactoTelefono: selectedProvider.contactoTelefono || '',
+            contactoEmail: selectedProvider.contactoEmail || '',
+            comuna: selectedProvider.comuna || '',
+          },
+        });
         addToast({ title: 'Creado', message: 'Nuevo trato registrado', type: 'success' });
       }
-      setIsModalOpen(false);
+      closeModal();
       handleRefresh();
     } catch {
       addToast({ title: 'Error', message: 'No se pudo guardar el trato', type: 'error' });
@@ -260,6 +415,18 @@ export default function Tratos() {
   const openEdit = (item) => {
     setEditingId(item._id);
     setEditingEstadoApi(item.estado || '');
+    setSelectedProvider(item.proveedorNombre ? {
+      id: item.proveedorKey || item._id,
+      contactoId: item.proveedorId || '',
+      proveedorKey: item.proveedorKey || '',
+      proveedorNombre: item.proveedorNombre || '',
+      contactoNombre: item.meta?.contactoNombre || '',
+      contactoTelefono: item.meta?.contactoTelefono || '',
+      contactoEmail: item.meta?.contactoEmail || '',
+      comuna: item.meta?.comuna || '',
+      centros: item.centroCodigo ? 1 : 0,
+    } : null);
+    setProviderSearch(item.proveedorNombre || '');
     setForm({
       proveedorNombre: item.proveedorNombre || '',
       tonsAcordadas: item.tonsAcordadas || '',
@@ -311,7 +478,7 @@ export default function Tratos() {
           />
         </div>
         <button className="mx-btn-icon sm" onClick={handleRefresh} title="Actualizar"><RotateCcw size={18} /></button>
-        <button className="mx-btn mx-btn-primary" onClick={() => { setEditingId(null); setEditingEstadoApi(''); setIsModalOpen(true); }}>
+        <button className="mx-btn mx-btn-primary" onClick={openNew}>
           <Plus size={18} /> Nueva Negociación
         </button>
       </div>
@@ -385,7 +552,7 @@ export default function Tratos() {
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <div className="mx-table-actions-cell" style={{ justifyContent: 'flex-end' }}>
+                        <div className="mx-table-actions-cell tratos-actions">
                            <button 
                              className="mx-action-btn" 
                              style={{ color: 'var(--color-primary)' }} 
@@ -412,13 +579,52 @@ export default function Tratos() {
           <div className="mx-modal" style={{ maxWidth: '600px' }}>
             <div className="mx-modal-header">
               <h2>{editingId ? 'Editar Trato' : 'Nuevo Trato'}</h2>
-              <button type="button" className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
+              <button type="button" className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
             </div>
             <form onSubmit={handleSave} className="mx-form">
               <div className="mx-modal-body">
                 <div className="mx-form-group">
                   <label className="mx-label">Proveedor</label>
-                  <input className="mx-input" value={form.proveedorNombre} onChange={e => setForm({...form, proveedorNombre: e.target.value})} required />
+                  <div className="tratos-provider-search">
+                    <Search size={18} className="tratos-search-icon" />
+                    <input
+                      type="text"
+                      placeholder="Buscar empresa, comuna o contacto..."
+                      value={providerSearch}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        setProviderSearch(nextValue);
+                        setForm({ ...form, proveedorNombre: nextValue });
+                        if (selectedProvider && nextValue.trim() !== (selectedProvider.proveedorNombre || '').trim()) {
+                          setSelectedProvider(null);
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="tratos-provider-results">
+                    {loadingProviders ? (
+                      <div className="gs-empty-inline">Cargando proveedores...</div>
+                    ) : filteredProviders.length === 0 ? (
+                      <div className="gs-empty-inline">No encontramos coincidencias en el directorio.</div>
+                    ) : (
+                      filteredProviders.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={`tratos-provider-option ${selectedProvider?.id === item.id ? 'is-selected' : ''}`}
+                          onClick={() => handleSelectProvider(item)}
+                        >
+                          <strong>{item.proveedorNombre || 'Proveedor'}</strong>
+                          <span>
+                            {item.contactoNombre || 'Primer contacto'}
+                            {item.contactoTelefono ? ` - ${item.contactoTelefono}` : ''}
+                            {item.comuna ? ` - ${item.comuna}` : ''}
+                            {item.centros ? ` - ${item.centros} centro${item.centros > 1 ? 's' : ''}` : ''}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
                 </div>
                 <div className="mx-form-group">
                   <label className="mx-label">Tons Acordadas</label>
@@ -503,7 +709,7 @@ export default function Tratos() {
                 </div>
               </div>
               <div className="mx-modal-footer">
-                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+                <button type="button" className="mx-btn mx-btn-outline" onClick={closeModal}>Cancelar</button>
                 <button type="submit" className="mx-btn mx-btn-primary">Guardar Negociación</button>
               </div>
             </form>
