@@ -919,37 +919,38 @@ export default function Muestreos() {
             <button className={`mx-toggle-btn ${calView === 'all' ? 'active' : ''}`} onClick={() => { setCalView('all'); setPage(1); }}>Todos</button>
           </div>
           {calView !== 'all' && (
-            <button className="mx-btn-icon sm" onClick={() => {
-              if (calView === 'month') {
-                setMes(prev => {
-                  const [y, m] = prev.split('-');
-                  const d = new Date(parseInt(y), parseInt(m) - 2, 1);
-                  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                });
-              } else {
-                setWeekOffset(o => o - 1);
-              }
-              setPage(1);
-            }}><ChevronLeft size={16} /></button>
-            <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-text)', minWidth: '200px', textAlign: 'center', textTransform: 'uppercase' }}>
-              {calView === 'month' ? mesLabel(mes) : weekLabel}
-            </span>
-            <button className="mx-btn-icon sm" onClick={() => {
-              if (calView === 'month') {
-                setMes(prev => {
-                  const [y, m] = prev.split('-');
-                  const d = new Date(parseInt(y), parseInt(m), 1);
-                  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                });
-              } else {
-                setWeekOffset(o => o + 1);
-              }
-              setPage(1);
-            }}><ChevronRight size={16} /></button>
-            {calView === 'week' && weekOffset !== 0 && (
-              <button className="mx-btn mx-btn-outline sm" onClick={() => { setWeekOffset(0); setPage(1); }}>Hoy</button>
-            )}
-          </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button className="mx-btn-icon sm" onClick={() => {
+                if (calView === 'month') {
+                  setMes(prev => {
+                    const [y, m] = prev.split('-');
+                    const d = new Date(parseInt(y), parseInt(m) - 2, 1);
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                  });
+                } else {
+                  setWeekOffset(o => o - 1);
+                }
+                setPage(1);
+              }}><ChevronLeft size={16} /></button>
+              <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-text)', minWidth: '200px', textAlign: 'center', textTransform: 'uppercase' }}>
+                {calView === 'month' ? mesLabel(mes) : weekLabel}
+              </span>
+              <button className="mx-btn-icon sm" onClick={() => {
+                if (calView === 'month') {
+                  setMes(prev => {
+                    const [y, m] = prev.split('-');
+                    const d = new Date(parseInt(y), parseInt(m), 1);
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                  });
+                } else {
+                  setWeekOffset(o => o + 1);
+                }
+                setPage(1);
+              }}><ChevronRight size={16} /></button>
+              {calView === 'week' && weekOffset !== 0 && (
+                <button className="mx-btn mx-btn-outline sm" onClick={() => { setWeekOffset(0); setPage(1); }}>Hoy</button>
+              )}
+            </div>
           )}
         </div>
       </div>
