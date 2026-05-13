@@ -29,7 +29,9 @@ import {
   Camera,
   Image as ImageIcon,
   Loader,
-  Share2
+  Share2,
+  MessageSquare,
+  Copy
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
