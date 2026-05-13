@@ -115,10 +115,8 @@ function distanceMeters(a, b) {
   return 2 * radius * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
-function formatDistance(meters) {
-  if (!meters) return '0 m';
-  if (meters < 1000) return `${Math.round(meters)} m`;
-  return `${(meters / 1000).toLocaleString('es-CL', { maximumFractionDigits: 2 })} km`;
+function formatMeters(meters) {
+  return `${Math.round(meters || 0).toLocaleString('es-CL')} m`;
 }
 
 function MapViewportHandler({ onViewportChange, setZoom }) {
@@ -151,6 +149,10 @@ function MeasureLayer({ enabled, points, onAddPoint }) {
   if (!points.length) return null;
 
   const positions = points.map((point) => [point.lat, point.lng]);
+  const segmentMeters = points.map((point, index) => {
+    if (index === 0) return 0;
+    return distanceMeters(points[index - 1], point);
+  });
 
   return (
     <>
@@ -161,7 +163,13 @@ function MeasureLayer({ enabled, points, onAddPoint }) {
           center={[point.lat, point.lng]}
           radius={5}
           pathOptions={{ color: '#f97316', fillColor: '#fff7ed', fillOpacity: 1, weight: 2 }}
-        />
+        >
+          {index > 0 && (
+            <Tooltip permanent direction="top" offset={[0, -8]} className="map-measure-tooltip">
+              {formatMeters(segmentMeters[index])}
+            </Tooltip>
+          )}
+        </CircleMarker>
       ))}
     </>
   );
@@ -173,7 +181,9 @@ const CentroPolygon = memo(function CentroPolygon({
   labelLevel,
   zoom,
   isHarvestActive,
+  isMeasuring,
   onSelect,
+  onMeasurePoint,
 }) {
   const labelSettings = LABEL_CONFIG[labelLevel] || LABEL_CONFIG.media;
   const showLabel = zoom >= labelSettings.showZoom;
@@ -189,7 +199,17 @@ const CentroPolygon = memo(function CentroPolygon({
         weight: isHarvestActive ? 3 : 2,
       }}
       eventHandlers={{
-        click: () => onSelect(centro),
+        click: (event) => {
+          if (isMeasuring) {
+            if (event.originalEvent) {
+              event.originalEvent._stopped = true;
+              event.originalEvent.stopPropagation?.();
+            }
+            onMeasurePoint({ lat: event.latlng.lat, lng: event.latlng.lng });
+            return;
+          }
+          onSelect(centro);
+        },
       }}
     >
       {showLabel && (
@@ -205,6 +225,7 @@ const CentroPolygon = memo(function CentroPolygon({
           </div>
         </Tooltip>
       )}
+      {!isMeasuring && (
       <Popup>
         <div className="map-popup-content">
           <h4 style={{ margin: '0 0 4px 0', color }}>{centro.proveedor}</h4>
@@ -216,12 +237,17 @@ const CentroPolygon = memo(function CentroPolygon({
           <button
             className="mx-btn mx-btn-primary sm am-mt-8"
             style={{ width: '100%', padding: '4px' }}
-            onClick={() => onSelect(centro)}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onSelect(centro);
+            }}
           >
             Ver Detalle
           </button>
         </div>
       </Popup>
+      )}
     </Polygon>
   );
 });
@@ -523,7 +549,9 @@ export default function CentrosMap() {
                   labelLevel={labelLevel}
                   zoom={zoom}
                   isHarvestActive={isHarvestActive}
+                  isMeasuring={isMeasuring}
                   onSelect={handleSelectCentro}
+                  onMeasurePoint={handleAddMeasurePoint}
                 />
               );
             })}
@@ -534,7 +562,7 @@ export default function CentrosMap() {
           <div className="map-measure-panel">
             <strong>Medicion activa</strong>
             <span>Haz clic en el mapa para trazar puntos.</span>
-            <b>{formatDistance(measuredDistance)}</b>
+            <b>{formatMeters(measuredDistance)}</b>
           </div>
         )}
 
@@ -558,8 +586,16 @@ export default function CentrosMap() {
             <div className="mx-modal-body">
               <div className="centros-detail-grid">
                 <div className="detail-item">
+                  <label>Codigo centro</label>
+                  <span>{selectedCentro.code || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Proveedor</label>
+                  <span>{selectedCentro.proveedor || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
                   <label>Comuna</label>
-                  <span>{selectedCentro.comuna}</span>
+                  <span>{selectedCentro.comuna || 'N/A'}</span>
                 </div>
                 <div className="detail-item">
                   <label>Region</label>
@@ -567,13 +603,37 @@ export default function CentrosMap() {
                 </div>
                 <div className="detail-item">
                   <label>Hectareas</label>
-                  <span>{selectedCentro.hectareas} ha</span>
+                  <span>{selectedCentro.hectareas != null ? `${selectedCentro.hectareas} ha` : 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Tons max</label>
+                  <span>{selectedCentro.tonsMax != null ? `${selectedCentro.tonsMax} t` : 'N/A'}</span>
                 </div>
                 <div className="detail-item">
                   <label>Estado Sernapesca</label>
                   <span className={`mx-badge ${selectedCentro.estadoAreaSernapesca === 'Abierta' ? 'mx-badge-success' : 'mx-badge-muted'}`}>
                     {selectedCentro.estadoAreaSernapesca || 'N/A'}
                   </span>
+                </div>
+                <div className="detail-item">
+                  <label>Area PSMB</label>
+                  <span>{selectedCentro.areaPSMB || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Codigo area</label>
+                  <span>{selectedCentro.codigoArea || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Grupo especie</label>
+                  <span>{selectedCentro.grupoEspecie || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Nro permiso</label>
+                  <span>{selectedCentro.nroPermiso || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <label>RUT</label>
+                  <span>{selectedCentro.rut || 'N/A'}</span>
                 </div>
                 <div className="detail-item" style={{ gridColumn: 'span 2' }}>
                   <label>Especies Autorizadas</label>
