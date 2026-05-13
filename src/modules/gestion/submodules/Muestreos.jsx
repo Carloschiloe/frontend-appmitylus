@@ -865,12 +865,11 @@ export default function Muestreos() {
       const centro = m.centroCodigo || m.centroNombre || 'Sin Centro';
       const fecha = m.fecha ? new Date(m.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
-      const shareText = `📊 *REPORTE DE MUESTREO*\n` + 
-                        `───────────────────────\n` +
-                        `🏭 *Proveedor:* ${proveedor}\n` +
-                        `📍 *Centro:* ${centro}\n` +
-                        `📅 *Fecha:* ${fecha}\n\n` +
-                        `🔗 *Link del Reporte:* \n${res.url}`;
+      const shareText = `*REPORTE MMPP* 📊\n` + 
+                        `*${proveedor}*\n` +
+                        `📍 Centro: ${centro}\n` +
+                        `📅 Fecha: ${fecha}\n\n` +
+                        `🔗 *Ver Muestreo:* \n${res.url}`;
 
       setShareData({
         url: res.url,
