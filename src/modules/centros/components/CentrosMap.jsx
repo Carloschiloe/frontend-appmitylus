@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, Maximize, Ruler, X } from 'lucide-react';
 import { MapContainer, TileLayer, Polygon, Popup, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
@@ -45,6 +46,7 @@ function ZoomHandler({ setZoom }) {
 
 export default function CentrosMap() {
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSpecies, setActiveSpecies] = useState('all');
   const [mapType, setMapType] = useState('street');
@@ -53,6 +55,7 @@ export default function CentrosMap() {
   const [selectedCentro, setSelectedCentro] = useState(null);
   const [zoom, setZoom] = useState(9);
   const [mapInstance, setMapInstance] = useState(null);
+  const selectedCentroCode = searchParams.get('centro') || '';
 
   const { data = [], isLoading: loading } = useQuery({
     queryKey: ['centros', 'mapa'],
@@ -89,11 +92,30 @@ export default function CentrosMap() {
   const handleSelectSuggestion = (centro) => {
     setSearchTerm(centro.code);
     setSelectedCentro(centro);
+    setSearchParams({ centro: centro.code }, { replace: true });
     if (mapInstance && centro.coords?.length > 0) {
       const firstCoord = [centro.coords[0].lat, centro.coords[0].lng];
       mapInstance.flyTo(firstCoord, 16, { duration: 0.8 }); // Animación más rápida
     }
   };
+
+  useEffect(() => {
+    const centroCode = String(selectedCentroCode || '').trim().toUpperCase();
+    if (!centroCode || !data.length) return;
+
+    const target = data.find((centro) => String(centro.code || '').trim().toUpperCase() === centroCode);
+    if (!target) {
+      setSearchTerm(centroCode);
+      return;
+    }
+
+    setSearchTerm(target.code || centroCode);
+
+    if (mapInstance && target.coords?.length > 0) {
+      const firstCoord = [target.coords[0].lat, target.coords[0].lng];
+      mapInstance.flyTo(firstCoord, 16, { duration: 0.8 });
+    }
+  }, [data, mapInstance, selectedCentroCode]);
 
   const mapCentros = useMemo(() => {
     return data.filter(c => {

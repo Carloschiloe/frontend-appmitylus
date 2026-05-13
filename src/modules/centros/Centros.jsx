@@ -26,6 +26,10 @@ export default function Centros() {
     window.dispatchEvent(new CustomEvent('centros:open-create'));
   };
 
+  const notifyImportCentros = () => {
+    window.dispatchEvent(new CustomEvent('centros:open-import'));
+  };
+
   return (
     <div className="mx-page">
       <header className="mx-hero">
@@ -34,7 +38,11 @@ export default function Centros() {
           <h1>Directorio de Centros</h1>
         </div>
         <div className="mx-hero-actions">
-          <button className="mx-btn mx-btn-outline" style={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}>
+          <button
+            className="mx-btn mx-btn-outline"
+            style={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
+            onClick={notifyImportCentros}
+          >
             <FileUp size={18} /> Importar
           </button>
           <button className="mx-btn mx-btn-primary" onClick={notifyCreateCentro}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Search,
@@ -13,12 +13,13 @@ import {
   X,
   Plus,
 } from 'lucide-react';
-import { deleteCentro, getCentros, upsertCentro } from '../../../api/api-centros';
+import { deleteCentro, exportCentros, getCentros, syncSubpesca, upsertCentro } from '../../../api/api-centros';
 import { useToast } from '../../../context/ToastContext';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 
 export default function CentrosTable() {
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
@@ -35,7 +36,9 @@ export default function CentrosTable() {
   const [comunaFilter, setComunaFilter] = useState(searchParams.get('comuna') || '');
   const [providerFilter, setProviderFilter] = useState(searchParams.get('proveedor') || '');
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [modalState, setModalState] = useState({ open: false, item: null });
+  const [confirmImport, setConfirmImport] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [modalState, setModalState] = useState({ open: false, mode: 'create', item: null });
 
   useEffect(() => {
     setSearchTerm(searchParams.get('q') || '');
@@ -55,10 +58,47 @@ export default function CentrosTable() {
   }, [searchTerm, comunaFilter, providerFilter, setSearchParams]);
 
   useEffect(() => {
-    const openCreate = () => setModalState({ open: true, item: null });
+    const openCreate = () => setModalState({ open: true, mode: 'create', item: null });
+    const openImport = () => setConfirmImport(true);
     window.addEventListener('centros:open-create', openCreate);
-    return () => window.removeEventListener('centros:open-create', openCreate);
+    window.addEventListener('centros:open-import', openImport);
+    return () => {
+      window.removeEventListener('centros:open-create', openCreate);
+      window.removeEventListener('centros:open-import', openImport);
+    };
   }, []);
+
+  const openCreateModal = useCallback(() => {
+    setModalState({ open: true, mode: 'create', item: null });
+  }, []);
+
+  const openViewModal = useCallback((item) => {
+    setModalState({ open: true, mode: 'view', item });
+  }, []);
+
+  const openEditModal = useCallback((item) => {
+    setModalState({ open: true, mode: 'edit', item });
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalState({ open: false, mode: 'create', item: null });
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setSearchTerm('');
+    setComunaFilter('');
+    setProviderFilter('');
+    setSearchParams(new URLSearchParams(), { replace: true });
+  }, [setSearchParams]);
+
+  const handleOpenMap = useCallback((centro) => {
+    const code = String(centro?.code || '').trim();
+    if (!code) {
+      addToast({ title: 'Sin codigo', message: 'Este centro no tiene codigo para ubicarlo en el mapa.', type: 'warning' });
+      return;
+    }
+    navigate(`/centros/mapa?centro=${encodeURIComponent(code)}`);
+  }, [addToast, navigate]);
 
   const handleDeleteCentro = useCallback(async () => {
     if (!confirmDelete?._id) return;
@@ -79,6 +119,55 @@ export default function CentrosTable() {
       });
     }
   }, [confirmDelete, addToast, queryClient]);
+
+  const handleExportCentros = useCallback(async () => {
+    try {
+      const csv = await exportCentros({
+        q: searchTerm,
+        comuna: comunaFilter,
+        proveedor: providerFilter,
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `centros-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      addToast({ title: 'Exportacion lista', message: 'El archivo CSV de centros fue generado.', type: 'success' });
+    } catch (err) {
+      addToast({
+        title: 'No se pudo exportar',
+        message: err?.data?.error || err?.message || 'No se pudo generar el archivo de centros.',
+        type: 'error',
+      });
+    }
+  }, [addToast, comunaFilter, providerFilter, searchTerm]);
+
+  const handleImportSubpesca = useCallback(async () => {
+    if (importing) return;
+    setImporting(true);
+    try {
+      const result = await syncSubpesca();
+      setConfirmImport(false);
+      queryClient.invalidateQueries({ queryKey: ['centros', 'mapa'] });
+      addToast({
+        title: 'Centros actualizados',
+        message: `SUBPESCA sincronizo ${result?.centros || 0} centros.`,
+        type: 'success',
+      });
+    } catch (err) {
+      addToast({
+        title: 'No se pudo importar',
+        message: err?.data?.error || err?.message || 'No se pudo sincronizar desde SUBPESCA.',
+        type: 'error',
+      });
+    } finally {
+      setImporting(false);
+    }
+  }, [addToast, importing, queryClient]);
 
   const handleSubmitCentro = useCallback(async (event) => {
     event.preventDefault();
@@ -102,7 +191,7 @@ export default function CentrosTable() {
         message: `${payload.code || 'El centro'} fue guardado correctamente.`,
         type: 'success',
       });
-      setModalState({ open: false, item: null });
+      closeModal();
       queryClient.invalidateQueries({ queryKey: ['centros', 'mapa'] });
     } catch (err) {
       addToast({
@@ -111,7 +200,7 @@ export default function CentrosTable() {
         type: 'error',
       });
     }
-  }, [modalState.item, addToast, queryClient]);
+  }, [modalState.item, addToast, closeModal, queryClient]);
 
   const filteredData = useMemo(() => {
     return data.filter((c) => {
@@ -151,6 +240,8 @@ export default function CentrosTable() {
       centros: filteredData.length,
     };
   }, [providerFilter, filteredData]);
+
+  const isViewMode = modalState.mode === 'view';
 
   return (
     <div className="centros-table-container">
@@ -210,22 +301,17 @@ export default function CentrosTable() {
 
           <button
             className="mx-btn mx-btn-outline"
-            onClick={useCallback(() => {
-              setSearchTerm('');
-              setComunaFilter('');
-              setProviderFilter('');
-              setSearchParams(new URLSearchParams(), { replace: true });
-            }, [setSearchParams])}
+            onClick={handleClearFilters}
           >
             Limpiar
           </button>
         </div>
 
         <div className="mx-toolbar-group">
-          <button className="mx-btn mx-btn-outline" style={{ height: 42 }}>
+          <button className="mx-btn mx-btn-outline" style={{ height: 42 }} onClick={handleExportCentros}>
             <Download size={18} /> Exportar
           </button>
-          <button className="mx-btn mx-btn-primary" onClick={useCallback(() => setModalState({ open: true, item: null }), [])}>
+          <button className="mx-btn mx-btn-primary" onClick={openCreateModal}>
             <Plus size={18} /> Nuevo Centro
           </button>
         </div>
@@ -283,8 +369,9 @@ export default function CentrosTable() {
                     <td>{Number(centro.hectareas || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}</td>
                     <td>
                       <div className="centros-actions">
-                        <button className="mx-btn-icon" title="Ver detalles" onClick={() => setModalState({ open: true, item: centro })}><Eye size={16} /></button>
-                        <button className="mx-btn-icon" title="Editar" onClick={() => setModalState({ open: true, item: centro })}><Edit size={16} /></button>
+                        <button className="mx-btn-icon" title="Ver en mapa" onClick={() => handleOpenMap(centro)}><MapPin size={16} /></button>
+                        <button className="mx-btn-icon" title="Ver detalles" onClick={() => openViewModal(centro)}><Eye size={16} /></button>
+                        <button className="mx-btn-icon" title="Editar" onClick={() => openEditModal(centro)}><Edit size={16} /></button>
                         <button className="mx-btn-icon" title="Eliminar" onClick={() => setConfirmDelete(centro)}><Trash2 size={16} /></button>
                       </div>
                     </td>
@@ -308,15 +395,77 @@ export default function CentrosTable() {
         }
       />
 
+      <ConfirmDeleteModal
+        isOpen={confirmImport}
+        onClose={() => setConfirmImport(false)}
+        onConfirm={handleImportSubpesca}
+        title="Actualizar centros desde SUBPESCA"
+        description={
+          importing
+            ? 'Sincronizando centros oficiales...'
+            : 'Se consultara la fuente oficial y se actualizaran los centros existentes por codigo. Esta accion puede tardar unos segundos.'
+        }
+        confirmLabel={importing ? 'Sincronizando...' : 'Actualizar'}
+      />
+
       {modalState.open && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '760px' }}>
             <div className="mx-modal-header">
-              <h2>{modalState.item?._id ? 'Editar Centro' : 'Nuevo Centro'}</h2>
-              <button type="button" className="mx-btn-icon" onClick={() => setModalState({ open: false, item: null })}>
+              <h2>{isViewMode ? 'Detalle Centro' : modalState.item?._id ? 'Editar Centro' : 'Nuevo Centro'}</h2>
+              <button type="button" className="mx-btn-icon" onClick={closeModal}>
                 <X size={20} />
               </button>
             </div>
+            {isViewMode ? (
+              <>
+                <div className="mx-modal-body">
+                  <div className="centros-detail-grid">
+                    <div className="detail-item">
+                      <label>Proveedor</label>
+                      <span>{modalState.item?.proveedor || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Codigo centro</label>
+                      <span>{modalState.item?.code || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Comuna</label>
+                      <span>{modalState.item?.comuna || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Region</label>
+                      <span>{modalState.item?.region || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Area PSMB</label>
+                      <span>{modalState.item?.areaPSMB || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Estado area</label>
+                      <span>{modalState.item?.estadoAreaSernapesca || 'Desconocido'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Hectareas</label>
+                      <span>{Number(modalState.item?.hectareas || 0).toLocaleString('es-CL')} ha</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Tons max</label>
+                      <span>{Number(modalState.item?.tonsMax || 0).toLocaleString('es-CL')}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mx-modal-footer">
+                  <button type="button" className="mx-btn mx-btn-outline" onClick={closeModal}>Cerrar</button>
+                  <button type="button" className="mx-btn mx-btn-outline" onClick={() => handleOpenMap(modalState.item)}>
+                    <MapPin size={18} /> Ver en mapa
+                  </button>
+                  <button type="button" className="mx-btn mx-btn-primary" onClick={() => openEditModal(modalState.item)}>
+                    <Edit size={18} /> Editar
+                  </button>
+                </div>
+              </>
+            ) : (
             <form onSubmit={handleSubmitCentro} className="mx-form">
               <div className="mx-modal-body" style={{ display: 'grid', gap: '18px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '16px' }}>
@@ -369,7 +518,7 @@ export default function CentrosTable() {
                 </div>
               </div>
               <div className="mx-modal-footer">
-                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setModalState({ open: false, item: null })}>
+                <button type="button" className="mx-btn mx-btn-outline" onClick={closeModal}>
                   Cancelar
                 </button>
                 <button type="submit" className="mx-btn mx-btn-primary">
@@ -377,6 +526,7 @@ export default function CentrosTable() {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

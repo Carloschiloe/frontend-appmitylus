@@ -27,6 +27,15 @@ export async function deleteCentro(id) {
   return apiClient.delete(`${BASE}/${id}`);
 }
 
+export async function exportCentros(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v) params.set(k, v);
+  });
+
+  return apiClient.get(`${BASE}/export${params.size ? `?${params}` : ''}`);
+}
+
 export async function syncSubpesca() {
   return apiClient.post(`${BASE}/sync-subpesca`);
 }
