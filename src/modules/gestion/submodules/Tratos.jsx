@@ -55,6 +55,25 @@ function parseNumberOrNull(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function formatInteger(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number === 0) return '-';
+  return number.toLocaleString('es-CL', { maximumFractionDigits: 0 });
+}
+
+function formatMoney(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number === 0) return '-';
+  return `$${number.toLocaleString('es-CL', { maximumFractionDigits: 0 })}`;
+}
+
 function getDateOnlyParts(value) {
   if (!value) return null;
   if (typeof value === 'string') {
@@ -93,22 +112,22 @@ function normalizeDateOnlyForUiSafe(value) {
 }
 
 function deriveCamionesXDia(condiciones = []) {
-  const match = (condiciones || []).find((item) => /camiones?\s*d[ií]a/i.test(String(item?.nombre || '')));
+  const match = (condiciones || []).find((item) => /camiones?\s*dia/.test(normalizeText(item?.nombre)));
   return parseNumberOrNull(match?.valor);
 }
 
 function derivePrecioDesdeCondiciones(condiciones = []) {
-  const match = (condiciones || []).find((item) => /precio/i.test(String(item?.nombre || '')));
+  const match = (condiciones || []).find((item) => /precio/.test(normalizeText(item?.nombre)));
   return parseNumberOrNull(match?.valor);
 }
 
 function deriveVolumenDesdeCondiciones(condiciones = []) {
-  const match = (condiciones || []).find((item) => /volumen|total/i.test(String(item?.nombre || '')));
+  const match = (condiciones || []).find((item) => /volumen|total/.test(normalizeText(item?.nombre)));
   return parseNumberOrNull(match?.valor);
 }
 
 function derivePlazoDesdeCondiciones(condiciones = []) {
-  const match = (condiciones || []).find((item) => /plazo|pago/i.test(String(item?.nombre || '')));
+  const match = (condiciones || []).find((item) => /plazo|pago/.test(normalizeText(item?.nombre)));
   return match?.valor || '';
 }
 
@@ -187,8 +206,9 @@ export default function Tratos() {
     e.preventDefault();
     try {
       if (editingId) {
+        const volumenDesdeCondiciones = deriveVolumenDesdeCondiciones(form.condiciones);
         const tratoPayload = {
-          tonsAcordadas: parseNumberOrNull(form.tonsAcordadas),
+          tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
           precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
           notasTrato: form.notas || '',
           camionesXDia: deriveCamionesXDia(form.condiciones),
@@ -330,32 +350,26 @@ export default function Tratos() {
                   const displayCamiones = item.camionesXDia || deriveCamionesXDia(item.condiciones);
 
                   return (
-                    <tr key={item._id}>
+                    <tr key={item._id} className="tratos-row">
                       <td>
-                        <div style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '0.95rem' }}>{item.proveedorNombre}</div>
-                        <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '10px', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                             💵 ${Number(displayPrecio).toLocaleString()}
-                          </span>
+                        <div className="tratos-provider-name">{item.proveedorNombre}</div>
+                        <div className="tratos-chip-row">
+                          <span className="tratos-chip">Precio {formatMoney(displayPrecio)}</span>
                           {displayPlazo && (
-                            <span style={{ fontSize: '10px', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                               💳 {displayPlazo} d
-                            </span>
+                            <span className="tratos-chip">Pago {formatInteger(displayPlazo)} dias</span>
                           )}
                           {displayCamiones && (
-                            <span style={{ fontSize: '10px', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                               🚚 {displayCamiones} cam/día
-                            </span>
+                            <span className="tratos-chip">Carga {formatInteger(displayCamiones)} cam/dia</span>
                           )}
                         </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <div style={{ fontWeight: 800, color: 'var(--color-primary)' }}>{displayTons} t</div>
-                        <div style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>Acordado</div>
+                        <div className="tratos-metric-primary">{formatInteger(displayTons)} t</div>
+                        <div className="tratos-metric-label">Volumen</div>
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <div style={{ fontWeight: 800 }}>${Number(displayPrecio).toLocaleString()}</div>
-                        <div style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>x Kg</div>
+                        <div className="tratos-metric-strong">{formatMoney(displayPrecio)}</div>
+                        <div className="tratos-metric-label">x kg</div>
                       </td>
                       <td style={{ color: 'var(--color-text-subtle)', fontSize: '0.85rem' }}>
                         <div style={{ fontWeight: 600 }}>{formatDateOnlySafe(item.fechaCierre)}</div>
@@ -404,7 +418,7 @@ export default function Tratos() {
                 </div>
                 <div className="mx-form-group">
                   <label className="mx-label">Tons Acordadas</label>
-                  <input type="number" className="mx-input" value={form.tonsAcordadas} onChange={e => setForm({...form, tonsAcordadas: e.target.value})} required />
+                  <input type="number" step="1" className="mx-input" value={form.tonsAcordadas} onChange={e => setForm({...form, tonsAcordadas: e.target.value})} />
                 </div>
                 
                 <div className="am-mt-16">
@@ -416,8 +430,8 @@ export default function Tratos() {
                       <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', textAlign: 'center', padding: '10px' }}>No hay condiciones configuradas en maestros.</p>
                     ) : (
                       form.condiciones.map((c, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: idx < form.condiciones.length - 1 ? '1px solid #e2e8f0' : 'none', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 600, flex: '1 1 120px' }}>{c.nombre}</span>
+                        <div key={idx} className="tratos-condition-row">
+                          <span className="tratos-condition-name">{c.nombre}</span>
                           
                           {c.tipoValor === 'porcentaje' && (
                             <select 
