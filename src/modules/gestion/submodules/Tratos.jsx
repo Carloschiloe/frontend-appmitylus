@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
-  Search, Plus, Edit, Trash2, X, RotateCcw
+  Search, Plus, Edit, Trash2, X, RotateCcw, Send, CheckCircle2, Copy
 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { apiClient } from '../../../api/apiClient';
@@ -130,6 +130,7 @@ export default function Tratos() {
   const [editingId, setEditingId] = useState(null);
   const [editingEstadoApi, setEditingEstadoApi] = useState('');
   const [confirmDeleteTrato, setConfirmDeleteTrato] = useState(null);
+  const [shareModal, setShareModal] = useState({ open: false, url: '', item: null });
 
   // 1. Carga de datos con React Query
   const { data: tratosRes, isLoading: loadingTratos } = useTratos();
@@ -256,6 +257,20 @@ export default function Tratos() {
     setForm({ ...form, condiciones: nextCond });
   };
 
+  const compartirTrato = async (item) => {
+    try {
+      const res = await apiClient.post(`/oportunidades/${item._id}/share`);
+      setShareModal({ open: true, url: res.url, item });
+    } catch {
+      addToast({ title: 'Error', message: 'No se pudo generar el link para compartir', type: 'error' });
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    addToast({ title: 'Copiado', message: 'Link copiado al portapapeles', type: 'success' });
+  };
+
   const filteredItems = items.filter(i => 
     (i.proveedorNombre || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -353,6 +368,14 @@ export default function Tratos() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div className="mx-table-actions-cell" style={{ justifyContent: 'flex-end' }}>
+                           <button 
+                             className="mx-action-btn" 
+                             style={{ color: 'var(--color-primary)' }} 
+                             title="Compartir Trato" 
+                             onClick={() => compartirTrato(item)}
+                           >
+                             <Send size={14} />
+                           </button>
                            <button className="mx-action-btn edit" title="Editar Negociación" onClick={() => openEdit(item)}><Edit size={14} /></button>
                            <button className="mx-action-btn delete" title="Eliminar" onClick={() => setConfirmDeleteTrato(item)}><Trash2 size={14} /></button>
                         </div>
@@ -476,6 +499,49 @@ export default function Tratos() {
         title="¿Eliminar trato?"
         itemName={confirmDeleteTrato?.proveedorNombre}
       />
+
+      {/* Modal de Compartir Trato (Minimalista) */}
+      {shareModal.open && (
+        <div className="mx-modal-overlay" style={{ zIndex: 1100, backdropFilter: 'blur(4px)' }}>
+          <div className="mx-modal" style={{ maxWidth: '380px', borderRadius: '24px', padding: '32px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ width: '64px', height: '64px', background: '#f0fdf4', color: '#166534', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <CheckCircle2 size={32} />
+              </div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 8px' }}>Trato Listo</h2>
+              <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>Envía el comprobante oficial al proveedor.</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+              <a 
+                href={`https://wa.me/?text=${encodeURIComponent(`🤝 Hola ${shareModal.item?.proveedorNombre}, adjunto la confirmación oficial de nuestra negociación: ${shareModal.url}`)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="mx-btn mx-btn-primary"
+                style={{ background: '#25D366', borderColor: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', height: '48px', borderRadius: '14px' }}
+              >
+                <Send size={18} /> WhatsApp Directo
+              </a>
+              
+              <button 
+                className="mx-btn mx-btn-outline"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', height: '48px', borderRadius: '14px' }}
+                onClick={() => copyToClipboard(shareModal.url)}
+              >
+                <Copy size={18} /> Copiar Link
+              </button>
+
+              <button 
+                className="mx-btn"
+                style={{ border: 'none', background: 'transparent', color: '#94a3b8', fontSize: '0.85rem', marginTop: '8px' }}
+                onClick={() => setShareModal({ open: false, url: '', item: null })}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
      </div>
    );
  }
