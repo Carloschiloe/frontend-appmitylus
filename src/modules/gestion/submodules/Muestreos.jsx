@@ -861,21 +861,25 @@ export default function Muestreos() {
       const centro = m.centroCodigo || m.centroNombre || 'Sin Centro';
       const fecha = m.fecha ? new Date(m.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
-      // Mensaje estructurado para WhatsApp / Redes
-      const shareText = `📊 *REPORTE DE MUESTREO · MITYNEX*\n-------------------------------------------\n🏭 *Proveedor:* ${proveedor}\n📍 *Centro:* ${centro}\n📅 *Fecha:* ${fecha}\n\n🔗 *Ver reporte completo aquí:*\n${res.url}`;
+      // Mensaje estructurado para WhatsApp / Redes (Ultra Moderno)
+      const shareText = `📊 *REPORTE DE MUESTREO*\n` + 
+                        `───────────────────────\n` +
+                        `🏭 *Proveedor:* ${proveedor}\n` +
+                        `📍 *Centro:* ${centro}\n` +
+                        `📅 *Fecha:* ${fecha}\n\n` +
+                        `🔗 *Link del Reporte:* \n${res.url}`;
 
       // 1. Intentar compartir nativo (Especialmente útil en móviles)
       if (navigator.share) {
         try {
           await navigator.share({
-            title: `Reporte Mitynex - ${proveedor}`,
-            text: shareText,
-            // Algunos navegadores requieren URL por separado, otros la incluyen en el text
-            url: res.url 
+            title: `Reporte Mitynex: ${proveedor}`,
+            text: shareText
+            // Quitamos 'url' por separado porque muchos clientes (WhatsApp Web/Desktop)
+            // lo manejan mejor si va todo dentro del 'text'
           });
-          return; // Si compartió con éxito, salimos
+          return; 
         } catch (err) {
-          // Si falla o el usuario cancela, caemos al copiado tradicional
           console.log('Compartir nativo cancelado o fallido, usando portapapeles');
         }
       }
