@@ -857,14 +857,35 @@ export default function Muestreos() {
       setIsLoadingDetails(true);
       const res = await apiClient.post(`/muestreos/${id}/share`);
       
-      console.log('[PUBLIC SHARE URL COPIED] (table)', res.url);
+      const proveedor = m.proveedorNombre || 'Proveedor';
+      const centro = m.centroCodigo || m.centroNombre || 'Sin Centro';
+      const fecha = m.fecha ? new Date(m.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
-      // Copiar al portapapeles
+      // Mensaje estructurado para WhatsApp / Redes
+      const shareText = `📊 *REPORTE DE MUESTREO · MITYNEX*\n-------------------------------------------\n🏭 *Proveedor:* ${proveedor}\n📍 *Centro:* ${centro}\n📅 *Fecha:* ${fecha}\n\n🔗 *Ver reporte completo aquí:*\n${res.url}`;
+
+      // 1. Intentar compartir nativo (Especialmente útil en móviles)
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `Reporte Mitynex - ${proveedor}`,
+            text: shareText,
+            // Algunos navegadores requieren URL por separado, otros la incluyen en el text
+            url: res.url 
+          });
+          return; // Si compartió con éxito, salimos
+        } catch (err) {
+          // Si falla o el usuario cancela, caemos al copiado tradicional
+          console.log('Compartir nativo cancelado o fallido, usando portapapeles');
+        }
+      }
+
+      // 2. Fallback: Copiar al portapapeles el mensaje formateado
       if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(res.url);
+        await navigator.clipboard.writeText(shareText);
       } else {
         const textArea = document.createElement("textarea");
-        textArea.value = res.url;
+        textArea.value = shareText;
         document.body.appendChild(textArea);
         textArea.select();
         document.execCommand("copy");
@@ -872,8 +893,8 @@ export default function Muestreos() {
       }
 
       addToast({ 
-        title: '¡Enlace generado!', 
-        message: `El enlace público ha sido copiado: ${res.url}`, 
+        title: '¡Mensaje generado!', 
+        message: `Se ha copiado un mensaje profesional de ${proveedor} listo para enviar.`, 
         type: 'success' 
       });
     } catch (err) {
