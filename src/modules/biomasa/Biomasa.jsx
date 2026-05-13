@@ -299,15 +299,17 @@ export default function Biomasa() {
           <h1 className="biomasa-title">{isStatusView ? 'Disponibilidad de biomasa' : isProgramView ? 'Programa de Cosecha' : 'Muestreos Técnicos'}</h1>
         </div>
         <div className="mx-hero-actions">
-          <div className="mx-search-box" style={{ minWidth: 'auto' }}>
-            <CalendarIcon size={18} />
-            <input 
-              type="month" 
-              value={mes} 
-              onChange={(e) => setMes(e.target.value)} 
-              style={{ paddingLeft: '42px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} 
-            />
-          </div>
+          {!isMuestreosView && (
+            <div className="mx-search-box" style={{ minWidth: 'auto' }}>
+              <CalendarIcon size={18} />
+              <input 
+                type="month" 
+                value={mes} 
+                onChange={(e) => setMes(e.target.value)} 
+                style={{ paddingLeft: '42px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} 
+              />
+            </div>
+          )}
           <button className="mx-btn-icon" onClick={load} style={{ color: 'white', background: 'rgba(255,255,255,0.1)' }}>
             <RotateCcw size={20} />
           </button>

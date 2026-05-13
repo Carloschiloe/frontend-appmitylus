@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/apiClient';
 import { useMuestreos } from '../modules/gestion/hooks/useGestionQueries';
 
-export function useMuestreosData(viewMode) {
+export function useMuestreosData(viewMode, { mes, weekRange } = {}) {
   const [page, setPage] = useState(1);
   const lim = viewMode === 'grouped' ? 500 : 50;
 
@@ -11,12 +11,27 @@ export function useMuestreosData(viewMode) {
   const reporteId = new URLSearchParams(window.location.search).get('reporteId');
   const isEnabled = !!activeTenant || !!reporteId;
 
+  // Calcular rango de fechas según el filtro activo
+  const dateFilter = useMemo(() => {
+    if (weekRange && weekRange.length >= 2) {
+      return { from: weekRange[0], to: weekRange[weekRange.length - 1] + 'T23:59:59.999Z' };
+    }
+    if (mes) {
+      const [y, m] = mes.split('-');
+      const from = `${mes}-01`;
+      const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+      const to = `${mes}-${String(lastDay).padStart(2, '0')}T23:59:59.999Z`;
+      return { from, to };
+    }
+    return {};
+  }, [mes, weekRange]);
+
   // 1. Muestreos con React Query
   const { 
     data: muestreosRes, 
     isLoading: loadingMue, 
     refetch: refresh 
-  } = useMuestreos({ limit: lim, page }, { enabled: isEnabled });
+  } = useMuestreos({ limit: lim, page, ...dateFilter }, { enabled: isEnabled });
 
   // 2. Maestros con React Query (específico para muestreos)
   const { data: catsRes } = useQuery({

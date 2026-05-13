@@ -14,6 +14,7 @@ import {
   ChevronUp,
   Check,
   ChevronRight,
+  ChevronLeft,
   Printer,
   Calendar,
   User,
@@ -85,7 +86,40 @@ export default function Muestreos() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'grouped'
-  const { muestreos, maestros, loading, page, setPage, pagination, refresh: loadData } = useMuestreosData(viewMode);
+
+  // ── Calendario navegador ──────────────────────────────────
+  const mesActualStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  };
+  const MESES_LARGO = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const mesLabel = (mk = '') => {
+    if (!mk) return '';
+    const [y, m] = mk.split('-');
+    return `${MESES_LARGO[parseInt(m, 10) - 1]} ${y}`.toUpperCase();
+  };
+
+  const [calView, setCalView] = useState('month'); // 'month' | 'week'
+  const [mes, setMes] = useState(mesActualStr);
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const weekDays = React.useMemo(() => {
+    const start = new Date();
+    const day = start.getDay();
+    start.setDate(start.getDate() - (day === 0 ? 6 : day - 1) + weekOffset * 7);
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return d.toISOString().split('T')[0];
+    });
+  }, [weekOffset]);
+
+  const weekLabel = `${new Date(weekDays[0] + 'T12:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })} — ${new Date(weekDays[6] + 'T12:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+
+  const { muestreos, maestros, loading, page, setPage, pagination, refresh: loadData } = useMuestreosData(
+    viewMode,
+    calView === 'month' ? { mes } : { weekRange: weekDays }
+  );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteOpen, setDeleteOpen] = useState(false);
@@ -875,6 +909,48 @@ export default function Muestreos() {
 
   return (
     <div className="muestreos-container am-p-24" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+
+      {/* ── Navegador de Calendario ── */}
+      <div className="mx-card" style={{ marginBottom: '16px', padding: '14px 18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <div className="mx-toggle-group">
+            <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => { setCalView('month'); setPage(1); }}>Vista Mes</button>
+            <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => { setCalView('week'); setPage(1); }}>Vista Semana</button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button className="mx-btn-icon sm" onClick={() => {
+              if (calView === 'month') {
+                setMes(prev => {
+                  const [y, m] = prev.split('-');
+                  const d = new Date(parseInt(y), parseInt(m) - 2, 1);
+                  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                });
+              } else {
+                setWeekOffset(o => o - 1);
+              }
+              setPage(1);
+            }}><ChevronLeft size={16} /></button>
+            <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-text)', minWidth: '200px', textAlign: 'center', textTransform: 'uppercase' }}>
+              {calView === 'month' ? mesLabel(mes) : weekLabel}
+            </span>
+            <button className="mx-btn-icon sm" onClick={() => {
+              if (calView === 'month') {
+                setMes(prev => {
+                  const [y, m] = prev.split('-');
+                  const d = new Date(parseInt(y), parseInt(m), 1);
+                  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                });
+              } else {
+                setWeekOffset(o => o + 1);
+              }
+              setPage(1);
+            }}><ChevronRight size={16} /></button>
+            {calView === 'week' && weekOffset !== 0 && (
+              <button className="mx-btn mx-btn-outline sm" onClick={() => { setWeekOffset(0); setPage(1); }}>Hoy</button>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="mx-toolbar am-mt-16">
         <div className="mx-toggle-group">
