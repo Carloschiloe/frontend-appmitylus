@@ -1809,14 +1809,14 @@ export default function Muestreos() {
                 style={{ height: '44px', borderRadius: '12px', fontSize: '14px', fontWeight: 600, border: '1.5px solid #e2e8f0' }}
                 onClick={async () => {
                   if (navigator.clipboard && window.isSecureContext) {
-                    await navigator.clipboard.writeText(shareData?.message);
-                    addToast({ title: '¡Copiado!', message: 'Link listo.', type: 'success' });
+                    await navigator.clipboard.writeText(shareData?.url);
+                    addToast({ title: '¡Copiado!', message: 'Link listo en el portapapeles.', type: 'success' });
                     setIsShareModalOpen(false);
                   }
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <Copy size={16} /> Copiar Mensaje
+                  <Copy size={16} /> Copiar Link
                 </div>
               </button>
 
