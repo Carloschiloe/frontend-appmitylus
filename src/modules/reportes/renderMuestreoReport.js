@@ -104,7 +104,7 @@ export const generarHTMLReporte = (m, options = {}) => {
         <div style="font-size:14px;font-weight:800;color:#166534;margin-bottom:4px;">
           ✅ Clasifica como: ${primary.nombre}${primary.tipoPrincipal ? ` <span style="font-weight:600;font-size:12px;color:#15803d;">(${primary.tipoPrincipal})</span>` : ''}
         </div>
-        <div style="font-size:12px;color:#16a34a;margin-bottom:12px;">La materia prima cumple los parámetros establecidos en el maestro vigente.</div>
+        <div style="font-size:12px;color:#16a34a;margin-bottom:12px;">El lote cumple con los estándares de calidad para su recepción.</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
           <div style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:10px;text-align:center;">
             <div style="font-size:10px;color:#6b7280;margin-bottom:2px;">R% Carne</div>
@@ -122,7 +122,7 @@ export const generarHTMLReporte = (m, options = {}) => {
         ${auditCumpleHTML}
       </div>`;
   } else {
-    auditoriaHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px 18px;"><div style="font-size:14px;font-weight:800;color:#991b1b;margin-bottom:6px;">❌ No clasifica en ninguna categoría del maestro vigente</div>${auditNoClasificaHTML}</div>`;
+    auditoriaHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px 18px;"><div style="font-size:14px;font-weight:800;color:#991b1b;margin-bottom:6px;">❌ Muestreo con observaciones: no logra clasificar dentro de los estándares esperados</div>${auditNoClasificaHTML}</div>`;
   }
 
 
