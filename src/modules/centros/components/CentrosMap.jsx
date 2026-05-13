@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { memo, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Maximize, Ruler, Search, Trash2, X } from 'lucide-react';
 import {
@@ -6,7 +6,6 @@ import {
   MapContainer,
   Polygon,
   Polyline,
-  Popup,
   TileLayer,
   Tooltip,
   useMap,
@@ -181,6 +180,7 @@ const CentroPolygon = memo(function CentroPolygon({
   labelLevel,
   zoom,
   isHarvestActive,
+  isFocused,
   isMeasuring,
   onSelect,
   onMeasurePoint,
@@ -193,10 +193,10 @@ const CentroPolygon = memo(function CentroPolygon({
     <Polygon
       positions={centro.coordsPositions}
       pathOptions={{
-        color,
-        fillColor: color,
-        fillOpacity: isHarvestActive ? 0.34 : 0.22,
-        weight: isHarvestActive ? 3 : 2,
+        color: isFocused ? '#38bdf8' : color,
+        fillColor: isFocused ? '#38bdf8' : color,
+        fillOpacity: isFocused ? 0.48 : (isHarvestActive ? 0.34 : 0.22),
+        weight: isFocused ? 5 : (isHarvestActive ? 3 : 2),
       }}
       eventHandlers={{
         click: (event) => {
@@ -225,29 +225,6 @@ const CentroPolygon = memo(function CentroPolygon({
           </div>
         </Tooltip>
       )}
-      {!isMeasuring && (
-      <Popup>
-        <div className="map-popup-content">
-          <h4 style={{ margin: '0 0 4px 0', color }}>{centro.proveedor}</h4>
-          <p style={{ margin: 0, fontSize: '0.85rem' }}>
-            <strong>Codigo:</strong> {centro.code}<br />
-            <strong>Hectareas:</strong> {centro.hectareas} ha<br />
-            <strong>Cosecha:</strong> {isHarvestActive ? 'Activa esta semana' : 'Sin programa activo'}
-          </p>
-          <button
-            className="mx-btn mx-btn-primary sm am-mt-8"
-            style={{ width: '100%', padding: '4px' }}
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onSelect(centro);
-            }}
-          >
-            Ver Detalle
-          </button>
-        </div>
-      </Popup>
-      )}
     </Polygon>
   );
 });
@@ -257,11 +234,13 @@ export default function CentrosMap() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [concessionFilter, setConcessionFilter] = useState('all');
+  const deferredSearchTerm = useDeferredValue(searchTerm);
   const [labelLevel, setLabelLevel] = useState('media');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [measurePoints, setMeasurePoints] = useState([]);
   const [selectedCentro, setSelectedCentro] = useState(null);
+  const [focusedCentroCode, setFocusedCentroCode] = useState('');
   const [zoom, setZoom] = useState(9);
   const [mapInstance, setMapInstance] = useState(null);
   const [viewportBounds, setViewportBounds] = useState(null);
@@ -344,23 +323,24 @@ export default function CentrosMap() {
   }, []);
 
   const searchSuggestions = useMemo(() => {
-    if (searchTerm.length < 2) return [];
-    const query = searchTerm.toLowerCase();
+    const query = deferredSearchTerm.trim().toLowerCase();
+    if (query.length < 2) return [];
     return allowedCentros.filter((centro) =>
       centro.code?.toLowerCase().includes(query) ||
       centro.proveedor?.toLowerCase().includes(query)
-    ).slice(0, 8);
-  }, [allowedCentros, searchTerm]);
+    ).slice(0, 10);
+  }, [allowedCentros, deferredSearchTerm]);
 
   const handleSelectSuggestion = useCallback((centro) => {
-    setSearchTerm('');
-    setSelectedCentro(centro);
-    setSearchParams({ centro: centro.code }, { replace: true });
+    setSearchTerm(centro.code || centro.proveedor || '');
+    setFocusedCentroCode(normalizeText(centro.code));
+    setSelectedCentro(null);
     if (mapInstance && centro.coords?.length > 0) {
-      const firstCoord = [centro.coords[0].lat, centro.coords[0].lng];
-      mapInstance.flyTo(firstCoord, 16, { duration: 0.8 });
+      const targetLat = centro.centerLat ?? centro.coords[0].lat;
+      const targetLng = centro.centerLng ?? centro.coords[0].lng;
+      mapInstance.flyTo([targetLat, targetLng], 16, { duration: 0.8 });
     }
-  }, [mapInstance, setSearchParams]);
+  }, [mapInstance]);
 
   const handleToggleMeasure = useCallback(() => {
     setIsMeasuring((value) => !value);
@@ -386,23 +366,26 @@ export default function CentrosMap() {
     }
 
     if (mapInstance && target.coords?.length > 0) {
-      const firstCoord = [target.coords[0].lat, target.coords[0].lng];
-      mapInstance.flyTo(firstCoord, 16, { duration: 0.8 });
+      setFocusedCentroCode(target.codeNorm);
+      const targetLat = target.centerLat ?? target.coords[0].lat;
+      const targetLng = target.centerLng ?? target.coords[0].lng;
+      mapInstance.flyTo([targetLat, targetLng], 16, { duration: 0.8 });
       setSearchParams({}, { replace: true });
     }
   }, [allowedCentros, mapInstance, selectedCentroCode, setSearchParams]);
 
   const mapCentros = useMemo(() => {
-    const query = searchTerm.toLowerCase();
+    const query = deferredSearchTerm.trim().toLowerCase();
+    const effectiveQuery = query.length >= 2 ? query : '';
     return allowedCentros.filter((centro) => {
-      const matchesSearch = !query ||
+      const matchesSearch = !effectiveQuery ||
         centro.code?.toLowerCase().includes(query) ||
         centro.proveedor?.toLowerCase().includes(query);
 
       const inHarvest = harvestKeys.codes.has(centro.codeNorm)
         || harvestKeys.providers.has(centro.proveedorNorm);
       const matchesHarvest = concessionFilter === 'all' || inHarvest;
-      const inViewport = query || !viewportBounds || (
+      const inViewport = effectiveQuery || !viewportBounds || (
         centro.centerLat >= viewportBounds.south &&
         centro.centerLat <= viewportBounds.north &&
         centro.centerLng >= viewportBounds.west &&
@@ -411,7 +394,7 @@ export default function CentrosMap() {
 
       return matchesSearch && matchesHarvest && inViewport;
     });
-  }, [allowedCentros, searchTerm, concessionFilter, harvestKeys, viewportBounds]);
+  }, [allowedCentros, deferredSearchTerm, concessionFilter, harvestKeys, viewportBounds]);
 
   const centerPosition = [-42.5, -73.5];
 
@@ -425,13 +408,24 @@ export default function CentrosMap() {
             placeholder="Buscar codigo o proveedor..."
             className="centros-search"
             value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
+            onChange={(event) => {
+              setSearchTerm(event.target.value);
+              setFocusedCentroCode('');
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && searchSuggestions[0]) {
+                handleSelectSuggestion(searchSuggestions[0]);
+              }
+            }}
           />
           {searchTerm && (
             <button
               type="button"
               className="map-search-clear"
-              onClick={() => setSearchTerm('')}
+              onClick={() => {
+                setSearchTerm('');
+                setFocusedCentroCode('');
+              }}
               title="Limpiar busqueda"
             >
               <X size={14} />
@@ -549,6 +543,7 @@ export default function CentrosMap() {
                   labelLevel={labelLevel}
                   zoom={zoom}
                   isHarvestActive={isHarvestActive}
+                  isFocused={focusedCentroCode === centro.codeNorm}
                   isMeasuring={isMeasuring}
                   onSelect={handleSelectCentro}
                   onMeasurePoint={handleAddMeasurePoint}
