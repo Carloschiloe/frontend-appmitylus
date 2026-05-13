@@ -145,6 +145,8 @@ export default function Muestreos() {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [selectedCats, setSelectedCats] = useState(new Set());
   const [activeDropdown, setActiveDropdown] = useState(null); // 'procesable' | 'rechazo' | 'defecto'
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareData, setShareData] = useState(null); // { url, message, proveedor }
 
   // Formulario
   const [form, setForm] = useState({
@@ -861,7 +863,6 @@ export default function Muestreos() {
       const centro = m.centroCodigo || m.centroNombre || 'Sin Centro';
       const fecha = m.fecha ? new Date(m.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
-      // Mensaje estructurado para WhatsApp / Redes (Ultra Moderno)
       const shareText = `📊 *REPORTE DE MUESTREO*\n` + 
                         `───────────────────────\n` +
                         `🏭 *Proveedor:* ${proveedor}\n` +
@@ -869,38 +870,12 @@ export default function Muestreos() {
                         `📅 *Fecha:* ${fecha}\n\n` +
                         `🔗 *Link del Reporte:* \n${res.url}`;
 
-      // 1. Intentar compartir nativo (Especialmente útil en móviles)
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: `Reporte Mitynex: ${proveedor}`,
-            text: shareText
-            // Quitamos 'url' por separado porque muchos clientes (WhatsApp Web/Desktop)
-            // lo manejan mejor si va todo dentro del 'text'
-          });
-          return; 
-        } catch (err) {
-          console.log('Compartir nativo cancelado o fallido, usando portapapeles');
-        }
-      }
-
-      // 2. Fallback: Copiar al portapapeles el mensaje formateado
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(shareText);
-      } else {
-        const textArea = document.createElement("textarea");
-        textArea.value = shareText;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textArea);
-      }
-
-      addToast({ 
-        title: '¡Mensaje generado!', 
-        message: `Se ha copiado un mensaje profesional de ${proveedor} listo para enviar.`, 
-        type: 'success' 
+      setShareData({
+        url: res.url,
+        message: shareText,
+        proveedor: proveedor
       });
+      setIsShareModalOpen(true);
     } catch (err) {
       console.error('Error al compartir reporte:', err);
       addToast({ title: 'Error', message: 'No se pudo generar el enlace para compartir.', type: 'error' });
@@ -1802,6 +1777,72 @@ export default function Muestreos() {
         </div>
       )}
 
+
+      {/* ── Modal de Compartir Reporte (Premium) ── */}
+      {isShareModalOpen && (
+        <div className="am-modal-overlay">
+          <div className="am-modal-content" style={{ maxWidth: '450px', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Share2 size={24} style={{ color: '#0f766e' }} /> Compartir Reporte
+              </h2>
+              <button className="mx-btn-icon" onClick={() => setIsShareModalOpen(false)}><X size={20} /></button>
+            </div>
+
+            <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '20px' }}>
+              El reporte para <strong>{shareData?.proveedor}</strong> está listo. Selecciona cómo deseas enviarlo:
+            </p>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <MessageSquare size={12} /> Vista previa del mensaje
+              </div>
+              <div style={{ whiteSpace: 'pre-wrap', fontSize: '13px', color: '#334155', lineHeight: '1.6', fontStyle: 'italic' }}>
+                {shareData?.message}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+              <button 
+                className="mx-btn mx-btn-primary" 
+                style={{ background: '#25D366', borderColor: '#25D366', height: '48px', fontSize: '15px' }}
+                onClick={() => {
+                  const encoded = encodeURIComponent(shareData?.message);
+                  window.open(`https://wa.me/?text=${encoded}`, '_blank');
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.484 8.412-.003 6.557-5.338 11.892-11.893 11.892-1.996-.001-3.951-.5-5.688-1.448l-6.309 1.656zm6.222-4.032c1.503.893 3.129 1.364 4.799 1.365 5.228 0 9.482-4.254 9.484-9.483 0-2.535-1.011-4.917-2.812-6.721-1.801-1.804-4.181-2.815-6.724-2.815-5.231 0-9.482 4.254-9.484 9.483 0 1.742.476 3.441 1.378 4.912l-.934 3.412 3.493-.916zm11.233-6.24c-.11-.183-.404-.293-.845-.513-.441-.22-2.603-1.285-3.007-1.431-.403-.147-.697-.22-.991.22-.293.441-1.138 1.431-1.395 1.724-.257.293-.513.33-.954.11-.441-.22-1.862-.686-3.547-2.189-1.311-1.17-2.196-2.614-2.453-3.054-.257-.441-.027-.679.193-.898.198-.197.441-.513.661-.77.22-.256.293-.44.441-.733.146-.293.073-.55-.037-.77-.11-.22-.991-2.388-1.358-3.267-.358-.856-.723-.74-.991-.754l-.844-.015c-.293 0-.77.11-1.174.55-.404.44-1.541 1.503-1.541 3.666 0 2.163 1.578 4.252 1.798 4.545.22.293 3.107 4.744 7.527 6.65.1.04.19.07.28.1.1.03.19.05.28.08.31.09.61.12.91.12.51-.01.99-.12 1.41-.33.56-.28 1.14-.65 1.51-1.03.37-.38.6-.83.69-1.29.09-.46.05-.88-.04-1.07z"/></svg>
+                  Enviar por WhatsApp
+                </div>
+              </button>
+
+              <button 
+                className="mx-btn mx-btn-outline" 
+                style={{ height: '48px', fontSize: '15px' }}
+                onClick={async () => {
+                  if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(shareData?.message);
+                    addToast({ title: '¡Copiado!', message: 'El mensaje profesional está en tu portapapeles.', type: 'success' });
+                  }
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                  <Copy size={18} /> Copiar Mensaje Formateado
+                </div>
+              </button>
+
+              <button 
+                className="mx-btn" 
+                style={{ height: '40px', fontSize: '13px', background: 'transparent', color: '#64748b', border: 'none', textDecoration: 'underline' }}
+                onClick={() => setIsShareModalOpen(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
