@@ -99,7 +99,7 @@ export default function Muestreos() {
     return `${MESES_LARGO[parseInt(m, 10) - 1]} ${y}`.toUpperCase();
   };
 
-  const [calView, setCalView] = useState('month'); // 'month' | 'week'
+  const [calView, setCalView] = useState('month'); // 'month' | 'week' | 'all'
   const [mes, setMes] = useState(mesActualStr);
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -118,7 +118,7 @@ export default function Muestreos() {
 
   const { muestreos, maestros, loading, page, setPage, pagination, refresh: loadData } = useMuestreosData(
     viewMode,
-    calView === 'month' ? { mes } : { weekRange: weekDays }
+    calView === 'month' ? { mes } : calView === 'week' ? { weekRange: weekDays } : {}
   );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -916,8 +916,9 @@ export default function Muestreos() {
           <div className="mx-toggle-group">
             <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => { setCalView('month'); setPage(1); }}>Vista Mes</button>
             <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => { setCalView('week'); setPage(1); }}>Vista Semana</button>
+            <button className={`mx-toggle-btn ${calView === 'all' ? 'active' : ''}`} onClick={() => { setCalView('all'); setPage(1); }}>Todos</button>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {calView !== 'all' && (
             <button className="mx-btn-icon sm" onClick={() => {
               if (calView === 'month') {
                 setMes(prev => {
@@ -949,6 +950,7 @@ export default function Muestreos() {
               <button className="mx-btn mx-btn-outline sm" onClick={() => { setWeekOffset(0); setPage(1); }}>Hoy</button>
             )}
           </div>
+          )}
         </div>
       </div>
 
