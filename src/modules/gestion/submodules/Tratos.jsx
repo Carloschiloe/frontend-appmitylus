@@ -102,6 +102,16 @@ function derivePrecioDesdeCondiciones(condiciones = []) {
   return parseNumberOrNull(match?.valor);
 }
 
+function deriveVolumenDesdeCondiciones(condiciones = []) {
+  const match = (condiciones || []).find((item) => /volumen|total/i.test(String(item?.nombre || '')));
+  return parseNumberOrNull(match?.valor);
+}
+
+function derivePlazoDesdeCondiciones(condiciones = []) {
+  const match = (condiciones || []).find((item) => /plazo|pago/i.test(String(item?.nombre || '')));
+  return match?.valor || '';
+}
+
 function isEquivalentEstado(actualApi, nextUi) {
   const current = String(actualApi || '').toLowerCase();
   if (nextUi === 'cerrado_ok') return ['compra_efectuada', 'cerrado'].includes(current);
@@ -297,25 +307,59 @@ export default function Tratos() {
                   </td>
                 </tr>
               ) : (
-                filteredItems.map(item => (
-                  <tr key={item._id}>
-                    <td><span style={{ fontWeight: 'var(--weight-bold)' }}>{item.proveedorNombre}</span></td>
-                    <td style={{ textAlign: 'center', fontWeight: 'var(--weight-bold)' }}>{item.tonsAcordadas} t</td>
-                    <td style={{ textAlign: 'center' }}>${Number(item.precioAcordado ?? item.precioBase ?? 0).toLocaleString()}</td>
-                    <td style={{ color: 'var(--color-text-subtle)', fontSize: '0.85rem' }}>{formatDateOnlySafe(item.fechaCierre)}</td>
-                    <td>
-                      <span className={`mx-badge mx-badge-${getUiEstadoFromApi(item.estado) === 'acordado' || getUiEstadoFromApi(item.estado) === 'cerrado_ok' ? 'success' : getUiEstadoFromApi(item.estado) === 'rechazado' ? 'danger' : 'info'}`}>
-                        {ESTADOS_TRATO.find(e => e.val === getUiEstadoFromApi(item.estado))?.label || item.estado}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div className="mx-table-actions-cell" style={{ justifyContent: 'flex-end' }}>
-                         <button className="mx-action-btn edit" onClick={() => openEdit(item)}><Edit size={14} /></button>
-                         <button className="mx-action-btn delete" onClick={() => setConfirmDeleteTrato(item)}><Trash2 size={14} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                filteredItems.map(item => {
+                  const uiEstado = getUiEstadoFromApi(item.estado);
+                  const displayPrecio = item.precioAcordado ?? derivePrecioDesdeCondiciones(item.condiciones) ?? 0;
+                  const displayTons = item.tonsAcordadas || deriveVolumenDesdeCondiciones(item.condiciones) || 0;
+                  const displayPlazo = derivePlazoDesdeCondiciones(item.condiciones);
+                  const displayCamiones = item.camionesXDia || deriveCamionesXDia(item.condiciones);
+
+                  return (
+                    <tr key={item._id}>
+                      <td>
+                        <div style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '0.95rem' }}>{item.proveedorNombre}</div>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '10px', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                             💵 ${Number(displayPrecio).toLocaleString()}
+                          </span>
+                          {displayPlazo && (
+                            <span style={{ fontSize: '10px', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                               💳 {displayPlazo} d
+                            </span>
+                          )}
+                          {displayCamiones && (
+                            <span style={{ fontSize: '10px', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                               🚚 {displayCamiones} cam/día
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ fontWeight: 800, color: 'var(--color-primary)' }}>{displayTons} t</div>
+                        <div style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>Acordado</div>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ fontWeight: 800 }}>${Number(displayPrecio).toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>x Kg</div>
+                      </td>
+                      <td style={{ color: 'var(--color-text-subtle)', fontSize: '0.85rem' }}>
+                        <div style={{ fontWeight: 600 }}>{formatDateOnlySafe(item.fechaCierre)}</div>
+                        <div style={{ fontSize: '10px' }}>Fecha estimada</div>
+                      </td>
+                      <td>
+                        <span className={`mx-badge mx-badge-${uiEstado === 'acordado' || uiEstado === 'cerrado_ok' ? 'success' : uiEstado === 'rechazado' ? 'danger' : 'info'}`}>
+                          {ESTADOS_TRATO.find(e => e.val === uiEstado)?.label || item.estado}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div className="mx-table-actions-cell" style={{ justifyContent: 'flex-end' }}>
+                           <button className="mx-action-btn edit" title="Editar Negociación" onClick={() => openEdit(item)}><Edit size={14} /></button>
+                           <button className="mx-action-btn delete" title="Eliminar" onClick={() => setConfirmDeleteTrato(item)}><Trash2 size={14} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
