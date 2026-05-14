@@ -63,6 +63,14 @@ const getTipoProductoLabel = (value) => (
   PRODUCT_TYPE_LABELS[String(value || '').toLowerCase()] || PRODUCT_TYPE_LABELS.sin_definir
 );
 
+const getPreferredTipoProducto = (...values) => {
+  for (const value of values) {
+    const normalized = String(value || '').toLowerCase();
+    if (normalized && normalized !== 'sin_definir') return normalized;
+  }
+  return 'sin_definir';
+};
+
 const asText = (value, fallback = '') => {
   if (value == null) return fallback;
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
@@ -160,6 +168,28 @@ export default function Biomasa() {
     });
   }, [currentWeekOffset]);
 
+  const programasById = useMemo(() => {
+    const map = new Map();
+    programas.forEach((programa) => map.set(String(programa._id), programa));
+    return map;
+  }, [programas]);
+
+  const enrichCalendarItem = useCallback((item) => {
+    const programa = programasById.get(String(item?.programaId || ''));
+    return {
+      ...item,
+      tipoProducto: getPreferredTipoProducto(
+        programa?.tipoProducto,
+        programa?.tipoProductoSugerido,
+        item?.tipoProducto,
+        item?.tipoProductoSugerido
+      ),
+      tonsEstimadas: item?.tonsEstimadas ?? programa?.tonsEstimadas ?? null,
+      centroNombre: item?.centroNombre || programa?.centroNombre || '',
+      centroCodigo: item?.centroCodigo || programa?.centroCodigo || '',
+    };
+  }, [programasById]);
+
   const weekData = useMemo(() => {
     const data = {};
     programas.filter(p => p.estado === 'activo').forEach(p => {
@@ -169,15 +199,32 @@ export default function Biomasa() {
         tipoProducto: p.tipoProducto || p.tipoProductoSugerido || 'sin_definir',
         dias: weekDays.map((d) => {
           const item = calData[d]?.items?.find(x => x.programaId === p._id);
+          const enriched = item ? enrichCalendarItem(item) : null;
           return {
-            camiones: item?.camiones || 0,
-            tipoProducto: item?.tipoProducto || p.tipoProducto || p.tipoProductoSugerido || 'sin_definir',
+            camiones: enriched?.camiones || 0,
+            tipoProducto: enriched?.tipoProducto || p.tipoProducto || p.tipoProductoSugerido || 'sin_definir',
+            tonsEstimadas: enriched?.tonsEstimadas ?? p.tonsEstimadas ?? null,
+            tipoCamion: enriched?.tipoCamion || p.tipoCamion || '',
+            maxisPorCamion: enriched?.maxisPorCamion ?? p.maxisPorCamion ?? null,
+            motivo: enriched?.motivo || '',
           };
         })
       };
     });
     return data;
-  }, [programas, calData, weekDays]);
+  }, [programas, calData, weekDays, enrichCalendarItem]);
+
+  useEffect(() => {
+    document.body.classList.toggle('biomasa-calendar-board-open', isCalendarBoard);
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setIsCalendarBoard(false);
+    };
+    if (isCalendarBoard) window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.classList.remove('biomasa-calendar-board-open');
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isCalendarBoard]);
 
   useEffect(() => {
     if (selectedDay && !String(selectedDay.key || '').startsWith(mes)) {
@@ -579,7 +626,7 @@ export default function Biomasa() {
                         {monthData.days.map((dayNum) => {
                           const dateKey = `${mes}-${String(dayNum).padStart(2, '0')}`;
                           const dayDataObj = calData[dateKey] || { total: 0, items: [] };
-                          const dayItems = dayDataObj.items || [];
+                          const dayItems = (dayDataObj.items || []).map(enrichCalendarItem);
                           const total = dayDataObj.total || 0;
                           const isSelected = selectedDay?.key === dateKey;
 
@@ -617,8 +664,8 @@ export default function Biomasa() {
                         })}
                       </div>
                     ) : (
-                      <div className="mx-table-wrap">
-                        <table className="mx-table">
+                      <div className="mx-table-wrap harvest-week-wrap">
+                        <table className="mx-table harvest-week-table">
                           <thead>
                             <tr>
                               <th>PROVEEDOR / CENTRO</th>
@@ -634,17 +681,18 @@ export default function Biomasa() {
                             {Object.entries(weekData).map(([id, data]) => (
                               <tr key={id}>
                                 <td>
-                                  <div style={{ fontWeight: 'var(--weight-bold)', fontSize: '14px' }}>{data.nombre}</div>
-                                  <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{data.centro}</div>
+                                  <div className="harvest-week-provider">{data.nombre}</div>
+                                  <div className="harvest-week-center">{data.centro || 'Sin centro definido'}</div>
                                 </td>
                                 {data.dias.map((cell, i) => (
                                   <td key={i} style={{ textAlign: 'center' }}>
                                     {cell.camiones > 0 ? (
-                                      <div style={{ background: 'var(--color-success-bg)', color: 'var(--color-success)', fontWeight: 'var(--weight-bold)', padding: '8px', borderRadius: '12px', border: '1px solid var(--color-success)', fontSize: '14px' }}>
-                                        <div>{cell.camiones}</div>
-                                        <div style={{ fontSize: '10px', fontWeight: 'var(--weight-semibold)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                                          {getTipoProductoLabel(cell.tipoProducto)}
-                                        </div>
+                                      <div className="harvest-week-cell">
+                                        <div className="harvest-week-camiones">{cell.camiones} cam</div>
+                                        <div className="harvest-week-product">{getTipoProductoLabel(cell.tipoProducto)}</div>
+                                        {cell.tonsEstimadas ? <div className="harvest-week-tons">{fmtTonsInt(cell.tonsEstimadas)}</div> : null}
+                                        {cell.tipoCamion ? <div className="harvest-week-meta">{cell.tipoCamion}</div> : null}
+                                        {cell.maxisPorCamion ? <div className="harvest-week-meta">{cell.maxisPorCamion} maxis/camion</div> : null}
                                       </div>
                                     ) : <span style={{ color: 'var(--color-border)' }}>—</span>}
                                   </td>
@@ -657,7 +705,7 @@ export default function Biomasa() {
                     )}
                   </div>
 
-                  {calView === 'month' && !isCalendarBoard && (
+                  {calView === 'month' && (
                     <aside className="mx-card harvest-day-detail">
                       <header className="mx-card-header">
                         <h4 className="mx-card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

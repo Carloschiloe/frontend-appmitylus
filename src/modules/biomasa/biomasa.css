@@ -201,8 +201,8 @@
 .harvest-calendar-shell.board-mode {
   position: fixed;
   inset: 0;
-  z-index: 2000;
-  grid-template-columns: 1fr;
+  z-index: 5000;
+  grid-template-columns: minmax(0, 1fr) 360px;
   gap: 0;
   padding: 18px;
   background: #f4f8fb;
@@ -216,6 +216,23 @@
 .harvest-calendar-shell.board-mode .harvest-calendar-main {
   min-height: calc(100vh - 36px);
   border-radius: 18px;
+}
+
+body.biomasa-calendar-board-open {
+  overflow: hidden;
+}
+
+body.biomasa-calendar-board-open .mx-sidebar {
+  display: none !important;
+}
+
+body.biomasa-calendar-board-open .mx-main-content {
+  margin-left: 0 !important;
+  padding: 0 !important;
+}
+
+body.biomasa-calendar-board-open .mx-app-shell {
+  display: block;
 }
 
 .harvest-calendar-toolbar {
@@ -396,9 +413,82 @@
   font-size: 11px;
 }
 
+.harvest-calendar-shell.board-mode .harvest-day-detail {
+  margin-left: 18px;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  border-radius: 18px;
+}
+
+.harvest-week-wrap {
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+
+.harvest-week-table th,
+.harvest-week-table td {
+  vertical-align: top;
+}
+
+.harvest-week-provider {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  line-height: 1.25;
+}
+
+.harvest-week-center {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+}
+
+.harvest-week-cell {
+  min-width: 110px;
+  border: 1px solid #b7eadf;
+  border-left: 4px solid var(--color-primary);
+  border-radius: 12px;
+  background: #f0fdfa;
+  padding: 9px 8px;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.08);
+}
+
+.harvest-week-camiones {
+  color: var(--color-primary-dark);
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+}
+
+.harvest-week-product {
+  margin-top: 3px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+}
+
+.harvest-week-tons,
+.harvest-week-meta {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+}
+
 @media (max-width: 1200px) {
   .harvest-calendar-shell {
     grid-template-columns: 1fr;
+  }
+
+  .harvest-calendar-shell.board-mode {
+    grid-template-columns: 1fr;
+  }
+
+  .harvest-calendar-shell.board-mode .harvest-day-detail {
+    margin-left: 0;
+    margin-top: 18px;
+    max-height: none;
   }
 }
 
