@@ -17,6 +17,8 @@ import { deleteCentro, exportCentros, getCentros, syncSubpesca, upsertCentro } f
 import { useToast } from '../../../context/ToastContext';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 
+const PAGE_SIZE = 100;
+
 const isSalmonCentro = (centro = {}) => {
   const especies = Array.isArray(centro.especies) ? centro.especies.join(' ') : centro.especies || '';
   const text = `${centro.grupoEspecie || ''} ${especies}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -52,9 +54,12 @@ export default function CentrosTable() {
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const deferredSearchTerm = useDeferredValue(searchTerm);
+  const [areaSearchTerm, setAreaSearchTerm] = useState(searchParams.get('areaQ') || '');
+  const deferredAreaSearchTerm = useDeferredValue(areaSearchTerm);
   const [comunaFilter, setComunaFilter] = useState(searchParams.get('comuna') || '');
   const [areaFilter, setAreaFilter] = useState(searchParams.get('area') || '');
   const [providerFilter, setProviderFilter] = useState(searchParams.get('proveedor') || '');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmImport, setConfirmImport] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -62,6 +67,7 @@ export default function CentrosTable() {
 
   useEffect(() => {
     setSearchTerm(searchParams.get('q') || '');
+    setAreaSearchTerm(searchParams.get('areaQ') || '');
     setComunaFilter(searchParams.get('comuna') || '');
     setAreaFilter(searchParams.get('area') || '');
     setProviderFilter(searchParams.get('proveedor') || '');
@@ -69,16 +75,18 @@ export default function CentrosTable() {
 
   const syncUrl = useCallback((next = {}) => {
     const q = next.q ?? searchTerm;
+    const areaQ = next.areaQ ?? areaSearchTerm;
     const comuna = next.comuna ?? comunaFilter;
     const area = next.area ?? areaFilter;
     const proveedor = next.proveedor ?? providerFilter;
     const params = new URLSearchParams();
     if (q) params.set('q', q);
+    if (areaQ) params.set('areaQ', areaQ);
     if (comuna) params.set('comuna', comuna);
     if (area) params.set('area', area);
     if (proveedor) params.set('proveedor', proveedor);
     setSearchParams(params, { replace: true });
-  }, [searchTerm, comunaFilter, areaFilter, providerFilter, setSearchParams]);
+  }, [searchTerm, areaSearchTerm, comunaFilter, areaFilter, providerFilter, setSearchParams]);
 
   useEffect(() => {
     const openCreate = () => setModalState({ open: true, mode: 'create', item: null });
@@ -109,6 +117,7 @@ export default function CentrosTable() {
 
   const handleClearFilters = useCallback(() => {
     setSearchTerm('');
+    setAreaSearchTerm('');
     setComunaFilter('');
     setAreaFilter('');
     setProviderFilter('');
@@ -228,8 +237,9 @@ export default function CentrosTable() {
 
   const filteredData = useMemo(() => {
     const query = deferredSearchTerm.trim().toLowerCase();
-    const isNumericQuery = /^\d{3,}$/.test(query);
-    const hasExactAreaCode = isNumericQuery && data.some((c) => String(c.codigoArea || '').trim().toLowerCase() === query);
+    const areaQuery = deferredAreaSearchTerm.trim().toLowerCase();
+    const isNumericAreaQuery = /^\d{3,}$/.test(areaQuery);
+    const hasExactAreaCode = isNumericAreaQuery && data.some((c) => String(c.codigoArea || '').trim().toLowerCase() === areaQuery);
 
     return data.filter((c) => {
       const areaPSMB = c.areaPSMB || c.sanitario?.areaPSMB || '';
@@ -237,12 +247,14 @@ export default function CentrosTable() {
       const estadoArea = c.estadoAreaSernapesca || c.sanitario?.estadoSernapesca || '';
       const matchSearch =
         query === '' ||
+        c.proveedor?.toLowerCase().includes(query) ||
+        c.code?.toLowerCase().includes(query);
+      const matchAreaSearch =
+        areaQuery === '' ||
         (hasExactAreaCode
-          ? codigoArea === query
-          : c.proveedor?.toLowerCase().includes(query) ||
-            c.code?.toLowerCase().includes(query) ||
-            areaPSMB.toLowerCase().includes(query) ||
-            codigoArea.includes(query));
+          ? codigoArea === areaQuery
+          : areaPSMB.toLowerCase().includes(areaQuery) ||
+            codigoArea.includes(areaQuery));
       const matchComuna = comunaFilter === '' || c.comuna === comunaFilter;
       const matchArea =
         areaFilter === '' ||
@@ -252,9 +264,16 @@ export default function CentrosTable() {
       const matchProveedor =
         providerFilter === '' ||
         String(c.proveedorKey || '').toLowerCase() === String(providerFilter || '').toLowerCase();
-      return matchSearch && matchComuna && matchArea && matchProveedor;
+      return matchSearch && matchAreaSearch && matchComuna && matchArea && matchProveedor;
     });
-  }, [data, deferredSearchTerm, comunaFilter, areaFilter, providerFilter]);
+  }, [data, deferredSearchTerm, deferredAreaSearchTerm, comunaFilter, areaFilter, providerFilter]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [deferredSearchTerm, deferredAreaSearchTerm, comunaFilter, areaFilter, providerFilter]);
+
+  const visibleRows = useMemo(() => filteredData.slice(0, visibleCount), [filteredData, visibleCount]);
+  const hasMoreRows = visibleCount < filteredData.length;
 
   const stats = useMemo(() => {
     const totalHect = filteredData.reduce((acc, curr) => acc + (Number(curr.hectareas) || 0), 0);
@@ -284,7 +303,7 @@ export default function CentrosTable() {
   }, [providerFilter, filteredData]);
 
   const isViewMode = modalState.mode === 'view';
-  const hasActiveFilters = Boolean(searchTerm || comunaFilter || areaFilter || providerFilter);
+  const hasActiveFilters = Boolean(searchTerm || areaSearchTerm || comunaFilter || areaFilter || providerFilter);
 
   return (
     <div className="centros-table-container">
@@ -292,7 +311,7 @@ export default function CentrosTable() {
         <div className="mx-table-card" style={{ marginBottom: 12, padding: 14 }}>
           <div style={{ fontWeight: 800, color: 'var(--color-text)' }}>{providerSummary.nombre}</div>
           <div style={{ marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.92rem' }}>
-            Vista filtrada desde Proveedores · {providerSummary.centros} centro{providerSummary.centros === 1 ? '' : 's'}
+            Vista filtrada desde Proveedores - {providerSummary.centros} centro{providerSummary.centros === 1 ? '' : 's'}
           </div>
         </div>
       ) : null}
@@ -303,11 +322,11 @@ export default function CentrosTable() {
           <div className="mx-kpi-value">{stats.count}</div>
         </article>
         <article className="mx-kpi-card">
-          <header className="mx-kpi-label"><Ruler size={16} /> Hectáreas</header>
+          <header className="mx-kpi-label"><Ruler size={16} /> Hectareas</header>
           <div className="mx-kpi-value">{stats.hectareas} <small className="mx-kpi-sub">ha</small></div>
         </article>
         <article className="mx-kpi-card">
-          <header className="mx-kpi-label"><MapPin size={16} /> Ãreas cultivo</header>
+          <header className="mx-kpi-label"><MapPin size={16} /> Areas cultivo</header>
           <div className="mx-kpi-value">{stats.areas}</div>
         </article>
       </div>
@@ -324,12 +343,26 @@ export default function CentrosTable() {
             <Search size={18} />
             <input
               type="text"
-              placeholder="Buscar por proveedor o código..."
+              placeholder="Buscar proveedor o codigo centro..."
               value={searchTerm}
               onChange={(e) => {
                 const value = e.target.value;
                 setSearchTerm(value);
                 syncUrl({ q: value });
+              }}
+            />
+          </div>
+
+          <div className="mx-search-box">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Buscar area PSMB o codigo area..."
+              value={areaSearchTerm}
+              onChange={(e) => {
+                const value = e.target.value;
+                setAreaSearchTerm(value);
+                syncUrl({ areaQ: value });
               }}
             />
           </div>
@@ -388,10 +421,10 @@ export default function CentrosTable() {
             <thead>
               <tr>
                 <th>Proveedor</th>
-                <th>Código Centro</th>
-                <th>Área PSMB</th>
-                <th>Estado Área</th>
-                <th>Hectáreas</th>
+                <th>Codigo Centro</th>
+                <th>Area PSMB</th>
+                <th>Estado Area</th>
+                <th>Hectareas</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
@@ -412,11 +445,11 @@ export default function CentrosTable() {
               ) : filteredData.length === 0 ? (
                 <tr>
                   <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
-                    <p>No se encontraron centros que coincidan con la búsqueda.</p>
+                    <p>No se encontraron centros que coincidan con la busqueda.</p>
                   </td>
                 </tr>
               ) : (
-                filteredData.map((centro) => (
+                visibleRows.map((centro) => (
                   <tr key={centro._id} className="centros-row">
                     <td>
                       <div className="centros-cell-main">
@@ -456,6 +489,20 @@ export default function CentrosTable() {
           </table>
         </div>
       </div>
+
+      {!loading && filteredData.length > 0 ? (
+        <div className="centros-pagination-footer">
+          <span>Mostrando {visibleRows.length} de {filteredData.length} centros</span>
+          {hasMoreRows ? (
+            <button
+              className="mx-btn mx-btn-outline"
+              onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+            >
+              Ver mas
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <ConfirmDeleteModal
         isOpen={Boolean(confirmDelete)}
@@ -516,7 +563,7 @@ export default function CentrosTable() {
                       <span>{modalState.item?.areaPSMB || '-'}</span>
                     </div>
                     <div className="detail-item">
-                      <label>Estado area</label>
+                      <label>Estado Area</label>
                       <span>{modalState.item?.estadoAreaSernapesca || 'Desconocido'}</span>
                     </div>
                     <div className="detail-item">
@@ -548,7 +595,7 @@ export default function CentrosTable() {
                     <input className="mx-input" name="proveedor" defaultValue={modalState.item?.proveedor || ''} required />
                   </div>
                   <div className="mx-form-group">
-                    <label className="mx-label">Código Centro</label>
+                    <label className="mx-label">Codigo Centro</label>
                     <input className="mx-input" name="code" defaultValue={modalState.item?.code || ''} required />
                   </div>
                 </div>
@@ -570,7 +617,7 @@ export default function CentrosTable() {
                     <input className="mx-input" name="areaPSMB" defaultValue={modalState.item?.areaPSMB || ''} />
                   </div>
                   <div className="mx-form-group">
-                    <label className="mx-label">Estado Área</label>
+                    <label className="mx-label">Estado Area</label>
                     <select className="mx-select" name="estadoAreaSernapesca" defaultValue={modalState.item?.estadoAreaSernapesca || ''}>
                       <option value="">Seleccionar</option>
                       <option value="Abierta">Abierta</option>
@@ -582,7 +629,7 @@ export default function CentrosTable() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div className="mx-form-group">
-                    <label className="mx-label">Hectáreas</label>
+                    <label className="mx-label">Hectareas</label>
                     <input className="mx-input" name="hectareas" type="number" step="0.01" defaultValue={modalState.item?.hectareas ?? ''} />
                   </div>
                   <div className="mx-form-group">

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, NavLink } from 'react-router-dom';
 import { 
   Map as MapIcon, 
@@ -8,7 +8,7 @@ import {
   TableProperties
 } from 'lucide-react';
 
-// Lazy loading con preload para que el cambio entre pestañas sea fluido.
+// Lazy loading con preload para que el cambio entre pestanas sea fluido.
 const loadCentrosTable = () => import('./components/CentrosTable');
 const loadCentrosMap = () => import('./components/CentrosMap');
 const loadSanitarioDashboard = () => import('./components/SanitarioDashboard');
@@ -26,6 +26,19 @@ const CENTROS_TABS = [
 ];
 
 export default function Centros() {
+  useEffect(() => {
+    const preloadTabs = () => {
+      loadCentrosMap();
+      loadSanitarioDashboard();
+    };
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(preloadTabs, { timeout: 1600 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(preloadTabs, 900);
+    return () => window.clearTimeout(id);
+  }, []);
+
   const notifyCreateCentro = () => {
     window.dispatchEvent(new CustomEvent('centros:open-create'));
   };
@@ -38,7 +51,7 @@ export default function Centros() {
     <div className="mx-page">
       <header className="mx-hero">
         <div className="mx-hero-content">
-          <p className="mx-eyebrow">Operaciones · Centros</p>
+          <p className="mx-eyebrow">Operaciones - Centros</p>
           <h1>Directorio de Centros</h1>
         </div>
         <div className="mx-hero-actions">
@@ -76,7 +89,7 @@ export default function Centros() {
           <Suspense fallback={
             <div className="mx-loading-placeholder am-flex-center" style={{ height: '200px', flexDirection: 'column', gap: '12px' }}>
               <div className="mx-spinner"></div>
-              <p className="am-muted">Cargando sección...</p>
+              <p className="am-muted">Cargando seccion...</p>
             </div>
           }>
             <Routes>
