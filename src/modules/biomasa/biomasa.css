@@ -486,6 +486,19 @@ body.biomasa-calendar-board-open .mx-app-shell {
   border-radius: 16px;
 }
 
+.harvest-week-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 14px;
+}
+
+.harvest-week-day-total {
+  margin-top: 5px;
+  color: var(--color-primary-dark);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+}
+
 .harvest-week-table th,
 .harvest-week-table td {
   vertical-align: top;
@@ -537,16 +550,6 @@ body.biomasa-calendar-board-open .mx-app-shell {
   font-weight: var(--weight-semibold);
 }
 
-.harvest-week-footer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 16px;
-  padding: 16px;
-  border-top: 1px solid var(--color-border);
-  background: #fbfdff;
-}
-
-.harvest-week-summary h4,
 .harvest-provider-summary h4 {
   margin: 0 0 10px 0;
   color: var(--color-text);
@@ -555,52 +558,11 @@ body.biomasa-calendar-board-open .mx-app-shell {
   text-transform: uppercase;
 }
 
-.harvest-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(120px, 1fr));
-  gap: 8px;
-}
-
-.harvest-summary-card,
 .harvest-provider-summary {
   border: 1px solid #dbe7f3;
   border-radius: 12px;
   background: white;
   padding: 10px;
-}
-
-.harvest-summary-day {
-  color: var(--color-text-muted);
-  font-size: 11px;
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-}
-
-.harvest-summary-main {
-  margin-top: 4px;
-  color: var(--color-text);
-  font-size: 14px;
-  font-weight: var(--weight-bold);
-}
-
-.harvest-summary-products {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.harvest-product-pill {
-  border: 1px solid #dbe7f3;
-  border-left: 3px solid #64748b;
-  border-radius: 8px;
-  padding: 4px 6px;
-  color: var(--color-text-muted);
-  font-size: 10px;
-  font-weight: var(--weight-bold);
-}
-
-.harvest-provider-summary {
   align-self: start;
 }
 
@@ -659,8 +621,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
     flex-wrap: wrap;
   }
 
-  .harvest-week-footer,
-  .harvest-summary-grid {
+  .harvest-week-layout {
     grid-template-columns: 1fr;
   }
 

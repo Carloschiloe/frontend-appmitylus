@@ -59,8 +59,6 @@ const PRODUCT_TYPE_LABELS = {
   sin_definir: 'Sin definir',
 };
 
-const PRODUCT_TYPES = ['entero', 'carne', 'mc', 'sin_definir'];
-
 const getTipoProductoLabel = (value) => (
   PRODUCT_TYPE_LABELS[String(value || '').toLowerCase()] || PRODUCT_TYPE_LABELS.sin_definir
 );
@@ -74,6 +72,12 @@ const getPreferredTipoProducto = (...values) => {
 };
 
 const getProductClass = (value) => `product-${getPreferredTipoProducto(value)}`;
+
+const formatHarvestMetric = (camiones = 0, tons = 0, metric = 'both') => {
+  if (metric === 'camiones') return `${Number(camiones || 0)} cam`;
+  if (metric === 'tons') return fmtTonsInt(tons);
+  return `${Number(camiones || 0)} cam · ${fmtTonsInt(tons)}`;
+};
 
 const asText = (value, fallback = '') => {
   if (value == null) return fallback;
@@ -230,19 +234,9 @@ export default function Biomasa() {
     const daily = {};
     weekDays.forEach((dayKeyValue) => {
       const items = (calData[dayKeyValue]?.items || []).map(enrichCalendarItem);
-      const byProduct = PRODUCT_TYPES.reduce((acc, type) => {
-        acc[type] = { camiones: 0, tons: 0 };
-        return acc;
-      }, {});
-      items.forEach((item) => {
-        const type = getPreferredTipoProducto(item.tipoProducto);
-        byProduct[type].camiones += Number(item.camiones || 0);
-        byProduct[type].tons += Number(item.tonsDia || 0);
-      });
       daily[dayKeyValue] = {
         camiones: items.reduce((sum, item) => sum + Number(item.camiones || 0), 0),
         tons: items.reduce((sum, item) => sum + Number(item.tonsDia || 0), 0),
-        byProduct,
       };
     });
 
@@ -729,17 +723,22 @@ export default function Biomasa() {
                         })}
                       </div>
                     ) : (
-                      <div className="mx-table-wrap harvest-week-wrap">
-                        <table className="mx-table harvest-week-table">
+                      <div className="harvest-week-layout">
+                        <div className="mx-table-wrap harvest-week-wrap">
+                          <table className="mx-table harvest-week-table">
                           <thead>
                             <tr>
                               <th>PROVEEDOR / CENTRO</th>
-                              {weekDays.map(d => (
-                                <th key={d} style={{ textAlign: 'center' }}>
-                                  <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 'var(--weight-bold)' }}>{new Date(d + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short' }).toUpperCase()}</div>
-                                  <div style={{ fontSize: '15px', color: 'var(--color-text)', fontWeight: 'var(--weight-bold)' }}>{d.split('-')[2]}</div>
-                                </th>
-                              ))}
+                              {weekDays.map((d) => {
+                                const summary = weekSummaries.daily[d] || { camiones: 0, tons: 0 };
+                                return (
+                                  <th key={d} style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 'var(--weight-bold)' }}>{new Date(d + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short' }).toUpperCase()}</div>
+                                    <div style={{ fontSize: '15px', color: 'var(--color-text)', fontWeight: 'var(--weight-bold)' }}>{d.split('-')[2]}</div>
+                                    <div className="harvest-week-day-total">{formatHarvestMetric(summary.camiones, summary.tons, calendarMetric)}</div>
+                                  </th>
+                                );
+                              })}
                             </tr>
                           </thead>
                           <tbody>
@@ -753,15 +752,8 @@ export default function Biomasa() {
                                   <td key={i} style={{ textAlign: 'center' }}>
                                     {cell.camiones > 0 ? (
                                       <div className={`harvest-week-cell ${getProductClass(cell.tipoProducto)}`}>
-                                        {(calendarMetric === 'both' || calendarMetric === 'camiones') && (
-                                          <div className="harvest-week-camiones">{cell.camiones} cam</div>
-                                        )}
+                                        <div className="harvest-week-camiones">{formatHarvestMetric(cell.camiones, cell.tonsDia, calendarMetric)}</div>
                                         <div className="harvest-week-product">{getTipoProductoLabel(cell.tipoProducto)}</div>
-                                        {(calendarMetric === 'both' || calendarMetric === 'tons') && (
-                                          <div className="harvest-week-tons">{fmtTonsInt(cell.tonsDia)}</div>
-                                        )}
-                                        {cell.tipoCamion ? <div className="harvest-week-meta">{cell.tipoCamion}</div> : null}
-                                        {cell.maxisPorCamion ? <div className="harvest-week-meta">{cell.maxisPorCamion} maxis/camion</div> : null}
                                       </div>
                                     ) : <span style={{ color: 'var(--color-border)' }}>—</span>}
                                   </td>
@@ -770,30 +762,7 @@ export default function Biomasa() {
                             ))}
                           </tbody>
                         </table>
-                        <div className="harvest-week-footer">
-                          <section className="harvest-week-summary">
-                            <h4>Resumen diario</h4>
-                            <div className="harvest-summary-grid">
-                              {weekDays.map((dayKeyValue) => {
-                                const summary = weekSummaries.daily[dayKeyValue] || { camiones: 0, tons: 0, byProduct: {} };
-                                return (
-                                  <article key={dayKeyValue} className="harvest-summary-card">
-                                    <div className="harvest-summary-day">
-                                      {new Date(dayKeyValue + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: '2-digit' })}
-                                    </div>
-                                    <div className="harvest-summary-main">{summary.camiones} cam · {fmtTonsInt(summary.tons)}</div>
-                                    <div className="harvest-summary-products">
-                                      {PRODUCT_TYPES.filter(type => summary.byProduct?.[type]?.camiones > 0).map(type => (
-                                        <span key={type} className={`harvest-product-pill ${getProductClass(type)}`}>
-                                          {getTipoProductoLabel(type)} {summary.byProduct[type].camiones} cam · {fmtTonsInt(summary.byProduct[type].tons)}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </article>
-                                );
-                              })}
-                            </div>
-                          </section>
+                        </div>
                           <aside className="harvest-provider-summary">
                             <h4>Resumen proveedor</h4>
                             {weekSummaries.providers.length ? weekSummaries.providers.map((item) => (
@@ -802,14 +771,13 @@ export default function Biomasa() {
                                   <strong>{item.nombre}</strong>
                                   <span>{item.centro || 'Sin centro definido'}</span>
                                 </div>
-                                <b>{item.camiones} cam · {fmtTonsInt(item.tons)}</b>
+                                <b>{formatHarvestMetric(item.camiones, item.tons, calendarMetric)}</b>
                               </div>
                             )) : (
                               <p>Sin cosechas programadas esta semana.</p>
                             )}
                           </aside>
                         </div>
-                      </div>
                     )}
                   </div>
 
