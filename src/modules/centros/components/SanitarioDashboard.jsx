@@ -294,18 +294,41 @@ export default function SanitarioDashboard() {
             ) : historyModal.items.length === 0 ? (
               <div className="sanitario-history-empty">Sin registros historicos visibles para esta area.</div>
             ) : (
-              <div className="sanitario-history-list">
-                {historyModal.items.map((item) => (
-                  <article key={item._id} className="sanitario-history-item">
-                    <div>
-                      <strong>{formatDate(item.fechaExtraccion || item.createdAt)}</strong>
-                      <span>{item.tipoAnalisis || item.agenteCausal || item.recurso || 'Registro sanitario'}</span>
-                    </div>
-                    <b className={item.resultadoPositivo ? 'is-alert' : ''}>
-                      {item.resultadoPositivo ? 'Positivo' : 'Sin alerta'}
-                    </b>
-                  </article>
-                ))}
+              <div className="sanitario-history-table-wrap">
+                <table className="sanitario-history-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Categoria</th>
+                      <th>Analisis</th>
+                      <th>Recurso</th>
+                      <th>B. Natural</th>
+                      <th>Glosa</th>
+                      <th>Valor</th>
+                      <th>Agente</th>
+                      <th>Laboratorio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historyModal.items.map((item) => (
+                      <tr key={item._id}>
+                        <td>{formatDate(item.fechaExtraccion || item.createdAt)}</td>
+                        <td>{item.categoriaTipo || '-'}</td>
+                        <td>{item.tipoAnalisis || '-'}</td>
+                        <td>{item.recurso || '-'}</td>
+                        <td>{item.bancaNatural || '-'}</td>
+                        <td>
+                          <span className={item.resultadoPositivo ? 'sanitario-result is-alert' : 'sanitario-result'}>
+                            {item.glosaResultado || (item.resultadoPositivo ? 'Positivo' : 'Sin alerta')}
+                          </span>
+                        </td>
+                        <td>{[item.valorNumerico, item.unidad].filter(Boolean).join(' ') || '-'}</td>
+                        <td>{item.agenteCausal || '-'}</td>
+                        <td>{item.laboratorio || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
