@@ -22,20 +22,32 @@ const STATUS_LABELS = {
   gris: 'Sin datos',
 };
 
+const sanitarioViewCache = {
+  tenantDb: '',
+  areas: [],
+  resumen: null,
+  tiposAnalisis: [],
+  totalAreas: 0,
+  page: 1,
+};
+
 export default function SanitarioDashboard() {
   const { addToast } = useToast();
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
-  const [areas, setAreas] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const hasCachedView = sanitarioViewCache.tenantDb === selectedTenantDb && sanitarioViewCache.areas.length > 0;
+  const [areas, setAreas] = useState(() => hasCachedView ? sanitarioViewCache.areas : []);
+  const [loading, setLoading] = useState(() => !hasCachedView);
   const [syncing, setSyncing] = useState(false);
-  const [resumen, setResumen] = useState(null);
+  const [resumen, setResumen] = useState(() => hasCachedView ? sanitarioViewCache.resumen : null);
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [estadoFilter, setEstadoFilter] = useState('');
   const [tipoFilter, setTipoFilter] = useState('');
-  const [tiposAnalisis, setTiposAnalisis] = useState([]);
-  const [page, setPage] = useState(1);
-  const [totalAreas, setTotalAreas] = useState(0);
+  const [tiposAnalisis, setTiposAnalisis] = useState(() =>
+    sanitarioViewCache.tenantDb === selectedTenantDb ? sanitarioViewCache.tiposAnalisis : []
+  );
+  const [page, setPage] = useState(() => hasCachedView ? sanitarioViewCache.page : 1);
+  const [totalAreas, setTotalAreas] = useState(() => hasCachedView ? sanitarioViewCache.totalAreas : 0);
   const [historyModal, setHistoryModal] = useState({ open: false, area: null, loading: false, items: [] });
   const [centersModal, setCentersModal] = useState({ open: false, area: null, items: [] });
 
@@ -62,7 +74,11 @@ export default function SanitarioDashboard() {
       return;
     }
 
-    if (!append) setLoading(true);
+    const hasUsableCache = sanitarioViewCache.tenantDb === selectedTenantDb && sanitarioViewCache.areas.length > 0;
+    if (!append && !hasUsableCache) {
+      setAreas([]);
+      setLoading(true);
+    }
 
     try {
       const params = new URLSearchParams({
@@ -79,10 +95,20 @@ export default function SanitarioDashboard() {
         apiClient.get('/sanitario/resumen', { signal }),
       ]);
 
-      setAreas((current) => append ? [...current, ...(resAreas.items || [])] : (resAreas.items || []));
-      setTotalAreas(Number(resAreas.total) || 0);
-      setPage(Number(resAreas.page) || nextPage);
+      const cachedAreas = sanitarioViewCache.tenantDb === selectedTenantDb ? sanitarioViewCache.areas : [];
+      const nextAreas = append ? [...cachedAreas, ...(resAreas.items || [])] : (resAreas.items || []);
+      const nextTotalAreas = Number(resAreas.total) || 0;
+      const resolvedPage = Number(resAreas.page) || nextPage;
+
+      setAreas(nextAreas);
+      setTotalAreas(nextTotalAreas);
+      setPage(resolvedPage);
       setResumen(resResumen);
+      sanitarioViewCache.tenantDb = selectedTenantDb;
+      sanitarioViewCache.areas = nextAreas;
+      sanitarioViewCache.resumen = resResumen;
+      sanitarioViewCache.totalAreas = nextTotalAreas;
+      sanitarioViewCache.page = resolvedPage;
     } catch (err) {
       if (err.name === 'AbortError') return;
       addToast({ title: 'Error', message: 'No se pudieron cargar los datos sanitarios.', type: 'error' });
@@ -105,7 +131,12 @@ export default function SanitarioDashboard() {
 
     const controller = new AbortController();
     apiClient.get('/sanitario/tipos-analisis', { signal: controller.signal })
-      .then((res) => setTiposAnalisis(res.items || []))
+      .then((res) => {
+        const items = res.items || [];
+        setTiposAnalisis(items);
+        sanitarioViewCache.tenantDb = selectedTenantDb;
+        sanitarioViewCache.tiposAnalisis = items;
+      })
       .catch((err) => {
         if (err.name !== 'AbortError') setTiposAnalisis([]);
       });
