@@ -20,6 +20,8 @@ import {
   Play,
   CheckCircle2,
   Trash,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 import { useToast } from '../../context/ToastContext';
@@ -48,6 +50,7 @@ const mesLabel = (mk = '', largo = false) => {
 };
 
 const fmtTons = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 1 }) + ' t';
+const fmtTonsInt = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' t';
 
 const PRODUCT_TYPE_LABELS = {
   entero: 'Entero',
@@ -125,6 +128,7 @@ export default function Biomasa() {
   const [calView, setCalView] = useState('month'); // 'month' | 'week'
   const [selectedDay, setSelectedDay] = useState(null);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  const [isCalendarBoard, setIsCalendarBoard] = useState(false);
 
   // Lógica Matemática de Mes
   const monthData = useMemo(() => {
@@ -516,15 +520,15 @@ export default function Biomasa() {
               )}
               
               {progSubTab === 'calendario' && (
-                <div style={{ display: 'grid', gridTemplateColumns: calView === 'month' ? '1fr 340px' : '1fr', gap: '24px' }}>
-                  <div className="mx-card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div className={`harvest-calendar-shell ${isCalendarBoard ? 'board-mode' : ''}`}>
+                  <div className="mx-card harvest-calendar-main">
+                    <div className="harvest-calendar-toolbar">
+                      <div className="harvest-calendar-controls">
                         <div className="mx-toggle-group">
                           <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => setCalView('month')}>Vista Mes</button>
                           <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => setCalView('week')}>Vista Semana</button>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div className="harvest-calendar-period">
                           <button className="mx-btn-icon sm" onClick={() => {
                             if (calView === 'month') {
                               setMes(prev => {
@@ -536,7 +540,7 @@ export default function Biomasa() {
                               setCurrentWeekOffset(o => o-1);
                             }
                           }}><ChevronLeft size={16} /></button>
-                          <span style={{ fontWeight: 'var(--weight-bold)', fontSize: '15px', color: 'var(--color-text)', minWidth: '150px', textAlign: 'center', textTransform: 'uppercase' }}>
+                          <span className="harvest-calendar-title">
                             {calView === 'month' ? mesLabel(mes, true) : `Semana ${new Date(weekDays[0] + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}`}
                           </span>
                           <button className="mx-btn-icon sm" onClick={() => {
@@ -552,7 +556,16 @@ export default function Biomasa() {
                           }}><ChevronRight size={16} /></button>
                         </div>
                       </div>
-                      {calView === 'week' && <button className="mx-btn mx-btn-outline sm" onClick={() => setCurrentWeekOffset(0)}>Volver a Hoy</button>}
+                      <div className="harvest-calendar-actions">
+                        {calView === 'week' && <button className="mx-btn mx-btn-outline sm" onClick={() => setCurrentWeekOffset(0)}>Volver a Hoy</button>}
+                        <button
+                          className="mx-btn mx-btn-outline sm"
+                          onClick={() => setIsCalendarBoard(value => !value)}
+                        >
+                          {isCalendarBoard ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                          {isCalendarBoard ? 'Salir pantalla' : 'Pantalla completa'}
+                        </button>
+                      </div>
                     </div>
 
                     {calView === 'month' ? (
@@ -576,10 +589,27 @@ export default function Biomasa() {
                               onClick={() => setSelectedDay({ key: dateKey, items: dayItems, total })}
                               className={`cal-day-cell ${isSelected ? 'selected' : ''}`}
                             >
-                              <span className="cal-day-num">{dayNum}</span>
-                              {total > 0 && (
-                                <div className="cal-day-badge">
-                                  {total}
+                              <div className="cal-day-top">
+                                <span className="cal-day-num">{dayNum}</span>
+                                {total > 0 && <span className="cal-day-total">{total} cam</span>}
+                              </div>
+                              {dayItems.length > 0 && (
+                                <div className="cal-day-items">
+                                  {dayItems.slice(0, isCalendarBoard ? 6 : 4).map((it, idx) => (
+                                    <div key={`${it.programaId}-${idx}`} className="cal-day-program">
+                                      <div className="cal-day-program-main">
+                                        <span className="cal-day-provider">{it.proveedorNombre || 'Sin proveedor'}</span>
+                                        <span className="cal-day-camiones">{it.camiones} cam</span>
+                                      </div>
+                                      <div className="cal-day-program-meta">
+                                        <span>{getTipoProductoLabel(it.tipoProducto)}</span>
+                                        {it.tonsEstimadas ? <span>{fmtTonsInt(it.tonsEstimadas)}</span> : null}
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {dayItems.length > (isCalendarBoard ? 6 : 4) && (
+                                    <div className="cal-day-more">+{dayItems.length - (isCalendarBoard ? 6 : 4)} mas</div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -627,8 +657,8 @@ export default function Biomasa() {
                     )}
                   </div>
 
-                  {calView === 'month' && (
-                    <aside className="mx-card">
+                  {calView === 'month' && !isCalendarBoard && (
+                    <aside className="mx-card harvest-day-detail">
                       <header className="mx-card-header">
                         <h4 className="mx-card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Truck size={18} /> DETALLE DEL DÍA
