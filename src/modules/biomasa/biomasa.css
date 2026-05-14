@@ -198,6 +198,10 @@
   gap: 24px;
 }
 
+.harvest-calendar-shell.week-mode {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .harvest-calendar-shell.board-mode {
   position: fixed;
   inset: 0;
@@ -207,6 +211,10 @@
   padding: 18px;
   background: #f4f8fb;
   overflow: auto;
+}
+
+.harvest-calendar-shell.week-mode.board-mode {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .harvest-calendar-main {

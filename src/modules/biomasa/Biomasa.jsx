@@ -232,15 +232,18 @@ export default function Biomasa() {
 
   const weekSummaries = useMemo(() => {
     const daily = {};
+    const total = { camiones: 0, tons: 0 };
     weekDays.forEach((dayKeyValue) => {
       const items = (calData[dayKeyValue]?.items || []).map(enrichCalendarItem);
       daily[dayKeyValue] = {
         camiones: items.reduce((sum, item) => sum + Number(item.camiones || 0), 0),
         tons: items.reduce((sum, item) => sum + Number(item.tonsDia || 0), 0),
       };
+      total.camiones += daily[dayKeyValue].camiones;
+      total.tons += daily[dayKeyValue].tons;
     });
 
-    return { daily };
+    return { daily, total };
   }, [calData, weekDays, enrichCalendarItem]);
 
   useEffect(() => {
@@ -596,7 +599,7 @@ export default function Biomasa() {
               )}
               
               {progSubTab === 'calendario' && (
-                <div className={`harvest-calendar-shell ${isCalendarBoard ? 'board-mode' : ''}`}>
+                <div className={`harvest-calendar-shell ${calView === 'week' ? 'week-mode' : 'month-mode'} ${isCalendarBoard ? 'board-mode' : ''}`}>
                   <div className="mx-card harvest-calendar-main">
                     <div className="harvest-calendar-toolbar">
                       <div className="harvest-calendar-controls">
@@ -727,7 +730,11 @@ export default function Biomasa() {
                                     </th>
                                   );
                                 })}
-                                <th style={{ textAlign: 'center' }}>TOTAL</th>
+                                <th style={{ textAlign: 'center' }}>
+                                  <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 'var(--weight-bold)' }}>TOTAL</div>
+                                  <div style={{ fontSize: '15px', color: 'var(--color-text)', fontWeight: 'var(--weight-bold)' }}>SEM</div>
+                                  <div className="harvest-week-day-total">{formatHarvestMetric(weekSummaries.total.camiones, weekSummaries.total.tons, calendarMetric)}</div>
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
