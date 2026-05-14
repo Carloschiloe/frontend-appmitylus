@@ -8,17 +8,21 @@ import {
   TableProperties
 } from 'lucide-react';
 
-// Lazy loading de sub-componentes para optimizar carga
-const CentrosTable = lazy(() => import('./components/CentrosTable'));
-const CentrosMap = lazy(() => import('./components/CentrosMap'));
-const SanitarioDashboard = lazy(() => import('./components/SanitarioDashboard'));
+// Lazy loading con preload para que el cambio entre pestañas sea fluido.
+const loadCentrosTable = () => import('./components/CentrosTable');
+const loadCentrosMap = () => import('./components/CentrosMap');
+const loadSanitarioDashboard = () => import('./components/SanitarioDashboard');
+
+const CentrosTable = lazy(loadCentrosTable);
+const CentrosMap = lazy(loadCentrosMap);
+const SanitarioDashboard = lazy(loadSanitarioDashboard);
 
 import './centros.css';
 
 const CENTROS_TABS = [
-  { id: 'directorio', label: 'Directorio', to: '/centros/directorio', icon: TableProperties },
-  { id: 'mapa',       label: 'Mapa',       to: '/centros/mapa',       icon: MapIcon },
-  { id: 'sanitario',  label: 'Sanitario',  to: '/centros/sanitario',  icon: ShieldCheck }
+  { id: 'directorio', label: 'Directorio', to: '/centros/directorio', icon: TableProperties, preload: loadCentrosTable },
+  { id: 'mapa',       label: 'Mapa',       to: '/centros/mapa',       icon: MapIcon, preload: loadCentrosMap },
+  { id: 'sanitario',  label: 'Sanitario',  to: '/centros/sanitario',  icon: ShieldCheck, preload: loadSanitarioDashboard }
 ];
 
 export default function Centros() {
@@ -57,6 +61,8 @@ export default function Centros() {
               <NavLink
                 key={tab.id}
                 to={tab.to}
+                onMouseEnter={tab.preload}
+                onFocus={tab.preload}
                 className={({ isActive }) => `mx-tab ${isActive ? 'active' : ''}`}
               >
                 <tab.icon size={18} />

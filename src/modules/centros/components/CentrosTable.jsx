@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useDeferredValue } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -25,15 +25,27 @@ export default function CentrosTable() {
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
 
   const { data: rawData = [], isLoading: loading } = useQuery({
-    queryKey: ['centros', 'mapa'],
+    queryKey: ['centros', 'directorio'],
     queryFn: ({ signal }) => getCentros({}, { signal }),
     enabled: Boolean(selectedTenantDb),
+    staleTime: 5 * 60_000,
+    gcTime: 15 * 60_000,
   });
 
-  const data = useMemo(() => Array.isArray(rawData) ? rawData : (rawData.items || []), [rawData]);
+  const data = useMemo(() => {
+    const items = Array.isArray(rawData) ? rawData : (rawData.items || []);
+    return items.map((centro) => ({
+      ...centro,
+      areaPSMB: centro.areaPSMB || centro.sanitario?.areaPSMB || '',
+      codigoArea: centro.codigoArea || centro.sanitario?.codigoArea || '',
+      estadoAreaSernapesca: centro.estadoAreaSernapesca || centro.sanitario?.estadoSernapesca || 'Desconocido',
+    }));
+  }, [rawData]);
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
+  const deferredSearchTerm = useDeferredValue(searchTerm);
   const [comunaFilter, setComunaFilter] = useState(searchParams.get('comuna') || '');
+  const [areaFilter, setAreaFilter] = useState(searchParams.get('area') || '');
   const [providerFilter, setProviderFilter] = useState(searchParams.get('proveedor') || '');
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmImport, setConfirmImport] = useState(false);
@@ -43,19 +55,22 @@ export default function CentrosTable() {
   useEffect(() => {
     setSearchTerm(searchParams.get('q') || '');
     setComunaFilter(searchParams.get('comuna') || '');
+    setAreaFilter(searchParams.get('area') || '');
     setProviderFilter(searchParams.get('proveedor') || '');
   }, [searchParams]);
 
   const syncUrl = useCallback((next = {}) => {
     const q = next.q ?? searchTerm;
     const comuna = next.comuna ?? comunaFilter;
+    const area = next.area ?? areaFilter;
     const proveedor = next.proveedor ?? providerFilter;
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (comuna) params.set('comuna', comuna);
+    if (area) params.set('area', area);
     if (proveedor) params.set('proveedor', proveedor);
     setSearchParams(params, { replace: true });
-  }, [searchTerm, comunaFilter, providerFilter, setSearchParams]);
+  }, [searchTerm, comunaFilter, areaFilter, providerFilter, setSearchParams]);
 
   useEffect(() => {
     const openCreate = () => setModalState({ open: true, mode: 'create', item: null });
@@ -87,6 +102,7 @@ export default function CentrosTable() {
   const handleClearFilters = useCallback(() => {
     setSearchTerm('');
     setComunaFilter('');
+    setAreaFilter('');
     setProviderFilter('');
     setSearchParams(new URLSearchParams(), { replace: true });
   }, [setSearchParams]);
@@ -110,7 +126,7 @@ export default function CentrosTable() {
         type: 'success',
       });
       setConfirmDelete(null);
-      queryClient.invalidateQueries({ queryKey: ['centros', 'mapa'] });
+      queryClient.invalidateQueries({ queryKey: ['centros'] });
     } catch (err) {
       addToast({
         title: 'No se pudo eliminar',
@@ -152,7 +168,7 @@ export default function CentrosTable() {
     try {
       const result = await syncSubpesca();
       setConfirmImport(false);
-      queryClient.invalidateQueries({ queryKey: ['centros', 'mapa'] });
+      queryClient.invalidateQueries({ queryKey: ['centros'] });
       addToast({
         title: 'Centros actualizados',
         message: `SUBPESCA sincronizo ${result?.centros || 0} centros.`,
@@ -192,7 +208,7 @@ export default function CentrosTable() {
         type: 'success',
       });
       closeModal();
-      queryClient.invalidateQueries({ queryKey: ['centros', 'mapa'] });
+      queryClient.invalidateQueries({ queryKey: ['centros'] });
     } catch (err) {
       addToast({
         title: 'Error',
@@ -203,27 +219,38 @@ export default function CentrosTable() {
   }, [modalState.item, addToast, closeModal, queryClient]);
 
   const filteredData = useMemo(() => {
+    const query = deferredSearchTerm.trim().toLowerCase();
     return data.filter((c) => {
+      const areaPSMB = c.areaPSMB || c.sanitario?.areaPSMB || '';
+      const estadoArea = c.estadoAreaSernapesca || c.sanitario?.estadoSernapesca || '';
       const matchSearch =
-        searchTerm === '' ||
-        c.proveedor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.code?.toLowerCase().includes(searchTerm.toLowerCase());
+        query === '' ||
+        c.proveedor?.toLowerCase().includes(query) ||
+        c.code?.toLowerCase().includes(query) ||
+        areaPSMB.toLowerCase().includes(query);
       const matchComuna = comunaFilter === '' || c.comuna === comunaFilter;
+      const matchArea =
+        areaFilter === '' ||
+        (areaFilter === 'con_area' && Boolean(areaPSMB)) ||
+        (areaFilter === 'abierta' && String(estadoArea).toLowerCase() === 'abierta') ||
+        (areaFilter === 'sin_area' && !areaPSMB);
       const matchProveedor =
         providerFilter === '' ||
         String(c.proveedorKey || '').toLowerCase() === String(providerFilter || '').toLowerCase();
-      return matchSearch && matchComuna && matchProveedor;
+      return matchSearch && matchComuna && matchArea && matchProveedor;
     });
-  }, [data, searchTerm, comunaFilter, providerFilter]);
+  }, [data, deferredSearchTerm, comunaFilter, areaFilter, providerFilter]);
 
   const stats = useMemo(() => {
     const totalHect = filteredData.reduce((acc, curr) => acc + (Number(curr.hectareas) || 0), 0);
     const uniqueComunas = new Set(filteredData.map((c) => c.comuna).filter(Boolean)).size;
+    const uniqueAreas = new Set(filteredData.map((c) => c.areaPSMB || c.sanitario?.areaPSMB).filter(Boolean)).size;
     const totalTons = filteredData.reduce((acc, curr) => acc + (Number(curr.tonsMax) || 0), 0);
     return {
       count: filteredData.length,
       hectareas: totalHect.toLocaleString('es-CL', { minimumFractionDigits: 2 }),
       comunas: uniqueComunas,
+      areas: uniqueAreas,
       tonsMax: totalTons.toLocaleString('es-CL'),
     };
   }, [filteredData]);
@@ -242,6 +269,7 @@ export default function CentrosTable() {
   }, [providerFilter, filteredData]);
 
   const isViewMode = modalState.mode === 'view';
+  const hasActiveFilters = Boolean(searchTerm || comunaFilter || areaFilter || providerFilter);
 
   return (
     <div className="centros-table-container">
@@ -264,9 +292,15 @@ export default function CentrosTable() {
           <div className="mx-kpi-value">{stats.hectareas} <small className="mx-kpi-sub">ha</small></div>
         </article>
         <article className="mx-kpi-card">
-          <header className="mx-kpi-label"><MapPin size={16} /> Comunas</header>
-          <div className="mx-kpi-value">{stats.comunas}</div>
+          <header className="mx-kpi-label"><MapPin size={16} /> Ãreas cultivo</header>
+          <div className="mx-kpi-value">{stats.areas}</div>
         </article>
+      </div>
+
+      <div className="centros-summary-strip">
+        <span>{stats.comunas} comunas</span>
+        <span>{stats.tonsMax} t max</span>
+        <b>{hasActiveFilters ? 'Vista filtrada' : 'Vista general'}</b>
       </div>
 
       <div className="mx-toolbar">
@@ -297,6 +331,22 @@ export default function CentrosTable() {
           >
             <option value="">Todas las comunas</option>
             {comunas.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+
+          <select
+            className="mx-input"
+            style={{ width: 'auto' }}
+            value={areaFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              setAreaFilter(value);
+              syncUrl({ area: value });
+            }}
+          >
+            <option value="">Todas las areas</option>
+            <option value="con_area">Solo con area cultivo</option>
+            <option value="abierta">Area abierta</option>
+            <option value="sin_area">Sin area asociada</option>
           </select>
 
           <button
@@ -352,7 +402,7 @@ export default function CentrosTable() {
                 </tr>
               ) : (
                 filteredData.map((centro) => (
-                  <tr key={centro._id}>
+                  <tr key={centro._id} className="centros-row">
                     <td>
                       <div className="centros-cell-main">
                         <span style={{ fontWeight: 'var(--weight-bold)' }}>{centro.proveedor}</span>
