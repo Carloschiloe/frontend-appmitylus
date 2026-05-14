@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import './biomasa.css';
 import { 
@@ -30,6 +30,13 @@ import Muestreos from '../gestion/submodules/Muestreos';
 const mesActual = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const finMes = (mk) => {
+  const [y, m] = String(mk || '').split('-').map(Number);
+  if (!y || !m) return '';
+  const day = new Date(y, m, 0).getDate();
+  return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 };
 
 const mesLabel = (mk = '', largo = false) => {
@@ -149,6 +156,12 @@ export default function Biomasa() {
     return data;
   }, [programas, calData, weekDays]);
 
+  useEffect(() => {
+    if (selectedDay && !String(selectedDay.key || '').startsWith(mes)) {
+      setSelectedDay(null);
+    }
+  }, [mes, selectedDay]);
+
   // Handlers CRUD
   const handleOpenModal = useCallback((item = null) => {
     if (item) {
@@ -171,7 +184,7 @@ export default function Biomasa() {
       setFormData({
         tratoId: tratosAcordados.length > 0 ? tratosAcordados[0]._id : '',
         vigenciaDesde: `${mes}-01`,
-        vigenciaHasta: `${mes}-31`,
+        vigenciaHasta: finMes(mes),
         camionesDefault: 1,
         tonsEstimadas: '',
         tipoCamion: 'Normal',
@@ -600,11 +613,17 @@ export default function Biomasa() {
                             <div key={idx} className="mx-card" style={{ padding: '16px', boxShadow: 'none', border: '1px solid var(--color-border)' }}>
                               <div style={{ fontWeight: 'var(--weight-bold)', fontSize: '13px', marginBottom: '4px' }}>{it.proveedorNombre}</div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{it.centroNombre}</span>
+                                <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{it.centroNombre || it.centroCodigo || 'Sin centro definido'}</span>
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
                                   <span style={{ fontSize: '20px', fontWeight: 'var(--weight-bold)', color: 'var(--color-primary)' }}>{it.camiones}</span>
                                   <span style={{ fontSize: '10px', color: 'var(--color-text-subtle)' }}>CAM</span>
                                 </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                                {it.tonsEstimadas ? <span>{fmtTons(it.tonsEstimadas)}</span> : null}
+                                {it.tipoCamion ? <span>{it.tipoCamion}</span> : null}
+                                {it.maxisPorCamion ? <span>{it.maxisPorCamion} maxis/camion</span> : null}
+                                {it.motivo ? <span>{it.motivo}</span> : null}
                               </div>
                             </div>
                           ))}
@@ -698,10 +717,10 @@ export default function Biomasa() {
                     onChange={e => setSegEstado(e.target.value)} 
                     required
                   >
-                    <option value="">— Seleccionar —</option>
-                    <option value="activo">🟢 Activo (Cosecha normal)</option>
-                    <option value="pausado">🟡 Pausado (Retrasos climáticos/logísticos)</option>
-                    <option value="detenido">🔴 Detenido (Alerta crítica / posible cancelación)</option>
+                    <option value="">Seleccionar</option>
+                    <option value="en_plan">En plan</option>
+                    <option value="con_retrasos">Con retrasos</option>
+                    <option value="detenido">Detenido</option>
                   </select>
                 </div>
                 <div className="mx-form-group">

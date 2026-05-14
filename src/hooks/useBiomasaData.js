@@ -11,6 +11,13 @@ function isSameMonth(value, mesKey) {
   return date.getFullYear() === year && date.getMonth() + 1 === month;
 }
 
+function endOfMonthKey(mesKey) {
+  const [year, month] = String(mesKey || '').split('-').map(Number);
+  if (!year || !month) return `${mesKey}-31`;
+  const lastDay = new Date(year, month, 0).getDate();
+  return `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+}
+
 export function useBiomasaData(mes, viewContext = {}) {
   const {
     isStatusView = false,
@@ -64,7 +71,9 @@ export function useBiomasaData(mes, viewContext = {}) {
       }
 
       if (isProgramView && progSubTab === 'calendario') {
-        promises.push(apiClient.get(`/programa-cosecha/calendario?from=${mes}-01&to=${mes}-31`, { signal }).catch(() => ({ calendario: {} })));
+        promises.push(apiClient.get('/programa-cosecha?estado=activo', { signal }).catch(() => ({ items: [] })));
+        keys.push('progRes');
+        promises.push(apiClient.get(`/programa-cosecha/calendario?from=${mes}-01&to=${endOfMonthKey(mes)}`, { signal }).catch(() => ({ calendario: {} })));
         keys.push('calRes');
       }
 
