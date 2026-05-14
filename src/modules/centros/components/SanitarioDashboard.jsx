@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useDeferredValue, useState } from 'react';
 import {
   ShieldCheck,
   AlertTriangle,
@@ -11,6 +11,8 @@ import {
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
 
+const PAGE_SIZE = 100;
+
 export default function SanitarioDashboard() {
   const { addToast } = useToast();
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
@@ -19,15 +21,11 @@ export default function SanitarioDashboard() {
   const [syncing, setSyncing] = useState(false);
   const [resumen, setResumen] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const deferredSearchTerm = useDeferredValue(searchTerm);
   const [estadoFilter, setEstadoFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalAreas, setTotalAreas] = useState(0);
   const [historyModal, setHistoryModal] = useState({ open: false, area: null, loading: false, items: [] });
-
-  const normalizeText = useCallback((value) => (
-    String(value || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-  ), []);
 
   const formatDate = useCallback((value) => {
     if (!value) return '—';
@@ -43,20 +41,30 @@ export default function SanitarioDashboard() {
     return date.toLocaleString('es-CL');
   }, []);
 
-  const loadData = useCallback(async (signal) => {
+  const loadData = useCallback(async (signal, nextPage = 1, append = false) => {
     if (!selectedTenantDb) {
       setAreas([]);
       setResumen(null);
+      setTotalAreas(0);
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!append) setLoading(true);
     try {
+      const params = new URLSearchParams({
+        page: String(nextPage),
+        limit: String(PAGE_SIZE),
+      });
+      if (deferredSearchTerm.trim()) params.set('q', deferredSearchTerm.trim());
+      if (estadoFilter) params.set('estado', estadoFilter);
+
       const [resAreas, resResumen] = await Promise.all([
-        apiClient.get('/sanitario/areas', { signal }),
+        apiClient.get(`/sanitario/areas?${params.toString()}`, { signal }),
         apiClient.get('/sanitario/resumen', { signal }),
       ]);
-      setAreas(resAreas.items || []);
+      setAreas((current) => append ? [...current, ...(resAreas.items || [])] : (resAreas.items || []));
+      setTotalAreas(Number(resAreas.total) || 0);
+      setPage(Number(resAreas.page) || nextPage);
       setResumen(resResumen);
     } catch (err) {
       if (err.name === 'AbortError') return;
@@ -64,24 +72,19 @@ export default function SanitarioDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [addToast, selectedTenantDb]);
+  }, [addToast, deferredSearchTerm, estadoFilter, selectedTenantDb]);
 
   useEffect(() => {
     const controller = new AbortController();
-    loadData(controller.signal);
+    loadData(controller.signal, 1, false);
     return () => controller.abort();
   }, [loadData]);
 
-  const filteredAreas = useMemo(() => {
-    const normalized = normalizeText(searchTerm.trim());
-    return areas.filter((area) => {
-      const matchEstado = !estadoFilter || area.estado === estadoFilter;
-      const matchSearch = !normalized ||
-        normalizeText(area.areaPSMB).includes(normalized) ||
-        normalizeText(area.codigoArea).includes(normalized);
-      return matchEstado && matchSearch;
-    });
-  }, [areas, estadoFilter, normalizeText, searchTerm]);
+  const hasMoreAreas = areas.length < totalAreas;
+
+  const handleLoadMore = useCallback(() => {
+    loadData(undefined, page + 1, true);
+  }, [loadData, page]);
 
   const handleOpenHistory = useCallback(async (area) => {
     if (!area?.areaPSMB) return;
@@ -109,7 +112,7 @@ export default function SanitarioDashboard() {
 
     try {
       await apiClient.post('/sanitario/sync/mrsat', {});
-      await loadData();
+      await loadData(undefined, 1, false);
       addToast({
         title: 'Datos actualizados',
         message: 'El estado sanitario fue sincronizado correctamente desde mrSAT.',
@@ -217,14 +220,14 @@ export default function SanitarioDashboard() {
                     <p>Sincronizando estados sanitarios...</p>
                   </td>
                 </tr>
-              ) : filteredAreas.length === 0 ? (
+              ) : areas.length === 0 ? (
                 <tr>
                   <td colSpan="8" style={{ textAlign: 'center', padding: '40px' }}>
                     <p>No se encontraron areas sanitarias con los filtros actuales.</p>
                   </td>
                 </tr>
               ) : (
-                filteredAreas.map((area) => (
+                areas.map((area) => (
                   <tr key={area._id}>
                     <td>
                       <div className={`centros-badge-sanitario ${area.estado || 'gris'}`}>
@@ -258,6 +261,17 @@ export default function SanitarioDashboard() {
           </table>
         </div>
       </div>
+
+      {!loading && totalAreas > 0 ? (
+        <div className="centros-pagination-footer">
+          <span>Mostrando {areas.length} de {totalAreas} areas sanitarias</span>
+          {hasMoreAreas ? (
+            <button className="mx-btn mx-btn-outline" onClick={handleLoadMore}>
+              Ver mas
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {historyModal.open ? (
         <div className="sanitario-modal-backdrop" role="dialog" aria-modal="true">
