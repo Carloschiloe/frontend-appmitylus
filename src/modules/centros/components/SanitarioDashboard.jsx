@@ -74,17 +74,15 @@ export default function SanitarioDashboard() {
       if (estadoFilter) params.set('estado', estadoFilter);
       if (tipoFilter) params.set('tipoAnalisis', tipoFilter);
 
-      const [resAreas, resResumen, resTipos] = await Promise.all([
+      const [resAreas, resResumen] = await Promise.all([
         apiClient.get(`/sanitario/areas?${params.toString()}`, { signal }),
         apiClient.get('/sanitario/resumen', { signal }),
-        apiClient.get('/sanitario/tipos-analisis', { signal }),
       ]);
 
       setAreas((current) => append ? [...current, ...(resAreas.items || [])] : (resAreas.items || []));
       setTotalAreas(Number(resAreas.total) || 0);
       setPage(Number(resAreas.page) || nextPage);
       setResumen(resResumen);
-      setTiposAnalisis(resTipos.items || []);
     } catch (err) {
       if (err.name === 'AbortError') return;
       addToast({ title: 'Error', message: 'No se pudieron cargar los datos sanitarios.', type: 'error' });
@@ -98,6 +96,22 @@ export default function SanitarioDashboard() {
     loadData(controller.signal, 1, false);
     return () => controller.abort();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!selectedTenantDb) {
+      setTiposAnalisis([]);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    apiClient.get('/sanitario/tipos-analisis', { signal: controller.signal })
+      .then((res) => setTiposAnalisis(res.items || []))
+      .catch((err) => {
+        if (err.name !== 'AbortError') setTiposAnalisis([]);
+      });
+
+    return () => controller.abort();
+  }, [selectedTenantDb]);
 
   const hasMoreAreas = areas.length < totalAreas;
 
