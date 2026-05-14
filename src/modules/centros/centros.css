@@ -68,6 +68,10 @@
   margin-bottom: 24px;
 }
 
+.sanitario-kpis {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
 .centros-kpi {
   background: var(--color-bg-card);
   padding: 12px 16px;
@@ -255,6 +259,101 @@
   display: flex;
   gap: 6px;
   justify-content: flex-end;
+}
+
+.sanitario-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(15, 23, 42, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.sanitario-history-modal {
+  width: min(720px, 100%);
+  max-height: min(720px, calc(100vh - 48px));
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xl);
+}
+
+.sanitario-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sanitario-modal-header h3 {
+  margin: 0 0 4px;
+  color: var(--color-text);
+  font-size: 1.15rem;
+}
+
+.sanitario-modal-header p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.sanitario-history-empty {
+  padding: 36px 24px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.sanitario-history-list {
+  max-height: 560px;
+  overflow: auto;
+}
+
+.sanitario-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sanitario-history-item:last-child {
+  border-bottom: 0;
+}
+
+.sanitario-history-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sanitario-history-item strong {
+  color: var(--color-text);
+}
+
+.sanitario-history-item span {
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.sanitario-history-item b {
+  white-space: nowrap;
+  color: var(--color-success-text);
+  background: var(--color-success-bg);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
+
+.sanitario-history-item b.is-alert {
+  color: var(--color-error-text);
+  background: var(--color-error-bg);
 }
 
 .centros-summary-strip {

@@ -6,7 +6,7 @@ import {
   Clock,
   RefreshCw,
   Search,
-  ExternalLink,
+  X,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
@@ -19,6 +19,15 @@ export default function SanitarioDashboard() {
   const [syncing, setSyncing] = useState(false);
   const [resumen, setResumen] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [estadoFilter, setEstadoFilter] = useState('');
+  const [historyModal, setHistoryModal] = useState({ open: false, area: null, loading: false, items: [] });
+
+  const normalizeText = useCallback((value) => (
+    String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+  ), []);
 
   const formatDate = useCallback((value) => {
     if (!value) return '—';
@@ -64,13 +73,35 @@ export default function SanitarioDashboard() {
   }, [loadData]);
 
   const filteredAreas = useMemo(() => {
-    const normalized = searchTerm.trim().toLowerCase();
-    if (!normalized) return areas;
-    return areas.filter((area) =>
-      area.areaPSMB?.toLowerCase().includes(normalized) ||
-      area.codigoArea?.toLowerCase().includes(normalized)
-    );
-  }, [areas, searchTerm]);
+    const normalized = normalizeText(searchTerm.trim());
+    return areas.filter((area) => {
+      const matchEstado = !estadoFilter || area.estado === estadoFilter;
+      const matchSearch = !normalized ||
+        normalizeText(area.areaPSMB).includes(normalized) ||
+        normalizeText(area.codigoArea).includes(normalized);
+      return matchEstado && matchSearch;
+    });
+  }, [areas, estadoFilter, normalizeText, searchTerm]);
+
+  const handleOpenHistory = useCallback(async (area) => {
+    if (!area?.areaPSMB) return;
+    setHistoryModal({ open: true, area, loading: true, items: [] });
+    try {
+      const res = await apiClient.get(`/sanitario/historial/${encodeURIComponent(area.areaPSMB)}?limit=20`);
+      setHistoryModal({ open: true, area, loading: false, items: res.items || [] });
+    } catch (err) {
+      setHistoryModal({ open: true, area, loading: false, items: [] });
+      addToast({
+        title: 'No se pudo cargar historial',
+        message: err?.data?.error || err?.message || 'Intenta nuevamente en unos segundos.',
+        type: 'error',
+      });
+    }
+  }, [addToast]);
+
+  const closeHistoryModal = useCallback(() => {
+    setHistoryModal({ open: false, area: null, loading: false, items: [] });
+  }, []);
 
   const handleSyncMrSat = useCallback(async () => {
     if (!selectedTenantDb || syncing) return;
@@ -106,7 +137,7 @@ export default function SanitarioDashboard() {
         </div>
       ) : null}
 
-      <div className="centros-kpis">
+      <div className="centros-kpis sanitario-kpis">
         <article className="centros-kpi" style={{ borderLeft: '4px solid #ef4444' }}>
           <header className="centros-kpi-label"><AlertTriangle size={16} color="#ef4444" /> Bloqueadas (Rojo)</header>
           <div className="centros-kpi-value">{resumen?.rojo || 0}</div>
@@ -115,9 +146,17 @@ export default function SanitarioDashboard() {
           <header className="centros-kpi-label"><AlertTriangle size={16} color="#f97316" /> Alerta (Naranja)</header>
           <div className="centros-kpi-value">{resumen?.naranja || 0}</div>
         </article>
+        <article className="centros-kpi" style={{ borderLeft: '4px solid #facc15' }}>
+          <header className="centros-kpi-label"><AlertTriangle size={16} color="#ca8a04" /> Observacion (Amarillo)</header>
+          <div className="centros-kpi-value">{resumen?.amarillo || 0}</div>
+        </article>
         <article className="centros-kpi" style={{ borderLeft: '4px solid #22c55e' }}>
           <header className="centros-kpi-label"><CheckCircle2 size={16} color="#22c55e" /> OK (Verde)</header>
           <div className="centros-kpi-value">{resumen?.verde || 0}</div>
+        </article>
+        <article className="centros-kpi" style={{ borderLeft: '4px solid #94a3b8' }}>
+          <header className="centros-kpi-label"><Clock size={16} color="#64748b" /> Sin datos (Gris)</header>
+          <div className="centros-kpi-value">{resumen?.gris || 0}</div>
         </article>
       </div>
 
@@ -132,6 +171,19 @@ export default function SanitarioDashboard() {
             onChange={(event) => setSearchTerm(event.target.value)}
           />
         </div>
+        <select
+          className="mx-input"
+          style={{ width: 'auto' }}
+          value={estadoFilter}
+          onChange={(event) => setEstadoFilter(event.target.value)}
+        >
+          <option value="">Todos los estados</option>
+          <option value="rojo">Rojo</option>
+          <option value="naranja">Naranja</option>
+          <option value="amarillo">Amarillo</option>
+          <option value="verde">Verde</option>
+          <option value="gris">Sin datos</option>
+        </select>
         <div style={{ flex: 1 }}></div>
         <div className="mx-sync-badge">
           <Clock size={14} />
@@ -165,6 +217,12 @@ export default function SanitarioDashboard() {
                     <p>Sincronizando estados sanitarios...</p>
                   </td>
                 </tr>
+              ) : filteredAreas.length === 0 ? (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '40px' }}>
+                    <p>No se encontraron areas sanitarias con los filtros actuales.</p>
+                  </td>
+                </tr>
               ) : (
                 filteredAreas.map((area) => (
                   <tr key={area._id}>
@@ -190,8 +248,7 @@ export default function SanitarioDashboard() {
                     <td>{formatDateTime(area.ultimaSyncMrsat)}</td>
                     <td>
                       <div className="centros-actions">
-                        <button className="mx-btn-icon" title="Ver historial"><Clock size={16} /></button>
-                        <button className="mx-btn-icon" title="Ver en SISCOMEX"><ExternalLink size={16} /></button>
+                        <button className="mx-btn-icon" title="Ver historial" onClick={() => handleOpenHistory(area)}><Clock size={16} /></button>
                       </div>
                     </td>
                   </tr>
@@ -201,6 +258,45 @@ export default function SanitarioDashboard() {
           </table>
         </div>
       </div>
+
+      {historyModal.open ? (
+        <div className="sanitario-modal-backdrop" role="dialog" aria-modal="true">
+          <div className="sanitario-history-modal">
+            <header className="sanitario-modal-header">
+              <div>
+                <h3>Historial sanitario</h3>
+                <p>{historyModal.area?.areaPSMB || 'Area sanitaria'} - Codigo {historyModal.area?.codigoArea || 'N/A'}</p>
+              </div>
+              <button className="mx-btn-icon" onClick={closeHistoryModal} title="Cerrar">
+                <X size={18} />
+              </button>
+            </header>
+
+            {historyModal.loading ? (
+              <div className="sanitario-history-empty">
+                <div className="mx-spinner" style={{ margin: '0 auto 12px' }}></div>
+                <span>Cargando historial...</span>
+              </div>
+            ) : historyModal.items.length === 0 ? (
+              <div className="sanitario-history-empty">Sin registros historicos visibles para esta area.</div>
+            ) : (
+              <div className="sanitario-history-list">
+                {historyModal.items.map((item) => (
+                  <article key={item._id} className="sanitario-history-item">
+                    <div>
+                      <strong>{formatDate(item.fechaExtraccion || item.createdAt)}</strong>
+                      <span>{item.tipoAnalisis || item.agenteCausal || item.recurso || 'Registro sanitario'}</span>
+                    </div>
+                    <b className={item.resultadoPositivo ? 'is-alert' : ''}>
+                      {item.resultadoPositivo ? 'Positivo' : 'Sin alerta'}
+                    </b>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
