@@ -287,6 +287,23 @@
   background: rgba(20, 184, 166, 0.035);
 }
 
+.centros-area-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.centros-area-cell strong {
+  font-size: 0.94rem;
+  color: var(--color-text);
+}
+
+.centros-area-cell span {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .centros-muted {
   color: var(--color-text-muted);
   font-size: 0.86rem;

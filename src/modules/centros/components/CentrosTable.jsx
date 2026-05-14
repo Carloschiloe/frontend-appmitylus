@@ -17,6 +17,12 @@ import { deleteCentro, exportCentros, getCentros, syncSubpesca, upsertCentro } f
 import { useToast } from '../../../context/ToastContext';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 
+const isSalmonCentro = (centro = {}) => {
+  const especies = Array.isArray(centro.especies) ? centro.especies.join(' ') : centro.especies || '';
+  const text = `${centro.grupoEspecie || ''} ${especies}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return /\b(salmon|salmonido|trucha)/.test(text);
+};
+
 export default function CentrosTable() {
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -34,12 +40,14 @@ export default function CentrosTable() {
 
   const data = useMemo(() => {
     const items = Array.isArray(rawData) ? rawData : (rawData.items || []);
-    return items.map((centro) => ({
-      ...centro,
-      areaPSMB: centro.areaPSMB || centro.sanitario?.areaPSMB || '',
-      codigoArea: centro.codigoArea || centro.sanitario?.codigoArea || '',
-      estadoAreaSernapesca: centro.estadoAreaSernapesca || centro.sanitario?.estadoSernapesca || 'Desconocido',
-    }));
+    return items
+      .filter((centro) => !isSalmonCentro(centro))
+      .map((centro) => ({
+        ...centro,
+        areaPSMB: centro.areaPSMB || centro.sanitario?.areaPSMB || '',
+        codigoArea: centro.codigoArea || centro.sanitario?.codigoArea || '',
+        estadoAreaSernapesca: centro.estadoAreaSernapesca || centro.sanitario?.estadoSernapesca || 'Desconocido',
+      }));
   }, [rawData]);
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
@@ -220,14 +228,21 @@ export default function CentrosTable() {
 
   const filteredData = useMemo(() => {
     const query = deferredSearchTerm.trim().toLowerCase();
+    const isNumericQuery = /^\d{3,}$/.test(query);
+    const hasExactAreaCode = isNumericQuery && data.some((c) => String(c.codigoArea || '').trim().toLowerCase() === query);
+
     return data.filter((c) => {
       const areaPSMB = c.areaPSMB || c.sanitario?.areaPSMB || '';
+      const codigoArea = String(c.codigoArea || c.sanitario?.codigoArea || '').trim().toLowerCase();
       const estadoArea = c.estadoAreaSernapesca || c.sanitario?.estadoSernapesca || '';
       const matchSearch =
         query === '' ||
-        c.proveedor?.toLowerCase().includes(query) ||
-        c.code?.toLowerCase().includes(query) ||
-        areaPSMB.toLowerCase().includes(query);
+        (hasExactAreaCode
+          ? codigoArea === query
+          : c.proveedor?.toLowerCase().includes(query) ||
+            c.code?.toLowerCase().includes(query) ||
+            areaPSMB.toLowerCase().includes(query) ||
+            codigoArea.includes(query));
       const matchComuna = comunaFilter === '' || c.comuna === comunaFilter;
       const matchArea =
         areaFilter === '' ||
@@ -410,7 +425,16 @@ export default function CentrosTable() {
                       </div>
                     </td>
                     <td><code>{centro.code}</code></td>
-                    <td>{centro.areaPSMB || '—'}</td>
+                    <td>
+                      {centro.areaPSMB ? (
+                        <div className="centros-area-cell">
+                          <strong>{centro.areaPSMB}</strong>
+                          {centro.codigoArea ? <span>Codigo area {centro.codigoArea}</span> : null}
+                        </div>
+                      ) : (
+                        <span className="centros-muted">Sin area</span>
+                      )}
+                    </td>
                     <td>
                       <span className={`mx-badge ${centro.estadoAreaSernapesca === 'Abierta' ? 'mx-badge-success' : 'mx-badge-muted'}`}>
                         {centro.estadoAreaSernapesca || 'Desconocido'}
