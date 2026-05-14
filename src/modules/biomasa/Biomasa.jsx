@@ -240,20 +240,8 @@ export default function Biomasa() {
       };
     });
 
-    const providers = {};
-    Object.values(weekData).forEach((programa) => {
-      const key = programa.nombre || 'Sin proveedor';
-      if (!providers[key]) {
-        providers[key] = { nombre: key, centro: programa.centro, camiones: 0, tons: 0 };
-      }
-      programa.dias.forEach((cell) => {
-        providers[key].camiones += Number(cell.camiones || 0);
-        providers[key].tons += Number(cell.tonsDia || 0);
-      });
-    });
-
-    return { daily, providers: Object.values(providers).filter(item => item.camiones > 0) };
-  }, [calData, weekData, weekDays, enrichCalendarItem]);
+    return { daily };
+  }, [calData, weekDays, enrichCalendarItem]);
 
   useEffect(() => {
     document.body.classList.toggle('biomasa-calendar-board-open', isCalendarBoard);
@@ -726,58 +714,54 @@ export default function Biomasa() {
                       <div className="harvest-week-layout">
                         <div className="mx-table-wrap harvest-week-wrap">
                           <table className="mx-table harvest-week-table">
-                          <thead>
-                            <tr>
-                              <th>PROVEEDOR / CENTRO</th>
-                              {weekDays.map((d) => {
-                                const summary = weekSummaries.daily[d] || { camiones: 0, tons: 0 };
+                            <thead>
+                              <tr>
+                                <th>PROVEEDOR / CENTRO</th>
+                                {weekDays.map((d) => {
+                                  const summary = weekSummaries.daily[d] || { camiones: 0, tons: 0 };
+                                  return (
+                                    <th key={d} style={{ textAlign: 'center' }}>
+                                      <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 'var(--weight-bold)' }}>{new Date(d + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short' }).toUpperCase()}</div>
+                                      <div style={{ fontSize: '15px', color: 'var(--color-text)', fontWeight: 'var(--weight-bold)' }}>{d.split('-')[2]}</div>
+                                      <div className="harvest-week-day-total">{formatHarvestMetric(summary.camiones, summary.tons, calendarMetric)}</div>
+                                    </th>
+                                  );
+                                })}
+                                <th style={{ textAlign: 'center' }}>TOTAL</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(weekData).map(([id, data]) => {
+                                const rowTotal = data.dias.reduce((acc, cell) => ({
+                                  camiones: acc.camiones + Number(cell.camiones || 0),
+                                  tons: acc.tons + Number(cell.tonsDia || 0),
+                                }), { camiones: 0, tons: 0 });
                                 return (
-                                  <th key={d} style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 'var(--weight-bold)' }}>{new Date(d + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short' }).toUpperCase()}</div>
-                                    <div style={{ fontSize: '15px', color: 'var(--color-text)', fontWeight: 'var(--weight-bold)' }}>{d.split('-')[2]}</div>
-                                    <div className="harvest-week-day-total">{formatHarvestMetric(summary.camiones, summary.tons, calendarMetric)}</div>
-                                  </th>
+                                  <tr key={id}>
+                                    <td>
+                                      <div className="harvest-week-provider">{data.nombre}</div>
+                                      <div className="harvest-week-center">{data.centro || 'Sin centro definido'}</div>
+                                    </td>
+                                    {data.dias.map((cell, i) => (
+                                      <td key={i} style={{ textAlign: 'center' }}>
+                                        {cell.camiones > 0 ? (
+                                          <div className={`harvest-week-cell ${getProductClass(cell.tipoProducto)}`}>
+                                            <div className="harvest-week-camiones">{formatHarvestMetric(cell.camiones, cell.tonsDia, calendarMetric)}</div>
+                                            <div className="harvest-week-product">{getTipoProductoLabel(cell.tipoProducto)}</div>
+                                          </div>
+                                        ) : <span style={{ color: 'var(--color-border)' }}>-</span>}
+                                      </td>
+                                    ))}
+                                    <td style={{ textAlign: 'center' }}>
+                                      <div className="harvest-week-row-total">{formatHarvestMetric(rowTotal.camiones, rowTotal.tons, calendarMetric)}</div>
+                                    </td>
+                                  </tr>
                                 );
                               })}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.entries(weekData).map(([id, data]) => (
-                              <tr key={id}>
-                                <td>
-                                  <div className="harvest-week-provider">{data.nombre}</div>
-                                  <div className="harvest-week-center">{data.centro || 'Sin centro definido'}</div>
-                                </td>
-                                {data.dias.map((cell, i) => (
-                                  <td key={i} style={{ textAlign: 'center' }}>
-                                    {cell.camiones > 0 ? (
-                                      <div className={`harvest-week-cell ${getProductClass(cell.tipoProducto)}`}>
-                                        <div className="harvest-week-camiones">{formatHarvestMetric(cell.camiones, cell.tonsDia, calendarMetric)}</div>
-                                        <div className="harvest-week-product">{getTipoProductoLabel(cell.tipoProducto)}</div>
-                                      </div>
-                                    ) : <span style={{ color: 'var(--color-border)' }}>—</span>}
-                                  </td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </tbody>
+                          </table>
                         </div>
-                          <aside className="harvest-provider-summary">
-                            <h4>Resumen proveedor</h4>
-                            {weekSummaries.providers.length ? weekSummaries.providers.map((item) => (
-                              <div key={item.nombre} className="harvest-provider-total">
-                                <div>
-                                  <strong>{item.nombre}</strong>
-                                  <span>{item.centro || 'Sin centro definido'}</span>
-                                </div>
-                                <b>{formatHarvestMetric(item.camiones, item.tons, calendarMetric)}</b>
-                              </div>
-                            )) : (
-                              <p>Sin cosechas programadas esta semana.</p>
-                            )}
-                          </aside>
-                        </div>
+                      </div>
                     )}
                   </div>
 
