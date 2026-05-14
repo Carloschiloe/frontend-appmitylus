@@ -320,6 +320,14 @@
   min-width: 980px;
 }
 
+.sanitario-centers-table {
+  min-width: 720px;
+}
+
+.sanitario-centers-modal {
+  max-width: 920px;
+}
+
 .sanitario-history-table th {
   position: sticky;
   top: 0;

@@ -7,11 +7,20 @@ import {
   RefreshCw,
   Search,
   X,
+  Building2,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
 
 const PAGE_SIZE = 100;
+
+const STATUS_LABELS = {
+  rojo: 'Bloqueada',
+  naranja: 'Alerta',
+  amarillo: 'Observacion',
+  verde: 'OK',
+  gris: 'Sin datos',
+};
 
 export default function SanitarioDashboard() {
   const { addToast } = useToast();
@@ -23,14 +32,17 @@ export default function SanitarioDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [estadoFilter, setEstadoFilter] = useState('');
+  const [tipoFilter, setTipoFilter] = useState('');
+  const [tiposAnalisis, setTiposAnalisis] = useState([]);
   const [page, setPage] = useState(1);
   const [totalAreas, setTotalAreas] = useState(0);
   const [historyModal, setHistoryModal] = useState({ open: false, area: null, loading: false, items: [] });
+  const [centersModal, setCentersModal] = useState({ open: false, area: null, items: [] });
 
   const formatDate = useCallback((value) => {
-    if (!value) return '—';
+    if (!value) return '-';
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '—';
+    if (Number.isNaN(date.getTime())) return '-';
     return date.toLocaleDateString('es-CL');
   }, []);
 
@@ -49,30 +61,37 @@ export default function SanitarioDashboard() {
       setLoading(false);
       return;
     }
+
     if (!append) setLoading(true);
+
     try {
       const params = new URLSearchParams({
         page: String(nextPage),
         limit: String(PAGE_SIZE),
       });
+
       if (deferredSearchTerm.trim()) params.set('q', deferredSearchTerm.trim());
       if (estadoFilter) params.set('estado', estadoFilter);
+      if (tipoFilter) params.set('tipoAnalisis', tipoFilter);
 
-      const [resAreas, resResumen] = await Promise.all([
+      const [resAreas, resResumen, resTipos] = await Promise.all([
         apiClient.get(`/sanitario/areas?${params.toString()}`, { signal }),
         apiClient.get('/sanitario/resumen', { signal }),
+        apiClient.get('/sanitario/tipos-analisis', { signal }),
       ]);
+
       setAreas((current) => append ? [...current, ...(resAreas.items || [])] : (resAreas.items || []));
       setTotalAreas(Number(resAreas.total) || 0);
       setPage(Number(resAreas.page) || nextPage);
       setResumen(resResumen);
+      setTiposAnalisis(resTipos.items || []);
     } catch (err) {
       if (err.name === 'AbortError') return;
       addToast({ title: 'Error', message: 'No se pudieron cargar los datos sanitarios.', type: 'error' });
     } finally {
       setLoading(false);
     }
-  }, [addToast, deferredSearchTerm, estadoFilter, selectedTenantDb]);
+  }, [addToast, deferredSearchTerm, estadoFilter, selectedTenantDb, tipoFilter]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -89,8 +108,11 @@ export default function SanitarioDashboard() {
   const handleOpenHistory = useCallback(async (area) => {
     if (!area?.areaPSMB) return;
     setHistoryModal({ open: true, area, loading: true, items: [] });
+
     try {
-      const res = await apiClient.get(`/sanitario/historial/${encodeURIComponent(area.areaPSMB)}?limit=20`);
+      const params = new URLSearchParams({ limit: '50' });
+      if (tipoFilter) params.set('tipoAnalisis', tipoFilter);
+      const res = await apiClient.get(`/sanitario/historial/${encodeURIComponent(area.areaPSMB)}?${params.toString()}`);
       setHistoryModal({ open: true, area, loading: false, items: res.items || [] });
     } catch (err) {
       setHistoryModal({ open: true, area, loading: false, items: [] });
@@ -100,10 +122,18 @@ export default function SanitarioDashboard() {
         type: 'error',
       });
     }
-  }, [addToast]);
+  }, [addToast, tipoFilter]);
 
   const closeHistoryModal = useCallback(() => {
     setHistoryModal({ open: false, area: null, loading: false, items: [] });
+  }, []);
+
+  const handleOpenCenters = useCallback((area) => {
+    setCentersModal({ open: true, area, items: Array.isArray(area?.centros) ? area.centros : [] });
+  }, []);
+
+  const closeCentersModal = useCallback(() => {
+    setCentersModal({ open: false, area: null, items: [] });
   }, []);
 
   const handleSyncMrSat = useCallback(async () => {
@@ -121,7 +151,7 @@ export default function SanitarioDashboard() {
     } catch (err) {
       addToast({
         title: 'Error',
-        message: err?.data?.error || err?.message || 'No se pudo completar la sincronización sanitaria.',
+        message: err?.data?.error || err?.message || 'No se pudo completar la sincronizacion sanitaria.',
         type: 'error',
       });
     } finally {
@@ -142,23 +172,23 @@ export default function SanitarioDashboard() {
 
       <div className="centros-kpis sanitario-kpis">
         <article className="centros-kpi" style={{ borderLeft: '4px solid #ef4444' }}>
-          <header className="centros-kpi-label"><AlertTriangle size={16} color="#ef4444" /> Bloqueadas (Rojo)</header>
+          <header className="centros-kpi-label"><AlertTriangle size={16} color="#ef4444" /> Bloqueadas</header>
           <div className="centros-kpi-value">{resumen?.rojo || 0}</div>
         </article>
         <article className="centros-kpi" style={{ borderLeft: '4px solid #f97316' }}>
-          <header className="centros-kpi-label"><AlertTriangle size={16} color="#f97316" /> Alerta (Naranja)</header>
+          <header className="centros-kpi-label"><AlertTriangle size={16} color="#f97316" /> Alerta</header>
           <div className="centros-kpi-value">{resumen?.naranja || 0}</div>
         </article>
         <article className="centros-kpi" style={{ borderLeft: '4px solid #facc15' }}>
-          <header className="centros-kpi-label"><AlertTriangle size={16} color="#ca8a04" /> Observacion (Amarillo)</header>
+          <header className="centros-kpi-label"><AlertTriangle size={16} color="#ca8a04" /> Observacion</header>
           <div className="centros-kpi-value">{resumen?.amarillo || 0}</div>
         </article>
         <article className="centros-kpi" style={{ borderLeft: '4px solid #22c55e' }}>
-          <header className="centros-kpi-label"><CheckCircle2 size={16} color="#22c55e" /> OK (Verde)</header>
+          <header className="centros-kpi-label"><CheckCircle2 size={16} color="#22c55e" /> OK</header>
           <div className="centros-kpi-value">{resumen?.verde || 0}</div>
         </article>
         <article className="centros-kpi" style={{ borderLeft: '4px solid #94a3b8' }}>
-          <header className="centros-kpi-label"><Clock size={16} color="#64748b" /> Sin datos (Gris)</header>
+          <header className="centros-kpi-label"><Clock size={16} color="#64748b" /> Sin datos</header>
           <div className="centros-kpi-value">{resumen?.gris || 0}</div>
         </article>
       </div>
@@ -168,7 +198,7 @@ export default function SanitarioDashboard() {
           <Search size={18} />
           <input
             type="text"
-            placeholder="Buscar área PSMB o código..."
+            placeholder="Buscar area PSMB o codigo..."
             className="centros-search"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
@@ -181,11 +211,22 @@ export default function SanitarioDashboard() {
           onChange={(event) => setEstadoFilter(event.target.value)}
         >
           <option value="">Todos los estados</option>
-          <option value="rojo">Rojo</option>
-          <option value="naranja">Naranja</option>
-          <option value="amarillo">Amarillo</option>
-          <option value="verde">Verde</option>
+          <option value="rojo">Bloqueadas</option>
+          <option value="naranja">Alerta</option>
+          <option value="amarillo">Observacion</option>
+          <option value="verde">OK</option>
           <option value="gris">Sin datos</option>
+        </select>
+        <select
+          className="mx-input"
+          style={{ width: 'auto', minWidth: '220px' }}
+          value={tipoFilter}
+          onChange={(event) => setTipoFilter(event.target.value)}
+        >
+          <option value="">Todos los analisis</option>
+          {tiposAnalisis.map((tipo) => (
+            <option key={tipo} value={tipo}>{tipo}</option>
+          ))}
         </select>
         <div style={{ flex: 1 }}></div>
         <div className="mx-sync-badge">
@@ -203,12 +244,12 @@ export default function SanitarioDashboard() {
             <thead>
               <tr>
                 <th>Estado</th>
-                <th>Código</th>
-                <th>Área PSMB</th>
-                <th>Último muestreo mrSAT</th>
+                <th>Codigo</th>
+                <th>Area PSMB</th>
+                <th>Ultimo muestreo mrSAT</th>
                 <th>Estado Sernapesca</th>
                 <th>Centros</th>
-                <th>Última sync</th>
+                <th>Ultima sync</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
@@ -232,18 +273,18 @@ export default function SanitarioDashboard() {
                     <td>
                       <div className={`centros-badge-sanitario ${area.estado || 'gris'}`}>
                         <ShieldCheck size={14} />
-                        {(area.estado || 'gris').toUpperCase()}
+                        {STATUS_LABELS[area.estado || 'gris'] || 'Sin datos'}
                       </div>
                     </td>
-                    <td><code>{area.codigoArea || '—'}</code></td>
+                    <td><code>{area.codigoArea || '-'}</code></td>
                     <td>
                       <div style={{ fontWeight: 600 }}>{area.areaPSMB}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Región: {area.region}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Region: {area.region}</div>
                     </td>
                     <td>
                       <div>{formatDate(area.ultimoMuestreoMrsat)}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                        {area.ultimoAnalisisMrsat || 'Sin análisis visible'}
+                        {area.ultimoAnalisisMrsat || 'Sin analisis visible'}
                       </div>
                     </td>
                     <td>{area.estadoSernapesca || 'Abierta'}</td>
@@ -251,6 +292,7 @@ export default function SanitarioDashboard() {
                     <td>{formatDateTime(area.ultimaSyncMrsat)}</td>
                     <td>
                       <div className="centros-actions">
+                        <button className="mx-btn-icon" title="Ver centros involucrados" onClick={() => handleOpenCenters(area)}><Building2 size={16} /></button>
                         <button className="mx-btn-icon" title="Ver historial" onClick={() => handleOpenHistory(area)}><Clock size={16} /></button>
                       </div>
                     </td>
@@ -325,6 +367,51 @@ export default function SanitarioDashboard() {
                         <td>{[item.valorNumerico, item.unidad].filter(Boolean).join(' ') || '-'}</td>
                         <td>{item.agenteCausal || '-'}</td>
                         <td>{item.laboratorio || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      {centersModal.open ? (
+        <div className="sanitario-modal-backdrop" role="dialog" aria-modal="true">
+          <div className="sanitario-history-modal sanitario-centers-modal">
+            <header className="sanitario-modal-header">
+              <div>
+                <h3>Centros involucrados</h3>
+                <p>{centersModal.area?.areaPSMB || 'Area sanitaria'} - Codigo {centersModal.area?.codigoArea || 'N/A'}</p>
+              </div>
+              <button className="mx-btn-icon" onClick={closeCentersModal} title="Cerrar">
+                <X size={18} />
+              </button>
+            </header>
+
+            {centersModal.items.length === 0 ? (
+              <div className="sanitario-history-empty">No hay centros asociados visibles para esta area.</div>
+            ) : (
+              <div className="sanitario-history-table-wrap">
+                <table className="sanitario-history-table sanitario-centers-table">
+                  <thead>
+                    <tr>
+                      <th>Codigo centro</th>
+                      <th>Titular</th>
+                      <th>Comuna</th>
+                      <th>Codigo area</th>
+                      <th>Estado area</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {centersModal.items.map((centro) => (
+                      <tr key={`${centro.code}-${centro.proveedor}`}>
+                        <td><code>{centro.code || '-'}</code></td>
+                        <td>{centro.proveedor || '-'}</td>
+                        <td>{centro.comuna || '-'}</td>
+                        <td>{centro.codigoArea || '-'}</td>
+                        <td>{centro.estadoAreaSernapesca || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
