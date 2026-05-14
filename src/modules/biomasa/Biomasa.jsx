@@ -49,6 +49,17 @@ const mesLabel = (mk = '', largo = false) => {
 
 const fmtTons = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 1 }) + ' t';
 
+const PRODUCT_TYPE_LABELS = {
+  entero: 'Entero',
+  carne: 'Carne',
+  mc: 'MC',
+  sin_definir: 'Sin definir',
+};
+
+const getTipoProductoLabel = (value) => (
+  PRODUCT_TYPE_LABELS[String(value || '').toLowerCase()] || PRODUCT_TYPE_LABELS.sin_definir
+);
+
 const asText = (value, fallback = '') => {
   if (value == null) return fallback;
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
@@ -95,6 +106,7 @@ export default function Biomasa() {
     vigenciaHasta: '',
     camionesDefault: 1,
     tonsEstimadas: '',
+    tipoProducto: 'sin_definir',
     tipoCamion: '',
     maxisPorCamion: '',
     condicionContinuidad: '',
@@ -150,7 +162,14 @@ export default function Biomasa() {
       data[p._id] = { 
         nombre: p.proveedorNombre, 
         centro: p.centroNombre,
-        dias: weekDays.map(d => calData[d]?.items?.find(x => x.programaId === p._id)?.camiones || 0)
+        tipoProducto: p.tipoProducto || p.tipoProductoSugerido || 'sin_definir',
+        dias: weekDays.map((d) => {
+          const item = calData[d]?.items?.find(x => x.programaId === p._id);
+          return {
+            camiones: item?.camiones || 0,
+            tipoProducto: item?.tipoProducto || p.tipoProducto || p.tipoProductoSugerido || 'sin_definir',
+          };
+        })
       };
     });
     return data;
@@ -172,6 +191,7 @@ export default function Biomasa() {
         vigenciaHasta: item.vigenciaHasta ? item.vigenciaHasta.split('T')[0] : '',
         camionesDefault: item.camionesDefault || 1,
         tonsEstimadas: item.tonsEstimadas || '',
+        tipoProducto: item.tipoProducto || item.tipoProductoSugerido || 'sin_definir',
         tipoCamion: item.tipoCamion || '',
         maxisPorCamion: item.maxisPorCamion || '',
         condicionContinuidad: item.condicionContinuidad || '',
@@ -187,6 +207,7 @@ export default function Biomasa() {
         vigenciaHasta: finMes(mes),
         camionesDefault: 1,
         tonsEstimadas: '',
+        tipoProducto: tratosAcordados[0]?.tipoProducto || tratosAcordados[0]?.tipoProductoSugerido || 'sin_definir',
         tipoCamion: 'Normal',
         maxisPorCamion: 12,
         condicionContinuidad: 'Sin Condición',
@@ -434,6 +455,7 @@ export default function Biomasa() {
                         <tr>
                           <th>Proveedor / Centro</th>
                           <th>Vigencia</th>
+                          <th>Producto</th>
                           <th style={{ textAlign: 'center' }}>Cam/Día</th>
                           <th>Estado</th>
                           <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -458,6 +480,11 @@ export default function Biomasa() {
                                 <CalendarIcon size={14} />
                                 {p.vigenciaDesde ? new Date(p.vigenciaDesde).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'} - {p.vigenciaHasta ? new Date(p.vigenciaHasta).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}
                               </div>
+                            </td>
+                            <td>
+                              <span className="mx-badge mx-badge-muted">
+                                {getTipoProductoLabel(p.tipoProducto)}
+                              </span>
                             </td>
                             <td style={{ textAlign: 'center' }}>
                               <div className="biomasa-camiones-badge">
@@ -580,11 +607,14 @@ export default function Biomasa() {
                                   <div style={{ fontWeight: 'var(--weight-bold)', fontSize: '14px' }}>{data.nombre}</div>
                                   <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{data.centro}</div>
                                 </td>
-                                {data.dias.map((c, i) => (
+                                {data.dias.map((cell, i) => (
                                   <td key={i} style={{ textAlign: 'center' }}>
-                                    {c > 0 ? (
+                                    {cell.camiones > 0 ? (
                                       <div style={{ background: 'var(--color-success-bg)', color: 'var(--color-success)', fontWeight: 'var(--weight-bold)', padding: '8px', borderRadius: '12px', border: '1px solid var(--color-success)', fontSize: '14px' }}>
-                                        {c}
+                                        <div>{cell.camiones}</div>
+                                        <div style={{ fontSize: '10px', fontWeight: 'var(--weight-semibold)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                                          {getTipoProductoLabel(cell.tipoProducto)}
+                                        </div>
                                       </div>
                                     ) : <span style={{ color: 'var(--color-border)' }}>—</span>}
                                   </td>
@@ -620,6 +650,7 @@ export default function Biomasa() {
                                 </div>
                               </div>
                               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                                <span>{getTipoProductoLabel(it.tipoProducto)}</span>
                                 {it.tonsEstimadas ? <span>{fmtTons(it.tonsEstimadas)}</span> : null}
                                 {it.tipoCamion ? <span>{it.tipoCamion}</span> : null}
                                 {it.maxisPorCamion ? <span>{it.maxisPorCamion} maxis/camion</span> : null}
@@ -769,7 +800,8 @@ export default function Biomasa() {
                           vigenciaDesde: t?.vigenciaDesde?.split('T')[0] || formData.vigenciaDesde,
                           vigenciaHasta: t?.vigenciaHasta?.split('T')[0] || formData.vigenciaHasta,
                           camionesDefault: t?.camionesXDia || formData.camionesDefault,
-                          tonsEstimadas: t?.tonsAcordadas || formData.tonsEstimadas
+                          tonsEstimadas: t?.tonsAcordadas || formData.tonsEstimadas,
+                          tipoProducto: t?.tipoProducto || t?.tipoProductoSugerido || formData.tipoProducto || 'sin_definir'
                         });
                       }}
                       required
@@ -795,6 +827,19 @@ export default function Biomasa() {
                   <div className="mx-form-group">
                     <label className="mx-label">Tons estimadas</label>
                     <input type="number" className="mx-input" value={formData.tonsEstimadas} onChange={e => setFormData({...formData, tonsEstimadas: e.target.value})} />
+                  </div>
+                  <div className="mx-form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="mx-label">Tipo de producto</label>
+                    <select
+                      className="mx-select"
+                      value={formData.tipoProducto}
+                      onChange={e => setFormData({...formData, tipoProducto: e.target.value})}
+                    >
+                      <option value="sin_definir">Sin definir</option>
+                      <option value="entero">Entero</option>
+                      <option value="carne">Carne</option>
+                      <option value="mc">MC</option>
+                    </select>
                   </div>
                   <div className="mx-form-group" style={{ gridColumn: '1 / -1' }}>
                     <label className="mx-label">Días de Cosecha</label>
