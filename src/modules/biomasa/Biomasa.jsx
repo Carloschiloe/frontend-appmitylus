@@ -59,6 +59,8 @@ const PRODUCT_TYPE_LABELS = {
   sin_definir: 'Sin definir',
 };
 
+const PRODUCT_TYPES = ['entero', 'carne', 'mc', 'sin_definir'];
+
 const getTipoProductoLabel = (value) => (
   PRODUCT_TYPE_LABELS[String(value || '').toLowerCase()] || PRODUCT_TYPE_LABELS.sin_definir
 );
@@ -70,6 +72,8 @@ const getPreferredTipoProducto = (...values) => {
   }
   return 'sin_definir';
 };
+
+const getProductClass = (value) => `product-${getPreferredTipoProducto(value)}`;
 
 const asText = (value, fallback = '') => {
   if (value == null) return fallback;
@@ -137,6 +141,8 @@ export default function Biomasa() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
   const [isCalendarBoard, setIsCalendarBoard] = useState(false);
+  const [calendarMetric, setCalendarMetric] = useState('both');
+  const [tonsPerTruck, setTonsPerTruck] = useState(11);
 
   // Lógica Matemática de Mes
   const monthData = useMemo(() => {
@@ -176,19 +182,24 @@ export default function Biomasa() {
 
   const enrichCalendarItem = useCallback((item) => {
     const programa = programasById.get(String(item?.programaId || ''));
+    const tipoProducto = getPreferredTipoProducto(
+      programa?.tipoProducto,
+      programa?.tipoProductoSugerido,
+      item?.tipoProducto,
+      item?.tipoProductoSugerido
+    );
+    const camiones = Number(item?.camiones || 0);
+    const tonsDia = camiones * Number(tonsPerTruck || 0);
     return {
       ...item,
-      tipoProducto: getPreferredTipoProducto(
-        programa?.tipoProducto,
-        programa?.tipoProductoSugerido,
-        item?.tipoProducto,
-        item?.tipoProductoSugerido
-      ),
+      camiones,
+      tipoProducto,
       tonsEstimadas: item?.tonsEstimadas ?? programa?.tonsEstimadas ?? null,
+      tonsDia,
       centroNombre: item?.centroNombre || programa?.centroNombre || '',
       centroCodigo: item?.centroCodigo || programa?.centroCodigo || '',
     };
-  }, [programasById]);
+  }, [programasById, tonsPerTruck]);
 
   const weekData = useMemo(() => {
     const data = {};
@@ -204,6 +215,7 @@ export default function Biomasa() {
             camiones: enriched?.camiones || 0,
             tipoProducto: enriched?.tipoProducto || p.tipoProducto || p.tipoProductoSugerido || 'sin_definir',
             tonsEstimadas: enriched?.tonsEstimadas ?? p.tonsEstimadas ?? null,
+            tonsDia: enriched?.tonsDia || 0,
             tipoCamion: enriched?.tipoCamion || p.tipoCamion || '',
             maxisPorCamion: enriched?.maxisPorCamion ?? p.maxisPorCamion ?? null,
             motivo: enriched?.motivo || '',
@@ -213,6 +225,41 @@ export default function Biomasa() {
     });
     return data;
   }, [programas, calData, weekDays, enrichCalendarItem]);
+
+  const weekSummaries = useMemo(() => {
+    const daily = {};
+    weekDays.forEach((dayKeyValue) => {
+      const items = (calData[dayKeyValue]?.items || []).map(enrichCalendarItem);
+      const byProduct = PRODUCT_TYPES.reduce((acc, type) => {
+        acc[type] = { camiones: 0, tons: 0 };
+        return acc;
+      }, {});
+      items.forEach((item) => {
+        const type = getPreferredTipoProducto(item.tipoProducto);
+        byProduct[type].camiones += Number(item.camiones || 0);
+        byProduct[type].tons += Number(item.tonsDia || 0);
+      });
+      daily[dayKeyValue] = {
+        camiones: items.reduce((sum, item) => sum + Number(item.camiones || 0), 0),
+        tons: items.reduce((sum, item) => sum + Number(item.tonsDia || 0), 0),
+        byProduct,
+      };
+    });
+
+    const providers = {};
+    Object.values(weekData).forEach((programa) => {
+      const key = programa.nombre || 'Sin proveedor';
+      if (!providers[key]) {
+        providers[key] = { nombre: key, centro: programa.centro, camiones: 0, tons: 0 };
+      }
+      programa.dias.forEach((cell) => {
+        providers[key].camiones += Number(cell.camiones || 0);
+        providers[key].tons += Number(cell.tonsDia || 0);
+      });
+    });
+
+    return { daily, providers: Object.values(providers).filter(item => item.camiones > 0) };
+  }, [calData, weekData, weekDays, enrichCalendarItem]);
 
   useEffect(() => {
     document.body.classList.toggle('biomasa-calendar-board-open', isCalendarBoard);
@@ -604,6 +651,24 @@ export default function Biomasa() {
                         </div>
                       </div>
                       <div className="harvest-calendar-actions">
+                        <div className="harvest-metric-control">
+                          <span>Ver</span>
+                          <select value={calendarMetric} onChange={e => setCalendarMetric(e.target.value)}>
+                            <option value="both">Cam + tons</option>
+                            <option value="camiones">Camiones</option>
+                            <option value="tons">Tons</option>
+                          </select>
+                        </div>
+                        <label className="harvest-tons-control">
+                          <span>t/cam</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            value={tonsPerTruck}
+                            onChange={e => setTonsPerTruck(Number(e.target.value) || 0)}
+                          />
+                        </label>
                         {calView === 'week' && <button className="mx-btn mx-btn-outline sm" onClick={() => setCurrentWeekOffset(0)}>Volver a Hoy</button>}
                         <button
                           className="mx-btn mx-btn-outline sm"
@@ -643,14 +708,14 @@ export default function Biomasa() {
                               {dayItems.length > 0 && (
                                 <div className="cal-day-items">
                                   {dayItems.slice(0, isCalendarBoard ? 6 : 4).map((it, idx) => (
-                                    <div key={`${it.programaId}-${idx}`} className="cal-day-program">
+                                    <div key={`${it.programaId}-${idx}`} className={`cal-day-program ${getProductClass(it.tipoProducto)}`}>
                                       <div className="cal-day-program-main">
                                         <span className="cal-day-provider">{it.proveedorNombre || 'Sin proveedor'}</span>
                                         <span className="cal-day-camiones">{it.camiones} cam</span>
                                       </div>
                                       <div className="cal-day-program-meta">
                                         <span>{getTipoProductoLabel(it.tipoProducto)}</span>
-                                        {it.tonsEstimadas ? <span>{fmtTonsInt(it.tonsEstimadas)}</span> : null}
+                                        <span>{fmtTonsInt(it.tonsDia)}</span>
                                       </div>
                                     </div>
                                   ))}
@@ -687,10 +752,14 @@ export default function Biomasa() {
                                 {data.dias.map((cell, i) => (
                                   <td key={i} style={{ textAlign: 'center' }}>
                                     {cell.camiones > 0 ? (
-                                      <div className="harvest-week-cell">
-                                        <div className="harvest-week-camiones">{cell.camiones} cam</div>
+                                      <div className={`harvest-week-cell ${getProductClass(cell.tipoProducto)}`}>
+                                        {(calendarMetric === 'both' || calendarMetric === 'camiones') && (
+                                          <div className="harvest-week-camiones">{cell.camiones} cam</div>
+                                        )}
                                         <div className="harvest-week-product">{getTipoProductoLabel(cell.tipoProducto)}</div>
-                                        {cell.tonsEstimadas ? <div className="harvest-week-tons">{fmtTonsInt(cell.tonsEstimadas)}</div> : null}
+                                        {(calendarMetric === 'both' || calendarMetric === 'tons') && (
+                                          <div className="harvest-week-tons">{fmtTonsInt(cell.tonsDia)}</div>
+                                        )}
                                         {cell.tipoCamion ? <div className="harvest-week-meta">{cell.tipoCamion}</div> : null}
                                         {cell.maxisPorCamion ? <div className="harvest-week-meta">{cell.maxisPorCamion} maxis/camion</div> : null}
                                       </div>
@@ -701,6 +770,45 @@ export default function Biomasa() {
                             ))}
                           </tbody>
                         </table>
+                        <div className="harvest-week-footer">
+                          <section className="harvest-week-summary">
+                            <h4>Resumen diario</h4>
+                            <div className="harvest-summary-grid">
+                              {weekDays.map((dayKeyValue) => {
+                                const summary = weekSummaries.daily[dayKeyValue] || { camiones: 0, tons: 0, byProduct: {} };
+                                return (
+                                  <article key={dayKeyValue} className="harvest-summary-card">
+                                    <div className="harvest-summary-day">
+                                      {new Date(dayKeyValue + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: '2-digit' })}
+                                    </div>
+                                    <div className="harvest-summary-main">{summary.camiones} cam · {fmtTonsInt(summary.tons)}</div>
+                                    <div className="harvest-summary-products">
+                                      {PRODUCT_TYPES.filter(type => summary.byProduct?.[type]?.camiones > 0).map(type => (
+                                        <span key={type} className={`harvest-product-pill ${getProductClass(type)}`}>
+                                          {getTipoProductoLabel(type)} {summary.byProduct[type].camiones} cam · {fmtTonsInt(summary.byProduct[type].tons)}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </article>
+                                );
+                              })}
+                            </div>
+                          </section>
+                          <aside className="harvest-provider-summary">
+                            <h4>Resumen proveedor</h4>
+                            {weekSummaries.providers.length ? weekSummaries.providers.map((item) => (
+                              <div key={item.nombre} className="harvest-provider-total">
+                                <div>
+                                  <strong>{item.nombre}</strong>
+                                  <span>{item.centro || 'Sin centro definido'}</span>
+                                </div>
+                                <b>{item.camiones} cam · {fmtTonsInt(item.tons)}</b>
+                              </div>
+                            )) : (
+                              <p>Sin cosechas programadas esta semana.</p>
+                            )}
+                          </aside>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -729,7 +837,7 @@ export default function Biomasa() {
                               </div>
                               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
                                 <span>{getTipoProductoLabel(it.tipoProducto)}</span>
-                                {it.tonsEstimadas ? <span>{fmtTons(it.tonsEstimadas)}</span> : null}
+                                <span>{fmtTonsInt(it.tonsDia)}</span>
                                 {it.tipoCamion ? <span>{it.tipoCamion}</span> : null}
                                 {it.maxisPorCamion ? <span>{it.maxisPorCamion} maxis/camion</span> : null}
                                 {it.motivo ? <span>{it.motivo}</span> : null}
