@@ -135,6 +135,38 @@ const getPreferredTipoProducto = (...values) => {
 
 const getProductClass = (value) => `product-${getPreferredTipoProducto(value)}`;
 
+const summarizeHarvestItems = (items = []) => {
+  const summary = {
+    camiones: 0,
+    tons: 0,
+    providers: new Set(),
+    products: {
+      entero: { key: 'entero', camiones: 0, tons: 0 },
+      carne: { key: 'carne', camiones: 0, tons: 0 },
+      mc: { key: 'mc', camiones: 0, tons: 0 },
+      sin_definir: { key: 'sin_definir', camiones: 0, tons: 0 },
+    },
+  };
+
+  items.forEach((item) => {
+    const camiones = Number(item?.camiones || 0);
+    const tons = Number(item?.tonsDia || 0);
+    const productKey = getPreferredTipoProducto(item?.tipoProducto);
+    summary.camiones += camiones;
+    summary.tons += tons;
+    if (item?.proveedorNombre) summary.providers.add(item.proveedorNombre);
+    summary.products[productKey].camiones += camiones;
+    summary.products[productKey].tons += tons;
+  });
+
+  return {
+    camiones: summary.camiones,
+    tons: summary.tons,
+    providerCount: summary.providers.size,
+    products: Object.values(summary.products).filter((item) => item.camiones > 0),
+  };
+};
+
 const formatHarvestMetric = (camiones = 0, tons = 0, metric = 'both') => {
   if (metric === 'camiones') return `${Number(camiones || 0)} cam`;
   if (metric === 'tons') return fmtTonsInt(tons);
@@ -786,36 +818,34 @@ export default function Biomasa() {
                           const dateKey = `${mes}-${String(dayNum).padStart(2, '0')}`;
                           const dayDataObj = calData[dateKey] || { total: 0, items: [] };
                           const dayItems = (dayDataObj.items || []).map(enrichCalendarItem);
-                          const total = dayDataObj.total || 0;
+                          const daySummary = summarizeHarvestItems(dayItems);
                           const isSelected = selectedDay?.key === dateKey;
 
                           return (
                             <div 
                               key={dayNum} 
-                              onClick={() => setSelectedDay({ key: dateKey, items: dayItems, total })}
+                              onClick={() => setSelectedDay({ key: dateKey, items: dayItems, total: daySummary.camiones, summary: daySummary })}
                               className={`cal-day-cell ${calendarDayToneClass(dateKey)} ${isSelected ? 'selected' : ''}`}
                             >
                               <div className="cal-day-top">
                                 <span className="cal-day-num">{dayNum}</span>
-                                {total > 0 && <span className="cal-day-total">{total} cam</span>}
                               </div>
-                              {dayItems.length > 0 && (
-                                <div className="cal-day-items">
-                                  {dayItems.slice(0, isCalendarBoard ? 6 : 4).map((it, idx) => (
-                                    <div key={`${it.programaId}-${idx}`} className={`cal-day-program ${getProductClass(it.tipoProducto)}`}>
-                                      <div className="cal-day-program-main">
-                                        <span className="cal-day-provider">{it.proveedorNombre || 'Sin proveedor'}</span>
-                                        <span className="cal-day-camiones">{it.camiones} cam</span>
+                              {daySummary.camiones > 0 && (
+                                <div className="cal-day-compact-summary">
+                                  <div className="cal-day-primary-total">
+                                    {formatHarvestMetric(daySummary.camiones, daySummary.tons, calendarMetric)}
+                                  </div>
+                                  <div className="cal-day-product-stack">
+                                    {daySummary.products.map((product) => (
+                                      <div key={product.key} className={`cal-day-product-row ${getProductClass(product.key)}`}>
+                                        <span>{getTipoProductoLabel(product.key)}</span>
+                                        <b>{formatHarvestMetric(product.camiones, product.tons, calendarMetric)}</b>
                                       </div>
-                                      <div className="cal-day-program-meta">
-                                        <span>{getTipoProductoLabel(it.tipoProducto)}</span>
-                                        <span>{fmtTonsInt(it.tonsDia)}</span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                  {dayItems.length > (isCalendarBoard ? 6 : 4) && (
-                                    <div className="cal-day-more">+{dayItems.length - (isCalendarBoard ? 6 : 4)} mas</div>
-                                  )}
+                                    ))}
+                                  </div>
+                                  <div className="cal-day-provider-count">
+                                    {daySummary.providerCount} {daySummary.providerCount === 1 ? 'proveedor' : 'proveedores'}
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -910,6 +940,22 @@ export default function Biomasa() {
                           <div style={{ padding: '8px 12px', background: 'var(--color-bg)', borderRadius: '8px', fontSize: '12px', fontWeight: 'var(--weight-bold)', color: 'var(--color-text-muted)', textAlign: 'center', marginBottom: '8px' }}>
                             {new Date(selectedDay.key + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
                           </div>
+                          {selectedDay.summary?.camiones > 0 && (
+                            <div className="harvest-day-summary-card">
+                              <div>
+                                <span>Total del dia</span>
+                                <strong>{formatHarvestMetric(selectedDay.summary.camiones, selectedDay.summary.tons, calendarMetric)}</strong>
+                              </div>
+                              <span>{selectedDay.summary.providerCount} {selectedDay.summary.providerCount === 1 ? 'proveedor' : 'proveedores'}</span>
+                              <div className="harvest-day-summary-products">
+                                {selectedDay.summary.products.map((product) => (
+                                  <span key={product.key} className={`harvest-product-pill ${getProductClass(product.key)}`}>
+                                    {getTipoProductoLabel(product.key)} - {formatHarvestMetric(product.camiones, product.tons, calendarMetric)}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           {selectedDay.items.map((it, idx) => (
                             <div key={idx} className="mx-card" style={{ padding: '16px', boxShadow: 'none', border: '1px solid var(--color-border)' }}>
                               <div style={{ fontWeight: 'var(--weight-bold)', fontSize: '13px', marginBottom: '4px' }}>{it.proveedorNombre}</div>

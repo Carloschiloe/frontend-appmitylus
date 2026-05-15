@@ -386,6 +386,86 @@ body.biomasa-calendar-board-open .mx-app-shell {
   box-shadow: 0 4px 10px rgba(15,118,110,0.3);
 }
 
+.cal-day-compact-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 0;
+}
+
+.cal-day-primary-total {
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary-light) 100%);
+  color: white;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(15,118,110,0.24);
+}
+
+.cal-day-product-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cal-day-product-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid #dbe7f3;
+  border-left: 3px solid #64748b;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 5px 6px;
+  color: var(--color-text);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  line-height: 1.15;
+}
+
+.cal-day-product-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-day-product-row b {
+  color: var(--color-primary-dark);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.cal-day-product-row.product-entero {
+  border-color: #99f6e4;
+  border-left-color: #0d9488;
+  background: #ecfdf5;
+}
+
+.cal-day-product-row.product-carne {
+  border-color: #fecdd3;
+  border-left-color: #e11d48;
+  background: #fff1f2;
+}
+
+.cal-day-product-row.product-mc {
+  border-color: #fde68a;
+  border-left-color: #d97706;
+  background: #fffbeb;
+}
+
+.cal-day-provider-count {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  line-height: 1.1;
+  text-align: right;
+}
+
 .cal-day-items {
   display: flex;
   flex-direction: column;
@@ -493,6 +573,21 @@ body.biomasa-calendar-board-open .mx-app-shell {
   font-size: 15px;
 }
 
+.harvest-calendar-shell.board-mode .cal-day-primary-total {
+  font-size: 14px;
+  padding: 8px 10px;
+}
+
+.harvest-calendar-shell.board-mode .cal-day-product-row {
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
+.harvest-calendar-shell.board-mode .cal-day-product-row b,
+.harvest-calendar-shell.board-mode .cal-day-provider-count {
+  font-size: 11px;
+}
+
 .harvest-calendar-shell.board-mode .cal-day-provider,
 .harvest-calendar-shell.board-mode .cal-day-camiones {
   font-size: 13px;
@@ -507,6 +602,51 @@ body.biomasa-calendar-board-open .mx-app-shell {
   max-height: calc(100vh - 36px);
   overflow: auto;
   border-radius: 18px;
+}
+
+.harvest-day-summary-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #ccfbf1;
+  border-radius: 12px;
+  background: #f0fdfa;
+  padding: 14px;
+}
+
+.harvest-day-summary-card > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.harvest-day-summary-card span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+}
+
+.harvest-day-summary-card strong {
+  color: var(--color-primary-dark);
+  font-size: 20px;
+  font-weight: var(--weight-bold);
+}
+
+.harvest-day-summary-products {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.harvest-product-pill {
+  border: 1px solid #dbe7f3;
+  border-left: 3px solid #64748b;
+  border-radius: 999px;
+  background: #f8fafc;
+  padding: 5px 8px;
+  color: var(--color-text) !important;
+  font-size: 10px !important;
+  font-weight: var(--weight-bold) !important;
 }
 
 .harvest-week-wrap {
