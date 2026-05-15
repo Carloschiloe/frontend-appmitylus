@@ -373,6 +373,65 @@ export default function Biomasa() {
     return { daily, total };
   }, [calData, weekDays, enrichCalendarItem]);
 
+  const monthSummary = useMemo(() => {
+    const providers = new Map();
+    const products = {
+      entero: { key: 'entero', camiones: 0, tons: 0 },
+      carne: { key: 'carne', camiones: 0, tons: 0 },
+      mc: { key: 'mc', camiones: 0, tons: 0 },
+      sin_definir: { key: 'sin_definir', camiones: 0, tons: 0 },
+    };
+    const total = { camiones: 0, tons: 0, days: 0 };
+    const sanitaryAlerts = new Map();
+
+    Object.entries(calData || {}).forEach(([dateKey, day]) => {
+      if (!String(dateKey).startsWith(mes)) return;
+      const items = (day?.items || []).map(enrichCalendarItem).filter((item) => Number(item.camiones || 0) > 0);
+      if (!items.length) return;
+      total.days += 1;
+
+      items.forEach((item) => {
+        const camiones = Number(item.camiones || 0);
+        const tons = Number(item.tonsDia || 0);
+        const providerKey = item.proveedorNombre || 'Sin proveedor';
+        const productKey = getPreferredTipoProducto(item.tipoProducto);
+
+        total.camiones += camiones;
+        total.tons += tons;
+        products[productKey].camiones += camiones;
+        products[productKey].tons += tons;
+
+        if (!providers.has(providerKey)) {
+          providers.set(providerKey, {
+            nombre: providerKey,
+            centro: item.centroNombre || item.centroCodigo || 'Sin centro definido',
+            camiones: 0,
+            tons: 0,
+          });
+        }
+        const provider = providers.get(providerKey);
+        provider.camiones += camiones;
+        provider.tons += tons;
+
+        if (isSanitarioRelevant(item.sanitario)) {
+          const alertKey = `${item.sanitario?.areaPSMB || item.centroCodigo || providerKey}-${getSanitarioEstado(item.sanitario)}`;
+          if (!sanitaryAlerts.has(alertKey)) {
+            sanitaryAlerts.set(alertKey, item.sanitario);
+          }
+        }
+      });
+    });
+
+    return {
+      total,
+      providers: [...providers.values()].sort((a, b) => b.camiones - a.camiones),
+      products: Object.values(products).filter((item) => item.camiones > 0),
+      sanitaryAlerts: [...sanitaryAlerts.values()].sort((a, b) => (
+        (SANITARIO_ORDER[getSanitarioEstado(b)] || 0) - (SANITARIO_ORDER[getSanitarioEstado(a)] || 0)
+      )),
+    };
+  }, [calData, enrichCalendarItem, mes]);
+
   useEffect(() => {
     document.body.classList.toggle('biomasa-calendar-board-open', isCalendarBoard);
     const handleKeyDown = (event) => {
@@ -991,8 +1050,13 @@ export default function Biomasa() {
                     <aside className="mx-card harvest-day-detail">
                       <header className="mx-card-header">
                         <h4 className="mx-card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Truck size={18} /> DETALLE DEL DÍA
+                          <Truck size={18} /> {selectedDay ? 'DETALLE DEL DIA' : 'RESUMEN DEL MES'}
                         </h4>
+                        {selectedDay && (
+                          <button className="mx-btn mx-btn-outline sm" onClick={() => setSelectedDay(null)}>
+                            Ver mes
+                          </button>
+                        )}
                       </header>
                       {selectedDay ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1055,9 +1119,59 @@ export default function Biomasa() {
                           )}
                         </div>
                       ) : (
-                        <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
-                          <CalendarIcon size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-                          <p>Selecciona un día para ver el desglose operativo.</p>
+                        <div className="harvest-month-summary">
+                          <div className="harvest-month-total-card">
+                            <span>{mesLabel(mes, true)}</span>
+                            <strong>{formatHarvestMetric(monthSummary.total.camiones, monthSummary.total.tons, calendarMetric)}</strong>
+                            <small>{monthSummary.total.days} dias con cosecha</small>
+                          </div>
+
+                          <section className="harvest-month-section">
+                            <h5>Por proveedor</h5>
+                            {monthSummary.providers.length ? monthSummary.providers.map((provider) => (
+                              <div key={provider.nombre} className="harvest-month-row">
+                                <div>
+                                  <strong>{provider.nombre}</strong>
+                                  <span>{provider.centro}</span>
+                                </div>
+                                <b>{formatHarvestMetric(provider.camiones, provider.tons, calendarMetric)}</b>
+                              </div>
+                            )) : (
+                              <div className="harvest-month-empty">Sin cosechas programadas en el mes.</div>
+                            )}
+                          </section>
+
+                          <section className="harvest-month-section">
+                            <h5>Por producto</h5>
+                            <div className="harvest-month-products">
+                              {monthSummary.products.map((product) => (
+                                <span key={product.key} className={`harvest-product-pill ${getProductClass(product.key)}`}>
+                                  {getTipoProductoLabel(product.key)} - {formatHarvestMetric(product.camiones, product.tons, calendarMetric)}
+                                </span>
+                              ))}
+                              {!monthSummary.products.length && <span className="harvest-month-empty">Sin productos definidos.</span>}
+                            </div>
+                          </section>
+
+                          {monthSummary.sanitaryAlerts.length > 0 && (
+                            <section className="harvest-month-section">
+                              <h5>Alertas sanitarias</h5>
+                              {monthSummary.sanitaryAlerts.slice(0, 4).map((alert, idx) => (
+                                <div key={`${alert?.areaPSMB || idx}-${idx}`} className={`harvest-day-sanitary-alert ${getSanitarioEstado(alert)}`}>
+                                  <AlertTriangle size={14} />
+                                  <span>
+                                    {getSanitarioLabel(alert)}
+                                    {alert?.areaPSMB ? ` - ${alert.areaPSMB}` : ''}
+                                    {alert?.ultimoAnalisisMrsat ? ` - ${alert.ultimoAnalisisMrsat}` : ''}
+                                  </span>
+                                </div>
+                              ))}
+                            </section>
+                          )}
+
+                          <div className="harvest-month-hint">
+                            Selecciona un dia del calendario para ver el desglose operativo diario.
+                          </div>
                         </div>
                       )}
                     </aside>
