@@ -51,6 +51,7 @@ const mesLabel = (mk = '', largo = false) => {
 
 const fmtTons = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 1 }) + ' t';
 const fmtTonsInt = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' t';
+const fmtNumber = (n, digits = 1) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: digits });
 
 const PRODUCT_TYPE_LABELS = {
   entero: 'Entero',
@@ -126,6 +127,8 @@ export default function Biomasa() {
     camionesDefault: 1,
     tonsEstimadas: '',
     tipoProducto: 'sin_definir',
+    uxkg: '',
+    rendimiento: '',
     tipoCamion: '',
     maxisPorCamion: '',
     condicionContinuidad: '',
@@ -200,6 +203,8 @@ export default function Biomasa() {
       tipoProducto,
       tonsEstimadas: item?.tonsEstimadas ?? programa?.tonsEstimadas ?? null,
       tonsDia,
+      uxkg: item?.uxkg ?? programa?.uxkg ?? null,
+      rendimiento: item?.rendimiento ?? programa?.rendimiento ?? null,
       centroNombre: item?.centroNombre || programa?.centroNombre || '',
       centroCodigo: item?.centroCodigo || programa?.centroCodigo || '',
     };
@@ -218,6 +223,8 @@ export default function Biomasa() {
           return {
             camiones: enriched?.camiones || 0,
             tipoProducto: enriched?.tipoProducto || p.tipoProducto || p.tipoProductoSugerido || 'sin_definir',
+            uxkg: enriched?.uxkg ?? p.uxkg ?? null,
+            rendimiento: enriched?.rendimiento ?? p.rendimiento ?? null,
             tonsEstimadas: enriched?.tonsEstimadas ?? p.tonsEstimadas ?? null,
             tonsDia: enriched?.tonsDia || 0,
             tipoCamion: enriched?.tipoCamion || p.tipoCamion || '',
@@ -275,6 +282,8 @@ export default function Biomasa() {
         camionesDefault: item.camionesDefault || 1,
         tonsEstimadas: item.tonsEstimadas || '',
         tipoProducto: item.tipoProducto || item.tipoProductoSugerido || 'sin_definir',
+        uxkg: item.uxkg || '',
+        rendimiento: item.rendimiento || '',
         tipoCamion: item.tipoCamion || '',
         maxisPorCamion: item.maxisPorCamion || '',
         condicionContinuidad: item.condicionContinuidad || '',
@@ -291,6 +300,8 @@ export default function Biomasa() {
         camionesDefault: 1,
         tonsEstimadas: '',
         tipoProducto: tratosAcordados[0]?.tipoProducto || tratosAcordados[0]?.tipoProductoSugerido || 'sin_definir',
+        uxkg: '',
+        rendimiento: '',
         tipoCamion: 'Normal',
         maxisPorCamion: 12,
         condicionContinuidad: 'Sin Condición',
@@ -568,6 +579,12 @@ export default function Biomasa() {
                               <span className="mx-badge mx-badge-muted">
                                 {getTipoProductoLabel(p.tipoProducto)}
                               </span>
+                              {(p.uxkg || p.rendimiento) && (
+                                <div className="harvest-program-quality">
+                                  {p.uxkg ? <span>{fmtNumber(p.uxkg, 1)} un/kg</span> : null}
+                                  {p.rendimiento ? <span>{fmtNumber(p.rendimiento, 1)}%</span> : null}
+                                </div>
+                              )}
                             </td>
                             <td style={{ textAlign: 'center' }}>
                               <div className="biomasa-camiones-badge">
@@ -720,20 +737,15 @@ export default function Biomasa() {
                             <thead>
                               <tr>
                                 <th>PROVEEDOR / CENTRO</th>
-                                {weekDays.map((d) => {
-                                  const summary = weekSummaries.daily[d] || { camiones: 0, tons: 0 };
-                                  return (
-                                    <th key={d} style={{ textAlign: 'center' }}>
-                                      <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 'var(--weight-bold)' }}>{new Date(d + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short' }).toUpperCase()}</div>
-                                      <div style={{ fontSize: '15px', color: 'var(--color-text)', fontWeight: 'var(--weight-bold)' }}>{d.split('-')[2]}</div>
-                                      <div className="harvest-week-day-total">{formatHarvestMetric(summary.camiones, summary.tons, calendarMetric)}</div>
-                                    </th>
-                                  );
-                                })}
+                                {weekDays.map((d) => (
+                                  <th key={d} style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 'var(--weight-bold)' }}>{new Date(d + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short' }).toUpperCase()}</div>
+                                    <div style={{ fontSize: '18px', color: 'var(--color-text)', fontWeight: 'var(--weight-bold)' }}>{d.split('-')[2]}</div>
+                                  </th>
+                                ))}
                                 <th style={{ textAlign: 'center' }}>
                                   <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 'var(--weight-bold)' }}>TOTAL</div>
-                                  <div style={{ fontSize: '15px', color: 'var(--color-text)', fontWeight: 'var(--weight-bold)' }}>SEM</div>
-                                  <div className="harvest-week-day-total">{formatHarvestMetric(weekSummaries.total.camiones, weekSummaries.total.tons, calendarMetric)}</div>
+                                  <div style={{ fontSize: '18px', color: 'var(--color-text)', fontWeight: 'var(--weight-bold)' }}>SEM</div>
                                 </th>
                               </tr>
                             </thead>
@@ -755,6 +767,12 @@ export default function Biomasa() {
                                           <div className={`harvest-week-cell ${getProductClass(cell.tipoProducto)}`}>
                                             <div className="harvest-week-camiones">{formatHarvestMetric(cell.camiones, cell.tonsDia, calendarMetric)}</div>
                                             <div className="harvest-week-product">{getTipoProductoLabel(cell.tipoProducto)}</div>
+                                            {(cell.uxkg || cell.rendimiento) && (
+                                              <div className="harvest-week-quality">
+                                                {cell.uxkg ? <span>{fmtNumber(cell.uxkg, 1)} un/kg</span> : null}
+                                                {cell.rendimiento ? <span>{fmtNumber(cell.rendimiento, 1)}%</span> : null}
+                                              </div>
+                                            )}
                                           </div>
                                         ) : <span style={{ color: 'var(--color-border)' }}>-</span>}
                                       </td>
@@ -766,6 +784,22 @@ export default function Biomasa() {
                                 );
                               })}
                             </tbody>
+                            <tfoot>
+                              <tr className="harvest-week-total-row">
+                                <td>Total diario</td>
+                                {weekDays.map((d) => {
+                                  const summary = weekSummaries.daily[d] || { camiones: 0, tons: 0 };
+                                  return (
+                                    <td key={`total-${d}`} style={{ textAlign: 'center' }}>
+                                      <div className="harvest-week-day-total">{formatHarvestMetric(summary.camiones, summary.tons, calendarMetric)}</div>
+                                    </td>
+                                  );
+                                })}
+                                <td style={{ textAlign: 'center' }}>
+                                  <div className="harvest-week-grand-total">{formatHarvestMetric(weekSummaries.total.camiones, weekSummaries.total.tons, calendarMetric)}</div>
+                                </td>
+                              </tr>
+                            </tfoot>
                           </table>
                         </div>
                       </div>
@@ -797,6 +831,8 @@ export default function Biomasa() {
                               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
                                 <span>{getTipoProductoLabel(it.tipoProducto)}</span>
                                 <span>{fmtTonsInt(it.tonsDia)}</span>
+                                {it.uxkg ? <span>{fmtNumber(it.uxkg, 1)} un/kg</span> : null}
+                                {it.rendimiento ? <span>{fmtNumber(it.rendimiento, 1)}% rend.</span> : null}
                                 {it.tipoCamion ? <span>{it.tipoCamion}</span> : null}
                                 {it.maxisPorCamion ? <span>{it.maxisPorCamion} maxis/camion</span> : null}
                                 {it.motivo ? <span>{it.motivo}</span> : null}
@@ -946,7 +982,9 @@ export default function Biomasa() {
                           vigenciaHasta: t?.vigenciaHasta?.split('T')[0] || formData.vigenciaHasta,
                           camionesDefault: t?.camionesXDia || formData.camionesDefault,
                           tonsEstimadas: t?.tonsAcordadas || formData.tonsEstimadas,
-                          tipoProducto: t?.tipoProducto || t?.tipoProductoSugerido || formData.tipoProducto || 'sin_definir'
+                          tipoProducto: t?.tipoProducto || t?.tipoProductoSugerido || formData.tipoProducto || 'sin_definir',
+                          uxkg: t?.uxkg || t?.calidad?.uxkg || formData.uxkg,
+                          rendimiento: t?.rendimiento || t?.calidad?.rendimiento || formData.rendimiento
                         });
                       }}
                       required
@@ -985,6 +1023,30 @@ export default function Biomasa() {
                       <option value="carne">Carne</option>
                       <option value="mc">MC</option>
                     </select>
+                  </div>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Unidades / kg</label>
+                    <input
+                      type="number"
+                      className="mx-input"
+                      value={formData.uxkg}
+                      onChange={e => setFormData({...formData, uxkg: e.target.value})}
+                      min="0"
+                      step="0.1"
+                      placeholder="Ej: 55"
+                    />
+                  </div>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Rendimiento (%)</label>
+                    <input
+                      type="number"
+                      className="mx-input"
+                      value={formData.rendimiento}
+                      onChange={e => setFormData({...formData, rendimiento: e.target.value})}
+                      min="0"
+                      step="0.1"
+                      placeholder="Ej: 22"
+                    />
                   </div>
                   <div className="mx-form-group" style={{ gridColumn: '1 / -1' }}>
                     <label className="mx-label">Días de Cosecha</label>
