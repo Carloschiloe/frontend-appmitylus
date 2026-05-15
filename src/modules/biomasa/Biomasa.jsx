@@ -456,7 +456,7 @@ export default function Biomasa() {
           <h1 className="biomasa-title">{isStatusView ? 'Disponibilidad de biomasa' : isProgramView ? 'Programa de Cosecha' : 'Muestreos Técnicos'}</h1>
         </div>
         <div className="mx-hero-actions">
-          {!isMuestreosView && (
+          {isStatusView && (
             <div className="mx-search-box" style={{ minWidth: 'auto' }}>
               <CalendarIcon size={18} />
               <input 

@@ -533,7 +533,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .harvest-week-table th:last-child,
 .harvest-week-table td:last-child {
-  width: 88px;
+  width: 132px;
 }
 
 .harvest-week-provider {
@@ -688,9 +688,10 @@ body.biomasa-calendar-board-open .mx-app-shell {
   border-radius: 12px;
   background: var(--color-primary);
   color: white;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: var(--weight-bold);
   white-space: nowrap;
+  padding: 0 10px;
   box-shadow: 0 8px 18px rgba(13, 148, 136, 0.22);
 }
 
