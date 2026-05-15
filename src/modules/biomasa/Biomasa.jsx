@@ -127,8 +127,6 @@ export default function Biomasa() {
     camionesDefault: 1,
     tonsEstimadas: '',
     tipoProducto: 'sin_definir',
-    uxkg: '',
-    rendimiento: '',
     tipoCamion: '',
     maxisPorCamion: '',
     condicionContinuidad: '',
@@ -282,8 +280,6 @@ export default function Biomasa() {
         camionesDefault: item.camionesDefault || 1,
         tonsEstimadas: item.tonsEstimadas || '',
         tipoProducto: item.tipoProducto || item.tipoProductoSugerido || 'sin_definir',
-        uxkg: item.uxkg || '',
-        rendimiento: item.rendimiento || '',
         tipoCamion: item.tipoCamion || '',
         maxisPorCamion: item.maxisPorCamion || '',
         condicionContinuidad: item.condicionContinuidad || '',
@@ -300,8 +296,6 @@ export default function Biomasa() {
         camionesDefault: 1,
         tonsEstimadas: '',
         tipoProducto: tratosAcordados[0]?.tipoProducto || tratosAcordados[0]?.tipoProductoSugerido || 'sin_definir',
-        uxkg: '',
-        rendimiento: '',
         tipoCamion: 'Normal',
         maxisPorCamion: 12,
         condicionContinuidad: 'Sin Condición',
@@ -982,9 +976,7 @@ export default function Biomasa() {
                           vigenciaHasta: t?.vigenciaHasta?.split('T')[0] || formData.vigenciaHasta,
                           camionesDefault: t?.camionesXDia || formData.camionesDefault,
                           tonsEstimadas: t?.tonsAcordadas || formData.tonsEstimadas,
-                          tipoProducto: t?.tipoProducto || t?.tipoProductoSugerido || formData.tipoProducto || 'sin_definir',
-                          uxkg: t?.uxkg || t?.calidad?.uxkg || formData.uxkg,
-                          rendimiento: t?.rendimiento || t?.calidad?.rendimiento || formData.rendimiento
+                          tipoProducto: t?.tipoProducto || t?.tipoProductoSugerido || formData.tipoProducto || 'sin_definir'
                         });
                       }}
                       required
@@ -1023,30 +1015,6 @@ export default function Biomasa() {
                       <option value="carne">Carne</option>
                       <option value="mc">MC</option>
                     </select>
-                  </div>
-                  <div className="mx-form-group">
-                    <label className="mx-label">Unidades / kg</label>
-                    <input
-                      type="number"
-                      className="mx-input"
-                      value={formData.uxkg}
-                      onChange={e => setFormData({...formData, uxkg: e.target.value})}
-                      min="0"
-                      step="0.1"
-                      placeholder="Ej: 55"
-                    />
-                  </div>
-                  <div className="mx-form-group">
-                    <label className="mx-label">Rendimiento (%)</label>
-                    <input
-                      type="number"
-                      className="mx-input"
-                      value={formData.rendimiento}
-                      onChange={e => setFormData({...formData, rendimiento: e.target.value})}
-                      min="0"
-                      step="0.1"
-                      placeholder="Ej: 22"
-                    />
                   </div>
                   <div className="mx-form-group" style={{ gridColumn: '1 / -1' }}>
                     <label className="mx-label">Días de Cosecha</label>
