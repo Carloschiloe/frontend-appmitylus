@@ -213,6 +213,13 @@
   overflow: auto;
 }
 
+.harvest-calendar-shell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  padding: 18px;
+  background: #f4f8fb;
+}
+
 .harvest-calendar-shell.week-mode.board-mode {
   grid-template-columns: minmax(0, 1fr);
 }

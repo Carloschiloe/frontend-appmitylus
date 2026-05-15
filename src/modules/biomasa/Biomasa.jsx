@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import './biomasa.css';
 import { 
@@ -148,6 +148,7 @@ export default function Biomasa() {
   const [isCalendarBoard, setIsCalendarBoard] = useState(false);
   const [calendarMetric, setCalendarMetric] = useState('both');
   const [tonsPerTruck, setTonsPerTruck] = useState(11);
+  const calendarBoardRef = useRef(null);
 
   // Lógica Matemática de Mes
   const monthData = useMemo(() => {
@@ -262,6 +263,40 @@ export default function Biomasa() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isCalendarBoard]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setIsCalendarBoard(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const handleCalendarBoardToggle = useCallback(async () => {
+    if (isCalendarBoard) {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+      setIsCalendarBoard(false);
+      return;
+    }
+
+    setIsCalendarBoard(true);
+    const target = calendarBoardRef.current;
+    if (target?.requestFullscreen) {
+      try {
+        await target.requestFullscreen();
+      } catch {
+        addToast({
+          title: 'Pantalla completa no disponible',
+          message: 'El navegador bloqueó el modo pantalla completa. Puedes usar F11 como alternativa.',
+          type: 'warning'
+        });
+      }
+    }
+  }, [addToast, isCalendarBoard]);
 
   useEffect(() => {
     if (selectedDay && !String(selectedDay.key || '').startsWith(mes)) {
@@ -610,7 +645,7 @@ export default function Biomasa() {
               )}
               
               {progSubTab === 'calendario' && (
-                <div className={`harvest-calendar-shell ${calView === 'week' ? 'week-mode' : 'month-mode'} ${isCalendarBoard ? 'board-mode' : ''}`}>
+                <div ref={calendarBoardRef} className={`harvest-calendar-shell ${calView === 'week' ? 'week-mode' : 'month-mode'} ${isCalendarBoard ? 'board-mode' : ''}`}>
                   <div className="mx-card harvest-calendar-main">
                     <div className="harvest-calendar-toolbar">
                       <div className="harvest-calendar-controls">
@@ -668,7 +703,7 @@ export default function Biomasa() {
                         {calView === 'week' && <button className="mx-btn mx-btn-outline sm" onClick={() => setCurrentWeekOffset(0)}>Volver a Hoy</button>}
                         <button
                           className="mx-btn mx-btn-outline sm"
-                          onClick={() => setIsCalendarBoard(value => !value)}
+                          onClick={handleCalendarBoardToggle}
                         >
                           {isCalendarBoard ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                           {isCalendarBoard ? 'Salir pantalla' : 'Pantalla completa'}
