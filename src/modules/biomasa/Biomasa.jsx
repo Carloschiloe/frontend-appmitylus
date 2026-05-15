@@ -53,6 +53,67 @@ const fmtTons = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractio
 const fmtTonsInt = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' t';
 const fmtNumber = (n, digits = 1) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: digits });
 
+const getEasterDate = (year) => {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+};
+
+const toDateKey = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const getChileHolidayKeys = (year) => {
+  const easter = getEasterDate(year);
+  const goodFriday = new Date(easter);
+  goodFriday.setDate(easter.getDate() - 2);
+  const holySaturday = new Date(easter);
+  holySaturday.setDate(easter.getDate() - 1);
+
+  return new Set([
+    `${year}-01-01`,
+    toDateKey(goodFriday),
+    toDateKey(holySaturday),
+    `${year}-05-01`,
+    `${year}-05-21`,
+    `${year}-06-20`,
+    `${year}-06-29`,
+    `${year}-07-16`,
+    `${year}-08-15`,
+    `${year}-09-18`,
+    `${year}-09-19`,
+    `${year}-10-12`,
+    `${year}-10-31`,
+    `${year}-11-01`,
+    `${year}-12-08`,
+    `${year}-12-25`,
+  ]);
+};
+
+const isSundayKey = (dateKey) => new Date(`${dateKey}T00:00:00`).getDay() === 0;
+const isChileHolidayKey = (dateKey) => {
+  const year = Number(String(dateKey).slice(0, 4));
+  return Number.isFinite(year) && getChileHolidayKeys(year).has(dateKey);
+};
+const calendarDayToneClass = (dateKey) => (
+  isSundayKey(dateKey) || isChileHolidayKey(dateKey) ? 'calendar-red-day' : ''
+);
+
 const PRODUCT_TYPE_LABELS = {
   entero: 'Entero',
   carne: 'Carne',
@@ -467,9 +528,11 @@ export default function Biomasa() {
               />
             </div>
           )}
-          <button className="mx-btn-icon" onClick={load} style={{ color: 'white', background: 'rgba(255,255,255,0.1)' }}>
-            <RotateCcw size={20} />
-          </button>
+          {isStatusView && (
+            <button className="mx-btn-icon" onClick={load} style={{ color: 'white', background: 'rgba(255,255,255,0.1)' }}>
+              <RotateCcw size={20} />
+            </button>
+          )}
         </div>
       </header>
 
@@ -714,7 +777,7 @@ export default function Biomasa() {
                     {calView === 'month' ? (
                       <div className="cal-month-grid">
                         {['LUN','MAR','MIE','JUE','VIE','SAB','DOM'].map(d => (
-                          <div key={d} className="cal-header-day">{d}</div>
+                          <div key={d} className={`cal-header-day ${d === 'DOM' ? 'calendar-red-day' : ''}`}>{d}</div>
                         ))}
                         {Array.from({ length: monthData.padding }).map((_, i) => (
                           <div key={`pad-${i}`} className="cal-pad-day" />
@@ -730,7 +793,7 @@ export default function Biomasa() {
                             <div 
                               key={dayNum} 
                               onClick={() => setSelectedDay({ key: dateKey, items: dayItems, total })}
-                              className={`cal-day-cell ${isSelected ? 'selected' : ''}`}
+                              className={`cal-day-cell ${calendarDayToneClass(dateKey)} ${isSelected ? 'selected' : ''}`}
                             >
                               <div className="cal-day-top">
                                 <span className="cal-day-num">{dayNum}</span>
@@ -767,7 +830,7 @@ export default function Biomasa() {
                               <tr>
                                 <th>PROVEEDOR / CENTRO</th>
                                 {weekDays.map((d) => (
-                                  <th key={d} style={{ textAlign: 'center' }}>
+                                  <th key={d} className={calendarDayToneClass(d)} style={{ textAlign: 'center' }}>
                                     <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 'var(--weight-bold)' }}>{new Date(d + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short' }).toUpperCase()}</div>
                                     <div style={{ fontSize: '18px', color: 'var(--color-text)', fontWeight: 'var(--weight-bold)' }}>{d.split('-')[2]}</div>
                                   </th>
@@ -819,7 +882,7 @@ export default function Biomasa() {
                                 {weekDays.map((d) => {
                                   const summary = weekSummaries.daily[d] || { camiones: 0, tons: 0 };
                                   return (
-                                    <td key={`total-${d}`} style={{ textAlign: 'center' }}>
+                                    <td key={`total-${d}`} className={calendarDayToneClass(d)} style={{ textAlign: 'center' }}>
                                       <div className="harvest-week-day-total">{formatHarvestMetric(summary.camiones, summary.tons, calendarMetric)}</div>
                                     </td>
                                   );

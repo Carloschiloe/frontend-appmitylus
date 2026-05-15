@@ -323,6 +323,11 @@ body.biomasa-calendar-board-open .mx-app-shell {
   color: var(--color-text-subtle);
 }
 
+.cal-header-day.calendar-red-day {
+  color: #dc2626;
+  background: #fff1f2;
+}
+
 .cal-pad-day {
   background: var(--color-bg);
   min-height: 132px;
@@ -339,6 +344,14 @@ body.biomasa-calendar-board-open .mx-app-shell {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.cal-day-cell.calendar-red-day {
+  background: #fff7f7;
+}
+
+.cal-day-cell.calendar-red-day .cal-day-num {
+  color: #dc2626;
 }
 
 .cal-day-cell:hover {
@@ -524,6 +537,16 @@ body.biomasa-calendar-board-open .mx-app-shell {
 .harvest-week-table td {
   vertical-align: top;
   padding: 12px 8px;
+}
+
+.harvest-week-table th.calendar-red-day,
+.harvest-week-total-row td.calendar-red-day {
+  background: #fff7f7;
+}
+
+.harvest-week-table th.calendar-red-day div,
+.harvest-week-total-row td.calendar-red-day .harvest-week-day-total {
+  color: #dc2626 !important;
 }
 
 .harvest-week-table th:first-child,
