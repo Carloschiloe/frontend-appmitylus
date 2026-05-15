@@ -22,6 +22,7 @@ import {
   Trash,
   Maximize2,
   Minimize2,
+  AlertTriangle,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 import { useToast } from '../../context/ToastContext';
@@ -135,11 +136,28 @@ const getPreferredTipoProducto = (...values) => {
 
 const getProductClass = (value) => `product-${getPreferredTipoProducto(value)}`;
 
+const SANITARIO_ORDER = { rojo: 4, naranja: 3, amarillo: 2, verde: 1, gris: 0 };
+const SANITARIO_LABELS = {
+  rojo: 'Bloqueada',
+  naranja: 'Alerta',
+  amarillo: 'Observacion',
+  verde: 'OK',
+  gris: 'Sin datos',
+};
+
+const getSanitarioEstado = (value) => String(value?.estado || value || 'gris').toLowerCase();
+const getSanitarioLabel = (value) => value?.label || SANITARIO_LABELS[getSanitarioEstado(value)] || 'Sin datos';
+const isSanitarioRelevant = (value) => {
+  const estado = getSanitarioEstado(value);
+  return Boolean(value) && estado !== 'gris' && (estado !== 'verde' || value?.hasObservaciones);
+};
+
 const summarizeHarvestItems = (items = []) => {
   const summary = {
     camiones: 0,
     tons: 0,
     providers: new Set(),
+    sanitario: null,
     products: {
       entero: { key: 'entero', camiones: 0, tons: 0 },
       carne: { key: 'carne', camiones: 0, tons: 0 },
@@ -157,6 +175,13 @@ const summarizeHarvestItems = (items = []) => {
     if (item?.proveedorNombre) summary.providers.add(item.proveedorNombre);
     summary.products[productKey].camiones += camiones;
     summary.products[productKey].tons += tons;
+    if (item?.sanitario) {
+      const current = getSanitarioEstado(summary.sanitario);
+      const incoming = getSanitarioEstado(item.sanitario);
+      if ((SANITARIO_ORDER[incoming] || 0) > (SANITARIO_ORDER[current] || 0)) {
+        summary.sanitario = item.sanitario;
+      }
+    }
   });
 
   return {
@@ -164,6 +189,7 @@ const summarizeHarvestItems = (items = []) => {
     tons: summary.tons,
     providerCount: summary.providers.size,
     products: Object.values(summary.products).filter((item) => item.camiones > 0),
+    sanitario: summary.sanitario,
   };
 };
 
@@ -299,6 +325,7 @@ export default function Biomasa() {
       rendimiento: item?.rendimiento ?? programa?.rendimiento ?? null,
       centroNombre: item?.centroNombre || programa?.centroNombre || '',
       centroCodigo: item?.centroCodigo || programa?.centroCodigo || '',
+      sanitario: item?.sanitario || programa?.sanitario || null,
     };
   }, [programasById, tonsPerTruck]);
 
@@ -319,6 +346,7 @@ export default function Biomasa() {
             rendimiento: enriched?.rendimiento ?? p.rendimiento ?? null,
             tonsEstimadas: enriched?.tonsEstimadas ?? p.tonsEstimadas ?? null,
             tonsDia: enriched?.tonsDia || 0,
+            sanitario: enriched?.sanitario || p.sanitario || null,
             tipoCamion: enriched?.tipoCamion || p.tipoCamion || '',
             maxisPorCamion: enriched?.maxisPorCamion ?? p.maxisPorCamion ?? null,
             motivo: enriched?.motivo || '',
@@ -676,6 +704,7 @@ export default function Biomasa() {
                           <th>Producto</th>
                           <th style={{ textAlign: 'center' }}>Cam/Día</th>
                           <th>Estado</th>
+                          <th>Sanitario</th>
                           <th style={{ textAlign: 'right' }}>Acciones</th>
                         </tr>
                       </thead>
@@ -719,6 +748,24 @@ export default function Biomasa() {
                               <span className={`mx-badge mx-badge-${p.estado === 'activo' ? 'success' : p.estado === 'pausado' ? 'warning' : 'muted'}`}>
                                 {(p.estado || 'desconocido').toUpperCase()}
                               </span>
+                            </td>
+                            <td>
+                              <span
+                                className={`harvest-sanitary-badge ${getSanitarioEstado(p.sanitario)}`}
+                                title={[
+                                  p.sanitario?.areaPSMB,
+                                  p.sanitario?.codigoArea ? `Area ${p.sanitario.codigoArea}` : '',
+                                  p.sanitario?.ultimoAnalisisMrsat,
+                                ].filter(Boolean).join(' - ')}
+                              >
+                                {isSanitarioRelevant(p.sanitario) ? <AlertTriangle size={13} /> : null}
+                                {getSanitarioLabel(p.sanitario)}
+                              </span>
+                              {p.sanitario?.areaPSMB && (
+                                <div className="harvest-sanitary-meta">
+                                  {p.sanitario.areaPSMB}{p.sanitario.codigoArea ? ` - ${p.sanitario.codigoArea}` : ''}
+                                </div>
+                              )}
                             </td>
                             <td style={{ textAlign: 'right' }}>
                               <div className="biomasa-action-bar">
@@ -835,6 +882,12 @@ export default function Biomasa() {
                                   <div className="cal-day-primary-total">
                                     {formatHarvestMetric(daySummary.camiones, daySummary.tons, calendarMetric)}
                                   </div>
+                                  {isSanitarioRelevant(daySummary.sanitario) && (
+                                    <div className={`cal-day-sanitary ${getSanitarioEstado(daySummary.sanitario)}`}>
+                                      <AlertTriangle size={12} />
+                                      {getSanitarioLabel(daySummary.sanitario)}
+                                    </div>
+                                  )}
                                   <div className="cal-day-product-stack">
                                     {daySummary.products.map((product) => (
                                       <div key={product.key} className={`cal-day-product-row ${getProductClass(product.key)}`}>
@@ -889,6 +942,12 @@ export default function Biomasa() {
                                           <div className={`harvest-week-cell ${getProductClass(cell.tipoProducto)}`}>
                                             <div className="harvest-week-camiones">{formatHarvestMetric(cell.camiones, cell.tonsDia, calendarMetric)}</div>
                                             <div className="harvest-week-product">{getTipoProductoLabel(cell.tipoProducto)}</div>
+                                            {isSanitarioRelevant(cell.sanitario) && (
+                                              <div className={`harvest-week-sanitary ${getSanitarioEstado(cell.sanitario)}`}>
+                                                <AlertTriangle size={11} />
+                                                {getSanitarioLabel(cell.sanitario)}
+                                              </div>
+                                            )}
                                             {(cell.uxkg || cell.rendimiento) && (
                                               <div className="harvest-week-quality">
                                                 {cell.uxkg ? <span>{fmtNumber(cell.uxkg, 1)} un/kg</span> : null}
@@ -954,6 +1013,16 @@ export default function Biomasa() {
                                   </span>
                                 ))}
                               </div>
+                              {isSanitarioRelevant(selectedDay.summary.sanitario) && (
+                                <div className={`harvest-day-sanitary-alert ${getSanitarioEstado(selectedDay.summary.sanitario)}`}>
+                                  <AlertTriangle size={14} />
+                                  <span>
+                                    {getSanitarioLabel(selectedDay.summary.sanitario)}
+                                    {selectedDay.summary.sanitario?.areaPSMB ? ` - ${selectedDay.summary.sanitario.areaPSMB}` : ''}
+                                    {selectedDay.summary.sanitario?.ultimoAnalisisMrsat ? ` - ${selectedDay.summary.sanitario.ultimoAnalisisMrsat}` : ''}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           )}
                           {selectedDay.items.map((it, idx) => (
@@ -971,6 +1040,7 @@ export default function Biomasa() {
                                 <span>{fmtTonsInt(it.tonsDia)}</span>
                                 {it.uxkg ? <span>{fmtNumber(it.uxkg, 1)} un/kg</span> : null}
                                 {it.rendimiento ? <span>{fmtNumber(it.rendimiento, 1)}% rend.</span> : null}
+                                {isSanitarioRelevant(it.sanitario) ? <span>{getSanitarioLabel(it.sanitario)} sanitario</span> : null}
                                 {it.tipoCamion ? <span>{it.tipoCamion}</span> : null}
                                 {it.maxisPorCamion ? <span>{it.maxisPorCamion} maxis/camion</span> : null}
                                 {it.motivo ? <span>{it.motivo}</span> : null}
