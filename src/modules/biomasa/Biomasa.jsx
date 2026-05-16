@@ -946,22 +946,24 @@ export default function Biomasa() {
               {progSubTab === 'programa' && (
                 <div className="mx-table-card harvest-program-table-card">
                   <div className="harvest-program-toolbar">
-                    <div className="mx-toggle-group">
-                      <button className={`mx-toggle-btn ${programPeriod === 'month' ? 'active' : ''}`} onClick={() => setProgramPeriod('month')}>Vista Mes</button>
-                      <button className={`mx-toggle-btn ${programPeriod === 'week' ? 'active' : ''}`} onClick={() => setProgramPeriod('week')}>Vista Semana</button>
-                    </div>
-                    <div className="harvest-program-period">
-                      <button className="mx-btn-icon sm" onClick={() => moveProgramPeriod(-1)} aria-label="Periodo anterior">
-                        <ChevronLeft size={16} />
-                      </button>
-                      <span>
-                        {programPeriod === 'week'
-                          ? `Semana ${new Date(weekDays[0] + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}`
-                          : mesLabel(mes, true)}
-                      </span>
-                      <button className="mx-btn-icon sm" onClick={() => moveProgramPeriod(1)} aria-label="Periodo siguiente">
-                        <ChevronRight size={16} />
-                      </button>
+                    <div className="harvest-program-controls">
+                      <div className="mx-toggle-group">
+                        <button className={`mx-toggle-btn ${programPeriod === 'month' ? 'active' : ''}`} onClick={() => setProgramPeriod('month')}>Vista Mes</button>
+                        <button className={`mx-toggle-btn ${programPeriod === 'week' ? 'active' : ''}`} onClick={() => setProgramPeriod('week')}>Vista Semana</button>
+                      </div>
+                      <div className="harvest-program-period">
+                        <button className="mx-btn-icon sm" onClick={() => moveProgramPeriod(-1)} aria-label="Periodo anterior">
+                          <ChevronLeft size={16} />
+                        </button>
+                        <span>
+                          {programPeriod === 'week'
+                            ? `Semana ${new Date(weekDays[0] + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}`
+                            : mesLabel(mes, true)}
+                        </span>
+                        <button className="mx-btn-icon sm" onClick={() => moveProgramPeriod(1)} aria-label="Periodo siguiente">
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="mx-table-wrap">
