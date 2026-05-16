@@ -199,6 +199,50 @@ const formatHarvestMetric = (camiones = 0, tons = 0, metric = 'both') => {
   return `${Number(camiones || 0)} cam · ${fmtTonsInt(tons)}`;
 };
 
+const getProgramVolumeProgress = (programa, tonsPerTruck = 0, until = new Date()) => {
+  const estimated = Number(programa?.tonsEstimadas || 0);
+  const desde = programa?.vigenciaDesde ? new Date(programa.vigenciaDesde) : null;
+  const hasta = programa?.vigenciaHasta ? new Date(programa.vigenciaHasta) : null;
+  if (!desde || !hasta || Number.isNaN(desde.getTime()) || Number.isNaN(hasta.getTime())) {
+    return { estimated, consumed: 0, balance: estimated };
+  }
+
+  const end = new Date(Math.min(hasta.getTime(), until.getTime()));
+  if (end < desde) return { estimated, consumed: 0, balance: estimated };
+
+  const diasSemana = Array.isArray(programa?.diasSemana) && programa.diasSemana.length
+    ? new Set(programa.diasSemana.map(Number))
+    : new Set([0, 1, 2, 3, 4]);
+  const especiales = new Map((programa?.diasEspeciales || []).map((item) => {
+    const key = item?.fecha ? new Date(item.fecha).toISOString().slice(0, 10) : '';
+    return [key, Number(item?.camiones || 0)];
+  }).filter(([key]) => key));
+
+  let camiones = 0;
+  const cursor = new Date(desde);
+  cursor.setUTCHours(0, 0, 0, 0);
+  end.setUTCHours(23, 59, 59, 999);
+
+  while (cursor <= end) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (especiales.has(key)) {
+      camiones += especiales.get(key);
+    } else if (diasSemana.has(cursor.getUTCDay())) {
+      camiones += Number(programa?.camionesDefault || 0);
+    }
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  const consumed = camiones * Number(tonsPerTruck || 0);
+  const progress = estimated > 0 ? Math.min((consumed / estimated) * 100, 100) : 0;
+  return {
+    estimated,
+    consumed,
+    balance: estimated ? estimated - consumed : 0,
+    progress,
+  };
+};
+
 const asText = (value, fallback = '') => {
   if (value == null) return fallback;
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
@@ -762,13 +806,16 @@ export default function Biomasa() {
                           <th>Vigencia</th>
                           <th>Producto</th>
                           <th style={{ textAlign: 'center' }}>Cam/Día</th>
+                          <th>Volumen</th>
                           <th>Estado</th>
                           <th>Sanitario</th>
                           <th style={{ textAlign: 'right' }}>Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {programas.map(p => (
+                        {programas.map(p => {
+                          const volume = getProgramVolumeProgress(p, tonsPerTruck);
+                          return (
                           <tr key={p._id}>
                             <td>
                               <div className="biomasa-prov-cell">
@@ -801,6 +848,27 @@ export default function Biomasa() {
                             <td style={{ textAlign: 'center' }}>
                               <div className="biomasa-camiones-badge">
                                 {p.camionesDefault}
+                              </div>
+                            </td>
+                            <td>
+                              <div className="harvest-program-volume">
+                                <div className="harvest-program-volume-head">
+                                  <span>Estimado</span>
+                                  <strong>{volume.estimated ? fmtTonsInt(volume.estimated) : 'S/D'}</strong>
+                                </div>
+                                <div className="harvest-program-volume-bar" aria-hidden="true">
+                                  <span style={{ width: `${volume.progress}%` }} />
+                                </div>
+                                <div className="harvest-program-volume-foot">
+                                  <span>
+                                    <b>{fmtTonsInt(volume.consumed)}</b>
+                                    consumidas
+                                  </span>
+                                  <span className={volume.balance < 0 ? 'is-negative' : ''}>
+                                    <b>{volume.estimated ? fmtTonsInt(volume.balance) : 'S/D'}</b>
+                                    saldo
+                                  </span>
+                                </div>
                               </div>
                             </td>
                             <td>
@@ -838,7 +906,8 @@ export default function Biomasa() {
                               </div>
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
