@@ -428,6 +428,10 @@ export default function Biomasa() {
             tipoCamion: enriched?.tipoCamion || p.tipoCamion || '',
             maxisPorCamion: enriched?.maxisPorCamion ?? p.maxisPorCamion ?? null,
             motivo: enriched?.motivo || '',
+            ajusteTipo: enriched?.ajusteTipo || '',
+            ajusteMotivo: enriched?.ajusteMotivo || '',
+            esDiaEspecial: Boolean(enriched?.esDiaEspecial),
+            cancelado: Boolean(enriched?.cancelado),
           };
         })
       };
@@ -905,6 +909,7 @@ export default function Biomasa() {
                         {programas.map(p => {
                           const volume = getProgramVolumeProgress(p, tonsPerTruck);
                           const isOverEstimated = volume.estimated > 0 && volume.balance < 0;
+                          const hasDailyAdjustments = Array.isArray(p.ajustesDiarios) && p.ajustesDiarios.length > 0;
                           return (
                           <tr key={p._id}>
                             <td>
@@ -960,6 +965,11 @@ export default function Biomasa() {
                                   </span>
                                 </div>
                               </div>
+                              {hasDailyAdjustments && (
+                                <span className="harvest-program-adjusted-badge">
+                                  Con ajustes diarios
+                                </span>
+                              )}
                             </td>
                             <td>
                               <span className={`mx-badge mx-badge-${p.estado === 'activo' ? 'success' : p.estado === 'pausado' ? 'warning' : 'muted'}`}>
@@ -1084,6 +1094,8 @@ export default function Biomasa() {
                           const dayDataObj = calData[dateKey] || { total: 0, items: [] };
                           const dayItems = (dayDataObj.items || []).map(enrichCalendarItem);
                           const daySummary = summarizeHarvestItems(dayItems);
+                          const hasAdjustedItems = dayItems.some((item) => item.esDiaEspecial);
+                          const hasCanceledItems = dayItems.some((item) => item.cancelado || (item.esDiaEspecial && Number(item.camiones || 0) === 0));
                           const isSelected = selectedDay?.key === dateKey;
 
                           return (
@@ -1095,11 +1107,15 @@ export default function Biomasa() {
                               <div className="cal-day-top">
                                 <span className="cal-day-num">{dayNum}</span>
                               </div>
-                              {daySummary.camiones > 0 && (
+                              {(daySummary.camiones > 0 || hasAdjustedItems) && (
                                 <div className="cal-day-compact-summary">
-                                  <div className="cal-day-primary-total">
-                                    {formatHarvestMetric(daySummary.camiones, daySummary.tons, calendarMetric)}
-                                  </div>
+                                  {daySummary.camiones > 0 ? (
+                                    <div className="cal-day-primary-total">
+                                      {formatHarvestMetric(daySummary.camiones, daySummary.tons, calendarMetric)}
+                                    </div>
+                                  ) : (
+                                    <div className="cal-day-primary-total is-canceled">0 cam</div>
+                                  )}
                                   {isSanitarioRelevant(daySummary.sanitario) && (
                                     <div className={`cal-day-sanitary ${getSanitarioEstado(daySummary.sanitario)}`}>
                                       <AlertTriangle size={12} />
@@ -1114,8 +1130,10 @@ export default function Biomasa() {
                                       </div>
                                     ))}
                                   </div>
-                                  {dayItems.some((item) => item.esDiaEspecial) && (
-                                    <div className="cal-day-adjusted">Ajustado</div>
+                                  {hasAdjustedItems && (
+                                    <div className={`cal-day-adjusted ${hasCanceledItems ? 'is-canceled' : ''}`}>
+                                      {hasCanceledItems ? 'Suspendido' : 'Ajustado'}
+                                    </div>
                                   )}
                                   <div className="cal-day-provider-count">
                                     {daySummary.providerCount} {daySummary.providerCount === 1 ? 'proveedor' : 'proveedores'}
@@ -1163,6 +1181,11 @@ export default function Biomasa() {
                                           <div className={`harvest-week-cell ${getProductClass(cell.tipoProducto)}`}>
                                             <div className="harvest-week-camiones">{formatHarvestMetric(cell.camiones, cell.tonsDia, calendarMetric)}</div>
                                             <div className="harvest-week-product">{getTipoProductoLabel(cell.tipoProducto)}</div>
+                                            {cell.esDiaEspecial && (
+                                              <div className="harvest-week-adjusted">
+                                                Ajustado{cell.ajusteMotivo ? ` - ${cell.ajusteMotivo}` : ''}
+                                              </div>
+                                            )}
                                             {isSanitarioRelevant(cell.sanitario) && (
                                               <div className={`harvest-week-sanitary ${getSanitarioEstado(cell.sanitario)}`}>
                                                 <AlertTriangle size={11} />
@@ -1175,6 +1198,13 @@ export default function Biomasa() {
                                                 {cell.rendimiento ? <span>{fmtNumber(cell.rendimiento, 1)}%</span> : null}
                                               </div>
                                             )}
+                                          </div>
+                                        ) : cell.esDiaEspecial ? (
+                                          <div className="harvest-week-cell is-canceled">
+                                            <div className="harvest-week-camiones">Suspendido</div>
+                                            <div className="harvest-week-product">
+                                              {cell.ajusteMotivo || cell.motivo || 'Ajuste diario'}
+                                            </div>
                                           </div>
                                         ) : <span style={{ color: 'var(--color-border)' }}>-</span>}
                                       </td>
@@ -1287,7 +1317,7 @@ export default function Biomasa() {
                               </button>
                             </div>
                           ))}
-                          {selectedDay.total === 0 && (
+                          {selectedDay.items.length === 0 && (
                             <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
                               <Activity size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
                               <p>Sin despachos programados.</p>

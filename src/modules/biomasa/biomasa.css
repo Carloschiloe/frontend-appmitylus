@@ -406,6 +406,12 @@ body.biomasa-calendar-board-open .mx-app-shell {
   box-shadow: 0 4px 10px rgba(15,118,110,0.24);
 }
 
+.cal-day-primary-total.is-canceled {
+  background: #f1f5f9;
+  color: #64748b;
+  box-shadow: none;
+}
+
 .cal-day-product-stack {
   display: flex;
   flex-direction: column;
@@ -475,6 +481,12 @@ body.biomasa-calendar-board-open .mx-app-shell {
   padding: 2px 8px;
   font-size: 10px;
   font-weight: 800;
+}
+
+.cal-day-adjusted.is-canceled {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 .cal-day-items {
@@ -934,6 +946,17 @@ body.biomasa-calendar-board-open .mx-app-shell {
   box-shadow: 0 2px 8px rgba(15, 118, 110, 0.08);
 }
 
+.harvest-week-cell.is-canceled {
+  border-color: #fecaca;
+  border-left-color: #dc2626;
+  background: #fef2f2;
+  box-shadow: none;
+}
+
+.harvest-week-cell.is-canceled .harvest-week-camiones {
+  color: #b91c1c;
+}
+
 .harvest-week-camiones {
   color: var(--color-primary-dark);
   font-size: 13px;
@@ -949,6 +972,13 @@ body.biomasa-calendar-board-open .mx-app-shell {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.harvest-week-adjusted {
+  margin-top: 5px;
+  color: #9a3412;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .harvest-week-quality,
@@ -1043,6 +1073,18 @@ body.biomasa-calendar-board-open .mx-app-shell {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
+}
+
+.harvest-program-adjusted-badge {
+  display: inline-flex;
+  margin-top: 7px;
+  border: 1px solid #fed7aa;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #9a3412;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .harvest-week-tons,
