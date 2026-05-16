@@ -14,7 +14,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   LayoutGrid, 
-  MessageSquare,
   List as ListIcon,
   Pause,
   Play,
@@ -774,6 +773,40 @@ export default function Biomasa() {
       .slice(0, followupPeriod === 'week' ? 12 : 20);
   }, [followupPeriod, mes, programas, weekDays]);
 
+  const followupPrograms = useMemo(() => {
+    const rangeStart = followupPeriod === 'week'
+      ? new Date(`${weekDays[0]}T00:00:00`)
+      : new Date(`${mes}-01T00:00:00`);
+    const rangeEnd = followupPeriod === 'week'
+      ? new Date(`${weekDays[6]}T23:59:59`)
+      : new Date(`${finMes(mes)}T23:59:59`);
+    const weekSet = new Set(weekDays);
+
+    return programas
+      .filter((programa) => {
+        if (programa.estado !== 'activo') return false;
+        const desde = programa.vigenciaDesde ? new Date(programa.vigenciaDesde) : null;
+        const hasta = programa.vigenciaHasta ? new Date(programa.vigenciaHasta) : null;
+        const overlapsVigencia = desde && hasta && desde <= rangeEnd && hasta >= rangeStart;
+        const hasAdjustmentInPeriod = (programa.diasEspeciales || []).some((item) => {
+          const key = item?.fecha ? new Date(item.fecha).toISOString().slice(0, 10) : '';
+          return followupPeriod === 'week' ? weekSet.has(key) : key.startsWith(mes);
+        });
+        return overlapsVigencia || hasAdjustmentInPeriod;
+      });
+  }, [followupPeriod, mes, programas, weekDays]);
+
+  const followupSummary = useMemo(() => {
+    const netDelta = recentDailyAdjustments.reduce((sum, ajuste) => sum + Number(ajuste.camionesDelta || 0), 0);
+    const todayItems = (calData[todayKey()]?.items || []).map(enrichCalendarItem);
+    return {
+      activePrograms: followupPrograms.length,
+      adjustments: recentDailyAdjustments.length,
+      netDelta,
+      todayCamiones: todayItems.reduce((sum, item) => sum + Number(item.camiones || 0), 0),
+    };
+  }, [calData, enrichCalendarItem, followupPrograms.length, recentDailyAdjustments]);
+
   const getLatestProgramNovelty = useCallback((programa) => {
     const weekSet = new Set(weekDays);
     const latestAdjustment = [...(programa?.ajustesDiarios || [])]
@@ -785,6 +818,11 @@ export default function Biomasa() {
     if (latestAdjustment) return formatDailyAdjustmentText(latestAdjustment);
     return programa?.seguimientos?.[0]?.nota || 'Sin novedades registradas recientemente.';
   }, [followupPeriod, mes, weekDays]);
+
+  const getTodayProgramCamiones = useCallback((programa) => {
+    const item = (calData[todayKey()]?.items || []).find(dayItem => String(dayItem.programaId) === String(programa?._id));
+    return Number(item?.camiones ?? programa?.camionesDefault ?? 0);
+  }, [calData]);
 
   const kpis = useMemo(() => {
     const disponible = disp.reduce((s, i) => s + (i.tons || 0), 0);
@@ -1503,29 +1541,96 @@ export default function Biomasa() {
                       </div>
                     </div>
                   </div>
+                  <section className="harvest-followup-kpis">
+                    <div>
+                      <span>Programas activos</span>
+                      <strong>{followupSummary.activePrograms}</strong>
+                    </div>
+                    <div>
+                      <span>Ajustes periodo</span>
+                      <strong>{followupSummary.adjustments}</strong>
+                    </div>
+                    <div>
+                      <span>Delta camiones</span>
+                      <strong className={followupSummary.netDelta < 0 ? 'negative' : followupSummary.netDelta > 0 ? 'positive' : ''}>
+                        {followupSummary.netDelta > 0 ? '+' : ''}{followupSummary.netDelta}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Camiones hoy</span>
+                      <strong>{followupSummary.todayCamiones}</strong>
+                    </div>
+                  </section>
                   <section className="mx-card harvest-followup-panel">
                     <header className="mx-card-header">
                       <div>
-                        <h4 className="mx-card-title">Ajustes diarios</h4>
+                        <h4 className="mx-card-title">Mesa de ajustes diarios</h4>
                         <p className="mx-card-description">Cambia solo el dia operativo sin modificar todo el programa.</p>
                       </div>
                     </header>
-                    <div className="harvest-followup-list">
-                      {programas.filter(p => p.estado === 'activo').map(p => (
-                        <div key={`adj-${p._id}`} className="harvest-followup-row">
-                          <div className="biomasa-avatar">
-                            {p.proveedorNombre.substring(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <strong>{p.proveedorNombre}</strong>
-                            <span>{p.centroNombre || 'Sin centro definido'}</span>
-                            <small>{getTipoProductoLabel(p.tipoProducto)} - base {p.camionesDefault || 0} cam/dia</small>
-                          </div>
-                          <button className="mx-btn mx-btn-primary sm" onClick={() => handleOpenAdjustModal(p)}>
-                            <Plus size={14} /> Ajustar hoy
-                          </button>
-                        </div>
-                      ))}
+                    <div className="mx-table-wrap harvest-followup-table-wrap">
+                      <table className="mx-table harvest-followup-table">
+                        <thead>
+                          <tr>
+                            <th>Proveedor / Centro</th>
+                            <th>Producto</th>
+                            <th style={{ textAlign: 'center' }}>Base</th>
+                            <th style={{ textAlign: 'center' }}>Hoy</th>
+                            <th>Ultima novedad</th>
+                            <th style={{ textAlign: 'right' }}>Accion</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {followupPrograms.map(p => (
+                            <tr key={`adj-${p._id}`}>
+                              <td>
+                                <div className="biomasa-prov-cell">
+                                  <div className="biomasa-avatar">
+                                    {p.proveedorNombre.substring(0, 2).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div className="biomasa-prov-name">{p.proveedorNombre}</div>
+                                    <div className="biomasa-centro-name">{p.centroNombre || 'Sin centro definido'}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td>
+                                <span className={`harvest-product-pill ${getProductClass(p.tipoProducto)}`}>
+                                  {getTipoProductoLabel(p.tipoProducto)}
+                                </span>
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <span className="harvest-followup-number">{p.camionesDefault || 0} cam</span>
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <span className="harvest-followup-number today">{getTodayProgramCamiones(p)} cam</span>
+                              </td>
+                              <td>
+                                <div className="harvest-followup-novelty">
+                                  {getLatestProgramNovelty(p)}
+                                </div>
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                <div className="harvest-followup-actions">
+                                  <button className="mx-btn mx-btn-primary sm" onClick={() => handleOpenAdjustModal(p)}>
+                                    <Plus size={14} /> Ajustar
+                                  </button>
+                                  <button className="mx-btn mx-btn-outline sm" onClick={() => { setSegProg(p); setShowSegModal(true); }}>
+                                    Nota
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                          {!followupPrograms.length && (
+                            <tr>
+                              <td colSpan="6" className="harvest-program-empty">
+                                Sin programas activos para el periodo seleccionado.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </div>
                   </section>
 
@@ -1554,41 +1659,6 @@ export default function Biomasa() {
                     </div>
                   </section>
 
-                  <section className="harvest-novelty-grid">
-                  {programas.filter(p => p.estado === 'activo').map(p => (
-                    <div key={p._id} className="mx-card harvest-novelty-card">
-                      <header className="mx-card-header">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                          <div className="biomasa-avatar">
-                            {p.proveedorNombre.substring(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <h4 className="mx-card-title">{p.proveedorNombre}</h4>
-                            <p className="mx-card-description">{p.centroNombre || 'Sin Centro'}</p>
-                          </div>
-                        </div>
-                        <span className="mx-badge mx-badge-success">ACTIVO</span>
-                      </header>
-
-                      <div className="mx-card harvest-novelty-note">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                          <MessageSquare size={14} style={{ color: 'var(--color-primary)' }} />
-                          <span style={{ fontSize: '11px', fontWeight: 'var(--weight-bold)', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Última Novedad</span>
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--color-text)', lineHeight: 1.6 }}>
-                          {getLatestProgramNovelty(p)}
-                        </div>
-                        <button 
-                          className="mx-btn-icon sm" 
-                          title="Registrar novedad"
-                          onClick={() => { setSegProg(p); setShowSegModal(true); }}
-                        >
-                          <Plus size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  </section>
                 </div>
               )}
             </div>
