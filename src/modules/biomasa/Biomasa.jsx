@@ -366,6 +366,19 @@ export default function Biomasa() {
     });
   }, [programPeriod]);
 
+  const moveFollowupPeriod = useCallback((direction) => {
+    if (followupPeriod === 'week') {
+      setCurrentWeekOffset(offset => offset + direction);
+      return;
+    }
+
+    setMes(prev => {
+      const [y, m] = prev.split('-');
+      const d = new Date(parseInt(y, 10), parseInt(m, 10) - 1 + direction, 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+  }, [followupPeriod]);
+
   // Lógica Matemática de Mes
   const monthData = useMemo(() => {
     if (!mes) return { days: [], padding: 0 };
@@ -1470,15 +1483,25 @@ export default function Biomasa() {
               {progSubTab === 'seguimiento' && (
                 <div className="harvest-followup-layout">
                   <div className="harvest-followup-toolbar">
-                    <div className="mx-toggle-group">
-                      <button className={`mx-toggle-btn ${followupPeriod === 'month' ? 'active' : ''}`} onClick={() => setFollowupPeriod('month')}>Vista Mes</button>
-                      <button className={`mx-toggle-btn ${followupPeriod === 'week' ? 'active' : ''}`} onClick={() => setFollowupPeriod('week')}>Vista Semana</button>
+                    <div className="harvest-followup-controls">
+                      <div className="mx-toggle-group">
+                        <button className={`mx-toggle-btn ${followupPeriod === 'month' ? 'active' : ''}`} onClick={() => setFollowupPeriod('month')}>Vista Mes</button>
+                        <button className={`mx-toggle-btn ${followupPeriod === 'week' ? 'active' : ''}`} onClick={() => setFollowupPeriod('week')}>Vista Semana</button>
+                      </div>
+                      <div className="harvest-followup-period">
+                        <button className="mx-btn-icon sm" onClick={() => moveFollowupPeriod(-1)} aria-label="Periodo anterior">
+                          <ChevronLeft size={16} />
+                        </button>
+                        <span>
+                          {followupPeriod === 'week'
+                            ? `Semana ${new Date(weekDays[0] + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}`
+                            : mesLabel(mes, true)}
+                        </span>
+                        <button className="mx-btn-icon sm" onClick={() => moveFollowupPeriod(1)} aria-label="Periodo siguiente">
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <span>
-                      {followupPeriod === 'week'
-                        ? `Semana ${new Date(weekDays[0] + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}`
-                        : mesLabel(mes, true)}
-                    </span>
                   </div>
                   <section className="mx-card harvest-followup-panel">
                     <header className="mx-card-header">
