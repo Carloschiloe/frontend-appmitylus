@@ -146,6 +146,17 @@ const ADJUST_ACTION_LABELS = {
 
 const ADJUST_MOTIVOS = ['Planta', 'Clima', 'Transporte', 'Proveedor', 'Sanitario', 'Calidad', 'Comercial', 'Otro'];
 
+const formatDailyAdjustmentText = (ajuste) => {
+  if (!ajuste) return '';
+  const fecha = ajuste.fecha ? new Date(ajuste.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '';
+  const action = ADJUST_ACTION_LABELS[ajuste.accion] || 'Ajuste diario';
+  const before = Number(ajuste.camionesAntes || 0);
+  const after = Number(ajuste.camionesDespues || 0);
+  const motivo = ajuste.motivo ? ` por ${ajuste.motivo}` : '';
+  const nota = ajuste.nota ? `: ${ajuste.nota}` : '';
+  return `${fecha ? `${fecha} - ` : ''}${action}${motivo}. ${before} -> ${after} cam${nota}`;
+};
+
 const SANITARIO_ORDER = { rojo: 4, naranja: 3, amarillo: 2, verde: 1, gris: 0 };
 const SANITARIO_LABELS = {
   rojo: 'Bloqueada',
@@ -696,6 +707,13 @@ export default function Biomasa() {
       .sort((a, b) => new Date(b.createdAt || b.fecha) - new Date(a.createdAt || a.fecha))
       .slice(0, 8);
   }, [programas]);
+
+  const getLatestProgramNovelty = useCallback((programa) => {
+    const latestAdjustment = [...(programa?.ajustesDiarios || [])]
+      .sort((a, b) => new Date(b.createdAt || b.fecha) - new Date(a.createdAt || a.fecha))[0];
+    if (latestAdjustment) return formatDailyAdjustmentText(latestAdjustment);
+    return programa?.seguimientos?.[0]?.nota || 'Sin novedades registradas recientemente.';
+  }, []);
 
   const kpis = useMemo(() => {
     const disponible = disp.reduce((s, i) => s + (i.tons || 0), 0);
@@ -1422,7 +1440,7 @@ export default function Biomasa() {
                           <span style={{ fontSize: '11px', fontWeight: 'var(--weight-bold)', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Última Novedad</span>
                         </div>
                         <div style={{ fontSize: '13px', color: 'var(--color-text)', lineHeight: 1.6 }}>
-                          {p.seguimientos?.[0]?.nota || 'Sin novedades registradas recientemente.'}
+                          {getLatestProgramNovelty(p)}
                         </div>
                         <button 
                           className="mx-btn-icon sm" 
