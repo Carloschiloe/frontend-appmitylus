@@ -53,6 +53,7 @@ const mesLabel = (mk = '', largo = false) => {
 const fmtTons = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 1 }) + ' t';
 const fmtTonsInt = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' t';
 const fmtNumber = (n, digits = 1) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: digits });
+const todayKey = () => toDateKey(new Date());
 
 const getEasterDate = (year) => {
   const a = year % 19;
@@ -135,6 +136,15 @@ const getPreferredTipoProducto = (...values) => {
 };
 
 const getProductClass = (value) => `product-${getPreferredTipoProducto(value)}`;
+
+const ADJUST_ACTION_LABELS = {
+  sumar: 'Sumar camion',
+  suspender: 'Suspender camion',
+  set_total: 'Cambiar total del dia',
+  suspender_dia: 'Suspender dia completo',
+};
+
+const ADJUST_MOTIVOS = ['Planta', 'Clima', 'Transporte', 'Proveedor', 'Sanitario', 'Calidad', 'Comercial', 'Otro'];
 
 const SANITARIO_ORDER = { rojo: 4, naranja: 3, amarillo: 2, verde: 1, gris: 0 };
 const SANITARIO_LABELS = {
@@ -303,6 +313,15 @@ export default function Biomasa() {
   const [segProg, setSegProg] = useState(null);
   const [segNota, setSegNota] = useState('');
   const [segEstado, setSegEstado] = useState('');
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [adjustProgram, setAdjustProgram] = useState(null);
+  const [adjustForm, setAdjustForm] = useState({
+    fecha: todayKey(),
+    accion: 'set_total',
+    camiones: 0,
+    motivo: 'Planta',
+    nota: '',
+  });
   
   // Estados para Calendario Avanzado
   const [calView, setCalView] = useState('month'); // 'month' | 'week'
@@ -370,6 +389,10 @@ export default function Biomasa() {
       centroNombre: item?.centroNombre || programa?.centroNombre || '',
       centroCodigo: item?.centroCodigo || programa?.centroCodigo || '',
       sanitario: item?.sanitario || programa?.sanitario || null,
+      ajusteTipo: item?.ajusteTipo || '',
+      ajusteMotivo: item?.ajusteMotivo || '',
+      esDiaEspecial: Boolean(item?.esDiaEspecial),
+      cancelado: Boolean(item?.cancelado),
     };
   }, [programasById, tonsPerTruck]);
 
@@ -625,6 +648,54 @@ export default function Biomasa() {
       addToast({ title: 'Error', message: e.message, type: 'error' }); 
     }
   }, [segNota, segEstado, segProg, addToast, load]);
+
+  const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), currentCamiones = null) => {
+    if (!programa) return;
+    const current = currentCamiones != null ? Number(currentCamiones || 0) : Number(programa.camionesDefault || 0);
+    setAdjustProgram(programa);
+    setAdjustForm({
+      fecha,
+      accion: 'set_total',
+      camiones: current,
+      motivo: 'Planta',
+      nota: '',
+    });
+    setShowAdjustModal(true);
+  }, []);
+
+  const handleAdjustSave = useCallback(async (e) => {
+    e.preventDefault();
+    if (!adjustProgram?._id || !adjustForm.fecha) return;
+    try {
+      await apiClient.post(`/programa-cosecha/${adjustProgram._id}/ajuste-diario`, {
+        ...adjustForm,
+        camiones: Number(adjustForm.camiones || 0),
+      });
+      addToast({
+        title: 'Ajuste diario registrado',
+        message: 'El calendario y el seguimiento fueron actualizados.',
+        type: 'success',
+      });
+      setShowAdjustModal(false);
+      setAdjustProgram(null);
+      setSelectedDay(null);
+      load();
+    } catch (e) {
+      addToast({ title: 'Error', message: e.message, type: 'error' });
+    }
+  }, [adjustForm, adjustProgram, addToast, load]);
+
+  const recentDailyAdjustments = useMemo(() => {
+    return programas
+      .flatMap((programa) => (programa.ajustesDiarios || []).map((ajuste) => ({
+        ...ajuste,
+        programaId: programa._id,
+        proveedorNombre: programa.proveedorNombre,
+        centroNombre: programa.centroNombre,
+      })))
+      .sort((a, b) => new Date(b.createdAt || b.fecha) - new Date(a.createdAt || a.fecha))
+      .slice(0, 8);
+  }, [programas]);
 
   const kpis = useMemo(() => {
     const disponible = disp.reduce((s, i) => s + (i.tons || 0), 0);
@@ -1025,6 +1096,9 @@ export default function Biomasa() {
                                       </div>
                                     ))}
                                   </div>
+                                  {dayItems.some((item) => item.esDiaEspecial) && (
+                                    <div className="cal-day-adjusted">Ajustado</div>
+                                  )}
                                   <div className="cal-day-provider-count">
                                     {daySummary.providerCount} {daySummary.providerCount === 1 ? 'proveedor' : 'proveedores'}
                                   </div>
@@ -1169,6 +1243,13 @@ export default function Biomasa() {
                                   <span style={{ fontSize: '10px', color: 'var(--color-text-subtle)' }}>CAM</span>
                                 </div>
                               </div>
+                              {it.esDiaEspecial && (
+                                <div className="harvest-adjust-note">
+                                  {ADJUST_ACTION_LABELS[it.ajusteTipo] || 'Ajuste diario'}
+                                  {it.ajusteMotivo ? ` - ${it.ajusteMotivo}` : ''}
+                                  {it.motivo ? `: ${it.motivo}` : ''}
+                                </div>
+                              )}
                               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
                                 <span>{getTipoProductoLabel(it.tipoProducto)}</span>
                                 <span>{fmtTonsInt(it.tonsDia)}</span>
@@ -1179,6 +1260,13 @@ export default function Biomasa() {
                                 {it.maxisPorCamion ? <span>{it.maxisPorCamion} maxis/camion</span> : null}
                                 {it.motivo ? <span>{it.motivo}</span> : null}
                               </div>
+                              <button
+                                type="button"
+                                className="mx-btn mx-btn-outline sm harvest-adjust-btn"
+                                onClick={() => handleOpenAdjustModal(programasById.get(String(it.programaId)), selectedDay.key, it.camiones)}
+                              >
+                                Ajustar dia
+                              </button>
                             </div>
                           ))}
                           {selectedDay.total === 0 && (
@@ -1250,7 +1338,59 @@ export default function Biomasa() {
               )}
 
               {progSubTab === 'seguimiento' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
+                <div className="harvest-followup-layout">
+                  <section className="mx-card harvest-followup-panel">
+                    <header className="mx-card-header">
+                      <div>
+                        <h4 className="mx-card-title">Ajustes diarios</h4>
+                        <p className="mx-card-description">Cambia solo el dia operativo sin modificar todo el programa.</p>
+                      </div>
+                    </header>
+                    <div className="harvest-followup-list">
+                      {programas.filter(p => p.estado === 'activo').map(p => (
+                        <div key={`adj-${p._id}`} className="harvest-followup-row">
+                          <div className="biomasa-avatar">
+                            {p.proveedorNombre.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <strong>{p.proveedorNombre}</strong>
+                            <span>{p.centroNombre || 'Sin centro definido'}</span>
+                            <small>{getTipoProductoLabel(p.tipoProducto)} - base {p.camionesDefault || 0} cam/dia</small>
+                          </div>
+                          <button className="mx-btn mx-btn-primary sm" onClick={() => handleOpenAdjustModal(p)}>
+                            <Plus size={14} /> Ajustar hoy
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="mx-card harvest-followup-panel">
+                    <header className="mx-card-header">
+                      <div>
+                        <h4 className="mx-card-title">Bitacora reciente</h4>
+                        <p className="mx-card-description">Ultimos cambios diarios registrados.</p>
+                      </div>
+                    </header>
+                    <div className="harvest-adjustment-history">
+                      {recentDailyAdjustments.length ? recentDailyAdjustments.map((ajuste) => (
+                        <div key={ajuste._id || `${ajuste.programaId}-${ajuste.fecha}`} className="harvest-adjustment-item">
+                          <div>
+                            <strong>{ajuste.proveedorNombre}</strong>
+                            <span>{new Date(ajuste.fecha).toLocaleDateString('es-CL')} - {ADJUST_ACTION_LABELS[ajuste.accion] || 'Ajuste diario'}</span>
+                            <small>{ajuste.motivo || 'Sin motivo'}{ajuste.nota ? ` - ${ajuste.nota}` : ''}</small>
+                          </div>
+                          <b className={Number(ajuste.camionesDelta || 0) < 0 ? 'negative' : Number(ajuste.camionesDelta || 0) > 0 ? 'positive' : ''}>
+                            {ajuste.camionesAntes} -&gt; {ajuste.camionesDespues} cam
+                          </b>
+                        </div>
+                      )) : (
+                        <div className="harvest-month-empty">Sin ajustes diarios registrados.</div>
+                      )}
+                    </div>
+                  </section>
+
+                  <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
                   {programas.filter(p => p.estado === 'activo').map(p => (
                     <div key={p._id} className="mx-card">
                       <header className="mx-card-header">
@@ -1295,6 +1435,7 @@ export default function Biomasa() {
                       </div>
                     </div>
                   ))}
+                  </section>
                 </div>
               )}
             </div>
@@ -1302,6 +1443,91 @@ export default function Biomasa() {
           {isMuestreosView && <Muestreos />}
         </div>
       </div>
+
+      {showAdjustModal && (
+        <div className="mx-modal-overlay">
+          <div className="mx-modal" style={{ maxWidth: '560px' }}>
+            <div className="mx-modal-header">
+              <h2>Ajuste diario de cosecha</h2>
+              <button className="mx-btn-icon" onClick={() => setShowAdjustModal(false)}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleAdjustSave} className="mx-form">
+              <div className="mx-modal-body">
+                <div className="harvest-adjust-context">
+                  <strong>{adjustProgram?.proveedorNombre}</strong>
+                  <span>{adjustProgram?.centroNombre || 'Sin centro definido'} - base {adjustProgram?.camionesDefault || 0} cam/dia</span>
+                </div>
+                <div className="mx-form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Fecha</label>
+                    <input
+                      type="date"
+                      className="mx-input"
+                      value={adjustForm.fecha}
+                      onChange={e => setAdjustForm({ ...adjustForm, fecha: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Accion</label>
+                    <select
+                      className="mx-select"
+                      value={adjustForm.accion}
+                      onChange={e => setAdjustForm({ ...adjustForm, accion: e.target.value })}
+                    >
+                      <option value="set_total">Cambiar total del dia</option>
+                      <option value="sumar">Sumar camion</option>
+                      <option value="suspender">Suspender camion</option>
+                      <option value="suspender_dia">Suspender dia completo</option>
+                    </select>
+                  </div>
+                  {adjustForm.accion !== 'suspender_dia' && (
+                    <div className="mx-form-group">
+                      <label className="mx-label">{adjustForm.accion === 'set_total' ? 'Total camiones del dia' : 'Camiones'}</label>
+                      <input
+                        type="number"
+                        className="mx-input"
+                        min="0"
+                        value={adjustForm.camiones}
+                        onChange={e => setAdjustForm({ ...adjustForm, camiones: e.target.value })}
+                        required
+                      />
+                    </div>
+                  )}
+                  <div className="mx-form-group">
+                    <label className="mx-label">Motivo</label>
+                    <select
+                      className="mx-select"
+                      value={adjustForm.motivo}
+                      onChange={e => setAdjustForm({ ...adjustForm, motivo: e.target.value })}
+                    >
+                      {ADJUST_MOTIVOS.map((motivo) => (
+                        <option key={motivo} value={motivo}>{motivo}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mx-form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="mx-label">Nota operacional</label>
+                    <textarea
+                      className="mx-textarea"
+                      value={adjustForm.nota}
+                      onChange={e => setAdjustForm({ ...adjustForm, nota: e.target.value })}
+                      placeholder="Ej: Se suspendio un camion por falta de ventana en planta."
+                      rows="3"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="mx-modal-footer">
+                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setShowAdjustModal(false)}>Cancelar</button>
+                <button type="submit" className="mx-btn mx-btn-primary">
+                  <CheckCircle2 size={18} /> Guardar ajuste
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* MODAL SEGUIMIENTO / NOVEDAD (Stage 3 Refactor) */}
       {showSegModal && (
