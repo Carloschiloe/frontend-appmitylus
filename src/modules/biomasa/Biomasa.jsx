@@ -815,6 +815,7 @@ export default function Biomasa() {
                       <tbody>
                         {programas.map(p => {
                           const volume = getProgramVolumeProgress(p, tonsPerTruck);
+                          const isOverEstimated = volume.estimated > 0 && volume.balance < 0;
                           return (
                           <tr key={p._id}>
                             <td>
@@ -864,9 +865,9 @@ export default function Biomasa() {
                                     <b>{fmtTonsInt(volume.consumed)}</b>
                                     consumidas
                                   </span>
-                                  <span className={volume.balance < 0 ? 'is-negative' : ''}>
-                                    <b>{volume.estimated ? fmtTonsInt(volume.balance) : 'S/D'}</b>
-                                    saldo
+                                  <span className={isOverEstimated ? 'is-over' : ''}>
+                                    <b>{volume.estimated ? fmtTonsInt(Math.abs(volume.balance)) : 'S/D'}</b>
+                                    {isOverEstimated ? 'sobre estimado' : 'saldo'}
                                   </span>
                                 </div>
                               </div>

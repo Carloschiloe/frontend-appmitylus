@@ -1006,8 +1006,15 @@ body.biomasa-calendar-board-open .mx-app-shell {
   white-space: nowrap;
 }
 
-.harvest-program-volume-foot .is-negative b {
+.harvest-program-volume-foot .is-over,
+.harvest-program-volume-foot .is-over b {
   color: var(--color-error);
+}
+
+.harvest-program-volume-foot .is-over b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .harvest-week-tons,
