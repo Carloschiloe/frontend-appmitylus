@@ -330,20 +330,20 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .cal-pad-day {
   background: var(--color-bg);
-  min-height: 132px;
+  min-height: 112px;
 }
 
 .cal-day-cell {
   background: var(--color-surface);
-  min-height: 132px;
-  padding: 10px;
+  min-height: 112px;
+  padding: 9px;
   cursor: pointer;
   position: relative;
   transition: all 0.2s;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
 .cal-day-cell.calendar-red-day {
@@ -389,7 +389,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
 .cal-day-compact-summary {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   min-height: 0;
 }
 
@@ -397,8 +397,8 @@ body.biomasa-calendar-board-open .mx-app-shell {
   border-radius: 999px;
   background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary-light) 100%);
   color: white;
-  padding: 6px 8px;
-  font-size: 12px;
+  padding: 5px 7px;
+  font-size: 11px;
   font-weight: var(--weight-bold);
   line-height: 1.1;
   text-align: center;
@@ -414,62 +414,78 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .cal-day-product-stack {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
-.cal-day-product-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px;
+.cal-day-product-chip {
+  display: inline-flex;
   align-items: center;
+  gap: 5px;
   border: 1px solid #dbe7f3;
   border-left: 3px solid #64748b;
-  border-radius: 8px;
+  border-radius: 999px;
   background: #f8fafc;
-  padding: 5px 6px;
+  padding: 3px 6px 3px 5px;
   color: var(--color-text);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: var(--weight-bold);
   line-height: 1.15;
+  min-width: 0;
 }
 
-.cal-day-product-row span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.cal-day-product-chip span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.82);
+  color: var(--color-text);
+  font-size: 8px;
+  font-weight: 900;
 }
 
-.cal-day-product-row b {
+.cal-day-product-chip b {
   color: var(--color-primary-dark);
-  font-size: 10px;
+  font-size: 9px;
   white-space: nowrap;
 }
 
-.cal-day-product-row.product-entero {
+.cal-day-product-chip.product-entero {
   border-color: #99f6e4;
   border-left-color: #0d9488;
   background: #ecfdf5;
 }
 
-.cal-day-product-row.product-carne {
+.cal-day-product-chip.product-carne {
   border-color: #fecdd3;
   border-left-color: #e11d48;
   background: #fff1f2;
 }
 
-.cal-day-product-row.product-mc {
+.cal-day-product-chip.product-mc {
   border-color: #fde68a;
   border-left-color: #d97706;
   background: #fffbeb;
 }
 
+.cal-day-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 17px;
+}
+
 .cal-day-provider-count {
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: var(--weight-semibold);
   line-height: 1.1;
   text-align: right;
+  margin-left: auto;
 }
 
 .cal-day-adjusted {
@@ -478,8 +494,8 @@ body.biomasa-calendar-board-open .mx-app-shell {
   border-radius: 999px;
   background: #fff7ed;
   color: #9a3412;
-  padding: 2px 8px;
-  font-size: 10px;
+  padding: 2px 6px;
+  font-size: 9px;
   font-weight: 800;
 }
 
@@ -487,6 +503,12 @@ body.biomasa-calendar-board-open .mx-app-shell {
   border-color: #fecaca;
   background: #fef2f2;
   color: #b91c1c;
+}
+
+.cal-day-more-products {
+  color: var(--color-text-muted);
+  font-size: 9px;
+  font-weight: 800;
 }
 
 .cal-day-items {
@@ -601,14 +623,20 @@ body.biomasa-calendar-board-open .mx-app-shell {
   padding: 8px 10px;
 }
 
-.harvest-calendar-shell.board-mode .cal-day-product-row {
+.harvest-calendar-shell.board-mode .cal-day-product-chip {
   font-size: 11px;
-  padding: 6px 8px;
+  padding: 5px 8px 5px 6px;
 }
 
-.harvest-calendar-shell.board-mode .cal-day-product-row b,
+.harvest-calendar-shell.board-mode .cal-day-product-chip b,
 .harvest-calendar-shell.board-mode .cal-day-provider-count {
   font-size: 11px;
+}
+
+.harvest-calendar-shell.board-mode .cal-day-product-chip span {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
 }
 
 .harvest-calendar-shell.board-mode .cal-day-provider,

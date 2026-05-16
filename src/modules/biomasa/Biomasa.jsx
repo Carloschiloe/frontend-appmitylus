@@ -1256,21 +1256,32 @@ export default function Biomasa() {
                                     </div>
                                   )}
                                   <div className="cal-day-product-stack">
-                                    {daySummary.products.map((product) => (
-                                      <div key={product.key} className={`cal-day-product-row ${getProductClass(product.key)}`}>
-                                        <span>{getTipoProductoLabel(product.key)}</span>
+                                    {daySummary.products.slice(0, 3).map((product) => (
+                                      <div
+                                        key={product.key}
+                                        className={`cal-day-product-chip ${getProductClass(product.key)}`}
+                                        title={`${getTipoProductoLabel(product.key)} - ${formatHarvestMetric(product.camiones, product.tons, calendarMetric)}`}
+                                      >
+                                        <span>{getTipoProductoLabel(product.key).slice(0, 1)}</span>
                                         <b>{formatHarvestMetric(product.camiones, product.tons, calendarMetric)}</b>
                                       </div>
                                     ))}
                                   </div>
-                                  {hasAdjustedItems && (
-                                    <div className={`cal-day-adjusted ${hasCanceledItems ? 'is-canceled' : ''}`}>
-                                      {hasCanceledItems ? 'Suspendido' : 'Ajustado'}
+                                  <div className="cal-day-meta-row">
+                                    {hasAdjustedItems && (
+                                      <span className={`cal-day-adjusted ${hasCanceledItems ? 'is-canceled' : ''}`}>
+                                        {hasCanceledItems ? 'Suspendido' : 'Ajustado'}
+                                      </span>
+                                    )}
+                                    <span className="cal-day-provider-count">
+                                      {daySummary.providerCount} {daySummary.providerCount === 1 ? 'prov.' : 'prov.'}
+                                    </span>
+                                  </div>
+                                  {daySummary.products.length > 3 && (
+                                    <div className="cal-day-more-products">
+                                      +{daySummary.products.length - 3} productos
                                     </div>
                                   )}
-                                  <div className="cal-day-provider-count">
-                                    {daySummary.providerCount} {daySummary.providerCount === 1 ? 'proveedor' : 'proveedores'}
-                                  </div>
                                 </div>
                               )}
                             </div>
