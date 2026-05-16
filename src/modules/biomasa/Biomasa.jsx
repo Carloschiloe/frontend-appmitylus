@@ -229,7 +229,6 @@ const getProgramVolumeProgress = (programa, tonsPerTruck = 0, until = new Date()
   }
 
   const end = new Date(Math.min(hasta.getTime(), until.getTime()));
-  if (end < desde) return { estimated, consumed: 0, balance: estimated };
 
   const diasSemana = Array.isArray(programa?.diasSemana) && programa.diasSemana.length
     ? new Set(programa.diasSemana.map(Number))
@@ -239,16 +238,25 @@ const getProgramVolumeProgress = (programa, tonsPerTruck = 0, until = new Date()
     return [key, Number(item?.camiones || 0)];
   }).filter(([key]) => key));
 
-  let camiones = 0;
-  const cursor = new Date(desde);
-  cursor.setUTCHours(0, 0, 0, 0);
-  end.setUTCHours(23, 59, 59, 999);
+  const specialKeysUntil = [...especiales.keys()].filter((key) => new Date(`${key}T00:00:00`) <= until);
+  if (end < desde && !specialKeysUntil.length) return { estimated, consumed: 0, balance: estimated };
 
-  while (cursor <= end) {
+  let camiones = 0;
+  const cursorStart = specialKeysUntil.length
+    ? new Date(Math.min(desde.getTime(), ...specialKeysUntil.map((key) => new Date(`${key}T00:00:00`).getTime())))
+    : new Date(desde);
+  const cursorEnd = specialKeysUntil.length
+    ? new Date(Math.max(end.getTime(), ...specialKeysUntil.map((key) => new Date(`${key}T00:00:00`).getTime())))
+    : end;
+  const cursor = new Date(cursorStart);
+  cursor.setUTCHours(0, 0, 0, 0);
+  cursorEnd.setUTCHours(23, 59, 59, 999);
+
+  while (cursor <= cursorEnd) {
     const key = cursor.toISOString().slice(0, 10);
     if (especiales.has(key)) {
       camiones += especiales.get(key);
-    } else if (diasSemana.has(cursor.getUTCDay())) {
+    } else if (cursor >= desde && cursor <= hasta && cursor <= until && diasSemana.has(cursor.getUTCDay())) {
       camiones += Number(programa?.camionesDefault || 0);
     }
     cursor.setUTCDate(cursor.getUTCDate() + 1);
@@ -324,6 +332,7 @@ export default function Biomasa() {
   const [segProg, setSegProg] = useState(null);
   const [segNota, setSegNota] = useState('');
   const [segEstado, setSegEstado] = useState('');
+  const [followupPeriod, setFollowupPeriod] = useState('week');
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustProgram, setAdjustProgram] = useState(null);
   const [adjustForm, setAdjustForm] = useState({
@@ -701,6 +710,7 @@ export default function Biomasa() {
   }, [adjustForm, adjustProgram, addToast, load]);
 
   const recentDailyAdjustments = useMemo(() => {
+    const weekSet = new Set(weekDays);
     return programas
       .flatMap((programa) => (programa.ajustesDiarios || []).map((ajuste) => ({
         ...ajuste,
@@ -708,16 +718,25 @@ export default function Biomasa() {
         proveedorNombre: programa.proveedorNombre,
         centroNombre: programa.centroNombre,
       })))
+      .filter((ajuste) => {
+        const dateKey = ajuste.fecha ? new Date(ajuste.fecha).toISOString().slice(0, 10) : '';
+        return followupPeriod === 'week' ? weekSet.has(dateKey) : dateKey.startsWith(mes);
+      })
       .sort((a, b) => new Date(b.createdAt || b.fecha) - new Date(a.createdAt || a.fecha))
-      .slice(0, 8);
-  }, [programas]);
+      .slice(0, followupPeriod === 'week' ? 12 : 20);
+  }, [followupPeriod, mes, programas, weekDays]);
 
   const getLatestProgramNovelty = useCallback((programa) => {
+    const weekSet = new Set(weekDays);
     const latestAdjustment = [...(programa?.ajustesDiarios || [])]
+      .filter((ajuste) => {
+        const dateKey = ajuste.fecha ? new Date(ajuste.fecha).toISOString().slice(0, 10) : '';
+        return followupPeriod === 'week' ? weekSet.has(dateKey) : dateKey.startsWith(mes);
+      })
       .sort((a, b) => new Date(b.createdAt || b.fecha) - new Date(a.createdAt || a.fecha))[0];
     if (latestAdjustment) return formatDailyAdjustmentText(latestAdjustment);
     return programa?.seguimientos?.[0]?.nota || 'Sin novedades registradas recientemente.';
-  }, []);
+  }, [followupPeriod, mes, weekDays]);
 
   const kpis = useMemo(() => {
     const disponible = disp.reduce((s, i) => s + (i.tons || 0), 0);
@@ -1240,7 +1259,7 @@ export default function Biomasa() {
 
                   {calView === 'month' && (
                     <aside className="mx-card harvest-day-detail">
-                      <header className="mx-card-header">
+                      <header className="mx-card-header harvest-novelty-header">
                         <h4 className="mx-card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Truck size={18} /> {selectedDay ? 'DETALLE DEL DIA' : 'RESUMEN DEL MES'}
                         </h4>
@@ -1387,6 +1406,17 @@ export default function Biomasa() {
 
               {progSubTab === 'seguimiento' && (
                 <div className="harvest-followup-layout">
+                  <div className="harvest-followup-toolbar">
+                    <div className="mx-toggle-group">
+                      <button className={`mx-toggle-btn ${followupPeriod === 'month' ? 'active' : ''}`} onClick={() => setFollowupPeriod('month')}>Vista Mes</button>
+                      <button className={`mx-toggle-btn ${followupPeriod === 'week' ? 'active' : ''}`} onClick={() => setFollowupPeriod('week')}>Vista Semana</button>
+                    </div>
+                    <span>
+                      {followupPeriod === 'week'
+                        ? `Semana ${new Date(weekDays[0] + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}`
+                        : mesLabel(mes, true)}
+                    </span>
+                  </div>
                   <section className="mx-card harvest-followup-panel">
                     <header className="mx-card-header">
                       <div>
@@ -1438,9 +1468,9 @@ export default function Biomasa() {
                     </div>
                   </section>
 
-                  <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
+                  <section className="harvest-novelty-grid">
                   {programas.filter(p => p.estado === 'activo').map(p => (
-                    <div key={p._id} className="mx-card">
+                    <div key={p._id} className="mx-card harvest-novelty-card">
                       <header className="mx-card-header">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                           <div className="biomasa-avatar">
@@ -1454,17 +1484,7 @@ export default function Biomasa() {
                         <span className="mx-badge mx-badge-success">ACTIVO</span>
                       </header>
 
-                      <div className="mx-progress-section am-mb-20">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'var(--weight-bold)', marginBottom: '8px' }}>
-                          <span>Avance de Vigencia</span>
-                          <span style={{ color: 'var(--color-primary)' }}>65%</span>
-                        </div>
-                        <div className="mx-progress">
-                          <div className="mx-progress-fill" style={{ width: '65%' }}></div>
-                        </div>
-                      </div>
-
-                      <div className="mx-card" style={{ padding: '16px', background: 'var(--color-bg)', border: 'none', boxShadow: 'none' }}>
+                      <div className="mx-card harvest-novelty-note">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                           <MessageSquare size={14} style={{ color: 'var(--color-primary)' }} />
                           <span style={{ fontSize: '11px', fontWeight: 'var(--weight-bold)', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Última Novedad</span>
@@ -1475,7 +1495,6 @@ export default function Biomasa() {
                         <button 
                           className="mx-btn-icon sm" 
                           title="Registrar novedad"
-                          style={{ position: 'absolute', top: '12px', right: '12px' }}
                           onClick={() => { setSegProg(p); setShowSegModal(true); }}
                         >
                           <Plus size={14} />

@@ -1232,11 +1232,25 @@ body.biomasa-calendar-board-open .mx-app-shell {
 /* Seguimiento Cards */
 .harvest-followup-layout {
   display: grid;
-  gap: 20px;
+  gap: 14px;
+}
+
+.harvest-followup-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.harvest-followup-toolbar > span {
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .harvest-followup-panel {
-  padding: 20px;
+  padding: 16px;
 }
 
 .harvest-followup-list,
@@ -1254,7 +1268,43 @@ body.biomasa-calendar-board-open .mx-app-shell {
   border: 1px solid var(--color-border);
   border-radius: 12px;
   background: #fff;
+  padding: 10px 12px;
+}
+
+.harvest-novelty-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 12px;
+}
+
+.harvest-novelty-card {
+  display: grid;
+  gap: 10px;
   padding: 14px;
+}
+
+.harvest-novelty-header {
+  margin: 0;
+}
+
+.harvest-novelty-note {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  border: none;
+  background: var(--color-bg);
+  box-shadow: none;
+  padding: 12px;
+}
+
+.harvest-novelty-note > div:first-child {
+  min-width: 0;
+}
+
+.harvest-novelty-note > div:nth-child(2) {
+  grid-column: 1 / -1;
 }
 
 .harvest-followup-row strong,
