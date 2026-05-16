@@ -332,6 +332,7 @@ export default function Biomasa() {
   const [segProg, setSegProg] = useState(null);
   const [segNota, setSegNota] = useState('');
   const [segEstado, setSegEstado] = useState('');
+  const [programPeriod, setProgramPeriod] = useState('month');
   const [followupPeriod, setFollowupPeriod] = useState('week');
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustProgram, setAdjustProgram] = useState(null);
@@ -463,6 +464,27 @@ export default function Biomasa() {
 
     return { daily, total };
   }, [calData, weekDays, enrichCalendarItem]);
+
+  const programasPeriodo = useMemo(() => {
+    const rangeStart = programPeriod === 'week'
+      ? new Date(`${weekDays[0]}T00:00:00`)
+      : new Date(`${mes}-01T00:00:00`);
+    const rangeEnd = programPeriod === 'week'
+      ? new Date(`${weekDays[6]}T23:59:59`)
+      : new Date(`${finMes(mes)}T23:59:59`);
+    const weekSet = new Set(weekDays);
+
+    return programas.filter((programa) => {
+      const desde = programa.vigenciaDesde ? new Date(programa.vigenciaDesde) : null;
+      const hasta = programa.vigenciaHasta ? new Date(programa.vigenciaHasta) : null;
+      const overlapsVigencia = desde && hasta && desde <= rangeEnd && hasta >= rangeStart;
+      const hasAdjustmentInPeriod = (programa.diasEspeciales || []).some((item) => {
+        const key = item?.fecha ? new Date(item.fecha).toISOString().slice(0, 10) : '';
+        return programPeriod === 'week' ? weekSet.has(key) : key.startsWith(mes);
+      });
+      return overlapsVigencia || hasAdjustmentInPeriod;
+    });
+  }, [mes, programPeriod, programas, weekDays]);
 
   const monthSummary = useMemo(() => {
     const providers = new Map();
@@ -909,9 +931,20 @@ export default function Biomasa() {
           {isProgramView && (
             <div className="program-view">
               {progSubTab === 'programa' && (
-                <div className="mx-table-card">
+                <div className="mx-table-card harvest-program-table-card">
+                  <div className="harvest-program-toolbar">
+                    <div className="mx-toggle-group">
+                      <button className={`mx-toggle-btn ${programPeriod === 'month' ? 'active' : ''}`} onClick={() => setProgramPeriod('month')}>Vista Mes</button>
+                      <button className={`mx-toggle-btn ${programPeriod === 'week' ? 'active' : ''}`} onClick={() => setProgramPeriod('week')}>Vista Semana</button>
+                    </div>
+                    <span>
+                      {programPeriod === 'week'
+                        ? `Semana ${new Date(weekDays[0] + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}`
+                        : mesLabel(mes, true)}
+                    </span>
+                  </div>
                   <div className="mx-table-wrap">
-                    <table className="mx-table">
+                    <table className="mx-table harvest-program-table">
                       <thead>
                         <tr>
                           <th>Proveedor / Centro</th>
@@ -925,7 +958,7 @@ export default function Biomasa() {
                         </tr>
                       </thead>
                       <tbody>
-                        {programas.map(p => {
+                        {programasPeriodo.map(p => {
                           const volume = getProgramVolumeProgress(p, tonsPerTruck);
                           const isOverEstimated = volume.estimated > 0 && volume.balance < 0;
                           const hasDailyAdjustments = Array.isArray(p.ajustesDiarios) && p.ajustesDiarios.length > 0;
@@ -1027,6 +1060,13 @@ export default function Biomasa() {
                           </tr>
                           );
                         })}
+                        {!programasPeriodo.length && (
+                          <tr>
+                            <td colSpan="8" className="harvest-program-empty">
+                              Sin programas para el periodo seleccionado.
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
