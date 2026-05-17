@@ -476,16 +476,30 @@ body.biomasa-calendar-board-open .mx-app-shell {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  min-height: 17px;
+  min-height: 18px;
 }
 
 .cal-day-provider-count {
   color: var(--color-text-muted);
-  font-size: 9px;
-  font-weight: var(--weight-semibold);
+  font-size: 10px;
+  font-weight: 800;
   line-height: 1.1;
-  text-align: right;
-  margin-left: auto;
+  text-align: left;
+  margin-left: 0;
+}
+
+.cal-day-adjust-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #f97316;
+  box-shadow: 0 0 0 3px #ffedd5;
+}
+
+.cal-day-adjust-dot.is-canceled {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px #fee2e2;
 }
 
 .cal-day-adjusted {

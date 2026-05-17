@@ -1255,33 +1255,17 @@ export default function Biomasa() {
                                       {getSanitarioLabel(daySummary.sanitario)}
                                     </div>
                                   )}
-                                  <div className="cal-day-product-stack">
-                                    {daySummary.products.slice(0, 3).map((product) => (
-                                      <div
-                                        key={product.key}
-                                        className={`cal-day-product-chip ${getProductClass(product.key)}`}
-                                        title={`${getTipoProductoLabel(product.key)} - ${formatHarvestMetric(product.camiones, product.tons, calendarMetric)}`}
-                                      >
-                                        <span>{getTipoProductoLabel(product.key).slice(0, 1)}</span>
-                                        <b>{formatHarvestMetric(product.camiones, product.tons, calendarMetric)}</b>
-                                      </div>
-                                    ))}
-                                  </div>
                                   <div className="cal-day-meta-row">
-                                    {hasAdjustedItems && (
-                                      <span className={`cal-day-adjusted ${hasCanceledItems ? 'is-canceled' : ''}`}>
-                                        {hasCanceledItems ? 'Suspendido' : 'Ajustado'}
-                                      </span>
-                                    )}
                                     <span className="cal-day-provider-count">
-                                      {daySummary.providerCount} {daySummary.providerCount === 1 ? 'prov.' : 'prov.'}
+                                      {daySummary.providerCount} prov. · {daySummary.products.length} prod.
                                     </span>
+                                    {hasAdjustedItems && (
+                                      <span
+                                        className={`cal-day-adjust-dot ${hasCanceledItems ? 'is-canceled' : ''}`}
+                                        title={hasCanceledItems ? 'Suspendido' : 'Ajustado'}
+                                      />
+                                    )}
                                   </div>
-                                  {daySummary.products.length > 3 && (
-                                    <div className="cal-day-more-products">
-                                      +{daySummary.products.length - 3} productos
-                                    </div>
-                                  )}
                                 </div>
                               )}
                             </div>
