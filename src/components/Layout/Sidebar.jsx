@@ -220,7 +220,15 @@ export default function Sidebar() {
                 <NavLink 
                   key={link.label} 
                   to={link.to}
-                  className={({ isActive }) => isActive ? 'is-active' : ''}
+                  className={({ isActive }) => {
+                    if (link.to.includes('?view=equipo')) {
+                      return location.pathname === '/historial' && location.search.includes('view=equipo') ? 'is-active' : '';
+                    }
+                    if (link.to === '/historial') {
+                      return location.pathname === '/historial' && !location.search.includes('view=equipo') ? 'is-active' : '';
+                    }
+                    return isActive ? 'is-active' : '';
+                  }}
                 >
                   <link.icon size={16} />
                   <span>{link.label}</span>

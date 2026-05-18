@@ -278,22 +278,56 @@ export default function Directorio() {
     });
   }, [tab, data, searchTerm]);
 
-  const providerOptions = useMemo(
-    () => (data.proveedores || []).map((provider) => {
-      const providerKey = provider.key || provider.providerKey;
-      const centers = (data.centros || []).filter(
-        (centro) => normalizeKey(centro.proveedorKey || centro.proveedor) === normalizeKey(providerKey || provider.nombre)
-      );
-      return {
-        ...provider,
-        value: providerKey,
-        label: provider.nombre,
-        centerCodes: centers.map((centro) => centro.code).filter(Boolean),
-        centerComunas: centers.map((centro) => centro.comuna).filter(Boolean),
-      };
-    }),
-    [data.proveedores, data.centros]
-  );
+  const providerOptions = useMemo(() => {
+    const providersMap = new Map();
+
+    // 1. Construir a partir de todos los centros (incluye importados de Sernapesca)
+    (data.centros || []).forEach((centro) => {
+      const nombre = String(centro.proveedor || '').trim() || 'Proveedor sin nombre';
+      const key = centro.proveedorKey || '';
+      const normKey = normalizeKey(key || nombre);
+
+      if (!providersMap.has(normKey)) {
+        providersMap.set(normKey, {
+          nombre,
+          key,
+          providerKey: normKey,
+          comuna: centro.comuna || '',
+          centerCodesSet: new Set(),
+          centerComunasSet: new Set(),
+        });
+      }
+
+      const item = providersMap.get(normKey);
+      if (centro.code) item.centerCodesSet.add(centro.code);
+      if (centro.comuna) item.centerComunasSet.add(centro.comuna);
+      if ((!item.comuna || item.comuna === '—') && centro.comuna) item.comuna = centro.comuna;
+    });
+
+    // 2. Suplementar con proveedores con actividad por seguridad
+    (data.proveedores || []).forEach((prov) => {
+      const normKey = normalizeKey(prov.key || prov.providerKey || prov.nombre);
+      if (!providersMap.has(normKey)) {
+        providersMap.set(normKey, {
+          nombre: prov.nombre,
+          key: prov.key,
+          providerKey: normKey,
+          comuna: prov.comuna || '',
+          centerCodesSet: new Set(),
+          centerComunasSet: new Set(),
+        });
+      }
+    });
+
+    // 3. Mapear al formato de opciones del selector
+    return Array.from(providersMap.values()).map((provider) => ({
+      ...provider,
+      value: provider.key || provider.providerKey,
+      label: provider.nombre,
+      centerCodes: Array.from(provider.centerCodesSet),
+      centerComunas: Array.from(provider.centerComunasSet),
+    }));
+  }, [data.proveedores, data.centros]);
 
   const selectedProvider = useMemo(() => {
     if (contactSelectedProviderKey) {
@@ -350,7 +384,7 @@ export default function Directorio() {
 
   const filteredProviderOptions = useMemo(() => {
     const query = normalizeKey(contactCompanyQuery);
-    if (!query) return providerOptions.slice(0, 5);
+    if (!query) return providerOptions.slice(0, 10);
     return providerOptions
       .filter((provider) =>
         [
@@ -360,7 +394,7 @@ export default function Directorio() {
           ...(provider.centerComunas || []),
         ].some((value) => normalizeKey(value).includes(query))
       )
-      .slice(0, 5);
+      .slice(0, 10);
   }, [providerOptions, contactCompanyQuery]);
 
   const associatedCenters = useMemo(() => {

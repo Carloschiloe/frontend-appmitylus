@@ -286,7 +286,7 @@ export default function Usuarios() {
                           {u.ultimoLogin ? new Date(u.ultimoLogin).toLocaleString('es-CL') : '—'}
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          <div className="mx-table-actions-cell" style={{ justifyContent: 'flex-end', position: 'relative' }}>
+                          <div className="mx-table-actions-cell" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', position: 'relative' }}>
                             <button className="mx-action-btn edit" onClick={(e) => { e.stopPropagation(); setEditingUser(u); setIsModalOpen(true); }}>
                               <Edit size={14} />
                             </button>
