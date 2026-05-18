@@ -350,6 +350,7 @@ export default function Biomasa() {
   const [progSubTab, setProgSubTab] = useState('programa');
   
   const [mes, setMes] = useState(mesActual);
+  const [statusPeriod, setStatusPeriod] = useState('month'); // 'month' | 'week'
   const { disp, asig, programas, calData, tratosAcordados, tratosBiomasa, perdidasBiomasa, reload: load } = useBiomasaData(mes, {
     isStatusView,
     isProgramView,
@@ -427,6 +428,31 @@ export default function Biomasa() {
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     });
   }, [followupPeriod]);
+
+  const moveStatusPeriod = useCallback((direction) => {
+    if (statusPeriod === 'week') {
+      setCurrentWeekOffset(offset => offset + direction);
+      return;
+    }
+
+    setMes(prev => {
+      const [y, m] = prev.split('-');
+      const d = new Date(parseInt(y, 10), parseInt(m, 10) - 1 + direction, 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+  }, [statusPeriod]);
+
+  // Sincronizar el mes cargado cuando cambia la semana seleccionada
+  useEffect(() => {
+    const isWeekMode = (isStatusView && statusPeriod === 'week') ||
+                       (isProgramView && (programPeriod === 'week' || (progSubTab === 'calendario' && calView === 'week')));
+    if (isWeekMode && weekDays && weekDays[0]) {
+      const weekMonth = weekDays[0].slice(0, 7);
+      if (weekMonth !== mes) {
+        setMes(weekMonth);
+      }
+    }
+  }, [isStatusView, statusPeriod, isProgramView, programPeriod, progSubTab, calView, currentWeekOffset, weekDays, mes]);
 
   // Lógica Matemática de Mes
   const monthData = useMemo(() => {
@@ -922,6 +948,49 @@ export default function Biomasa() {
     return 'Sin programa';
   };
 
+  const isDateInActiveWeek = useCallback((dateValue) => {
+    if (!dateValue) return false;
+    const dateStr = new Date(dateValue).toISOString().slice(0, 10);
+    return weekDays.includes(dateStr);
+  }, [weekDays]);
+
+  const visibleTratosBiomasa = useMemo(() => {
+    if (statusPeriod === 'month') return tratosBiomasa;
+    return tratosBiomasa.filter(item => {
+      const date = item?.fechaCierre || item?.updatedAt || item?.ultimaActividadAt || item?.fecha;
+      return isDateInActiveWeek(date);
+    });
+  }, [statusPeriod, tratosBiomasa, isDateInActiveWeek]);
+
+  const visiblePerdidasBiomasa = useMemo(() => {
+    if (statusPeriod === 'month') return perdidasBiomasa;
+    return perdidasBiomasa.filter(item => {
+      const date = item?.fechaCierre || item?.updatedAt || item?.ultimaActividadAt || item?.fecha;
+      return isDateInActiveWeek(date);
+    });
+  }, [statusPeriod, perdidasBiomasa, isDateInActiveWeek]);
+
+  const visibleBiomasaPendiente = useMemo(
+    () => visibleTratosBiomasa.filter((item) => !asText(item?.programaEstado, '').trim()),
+    [visibleTratosBiomasa]
+  );
+
+  const visibleBiomasaVinculada = useMemo(
+    () => visibleTratosBiomasa.filter((item) => asText(item?.programaEstado, '').trim()),
+    [visibleTratosBiomasa]
+  );
+
+  const visibleNegociacionKpis = useMemo(() => {
+    const sumTons = (items) => items.reduce((acc, item) => acc + (Number(item?.tonsAcordadas || item?.tons || item?.biomasaEstimacion || 0)), 0);
+    const enConversacion = visibleBiomasaPendiente.filter((item) => getSituacionBiomasaLabel(item) === 'En conversación');
+    const acordadas = visibleTratosBiomasa.filter((item) => getSituacionBiomasaLabel(item) === 'Acordada');
+    return {
+      enConversacionTons: sumTons(enConversacion),
+      acordadasTons: sumTons(acordadas),
+      perdidasTons: sumTons(visiblePerdidasBiomasa),
+    };
+  }, [visibleBiomasaPendiente, visiblePerdidasBiomasa, visibleTratosBiomasa]);
+
   const biomasaPendiente = useMemo(
     () => tratosBiomasa.filter((item) => !asText(item?.programaEstado, '').trim()),
     [tratosBiomasa]
@@ -954,7 +1023,7 @@ export default function Biomasa() {
         </div>
         <div className="mx-hero-actions">
           {isStatusView && (
-            <div className="mx-search-box" style={{ minWidth: 'auto' }}>
+            false && <div className="mx-search-box" style={{ minWidth: 'auto' }}>
               <CalendarIcon size={18} />
               <input 
                 type="month" 
@@ -965,7 +1034,7 @@ export default function Biomasa() {
             </div>
           )}
           {isStatusView && (
-            <button className="mx-btn-icon" onClick={load} style={{ color: 'white', background: 'rgba(255,255,255,0.1)' }}>
+            false && <button className="mx-btn-icon" onClick={load} style={{ color: 'white', background: 'rgba(255,255,255,0.1)' }}>
               <RotateCcw size={20} />
             </button>
           )}
@@ -998,6 +1067,61 @@ export default function Biomasa() {
         <div className="tab-content-area">
           {isStatusView && (
             <div className="status-view">
+              
+              {/* Selector de periodo y actualizar para Status */}
+              <div className="mx-toolbar status-period-toolbar am-mb-16" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--color-surface)', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  <div className="mx-toggle-group">
+                    <button 
+                      type="button" 
+                      className={`mx-toggle-btn ${statusPeriod === 'month' ? 'active' : ''}`} 
+                      onClick={() => setStatusPeriod('month')}
+                    >
+                      Vista Mes
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`mx-toggle-btn ${statusPeriod === 'week' ? 'active' : ''}`} 
+                      onClick={() => setStatusPeriod('week')}
+                    >
+                      Vista Semana
+                    </button>
+                  </div>
+                  
+                  <div className="harvest-calendar-period" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button 
+                      type="button" 
+                      className="mx-btn-icon sm" 
+                      onClick={() => moveStatusPeriod(-1)}
+                      aria-label="Periodo anterior"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span style={{ fontWeight: 'var(--weight-bold)', fontSize: '13px', textTransform: 'uppercase', color: 'var(--color-text)' }}>
+                      {statusPeriod === 'week'
+                        ? `Semana ${new Date(weekDays[0] + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}`
+                        : mesLabel(mes, true)}
+                    </span>
+                    <button 
+                      type="button" 
+                      className="mx-btn-icon sm" 
+                      onClick={() => moveStatusPeriod(1)}
+                      aria-label="Periodo siguiente"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                <button 
+                  type="button" 
+                  className="mx-btn mx-btn-outline sm" 
+                  onClick={load}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <RotateCcw size={14} /> Actualizar
+                </button>
+              </div>
               {statusSubTab === 'disponibilidad' ? (
                 <div className="mx-kpi-grid">
                   <div className="mx-kpi-card">
@@ -1020,15 +1144,15 @@ export default function Biomasa() {
                 <div className="mx-kpi-grid">
                   <div className="mx-kpi-card">
                     <div className="mx-kpi-label">En conversación</div>
-                    <div className="mx-kpi-value" style={{ color: 'var(--color-info)' }}>{fmtTons(negociacionKpis.enConversacionTons)}</div>
+                    <div className="mx-kpi-value" style={{ color: 'var(--color-info)' }}>{fmtTons(visibleNegociacionKpis.enConversacionTons)}</div>
                   </div>
                   <div className="mx-kpi-card">
                     <div className="mx-kpi-label">Acordadas</div>
-                    <div className="mx-kpi-value" style={{ color: 'var(--color-success)' }}>{fmtTons(negociacionKpis.acordadasTons)}</div>
+                    <div className="mx-kpi-value" style={{ color: 'var(--color-success)' }}>{fmtTons(visibleNegociacionKpis.acordadasTons)}</div>
                   </div>
                   <div className="mx-kpi-card">
-                    <div className="mx-kpi-label">Pérdidas del mes</div>
-                    <div className="mx-kpi-value" style={{ color: 'var(--color-error)' }}>{fmtTons(negociacionKpis.perdidasTons)}</div>
+                    <div className="mx-kpi-label">{statusPeriod === 'week' ? 'Pérdidas de la semana' : 'Pérdidas del mes'}</div>
+                    <div className="mx-kpi-value" style={{ color: 'var(--color-error)' }}>{fmtTons(visibleNegociacionKpis.perdidasTons)}</div>
                   </div>
                 </div>
               )}
@@ -1043,7 +1167,7 @@ export default function Biomasa() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(statusSubTab === 'disponibilidad' ? disp : [...biomasaPendiente, ...biomasaVinculada]).map(item => (
+                    {(statusSubTab === 'disponibilidad' ? disp : [...visibleBiomasaPendiente, ...visibleBiomasaVinculada]).map(item => (
                       <tr key={item._id}>
                         <td style={{ fontWeight: 'var(--weight-bold)' }}>{item.proveedorNombre}</td>
                         <td>{statusSubTab === 'disponibilidad' ? mesLabel(item.mesKey) : getSituacionBiomasaLabel(item)}</td>
@@ -1051,7 +1175,7 @@ export default function Biomasa() {
                         {statusSubTab === 'disponibilidad' ? <td>{item.centroCodigo || '—'}</td> : <td>{getProgramaLabel(item)}</td>}
                       </tr>
                     ))}
-                    {statusSubTab !== 'disponibilidad' && perdidasBiomasa.map((item) => (
+                    {statusSubTab !== 'disponibilidad' && visiblePerdidasBiomasa.map((item) => (
                       <tr key={`perdida-${item._id}`}>
                         <td style={{ fontWeight: 'var(--weight-bold)' }}>{item.proveedorNombre}</td>
                         <td>{item.motivoCierre || 'Pérdida'}</td>
