@@ -53,6 +53,34 @@ const fmtTons = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractio
 const fmtTonsInt = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' t';
 const fmtNumber = (n, digits = 1) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: digits });
 const todayKey = () => toDateKey(new Date());
+const CHILE_TIME_ZONE = 'America/Santiago';
+
+const chileDateFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: CHILE_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+const toChileDateKey = (value) => {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const parts = chileDateFormatter.formatToParts(date).reduce((acc, part) => {
+    acc[part.type] = part.value;
+    return acc;
+  }, {});
+  return `${parts.year}-${parts.month}-${parts.day}`;
+};
+
+const compareDateKeys = (a, b) => String(a || '').localeCompare(String(b || ''));
+const minDateKey = (...keys) => keys.filter(Boolean).sort()[0] || '';
+const maxDateKey = (...keys) => keys.filter(Boolean).sort().at(-1) || '';
+const addDaysToKey = (key, days = 1) => {
+  const date = new Date(`${key}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+const dayOfWeekFromKey = (key) => new Date(`${key}T12:00:00Z`).getUTCDay();
 
 const getEasterDate = (year) => {
   const a = year % 19;
@@ -221,19 +249,20 @@ const formatHarvestMetric = (camiones = 0, tons = 0, metric = 'both') => {
 
 const getProgramVolumeProgress = (programa, tonsPerTruck = 0, until = new Date()) => {
   const estimated = Number(programa?.tonsEstimadas || 0);
-  const desde = programa?.vigenciaDesde ? new Date(programa.vigenciaDesde) : null;
-  const hasta = programa?.vigenciaHasta ? new Date(programa.vigenciaHasta) : null;
-  if (!desde || !hasta || Number.isNaN(desde.getTime()) || Number.isNaN(hasta.getTime())) {
+  const desdeKey = programa?.vigenciaDesde ? toChileDateKey(programa.vigenciaDesde) : '';
+  const hastaKey = programa?.vigenciaHasta ? toChileDateKey(programa.vigenciaHasta) : '';
+  const untilKey = toChileDateKey(until);
+  if (!desdeKey || !hastaKey || !untilKey) {
     return { estimated, consumed: 0, balance: estimated };
   }
 
-  const end = new Date(Math.min(hasta.getTime(), until.getTime()));
+  const endKey = minDateKey(hastaKey, untilKey);
 
   const diasSemana = Array.isArray(programa?.diasSemana) && programa.diasSemana.length
     ? new Set(programa.diasSemana.map(Number))
     : new Set([0, 1, 2, 3, 4]);
   const especiales = new Map((programa?.diasEspeciales || []).map((item) => {
-    const key = item?.fecha ? new Date(item.fecha).toISOString().slice(0, 10) : '';
+    const key = item?.fecha ? toChileDateKey(item.fecha) : '';
     return [key, Number(item?.camiones || 0)];
   }).filter(([key]) => key));
 
@@ -243,33 +272,33 @@ const getProgramVolumeProgress = (programa, tonsPerTruck = 0, until = new Date()
   [...(programa?.ajustesDiarios || [])]
     .sort((a, b) => new Date(b.createdAt || b.fecha) - new Date(a.createdAt || a.fecha))
     .forEach((ajuste) => {
-      const key = ajuste?.fecha ? new Date(ajuste.fecha).toISOString().slice(0, 10) : '';
+      const key = ajuste?.fecha ? toChileDateKey(ajuste.fecha) : '';
       if (!key || especiales.has(key)) return;
       especiales.set(key, Number(ajuste.camionesDespues ?? ajuste.camiones ?? 0));
     });
 
-  const specialKeysUntil = [...especiales.keys()].filter((key) => new Date(`${key}T00:00:00`) <= until);
-  if (end < desde && !specialKeysUntil.length) return { estimated, consumed: 0, balance: estimated };
+  const specialKeysUntil = [...especiales.keys()].filter((key) => compareDateKeys(key, untilKey) <= 0);
+  if (compareDateKeys(endKey, desdeKey) < 0 && !specialKeysUntil.length) {
+    return { estimated, consumed: 0, balance: estimated };
+  }
 
   let camiones = 0;
-  const cursorStart = specialKeysUntil.length
-    ? new Date(Math.min(desde.getTime(), ...specialKeysUntil.map((key) => new Date(`${key}T00:00:00`).getTime())))
-    : new Date(desde);
-  const cursorEnd = specialKeysUntil.length
-    ? new Date(Math.max(end.getTime(), ...specialKeysUntil.map((key) => new Date(`${key}T00:00:00`).getTime())))
-    : end;
-  const cursor = new Date(cursorStart);
-  cursor.setUTCHours(0, 0, 0, 0);
-  cursorEnd.setUTCHours(23, 59, 59, 999);
+  let cursorKey = specialKeysUntil.length ? minDateKey(desdeKey, ...specialKeysUntil) : desdeKey;
+  const cursorEndKey = specialKeysUntil.length ? maxDateKey(endKey, ...specialKeysUntil) : endKey;
 
-  while (cursor <= cursorEnd) {
-    const key = cursor.toISOString().slice(0, 10);
+  while (compareDateKeys(cursorKey, cursorEndKey) <= 0) {
+    const key = cursorKey;
     if (especiales.has(key)) {
       camiones += especiales.get(key);
-    } else if (cursor >= desde && cursor <= hasta && cursor <= until && diasSemana.has(cursor.getUTCDay())) {
+    } else if (
+      compareDateKeys(key, desdeKey) >= 0 &&
+      compareDateKeys(key, hastaKey) <= 0 &&
+      compareDateKeys(key, untilKey) <= 0 &&
+      diasSemana.has(dayOfWeekFromKey(key))
+    ) {
       camiones += Number(programa?.camionesDefault || 0);
     }
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    cursorKey = addDaysToKey(cursorKey, 1);
   }
 
   const consumed = camiones * Number(tonsPerTruck || 0);
