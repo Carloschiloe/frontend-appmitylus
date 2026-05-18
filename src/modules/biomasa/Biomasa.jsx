@@ -237,6 +237,17 @@ const getProgramVolumeProgress = (programa, tonsPerTruck = 0, until = new Date()
     return [key, Number(item?.camiones || 0)];
   }).filter(([key]) => key));
 
+  // Safety net: older API payloads may include ajustesDiarios before diasEspeciales is hydrated
+  // in the list response. Use the latest daily adjustment as the visible override only when
+  // diasEspeciales does not already define that day.
+  [...(programa?.ajustesDiarios || [])]
+    .sort((a, b) => new Date(b.createdAt || b.fecha) - new Date(a.createdAt || a.fecha))
+    .forEach((ajuste) => {
+      const key = ajuste?.fecha ? new Date(ajuste.fecha).toISOString().slice(0, 10) : '';
+      if (!key || especiales.has(key)) return;
+      especiales.set(key, Number(ajuste.camionesDespues ?? ajuste.camiones ?? 0));
+    });
+
   const specialKeysUntil = [...especiales.keys()].filter((key) => new Date(`${key}T00:00:00`) <= until);
   if (end < desde && !specialKeysUntil.length) return { estimated, consumed: 0, balance: estimated };
 
