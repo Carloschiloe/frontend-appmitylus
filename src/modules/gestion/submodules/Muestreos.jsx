@@ -860,16 +860,19 @@ export default function Muestreos() {
 
       setIsLoadingDetails(true);
       const res = await apiClient.post(`/muestreos/${id}/share`);
-      
+
       const proveedor = m.proveedorNombre || 'Proveedor';
       const centro = m.centroCodigo || m.centroNombre || 'Sin Centro';
       const fecha = m.fecha ? new Date(m.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+      const linea = m.linea ? `\nLinea: ${m.linea}` : '';
+      const responsable = m.responsable ? `\nResponsable: ${m.responsable}` : '';
 
-      const shareText = `📌 *REPORTE MMPP*\n` + 
-                        `*${proveedor}*\n` +
-                        `🔹 Centro: ${centro}\n` +
-                        `📅 Fecha: ${fecha}\n\n` +
-                        `🔗 *Ver Muestreo:* \n${res.url}`;
+      const shareText =
+        `*Mitynex | Informe publico de muestreo*\n` +
+        `Proveedor: ${proveedor}\n` +
+        `Centro: ${centro}${linea}\n` +
+        `Fecha muestreo: ${fecha}${responsable}\n\n` +
+        `Ver informe tecnico:\n${res.url}`;
 
       setShareData({
         url: res.url,
@@ -1809,14 +1812,14 @@ export default function Muestreos() {
                 style={{ height: '44px', borderRadius: '12px', fontSize: '14px', fontWeight: 600, border: '1.5px solid #e2e8f0' }}
                 onClick={async () => {
                   if (navigator.clipboard && window.isSecureContext) {
-                    await navigator.clipboard.writeText(shareData?.url);
-                    addToast({ title: '¡Copiado!', message: 'Link listo en el portapapeles.', type: 'success' });
+                    await navigator.clipboard.writeText(shareData?.message || shareData?.url);
+                    addToast({ title: 'Copiado', message: 'Mensaje listo en el portapapeles.', type: 'success' });
                     setIsShareModalOpen(false);
                   }
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <Copy size={16} /> Copiar Link
+                  <Copy size={16} /> Copiar mensaje
                 </div>
               </button>
 

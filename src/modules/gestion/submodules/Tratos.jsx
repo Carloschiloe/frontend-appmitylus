@@ -223,6 +223,30 @@ function isEquivalentEstado(actualApi, nextUi) {
   return false;
 }
 
+function buildTratoShareMessage(item, url) {
+  const proveedor = item?.proveedorNombre || 'Proveedor';
+  const tons = item?.tonsAcordadas || deriveVolumenDesdeCondiciones(item?.condiciones) || 0;
+  const precio = item?.precioAcordado ?? derivePrecioDesdeCondiciones(item?.condiciones);
+  const camiones = item?.camionesXDia || deriveCamionesXDia(item?.condiciones);
+  const inicio = item?.vigenciaDesde || item?.fechaCierre;
+  const centro = item?.centroCodigo || item?.centroNombre || item?.meta?.centroNombre || '';
+  const estado = ESTADOS_TRATO.find(e => e.val === getUiEstadoFromApi(item?.estado))?.label || item?.estado || 'Trato';
+
+  return [
+    '*Mitynex | Confirmacion publica de trato*',
+    `Proveedor: ${proveedor}`,
+    centro ? `Centro: ${centro}` : null,
+    tons ? `Volumen acordado: ${formatInteger(tons)} t` : null,
+    precio ? `Precio: ${formatMoney(precio)} / kg` : null,
+    camiones ? `Carga: ${formatInteger(camiones)} cam/dia` : null,
+    inicio ? `Inicio probable cosecha: ${formatDateOnlySafe(inicio)}` : null,
+    `Estado: ${estado}`,
+    '',
+    `Ver confirmacion:`,
+    url,
+  ].filter((line) => line !== null).join('\n');
+}
+
 export default function Tratos() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
@@ -451,7 +475,7 @@ export default function Tratos() {
   const compartirTrato = async (item) => {
     try {
       const res = await apiClient.post(`/oportunidades/${item._id}/share`);
-      setShareModal({ open: true, url: res.url, item });
+      setShareModal({ open: true, url: res.url, item, message: buildTratoShareMessage(item, res.url) });
     } catch {
       addToast({ title: 'Error', message: 'No se pudo generar el link para compartir', type: 'error' });
     }
@@ -459,7 +483,7 @@ export default function Tratos() {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    addToast({ title: 'Copiado', message: 'Link copiado al portapapeles', type: 'success' });
+    addToast({ title: 'Copiado', message: 'Mensaje copiado al portapapeles', type: 'success' });
   };
 
   const filteredItems = items.filter(i => 
@@ -751,7 +775,7 @@ export default function Tratos() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
               <a 
-                href={`https://wa.me/?text=${encodeURIComponent(`🤝 Hola ${shareModal.item?.proveedorNombre}, adjunto la confirmación oficial de nuestra negociación: ${shareModal.url}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(shareModal.message || buildTratoShareMessage(shareModal.item, shareModal.url))}`}
                 target="_blank"
                 rel="noreferrer"
                 className="mx-btn mx-btn-primary"
@@ -763,15 +787,15 @@ export default function Tratos() {
               <button 
                 className="mx-btn mx-btn-outline"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', height: '48px', borderRadius: '14px' }}
-                onClick={() => copyToClipboard(shareModal.url)}
+                onClick={() => copyToClipboard(shareModal.message || shareModal.url)}
               >
-                <Copy size={18} /> Copiar Link
+                <Copy size={18} /> Copiar mensaje
               </button>
 
               <button 
                 className="mx-btn"
                 style={{ border: 'none', background: 'transparent', color: '#94a3b8', fontSize: '0.85rem', marginTop: '8px' }}
-                onClick={() => setShareModal({ open: false, url: '', item: null })}
+                onClick={() => setShareModal({ open: false, url: '', item: null, message: '' })}
               >
                 Cerrar
               </button>
