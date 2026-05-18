@@ -442,17 +442,7 @@ export default function Biomasa() {
     });
   }, [statusPeriod]);
 
-  // Sincronizar el mes cargado cuando cambia la semana seleccionada
-  useEffect(() => {
-    const isWeekMode = (isStatusView && statusPeriod === 'week') ||
-                       (isProgramView && (programPeriod === 'week' || (progSubTab === 'calendario' && calView === 'week')));
-    if (isWeekMode && weekDays && weekDays[0]) {
-      const weekMonth = weekDays[0].slice(0, 7);
-      if (weekMonth !== mes) {
-        setMes(weekMonth);
-      }
-    }
-  }, [isStatusView, statusPeriod, isProgramView, programPeriod, progSubTab, calView, currentWeekOffset, weekDays, mes]);
+
 
   // Lógica Matemática de Mes
   const monthData = useMemo(() => {
@@ -483,6 +473,18 @@ export default function Biomasa() {
       return d.toISOString().split('T')[0];
     });
   }, [currentWeekOffset]);
+
+  // Sincronizar el mes cargado cuando cambia la semana seleccionada
+  useEffect(() => {
+    const isWeekMode = (isStatusView && statusPeriod === 'week') ||
+                       (isProgramView && (programPeriod === 'week' || (progSubTab === 'calendario' && calView === 'week')));
+    if (isWeekMode && weekDays && weekDays[0]) {
+      const weekMonth = weekDays[0].slice(0, 7);
+      if (weekMonth !== mes) {
+        setMes(weekMonth);
+      }
+    }
+  }, [isStatusView, statusPeriod, isProgramView, programPeriod, progSubTab, calView, currentWeekOffset, weekDays, mes]);
 
   const programasById = useMemo(() => {
     const map = new Map();
