@@ -347,11 +347,11 @@ body.biomasa-calendar-board-open .mx-app-shell {
 }
 
 .cal-day-cell.calendar-red-day {
-  background: #fff7f7;
+  background: #fffafa;
 }
 
 .cal-day-cell.calendar-red-day .cal-day-num {
-  color: #dc2626;
+  color: #ef4444;
 }
 
 .cal-day-cell:hover {
@@ -394,6 +394,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
   gap: 6px;
   flex: 1;
   min-height: 0;
+  transform: translateY(-3px);
 }
 
 .cal-day-primary-total {
@@ -528,9 +529,9 @@ body.biomasa-calendar-board-open .mx-app-shell {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   color: #64748b;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1.1;
   text-align: center;
@@ -539,11 +540,13 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .cal-day-provider-count svg {
   color: #94a3b8;
+  width: 14px;
+  height: 14px;
 }
 
 .cal-day-provider-count b {
   color: #475569;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
 }
 
@@ -555,21 +558,21 @@ body.biomasa-calendar-board-open .mx-app-shell {
   flex: 0 0 auto;
   min-width: 58px;
   max-width: none;
-  border: 1px solid #fed7aa;
+  border: 1px solid #ffedd5;
   border-radius: 999px;
-  background: #fff7ed;
-  color: #c2410c;
+  background: #fffaf4;
+  color: #b45309;
   padding: 3px 7px;
   font-size: 9px;
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1;
   white-space: nowrap;
 }
 
 .cal-day-adjust-badge.is-canceled {
-  border-color: #fecaca;
-  background: #fef2f2;
-  color: #b91c1c;
+  border-color: #fee2e2;
+  background: #fff7f7;
+  color: #991b1b;
 }
 
 .cal-day-adjusted {
@@ -716,6 +719,15 @@ body.biomasa-calendar-board-open .mx-app-shell {
   font-size: 12px;
 }
 
+.harvest-calendar-shell.board-mode .cal-day-compact-summary {
+  transform: translateY(-5px);
+}
+
+.harvest-calendar-shell.board-mode .cal-day-provider-count svg {
+  width: 16px;
+  height: 16px;
+}
+
 .harvest-calendar-shell.board-mode .cal-day-empty {
   font-size: 20px;
 }
@@ -804,11 +816,11 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .harvest-month-total-card {
   display: grid;
-  gap: 5px;
-  border: 1px solid #d7eee9;
+  gap: 4px;
+  border: 1px solid #e2f3ef;
   border-radius: 12px;
-  background: #f8fffc;
-  padding: 13px 14px;
+  background: linear-gradient(180deg, #fbfffd 0%, #ffffff 100%);
+  padding: 12px 14px;
 }
 
 .harvest-month-total-card span {
@@ -820,7 +832,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .harvest-month-total-card strong {
   color: var(--color-primary-dark);
-  font-size: 24px;
+  font-size: 23px;
   font-weight: var(--weight-bold);
   line-height: 1.1;
 }
@@ -833,11 +845,11 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .harvest-month-section {
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 
 .harvest-month-section h5 {
-  margin: 2px 0 4px;
+  margin: 4px 0 5px;
   color: #475569;
   font-size: 10px;
   font-weight: var(--weight-bold);
@@ -848,11 +860,11 @@ body.biomasa-calendar-board-open .mx-app-shell {
 .harvest-month-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid #f1f5f9;
   background: transparent;
-  padding: 6px 0;
+  padding: 5px 0;
 }
 
 .harvest-month-row:last-child {
@@ -864,7 +876,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
   overflow: hidden;
   color: var(--color-text);
   font-size: 11px;
-  font-weight: var(--weight-bold);
+  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -880,20 +892,22 @@ body.biomasa-calendar-board-open .mx-app-shell {
 .harvest-month-row b {
   color: var(--color-primary-dark);
   font-size: 11px;
-  font-weight: var(--weight-bold);
+  font-weight: 900;
   white-space: nowrap;
 }
 
 .harvest-month-products {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 5px 6px;
 }
 
 .harvest-month-products .harvest-product-pill {
+  border-color: #e2e8f0;
   border-left-width: 2px;
-  padding: 3px 6px;
+  padding: 3px 7px;
   font-size: 9px !important;
+  background: #ffffff;
 }
 
 .harvest-month-hint {
