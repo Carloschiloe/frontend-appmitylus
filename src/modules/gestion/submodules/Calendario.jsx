@@ -126,6 +126,18 @@ function getEventTime(ev) {
   return '';
 }
 
+function compareEventsNewestFirst(a, b) {
+  const ad = getEventDate(a)?.getTime() || 0;
+  const bd = getEventDate(b)?.getTime() || 0;
+  return bd - ad || getEventTime(b).localeCompare(getEventTime(a));
+}
+
+function compareEventsOldestFirst(a, b) {
+  const ad = getEventDate(a)?.getTime() || 0;
+  const bd = getEventDate(b)?.getTime() || 0;
+  return ad - bd || getEventTime(a).localeCompare(getEventTime(b));
+}
+
 function normalizeKind(value) {
   const text = String(value || '').toLowerCase();
   if (text.includes('muestra') || text.includes('muestreo')) return 'muestreo';
@@ -303,11 +315,7 @@ export default function Calendario() {
   const events = useMemo(() => {
     return (data?.events || [])
       .filter((ev) => getEventDate(ev))
-      .sort((a, b) => {
-        const ad = getEventDate(a)?.getTime() || 0;
-        const bd = getEventDate(b)?.getTime() || 0;
-        return ad - bd || getEventTime(a).localeCompare(getEventTime(b));
-      });
+      .sort(compareEventsOldestFirst);
   }, [data]);
 
   const availableTypes = useMemo(() => {
@@ -368,6 +376,7 @@ export default function Calendario() {
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(ev);
     });
+    map.forEach((items) => items.sort(compareEventsOldestFirst));
     return map;
   }, [filteredEvents]);
 
@@ -388,7 +397,9 @@ export default function Calendario() {
       if (!groups.has(key)) groups.set(key, { date, items: [] });
       groups.get(key).items.push(ev);
     });
-    return Array.from(groups.values()).sort((a, b) => a.date - b.date);
+    return Array.from(groups.values())
+      .map((group) => ({ ...group, items: [...group.items].sort(compareEventsNewestFirst) }))
+      .sort((a, b) => b.date - a.date);
   }, [filteredEvents]);
 
   const visibleListEvents = useMemo(() => {
@@ -397,7 +408,7 @@ export default function Calendario() {
     return filteredEvents.filter((ev) => {
       const date = getEventDate(ev)?.getTime();
       return date >= monthStart && date <= monthEnd;
-    });
+    }).sort(compareEventsNewestFirst);
   }, [filteredEvents, month, year]);
 
   const changeMonth = (delta) => {
