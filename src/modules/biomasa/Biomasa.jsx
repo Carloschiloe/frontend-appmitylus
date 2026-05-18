@@ -859,10 +859,35 @@ export default function Biomasa() {
     return programa?.seguimientos?.[0]?.nota || 'Sin novedades registradas recientemente.';
   }, [followupPeriod, mes, weekDays]);
 
-  const getTodayProgramCamiones = useCallback((programa) => {
-    const item = (calData[todayKey()]?.items || []).find(dayItem => String(dayItem.programaId) === String(programa?._id));
-    return Number(item?.camiones ?? programa?.camionesDefault ?? 0);
+  const getProgramDayCamiones = useCallback((programa, dateKey = todayKey()) => {
+    const base = Number(programa?.camionesDefault || 0);
+    const calendarItem = (calData[dateKey]?.items || []).find(dayItem => String(dayItem.programaId) === String(programa?._id));
+    if (calendarItem) return Number(calendarItem.camiones ?? base);
+
+    const specialDay = (programa?.diasEspeciales || []).find((item) => toChileDateKey(item?.fecha) === dateKey);
+    if (specialDay) return Number(specialDay.camiones ?? base);
+
+    const latestAdjustment = [...(programa?.ajustesDiarios || [])]
+      .filter((ajuste) => toChileDateKey(ajuste?.fecha) === dateKey)
+      .sort((a, b) => new Date(b.createdAt || b.fecha) - new Date(a.createdAt || a.fecha))[0];
+    if (latestAdjustment) return Number(latestAdjustment.camionesDespues ?? base);
+
+    return base;
   }, [calData]);
+
+  const getTodayProgramCamiones = useCallback((programa) => (
+    getProgramDayCamiones(programa, todayKey())
+  ), [getProgramDayCamiones]);
+
+  const getProgramCamionesStatus = useCallback((programa) => {
+    const base = Number(programa?.camionesDefault || 0);
+    const today = getTodayProgramCamiones(programa);
+    return {
+      base,
+      today,
+      adjusted: today !== base,
+    };
+  }, [getTodayProgramCamiones]);
 
   const kpis = useMemo(() => {
     const disponible = disp.reduce((s, i) => s + (i.tons || 0), 0);
@@ -1064,7 +1089,7 @@ export default function Biomasa() {
                           <th>Proveedor / Centro</th>
                           <th>Vigencia</th>
                           <th>Producto</th>
-                          <th style={{ textAlign: 'center' }}>Cam/Día</th>
+                          <th style={{ textAlign: 'center' }}>Cam/día</th>
                           <th>Volumen</th>
                           <th>Estado</th>
                           <th>Sanitario</th>
@@ -1076,6 +1101,7 @@ export default function Biomasa() {
                           const volume = getProgramVolumeProgress(p, tonsPerTruck);
                           const isOverEstimated = volume.estimated > 0 && volume.balance < 0;
                           const hasDailyAdjustments = Array.isArray(p.ajustesDiarios) && p.ajustesDiarios.length > 0;
+                          const camionesStatus = getProgramCamionesStatus(p);
                           return (
                           <tr key={p._id}>
                             <td>
@@ -1107,8 +1133,15 @@ export default function Biomasa() {
                               )}
                             </td>
                             <td style={{ textAlign: 'center' }}>
-                              <div className="biomasa-camiones-badge">
-                                {p.camionesDefault}
+                              <div className="harvest-program-camiones">
+                                <div className="biomasa-camiones-badge">
+                                  {camionesStatus.base}
+                                </div>
+                                {camionesStatus.adjusted && (
+                                  <span className="harvest-program-camiones-adjusted">
+                                    Hoy {camionesStatus.today} cam
+                                  </span>
+                                )}
                               </div>
                             </td>
                             <td>
