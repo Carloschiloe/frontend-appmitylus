@@ -791,3 +791,142 @@ ul, ol {
   }
 }
 
+/* Hide mobile header by default on desktop */
+.mx-mobile-header {
+  display: none;
+}
+
+/* ── Mobile & Tablet Responsive Layout (<= 768px) ── */
+@media (max-width: 768px) {
+  /* ── Header móvil premium ── */
+  .mx-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background-color: var(--color-sidebar);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0 16px;
+    z-index: 1999;
+  }
+
+  .mx-mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--nav-fg);
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .mx-mobile-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .mx-mobile-brand img {
+    height: 26px;
+    display: block;
+  }
+
+  /* ── Backdrop móvil ── */
+  .mx-sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* ── Modificación de la barra lateral en móvil ── */
+  .mx-sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--transition-slow);
+    z-index: 2001; /* Queda sobre el backdrop */
+    box-shadow: var(--shadow-xl);
+  }
+
+  .mobile-sidebar-open .mx-sidebar {
+    transform: translateX(0);
+  }
+
+  /* ── Modificación del contenido principal en móvil ── */
+  .mx-main-content {
+    margin-left: 0 !important;
+    padding-top: 56px; /* Desplazar hacia abajo por el mobile header */
+  }
+
+  /* Ajustes generales de espaciado en móviles */
+  :root {
+    --page-padding: 16px; /* Padding más compacto */
+  }
+
+  .mx-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    border-radius: 0;
+    padding: var(--page-padding) var(--page-padding) 40px var(--page-padding);
+  }
+
+  .mx-content-frame {
+    margin-top: -20px;
+    padding: var(--page-padding);
+  }
+
+  /* Ajustes para tablas responsivas */
+  .mx-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ajustes para barras de herramientas en móvil */
+  .mx-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+  }
+
+  .mx-search-box {
+    width: 100%;
+  }
+
+  /* Ajustes de cuadrículas KPI y formularios */
+  .mx-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .mx-form-row {
+    flex-direction: column;
+    gap: 0 !important;
+  }
+
+  .mx-form-group {
+    width: 100% !important;
+  }
+
+  /* Modal responsive */
+  .mx-modal {
+    width: calc(100% - 32px) !important;
+    margin: 16px !important;
+    max-height: calc(100vh - 32px) !important;
+  }
+}
+

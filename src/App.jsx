@@ -1,8 +1,9 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Menu } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar.jsx';
 import 'leaflet/dist/leaflet.css';
 
@@ -31,12 +32,43 @@ const SharedMuestreo = lazy(() => import('./modules/public/SharedMuestreo.jsx'))
 
 const MainLayout = ({ children }) => {
   const { user } = useAuth();
-  
+  const [isMobileOpen, setIsMobileOpen] = React.useState(false);
+  const location = useLocation();
+
+  // Cerrar el menú lateral al cambiar de ruta
+  React.useEffect(() => {
+    setIsMobileOpen(false);
+  }, [location.pathname]);
+
   // Si no hay usuario, es una ruta pública (Login/Activar), no mostramos Sidebar
   if (!user) return children;
 
   return (
-    <div className="mx-app-shell">
+    <div className={`mx-app-shell ${isMobileOpen ? 'mobile-sidebar-open' : ''}`}>
+      {/* Encabezado móvil premium */}
+      <header className="mx-mobile-header">
+        <button 
+          type="button" 
+          className="mx-mobile-menu-btn"
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+          aria-label="Abrir menú"
+        >
+          <Menu size={20} />
+        </button>
+        <div className="mx-mobile-brand">
+          <img src="/img/logo-sidebar.png" alt="Mitynex" />
+        </div>
+        <div style={{ width: 36 }}></div> {/* Espaciador para centrado óptico del logo */}
+      </header>
+
+      {/* Fondo oscuro traslúcido para cerrar el menú al hacer click fuera */}
+      {isMobileOpen && (
+        <div 
+          className="mx-sidebar-backdrop" 
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
       <Sidebar />
       <main className="mx-main-content">
         {children}
