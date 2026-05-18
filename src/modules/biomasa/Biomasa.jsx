@@ -247,6 +247,14 @@ const formatHarvestMetric = (camiones = 0, tons = 0, metric = 'both') => {
   return `${Number(camiones || 0)} cam · ${fmtTonsInt(tons)}`;
 };
 
+const getHarvestMetricKpi = (camiones = 0, tons = 0, metric = 'both') => {
+  const tonsValue = Number(tons || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 });
+  const camionesValue = Number(camiones || 0);
+  if (metric === 'camiones') return { value: camionesValue, unit: 'cam', note: null };
+  if (metric === 'tons') return { value: tonsValue, unit: 't', note: null };
+  return { value: tonsValue, unit: 't', note: `${camionesValue} cam` };
+};
+
 const getProgramVolumeProgress = (programa, tonsPerTruck = 0, until = new Date()) => {
   const estimated = Number(programa?.tonsEstimadas || 0);
   const desdeKey = programa?.vigenciaDesde ? toChileDateKey(programa.vigenciaDesde) : '';
@@ -1303,6 +1311,7 @@ export default function Biomasa() {
                           const hasAdjustedItems = dayItems.some((item) => item.esDiaEspecial);
                           const hasCanceledItems = dayItems.some((item) => item.cancelado || (item.esDiaEspecial && Number(item.camiones || 0) === 0));
                           const isSelected = selectedDay?.key === dateKey;
+                          const metricKpi = getHarvestMetricKpi(daySummary.camiones, daySummary.tons, calendarMetric);
 
                           return (
                             <div 
@@ -1313,11 +1322,13 @@ export default function Biomasa() {
                               <div className="cal-day-top">
                                 <span className="cal-day-num">{dayNum}</span>
                               </div>
-                              {(daySummary.camiones > 0 || hasAdjustedItems) && (
+                              {(daySummary.camiones > 0 || hasAdjustedItems) ? (
                                 <div className="cal-day-compact-summary">
                                   {daySummary.camiones > 0 ? (
                                     <div className="cal-day-primary-total">
-                                      {formatHarvestMetric(daySummary.camiones, daySummary.tons, calendarMetric)}
+                                      {metricKpi.note && <span>{metricKpi.note}</span>}
+                                      <strong>{metricKpi.value}</strong>
+                                      <em>{metricKpi.unit}</em>
                                     </div>
                                   ) : (
                                     <div className="cal-day-primary-total is-canceled">0 cam</div>
@@ -1334,12 +1345,17 @@ export default function Biomasa() {
                                     </span>
                                     {hasAdjustedItems && (
                                       <span
-                                        className={`cal-day-adjust-dot ${hasCanceledItems ? 'is-canceled' : ''}`}
+                                        className={`cal-day-adjust-badge ${hasCanceledItems ? 'is-canceled' : ''}`}
                                         title={hasCanceledItems ? 'Suspendido' : 'Ajustado'}
-                                      />
+                                      >
+                                        <AlertTriangle size={10} />
+                                        {hasCanceledItems ? 'Susp.' : 'Ajuste'}
+                                      </span>
                                     )}
                                   </div>
                                 </div>
+                              ) : (
+                                <div className="cal-day-empty">Sin programación</div>
                               )}
                             </div>
                           );
