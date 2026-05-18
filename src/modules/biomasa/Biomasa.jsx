@@ -22,6 +22,8 @@ import {
   Maximize2,
   Minimize2,
   AlertTriangle,
+  Package,
+  Users,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 import { useToast } from '../../context/ToastContext';
@@ -1341,7 +1343,10 @@ export default function Biomasa() {
                                   )}
                                   <div className="cal-day-meta-row">
                                     <span className="cal-day-provider-count">
-                                      {daySummary.providerCount} prov. · {daySummary.products.length} prod.
+                                      <Users size={11} />
+                                      <b>{daySummary.providerCount}</b>
+                                      <Package size={11} />
+                                      <b>{daySummary.products.length}</b>
                                     </span>
                                     {hasAdjustedItems && (
                                       <span
@@ -1355,7 +1360,7 @@ export default function Biomasa() {
                                   </div>
                                 </div>
                               ) : (
-                                <div className="cal-day-empty">Sin programación</div>
+                                <div className="cal-day-empty">—</div>
                               )}
                             </div>
                           );

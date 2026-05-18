@@ -390,7 +390,9 @@ body.biomasa-calendar-board-open .mx-app-shell {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
   min-height: 0;
 }
 
@@ -399,20 +401,20 @@ body.biomasa-calendar-board-open .mx-app-shell {
   grid-template-columns: auto auto;
   align-items: end;
   justify-content: center;
-  gap: 0 3px;
-  min-width: 58px;
-  border: 1px solid #ccfbf1;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%);
+  gap: 1px 4px;
+  min-width: 76px;
+  border: 1px solid #d7eee9;
+  border-radius: 10px;
+  background: #f7fffc;
   color: var(--color-primary-dark);
-  padding: 7px 10px 6px;
+  padding: 8px 12px 7px;
   text-align: center;
-  box-shadow: 0 6px 16px rgba(15, 118, 110, 0.08);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
 .cal-day-primary-total span {
   grid-column: 1 / -1;
-  color: #0f766e;
+  color: #64748b;
   font-size: 9px;
   font-weight: 900;
   line-height: 1;
@@ -420,15 +422,15 @@ body.biomasa-calendar-board-open .mx-app-shell {
 }
 
 .cal-day-primary-total strong {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 900;
   line-height: 0.95;
   letter-spacing: 0;
 }
 
 .cal-day-primary-total em {
-  color: #0f766e;
-  font-size: 10px;
+  color: #475569;
+  font-size: 11px;
   font-style: normal;
   font-weight: 900;
   line-height: 1.1;
@@ -446,12 +448,10 @@ body.biomasa-calendar-board-open .mx-app-shell {
   align-items: center;
   justify-content: center;
   flex: 1;
-  min-height: 48px;
-  border: 1px dashed #e2e8f0;
-  border-radius: 12px;
-  color: #94a3b8;
-  font-size: 10px;
-  font-weight: 800;
+  min-height: 32px;
+  color: #cbd5e1;
+  font-size: 16px;
+  font-weight: 700;
   text-align: center;
 }
 
@@ -517,8 +517,9 @@ body.biomasa-calendar-board-open .mx-app-shell {
 .cal-day-meta-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
   width: 100%;
   min-height: 18px;
 }
@@ -527,33 +528,42 @@ body.biomasa-calendar-board-open .mx-app-shell {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  border-radius: 999px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 3px 7px;
-  color: var(--color-text-muted);
-  font-size: 9px;
+  gap: 3px;
+  color: #64748b;
+  font-size: 10px;
   font-weight: 800;
   line-height: 1.1;
   text-align: center;
-  margin-left: 0;
   white-space: nowrap;
+}
+
+.cal-day-provider-count svg {
+  color: #94a3b8;
+}
+
+.cal-day-provider-count b {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 900;
 }
 
 .cal-day-adjust-badge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  gap: 4px;
   flex: 0 0 auto;
+  min-width: 58px;
+  max-width: none;
   border: 1px solid #fed7aa;
   border-radius: 999px;
   background: #fff7ed;
   color: #c2410c;
-  padding: 3px 6px;
+  padding: 3px 7px;
   font-size: 9px;
   font-weight: 900;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .cal-day-adjust-badge.is-canceled {
@@ -693,17 +703,21 @@ body.biomasa-calendar-board-open .mx-app-shell {
 }
 
 .harvest-calendar-shell.board-mode .cal-day-primary-total {
-  min-width: 74px;
-  padding: 10px 12px 8px;
+  min-width: 96px;
+  padding: 12px 14px 10px;
 }
 
 .harvest-calendar-shell.board-mode .cal-day-primary-total strong {
-  font-size: 28px;
+  font-size: 32px;
 }
 
 .harvest-calendar-shell.board-mode .cal-day-primary-total em,
 .harvest-calendar-shell.board-mode .cal-day-primary-total span {
   font-size: 12px;
+}
+
+.harvest-calendar-shell.board-mode .cal-day-empty {
+  font-size: 20px;
 }
 
 .harvest-calendar-shell.board-mode .cal-day-product-chip {
@@ -785,16 +799,16 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .harvest-month-summary {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .harvest-month-total-card {
   display: grid;
   gap: 5px;
-  border: 1px solid #ccfbf1;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #f0fdfa 0%, #ffffff 100%);
-  padding: 14px;
+  border: 1px solid #d7eee9;
+  border-radius: 12px;
+  background: #f8fffc;
+  padding: 13px 14px;
 }
 
 .harvest-month-total-card span {
@@ -819,14 +833,15 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .harvest-month-section {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .harvest-month-section h5 {
-  margin: 0;
-  color: var(--color-text);
-  font-size: 12px;
+  margin: 2px 0 4px;
+  color: #475569;
+  font-size: 10px;
   font-weight: var(--weight-bold);
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
@@ -835,9 +850,9 @@ body.biomasa-calendar-board-open .mx-app-shell {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
-  border-bottom: 1px solid #edf2f7;
+  border-bottom: 1px solid #eef2f7;
   background: transparent;
-  padding: 7px 2px;
+  padding: 6px 0;
 }
 
 .harvest-month-row:last-child {
@@ -848,7 +863,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
   display: block;
   overflow: hidden;
   color: var(--color-text);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: var(--weight-bold);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -858,7 +873,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
 .harvest-month-empty,
 .harvest-month-hint {
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: var(--weight-semibold);
 }
 
@@ -872,17 +887,18 @@ body.biomasa-calendar-board-open .mx-app-shell {
 .harvest-month-products {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
 
 .harvest-month-products .harvest-product-pill {
-  padding: 4px 7px;
+  border-left-width: 2px;
+  padding: 3px 6px;
   font-size: 9px !important;
 }
 
 .harvest-month-hint {
-  border-top: 1px solid var(--color-border);
-  padding-top: 12px;
+  border-top: 1px solid #eef2f7;
+  padding-top: 10px;
   line-height: 1.4;
 }
 
