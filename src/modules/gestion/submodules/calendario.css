@@ -148,11 +148,15 @@
 
 .cal-filters {
   display: grid;
-  grid-template-columns: minmax(320px, 1fr) 220px 190px;
+  grid-template-columns: minmax(320px, 1fr) 190px 220px 190px;
   gap: 12px;
   padding: 14px 22px;
   border-bottom: 1px solid #e2e8f0;
   background: #ffffff;
+}
+
+.cal-filters.is-agenda {
+  grid-template-columns: minmax(320px, 1fr) 220px 220px;
 }
 
 .cal-search-box,
@@ -458,6 +462,11 @@
   color: #c2410c;
 }
 
+.cal-status-chip.is-cancelled {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
 .cal-status-chip.is-overdue {
   background: #fee2e2;
   color: #b91c1c;
@@ -555,6 +564,38 @@
   overflow-x: auto;
 }
 
+.cal-view-context {
+  padding: 16px 18px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.cal-view-context span {
+  display: block;
+  color: #0f766e;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.cal-view-context strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.cal-view-context p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+.cal-view-context.is-planning {
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+}
+
 .cal-activity-table {
   width: 100%;
   border-collapse: separate;
@@ -612,13 +653,14 @@
 .cal-agenda-list {
   display: grid;
   gap: 0;
+  background: #ffffff;
 }
 
 .cal-agenda-day {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);
   gap: 18px;
-  padding: 18px 22px;
+  padding: 20px 22px;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -644,6 +686,137 @@
   gap: 10px;
 }
 
+.cal-timeline-items {
+  position: relative;
+  display: grid;
+  gap: 12px;
+}
+
+.cal-timeline-items::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 64px;
+  width: 1px;
+  background: #e2e8f0;
+}
+
+.cal-timeline-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px 24px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.cal-timeline-time {
+  padding-top: 8px;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-align: right;
+}
+
+.cal-timeline-dot {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  margin-top: 5px;
+  border: 1px solid var(--event-border);
+  border-radius: 999px;
+  background: var(--event-bg);
+  color: var(--event-color);
+  display: grid;
+  place-items: center;
+}
+
+.cal-timeline-content {
+  padding: 12px;
+  border: 1px solid var(--event-border);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.cal-timeline-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.cal-timeline-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cal-timeline-title span {
+  color: var(--event-color);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.cal-timeline-title strong {
+  color: #0f172a;
+  font-size: 0.94rem;
+  font-weight: 850;
+}
+
+.cal-timeline-content p {
+  margin: 4px 0 0;
+  color: #475569;
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.cal-timeline-content small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.cal-timeline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.cal-timeline-actions button {
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid #dbe4ef;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.cal-timeline-actions button:hover:not(:disabled) {
+  background: #f0fdfa;
+  border-color: #99f6e4;
+  color: #0f766e;
+}
+
+.cal-timeline-actions button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  background: #f8fafc;
+}
+
 @media (max-width: 1180px) {
   .calendario-header-bar {
     align-items: flex-start;
@@ -652,6 +825,7 @@
 
   .cal-toolbar,
   .cal-filters,
+  .cal-filters.is-agenda,
   .cal-content-grid {
     grid-template-columns: 1fr;
   }
@@ -698,5 +872,19 @@
 
   .cal-agenda-day {
     grid-template-columns: 1fr;
+  }
+
+  .cal-timeline-items::before {
+    left: 10px;
+  }
+
+  .cal-timeline-item {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
+  .cal-timeline-time {
+    grid-column: 1 / -1;
+    text-align: left;
+    padding: 0;
   }
 }

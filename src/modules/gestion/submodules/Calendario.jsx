@@ -13,6 +13,11 @@ import {
   PauseCircle,
   Phone,
   Search,
+  CalendarClock,
+  Check,
+  Pencil,
+  RotateCcw,
+  XCircle,
   Table2,
   Target,
   Users,
@@ -58,9 +63,26 @@ const STATUS_CONFIG = {
   activo: { label: 'Activo', className: 'is-active' },
   pendiente: { label: 'Pendiente', className: 'is-pending' },
   pausado: { label: 'Pausado', className: 'is-paused' },
+  cancelado: { label: 'Cancelado', className: 'is-cancelled' },
+  cancelada: { label: 'Cancelado', className: 'is-cancelled' },
+  cancelled: { label: 'Cancelado', className: 'is-cancelled' },
   vencido: { label: 'Vencido', className: 'is-overdue' },
   default: { label: 'Pendiente', className: 'is-pending' },
 };
+
+const AGENDA_RANGE_OPTIONS = [
+  { id: 'today', label: 'Hoy' },
+  { id: '7d', label: 'Proximos 7 dias' },
+  { id: '30d', label: 'Proximos 30 dias' },
+  { id: 'pending', label: 'Todas las pendientes' },
+];
+
+const LIST_DATE_OPTIONS = [
+  { id: 'all', label: 'Todas las fechas' },
+  { id: 'month', label: 'Mes visible' },
+  { id: 'future', label: 'Programadas' },
+  { id: 'past', label: 'Historico' },
+];
 
 const PAUSE_REASON_LABELS = {
   esperando_crecimiento: 'Esperando crecimiento',
@@ -111,6 +133,18 @@ function formatDayHeading(date) {
 
 function getEventDate(ev) {
   return parseLocalDate(ev.date || ev.fecha || ev.fechaActividad || ev.fechaProximaAccion || ev.createdAt);
+}
+
+function startOfDay(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfDay(date) {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
 }
 
 function getEventTime(ev) {
@@ -183,6 +217,21 @@ function getTypeConfig(ev) {
 function getStatusConfig(ev) {
   const status = String(ev.estado || ev.status || ev.seguimientoEstado || '').toLowerCase();
   return STATUS_CONFIG[status] || STATUS_CONFIG.default;
+}
+
+function getEventStatusKey(ev) {
+  return getStatusConfig(ev).className;
+}
+
+function isPlanningEvent(ev) {
+  const status = getEventStatusKey(ev);
+  return status === 'is-pending' || status === 'is-active' || status === 'is-paused' || status === 'is-overdue';
+}
+
+function isFutureOrToday(ev) {
+  const date = getEventDate(ev);
+  if (!date) return false;
+  return date.getTime() >= startOfDay(new Date()).getTime();
 }
 
 function getEventTitle(ev) {
@@ -260,6 +309,40 @@ function EventCard({ event, onSelect }) {
   );
 }
 
+function AgendaTimelineItem({ event, onSelect }) {
+  const cfg = getTypeConfig(event);
+  const status = getStatusConfig(event);
+  const Icon = cfg.icon;
+  const time = getEventTime(event);
+
+  return (
+    <article className="cal-timeline-item" style={{ '--event-color': cfg.color, '--event-bg': cfg.bg, '--event-border': cfg.border }}>
+      <div className="cal-timeline-time">{time || '--:--'}</div>
+      <div className="cal-timeline-dot"><Icon size={15} /></div>
+      <div className="cal-timeline-content">
+        <div className="cal-timeline-main">
+          <div>
+            <div className="cal-timeline-title">
+              <span>{cfg.label}</span>
+              <strong>{getEventTitle(event)}</strong>
+            </div>
+            <p>{getEventProvider(event)}</p>
+            {getEventDescription(event) ? <small>{getEventDescription(event)}</small> : null}
+          </div>
+          <span className={`cal-status-chip ${status.className}`}>{status.label}</span>
+        </div>
+        <div className="cal-timeline-actions" aria-label="Acciones de agenda">
+          <button type="button" onClick={() => onSelect(event)} title="Ver en calendario"><Eye size={14} /> Ver</button>
+          <button type="button" onClick={() => onSelect(event)} title="Editar actividad"><Pencil size={14} /> Editar</button>
+          <button type="button" disabled title="Completar requiere flujo de actualizacion"><Check size={14} /> Completar</button>
+          <button type="button" disabled title="Reprogramar requiere flujo de actualizacion"><RotateCcw size={14} /> Reprogramar</button>
+          <button type="button" disabled title="Cancelar requiere flujo de actualizacion"><XCircle size={14} /> Cancelar</button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function Calendario() {
   const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -272,6 +355,8 @@ export default function Calendario() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [agendaRange, setAgendaRange] = useState('7d');
+  const [listDateFilter, setListDateFilter] = useState('all');
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['calendario-agenda'] });
@@ -285,8 +370,8 @@ export default function Calendario() {
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  const from = new Date(year, month - 1, 1).toISOString();
-  const to = new Date(year, month + 2, 0).toISOString();
+  const from = new Date(year - 1, month, 1).toISOString();
+  const to = new Date(year + 1, month + 1, 0).toISOString();
 
   const { data: agendaRes, isLoading: loadingAgenda } = useCalendarioAgenda({ from, to });
   const { data: activeRes, isLoading: loadingActive } = useOportunidades({ seguimientoEstado: 'activo', limit: 200 });
@@ -389,27 +474,51 @@ export default function Calendario() {
   const daySelectedEvents = selectedDate ? eventsByDay.get(dateKeyFromDate(selectedDate)) || [] : [];
   const weekDays = useMemo(() => getWeekDays(currentDate), [currentDate]);
 
+  const timelineEvents = useMemo(() => {
+    const todayStart = startOfDay(new Date());
+    const todayEnd = endOfDay(new Date());
+    const sevenDaysEnd = endOfDay(new Date());
+    sevenDaysEnd.setDate(todayEnd.getDate() + 7);
+    const thirtyDaysEnd = endOfDay(new Date());
+    thirtyDaysEnd.setDate(todayEnd.getDate() + 30);
+
+    return filteredEvents
+      .filter((ev) => isPlanningEvent(ev) && isFutureOrToday(ev))
+      .filter((ev) => {
+        const date = getEventDate(ev);
+        if (!date) return false;
+        if (agendaRange === 'today') return date >= todayStart && date <= todayEnd;
+        if (agendaRange === '7d') return date >= todayStart && date <= sevenDaysEnd;
+        if (agendaRange === '30d') return date >= todayStart && date <= thirtyDaysEnd;
+        return true;
+      })
+      .sort(compareEventsOldestFirst);
+  }, [filteredEvents, agendaRange]);
+
   const agendaGroups = useMemo(() => {
     const groups = new Map();
-    filteredEvents.forEach((ev) => {
+    timelineEvents.forEach((ev) => {
       const date = getEventDate(ev);
       const key = dateKeyFromDate(date);
       if (!groups.has(key)) groups.set(key, { date, items: [] });
       groups.get(key).items.push(ev);
     });
     return Array.from(groups.values())
-      .map((group) => ({ ...group, items: [...group.items].sort(compareEventsNewestFirst) }))
-      .sort((a, b) => b.date - a.date);
-  }, [filteredEvents]);
+      .map((group) => ({ ...group, items: [...group.items].sort(compareEventsOldestFirst) }))
+      .sort((a, b) => a.date - b.date);
+  }, [timelineEvents]);
 
   const visibleListEvents = useMemo(() => {
     const monthStart = new Date(year, month, 1).getTime();
     const monthEnd = new Date(year, month + 1, 0, 23, 59, 59).getTime();
     return filteredEvents.filter((ev) => {
       const date = getEventDate(ev)?.getTime();
-      return date >= monthStart && date <= monthEnd;
+      if (listDateFilter === 'month') return date >= monthStart && date <= monthEnd;
+      if (listDateFilter === 'future') return isFutureOrToday(ev);
+      if (listDateFilter === 'past') return date < startOfDay(new Date()).getTime();
+      return true;
     }).sort(compareEventsNewestFirst);
-  }, [filteredEvents, month, year]);
+  }, [filteredEvents, listDateFilter, month, year]);
 
   const changeMonth = (delta) => {
     const next = new Date(currentDate.getFullYear(), currentDate.getMonth() + delta, 1);
@@ -493,11 +602,26 @@ export default function Calendario() {
         </div>
 
         {(viewMode === 'list' || viewMode === 'agenda') && (
-          <div className="cal-filters">
+          <div className={`cal-filters ${viewMode === 'agenda' ? 'is-agenda' : ''}`}>
             <div className="cal-search-box">
               <Search size={17} />
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar actividad, proveedor o responsable..." />
             </div>
+            {viewMode === 'list' ? (
+              <label className="cal-filter-select">
+                <CalendarClock size={15} />
+                <select value={listDateFilter} onChange={(e) => setListDateFilter(e.target.value)}>
+                  {LIST_DATE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                </select>
+              </label>
+            ) : (
+              <label className="cal-filter-select">
+                <CalendarClock size={15} />
+                <select value={agendaRange} onChange={(e) => setAgendaRange(e.target.value)}>
+                  {AGENDA_RANGE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                </select>
+              </label>
+            )}
             <label className="cal-filter-select">
               <Filter size={15} />
               <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
@@ -505,16 +629,19 @@ export default function Calendario() {
                 {availableTypes.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
               </select>
             </label>
-            <label className="cal-filter-select">
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="all">Todos los estados</option>
-                <option value="is-pending">Pendiente</option>
-                <option value="is-active">Activo</option>
-                <option value="is-done">Completado</option>
-                <option value="is-paused">Pausado</option>
-                <option value="is-overdue">Vencido</option>
-              </select>
-            </label>
+            {viewMode === 'list' && (
+              <label className="cal-filter-select">
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                  <option value="all">Todos los estados</option>
+                  <option value="is-pending">Pendiente</option>
+                  <option value="is-active">Activo</option>
+                  <option value="is-done">Completado</option>
+                  <option value="is-paused">Pausado</option>
+                  <option value="is-cancelled">Cancelado</option>
+                  <option value="is-overdue">Vencido</option>
+                </select>
+              </label>
+            )}
           </div>
         )}
 
@@ -582,6 +709,11 @@ export default function Calendario() {
 
               {viewMode === 'list' && (
                 <div className="cal-table-wrap">
+                  <div className="cal-view-context">
+                    <span>Gestion / historial</span>
+                    <strong>{visibleListEvents.length} actividades registradas</strong>
+                    <p>Incluye actividades ejecutadas, pendientes, activas, pausadas y canceladas disponibles en el periodo cargado.</p>
+                  </div>
                   <table className="cal-activity-table">
                     <thead>
                       <tr>
@@ -626,17 +758,26 @@ export default function Calendario() {
 
               {viewMode === 'agenda' && (
                 <div className="cal-agenda-list">
+                  <div className="cal-view-context is-planning">
+                    <span>Planificacion / agenda</span>
+                    <strong>{timelineEvents.length} actividades futuras</strong>
+                    <p>Solo muestra compromisos programados hacia adelante que estan pendientes, activos o pausados.</p>
+                  </div>
                   {agendaGroups.length ? agendaGroups.map((group) => (
                     <section key={dateKeyFromDate(group.date)} className="cal-agenda-day">
                       <div className="cal-agenda-date">
                         <strong>{formatDayHeading(group.date)}</strong>
                         <span>{formatShortDate(group.date)}</span>
                       </div>
-                      <div className="cal-agenda-items">
-                        {group.items.map((ev) => <EventCard key={ev.id || `${getEventTitle(ev)}-${getEventTime(ev)}`} event={ev} onSelect={selectEventDay} />)}
+                      <div className="cal-timeline-items">
+                        {group.items.map((ev) => <AgendaTimelineItem key={ev.id || `${getEventTitle(ev)}-${getEventTime(ev)}`} event={ev} onSelect={selectEventDay} />)}
                       </div>
                     </section>
-                  )) : <div className="cal-empty-table">Sin actividades para mostrar.</div>}
+                  )) : (
+                    <div className="cal-empty-table">
+                      Sin actividades futuras para el filtro seleccionado.
+                    </div>
+                  )}
                 </div>
               )}
             </main>
