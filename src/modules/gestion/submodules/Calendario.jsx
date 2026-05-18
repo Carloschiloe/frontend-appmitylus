@@ -1,41 +1,65 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
+  CalendarDays,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock,
+  Eye,
+  Filter,
+  ListChecks,
   MapPin,
   MessageSquare,
-  Beaker,
-  Phone,
-  Users,
-  CheckCircle2,
   PauseCircle,
+  Phone,
+  Search,
+  Table2,
   Target,
+  Users,
+  Beaker,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../api/apiClient';
-import { 
-  useCalendarioAgenda, 
-  useOportunidades 
+import {
+  useCalendarioAgenda,
+  useOportunidades,
 } from '../hooks/useGestionQueries';
 import './calendario.css';
 
-const DOW = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const DOW = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
+const VIEW_OPTIONS = [
+  { id: 'calendar', label: 'Calendario', icon: CalendarDays },
+  { id: 'week', label: 'Semana', icon: Table2 },
+  { id: 'list', label: 'Lista', icon: ListChecks },
+  { id: 'agenda', label: 'Agenda', icon: Clock },
+];
+
 const TYPE_CONFIG = {
-  interaccion: { icon: MessageSquare, color: '#6366f1', label: 'Interacción' },
-  llamada: { icon: Phone, color: '#6366f1', label: 'Llamada' },
-  reunion: { icon: Users, color: '#f59e0b', label: 'Reunión' },
-  tarea: { icon: CheckCircle2, color: '#10b981', label: 'Compromiso' },
-  visita: { icon: MapPin, color: '#0ea5e9', label: 'Visita' },
-  muestreo: { icon: Beaker, color: '#f43f5e', label: 'Muestreo' },
-  seguimiento: { icon: Target, color: '#0f766e', label: 'Seguimiento activo' },
-  pausado: { icon: PauseCircle, color: '#f59e0b', label: 'Pausado' },
-  default: { icon: Clock, color: '#94a3b8', label: 'Evento' },
+  muestreo: { icon: Beaker, color: '#0f766e', bg: '#ecfdf5', border: '#99f6e4', label: 'Muestreo' },
+  visita: { icon: MapPin, color: '#0369a1', bg: '#eff6ff', border: '#bfdbfe', label: 'Visita' },
+  seguimiento: { icon: Target, color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', label: 'Seguimiento' },
+  llamada: { icon: Phone, color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', label: 'Llamada' },
+  reunion: { icon: Users, color: '#b45309', bg: '#fffbeb', border: '#fde68a', label: 'Negociacion' },
+  negociacion: { icon: Users, color: '#b45309', bg: '#fffbeb', border: '#fde68a', label: 'Negociacion' },
+  tarea: { icon: CheckCircle2, color: '#475569', bg: '#f8fafc', border: '#e2e8f0', label: 'Tarea interna' },
+  interaccion: { icon: MessageSquare, color: '#4f46e5', bg: '#eef2ff', border: '#c7d2fe', label: 'Seguimiento' },
+  pausado: { icon: PauseCircle, color: '#d97706', bg: '#fff7ed', border: '#fed7aa', label: 'Pausado' },
+  default: { icon: Clock, color: '#64748b', bg: '#f8fafc', border: '#e2e8f0', label: 'Otro' },
+};
+
+const STATUS_CONFIG = {
+  completado: { label: 'Completado', className: 'is-done' },
+  completed: { label: 'Completado', className: 'is-done' },
+  cerrado: { label: 'Cerrado', className: 'is-done' },
+  activo: { label: 'Activo', className: 'is-active' },
+  pendiente: { label: 'Pendiente', className: 'is-pending' },
+  pausado: { label: 'Pausado', className: 'is-paused' },
+  vencido: { label: 'Vencido', className: 'is-overdue' },
+  default: { label: 'Pendiente', className: 'is-pending' },
 };
 
 const PAUSE_REASON_LABELS = {
@@ -43,20 +67,75 @@ const PAUSE_REASON_LABELS = {
   esperando_disponibilidad: 'Esperando disponibilidad',
   esperando_respuesta: 'Esperando respuesta',
   esperando_resultado_muestra: 'Esperando resultado de muestra',
-  esperando_decision_interna: 'Esperando decisión interna',
+  esperando_decision_interna: 'Esperando decision interna',
 };
 
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
   const s = String(dateStr).slice(0, 10);
   const [y, m, d] = s.split('-').map(Number);
-  if (!y || !m || !d) return new Date(dateStr);
+  if (!y || !m || !d) {
+    const fallback = new Date(dateStr);
+    return Number.isNaN(fallback.getTime()) ? null : fallback;
+  }
   return new Date(y, m - 1, d);
 }
 
 function toList(payload) {
   if (Array.isArray(payload)) return payload;
   return payload?.items || payload?.data || [];
+}
+
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+function dateKeyFromDate(date) {
+  if (!date) return '';
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function formatShortDate(date) {
+  if (!date) return '-';
+  return `${pad2(date.getDate())}-${pad2(date.getMonth() + 1)}-${date.getFullYear()}`;
+}
+
+function formatDayHeading(date) {
+  if (!date) return 'Sin fecha';
+  return date.toLocaleDateString('es-CL', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+  });
+}
+
+function getEventDate(ev) {
+  return parseLocalDate(ev.date || ev.fecha || ev.fechaActividad || ev.fechaProximaAccion || ev.createdAt);
+}
+
+function getEventTime(ev) {
+  const raw = ev.hora || ev.time || ev.fechaHora || ev.startsAt || ev.date;
+  if (!raw) return '';
+  const text = String(raw);
+  const match = text.match(/(\d{1,2}):(\d{2})/);
+  if (match) return `${pad2(match[1])}:${match[2]}`;
+  const date = new Date(raw);
+  if (!Number.isNaN(date.getTime()) && (date.getHours() || date.getMinutes())) {
+    return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+  }
+  return '';
+}
+
+function normalizeKind(value) {
+  const text = String(value || '').toLowerCase();
+  if (text.includes('muestra') || text.includes('muestreo')) return 'muestreo';
+  if (text.includes('visita')) return 'visita';
+  if (text.includes('llamada') || text.includes('telefono')) return 'llamada';
+  if (text.includes('negoci') || text.includes('reunion')) return 'negociacion';
+  if (text.includes('tarea')) return 'tarea';
+  if (text.includes('paus')) return 'pausado';
+  if (text.includes('seguim')) return 'seguimiento';
+  return value || 'default';
 }
 
 function getPauseReasonLabel(value) {
@@ -71,18 +150,116 @@ function buildFollowupEvent(item, kind) {
     date,
     proveedorNombre: item.proveedorNombre || 'Proveedor sin nombre',
     contactoNombre: item.proveedorNombre || 'Proveedor sin nombre',
-    title: item.proximaAccion || (kind === 'pausado' ? 'Revisar caso pausado' : 'Definir próximo paso'),
+    title: item.proximaAccion || (kind === 'pausado' ? 'Revisar caso pausado' : 'Definir proximo paso'),
     resumen: kind === 'pausado'
       ? getPauseReasonLabel(item.motivoPausa)
       : (item.notasTrato || item.estado || 'Seguimiento pendiente'),
     proximoPaso: item.proximaAccion || '',
+    estado: kind === 'pausado' ? 'pausado' : 'activo',
+    responsable: item.responsableNombre || item.responsable || '',
   };
+}
+
+function getEventType(ev) {
+  return normalizeKind(ev.kind || ev.tipo || ev.type || ev.categoria || ev.actividadTipo);
+}
+
+function getTypeConfig(ev) {
+  return TYPE_CONFIG[getEventType(ev)] || TYPE_CONFIG.default;
+}
+
+function getStatusConfig(ev) {
+  const status = String(ev.estado || ev.status || ev.seguimientoEstado || '').toLowerCase();
+  return STATUS_CONFIG[status] || STATUS_CONFIG.default;
+}
+
+function getEventTitle(ev) {
+  return ev.title || ev.titulo || ev.actividad || ev.proximaAccion || ev.asunto || 'Actividad';
+}
+
+function getEventProvider(ev) {
+  return ev.proveedorNombre || ev.contactoNombre || ev.clienteNombre || ev.empresaNombre || ev.proveedor || 'Sin proveedor';
+}
+
+function getEventResponsible(ev) {
+  return ev.responsableNombre || ev.responsable || ev.usuarioNombre || ev.createdByName || '-';
+}
+
+function getEventDescription(ev) {
+  return ev.resumen || ev.detalle || ev.descripcion || ev.observacion || ev.notas || '';
+}
+
+function getWeekStart(date) {
+  const base = new Date(date);
+  const offset = (base.getDay() + 6) % 7;
+  base.setDate(base.getDate() - offset);
+  base.setHours(0, 0, 0, 0);
+  return base;
+}
+
+function getWeekDays(currentDate) {
+  const start = getWeekStart(currentDate);
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(start);
+    day.setDate(start.getDate() + index);
+    return day;
+  });
+}
+
+function EventPill({ event, compact = false }) {
+  const cfg = getTypeConfig(event);
+  const Icon = cfg.icon;
+  return (
+    <div
+      className={`cal-event-pill ${compact ? 'is-compact' : ''}`}
+      style={{ '--event-color': cfg.color, '--event-bg': cfg.bg, '--event-border': cfg.border }}
+      title={`${getEventTitle(event)} - ${getEventProvider(event)}`}
+    >
+      <Icon size={compact ? 12 : 14} />
+      <span>{compact ? getEventProvider(event) : getEventTitle(event)}</span>
+    </div>
+  );
+}
+
+function EventCard({ event, onSelect }) {
+  const cfg = getTypeConfig(event);
+  const status = getStatusConfig(event);
+  const Icon = cfg.icon;
+  const time = getEventTime(event);
+
+  return (
+    <article className="cal-event-card-modern" style={{ '--event-color': cfg.color, '--event-bg': cfg.bg, '--event-border': cfg.border }}>
+      <div className="cal-event-card-icon"><Icon size={16} /></div>
+      <div className="cal-event-card-body">
+        <div className="cal-event-card-topline">
+          <span>{time || 'Sin hora'}</span>
+          <span className={`cal-status-chip ${status.className}`}>{status.label}</span>
+        </div>
+        <h4>{getEventTitle(event)}</h4>
+        <p>{getEventProvider(event)}</p>
+        {getEventDescription(event) ? <span className="cal-event-card-note">{getEventDescription(event)}</span> : null}
+      </div>
+      {onSelect ? (
+        <button type="button" className="cal-icon-action" onClick={() => onSelect(event)} title="Ver actividad">
+          <Eye size={15} />
+        </button>
+      ) : null}
+    </article>
+  );
 }
 
 export default function Calendario() {
   const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState(null);
+  const [selectedDay, setSelectedDay] = useState({
+    day: new Date().getDate(),
+    month: new Date().getMonth(),
+    year: new Date().getFullYear(),
+  });
+  const [viewMode, setViewMode] = useState('calendar');
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['calendario-agenda'] });
@@ -99,7 +276,6 @@ export default function Calendario() {
   const from = new Date(year, month - 1, 1).toISOString();
   const to = new Date(year, month + 2, 0).toISOString();
 
-  // 1. Carga de datos con React Query
   const { data: agendaRes, isLoading: loadingAgenda } = useCalendarioAgenda({ from, to });
   const { data: activeRes, isLoading: loadingActive } = useOportunidades({ seguimientoEstado: 'activo', limit: 200 });
   const { data: pausedRes, isLoading: loadingPaused } = useOportunidades({ seguimientoEstado: 'pausado', limit: 200 });
@@ -108,7 +284,7 @@ export default function Calendario() {
 
   const data = useMemo(() => {
     if (loading) return { events: [], activeCount: 0, pausedCount: 0 };
-    
+
     const agenda = toList(agendaRes);
     const active = toList(activeRes);
     const paused = toList(pausedRes);
@@ -124,15 +300,50 @@ export default function Calendario() {
     };
   }, [agendaRes, activeRes, pausedRes, loading]);
 
-  const events = useMemo(() => data?.events || [], [data]);
+  const events = useMemo(() => {
+    return (data?.events || [])
+      .filter((ev) => getEventDate(ev))
+      .sort((a, b) => {
+        const ad = getEventDate(a)?.getTime() || 0;
+        const bd = getEventDate(b)?.getTime() || 0;
+        return ad - bd || getEventTime(a).localeCompare(getEventTime(b));
+      });
+  }, [data]);
+
+  const availableTypes = useMemo(() => {
+    const set = new Map();
+    events.forEach((ev) => {
+      const key = getEventType(ev);
+      const cfg = TYPE_CONFIG[key] || TYPE_CONFIG.default;
+      set.set(key, cfg.label);
+    });
+    return Array.from(set.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [events]);
+
+  const filteredEvents = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return events.filter((ev) => {
+      const type = getEventType(ev);
+      const status = getStatusConfig(ev);
+      const haystack = [
+        getEventTitle(ev),
+        getEventProvider(ev),
+        getEventResponsible(ev),
+        getEventDescription(ev),
+        type,
+      ].join(' ').toLowerCase();
+
+      if (term && !haystack.includes(term)) return false;
+      if (typeFilter !== 'all' && type !== typeFilter) return false;
+      if (statusFilter !== 'all' && status.className !== statusFilter) return false;
+      return true;
+    });
+  }, [events, search, typeFilter, statusFilter]);
 
   const calendarGrid = useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const startOffset = (firstDay.getDay() + 6) % 7;
-
     const days = [];
     const prevMonthLastDay = new Date(year, month, 0).getDate();
 
@@ -147,139 +358,301 @@ export default function Calendario() {
       days.push({ day: i, month: month + 1, year, isCurrentMonth: false });
     }
     return days;
-  }, [currentDate]);
+  }, [month, year]);
 
-  const getDayEvents = useCallback((day, month, year) => {
-    return events.filter((ev) => {
-      const d = parseLocalDate(ev.date);
-      if (!d) return false;
-      return d.getDate() === day && d.getMonth() === month && d.getFullYear() === year;
+  const eventsByDay = useMemo(() => {
+    const map = new Map();
+    filteredEvents.forEach((ev) => {
+      const date = getEventDate(ev);
+      const key = dateKeyFromDate(date);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(ev);
     });
-  }, [events]);
+    return map;
+  }, [filteredEvents]);
+
+  const getDayEvents = useCallback((day, monthValue, yearValue) => {
+    const date = new Date(yearValue, monthValue, day);
+    return eventsByDay.get(dateKeyFromDate(date)) || [];
+  }, [eventsByDay]);
+
+  const selectedDate = selectedDay ? new Date(selectedDay.year, selectedDay.month, selectedDay.day) : null;
+  const daySelectedEvents = selectedDate ? eventsByDay.get(dateKeyFromDate(selectedDate)) || [] : [];
+  const weekDays = useMemo(() => getWeekDays(currentDate), [currentDate]);
+
+  const agendaGroups = useMemo(() => {
+    const groups = new Map();
+    filteredEvents.forEach((ev) => {
+      const date = getEventDate(ev);
+      const key = dateKeyFromDate(date);
+      if (!groups.has(key)) groups.set(key, { date, items: [] });
+      groups.get(key).items.push(ev);
+    });
+    return Array.from(groups.values()).sort((a, b) => a.date - b.date);
+  }, [filteredEvents]);
+
+  const visibleListEvents = useMemo(() => {
+    const monthStart = new Date(year, month, 1).getTime();
+    const monthEnd = new Date(year, month + 1, 0, 23, 59, 59).getTime();
+    return filteredEvents.filter((ev) => {
+      const date = getEventDate(ev)?.getTime();
+      return date >= monthStart && date <= monthEnd;
+    });
+  }, [filteredEvents, month, year]);
 
   const changeMonth = (delta) => {
     const next = new Date(currentDate.getFullYear(), currentDate.getMonth() + delta, 1);
     setCurrentDate(next);
-    setSelectedDay(null);
+    setSelectedDay({ day: 1, month: next.getMonth(), year: next.getFullYear() });
   };
 
-  const daySelectedEvents = useMemo(() => {
-    if (!selectedDay) return [];
-    return getDayEvents(selectedDay.day, selectedDay.month, selectedDay.year);
-  }, [selectedDay, getDayEvents]);
+  const changeWeek = (delta) => {
+    const next = new Date(currentDate);
+    next.setDate(currentDate.getDate() + (delta * 7));
+    setCurrentDate(next);
+    setSelectedDay({ day: next.getDate(), month: next.getMonth(), year: next.getFullYear() });
+  };
+
+  const changePeriod = (delta) => {
+    if (viewMode === 'week') changeWeek(delta);
+    else changeMonth(delta);
+  };
+
+  const selectEventDay = (event) => {
+    const date = getEventDate(event);
+    if (!date) return;
+    setSelectedDay({ day: date.getDate(), month: date.getMonth(), year: date.getFullYear() });
+    setCurrentDate(date);
+    setViewMode('calendar');
+  };
+
+  const periodLabel = viewMode === 'week'
+    ? `Semana ${pad2(weekDays[0].getDate())}-${MONTHS[weekDays[0].getMonth()].slice(0, 3)}`
+    : `${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
 
   return (
     <div className="calendario-main-wrapper">
-      <div className="calendario-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="calendario-header-bar">
         <div>
-          <h2 className="calendario-title-text" style={{ margin: 0 }}>Calendario de Actividades</h2>
-          <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-            Gestiona compromisos, visitas y seguimientos.
-          </p>
+          <h2 className="calendario-title-text">Calendario de Actividades</h2>
+          <p>Gestion operativa de compromisos, visitas, muestreos y seguimientos.</p>
         </div>
-        <div className="calendario-actions-bar" style={{ display: 'flex', alignItems: 'center' }}>
-          <div className="mx-badge mx-badge-info" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Target size={14} /> <strong>{data?.activeCount || 0}</strong> Seguimientos
-          </div>
-          <div className="mx-badge mx-badge-warning" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <PauseCircle size={14} /> <strong>{data?.pausedCount || 0}</strong> Pausados
-          </div>
+        <div className="calendario-actions-bar">
+          <div className="cal-kpi-soft"><Target size={15} /><strong>{data?.activeCount || 0}</strong><span>Seguimientos</span></div>
+          <div className="cal-kpi-soft warning"><PauseCircle size={15} /><strong>{data?.pausedCount || 0}</strong><span>Pausados</span></div>
         </div>
       </div>
 
-      <div className="calendario-layout-grid">
-        <div className="mx-card calendario-grid-card">
-          <div style={{ padding: '20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div className="calendario-month-nav">
-              <button className="calendario-nav-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={20} /></button>
-              <div className="calendario-nav-label">
-                {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
-              </div>
-              <button className="calendario-nav-btn" onClick={() => changeMonth(1)}><ChevronRight size={20} /></button>
-            </div>
-            <button className="mx-btn mx-btn-outline sm" onClick={() => setCurrentDate(new Date())}>Hoy</button>
-          </div>
-
-          <div className="calendario-dow-row">
-            {DOW.map(d => <div key={d} className="calendario-dow-cell">{d}</div>)}
-          </div>
-          <div className="calendario-days-grid">
-            {calendarGrid.map((day, idx) => {
-              const dayEvs = getDayEvents(day.day, day.month, day.year);
-              const isToday = new Date().getDate() === day.day && new Date().getMonth() === day.month && new Date().getFullYear() === day.year;
-              const isSelected = selectedDay?.day === day.day && selectedDay?.month === day.month && selectedDay?.year === day.year;
-
+      <section className="cal-shell">
+        <div className="cal-toolbar">
+          <div className="cal-view-switch" role="tablist" aria-label="Vista calendario">
+            {VIEW_OPTIONS.map((view) => {
+              const Icon = view.icon;
               return (
-                <div 
-                  key={idx} 
-                  className="calendario-day-cell"
-                  style={{ 
-                    background: isSelected ? 'var(--color-primary-50)' : day.isCurrentMonth ? 'var(--color-surface)' : '#f8fafc',
-                    boxShadow: isSelected ? 'inset 0 0 0 2px var(--color-primary)' : 'none'
-                  }}
-                  onClick={() => setSelectedDay(day)}
+                <button
+                  key={view.id}
+                  type="button"
+                  className={viewMode === view.id ? 'active' : ''}
+                  onClick={() => setViewMode(view.id)}
                 >
-                  <div className="calendario-day-header">
-                    <div className="calendario-day-number" style={{ 
-                      background: isToday ? 'var(--color-primary)' : 'transparent',
-                      color: isToday ? '#fff' : (day.isCurrentMonth ? 'var(--color-text)' : 'var(--color-text-muted)')
-                    }}>
-                      {day.day}
-                    </div>
-                    {dayEvs.length > 0 && <div className="calendario-day-count">{dayEvs.length} act</div>}
-                  </div>
-                  <div className="calendario-events-wrapper">
-                    {dayEvs.slice(0, 3).map((ev, i) => {
-                      const cfg = TYPE_CONFIG[ev.kind] || TYPE_CONFIG.default;
-                      return (
-                        <div key={i} className="calendario-event-badge" style={{ backgroundColor: cfg.color, color: '#fff' }} title={ev.title}>
-                          {ev.title}
-                        </div>
-                      );
-                    })}
-                    {dayEvs.length > 3 && <div className="calendario-event-more">+{dayEvs.length - 3} más</div>}
-                  </div>
-                </div>
+                  <Icon size={15} />
+                  {view.label}
+                </button>
               );
             })}
           </div>
-        </div>
 
-        <div className="mx-card calendario-aside">
-          <div className="calendario-aside-header">
-            <h3 className="calendario-aside-title">{selectedDay ? `${selectedDay.day} de ${MONTHS[selectedDay.month]}` : 'Agenda del día'}</h3>
-            <p className="calendario-aside-subtitle">{selectedDay ? 'Detalles de la fecha' : 'Selecciona un día en el calendario'}</p>
+          <div className="cal-period-nav">
+            <button type="button" onClick={() => changePeriod(-1)}><ChevronLeft size={18} /></button>
+            <strong>{periodLabel}</strong>
+            <button type="button" onClick={() => changePeriod(1)}><ChevronRight size={18} /></button>
           </div>
 
-          <div className="calendario-aside-list">
-            {daySelectedEvents.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-subtle)' }}>
-                <Clock size={32} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-                <p style={{ margin: 0 }}>No hay eventos para este día</p>
-              </div>
-            ) : (
-              daySelectedEvents.map((ev, i) => {
-                const cfg = TYPE_CONFIG[ev.kind] || TYPE_CONFIG.default;
-                const Icon = cfg.icon;
-                return (
-                  <div key={i} className="calendario-event-card">
-                    <div className="calendario-event-card-border" style={{ backgroundColor: cfg.color }} />
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                      <div style={{ color: cfg.color, marginTop: '2px' }}><Icon size={18} /></div>
-                      <div>
-                        <div className="calendario-event-card-type" style={{ color: cfg.color }}>{cfg.label}</div>
-                        <div className="calendario-event-card-title">{ev.title}</div>
-                        {ev.proveedorNombre && <div style={{ fontSize: '0.85rem', fontWeight: 600, marginTop: '4px' }}>{ev.proveedorNombre}</div>}
-                        {ev.resumen && <div className="calendario-event-card-desc">{ev.resumen}</div>}
-                      </div>
-                    </div>
+          <button
+            type="button"
+            className="mx-btn mx-btn-outline sm cal-today-btn"
+            onClick={() => {
+              const today = new Date();
+              setCurrentDate(today);
+              setSelectedDay({ day: today.getDate(), month: today.getMonth(), year: today.getFullYear() });
+            }}
+          >
+            Hoy
+          </button>
+        </div>
+
+        {(viewMode === 'list' || viewMode === 'agenda') && (
+          <div className="cal-filters">
+            <div className="cal-search-box">
+              <Search size={17} />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar actividad, proveedor o responsable..." />
+            </div>
+            <label className="cal-filter-select">
+              <Filter size={15} />
+              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                <option value="all">Todos los tipos</option>
+                {availableTypes.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+              </select>
+            </label>
+            <label className="cal-filter-select">
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="all">Todos los estados</option>
+                <option value="is-pending">Pendiente</option>
+                <option value="is-active">Activo</option>
+                <option value="is-done">Completado</option>
+                <option value="is-paused">Pausado</option>
+                <option value="is-overdue">Vencido</option>
+              </select>
+            </label>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="mx-loading-placeholder">
+            <div className="mx-spinner" />
+            <p>Cargando agenda...</p>
+          </div>
+        ) : (
+          <div className={`cal-content-grid ${viewMode !== 'calendar' ? 'is-wide' : ''}`}>
+            <main className="cal-main-panel">
+              {viewMode === 'calendar' && (
+                <>
+                  <div className="cal-dow-row">
+                    {DOW.map((day) => <div key={day} className="cal-dow-cell">{day}</div>)}
                   </div>
-                );
-              })
+                  <div className="cal-days-grid">
+                    {calendarGrid.map((day, idx) => {
+                      const dayEvs = getDayEvents(day.day, day.month, day.year);
+                      const cellDate = new Date(day.year, day.month, day.day);
+                      const isToday = dateKeyFromDate(new Date()) === dateKeyFromDate(cellDate);
+                      const isSelected = selectedDay?.day === day.day && selectedDay?.month === day.month && selectedDay?.year === day.year;
+
+                      return (
+                        <button
+                          type="button"
+                          key={`${day.year}-${day.month}-${day.day}-${idx}`}
+                          className={`cal-day-cell ${day.isCurrentMonth ? '' : 'is-muted'} ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}`}
+                          onClick={() => setSelectedDay(day)}
+                        >
+                          <div className="cal-day-header">
+                            <span className="cal-day-number">{day.day}</span>
+                            {dayEvs.length > 0 ? <span className="cal-day-count">{dayEvs.length}</span> : null}
+                          </div>
+                          <div className="cal-events-stack">
+                            {dayEvs.slice(0, 3).map((ev) => <EventPill key={ev.id || `${getEventTitle(ev)}-${getEventTime(ev)}`} event={ev} compact />)}
+                            {dayEvs.length > 3 ? <span className="cal-more-events">+{dayEvs.length - 3} mas</span> : null}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {viewMode === 'week' && (
+                <div className="cal-week-board">
+                  {weekDays.map((day) => {
+                    const dayEvents = eventsByDay.get(dateKeyFromDate(day)) || [];
+                    const isToday = dateKeyFromDate(day) === dateKeyFromDate(new Date());
+                    return (
+                      <section key={dateKeyFromDate(day)} className={`cal-week-column ${isToday ? 'is-today' : ''}`}>
+                        <header>
+                          <span>{DOW[(day.getDay() + 6) % 7]}</span>
+                          <strong>{day.getDate()}</strong>
+                        </header>
+                        <div className="cal-week-events">
+                          {dayEvents.length ? dayEvents.map((ev) => <EventCard key={ev.id || `${getEventTitle(ev)}-${getEventTime(ev)}`} event={ev} onSelect={selectEventDay} />) : <span className="cal-empty-dash">-</span>}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              )}
+
+              {viewMode === 'list' && (
+                <div className="cal-table-wrap">
+                  <table className="cal-activity-table">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Tipo</th>
+                        <th>Proveedor / Cliente</th>
+                        <th>Actividad</th>
+                        <th>Estado</th>
+                        <th>Responsable</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleListEvents.length ? visibleListEvents.map((ev) => {
+                        const cfg = getTypeConfig(ev);
+                        const Icon = cfg.icon;
+                        const status = getStatusConfig(ev);
+                        return (
+                          <tr key={ev.id || `${getEventTitle(ev)}-${getEventDate(ev)?.toISOString()}`}>
+                            <td>{formatShortDate(getEventDate(ev))}</td>
+                            <td>{getEventTime(ev) || '-'}</td>
+                            <td><span className="cal-type-chip" style={{ '--event-color': cfg.color, '--event-bg': cfg.bg, '--event-border': cfg.border }}><Icon size={13} />{cfg.label}</span></td>
+                            <td><strong>{getEventProvider(ev)}</strong></td>
+                            <td>{getEventTitle(ev)}</td>
+                            <td><span className={`cal-status-chip ${status.className}`}>{status.label}</span></td>
+                            <td>{getEventResponsible(ev)}</td>
+                            <td>
+                              <button type="button" className="cal-icon-action" onClick={() => selectEventDay(ev)} title="Ver en calendario">
+                                <Eye size={15} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      }) : (
+                        <tr><td colSpan="8"><div className="cal-empty-table">Sin actividades para los filtros seleccionados.</div></td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {viewMode === 'agenda' && (
+                <div className="cal-agenda-list">
+                  {agendaGroups.length ? agendaGroups.map((group) => (
+                    <section key={dateKeyFromDate(group.date)} className="cal-agenda-day">
+                      <div className="cal-agenda-date">
+                        <strong>{formatDayHeading(group.date)}</strong>
+                        <span>{formatShortDate(group.date)}</span>
+                      </div>
+                      <div className="cal-agenda-items">
+                        {group.items.map((ev) => <EventCard key={ev.id || `${getEventTitle(ev)}-${getEventTime(ev)}`} event={ev} onSelect={selectEventDay} />)}
+                      </div>
+                    </section>
+                  )) : <div className="cal-empty-table">Sin actividades para mostrar.</div>}
+                </div>
+              )}
+            </main>
+
+            {viewMode === 'calendar' && (
+              <aside className="cal-aside-panel">
+                <div className="cal-aside-header">
+                  <span>Agenda del dia</span>
+                  <h3>{selectedDate ? formatDayHeading(selectedDate) : 'Selecciona un dia'}</h3>
+                  <p>{daySelectedEvents.length ? `${daySelectedEvents.length} actividades programadas` : 'Sin actividades programadas'}</p>
+                </div>
+                <div className="cal-aside-list">
+                  {daySelectedEvents.length ? daySelectedEvents.map((ev) => (
+                    <EventCard key={ev.id || `${getEventTitle(ev)}-${getEventTime(ev)}`} event={ev} />
+                  )) : (
+                    <div className="cal-empty-state">
+                      <CalendarDays size={34} />
+                      <strong>Dia despejado</strong>
+                      <span>No hay compromisos registrados para esta fecha.</span>
+                    </div>
+                  )}
+                </div>
+              </aside>
             )}
           </div>
-        </div>
-      </div>
+        )}
+      </section>
     </div>
   );
 }
