@@ -483,7 +483,7 @@ export default function Tratos() {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    addToast({ title: 'Copiado', message: 'Mensaje copiado al portapapeles', type: 'success' });
+    addToast({ title: 'Copiado', message: 'Enlace listo para abrir en navegador', type: 'success' });
   };
 
   const filteredItems = items.filter(i => 
@@ -775,7 +775,7 @@ export default function Tratos() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
               <a 
-                href={`https://wa.me/?text=${encodeURIComponent(shareModal.message || buildTratoShareMessage(shareModal.item, shareModal.url))}`}
+                href={`https://wa.me/?text=${encodeURIComponent(shareModal.url)}`}
                 target="_blank"
                 rel="noreferrer"
                 className="mx-btn mx-btn-primary"
@@ -787,9 +787,9 @@ export default function Tratos() {
               <button 
                 className="mx-btn mx-btn-outline"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', height: '48px', borderRadius: '14px' }}
-                onClick={() => copyToClipboard(shareModal.message || shareModal.url)}
+                onClick={() => copyToClipboard(shareModal.url)}
               >
-                <Copy size={18} /> Copiar mensaje
+                <Copy size={18} /> Copiar enlace
               </button>
 
               <button 

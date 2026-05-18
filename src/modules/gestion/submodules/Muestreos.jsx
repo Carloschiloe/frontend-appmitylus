@@ -1796,7 +1796,7 @@ export default function Muestreos() {
                 className="mx-btn" 
                 style={{ background: '#25D366', color: 'white', border: 'none', height: '44px', borderRadius: '12px', fontSize: '14px', fontWeight: 600 }}
                 onClick={() => {
-                  const encoded = encodeURIComponent(shareData?.message);
+                  const encoded = encodeURIComponent(shareData?.url);
                   window.open(`https://wa.me/?text=${encoded}`, '_blank');
                   setIsShareModalOpen(false);
                 }}
@@ -1812,14 +1812,14 @@ export default function Muestreos() {
                 style={{ height: '44px', borderRadius: '12px', fontSize: '14px', fontWeight: 600, border: '1.5px solid #e2e8f0' }}
                 onClick={async () => {
                   if (navigator.clipboard && window.isSecureContext) {
-                    await navigator.clipboard.writeText(shareData?.message || shareData?.url);
-                    addToast({ title: 'Copiado', message: 'Mensaje listo en el portapapeles.', type: 'success' });
+                    await navigator.clipboard.writeText(shareData?.url);
+                    addToast({ title: 'Copiado', message: 'Enlace listo para abrir en navegador.', type: 'success' });
                     setIsShareModalOpen(false);
                   }
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <Copy size={16} /> Copiar mensaje
+                  <Copy size={16} /> Copiar enlace
                 </div>
               </button>
 
