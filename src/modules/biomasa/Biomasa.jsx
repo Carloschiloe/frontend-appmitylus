@@ -1394,7 +1394,7 @@ export default function Biomasa() {
                                 return (
                                   <tr key={id}>
                                     <td>
-                                      <div className="harvest-week-provider">{data.nombre}</div>
+                                      <div className="harvest-week-provider" title={data.nombre}>{data.nombre}</div>
                                       <div className="harvest-week-center">{data.centro || 'Sin centro definido'}</div>
                                     </td>
                                     {data.dias.map((cell, i) => (
@@ -1404,8 +1404,12 @@ export default function Biomasa() {
                                             <div className="harvest-week-camiones">{formatHarvestMetric(cell.camiones, cell.tonsDia, calendarMetric)}</div>
                                             <div className="harvest-week-product">{getTipoProductoLabel(cell.tipoProducto)}</div>
                                             {cell.esDiaEspecial && (
-                                              <div className="harvest-week-adjusted">
-                                                Ajustado{cell.ajusteMotivo ? ` - ${cell.ajusteMotivo}` : ''}
+                                              <div
+                                                className="harvest-week-adjusted"
+                                                title={cell.ajusteMotivo ? `Ajuste - ${cell.ajusteMotivo}` : 'Ajuste diario'}
+                                              >
+                                                <AlertTriangle size={10} />
+                                                Ajuste
                                               </div>
                                             )}
                                             {isSanitarioRelevant(cell.sanitario) && (
@@ -1424,11 +1428,14 @@ export default function Biomasa() {
                                         ) : cell.esDiaEspecial ? (
                                           <div className="harvest-week-cell is-canceled">
                                             <div className="harvest-week-camiones">Suspendido</div>
-                                            <div className="harvest-week-product">
-                                              {cell.ajusteMotivo || cell.motivo || 'Ajuste diario'}
+                                            <div
+                                              className="harvest-week-product"
+                                              title={cell.ajusteMotivo || cell.motivo || 'Ajuste diario'}
+                                            >
+                                              Ajuste
                                             </div>
                                           </div>
-                                        ) : <span style={{ color: 'var(--color-border)' }}>-</span>}
+                                        ) : null}
                                       </td>
                                     ))}
                                     <td style={{ textAlign: 'center' }}>
