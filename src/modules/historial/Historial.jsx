@@ -518,7 +518,7 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
 
   return (
     <>
-      <div className="mx-kpi-grid" style={{ marginTop: '16px' }}>
+      <div className="mx-kpi-grid historial-kpi-grid">
         {[
           { label: 'Proveedores con historial', value: providers.length },
           { label: 'Eventos registrados',       value: kpiStats.totalEventos },
@@ -894,12 +894,12 @@ export default function Historial() {
             className="mx-input-group"
             style={{
               flex: 1,
-              maxWidth: 560,
+              width: '100%',
               background: '#ffffff',
               border: '1px solid #d7e3f1',
-              borderRadius: 16,
-              padding: '0 14px',
-              boxShadow: '0 10px 24px rgba(15, 23, 42, 0.06)',
+              borderRadius: 12,
+              padding: '0 12px',
+              boxShadow: '0 6px 14px rgba(15, 23, 42, 0.05)',
             }}
           >
             <Search size={18} color="#64748b" />
@@ -913,7 +913,7 @@ export default function Historial() {
                 border: 'none',
                 background: 'transparent',
                 boxShadow: 'none',
-                paddingLeft: 8,
+                padding: 0,
                 color: '#0f172a',
               }}
             />
@@ -943,8 +943,8 @@ export default function Historial() {
           <div
             className="mx-table-card"
             style={{
-              marginTop: 16,
-              padding: 16,
+              marginTop: 8,
+              padding: 12,
               border: '1px solid #d7e3f1',
               background: 'linear-gradient(135deg, rgba(37,99,235,0.05), rgba(15,118,110,0.04))',
             }}

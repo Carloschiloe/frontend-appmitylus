@@ -1,5 +1,5 @@
 .historial-hero {
-  padding-bottom: 18px;
+  padding-bottom: 14px;
 }
 
 .historial-hero h1 {
@@ -14,43 +14,66 @@
 
 .historial-content-frame {
   margin-top: 0;
-  padding-top: 12px;
-  gap: 12px;
+  padding-top: 8px;
+  gap: 8px;
 }
 
 .historial-search-row {
   display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0;
 }
 
 .historial-search-row .mx-input-group {
-  min-height: 48px;
+  width: 100%;
+  max-width: none;
+  min-height: 44px;
+  height: 44px;
+  align-items: center;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.historial-search-row .mx-input-group svg {
+  flex: 0 0 auto;
+}
+
+.historial-search-row .mx-input-group .mx-input {
+  min-height: 0;
+  height: 42px;
+  line-height: 42px;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .historial-view-switch {
   margin-top: 0;
-  margin-bottom: 4px;
-  padding: 12px 16px;
+  margin-bottom: 0;
+  padding: 8px 12px;
+  min-height: 44px;
 }
 
 .historial-kpi-grid {
-  margin-top: 6px;
-  gap: 16px;
+  margin-top: 0;
+  gap: 12px;
 }
 
 .historial-kpi-grid .mx-kpi-card {
-  padding: 18px 22px;
+  padding: 14px 18px;
+  min-height: auto;
 }
 
 .historial-card-section {
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
 .historial-provider-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
 }
 
 .historial-provider-card {
-  padding: 16px;
+  padding: 14px;
 }
