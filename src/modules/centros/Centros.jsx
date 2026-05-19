@@ -23,9 +23,34 @@ const CENTROS_TABS = [
   { id: 'mapa',       label: 'Mapa',       to: '/centros/mapa',       icon: MapIcon, preload: loadCentrosMap }
 ];
 
+const getPageMeta = (pathname) => {
+  if (pathname.startsWith('/centros/sanitario')) {
+    return {
+      eyebrow: 'Inteligencia - Sanitario',
+      title: 'Estado Sanitario',
+      showActions: false
+    };
+  }
+
+  if (pathname.startsWith('/centros/mapa')) {
+    return {
+      eyebrow: 'Directorio - Mapa',
+      title: 'Mapa de Centros',
+      showActions: true
+    };
+  }
+
+  return {
+    eyebrow: 'Directorio - Centros',
+    title: 'Directorio de Centros',
+    showActions: true
+  };
+};
+
 export default function Centros() {
   const location = useLocation();
   const isSanitarioView = location.pathname.startsWith('/centros/sanitario');
+  const pageMeta = getPageMeta(location.pathname);
 
   useEffect(() => {
     const preloadTabs = () => {
@@ -52,20 +77,22 @@ export default function Centros() {
     <div className="mx-page">
       <header className="mx-hero">
         <div className="mx-hero-content">
-          <p className="mx-eyebrow">Operaciones - Centros</p>
-          <h1>Directorio de Centros</h1>
+          <p className="mx-eyebrow">{pageMeta.eyebrow}</p>
+          <h1>{pageMeta.title}</h1>
         </div>
-        <div className="mx-hero-actions">
-          <button
-            className="mx-btn mx-btn-outline centros-import-btn"
-            onClick={notifyImportCentros}
-          >
-            <FileUp size={18} /> Importar
-          </button>
-          <button className="mx-btn mx-btn-primary" onClick={notifyCreateCentro}>
-            <Plus size={20} /> Nuevo Centro
-          </button>
-        </div>
+        {pageMeta.showActions && (
+          <div className="mx-hero-actions">
+            <button
+              className="mx-btn mx-btn-outline centros-import-btn"
+              onClick={notifyImportCentros}
+            >
+              <FileUp size={18} /> Importar
+            </button>
+            <button className="mx-btn mx-btn-primary" onClick={notifyCreateCentro}>
+              <Plus size={20} /> Nuevo Centro
+            </button>
+          </div>
+        )}
       </header>
 
       <div className="mx-content-frame centros-content-frame">
