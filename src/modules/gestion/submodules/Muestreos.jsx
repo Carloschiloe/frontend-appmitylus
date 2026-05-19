@@ -630,11 +630,13 @@ export default function Muestreos() {
 
       const endpoint = editingId ? `/muestreos/${editingId}` : '/muestreos';
       const method = editingId ? 'patch' : 'post';
-      
+
       const data = await apiClient[method](endpoint, payload);
       setResultData(data.item || data);
       setIsModalOpen(false);
       setDirectory([]); // Limpiar caché para recargar directorio con el nuevo contacto al abrir modal
+      queryClient.invalidateQueries({ queryKey: ['muestreos'] });
+      queryClient.invalidateQueries({ queryKey: ['contactos'] });
       setIsResultOpen(true);
       loadData(page);
       addToast({ title: 'Éxito', message: `Muestreo ${editingId ? 'actualizado' : 'guardado'} correctamente.`, type: 'success' });

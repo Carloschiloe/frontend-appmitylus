@@ -23,7 +23,8 @@ import {
   useCentros, 
   useContactos, 
   useOportunidades, 
-  useInteracciones 
+  useInteracciones,
+  useMuestreos
 } from '../hooks/useGestionQueries';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import './directorio.css';
@@ -79,7 +80,7 @@ function contactEmail(contact) {
   return contact?.contactoEmail || contact?.email || '';
 }
 
-function buildProviderRows(centros = [], contactos = [], oportunidades = [], interacciones = []) {
+function buildProviderRows(centros = [], contactos = [], oportunidades = [], interacciones = [], muestreos = []) {
   const providers = new Map();
 
   centros.forEach((centro, index) => {
@@ -158,11 +159,23 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     latestInteractionByProvider.set(key, item);
   });
 
+  // Encontrar el último muestreo por proveedor
+  const latestMuestreoByProvider = new Map();
+  muestreos.forEach((item) => {
+    const key = normalizeKey(item.proveedorKey || item.proveedorNombre);
+    if (!key) return;
+    const existing = latestMuestreoByProvider.get(key);
+    if (!existing || new Date(item.fecha) > new Date(existing.fecha)) {
+      latestMuestreoByProvider.set(key, item);
+    }
+  });
+
   providers.forEach((provider, key) => {
     const providerContacts = contactsByProvider.get(key) || [];
     const firstContact = providerContacts[0] || null;
     const latestOpportunity = latestOpportunityByProvider.get(key) || null;
     const latestInteraction = latestInteractionByProvider.get(key) || null;
+    const latestMuestreo = latestMuestreoByProvider.get(key) || null;
 
     provider.totalContactos = providerContacts.length;
     provider.contactoPrincipal = contactName(firstContact) || 'Primer contacto pendiente';
@@ -172,12 +185,25 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     provider.estadoComercial = latestOpportunity?.estado || '';
     provider.proximaAccion = latestOpportunity?.proximaAccion || '';
     provider.fechaProximaAccion = latestOpportunity?.fechaProximaAccion || latestOpportunity?.fechaRevision || '';
-    provider.ultimaInteraccionResumen = latestInteraction?.resumen || '';
-    provider.ultimaInteraccionFecha = latestInteraction?.fecha || '';
-    provider.ultimoResponsable = latestInteraction?.responsablePG || latestInteraction?.responsable || '';
+
+    // Comparar fecha de última interacción comercial con última fecha de muestreo técnico
+    const interactionDate = latestInteraction?.fecha ? new Date(latestInteraction.fecha) : null;
+    const muestreoDate = latestMuestreo?.fecha ? new Date(latestMuestreo.fecha) : null;
+
+    if (muestreoDate && (!interactionDate || muestreoDate > interactionDate)) {
+      const rendText = latestMuestreo.rendimiento ? `Rend: ${latestMuestreo.rendimiento.toFixed(1)}%` : 'Realizado';
+      const centroText = latestMuestreo.centroCodigo ? ` · Centro: ${latestMuestreo.centroCodigo}` : '';
+      provider.ultimaInteraccionResumen = `Muestreo técnico: ${rendText}${centroText}`;
+      provider.ultimaInteraccionFecha = latestMuestreo.fecha || '';
+      provider.ultimoResponsable = latestMuestreo.responsable || '';
+    } else if (latestInteraction) {
+      provider.ultimaInteraccionResumen = latestInteraction.resumen || '';
+      provider.ultimaInteraccionFecha = latestInteraction.fecha || '';
+      provider.ultimoResponsable = latestInteraction.responsablePG || latestInteraction.responsable || '';
+    }
   });
 
-  // 4. Filtrar para mostrar solo los que tienen alguna actividad (contactos, oportunidades o interacciones)
+  // 4. Filtrar para mostrar solo los que tienen alguna actividad (contactos, oportunidades, interacciones o muestreos)
   // Esto evita mostrar el "directorio global" de 1000+ empresas sin relacion.
   return Array.from(providers.values())
     .filter(p => p.totalContactos > 0 || p.seguimientoEstado || p.ultimaInteraccionFecha)
@@ -203,8 +229,9 @@ export default function Directorio() {
   const { data: contactosRaw, isLoading: loadingContactos, refetch: refetchContactos } = useContactos({ conEmpresa: 1 });
   const { data: oportunidadesRaw, isLoading: loadingOpp, refetch: refetchOpp } = useOportunidades();
   const { data: interaccionesRaw, isLoading: loadingInt, refetch: refetchInt } = useInteracciones({ limit: 500 });
+  const { data: muestreosRaw, isLoading: loadingMuestreos, refetch: refetchMuestreos } = useMuestreos();
 
-  const loading = loadingCentros || loadingContactos || loadingOpp || loadingInt;
+  const loading = loadingCentros || loadingContactos || loadingOpp || loadingInt || loadingMuestreos;
 
   const loadData = useCallback(async () => {
     await Promise.all([
@@ -212,8 +239,9 @@ export default function Directorio() {
       refetchContactos(),
       refetchOpp(),
       refetchInt(),
+      refetchMuestreos(),
     ]);
-  }, [refetchCentros, refetchContactos, refetchOpp, refetchInt]);
+  }, [refetchCentros, refetchContactos, refetchOpp, refetchInt, refetchMuestreos]);
 
   // 2. Procesamiento de datos
   const data = useMemo(() => {
@@ -221,13 +249,14 @@ export default function Directorio() {
     const contactos = Array.isArray(contactosRaw) ? contactosRaw : (contactosRaw?.items || []);
     const oportunidades = Array.isArray(oportunidadesRaw) ? oportunidadesRaw : (oportunidadesRaw?.items || []);
     const interacciones = Array.isArray(interaccionesRaw) ? interaccionesRaw : (interaccionesRaw?.items || []);
+    const muestreos = Array.isArray(muestreosRaw) ? muestreosRaw : (muestreosRaw?.items || []);
 
     return {
-      proveedores: buildProviderRows(centros, contactos, oportunidades, interacciones),
+      proveedores: buildProviderRows(centros, contactos, oportunidades, interacciones, muestreos),
       contactos,
       centros,
     };
-  }, [centrosRaw, contactosRaw, oportunidadesRaw, interaccionesRaw]);
+  }, [centrosRaw, contactosRaw, oportunidadesRaw, interaccionesRaw, muestreosRaw]);
 
   const [detailModal, setDetailModal] = useState({ open: false, provider: null });
 
