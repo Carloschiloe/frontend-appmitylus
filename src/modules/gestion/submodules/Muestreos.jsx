@@ -590,8 +590,20 @@ export default function Muestreos() {
     delete payload.unidadPeso;
 
     try {
-      // Registrar automáticamente el proveedor/contacto si es nuevo o no tiene contacto en el directorio
-      if (selectedProvider && (selectedProvider.isNew || !selectedProvider.contactoId)) {
+      // 1. Resolver el proveedor (ya sea desde el estado o buscándolo en el directorio)
+      const currentProviderKey = String(form.proveedorKey || '').trim().toLowerCase();
+      const currentProviderNombre = String(form.proveedorNombre || '').trim().toLowerCase();
+      
+      const resolvedProvider = selectedProvider || directory.find(p => 
+        (p.proveedorKey && String(p.proveedorKey).trim().toLowerCase() === currentProviderKey) ||
+        (p.proveedorNombre && String(p.proveedorNombre).trim().toLowerCase() === currentProviderNombre)
+      );
+
+      // 2. Determinar si requiere creación de contacto
+      const hasProviderName = String(form.proveedorNombre || '').trim().length > 0;
+      const needsContact = hasProviderName && (selectedProvider?.isNew || !resolvedProvider || !resolvedProvider.contactoId);
+
+      if (needsContact) {
         const selectedCenter = allCentros.find(c => c._id === form.centroId) || null;
         const newContactPayload = {
           nombre: form.responsable || 'Contacto de Muestreo',
@@ -626,7 +638,7 @@ export default function Muestreos() {
     } catch {
       addToast({ title: 'Error', message: 'No se pudo guardar el muestreo.', type: 'error' });
     }
-  }, [selectedCats, form, totals, editingId, page, addToast, loadData, catDetails, generalPhotos, selectedProvider, allCentros]);
+  }, [selectedCats, form, totals, editingId, page, addToast, loadData, catDetails, generalPhotos, selectedProvider, allCentros, directory]);
 
   const toggleCatSelection = useCallback((id) => {
     const next = new Set(selectedCats);
