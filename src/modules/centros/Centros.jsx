@@ -67,7 +67,7 @@ export default function Centros() {
         </div>
       </header>
 
-      <div className="mx-content-frame">
+      <div className="mx-content-frame centros-content-frame">
         <div className="mx-tabs-container">
           <div className="mx-tabs">
             {CENTROS_TABS.map(tab => (
