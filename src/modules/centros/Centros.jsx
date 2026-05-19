@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { Routes, Route, Navigate, NavLink } from 'react-router-dom';
+import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 import { 
   Map as MapIcon, 
   Plus, 
@@ -24,6 +24,9 @@ const CENTROS_TABS = [
 ];
 
 export default function Centros() {
+  const location = useLocation();
+  const isSanitarioView = location.pathname.startsWith('/centros/sanitario');
+
   useEffect(() => {
     const preloadTabs = () => {
       loadCentrosMap();
@@ -66,22 +69,24 @@ export default function Centros() {
       </header>
 
       <div className="mx-content-frame centros-content-frame">
-        <div className="mx-tabs-container">
-          <div className="mx-tabs">
-            {CENTROS_TABS.map(tab => (
-              <NavLink
-                key={tab.id}
-                to={tab.to}
-                onMouseEnter={tab.preload}
-                onFocus={tab.preload}
-                className={({ isActive }) => `mx-tab ${isActive ? 'active' : ''}`}
-              >
-                <tab.icon size={18} />
-                {tab.label}
-              </NavLink>
-            ))}
+        {!isSanitarioView && (
+          <div className="mx-tabs-container">
+            <div className="mx-tabs">
+              {CENTROS_TABS.map(tab => (
+                <NavLink
+                  key={tab.id}
+                  to={tab.to}
+                  onMouseEnter={tab.preload}
+                  onFocus={tab.preload}
+                  className={({ isActive }) => `mx-tab ${isActive ? 'active' : ''}`}
+                >
+                  <tab.icon size={18} />
+                  {tab.label}
+                </NavLink>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="mx-submodule-body">
           <Suspense fallback={
