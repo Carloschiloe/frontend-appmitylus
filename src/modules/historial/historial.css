@@ -26,6 +26,7 @@
 }
 
 .historial-search-row .mx-input-group {
+  display: flex;
   width: 100%;
   max-width: none;
   min-height: 44px;
