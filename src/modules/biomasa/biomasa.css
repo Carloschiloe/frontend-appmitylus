@@ -67,6 +67,11 @@
   margin-bottom: 4px;
 }
 
+.biomasa-content-frame--muestreos {
+  padding-top: 10px;
+  gap: 8px;
+}
+
 .muestreos-compact {
   width: 100%;
   padding: 0;

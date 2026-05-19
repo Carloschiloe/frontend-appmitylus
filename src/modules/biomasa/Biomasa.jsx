@@ -1027,7 +1027,8 @@ export default function Biomasa() {
         </div>
       </header>
 
-      <div className="mx-content-frame biomasa-content-frame">
+      <div className={`mx-content-frame biomasa-content-frame ${isMuestreosView ? 'biomasa-content-frame--muestreos' : ''}`}>
+        {!isMuestreosView && (
         <div className="mx-toolbar">
           <div className="mx-toggle-group">
             {isStatusView ? (
@@ -1049,6 +1050,7 @@ export default function Biomasa() {
             </button>
           )}
         </div>
+        )}
 
         <div className="tab-content-area">
           {isStatusView && (
