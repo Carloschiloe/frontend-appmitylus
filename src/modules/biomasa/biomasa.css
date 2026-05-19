@@ -59,7 +59,12 @@
 /* Tabs */
 .biomasa-content-frame {
   margin-top: 0;
-  padding-top: 28px;
+  padding-top: 16px;
+  gap: 12px;
+}
+
+.biomasa-content-frame > .mx-toolbar {
+  margin-bottom: 4px;
 }
 
 .biomasa-content {
