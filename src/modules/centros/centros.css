@@ -19,6 +19,7 @@
 }
 
 .centros-content-frame {
+  margin-top: 0;
   padding-top: 10px;
   gap: 10px;
 }
