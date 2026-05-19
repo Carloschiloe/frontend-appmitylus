@@ -57,6 +57,11 @@
 }
 
 /* Tabs */
+.biomasa-content-frame {
+  margin-top: 0;
+  padding-top: 28px;
+}
+
 .biomasa-content {
   margin-top: -24px;
 }
