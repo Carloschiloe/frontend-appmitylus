@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Inbox, 
-  Building2, 
-  Droplet, 
-  History, 
-  Settings, 
-  ChevronDown, 
-  ChevronRight, 
-  LogOut, 
+import {
+  LayoutDashboard,
+  Inbox,
+  Building2,
+  Droplet,
+  History,
+  Settings,
+  ChevronDown,
+  ChevronRight,
+  LogOut,
   User,
   Calendar,
   Users,
@@ -17,7 +17,10 @@ import {
   ShieldCheck,
   TableProperties,
   Search,
-  TestTube2
+  TestTube2,
+  Handshake,
+  Database,
+  BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
@@ -30,67 +33,59 @@ const MENU_STRUCTURE = [
     label: 'Inicio',
     icon: LayoutDashboard,
     links: [
-      { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard }
-    ]
+      { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
+    ],
   },
   {
-    id: 'gestion',
-    label: 'Gestión',
+    id: 'operacion',
+    label: 'Operacion',
     icon: Inbox,
     links: [
-      { label: 'Resumen', to: '/gestion/bandeja', icon: Inbox },
-      { label: 'Proveedores', to: '/gestion/proveedores', icon: Building2 },
-      { label: 'Calendario actividades', to: '/gestion/agenda', icon: Calendar }
-    ]
+      { label: 'Agenda', to: '/gestion/agenda', icon: Calendar },
+      { label: 'Tratos', to: '/gestion/tratos', icon: Handshake },
+      { label: 'Cosechas', to: '/biomasa/programa', icon: Droplet },
+      { label: 'Muestreos', to: '/biomasa/muestreos', icon: TestTube2 },
+    ],
   },
   {
-    id: 'centros',
-    label: 'Centros',
+    id: 'directorio',
+    label: 'Directorio',
     icon: Building2,
     links: [
-      { label: 'Directorio', to: '/centros/directorio', icon: TableProperties },
+      { label: 'Proveedores', to: '/gestion/proveedores', icon: Building2 },
+      { label: 'Centros', to: '/centros/directorio', icon: TableProperties },
       { label: 'Mapa', to: '/centros/mapa', icon: Map },
-      { label: 'Estado Sanitario', to: '/centros/sanitario', icon: ShieldCheck, alertId: 'sanitario' }
-    ]
+    ],
   },
   {
-    id: 'biomasa',
-    label: 'Biomasa',
-    icon: Droplet,
+    id: 'inteligencia',
+    label: 'Inteligencia',
+    icon: BarChart3,
     links: [
-      { label: 'Status', to: '/biomasa/status', icon: LayoutDashboard },
-      { label: 'Calendario cosechas', to: '/biomasa/programa', icon: Calendar },
-      { label: 'Muestreos', to: '/biomasa/muestreos', icon: TestTube2 }
-    ]
+      { label: 'Sanitario', to: '/centros/sanitario', icon: ShieldCheck, alertId: 'sanitario' },
+      { label: 'Historial', to: '/historial', icon: History },
+      { label: 'Actividad del equipo', to: '/historial?view=equipo', icon: Users },
+    ],
   },
   {
-    id: 'historial',
-    label: 'Historial',
-    icon: History,
-    links: [
-      { label: 'Expediente', to: '/historial', icon: History },
-      { label: 'Actividad del equipo', to: '/historial?view=equipo', icon: Users }
-    ]
-  },
-  {
-    id: 'configuracion',
-    label: 'Configuración',
+    id: 'administracion',
+    label: 'Administracion',
     icon: Settings,
     requiereRol: 'admin',
     links: [
-      { label: 'Maestros', to: '/configuracion/maestros', icon: Settings },
-      { label: 'Usuarios', to: '/configuracion/usuarios', icon: Users }
-    ]
+      { label: 'Maestros', to: '/configuracion/maestros', icon: Database },
+      { label: 'Usuarios', to: '/configuracion/usuarios', icon: Users },
+    ],
   },
   {
     id: 'saas',
-    label: 'Administración SaaS',
+    label: 'SaaS',
     icon: ShieldCheck,
     requiereRol: 'superadmin',
     links: [
-      { label: 'Empresas', to: '/configuracion/empresas', icon: Building2 }
-    ]
-  }
+      { label: 'Empresas', to: '/configuracion/empresas', icon: Building2 },
+    ],
+  },
 ];
 
 export default function Sidebar() {
@@ -102,55 +97,56 @@ export default function Sidebar() {
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
 
   useEffect(() => {
-    // Cargar alertas sanitarias solo si hay usuario
-    if (!user) return;
+    if (!user) return undefined;
     if (user.rol === 'superadmin' && !selectedTenantDb) {
       setAlerts({});
-      return;
+      return undefined;
     }
 
     const controller = new AbortController();
 
     apiClient.get('/sanitario/resumen', { signal: controller.signal })
-      .then(data => {
+      .then((data) => {
         if (!data) return;
         const criticas = (data.rojo || 0) + (data.naranja || 0);
         if (criticas > 0) {
-          setAlerts(prev => ({ ...prev, sanitario: criticas }));
-          setOpenGroups({ centros: true });
+          setAlerts((prev) => ({ ...prev, sanitario: criticas }));
+          setOpenGroups({ inteligencia: true });
         }
       })
-      .catch(err => {
+      .catch((err) => {
         if (err.name === 'AbortError' || err.status === 401) return;
       });
 
     return () => controller.abort();
   }, [selectedTenantDb, user]);
 
-  // Abrir automáticamente el grupo que contiene la ruta activa
   useEffect(() => {
-    const activeGroup = MENU_STRUCTURE.find(group => 
-      group.links.some(link => location.pathname.startsWith(link.to))
-    );
+    const activeGroup = MENU_STRUCTURE.find((group) => (
+      group.links.some((link) => {
+        const [path] = link.to.split('?');
+        return location.pathname.startsWith(path);
+      })
+    ));
     if (activeGroup) {
-      setOpenGroups({ [activeGroup.id]: true }); // Solo el grupo activo se mantiene abierto
+      setOpenGroups({ [activeGroup.id]: true });
     }
   }, [location.pathname]);
 
   const toggleGroup = useCallback((id) => {
-    setOpenGroups(prev => ({
-      [id]: !prev[id]
+    setOpenGroups((prev) => ({
+      [id]: !prev[id],
     }));
   }, []);
 
-  const filteredMenu = useMemo(() => {
-    return MENU_STRUCTURE.filter(group => {
+  const filteredMenu = useMemo(() => (
+    MENU_STRUCTURE.filter((group) => {
       if (!group.requiereRol) return true;
       if (user?.rol === 'superadmin') return true;
       if (user?.rol === 'admin' && group.requiereRol === 'admin') return true;
       return false;
-    });
-  }, [user?.rol]);
+    })
+  ), [user?.rol]);
 
   return (
     <aside className="mx-sidebar">
@@ -160,13 +156,12 @@ export default function Sidebar() {
 
       <TenantSelector />
 
-      {/* Badge de empresa para usuarios no-superadmin */}
       {user?.rol !== 'superadmin' && user?.empresaId && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: '8px',
           padding: '8px 14px', margin: '0 8px 4px',
           background: 'rgba(255,255,255,0.06)', borderRadius: '8px',
-          minWidth: 0
+          minWidth: 0,
         }}>
           {user.empresaId.config?.logo ? (
             <img
@@ -179,7 +174,7 @@ export default function Sidebar() {
           )}
           <span style={{
             fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.85)',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {user.empresaId.nombre}
           </span>
@@ -188,16 +183,16 @@ export default function Sidebar() {
 
       <div className="mx-global-search">
         <Search size={16} className="search-icon" />
-        <input 
-          type="text" 
-          placeholder="Buscar proveedor, centro..." 
+        <input
+          type="text"
+          placeholder="Buscar proveedor, centro..."
           className="mx-search-input"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               const val = e.target.value.trim();
               if (val) {
                 navigate(`/gestion/proveedores?q=${encodeURIComponent(val)}`);
-                e.target.value = ''; // clean up input
+                e.target.value = '';
               }
             }
           }}
@@ -206,7 +201,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="mx-sidebar-menu">
-        {filteredMenu.map(group => (
+        {filteredMenu.map((group) => (
           <div key={group.id} className={`mx-menu-group ${openGroups[group.id] ? 'is-open' : ''}`}>
             <button className="mx-menu-head" onClick={() => toggleGroup(group.id)}>
               <span className="mx-menu-head-label">
@@ -216,9 +211,9 @@ export default function Sidebar() {
               {openGroups[group.id] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             </button>
             <div className="mx-submenu">
-              {group.links.map(link => (
-                <NavLink 
-                  key={link.label} 
+              {group.links.map((link) => (
+                <NavLink
+                  key={link.label}
                   to={link.to}
                   className={({ isActive }) => {
                     if (link.to.includes('?view=equipo')) {
@@ -256,10 +251,9 @@ export default function Sidebar() {
         )}
         <button className="mx-btn-logout" onClick={logout}>
           <LogOut size={16} />
-          Cerrar sesión
+          Cerrar sesion
         </button>
       </div>
     </aside>
   );
 }
-
