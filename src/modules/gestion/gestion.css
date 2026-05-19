@@ -3,6 +3,14 @@
   padding-top: 28px;
 }
 
+.gestion-content-frame--providers {
+  padding-top: 12px;
+}
+
+.gestion-content-frame--providers .mx-submodule-body > .mx-page > .mx-toolbar:first-child {
+  margin-top: 0;
+}
+
 .gestion-content-frame .mx-submodule-body {
   min-width: 0;
 }

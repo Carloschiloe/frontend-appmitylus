@@ -35,6 +35,7 @@ const PAGE_META = {
 export default function Gestion() {
   const location = useLocation();
   const pageMeta = PAGE_META[location.pathname] || PAGE_META['/gestion/tratos'];
+  const isProvidersView = location.pathname === '/gestion/proveedores';
 
   return (
     <div className="mx-page">
@@ -45,7 +46,7 @@ export default function Gestion() {
         </div>
       </header>
 
-      <div className="mx-content-frame gestion-content-frame">
+      <div className={`mx-content-frame gestion-content-frame ${isProvidersView ? 'gestion-content-frame--providers' : ''}`}>
         <div className="mx-submodule-body">
           <Suspense
             fallback={
