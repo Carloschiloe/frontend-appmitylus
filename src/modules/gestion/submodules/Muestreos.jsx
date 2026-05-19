@@ -590,8 +590,8 @@ export default function Muestreos() {
     delete payload.unidadPeso;
 
     try {
-      // Registrar automáticamente el nuevo proveedor/contacto si es marcado como isNew
-      if (selectedProvider && selectedProvider.isNew) {
+      // Registrar automáticamente el proveedor/contacto si es nuevo o no tiene contacto en el directorio
+      if (selectedProvider && (selectedProvider.isNew || !selectedProvider.contactoId)) {
         const selectedCenter = allCentros.find(c => c._id === form.centroId) || null;
         const newContactPayload = {
           nombre: form.responsable || 'Contacto de Muestreo',
@@ -619,6 +619,7 @@ export default function Muestreos() {
       const data = await apiClient[method](endpoint, payload);
       setResultData(data.item || data);
       setIsModalOpen(false);
+      setDirectory([]); // Limpiar caché para recargar directorio con el nuevo contacto al abrir modal
       setIsResultOpen(true);
       loadData(page);
       addToast({ title: 'Éxito', message: `Muestreo ${editingId ? 'actualizado' : 'guardado'} correctamente.`, type: 'success' });
