@@ -1,0 +1,8 @@
+.gestion-content-frame {
+  margin-top: 0;
+  padding-top: 28px;
+}
+
+.gestion-content-frame .mx-submodule-body {
+  min-width: 0;
+}

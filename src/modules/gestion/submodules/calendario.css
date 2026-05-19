@@ -70,7 +70,7 @@
   grid-template-columns: minmax(360px, auto) 1fr auto;
   align-items: center;
   gap: 16px;
-  padding: 18px 22px;
+  padding: 16px 22px;
   border-bottom: 1px solid #e2e8f0;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
@@ -78,20 +78,22 @@
 .cal-view-switch {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   width: max-content;
-  padding: 4px;
-  border-radius: 14px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  padding: 3px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #dbe4ef;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .cal-view-switch button {
   border: 0;
   background: transparent;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 10px;
+  height: 36px;
+  min-width: 112px;
+  padding: 0 13px;
+  border-radius: 7px;
   color: #334155;
   font-size: 0.82rem;
   font-weight: 800;
@@ -105,7 +107,7 @@
 .cal-view-switch button.active {
   background: #ffffff;
   color: #008c82;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
 }
 
 .cal-period-nav {
