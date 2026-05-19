@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../api/apiClient';
+import { maestrosApi } from '../api/api-maestros';
 import { useMuestreos } from '../modules/gestion/hooks/useGestionQueries';
 
 export function useMuestreosData(viewMode, { mes, weekRange } = {}) {
@@ -34,16 +34,16 @@ export function useMuestreosData(viewMode, { mes, weekRange } = {}) {
   } = useMuestreos({ limit: lim, page, ...dateFilter }, { enabled: isEnabled });
 
   // 2. Maestros con React Query (específico para muestreos)
-  const { data: catsRes } = useQuery({
-    queryKey: ['maestros', 'categoria-muestreo'],
-    queryFn: () => apiClient.get('/maestros?tipo=categoria-muestreo&soloActivos=true'),
+  const { data: cats = [] } = useQuery({
+    queryKey: ['maestros', 'categoria-muestreo', 'activos'],
+    queryFn: () => maestrosApi.getMaestrosActivos('categoria-muestreo'),
     staleTime: 15 * 60 * 1000,
     enabled: isEnabled,
   });
 
-  const { data: rulesRes } = useQuery({
-    queryKey: ['maestros', 'regla_calidad'],
-    queryFn: () => apiClient.get('/maestros?tipo=regla_calidad&soloActivos=true'),
+  const { data: rules = [] } = useQuery({
+    queryKey: ['maestros', 'regla_calidad', 'activos'],
+    queryFn: () => maestrosApi.getMaestrosActivos('regla_calidad'),
     staleTime: 15 * 60 * 1000,
     enabled: isEnabled,
   });
@@ -56,9 +56,9 @@ export function useMuestreosData(viewMode, { mes, weekRange } = {}) {
   const pagination = useMemo(() => muestreosRes?.pagination || null, [muestreosRes]);
 
   const maestros = useMemo(() => ({
-    cats: catsRes?.items || [],
-    rules: rulesRes?.items || [],
-  }), [catsRes, rulesRes]);
+    cats: Array.isArray(cats) ? cats : [],
+    rules: Array.isArray(rules) ? rules : [],
+  }), [cats, rules]);
 
   const loading = loadingMue;
 

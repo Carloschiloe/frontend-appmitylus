@@ -12,6 +12,7 @@ import {
   X,
   Award,
   MinusCircle,
+  Settings2,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { maestrosApi } from '../../api/api-maestros';
@@ -64,7 +65,7 @@ export default function Maestros() {
 
   // Filtro de búsqueda local (ultra rápido)
   const maestrosList = React.useMemo(() => {
-    const list = Array.isArray(maestros) ? maestros : [];
+    const list = Array.isArray(maestros) ? maestros : (maestros?.items || []);
     if (!searchTerm) return list;
     const s = searchTerm.toLowerCase();
     return list.filter(m => m.nombre?.toLowerCase().includes(s));
