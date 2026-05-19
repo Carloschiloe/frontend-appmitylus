@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
@@ -17,8 +17,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
-import { useToast } from '../../context/ToastContext';
 import { useQuery } from '@tanstack/react-query';
+import './historial.css';
 
 const EVENT_META = {
   contacto: { label: 'Contacto', color: '#6366f1', icon: User },
@@ -378,7 +378,7 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
 
   return (
     <>
-      <div className="mx-kpi-grid" style={{ marginTop: '16px' }}>
+      <div className="mx-kpi-grid historial-kpi-grid">
         {[
           { label: 'Llamadas', value: kpis.llamadas },
           { label: 'Visitas', value: kpis.visitas },
@@ -426,7 +426,7 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
         </select>
       </div>
 
-      <div className="am-mt-24">
+      <div className="historial-card-section">
         {loading ? (
           <div className="mx-state-placeholder">
             <div className="mx-spinner"></div>
@@ -545,7 +545,7 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
             <p>Prueba con otro proveedor o ajusta la búsqueda.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' }}>
+          <div className="historial-provider-grid">
             {filteredProviders.map((provider) => {
               const status = STATUS_META[provider.status || 'none'] || STATUS_META.none;
               const StatusIcon = status.icon;
@@ -553,9 +553,9 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
                 <button
                   key={provider.key}
                   type="button"
-                  className="mx-card"
+                  className="mx-card historial-provider-card"
                   onClick={() => onSelectProvider(provider.key)}
-                  style={{ textAlign: 'left', padding: '20px', cursor: 'pointer' }}
+                  style={{ textAlign: 'left', cursor: 'pointer' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                     <div className="mx-btn-icon" style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>
@@ -567,17 +567,17 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
                     </span>
                   </div>
 
-                  <h3 style={{ margin: '16px 0 6px', fontSize: '1.08rem' }}>{provider.name}</h3>
+                  <h3 style={{ margin: '12px 0 5px', fontSize: '1.03rem' }}>{provider.name}</h3>
                   <p style={{ margin: 0, color: 'var(--color-text-subtle)', fontSize: '0.86rem' }}>
                     {provider.totalEventos} eventos · {provider.totalContactos} contacto{provider.totalContactos === 1 ? '' : 's'}
                   </p>
 
-                  <div style={{ marginTop: '14px', display: 'grid', gap: '8px', color: 'var(--color-text-muted)', fontSize: '0.86rem' }}>
+                  <div style={{ marginTop: '10px', display: 'grid', gap: '6px', color: 'var(--color-text-muted)', fontSize: '0.86rem' }}>
                     <span className="am-line-clamp-1">{provider.lastInteraction || 'Sin interacciones'}</span>
                     <span>{provider.lastActivity ? `${formatDate(provider.lastActivity)} · ${relativeText(provider.lastActivity)}` : 'Sin actividad'}</span>
                   </div>
 
-                  <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--color-text-subtle)', fontSize: '0.84rem' }}>
+                  <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--color-text-subtle)', fontSize: '0.84rem' }}>
                     <span className="am-line-clamp-1">{provider.contactoPrincipal || 'Sin contacto'}</span>
                     <span style={{ color: 'var(--color-primary)', fontWeight: 'var(--weight-bold)' }}>Expediente</span>
                   </div>
@@ -592,7 +592,6 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
 }
 
 export default function Historial() {
-  const { addToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Filtros de UI
@@ -879,7 +878,7 @@ export default function Historial() {
 
   return (
     <div className="mx-page">
-      <header className="mx-hero">
+      <header className="mx-hero historial-hero">
         <div className="mx-hero-content">
           <p className="mx-eyebrow">Gestión · Historial</p>
           <h1>Historial operativo</h1>
@@ -889,8 +888,8 @@ export default function Historial() {
         </div>
       </header>
 
-      <div className="mx-content-frame">
-        <div style={{ marginTop: 24, display: 'flex' }}>
+      <div className="mx-content-frame historial-content-frame">
+        <div className="historial-search-row">
           <div
             className="mx-input-group"
             style={{
@@ -921,7 +920,7 @@ export default function Historial() {
           </div>
         </div>
 
-        <div className="centros-filters" style={{ marginTop: 18 }}>
+        <div className="centros-filters historial-view-switch">
           <div className="mx-toggle-group">
             <button
               type="button"
