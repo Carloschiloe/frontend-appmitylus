@@ -912,10 +912,10 @@ export default function Muestreos() {
   }
 
   return (
-    <div className="muestreos-container am-p-24" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+    <div className="muestreos-container muestreos-compact" style={{ animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* ── Navegador de Calendario ── */}
-      <div className="mx-card" style={{ marginBottom: '16px', padding: '14px 18px' }}>
+      <div className="mx-card muestreos-period-card">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
           <div className="mx-toggle-group">
             <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => { setCalView('month'); setPage(1); }}>Vista Mes</button>
@@ -959,7 +959,7 @@ export default function Muestreos() {
         </div>
       </div>
 
-      <div className="mx-toolbar am-mt-16">
+      <div className="mx-toolbar muestreos-actions-toolbar">
         <div className="mx-toggle-group">
           <button className={`mx-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => { setViewMode('list'); setPage(1); }}><List size={14} /> Historial</button>
           <button className={`mx-toggle-btn ${viewMode === 'grouped' ? 'active' : ''}`} onClick={() => { setViewMode('grouped'); setPage(1); }}><LayoutGrid size={14} /> Agrupado</button>
@@ -983,7 +983,7 @@ export default function Muestreos() {
       {loading ? (
         <div className="am-p-64 am-text-center"><div className="mx-loader"></div></div>
       ) : (
-        <div className="mx-table-card am-mt-16">
+        <div className="mx-table-card muestreos-table-card">
           <div className="mx-table-wrap">
             <table className="mx-table">
               <thead>

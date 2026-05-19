@@ -67,6 +67,25 @@
   margin-bottom: 4px;
 }
 
+.muestreos-compact {
+  width: 100%;
+  padding: 0;
+}
+
+.muestreos-period-card {
+  margin-bottom: 10px;
+  padding: 10px 14px;
+}
+
+.muestreos-actions-toolbar {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.muestreos-table-card {
+  margin-top: 8px;
+}
+
 .biomasa-content {
   margin-top: -24px;
 }
