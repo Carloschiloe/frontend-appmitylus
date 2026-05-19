@@ -375,8 +375,10 @@ export default function Muestreos() {
     }));
     setSearchProviders('');
 
-    // Filtrar centros de este proveedor
-    const centers = allCentros.filter(c => c.proveedorKey === provider.proveedorKey);
+    // Filtrar centros de este proveedor (si es nuevo, permitimos todos los centros del sistema)
+    const centers = provider.isNew
+      ? allCentros
+      : allCentros.filter(c => (c.proveedorKey || '').toLowerCase() === (provider.proveedorKey || '').toLowerCase());
     setProviderCenters(centers);
 
     // Autoselección si hay solo uno
@@ -588,6 +590,29 @@ export default function Muestreos() {
     delete payload.unidadPeso;
 
     try {
+      // Registrar automáticamente el nuevo proveedor/contacto si es marcado como isNew
+      if (selectedProvider && selectedProvider.isNew) {
+        const selectedCenter = allCentros.find(c => c._id === form.centroId) || null;
+        const newContactPayload = {
+          nombre: form.responsable || 'Contacto de Muestreo',
+          entidad: form.proveedorNombre,
+          contactoNombre: form.responsable || 'Contacto de Muestreo',
+          contactoEmail: '',
+          contactoTelefono: '',
+          proveedorKey: form.proveedorKey,
+          proveedorNombre: form.proveedorNombre,
+          centroId: form.centroId || '',
+          centroCodigo: form.centroCodigo || '',
+          centroComuna: selectedCenter?.comuna || '',
+        };
+        try {
+          await apiClient.post('/contactos', newContactPayload);
+          addToast({ title: 'Directorio', message: 'Se ha creado automáticamente el nuevo proveedor en el directorio.', type: 'info' });
+        } catch (err) {
+          console.error('[AUTO CREATE CONTACT ERROR]:', err);
+        }
+      }
+
       const endpoint = editingId ? `/muestreos/${editingId}` : '/muestreos';
       const method = editingId ? 'patch' : 'post';
       
@@ -600,7 +625,7 @@ export default function Muestreos() {
     } catch {
       addToast({ title: 'Error', message: 'No se pudo guardar el muestreo.', type: 'error' });
     }
-  }, [selectedCats, form, totals, editingId, page, addToast, loadData, catDetails, generalPhotos]);
+  }, [selectedCats, form, totals, editingId, page, addToast, loadData, catDetails, generalPhotos, selectedProvider, allCentros]);
 
   const toggleCatSelection = useCallback((id) => {
     const next = new Set(selectedCats);
@@ -1183,7 +1208,7 @@ export default function Muestreos() {
                             value={searchProviders} 
                             onChange={e => setSearchProviders(e.target.value)} 
                           />
-                          {filteredProviders.length > 0 && (
+                          {(filteredProviders.length > 0 || searchProviders.trim().length > 0) && (
                             <div className="mu-dropdown shadow-lg">
                               {filteredProviders.map(p => (
                                 <button key={p.id} type="button" onClick={() => handleSelectProvider(p)} className="mu-opt">
@@ -1191,6 +1216,24 @@ export default function Muestreos() {
                                   <span>{p.comuna} · {p.contactoNombre}</span>
                                 </button>
                               ))}
+                              {searchProviders.trim().length > 0 && (
+                                <button 
+                                  type="button" 
+                                  onClick={() => handleSelectProvider({
+                                    id: 'new-provider',
+                                    proveedorNombre: searchProviders,
+                                    proveedorKey: searchProviders.trim().toLowerCase().replace(/[^a-z0-9]/g, '-'),
+                                    comuna: 'Nuevo Registro',
+                                    contactoNombre: 'Creado al guardar',
+                                    isNew: true
+                                  })} 
+                                  className="mu-opt"
+                                  style={{ borderTop: '1px dashed var(--color-border)', color: 'var(--color-primary)', fontWeight: 'var(--weight-bold)' }}
+                                >
+                                  <strong>+ Crear proveedor: "{searchProviders}"</strong>
+                                  <span>Registrar automáticamente en el directorio</span>
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
