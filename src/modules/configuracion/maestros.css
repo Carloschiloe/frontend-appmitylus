@@ -1,14 +1,18 @@
 /* src/modules/configuracion/maestros.css */
 
 .maestros-content-frame {
-  padding: 0 var(--page-padding) 40px var(--page-padding);
-  margin-top: -20px;
+  padding: 12px var(--page-padding) 40px var(--page-padding);
+  margin-top: 0;
+  gap: 12px;
 }
 
 .maestros-toolbar {
-  margin-top: 24px;
+  margin-top: 0;
   flex-wrap: nowrap;
   gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
 }
 
 .maestros-toggle-wrap {
@@ -22,6 +26,11 @@
 .maestros-search-box {
   flex: 1;
   min-width: 200px;
+  max-width: 340px;
+}
+
+.maestros-table-card {
+  margin-top: 0;
 }
 
 .maestros-table-head-nombre {

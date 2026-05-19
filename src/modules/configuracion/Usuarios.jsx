@@ -189,7 +189,7 @@ export default function Usuarios() {
     <div className="mx-page" onClick={() => setActiveMenu(null)}>
       <header className="mx-hero">
         <div className="mx-hero-content">
-          <p className="mx-eyebrow">Configuración · Accesos</p>
+          <p className="mx-eyebrow">Administración - Usuarios</p>
           <h1>Gestión de Usuarios</h1>
           <p>Control de acceso, roles y permisos de la plataforma.</p>
         </div>
@@ -207,9 +207,9 @@ export default function Usuarios() {
         </div>
       </header>
 
-      <div className="mx-content-frame">
-        <div className="mx-toolbar am-mt-16">
-          <div className="mx-search-box" style={{ maxWidth: '300px' }}>
+      <div className="mx-content-frame usuarios-content-frame">
+        <div className="mx-toolbar usuarios-toolbar">
+          <div className="mx-search-box usuarios-search-box">
             <Search size={18} />
             <input
               type="text"
@@ -223,7 +223,7 @@ export default function Usuarios() {
           </div>
         </div>
 
-        <div className="mx-table-card am-mt-16">
+        <div className="mx-table-card usuarios-table-card">
           <div className="mx-table-wrap">
             <table className="mx-table">
               <thead>

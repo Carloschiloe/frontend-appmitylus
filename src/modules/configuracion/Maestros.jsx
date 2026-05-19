@@ -4,7 +4,6 @@ import {
   Search,
   Trash2,
   Edit,
-  Download,
   Table,
   ClipboardList,
   Users,
@@ -171,7 +170,7 @@ export default function Maestros() {
       <div className="mx-page">
         <header className="mx-hero">
           <div className="mx-hero-content">
-            <p className="mx-eyebrow">Configuración · Parámetros</p>
+            <p className="mx-eyebrow">Administración - Parámetros</p>
             <h1>Maestros del Sistema</h1>
           </div>
         </header>
@@ -194,22 +193,19 @@ export default function Maestros() {
     <div className="mx-page">
       <header className="mx-hero">
         <div className="mx-hero-content">
-          <p className="mx-eyebrow">Configuración · Parámetros</p>
+          <p className="mx-eyebrow">Administración - Parámetros</p>
           <h1>Maestros del Sistema</h1>
           <p>Administración dinámica de categorías y parámetros operativos.</p>
         </div>
         <div className="mx-hero-actions">
-          <button className="mx-btn mx-btn-outline" style={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}>
-            <Download size={18} /> Exportar
-          </button>
           <button className="mx-btn mx-btn-primary" onClick={handleNuevo}>
             <Plus size={18} /> Nuevo Registro
           </button>
         </div>
       </header>
 
-      <div className="mx-content-frame">
-        <div className="mx-toolbar am-mt-16">
+      <div className="mx-content-frame maestros-content-frame">
+        <div className="mx-toolbar maestros-toolbar">
           <div className="mx-toggle-group">
             {TIPOS.map((t) => (
               <button
@@ -221,7 +217,7 @@ export default function Maestros() {
               </button>
             ))}
           </div>
-          <div className="mx-search-box" style={{ maxWidth: '300px' }}>
+          <div className="mx-search-box maestros-search-box">
             <Search size={18} />
             <input 
               type="text" 
@@ -232,7 +228,7 @@ export default function Maestros() {
           </div>
         </div>
 
-        <div className="mx-table-card am-mt-16">
+        <div className="mx-table-card maestros-table-card">
           <div className="mx-table-wrap">
             <table className="mx-table">
               <thead>

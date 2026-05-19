@@ -1,18 +1,26 @@
 /* src/modules/configuracion/usuarios.css */
 
 .usuarios-content-frame {
-  padding: 0 var(--page-padding) 40px var(--page-padding);
-  margin-top: -20px;
+  padding: 12px var(--page-padding) 40px var(--page-padding);
+  margin-top: 0;
+  gap: 12px;
 }
 
 .usuarios-toolbar {
-  margin-top: 24px;
+  margin-top: 0;
   flex-wrap: nowrap;
   gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
 }
 
 .usuarios-search-box {
   flex: 1;
+  max-width: 420px;
+}
+
+.usuarios-table-card {
+  margin-top: 0;
 }
 
 .usuarios-count-badge {
