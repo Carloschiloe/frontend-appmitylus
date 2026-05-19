@@ -2,7 +2,6 @@ import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, NavLink } from 'react-router-dom';
 import { 
   Map as MapIcon, 
-  ShieldCheck, 
   Plus, 
   FileUp, 
   TableProperties
@@ -21,8 +20,7 @@ import './centros.css';
 
 const CENTROS_TABS = [
   { id: 'directorio', label: 'Directorio', to: '/centros/directorio', icon: TableProperties, preload: loadCentrosTable },
-  { id: 'mapa',       label: 'Mapa',       to: '/centros/mapa',       icon: MapIcon, preload: loadCentrosMap },
-  { id: 'sanitario',  label: 'Sanitario',  to: '/centros/sanitario',  icon: ShieldCheck, preload: loadSanitarioDashboard }
+  { id: 'mapa',       label: 'Mapa',       to: '/centros/mapa',       icon: MapIcon, preload: loadCentrosMap }
 ];
 
 export default function Centros() {
