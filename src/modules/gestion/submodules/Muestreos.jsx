@@ -38,6 +38,7 @@ import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useMuestreosData } from '../../../hooks/useMuestreosData';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 const fmtNum = (v, d = 2) => (Number(v) || 0).toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
 
@@ -86,6 +87,7 @@ function buildProviderDirectory(centros = [], contactos = []) {
 export default function Muestreos() {
   const { addToast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'grouped'
 
@@ -619,6 +621,7 @@ export default function Muestreos() {
         };
         try {
           await apiClient.post('/contactos', newContactPayload);
+          queryClient.invalidateQueries({ queryKey: ['contactos'] });
           addToast({ title: 'Directorio', message: 'Se ha creado automáticamente el nuevo proveedor en el directorio.', type: 'info' });
         } catch (err) {
           console.error('[AUTO CREATE CONTACT ERROR]:', err);
@@ -638,7 +641,7 @@ export default function Muestreos() {
     } catch {
       addToast({ title: 'Error', message: 'No se pudo guardar el muestreo.', type: 'error' });
     }
-  }, [selectedCats, form, totals, editingId, page, addToast, loadData, catDetails, generalPhotos, selectedProvider, allCentros, directory]);
+  }, [selectedCats, form, totals, editingId, page, addToast, loadData, catDetails, generalPhotos, selectedProvider, allCentros, directory, queryClient]);
 
   const toggleCatSelection = useCallback((id) => {
     const next = new Set(selectedCats);
