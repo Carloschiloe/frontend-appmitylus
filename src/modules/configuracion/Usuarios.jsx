@@ -64,11 +64,19 @@ export default function Usuarios() {
       editingUser
         ? usuariosApi.actualizarUsuario(editingUser._id, body)
         : usuariosApi.crearUsuario(body),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
       setIsModalOpen(false);
       setEditingUser(null);
-      addToast({ title: 'Éxito', message: 'Usuario guardado correctamente.', type: 'success' });
+      if (data && data.message) {
+        if (data.usuario?.emailEnviado === false) {
+           addToast({ title: 'Atención', message: data.message, type: 'warning' });
+        } else {
+           addToast({ title: 'Éxito', message: data.message, type: 'success' });
+        }
+      } else {
+        addToast({ title: 'Éxito', message: 'Usuario guardado correctamente.', type: 'success' });
+      }
     },
     onError: () => {
       addToast({ title: 'Error', message: 'No se pudo guardar el usuario.', type: 'error' });

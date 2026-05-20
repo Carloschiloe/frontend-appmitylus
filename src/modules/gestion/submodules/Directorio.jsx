@@ -440,11 +440,6 @@ export default function Directorio() {
       }));
   }, [data.centros, selectedProvider]);
 
-  const selectedCenter = useMemo(
-    () => associatedCenters.find((centro) => centro.id === contactCenterValue || centro.code === contactCenterValue) || null,
-    [associatedCenters, contactCenterValue]
-  );
-
   const openCreateModal = useCallback(() => {
     setModalState({ open: true, mode: 'create', item: null });
     setContactCompanyQuery('');

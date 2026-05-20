@@ -103,13 +103,6 @@ const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
   const isPublicReport = window.location.pathname.startsWith('/r/muestreo/') || window.location.pathname.startsWith('/r/trato/');
 
-  console.log('[AUTH REDIRECT CHECK] PrivateRoute', {
-    path: window.location.pathname,
-    isPublicReport,
-    isAuthenticated: !!user,
-    loading
-  });
-
   if (loading) {
     return (
       <div className="mx-loading-screen">
@@ -127,13 +120,6 @@ const PrivateRoute = ({ children }) => {
 const TenantScopedRoute = ({ children, title, description }) => {
   const { user, loading } = useAuth();
   const isPublicReport = window.location.pathname.startsWith('/r/muestreo/') || window.location.pathname.startsWith('/r/trato/');
-
-  console.log('[AUTH REDIRECT CHECK] TenantScopedRoute', {
-    path: window.location.pathname,
-    isPublicReport,
-    isAuthenticated: !!user,
-    loading
-  });
 
   const selectedTenantDb = typeof window !== 'undefined'
     ? window.localStorage.getItem('selected_tenant_db') || ''
@@ -160,14 +146,6 @@ const TenantScopedRoute = ({ children, title, description }) => {
 // Rutas exclusivas para administradores
 const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/') || window.location.pathname.startsWith('/r/trato/');
-
-  console.log('[AUTH REDIRECT CHECK] AdminRoute', {
-    path: window.location.pathname,
-    isPublicReport,
-    isAuthenticated: !!user,
-    loading
-  });
 
   if (loading) {
     return (
@@ -187,14 +165,6 @@ const AdminRoute = ({ children }) => {
 // Rutas exclusivas para SuperAdministradores (SaaS Management)
 const SuperAdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/') || window.location.pathname.startsWith('/r/trato/');
-
-  console.log('[AUTH REDIRECT CHECK] SuperAdminRoute', {
-    path: window.location.pathname,
-    isPublicReport,
-    isAuthenticated: !!user,
-    loading
-  });
 
   if (loading) {
     return (
@@ -215,9 +185,6 @@ export default function App() {
   const path = window.location.pathname;
   const isPublicReportRoute = path.toLowerCase().startsWith('/r/muestreo') || path.toLowerCase().startsWith('/r/trato');
   
-  console.log('--- APP.JSX BOOTING ---');
-  console.log('[BOOT PATH]', path);
-  console.log('[BOOT PUBLIC CHECK]', isPublicReportRoute);
 
   // VISTA PÚBLICA AISLADA (Sin Auth, Sin Sidebar, Sin contexto privado)
   if (isPublicReportRoute) {

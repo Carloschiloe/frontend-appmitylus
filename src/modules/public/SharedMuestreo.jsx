@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { apiClient } from '../../api/apiClient';
-import { generarHTMLReporte } from '../reportes/renderMuestreoReport';
 import { Loader, AlertTriangle } from 'lucide-react';
 
 const SharedMuestreo = () => {
@@ -19,7 +17,7 @@ const SharedMuestreo = () => {
         if (!response.ok) throw new Error('Reporte no encontrado');
         const htmlContent = await response.text();
         setHtml(htmlContent);
-      } catch (err) {
+      } catch {
         setError('No se pudo cargar el reporte.');
       } finally {
         setLoading(false);

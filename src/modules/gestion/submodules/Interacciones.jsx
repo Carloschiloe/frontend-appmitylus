@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, X, RotateCcw, Edit, Trash2 } from 'lucide-react';
+import { Search, X, RotateCcw, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { apiClient } from '../../../api/apiClient';
 import { 

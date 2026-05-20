@@ -9,7 +9,6 @@ export const generarHTMLReporte = (m, options = {}) => {
   const {
     logoUrl = '',
     empresaNom = 'Mitynex',
-    appOrigin = typeof window !== 'undefined' ? window.location.origin : '',
     isPublic = false,
     maestros = { cats: [] }
   } = options;
@@ -186,8 +185,6 @@ export const generarHTMLReporte = (m, options = {}) => {
           </div>`).join('')}
       </div>
     </div>` : '';
-
-  const pdfFilename = `reporte-muestreo-${(m.proveedorNombre || 'reporte').replace(/[^a-z0-9]/gi, '-')}.pdf`;
 
   return `<!DOCTYPE html>
 <html lang="es">

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+﻿import React, { useState, useMemo, useCallback } from 'react';
 import { generarHTMLReporte } from '../../reportes/renderMuestreoReport';
 import { 
   Plus, 
@@ -7,82 +7,51 @@ import {
   CheckCircle2,
   AlertTriangle,
   Award,
-  Edit,
-  LayoutGrid,
-  List,
   ChevronDown,
-  ChevronUp,
   Check,
-  ChevronRight,
-  ChevronLeft,
   Printer,
-  Calendar,
   User,
   MapPin,
   Layers,
   ArrowRight,
   ArrowLeft,
   Settings2,
-  RotateCcw,
   Target,
-  Trash2,
   Camera,
-  Image as ImageIcon,
   Loader,
-  Share2,
-  MessageSquare,
   Copy
 } from 'lucide-react';
-import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useMuestreosData } from '../../../hooks/useMuestreosData';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import { useQueryClient } from '@tanstack/react-query';
-
-const fmtNum = (v, d = 2) => (Number(v) || 0).toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
-
-function buildProviderDirectory(centros = [], contactos = []) {
-  const firstContactByKey = new Map();
-  contactos.forEach((item) => {
-    const key = String(item.proveedorKey || '').trim().toLowerCase();
-    if (!key || firstContactByKey.has(key)) return;
-    firstContactByKey.set(key, item);
-  });
-
-  const providers = new Map();
-  centros.forEach((centro, index) => {
-    const proveedorNombre = String(centro.proveedor || '').trim() || 'Proveedor sin nombre';
-    const proveedorKey = String(centro.proveedorKey || proveedorNombre).trim().toLowerCase();
-    if (!proveedorKey) return;
-
-    const linkedContact = firstContactByKey.get(proveedorKey);
-    const existing = providers.get(proveedorKey);
-
-    if (!existing) {
-      providers.set(proveedorKey, {
-        id: `prov-${proveedorKey || index}`,
-        contactoId: linkedContact?._id || '',
-        proveedorKey,
-        proveedorNombre,
-        contactoNombre: linkedContact?.contactoNombre || '',
-        contactoTelefono: linkedContact?.contactoTelefono || '',
-        contactoEmail: linkedContact?.contactoEmail || '',
-        comuna: centro.comuna || '',
-        centros: 1,
-      });
-      return;
-    }
-
-    existing.centros += 1;
-    if (!existing.contactoNombre && linkedContact?.contactoNombre) existing.contactoNombre = linkedContact.contactoNombre;
-    if (!existing.contactoTelefono && linkedContact?.contactoTelefono) existing.contactoTelefono = linkedContact.contactoTelefono;
-    if (!existing.contactoEmail && linkedContact?.contactoEmail) existing.contactoEmail = linkedContact.contactoEmail;
-    if (!existing.comuna && centro.comuna) existing.comuna = centro.comuna;
-  });
-
-  return Array.from(providers.values()).sort((a, b) => a.proveedorNombre.localeCompare(b.proveedorNombre));
-}
+import MuestreosHeaderControls from './MuestreosHeaderControls';
+import MuestreosTable from './MuestreosTable';
+import {
+  buildProviderDirectory,
+  computeSamplingTotals,
+  filterMuestreos,
+  filterProviders,
+  fmtNum,
+  getAvailableCats,
+  getCurrentMonthKey,
+  getSelectedCatsForTab,
+  getWeekDays,
+  getWeekLabel,
+  groupMuestreosByProvider,
+} from './muestreos.helpers';
+import {
+  createPublicMuestreoShare,
+  createMuestreoDirectoryContact,
+  deleteMuestreo,
+  deleteMuestreoEvidence,
+  getMuestreoDetail,
+  getMuestreoDirectorySources,
+  getMuestreoReportDetail,
+  saveMuestreo,
+  uploadMuestreoEvidence,
+} from './muestreos.api';
 
 export default function Muestreos() {
   const { addToast } = useToast();
@@ -91,34 +60,13 @@ export default function Muestreos() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'grouped'
 
-  // ── Calendario navegador ──────────────────────────────────
-  const mesActualStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  };
-  const MESES_LARGO = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const mesLabel = (mk = '') => {
-    if (!mk) return '';
-    const [y, m] = mk.split('-');
-    return `${MESES_LARGO[parseInt(m, 10) - 1]} ${y}`.toUpperCase();
-  };
-
+  // â”€â”€ Calendario navegador â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [calView, setCalView] = useState('month'); // 'month' | 'week' | 'all'
-  const [mes, setMes] = useState(mesActualStr);
+  const [mes, setMes] = useState(getCurrentMonthKey);
   const [weekOffset, setWeekOffset] = useState(0);
 
-  const weekDays = React.useMemo(() => {
-    const start = new Date();
-    const day = start.getDay();
-    start.setDate(start.getDate() - (day === 0 ? 6 : day - 1) + weekOffset * 7);
-    return Array.from({ length: 7 }).map((_, i) => {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      return d.toISOString().split('T')[0];
-    });
-  }, [weekOffset]);
-
-  const weekLabel = `${new Date(weekDays[0] + 'T12:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })} — ${new Date(weekDays[6] + 'T12:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+  const weekDays = useMemo(() => getWeekDays(weekOffset), [weekOffset]);
+  const weekLabel = useMemo(() => getWeekLabel(weekDays), [weekDays]);
 
   const { muestreos, maestros, loading, page, setPage, pagination, refresh: loadData } = useMuestreosData(
     viewMode,
@@ -132,8 +80,8 @@ export default function Muestreos() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await apiClient.delete(`/muestreos/${deleteTarget._id}`);
-      addToast({ title: 'Éxito', message: 'Muestreo eliminado.', type: 'success' });
+      await deleteMuestreo(deleteTarget._id);
+      addToast({ title: 'Ã‰xito', message: 'Muestreo eliminado.', type: 'success' });
       loadData(page);
     } catch {
       addToast({ title: 'Error', message: 'No se pudo eliminar.', type: 'error' });
@@ -148,7 +96,6 @@ export default function Muestreos() {
   const [editingId, setEditingId] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [selectedCats, setSelectedCats] = useState(new Set());
-  const [activeDropdown, setActiveDropdown] = useState(null); // 'procesable' | 'rechazo' | 'defecto'
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareData, setShareData] = useState(null); // { url, message, proveedor }
 
@@ -178,38 +125,6 @@ export default function Muestreos() {
   const [generalPhotos, setGeneralPhotos] = useState([]);
   const [deletedPhotoKeys, setDeletedPhotoKeys] = useState([]);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
-
-  // === Efecto para Deep Linking del Reporte ===
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const reporteId = params.get('reporteId');
-    const tenantUrl = params.get('tenant'); // slug o dbName
-
-    console.log('[ACTIVE TENANT]:', localStorage.getItem('selected_tenant_db') || 'Ninguno');
-    console.log('[REPORTE ID]:', reporteId || 'Ninguno');
-
-    if (reporteId) {
-      // Si viene un tenant en la URL, lo priorizamos para SuperAdmins
-      if (tenantUrl) {
-        console.log('[TENANT FROM URL]:', tenantUrl);
-        localStorage.setItem('selected_tenant_db', tenantUrl);
-      }
-
-      const fetchReport = async () => {
-        try {
-          setIsLoadingDetails(true);
-          // verReporte ahora se encarga de hacer el fetch si se le pasa el ID
-          await verReporte({ _id: reporteId });
-        } catch (err) {
-          console.error('[REPORT FETCH ERROR]:', err);
-          addToast({ title: 'Error', message: 'No se pudo cargar el reporte. Verifique su acceso.', type: 'error' });
-        } finally {
-          setIsLoadingDetails(false);
-        }
-      };
-      fetchReport();
-    }
-  }, []); // Solo al montar
 
   React.useEffect(() => {
     const handleEsc = (e) => {
@@ -256,11 +171,10 @@ export default function Muestreos() {
     setIsModalOpen(true);
   }, [user, maestros.cats]);
 
-  // Buscador de Proveedor (Patrón Registro Rápido)
+  // Buscador de Proveedor (PatrÃ³n Registro RÃ¡pido)
   const [searchProviders, setSearchProviders] = useState('');
   const [directory, setDirectory] = useState([]);
   const [allCentros, setAllCentros] = useState([]);
-  const [loadingProviders, setLoadingProviders] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [providerCenters, setProviderCenters] = useState([]);
 
@@ -272,12 +186,8 @@ export default function Muestreos() {
     const controller = new AbortController();
 
     async function loadDirectory() {
-      setLoadingProviders(true);
       try {
-        const [centrosRes, contactosRes] = await Promise.all([
-          apiClient.get('/centros', { signal: controller.signal }),
-          apiClient.get('/contactos?conEmpresa=1', { signal: controller.signal }),
-        ]);
+        const [centrosRes, contactosRes] = await getMuestreoDirectorySources({ signal: controller.signal });
 
         if (!cancelled) {
           const rawCentros = Array.isArray(centrosRes) ? centrosRes : (centrosRes.items || []);
@@ -288,8 +198,6 @@ export default function Muestreos() {
       } catch (error) {
         if (error.name === 'AbortError') return;
         addToast({ title: 'Error', message: 'No se pudo cargar el directorio de proveedores.', type: 'error' });
-      } finally {
-        if (!cancelled) setLoadingProviders(false);
       }
     }
 
@@ -300,7 +208,7 @@ export default function Muestreos() {
     };
   }, [isModalOpen, directory.length, addToast]);
 
-  // Bloquear scroll y ocultar sidebar en mobile cuando el modal está abierto
+  // Bloquear scroll y ocultar sidebar en mobile cuando el modal estÃ¡ abierto
   React.useEffect(() => {
     if (isModalOpen) {
       document.body.classList.add('mu-modal-open');
@@ -310,61 +218,20 @@ export default function Muestreos() {
     return () => document.body.classList.remove('mu-modal-open');
   }, [isModalOpen]);
 
-  const filteredProviders = useMemo(() => {
-    if (!searchProviders.trim()) return [];
-    const q = searchProviders.toLowerCase();
-    return directory.filter(p => 
-      (p.proveedorNombre || '').toLowerCase().includes(q) ||
-      (p.proveedorKey || '').toLowerCase().includes(q) ||
-      (p.contactoNombre || '').toLowerCase().includes(q)
-    ).slice(0, 10);
-  }, [directory, searchProviders]);
+  const filteredProviders = useMemo(() => filterProviders(directory, searchProviders), [directory, searchProviders]);
 
-  const filteredAvailableCats = useMemo(() => {
-    // 1. Solo categorías de muestreo del tab activo
-    // 2. Que estén activas (ya vienen filtradas del hook, pero por seguridad)
-    // 3. Que NO estén ya seleccionadas
-    const res = maestros.cats.filter(c => 
-      c.tipoCat === activeTab && 
-      !selectedCats.has(c._id)
-    );
-    
-    console.log('[MUESTREO CATS RAW]', maestros.cats);
-    console.log('[MUESTREO ACTIVE TAB]', activeTab);
-    console.log('[MUESTREO AVAILABLE CATS]', res);
-    console.log('[MUESTREO SELECTED CATS IDS]', Array.from(selectedCats));
-    
-    return res;
-  }, [maestros.cats, activeTab, selectedCats]);
+  const filteredAvailableCats = useMemo(
+    () => getAvailableCats(maestros.cats, activeTab, selectedCats),
+    [maestros.cats, activeTab, selectedCats]
+  );
 
-  const filteredSelectedCats = useMemo(() => {
-    // Reconstruimos la lista de objetos seleccionados para el tab activo.
-    // Importante: Si un ítem está en selectedCats pero NO en maestros.cats (ej: desactivado o legacy),
-    // debemos intentar mostrarlo igual si tiene datos en el formulario.
-    
-    const selectedList = [];
-    selectedCats.forEach(id => {
-      let cat = maestros.cats.find(c => c._id === id);
-      
-      // Si no está en el maestro, creamos un placeholder para no perder los datos del formulario
-      if (!cat) {
-        const val = Number(form.cats[id]) || 0;
-        const details = catDetails[id];
-        // Solo lo incluimos si tiene datos reales (peso, obs o fotos)
-        if (val > 0 || details?.obs || details?.photos?.length > 0) {
-          cat = { _id: id, nombre: `(Inactivo) ${id.slice(-4)}`, tipoCat: 'unknown' };
-          // Intentar adivinar el tipoCat si es posible, o dejarlo visible en todos los tabs si es unknown
-        }
-      }
-
-      if (cat && (cat.tipoCat === activeTab || cat.tipoCat === 'unknown')) {
-        selectedList.push(cat);
-      }
-    });
-
-    console.log('[MUESTREO FILTERED SELECTED CATS]', selectedList);
-    return selectedList;
-  }, [selectedCats, maestros.cats, activeTab, form.cats, catDetails]);
+  const filteredSelectedCats = useMemo(() => getSelectedCatsForTab({
+    selectedCats,
+    cats: maestros.cats,
+    activeTab,
+    formCats: form.cats,
+    catDetails,
+  }), [selectedCats, maestros.cats, activeTab, form.cats, catDetails]);
 
   const handleSelectProvider = (provider) => {
     setSelectedProvider(provider);
@@ -383,7 +250,7 @@ export default function Muestreos() {
       : allCentros.filter(c => (c.proveedorKey || '').toLowerCase() === (provider.proveedorKey || '').toLowerCase());
     setProviderCenters(centers);
 
-    // Autoselección si hay solo uno
+    // AutoselecciÃ³n si hay solo uno
     if (centers.length === 1) {
       setForm(prev => ({
         ...prev,
@@ -393,60 +260,13 @@ export default function Muestreos() {
     }
   };
 
-  const totals = useMemo(() => {
-    const isG = form.unidadPeso === 'g';
-    const mult = isG ? 0.001 : 1;
-    const vivo = Number(form.pesoVivo) || 0;
-    const cocida = Number(form.pesoCocida) || 0;
-    const rend = vivo > 0 ? (cocida / vivo) * 100 : 0;
+  const totals = useMemo(
+    () => computeSamplingTotals({ form, selectedCats, cats: maestros.cats }),
+    [form, selectedCats, maestros.cats]
+  );
 
-    let procesable = 0;
-    let rechazos = 0;
-    let defectos = 0;
-
-    selectedCats.forEach(id => {
-      const val = (Number(form.cats[id]) || 0) * mult;
-      const cat = maestros.cats.find(c => c._id === id);
-      if (cat?.tipoCat === 'procesable') procesable += val;
-      else if (cat?.tipoCat === 'rechazo') rechazos += val;
-      else if (cat?.tipoCat === 'defecto') defectos += val;
-    });
-
-    const totalMuestra = procesable + rechazos;
-    return { rend, totalMuestra, procesable, rechazos, defectos };
-  }, [form.pesoVivo, form.pesoCocida, form.cats, selectedCats, maestros.cats, form.unidadPeso]);
-
-  const filtered = useMemo(() => {
-    return muestreos.filter(m => 
-      (m.proveedorNombre || m.proveedor || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (m.centroCodigo || m.centro || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [muestreos, searchTerm]);
-
-  const groupedData = useMemo(() => {
-    const groups = {};
-    filtered.forEach(m => {
-      const key = m.proveedorNombre || m.proveedor || 'S/P';
-      if (!groups[key]) {
-        groups[key] = { 
-          key,
-          muestras: 0, 
-          rendSum: 0, 
-          uxkgSum: 0, 
-          totalSum: 0,
-          rechazosSum: 0,
-          items: []
-        };
-      }
-      groups[key].muestras++;
-      groups[key].rendSum += Number(m.rendimiento) || 0;
-      groups[key].uxkgSum += Number(m.uxkg) || 0;
-      groups[key].totalSum += Number(m.total) || 0;
-      groups[key].rechazosSum += Number(m.rechazos) || 0;
-      groups[key].items.push(m);
-    });
-    return Object.values(groups).sort((a, b) => b.muestras - a.muestras);
-  }, [filtered]);
+  const filtered = useMemo(() => filterMuestreos(muestreos, searchTerm), [muestreos, searchTerm]);
+  const groupedData = useMemo(() => groupMuestreosByProvider(filtered), [filtered]);
 
   // Handlers
   const handleAdvanceOnEnter = useCallback((e) => {
@@ -472,7 +292,7 @@ export default function Muestreos() {
     setIsLoadingDetails(true);
 
     try {
-      const m = await apiClient.get(`/muestreos/${id}`);
+      const m = await getMuestreoDetail(id);
 
       const mCats = m.cats || {};
       
@@ -500,22 +320,21 @@ export default function Muestreos() {
       setDeletedPhotoKeys([]);
 
       const catIds = new Set();
-      // 1. Añadir procesables del maestro (siempre visibles)
+      // 1. AÃ±adir procesables del maestro (siempre visibles)
       maestros.cats.filter(c => c.tipoCat === 'procesable').forEach(c => catIds.add(c._id));
       
-      // 2. Añadir categorías guardadas en m.cats
+      // 2. AÃ±adir categorÃ­as guardadas en m.cats
       Object.keys(m.cats || {}).forEach(cId => {
         catIds.add(cId);
       });
 
-      // 3. Añadir categorías que tienen detalles (fotos/obs)
+      // 3. AÃ±adir categorÃ­as que tienen detalles (fotos/obs)
       Object.entries(normalizedCatDetails).forEach(([cId, data]) => {
         if (data.obs || (data.photos && data.photos.length > 0)) {
           catIds.add(cId);
         }
       });
 
-      console.log('[MUESTREO EDIT RECONSTRUCTED IDS]', Array.from(catIds));
       setSelectedCats(catIds);
 
       const pKey = (m.proveedorKey || '').toLowerCase();
@@ -548,8 +367,7 @@ export default function Muestreos() {
         setSelectedProvider(null);
         setProviderCenters([]);
       }
-    } catch (err) {
-      console.error('Error al cargar muestreo completo:', err);
+    } catch {
       addToast('Error al cargar muestreo completo', 'error');
       setIsModalOpen(false);
     } finally {
@@ -565,8 +383,6 @@ export default function Muestreos() {
     selectedCats.forEach(id => {
       finalCats[id] = (Number(form.cats[id]) || 0) * mult;
     });
-
-    console.log('[STATE CATDETAILS BEFORE SAVE]', catDetails);
 
     const payload = { 
       ...form,
@@ -592,7 +408,7 @@ export default function Muestreos() {
     delete payload.unidadPeso;
 
     try {
-      // 1. Resolver el proveedor (ya sea desde el estado o buscándolo en el directorio)
+      // 1. Resolver el proveedor (ya sea desde el estado o buscÃ¡ndolo en el directorio)
       const currentProviderKey = String(form.proveedorKey || '').trim().toLowerCase();
       const currentProviderNombre = String(form.proveedorNombre || '').trim().toLowerCase();
       
@@ -601,7 +417,7 @@ export default function Muestreos() {
         (p.proveedorNombre && String(p.proveedorNombre).trim().toLowerCase() === currentProviderNombre)
       );
 
-      // 2. Determinar si requiere creación de contacto
+      // 2. Determinar si requiere creaciÃ³n de contacto
       const hasProviderName = String(form.proveedorNombre || '').trim().length > 0;
       const needsContact = hasProviderName && (selectedProvider?.isNew || !resolvedProvider || !resolvedProvider.contactoId);
 
@@ -620,30 +436,27 @@ export default function Muestreos() {
           centroComuna: selectedCenter?.comuna || '',
         };
         try {
-          await apiClient.post('/contactos', newContactPayload);
+          await createMuestreoDirectoryContact(newContactPayload);
           queryClient.invalidateQueries({ queryKey: ['contactos'] });
-          addToast({ title: 'Directorio', message: 'Se ha creado automáticamente el nuevo proveedor en el directorio.', type: 'info' });
-        } catch (err) {
-          console.error('[AUTO CREATE CONTACT ERROR]:', err);
+          addToast({ title: 'Directorio', message: 'Se ha creado automÃ¡ticamente el nuevo proveedor en el directorio.', type: 'info' });
+        } catch {
+          addToast({ title: 'Directorio', message: 'El muestreo se guardara, pero no se pudo crear el contacto automaticamente.', type: 'warning' });
         }
       }
 
-      const endpoint = editingId ? `/muestreos/${editingId}` : '/muestreos';
-      const method = editingId ? 'patch' : 'post';
-
-      const data = await apiClient[method](endpoint, payload);
+      const data = await saveMuestreo(editingId, payload);
       setResultData(data.item || data);
       setIsModalOpen(false);
-      setDirectory([]); // Limpiar caché para recargar directorio con el nuevo contacto al abrir modal
+      setDirectory([]); // Limpiar cachÃ© para recargar directorio con el nuevo contacto al abrir modal
       queryClient.invalidateQueries({ queryKey: ['muestreos'] });
       queryClient.invalidateQueries({ queryKey: ['contactos'] });
       setIsResultOpen(true);
       loadData(page);
-      addToast({ title: 'Éxito', message: `Muestreo ${editingId ? 'actualizado' : 'guardado'} correctamente.`, type: 'success' });
+      addToast({ title: 'Ã‰xito', message: `Muestreo ${editingId ? 'actualizado' : 'guardado'} correctamente.`, type: 'success' });
     } catch {
       addToast({ title: 'Error', message: 'No se pudo guardar el muestreo.', type: 'error' });
     }
-  }, [selectedCats, form, totals, editingId, page, addToast, loadData, catDetails, generalPhotos, selectedProvider, allCentros, directory, queryClient]);
+  }, [selectedCats, form, totals, editingId, page, addToast, loadData, catDetails, generalPhotos, deletedPhotoKeys, selectedProvider, allCentros, directory, queryClient]);
 
   const toggleCatSelection = useCallback((id) => {
     const next = new Set(selectedCats);
@@ -675,12 +488,7 @@ export default function Muestreos() {
     
     for (const file of fileList) {
       try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('category', id);
-        formData.append('samplingId', editingId || 'temp');
-
-        const res = await apiClient.post('/muestreos/evidencias/upload', formData);
+        const res = await uploadMuestreoEvidence({ file, category: id, samplingId: editingId || 'temp' });
 
         if (res.ok) {
           setCatDetails(prev => {
@@ -694,8 +502,7 @@ export default function Muestreos() {
             };
           });
         }
-      } catch (err) {
-        console.error('Error al subir evidencia:', err);
+      } catch {
         addToast('Error al subir imagen', 'error');
       }
     }
@@ -719,9 +526,7 @@ export default function Muestreos() {
         if (photoToDelete?.key) {
           setDeletedPhotoKeys(prevKeys => [...prevKeys, photoToDelete.key]);
           
-          // Llamar al delete en background
-          apiClient.delete(`/muestreos/evidencias?key=${encodeURIComponent(photoToDelete.key)}`)
-            .catch(err => console.error('Error al eliminar del storage:', err));
+          deleteMuestreoEvidence(photoToDelete.key).catch(() => {});
         }
         
         nextPhotos.splice(idx, 1);
@@ -738,18 +543,12 @@ export default function Muestreos() {
     
     for (const file of fileList) {
       try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('category', 'general');
-        formData.append('samplingId', editingId || 'temp');
-
-        const res = await apiClient.post('/muestreos/evidencias/upload', formData);
+        const res = await uploadMuestreoEvidence({ file, category: 'general', samplingId: editingId || 'temp' });
 
         if (res.ok) {
           setGeneralPhotos(prev => [...prev, res.metadata]);
         }
-      } catch (err) {
-        console.error('Error al subir evidencia general:', err);
+      } catch {
         addToast('Error al subir imagen', 'error');
       }
     }
@@ -762,15 +561,14 @@ export default function Muestreos() {
       if (photoToDelete?.key) {
         setDeletedPhotoKeys(prevKeys => [...prevKeys, photoToDelete.key]);
         
-        apiClient.delete(`/muestreos/evidencias?key=${encodeURIComponent(photoToDelete.key)}`)
-          .catch(err => console.error('Error al eliminar del storage:', err));
+        deleteMuestreoEvidence(photoToDelete.key).catch(() => {});
       }
       nextPhotos.splice(idx, 1);
       return nextPhotos;
     });
   }, []);
 
-  // El generador de HTML se ha movido a src/modules/reportes/renderMuestreoReport.js para ser compartido con la vista pública.
+  // El generador de HTML se ha movido a src/modules/reportes/renderMuestreoReport.js para ser compartido con la vista pÃºblica.
 
   const verReporte = useCallback(async (m) => {
     const id = m._id || m.id;
@@ -778,7 +576,7 @@ export default function Muestreos() {
       if (!id) return;
 
       setIsLoadingDetails(true);
-      const detalle = await apiClient.get(`/muestreos/${id}?audit=1`);
+      const detalle = await getMuestreoReportDetail(id);
       
       const logoUrl    = user?.empresaId?.config?.logo || localStorage.getItem('selected_tenant_logo') || '';
       const empresaNom = user?.empresaId?.nombre || 'Mitynex';
@@ -787,9 +585,6 @@ export default function Muestreos() {
         empresaNom,
         maestros
       });
-      // TODO: [REPORT] Diagnostic logs for parity validation
-      console.log('[PRIVATE REPORT PAYLOAD]', detalle);
-      console.log('[PRIVATE REPORT HTML CHECK]', html.slice(0, 1000));
       if (!html) return;
 
       const win = window.open('', '_blank', 'width=900,height=1000');
@@ -801,14 +596,14 @@ export default function Muestreos() {
       win.document.write(html);
       win.document.close();
 
-      // Pequeño delay para asegurar que el DOM de la nueva ventana esté listo
+      // PequeÃ±o delay para asegurar que el DOM de la nueva ventana estÃ© listo
       setTimeout(() => {
         const btn = win.document.getElementById('btnCopiarEnlace');
         if (btn) {
           btn.addEventListener('click', async () => {
             try {
-              btn.innerText = '⏳...';
-              const res = await apiClient.post(`/muestreos/${id}/share`);
+              btn.innerText = 'â³...';
+              const res = await createPublicMuestreoShare(id);
               
               const doc = win.document;
               const textarea = doc.createElement('textarea');
@@ -818,12 +613,11 @@ export default function Muestreos() {
               doc.execCommand('copy');
               doc.body.removeChild(textarea);
 
-              btn.innerText = '✅ ¡Copiado!';
-              setTimeout(() => { btn.innerText = '🔗 Copiar enlace'; }, 2500);
-            } catch (err) {
-              console.error('Copy link error:', err);
-              btn.innerText = '❌ Error';
-              setTimeout(() => { btn.innerText = '🔗 Copiar enlace'; }, 2500);
+              btn.innerText = 'âœ… Â¡Copiado!';
+              setTimeout(() => { btn.innerText = 'ðŸ”— Copiar enlace'; }, 2500);
+            } catch {
+              btn.innerText = 'âŒ Error';
+              setTimeout(() => { btn.innerText = 'ðŸ”— Copiar enlace'; }, 2500);
             }
           });
         }
@@ -832,11 +626,9 @@ export default function Muestreos() {
         if (btnShare) {
           btnShare.addEventListener('click', async () => {
             try {
-              btnShare.innerText = '⏳ Generando...';
-              const res = await apiClient.post(`/muestreos/${id}/share`);
+              btnShare.innerText = 'â³ Generando...';
+              const res = await createPublicMuestreoShare(id);
               
-              console.log('[PUBLIC SHARE URL COPIED] (popup)', res.url);
-
               const doc = win.document;
               const textarea = doc.createElement('textarea');
               textarea.value = res.url;
@@ -845,56 +637,22 @@ export default function Muestreos() {
               doc.execCommand('copy');
               doc.body.removeChild(textarea);
 
-              btnShare.innerText = '✅ ¡Copiado!';
-              setTimeout(() => { btnShare.innerText = '📤 Compartir'; }, 2500);
-            } catch (err) {
-              console.error('Share error:', err);
-              btnShare.innerText = '❌ Error';
-              setTimeout(() => { btnShare.innerText = '📤 Compartir'; }, 2500);
+              btnShare.innerText = 'âœ… Â¡Copiado!';
+              setTimeout(() => { btnShare.innerText = 'ðŸ“¤ Compartir'; }, 2500);
+            } catch {
+              btnShare.innerText = 'âŒ Error';
+              setTimeout(() => { btnShare.innerText = 'ðŸ“¤ Compartir'; }, 2500);
             }
           });
         }
       }, 300);
 
-    } catch (err) {
-      console.error('Error al generar reporte:', err);
+    } catch {
       addToast({ title: 'Error', message: 'No se pudo cargar el detalle del reporte.', type: 'error' });
     } finally {
       setIsLoadingDetails(false);
     }
-  }, [generarHTMLReporte, addToast]);
-
-  const descargarPDF = useCallback(async (m) => {
-    // ... (sin cambios en la lógica interna)
-    try {
-      const id = m._id || m.id;
-      if (!id) return;
-
-      setIsLoadingDetails(true);
-      const detalle = await apiClient.get(`/muestreos/${id}`);
-      
-      const html = generarHTMLReporte(detalle);
-      if (!html) return;
-
-      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      const proveedor = (detalle.proveedorNombre || detalle.proveedor || 'proveedor').replace(/[^a-z0-9]/gi, '-').toLowerCase();
-      const centro = (detalle.centroCodigo || detalle.centro || 'centro').replace(/[^a-z0-9]/gi, '-').toLowerCase();
-      const fecha = (detalle.fecha || '').slice(0, 10);
-      link.href = url;
-      link.download = `reporte-muestreo-${proveedor}-${centro}-${fecha}.html`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Error al descargar reporte:', err);
-      addToast({ title: 'Error', message: 'No se pudo descargar el reporte.', type: 'error' });
-    } finally {
-      setIsLoadingDetails(false);
-    }
-  }, [generarHTMLReporte, addToast]);
+  }, [addToast, maestros, user?.empresaId?.config?.logo, user?.empresaId?.nombre]);
 
   const compartirReporte = useCallback(async (m) => {
     try {
@@ -902,7 +660,7 @@ export default function Muestreos() {
       if (!id) return;
 
       setIsLoadingDetails(true);
-      const res = await apiClient.post(`/muestreos/${id}/share`);
+      const res = await createPublicMuestreoShare(id);
 
       const proveedor = m.proveedorNombre || 'Proveedor';
       const centro = m.centroCodigo || m.centroNombre || 'Sin Centro';
@@ -923,13 +681,24 @@ export default function Muestreos() {
         proveedor: proveedor
       });
       setIsShareModalOpen(true);
-    } catch (err) {
-      console.error('Error al compartir reporte:', err);
+    } catch {
       addToast({ title: 'Error', message: 'No se pudo generar el enlace para compartir.', type: 'error' });
     } finally {
       setIsLoadingDetails(false);
     }
   }, [addToast]);
+
+  // Deep link para abrir un reporte puntual desde URL privada.
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reporteId = params.get('reporteId');
+    const tenantUrl = params.get('tenant');
+
+    if (!reporteId) return;
+    if (tenantUrl) localStorage.setItem('selected_tenant_db', tenantUrl);
+
+    verReporte({ _id: reporteId });
+  }, [verReporte]);
 
   // Alias para compatibilidad con el modal de resultado
   const generarInformePDF = verReporte;
@@ -957,213 +726,50 @@ export default function Muestreos() {
   return (
     <div className="muestreos-container muestreos-compact" style={{ animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* ── Navegador de Calendario ── */}
-      <div className="mx-card muestreos-period-card">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          <div className="mx-toggle-group">
-            <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => { setCalView('month'); setPage(1); }}>Vista Mes</button>
-            <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => { setCalView('week'); setPage(1); }}>Vista Semana</button>
-            <button className={`mx-toggle-btn ${calView === 'all' ? 'active' : ''}`} onClick={() => { setCalView('all'); setPage(1); }}>Todos</button>
-          </div>
-          {calView !== 'all' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button className="mx-btn-icon sm" onClick={() => {
-                if (calView === 'month') {
-                  setMes(prev => {
-                    const [y, m] = prev.split('-');
-                    const d = new Date(parseInt(y), parseInt(m) - 2, 1);
-                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                  });
-                } else {
-                  setWeekOffset(o => o - 1);
-                }
-                setPage(1);
-              }}><ChevronLeft size={16} /></button>
-              <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-text)', minWidth: '200px', textAlign: 'center', textTransform: 'uppercase' }}>
-                {calView === 'month' ? mesLabel(mes) : weekLabel}
-              </span>
-              <button className="mx-btn-icon sm" onClick={() => {
-                if (calView === 'month') {
-                  setMes(prev => {
-                    const [y, m] = prev.split('-');
-                    const d = new Date(parseInt(y), parseInt(m), 1);
-                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                  });
-                } else {
-                  setWeekOffset(o => o + 1);
-                }
-                setPage(1);
-              }}><ChevronRight size={16} /></button>
-              {calView === 'week' && weekOffset !== 0 && (
-                <button className="mx-btn mx-btn-outline sm" onClick={() => { setWeekOffset(0); setPage(1); }}>Hoy</button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mx-toolbar muestreos-actions-toolbar">
-        <div className="mx-toggle-group">
-          <button className={`mx-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => { setViewMode('list'); setPage(1); }}><List size={14} /> Historial</button>
-          <button className={`mx-toggle-btn ${viewMode === 'grouped' ? 'active' : ''}`} onClick={() => { setViewMode('grouped'); setPage(1); }}><LayoutGrid size={14} /> Agrupado</button>
-        </div>
-        <div className="mx-search-box" style={{ flex: 1 }}>
-          <Search size={18} />
-          <input 
-            type="text" 
-            placeholder="Buscar por proveedor o centro..." 
-            className="mx-input" 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)} 
-          />
-        </div>
-        <button className="mx-btn mx-btn-outline sm" onClick={() => { setPage(1); loadData(1); }}><RotateCcw size={18} /></button>
-        <button className="mx-btn mx-btn-primary sm" onClick={resetForm}>
-          <Plus size={18} /> Muestreo
-        </button>
-      </div>
+      <MuestreosHeaderControls
+        calView={calView}
+        mes={mes}
+        onCalViewChange={(nextView) => { setCalView(nextView); setPage(1); }}
+        onMesChange={(updater) => { setMes(updater); setPage(1); }}
+        weekOffset={weekOffset}
+        onWeekOffsetChange={(updater) => { setWeekOffset(updater); setPage(1); }}
+        weekLabel={weekLabel}
+        viewMode={viewMode}
+        onViewModeChange={(nextView) => { setViewMode(nextView); setPage(1); }}
+        searchTerm={searchTerm}
+        onSearchTermChange={setSearchTerm}
+        onRefresh={() => { setPage(1); loadData(1); }}
+        onNewMuestreo={resetForm}
+      />
 
       {loading ? (
         <div className="am-p-64 am-text-center"><div className="mx-loader"></div></div>
       ) : (
-        <div className="mx-table-card muestreos-table-card">
-          <div className="mx-table-wrap">
-            <table className="mx-table">
-              <thead>
-                <tr>
-                  <th style={{ width: viewMode === 'grouped' ? '40px' : '100px' }}>{viewMode === 'grouped' ? '' : 'Fecha'}</th>
-                  <th>Proveedor / Centro</th>
-                  <th style={{ textAlign: 'center' }}>Muestras</th>
-                  <th style={{ textAlign: 'center' }}>R% Prom.</th>
-                  <th style={{ textAlign: 'center' }}>U x Kg</th>
-                  <th style={{ textAlign: 'center' }}>Procesable %</th>
-                  <th style={{ textAlign: 'center' }}>% Rechazo</th>
-                  <th style={{ textAlign: 'center' }}>{viewMode === 'list' ? 'Calificación' : ''}</th>
-                  <th style={{ textAlign: 'right' }}>{viewMode === 'list' ? 'Acciones' : ''}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {viewMode === 'list' ? (
-                  filtered.map(m => (
-                    <tr key={m._id || m.id}>
-                      <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{m.fecha ? new Date(m.fecha).toLocaleDateString('es-CL') : '—'}</td>
-                      <td>
-                        <div style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{m.proveedorNombre || m.proveedor}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--color-text-subtle)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <MapPin size={10} /> {m.centroCodigo || 'Sin Centro'} {m.linea && `· L: ${m.linea}`}
-                        </div>
-                      </td>
-                      <td style={{ textAlign: 'center' }}>1</td>
-                      <td style={{ textAlign: 'center' }}><span className="mx-badge mx-badge-info" style={{ fontWeight: 700 }}>{Number(m.rendimiento || 0).toFixed(1)}%</span></td>
-                      <td style={{ textAlign: 'center', fontWeight: 800 }}>{m.uxkg || 0}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--color-success)' }}>
-                        {m.total > 0 ? (m.procesable / m.total * 100).toFixed(1) : '0.0'}%
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <span style={{ color: (m.total > 0 && m.rechazos/m.total > 0.05) ? 'var(--color-error)' : 'inherit' }}>
-                          {m.total > 0 ? (m.rechazos / m.total * 100).toFixed(1) : 0}%
-                        </span>
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        {m.clasificaciones?.[0] ? <span className="mx-badge mx-badge-success">{m.clasificaciones[0].nombre}</span> : <span className="mx-badge mx-badge-muted">S/C</span>}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                          <button className="mx-action-btn share" style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bcf0da' }} title="Compartir enlace público" onClick={() => compartirReporte(m)}><Share2 size={14} /></button>
-                          <button className="mx-action-btn print" title="Ver reporte" onClick={() => verReporte(m)}><Printer size={14} /></button>
-                          <button className="mx-action-btn edit" title="Editar" onClick={() => handleEdit(m)}><Edit size={14} /></button>
-                          <button className="mx-action-btn delete" title="Eliminar" onClick={() => { setDeleteTarget(m); setDeleteOpen(true); }}><Trash2 size={14} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  groupedData.map(g => (
-                    <React.Fragment key={g.key}>
-                      <tr onClick={() => toggleGroup(g.key)} style={{ cursor: 'pointer', background: expandedGroups.has(g.key) ? 'var(--color-primary-bg)' : 'white' }}>
-                        <td style={{ textAlign: 'center' }}>{expandedGroups.has(g.key) ? <ChevronUp size={16} color="var(--color-primary)" /> : <ChevronDown size={16} />}</td>
-                        <td style={{ fontWeight: 800, color: 'var(--color-text)' }}>{g.key}</td>
-                        <td style={{ textAlign: 'center' }}><span className="mx-badge mx-badge-muted" style={{ fontWeight: 700 }}>{g.muestras}</span></td>
-                        <td style={{ textAlign: 'center', fontWeight: 800, color: 'var(--color-primary)' }}>{(g.rendSum / g.muestras).toFixed(1)}%</td>
-                        <td style={{ textAlign: 'center', fontWeight: 800 }}>{(g.uxkgSum / g.muestras).toFixed(0)}</td>
-                        <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--color-success)' }}>
-                          {g.totalSum > 0 ? ( (g.totalSum - g.rechazosSum) / g.totalSum * 100).toFixed(1) : '0.0'}%
-                        </td>
-                        <td style={{ textAlign: 'center', fontWeight: 700, color: (g.rechazosSum / g.totalSum * 100) > 5 ? 'var(--color-error)' : 'inherit' }}>
-                          {(g.totalSum > 0 ? (g.rechazosSum / g.totalSum * 100).toFixed(1) : 0)}%
-                        </td>
-                        <td style={{ textAlign: 'center' }}>—</td>
-                        <td style={{ textAlign: 'right' }}><ChevronRight size={14} style={{ opacity: 0.2 }} /></td>
-                      </tr>
-                      {expandedGroups.has(g.key) && g.items.map(m => (
-                        <tr key={m._id} style={{ background: '#fafafa' }}>
-                          <td style={{ textAlign: 'right', borderRight: '2px solid var(--color-primary)' }}></td>
-                          <td style={{ paddingLeft: '24px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', whiteSpace: 'nowrap' }}>
-                              <span style={{ fontSize: '12px', fontWeight: 700 }}>{new Date(m.fecha).toLocaleDateString('es-CL')}</span>
-                              <span style={{ fontSize: '11px', color: 'var(--color-text-subtle)' }}>{m.centroCodigo || 'Sin Centro'} {m.linea && `· L: ${m.linea}`}</span>
-                            </div>
-                          </td>
-                          <td style={{ textAlign: 'center' }}>1</td>
-                          <td style={{ textAlign: 'center', fontSize: '13px' }}>{Number(m.rendimiento).toFixed(1)}%</td>
-                          <td style={{ textAlign: 'center', fontSize: '13px' }}>{m.uxkg}</td>
-                          <td style={{ textAlign: 'center', fontSize: '13px', color: 'var(--color-success)', fontWeight: 700 }}>
-                            {m.total > 0 ? (m.procesable / m.total * 100).toFixed(1) : '0.0'}%
-                          </td>
-                          <td style={{ textAlign: 'center', fontSize: '13px' }}>{m.total > 0 ? (m.rechazos / m.total * 100).toFixed(1) : 0}%</td>
-                          <td style={{ textAlign: 'center' }}>
-                            {m.clasificaciones?.[0] ? <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-success)' }}>{m.clasificaciones[0].nombre}</span> : <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>S/C</span>}
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
-                              <button className="mx-action-btn share" style={{ width: '28px', height: '28px', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bcf0da' }} title="Compartir enlace público" onClick={(e) => { e.stopPropagation(); compartirReporte(m); }}><Share2 size={12} /></button>
-                              <button className="mx-action-btn print" style={{ width: '28px', height: '28px' }} title="Ver reporte" onClick={(e) => { e.stopPropagation(); verReporte(m); }}><Printer size={12} /></button>
-                              <button className="mx-action-btn edit" style={{ width: '28px', height: '28px', opacity: isLoadingDetails && editingId === (m._id || m.id) ? 0.5 : 1 }} title="Editar" disabled={isLoadingDetails} onClick={(e) => { e.stopPropagation(); if (!isLoadingDetails) handleEdit(m); }}><Edit size={12} /></button>
-                              <button className="mx-action-btn delete" style={{ width: '28px', height: '28px' }} title="Eliminar" onClick={(e) => { e.stopPropagation(); setDeleteTarget(m); setDeleteOpen(true); }}><Trash2 size={12} /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {viewMode === 'list' && pagination && pagination.pages > 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--color-border)' }}>
-              <span style={{ fontSize: '13px', color: 'var(--color-text-subtle)' }}>
-                {pagination.total} muestreos &nbsp;·&nbsp; Pág. {pagination.page} / {pagination.pages}
-              </span>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  className="mx-btn mx-btn-outline sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                >
-                  <ArrowLeft size={14} /> Anterior
-                </button>
-                <button
-                  className="mx-btn mx-btn-outline sm"
-                  disabled={page >= pagination.pages}
-                  onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
-                >
-                  Siguiente <ArrowRight size={14} />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <MuestreosTable
+          viewMode={viewMode}
+          filtered={filtered}
+          groupedData={groupedData}
+          expandedGroups={expandedGroups}
+          onToggleGroup={toggleGroup}
+          pagination={pagination}
+          page={page}
+          onPageChange={setPage}
+          isLoadingDetails={isLoadingDetails}
+          editingId={editingId}
+          onShare={compartirReporte}
+          onReport={verReporte}
+          onEdit={handleEdit}
+          onDelete={(item) => { setDeleteTarget(item); setDeleteOpen(true); }}
+        />
       )}
 
       <ConfirmDeleteModal
         isOpen={isDeleteOpen}
         onClose={() => { setDeleteOpen(false); setDeleteTarget(null); }}
         onConfirm={handleDeleteConfirm}
-        title="¿Eliminar este muestreo?"
+        title="Â¿Eliminar este muestreo?"
         itemName={deleteTarget?.proveedorNombre || deleteTarget?.proveedor}
-        description={deleteTarget ? `Estás por eliminar el muestreo del ${new Date(deleteTarget.fecha).toLocaleDateString('es-CL')}${deleteTarget.centroCodigo ? ` en el centro ${deleteTarget.centroCodigo}` : ''}. Esta acción no se puede deshacer.` : ''}
+        description={deleteTarget ? `EstÃ¡s por eliminar el muestreo del ${new Date(deleteTarget.fecha).toLocaleDateString('es-CL')}${deleteTarget.centroCodigo ? ` en el centro ${deleteTarget.centroCodigo}` : ''}. Esta acciÃ³n no se puede deshacer.` : ''}
       />
 
       {isModalOpen && (
@@ -1172,7 +778,7 @@ export default function Muestreos() {
             <div className="mx-modal-header" style={{ width: '100%', boxSizing: 'border-box', padding: '12px 20px', minHeight: 'auto' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
                 <h3 className="mx-modal-title" style={{ fontSize: '1rem', whiteSpace: 'nowrap' }}>
-                  {editingId ? 'Editar' : 'Nuevo'} Muestreo Técnico
+                  {editingId ? 'Editar' : 'Nuevo'} Muestreo TÃ©cnico
                 </h3>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', padding: '3px 10px', borderRadius: '16px' }}>
@@ -1192,7 +798,7 @@ export default function Muestreos() {
                           {step > n ? <Check size={10} /> : n}
                         </div>
                         <span style={{ fontSize: '0.7rem', fontWeight: 700, color: step === n ? 'var(--color-primary)' : '#64748b' }}>
-                          {n === 1 ? 'Contexto' : n === 2 ? 'Análisis' : 'Resultado'}
+                          {n === 1 ? 'Contexto' : n === 2 ? 'AnÃ¡lisis' : 'Resultado'}
                         </span>
                       </div>
                       {n < 3 && <div style={{ width: '8px', height: '1px', background: '#cbd5e1' }} />}
@@ -1231,7 +837,7 @@ export default function Muestreos() {
                               {filteredProviders.map(p => (
                                 <button key={p.id} type="button" onClick={() => handleSelectProvider(p)} className="mu-opt">
                                   <strong>{p.proveedorNombre}</strong>
-                                  <span>{p.comuna} · {p.contactoNombre}</span>
+                                  <span>{p.comuna} Â· {p.contactoNombre}</span>
                                 </button>
                               ))}
                               {searchProviders.trim().length > 0 && (
@@ -1248,8 +854,8 @@ export default function Muestreos() {
                                   className="mu-opt"
                                   style={{ borderTop: '1px dashed var(--color-border)', color: 'var(--color-primary)', fontWeight: 'var(--weight-bold)' }}
                                 >
-                                  <strong>+ Crear proveedor: "{searchProviders}"</strong>
-                                  <span>Registrar automáticamente en el directorio</span>
+                                  <strong>+ Crear proveedor: {searchProviders}</strong>
+                                  <span>Registrar automÃ¡ticamente en el directorio</span>
                                 </button>
                               )}
                             </div>
@@ -1276,8 +882,8 @@ export default function Muestreos() {
                       </select>
                     </div>
                     <div className="mx-form-group" style={{ flex: 1 }}>
-                      <label className="mx-label">Línea</label>
-                      <input className="mx-input" placeholder="N°" value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} />
+                      <label className="mx-label">LÃ­nea</label>
+                      <input className="mx-input" placeholder="NÂ°" value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} />
                     </div>
                   </div>
 
@@ -1299,7 +905,7 @@ export default function Muestreos() {
                   <div style={{ flex: '0 0 200px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', color: 'var(--color-primary)' }}>
                       <Target size={14} />
-                      <h4 style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800 }}>Parámetros</h4>
+                      <h4 style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800 }}>ParÃ¡metros</h4>
                     </div>
 
                     <div className="mx-form-group">
@@ -1333,7 +939,7 @@ export default function Muestreos() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16a34a' }}>
                         <Layers size={14} />
-                        <h4 style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800 }}>Análisis Técnico</h4>
+                        <h4 style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800 }}>AnÃ¡lisis TÃ©cnico</h4>
                       </div>
                       <select 
                         className="mx-select" 
@@ -1367,7 +973,7 @@ export default function Muestreos() {
                           style={{ width: '100%', height: '32px', fontSize: '0.8rem', justifyContent: 'space-between', padding: '0 12px' }}
                           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         >
-                          <span>+ Añadir {activeTab}s...</span>
+                          <span>+ AÃ±adir {activeTab}s...</span>
                           <ChevronDown size={14} style={{ transform: isDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                         </button>
 
@@ -1385,7 +991,7 @@ export default function Muestreos() {
                             }}>
                               {filteredAvailableCats.length === 0 ? (
                                 <div style={{ padding: '8px', textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8' }}>
-                                  No hay más ítems disponibles
+                                  No hay mÃ¡s Ã­tems disponibles
                                 </div>
                               ) : (
                                 filteredAvailableCats.map(c => (
@@ -1549,8 +1155,8 @@ export default function Muestreos() {
                 <div className="mu-step-container am-text-center am-py-32" style={{ animation: 'slideInRight 0.3s ease-out', padding: '24px' }}>
                   <div className="mu-result-hero">
                     <Target size={48} color="var(--color-primary)" />
-                    <h3 className="am-mt-16">Resumen del Análisis</h3>
-                    <p className="am-mb-32">Verifica los datos antes de guardar la calificación oficial.</p>
+                    <h3 className="am-mt-16">Resumen del AnÃ¡lisis</h3>
+                    <p className="am-mb-32">Verifica los datos antes de guardar la calificaciÃ³n oficial.</p>
                   </div>
 
                   <div className="mu-result-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', maxWidth: '800px' }}>
@@ -1582,7 +1188,7 @@ export default function Muestreos() {
 
                   <div className="mu-confirm-msg am-mt-32">
                     <AlertTriangle size={16} />
-                    <span>Este muestreo será registrado por <strong>{form.responsable || 'Usuario Sistema'}</strong> para el proveedor <strong>{form.proveedorNombre}</strong>.</span>
+                    <span>Este muestreo serÃ¡ registrado por <strong>{form.responsable || 'Usuario Sistema'}</strong> para el proveedor <strong>{form.proveedorNombre}</strong>.</span>
                   </div>
                 </div>
               )}
@@ -1596,7 +1202,7 @@ export default function Muestreos() {
                 onClick={() => setStep(s => Math.max(1, s - 1))}
                 disabled={step === 1 || isLoadingDetails}
               >
-                <ArrowLeft size={16} /> Atrás
+                <ArrowLeft size={16} /> AtrÃ¡s
               </button>
               
               <div style={{ display: 'flex', gap: '12px' }}>
@@ -1606,7 +1212,7 @@ export default function Muestreos() {
                   </button>
                 ) : (
                   <button className="mx-btn mx-btn-primary" onClick={handleSave} disabled={isLoadingDetails}>
-                    <CheckCircle2 size={16} /> Guardar Calificación
+                    <CheckCircle2 size={16} /> Guardar CalificaciÃ³n
                   </button>
                 )}
               </div>
@@ -1615,7 +1221,7 @@ export default function Muestreos() {
 
           {step === 2 && (
             <div className="mu-side-car">
-              <div className="mu-side-car-header">Métricas Resumen</div>
+              <div className="mu-side-car-header">MÃ©tricas Resumen</div>
               
               <div className="mu-side-car-item primary">
                 <div className="label">R% Carne</div>
@@ -1658,10 +1264,10 @@ export default function Muestreos() {
             </div>
             
             <h2 style={{ marginTop: '24px', fontWeight: 900, color: 'var(--color-text)' }}>
-              {resultData.clasificaciones?.[0]?.nombre || 'Sin Clasificación'}
+              {resultData.clasificaciones?.[0]?.nombre || 'Sin ClasificaciÃ³n'}
             </h2>
             <p style={{ color: 'var(--color-text-subtle)', marginTop: '8px' }}>
-              La materia prima ha sido analizada y calificada según los parámetros vigentes.
+              La materia prima ha sido analizada y calificada segÃºn los parÃ¡metros vigentes.
             </p>
 
             <div className="mu-result-mini-kpis am-mt-24">
@@ -1843,7 +1449,7 @@ export default function Muestreos() {
       )}
 
 
-      {/* ── Mini-Tarjeta Flotante de Compartir (Ultra Minimalista) ── */}
+      {/* â”€â”€ Mini-Tarjeta Flotante de Compartir (Ultra Minimalista) â”€â”€ */}
       {isShareModalOpen && (
         <div className="am-modal-overlay" style={{ backdropFilter: 'blur(4px)' }}>
           <div className="am-modal-content" style={{ maxWidth: '280px', padding: '20px', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
@@ -1890,7 +1496,7 @@ export default function Muestreos() {
                 style={{ height: '44px', borderRadius: '12px', fontSize: '14px', fontWeight: 600, background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0', cursor: 'not-allowed', opacity: 0.7 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <Target size={16} /> Ping (Próximamente)
+                  <Target size={16} /> Ping (PrÃ³ximamente)
                 </div>
               </button>
             </div>
@@ -1900,3 +1506,4 @@ export default function Muestreos() {
     </div>
   );
 }
+

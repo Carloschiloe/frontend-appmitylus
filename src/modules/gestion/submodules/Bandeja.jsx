@@ -1,16 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  AlertTriangle,
   ChevronRight,
-  Clock,
   MessageSquare,
   RotateCcw,
   Target,
   PauseCircle,
 } from 'lucide-react';
-import { apiClient } from '../../../api/apiClient';
-import { useToast } from '../../../context/ToastContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { 
   useGestionSummary, 
@@ -111,17 +107,12 @@ function dueText(value) {
   return `En ${diffDays} días`;
 }
 
-function toneClass(tone) {
-  return `is-${tone || 'muted'}`;
-}
-
 function getPauseReasonLabel(value) {
   return PAUSE_REASON_LABELS[value] || 'En espera';
 }
 
 export default function Bandeja() {
   const queryClient = useQueryClient();
-  const { addToast } = useToast();
 
   // 1. Carga de datos con React Query
   // El uso de hooks permite que cada recurso se gestione de forma independiente

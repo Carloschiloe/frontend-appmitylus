@@ -1,10 +1,4 @@
-/**
- * Mitynex API Client
- * Capa de abstracción sobre fetch para manejar peticiones HTTP, 
- * errores, interceptores y configuración de manera centralizada.
- */
-
-const API_BASE_URL = '/api'; // Base centralizada para todas las peticiones
+const API_BASE_URL = '/api';
 
 class ApiError extends Error {
   constructor(message, status, data) {
@@ -15,22 +9,22 @@ class ApiError extends Error {
   }
 }
 
+function clearAuthCache() {
+  localStorage.removeItem('ammpp_token');
+  localStorage.removeItem('ammpp_refresh_token');
+  localStorage.removeItem('ammpp_user');
+}
+
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const isAuthEndpoint = endpoint.startsWith('/auth/');
-  
   const isFormData = options.body instanceof FormData;
-  
+
   const headers = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...options.headers,
   };
 
-  // El token ahora se maneja vía Cookies seguras (HttpOnly)
-  // No inyectamos Authorization header por defecto para evitar redundancia y mejorar seguridad.
-
-
-  // Soporte Multi-tenant para SuperAdmin: Inyectar DB seleccionada si existe
   const tenantDb = localStorage.getItem('selected_tenant_db');
   if (tenantDb && !isAuthEndpoint) {
     headers['x-tenant-db'] = tenantDb;
@@ -39,7 +33,7 @@ async function request(endpoint, options = {}) {
   const config = {
     ...options,
     headers,
-    credentials: 'include', // Permite envío de cookies seguras (Fase 2)
+    credentials: 'include',
   };
 
   if (config.body && typeof config.body === 'object' && !isFormData) {
@@ -49,18 +43,13 @@ async function request(endpoint, options = {}) {
   try {
     const response = await fetch(url, config);
 
-    // Interceptar 401: sesión expirada → redirigir a login
-    // Interceptar 401: sesión expirada → redirigir a login
     if (response.status === 401) {
-      // Evitar loop: solo redirigir si NO estamos ya en /login, /auth o rutas públicas
       const isPublicPath = endpoint.startsWith('/auth/') || endpoint.startsWith('/public/');
-      console.log('[API 401 DETECTED]', { endpoint, isPublicPath });
-      
+
       if (!isPublicPath) {
-        localStorage.removeItem('ammpp_token');
-        localStorage.removeItem('ammpp_user');
+        clearAuthCache();
         window.location.href = '/login';
-        throw new ApiError('Sesión expirada', 401);
+        throw new ApiError('Sesion expirada', 401);
       }
     }
 
@@ -73,12 +62,11 @@ async function request(endpoint, options = {}) {
     }
 
     if (!response.ok) {
-      throw new ApiError(data?.error || data?.message || 'Error en la petición', response.status, data);
+      throw new ApiError(data?.error || data?.message || 'Error en la peticion', response.status, data);
     }
 
     return data;
   } catch (error) {
-    // AbortError es normal (cleanup de useEffect en React StrictMode)
     const isExpectedBootstrapAuthFailure =
       endpoint === '/auth/me' && (error?.status === 401 || error?.status === 500);
 
