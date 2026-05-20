@@ -33,6 +33,19 @@ export const AuthProvider = ({ children }) => {
         if (data?.ok && data.usuario) {
           setUser(data.usuario);
           localStorage.setItem('ammpp_user', JSON.stringify(data.usuario));
+
+          // Auto-seleccionar tenant si el usuario tiene empresa asignada (Self-healing)
+          const currentTenant = localStorage.getItem('selected_tenant_db');
+          if (!currentTenant) {
+            const empresaData = data.usuario.empresaId;
+            if (empresaData && typeof empresaData === 'object' && empresaData.dbName) {
+              localStorage.setItem('selected_tenant_db', empresaData.dbName);
+              localStorage.setItem('selected_tenant_nombre', empresaData.nombre || '');
+              localStorage.setItem('selected_tenant_logo', empresaData.config?.logo || '');
+            } else if (data.usuario.dbName) {
+              localStorage.setItem('selected_tenant_db', data.usuario.dbName);
+            }
+          }
         } else {
           clearSessionCache();
           setUser(null);
