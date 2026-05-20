@@ -26,7 +26,7 @@ const ACTION_OPTIONS = [
 ];
 
 const RESULT_OPTIONS = [
-  { value: 'seguir', label: 'Seguir', icon: Target, tone: '#0f766e' },
+  { value: 'seguir', label: 'Seguir', icon: Target, tone: '#0A5CFF' },
   { value: 'pausar', label: 'Pausar', icon: PauseCircle, tone: '#d97706' },
   { value: 'cerrar', label: 'Cerrar', icon: X, tone: '#dc2626' },
   { value: 'acordar', label: 'Acordar', icon: CheckCircle2, tone: '#0891b2' },
@@ -50,7 +50,7 @@ const CLOSE_OPTIONS = [
 ];
 
 const SEGUIMIENTO_META = {
-  activo: { label: 'Seguimiento activo', tone: '#0f766e', bg: 'rgba(13, 148, 136, 0.12)' },
+  activo: { label: 'Seguimiento activo', tone: '#0A5CFF', bg: 'rgba(10, 92, 255, 0.12)' },
   pausado: { label: 'Pausado', tone: '#d97706', bg: 'rgba(217, 119, 6, 0.12)' },
   cerrado: { label: 'Cerrado', tone: '#dc2626', bg: 'rgba(220, 38, 38, 0.10)' },
   acordado: { label: 'Acordado', tone: '#0891b2', bg: 'rgba(8, 145, 178, 0.12)' },
@@ -433,7 +433,7 @@ export default function QuickCaptureModal() {
                             border: selected?.id === item.id ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
                             borderRadius: '14px',
                             padding: '12px 14px',
-                            background: selected?.id === item.id ? 'rgba(13, 148, 136, 0.08)' : 'white',
+                            background: selected?.id === item.id ? 'rgba(10, 92, 255, 0.08)' : 'white',
                           }}
                         >
                           <strong style={{ display: 'block' }}>{item.proveedorNombre || 'Proveedor'}</strong>
@@ -559,7 +559,7 @@ export default function QuickCaptureModal() {
                             justifyContent: 'center',
                             borderRadius: '14px',
                             border: active ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                            background: active ? 'rgba(13, 148, 136, 0.08)' : 'white',
+                            background: active ? 'rgba(10, 92, 255, 0.08)' : 'white',
                             minHeight: '52px',
                             fontWeight: 700,
                           }}

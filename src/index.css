@@ -160,11 +160,11 @@ ul, ol {
 
 /* ── Hero Sections (Premium) ── */
 .mx-hero {
-  background: linear-gradient(135deg, var(--color-brand-deep) 0%, #164e63 100%);
+  background: var(--mx-gradient-hero);
   color: white;
   padding: 12px var(--page-padding) 24px var(--page-padding); /* Máxima compactación */
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 14px 38px rgba(3, 27, 78, 0.16);
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -257,7 +257,7 @@ ul, ol {
 .mx-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(0, 18, 51, 0.56);
   backdrop-filter: blur(4px);
   z-index: var(--z-modal);
   display: flex;
@@ -286,9 +286,9 @@ ul, ol {
 .mx-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-card);
   padding: 24px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--mx-shadow-card);
   transition: var(--transition-spring);
   display: flex;
   flex-direction: column;
@@ -303,12 +303,12 @@ ul, ol {
   border-radius: inherit;
   opacity: 0;
   transition: opacity 0.25s ease;
-  background: radial-gradient(ellipse at top right, rgba(13, 148, 136, 0.04) 0%, transparent 65%);
+  background: radial-gradient(ellipse at top right, rgba(10, 92, 255, 0.07) 0%, transparent 65%);
   pointer-events: none;
 }
 
 .mx-card:hover {
-  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.08), var(--shadow-md);
+  box-shadow: var(--mx-shadow-hover);
   border-color: var(--color-border-hover);
 }
 
@@ -375,7 +375,7 @@ ul, ol {
 .mx-input {
   width: 100%;
   padding: 12px 16px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-input);
   border: 1px solid var(--color-border);
   font-size: 0.95rem;
   transition: all 0.2s ease;
@@ -385,7 +385,7 @@ ul, ol {
 .mx-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-bg);
+  box-shadow: 0 0 0 4px var(--color-primary-ring);
 }
 
 /* ── Premium Buttons ── */
@@ -396,7 +396,7 @@ ul, ol {
   gap: 8px;
   padding: 9px 20px;
   height: 40px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-button);
   font-weight: var(--weight-semibold);
   font-size: 0.875rem;
   cursor: pointer;
@@ -423,12 +423,14 @@ ul, ol {
 }
 
 .mx-btn-primary {
-  background: var(--color-primary);
+  background: var(--mx-gradient-cta);
   color: white;
+  box-shadow: 0 10px 24px rgba(10, 92, 255, 0.20);
 }
 
 .mx-btn-primary:hover {
-  background: var(--color-primary-dark);
+  background: var(--mx-gradient-accent);
+  box-shadow: var(--mx-shadow-hover);
 }
 
 .mx-btn-outline {
@@ -486,7 +488,7 @@ ul, ol {
 /* ── Tables Modern ── */
 .mx-table-card {
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-table);
   border: 1px solid var(--color-border);
   box-shadow: var(--mx-shadow-card);
   overflow: hidden;
@@ -929,4 +931,3 @@ ul, ol {
     max-height: calc(100vh - 32px) !important;
   }
 }
-

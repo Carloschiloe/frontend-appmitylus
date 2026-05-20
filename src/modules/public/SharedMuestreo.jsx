@@ -44,7 +44,7 @@ const SharedMuestreo = () => {
           <AlertTriangle size={48} color="#ef4444" style={{ margin: '0 auto 16px' }} />
           <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Acceso Denegado</h2>
           <p style={{ color: '#64748b', lineHeight: 1.5 }}>{error}</p>
-          <a href="https://mitynex.cl" style={{ display: 'inline-block', marginTop: '24px', padding: '10px 20px', background: 'var(--color-primary, #0d9488)', color: 'white', borderRadius: '6px', fontWeight: 600, textDecoration: 'none' }}>Ir a Mitynex</a>
+          <a href="https://mitynex.cl" style={{ display: 'inline-block', marginTop: '24px', padding: '10px 20px', background: 'var(--mx-gradient-cta, #0A5CFF)', color: 'white', borderRadius: '14px', fontWeight: 600, textDecoration: 'none' }}>Ir a Mitynex</a>
         </div>
       </div>
     );

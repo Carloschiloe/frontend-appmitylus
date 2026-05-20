@@ -24,7 +24,7 @@ const EVENT_META = {
   contacto: { label: 'Contacto', color: '#6366f1', icon: User },
   visita: { label: 'Visita', color: '#f59e0b', icon: MapPin },
   interaccion: { label: 'Interacción', color: '#06b6d4', icon: MessageSquare },
-  seguimiento: { label: 'Seguimiento', color: '#0f766e', icon: Clock3 },
+  seguimiento: { label: 'Seguimiento', color: '#0A5CFF', icon: Clock3 },
 };
 
 const TEAM_ACTIVITY_META = {
@@ -33,11 +33,11 @@ const TEAM_ACTIVITY_META = {
   interaccion: { label: 'Interacción', color: '#0891b2', icon: MessageSquare },
   visita: { label: 'Visita', color: '#f59e0b', icon: MapPin },
   muestreo: { label: 'Muestreo', color: '#7c3aed', icon: FlaskConical },
-  seguimiento: { label: 'Cambio de seguimiento', color: '#0f766e', icon: Clock3 },
+  seguimiento: { label: 'Cambio de seguimiento', color: '#0A5CFF', icon: Clock3 },
 };
 
 const STATUS_META = {
-  activo: { label: 'Activo', color: '#0f766e', bg: 'rgba(13, 148, 136, 0.12)', icon: Clock3 },
+  activo: { label: 'Activo', color: '#0A5CFF', bg: 'rgba(10, 92, 255, 0.12)', icon: Clock3 },
   pausado: { label: 'Pausado', color: '#d97706', bg: 'rgba(217, 119, 6, 0.12)', icon: PauseCircle },
   cerrado: { label: 'Cerrado', color: '#dc2626', bg: 'rgba(220, 38, 38, 0.10)', icon: XCircle },
   acordado: { label: 'Acordado', color: '#0891b2', bg: 'rgba(8, 145, 178, 0.12)', icon: CheckCircle2 },

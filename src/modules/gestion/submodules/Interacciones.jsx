@@ -51,8 +51,8 @@ const TIPOS = [
   { val: 'interaccion', label: 'Nota', color: '#64748b' },
   { val: 'llamada', label: 'Llamada', color: '#8b5cf6' },
   { val: 'reunion', label: 'Reunión', color: '#f59e0b' },
-  { val: 'muestreo', label: 'Muestreo', color: '#2dd4bf' },
-  { val: 'visita', label: 'Visita', color: '#0d9488' },
+  { val: 'muestreo', label: 'Muestreo', color: '#2A8CFF' },
+  { val: 'visita', label: 'Visita', color: '#0A5CFF' },
   { val: 'compromiso', label: 'Compromiso', color: '#10b981' },
 ];
 
@@ -291,7 +291,7 @@ export default function Interacciones() {
                             border: selectedProvider?.id === item.id ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
                             borderRadius: '14px',
                             padding: '12px 14px',
-                            background: selectedProvider?.id === item.id ? 'rgba(13, 148, 136, 0.08)' : 'white',
+                            background: selectedProvider?.id === item.id ? 'rgba(10, 92, 255, 0.08)' : 'white',
                           }}
                         >
                           <strong style={{ display: 'block' }}>{item.proveedorNombre}</strong>

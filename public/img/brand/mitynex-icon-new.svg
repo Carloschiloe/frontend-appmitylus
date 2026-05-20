@@ -1,0 +1,20 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mitynex">
+  <defs>
+    <linearGradient id="iconA" x1="17" y1="14" x2="81" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.42" stop-color="#2A8CFF"/>
+      <stop offset="1" stop-color="#12D6FF"/>
+    </linearGradient>
+    <filter id="iconGlow" x="-24%" y="-24%" width="148%" height="148%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#12D6FF" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="96" height="96" rx="24" fill="#001233"/>
+  <g filter="url(#iconGlow)">
+    <path d="M80 21.1C63.9 11.4 35.3 17.4 15.4 42.8C34.1 26.3 55.6 20.5 74.7 29C77.2 30.1 79.9 27.6 80 21.1Z" fill="url(#iconA)" opacity="0.95"/>
+    <path d="M86.2 36.8C64.6 29.3 35.4 36.7 9.1 61.7C37.1 48.9 58.7 47.2 81.2 52.3C84.8 53.1 87.8 45.8 86.2 36.8Z" fill="url(#iconA)" opacity="0.86"/>
+    <path d="M82 59.4C59.8 55.7 36.9 59.1 14.4 72.2C35.9 82.6 65.1 79.7 87.4 62.4C86 61.1 84.2 59.9 82 59.4Z" fill="url(#iconA)"/>
+    <path d="M20.1 65.4C34.1 54.4 53.4 47.8 76.4 50" stroke="#F5FAFF" stroke-width="2.8" stroke-linecap="round" opacity="0.88"/>
+    <path d="M22.3 45.5C37.1 30.3 55.1 24.8 72 29.1" stroke="#F5FAFF" stroke-width="2.4" stroke-linecap="round" opacity="0.78"/>
+  </g>
+</svg>

@@ -151,13 +151,13 @@
 }
 
 .tratos-provider-option:hover {
-  border-color: rgba(13, 148, 136, 0.45);
+  border-color: rgba(10, 92, 255, 0.45);
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 
 .tratos-provider-option.is-selected {
   border: 2px solid var(--color-primary);
-  background: rgba(13, 148, 136, 0.08);
+  background: rgba(10, 92, 255, 0.08);
 }
 
 .tratos-provider-option strong,

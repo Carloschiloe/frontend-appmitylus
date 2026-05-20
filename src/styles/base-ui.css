@@ -36,9 +36,9 @@
   line-height: 1;
 }
 
-.am-tag-teal { background: #0d948815; color: #0d9488; border-color: #0d948830; }
+.am-tag-teal { background: var(--color-primary-bg); color: var(--color-primary); border-color: var(--color-primary-100); }
 .am-tag-purple { background: #7c3aed15; color: #7c3aed; border-color: #7c3aed30; }
-.am-tag-blue { background: #2563eb15; color: #2563eb; border-color: #2563eb30; }
+.am-tag-blue { background: var(--color-info-bg); color: var(--color-info); border-color: #BBD0EA; }
 .am-tag-amber { background: #f59e0b15; color: #f59e0b; border-color: #f59e0b30; }
 .am-tag-orange { background: #d9770615; color: #d97706; border-color: #d9770630; }
 .am-tag-slate { background: #64748b15; color: #64748b; border-color: #64748b30; }
@@ -65,9 +65,9 @@
 
 .mx-list-item:hover {
   border-color: var(--color-primary-100);
-  box-shadow: 0 4px 12px -2px rgba(13, 148, 136, 0.10);
+  box-shadow: 0 8px 24px rgba(10, 92, 255, 0.10);
   transform: translateX(3px);
-  background: #fafffe;
+  background: var(--color-surface-hover);
 }
 
 /* ── Badges & Indicators ── */
@@ -144,9 +144,9 @@
 .mx-kpi-card {
   background: var(--color-surface);
   padding: 22px 24px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-card);
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--mx-shadow-card);
   transition: var(--transition-spring);
   display: flex;
   flex-direction: column;
@@ -168,7 +168,7 @@
 
 .mx-kpi-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px -4px rgba(13, 148, 136, 0.12), var(--shadow-md);
+  box-shadow: var(--mx-shadow-hover);
   border-color: var(--color-primary-100);
 }
 
@@ -212,8 +212,8 @@
 }
 
 .mx-lane {
-  background: rgba(248, 250, 252, 0.5);
-  border-radius: var(--radius-lg);
+  background: rgba(245, 250, 255, 0.72);
+  border-radius: var(--radius-card);
   padding: 16px;
   min-height: 400px;
   display: flex;
@@ -242,9 +242,9 @@
 .mx-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-card);
   padding: 24px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--mx-shadow-card);
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
@@ -271,7 +271,7 @@
 }
 
 .mx-card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--mx-shadow-hover);
 }
 
 .mx-card-sub {
@@ -320,7 +320,7 @@
 .mx-search-box input {
   width: 100%;
   padding: 10px 16px 10px 42px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-input);
   border: 1px solid var(--color-border);
   font-size: 0.9rem;
   background: var(--color-surface);
@@ -329,7 +329,7 @@
 
 .mx-search-box input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-bg);
+  box-shadow: 0 0 0 4px var(--color-primary-ring);
 }
 
 /* ── Modo Solo Lectura (Gerencia) ── */
@@ -346,8 +346,8 @@ body.modo-lectura::after {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  background: rgba(15,23,42,0.9);
-  border: 1px solid rgba(45,212,191,0.2);
+  background: rgba(0,18,51,0.92);
+  border: 1px solid rgba(18,214,255,0.22);
   color: var(--color-primary-light);
   font-size: 11px;
   font-weight: var(--weight-bold);
@@ -369,7 +369,7 @@ body.modo-lectura::after {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.4);
+  background: rgba(0, 18, 51, 0.46);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -380,8 +380,8 @@ body.modo-lectura::after {
 
 .mx-modal {
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
+  border-radius: var(--radius-modal);
+  box-shadow: var(--modal-shadow);
   width: 100%;
   max-width: 500px;
   max-height: calc(100vh - 32px); /* Safety margin */
@@ -475,7 +475,7 @@ body.modo-lectura::after {
 .mx-textarea {
   width: 100%;
   padding: 10px 14px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-input);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
@@ -489,7 +489,7 @@ body.modo-lectura::after {
 .mx-textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-bg);
+  box-shadow: 0 0 0 4px var(--color-primary-ring);
 }
 
 .mx-input:disabled,

@@ -78,7 +78,7 @@ function timeAgo(dateStr) {
 }
 
 const ESTADO_COLOR = {
-  acordado: '#0d9488',
+  acordado: '#0A5CFF',
   negociando: '#3b82f6',
   compra_efectuada: '#10b981',
   caido: '#ef4444',
@@ -177,7 +177,7 @@ export default function Dashboard() {
               value={formatTons(data?.acordadoMes)}
               sub="Acumulado este mes"
               icon={CheckCircle}
-              color="#0d9488"
+              color="#0A5CFF"
             />
             <KpiCard
               title="Tons Próximo Mes"
@@ -249,7 +249,7 @@ export default function Dashboard() {
                       <div key={i} className="area-stat-row">
                         <span style={{ fontSize: '12px', flex: '0 0 120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</span>
                         <div className="area-bar-wrap">
-                          <div className="area-bar" style={{ width: `${pct}%`, background: '#0d9488' }}></div>
+                          <div className="area-bar" style={{ width: `${pct}%`, background: '#0A5CFF' }}></div>
                         </div>
                         <span className="area-val">{p.tons ?? 0} t</span>
                       </div>

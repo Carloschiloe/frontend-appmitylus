@@ -24,7 +24,7 @@ import './bandeja.css';
 const PIPELINE_ORDER = [
   { key: 'prospecto', label: 'Prospectos', color: '#64748b' },
   { key: 'negociando', label: 'Negociando', color: '#2563eb' },
-  { key: 'acordado', label: 'Acordados', color: '#0d9488' },
+  { key: 'acordado', label: 'Acordados', color: '#0A5CFF' },
   { key: 'compra_efectuada', label: 'Compras', color: '#10b981' },
   { key: 'caido', label: 'Caídos', color: '#ef4444' },
 ];

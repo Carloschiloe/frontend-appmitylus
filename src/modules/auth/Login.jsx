@@ -36,9 +36,22 @@ export default function Login() {
     <div className="login-container">
       <div className="login-visual">
         <div className="login-visual-overlay"></div>
+        <div className="login-ocean" aria-hidden="true">
+          <span className="ocean-glow ocean-glow-a"></span>
+          <span className="ocean-glow ocean-glow-b"></span>
+          <span className="ocean-grid"></span>
+          <span className="ocean-current"></span>
+          <span className="ocean-wave ocean-wave-a"></span>
+          <span className="ocean-wave ocean-wave-b"></span>
+        </div>
+        <div className="login-brand-mark" aria-hidden="true">
+          <img src="/img/brand/mitynex-logo-new.svg" alt="" />
+        </div>
         <div className="login-visual-content">
           <div className="login-logo-big">
-            <span className="logo-icon">M</span>
+            <span className="logo-icon">
+              <img src="/img/brand/mitynex-icon-new.svg" alt="" />
+            </span>
             <h1>Mitynex Prime</h1>
           </div>
           <p>Plataforma inteligente para la gestión de la industria mitilicultora.</p>

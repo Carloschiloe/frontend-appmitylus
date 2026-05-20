@@ -4,7 +4,7 @@
 }
 
 .centros-hero-shell {
-  background: linear-gradient(135deg, var(--color-bg-card) 0%, rgba(99, 102, 241, 0.05) 100%);
+  background: linear-gradient(135deg, var(--color-bg-card) 0%, rgba(10, 92, 255, 0.05) 100%);
   border-bottom: 1px solid var(--color-border);
   padding: 40px var(--page-padding);
   display: flex;
@@ -57,13 +57,13 @@
 
 .mx-tab:hover {
   color: var(--color-primary);
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(10, 92, 255, 0.05);
 }
 
 .mx-tab.active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(10, 92, 255, 0.08);
 }
 
 /* KPIs in Centros */
@@ -182,7 +182,7 @@
 .centros-search:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(10, 92, 255, 0.1);
 }
 
 /* Table Card */
@@ -226,7 +226,7 @@
 }
 
 .centros-tbl tr:hover td {
-  background: rgba(99, 102, 241, 0.02);
+  background: rgba(10, 92, 255, 0.02);
 }
 
 /* Table Specific Components */

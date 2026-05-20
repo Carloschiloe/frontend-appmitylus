@@ -533,7 +533,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .cal-day-product-chip.product-entero {
   border-color: #99f6e4;
-  border-left-color: #0d9488;
+  border-left-color: var(--color-primary);
   background: #ecfdf5;
 }
 
@@ -652,7 +652,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
 .harvest-week-cell.product-entero,
 .harvest-product-pill.product-entero {
   border-color: #99f6e4;
-  border-left-color: #0d9488;
+  border-left-color: var(--color-primary);
   background: #ecfdf5;
 }
 
@@ -1864,7 +1864,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
   width: 52px;
   height: 52px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  background: var(--mx-gradient-accent);
   color: white;
   display: flex;
   align-items: center;

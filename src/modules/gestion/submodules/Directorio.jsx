@@ -30,7 +30,7 @@ import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import './directorio.css';
 
 const STATUS_META = {
-  activo: { label: 'Activo', tone: '#0f766e', bg: 'rgba(13, 148, 136, 0.12)', icon: Clock3 },
+  activo: { label: 'Activo', tone: '#0A5CFF', bg: 'rgba(10, 92, 255, 0.12)', icon: Clock3 },
   pausado: { label: 'Pausado', tone: '#d97706', bg: 'rgba(217, 119, 6, 0.12)', icon: PauseCircle },
   cerrado: { label: 'Cerrado', tone: '#dc2626', bg: 'rgba(220, 38, 38, 0.10)', icon: CircleOff },
   acordado: { label: 'Acordado', tone: '#0891b2', bg: 'rgba(8, 145, 178, 0.12)', icon: CheckCircle2 },

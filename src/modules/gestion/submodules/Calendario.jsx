@@ -44,7 +44,7 @@ const VIEW_OPTIONS = [
 ];
 
 const TYPE_CONFIG = {
-  muestreo: { icon: Beaker, color: '#0f766e', bg: '#ecfdf5', border: '#99f6e4', label: 'Muestreo' },
+  muestreo: { icon: Beaker, color: '#0A5CFF', bg: '#EAF4FF', border: '#BBD0EA', label: 'Muestreo' },
   visita: { icon: MapPin, color: '#0369a1', bg: '#eff6ff', border: '#bfdbfe', label: 'Visita' },
   seguimiento: { icon: Target, color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', label: 'Seguimiento' },
   llamada: { icon: Phone, color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', label: 'Llamada' },

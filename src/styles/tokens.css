@@ -1,152 +1,158 @@
 /* ============================================================
-   tokens.css — Sistema de Diseño Mitynex
-   FUENTE ÚNICA DE VERDAD para todas las variables CSS.
-
-   REGLA: Ningún otro archivo CSS debe declarar un bloque :root
-   con variables de diseño. Todos deben importar este archivo.
+   tokens.css - Sistema de diseno Mitynex
+   Fuente unica de verdad para paleta, radios, sombras y aliases.
    ============================================================ */
 
 :root {
-  /* ── Paleta Mitynex (Azul Profundo + Aqua marino) ── */
-  --color-primary:        #0d9488;   /* Teal 600 — acento principal Biomasa */
-  --color-primary-dark:   #0f766e;   /* Teal 700 — hover/pressed */
-  --color-primary-light:  #2dd4bf;   /* Teal 400 — highlights */
-  --color-secondary:      #4A5568;   /* Gris Texto */
-  --color-brand-deep:     #0B3C5D;   /* Azul Profundo — sidebar/headers */
-  --color-brand-deep-alt: #082d47;   /* Azul más oscuro — sidebar fondo alt */
+  /* Paleta oficial Mitynex */
+  --color-deep-ocean: #001233;
+  --color-primary-navy: #031B4E;
+  --color-primary-blue: #0A5CFF;
+  --color-electric-blue: #2A8CFF;
+  --color-accent-cyan: #12D6FF;
+  --color-soft-ice: #F5FAFF;
+  --color-white: #FFFFFF;
+  --color-slate-text: #1E2B45;
+  --color-muted-gray: #6B7A90;
+  --color-border-light: #D9E6F5;
+  --color-success: #00C48C;
+  --color-warning: #FFB020;
+  --color-error: #FF4D4F;
+  --color-info: #2A8CFF;
 
-  /* ── Superficies y fondos ── */
-  --color-bg:             #f8fafc;   /* Slate 50 — Fondo general */
-  --color-surface:        #ffffff;
-  --color-sidebar:        #0f172a;   /* Slate 900 — Sidebar */
-  --color-sidebar-alt:    #1e293b;   /* Slate 800 */
+  /* Roles principales */
+  --color-primary: var(--color-primary-blue);
+  --color-primary-dark: var(--color-primary-navy);
+  --color-primary-light: var(--color-accent-cyan);
+  --color-secondary: var(--color-muted-gray);
+  --color-brand-deep: var(--color-deep-ocean);
+  --color-brand-deep-alt: var(--color-primary-navy);
 
-  /* ── Bordes ── */
-  --color-border:         #e2e8f0;   /* Slate 200 */
-  --color-border-hover:   #cbd5e1;   /* Slate 300 */
+  /* Superficies */
+  --color-bg: var(--color-soft-ice);
+  --color-bg-body: var(--color-soft-ice);
+  --color-surface: var(--color-white);
+  --color-bg-card: var(--color-white);
+  --color-sidebar: var(--color-deep-ocean);
+  --color-sidebar-alt: var(--color-primary-navy);
+  --color-surface-hover: #EEF6FF;
 
-  /* ── Texto ── */
-  --color-text:           #0f172a;   /* Slate 900 */
-  --color-text-muted:     #475569;   /* Slate 600 */
-  --color-text-subtle:    #94a3b8;   /* Slate 400 */
-  --color-white:          #ffffff;
+  /* Bordes */
+  --color-border: var(--color-border-light);
+  --color-border-hover: #BBD0EA;
 
-  /* ── Semánticos ── */
-  --color-success:        #10b981;
-  --color-success-bg:     #ecfdf5;
-  --color-warning:        #f59e0b;
-  --color-warning-bg:     #fffbeb;
-  --color-error:          #ef4444;
-  --color-error-bg:       #fef2f2;
-  --color-info:           #3b82f6;
-  --color-info-bg:        #eff6ff;
-  --color-primary-bg:     #f0fdfa;
+  /* Texto */
+  --color-text: var(--color-slate-text);
+  --color-text-muted: var(--color-muted-gray);
+  --color-text-subtle: #8A9AB3;
 
-  /* ── Espaciado ── */
-  --spacing-xs:  4px;
-  --spacing-sm:  8px;
-  --spacing-md:  16px;
-  --spacing-lg:  24px;
-  --spacing-xl:  32px;
+  /* Semanticos */
+  --color-success-bg: #E8FFF7;
+  --color-success-text: #007C5E;
+  --color-warning-bg: #FFF7E6;
+  --color-warning-text: #A46000;
+  --color-error-bg: #FFF1F1;
+  --color-error-text: #B4232A;
+  --color-info-bg: #EAF4FF;
+  --color-info-text: #0648C8;
+  --color-primary-bg: #EAF4FF;
+  --color-primary-50: #F0F7FF;
+  --color-primary-100: #DCEEFF;
+  --color-primary-ring: rgba(10, 92, 255, 0.22);
+  --color-success-ring: rgba(0, 196, 140, 0.22);
+  --color-warning-ring: rgba(255, 176, 32, 0.24);
+  --color-error-ring: rgba(255, 77, 79, 0.22);
+
+  /* Gradientes oficiales */
+  --mx-gradient-cta: linear-gradient(135deg, #031B4E 0%, #0A5CFF 100%);
+  --mx-gradient-accent: linear-gradient(135deg, #0A5CFF 0%, #12D6FF 100%);
+  --mx-gradient-dark-panel: linear-gradient(180deg, #001233 0%, #031B4E 100%);
+  --mx-gradient-hero: linear-gradient(90deg, #001233 0%, #031B4E 45%, #0A5CFF 100%);
+  --mx-gradient-primary: var(--mx-gradient-cta);
+  --mx-gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+
+  /* Espaciado */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
   --spacing-2xl: 48px;
   --page-padding: 32px;
 
-  --color-bg-card:        #ffffff;
-
-  /* ── Radio de bordes ── */
-  --radius-sm:   8px;
-  --radius-md:   12px;
-  --radius-lg:   16px;
-  --radius-xl:   20px;
+  /* Radios */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 20px;
   --radius-full: 999px;
+  --radius-button: 14px;
+  --radius-input: 12px;
+  --radius-card: 18px;
+  --radius-modal: 20px;
+  --radius-table: 14px;
 
-  /* ── Sombras (Suavizadas para SaaS) ── */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  /* Sombras premium */
+  --shadow-sm: 0 1px 2px rgba(3, 27, 78, 0.05);
+  --shadow-md: 0 8px 30px rgba(3, 27, 78, 0.08);
+  --shadow-lg: 0 12px 35px rgba(10, 92, 255, 0.18);
+  --shadow-xl: 0 24px 48px rgba(3, 27, 78, 0.16);
+  --mx-shadow-card: 0 8px 30px rgba(3, 27, 78, 0.08);
+  --mx-shadow-hover: 0 12px 35px rgba(10, 92, 255, 0.18);
+  --mx-shadow-popover: 0 16px 45px rgba(3, 27, 78, 0.14);
+  --modal-shadow: 0 20px 60px rgba(3, 27, 78, 0.18);
 
-  /* ── Tipografía (Capped at 700) ── */
-  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --font-size-xs:   11px;
-  --font-size-sm:   12px;
+  /* Tipografia */
+  --font-sans: 'Inter', 'Manrope', 'Sora', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
   --font-size-base: 14px;
-  --font-size-md:   15px;
-  --font-size-lg:   16px;
-  --font-size-xl:   20px;
-  --font-size-2xl:  24px;
-  --font-size-3xl:  30px;
-
-  --weight-normal:  400;
-  --weight-medium:  500;
+  --font-size-md: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  --weight-normal: 400;
+  --weight-medium: 500;
   --weight-semibold: 600;
-  --weight-bold:    700;
+  --weight-bold: 700;
 
-  /* ── Z-index ── */
+  /* Z-index */
   --z-dropdown: 100;
-  --z-sticky:   200;
-  --z-modal:    3000;
-  --z-toast:    9999;
+  --z-sticky: 200;
+  --z-modal: 3000;
+  --z-toast: 9999;
 
-  /* ── Texto semántico para badges/estados ── */
-  --color-success-text: #065f46;
-  --color-warning-text: #92400e;
-  --color-error-text:   #991b1b;
-  --color-info-text:    #1e40af;
-
-  /* ── Navegación lateral (módulo mmpp/app-shell) ── */
-  --nav-width:  240px;
-  --nav-bg:     var(--color-sidebar);
-  --nav-fg:     #e5e7eb;
-  --nav-fg-dim: #9ca3af;
+  /* Navegacion */
+  --nav-width: 240px;
+  --nav-bg: var(--color-sidebar);
+  --nav-fg: #EAF4FF;
+  --nav-fg-dim: #A9B8CF;
   --nav-accent: var(--color-primary);
 
-  /* ── Modal (sistema legacy Materialize) ── */
-  --modal-radius: var(--radius-xl);
-  --modal-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-
-  /* ────────────────────────────────────────────────────────
-     ALIASES de compatibilidad hacia atrás
-     Permiten que index-modern.css, sidebar.css, etc. sigan
-     usando sus nombres cortos sin necesidad de refactorizar
-     todo el código HTML/JS de una vez.
-     NO usar estos aliases en código nuevo — usar --color-*
-     ──────────────────────────────────────────────────────── */
-  --bg:      var(--color-bg);
+  /* Aliases legacy de compatibilidad */
+  --bg: var(--color-bg);
   --surface: var(--color-surface);
   --sidebar: var(--color-sidebar);
   --sidebar-2: var(--color-sidebar-alt);
-  --line:    var(--color-border);
-  --border:  var(--color-border);
-  --ink:     var(--color-text);
-  --text:    var(--color-text);
-  --muted:   var(--color-text-muted);
-  --accent:  var(--color-primary);
+  --line: var(--color-border);
+  --border: var(--color-border);
+  --ink: var(--color-text);
+  --text: var(--color-text);
+  --muted: var(--color-text-muted);
+  --accent: var(--color-primary);
   --accent-2: var(--color-primary-light);
-  --radius:  var(--radius-md);
-  --card:    var(--color-surface);
-  --panel:   var(--color-surface);
+  --radius: var(--radius-md);
+  --card: var(--color-surface);
+  --panel: var(--color-surface);
   --brand-1: var(--color-primary);
   --brand-2: var(--color-primary-dark);
-  --shadow:  var(--shadow-sm);
+  --shadow: var(--shadow-sm);
+  --modal-radius: var(--radius-modal);
 
-  /* ── Tokens Mitynex (Nuevos) ── */
-  --mx-gradient-primary: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
-  --mx-gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
-  --mx-shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --mx-shadow-popover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  /* ── Transiciones (UX Stage 5) ── */
-  --transition-fast:   all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base:   all 0.2s  cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow:   all 0.3s  cubic-bezier(0.4, 0, 0.2, 1);
+  /* Transiciones */
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-
-  /* ── Colores de acento derivados (UX Stage 5) ── */
-  --color-primary-50:  #f0fdfa;   /* Teal 50 — fondo hover suave */
-  --color-primary-100: #ccfbf1;   /* Teal 100 — hover accent */
-  --color-primary-ring: rgba(13, 148, 136, 0.20); /* ring focus */
-  --color-surface-hover: #f8fafc; /* hover row / card */
-  --color-success-ring: rgba(16, 185, 129, 0.20);
-  --color-warning-ring: rgba(245, 158, 11, 0.20);
-  --color-error-ring:   rgba(239, 68, 68, 0.20);
 }

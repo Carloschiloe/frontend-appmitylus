@@ -56,7 +56,7 @@ const MainLayout = ({ children }) => {
           <Menu size={20} />
         </button>
         <div className="mx-mobile-brand">
-          <img src="/img/logo-sidebar.png" alt="Mitynex" />
+          <img src="/img/brand/mitynex-logo-new.svg" alt="Mitynex" />
         </div>
         <div style={{ width: 36 }}></div> {/* Espaciador para centrado óptico del logo */}
       </header>
