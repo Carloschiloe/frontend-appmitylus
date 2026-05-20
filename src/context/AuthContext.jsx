@@ -85,6 +85,18 @@ export const AuthProvider = ({ children }) => {
 
       clearSessionCache();
       localStorage.setItem('ammpp_user', JSON.stringify(usuario));
+
+      // Auto-seleccionar tenant si el usuario tiene empresa asignada
+      const empresaData = usuario.empresaId;
+      if (empresaData && typeof empresaData === 'object' && empresaData.dbName) {
+        localStorage.setItem('selected_tenant_db', empresaData.dbName);
+        localStorage.setItem('selected_tenant_nombre', empresaData.nombre || '');
+        localStorage.setItem('selected_tenant_logo', empresaData.config?.logo || '');
+      } else if (usuario.dbName) {
+        // Fallback: dbName directamente en el token/usuario
+        localStorage.setItem('selected_tenant_db', usuario.dbName);
+      }
+
       setUser(usuario);
 
       return { success: true };
