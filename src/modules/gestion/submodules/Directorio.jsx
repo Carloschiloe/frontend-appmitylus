@@ -224,6 +224,10 @@ export default function Directorio() {
   const [contactCompanyQuery, setContactCompanyQuery] = useState('');
   const [contactCenterValue, setContactCenterValue] = useState('');
   const [contactSelectedProviderKey, setContactSelectedProviderKey] = useState('');
+  
+  // Optimistic UI updates
+  const [deletedProviders, setDeletedProviders] = useState(new Set());
+  const [deletedContacts, setDeletedContacts] = useState(new Set());
 
   // 1. Carga de datos con React Query
   const { data: centrosRaw, isLoading: loadingCentros, refetch: refetchCentros } = useCentros();
@@ -235,6 +239,7 @@ export default function Directorio() {
   const loading = loadingCentros || loadingContactos || loadingOpp || loadingInt || loadingMuestreos;
 
   const loadData = useCallback(async () => {
+    // Usamos queryClient para invalidar cache si estuviera disponible, pero refetch funciona
     await Promise.all([
       refetchCentros(),
       refetchContactos(),
@@ -252,12 +257,14 @@ export default function Directorio() {
     const interacciones = Array.isArray(interaccionesRaw) ? interaccionesRaw : (interaccionesRaw?.items || []);
     const muestreos = Array.isArray(muestreosRaw) ? muestreosRaw : (muestreosRaw?.items || []);
 
+    const allProviders = buildProviderRows(centros, contactos, oportunidades, interacciones, muestreos);
+    
     return {
-      proveedores: buildProviderRows(centros, contactos, oportunidades, interacciones, muestreos),
-      contactos,
+      proveedores: allProviders.filter(p => !deletedProviders.has(p.providerKey) && !deletedProviders.has(p.key)),
+      contactos: contactos.filter(c => !deletedContacts.has(c._id)),
       centros,
     };
-  }, [centrosRaw, contactosRaw, oportunidadesRaw, interaccionesRaw, muestreosRaw]);
+  }, [centrosRaw, contactosRaw, oportunidadesRaw, interaccionesRaw, muestreosRaw, deletedProviders, deletedContacts]);
 
   const [detailModal, setDetailModal] = useState({ open: false, provider: null });
 
@@ -478,6 +485,10 @@ export default function Directorio() {
       } else {
         throw new Error('Esta empresa no tiene un centro base directo y no puede ser eliminada desde aquí. Elimina los contactos asociados primero.');
       }
+      
+      // Optimistic delete: ocultarlo de la UI inmediatamente
+      setDeletedProviders(prev => new Set([...prev, confirmDeleteProvider.providerKey, confirmDeleteProvider.key]));
+      
       await loadData();
       setConfirmDeleteProvider(null);
       addToast({
@@ -499,6 +510,8 @@ export default function Directorio() {
     const contactNameValue = confirmDeleteContact?.nombre || confirmDeleteContact?.contactoNombre || 'este contacto';
     try {
       await apiClient.delete(`/contactos/${confirmDeleteContact._id}`);
+      // Optimistic delete: ocultarlo de la UI inmediatamente
+      setDeletedContacts(prev => new Set([...prev, confirmDeleteContact._id]));
       await loadData();
       setConfirmDeleteContact(null);
       addToast({
