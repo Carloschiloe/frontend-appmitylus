@@ -639,20 +639,20 @@ export default function Directorio() {
             <thead>
               {tab === 'proveedores' ? (
                 <tr>
-                  <th>Proveedor</th>
-                  <th>Contacto principal</th>
-                  <th>Seguimiento</th>
-                  <th>Ultima interaccion</th>
-                  <th>Proxima accion</th>
-                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                  <th style={{ width: '25%' }}>Proveedor</th>
+                  <th style={{ width: '20%' }}>Contacto principal</th>
+                  <th style={{ width: '15%' }}>Seguimiento</th>
+                  <th style={{ width: '20%' }}>Ultima interaccion</th>
+                  <th style={{ width: '10%' }}>Proxima accion</th>
+                  <th style={{ width: '10%', textAlign: 'right' }}>Acciones</th>
                 </tr>
               ) : (
                 <tr>
-                  <th>Nombre contacto</th>
-                  <th>Empresa</th>
-                  <th>Correo / telefono</th>
-                  <th>Cargo / rol</th>
-                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                  <th style={{ width: '25%' }}>Nombre contacto</th>
+                  <th style={{ width: '25%' }}>Empresa</th>
+                  <th style={{ width: '25%' }}>Correo / telefono</th>
+                  <th style={{ width: '15%' }}>Cargo / rol</th>
+                  <th style={{ width: '10%', textAlign: 'right' }}>Acciones</th>
                 </tr>
               )}
             </thead>

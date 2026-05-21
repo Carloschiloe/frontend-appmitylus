@@ -501,6 +501,7 @@ ul, ol {
 .mx-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .mx-table th {
