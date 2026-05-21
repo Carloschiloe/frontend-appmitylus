@@ -480,6 +480,12 @@ export default function Directorio() {
   const handleDeleteProvider = async () => {
     if (!confirmDeleteProvider) return;
     try {
+      if (confirmDeleteProvider.totalContactos > 0) {
+        throw new Error('Esta empresa tiene contactos asociados. Elimina los contactos primero para poder borrar la empresa.');
+      }
+      if (confirmDeleteProvider.centros > 1) {
+        throw new Error('Esta empresa tiene múltiples centros asociados. No se puede eliminar directamente. Gestiona sus centros individualmente.');
+      }
       if (confirmDeleteProvider.primaryCenterId) {
         await apiClient.delete(`/centros/${confirmDeleteProvider.primaryCenterId}`);
       } else {
