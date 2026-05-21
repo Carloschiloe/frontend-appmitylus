@@ -220,6 +220,7 @@ export default function Directorio() {
   const [searchTerm, setSearchTerm] = useState(queryFromUrl);
   const [modalState, setModalState] = useState({ open: false, mode: 'create', item: null });
   const [confirmDeleteContact, setConfirmDeleteContact] = useState(null);
+  const [confirmDeleteProvider, setConfirmDeleteProvider] = useState(null);
   const [contactCompanyQuery, setContactCompanyQuery] = useState('');
   const [contactCenterValue, setContactCenterValue] = useState('');
   const [contactSelectedProviderKey, setContactSelectedProviderKey] = useState('');
@@ -468,6 +469,30 @@ export default function Directorio() {
     if (provider?.nombre) params.set('q', provider.nombre);
     navigate(`/centros/directorio?${params.toString()}`);
   }, [navigate]);
+
+  const handleDeleteProvider = async () => {
+    if (!confirmDeleteProvider) return;
+    try {
+      if (confirmDeleteProvider.primaryCenterId) {
+        await apiClient.delete(`/centros/${confirmDeleteProvider.primaryCenterId}`);
+      } else {
+        throw new Error('Esta empresa no tiene un centro base directo y no puede ser eliminada desde aquí. Elimina los contactos asociados primero.');
+      }
+      await loadData();
+      setConfirmDeleteProvider(null);
+      addToast({
+        title: 'Empresa eliminada',
+        message: `${confirmDeleteProvider.nombre} fue eliminada correctamente.`,
+        type: 'success',
+      });
+    } catch (error) {
+      addToast({
+        title: 'Error al eliminar',
+        message: error?.data?.error || error?.message || 'No se pudo eliminar la empresa.',
+        type: 'error',
+      });
+    }
+  };
 
   const handleDeleteContact = async () => {
     if (!confirmDeleteContact?._id) return;
@@ -743,6 +768,13 @@ export default function Directorio() {
                           </button>
                           <button className="mx-action-btn edit" title="Editar" onClick={() => openEditModal(provider)}>
                             <Edit size={14} />
+                          </button>
+                          <button
+                            className="mx-action-btn delete"
+                            title="Eliminar Empresa"
+                            onClick={() => setConfirmDeleteProvider(provider)}
+                          >
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </td>
@@ -1049,6 +1081,13 @@ export default function Directorio() {
         onClose={() => setConfirmDeleteContact(null)}
         onConfirm={handleDeleteContact}
         itemName={confirmDeleteContact?.nombre || confirmDeleteContact?.contactoNombre || 'este contacto'}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={Boolean(confirmDeleteProvider)}
+        onClose={() => setConfirmDeleteProvider(null)}
+        onConfirm={handleDeleteProvider}
+        itemName={`la empresa ${confirmDeleteProvider?.nombre || 'seleccionada'}`}
       />
 
      </div>
