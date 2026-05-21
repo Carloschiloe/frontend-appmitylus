@@ -1100,6 +1100,11 @@ export default function Directorio() {
         onClose={() => setConfirmDeleteContact(null)}
         onConfirm={handleDeleteContact}
         itemName={confirmDeleteContact?.nombre || confirmDeleteContact?.contactoNombre || 'este contacto'}
+        description={
+          confirmDeleteContact && ['con biomasa', 'con', 'con_biomasa'].includes(String(confirmDeleteContact.biomasa || '').trim().toLowerCase())
+            ? `Estás a punto de borrar a "${confirmDeleteContact?.nombre || confirmDeleteContact?.contactoNombre || 'este contacto'}". ATENCIÓN: Este contacto tiene registrado "Con Biomasa". Al eliminarlo, también se borrará su registro de seguimiento automático. Esta acción es irreversible.`
+            : undefined
+        }
       />
 
       <ConfirmDeleteModal
