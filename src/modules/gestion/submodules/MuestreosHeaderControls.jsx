@@ -49,7 +49,7 @@ export default function MuestreosHeaderControls({
   return (
     <>
       <div className="mx-card muestreos-period-card">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        <div className="mu-period-row">
           <div className="mx-toggle-group">
             <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => handleCalView('month')}>Vista Mes</button>
             <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => handleCalView('week')}>Vista Semana</button>
@@ -57,9 +57,9 @@ export default function MuestreosHeaderControls({
           </div>
 
           {calView !== 'all' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="mu-period-nav">
               <button className="mx-btn-icon sm" onClick={handlePreviousPeriod}><ChevronLeft size={16} /></button>
-              <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-text)', minWidth: '200px', textAlign: 'center', textTransform: 'uppercase' }}>
+              <span className="mu-period-label">
                 {calView === 'month' ? getMonthLabel(mes) : weekLabel}
               </span>
               <button className="mx-btn-icon sm" onClick={handleNextPeriod}><ChevronRight size={16} /></button>
@@ -76,7 +76,7 @@ export default function MuestreosHeaderControls({
           <button className={`mx-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => onViewModeChange('list')}><List size={14} /> Historial</button>
           <button className={`mx-toggle-btn ${viewMode === 'grouped' ? 'active' : ''}`} onClick={() => onViewModeChange('grouped')}><LayoutGrid size={14} /> Agrupado</button>
         </div>
-        <div className="mx-search-box" style={{ flex: 1 }}>
+        <div className="mx-search-box mu-toolbar-search">
           <Search size={18} />
           <input
             type="text"

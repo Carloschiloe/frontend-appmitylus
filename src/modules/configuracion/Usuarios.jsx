@@ -368,8 +368,11 @@ export default function Usuarios() {
                   />
                 </div>
                 <div className="mx-form-group">
+                  <label className="mx-label">Rol del Usuario</label>
                   <select name="rol" className="mx-select" defaultValue={editingUser?.rol || 'usuario'}>
-                    <option value="superadmin">SuperAdmin (Global)</option>
+                    {currentUser?.rol === 'superadmin' && (
+                      <option value="superadmin">SuperAdmin (Global)</option>
+                    )}
                     <option value="admin">Administrador Empresa</option>
                     <option value="usuario">Usuario Operativo</option>
                     <option value="lectura">Solo Lectura</option>

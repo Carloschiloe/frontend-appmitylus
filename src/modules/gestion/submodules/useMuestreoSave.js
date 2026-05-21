@@ -1,0 +1,148 @@
+import { useCallback } from 'react';
+import { createMuestreoDirectoryContact, saveMuestreo } from './muestreos.api';
+
+function buildMuestreoPayload({
+  form,
+  selectedCats,
+  totals,
+  catDetails,
+  generalPhotos,
+  deletedPhotoKeys,
+}) {
+  const multiplier = form.unidadPeso === 'g' ? 0.001 : 1;
+  const finalCats = {};
+
+  selectedCats.forEach((id) => {
+    finalCats[id] = (Number(form.cats[id]) || 0) * multiplier;
+  });
+
+  const payload = {
+    ...form,
+    uxkg: Number(form.uxkg) || 0,
+    pesoVivo: Number(form.pesoVivo) || 0,
+    pesoCocida: Number(form.pesoCocida) || 0,
+    rendimiento: Number(totals.rend) || 0,
+    total: Number(totals.totalMuestra) || 0,
+    procesable: Number(totals.procesable) || 0,
+    rechazos: Number(totals.rechazos) || 0,
+    defectos: Number(totals.defectos) || 0,
+    cats: finalCats,
+    comentarios: form.comentarios,
+    catDetails,
+    generalPhotos,
+    deletedPhotoKeys,
+  };
+
+  if (payload.fecha && payload.fecha.length === 10) {
+    payload.fecha = new Date(`${payload.fecha}T12:00:00Z`).toISOString();
+  }
+
+  delete payload.unidadPeso;
+  return payload;
+}
+
+function resolveProvider({ form, selectedProvider, directory }) {
+  const currentProviderKey = String(form.proveedorKey || '').trim().toLowerCase();
+  const currentProviderNombre = String(form.proveedorNombre || '').trim().toLowerCase();
+
+  return selectedProvider || directory.find((provider) => (
+    (provider.proveedorKey && String(provider.proveedorKey).trim().toLowerCase() === currentProviderKey) ||
+    (provider.proveedorNombre && String(provider.proveedorNombre).trim().toLowerCase() === currentProviderNombre)
+  ));
+}
+
+function buildDirectoryContactPayload({ form, allCentros }) {
+  const selectedCenter = allCentros.find((centro) => centro._id === form.centroId) || null;
+
+  return {
+    nombre: form.responsable || 'Contacto de Muestreo',
+    entidad: form.proveedorNombre,
+    contactoNombre: form.responsable || 'Contacto de Muestreo',
+    contactoEmail: '',
+    contactoTelefono: '',
+    proveedorKey: form.proveedorKey,
+    proveedorNombre: form.proveedorNombre,
+    centroId: form.centroId || '',
+    centroCodigo: form.centroCodigo || '',
+    centroComuna: selectedCenter?.comuna || '',
+  };
+}
+
+export default function useMuestreoSave({
+  form,
+  selectedCats,
+  totals,
+  editingId,
+  page,
+  addToast,
+  loadData,
+  catDetails,
+  generalPhotos,
+  deletedPhotoKeys,
+  selectedProvider,
+  allCentros,
+  directory,
+  queryClient,
+  setResultData,
+  setIsModalOpen,
+  setDirectory,
+  setIsResultOpen,
+}) {
+  return useCallback(async () => {
+    const payload = buildMuestreoPayload({
+      form,
+      selectedCats,
+      totals,
+      catDetails,
+      generalPhotos,
+      deletedPhotoKeys,
+    });
+
+    try {
+      const resolvedProvider = resolveProvider({ form, selectedProvider, directory });
+      const hasProviderName = String(form.proveedorNombre || '').trim().length > 0;
+      const needsContact = hasProviderName && (selectedProvider?.isNew || !resolvedProvider || !resolvedProvider.contactoId);
+
+      if (needsContact) {
+        try {
+          await createMuestreoDirectoryContact(buildDirectoryContactPayload({ form, allCentros }));
+          queryClient.invalidateQueries({ queryKey: ['contactos'] });
+          addToast({ title: 'Directorio', message: 'Se ha creado automaticamente el nuevo proveedor en el directorio.', type: 'info' });
+        } catch {
+          addToast({ title: 'Directorio', message: 'El muestreo se guardara, pero no se pudo crear el contacto automaticamente.', type: 'warning' });
+        }
+      }
+
+      const data = await saveMuestreo(editingId, payload);
+      setResultData(data.item || data);
+      setIsModalOpen(false);
+      setDirectory([]);
+      queryClient.invalidateQueries({ queryKey: ['muestreos'] });
+      queryClient.invalidateQueries({ queryKey: ['contactos'] });
+      setIsResultOpen(true);
+      loadData(page);
+      addToast({ title: 'Exito', message: `Muestreo ${editingId ? 'actualizado' : 'guardado'} correctamente.`, type: 'success' });
+    } catch {
+      addToast({ title: 'Error', message: 'No se pudo guardar el muestreo.', type: 'error' });
+    }
+  }, [
+    form,
+    selectedCats,
+    totals,
+    editingId,
+    page,
+    addToast,
+    loadData,
+    catDetails,
+    generalPhotos,
+    deletedPhotoKeys,
+    selectedProvider,
+    allCentros,
+    directory,
+    queryClient,
+    setResultData,
+    setIsModalOpen,
+    setDirectory,
+    setIsResultOpen,
+  ]);
+}

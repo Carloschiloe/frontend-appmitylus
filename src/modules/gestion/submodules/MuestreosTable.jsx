@@ -20,29 +20,26 @@ function MuestreoActions({ item, size = 14, disabled = false, onShare, onReport,
     callback(item);
   };
 
-  const compactStyle = size === 12 ? { width: '28px', height: '28px' } : undefined;
+  const isCompact = size === 12;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: size === 12 ? '12px' : '8px' }}>
+    <div className={`mu-table-actions ${isCompact ? 'compact' : ''}`}>
       <button
-        className="mx-action-btn share"
-        style={{ ...compactStyle, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bcf0da' }}
+        className={`mx-action-btn share mu-action-share ${isCompact ? 'compact' : ''}`}
         title="Compartir enlace publico"
         onClick={(event) => handle(event, onShare)}
       >
         <Share2 size={size} />
       </button>
       <button
-        className="mx-action-btn print"
-        style={compactStyle}
+        className={`mx-action-btn print ${isCompact ? 'compact' : ''}`}
         title="Ver reporte"
         onClick={(event) => handle(event, onReport)}
       >
         <Printer size={size} />
       </button>
       <button
-        className="mx-action-btn edit"
-        style={{ ...compactStyle, opacity: disabled ? 0.5 : 1 }}
+        className={`mx-action-btn edit ${isCompact ? 'compact' : ''} ${disabled ? 'disabled-soft' : ''}`}
         title="Editar"
         disabled={disabled}
         onClick={(event) => {
@@ -53,8 +50,7 @@ function MuestreoActions({ item, size = 14, disabled = false, onShare, onReport,
         <Edit size={size} />
       </button>
       <button
-        className="mx-action-btn delete"
-        style={compactStyle}
+        className={`mx-action-btn delete ${isCompact ? 'compact' : ''}`}
         title="Eliminar"
         onClick={(event) => handle(event, onDelete)}
       >
@@ -68,12 +64,12 @@ function QualityBadge({ item, compact = false }) {
   const label = item.clasificaciones?.[0]?.nombre;
   if (!label) {
     return compact
-      ? <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>S/C</span>
+      ? <span className="mu-quality-compact muted">S/C</span>
       : <span className="mx-badge mx-badge-muted">S/C</span>;
   }
 
   return compact
-    ? <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-success)' }}>{label}</span>
+    ? <span className="mu-quality-compact success">{label}</span>
     : <span className="mx-badge mx-badge-success">{label}</span>;
 }
 
@@ -99,41 +95,41 @@ export default function MuestreosTable({
         <table className="mx-table">
           <thead>
             <tr>
-              <th style={{ width: viewMode === 'grouped' ? '40px' : '100px' }}>{viewMode === 'grouped' ? '' : 'Fecha'}</th>
+              <th className={viewMode === 'grouped' ? 'mu-col-toggle' : 'mu-col-date'}>{viewMode === 'grouped' ? '' : 'Fecha'}</th>
               <th>Proveedor / Centro</th>
-              <th style={{ textAlign: 'center' }}>Muestras</th>
-              <th style={{ textAlign: 'center' }}>R% Prom.</th>
-              <th style={{ textAlign: 'center' }}>U x Kg</th>
-              <th style={{ textAlign: 'center' }}>Procesable %</th>
-              <th style={{ textAlign: 'center' }}>% Rechazo</th>
-              <th style={{ textAlign: 'center' }}>{viewMode === 'list' ? 'Calificacion' : ''}</th>
-              <th style={{ textAlign: 'right' }}>{viewMode === 'list' ? 'Acciones' : ''}</th>
+              <th className="mu-text-center">Muestras</th>
+              <th className="mu-text-center">R% Prom.</th>
+              <th className="mu-text-center">U x Kg</th>
+              <th className="mu-text-center">Procesable %</th>
+              <th className="mu-text-center">% Rechazo</th>
+              <th className="mu-text-center">{viewMode === 'list' ? 'Calificacion' : ''}</th>
+              <th className="mu-text-right">{viewMode === 'list' ? 'Acciones' : ''}</th>
             </tr>
           </thead>
           <tbody>
             {viewMode === 'list' ? (
               filtered.map((item) => (
                 <tr key={item._id || item.id}>
-                  <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{formatDate(item.fecha)}</td>
+                  <td className="mu-date-cell">{formatDate(item.fecha)}</td>
                   <td>
-                    <div style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{item.proveedorNombre || item.proveedor}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--color-text-subtle)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div className="mu-provider-name">{item.proveedorNombre || item.proveedor}</div>
+                    <div className="mu-center-line">
                       <MapPin size={10} /> {item.centroCodigo || 'Sin Centro'} {item.linea && `- L: ${item.linea}`}
                     </div>
                   </td>
-                  <td style={{ textAlign: 'center' }}>1</td>
-                  <td style={{ textAlign: 'center' }}><span className="mx-badge mx-badge-info" style={{ fontWeight: 700 }}>{Number(item.rendimiento || 0).toFixed(1)}%</span></td>
-                  <td style={{ textAlign: 'center', fontWeight: 800 }}>{item.uxkg || 0}</td>
-                  <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--color-success)' }}>
+                  <td className="mu-text-center">1</td>
+                  <td className="mu-text-center"><span className="mx-badge mx-badge-info mu-strong-badge">{Number(item.rendimiento || 0).toFixed(1)}%</span></td>
+                  <td className="mu-text-center mu-strong">{item.uxkg || 0}</td>
+                  <td className="mu-text-center mu-success-strong">
                     {item.total > 0 ? (item.procesable / item.total * 100).toFixed(1) : '0.0'}%
                   </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <span style={{ color: (item.total > 0 && item.rechazos / item.total > 0.05) ? 'var(--color-error)' : 'inherit' }}>
+                  <td className="mu-text-center">
+                    <span className={(item.total > 0 && item.rechazos / item.total > 0.05) ? 'mu-error-text' : ''}>
                       {item.total > 0 ? (item.rechazos / item.total * 100).toFixed(1) : 0}%
                     </span>
                   </td>
-                  <td style={{ textAlign: 'center' }}><QualityBadge item={item} /></td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td className="mu-text-center"><QualityBadge item={item} /></td>
+                  <td className="mu-text-right">
                     <MuestreoActions item={item} onShare={onShare} onReport={onReport} onEdit={onEdit} onDelete={onDelete} />
                   </td>
                 </tr>
@@ -141,39 +137,39 @@ export default function MuestreosTable({
             ) : (
               groupedData.map((group) => (
                 <React.Fragment key={group.key}>
-                  <tr onClick={() => onToggleGroup(group.key)} style={{ cursor: 'pointer', background: expandedGroups.has(group.key) ? 'var(--color-primary-bg)' : 'white' }}>
-                    <td style={{ textAlign: 'center' }}>{expandedGroups.has(group.key) ? <ChevronUp size={16} color="var(--color-primary)" /> : <ChevronDown size={16} />}</td>
-                    <td style={{ fontWeight: 800, color: 'var(--color-text)' }}>{group.key}</td>
-                    <td style={{ textAlign: 'center' }}><span className="mx-badge mx-badge-muted" style={{ fontWeight: 700 }}>{group.muestras}</span></td>
-                    <td style={{ textAlign: 'center', fontWeight: 800, color: 'var(--color-primary)' }}>{(group.rendSum / group.muestras).toFixed(1)}%</td>
-                    <td style={{ textAlign: 'center', fontWeight: 800 }}>{(group.uxkgSum / group.muestras).toFixed(0)}</td>
-                    <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--color-success)' }}>
+                  <tr onClick={() => onToggleGroup(group.key)} className={`mu-group-row ${expandedGroups.has(group.key) ? 'expanded' : ''}`}>
+                    <td className="mu-text-center">{expandedGroups.has(group.key) ? <ChevronUp size={16} color="var(--color-primary)" /> : <ChevronDown size={16} />}</td>
+                    <td className="mu-group-name">{group.key}</td>
+                    <td className="mu-text-center"><span className="mx-badge mx-badge-muted mu-strong-badge">{group.muestras}</span></td>
+                    <td className="mu-text-center mu-primary-strong">{(group.rendSum / group.muestras).toFixed(1)}%</td>
+                    <td className="mu-text-center mu-strong">{(group.uxkgSum / group.muestras).toFixed(0)}</td>
+                    <td className="mu-text-center mu-success-strong">
                       {group.totalSum > 0 ? ((group.totalSum - group.rechazosSum) / group.totalSum * 100).toFixed(1) : '0.0'}%
                     </td>
-                    <td style={{ textAlign: 'center', fontWeight: 700, color: (group.rechazosSum / group.totalSum * 100) > 5 ? 'var(--color-error)' : 'inherit' }}>
+                    <td className={`mu-text-center mu-strong ${(group.rechazosSum / group.totalSum * 100) > 5 ? 'mu-error-text' : ''}`}>
                       {group.totalSum > 0 ? (group.rechazosSum / group.totalSum * 100).toFixed(1) : 0}%
                     </td>
-                    <td style={{ textAlign: 'center' }}>-</td>
-                    <td style={{ textAlign: 'right' }}><ChevronRight size={14} style={{ opacity: 0.2 }} /></td>
+                    <td className="mu-text-center">-</td>
+                    <td className="mu-text-right"><ChevronRight size={14} className="mu-muted-chevron" /></td>
                   </tr>
                   {expandedGroups.has(group.key) && group.items.map((item) => (
-                    <tr key={item._id || item.id} style={{ background: '#fafafa' }}>
-                      <td style={{ textAlign: 'right', borderRight: '2px solid var(--color-primary)' }}></td>
-                      <td style={{ paddingLeft: '24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 700 }}>{formatDate(item.fecha)}</span>
-                          <span style={{ fontSize: '11px', color: 'var(--color-text-subtle)' }}>{item.centroCodigo || 'Sin Centro'} {item.linea && `- L: ${item.linea}`}</span>
+                    <tr key={item._id || item.id} className="mu-group-child-row">
+                      <td className="mu-group-child-marker"></td>
+                      <td className="mu-group-child-detail">
+                        <div className="mu-group-child-meta">
+                          <span className="mu-group-child-date">{formatDate(item.fecha)}</span>
+                          <span className="mu-group-child-center">{item.centroCodigo || 'Sin Centro'} {item.linea && `- L: ${item.linea}`}</span>
                         </div>
                       </td>
-                      <td style={{ textAlign: 'center' }}>1</td>
-                      <td style={{ textAlign: 'center', fontSize: '13px' }}>{Number(item.rendimiento).toFixed(1)}%</td>
-                      <td style={{ textAlign: 'center', fontSize: '13px' }}>{item.uxkg}</td>
-                      <td style={{ textAlign: 'center', fontSize: '13px', color: 'var(--color-success)', fontWeight: 700 }}>
+                      <td className="mu-text-center">1</td>
+                      <td className="mu-text-center mu-small-cell">{Number(item.rendimiento).toFixed(1)}%</td>
+                      <td className="mu-text-center mu-small-cell">{item.uxkg}</td>
+                      <td className="mu-text-center mu-small-cell mu-success-strong">
                         {item.total > 0 ? (item.procesable / item.total * 100).toFixed(1) : '0.0'}%
                       </td>
-                      <td style={{ textAlign: 'center', fontSize: '13px' }}>{item.total > 0 ? (item.rechazos / item.total * 100).toFixed(1) : 0}%</td>
-                      <td style={{ textAlign: 'center' }}><QualityBadge item={item} compact /></td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td className="mu-text-center mu-small-cell">{item.total > 0 ? (item.rechazos / item.total * 100).toFixed(1) : 0}%</td>
+                      <td className="mu-text-center"><QualityBadge item={item} compact /></td>
+                      <td className="mu-text-right">
                         <MuestreoActions
                           item={item}
                           size={12}
@@ -195,11 +191,11 @@ export default function MuestreosTable({
       </div>
 
       {viewMode === 'list' && pagination && pagination.pages > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--color-border)' }}>
-          <span style={{ fontSize: '13px', color: 'var(--color-text-subtle)' }}>
+        <div className="mu-table-pagination">
+          <span className="mu-table-pagination-info">
             {pagination.total} muestreos &nbsp;-&nbsp; Pag. {pagination.page} / {pagination.pages}
           </span>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="mu-table-pagination-actions">
             <button
               className="mx-btn mx-btn-outline sm"
               disabled={page <= 1}
