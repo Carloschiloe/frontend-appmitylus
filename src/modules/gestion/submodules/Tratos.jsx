@@ -384,15 +384,6 @@ export default function Tratos() {
           return;
         }
 
-        if (!selectedProvider.contactoId) {
-          addToast({
-            title: 'Proveedor sin contacto',
-            message: 'Este proveedor no tiene un contacto asociado. Crea o asocia un contacto antes de registrar el trato.',
-            type: 'warning',
-          });
-          return;
-        }
-
         const volumenDesdeCondiciones = deriveVolumenDesdeCondiciones(form.condiciones);
         await apiClient.post('/oportunidades', {
           proveedorId: selectedProvider.contactoId,
