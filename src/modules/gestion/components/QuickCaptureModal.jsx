@@ -61,6 +61,14 @@ function toIsoFromDateInput(value) {
   return new Date(`${value}T09:00:00`).toISOString();
 }
 
+function todayDateInputValue() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function getCurrentUserName() {
   try {
     const raw = localStorage.getItem('ammpp_user');
@@ -113,6 +121,7 @@ function initialState() {
   return {
     tipoGestion: 'llame',
     resultadoSeguimiento: 'seguir',
+    fechaGestion: todayDateInputValue(),
     resumen: '',
     detalle: '',
     proximaAccion: '',
@@ -323,7 +332,7 @@ export default function QuickCaptureModal() {
         responsablePG: getCurrentUserName(),
         tipoGestion: form.tipoGestion,
         resultadoSeguimiento: form.resultadoSeguimiento,
-        fecha: new Date().toISOString(),
+        fecha: toIsoFromDateInput(form.fechaGestion) || new Date().toISOString(),
         resumen: form.resumen || `${selectedAction.label} a ${selected.proveedorNombre || 'proveedor'}`,
         detalle: form.detalle || '',
         proximaAccion: form.proximaAccion || '',
@@ -569,6 +578,19 @@ export default function QuickCaptureModal() {
                         </button>
                       );
                     })}
+                  </div>
+                </section>
+
+                <section className="mx-field-row" style={{ display: 'grid', gap: 16, gridTemplateColumns: '180px 1fr', alignItems: 'end' }}>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Fecha acción</label>
+                    <input
+                      type="date"
+                      className="mx-input"
+                      value={form.fechaGestion}
+                      onChange={(e) => setForm((prev) => ({ ...prev, fechaGestion: e.target.value }))}
+                      required
+                    />
                   </div>
                 </section>
 
