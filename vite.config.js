@@ -46,6 +46,8 @@ export default defineConfig({
           'vendor-query': ['@tanstack/react-query'],
           // Lucide icons — gran superficie, se cachea sola
           'vendor-lucide': ['lucide-react'],
+          // Mapa pesado de vista especifica.
+          'vendor-leaflet': ['leaflet', 'react-leaflet'],
         },
       },
     },

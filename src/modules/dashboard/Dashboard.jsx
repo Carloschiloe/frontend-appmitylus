@@ -1,19 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import './Dashboard.css';
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Title,
-  Filler
-} from 'chart.js';
-import { Doughnut } from 'react-chartjs-2';
 import {
   Activity,
   CheckCircle,
@@ -28,18 +14,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Title,
-  Filler
-);
+const DashboardBiomasaChart = lazy(() => import('./DashboardBiomasaChart.jsx'));
 
 const KpiCard = ({ title, value, sub, icon: Icon, color, trend }) => (
   <div className="mx-kpi-card-new">
@@ -264,7 +239,9 @@ export default function Dashboard() {
             <article className="dsh-card">
               <h3 className="dsh-card-title sm">Estado de Biomasa</h3>
               <div style={{ height: '200px', marginTop: '16px' }}>
-                <Doughnut data={speciesData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }} />
+                <Suspense fallback={<div className="mx-skeleton dsh-chart-skeleton" />}>
+                  <DashboardBiomasaChart data={speciesData} />
+                </Suspense>
               </div>
             </article>
 

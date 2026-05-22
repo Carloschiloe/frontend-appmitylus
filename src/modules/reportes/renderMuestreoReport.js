@@ -1,6 +1,6 @@
-/**
- * Generador de Reporte Técnico de Muestreo (Versión HTML compartible)
- * Reutilizado por la vista privada y la vista pública.
+﻿/**
+ * Generador de Reporte Tecnico de Muestreo (version HTML compartible)
+ * Reutilizado por la vista privada y la vista publica.
  */
 
 export const generarHTMLReporte = (m, options = {}) => {
@@ -22,7 +22,7 @@ export const generarHTMLReporte = (m, options = {}) => {
   const evaluacionCriterios = Array.isArray(m.evaluacionCriterios) ? m.evaluacionCriterios : [];
   const primary = clasificaciones[0];
 
-  // Normalización de campos para soportar variaciones legacy o de hidratación
+  // Normalizacion de campos para soportar variaciones legacy o de hidratacion
   const rend = Number(m.rendimiento ?? m.rendimientoPct ?? 0);
   const uxkg = Number(m.uxkg ?? m.uXKg ?? 0);
   const total = Number(m.total ?? 0);
@@ -39,11 +39,11 @@ export const generarHTMLReporte = (m, options = {}) => {
     ? `<img src="${logoUrl}" alt="${empresaNom}" style="height:52px;max-width:180px;object-fit:contain;" />`
     : `<div style="font-size:20px;font-weight:900;color:#0f766e;letter-spacing:-0.5px;">${empresaNom}</div>`;
 
-  // --- Análisis de auditoría técnica ---
+  // --- Analisis de auditoria tecnica ---
   const parsearFallo = (razon) => {
     if (!razon) return null;
-    const mExcede = razon.match(/^(.+?)\s*\((.+?)\)\s+excede el m[áa]ximo\s*\((.+?)\)$/i);
-    const mMenor = razon.match(/^(.+?)\s*\((.+?)\)\s+es menor al m[íi]nimo\s*\((.+?)\)$/i);
+    const mExcede = razon.match(/^(.+?)\s*\((.+?)\)\s+excede el m[a\u00e1]ximo\s*\((.+?)\)$/i);
+    const mMenor = razon.match(/^(.+?)\s*\((.+?)\)\s+es menor al m[i\u00ed]nimo\s*\((.+?)\)$/i);
 
     let p, v, t, u;
     if (mExcede) { p = mExcede[1].trim(); v = mExcede[2]; t = 'max'; u = mExcede[3]; }
@@ -72,18 +72,18 @@ export const generarHTMLReporte = (m, options = {}) => {
   if (fallosUnicos.length > 0) {
     const filas = fallosUnicos.map(f => {
       let desc = '';
-      if (f.tipo === 'max' && f.valor) desc = `${f.valor} — rango permitido: <strong>${f.umbral}</strong>`;
-      else if (f.tipo === 'min' && f.valor) desc = `${f.valor} — rango permitido: <strong>${f.umbral}</strong>`;
+      if (f.tipo === 'max' && f.valor) desc = `${f.valor} - rango permitido: <strong>${f.umbral}</strong>`;
+      else if (f.tipo === 'min' && f.valor) desc = `${f.valor} - rango permitido: <strong>${f.umbral}</strong>`;
       else if (f.valor) desc = `valor actual: ${f.valor}`;
       else desc = f.param;
       return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #fee2e2;">
-        <div style="min-width:14px;height:14px;border-radius:50%;background:#ef4444;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0;margin-top:2px;">✗</div>
-        <div style="font-size:12px;color:#7f1d1d;line-height:1.5;"><strong>${f.param}</strong> — ${desc}</div>
+        <div style="min-width:14px;height:14px;border-radius:50%;background:#ef4444;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0;margin-top:2px;">x</div>
+        <div style="font-size:12px;color:#7f1d1d;line-height:1.5;"><strong>${f.param}</strong> - ${desc}</div>
       </div>`;
     }).join('');
-    auditNoClasificaHTML = `<div style="margin-top:10px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#991b1b;margin-bottom:6px;">Parámetros fuera de rango</div>${filas}</div>`;
+    auditNoClasificaHTML = `<div style="margin-top:10px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#991b1b;margin-bottom:6px;">Parametros fuera de rango</div>${filas}</div>`;
   } else {
-    auditNoClasificaHTML = `<div style="margin-top:8px;font-size:12px;color:#7f1d1d;font-style:italic;">No se clasificó por parámetros técnicos detallados.</div>`;
+    auditNoClasificaHTML = `<div style="margin-top:8px;font-size:12px;color:#7f1d1d;font-style:italic;">No se clasifico por parametros tecnicos detallados.</div>`;
   }
 
   const auditCumpleHTML = cumplidores.length > 0 ? `
@@ -91,8 +91,8 @@ export const generarHTMLReporte = (m, options = {}) => {
       <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#166534;margin-bottom:6px;">Criterios aprobados</div>
       ${cumplidores.map(ev => `
         <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #dcfce7;">
-          <div style="min-width:14px;height:14px;border-radius:50%;background:#22c55e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0;">✓</div>
-          <div style="font-size:12px;color:#14532d;"><strong>${ev.nombre}</strong> — Todos los parámetros dentro del rango</div>
+          <div style="min-width:14px;height:14px;border-radius:50%;background:#22c55e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0;">OK</div>
+          <div style="font-size:12px;color:#14532d;"><strong>${ev.nombre}</strong> - Todos los parametros dentro del rango</div>
         </div>`).join('')}
     </div>` : '';
 
@@ -101,16 +101,16 @@ export const generarHTMLReporte = (m, options = {}) => {
     auditoriaHTML = `
       <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:16px 18px;">
         <div style="font-size:14px;font-weight:800;color:#166534;margin-bottom:4px;">
-          ✅ Clasifica como: ${primary.nombre}${primary.tipoPrincipal ? ` <span style="font-weight:600;font-size:12px;color:#15803d;">(${primary.tipoPrincipal})</span>` : ''}
+          OK Clasifica como: ${primary.nombre}${primary.tipoPrincipal ? ` <span style="font-weight:600;font-size:12px;color:#15803d;">(${primary.tipoPrincipal})</span>` : ''}
         </div>
-        <div style="font-size:12px;color:#16a34a;margin-bottom:12px;">El lote cumple con los estándares de calidad para su recepción.</div>
+        <div style="font-size:12px;color:#16a34a;margin-bottom:12px;">El lote cumple con los estandares de calidad para su recepcion.</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
           <div style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:10px;text-align:center;">
             <div style="font-size:10px;color:#6b7280;margin-bottom:2px;">R% Carne</div>
             <div style="font-size:18px;font-weight:800;color:#16a34a;">${fmtNum(rend, 2)}%</div>
           </div>
           <div style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:10px;text-align:center;">
-            <div style="font-size:10px;color:#6b7280;margin-bottom:2px;">U × Kg</div>
+            <div style="font-size:10px;color:#6b7280;margin-bottom:2px;">U x Kg</div>
             <div style="font-size:18px;font-weight:800;color:#16a34a;">${fmtNum(uxkg, 0)}</div>
           </div>
           <div style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:10px;text-align:center;">
@@ -121,7 +121,7 @@ export const generarHTMLReporte = (m, options = {}) => {
         ${auditCumpleHTML}
       </div>`;
   } else {
-    auditoriaHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px 18px;"><div style="font-size:14px;font-weight:800;color:#991b1b;margin-bottom:6px;">❌ Muestreo con observaciones: no logra clasificar dentro de los estándares esperados</div>${auditNoClasificaHTML}</div>`;
+    auditoriaHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:16px 18px;"><div style="font-size:14px;font-weight:800;color:#991b1b;margin-bottom:6px;">Error Muestreo con observaciones: no logra clasificar dentro de los estandares esperados</div>${auditNoClasificaHTML}</div>`;
   }
 
 
@@ -153,13 +153,13 @@ export const generarHTMLReporte = (m, options = {}) => {
   if (m.catDetails) {
     Object.entries(m.catDetails).forEach(([catId, data]) => {
       if (!data?.photos) return;
-      // Prioridad: 1. data.nombre (backend), 2. maestros (frontend), 3. emergencyMap (hardcoded), 4. fallback 'Ítem'
-      const nombreCat = (data.nombre && data.nombre !== 'Ítem')
+      // Prioridad: 1. data.nombre (backend), 2. maestros (frontend), 3. emergencyMap (hardcoded), 4. fallback 'Item'
+      const nombreCat = (data.nombre && data.nombre !== 'Item')
         ? data.nombre
-        : (catMap[catId] || emergencyMap[catId] || 'Ítem');
+        : (catMap[catId] || emergencyMap[catId] || 'Item');
       const pesoItem = Number(m.cats?.[catId]) || 0;
       const pctItem = total > 0 && pesoItem > 0 ? `${fmtNum((pesoItem / total) * 100, 1)}%` : null;
-      const label = pctItem ? `${nombreCat} — ${pctItem}` : nombreCat;
+      const label = pctItem ? `${nombreCat} - ${pctItem}` : nombreCat;
       const photos = Array.isArray(data.photos) ? data.photos : [];
       photos.forEach(p => {
         const url = p.url || p.signedUrl;
@@ -176,7 +176,7 @@ export const generarHTMLReporte = (m, options = {}) => {
 
   const photosHTML = allPhotos.length > 0 ? `
     <div class="section">
-      <div class="sec-title">Evidencias Fotográficas</div>
+      <div class="sec-title">Evidencias Fotograficas</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-top:10px;">
         ${allPhotos.map(p => `
           <div style="text-align:center;">
@@ -190,7 +190,7 @@ export const generarHTMLReporte = (m, options = {}) => {
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Informe Muestreo — ${m.proveedorNombre || ''}</title>
+<title>Informe Muestreo - ${m.proveedorNombre || ''}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:Arial,Helvetica,sans-serif;color:#1e293b;padding:32px;font-size:14px;line-height:1.5}
@@ -237,43 +237,43 @@ export const generarHTMLReporte = (m, options = {}) => {
 <body>
   ${!isPublic ? `
   <div class="no-print" style="background:#0f766e;color:#fff;padding:10px 14px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
-    <span style="font-weight:700;font-size:13px;">Informe Técnico &mdash; Vista Previa</span>
-    <button onclick="window.print()" style="background:#fff;color:#0f766e;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;">🖨️ Imprimir / PDF</button>
+    <span style="font-weight:700;font-size:13px;">Informe Tecnico - Vista Previa</span>
+    <button onclick="window.print()" style="background:#fff;color:#0f766e;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;">Imprimir / PDF</button>
   </div>` : ''}
 
   <div class="header">
     <div>${logoBlock}</div>
     <div style="text-align:right;">
       <div class="header-title">Informe de Muestreo MMPP</div>
-      <div class="header-sub">${empresaNom} · ${isPublic ? 'Consulta Pública' : 'Auditoría Interna'}</div>
+      <div class="header-sub">${empresaNom} - ${isPublic ? 'Consulta Publica' : 'Auditoria Interna'}</div>
     </div>
   </div>
 
   <div class="meta-grid">
-    <div class="meta-item"><label>Proveedor</label><span>${m.proveedorNombre || '—'}</span></div>
-    <div class="meta-item"><label>Centro</label><span>${m.centroCodigo || '—'}</span></div>
-    <div class="meta-item"><label>Línea</label><span>${m.linea || '—'}</span></div>
+    <div class="meta-item"><label>Proveedor</label><span>${m.proveedorNombre || '-'}</span></div>
+    <div class="meta-item"><label>Centro</label><span>${m.centroCodigo || '-'}</span></div>
+    <div class="meta-item"><label>Linea</label><span>${m.linea || '-'}</span></div>
     <div class="meta-item"><label>Fecha</label><span>${fecha}</span></div>
-    <div class="meta-item"><label>Responsable</label><span>${m.responsable || '—'}</span></div>
-    <div class="meta-item"><label>Origen</label><span>${m.origen || '—'}</span></div>
+    <div class="meta-item"><label>Responsable</label><span>${m.responsable || '-'}</span></div>
+    <div class="meta-item"><label>Origen</label><span>${m.origen || '-'}</span></div>
   </div>
 
   <div class="section">
-    <div class="sec-title">Indicadores Técnicos de la Materia Prima</div>
+    <div class="sec-title">Indicadores Tecnicos de la Materia Prima</div>
     <div class="kpis" style="grid-template-columns: repeat(2, 1fr);">
       <div class="kpi" style="background:#f0f9ff; border-color:#bae6fd;">
         <div class="kpi-label" style="color:#0369a1;">Rendimiento (R% Carne)</div>
         <div class="kpi-val" style="color:#0369a1;">${fmtNum(rend, 2)}%</div>
       </div>
       <div class="kpi" style="background:#f0fdf4; border-color:#bbf7d0;">
-        <div class="kpi-label" style="color:#15803d;">U × Kg (Calibre)</div>
+        <div class="kpi-label" style="color:#15803d;">U x Kg (Calibre)</div>
         <div class="kpi-val" style="color:#15803d;">${fmtNum(uxkg, 0)}</div>
       </div>
     </div>
   </div>
 
   <div class="section">
-    <div class="sec-title">Clasificación</div>
+    <div class="sec-title">Clasificacion</div>
     <div class="clas-box ${primary ? '' : 'fail'}">
       <div class="clas-label">Tipo de producto</div>
       <div class="clas-val ${primary ? '' : 'fail'}">${primary ? primary.nombre : 'No Clasifica'}</div>
@@ -282,7 +282,7 @@ export const generarHTMLReporte = (m, options = {}) => {
   </div>
 
   <div class="section">
-    <div class="sec-title">Resultado de la Auditoría Técnica</div>
+    <div class="sec-title">Resultado de la Auditoria Tecnica</div>
     ${auditoriaHTML}
   </div>
 
@@ -359,7 +359,7 @@ export const generarHTMLReporte = (m, options = {}) => {
 
   <div class="footer">
     <span>${empresaNom}</span>
-    <span>Sistema MMPP · ${new Date().toLocaleDateString('es-CL')}</span>
+    <span>Sistema MMPP - ${new Date().toLocaleDateString('es-CL')}</span>
   </div>
 
   <div id="lightbox" onclick="this.style.display='none'">
@@ -382,3 +382,4 @@ export const generarHTMLReporte = (m, options = {}) => {
 </body>
 </html>`;
 };
+

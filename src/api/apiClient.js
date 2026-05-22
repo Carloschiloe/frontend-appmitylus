@@ -1,3 +1,5 @@
+import { clearRuntimeLayoutState, clearSessionCache } from '../context/authSession.helpers';
+
 const API_BASE_URL = '/api';
 
 class ApiError extends Error {
@@ -7,12 +9,6 @@ class ApiError extends Error {
     this.status = status;
     this.data = data;
   }
-}
-
-function clearAuthCache() {
-  localStorage.removeItem('ammpp_token');
-  localStorage.removeItem('ammpp_refresh_token');
-  localStorage.removeItem('ammpp_user');
 }
 
 async function request(endpoint, options = {}) {
@@ -47,7 +43,8 @@ async function request(endpoint, options = {}) {
       const isPublicPath = endpoint.startsWith('/auth/') || endpoint.startsWith('/public/');
 
       if (!isPublicPath) {
-        clearAuthCache();
+        clearSessionCache({ clearTenant: true });
+        clearRuntimeLayoutState();
         window.location.href = '/login';
         throw new ApiError('Sesion expirada', 401);
       }

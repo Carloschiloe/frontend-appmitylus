@@ -285,6 +285,96 @@
   height: 300px;
 }
 
+.dsh-chart-skeleton {
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  border-radius: var(--radius-card);
+}
+
+.dsh-donut-chart {
+  display: grid;
+  grid-template-columns: minmax(128px, 0.82fr) 1fr;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+  min-height: 180px;
+}
+
+.dsh-donut-svg {
+  width: 100%;
+  max-width: 156px;
+  justify-self: center;
+  transform: rotate(-90deg);
+}
+
+.dsh-donut-track {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 4;
+}
+
+.dsh-donut-segment {
+  fill: none;
+  stroke-width: 4;
+  transition: stroke-dasharray 180ms ease;
+}
+
+.dsh-donut-total,
+.dsh-donut-unit {
+  fill: var(--color-text);
+  text-anchor: middle;
+  transform: rotate(90deg);
+  transform-origin: 21px 21px;
+}
+
+.dsh-donut-total {
+  font-size: 0.28rem;
+  font-weight: 800;
+}
+
+.dsh-donut-unit {
+  fill: var(--color-text-muted);
+  font-size: 0.15rem;
+  font-weight: 700;
+}
+
+.dsh-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dsh-donut-legend-item {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+}
+
+.dsh-donut-legend-item span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.dsh-donut-legend-item b {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsh-donut-legend-item em {
+  color: var(--color-text-muted);
+  font-style: normal;
+  font-weight: 700;
+}
+
 @media (max-width: 1024px) {
   .dsh-main-grid, .dsh-secondary-grid {
     grid-template-columns: 1fr;

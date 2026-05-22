@@ -1284,40 +1284,125 @@ body.biomasa-calendar-board-open .mx-app-shell {
   text-align: center;
 }
 
-.harvest-program-table th {
-  padding-top: 8px;
-  padding-bottom: 8px;
+.harvest-program-grid-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.harvest-program-table td {
-  padding-top: 7px;
-  padding-bottom: 7px;
-  vertical-align: middle;
+.harvest-program-grid {
+  --program-grid-columns: 240px 150px 118px 82px minmax(270px, 1fr) 108px 150px 120px;
+  min-width: 1240px;
 }
 
-.harvest-program-table .biomasa-avatar {
+.harvest-program-grid-head,
+.harvest-program-grid-row {
+  display: grid;
+  grid-template-columns: var(--program-grid-columns);
+  align-items: center;
+}
+
+.harvest-program-grid-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 1px solid var(--color-border);
+  background: #f2f7fd;
+}
+
+.harvest-program-grid-head > div {
+  min-width: 0;
+  padding: 13px 14px;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.harvest-program-grid-head > div:nth-child(4),
+.harvest-program-grid-head > div:nth-child(8) {
+  text-align: center;
+}
+
+.harvest-program-grid-row {
+  min-height: 78px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.harvest-program-grid-row:hover {
+  background: #f7fbff;
+}
+
+.harvest-program-grid-row > div {
+  min-width: 0;
+  padding: 10px 14px;
+}
+
+.harvest-program-grid-row > div:nth-child(4),
+.harvest-program-grid-row > div:nth-child(6),
+.harvest-program-grid-row > div:nth-child(8) {
+  align-self: stretch;
+  align-items: center;
+}
+
+.harvest-program-provider-cell {
+  overflow: hidden;
+}
+
+.harvest-program-grid .biomasa-avatar {
   width: 30px;
   height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  flex: 0 0 30px;
   border-radius: 8px;
   font-size: 11px;
 }
 
-.harvest-program-table .biomasa-prov-name {
-  font-size: 12px;
-  line-height: 1.15;
+.harvest-program-grid .biomasa-provider-text {
+  min-width: 0;
 }
 
-.harvest-program-table .biomasa-centro-name,
-.harvest-program-table .biomasa-date-range {
+.harvest-program-grid .biomasa-prov-name {
+  max-width: 174px;
+  font-size: 12px;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+.harvest-program-grid .biomasa-centro-name,
+.harvest-program-grid .biomasa-date-range {
   font-size: 10px;
   line-height: 1.2;
 }
 
-.harvest-program-table .biomasa-camiones-badge {
+.harvest-program-grid .biomasa-date-range {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.harvest-program-grid .biomasa-camiones-badge {
   width: 26px;
   height: 26px;
   border-radius: 7px;
   font-size: 13px;
+}
+
+.harvest-program-camiones-cell,
+.harvest-program-status-cell,
+.harvest-program-actions-cell {
+  display: flex;
+  justify-content: center;
+}
+
+.harvest-program-volume-cell {
+  overflow: hidden;
 }
 
 .harvest-program-camiones {
@@ -1343,11 +1428,12 @@ body.biomasa-calendar-board-open .mx-app-shell {
 }
 
 .harvest-program-volume {
-  display: grid;
-  grid-template-columns: auto 52px auto auto;
-  align-items: center;
-  gap: 6px 8px;
-  min-width: 232px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
   border: 1px solid #dbeafe;
   border-radius: 11px;
   background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
@@ -1362,11 +1448,14 @@ body.biomasa-calendar-board-open .mx-app-shell {
 }
 
 .harvest-program-volume-head {
+  justify-content: flex-start;
   white-space: nowrap;
 }
 
 .harvest-program-volume-foot {
-  display: contents;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
 }
 
 .harvest-program-volume-head span {
@@ -1384,6 +1473,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
 }
 
 .harvest-program-volume-bar {
+  width: 100%;
   height: 5px;
   overflow: hidden;
   border-radius: 999px;
@@ -1401,6 +1491,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
+  min-width: 0;
   color: var(--color-text-muted);
   font-size: 8px;
   font-weight: var(--weight-semibold);
@@ -1410,6 +1501,7 @@ body.biomasa-calendar-board-open .mx-app-shell {
 }
 
 .harvest-program-volume-foot span:last-child {
+  justify-content: flex-end;
   text-align: right;
 }
 
@@ -1442,6 +1534,29 @@ body.biomasa-calendar-board-open .mx-app-shell {
   padding: 2px 6px;
   font-size: 8px;
   font-weight: 800;
+  white-space: nowrap;
+}
+
+.harvest-program-grid .mx-badge,
+.harvest-program-grid .harvest-sanitary-badge {
+  max-width: 100%;
+}
+
+.harvest-program-status-cell .mx-badge {
+  justify-content: center;
+  width: fit-content;
+}
+
+.harvest-program-grid .biomasa-action-bar {
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.harvest-program-grid .mx-btn-icon.sm {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  flex: 0 0 32px;
 }
 
 .harvest-program-empty {
@@ -1903,11 +2018,16 @@ body.biomasa-calendar-board-open .mx-app-shell {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .biomasa-avatar {
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  flex: 0 0 40px;
+  aspect-ratio: 1 / 1;
   border-radius: 10px;
   background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary-light) 100%);
   color: white;
@@ -1916,9 +2036,12 @@ body.biomasa-calendar-board-open .mx-app-shell {
   justify-content: center;
   font-weight: 800;
   font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .biomasa-prov-name {
+  min-width: 0;
   font-weight: 700;
   color: var(--color-text);
   font-size: 14px;

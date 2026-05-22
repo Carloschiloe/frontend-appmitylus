@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 import { 
   Map as MapIcon, 
@@ -51,19 +51,6 @@ export default function Centros() {
   const location = useLocation();
   const isSanitarioView = location.pathname.startsWith('/centros/sanitario');
   const pageMeta = getPageMeta(location.pathname);
-
-  useEffect(() => {
-    const preloadTabs = () => {
-      loadCentrosMap();
-      loadSanitarioDashboard();
-    };
-    if ('requestIdleCallback' in window) {
-      const id = window.requestIdleCallback(preloadTabs, { timeout: 1600 });
-      return () => window.cancelIdleCallback(id);
-    }
-    const id = window.setTimeout(preloadTabs, 900);
-    return () => window.clearTimeout(id);
-  }, []);
 
   const notifyCreateCentro = () => {
     window.dispatchEvent(new CustomEvent('centros:open-create'));

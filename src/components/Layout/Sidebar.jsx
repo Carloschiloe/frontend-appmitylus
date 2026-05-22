@@ -157,25 +157,17 @@ export default function Sidebar() {
       <TenantSelector />
 
       {user?.rol !== 'superadmin' && user?.empresaId && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          padding: '8px 14px', margin: '0 8px 4px',
-          background: 'rgba(255,255,255,0.06)', borderRadius: '8px',
-          minWidth: 0,
-        }}>
+        <div className="mx-sidebar-company">
           {user.empresaId.config?.logo ? (
             <img
               src={user.empresaId.config.logo}
               alt={user.empresaId.nombre}
-              style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '4px', flexShrink: 0 }}
+              className="mx-sidebar-company-logo"
             />
           ) : (
-            <Building2 size={16} style={{ flexShrink: 0, opacity: 0.7 }} />
+            <Building2 size={16} className="mx-sidebar-company-icon" />
           )}
-          <span style={{
-            fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.85)',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
+          <span className="mx-sidebar-company-name">
             {user.empresaId.nombre}
           </span>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Building2,
   User,
@@ -42,9 +42,9 @@ function normalizeKey(value) {
 }
 
 function formatShortDate(value) {
-  if (!value) return '—';
+  if (!value) return '-';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return '-';
   return new Intl.DateTimeFormat('es-CL', {
     day: '2-digit',
     month: 'short',
@@ -64,8 +64,8 @@ function formatDaysAgo(value) {
   const diffDays = Math.round((startOfToday - startOfTarget) / msPerDay);
 
   if (diffDays <= 0) return 'Hoy';
-  if (diffDays === 1) return 'Hace 1 día';
-  return `Hace ${diffDays} días`;
+  if (diffDays === 1) return 'Hace 1 dia';
+  return `Hace ${diffDays} dias`;
 }
 
 function contactName(contact) {
@@ -94,7 +94,7 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
         primaryCenterId: centro._id || '',
         primaryCenterCode: centro.code || '',
         centros: 0,
-        comuna: centro.comuna || '—',
+        comuna: centro.comuna || '-',
         totalContactos: 0,
         contactoPrincipal: '',
         contactoTelefono: '',
@@ -111,7 +111,7 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
 
     const item = providers.get(key);
     item.centros += 1;
-    if ((!item.comuna || item.comuna === '—') && centro.comuna) item.comuna = centro.comuna;
+    if ((!item.comuna || item.comuna === '-') && centro.comuna) item.comuna = centro.comuna;
   });
 
   const contactsByProvider = new Map();
@@ -129,7 +129,7 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
         primaryCenterId: '',
         primaryCenterCode: '',
         centros: 0,
-        comuna: '—',
+        comuna: '-',
         totalContactos: 0,
         contactoPrincipal: '',
         contactoTelefono: '',
@@ -159,7 +159,7 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     latestInteractionByProvider.set(key, item);
   });
 
-  // Encontrar el último muestreo por proveedor
+  // Encontrar el ultimo muestreo por proveedor
   const latestMuestreoByProvider = new Map();
   muestreos.forEach((item) => {
     const key = normalizeKey(item.proveedorKey || item.proveedorNombre);
@@ -186,14 +186,14 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     provider.proximaAccion = latestOpportunity?.proximaAccion || '';
     provider.fechaProximaAccion = latestOpportunity?.fechaProximaAccion || latestOpportunity?.fechaRevision || '';
 
-    // Comparar fecha de última interacción comercial con última fecha de muestreo técnico
+    // Comparar fecha de ultima interaccion comercial con ultima fecha de muestreo tecnico
     const interactionDate = latestInteraction?.fecha ? new Date(latestInteraction.fecha) : null;
     const muestreoDate = latestMuestreo?.fecha ? new Date(latestMuestreo.fecha) : null;
 
     if (muestreoDate && (!interactionDate || muestreoDate > interactionDate)) {
       const rendText = latestMuestreo.rendimiento ? `Rend: ${latestMuestreo.rendimiento.toFixed(1)}%` : 'Realizado';
-      const centroText = latestMuestreo.centroCodigo ? ` · Centro: ${latestMuestreo.centroCodigo}` : '';
-      provider.ultimaInteraccionResumen = `Muestreo técnico: ${rendText}${centroText}`;
+      const centroText = latestMuestreo.centroCodigo ? ` - Centro: ${latestMuestreo.centroCodigo}` : '';
+      provider.ultimaInteraccionResumen = `Muestreo tecnico: ${rendText}${centroText}`;
       provider.ultimaInteraccionFecha = latestMuestreo.fecha || '';
       provider.ultimoResponsable = latestMuestreo.responsable || '';
     } else if (latestInteraction) {
@@ -338,7 +338,7 @@ export default function Directorio() {
       const item = providersMap.get(normKey);
       if (centro.code) item.centerCodesSet.add(centro.code);
       if (centro.comuna) item.centerComunasSet.add(centro.comuna);
-      if ((!item.comuna || item.comuna === '—') && centro.comuna) item.comuna = centro.comuna;
+      if ((!item.comuna || item.comuna === '-') && centro.comuna) item.comuna = centro.comuna;
     });
 
     // 2. Suplementar con proveedores con actividad por seguridad
@@ -444,7 +444,7 @@ export default function Directorio() {
         code: centro.code || '',
         comuna: centro.comuna || '',
         hectareas: centro.hectareas ?? null,
-        label: [centro.code, centro.comuna].filter(Boolean).join(' · ') || centro.code || centro.comuna || 'Centro sin referencia',
+        label: [centro.code, centro.comuna].filter(Boolean).join(' - ') || centro.code || centro.comuna || 'Centro sin referencia',
       }));
   }, [data.centros, selectedProvider]);
 
@@ -484,12 +484,12 @@ export default function Directorio() {
         throw new Error('Esta empresa tiene contactos asociados. Elimina los contactos primero para poder borrar la empresa.');
       }
       if (confirmDeleteProvider.centros > 1) {
-        throw new Error('Esta empresa tiene múltiples centros asociados. No se puede eliminar directamente. Gestiona sus centros individualmente.');
+        throw new Error('Esta empresa tiene multiples centros asociados. No se puede eliminar directamente. Gestiona sus centros individualmente.');
       }
       if (confirmDeleteProvider.primaryCenterId) {
         await apiClient.delete(`/centros/${confirmDeleteProvider.primaryCenterId}`);
       } else {
-        throw new Error('Esta empresa no tiene un centro base directo y no puede ser eliminada desde aquí. Elimina los contactos asociados primero.');
+        throw new Error('Esta empresa no tiene un centro base directo y no puede ser eliminada desde aqui. Elimina los contactos asociados primero.');
       }
       
       // Optimistic delete: ocultarlo de la UI inmediatamente
@@ -621,7 +621,7 @@ export default function Directorio() {
           </button>
         </div>
 
-        <div className="mx-search-box" style={{ flex: 1 }}>
+        <div className="mx-search-box dir-toolbar-search">
           <Search size={18} />
           <input
             type="text"
@@ -639,14 +639,14 @@ export default function Directorio() {
       {tab === 'proveedores' && (
         <div className="mx-kpi-grid am-mt-16">
           {[
-            { label: 'Activos', value: providerStats.activos, color: 'var(--color-success)' },
-            { label: 'Pausados', value: providerStats.pausados, color: 'var(--color-warning)' },
-            { label: 'Acordados', value: providerStats.acordados, color: 'var(--color-primary)' },
-            { label: 'Sin seguimiento', value: providerStats.sinSeguimiento, color: 'var(--color-text-subtle)' },
+            { label: 'Activos', value: providerStats.activos, tone: 'success' },
+            { label: 'Pausados', value: providerStats.pausados, tone: 'warning' },
+            { label: 'Acordados', value: providerStats.acordados, tone: 'primary' },
+            { label: 'Sin seguimiento', value: providerStats.sinSeguimiento, tone: 'muted' },
           ].map((stat) => (
             <div key={stat.label} className="mx-kpi-card">
               <p className="mx-eyebrow">{stat.label}</p>
-              <h2 className="mx-kpi-value" style={{ color: stat.color }}>{stat.value}</h2>
+              <h2 className={`mx-kpi-value dir-kpi-value is-${stat.tone}`}>{stat.value}</h2>
             </div>
           ))}
         </div>
@@ -658,20 +658,20 @@ export default function Directorio() {
             <thead>
               {tab === 'proveedores' ? (
                 <tr>
-                  <th style={{ width: '25%' }}>Proveedor</th>
-                  <th style={{ width: '20%' }}>Contacto principal</th>
-                  <th style={{ width: '15%' }}>Seguimiento</th>
-                  <th style={{ width: '20%' }}>Ultima interaccion</th>
-                  <th style={{ width: '10%' }}>Proxima accion</th>
-                  <th style={{ width: '10%', textAlign: 'right' }}>Acciones</th>
+                  <th className="dir-col-provider">Proveedor</th>
+                  <th className="dir-col-main-contact">Contacto principal</th>
+                  <th className="dir-col-followup">Seguimiento</th>
+                  <th className="dir-col-last">Ultima interaccion</th>
+                  <th className="dir-col-next">Proxima accion</th>
+                  <th className="dir-col-actions">Acciones</th>
                 </tr>
               ) : (
                 <tr>
-                  <th style={{ width: '25%' }}>Nombre contacto</th>
-                  <th style={{ width: '25%' }}>Empresa</th>
-                  <th style={{ width: '25%' }}>Correo / telefono</th>
-                  <th style={{ width: '15%' }}>Cargo / rol</th>
-                  <th style={{ width: '10%', textAlign: 'right' }}>Acciones</th>
+                  <th className="dir-col-contact">Nombre contacto</th>
+                  <th className="dir-col-company">Empresa</th>
+                  <th className="dir-col-channel">Correo / telefono</th>
+                  <th className="dir-col-role">Cargo / rol</th>
+                  <th className="dir-col-actions">Acciones</th>
                 </tr>
               )}
             </thead>
@@ -679,13 +679,13 @@ export default function Directorio() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={tab === 'proveedores' ? 6 : 5} style={{ textAlign: 'center', padding: '60px' }}>
-                    <div className="mx-spinner" style={{ margin: '0 auto' }}></div>
+                  <td colSpan={tab === 'proveedores' ? 6 : 5} className="dir-table-state">
+                    <div className="mx-spinner dir-spinner"></div>
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={tab === 'proveedores' ? 6 : 5} style={{ textAlign: 'center', padding: '60px' }}>
+                  <td colSpan={tab === 'proveedores' ? 6 : 5} className="dir-table-state">
                     No se encontraron resultados.
                   </td>
                 </tr>
@@ -697,14 +697,14 @@ export default function Directorio() {
                   return (
                     <tr key={provider.providerKey}>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div className="mx-btn-icon sm" style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>
+                        <div className="dir-provider-cell">
+                          <div className="mx-btn-icon sm dir-provider-icon">
                             <Building2 size={16} />
                           </div>
                           <div>
-                            <div style={{ fontWeight: 'var(--weight-bold)' }}>{provider.nombre}</div>
-                            <div style={{ marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                              <span className="mx-badge" style={{ fontSize: '10px', padding: '1px 6px' }}>{provider.key || 'sin-key'}</span>
+                            <div className="dir-primary-text">{provider.nombre}</div>
+                            <div className="dir-provider-meta">
+                              <span className="mx-badge dir-key-badge">{provider.key || 'sin-key'}</span>
                               <span><MapPin size={10} /> {provider.comuna}</span>
                               <span>{provider.centros} centro{provider.centros === 1 ? '' : 's'}</span>
                             </div>
@@ -713,75 +713,50 @@ export default function Directorio() {
                       </td>
 
                       <td>
-                        <div style={{ fontWeight: 'var(--weight-bold)' }}>{provider.contactoPrincipal}</div>
-                        <div style={{ marginTop: '4px', display: 'grid', gap: '2px', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                        <div className="dir-primary-text">{provider.contactoPrincipal}</div>
+                        <div className="dir-contact-meta">
                           <span>{provider.totalContactos} contacto{provider.totalContactos === 1 ? '' : 's'}</span>
-                          {provider.contactoTelefono ? <span><Phone size={10} style={{ marginRight: '4px' }} />{provider.contactoTelefono}</span> : null}
-                          {provider.contactoEmail ? <span><Mail size={10} style={{ marginRight: '4px' }} />{provider.contactoEmail}</span> : null}
+                          {provider.contactoTelefono ? <span><Phone size={10} />{provider.contactoTelefono}</span> : null}
+                          {provider.contactoEmail ? <span><Mail size={10} />{provider.contactoEmail}</span> : null}
                         </div>
                       </td>
 
                       <td>
                         <span className={`mx-badge mx-badge-${provider.seguimientoEstado === 'activo' ? 'success' : provider.seguimientoEstado === 'pausado' ? 'warning' : provider.seguimientoEstado === 'acordado' ? 'primary' : 'muted'}`}>
-                          <StatusIcon size={12} style={{ marginRight: '6px' }} />
+                          <StatusIcon size={12} />
                           {status.label}
                         </span>
                         {provider.estadoComercial ? (
-                          <div style={{ marginTop: '8px', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                          <div className="dir-muted-note">
                             {provider.estadoComercial}
                           </div>
                         ) : null}
                       </td>
 
                       <td>
-                        <div 
-                          style={{ 
-                            fontWeight: 600, 
-                            color: 'var(--color-text)', 
-                            fontSize: '0.85rem',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            lineHeight: '1.4'
-                          }}
-                          title={provider.ultimaInteraccionResumen}
-                        >
+                        <div className="dir-clamped-text" title={provider.ultimaInteraccionResumen}>
                           {provider.ultimaInteraccionResumen || 'Sin interaccion registrada'}
                         </div>
-                        <div style={{ marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.75rem' }}>
-                          {provider.ultimaInteraccionFecha ? `${formatShortDate(provider.ultimaInteraccionFecha)} · ${formatDaysAgo(provider.ultimaInteraccionFecha)}` : 'Aún sin actividad'}
+                        <div className="dir-subtle-note">
+                          {provider.ultimaInteraccionFecha ? `${formatShortDate(provider.ultimaInteraccionFecha)} - ${formatDaysAgo(provider.ultimaInteraccionFecha)}` : 'Aun sin actividad'}
                         </div>
                       </td>
 
                       <td>
-                        <div 
-                          style={{ 
-                            fontWeight: 600, 
-                            color: 'var(--color-text)', 
-                            fontSize: '0.85rem',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            lineHeight: '1.4'
-                          }}
-                          title={provider.proximaAccion}
-                        >
+                        <div className="dir-clamped-text" title={provider.proximaAccion}>
                           {provider.proximaAccion || 'Sin accion definida'}
                         </div>
-                        <div style={{ marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.75rem' }}>
+                        <div className="dir-subtle-note">
                           {provider.fechaProximaAccion ? formatShortDate(provider.fechaProximaAccion) : 'Sin fecha programada'}
                         </div>
                       </td>
 
-                      <td style={{ textAlign: 'right' }}>
-                        <div className="mx-table-actions-cell" style={{ display: 'inline-flex' }}>
+                      <td className="dir-actions-cell">
+                        <div className="mx-table-actions-cell dir-actions">
                           <button 
-                            className="mx-action-btn" 
+                            className="mx-action-btn dir-action-primary" 
                             title="Ver Detalles" 
                             onClick={() => setDetailModal({ open: true, provider })}
-                            style={{ color: 'var(--color-primary)' }}
                           >
                             <ExternalLink size={14} />
                           </button>
@@ -804,19 +779,19 @@ export default function Directorio() {
                 filteredItems.map((contact, index) => (
                   <tr key={contact._id || index}>
                     <td>
-                      <div style={{ fontWeight: 600 }}>{contact.nombre || contact.contactoNombre}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--color-text-subtle)' }}>ID: {contact._id?.slice(-6) || '—'}</div>
+                      <div className="dir-contact-name">{contact.nombre || contact.contactoNombre}</div>
+                      <div className="dir-contact-id">ID: {contact._id?.slice(-6) || '-'}</div>
                     </td>
-                    <td>{contact.proveedorNombre || '—'}</td>
+                    <td>{contact.proveedorNombre || '-'}</td>
                     <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <span style={{ fontSize: '12px' }}><Mail size={10} /> {contact.email || contact.contactoEmail || '—'}</span>
-                        <span style={{ fontSize: '12px' }}><Phone size={10} /> {contact.telefono || contact.contactoTelefono || '—'}</span>
+                      <div className="dir-contact-channel">
+                        <span><Mail size={10} /> {contact.email || contact.contactoEmail || '-'}</span>
+                        <span><Phone size={10} /> {contact.telefono || contact.contactoTelefono || '-'}</span>
                       </div>
                     </td>
                     <td><span className="mx-badge mx-badge-muted">{contact.cargo || 'Contacto'}</span></td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div className="mx-table-actions-cell" style={{ display: 'inline-flex' }}>
+                    <td className="dir-actions-cell">
+                      <div className="mx-table-actions-cell dir-actions">
                         <button className="mx-action-btn edit" title="Editar" onClick={() => openEditModal(contact)}>
                           <Edit size={14} />
                         </button>
@@ -839,7 +814,7 @@ export default function Directorio() {
 
       {modalState.open && (
         <div className="mx-modal-overlay">
-            <div className="mx-modal" style={{ maxWidth: '500px' }}>
+            <div className="mx-modal dir-form-modal">
             <div className="mx-modal-header">
               <h2>
                 {tab === 'proveedores'
@@ -955,8 +930,8 @@ export default function Directorio() {
                               >
                                 <strong>{provider.label}</strong>
                                 <span>
-                                  {(provider.centerCodes || []).slice(0, 3).join(' · ') || 'Sin centros referenciados'}
-                                  {provider.comuna ? ` · ${provider.comuna}` : ''}
+                                  {(provider.centerCodes || []).slice(0, 3).join(' - ') || 'Sin centros referenciados'}
+                                  {provider.comuna ? ` - ${provider.comuna}` : ''}
                                 </span>
                               </button>
                             );
@@ -978,7 +953,7 @@ export default function Directorio() {
                           value={contactCenterValue}
                           onChange={(e) => setContactCenterValue(e.target.value)}
                         >
-                          <option value="">-- Sin centro específico --</option>
+                          <option value="">-- Sin centro especifico --</option>
                           {associatedCenters.map((centro) => (
                             <option key={centro.id} value={centro.id || centro.code}>
                               {centro.label}
@@ -988,9 +963,9 @@ export default function Directorio() {
                       )}
                     </div>
 
-                    <div className="mx-form-row" style={{ display: 'flex', gap: '16px' }}>
-                      <div className="mx-form-group" style={{ flex: 1 }}>
-                        <label className="mx-label">Correo electrónico</label>
+                    <div className="mx-form-row dir-form-row">
+                      <div className="mx-form-group dir-form-row-item">
+                        <label className="mx-label">Correo electronico</label>
                         <input
                           name="email"
                           type="email"
@@ -999,7 +974,7 @@ export default function Directorio() {
                           defaultValue={modalState.item?.email || modalState.item?.contactoEmail || ''}
                         />
                       </div>
-                      <div className="mx-form-group" style={{ flex: 1 }}>
+                      <div className="mx-form-group dir-form-row-item">
                         <label className="mx-label">Telefono</label>
                         <input
                           name="telefono"
@@ -1028,66 +1003,66 @@ export default function Directorio() {
 
       {/* Modal de Detalle Moderno */}
       {detailModal.open && detailModal.provider && (
-        <div className="mx-modal-overlay" style={{ zIndex: 1000 }}>
-          <div className="mx-modal" style={{ maxWidth: '600px', width: '90%' }}>
-            <div className="mx-modal-header" style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="mx-modal-overlay dir-detail-overlay">
+          <div className="mx-modal dir-detail-modal">
+            <div className="mx-modal-header dir-detail-header">
+              <div className="dir-detail-title-wrap">
+                <div className="dir-detail-icon">
                   <Building2 size={24} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>{detailModal.provider.nombre}</h2>
-                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}>{detailModal.provider.comuna} · {detailModal.provider.centros} centros</div>
+                  <h2 className="dir-detail-title">{detailModal.provider.nombre}</h2>
+                  <div className="dir-detail-subtitle">{detailModal.provider.comuna} - {detailModal.provider.centros} centros</div>
                 </div>
               </div>
               <button type="button" className="mx-btn-icon" onClick={() => setDetailModal({ open: false, provider: null })}><X size={20} /></button>
             </div>
 
-            <div className="mx-modal-body" style={{ padding: '24px 0' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '32px' }}>
-                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
-                  <div className="mx-eyebrow" style={{ marginBottom: '8px' }}>Estado Comercial</div>
-                  <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{detailModal.provider.seguimientoEstado?.toUpperCase() || 'SIN SEGUIMIENTO'}</div>
-                  {detailModal.provider.estadoComercial && <div style={{ fontSize: '0.85rem', marginTop: '4px', color: '#64748b' }}>{detailModal.provider.estadoComercial}</div>}
+            <div className="mx-modal-body dir-detail-body">
+              <div className="dir-detail-summary-grid">
+                <div className="dir-detail-summary-card">
+                  <div className="mx-eyebrow dir-detail-eyebrow">Estado Comercial</div>
+                  <div className="dir-detail-strong">{detailModal.provider.seguimientoEstado?.toUpperCase() || 'SIN SEGUIMIENTO'}</div>
+                  {detailModal.provider.estadoComercial && <div className="dir-detail-muted">{detailModal.provider.estadoComercial}</div>}
                 </div>
-                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
-                  <div className="mx-eyebrow" style={{ marginBottom: '8px' }}>Contacto Principal</div>
-                  <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{detailModal.provider.contactoPrincipal}</div>
-                  <div style={{ fontSize: '0.85rem', marginTop: '4px', color: '#64748b' }}>{detailModal.provider.contactoTelefono || 'Sin teléfono'}</div>
+                <div className="dir-detail-summary-card">
+                  <div className="mx-eyebrow dir-detail-eyebrow">Contacto Principal</div>
+                  <div className="dir-detail-strong">{detailModal.provider.contactoPrincipal}</div>
+                  <div className="dir-detail-muted">{detailModal.provider.contactoTelefono || 'Sin telefono'}</div>
                 </div>
               </div>
 
-              <div style={{ padding: '0 4px' }}>
-                <h3 style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#475569', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Clock3 size={16} /> Última Actividad Registrada
+              <div className="dir-detail-activity">
+                <h3 className="dir-detail-section-title">
+                  <Clock3 size={16} /> Ultima Actividad Registrada
                 </h3>
                 
-                <div style={{ borderLeft: '2px solid #e2e8f0', marginLeft: '8px', paddingLeft: '20px', position: 'relative' }}>
-                  <div style={{ position: 'absolute', left: '-6px', top: '0', width: '10px', height: '10px', borderRadius: '50%', background: 'var(--color-primary)' }}></div>
-                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '6px' }}>{detailModal.provider.ultimaInteraccionFecha ? formatShortDate(detailModal.provider.ultimaInteraccionFecha) : 'Sin fecha'}</div>
-                  <div style={{ background: '#fff', border: '1.5px solid #f1f5f9', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                    <p style={{ margin: 0, color: 'var(--color-text)', lineHeight: '1.6', fontSize: '0.95rem' }}>
+                <div className="dir-detail-timeline">
+                  <div className="dir-detail-timeline-dot is-primary"></div>
+                  <div className="dir-detail-date">{detailModal.provider.ultimaInteraccionFecha ? formatShortDate(detailModal.provider.ultimaInteraccionFecha) : 'Sin fecha'}</div>
+                  <div className="dir-detail-note-card">
+                    <p>
                       {detailModal.provider.ultimaInteraccionResumen || 'No hay notas registradas para este proveedor.'}
                     </p>
                   </div>
                 </div>
 
                 {detailModal.provider.proximaAccion && (
-                  <div style={{ marginTop: '32px', borderLeft: '2px dashed #cbd5e1', marginLeft: '8px', paddingLeft: '20px', position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: '-6px', top: '0', width: '10px', height: '10px', borderRadius: '50%', background: '#94a3b8' }}></div>
-                    <div className="mx-eyebrow" style={{ color: '#94a3b8', marginBottom: '6px' }}>Próxima Acción Programada</div>
-                    <div style={{ fontWeight: 600, color: 'var(--color-text)' }}>{detailModal.provider.proximaAccion}</div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', marginTop: '4px' }}>{formatShortDate(detailModal.provider.fechaProximaAccion)}</div>
+                  <div className="dir-detail-timeline dir-detail-timeline-next">
+                    <div className="dir-detail-timeline-dot is-muted"></div>
+                    <div className="mx-eyebrow dir-detail-next-label">Proxima Accion Programada</div>
+                    <div className="dir-detail-next-text">{detailModal.provider.proximaAccion}</div>
+                    <div className="dir-detail-next-date">{formatShortDate(detailModal.provider.fechaProximaAccion)}</div>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="mx-modal-footer" style={{ borderTop: '1px solid #f1f5f9', marginTop: '20px', display: 'flex', gap: '12px' }}>
-              <button type="button" className="mx-btn mx-btn-outline" style={{ flex: 1 }} onClick={() => openProviderCenters(detailModal.provider)}>
+            <div className="mx-modal-footer dir-detail-footer">
+              <button type="button" className="mx-btn mx-btn-outline dir-detail-footer-btn" onClick={() => openProviderCenters(detailModal.provider)}>
                 <ExternalLink size={16} /> Ver Centros
               </button>
-              <button type="button" className="mx-btn mx-btn-primary" style={{ flex: 1 }} onClick={() => { setDetailModal({ open: false, provider: null }); openEditModal(detailModal.provider); }}>
+              <button type="button" className="mx-btn mx-btn-primary dir-detail-footer-btn" onClick={() => { setDetailModal({ open: false, provider: null }); openEditModal(detailModal.provider); }}>
                 <Edit size={16} /> Editar Proveedor
               </button>
             </div>
@@ -1102,7 +1077,7 @@ export default function Directorio() {
         itemName={confirmDeleteContact?.nombre || confirmDeleteContact?.contactoNombre || 'este contacto'}
         description={
           confirmDeleteContact && ['con biomasa', 'con', 'con_biomasa'].includes(String(confirmDeleteContact.biomasa || '').trim().toLowerCase())
-            ? `Estás a punto de borrar a "${confirmDeleteContact?.nombre || confirmDeleteContact?.contactoNombre || 'este contacto'}". ATENCIÓN: Este contacto tiene registrado "Con Biomasa". Al eliminarlo, también se borrará su registro de seguimiento automático. Esta acción es irreversible.`
+            ? `Estas a punto de borrar a "${confirmDeleteContact?.nombre || confirmDeleteContact?.contactoNombre || 'este contacto'}". ATENCION: Este contacto tiene registrado "Con Biomasa". Al eliminarlo, tambien se borrara su registro de seguimiento automatico. Esta accion es irreversible.`
             : undefined
         }
       />
@@ -1117,3 +1092,5 @@ export default function Directorio() {
      </div>
    );
  }
+
+

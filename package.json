@@ -6,6 +6,8 @@
     "dev": "vite --port 5173",
     "build": "vite build",
     "preview": "vite preview",
+    "test:frontend": "node --test \"src/**/*.test.js\"",
+    "security:secrets": "node scripts/check-sensitive-files.mjs",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,css}\""
@@ -17,13 +19,10 @@
   "dependencies": {
     "@tanstack/react-query": "^5.100.9",
     "bootstrap-icons": "^1.13.1",
-    "chart.js": "^4.5.1",
-    "chartjs-plugin-datalabels": "^2.2.0",
     "html2pdf.js": "^0.14.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.14.0",
     "react": "^19.2.4",
-    "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.4",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.14.2"

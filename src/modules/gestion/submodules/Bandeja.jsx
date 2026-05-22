@@ -18,11 +18,11 @@ import {
 import './bandeja.css';
 
 const PIPELINE_ORDER = [
-  { key: 'prospecto', label: 'Prospectos', color: '#64748b' },
-  { key: 'negociando', label: 'Negociando', color: '#2563eb' },
-  { key: 'acordado', label: 'Acordados', color: '#0A5CFF' },
-  { key: 'compra_efectuada', label: 'Compras', color: '#10b981' },
-  { key: 'caido', label: 'Caídos', color: '#ef4444' },
+  { key: 'prospecto', label: 'Prospectos' },
+  { key: 'negociando', label: 'Negociando' },
+  { key: 'acordado', label: 'Acordados' },
+  { key: 'compra_efectuada', label: 'Compras' },
+  { key: 'caido', label: 'Caídos' },
 ];
 
 const FOLLOWUP_META = {
@@ -331,37 +331,25 @@ export default function Bandeja() {
           <p>Priorización de proveedores, seguimiento de tratos y pipeline comercial consolidado.</p>
         </div>
         <div className="mx-hero-actions">
-          <div className="gs-highlight-pills" style={{ display: 'flex', gap: '8px' }}>
-            <span className="mx-badge" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>
+          <div className="gs-highlight-pills gs-highlight-pills-hero">
+            <span className="mx-badge gs-hero-badge">
               {formatTons(summary?.acordadoMes)} este mes
             </span>
-            <span className="mx-badge" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>
+            <span className="mx-badge gs-hero-badge">
               {formatTons(summary?.acordadoProxMes)} próx. mes
             </span>
           </div>
-          <div className="gs-hero-buttons" style={{ display: 'flex', gap: '8px' }}>
+          <div className="gs-hero-buttons">
             <Link 
               to="/gestion/interacciones" 
-              className="mx-btn" 
-              style={{ 
-                background: 'rgba(255,255,255,0.1)', 
-                color: 'white', 
-                border: '1px solid rgba(255,255,255,0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '0 16px',
-                height: '40px',
-                fontSize: '0.9rem'
-              }}
+              className="mx-btn gs-hero-action"
             >
               <MessageSquare size={18} />
               Ver interacciones
             </Link>
             <button 
-              className="mx-btn-icon" 
+              className="mx-btn-icon gs-hero-refresh" 
               onClick={handleRefresh} 
-              style={{ color: 'white', background: 'rgba(255,255,255,0.1)', height: '40px', width: '40px' }}
             >
               <RotateCcw size={20} />
             </button>
@@ -370,22 +358,22 @@ export default function Bandeja() {
       </header>
 
       <div className="mx-content-frame">
-        <div className="mx-kpi-grid" style={{ marginTop: '16px' }}>
+        <div className="mx-kpi-grid gs-kpi-strip">
           <div className="mx-kpi-card">
             <div className="mx-kpi-label">Pendientes vencidos</div>
-            <div className="mx-kpi-value" style={{ color: 'var(--color-error)' }}>{taskBoard.overdue.length}</div>
+            <div className="mx-kpi-value gs-kpi-value-danger">{taskBoard.overdue.length}</div>
           </div>
           <div className="mx-kpi-card">
             <div className="mx-kpi-label">Actividades de hoy</div>
-            <div className="mx-kpi-value" style={{ color: 'var(--color-info)' }}>{taskBoard.today.length}</div>
+            <div className="mx-kpi-value gs-kpi-value-info">{taskBoard.today.length}</div>
           </div>
           <div className="mx-kpi-card">
             <div className="mx-kpi-label">Seguimiento activo</div>
-            <div className="mx-kpi-value" style={{ color: 'var(--color-success)' }}>{seguimiento.active.length}</div>
+            <div className="mx-kpi-value gs-kpi-value-success">{seguimiento.active.length}</div>
           </div>
           <div className="mx-kpi-card">
             <div className="mx-kpi-label">Casos pausados</div>
-            <div className="mx-kpi-value" style={{ color: 'var(--color-warning)' }}>{seguimiento.paused.length}</div>
+            <div className="mx-kpi-value gs-kpi-value-warning">{seguimiento.paused.length}</div>
           </div>
         </div>
 
@@ -401,7 +389,7 @@ export default function Bandeja() {
               </Link>
             </header>
 
-            <div className="mx-toolbar am-mt-12" style={{ padding: '0 16px' }}>
+            <div className="mx-toolbar am-mt-12 gs-priority-toolbar">
               <div className="mx-toggle-group">
                 <span className="mx-badge mx-badge-danger">Vencidos: {taskBoard.overdue.length}</span>
                 <span className="mx-badge mx-badge-warning">Hoy: {taskBoard.today.length}</span>
@@ -411,7 +399,7 @@ export default function Bandeja() {
 
             <div className="gs-priority-list am-mt-16">
               {taskBoard.spotlight.length === 0 ? (
-                <div className="mx-state-placeholder" style={{ padding: '40px' }}>No hay compromisos urgentes por ahora.</div>
+                <div className="mx-state-placeholder gs-empty-priority">No hay compromisos urgentes por ahora.</div>
               ) : (
                 taskBoard.spotlight.map((item) => {
                   const meta = FOLLOWUP_META[item.source] || FOLLOWUP_META.activo;
@@ -425,16 +413,16 @@ export default function Bandeja() {
 
                       <div className="gs-priority-content">
                         <div className="gs-priority-topline">
-                          <strong style={{ fontWeight: 'var(--weight-bold)' }}>{item.provider}</strong>
+                          <strong>{item.provider}</strong>
                           <span className={`mx-badge mx-badge-${item.bucket === 'overdue' ? 'danger' : item.bucket === 'today' ? 'warning' : 'muted'}`}>
                             {dueText(item.dueAt)}
                           </span>
                         </div>
-                        <p style={{ margin: '4px 0', fontSize: '0.9rem' }}>{item.title}</p>
+                        <p>{item.title}</p>
                         <div className="gs-priority-meta">
                           <span>{meta.label}</span>
                           <span>{item.owner}</span>
-                          <span style={{ fontWeight: 'var(--weight-bold)' }}>{formatShortDate(item.dueAt)}</span>
+                          <span className="gs-date-strong">{formatShortDate(item.dueAt)}</span>
                         </div>
                       </div>
                     </div>
@@ -456,22 +444,14 @@ export default function Bandeja() {
               </Link>
             </header>
 
-            <div className="gs-pipeline-list am-mt-12" style={{ padding: '0 20px 20px' }}>
+            <div className="gs-pipeline-list am-mt-12">
               {pipeline.counts.map((item) => (
-                <div key={item.key} className="gs-pipeline-row" style={{ marginBottom: '12px' }}>
-                  <div className="gs-pipeline-copy" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '6px' }}>
-                    <span style={{ color: 'var(--color-text-muted)' }}>{item.label}</span>
-                    <strong style={{ fontWeight: 'var(--weight-bold)' }}>{item.count}</strong>
+                <div key={item.key} className={`gs-pipeline-row is-${item.key}`}>
+                  <div className="gs-pipeline-copy">
+                    <span>{item.label}</span>
+                    <strong>{item.count}</strong>
                   </div>
-                  <div className="mx-progress" style={{ height: '6px' }}>
-                    <div
-                      className="mx-progress-fill"
-                      style={{
-                        width: `${Math.max((item.count / pipeline.max) * 100, item.count > 0 ? 5 : 0)}%`,
-                        backgroundColor: item.color,
-                      }}
-                    ></div>
-                  </div>
+                  <progress className="gs-pipeline-progress" value={item.count} max={pipeline.max}></progress>
                 </div>
               ))}
             </div>
@@ -485,15 +465,15 @@ export default function Bandeja() {
               </div>
             </header>
 
-            <div className="gs-mini-list" style={{ padding: '0 20px 20px' }}>
+            <div className="gs-mini-list">
               {upcomingDeals.length === 0 ? (
                 <div className="mx-state-placeholder sm">Sin hitos próximos.</div>
               ) : (
                 upcomingDeals.map((item) => (
-                  <div key={item._id} className="gs-mini-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--color-border)' }}>
+                  <div key={item._id} className="gs-mini-item">
                     <div>
-                      <strong style={{ fontSize: '0.9rem', fontWeight: 'var(--weight-bold)' }}>{item.proveedorNombre}</strong>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{formatShortDate(item.closeDate)} · {formatTons(item.tonsAcordadas)}</p>
+                      <strong>{item.proveedorNombre}</strong>
+                      <p>{formatShortDate(item.closeDate)} · {formatTons(item.tonsAcordadas)}</p>
                     </div>
                     <span className={`mx-badge mx-badge-${item.estado === 'acordado' ? 'success' : 'info'}`}>
                       {item.estado || 'sin estado'}
@@ -518,16 +498,16 @@ export default function Bandeja() {
             </Link>
           </header>
 
-          <div className="gs-agenda-list" style={{ padding: '0 20px 20px' }}>
+          <div className="gs-agenda-list">
             {agendaByDay.map((day) => (
-              <div key={day.key} className="gs-agenda-day" style={{ padding: '12px 0', borderBottom: '1px solid var(--color-border)' }}>
-                <div className="gs-agenda-date" style={{ marginBottom: '8px' }}>
-                  <strong style={{ fontWeight: 'var(--weight-bold)', fontSize: '0.9rem' }}>{formatLongDate(day.date)}</strong>
-                  <span style={{ marginLeft: '8px', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>{day.items.length} tareas</span>
+              <div key={day.key} className="gs-agenda-day">
+                <div className="gs-agenda-date">
+                  <strong>{formatLongDate(day.date)}</strong>
+                  <span>{day.items.length} tareas</span>
                 </div>
-                <div className="gs-agenda-items" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <div className="gs-agenda-items">
                   {day.items.length === 0 ? (
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>Sin actividad</span>
+                    <span className="gs-agenda-empty">Sin actividad</span>
                   ) : (
                     day.items.slice(0, 2).map((item, index) => (
                       <span
@@ -555,19 +535,19 @@ export default function Bandeja() {
             </Link>
           </header>
 
-          <div className="gs-activity-list" style={{ padding: '0 20px 20px' }}>
+          <div className="gs-activity-list">
             {activityFeed.length === 0 ? (
               <div className="mx-state-placeholder sm">Sin actividad reciente.</div>
             ) : (
               activityFeed.map((item) => (
-                <div key={item.id} className="gs-activity-item" style={{ display: 'flex', gap: '12px', padding: '12px 0', borderBottom: '1px solid var(--color-border)' }}>
+                <div key={item.id} className="gs-activity-item">
                   <div className={`mx-btn-icon sm is-${(EVENT_META[item.kind] || EVENT_META.interaccion).tone}`}>
                     <MessageSquare size={14} />
                   </div>
                   <div className="gs-activity-copy">
-                    <strong style={{ display: 'block', fontSize: '0.9rem', fontWeight: 'var(--weight-bold)' }}>{item.provider}</strong>
-                    <p style={{ margin: '2px 0', fontSize: '0.85rem' }}>{item.title}</p>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{formatShortDate(item.date)}</span>
+                    <strong>{item.provider}</strong>
+                    <p>{item.title}</p>
+                    <span>{formatShortDate(item.date)}</span>
                   </div>
                 </div>
               ))
@@ -586,23 +566,23 @@ export default function Bandeja() {
             </Link>
           </header>
 
-          <div className="gs-sample-list" style={{ padding: '0 20px 20px' }}>
+          <div className="gs-sample-list">
             {recentSamples.length === 0 ? (
               <div className="mx-state-placeholder sm">Sin muestreos.</div>
             ) : (
               recentSamples.map((item) => (
-                <div key={item._id} className="gs-sample-item" style={{ padding: '12px 0', borderBottom: '1px solid var(--color-border)' }}>
-                  <div className="gs-sample-topline" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ fontSize: '0.9rem', fontWeight: 'var(--weight-bold)' }}>{item.proveedorNombre}</strong>
+                <div key={item._id} className="gs-sample-item">
+                  <div className="gs-sample-topline">
+                    <strong>{item.proveedorNombre}</strong>
                     <span className={`mx-badge mx-badge-${item.mainClass === 'Sin clasificación' ? 'warning' : 'success'}`}>
                       {item.mainClass}
                     </span>
                   </div>
-                  <p style={{ margin: '4px 0', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{item.centroCodigo}</p>
-                  <div className="gs-sample-metrics" style={{ display: 'flex', gap: '12px', fontSize: '0.8rem', color: 'var(--color-text-subtle)' }}>
+                  <p>{item.centroCodigo}</p>
+                  <div className="gs-sample-metrics">
                     <span>Rend: {Number(item.rendimiento || 0).toFixed(1)}%</span>
                     <span>UX/Kg: {Math.round(item.uxkg || 0)}</span>
-                    <span style={{ marginLeft: 'auto' }}>{formatShortDate(item.fecha)}</span>
+                    <span className="gs-sample-date">{formatShortDate(item.fecha)}</span>
                   </div>
                 </div>
               ))
@@ -611,9 +591,9 @@ export default function Bandeja() {
         </article>
       </section>
 
-      <footer className="mx-state-placeholder sm am-mt-32" style={{ flexDirection: 'row', gap: '12px', padding: '20px' }}>
-        <Target size={20} style={{ color: 'var(--color-primary)' }} />
-        <p style={{ margin: 0, textAlign: 'left', fontSize: '0.9rem' }}>
+      <footer className="mx-state-placeholder sm am-mt-32 gs-footer-summary">
+        <Target size={20} className="gs-footer-icon" />
+        <p>
           Este resumen separa lo que requiere seguimiento, lo que está pausado y lo que ya avanzó comercialmente,
           para ayudarte a decidir más rápido qué sigue con cada proveedor.
         </p>

@@ -38,6 +38,55 @@
   vertical-align: middle;
 }
 
+.tratos-toolbar-search {
+  flex: 1;
+}
+
+.tratos-col-provider {
+  width: 30%;
+}
+
+.tratos-col-tons {
+  width: 100px;
+  text-align: center;
+}
+
+.tratos-col-price {
+  width: 120px;
+  text-align: center;
+}
+
+.tratos-col-status {
+  width: 140px;
+}
+
+.tratos-col-actions,
+.tratos-actions-cell {
+  width: 100px;
+  text-align: right;
+}
+
+.tratos-metric-cell {
+  text-align: center;
+}
+
+.tratos-date-cell {
+  color: var(--color-text-subtle);
+  font-size: 0.85rem;
+}
+
+.tratos-date-main {
+  font-weight: 600;
+}
+
+.tratos-date-label {
+  font-size: 10px;
+}
+
+.tratos-action-primary {
+  color: var(--color-primary);
+}
+
 .tratos-actions {
   display: inline-flex;
   align-items: center;
@@ -111,6 +160,52 @@
   color: var(--color-text);
   font-size: 13px;
   font-weight: 700;
+}
+
+.tratos-form-modal {
+  max-width: 600px;
+}
+
+.tratos-conditions-title {
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+.tratos-conditions-list {
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.tratos-conditions-empty {
+  padding: 10px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.tratos-condition-control {
+  height: 28px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.tratos-condition-control-auto {
+  width: auto;
+}
+
+.tratos-condition-value {
+  width: 100px;
+}
+
+.tratos-form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.tratos-form-row-item {
+  flex: 1;
 }
 
 .tratos-provider-search {
@@ -190,6 +285,75 @@
   font-size: 0.88rem;
 }
 
+.tratos-share-overlay {
+  z-index: 1100;
+  backdrop-filter: blur(4px);
+}
+
+.tratos-share-modal {
+  max-width: 380px;
+  padding: 32px;
+  border-radius: 24px;
+  text-align: center;
+}
+
+.tratos-share-header {
+  margin-bottom: 24px;
+}
+
+.tratos-share-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 20px;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.tratos-share-header h2 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.tratos-share-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.tratos-share-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.tratos-share-whatsapp,
+.tratos-share-copy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 48px;
+  border-radius: 14px;
+}
+
+.tratos-share-whatsapp {
+  background: #25d366;
+  border-color: #25d366;
+}
+
+.tratos-share-close {
+  margin-top: 8px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 768px) {
   .tratos-search-wrap {
     min-height: 48px;
@@ -204,5 +368,9 @@
   .tratos-condition-row {
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+
+  .tratos-form-row {
+    flex-direction: column;
   }
 }

@@ -41,7 +41,7 @@ export default function Muestreos() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'grouped'
 
-  // â”€â”€ Calendario navegador â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Calendario navegador ----------------------------------
   const [calView, setCalView] = useState('month'); // 'month' | 'week' | 'all'
   const [mes, setMes] = useState(getCurrentMonthKey);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -62,7 +62,7 @@ export default function Muestreos() {
     if (!deleteTarget) return;
     try {
       await deleteMuestreo(deleteTarget._id);
-      addToast({ title: 'Ã‰xito', message: 'Muestreo eliminado.', type: 'success' });
+      addToast({ title: 'Exito', message: 'Muestreo eliminado.', type: 'success' });
       loadData(page);
     } catch {
       addToast({ title: 'Error', message: 'No se pudo eliminar.', type: 'error' });
@@ -165,7 +165,7 @@ export default function Muestreos() {
     setIsModalOpen(true);
   }, [user, maestros.cats, resetEvidence, setProviderCenters, setSearchProviders, setSelectedProvider]);
 
-  // Bloquear scroll y ocultar sidebar en mobile cuando el modal estÃ¡ abierto
+  // Bloquear scroll y ocultar sidebar en mobile cuando el modal esta abierto
   React.useEffect(() => {
     if (isModalOpen) {
       document.body.classList.add('mu-modal-open');
@@ -342,9 +342,9 @@ export default function Muestreos() {
         isOpen={isDeleteOpen}
         onClose={() => { setDeleteOpen(false); setDeleteTarget(null); }}
         onConfirm={handleDeleteConfirm}
-        title="Â¿Eliminar este muestreo?"
+        title="Eliminar este muestreo?"
         itemName={deleteTarget?.proveedorNombre || deleteTarget?.proveedor}
-        description={deleteTarget ? `EstÃ¡s por eliminar el muestreo del ${new Date(deleteTarget.fecha).toLocaleDateString('es-CL')}${deleteTarget.centroCodigo ? ` en el centro ${deleteTarget.centroCodigo}` : ''}. Esta acciÃ³n no se puede deshacer.` : ''}
+        description={deleteTarget ? `Estas por eliminar el muestreo del ${new Date(deleteTarget.fecha).toLocaleDateString('es-CL')}${deleteTarget.centroCodigo ? ` en el centro ${deleteTarget.centroCodigo}` : ''}. Esta accion no se puede deshacer.` : ''}
       />
 
       {isModalOpen && (
@@ -419,6 +419,7 @@ export default function Muestreos() {
     </div>
   );
 }
+
 
 
 

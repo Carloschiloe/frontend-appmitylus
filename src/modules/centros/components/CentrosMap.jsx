@@ -1,6 +1,7 @@
 import React, { memo, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Maximize, Ruler, Search, Trash2, X } from 'lucide-react';
+import 'leaflet/dist/leaflet.css';
 import {
   CircleMarker,
   MapContainer,

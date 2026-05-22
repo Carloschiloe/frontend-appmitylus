@@ -1,14 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiClient } from '../api/apiClient';
+import {
+  clearRuntimeLayoutState,
+  clearSessionCache,
+  persistUserSession,
+  readCachedUser,
+} from './authSession.helpers';
 
 const AuthContext = createContext(null);
-
-function clearSessionCache({ clearTenant = false } = {}) {
-  localStorage.removeItem('ammpp_token');
-  localStorage.removeItem('ammpp_refresh_token');
-  localStorage.removeItem('ammpp_user');
-  if (clearTenant) localStorage.removeItem('selected_tenant_db');
-}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -19,40 +18,22 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = async () => {
       try {
-        const cachedUserRaw = localStorage.getItem('ammpp_user');
-
-        if (cachedUserRaw) {
-          try {
-            setUser(JSON.parse(cachedUserRaw));
-          } catch {
-            localStorage.removeItem('ammpp_user');
-          }
-        }
+        const cachedUser = readCachedUser();
+        if (cachedUser) setUser(cachedUser);
 
         const data = await apiClient.get('/auth/me', { signal: controller.signal });
         if (data?.ok && data.usuario) {
           setUser(data.usuario);
-          localStorage.setItem('ammpp_user', JSON.stringify(data.usuario));
-
-          // Auto-seleccionar tenant si el usuario tiene empresa asignada (Self-healing)
-          const currentTenant = localStorage.getItem('selected_tenant_db');
-          if (!currentTenant) {
-            const empresaData = data.usuario.empresaId;
-            if (empresaData && typeof empresaData === 'object' && empresaData.dbName) {
-              localStorage.setItem('selected_tenant_db', empresaData.dbName);
-              localStorage.setItem('selected_tenant_nombre', empresaData.nombre || '');
-              localStorage.setItem('selected_tenant_logo', empresaData.config?.logo || '');
-            } else if (data.usuario.dbName) {
-              localStorage.setItem('selected_tenant_db', data.usuario.dbName);
-            }
-          }
+          persistUserSession(data.usuario);
         } else {
-          clearSessionCache();
+          clearSessionCache({ clearTenant: true });
+          clearRuntimeLayoutState();
           setUser(null);
         }
       } catch (e) {
         if (e.name === 'AbortError') return;
         clearSessionCache({ clearTenant: true });
+        clearRuntimeLayoutState();
         setUser(null);
       } finally {
         setLoading(false);
@@ -71,7 +52,7 @@ export const AuthProvider = ({ children }) => {
         const data = await apiClient.post('/auth/refresh', {});
         if (data?.ok && data.usuario) {
           setUser(data.usuario);
-          localStorage.setItem('ammpp_user', JSON.stringify(data.usuario));
+          persistUserSession(data.usuario);
         }
       } catch {
         // La siguiente llamada privada recibira 401 y redirigira si corresponde.
@@ -96,19 +77,9 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: 'Respuesta de autenticacion invalida' };
       }
 
-      clearSessionCache();
-      localStorage.setItem('ammpp_user', JSON.stringify(usuario));
-
-      // Auto-seleccionar tenant si el usuario tiene empresa asignada
-      const empresaData = usuario.empresaId;
-      if (empresaData && typeof empresaData === 'object' && empresaData.dbName) {
-        localStorage.setItem('selected_tenant_db', empresaData.dbName);
-        localStorage.setItem('selected_tenant_nombre', empresaData.nombre || '');
-        localStorage.setItem('selected_tenant_logo', empresaData.config?.logo || '');
-      } else if (usuario.dbName) {
-        // Fallback: dbName directamente en el token/usuario
-        localStorage.setItem('selected_tenant_db', usuario.dbName);
-      }
+      clearSessionCache({ clearTenant: true });
+      clearRuntimeLayoutState();
+      persistUserSession(usuario);
 
       setUser(usuario);
 
@@ -125,6 +96,7 @@ export const AuthProvider = ({ children }) => {
       // Cerrar sesion local incluso si la red falla.
     }
     clearSessionCache({ clearTenant: true });
+    clearRuntimeLayoutState();
     setUser(null);
     window.location.href = '/login';
   };

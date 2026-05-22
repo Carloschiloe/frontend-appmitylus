@@ -5,7 +5,6 @@ import { ToastProvider } from './context/ToastContext.jsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Menu } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar.jsx';
-import 'leaflet/dist/leaflet.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,7 +57,7 @@ const MainLayout = ({ children }) => {
         <div className="mx-mobile-brand">
           <img src="/img/brand/mitynex-logo-new.svg" alt="Mitynex" />
         </div>
-        <div style={{ width: 36 }}></div> {/* Espaciador para centrado óptico del logo */}
+        <div className="mx-mobile-header-spacer" aria-hidden="true" />
       </header>
 
       {/* Fondo oscuro traslúcido para cerrar el menú al hacer click fuera */}
@@ -78,21 +77,12 @@ const MainLayout = ({ children }) => {
 };
 
 const TenantContextRequired = ({ title = 'Selecciona una empresa', description }) => (
-  <div className="mx-card" style={{ maxWidth: 760, margin: '48px auto', padding: '32px 28px' }}>
-    <p
-      style={{
-        margin: 0,
-        color: 'var(--mx-muted, #6b7a90)',
-        fontSize: '0.82rem',
-        fontWeight: 700,
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase'
-      }}
-    >
+  <div className="mx-card mx-tenant-required">
+    <p className="mx-tenant-required__eyebrow">
       Contexto requerido
     </p>
-    <h2 style={{ margin: '10px 0 12px', fontSize: '2rem', lineHeight: 1.1 }}>{title}</h2>
-    <p style={{ margin: 0, color: 'var(--mx-muted, #6b7a90)', fontSize: '1rem', lineHeight: 1.7 }}>
+    <h2 className="mx-tenant-required__title">{title}</h2>
+    <p className="mx-tenant-required__description">
       {description || 'Debes elegir una empresa en el selector lateral para trabajar en este módulo sin errores de contexto.'}
     </p>
   </div>

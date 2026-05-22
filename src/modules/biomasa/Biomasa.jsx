@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { Suspense, lazy, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import './biomasa.css';
 import { 
@@ -29,7 +29,8 @@ import { apiClient } from '../../api/apiClient';
 import { useToast } from '../../context/ToastContext';
 import { useBiomasaData } from '../../hooks/useBiomasaData';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
-import Muestreos from '../gestion/submodules/Muestreos';
+const Muestreos = lazy(() => import('../gestion/submodules/Muestreos'));
+
 
 const mesActual = () => {
   const d = new Date();
@@ -44,7 +45,7 @@ const finMes = (mk) => {
 };
 
 const mesLabel = (mk = '', largo = false) => {
-  if (!mk) return 'â€”';
+  if (!mk) return '—';
   const LARGO  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const [y, m] = mk.split('-');
   const idx = parseInt(m, 10) - 1;
@@ -246,7 +247,7 @@ const summarizeHarvestItems = (items = []) => {
 const formatHarvestMetric = (camiones = 0, tons = 0, metric = 'both') => {
   if (metric === 'camiones') return `${Number(camiones || 0)} cam`;
   if (metric === 'tons') return fmtTonsInt(tons);
-  return `${Number(camiones || 0)} cam Â· ${fmtTonsInt(tons)}`;
+  return `${Number(camiones || 0)} cam · ${fmtTonsInt(tons)}`;
 };
 
 const getHarvestMetricKpi = (camiones = 0, tons = 0, metric = 'both') => {
@@ -444,14 +445,14 @@ export default function Biomasa() {
 
 
 
-  // LÃ³gica MatemÃ¡tica de Mes
+  // Lógica Matemática de Mes
   const monthData = useMemo(() => {
     if (!mes) return { days: [], padding: 0 };
     const [y, m] = mes.split('-');
     const year = parseInt(y, 10);
     const month = parseInt(m, 10) - 1; // 0-indexed
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0); // Ãºltimo dÃ­a
+    const lastDay = new Date(year, month + 1, 0); // último día
     
     // Ajustar Lunes = 0, Domingo = 6
     const dayOfWeek = firstDay.getDay();
@@ -463,7 +464,7 @@ export default function Biomasa() {
     };
   }, [mes]);
 
-  // LÃ³gica de Semanas
+  // Lógica de Semanas
   const weekDays = useMemo(() => {
     const start = new Date();
     start.setDate(start.getDate() - start.getDay() + 1 + (currentWeekOffset * 7)); // Lunes
@@ -687,7 +688,7 @@ export default function Biomasa() {
       } catch {
         addToast({
           title: 'Pantalla completa no disponible',
-          message: 'El navegador bloqueÃ³ el modo pantalla completa. Puedes usar F11 como alternativa.',
+          message: 'El navegador bloqueó el modo pantalla completa. Puedes usar F11 como alternativa.',
           type: 'warning'
         });
       }
@@ -729,7 +730,7 @@ export default function Biomasa() {
         tipoProducto: tratosAcordados[0]?.tipoProducto || tratosAcordados[0]?.tipoProductoSugerido || 'sin_definir',
         tipoCamion: 'Normal',
         maxisPorCamion: 12,
-        condicionContinuidad: 'Sin CondiciÃ³n',
+        condicionContinuidad: 'Sin Condición',
         notas: '',
         diasSemana: [1,2,3,4,5],
         diasEspeciales: []
@@ -788,7 +789,7 @@ export default function Biomasa() {
     if (!segNota.trim() || !segEstado) return;
     try {
       await apiClient.post(`/programa-cosecha/${segProg._id}/seguimiento`, { estado: segEstado, nota: segNota });
-      addToast({ title: 'Ã‰xito', message: 'Novedad registrada con Ã©xito', type: 'success' });
+      addToast({ title: 'Éxito', message: 'Novedad registrada con éxito', type: 'success' });
       setShowSegModal(false);
       setSegNota('');
       setSegEstado('');
@@ -936,7 +937,7 @@ export default function Biomasa() {
 
   const getSituacionBiomasaLabel = (item) => {
     const raw = asText(item?.situacionBiomasa || item?.estado, '').toLowerCase();
-    if (raw === 'en_conversacion' || raw === 'negociando') return 'En conversaciÃ³n';
+    if (raw === 'en_conversacion' || raw === 'negociando') return 'En conversación';
     if (raw === 'reservada' || raw === 'semi_acordado' || raw === 'semi_cerrado') return 'Reservada';
     if (raw === 'acordada' || raw === 'acordado' || raw === 'cerrado' || raw === 'compra_efectuada') return 'Acordada';
     return asText(item?.situacionBiomasa || item?.estado, 'Sin definir');
@@ -984,7 +985,7 @@ export default function Biomasa() {
 
   const visibleNegociacionKpis = useMemo(() => {
     const sumTons = (items) => items.reduce((acc, item) => acc + (Number(item?.tonsAcordadas || item?.tons || item?.biomasaEstimacion || 0)), 0);
-    const enConversacion = visibleBiomasaPendiente.filter((item) => getSituacionBiomasaLabel(item) === 'En conversaciÃ³n');
+    const enConversacion = visibleBiomasaPendiente.filter((item) => getSituacionBiomasaLabel(item) === 'En conversación');
     const acordadas = visibleTratosBiomasa.filter((item) => getSituacionBiomasaLabel(item) === 'Acordada');
     return {
       enConversacionTons: sumTons(enConversacion),
@@ -1000,7 +1001,7 @@ export default function Biomasa() {
       <header className="mx-hero">
         <div className="mx-hero-content">
           <p className="mx-eyebrow">
-            {isStatusView ? 'Operacion Â· Disponibilidad' : isProgramView ? 'Operacion Â· Programa de cosecha' : 'Operacion Â· Muestreos tecnicos'}
+            {isStatusView ? 'Operacion · Disponibilidad' : isProgramView ? 'Operacion · Programa de cosecha' : 'Operacion · Muestreos tecnicos'}
           </p>
           <h1 className="biomasa-title">{isStatusView ? 'Disponibilidad de biomasa' : isProgramView ? 'Programa de Cosecha' : 'Muestreos Tecnicos'}</h1>
         </div>
@@ -1013,7 +1014,7 @@ export default function Biomasa() {
             {isStatusView ? (
               <>
                 <button className={`mx-toggle-btn ${statusSubTab === 'disponibilidad' ? 'active' : ''}`} onClick={() => setStatusSubTab('disponibilidad')}><Inbox size={14} /> Disponibilidad</button>
-                <button className={`mx-toggle-btn ${statusSubTab === 'negociacion' ? 'active' : ''}`} onClick={() => setStatusSubTab('negociacion')}><ShoppingCart size={14} /> NegociaciÃ³n</button>
+                <button className={`mx-toggle-btn ${statusSubTab === 'negociacion' ? 'active' : ''}`} onClick={() => setStatusSubTab('negociacion')}><ShoppingCart size={14} /> Negociación</button>
               </>
             ) : isProgramView ? (
               <>
@@ -1110,7 +1111,7 @@ export default function Biomasa() {
               ) : (
                 <div className="mx-kpi-grid">
                   <div className="mx-kpi-card">
-                    <div className="mx-kpi-label">En conversaciÃ³n</div>
+                    <div className="mx-kpi-label">En conversación</div>
                     <div className="mx-kpi-value" style={{ color: 'var(--color-info)' }}>{fmtTons(visibleNegociacionKpis.enConversacionTons)}</div>
                   </div>
                   <div className="mx-kpi-card">
@@ -1118,7 +1119,7 @@ export default function Biomasa() {
                     <div className="mx-kpi-value" style={{ color: 'var(--color-success)' }}>{fmtTons(visibleNegociacionKpis.acordadasTons)}</div>
                   </div>
                   <div className="mx-kpi-card">
-                    <div className="mx-kpi-label">{statusPeriod === 'week' ? 'PÃ©rdidas de la semana' : 'PÃ©rdidas del mes'}</div>
+                    <div className="mx-kpi-label">{statusPeriod === 'week' ? 'Pérdidas de la semana' : 'Pérdidas del mes'}</div>
                     <div className="mx-kpi-value" style={{ color: 'var(--color-error)' }}>{fmtTons(visibleNegociacionKpis.perdidasTons)}</div>
                   </div>
                 </div>
@@ -1128,7 +1129,7 @@ export default function Biomasa() {
                   <thead>
                     <tr>
                       <th>Proveedor</th>
-                      <th>{statusSubTab === 'disponibilidad' ? 'Mes' : 'SituaciÃ³n biomasa'}</th>
+                      <th>{statusSubTab === 'disponibilidad' ? 'Mes' : 'Situación biomasa'}</th>
                       <th style={{ textAlign: 'center' }}>Tons</th>
                       {statusSubTab === 'disponibilidad' ? <th>Centro</th> : <th>Programa</th>}
                     </tr>
@@ -1139,17 +1140,17 @@ export default function Biomasa() {
                         <td style={{ fontWeight: 'var(--weight-bold)' }}>{item.proveedorNombre}</td>
                         <td>{statusSubTab === 'disponibilidad' ? mesLabel(item.mesKey) : getSituacionBiomasaLabel(item)}</td>
                         <td style={{ textAlign: 'center', fontWeight: 'var(--weight-bold)' }}>{fmtTons(statusSubTab === 'disponibilidad' ? item.tons : (item.tonsAcordadas || item.tons || item.biomasaEstimacion || 0))}</td>
-                        {statusSubTab === 'disponibilidad' ? <td>{item.centroCodigo || 'â€”'}</td> : <td>{getProgramaLabel(item)}</td>}
+                        {statusSubTab === 'disponibilidad' ? <td>{item.centroCodigo || '—'}</td> : <td>{getProgramaLabel(item)}</td>}
                       </tr>
                     ))}
                     {statusSubTab !== 'disponibilidad' && visiblePerdidasBiomasa.map((item) => (
                       <tr key={`perdida-${item._id}`}>
                         <td style={{ fontWeight: 'var(--weight-bold)' }}>{item.proveedorNombre}</td>
-                        <td>{item.motivoCierre || 'PÃ©rdida'}</td>
+                        <td>{item.motivoCierre || 'Pérdida'}</td>
                         <td style={{ textAlign: 'center', fontWeight: 'var(--weight-bold)', color: 'var(--color-error)' }}>
                           {fmtTons(item.tonsAcordadas || item.tons || item.biomasaEstimacion || 0)}
                         </td>
-                        <td>PÃ©rdida real</td>
+                        <td>Pérdida real</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1183,46 +1184,46 @@ export default function Biomasa() {
                       </div>
                     </div>
                   </div>
-                  <div className="mx-table-wrap">
-                    <table className="mx-table harvest-program-table">
-                      <thead>
-                        <tr>
-                          <th>Proveedor / Centro</th>
-                          <th>Vigencia</th>
-                          <th>Producto</th>
-                          <th style={{ textAlign: 'center' }}>Cam/dÃ­a</th>
-                          <th>Volumen</th>
-                          <th>Estado</th>
-                          <th>Sanitario</th>
-                          <th style={{ textAlign: 'right' }}>Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {programasPeriodo.map(p => {
-                          const volume = getProgramVolumeProgress(p, tonsPerTruck);
-                          const isOverEstimated = volume.estimated > 0 && volume.balance < 0;
-                          const hasDailyAdjustments = Array.isArray(p.ajustesDiarios) && p.ajustesDiarios.length > 0;
-                          const camionesStatus = getProgramCamionesStatus(p);
-                          return (
-                          <tr key={p._id}>
-                            <td>
+                  <div className="harvest-program-grid-wrap">
+                    <div className="harvest-program-grid" role="table" aria-label="Programa de cosecha">
+                      <div className="harvest-program-grid-head" role="row">
+                        <div role="columnheader">Proveedor / Centro</div>
+                        <div role="columnheader">Vigencia</div>
+                        <div role="columnheader">Producto</div>
+                        <div role="columnheader">Cam/dia</div>
+                        <div role="columnheader">Volumen</div>
+                        <div role="columnheader">Estado</div>
+                        <div role="columnheader">Sanitario</div>
+                        <div role="columnheader">Acciones</div>
+                      </div>
+
+                      {programasPeriodo.map(p => {
+                        const volume = getProgramVolumeProgress(p, tonsPerTruck);
+                        const isOverEstimated = volume.estimated > 0 && volume.balance < 0;
+                        const hasDailyAdjustments = Array.isArray(p.ajustesDiarios) && p.ajustesDiarios.length > 0;
+                        const camionesStatus = getProgramCamionesStatus(p);
+                        return (
+                          <div className="harvest-program-grid-row" role="row" key={p._id}>
+                            <div role="cell" className="harvest-program-provider-cell">
                               <div className="biomasa-prov-cell">
                                 <div className="biomasa-avatar">
                                   {p.proveedorNombre ? p.proveedorNombre.substring(0, 2).toUpperCase() : 'NA'}
                                 </div>
-                                <div>
+                                <div className="biomasa-provider-text">
                                   <div className="biomasa-prov-name">{p.proveedorNombre || 'Proveedor Desconocido'}</div>
                                   <div className="biomasa-centro-name">{p.centroNombre || 'Sin Centro Definido'}</div>
                                 </div>
                               </div>
-                            </td>
-                            <td>
+                            </div>
+
+                            <div role="cell">
                               <div className="biomasa-date-range">
                                 <CalendarIcon size={14} />
-                                {p.vigenciaDesde ? new Date(p.vigenciaDesde).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : 'â€”'} - {p.vigenciaHasta ? new Date(p.vigenciaHasta).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : 'â€”'}
+                                {p.vigenciaDesde ? new Date(p.vigenciaDesde).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '-'} - {p.vigenciaHasta ? new Date(p.vigenciaHasta).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '-'}
                               </div>
-                            </td>
-                            <td>
+                            </div>
+
+                            <div role="cell">
                               <span className="mx-badge mx-badge-muted">
                                 {getTipoProductoLabel(p.tipoProducto)}
                               </span>
@@ -1232,8 +1233,9 @@ export default function Biomasa() {
                                   {p.rendimiento ? <span>{fmtNumber(p.rendimiento, 1)}%</span> : null}
                                 </div>
                               )}
-                            </td>
-                            <td style={{ textAlign: 'center' }}>
+                            </div>
+
+                            <div role="cell" className="harvest-program-camiones-cell">
                               <div className="harvest-program-camiones">
                                 <div className="biomasa-camiones-badge">
                                   {camionesStatus.base}
@@ -1244,8 +1246,9 @@ export default function Biomasa() {
                                   </span>
                                 )}
                               </div>
-                            </td>
-                            <td>
+                            </div>
+
+                            <div role="cell" className="harvest-program-volume-cell">
                               <div className="harvest-program-volume">
                                 <div className="harvest-program-volume-head">
                                   <span>Est.</span>
@@ -1270,13 +1273,15 @@ export default function Biomasa() {
                                   Con ajustes diarios
                                 </span>
                               )}
-                            </td>
-                            <td>
+                            </div>
+
+                            <div role="cell" className="harvest-program-status-cell">
                               <span className={`mx-badge mx-badge-${p.estado === 'activo' ? 'success' : p.estado === 'pausado' ? 'warning' : 'muted'}`}>
                                 {(p.estado || 'desconocido').toUpperCase()}
                               </span>
-                            </td>
-                            <td>
+                            </div>
+
+                            <div role="cell">
                               <span
                                 className={`harvest-sanitary-badge ${getSanitarioEstado(p.sanitario)}`}
                                 title={[
@@ -1293,8 +1298,9 @@ export default function Biomasa() {
                                   {p.sanitario.areaPSMB}{p.sanitario.codigoArea ? ` - ${p.sanitario.codigoArea}` : ''}
                                 </div>
                               )}
-                            </td>
-                            <td style={{ textAlign: 'right' }}>
+                            </div>
+
+                            <div role="cell" className="harvest-program-actions-cell">
                               <div className="biomasa-action-bar">
                                 {p.estado === 'activo' ? (
                                   <button className="mx-btn-icon sm pause" onClick={() => handleStatusChange(p._id, 'pausado')}><Pause size={14} /></button>
@@ -1304,19 +1310,17 @@ export default function Biomasa() {
                                 <button className="mx-btn-icon sm edit" onClick={() => handleOpenModal(p)}><Edit size={14} /></button>
                                 <button className="mx-btn-icon sm delete" onClick={() => setConfirmDelete(p)}><Trash size={14} /></button>
                               </div>
-                            </td>
-                          </tr>
-                          );
-                        })}
-                        {!programasPeriodo.length && (
-                          <tr>
-                            <td colSpan="8" className="harvest-program-empty">
-                              Sin programas para el periodo seleccionado.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {!programasPeriodo.length && (
+                        <div className="harvest-program-empty" role="row">
+                          Sin programas para el periodo seleccionado.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1451,7 +1455,7 @@ export default function Biomasa() {
                                   </div>
                                 </div>
                               ) : (
-                                <div className="cal-day-empty">â€”</div>
+                                <div className="cal-day-empty">—</div>
                               )}
                             </div>
                           );
@@ -1850,7 +1854,18 @@ export default function Biomasa() {
               )}
             </div>
           )}
-          {isMuestreosView && <Muestreos />}
+          {isMuestreosView && (
+            <Suspense
+              fallback={
+                <div className="mx-loading-placeholder">
+                  <div className="mx-spinner"></div>
+                  <p>Cargando muestreos...</p>
+                </div>
+              }
+            >
+              <Muestreos />
+            </Suspense>
+          )}
         </div>
       </div>
 
@@ -1964,12 +1979,12 @@ export default function Biomasa() {
                   </select>
                 </div>
                 <div className="mx-form-group">
-                  <label className="mx-label">Nota / ObservaciÃ³n de Cosecha</label>
+                  <label className="mx-label">Nota / Observación de Cosecha</label>
                   <textarea 
                     className="mx-textarea" 
                     value={segNota} 
                     onChange={e => setSegNota(e.target.value)} 
-                    placeholder="Describe lo ocurrido (ej: retraso por clima, cambio de logÃ­stica...)"
+                    placeholder="Describe lo ocurrido (ej: retraso por clima, cambio de logística...)"
                     required
                   />
                 </div>
@@ -2015,9 +2030,9 @@ export default function Biomasa() {
                       }}
                       required
                     >
-                      <option value="">â€” Seleccionar trato acordado â€”</option>
+                      <option value="">— Seleccionar trato acordado —</option>
                       {tratosAcordados.map(t => (
-                        <option key={t._id} value={t._id}>{t.proveedorNombre} â€” {t.tonsAcordadas}T ({t.centroCodigo || t.centroNombre || 'Sin centro'})</option>
+                        <option key={t._id} value={t._id}>{t.proveedorNombre} — {t.tonsAcordadas}T ({t.centroCodigo || t.centroNombre || 'Sin centro'})</option>
                       ))}
                     </select>
                   </div>
@@ -2030,7 +2045,7 @@ export default function Biomasa() {
                     <input type="date" className="mx-input" value={formData.vigenciaHasta} onChange={e => setFormData({...formData, vigenciaHasta: e.target.value})} required />
                   </div>
                   <div className="mx-form-group">
-                    <label className="mx-label">Camiones / dÃ­a</label>
+                    <label className="mx-label">Camiones / día</label>
                     <input type="number" className="mx-input" value={formData.camionesDefault} onChange={e => setFormData({...formData, camionesDefault: e.target.value})} min="0" required />
                   </div>
                   <div className="mx-form-group">
@@ -2051,9 +2066,9 @@ export default function Biomasa() {
                     </select>
                   </div>
                   <div className="mx-form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="mx-label">DÃ­as de Cosecha</label>
+                    <label className="mx-label">Días de Cosecha</label>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {['Dom','Lun','Mar','MiÃ©','Jue','Vie','SÃ¡b'].map((d, i) => (
+                      {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d, i) => (
                         <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', background: formData.diasSemana.includes(i) ? 'var(--color-primary-light, #f0fdfa)' : 'white', borderColor: formData.diasSemana.includes(i) ? 'var(--color-primary)' : 'var(--color-border)' }}>
                           <input 
                             type="checkbox" 
@@ -2092,8 +2107,8 @@ export default function Biomasa() {
         isOpen={Boolean(confirmDelete)}
         onClose={() => setConfirmDelete(null)}
         onConfirm={handleDelete}
-        title="Â¿Eliminar programa?"
-        description={confirmDelete ? `EstÃ¡s a punto de borrar el programa de cosecha de "${confirmDelete.proveedorNombre}". Esta acciÃ³n es irreversible.` : ''}
+        title="¿Eliminar programa?"
+        description={confirmDelete ? `Estás a punto de borrar el programa de cosecha de "${confirmDelete.proveedorNombre}". Esta acción es irreversible.` : ''}
       />
     </div>
   );
