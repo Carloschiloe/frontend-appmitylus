@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, RotateCcw } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { apiClient } from '../../../api/apiClient';
+import { useAuth } from '../../../context/AuthContext';
 import { 
   useInteracciones, 
   useCentros, 
@@ -23,6 +24,7 @@ import {
 export default function Interacciones() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
+  const { user } = useAuth();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,7 +80,13 @@ export default function Interacciones() {
   const handleSelectProvider = useCallback((provider) => {
     setSelectedProvider(provider);
     setProviderSearch(provider.proveedorNombre);
-    setForm((prev) => ({ ...prev, proveedorNombre: provider.proveedorNombre }));
+    setForm((prev) => ({
+      ...prev,
+      proveedorKey: provider.proveedorKey || '',
+      proveedorNombre: provider.proveedorNombre || '',
+      contactoId: provider.contactoId || '',
+      contactoNombre: provider.contactoNombre || '',
+    }));
   }, []);
 
   const handleProviderSearchChange = useCallback((value) => {
@@ -88,17 +96,59 @@ export default function Interacciones() {
     }
   }, [selectedProvider]);
 
+   const openCreateModal = useCallback(() => {
+     setForm(createEmptyInteraccionForm());
+     setProviderSearch('');
+     setSelectedProvider(null);
+     setIsModalOpen(true);
+   }, []);
+
+   const openEditModal = useCallback((item) => {
+     const itemId = item?._id || item?.id || '';
+     const fecha = item?.fecha ? String(item.fecha).slice(0, 10) : createEmptyInteraccionForm().fecha;
+     setForm({
+       ...createEmptyInteraccionForm(),
+       _id: itemId,
+       proveedorKey: item?.proveedorKey || '',
+       proveedorNombre: item?.proveedorNombre || '',
+       contactoId: item?.contactoId || '',
+       contactoNombre: item?.contactoNombre || '',
+       tipo: item?.tipo || 'interaccion',
+       fecha,
+       resumen: item?.resumen || '',
+       notas: item?.notas || item?.resultado || item?.detalle || '',
+       proximaAccion: item?.proximoPaso || item?.proximaAccion || '',
+       fechaProxima: item?.fechaProximo ? String(item.fechaProximo).slice(0, 10) : '',
+     });
+     setProviderSearch(item?.proveedorNombre || '');
+     setSelectedProvider(null);
+     setIsModalOpen(true);
+   }, []);
+
    const handleSave = useCallback(async (e) => {
      e.preventDefault();
      try {
-       await apiClient.post('/interacciones', form);
-       addToast({ title: 'Exito', message: 'Interaccion registrada', type: 'success' });
+       const { _id, ...formPayload } = form;
+       const responsablePG = user?.nombre || user?.name || user?.email?.split('@')?.[0] || 'Usuario';
+       const payload = {
+         ...formPayload,
+         responsablePG,
+         resultado: formPayload.notas || formPayload.resultado || '',
+       };
+       delete payload.notas;
+
+       if (_id) {
+         await apiClient.put(`/interacciones/${_id}`, payload);
+       } else {
+         await apiClient.post('/interacciones', payload);
+       }
+       addToast({ title: 'Exito', message: _id ? 'Interaccion actualizada' : 'Interaccion registrada', type: 'success' });
        closeModal();
        handleRefresh();
      } catch {
        addToast({ title: 'Error', message: 'No se pudo guardar', type: 'error' });
      }
-   }, [form, addToast, handleRefresh, closeModal]);
+   }, [form, user, addToast, handleRefresh, closeModal]);
 
    const deleteMutation = useMutation({
      mutationFn: (id) => apiClient.delete(`/interacciones/${id}`),
@@ -138,7 +188,7 @@ export default function Interacciones() {
         <button className="mx-btn mx-btn-outline sm" onClick={handleRefresh}>
           <RotateCcw size={18} />
         </button>
-        <button className="mx-btn mx-btn-primary sm" onClick={() => setIsModalOpen(true)}>
+        <button className="mx-btn mx-btn-primary sm" onClick={openCreateModal}>
           <Plus size={18} />
           Registrar gestion
         </button>
@@ -148,6 +198,7 @@ export default function Interacciones() {
       <InteraccionesTable
         items={filteredItems}
         loading={loading}
+        onEdit={openEditModal}
         onDelete={handleDelete}
       />
 

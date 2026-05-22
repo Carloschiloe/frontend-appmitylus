@@ -18,7 +18,7 @@ export default function InteraccionFormModal({
     <div className="mx-modal-overlay">
       <div className="mx-modal interacciones-modal">
         <div className="mx-modal-header">
-          <h2>Registrar Nueva Gestion</h2>
+          <h2>{form._id ? 'Editar Gestion' : 'Registrar Nueva Gestion'}</h2>
           <button type="button" className="mx-btn-icon" onClick={onClose}>
             <X size={20} />
           </button>
@@ -102,7 +102,7 @@ export default function InteraccionFormModal({
           </div>
           <div className="mx-modal-footer">
             <button type="button" className="mx-btn mx-btn-outline" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="mx-btn mx-btn-primary">Guardar Gestion</button>
+            <button type="submit" className="mx-btn mx-btn-primary">{form._id ? 'Guardar cambios' : 'Guardar Gestion'}</button>
           </div>
         </form>
       </div>

@@ -389,40 +389,43 @@ export default function QuickCaptureModal() {
             <form onSubmit={handleSubmit} className="mx-form">
               <div className="mx-modal-body" style={{ display: 'grid', gap: '18px' }}>
                 <section className="mx-form-group">
-                  <label className="mx-label">1. Proveedor</label>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 14,
-                      padding: '12px 14px',
-                      background: '#fff',
-                    }}
-                  >
-                    <Search size={18} style={{ color: 'var(--color-text-subtle)', flexShrink: 0 }} />
-                    <input
-                      type="text"
-                      placeholder="Buscar empresa, comuna o contacto..."
-                      value={search}
-                      onChange={(e) => {
-                        const nextValue = e.target.value;
-                        setSearch(nextValue);
-                        if (selected && nextValue.trim() !== (selected.proveedorNombre || '').trim()) {
-                          setSelected(null);
-                        }
-                      }}
-                      style={{
-                        width: '100%',
-                        border: 'none',
-                        outline: 'none',
-                        background: 'transparent',
-                        fontSize: '0.96rem',
-                        color: 'var(--color-text)',
-                      }}
-                    />
+                  <div className="quick-capture-provider-row">
+                    <div>
+                      <label className="mx-label">1. Proveedor</label>
+                      <div className="quick-capture-provider-search">
+                        <Search size={18} style={{ color: 'var(--color-text-subtle)', flexShrink: 0 }} />
+                        <input
+                          type="text"
+                          placeholder="Buscar empresa, comuna o contacto..."
+                          value={search}
+                          onChange={(e) => {
+                            const nextValue = e.target.value;
+                            setSearch(nextValue);
+                            if (selected && nextValue.trim() !== (selected.proveedorNombre || '').trim()) {
+                              setSelected(null);
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            border: 'none',
+                            outline: 'none',
+                            background: 'transparent',
+                            fontSize: '0.96rem',
+                            color: 'var(--color-text)',
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Fecha acción</label>
+                      <input
+                        type="date"
+                        className="mx-input"
+                        value={form.fechaGestion}
+                        onChange={(e) => setForm((prev) => ({ ...prev, fechaGestion: e.target.value }))}
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div style={{ marginTop: 10, display: 'grid', gap: 10 }}>
@@ -578,19 +581,6 @@ export default function QuickCaptureModal() {
                         </button>
                       );
                     })}
-                  </div>
-                </section>
-
-                <section className="mx-field-row" style={{ display: 'grid', gap: 16, gridTemplateColumns: '180px 1fr', alignItems: 'end' }}>
-                  <div className="mx-form-group">
-                    <label className="mx-label">Fecha acción</label>
-                    <input
-                      type="date"
-                      className="mx-input"
-                      value={form.fechaGestion}
-                      onChange={(e) => setForm((prev) => ({ ...prev, fechaGestion: e.target.value }))}
-                      required
-                    />
                   </div>
                 </section>
 

@@ -1,10 +1,11 @@
 import React from 'react';
-import { Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { getTipoLabel } from './interacciones.helpers';
 
 export default function InteraccionesTable({
   items,
   loading,
+  onEdit,
   onDelete,
 }) {
   return (
@@ -44,6 +45,14 @@ export default function InteraccionesTable({
                   <td>{item.resumen}</td>
                   <td className="interacciones-actions-cell">
                     <div className="mx-table-actions-cell interacciones-actions">
+                      <button
+                        type="button"
+                        className="mx-action-btn edit"
+                        onClick={() => onEdit(item)}
+                        aria-label="Editar interaccion"
+                      >
+                        <Pencil size={14} />
+                      </button>
                       <button
                         type="button"
                         className="mx-action-btn delete"

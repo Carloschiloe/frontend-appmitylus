@@ -22,6 +22,10 @@ const PAGE_META = {
     eyebrow: 'Operacion · Agenda',
     title: 'Agenda Operacional',
   },
+  '/gestion/interacciones': {
+    eyebrow: 'Operacion - Interacciones',
+    title: 'Historial de Gestiones',
+  },
   '/gestion/calendario': {
     eyebrow: 'Operacion · Agenda',
     title: 'Agenda Operacional',

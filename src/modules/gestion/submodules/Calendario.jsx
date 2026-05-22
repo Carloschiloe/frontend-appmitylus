@@ -39,8 +39,8 @@ const MONTHS = [
 const VIEW_OPTIONS = [
   { id: 'calendar', label: 'Calendario', icon: CalendarDays },
   { id: 'week', label: 'Semana', icon: Table2 },
-  { id: 'list', label: 'Lista', icon: ListChecks },
-  { id: 'agenda', label: 'Agenda', icon: Clock },
+  { id: 'list', label: 'Historial', icon: ListChecks },
+  { id: 'agenda', label: 'Programado', icon: Clock },
 ];
 
 const TYPE_CONFIG = {
@@ -710,9 +710,9 @@ export default function Calendario() {
               {viewMode === 'list' && (
                 <div className="cal-table-wrap">
                   <div className="cal-view-context">
-                    <span>Gestion / historial</span>
+                    <span>Historial / ejecutado</span>
                     <strong>{visibleListEvents.length} actividades registradas</strong>
-                    <p>Incluye actividades ejecutadas, pendientes, activas, pausadas y canceladas disponibles en el periodo cargado.</p>
+                    <p>Muestra lo que ya se registro y permite revisar cada gestion por fecha, proveedor, tipo y responsable.</p>
                   </div>
                   <table className="cal-activity-table">
                     <thead>
@@ -759,7 +759,7 @@ export default function Calendario() {
               {viewMode === 'agenda' && (
                 <div className="cal-agenda-list">
                   <div className="cal-view-context is-planning">
-                    <span>Planificacion / agenda</span>
+                    <span>Programado / pendientes</span>
                     <strong>{timelineEvents.length} actividades futuras</strong>
                     <p>Solo muestra compromisos programados hacia adelante que estan pendientes, activos o pausados.</p>
                   </div>
