@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Edit3,
   Eye,
   Filter,
   ListChecks,
@@ -228,17 +227,12 @@ function AgendaType({ kind }) {
   return <span className={`agenda-type is-${kind}`}>{TYPE_LABELS[kind] || TYPE_LABELS.default}</span>;
 }
 
-function AgendaActions({ item, onViewCalendar, onEdit, onReprogram, onDelete }) {
+function AgendaActions({ item, onViewCalendar, onReprogram, onDelete }) {
   return (
     <div className="agenda-row-actions">
       <button type="button" className="cal-icon-action" onClick={() => onViewCalendar(item)} title="Ver en calendario">
         <Eye size={15} />
       </button>
-      {item.canEdit ? (
-        <button type="button" className="cal-icon-action" onClick={() => onEdit(item)} title="Editar">
-          <Edit3 size={15} />
-        </button>
-      ) : null}
       {item.canReprogram ? (
         <button type="button" className="cal-icon-action" onClick={() => onReprogram(item)} title="Reprogramar">
           <RotateCcw size={15} />
@@ -253,7 +247,7 @@ function AgendaActions({ item, onViewCalendar, onEdit, onReprogram, onDelete }) 
   );
 }
 
-function AgendaTable({ items, emptyText, onViewCalendar, onEdit, onReprogram, onDelete }) {
+function AgendaTable({ items, emptyText, onViewCalendar, onReprogram, onDelete }) {
   return (
     <div className="agenda-table-wrap">
       <table className="agenda-table">
@@ -289,7 +283,6 @@ function AgendaTable({ items, emptyText, onViewCalendar, onEdit, onReprogram, on
                 <AgendaActions
                   item={item}
                   onViewCalendar={onViewCalendar}
-                  onEdit={onEdit}
                   onReprogram={onReprogram}
                   onDelete={onDelete}
                 />
@@ -351,7 +344,6 @@ export default function Calendario() {
       .map((item) => withDerivedStatus(item, today))
       .map((item) => ({
         ...item,
-        canEdit: ['interaccion', 'visita'].includes(item.source),
         canReprogram: ['interaccion', 'oportunidad'].includes(item.source),
         canDelete: ['interaccion', 'visita'].includes(item.source),
       }))
@@ -437,21 +429,6 @@ export default function Calendario() {
     setCurrentDate(new Date(item.date.getFullYear(), item.date.getMonth(), 1));
     setSelectedDate(item.date);
     setViewMode('calendar');
-  }
-
-  function getEditPath(item) {
-    if (item.source === 'interaccion') return `/gestion/interacciones?q=${encodeURIComponent(item.provider || '')}`;
-    if (item.source === 'visita') return `/gestion/interacciones?q=${encodeURIComponent(item.provider || '')}`;
-    return '';
-  }
-
-  function handleEdit(item) {
-    const path = getEditPath(item);
-    if (path) {
-      window.location.href = path;
-      return;
-    }
-    addToast({ title: 'Sin editor', message: 'Este origen aun no tiene editor directo conectado.', type: 'warning' });
   }
 
   async function handleReprogram(item) {
@@ -592,7 +569,6 @@ export default function Calendario() {
                 items={filteredItems}
                 emptyText="No hay pendientes para los filtros seleccionados."
                 onViewCalendar={viewItemInCalendar}
-                onEdit={handleEdit}
                 onReprogram={handleReprogram}
                 onDelete={handleDelete}
               />
@@ -603,7 +579,6 @@ export default function Calendario() {
                 items={filteredItems}
                 emptyText="No hay casos pausados con fecha de revision."
                 onViewCalendar={viewItemInCalendar}
-                onEdit={handleEdit}
                 onReprogram={handleReprogram}
                 onDelete={handleDelete}
               />

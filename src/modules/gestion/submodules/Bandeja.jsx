@@ -340,13 +340,6 @@ export default function Bandeja() {
             </span>
           </div>
           <div className="gs-hero-buttons">
-            <Link 
-              to="/gestion/interacciones" 
-              className="mx-btn gs-hero-action"
-            >
-              <MessageSquare size={18} />
-              Ver interacciones
-            </Link>
             <button 
               className="mx-btn-icon gs-hero-refresh" 
               onClick={handleRefresh} 

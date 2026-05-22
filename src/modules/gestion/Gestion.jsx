@@ -6,7 +6,6 @@ import './gestion.css';
 const Bandeja = lazy(() => import('./submodules/Bandeja'));
 const Directorio = lazy(() => import('./submodules/Directorio'));
 const Calendario = lazy(() => import('./submodules/Calendario'));
-const Interacciones = lazy(() => import('./submodules/Interacciones'));
 const Tratos = lazy(() => import('./submodules/Tratos'));
 
 const PAGE_META = {
@@ -21,10 +20,6 @@ const PAGE_META = {
   '/gestion/agenda': {
     eyebrow: 'Operacion · Agenda',
     title: 'Agenda Operacional',
-  },
-  '/gestion/interacciones': {
-    eyebrow: 'Operacion - Interacciones',
-    title: 'Historial de Gestiones',
   },
   '/gestion/calendario': {
     eyebrow: 'Operacion · Agenda',
@@ -67,7 +62,7 @@ export default function Gestion() {
               <Route path="directorio" element={<Navigate to="/gestion/proveedores" replace />} />
               <Route path="agenda" element={<Calendario />} />
               <Route path="calendario" element={<Navigate to="/gestion/agenda" replace />} />
-              <Route path="interacciones" element={<Interacciones />} />
+              <Route path="interacciones" element={<Navigate to="/historial" replace />} />
               <Route path="tratos" element={<Tratos />} />
               <Route path="muestreos" element={<Navigate to="/biomasa/muestreos" replace />} />
             </Routes>
