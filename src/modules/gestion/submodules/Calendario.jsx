@@ -1,33 +1,20 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  AlertTriangle,
+  CalendarClock,
   CalendarDays,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock,
   Eye,
   Filter,
   ListChecks,
-  MapPin,
-  MessageSquare,
   PauseCircle,
-  Phone,
   Search,
-  CalendarClock,
-  Check,
-  Pencil,
-  RotateCcw,
-  XCircle,
-  Table2,
   Target,
-  Users,
-  Beaker,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  useCalendarioAgenda,
-  useOportunidades,
-} from '../hooks/useGestionQueries';
+import { useCalendarioAgenda, useOportunidades } from '../hooks/useGestionQueries';
 import './calendario.css';
 
 const DOW = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
@@ -37,52 +24,37 @@ const MONTHS = [
 ];
 
 const VIEW_OPTIONS = [
+  { id: 'list', label: 'Lista operativa', icon: ListChecks },
   { id: 'calendar', label: 'Calendario', icon: CalendarDays },
-  { id: 'week', label: 'Semana', icon: Table2 },
-  { id: 'list', label: 'Historial', icon: ListChecks },
-  { id: 'agenda', label: 'Programado', icon: Clock },
+  { id: 'paused', label: 'Pausados', icon: PauseCircle },
 ];
 
-const TYPE_CONFIG = {
-  muestreo: { icon: Beaker, color: '#0A5CFF', bg: '#EAF4FF', border: '#BBD0EA', label: 'Muestreo' },
-  visita: { icon: MapPin, color: '#0369a1', bg: '#eff6ff', border: '#bfdbfe', label: 'Visita' },
-  seguimiento: { icon: Target, color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', label: 'Seguimiento' },
-  llamada: { icon: Phone, color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', label: 'Llamada' },
-  reunion: { icon: Users, color: '#b45309', bg: '#fffbeb', border: '#fde68a', label: 'Negociacion' },
-  negociacion: { icon: Users, color: '#b45309', bg: '#fffbeb', border: '#fde68a', label: 'Negociacion' },
-  tarea: { icon: CheckCircle2, color: '#475569', bg: '#f8fafc', border: '#e2e8f0', label: 'Tarea interna' },
-  interaccion: { icon: MessageSquare, color: '#4f46e5', bg: '#eef2ff', border: '#c7d2fe', label: 'Seguimiento' },
-  pausado: { icon: PauseCircle, color: '#d97706', bg: '#fff7ed', border: '#fed7aa', label: 'Pausado' },
-  default: { icon: Clock, color: '#64748b', bg: '#f8fafc', border: '#e2e8f0', label: 'Otro' },
-};
-
-const STATUS_CONFIG = {
-  completado: { label: 'Completado', className: 'is-done' },
-  completed: { label: 'Completado', className: 'is-done' },
-  cerrado: { label: 'Cerrado', className: 'is-done' },
-  activo: { label: 'Activo', className: 'is-active' },
-  pendiente: { label: 'Pendiente', className: 'is-pending' },
-  pausado: { label: 'Pausado', className: 'is-paused' },
-  cancelado: { label: 'Cancelado', className: 'is-cancelled' },
-  cancelada: { label: 'Cancelado', className: 'is-cancelled' },
-  cancelled: { label: 'Cancelado', className: 'is-cancelled' },
-  vencido: { label: 'Vencido', className: 'is-overdue' },
-  default: { label: 'Pendiente', className: 'is-pending' },
-};
-
-const AGENDA_RANGE_OPTIONS = [
+const RANGE_OPTIONS = [
+  { id: 'all', label: 'Todo pendiente' },
   { id: 'today', label: 'Hoy' },
+  { id: 'overdue', label: 'Vencidos' },
   { id: '7d', label: 'Proximos 7 dias' },
   { id: '30d', label: 'Proximos 30 dias' },
-  { id: 'pending', label: 'Todas las pendientes' },
 ];
 
-const LIST_DATE_OPTIONS = [
-  { id: 'all', label: 'Todas las fechas' },
-  { id: 'month', label: 'Mes visible' },
-  { id: 'future', label: 'Programadas' },
-  { id: 'past', label: 'Historico' },
-];
+const TYPE_LABELS = {
+  muestreo: 'Muestreo',
+  visita: 'Visita',
+  llamada: 'Llamada',
+  reunion: 'Negociacion',
+  negociacion: 'Negociacion',
+  seguimiento: 'Seguimiento',
+  interaccion: 'Seguimiento',
+  pausado: 'Pausado',
+  tarea: 'Tarea',
+  default: 'Actividad',
+};
+
+const STATUS_LABELS = {
+  active: 'Pendiente',
+  overdue: 'Vencido',
+  paused: 'Pausado',
+};
 
 const PAUSE_REASON_LABELS = {
   esperando_crecimiento: 'Esperando crecimiento',
@@ -91,17 +63,6 @@ const PAUSE_REASON_LABELS = {
   esperando_resultado_muestra: 'Esperando resultado de muestra',
   esperando_decision_interna: 'Esperando decision interna',
 };
-
-function parseLocalDate(dateStr) {
-  if (!dateStr) return null;
-  const s = String(dateStr).slice(0, 10);
-  const [y, m, d] = s.split('-').map(Number);
-  if (!y || !m || !d) {
-    const fallback = new Date(dateStr);
-    return Number.isNaN(fallback.getTime()) ? null : fallback;
-  }
-  return new Date(y, m - 1, d);
-}
 
 function toList(payload) {
   if (Array.isArray(payload)) return payload;
@@ -112,9 +73,36 @@ function pad2(value) {
   return String(value).padStart(2, '0');
 }
 
-function dateKeyFromDate(date) {
+function parseLocalDate(value) {
+  if (!value) return null;
+  const text = String(value).slice(0, 10);
+  const [year, month, day] = text.split('-').map(Number);
+  if (year && month && day) return new Date(year, month - 1, day);
+  const fallback = new Date(value);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function dateKey(date) {
   if (!date) return '';
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function startOfDay(date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function endOfDay(date) {
+  const next = new Date(date);
+  next.setHours(23, 59, 59, 999);
+  return next;
+}
+
+function addDays(date, amount) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
 }
 
 function formatShortDate(date) {
@@ -122,7 +110,7 @@ function formatShortDate(date) {
   return `${pad2(date.getDate())}-${pad2(date.getMonth() + 1)}-${date.getFullYear()}`;
 }
 
-function formatDayHeading(date) {
+function formatLongDate(date) {
   if (!date) return 'Sin fecha';
   return date.toLocaleDateString('es-CL', {
     weekday: 'long',
@@ -131,27 +119,25 @@ function formatDayHeading(date) {
   });
 }
 
-function getEventDate(ev) {
-  return parseLocalDate(ev.date || ev.fecha || ev.fechaActividad || ev.fechaProximaAccion || ev.createdAt);
+function normalizeKind(value) {
+  const text = String(value || '').toLowerCase();
+  if (text.includes('muestra') || text.includes('muestreo')) return 'muestreo';
+  if (text.includes('visita')) return 'visita';
+  if (text.includes('llamada') || text.includes('telefono')) return 'llamada';
+  if (text.includes('negoci') || text.includes('reunion')) return 'negociacion';
+  if (text.includes('paus')) return 'pausado';
+  if (text.includes('seguim')) return 'seguimiento';
+  return text || 'default';
 }
 
-function startOfDay(date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
+function getRawEventDate(item) {
+  return parseLocalDate(item.date || item.fechaProximo || item.fechaActividad || item.fechaProximaAccion || item.fechaRevision || item.nextActionAt);
 }
 
-function endOfDay(date) {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
-
-function getEventTime(ev) {
-  const raw = ev.hora || ev.time || ev.fechaHora || ev.startsAt || ev.date;
+function getRawEventTime(item) {
+  const raw = item.hora || item.time || item.fechaHora || item.startsAt || item.date;
   if (!raw) return '';
-  const text = String(raw);
-  const match = text.match(/(\d{1,2}):(\d{2})/);
+  const match = String(raw).match(/(\d{1,2}):(\d{2})/);
   if (match) return `${pad2(match[1])}:${match[2]}`;
   const date = new Date(raw);
   if (!Number.isNaN(date.getTime()) && (date.getHours() || date.getMinutes())) {
@@ -160,203 +146,139 @@ function getEventTime(ev) {
   return '';
 }
 
-function compareEventsNewestFirst(a, b) {
-  const ad = getEventDate(a)?.getTime() || 0;
-  const bd = getEventDate(b)?.getTime() || 0;
-  return bd - ad || getEventTime(b).localeCompare(getEventTime(a));
-}
-
-function compareEventsOldestFirst(a, b) {
-  const ad = getEventDate(a)?.getTime() || 0;
-  const bd = getEventDate(b)?.getTime() || 0;
-  return ad - bd || getEventTime(a).localeCompare(getEventTime(b));
-}
-
-function normalizeKind(value) {
-  const text = String(value || '').toLowerCase();
-  if (text.includes('muestra') || text.includes('muestreo')) return 'muestreo';
-  if (text.includes('visita')) return 'visita';
-  if (text.includes('llamada') || text.includes('telefono')) return 'llamada';
-  if (text.includes('negoci') || text.includes('reunion')) return 'negociacion';
-  if (text.includes('tarea')) return 'tarea';
-  if (text.includes('paus')) return 'pausado';
-  if (text.includes('seguim')) return 'seguimiento';
-  return value || 'default';
-}
-
-function getPauseReasonLabel(value) {
-  return PAUSE_REASON_LABELS[value] || 'En espera';
+function compareAgendaItems(a, b) {
+  return a.date.getTime() - b.date.getTime() || a.provider.localeCompare(b.provider);
 }
 
 function buildFollowupEvent(item, kind) {
-  const date = item.fechaProximaAccion || item.fechaRevision || item.nextActionAt || null;
+  const date = parseLocalDate(item.fechaProximaAccion || item.fechaRevision || item.nextActionAt);
+  if (!date) return null;
+
   return {
     id: `opp-${item._id}`,
+    source: 'oportunidad',
+    sourceId: item._id,
     kind,
     date,
-    proveedorNombre: item.proveedorNombre || 'Proveedor sin nombre',
-    contactoNombre: item.proveedorNombre || 'Proveedor sin nombre',
+    time: '',
+    provider: item.proveedorNombre || 'Proveedor sin nombre',
     title: item.proximaAccion || (kind === 'pausado' ? 'Revisar caso pausado' : 'Definir proximo paso'),
-    resumen: kind === 'pausado'
-      ? getPauseReasonLabel(item.motivoPausa)
+    description: kind === 'pausado'
+      ? PAUSE_REASON_LABELS[item.motivoPausa] || 'En espera'
       : (item.notasTrato || item.estado || 'Seguimiento pendiente'),
-    proximoPaso: item.proximaAccion || '',
-    estado: kind === 'pausado' ? 'pausado' : 'activo',
-    responsable: item.responsableNombre || item.responsable || '',
+    responsible: item.responsableNombre || item.responsable || '-',
+    status: kind === 'pausado' ? 'paused' : 'active',
   };
 }
 
-function getEventType(ev) {
-  return normalizeKind(ev.kind || ev.tipo || ev.type || ev.categoria || ev.actividadTipo);
+function buildCalendarEvent(item) {
+  const date = getRawEventDate(item);
+  if (!date) return null;
+  const kind = normalizeKind(item.kind || item.tipo || item.type || item.categoria || item.actividadTipo);
+  const rawStatus = String(item.estado || item.status || item.seguimientoEstado || '').toLowerCase();
+
+  return {
+    id: item.id || item._id || `${item.proveedorNombre || item.title || 'agenda'}-${dateKey(date)}`,
+    source: item.source || 'calendario',
+    sourceId: item._id || item.id || '',
+    kind,
+    date,
+    time: getRawEventTime(item),
+    provider: item.proveedorNombre || item.contactoNombre || item.clienteNombre || item.empresaNombre || item.proveedor || 'Sin proveedor',
+    title: item.title || item.titulo || item.actividad || item.proximaAccion || item.proximoPaso || item.asunto || 'Actividad pendiente',
+    description: item.resumen || item.detalle || item.descripcion || item.observacion || item.notas || '',
+    responsible: item.responsableNombre || item.responsable || item.usuarioNombre || item.createdByName || '-',
+    status: rawStatus === 'pausado' ? 'paused' : 'active',
+  };
 }
 
-function getTypeConfig(ev) {
-  return TYPE_CONFIG[getEventType(ev)] || TYPE_CONFIG.default;
+function withDerivedStatus(item, today) {
+  if (item.status === 'paused') return item;
+  return item.date.getTime() < today.getTime() ? { ...item, status: 'overdue' } : item;
 }
 
-function getStatusConfig(ev) {
-  const status = String(ev.estado || ev.status || ev.seguimientoEstado || '').toLowerCase();
-  return STATUS_CONFIG[status] || STATUS_CONFIG.default;
+function matchesRange(item, range, today) {
+  const itemTime = item.date.getTime();
+  if (range === 'today') return itemTime >= today.getTime() && itemTime <= endOfDay(today).getTime();
+  if (range === 'overdue') return item.status === 'overdue';
+  if (range === '7d') return itemTime >= today.getTime() && itemTime <= endOfDay(addDays(today, 7)).getTime();
+  if (range === '30d') return itemTime >= today.getTime() && itemTime <= endOfDay(addDays(today, 30)).getTime();
+  return true;
 }
 
-function getEventStatusKey(ev) {
-  return getStatusConfig(ev).className;
+function AgendaStatus({ status }) {
+  return <span className={`agenda-status is-${status}`}>{STATUS_LABELS[status] || 'Pendiente'}</span>;
 }
 
-function isPlanningEvent(ev) {
-  const status = getEventStatusKey(ev);
-  return status === 'is-pending' || status === 'is-active' || status === 'is-paused' || status === 'is-overdue';
+function AgendaType({ kind }) {
+  return <span className={`agenda-type is-${kind}`}>{TYPE_LABELS[kind] || TYPE_LABELS.default}</span>;
 }
 
-function isFutureOrToday(ev) {
-  const date = getEventDate(ev);
-  if (!date) return false;
-  return date.getTime() >= startOfDay(new Date()).getTime();
-}
-
-function getEventTitle(ev) {
-  return ev.title || ev.titulo || ev.actividad || ev.proximaAccion || ev.asunto || 'Actividad';
-}
-
-function getEventProvider(ev) {
-  return ev.proveedorNombre || ev.contactoNombre || ev.clienteNombre || ev.empresaNombre || ev.proveedor || 'Sin proveedor';
-}
-
-function getEventResponsible(ev) {
-  return ev.responsableNombre || ev.responsable || ev.usuarioNombre || ev.createdByName || '-';
-}
-
-function getEventDescription(ev) {
-  return ev.resumen || ev.detalle || ev.descripcion || ev.observacion || ev.notas || '';
-}
-
-function getWeekStart(date) {
-  const base = new Date(date);
-  const offset = (base.getDay() + 6) % 7;
-  base.setDate(base.getDate() - offset);
-  base.setHours(0, 0, 0, 0);
-  return base;
-}
-
-function getWeekDays(currentDate) {
-  const start = getWeekStart(currentDate);
-  return Array.from({ length: 7 }, (_, index) => {
-    const day = new Date(start);
-    day.setDate(start.getDate() + index);
-    return day;
-  });
-}
-
-function EventPill({ event, compact = false }) {
-  const cfg = getTypeConfig(event);
-  const Icon = cfg.icon;
+function AgendaActions({ item, onViewCalendar }) {
   return (
-    <div
-      className={`cal-event-pill ${compact ? 'is-compact' : ''}`}
-      style={{ '--event-color': cfg.color, '--event-bg': cfg.bg, '--event-border': cfg.border }}
-      title={`${getEventTitle(event)} - ${getEventProvider(event)}`}
-    >
-      <Icon size={compact ? 12 : 14} />
-      <span>{compact ? getEventProvider(event) : getEventTitle(event)}</span>
+    <div className="agenda-row-actions">
+      <button type="button" className="cal-icon-action" onClick={() => onViewCalendar(item)} title="Ver en calendario">
+        <Eye size={15} />
+      </button>
     </div>
   );
 }
 
-function EventCard({ event, onSelect }) {
-  const cfg = getTypeConfig(event);
-  const status = getStatusConfig(event);
-  const Icon = cfg.icon;
-  const time = getEventTime(event);
-
+function AgendaTable({ items, emptyText, onViewCalendar }) {
   return (
-    <article className="cal-event-card-modern" style={{ '--event-color': cfg.color, '--event-bg': cfg.bg, '--event-border': cfg.border }}>
-      <div className="cal-event-card-icon"><Icon size={16} /></div>
-      <div className="cal-event-card-body">
-        <div className="cal-event-card-topline">
-          <span>{time || 'Sin hora'}</span>
-          <span className={`cal-status-chip ${status.className}`}>{status.label}</span>
-        </div>
-        <h4>{getEventTitle(event)}</h4>
-        <p>{getEventProvider(event)}</p>
-        {getEventDescription(event) ? <span className="cal-event-card-note">{getEventDescription(event)}</span> : null}
-      </div>
-      {onSelect ? (
-        <button type="button" className="cal-icon-action" onClick={() => onSelect(event)} title="Ver actividad">
-          <Eye size={15} />
-        </button>
-      ) : null}
-    </article>
-  );
-}
-
-function AgendaTimelineItem({ event, onSelect }) {
-  const cfg = getTypeConfig(event);
-  const status = getStatusConfig(event);
-  const Icon = cfg.icon;
-  const time = getEventTime(event);
-
-  return (
-    <article className="cal-timeline-item" style={{ '--event-color': cfg.color, '--event-bg': cfg.bg, '--event-border': cfg.border }}>
-      <div className="cal-timeline-time">{time || '--:--'}</div>
-      <div className="cal-timeline-dot"><Icon size={15} /></div>
-      <div className="cal-timeline-content">
-        <div className="cal-timeline-main">
-          <div>
-            <div className="cal-timeline-title">
-              <span>{cfg.label}</span>
-              <strong>{getEventTitle(event)}</strong>
-            </div>
-            <p>{getEventProvider(event)}</p>
-            {getEventDescription(event) ? <small>{getEventDescription(event)}</small> : null}
-          </div>
-          <span className={`cal-status-chip ${status.className}`}>{status.label}</span>
-        </div>
-        <div className="cal-timeline-actions" aria-label="Acciones de agenda">
-          <button type="button" onClick={() => onSelect(event)} title="Ver en calendario"><Eye size={14} /> Ver</button>
-          <button type="button" onClick={() => onSelect(event)} title="Editar actividad"><Pencil size={14} /> Editar</button>
-          <button type="button" disabled title="Completar requiere flujo de actualizacion"><Check size={14} /> Completar</button>
-          <button type="button" disabled title="Reprogramar requiere flujo de actualizacion"><RotateCcw size={14} /> Reprogramar</button>
-          <button type="button" disabled title="Cancelar requiere flujo de actualizacion"><XCircle size={14} /> Cancelar</button>
-        </div>
-      </div>
-    </article>
+    <div className="agenda-table-wrap">
+      <table className="agenda-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Estado</th>
+            <th>Proveedor</th>
+            <th>Accion pendiente</th>
+            <th>Origen</th>
+            <th>Responsable</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.length ? items.map((item) => (
+            <tr key={item.id}>
+              <td>
+                <strong>{formatShortDate(item.date)}</strong>
+                {item.time ? <span>{item.time}</span> : null}
+              </td>
+              <td><AgendaStatus status={item.status} /></td>
+              <td className="agenda-provider-cell">{item.provider}</td>
+              <td>
+                <div className="agenda-action-cell">
+                  <strong>{item.title}</strong>
+                  {item.description ? <span>{item.description}</span> : null}
+                </div>
+              </td>
+              <td><AgendaType kind={item.kind} /></td>
+              <td>{item.responsible}</td>
+              <td><AgendaActions item={item} onViewCalendar={onViewCalendar} /></td>
+            </tr>
+          )) : (
+            <tr>
+              <td colSpan="7">
+                <div className="agenda-empty-table">{emptyText}</div>
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
 export default function Calendario() {
   const queryClient = useQueryClient();
+  const [viewMode, setViewMode] = useState('list');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState({
-    day: new Date().getDate(),
-    month: new Date().getMonth(),
-    year: new Date().getFullYear(),
-  });
-  const [viewMode, setViewMode] = useState('calendar');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [range, setRange] = useState('all');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [agendaRange, setAgendaRange] = useState('7d');
-  const [listDateFilter, setListDateFilter] = useState('all');
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['calendario-agenda'] });
@@ -378,60 +300,50 @@ export default function Calendario() {
   const { data: pausedRes, isLoading: loadingPaused } = useOportunidades({ seguimientoEstado: 'pausado', limit: 200 });
 
   const loading = loadingAgenda || loadingActive || loadingPaused;
+  const today = useMemo(() => startOfDay(new Date()), []);
 
-  const data = useMemo(() => {
-    if (loading) return { events: [], activeCount: 0, pausedCount: 0 };
+  const agendaItems = useMemo(() => {
+    if (loading) return [];
 
-    const agenda = toList(agendaRes);
-    const active = toList(activeRes);
-    const paused = toList(pausedRes);
+    const calendarItems = toList(agendaRes).map(buildCalendarEvent).filter(Boolean);
+    const activeItems = toList(activeRes).map((item) => buildFollowupEvent(item, 'seguimiento')).filter(Boolean);
+    const pausedItems = toList(pausedRes).map((item) => buildFollowupEvent(item, 'pausado')).filter(Boolean);
 
-    return {
-      events: [
-        ...agenda,
-        ...active.map((item) => buildFollowupEvent(item, 'seguimiento')),
-        ...paused.map((item) => buildFollowupEvent(item, 'pausado')),
-      ],
-      activeCount: active.length,
-      pausedCount: paused.length,
-    };
-  }, [agendaRes, activeRes, pausedRes, loading]);
-
-  const events = useMemo(() => {
-    return (data?.events || [])
-      .filter((ev) => getEventDate(ev))
-      .sort(compareEventsOldestFirst);
-  }, [data]);
+    return [...calendarItems, ...activeItems, ...pausedItems]
+      .map((item) => withDerivedStatus(item, today))
+      .filter((item) => ['active', 'overdue', 'paused'].includes(item.status))
+      .sort(compareAgendaItems);
+  }, [agendaRes, activeRes, pausedRes, loading, today]);
 
   const availableTypes = useMemo(() => {
-    const set = new Map();
-    events.forEach((ev) => {
-      const key = getEventType(ev);
-      const cfg = TYPE_CONFIG[key] || TYPE_CONFIG.default;
-      set.set(key, cfg.label);
-    });
-    return Array.from(set.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-  }, [events]);
+    const map = new Map();
+    agendaItems.forEach((item) => map.set(item.kind, TYPE_LABELS[item.kind] || TYPE_LABELS.default));
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [agendaItems]);
 
-  const filteredEvents = useMemo(() => {
+  const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return events.filter((ev) => {
-      const type = getEventType(ev);
-      const status = getStatusConfig(ev);
-      const haystack = [
-        getEventTitle(ev),
-        getEventProvider(ev),
-        getEventResponsible(ev),
-        getEventDescription(ev),
-        type,
-      ].join(' ').toLowerCase();
-
+    return agendaItems.filter((item) => {
+      const haystack = `${item.provider} ${item.title} ${item.description} ${item.responsible}`.toLowerCase();
       if (term && !haystack.includes(term)) return false;
-      if (typeFilter !== 'all' && type !== typeFilter) return false;
-      if (statusFilter !== 'all' && status.className !== statusFilter) return false;
-      return true;
+      if (typeFilter !== 'all' && item.kind !== typeFilter) return false;
+      if (viewMode === 'paused' && item.status !== 'paused') return false;
+      if (viewMode !== 'paused' && item.status === 'paused' && range !== 'all') return matchesRange(item, range, today);
+      return matchesRange(item, range, today);
     });
-  }, [events, search, typeFilter, statusFilter]);
+  }, [agendaItems, range, search, today, typeFilter, viewMode]);
+
+  const kpis = useMemo(() => {
+    const todayEnd = endOfDay(today).getTime();
+    const sevenEnd = endOfDay(addDays(today, 7)).getTime();
+    return {
+      today: agendaItems.filter((item) => item.date.getTime() >= today.getTime() && item.date.getTime() <= todayEnd && item.status !== 'paused').length,
+      overdue: agendaItems.filter((item) => item.status === 'overdue').length,
+      next7: agendaItems.filter((item) => item.date.getTime() >= today.getTime() && item.date.getTime() <= sevenEnd && item.status !== 'paused').length,
+      paused: agendaItems.filter((item) => item.status === 'paused').length,
+      total: agendaItems.length,
+    };
+  }, [agendaItems, today]);
 
   const calendarGrid = useMemo(() => {
     const firstDay = new Date(year, month, 1);
@@ -441,131 +353,74 @@ export default function Calendario() {
     const prevMonthLastDay = new Date(year, month, 0).getDate();
 
     for (let i = startOffset; i > 0; i -= 1) {
-      days.push({ day: prevMonthLastDay - i + 1, month: month - 1, year, isCurrentMonth: false });
+      days.push(new Date(year, month - 1, prevMonthLastDay - i + 1));
     }
     for (let i = 1; i <= lastDay.getDate(); i += 1) {
-      days.push({ day: i, month, year, isCurrentMonth: true });
+      days.push(new Date(year, month, i));
     }
-    const remaining = 42 - days.length;
-    for (let i = 1; i <= remaining; i += 1) {
-      days.push({ day: i, month: month + 1, year, isCurrentMonth: false });
+    while (days.length < 42) {
+      const last = days[days.length - 1];
+      days.push(new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1));
     }
     return days;
   }, [month, year]);
 
   const eventsByDay = useMemo(() => {
     const map = new Map();
-    filteredEvents.forEach((ev) => {
-      const date = getEventDate(ev);
-      const key = dateKeyFromDate(date);
+    agendaItems.forEach((item) => {
+      const key = dateKey(item.date);
       if (!map.has(key)) map.set(key, []);
-      map.get(key).push(ev);
+      map.get(key).push(item);
     });
-    map.forEach((items) => items.sort(compareEventsOldestFirst));
+    map.forEach((items) => items.sort(compareAgendaItems));
     return map;
-  }, [filteredEvents]);
+  }, [agendaItems]);
 
-  const getDayEvents = useCallback((day, monthValue, yearValue) => {
-    const date = new Date(yearValue, monthValue, day);
-    return eventsByDay.get(dateKeyFromDate(date)) || [];
-  }, [eventsByDay]);
+  const selectedDayItems = eventsByDay.get(dateKey(selectedDate)) || [];
+  const periodLabel = `${MONTHS[month]} ${year}`;
 
-  const selectedDate = selectedDay ? new Date(selectedDay.year, selectedDay.month, selectedDay.day) : null;
-  const daySelectedEvents = selectedDate ? eventsByDay.get(dateKeyFromDate(selectedDate)) || [] : [];
-  const weekDays = useMemo(() => getWeekDays(currentDate), [currentDate]);
-
-  const timelineEvents = useMemo(() => {
-    const todayStart = startOfDay(new Date());
-    const todayEnd = endOfDay(new Date());
-    const sevenDaysEnd = endOfDay(new Date());
-    sevenDaysEnd.setDate(todayEnd.getDate() + 7);
-    const thirtyDaysEnd = endOfDay(new Date());
-    thirtyDaysEnd.setDate(todayEnd.getDate() + 30);
-
-    return filteredEvents
-      .filter((ev) => isPlanningEvent(ev) && isFutureOrToday(ev))
-      .filter((ev) => {
-        const date = getEventDate(ev);
-        if (!date) return false;
-        if (agendaRange === 'today') return date >= todayStart && date <= todayEnd;
-        if (agendaRange === '7d') return date >= todayStart && date <= sevenDaysEnd;
-        if (agendaRange === '30d') return date >= todayStart && date <= thirtyDaysEnd;
-        return true;
-      })
-      .sort(compareEventsOldestFirst);
-  }, [filteredEvents, agendaRange]);
-
-  const agendaGroups = useMemo(() => {
-    const groups = new Map();
-    timelineEvents.forEach((ev) => {
-      const date = getEventDate(ev);
-      const key = dateKeyFromDate(date);
-      if (!groups.has(key)) groups.set(key, { date, items: [] });
-      groups.get(key).items.push(ev);
-    });
-    return Array.from(groups.values())
-      .map((group) => ({ ...group, items: [...group.items].sort(compareEventsOldestFirst) }))
-      .sort((a, b) => a.date - b.date);
-  }, [timelineEvents]);
-
-  const visibleListEvents = useMemo(() => {
-    const monthStart = new Date(year, month, 1).getTime();
-    const monthEnd = new Date(year, month + 1, 0, 23, 59, 59).getTime();
-    return filteredEvents.filter((ev) => {
-      const date = getEventDate(ev)?.getTime();
-      if (listDateFilter === 'month') return date >= monthStart && date <= monthEnd;
-      if (listDateFilter === 'future') return isFutureOrToday(ev);
-      if (listDateFilter === 'past') return date < startOfDay(new Date()).getTime();
-      return true;
-    }).sort(compareEventsNewestFirst);
-  }, [filteredEvents, listDateFilter, month, year]);
-
-  const changeMonth = (delta) => {
-    const next = new Date(currentDate.getFullYear(), currentDate.getMonth() + delta, 1);
+  function changeMonth(delta) {
+    const next = new Date(year, month + delta, 1);
     setCurrentDate(next);
-    setSelectedDay({ day: 1, month: next.getMonth(), year: next.getFullYear() });
-  };
+    setSelectedDate(next);
+  }
 
-  const changeWeek = (delta) => {
-    const next = new Date(currentDate);
-    next.setDate(currentDate.getDate() + (delta * 7));
-    setCurrentDate(next);
-    setSelectedDay({ day: next.getDate(), month: next.getMonth(), year: next.getFullYear() });
-  };
-
-  const changePeriod = (delta) => {
-    if (viewMode === 'week') changeWeek(delta);
-    else changeMonth(delta);
-  };
-
-  const selectEventDay = (event) => {
-    const date = getEventDate(event);
-    if (!date) return;
-    setSelectedDay({ day: date.getDate(), month: date.getMonth(), year: date.getFullYear() });
-    setCurrentDate(date);
+  function viewItemInCalendar(item) {
+    setCurrentDate(new Date(item.date.getFullYear(), item.date.getMonth(), 1));
+    setSelectedDate(item.date);
     setViewMode('calendar');
-  };
-
-  const periodLabel = viewMode === 'week'
-    ? `Semana ${pad2(weekDays[0].getDate())}-${MONTHS[weekDays[0].getMonth()].slice(0, 3)}`
-    : `${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+  }
 
   return (
-    <div className="calendario-main-wrapper">
+    <div className="calendario-main-wrapper agenda-modern">
       <div className="calendario-header-bar">
         <div>
-          <h2 className="calendario-title-text">Calendario de Actividades</h2>
-          <p>Gestion operativa de compromisos, visitas, muestreos y seguimientos.</p>
+          <h2 className="calendario-title-text">Agenda Operativa</h2>
+          <p>Trabajo pendiente, vencido y programado. El historial de lo realizado queda fuera de esta vista.</p>
         </div>
-        <div className="calendario-actions-bar">
-          <div className="cal-kpi-soft"><Target size={15} /><strong>{data?.activeCount || 0}</strong><span>Seguimientos</span></div>
-          <div className="cal-kpi-soft warning"><PauseCircle size={15} /><strong>{data?.pausedCount || 0}</strong><span>Pausados</span></div>
+      </div>
+
+      <div className="agenda-kpis">
+        <button type="button" onClick={() => { setViewMode('list'); setRange('today'); }}>
+          <Target size={16} /><span>Hoy</span><strong>{kpis.today}</strong>
+        </button>
+        <button type="button" onClick={() => { setViewMode('list'); setRange('overdue'); }}>
+          <AlertTriangle size={16} /><span>Vencidos</span><strong>{kpis.overdue}</strong>
+        </button>
+        <button type="button" onClick={() => { setViewMode('list'); setRange('7d'); }}>
+          <CalendarClock size={16} /><span>Prox. 7 dias</span><strong>{kpis.next7}</strong>
+        </button>
+        <button type="button" onClick={() => { setViewMode('paused'); setRange('all'); }}>
+          <PauseCircle size={16} /><span>Pausados</span><strong>{kpis.paused}</strong>
+        </button>
+        <div>
+          <Clock size={16} /><span>Total pendiente</span><strong>{kpis.total}</strong>
         </div>
       </div>
 
       <section className="cal-shell">
-        <div className="cal-toolbar">
-          <div className="cal-view-switch" role="tablist" aria-label="Vista calendario">
+        <div className="cal-toolbar agenda-toolbar">
+          <div className="cal-view-switch" role="tablist" aria-label="Vistas de agenda">
             {VIEW_OPTIONS.map((view) => {
               const Icon = view.icon;
               return (
@@ -582,68 +437,34 @@ export default function Calendario() {
             })}
           </div>
 
-          <div className="cal-period-nav">
-            <button type="button" onClick={() => changePeriod(-1)}><ChevronLeft size={18} /></button>
-            <strong>{periodLabel}</strong>
-            <button type="button" onClick={() => changePeriod(1)}><ChevronRight size={18} /></button>
-          </div>
-
-          <button
-            type="button"
-            className="mx-btn mx-btn-outline sm cal-today-btn"
-            onClick={() => {
-              const today = new Date();
-              setCurrentDate(today);
-              setSelectedDay({ day: today.getDate(), month: today.getMonth(), year: today.getFullYear() });
-            }}
-          >
-            Hoy
-          </button>
-        </div>
-
-        {(viewMode === 'list' || viewMode === 'agenda') && (
-          <div className={`cal-filters ${viewMode === 'agenda' ? 'is-agenda' : ''}`}>
-            <div className="cal-search-box">
-              <Search size={17} />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar actividad, proveedor o responsable..." />
+          {viewMode === 'calendar' ? (
+            <div className="cal-period-nav">
+              <button type="button" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
+              <strong>{periodLabel}</strong>
+              <button type="button" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
             </div>
-            {viewMode === 'list' ? (
+          ) : (
+            <div className="agenda-filter-row">
+              <div className="cal-search-box">
+                <Search size={17} />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar proveedor, accion o responsable..." />
+              </div>
               <label className="cal-filter-select">
                 <CalendarClock size={15} />
-                <select value={listDateFilter} onChange={(e) => setListDateFilter(e.target.value)}>
-                  {LIST_DATE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                <select value={range} onChange={(e) => setRange(e.target.value)}>
+                  {RANGE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
                 </select>
               </label>
-            ) : (
               <label className="cal-filter-select">
-                <CalendarClock size={15} />
-                <select value={agendaRange} onChange={(e) => setAgendaRange(e.target.value)}>
-                  {AGENDA_RANGE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                <Filter size={15} />
+                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                  <option value="all">Todos los tipos</option>
+                  {availableTypes.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                 </select>
               </label>
-            )}
-            <label className="cal-filter-select">
-              <Filter size={15} />
-              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-                <option value="all">Todos los tipos</option>
-                {availableTypes.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-              </select>
-            </label>
-            {viewMode === 'list' && (
-              <label className="cal-filter-select">
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                  <option value="all">Todos los estados</option>
-                  <option value="is-pending">Pendiente</option>
-                  <option value="is-active">Activo</option>
-                  <option value="is-done">Completado</option>
-                  <option value="is-paused">Pausado</option>
-                  <option value="is-cancelled">Cancelado</option>
-                  <option value="is-overdue">Vencido</option>
-                </select>
-              </label>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
         {loading ? (
           <div className="mx-loading-placeholder">
@@ -651,158 +472,85 @@ export default function Calendario() {
             <p>Cargando agenda...</p>
           </div>
         ) : (
-          <div className={`cal-content-grid ${viewMode !== 'calendar' ? 'is-wide' : ''}`}>
-            <main className="cal-main-panel">
-              {viewMode === 'calendar' && (
-                <>
+          <>
+            {viewMode === 'list' && (
+              <AgendaTable
+                items={filteredItems}
+                emptyText="No hay pendientes para los filtros seleccionados."
+                onViewCalendar={viewItemInCalendar}
+              />
+            )}
+
+            {viewMode === 'paused' && (
+              <AgendaTable
+                items={filteredItems}
+                emptyText="No hay casos pausados con fecha de revision."
+                onViewCalendar={viewItemInCalendar}
+              />
+            )}
+
+            {viewMode === 'calendar' && (
+              <div className="agenda-calendar-layout">
+                <main>
                   <div className="cal-dow-row">
                     {DOW.map((day) => <div key={day} className="cal-dow-cell">{day}</div>)}
                   </div>
                   <div className="cal-days-grid">
-                    {calendarGrid.map((day, idx) => {
-                      const dayEvs = getDayEvents(day.day, day.month, day.year);
-                      const cellDate = new Date(day.year, day.month, day.day);
-                      const isToday = dateKeyFromDate(new Date()) === dateKeyFromDate(cellDate);
-                      const isSelected = selectedDay?.day === day.day && selectedDay?.month === day.month && selectedDay?.year === day.year;
-
+                    {calendarGrid.map((day) => {
+                      const key = dateKey(day);
+                      const dayItems = eventsByDay.get(key) || [];
+                      const isCurrentMonth = day.getMonth() === month;
+                      const isToday = key === dateKey(new Date());
+                      const isSelected = key === dateKey(selectedDate);
                       return (
                         <button
                           type="button"
-                          key={`${day.year}-${day.month}-${day.day}-${idx}`}
-                          className={`cal-day-cell ${day.isCurrentMonth ? '' : 'is-muted'} ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}`}
-                          onClick={() => setSelectedDay(day)}
+                          key={key}
+                          className={`cal-day-cell ${isCurrentMonth ? '' : 'is-muted'} ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}`}
+                          onClick={() => setSelectedDate(day)}
                         >
                           <div className="cal-day-header">
-                            <span className="cal-day-number">{day.day}</span>
-                            {dayEvs.length > 0 ? <span className="cal-day-count">{dayEvs.length}</span> : null}
+                            <span className="cal-day-number">{day.getDate()}</span>
+                            {dayItems.length ? <span className="cal-day-count">{dayItems.length}</span> : null}
                           </div>
                           <div className="cal-events-stack">
-                            {dayEvs.slice(0, 3).map((ev) => <EventPill key={ev.id || `${getEventTitle(ev)}-${getEventTime(ev)}`} event={ev} compact />)}
-                            {dayEvs.length > 3 ? <span className="cal-more-events">+{dayEvs.length - 3} mas</span> : null}
+                            {dayItems.slice(0, 3).map((item) => (
+                              <span key={item.id} className={`cal-event-pill is-compact is-${item.status}`}>
+                                {item.provider}
+                              </span>
+                            ))}
+                            {dayItems.length > 3 ? <span className="cal-more-events">+{dayItems.length - 3} mas</span> : null}
                           </div>
                         </button>
                       );
                     })}
                   </div>
-                </>
-              )}
-
-              {viewMode === 'week' && (
-                <div className="cal-week-board">
-                  {weekDays.map((day) => {
-                    const dayEvents = eventsByDay.get(dateKeyFromDate(day)) || [];
-                    const isToday = dateKeyFromDate(day) === dateKeyFromDate(new Date());
-                    return (
-                      <section key={dateKeyFromDate(day)} className={`cal-week-column ${isToday ? 'is-today' : ''}`}>
-                        <header>
-                          <span>{DOW[(day.getDay() + 6) % 7]}</span>
-                          <strong>{day.getDate()}</strong>
-                        </header>
-                        <div className="cal-week-events">
-                          {dayEvents.length ? dayEvents.map((ev) => <EventCard key={ev.id || `${getEventTitle(ev)}-${getEventTime(ev)}`} event={ev} onSelect={selectEventDay} />) : <span className="cal-empty-dash">-</span>}
-                        </div>
-                      </section>
-                    );
-                  })}
-                </div>
-              )}
-
-              {viewMode === 'list' && (
-                <div className="cal-table-wrap">
-                  <div className="cal-view-context">
-                    <span>Historial / ejecutado</span>
-                    <strong>{visibleListEvents.length} actividades registradas</strong>
-                    <p>Muestra lo que ya se registro y permite revisar cada gestion por fecha, proveedor, tipo y responsable.</p>
+                </main>
+                <aside className="cal-aside-panel">
+                  <div className="cal-aside-header">
+                    <span>Agenda del dia</span>
+                    <h3>{formatLongDate(selectedDate)}</h3>
+                    <p>{selectedDayItems.length ? `${selectedDayItems.length} pendientes` : 'Sin pendientes'}</p>
                   </div>
-                  <table className="cal-activity-table">
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Hora</th>
-                        <th>Tipo</th>
-                        <th>Proveedor / Cliente</th>
-                        <th>Actividad</th>
-                        <th>Estado</th>
-                        <th>Responsable</th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleListEvents.length ? visibleListEvents.map((ev) => {
-                        const cfg = getTypeConfig(ev);
-                        const Icon = cfg.icon;
-                        const status = getStatusConfig(ev);
-                        return (
-                          <tr key={ev.id || `${getEventTitle(ev)}-${getEventDate(ev)?.toISOString()}`}>
-                            <td>{formatShortDate(getEventDate(ev))}</td>
-                            <td>{getEventTime(ev) || '-'}</td>
-                            <td><span className="cal-type-chip" style={{ '--event-color': cfg.color, '--event-bg': cfg.bg, '--event-border': cfg.border }}><Icon size={13} />{cfg.label}</span></td>
-                            <td><strong>{getEventProvider(ev)}</strong></td>
-                            <td>{getEventTitle(ev)}</td>
-                            <td><span className={`cal-status-chip ${status.className}`}>{status.label}</span></td>
-                            <td>{getEventResponsible(ev)}</td>
-                            <td>
-                              <button type="button" className="cal-icon-action" onClick={() => selectEventDay(ev)} title="Ver en calendario">
-                                <Eye size={15} />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      }) : (
-                        <tr><td colSpan="8"><div className="cal-empty-table">Sin actividades para los filtros seleccionados.</div></td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {viewMode === 'agenda' && (
-                <div className="cal-agenda-list">
-                  <div className="cal-view-context is-planning">
-                    <span>Programado / pendientes</span>
-                    <strong>{timelineEvents.length} actividades futuras</strong>
-                    <p>Solo muestra compromisos programados hacia adelante que estan pendientes, activos o pausados.</p>
+                  <div className="agenda-aside-list">
+                    {selectedDayItems.length ? selectedDayItems.map((item) => (
+                      <article key={item.id} className={`agenda-mini-card is-${item.status}`}>
+                        <AgendaStatus status={item.status} />
+                        <strong>{item.title}</strong>
+                        <span>{item.provider}</span>
+                      </article>
+                    )) : (
+                      <div className="cal-empty-state">
+                        <CalendarDays size={34} />
+                        <strong>Dia despejado</strong>
+                        <span>No hay pendientes para esta fecha.</span>
+                      </div>
+                    )}
                   </div>
-                  {agendaGroups.length ? agendaGroups.map((group) => (
-                    <section key={dateKeyFromDate(group.date)} className="cal-agenda-day">
-                      <div className="cal-agenda-date">
-                        <strong>{formatDayHeading(group.date)}</strong>
-                        <span>{formatShortDate(group.date)}</span>
-                      </div>
-                      <div className="cal-timeline-items">
-                        {group.items.map((ev) => <AgendaTimelineItem key={ev.id || `${getEventTitle(ev)}-${getEventTime(ev)}`} event={ev} onSelect={selectEventDay} />)}
-                      </div>
-                    </section>
-                  )) : (
-                    <div className="cal-empty-table">
-                      Sin actividades futuras para el filtro seleccionado.
-                    </div>
-                  )}
-                </div>
-              )}
-            </main>
-
-            {viewMode === 'calendar' && (
-              <aside className="cal-aside-panel">
-                <div className="cal-aside-header">
-                  <span>Agenda del dia</span>
-                  <h3>{selectedDate ? formatDayHeading(selectedDate) : 'Selecciona un dia'}</h3>
-                  <p>{daySelectedEvents.length ? `${daySelectedEvents.length} actividades programadas` : 'Sin actividades programadas'}</p>
-                </div>
-                <div className="cal-aside-list">
-                  {daySelectedEvents.length ? daySelectedEvents.map((ev) => (
-                    <EventCard key={ev.id || `${getEventTitle(ev)}-${getEventTime(ev)}`} event={ev} />
-                  )) : (
-                    <div className="cal-empty-state">
-                      <CalendarDays size={34} />
-                      <strong>Dia despejado</strong>
-                      <span>No hay compromisos registrados para esta fecha.</span>
-                    </div>
-                  )}
-                </div>
-              </aside>
+                </aside>
+              </div>
             )}
-          </div>
+          </>
         )}
       </section>
     </div>
