@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { Search, Plus, RotateCcw } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { apiClient } from '../../../api/apiClient';
@@ -23,6 +24,7 @@ import {
 
 export default function Interacciones() {
   const queryClient = useQueryClient();
+  const location = useLocation();
   const { addToast } = useToast();
   const { user } = useAuth();
   
@@ -61,6 +63,12 @@ export default function Interacciones() {
     window.addEventListener('gestion:quick-capture-saved', handleRefresh);
     return () => window.removeEventListener('gestion:quick-capture-saved', handleRefresh);
   }, [handleRefresh]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const query = params.get('q') || '';
+    if (query) setSearchTerm(query);
+  }, [location.search]);
 
   const filteredProviders = useMemo(() => {
     return filterProviders(providers, providerSearch);

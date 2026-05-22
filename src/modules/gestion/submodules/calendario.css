@@ -137,9 +137,46 @@
 
 .agenda-filter-row {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) 190px 190px;
+  grid-template-columns: 220px minmax(260px, 1fr) 190px 190px;
   gap: 10px;
   min-width: 0;
+}
+
+.agenda-month-nav {
+  min-width: 0;
+  height: 40px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.agenda-month-nav button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+}
+
+.agenda-month-nav strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #0f172a;
+  white-space: nowrap;
+  text-align: center;
+  text-overflow: ellipsis;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .cal-search-box,
@@ -334,6 +371,11 @@
 .cal-icon-action:hover {
   background: #e0f2fe;
   color: #0369a1;
+}
+
+.cal-icon-action.danger:hover {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .agenda-empty-table {

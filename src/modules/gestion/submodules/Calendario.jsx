@@ -6,14 +6,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Edit3,
   Eye,
   Filter,
   ListChecks,
   PauseCircle,
+  RotateCcw,
   Search,
   Target,
+  Trash2,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../../api/apiClient';
+import { useToast } from '../../../context/ToastContext';
 import { useCalendarioAgenda, useOportunidades } from '../hooks/useGestionQueries';
 import './calendario.css';
 
@@ -30,6 +35,7 @@ const VIEW_OPTIONS = [
 ];
 
 const RANGE_OPTIONS = [
+  { id: 'month', label: 'Mes visible' },
   { id: 'all', label: 'Todo pendiente' },
   { id: 'today', label: 'Hoy' },
   { id: 'overdue', label: 'Vencidos' },
@@ -146,7 +152,13 @@ function getRawEventTime(item) {
   return '';
 }
 
-function compareAgendaItems(a, b) {
+function compareAgendaItems(a, b, today = startOfDay(new Date())) {
+  const aDistance = Math.abs(a.date.getTime() - today.getTime());
+  const bDistance = Math.abs(b.date.getTime() - today.getTime());
+  return aDistance - bDistance || a.date.getTime() - b.date.getTime() || a.provider.localeCompare(b.provider);
+}
+
+function compareCalendarItems(a, b) {
   return a.date.getTime() - b.date.getTime() || a.provider.localeCompare(b.provider);
 }
 
@@ -166,8 +178,9 @@ function buildFollowupEvent(item, kind) {
     description: kind === 'pausado'
       ? PAUSE_REASON_LABELS[item.motivoPausa] || 'En espera'
       : (item.notasTrato || item.estado || 'Seguimiento pendiente'),
-    responsible: item.responsableNombre || item.responsable || '-',
+    responsible: item.responsableNombre || item.responsable || item.responsablePG || item.ownerName || '-',
     status: kind === 'pausado' ? 'paused' : 'active',
+    motivoPausa: item.motivoPausa || '',
   };
 }
 
@@ -180,14 +193,14 @@ function buildCalendarEvent(item) {
   return {
     id: item.id || item._id || `${item.proveedorNombre || item.title || 'agenda'}-${dateKey(date)}`,
     source: item.source || 'calendario',
-    sourceId: item._id || item.id || '',
+    sourceId: item.sourceId || item._id || item.id || '',
     kind,
     date,
     time: getRawEventTime(item),
-    provider: item.proveedorNombre || item.contactoNombre || item.clienteNombre || item.empresaNombre || item.proveedor || 'Sin proveedor',
-    title: item.title || item.titulo || item.actividad || item.proximaAccion || item.proximoPaso || item.asunto || 'Actividad pendiente',
-    description: item.resumen || item.detalle || item.descripcion || item.observacion || item.notas || '',
-    responsible: item.responsableNombre || item.responsable || item.usuarioNombre || item.createdByName || '-',
+    provider: item.proveedorNombre || item.contactoNombre || item.title || item.clienteNombre || item.empresaNombre || item.proveedor || 'Sin proveedor',
+    title: item.proximoPaso || item.proximaAccion || item.actividad || item.asunto || item.resumen || item.titulo || item.title || 'Actividad pendiente',
+    description: item.resumen || item.resultado || item.detalle || item.descripcion || item.observacion || item.notas || '',
+    responsible: item.responsablePG || item.responsableNombre || item.responsable || item.usuarioNombre || item.createdByName || '-',
     status: rawStatus === 'pausado' ? 'paused' : 'active',
   };
 }
@@ -199,6 +212,7 @@ function withDerivedStatus(item, today) {
 
 function matchesRange(item, range, today) {
   const itemTime = item.date.getTime();
+  if (range === 'month') return true;
   if (range === 'today') return itemTime >= today.getTime() && itemTime <= endOfDay(today).getTime();
   if (range === 'overdue') return item.status === 'overdue';
   if (range === '7d') return itemTime >= today.getTime() && itemTime <= endOfDay(addDays(today, 7)).getTime();
@@ -214,17 +228,32 @@ function AgendaType({ kind }) {
   return <span className={`agenda-type is-${kind}`}>{TYPE_LABELS[kind] || TYPE_LABELS.default}</span>;
 }
 
-function AgendaActions({ item, onViewCalendar }) {
+function AgendaActions({ item, onViewCalendar, onEdit, onReprogram, onDelete }) {
   return (
     <div className="agenda-row-actions">
       <button type="button" className="cal-icon-action" onClick={() => onViewCalendar(item)} title="Ver en calendario">
         <Eye size={15} />
       </button>
+      {item.canEdit ? (
+        <button type="button" className="cal-icon-action" onClick={() => onEdit(item)} title="Editar">
+          <Edit3 size={15} />
+        </button>
+      ) : null}
+      {item.canReprogram ? (
+        <button type="button" className="cal-icon-action" onClick={() => onReprogram(item)} title="Reprogramar">
+          <RotateCcw size={15} />
+        </button>
+      ) : null}
+      {item.canDelete ? (
+        <button type="button" className="cal-icon-action danger" onClick={() => onDelete(item)} title="Eliminar">
+          <Trash2 size={15} />
+        </button>
+      ) : null}
     </div>
   );
 }
 
-function AgendaTable({ items, emptyText, onViewCalendar }) {
+function AgendaTable({ items, emptyText, onViewCalendar, onEdit, onReprogram, onDelete }) {
   return (
     <div className="agenda-table-wrap">
       <table className="agenda-table">
@@ -256,7 +285,15 @@ function AgendaTable({ items, emptyText, onViewCalendar }) {
               </td>
               <td><AgendaType kind={item.kind} /></td>
               <td>{item.responsible}</td>
-              <td><AgendaActions item={item} onViewCalendar={onViewCalendar} /></td>
+              <td>
+                <AgendaActions
+                  item={item}
+                  onViewCalendar={onViewCalendar}
+                  onEdit={onEdit}
+                  onReprogram={onReprogram}
+                  onDelete={onDelete}
+                />
+              </td>
             </tr>
           )) : (
             <tr>
@@ -273,10 +310,11 @@ function AgendaTable({ items, emptyText, onViewCalendar }) {
 
 export default function Calendario() {
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const [viewMode, setViewMode] = useState('list');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [range, setRange] = useState('all');
+  const [range, setRange] = useState('month');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
 
@@ -311,8 +349,14 @@ export default function Calendario() {
 
     return [...calendarItems, ...activeItems, ...pausedItems]
       .map((item) => withDerivedStatus(item, today))
+      .map((item) => ({
+        ...item,
+        canEdit: ['interaccion', 'visita'].includes(item.source),
+        canReprogram: ['interaccion', 'oportunidad'].includes(item.source),
+        canDelete: ['interaccion', 'visita'].includes(item.source),
+      }))
       .filter((item) => ['active', 'overdue', 'paused'].includes(item.status))
-      .sort(compareAgendaItems);
+      .sort((a, b) => compareAgendaItems(a, b, today));
   }, [agendaRes, activeRes, pausedRes, loading, today]);
 
   const availableTypes = useMemo(() => {
@@ -323,15 +367,19 @@ export default function Calendario() {
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
+    const monthStart = new Date(year, month, 1).getTime();
+    const monthEnd = new Date(year, month + 1, 0, 23, 59, 59).getTime();
     return agendaItems.filter((item) => {
+      const itemTime = item.date.getTime();
       const haystack = `${item.provider} ${item.title} ${item.description} ${item.responsible}`.toLowerCase();
       if (term && !haystack.includes(term)) return false;
       if (typeFilter !== 'all' && item.kind !== typeFilter) return false;
+      if (range === 'month' && (itemTime < monthStart || itemTime > monthEnd)) return false;
       if (viewMode === 'paused' && item.status !== 'paused') return false;
       if (viewMode !== 'paused' && item.status === 'paused' && range !== 'all') return matchesRange(item, range, today);
       return matchesRange(item, range, today);
-    });
-  }, [agendaItems, range, search, today, typeFilter, viewMode]);
+    }).sort((a, b) => compareAgendaItems(a, b, today));
+  }, [agendaItems, month, range, search, today, typeFilter, viewMode, year]);
 
   const kpis = useMemo(() => {
     const todayEnd = endOfDay(today).getTime();
@@ -372,7 +420,7 @@ export default function Calendario() {
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(item);
     });
-    map.forEach((items) => items.sort(compareAgendaItems));
+    map.forEach((items) => items.sort(compareCalendarItems));
     return map;
   }, [agendaItems]);
 
@@ -389,6 +437,67 @@ export default function Calendario() {
     setCurrentDate(new Date(item.date.getFullYear(), item.date.getMonth(), 1));
     setSelectedDate(item.date);
     setViewMode('calendar');
+  }
+
+  function getEditPath(item) {
+    if (item.source === 'interaccion') return `/gestion/interacciones?q=${encodeURIComponent(item.provider || '')}`;
+    if (item.source === 'visita') return `/gestion/interacciones?q=${encodeURIComponent(item.provider || '')}`;
+    return '';
+  }
+
+  function handleEdit(item) {
+    const path = getEditPath(item);
+    if (path) {
+      window.location.href = path;
+      return;
+    }
+    addToast({ title: 'Sin editor', message: 'Este origen aun no tiene editor directo conectado.', type: 'warning' });
+  }
+
+  async function handleReprogram(item) {
+    const nextDate = window.prompt('Nueva fecha programada (YYYY-MM-DD)', dateKey(item.date));
+    if (!nextDate) return;
+    const iso = new Date(`${nextDate}T09:00:00`).toISOString();
+
+    try {
+      if (item.source === 'interaccion') {
+        await apiClient.put(`/interacciones/${item.sourceId}`, { fechaProximo: iso, tipo: item.kind, fecha: item.date.toISOString(), responsablePG: item.responsible || 'Usuario' });
+      } else if (item.source === 'visita') {
+        await apiClient.patch(`/visitas/${item.sourceId}`, { proximoPasoFecha: iso });
+      } else if (item.source === 'oportunidad') {
+        await apiClient.patch(`/oportunidades/${item.sourceId}/seguimiento`, {
+          seguimientoEstado: item.status === 'paused' ? 'pausado' : 'activo',
+          proximaAccion: item.title,
+          fechaProximaAccion: item.status === 'paused' ? '' : iso,
+          fechaRevision: item.status === 'paused' ? iso : '',
+          motivoPausa: item.status === 'paused' ? (item.motivoPausa || 'esperando_respuesta') : undefined,
+        });
+      }
+      addToast({ title: 'Agenda actualizada', message: 'La actividad fue reprogramada.', type: 'success' });
+      handleRefresh();
+    } catch (error) {
+      addToast({ title: 'Error', message: error?.message || 'No se pudo reprogramar.', type: 'error' });
+    }
+  }
+
+  async function handleDelete(item) {
+    const ok = window.confirm(`Eliminar actividad de ${item.provider}?`);
+    if (!ok) return;
+
+    try {
+      if (item.source === 'interaccion') {
+        await apiClient.delete(`/interacciones/${item.sourceId}`);
+      } else if (item.source === 'visita') {
+        await apiClient.delete(`/visitas/${item.sourceId}`);
+      } else {
+        addToast({ title: 'No eliminado', message: 'Este origen no permite eliminacion directa desde Agenda.', type: 'warning' });
+        return;
+      }
+      addToast({ title: 'Eliminado', message: 'La actividad fue eliminada.', type: 'success' });
+      handleRefresh();
+    } catch (error) {
+      addToast({ title: 'Error', message: error?.message || 'No se pudo eliminar.', type: 'error' });
+    }
   }
 
   return (
@@ -445,6 +554,11 @@ export default function Calendario() {
             </div>
           ) : (
             <div className="agenda-filter-row">
+              <div className="agenda-month-nav">
+                <button type="button" onClick={() => changeMonth(-1)}><ChevronLeft size={16} /></button>
+                <strong>{periodLabel}</strong>
+                <button type="button" onClick={() => changeMonth(1)}><ChevronRight size={16} /></button>
+              </div>
               <div className="cal-search-box">
                 <Search size={17} />
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar proveedor, accion o responsable..." />
@@ -478,6 +592,9 @@ export default function Calendario() {
                 items={filteredItems}
                 emptyText="No hay pendientes para los filtros seleccionados."
                 onViewCalendar={viewItemInCalendar}
+                onEdit={handleEdit}
+                onReprogram={handleReprogram}
+                onDelete={handleDelete}
               />
             )}
 
@@ -486,6 +603,9 @@ export default function Calendario() {
                 items={filteredItems}
                 emptyText="No hay casos pausados con fecha de revision."
                 onViewCalendar={viewItemInCalendar}
+                onEdit={handleEdit}
+                onReprogram={handleReprogram}
+                onDelete={handleDelete}
               />
             )}
 
