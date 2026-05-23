@@ -2,6 +2,7 @@ import React from 'react';
 import { CalendarCheck, Edit, Send, Trash2 } from 'lucide-react';
 import {
   ESTADOS_TRATO,
+  calcularTonsDiarias,
   deriveCamionesXDia,
   derivePlazoDesdeCondiciones,
   derivePrecioDesdeCondiciones,
@@ -57,6 +58,13 @@ export default function TratosTable({
                 const displayPlazo = derivePlazoDesdeCondiciones(item.condiciones);
                 const displayCamiones = item.camionesXDia || deriveCamionesXDia(item.condiciones);
                 const displayInicioCosecha = item.vigenciaDesde || item.fechaCierre;
+                const displayTermino = item.vigenciaHasta;
+                const tonsDia = calcularTonsDiarias(item.transportes || []);
+                const estadoColor = uiEstado === 'acordado' || uiEstado === 'cerrado_ok'
+                  ? 'var(--color-success)'
+                  : uiEstado === 'rechazado'
+                  ? 'var(--color-danger)'
+                  : 'var(--color-primary)';
 
                 return (
                   <tr key={item._id} className="tratos-row">
@@ -69,7 +77,19 @@ export default function TratosTable({
                         {displayCamiones && (
                           <span className="tratos-chip">Carga {formatInteger(displayCamiones)} cam/dia</span>
                         )}
+                        {tonsDia > 0 && (
+                          <span className="tratos-chip">{tonsDia.toFixed(1)} t/día</span>
+                        )}
                       </div>
+                      {displayInicioCosecha && displayTermino && (
+                        <div className="tratos-gantt-bar">
+                          <span className="tratos-gantt-date">{formatDateOnlySafe(displayInicioCosecha)}</span>
+                          <div className="tratos-gantt-track">
+                            <div className="tratos-gantt-fill" style={{ background: estadoColor }} />
+                          </div>
+                          <span className="tratos-gantt-date">{formatDateOnlySafe(displayTermino)}</span>
+                        </div>
+                      )}
                     </td>
                     <td className="tratos-metric-cell">
                       <div className="tratos-metric-primary">{formatInteger(displayTons)} t</div>

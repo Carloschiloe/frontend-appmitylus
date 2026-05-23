@@ -14,6 +14,7 @@ import {
   buildInitialConditions,
   buildProviderDirectory,
   buildTratoShareMessage,
+  calcularFechaTermino,
   createEmptyForm,
   deriveCamionesXDia,
   derivePrecioDesdeCondiciones,
@@ -72,6 +73,7 @@ export default function Tratos() {
       ...item,
       fechaCierre: normalizeDateOnlyForUiSafe(item.fechaCierre),
       vigenciaDesde: normalizeDateOnlyForUiSafe(item.vigenciaDesde),
+      vigenciaHasta: normalizeDateOnlyForUiSafe(item.vigenciaHasta),
     }));
   }, [tratosRes]);
 
@@ -95,6 +97,12 @@ export default function Tratos() {
   const { data: maestrosResponsables = [] } = useQuery({
     queryKey: ['maestros', 'responsable', 'activos'],
     queryFn: () => maestrosApi.getMaestrosActivos('responsable'),
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: tiposTransporte = [] } = useQuery({
+    queryKey: ['maestros', 'tipo_transporte', 'activos'],
+    queryFn: () => maestrosApi.getMaestrosActivos('tipo_transporte'),
     staleTime: 10 * 60 * 1000,
   });
 
@@ -161,13 +169,21 @@ export default function Tratos() {
     try {
       if (editingId) {
         const volumenDesdeCondiciones = deriveVolumenDesdeCondiciones(form.condiciones);
+        const tonsGuardadas = parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones;
+        const fechaTermino = calcularFechaTermino(
+          form.fechaInicioCosecha, tonsGuardadas, form.transportes || [], form.diasHabilesConfig
+        );
         const tratoPayload = {
-          tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
+          tonsAcordadas: tonsGuardadas,
           precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
           notasTrato: form.notas || '',
           camionesXDia: deriveCamionesXDia(form.condiciones),
           vigenciaDesde: form.fechaInicioCosecha || null,
+          vigenciaHasta: fechaTermino ? fechaTermino.toISOString() : null,
+          fechaTerminoCosecha: fechaTermino ? fechaTermino.toISOString() : null,
           responsableNombre: form.responsableNombre || '',
+          transportes: form.transportes || [],
+          diasHabilesConfig: form.diasHabilesConfig || { vie: false, sab: false },
         };
 
         await apiClient.patch(`/oportunidades/${editingId}/trato`, tratoPayload);
@@ -191,7 +207,6 @@ export default function Tratos() {
             await apiClient.patch(`/oportunidades/${editingId}/estado`, {
               estado: apiEstado,
               observacion: form.motivoCierre || form.notas || '',
-              motivoPerdida: form.motivoCierre || '',
             });
           }
         }
@@ -273,7 +288,9 @@ export default function Tratos() {
       estadoCierre: getEstadoCierreFromApi(item.estado),
       motivoCierre: item.motivoPerdida || item.motivoCierre || '',
       notas: item.notasTrato || item.notas || '',
-      condiciones: item.condiciones || []
+      condiciones: item.condiciones || [],
+      transportes: item.transportes || [],
+      diasHabilesConfig: item.diasHabilesConfig || { vie: false, sab: false },
     });
     setIsModalOpen(true);
   };
@@ -416,6 +433,7 @@ export default function Tratos() {
         onConditionModeChange={handleConditionModeChange}
         onConditionValueChange={handleConditionValueChange}
         onConditionStatusChange={toggleCondicionStatus}
+        tiposTransporte={tiposTransporte}
       />
       <ConfirmDeleteModal
         isOpen={Boolean(confirmDeleteTrato)}

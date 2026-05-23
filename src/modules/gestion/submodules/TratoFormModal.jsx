@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, X, AlertTriangle, XCircle } from 'lucide-react';
+import { Search, X, AlertTriangle, XCircle, Plus, Trash2 } from 'lucide-react';
+import { calcularFechaTermino, calcularTonsDiarias, formatDateOnlySafe, parseNumberOrNull } from './tratos.helpers';
 
 export default function TratoFormModal({
   isOpen,
@@ -10,6 +11,7 @@ export default function TratoFormModal({
   loadingProviders,
   filteredProviders,
   responsables,
+  tiposTransporte = [],
   onClose,
   onSubmit,
   onFormChange,
@@ -21,6 +23,45 @@ export default function TratoFormModal({
   onConditionStatusChange,
 }) {
   if (!isOpen) return null;
+
+  const transportes = form.transportes || [];
+  const diasConfig  = form.diasHabilesConfig || { vie: false, sab: false };
+
+  const addTransporte = () => onFormChange({
+    ...form,
+    transportes: [...transportes, { tipoTransporteId: '', nombre: '', modo: null, cantidadDiaria: '', maxisPorUnidad: '', kgPorMaxiRef: '' }],
+  });
+
+  const removeTransporte = (idx) => onFormChange({
+    ...form,
+    transportes: transportes.filter((_, i) => i !== idx),
+  });
+
+  const updateTransporte = (idx, patch) => {
+    const next = transportes.map((t, i) => i === idx ? { ...t, ...patch } : t);
+    onFormChange({ ...form, transportes: next });
+  };
+
+  const handleTipoChange = (idx, tipoId) => {
+    const tipo = tiposTransporte.find(t => t._id === tipoId);
+    updateTransporte(idx, {
+      tipoTransporteId: tipoId,
+      nombre: tipo?.nombre || '',
+      modo: tipo?.modo || null,
+      maxisPorUnidad: tipo?.maxisPorUnidad ?? transportes[idx].maxisPorUnidad,
+      kgPorMaxiRef:   tipo?.kgPorMaxiRef   ?? transportes[idx].kgPorMaxiRef,
+    });
+  };
+
+  const toggleDia = (dia) => onFormChange({
+    ...form,
+    diasHabilesConfig: { ...diasConfig, [dia]: !diasConfig[dia] },
+  });
+
+  const tonsDia   = calcularTonsDiarias(transportes);
+  const tonsTotal = parseNumberOrNull(form.tonsAcordadas);
+  const diasNecesarios = (tonsDia > 0 && tonsTotal > 0) ? Math.ceil(tonsTotal / tonsDia) : null;
+  const fechaTermino   = calcularFechaTermino(form.fechaInicioCosecha, tonsTotal, transportes, diasConfig);
 
   return (
     <div className="mx-modal-overlay">
@@ -154,6 +195,107 @@ export default function TratoFormModal({
                 value={form.fechaInicioCosecha}
                 onChange={e => onFormChange({ ...form, fechaInicioCosecha: e.target.value })}
               />
+            </div>
+
+            {/* ── Transportes de cosecha ── */}
+            <div className="mx-form-group am-mt-16">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <label className="mx-label tratos-conditions-title" style={{ marginBottom: 0 }}>
+                  Transportes de Cosecha
+                </label>
+                <button type="button" className="mx-btn mx-btn-outline" style={{ height: 28, fontSize: '0.78rem', padding: '0 10px' }} onClick={addTransporte}>
+                  <Plus size={13} /> Agregar
+                </button>
+              </div>
+
+              <div className="tratos-conditions-list">
+                {transportes.length === 0 ? (
+                  <p className="tratos-conditions-empty">Sin transportes. Agrégalos para calcular la fecha de término.</p>
+                ) : (
+                  <>
+                    {transportes.map((t, idx) => {
+                      const tonsPorUnidad = ((Number(t.maxisPorUnidad) || 0) * (Number(t.kgPorMaxiRef) || 0)) / 1000;
+                      const tonsDiaFila   = (Number(t.cantidadDiaria) || 0) * tonsPorUnidad;
+                      return (
+                        <div key={idx} className="tratos-transporte-row">
+                          <select
+                            className="mx-input tratos-condition-control"
+                            value={t.tipoTransporteId || ''}
+                            onChange={(e) => handleTipoChange(idx, e.target.value)}
+                          >
+                            <option value="">Tipo...</option>
+                            {tiposTransporte.map(tt => (
+                              <option key={tt._id} value={tt._id}>{tt.nombre}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="number" min="1" step="1"
+                            className="mx-input tratos-condition-control tratos-transporte-num"
+                            placeholder="Cant/día"
+                            value={t.cantidadDiaria ?? ''}
+                            onChange={(e) => updateTransporte(idx, { cantidadDiaria: e.target.value })}
+                          />
+                          <input
+                            type="number" min="1" step="1"
+                            className="mx-input tratos-condition-control tratos-transporte-num"
+                            placeholder="Maxis/un."
+                            value={t.maxisPorUnidad ?? ''}
+                            onChange={(e) => updateTransporte(idx, { maxisPorUnidad: e.target.value })}
+                          />
+                          <input
+                            type="number" min="1" step="1"
+                            className="mx-input tratos-condition-control tratos-transporte-num"
+                            placeholder="Kg/maxi"
+                            value={t.kgPorMaxiRef ?? ''}
+                            onChange={(e) => updateTransporte(idx, { kgPorMaxiRef: e.target.value })}
+                          />
+                          <span className="tratos-transporte-tons">
+                            {tonsDiaFila > 0 ? `${tonsDiaFila.toFixed(1)} t` : '—'}
+                          </span>
+                          <button type="button" className="mx-btn-icon" onClick={() => removeTransporte(idx)}>
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {tonsDia > 0 && (
+                      <div className="tratos-transporte-total">
+                        <span>Total: <strong>{tonsDia.toFixed(1)} t/día</strong></span>
+                        {diasNecesarios && <span>{diasNecesarios} días hábiles estimados</span>}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Días hábiles */}
+                <div className="tratos-dias-wrap">
+                  <span className="tratos-dias-label">Días de cosecha:</span>
+                  <div className="tratos-dias-row">
+                    {['Dom','Lun','Mar','Mié','Jue'].map(d => (
+                      <span key={d} className="tratos-dia-pill tratos-dia-fixed">{d}</span>
+                    ))}
+                    {[['vie','Vie'],['sab','Sáb']].map(([key, label]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        className={`tratos-dia-pill tratos-dia-toggle${diasConfig[key] ? ' is-active' : ''}`}
+                        onClick={() => toggleDia(key)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Fecha término */}
+                {fechaTermino && (
+                  <div className="tratos-termino-banner">
+                    <span>Término estimado:</span>
+                    <strong>{formatDateOnlySafe(fechaTermino)}</strong>
+                    {diasNecesarios && <span style={{ marginLeft: 'auto', fontSize: '0.78rem', opacity: 0.8 }}>({diasNecesarios} días)</span>}
+                  </div>
+                )}
+              </div>
             </div>
 
             {editingId && (

@@ -12,6 +12,7 @@ import {
   Award,
   MinusCircle,
   Settings2,
+  Truck,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { maestrosApi } from '../../api/api-maestros';
@@ -41,11 +42,12 @@ export default function Maestros() {
   // Prefetch de todas las categorías para carga instantánea
   React.useEffect(() => {
     const tiposArr = [
-      'categoria-muestreo', 
-      'regla_calidad', 
-      'proximo-paso', 
-      'condicion_negociacion', 
-      'responsable'
+      'categoria-muestreo',
+      'regla_calidad',
+      'proximo-paso',
+      'condicion_negociacion',
+      'responsable',
+      'tipo_transporte',
     ];
     tiposArr.forEach(t => {
       queryClient.prefetchQuery({
@@ -111,6 +113,7 @@ export default function Maestros() {
     { id: 'proximo-paso', label: 'Próximos Pasos', icon: CheckSquare },
     { id: 'condicion_negociacion', label: 'Acuerdo de Tratos', icon: ClipboardList },
     { id: 'responsable', label: 'Responsables', icon: Users },
+    { id: 'tipo_transporte', label: 'Tipos de Transporte', icon: Truck },
   ];
 
   const handleNuevo = () => {
@@ -148,6 +151,11 @@ export default function Maestros() {
     if (tipo === 'regla_calidad') {
       body.parametros = modalParams;
       body.prioridad = { Entero: 1, 'Media Concha': 2, Carne: 3 }[body.tipoPrincipal] || 99;
+    }
+
+    if (tipo === 'tipo_transporte') {
+      body.maxisPorUnidad = body.maxisPorUnidad !== '' ? Number(body.maxisPorUnidad) : null;
+      body.kgPorMaxiRef   = body.kgPorMaxiRef   !== '' ? Number(body.kgPorMaxiRef)   : null;
     }
 
     if (body.opcionesRaw) {
@@ -237,6 +245,9 @@ export default function Maestros() {
                   {tipo === 'categoria-muestreo' && <th>Tipo Categoría</th>}
                   {tipo === 'regla_calidad' && <th>Configuración</th>}
                   {tipo === 'condicion_negociacion' && <th>Tipo Valor</th>}
+                  {tipo === 'tipo_transporte' && <th>Modo</th>}
+                  {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Maxis/Un.</th>}
+                  {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Kg/Maxi ref.</th>}
                   {tipo !== 'responsable' && <th style={{ width: '80px', textAlign: 'center' }}>Orden</th>}
                   <th style={{ width: '120px' }}>Estado</th>
                   <th style={{ width: '100px', textAlign: 'right' }}>Acciones</th>
@@ -290,6 +301,15 @@ export default function Maestros() {
                         </td>
                       )}
                       {tipo === 'condicion_negociacion' && <td><code>{item.tipoValor}</code></td>}
+                      {tipo === 'tipo_transporte' && (
+                        <td>
+                          <span className={`mx-badge mx-badge-${item.modo === 'maritimo' ? 'info' : 'muted'}`}>
+                            {item.modo === 'maritimo' ? 'Marítimo' : item.modo === 'terrestre' ? 'Terrestre' : '—'}
+                          </span>
+                        </td>
+                      )}
+                      {tipo === 'tipo_transporte' && <td style={{ textAlign: 'center' }}>{item.maxisPorUnidad ?? '—'}</td>}
+                      {tipo === 'tipo_transporte' && <td style={{ textAlign: 'center' }}>{item.kgPorMaxiRef ? `${item.kgPorMaxiRef} kg` : '—'}</td>}
                       {tipo !== 'responsable' && <td style={{ textAlign: 'center' }}>{item.orden ?? 0}</td>}
                       <td>
                         <span className={`mx-badge mx-badge-${item.activo ? 'success' : 'muted'}`}>
@@ -408,6 +428,42 @@ export default function Maestros() {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  </>
+                )}
+
+                {tipo === 'tipo_transporte' && (
+                  <>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Modo</label>
+                      <select name="modo" className="mx-select" defaultValue={editingItem?.modo || 'terrestre'}>
+                        <option value="maritimo">Marítimo</option>
+                        <option value="terrestre">Terrestre</option>
+                      </select>
+                    </div>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Maxis por unidad</label>
+                      <input
+                        name="maxisPorUnidad"
+                        type="number"
+                        min="1"
+                        step="1"
+                        className="mx-input"
+                        defaultValue={editingItem?.maxisPorUnidad ?? ''}
+                        placeholder="Ej: 20"
+                      />
+                    </div>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Kg por maxi (referencia)</label>
+                      <input
+                        name="kgPorMaxiRef"
+                        type="number"
+                        min="1"
+                        step="1"
+                        className="mx-input"
+                        defaultValue={editingItem?.kgPorMaxiRef ?? ''}
+                        placeholder="Ej: 1100"
+                      />
                     </div>
                   </>
                 )}
