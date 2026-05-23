@@ -65,13 +65,23 @@ export function formatMoney(value) {
 export function createEmptyForm(condiciones = []) {
   return {
     proveedorNombre: '',
+    responsableNombre: '',
     tonsAcordadas: '',
     precioBase: '',
     fechaInicioCosecha: '',
-    estado: 'pendiente',
+    estadoCierre: '',   // '' = activo/negociando, 'perdido', 'descartado', 'cerrado_ok'
+    motivoCierre: '',
     notas: '',
     condiciones,
   };
+}
+
+export function getEstadoCierreFromApi(estadoApi) {
+  const e = String(estadoApi || '').toLowerCase();
+  if (['perdido', 'caido'].includes(e)) return 'perdido';
+  if (e === 'descartado') return 'descartado';
+  if (['compra_efectuada', 'cerrado'].includes(e)) return 'cerrado_ok';
+  return '';
 }
 
 export function buildInitialConditions(maestros = []) {

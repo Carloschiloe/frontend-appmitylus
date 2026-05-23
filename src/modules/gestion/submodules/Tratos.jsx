@@ -1,7 +1,5 @@
-﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  Search, Plus, RotateCcw
-} from 'lucide-react';
+﻿import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Search, Plus, RotateCcw, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { apiClient } from '../../../api/apiClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,19 +18,43 @@ import {
   deriveCamionesXDia,
   derivePrecioDesdeCondiciones,
   deriveVolumenDesdeCondiciones,
-  getApiEstadoFromUi,
-  getUiEstadoFromApi,
-  isEquivalentEstado,
+  getEstadoCierreFromApi,
   normalizeDateOnlyForUiSafe,
   parseNumberOrNull,
   toList,
 } from './tratos.helpers';
+
+const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function mesLabel(ym) {
+  if (!ym) return '';
+  const [y, m] = String(ym).split('-');
+  return `${(MESES_ES[parseInt(m, 10) - 1] || '').toUpperCase()} ${y}`;
+}
+function toMonthKey(dateStr) {
+  if (!dateStr) return null;
+  return String(dateStr).slice(0, 7);
+}
+function mesActual() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
 
 export default function Tratos() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [mes, setMes] = useState(mesActual);
+  const [showAllMonths, setShowAllMonths] = useState(false);
+  const [responsableFilter, setResponsableFilter] = useState('all');
+
+  const moveMes = useCallback((dir) => {
+    setMes((prev) => {
+      const [y, m] = prev.split('-').map(Number);
+      const d = new Date(y, m - 1 + dir, 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+  }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editingEstadoApi, setEditingEstadoApi] = useState('');
@@ -67,6 +89,12 @@ export default function Tratos() {
   const { data: maestrosCondiciones = [] } = useQuery({
     queryKey: ['maestros', 'condicion_negociacion', 'activos'],
     queryFn: () => maestrosApi.getMaestrosActivos('condicion_negociacion'),
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: maestrosResponsables = [] } = useQuery({
+    queryKey: ['maestros', 'responsable', 'activos'],
+    queryFn: () => maestrosApi.getMaestrosActivos('responsable'),
     staleTime: 10 * 60 * 1000,
   });
 
@@ -139,6 +167,7 @@ export default function Tratos() {
           notasTrato: form.notas || '',
           camionesXDia: deriveCamionesXDia(form.condiciones),
           vigenciaDesde: form.fechaInicioCosecha || null,
+          responsableNombre: form.responsableNombre || '',
         };
 
         await apiClient.patch(`/oportunidades/${editingId}/trato`, tratoPayload);
@@ -152,11 +181,19 @@ export default function Tratos() {
           )
         );
 
-        if (!isEquivalentEstado(editingEstadoApi, form.estado)) {
-          await apiClient.patch(`/oportunidades/${editingId}/estado`, {
-            estado: getApiEstadoFromUi(form.estado),
-            observacion: form.notas || '',
-          });
+        if (form.estadoCierre) {
+          const apiEstado = form.estadoCierre === 'cerrado_ok' ? 'compra_efectuada' : form.estadoCierre;
+          if (apiEstado !== editingEstadoApi) {
+            if ((form.estadoCierre === 'perdido' || form.estadoCierre === 'descartado') && !form.motivoCierre?.trim()) {
+              addToast({ title: 'Falta motivo', message: 'Indica el motivo del cierre antes de guardar.', type: 'warning' });
+              return;
+            }
+            await apiClient.patch(`/oportunidades/${editingId}/estado`, {
+              estado: apiEstado,
+              observacion: form.motivoCierre || form.notas || '',
+              motivoPerdida: form.motivoCierre || '',
+            });
+          }
         }
         addToast({ title: 'Actualizado', message: 'Trato actualizado con exito', type: 'success' });
       } else {
@@ -170,13 +207,14 @@ export default function Tratos() {
           proveedorId: selectedProvider.contactoId,
           proveedorKey: selectedProvider.proveedorKey,
           proveedorNombre: selectedProvider.proveedorNombre,
-          estado: getApiEstadoFromUi(form.estado),
+          estado: 'negociando',
           origen: 'manual',
           tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
           precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
           notasTrato: form.notas || '',
           camionesXDia: deriveCamionesXDia(form.condiciones),
           vigenciaDesde: form.fechaInicioCosecha || null,
+          responsableNombre: form.responsableNombre || '',
           condiciones: (form.condiciones || []).map((condicion) => ({
             ...condicion,
             valor: condicion.valor === '' ? null : condicion.valor,
@@ -226,12 +264,14 @@ export default function Tratos() {
     setProviderSearch(item.proveedorNombre || '');
     setForm({
       proveedorNombre: item.proveedorNombre || '',
+      responsableNombre: item.responsableNombre || '',
       tonsAcordadas: item.tonsAcordadas || '',
       precioBase: '',
       fechaInicioCosecha: item.vigenciaDesde
         ? item.vigenciaDesde.slice(0, 10)
         : (item.fechaCierre ? item.fechaCierre.slice(0, 10) : ''),
-      estado: getUiEstadoFromApi(item.estado),
+      estadoCierre: getEstadoCierreFromApi(item.estado),
+      motivoCierre: item.motivoPerdida || item.motivoCierre || '',
       notas: item.notasTrato || item.notas || '',
       condiciones: item.condiciones || []
     });
@@ -271,22 +311,79 @@ export default function Tratos() {
     addToast({ title: 'Copiado', message: 'Enlace listo para abrir en navegador', type: 'success' });
   };
 
-  const filteredItems = items.filter(i => 
-    (i.proveedorNombre || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const availableResponsables = useMemo(() => {
+    const set = new Set();
+    items.forEach((i) => { if (i.responsableNombre) set.add(i.responsableNombre); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
+  }, [items]);
+
+  const filteredItems = useMemo(() => items.filter((i) => {
+    if (searchTerm && !(i.proveedorNombre || '').toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (!showAllMonths && toMonthKey(i.vigenciaDesde || i.fechaCierre) !== mes) return false;
+    if (responsableFilter !== 'all' && i.responsableNombre !== responsableFilter) return false;
+    return true;
+  }), [items, searchTerm, mes, showAllMonths, responsableFilter]);
 
   return (
     <div className="mx-page am-p-0">
       <div className="mx-toolbar am-mt-16">
         <div className="mx-search-box tratos-toolbar-search">
           <Search size={18} />
-          <input 
-            type="text" 
-            placeholder="Buscar por proveedor..." 
+          <input
+            type="text"
+            placeholder="Buscar por proveedor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            className="mx-btn-icon sm"
+            onClick={() => { moveMes(-1); setShowAllMonths(false); }}
+            title="Mes anterior"
+            disabled={showAllMonths}
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span style={{ fontWeight: 'var(--weight-bold)', fontSize: '13px', minWidth: 110, textAlign: 'center', color: showAllMonths ? 'var(--color-text-subtle)' : 'var(--color-text)' }}>
+            {showAllMonths ? '—' : mesLabel(mes)}
+          </span>
+          <button
+            className="mx-btn-icon sm"
+            onClick={() => { moveMes(1); setShowAllMonths(false); }}
+            title="Mes siguiente"
+            disabled={showAllMonths}
+          >
+            <ChevronRight size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowAllMonths((v) => !v)}
+            style={{
+              padding: '3px 10px',
+              borderRadius: 999,
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              border: showAllMonths ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+              background: showAllMonths ? 'rgba(10,92,255,0.08)' : 'transparent',
+              color: showAllMonths ? 'var(--color-primary)' : 'var(--color-text-subtle)',
+              cursor: 'pointer',
+            }}
+          >
+            Todos
+          </button>
+        </div>
+        {availableResponsables.length > 1 && (
+          <label className="cal-filter-select">
+            <User size={15} />
+            <select value={responsableFilter} onChange={(e) => setResponsableFilter(e.target.value)}>
+              <option value="all">Todos los responsables</option>
+              {availableResponsables.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <button className="mx-btn-icon sm" onClick={handleRefresh} title="Actualizar"><RotateCcw size={18} /></button>
         <button className="mx-btn mx-btn-primary" onClick={openNew}>
           <Plus size={18} /> Nueva Negociacion
@@ -309,6 +406,7 @@ export default function Tratos() {
         providerSearch={providerSearch}
         loadingProviders={loadingProviders}
         filteredProviders={filteredProviders}
+        responsables={maestrosResponsables}
         onClose={closeModal}
         onSubmit={handleSave}
         onFormChange={setForm}

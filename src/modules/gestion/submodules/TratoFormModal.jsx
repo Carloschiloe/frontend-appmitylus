@@ -1,6 +1,5 @@
 import React from 'react';
-import { Search, X } from 'lucide-react';
-import { ESTADOS_TRATO } from './tratos.helpers';
+import { Search, X, AlertTriangle, XCircle } from 'lucide-react';
 
 export default function TratoFormModal({
   isOpen,
@@ -10,6 +9,7 @@ export default function TratoFormModal({
   providerSearch,
   loadingProviders,
   filteredProviders,
+  responsables,
   onClose,
   onSubmit,
   onFormChange,
@@ -146,26 +146,77 @@ export default function TratoFormModal({
               </div>
             </div>
 
-            <div className="mx-form-row am-mt-16 tratos-form-row">
-              <div className="mx-form-group tratos-form-row-item">
-                <label className="mx-label">Fecha probable inicio cosecha</label>
-                <input
-                  type="date"
-                  className="mx-input"
-                  value={form.fechaInicioCosecha}
-                  onChange={e => onFormChange({ ...form, fechaInicioCosecha: e.target.value })}
-                />
+            <div className="mx-form-group am-mt-16">
+              <label className="mx-label">Fecha probable inicio cosecha</label>
+              <input
+                type="date"
+                className="mx-input"
+                value={form.fechaInicioCosecha}
+                onChange={e => onFormChange({ ...form, fechaInicioCosecha: e.target.value })}
+              />
+            </div>
+
+            {editingId && (
+              <div className="mx-form-group am-mt-16">
+                <label className="mx-label">Cierre de negociación</label>
+                <p style={{ margin: '4px 0 10px', fontSize: '0.82rem', color: 'var(--color-text-subtle)' }}>
+                  Solo marcar si la negociación terminó. El estado activo se determina por las condiciones.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                  {[
+                    { val: 'perdido',    label: 'Perdido',    sub: 'El proveedor no quiso', Icon: XCircle,       color: 'var(--color-danger)' },
+                    { val: 'descartado', label: 'Descartado', sub: 'Nosotros no quisimos',  Icon: AlertTriangle, color: '#d97706' },
+                  ].map(({ val, label, sub, Icon, color }) => {
+                    const active = form.estadoCierre === val;
+                    return (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => onFormChange({ ...form, estadoCierre: active ? '' : val, motivoCierre: '' })}
+                        style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                          padding: '10px 6px', borderRadius: 12, cursor: 'pointer',
+                          border: active ? `2px solid ${color}` : '1px solid var(--color-border)',
+                          background: active ? `${color}14` : 'white',
+                          color: active ? color : 'var(--color-text-subtle)',
+                        }}
+                      >
+                        <Icon size={16} />
+                        <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{label}</span>
+                        <span style={{ fontSize: '0.72rem', textAlign: 'center', lineHeight: 1.3 }}>{sub}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {(form.estadoCierre === 'perdido' || form.estadoCierre === 'descartado') && (
+                  <div style={{ marginTop: 10 }}>
+                    <label className="mx-label">
+                      Motivo <span style={{ color: 'var(--color-danger)' }}>*</span>
+                    </label>
+                    <input
+                      className="mx-input"
+                      value={form.motivoCierre}
+                      onChange={e => onFormChange({ ...form, motivoCierre: e.target.value })}
+                      placeholder={form.estadoCierre === 'perdido' ? 'Ej: No le convenció el precio' : 'Ej: Calidad del producto no cumple'}
+                      required
+                    />
+                  </div>
+                )}
               </div>
-              <div className="mx-form-group tratos-form-row-item">
-                <label className="mx-label">Estado General</label>
-                <select
-                  className="mx-select"
-                  value={form.estado}
-                  onChange={e => onFormChange({ ...form, estado: e.target.value })}
-                >
-                  {ESTADOS_TRATO.map(e => <option key={e.val} value={e.val}>{e.label}</option>)}
-                </select>
-              </div>
+            )}
+
+            <div className="mx-form-group">
+              <label className="mx-label">Responsable</label>
+              <select
+                className="mx-select"
+                value={form.responsableNombre}
+                onChange={e => onFormChange({ ...form, responsableNombre: e.target.value })}
+              >
+                <option value="">Sin asignar</option>
+                {(responsables || []).map(r => (
+                  <option key={r._id || r.nombre} value={r.nombre}>{r.nombre}</option>
+                ))}
+              </select>
             </div>
 
             <div className="mx-form-group">

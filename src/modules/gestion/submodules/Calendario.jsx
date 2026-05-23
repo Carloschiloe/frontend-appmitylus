@@ -1,24 +1,38 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   AlertTriangle,
   CalendarClock,
   CalendarDays,
+  CalendarRange,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
   Clock,
   Eye,
   Filter,
+  Info,
   ListChecks,
+  Mail,
+  MoreHorizontal,
   PauseCircle,
+  Pencil,
+  Phone,
   RotateCcw,
   Search,
   Target,
   Trash2,
+  User,
 } from 'lucide-react';
+import CompletarTareaModal from './CompletarTareaModal';
+import ConfirmModal from './ConfirmModal';
+import EditarRealizadoModal from './EditarRealizadoModal';
+import ReprogramModal from './ReprogramModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
-import { useCalendarioAgenda, useOportunidades } from '../hooks/useGestionQueries';
+import { useCalendarioAgenda, useInteracciones } from '../hooks/useGestionQueries';
 import './calendario.css';
 
 const DOW = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
@@ -29,45 +43,38 @@ const MONTHS = [
 
 const VIEW_OPTIONS = [
   { id: 'list', label: 'Lista operativa', icon: ListChecks },
+  { id: 'week', label: 'Semana', icon: CalendarRange },
   { id: 'calendar', label: 'Calendario', icon: CalendarDays },
-  { id: 'paused', label: 'Pausados', icon: PauseCircle },
 ];
 
-const RANGE_OPTIONS = [
-  { id: 'month', label: 'Mes visible' },
-  { id: 'all', label: 'Todo pendiente' },
-  { id: 'today', label: 'Hoy' },
-  { id: 'overdue', label: 'Vencidos' },
-  { id: '7d', label: 'Proximos 7 dias' },
-  { id: '30d', label: 'Proximos 30 dias' },
+// Order: vencidos, realizados, pendiente, pausados (as specified)
+const STATUS_OPTIONS = [
+  { id: 'todos', label: 'Todos los estados' },
+  { id: 'vencido', label: 'Vencido' },
+  { id: 'realizado', label: 'Realizado' },
+  { id: 'pendiente', label: 'Pendiente' },
+  { id: 'pausado', label: 'Pausado' },
 ];
 
 const TYPE_LABELS = {
   muestreo: 'Muestreo',
   visita: 'Visita',
   llamada: 'Llamada',
-  reunion: 'Negociacion',
-  negociacion: 'Negociacion',
+  whatsapp: 'WhatsApp',
   seguimiento: 'Seguimiento',
-  interaccion: 'Seguimiento',
   pausado: 'Pausado',
-  tarea: 'Tarea',
-  default: 'Actividad',
 };
+
+// Solo estos tipos aparecen en el filtro de tipos
+const FILTERABLE_TYPES = new Set(['llamada', 'visita', 'whatsapp', 'muestreo', 'seguimiento', 'pausado']);
 
 const STATUS_LABELS = {
   active: 'Pendiente',
   overdue: 'Vencido',
   paused: 'Pausado',
+  realizado: 'Realizado',
 };
 
-const PAUSE_REASON_LABELS = {
-  esperando_crecimiento: 'Esperando crecimiento',
-  esperando_disponibilidad: 'Esperando disponibilidad',
-  esperando_respuesta: 'Esperando respuesta',
-  esperando_resultado_muestra: 'Esperando resultado de muestra',
-  esperando_decision_interna: 'Esperando decision interna',
-};
 
 function toList(payload) {
   if (Array.isArray(payload)) return payload;
@@ -110,6 +117,15 @@ function addDays(date, amount) {
   return next;
 }
 
+function getWeekStart(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
 function formatShortDate(date) {
   if (!date) return '-';
   return `${pad2(date.getDate())}-${pad2(date.getMonth() + 1)}-${date.getFullYear()}`;
@@ -124,15 +140,19 @@ function formatLongDate(date) {
   });
 }
 
+function normalizeAccents(str) {
+  return String(str).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
 function normalizeKind(value) {
-  const text = String(value || '').toLowerCase();
-  if (text.includes('muestra') || text.includes('muestreo')) return 'muestreo';
-  if (text.includes('visita')) return 'visita';
-  if (text.includes('llamada') || text.includes('telefono')) return 'llamada';
-  if (text.includes('negoci') || text.includes('reunion')) return 'negociacion';
+  const text = String(value || '').toLowerCase().trim();
+  if (text === 'llame' || text.includes('llamada') || text.includes('telefono')) return 'llamada';
+  if (text === 'visite' || text.includes('visita')) return 'visita';
+  if (text === 'whatsapp') return 'whatsapp';
+  if (text === 'tome_muestra' || text.includes('muestra') || text.includes('muestreo')) return 'muestreo';
   if (text.includes('paus')) return 'pausado';
   if (text.includes('seguim')) return 'seguimiento';
-  return text || 'default';
+  return 'otro';
 }
 
 function getRawEventDate(item) {
@@ -161,27 +181,6 @@ function compareCalendarItems(a, b) {
   return a.date.getTime() - b.date.getTime() || a.provider.localeCompare(b.provider);
 }
 
-function buildFollowupEvent(item, kind) {
-  const date = parseLocalDate(item.fechaProximaAccion || item.fechaRevision || item.nextActionAt);
-  if (!date) return null;
-
-  return {
-    id: `opp-${item._id}`,
-    source: 'oportunidad',
-    sourceId: item._id,
-    kind,
-    date,
-    time: '',
-    provider: item.proveedorNombre || 'Proveedor sin nombre',
-    title: item.proximaAccion || (kind === 'pausado' ? 'Revisar caso pausado' : 'Definir proximo paso'),
-    description: kind === 'pausado'
-      ? PAUSE_REASON_LABELS[item.motivoPausa] || 'En espera'
-      : (item.notasTrato || item.estado || 'Seguimiento pendiente'),
-    responsible: item.responsableNombre || item.responsable || item.responsablePG || item.ownerName || '-',
-    status: kind === 'pausado' ? 'paused' : 'active',
-    motivoPausa: item.motivoPausa || '',
-  };
-}
 
 function buildCalendarEvent(item) {
   const date = getRawEventDate(item);
@@ -197,6 +196,11 @@ function buildCalendarEvent(item) {
     date,
     time: getRawEventTime(item),
     provider: item.proveedorNombre || item.contactoNombre || item.title || item.clienteNombre || item.empresaNombre || item.proveedor || 'Sin proveedor',
+    proveedorKey: item.proveedorKey || '',
+    contactoNombre: item.contactoNombre || '',
+    telefono: item.telefono || item.contactoSnapshot?.telefono || '',
+    email: item.email || item.contactoSnapshot?.email || '',
+    centroCodigo: item.centroCodigo || '',
     title: item.proximoPaso || item.proximaAccion || item.actividad || item.asunto || item.resumen || item.titulo || item.title || 'Actividad pendiente',
     description: item.resumen || item.resultado || item.detalle || item.descripcion || item.observacion || item.notas || '',
     responsible: item.responsablePG || item.responsableNombre || item.responsable || item.usuarioNombre || item.createdByName || '-',
@@ -224,30 +228,136 @@ function AgendaStatus({ status }) {
 }
 
 function AgendaType({ kind }) {
-  return <span className={`agenda-type is-${kind}`}>{TYPE_LABELS[kind] || TYPE_LABELS.default}</span>;
+  return <span className={`agenda-type is-${kind}`}>{TYPE_LABELS[kind] || 'Gestión'}</span>;
 }
 
-function AgendaActions({ item, onViewCalendar, onReprogram, onDelete }) {
+function useFloatingMenu() {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({});
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onMouseDown(e) {
+      if (btnRef.current?.contains(e.target)) return;
+      if (!menuRef.current?.contains(e.target)) setOpen(false);
+    }
+    function onScroll() { setOpen(false); }
+    document.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('scroll', onScroll, true);
+    };
+  }, [open]);
+
+  function toggle(estimatedHeight = 200) {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const right = window.innerWidth - rect.right;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < estimatedHeight) {
+        setPos({ bottom: window.innerHeight - rect.top + 6, right, top: 'auto' });
+      } else {
+        setPos({ top: rect.bottom + 6, right, bottom: 'auto' });
+      }
+    }
+    setOpen((v) => !v);
+  }
+
+  return { open, pos, btnRef, menuRef, toggle, close: () => setOpen(false) };
+}
+
+function InfoPopover({ item }) {
+  const { open, pos, btnRef, menuRef, toggle } = useFloatingMenu();
+  const hasInfo = item.contactoNombre || item.telefono || item.email || item.centroCodigo;
+
   return (
-    <div className="agenda-row-actions">
-      <button type="button" className="cal-icon-action" onClick={() => onViewCalendar(item)} title="Ver en calendario">
-        <Eye size={15} />
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        className={`mx-action-btn${open ? ' is-info-active' : ''}`}
+        onClick={() => toggle(140)}
+        title="Ver contacto"
+      >
+        <Info size={14} />
       </button>
-      {item.canReprogram ? (
-        <button type="button" className="cal-icon-action" onClick={() => onReprogram(item)} title="Reprogramar">
-          <RotateCcw size={15} />
-        </button>
-      ) : null}
-      {item.canDelete ? (
-        <button type="button" className="cal-icon-action danger" onClick={() => onDelete(item)} title="Eliminar">
-          <Trash2 size={15} />
-        </button>
-      ) : null}
+      {open && createPortal(
+        <div ref={menuRef} className="agenda-info-popover" style={{ position: 'fixed', left: 'auto', ...pos }}>
+          {hasInfo ? (
+            <>
+              {item.contactoNombre && <div className="aip-name">{item.contactoNombre}</div>}
+              {item.telefono && (
+                <a href={`tel:${item.telefono}`} className="aip-row"><Phone size={12} /> {item.telefono}</a>
+              )}
+              {item.email && (
+                <a href={`mailto:${item.email}`} className="aip-row"><Mail size={12} /> {item.email}</a>
+              )}
+              {item.centroCodigo && <div className="aip-row aip-meta">{item.centroCodigo}</div>}
+            </>
+          ) : (
+            <div className="aip-empty">Sin datos de contacto registrados</div>
+          )}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
+function AgendaActions({ item, onViewCalendar, onEdit, onReprogram, onDelete, onComplete }) {
+  const { open, pos, btnRef, menuRef, toggle, close } = useFloatingMenu();
+  const actionCount = 2 + (item.canReprogram ? 1 : 0) + (item.canDelete ? 1 : 0);
+
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      <InfoPopover item={item} />
+      <button
+        ref={btnRef}
+        type="button"
+        className={`mx-action-btn${open ? ' is-open' : ''}`}
+        onClick={() => toggle(actionCount * 44 + 16)}
+        title="Opciones"
+      >
+        <MoreHorizontal size={14} />
+      </button>
+      {open && createPortal(
+        <div ref={menuRef} className="agenda-options-menu" style={{ position: 'fixed', left: 'auto', ...pos }}>
+          {item.status !== 'realizado' && (
+            <button type="button" className="agenda-option-item is-success" onClick={() => { close(); onComplete(item); }}>
+              <CheckCircle2 size={14} /> Marcar como hecho
+            </button>
+          )}
+          {item.status === 'realizado' ? (
+            <button type="button" className="agenda-option-item" onClick={() => { close(); onEdit(item); }}>
+              <Pencil size={14} /> Ver / Editar gestión
+            </button>
+          ) : (
+            <button type="button" className="agenda-option-item" onClick={() => { close(); onViewCalendar(item); }}>
+              <Eye size={14} /> Ver en calendario
+            </button>
+          )}
+          {(item.canReprogram || item.canDelete) && <div className="agenda-option-sep" />}
+          {item.canReprogram && (
+            <button type="button" className="agenda-option-item" onClick={() => { close(); onReprogram(item); }}>
+              <RotateCcw size={14} /> Reprogramar
+            </button>
+          )}
+          {item.canDelete && (
+            <button type="button" className="agenda-option-item is-danger" onClick={() => { close(); onDelete(item); }}>
+              <Trash2 size={14} /> Eliminar
+            </button>
+          )}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
 
-function AgendaTable({ items, emptyText, onViewCalendar, onReprogram, onDelete }) {
+function AgendaTable({ items, emptyText, onViewCalendar, onEdit, onReprogram, onDelete, onComplete }) {
   return (
     <div className="agenda-table-wrap">
       <table className="agenda-table">
@@ -256,35 +366,41 @@ function AgendaTable({ items, emptyText, onViewCalendar, onReprogram, onDelete }
             <th>Fecha</th>
             <th>Estado</th>
             <th>Proveedor</th>
-            <th>Accion pendiente</th>
-            <th>Origen</th>
+            <th>Acción</th>
+            <th>Tipo</th>
             <th>Responsable</th>
-            <th>Acciones</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           {items.length ? items.map((item) => (
             <tr key={item.id}>
-              <td>
-                <strong>{formatShortDate(item.date)}</strong>
-                {item.time ? <span>{item.time}</span> : null}
-              </td>
+              <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
               <td><AgendaStatus status={item.status} /></td>
-              <td className="agenda-provider-cell">{item.provider}</td>
+              <td className="agenda-provider-cell">
+                {item.provider}
+                {item.contactoNombre && item.contactoNombre !== item.provider && (
+                  <span className="agenda-provider-contacto">{item.contactoNombre}</span>
+                )}
+              </td>
               <td>
                 <div className="agenda-action-cell">
-                  <strong>{item.title}</strong>
-                  {item.description ? <span>{item.description}</span> : null}
+                  <span className="agenda-action-title">{item.title}</span>
+                  {item.description && item.description !== item.title
+                    ? <span className="agenda-action-desc">{item.description}</span>
+                    : null}
                 </div>
               </td>
               <td><AgendaType kind={item.kind} /></td>
-              <td>{item.responsible}</td>
+              <td className="agenda-cell-responsible">{item.responsible}</td>
               <td>
                 <AgendaActions
                   item={item}
                   onViewCalendar={onViewCalendar}
+                  onEdit={onEdit}
                   onReprogram={onReprogram}
                   onDelete={onDelete}
+                  onComplete={onComplete}
                 />
               </td>
             </tr>
@@ -305,15 +421,22 @@ export default function Calendario() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   const [viewMode, setViewMode] = useState('list');
+  const [statusFilter, setStatusFilter] = useState('todos');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [range, setRange] = useState('month');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [responsibleFilter, setResponsibleFilter] = useState('all');
+  const [completingItem, setCompletingItem] = useState(null);
+  const [editingRealizadoItem, setEditingRealizadoItem] = useState(null);
+  const [deletingItem, setDeletingItem] = useState(null);
+  const [reprogrammingItem, setReprogrammingItem] = useState(null);
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['calendario-agenda'] });
     queryClient.invalidateQueries({ queryKey: ['oportunidades'] });
+    queryClient.invalidateQueries({ queryKey: ['interacciones'] });
   }, [queryClient]);
 
   useEffect(() => {
@@ -323,55 +446,134 @@ export default function Calendario() {
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  const from = new Date(year - 1, month, 1).toISOString();
+  const from = addDays(startOfDay(new Date()), -60).toISOString();
   const to = new Date(year + 1, month + 1, 0).toISOString();
 
   const { data: agendaRes, isLoading: loadingAgenda } = useCalendarioAgenda({ from, to });
-  const { data: activeRes, isLoading: loadingActive } = useOportunidades({ seguimientoEstado: 'activo', limit: 200 });
-  const { data: pausedRes, isLoading: loadingPaused } = useOportunidades({ seguimientoEstado: 'pausado', limit: 200 });
 
-  const loading = loadingAgenda || loadingActive || loadingPaused;
+  // Always load realizados for the visible month (powers the KPI count and the filter)
+  const realizadoFrom = new Date(year, month, 1).toISOString();
+  const realizadoTo = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+  const { data: realizadosRes, isLoading: loadingRealizados } = useInteracciones(
+    { from: realizadoFrom, to: realizadoTo, limit: 200 },
+  );
+
+  const realizadoItems = useMemo(() => {
+    const todayStart = startOfDay(new Date());
+    return toList(realizadosRes)
+      .map((i) => {
+        // Si tiene fechaProximo en el futuro, ya aparece como pendiente en agendaItems — no duplicar
+        if (i.fechaProximo) {
+          const proxDate = parseLocalDate(i.fechaProximo);
+          if (proxDate && proxDate.getTime() >= todayStart.getTime()) return null;
+        }
+        const date = parseLocalDate(i.fecha);
+        if (!date) return null;
+        return {
+          id: i._id,
+          source: 'interaccion',
+          sourceId: i._id,
+          kind: normalizeKind(i.tipo),
+          date,
+          time: '',
+          provider: i.proveedorNombre || i.contactoNombre || 'Sin proveedor',
+          proveedorKey: i.proveedorKey || '',
+          contactoNombre: i.contactoNombre || '',
+          telefono: i.contactoSnapshot?.telefono || '',
+          email: i.contactoSnapshot?.email || '',
+          centroCodigo: i.centroCodigo || '',
+          title: i.resumen || i.resultado || 'Gestión registrada',
+          description: i.resultado || i.resumen || '',
+          responsible: i.responsablePG || '-',
+          status: 'realizado',
+          canReprogram: false,
+          canDelete: true,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [realizadosRes]);
+
+  const loading = loadingAgenda || (['realizado', 'todos'].includes(statusFilter) && loadingRealizados);
   const today = useMemo(() => startOfDay(new Date()), []);
 
   const agendaItems = useMemo(() => {
-    if (loading) return [];
+    if (loadingAgenda) return [];
 
-    const calendarItems = toList(agendaRes).map(buildCalendarEvent).filter(Boolean);
-    const activeItems = toList(activeRes).map((item) => buildFollowupEvent(item, 'seguimiento')).filter(Boolean);
-    const pausedItems = toList(pausedRes).map((item) => buildFollowupEvent(item, 'pausado')).filter(Boolean);
-
-    return [...calendarItems, ...activeItems, ...pausedItems]
+    return toList(agendaRes)
+      .map(buildCalendarEvent)
+      .filter(Boolean)
+      .filter((item) => item.kind !== 'muestreo')
       .map((item) => withDerivedStatus(item, today))
       .map((item) => ({
         ...item,
-        canReprogram: ['interaccion', 'oportunidad'].includes(item.source),
+        canReprogram: ['interaccion', 'visita'].includes(item.source),
         canDelete: ['interaccion', 'visita'].includes(item.source),
       }))
       .filter((item) => ['active', 'overdue', 'paused'].includes(item.status))
       .sort((a, b) => compareAgendaItems(a, b, today));
-  }, [agendaRes, activeRes, pausedRes, loading, today]);
+  }, [agendaRes, loadingAgenda, today]);
 
   const availableTypes = useMemo(() => {
     const map = new Map();
-    agendaItems.forEach((item) => map.set(item.kind, TYPE_LABELS[item.kind] || TYPE_LABELS.default));
+    [...agendaItems, ...realizadoItems].forEach((item) => {
+      if (FILTERABLE_TYPES.has(item.kind)) {
+        map.set(item.kind, TYPE_LABELS[item.kind]);
+      }
+    });
     return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-  }, [agendaItems]);
+  }, [agendaItems, realizadoItems]);
+
+  const availableResponsibles = useMemo(() => {
+    // Deduplica por nombre sin acentos; prefiere la versión con acento correcto
+    const canonical = new Map(); // normalizado -> nombre canónico
+    [...agendaItems, ...realizadoItems].forEach((item) => {
+      if (!item.responsible || item.responsible === '-') return;
+      const key = normalizeAccents(item.responsible);
+      const existing = canonical.get(key);
+      // Preferir la versión con tilde (distinta del normalizado)
+      if (!existing || normalizeAccents(item.responsible) !== item.responsible) {
+        canonical.set(key, item.responsible);
+      }
+    });
+    return Array.from(canonical.values()).sort((a, b) => a.localeCompare(b, 'es'));
+  }, [agendaItems, realizadoItems]);
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
     const monthStart = new Date(year, month, 1).getTime();
     const monthEnd = new Date(year, month + 1, 0, 23, 59, 59).getTime();
-    return agendaItems.filter((item) => {
-      const itemTime = item.date.getTime();
+
+    const applyFilters = (item) => {
       const haystack = `${item.provider} ${item.title} ${item.description} ${item.responsible}`.toLowerCase();
       if (term && !haystack.includes(term)) return false;
       if (typeFilter !== 'all' && item.kind !== typeFilter) return false;
-      if (range === 'month' && (itemTime < monthStart || itemTime > monthEnd)) return false;
-      if (viewMode === 'paused' && item.status !== 'paused') return false;
-      if (viewMode !== 'paused' && item.status === 'paused' && range !== 'all') return matchesRange(item, range, today);
-      return matchesRange(item, range, today);
+      if (responsibleFilter !== 'all' && normalizeAccents(item.responsible) !== normalizeAccents(responsibleFilter)) return false;
+      return true;
+    };
+
+    if (statusFilter === 'realizado') {
+      return realizadoItems.filter(applyFilters);
+    }
+
+    if (statusFilter === 'todos') {
+      const pendingPool = agendaItems.filter((item) => {
+        if (!applyFilters(item)) return false;
+        if (range === 'month' && (item.date.getTime() < monthStart || item.date.getTime() > monthEnd)) return false;
+        return matchesRange(item, range, today);
+      });
+      const realizadoPool = realizadoItems.filter(applyFilters);
+      return [...pendingPool, ...realizadoPool].sort((a, b) => compareAgendaItems(a, b, today));
+    }
+
+    return agendaItems.filter((item) => {
+      if (!applyFilters(item)) return false;
+      if (statusFilter === 'vencido') return item.status === 'overdue';
+      if (statusFilter === 'pendiente') return item.status === 'active' && matchesRange(item, range, today);
+      if (statusFilter === 'pausado') return item.status === 'paused';
+      return true;
     }).sort((a, b) => compareAgendaItems(a, b, today));
-  }, [agendaItems, month, range, search, today, typeFilter, viewMode, year]);
+  }, [agendaItems, realizadoItems, month, range, search, statusFilter, today, typeFilter, responsibleFilter, year]);
 
   const kpis = useMemo(() => {
     const todayEnd = endOfDay(today).getTime();
@@ -381,9 +583,11 @@ export default function Calendario() {
       overdue: agendaItems.filter((item) => item.status === 'overdue').length,
       next7: agendaItems.filter((item) => item.date.getTime() >= today.getTime() && item.date.getTime() <= sevenEnd && item.status !== 'paused').length,
       paused: agendaItems.filter((item) => item.status === 'paused').length,
-      total: agendaItems.length,
+      pendiente: agendaItems.filter((item) => item.status === 'active').length,
+      realizado: realizadoItems.length,
+      total: agendaItems.length + realizadoItems.length,
     };
-  }, [agendaItems, today]);
+  }, [agendaItems, realizadoItems, today]);
 
   const calendarGrid = useMemo(() => {
     const firstDay = new Date(year, month, 1);
@@ -406,23 +610,72 @@ export default function Calendario() {
   }, [month, year]);
 
   const eventsByDay = useMemo(() => {
+    const source = responsibleFilter === 'all'
+      ? agendaItems
+      : agendaItems.filter((item) => normalizeAccents(item.responsible) === normalizeAccents(responsibleFilter));
     const map = new Map();
-    agendaItems.forEach((item) => {
+    source.forEach((item) => {
       const key = dateKey(item.date);
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(item);
     });
     map.forEach((items) => items.sort(compareCalendarItems));
     return map;
-  }, [agendaItems]);
+  }, [agendaItems, responsibleFilter]);
 
   const selectedDayItems = eventsByDay.get(dateKey(selectedDate)) || [];
   const periodLabel = `${MONTHS[month]} ${year}`;
+  const hasActiveFilters = statusFilter !== 'todos' || search !== '' || range !== 'month' || typeFilter !== 'all' || responsibleFilter !== 'all';
+
+  function clearFilters() {
+    setStatusFilter('todos');
+    setSearch('');
+    setRange('month');
+    setTypeFilter('all');
+    setResponsibleFilter('all');
+  }
+
+  const ResponsableSelect = availableResponsibles.length > 1 ? (
+    <label className="cal-filter-select">
+      <User size={15} />
+      <select value={responsibleFilter} onChange={(e) => setResponsibleFilter(e.target.value)}>
+        <option value="all">Todos los responsables</option>
+        {availableResponsibles.map((r) => <option key={r} value={r}>{r}</option>)}
+      </select>
+    </label>
+  ) : null;
+
+  const chipCounts = {
+    todos: kpis.total,
+    vencido: kpis.overdue,
+    realizado: kpis.realizado,
+    pendiente: kpis.pendiente,
+    pausado: kpis.paused,
+  };
+
+  const weekDays = useMemo(() => {
+    const start = getWeekStart(currentDate);
+    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  }, [currentDate]);
+
+  const weekPeriodLabel = useMemo(() => {
+    if (weekDays.length < 7) return '';
+    const s = weekDays[0];
+    const e = weekDays[6];
+    if (s.getMonth() === e.getMonth()) {
+      return `${s.getDate()} - ${e.getDate()} ${MONTHS[s.getMonth()]} ${s.getFullYear()}`;
+    }
+    return `${s.getDate()} ${MONTHS[s.getMonth()]} - ${e.getDate()} ${MONTHS[e.getMonth()]}`;
+  }, [weekDays]);
 
   function changeMonth(delta) {
     const next = new Date(year, month + delta, 1);
     setCurrentDate(next);
     setSelectedDate(next);
+  }
+
+  function changeWeek(delta) {
+    setCurrentDate((prev) => addDays(prev, delta * 7));
   }
 
   function viewItemInCalendar(item) {
@@ -431,24 +684,15 @@ export default function Calendario() {
     setViewMode('calendar');
   }
 
-  async function handleReprogram(item) {
-    const nextDate = window.prompt('Nueva fecha programada (YYYY-MM-DD)', dateKey(item.date));
-    if (!nextDate) return;
+  async function confirmReprogram(nextDate) {
+    const item = reprogrammingItem;
+    setReprogrammingItem(null);
     const iso = new Date(`${nextDate}T09:00:00`).toISOString();
-
     try {
       if (item.source === 'interaccion') {
         await apiClient.put(`/interacciones/${item.sourceId}`, { fechaProximo: iso, tipo: item.kind, fecha: item.date.toISOString(), responsablePG: item.responsible || 'Usuario' });
       } else if (item.source === 'visita') {
         await apiClient.patch(`/visitas/${item.sourceId}`, { proximoPasoFecha: iso });
-      } else if (item.source === 'oportunidad') {
-        await apiClient.patch(`/oportunidades/${item.sourceId}/seguimiento`, {
-          seguimientoEstado: item.status === 'paused' ? 'pausado' : 'activo',
-          proximaAccion: item.title,
-          fechaProximaAccion: item.status === 'paused' ? '' : iso,
-          fechaRevision: item.status === 'paused' ? iso : '',
-          motivoPausa: item.status === 'paused' ? (item.motivoPausa || 'esperando_respuesta') : undefined,
-        });
       }
       addToast({ title: 'Agenda actualizada', message: 'La actividad fue reprogramada.', type: 'success' });
       handleRefresh();
@@ -457,51 +701,57 @@ export default function Calendario() {
     }
   }
 
-  async function handleDelete(item) {
-    const ok = window.confirm(`Eliminar actividad de ${item.provider}?`);
-    if (!ok) return;
-
+  async function confirmDelete() {
+    const item = deletingItem;
+    setDeletingItem(null);
     try {
       if (item.source === 'interaccion') {
         await apiClient.delete(`/interacciones/${item.sourceId}`);
       } else if (item.source === 'visita') {
         await apiClient.delete(`/visitas/${item.sourceId}`);
       } else {
-        addToast({ title: 'No eliminado', message: 'Este origen no permite eliminacion directa desde Agenda.', type: 'warning' });
+        addToast({ title: 'No eliminado', message: 'Este origen no permite eliminacion desde Agenda.', type: 'warning' });
         return;
       }
-      addToast({ title: 'Eliminado', message: 'La actividad fue eliminada.', type: 'success' });
+      addToast({ title: 'Eliminado', message: 'La actividad fue eliminada de la agenda.', type: 'success' });
       handleRefresh();
     } catch (error) {
       addToast({ title: 'Error', message: error?.message || 'No se pudo eliminar.', type: 'error' });
     }
   }
 
+  const subtitleText = statusFilter === 'realizado'
+    ? `Gestiones realizadas en ${MONTHS[month]} ${year}.`
+    : 'Trabajo pendiente, vencido y programado.';
+
   return (
     <div className="calendario-main-wrapper agenda-modern">
       <div className="calendario-header-bar">
         <div>
           <h2 className="calendario-title-text">Agenda Operativa</h2>
-          <p>Trabajo pendiente, vencido y programado. El historial de lo realizado queda fuera de esta vista.</p>
+          <p>{subtitleText}</p>
         </div>
       </div>
 
       <div className="agenda-kpis">
-        <button type="button" onClick={() => { setViewMode('list'); setRange('today'); }}>
+        <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('pendiente'); setRange('today'); }}>
           <Target size={16} /><span>Hoy</span><strong>{kpis.today}</strong>
         </button>
-        <button type="button" onClick={() => { setViewMode('list'); setRange('overdue'); }}>
+        <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('pendiente'); setRange('month'); }}>
+          <Clock size={16} /><span>Pendientes</span><strong>{kpis.pendiente}</strong>
+        </button>
+        <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('vencido'); setRange('all'); }}>
           <AlertTriangle size={16} /><span>Vencidos</span><strong>{kpis.overdue}</strong>
         </button>
-        <button type="button" onClick={() => { setViewMode('list'); setRange('7d'); }}>
+        <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('realizado'); }}>
+          <ClipboardCheck size={16} /><span>Realizados</span><strong>{kpis.realizado}</strong>
+        </button>
+        <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('todos'); setRange('7d'); }}>
           <CalendarClock size={16} /><span>Prox. 7 dias</span><strong>{kpis.next7}</strong>
         </button>
-        <button type="button" onClick={() => { setViewMode('paused'); setRange('all'); }}>
+        <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('pausado'); setRange('all'); }}>
           <PauseCircle size={16} /><span>Pausados</span><strong>{kpis.paused}</strong>
         </button>
-        <div>
-          <Clock size={16} /><span>Total pendiente</span><strong>{kpis.total}</strong>
-        </div>
       </div>
 
       <section className="cal-shell">
@@ -523,13 +773,29 @@ export default function Calendario() {
             })}
           </div>
 
-          {viewMode === 'calendar' ? (
-            <div className="cal-period-nav">
-              <button type="button" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
-              <strong>{periodLabel}</strong>
-              <button type="button" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
+          {viewMode === 'calendar' && (
+            <div className="cal-toolbar-right">
+              <div className="cal-period-nav">
+                <button type="button" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
+                <strong>{periodLabel}</strong>
+                <button type="button" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
+              </div>
+              {ResponsableSelect}
             </div>
-          ) : (
+          )}
+
+          {viewMode === 'week' && (
+            <div className="cal-toolbar-right">
+              <div className="cal-period-nav">
+                <button type="button" onClick={() => changeWeek(-1)}><ChevronLeft size={18} /></button>
+                <strong>{weekPeriodLabel}</strong>
+                <button type="button" onClick={() => changeWeek(1)}><ChevronRight size={18} /></button>
+              </div>
+              {ResponsableSelect}
+            </div>
+          )}
+
+          {viewMode === 'list' && (
             <div className="agenda-filter-row">
               <div className="agenda-month-nav">
                 <button type="button" onClick={() => changeMonth(-1)}><ChevronLeft size={16} /></button>
@@ -541,21 +807,36 @@ export default function Calendario() {
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar proveedor, accion o responsable..." />
               </div>
               <label className="cal-filter-select">
-                <CalendarClock size={15} />
-                <select value={range} onChange={(e) => setRange(e.target.value)}>
-                  {RANGE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-                </select>
-              </label>
-              <label className="cal-filter-select">
                 <Filter size={15} />
                 <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
                   <option value="all">Todos los tipos</option>
                   {availableTypes.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                 </select>
               </label>
+              {ResponsableSelect}
+              {hasActiveFilters && (
+                <button type="button" className="agenda-clear-btn" onClick={clearFilters}>
+                  <Filter size={13} /> Limpiar
+                </button>
+              )}
             </div>
           )}
         </div>
+
+        {viewMode === 'list' && (
+          <div className="agenda-status-chips">
+            {STATUS_OPTIONS.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                className={`agenda-chip agenda-chip-${id}${statusFilter === id ? ' is-active' : ''}`}
+                onClick={() => setStatusFilter(id)}
+              >
+                {label} <strong>{chipCounts[id]}</strong>
+              </button>
+            ))}
+          </div>
+        )}
 
         {loading ? (
           <div className="mx-loading-placeholder">
@@ -567,21 +848,64 @@ export default function Calendario() {
             {viewMode === 'list' && (
               <AgendaTable
                 items={filteredItems}
-                emptyText="No hay pendientes para los filtros seleccionados."
+                emptyText={
+                  statusFilter === 'realizado'
+                    ? `Sin gestiones registradas en ${MONTHS[month]} ${year}.`
+                    : 'No hay items para los filtros seleccionados.'
+                }
                 onViewCalendar={viewItemInCalendar}
-                onReprogram={handleReprogram}
-                onDelete={handleDelete}
+                onEdit={setEditingRealizadoItem}
+                onReprogram={setReprogrammingItem}
+                onDelete={setDeletingItem}
+                onComplete={setCompletingItem}
               />
             )}
 
-            {viewMode === 'paused' && (
-              <AgendaTable
-                items={filteredItems}
-                emptyText="No hay casos pausados con fecha de revision."
-                onViewCalendar={viewItemInCalendar}
-                onReprogram={handleReprogram}
-                onDelete={handleDelete}
-              />
+            {viewMode === 'week' && (
+              <div className="cal-week-grid">
+                {weekDays.map((day) => {
+                  const key = dateKey(day);
+                  const dayItems = eventsByDay.get(key) || [];
+                  const isToday = key === dateKey(new Date());
+                  return (
+                    <div key={key} className={`cal-week-col${isToday ? ' is-today' : ''}`}>
+                      <div className={`cal-week-col-header${isToday ? ' is-today' : ''}`}>
+                        <div className="col-dow">{DOW[(day.getDay() + 6) % 7]}</div>
+                        <div className="col-date">{day.getDate()}</div>
+                      </div>
+                      <div className="cal-week-col-events">
+                        {dayItems.map((item) => (
+                          <div key={item.id} className={`cal-week-event is-${item.status}`}>
+                            <div className="cal-week-event-title">{item.title}</div>
+                            <div className="cal-week-event-provider">{item.provider}</div>
+                            {item.responsible && item.responsible !== '-' && (
+                              <div className="cal-week-event-responsible">{item.responsible}</div>
+                            )}
+                            <div className="cal-week-event-actions">
+                              <button type="button" className="cal-icon-action success" onClick={() => setCompletingItem(item)} title="Marcar como hecho">
+                                <CheckCircle2 size={13} />
+                              </button>
+                              {item.canReprogram && (
+                                <button type="button" className="cal-icon-action" onClick={() => setReprogrammingItem(item)} title="Reprogramar">
+                                  <RotateCcw size={13} />
+                                </button>
+                              )}
+                              {item.canDelete && (
+                                <button type="button" className="cal-icon-action danger" onClick={() => setDeletingItem(item)} title="Eliminar">
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        {dayItems.length === 0 && (
+                          <div className="cal-week-empty">—</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
 
             {viewMode === 'calendar' && (
@@ -633,6 +957,24 @@ export default function Calendario() {
                         <AgendaStatus status={item.status} />
                         <strong>{item.title}</strong>
                         <span>{item.provider}</span>
+                        {item.responsible && item.responsible !== '-' && (
+                          <span className="agenda-mini-responsible">{item.responsible}</span>
+                        )}
+                        <div className="agenda-mini-actions">
+                          <button type="button" className="cal-icon-action success" onClick={() => setCompletingItem(item)} title="Marcar como hecho">
+                            <CheckCircle2 size={14} />
+                          </button>
+                          {item.canReprogram && (
+                            <button type="button" className="cal-icon-action" onClick={() => setReprogrammingItem(item)} title="Reprogramar">
+                              <RotateCcw size={14} />
+                            </button>
+                          )}
+                          {item.canDelete && (
+                            <button type="button" className="cal-icon-action danger" onClick={() => setDeletingItem(item)} title="Eliminar">
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
                       </article>
                     )) : (
                       <div className="cal-empty-state">
@@ -648,6 +990,40 @@ export default function Calendario() {
           </>
         )}
       </section>
+
+      {editingRealizadoItem && (
+        <EditarRealizadoModal
+          item={editingRealizadoItem}
+          onClose={() => setEditingRealizadoItem(null)}
+          onSaved={handleRefresh}
+        />
+      )}
+
+      {completingItem && (
+        <CompletarTareaModal
+          item={completingItem}
+          onClose={() => setCompletingItem(null)}
+          onSaved={handleRefresh}
+        />
+      )}
+
+      {deletingItem && (
+        <ConfirmModal
+          title="Eliminar actividad"
+          message={`¿Eliminar la actividad de ${deletingItem.provider}? Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          onConfirm={confirmDelete}
+          onClose={() => setDeletingItem(null)}
+        />
+      )}
+
+      {reprogrammingItem && (
+        <ReprogramModal
+          item={reprogrammingItem}
+          onConfirm={confirmReprogram}
+          onClose={() => setReprogrammingItem(null)}
+        />
+      )}
     </div>
   );
 }

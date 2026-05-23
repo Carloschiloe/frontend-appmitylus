@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Send, Trash2 } from 'lucide-react';
+import { CalendarCheck, Edit, Send, Trash2 } from 'lucide-react';
 import {
   ESTADOS_TRATO,
   deriveCamionesXDia,
@@ -30,13 +30,14 @@ export default function TratosTable({
               <th className="tratos-col-price">Precio Est.</th>
               <th>Inicio Cosecha</th>
               <th className="tratos-col-status">Estado</th>
+              <th>Responsable</th>
               <th className="tratos-col-actions">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="6">
+                <td colSpan="7">
                   <div className="mx-state-placeholder">
                     <div className="mx-spinner"></div>
                   </div>
@@ -44,7 +45,7 @@ export default function TratosTable({
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan="6">
+                <td colSpan="7">
                   <div className="mx-state-placeholder">No hay negociaciones activas.</div>
                 </td>
               </tr>
@@ -62,7 +63,6 @@ export default function TratosTable({
                     <td>
                       <div className="tratos-provider-name">{item.proveedorNombre}</div>
                       <div className="tratos-chip-row">
-                        <span className="tratos-chip">Precio {formatMoney(displayPrecio)}</span>
                         {displayPlazo && (
                           <span className="tratos-chip">Pago {formatInteger(displayPlazo)} dias</span>
                         )}
@@ -87,6 +87,15 @@ export default function TratosTable({
                       <span className={`mx-badge mx-badge-${uiEstado === 'acordado' || uiEstado === 'cerrado_ok' ? 'success' : uiEstado === 'rechazado' ? 'danger' : 'info'}`}>
                         {ESTADOS_TRATO.find(e => e.val === uiEstado)?.label || item.estado}
                       </span>
+                      {item.meta?.programaCosecha?.estado && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 5, fontSize: '0.78rem', color: item.meta.programaCosecha.estado === 'activo' ? 'var(--color-success)' : item.meta.programaCosecha.estado === 'pausado' ? '#d97706' : 'var(--color-text-subtle)' }}>
+                          <CalendarCheck size={11} />
+                          Prog. {item.meta.programaCosecha.estado}
+                        </div>
+                      )}
+                    </td>
+                    <td className="tratos-date-cell" style={{ fontSize: '0.85rem' }}>
+                      {item.responsableNombre || '-'}
                     </td>
                     <td className="tratos-actions-cell">
                       <div className="mx-table-actions-cell tratos-actions">
