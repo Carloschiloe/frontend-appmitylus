@@ -14,7 +14,6 @@ import {
   buildInitialConditions,
   buildProviderDirectory,
   buildTratoShareMessage,
-  calcularFechaTermino,
   createEmptyForm,
   deriveCamionesXDia,
   derivePrecioDesdeCondiciones,
@@ -100,12 +99,6 @@ export default function Tratos() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const { data: tiposTransporte = [] } = useQuery({
-    queryKey: ['maestros', 'tipo_transporte', 'activos'],
-    queryFn: () => maestrosApi.getMaestrosActivos('tipo_transporte'),
-    staleTime: 10 * 60 * 1000,
-  });
-
   const isCreatingTrato = isModalOpen && !editingId;
   const { data: centrosRaw, isLoading: loadingCentros } = useCentros({ enabled: isCreatingTrato });
   const { data: contactosRaw, isLoading: loadingContactos } = useContactos({ conEmpresa: 1 }, { enabled: isCreatingTrato });
@@ -170,37 +163,41 @@ export default function Tratos() {
       if (editingId) {
         const volumenDesdeCondiciones = deriveVolumenDesdeCondiciones(form.condiciones);
         const tonsGuardadas = parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones;
-        const fechaTermino = calcularFechaTermino(
-          form.fechaInicioCosecha, tonsGuardadas, form.transportes || [], form.diasHabilesConfig
-        );
         const tratoPayload = {
           tonsAcordadas: tonsGuardadas,
           precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
           notasTrato: form.notas || '',
           camionesXDia: deriveCamionesXDia(form.condiciones),
           vigenciaDesde: form.fechaInicioCosecha || null,
-          vigenciaHasta: fechaTermino ? fechaTermino.toISOString() : null,
-          fechaTerminoCosecha: fechaTermino ? fechaTermino.toISOString() : null,
           responsableNombre: form.responsableNombre || '',
-          transportes: form.transportes || [],
-          diasHabilesConfig: form.diasHabilesConfig || { vie: false, sab: false },
+          condiciones: (form.condiciones || []).map((c) => ({
+            ...c,
+            valor: c.valor === '' ? null : c.valor,
+          })),
         };
 
         await apiClient.patch(`/oportunidades/${editingId}/trato`, tratoPayload);
 
-        await Promise.all(
-          (form.condiciones || []).map((condicion) =>
-            apiClient.post(`/oportunidades/${editingId}/condiciones`, {
-              ...condicion,
-              valor: condicion.valor === '' ? null : condicion.valor,
-            })
-          )
-        );
+        // Estado automático según condiciones
+        const todasAcordadas =
+          form.condiciones.length > 0 &&
+          form.condiciones.every(c => c.estado === 'acordado');
+        const estadoCierreExplicito = form.estadoCierre; // perdido / descartado / cerrado_ok
 
-        if (form.estadoCierre) {
-          const apiEstado = form.estadoCierre === 'cerrado_ok' ? 'compra_efectuada' : form.estadoCierre;
+        let nextEstadoCierre = estadoCierreExplicito;
+        if (!nextEstadoCierre) {
+          if (todasAcordadas) {
+            nextEstadoCierre = 'acordado';
+          } else if (editingEstadoApi === 'acordado') {
+            // Si estaba acordado pero hay condiciones pendientes, vuelve a semi_acordado (pendiente)
+            nextEstadoCierre = 'semi_acordado';
+          }
+        }
+
+        if (nextEstadoCierre) {
+          const apiEstado = nextEstadoCierre === 'cerrado_ok' ? 'compra_efectuada' : nextEstadoCierre;
           if (apiEstado !== editingEstadoApi) {
-            if ((form.estadoCierre === 'perdido' || form.estadoCierre === 'descartado') && !form.motivoCierre?.trim()) {
+            if ((nextEstadoCierre === 'perdido' || nextEstadoCierre === 'descartado') && !form.motivoCierre?.trim()) {
               addToast({ title: 'Falta motivo', message: 'Indica el motivo del cierre antes de guardar.', type: 'warning' });
               return;
             }
@@ -281,16 +278,13 @@ export default function Tratos() {
       proveedorNombre: item.proveedorNombre || '',
       responsableNombre: item.responsableNombre || '',
       tonsAcordadas: item.tonsAcordadas || '',
-      precioBase: '',
       fechaInicioCosecha: item.vigenciaDesde
         ? item.vigenciaDesde.slice(0, 10)
         : (item.fechaCierre ? item.fechaCierre.slice(0, 10) : ''),
       estadoCierre: getEstadoCierreFromApi(item.estado),
       motivoCierre: item.motivoPerdida || item.motivoCierre || '',
       notas: item.notasTrato || item.notas || '',
-      condiciones: item.condiciones || [],
-      transportes: item.transportes || [],
-      diasHabilesConfig: item.diasHabilesConfig || { vie: false, sab: false },
+      condiciones: buildInitialConditions(maestrosCondiciones, item.condiciones || []),
     });
     setIsModalOpen(true);
   };
@@ -433,7 +427,6 @@ export default function Tratos() {
         onConditionModeChange={handleConditionModeChange}
         onConditionValueChange={handleConditionValueChange}
         onConditionStatusChange={toggleCondicionStatus}
-        tiposTransporte={tiposTransporte}
       />
       <ConfirmDeleteModal
         isOpen={Boolean(confirmDeleteTrato)}

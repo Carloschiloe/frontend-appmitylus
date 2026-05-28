@@ -1,6 +1,5 @@
-import React from 'react';
-import { Search, X, AlertTriangle, XCircle, Plus, Trash2 } from 'lucide-react';
-import { calcularFechaTermino, calcularTonsDiarias, formatDateOnlySafe, parseNumberOrNull } from './tratos.helpers';
+import React, { useState, useEffect } from 'react';
+import { Search, X, AlertTriangle, XCircle } from 'lucide-react';
 
 export default function TratoFormModal({
   isOpen,
@@ -11,7 +10,6 @@ export default function TratoFormModal({
   loadingProviders,
   filteredProviders,
   responsables,
-  tiposTransporte = [],
   onClose,
   onSubmit,
   onFormChange,
@@ -22,46 +20,18 @@ export default function TratoFormModal({
   onConditionValueChange,
   onConditionStatusChange,
 }) {
+  const [activeTab, setActiveTab] = useState('acuerdo');
+
+  useEffect(() => {
+    if (isOpen) setActiveTab('acuerdo');
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const transportes = form.transportes || [];
-  const diasConfig  = form.diasHabilesConfig || { vie: false, sab: false };
-
-  const addTransporte = () => onFormChange({
-    ...form,
-    transportes: [...transportes, { tipoTransporteId: '', nombre: '', modo: null, cantidadDiaria: '', maxisPorUnidad: '', kgPorMaxiRef: '' }],
-  });
-
-  const removeTransporte = (idx) => onFormChange({
-    ...form,
-    transportes: transportes.filter((_, i) => i !== idx),
-  });
-
-  const updateTransporte = (idx, patch) => {
-    const next = transportes.map((t, i) => i === idx ? { ...t, ...patch } : t);
-    onFormChange({ ...form, transportes: next });
-  };
-
-  const handleTipoChange = (idx, tipoId) => {
-    const tipo = tiposTransporte.find(t => t._id === tipoId);
-    updateTransporte(idx, {
-      tipoTransporteId: tipoId,
-      nombre: tipo?.nombre || '',
-      modo: tipo?.modo || null,
-      maxisPorUnidad: tipo?.maxisPorUnidad ?? transportes[idx].maxisPorUnidad,
-      kgPorMaxiRef:   tipo?.kgPorMaxiRef   ?? transportes[idx].kgPorMaxiRef,
-    });
-  };
-
-  const toggleDia = (dia) => onFormChange({
-    ...form,
-    diasHabilesConfig: { ...diasConfig, [dia]: !diasConfig[dia] },
-  });
-
-  const tonsDia   = calcularTonsDiarias(transportes);
-  const tonsTotal = parseNumberOrNull(form.tonsAcordadas);
-  const diasNecesarios = (tonsDia > 0 && tonsTotal > 0) ? Math.ceil(tonsTotal / tonsDia) : null;
-  const fechaTermino   = calcularFechaTermino(form.fechaInicioCosecha, tonsTotal, transportes, diasConfig);
+  const TABS = [
+    { key: 'acuerdo',  label: 'Acuerdo' },
+    { key: 'gestion',  label: 'Gestión' },
+  ];
 
   return (
     <div className="mx-modal-overlay">
@@ -70,8 +40,11 @@ export default function TratoFormModal({
           <h2>{editingId ? 'Editar Trato' : 'Nuevo Trato'}</h2>
           <button type="button" className="mx-btn-icon" onClick={onClose}><X size={20} /></button>
         </div>
+
         <form onSubmit={onSubmit} className="mx-form">
           <div className="mx-modal-body">
+
+            {/* ── Proveedor (siempre visible) ── */}
             <div className="mx-form-group">
               <label className="mx-label">Proveedor</label>
               {editingId ? (
@@ -128,248 +101,195 @@ export default function TratoFormModal({
               )}
             </div>
 
-            <div className="mx-form-group">
-              <label className="mx-label">Tons Acordadas</label>
-              <input
-                type="number"
-                step="1"
-                className="mx-input"
-                value={form.tonsAcordadas}
-                onChange={e => onFormChange({ ...form, tonsAcordadas: e.target.value })}
-              />
-            </div>
-
-            <div className="am-mt-16">
-              <label className="mx-label am-mb-8 tratos-conditions-title">
-                Condiciones de Negociacion (Maestros)
-              </label>
-              <div className="mx-conditions-checklist tratos-conditions-list">
-                {form.condiciones.length === 0 ? (
-                  <p className="tratos-conditions-empty">No hay condiciones configuradas en maestros.</p>
-                ) : (
-                  form.condiciones.map((c, idx) => (
-                    <div key={idx} className="tratos-condition-row">
-                      <span className="tratos-condition-name">{c.nombre}</span>
-
-                      {c.tipoValor === 'porcentaje' && (
-                        <select
-                          className="mx-input tratos-condition-control tratos-condition-control-auto"
-                          value={c.modoCondicion || 'normal'}
-                          onChange={(e) => onConditionModeChange(idx, e.target.value)}
-                        >
-                          <option value="normal">Normal</option>
-                          <option value="fijo">Fijo</option>
-                        </select>
-                      )}
-
-                      {!(c.tipoValor === 'porcentaje' && (!c.modoCondicion || c.modoCondicion === 'normal')) && (
-                        <input
-                          type={['numero', 'moneda', 'porcentaje', 'dias'].includes(c.tipoValor) ? 'number' : 'text'}
-                          className="mx-input tratos-condition-control tratos-condition-value"
-                          placeholder={c.tipoValor === 'moneda' ? '$ Valor' : c.tipoValor === 'porcentaje' ? '% Valor' : 'Valor'}
-                          value={c.valor || ''}
-                          onChange={(e) => onConditionValueChange(idx, e.target.value)}
-                        />
-                      )}
-
-                      <select
-                        className="mx-input tratos-condition-control tratos-condition-control-auto"
-                        value={c.estado}
-                        onChange={(e) => onConditionStatusChange(idx, e.target.value)}
-                      >
-                        <option value="pendiente">Pendiente</option>
-                        <option value="acordado">Acordado</option>
-                        <option value="rechazado">Rechazado</option>
-                      </select>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="mx-form-group am-mt-16">
-              <label className="mx-label">Fecha probable inicio cosecha</label>
-              <input
-                type="date"
-                className="mx-input"
-                value={form.fechaInicioCosecha}
-                onChange={e => onFormChange({ ...form, fechaInicioCosecha: e.target.value })}
-              />
-            </div>
-
-            {/* ── Transportes de cosecha ── */}
-            <div className="mx-form-group am-mt-16">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <label className="mx-label tratos-conditions-title" style={{ marginBottom: 0 }}>
-                  Transportes de Cosecha
-                </label>
-                <button type="button" className="mx-btn mx-btn-outline" style={{ height: 28, fontSize: '0.78rem', padding: '0 10px' }} onClick={addTransporte}>
-                  <Plus size={13} /> Agregar
+            {/* ── Tabs ── */}
+            <div className="mx-toggle-group" style={{ marginTop: 10, marginBottom: 2 }}>
+              {TABS.map(tab => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  className={`mx-toggle-btn${activeTab === tab.key ? ' active' : ''}`}
+                  onClick={() => setActiveTab(tab.key)}
+                >
+                  {tab.label}
                 </button>
-              </div>
-
-              <div className="tratos-conditions-list">
-                {transportes.length === 0 ? (
-                  <p className="tratos-conditions-empty">Sin transportes. Agrégalos para calcular la fecha de término.</p>
-                ) : (
-                  <>
-                    {transportes.map((t, idx) => {
-                      const tonsPorUnidad = ((Number(t.maxisPorUnidad) || 0) * (Number(t.kgPorMaxiRef) || 0)) / 1000;
-                      const tonsDiaFila   = (Number(t.cantidadDiaria) || 0) * tonsPorUnidad;
-                      return (
-                        <div key={idx} className="tratos-transporte-row">
-                          <select
-                            className="mx-input tratos-condition-control"
-                            value={t.tipoTransporteId || ''}
-                            onChange={(e) => handleTipoChange(idx, e.target.value)}
-                          >
-                            <option value="">Tipo...</option>
-                            {tiposTransporte.map(tt => (
-                              <option key={tt._id} value={tt._id}>{tt.nombre}</option>
-                            ))}
-                          </select>
-                          <input
-                            type="number" min="1" step="1"
-                            className="mx-input tratos-condition-control tratos-transporte-num"
-                            placeholder="Cant/día"
-                            value={t.cantidadDiaria ?? ''}
-                            onChange={(e) => updateTransporte(idx, { cantidadDiaria: e.target.value })}
-                          />
-                          <input
-                            type="number" min="1" step="1"
-                            className="mx-input tratos-condition-control tratos-transporte-num"
-                            placeholder="Maxis/un."
-                            value={t.maxisPorUnidad ?? ''}
-                            onChange={(e) => updateTransporte(idx, { maxisPorUnidad: e.target.value })}
-                          />
-                          <input
-                            type="number" min="1" step="1"
-                            className="mx-input tratos-condition-control tratos-transporte-num"
-                            placeholder="Kg/maxi"
-                            value={t.kgPorMaxiRef ?? ''}
-                            onChange={(e) => updateTransporte(idx, { kgPorMaxiRef: e.target.value })}
-                          />
-                          <span className="tratos-transporte-tons">
-                            {tonsDiaFila > 0 ? `${tonsDiaFila.toFixed(1)} t` : '—'}
-                          </span>
-                          <button type="button" className="mx-btn-icon" onClick={() => removeTransporte(idx)}>
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      );
-                    })}
-                    {tonsDia > 0 && (
-                      <div className="tratos-transporte-total">
-                        <span>Total: <strong>{tonsDia.toFixed(1)} t/día</strong></span>
-                        {diasNecesarios && <span>{diasNecesarios} días hábiles estimados</span>}
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Días hábiles */}
-                <div className="tratos-dias-wrap">
-                  <span className="tratos-dias-label">Días de cosecha:</span>
-                  <div className="tratos-dias-row">
-                    {['Dom','Lun','Mar','Mié','Jue'].map(d => (
-                      <span key={d} className="tratos-dia-pill tratos-dia-fixed">{d}</span>
-                    ))}
-                    {[['vie','Vie'],['sab','Sáb']].map(([key, label]) => (
-                      <button
-                        key={key}
-                        type="button"
-                        className={`tratos-dia-pill tratos-dia-toggle${diasConfig[key] ? ' is-active' : ''}`}
-                        onClick={() => toggleDia(key)}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Fecha término */}
-                {fechaTermino && (
-                  <div className="tratos-termino-banner">
-                    <span>Término estimado:</span>
-                    <strong>{formatDateOnlySafe(fechaTermino)}</strong>
-                    {diasNecesarios && <span style={{ marginLeft: 'auto', fontSize: '0.78rem', opacity: 0.8 }}>({diasNecesarios} días)</span>}
-                  </div>
-                )}
-              </div>
+              ))}
             </div>
 
-            {editingId && (
-              <div className="mx-form-group am-mt-16">
-                <label className="mx-label">Cierre de negociación</label>
-                <p style={{ margin: '4px 0 10px', fontSize: '0.82rem', color: 'var(--color-text-subtle)' }}>
-                  Solo marcar si la negociación terminó. El estado activo se determina por las condiciones.
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                  {[
-                    { val: 'perdido',    label: 'Perdido',    sub: 'El proveedor no quiso', Icon: XCircle,       color: 'var(--color-danger)' },
-                    { val: 'descartado', label: 'Descartado', sub: 'Nosotros no quisimos',  Icon: AlertTriangle, color: '#d97706' },
-                  ].map(({ val, label, sub, Icon, color }) => {
-                    const active = form.estadoCierre === val;
-                    return (
-                      <button
-                        key={val}
-                        type="button"
-                        onClick={() => onFormChange({ ...form, estadoCierre: active ? '' : val, motivoCierre: '' })}
-                        style={{
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                          padding: '10px 6px', borderRadius: 12, cursor: 'pointer',
-                          border: active ? `2px solid ${color}` : '1px solid var(--color-border)',
-                          background: active ? `${color}14` : 'white',
-                          color: active ? color : 'var(--color-text-subtle)',
-                        }}
-                      >
-                        <Icon size={16} />
-                        <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{label}</span>
-                        <span style={{ fontSize: '0.72rem', textAlign: 'center', lineHeight: 1.3 }}>{sub}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {(form.estadoCierre === 'perdido' || form.estadoCierre === 'descartado') && (
-                  <div style={{ marginTop: 10 }}>
-                    <label className="mx-label">
-                      Motivo <span style={{ color: 'var(--color-danger)' }}>*</span>
-                    </label>
+            {/* ── Tab: Acuerdo ── */}
+            {activeTab === 'acuerdo' && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
+                  <div className="mx-form-group" style={{ margin: 0 }}>
+                    <label className="mx-label">Tons Acordadas</label>
                     <input
+                      type="number"
+                      step="1"
                       className="mx-input"
-                      value={form.motivoCierre}
-                      onChange={e => onFormChange({ ...form, motivoCierre: e.target.value })}
-                      placeholder={form.estadoCierre === 'perdido' ? 'Ej: No le convenció el precio' : 'Ej: Calidad del producto no cumple'}
-                      required
+                      value={form.tonsAcordadas}
+                      onChange={e => onFormChange({ ...form, tonsAcordadas: e.target.value })}
                     />
                   </div>
-                )}
-              </div>
+                  <div className="mx-form-group" style={{ margin: 0 }}>
+                    <label className="mx-label">Inicio probable cosecha</label>
+                    <input
+                      type="date"
+                      className="mx-input"
+                      value={form.fechaInicioCosecha}
+                      onChange={e => onFormChange({ ...form, fechaInicioCosecha: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 10 }}>
+                  <label className="mx-label am-mb-8 tratos-conditions-title">
+                    Condiciones de Negociacion
+                  </label>
+                  <div className="mx-conditions-checklist tratos-conditions-list">
+                    {form.condiciones.length === 0 ? (
+                      <p className="tratos-conditions-empty">No hay condiciones configuradas en maestros.</p>
+                    ) : (
+                      form.condiciones.map((c, idx) => (
+                        <div key={idx} className="tratos-condition-row">
+                          <span className="tratos-condition-name">{c.nombre}</span>
+
+                          {c.tipoValor === 'porcentaje' && (
+                            <select
+                              className="mx-input tratos-condition-control tratos-condition-control-auto"
+                              value={c.modoCondicion || 'normal'}
+                              onChange={(e) => onConditionModeChange(idx, e.target.value)}
+                            >
+                              <option value="normal">Normal</option>
+                              <option value="fijo">Fijo</option>
+                            </select>
+                          )}
+
+                          {!(c.tipoValor === 'porcentaje' && (!c.modoCondicion || c.modoCondicion === 'normal')) && (
+                            <input
+                              type={['numero', 'moneda', 'porcentaje', 'dias'].includes(c.tipoValor) ? 'number' : 'text'}
+                              className="mx-input tratos-condition-control tratos-condition-value"
+                              placeholder={c.tipoValor === 'moneda' ? '$ Valor' : c.tipoValor === 'porcentaje' ? '% Valor' : 'Valor'}
+                              value={c.valor || ''}
+                              onChange={(e) => onConditionValueChange(idx, e.target.value)}
+                            />
+                          )}
+
+                          <select
+                            className="mx-input tratos-condition-control tratos-condition-control-auto"
+                            value={c.estado}
+                            onChange={(e) => onConditionStatusChange(idx, e.target.value)}
+                          >
+                            <option value="pendiente">Pendiente</option>
+                            <option value="acordado">Acordado</option>
+                            <option value="rechazado">Rechazado</option>
+                          </select>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {form.condiciones.length > 0 && (() => {
+                  const acordadas      = form.condiciones.filter(c => c.estado === 'acordado').length;
+                  const pendientes     = form.condiciones.filter(c => c.estado === 'pendiente').length;
+                  const rechazadas     = form.condiciones.filter(c => c.estado === 'rechazado').length;
+                  const total          = form.condiciones.length;
+                  const todasAcordadas = acordadas === total;
+                  return (
+                    <div style={{ marginTop: 6, padding: '6px 10px', borderRadius: 10, background: todasAcordadas ? '#f0fdf4' : '#fffbeb', border: `1px solid ${todasAcordadas ? '#bbf7d0' : '#fde68a'}`, display: 'flex', gap: 8, alignItems: 'center', fontSize: '0.8rem', flexWrap: 'wrap' }}>
+                      {todasAcordadas ? (
+                        <span style={{ color: '#166534', fontWeight: 600 }}>✓ Todas las condiciones acordadas — al guardar el trato pasará a Acordado.</span>
+                      ) : (
+                        <>
+                          {pendientes > 0 && <span style={{ color: '#92400e', fontWeight: 600 }}>⚠ {pendientes} pendiente{pendientes > 1 ? 's' : ''}</span>}
+                          {rechazadas > 0 && <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>✕ {rechazadas} rechazada{rechazadas > 1 ? 's' : ''}</span>}
+                          {acordadas > 0 && <span style={{ color: 'var(--color-success)' }}>✓ {acordadas} acordada{acordadas > 1 ? 's' : ''}</span>}
+                          <span style={{ marginLeft: 'auto', color: '#92400e' }}>Se guardará como Pendiente hasta acordar todas.</span>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+              </>
             )}
 
-            <div className="mx-form-group">
-              <label className="mx-label">Responsable</label>
-              <select
-                className="mx-select"
-                value={form.responsableNombre}
-                onChange={e => onFormChange({ ...form, responsableNombre: e.target.value })}
-              >
-                <option value="">Sin asignar</option>
-                {(responsables || []).map(r => (
-                  <option key={r._id || r.nombre} value={r.nombre}>{r.nombre}</option>
-                ))}
-              </select>
-            </div>
+            {/* ── Tab: Gestión ── */}
+            {activeTab === 'gestion' && (
+              <>
+                <div className="mx-form-group am-mt-16">
+                  <label className="mx-label">Responsable</label>
+                  <select
+                    className="mx-select"
+                    value={form.responsableNombre}
+                    onChange={e => onFormChange({ ...form, responsableNombre: e.target.value })}
+                  >
+                    <option value="">Sin asignar</option>
+                    {(responsables || []).map(r => (
+                      <option key={r._id || r.nombre} value={r.nombre}>{r.nombre}</option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="mx-form-group">
-              <label className="mx-label">Notas</label>
-              <textarea
-                className="mx-textarea"
-                value={form.notas}
-                onChange={e => onFormChange({ ...form, notas: e.target.value })}
-                rows="3"
-              />
-            </div>
+                <div className="mx-form-group">
+                  <label className="mx-label">Notas</label>
+                  <textarea
+                    className="mx-textarea"
+                    value={form.notas}
+                    onChange={e => onFormChange({ ...form, notas: e.target.value })}
+                    rows="3"
+                  />
+                </div>
+
+                {editingId && (
+                  <div className="mx-form-group am-mt-16">
+                    <label className="mx-label">Estado de negociación</label>
+                    <p style={{ margin: '4px 0 10px', fontSize: '0.82rem', color: 'var(--color-text-subtle)' }}>
+                      Solo marcar si la negociación terminó. El estado activo se determina por las condiciones.
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                      {[
+                        { val: 'perdido',    label: 'Perdido',    sub: 'El proveedor no quiso', Icon: XCircle,       color: 'var(--color-danger)' },
+                        { val: 'descartado', label: 'Descartado', sub: 'Nosotros no quisimos',  Icon: AlertTriangle, color: '#d97706' },
+                      ].map(({ val, label, sub, Icon, color }) => {
+                        const active = form.estadoCierre === val;
+                        return (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => onFormChange({ ...form, estadoCierre: active ? '' : val, motivoCierre: '' })}
+                            style={{
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                              padding: '10px 6px', borderRadius: 12, cursor: 'pointer',
+                              border: active ? `2px solid ${color}` : '1px solid var(--color-border)',
+                              background: active ? `${color}14` : 'white',
+                              color: active ? color : 'var(--color-text-subtle)',
+                            }}
+                          >
+                            <Icon size={16} />
+                            <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{label}</span>
+                            <span style={{ fontSize: '0.72rem', textAlign: 'center', lineHeight: 1.3 }}>{sub}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {(form.estadoCierre === 'perdido' || form.estadoCierre === 'descartado') && (
+                      <div style={{ marginTop: 10 }}>
+                        <label className="mx-label">
+                          Motivo <span style={{ color: 'var(--color-danger)' }}>*</span>
+                        </label>
+                        <input
+                          className="mx-input"
+                          value={form.motivoCierre}
+                          onChange={e => onFormChange({ ...form, motivoCierre: e.target.value })}
+                          placeholder={form.estadoCierre === 'perdido' ? 'Ej: No le convenció el precio' : 'Ej: Calidad del producto no cumple'}
+                          required
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
           </div>
           <div className="mx-modal-footer">
             <button type="button" className="mx-btn mx-btn-outline" onClick={onClose}>Cancelar</button>

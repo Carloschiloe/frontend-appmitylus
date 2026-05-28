@@ -23,14 +23,14 @@ import './historial.css';
 const EVENT_META = {
   contacto: { label: 'Contacto', color: '#6366f1', icon: User },
   visita: { label: 'Visita', color: '#f59e0b', icon: MapPin },
-  interaccion: { label: 'Interacción', color: '#06b6d4', icon: MessageSquare },
+  interaccion: { label: 'Gestión', color: '#06b6d4', icon: MessageSquare },
   seguimiento: { label: 'Seguimiento', color: '#0A5CFF', icon: Clock3 },
 };
 
 const TEAM_ACTIVITY_META = {
   llamada: { label: 'Llamada', color: '#2563eb', icon: Phone },
   whatsapp: { label: 'WhatsApp', color: '#16a34a', icon: MessageSquare },
-  interaccion: { label: 'Interacción', color: '#0891b2', icon: MessageSquare },
+  interaccion: { label: 'Gestión', color: '#0891b2', icon: MessageSquare },
   visita: { label: 'Visita', color: '#f59e0b', icon: MapPin },
   muestreo: { label: 'Muestreo', color: '#7c3aed', icon: FlaskConical },
   seguimiento: { label: 'Cambio de seguimiento', color: '#0A5CFF', icon: Clock3 },
@@ -191,7 +191,7 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
       id: `interaccion-${item._id || `${key}-${provider.events.length}`}`,
       type: 'interaccion',
       date: toDate(item.fecha || item.createdAt || item.updatedAt),
-      title: firstNonEmpty(item.resumen, item.tipo, 'Interacción registrada'),
+      title: firstNonEmpty(item.resumen, item.tipo, 'Gestión registrada'),
       summary: firstNonEmpty(item.resultado, item.notas, 'Sin resumen adicional.'),
       note: firstNonEmpty(item.proximoPaso),
       actor: firstNonEmpty(item.responsablePG, item.responsable),
@@ -278,7 +278,7 @@ function buildTeamActivity({ interacciones = [], visitas = [], muestreos = [], o
       provider: firstNonEmpty(item.proveedorNombre, item.proveedor, item.contactoNombre, 'Proveedor sin nombre'),
       center: firstNonEmpty(item.centroCodigo, item.centroNombre, item.comuna),
       type: normalizeTeamActivityType(item.tipo),
-      summary: firstNonEmpty(item.resumen, item.tipo, 'Interacción registrada'),
+      summary: firstNonEmpty(item.resumen, item.tipo, 'Gestión registrada'),
       result: firstNonEmpty(item.resultado, item.estado, 'Sin resultado'),
       nextAction: firstNonEmpty(item.proximoPaso),
       nextDate: item.fechaProximo || item.fechaProx || item.proximoPasoFecha || null,
@@ -785,7 +785,7 @@ export default function Historial() {
             <div className="mx-toggle-group">
               {[
                 { value: 'todos', label: 'Todos' },
-                { value: 'interaccion', label: 'Interacciones' },
+                { value: 'interaccion', label: 'Gestiones' },
                 { value: 'visita', label: 'Visitas' },
                 { value: 'seguimiento', label: 'Seguimiento' },
                 { value: 'contacto', label: 'Contactos' },
@@ -950,7 +950,7 @@ export default function Historial() {
             <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.96rem' }}>Vista de supervisión del equipo</div>
             <p style={{ margin: '6px 0 0', color: '#64748b', lineHeight: 1.5, fontSize: '0.88rem' }}>
               Aquí la jefatura revisa llamadas, visitas, muestreos, responsables y próximas acciones del equipo de
-              abastecimiento. <strong style={{ color: '#0f172a' }}>Interacciones</strong> sigue existiendo como herramienta de
+              abastecimiento. <strong style={{ color: '#0f172a' }}>Gestiones</strong> sigue existiendo como herramienta de
               registro operativo, pero la lectura consolidada del trabajo del equipo vive en esta vista.
             </p>
           </div>

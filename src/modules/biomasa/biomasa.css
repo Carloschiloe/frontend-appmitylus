@@ -233,7 +233,7 @@
 }
 
 .harvest-calendar-shell.week-mode {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 320px;
 }
 
 .harvest-calendar-shell.board-mode {
@@ -255,7 +255,7 @@
 }
 
 .harvest-calendar-shell.week-mode.board-mode {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 320px;
 }
 
 .harvest-calendar-main {
@@ -284,11 +284,15 @@ body.biomasa-calendar-board-open .mx-app-shell {
   display: block;
 }
 
+body.biomasa-calendar-board-open .mx-modal-overlay {
+  z-index: 6000;
+}
+
 .harvest-calendar-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   margin-bottom: 14px;
 }
 
@@ -298,6 +302,11 @@ body.biomasa-calendar-board-open .mx-app-shell {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.harvest-calendar-period {
+  min-width: 260px;
+  justify-content: center;
 }
 
 .harvest-metric-control,
@@ -337,6 +346,29 @@ body.biomasa-calendar-board-open .mx-app-shell {
   text-align: center;
   text-transform: uppercase;
 }
+.harvest-week-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.harvest-week-title-icon {
+  color: #94A3B8;
+  flex-shrink: 0;
+}
+.harvest-week-title-wrap .harvest-calendar-title {
+  text-align: left;
+  min-width: unset;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+}
+.harvest-week-subtitle {
+  font-size: 11px;
+  color: #94A3B8;
+  font-weight: 400;
+  margin-top: 1px;
+  text-transform: none;
+  letter-spacing: 0;
+}
 
 .cal-month-grid {
   display: grid;
@@ -358,8 +390,8 @@ body.biomasa-calendar-board-open .mx-app-shell {
 }
 
 .cal-header-day.calendar-red-day {
-  color: #dc2626;
-  background: #fff1f2;
+  color: #ef4444;
+  background: #fafafa;
 }
 
 .cal-pad-day {
@@ -369,23 +401,23 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .cal-day-cell {
   background: var(--color-surface);
-  min-height: 112px;
-  padding: 10px;
+  min-height: 90px;
+  padding: 10px 10px 8px;
   cursor: pointer;
   position: relative;
-  transition: all 0.2s;
+  transition: background 0.15s;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
 }
 
 .cal-day-cell.calendar-red-day {
-  background: #fffafa;
+  background: #fafafa;
 }
 
 .cal-day-cell.calendar-red-day .cal-day-num {
-  color: #ef4444;
+  color: #f87171;
 }
 
 .cal-day-cell:hover {
@@ -648,28 +680,31 @@ body.biomasa-calendar-board-open .mx-app-shell {
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
+/* Entero = azul */
 .cal-day-program.product-entero,
 .harvest-week-cell.product-entero,
 .harvest-product-pill.product-entero {
-  border-color: #99f6e4;
-  border-left-color: var(--color-primary);
-  background: #ecfdf5;
+  border-color: #bfdbfe;
+  border-left-color: #2563eb;
+  background: #eff6ff;
 }
 
+/* Carne = rojo suave */
 .cal-day-program.product-carne,
 .harvest-week-cell.product-carne,
 .harvest-product-pill.product-carne {
   border-color: #fecdd3;
-  border-left-color: #e11d48;
+  border-left-color: #f43f5e;
   background: #fff1f2;
 }
 
+/* Media Concha = verde */
 .cal-day-program.product-mc,
 .harvest-week-cell.product-mc,
 .harvest-product-pill.product-mc {
-  border-color: #fde68a;
-  border-left-color: #d97706;
-  background: #fffbeb;
+  border-color: #bbf7d0;
+  border-left-color: #16a34a;
+  background: #f0fdf4;
 }
 
 .cal-day-program.product-sin_definir,
@@ -719,6 +754,671 @@ body.biomasa-calendar-board-open .mx-app-shell {
   font-size: 11px;
   font-weight: var(--weight-bold);
   padding-left: 4px;
+}
+
+/* ── Vista mes: burbuja + puntos ────────────────────────────────── */
+.cal-day-cell.is-today { background: #f0f7ff; }
+.cal-day-cell.is-today .cal-day-num { color: #2563eb; font-weight: 700; }
+
+.cal-month-cell-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+
+.cal-month-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cal-month-camrow {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.cal-month-main {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.cal-month-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cal-month-tons {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+.cal-month-products-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 5px;
+}
+
+/* Chips de producto — abreviados E / C / MC / SD */
+.cal-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  letter-spacing: 0.01em;
+}
+.cal-chip.product-entero      { background: #3b82f6; }
+.cal-chip.product-carne       { background: #f87171; }
+.cal-chip.product-mc          { background: #34d399; color: #065f46; }
+.cal-chip.product-sin_definir { background: #e2e8f0; color: #64748b; }
+
+.cal-month-susp {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* ── Vista semana v2 ─────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   VISTA SEMANAL V3 — REDESIGN
+   ════════════════════════════════════════════════════════════════ */
+
+.harvest-week-v2 {
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid #E2E8F0;
+  background: #fff;
+}
+
+.harvest-week-v2-head,
+.harvest-week-v2-row {
+  display: grid;
+  grid-template-columns: 190px repeat(7, 1fr) 88px;
+  align-items: stretch;
+  min-width: 700px;
+}
+
+/* ── Header ── */
+.harvest-week-v2-head {
+  border-bottom: 2px solid #E2E8F0;
+  background: #F8FAFC;
+  border-radius: 14px 14px 0 0;
+}
+.harvest-week-v2-label {
+  padding: 12px 16px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94A3B8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+}
+.harvest-week-v2-daycol {
+  padding: 14px 6px 12px;
+  text-align: center;
+  border-left: 1px solid #E2E8F0;
+  transition: background 0.12s;
+}
+.harvest-week-v2-daycol.is-today { background: #EFF6FF; }
+.harvest-week-v2-dayname {
+  font-size: 10px;
+  color: #94A3B8;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.harvest-week-v2-daynum {
+  font-size: 22px;
+  font-weight: 300;
+  color: #0F172A;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+.harvest-week-v2-daycol.is-today .harvest-week-v2-daynum { color: #2563EB; font-weight: 600; }
+.harvest-week-v2-daycol.calendar-red-day .harvest-week-v2-dayname { color: #FCA5A5; }
+.harvest-week-v2-daycol.calendar-red-day .harvest-week-v2-daynum  { color: #F87171; }
+
+/* ── Rows ── */
+.harvest-week-v2-row {
+  border-bottom: 1px solid #E2E8F0;
+  transition: background 0.12s;
+}
+.harvest-week-v2-row:hover { background: #FAFBFF; }
+.harvest-week-v2-row:last-of-type { border-bottom: none; }
+
+/* ── Provider column ── */
+.harvest-week-v2-prov {
+  position: relative;
+  padding: 14px 16px;
+  border-left: 4px solid #CBD5E1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+  overflow: visible;
+}
+.harvest-week-v2-prov.product-entero     { border-left-color: #2563EB; }
+.harvest-week-v2-prov.product-carne      { border-left-color: #F43F5E; }
+.harvest-week-v2-prov.product-mc         { border-left-color: #16A34A; }
+.harvest-week-v2-prov.product-sin_definir{ border-left-color: #CBD5E1; }
+
+.harvest-week-v2-prov-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0F172A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+}
+.wk-prov-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 10px;
+  background: #0F172A;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 200;
+  box-shadow: 0 4px 12px rgba(15,23,42,0.25);
+}
+.wk-prov-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 14px;
+  border: 4px solid transparent;
+  border-top-color: #0F172A;
+}
+.harvest-week-v2-prov:hover .wk-prov-tooltip { opacity: 1; }
+.harvest-week-v2-prov-centro {
+  font-size: 11px;
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wk-product-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  align-self: flex-start;
+  background: #F1F5F9;
+  color: #475569;
+}
+.harvest-week-v2-prov.product-entero     .wk-product-chip { background: #DBEAFE; color: #1D4ED8; }
+.harvest-week-v2-prov.product-carne      .wk-product-chip { background: #FFE4E6; color: #BE123C; }
+.harvest-week-v2-prov.product-mc         .wk-product-chip { background: #DCFCE7; color: #15803D; }
+.harvest-week-v2-prov.product-sin_definir .wk-product-chip { background: #F1F5F9; color: #64748B; }
+
+/* ── Day cells ── */
+.harvest-week-v2-cell {
+  padding: 14px 8px 10px;
+  text-align: center;
+  border-left: 1px solid #E2E8F0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  position: relative;
+  min-height: 78px;
+}
+.harvest-week-v2-cell.is-today { background: #F8FBFF; }
+.harvest-week-v2-cell.is-susp  { background: #FAFAFA; }
+.harvest-week-v2-cell.is-prog-pausado { background: #FFFEFA; }
+
+/* ── Count display ── */
+.harvest-week-v2-count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  line-height: 1;
+}
+.harvest-week-v2-count strong {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0F172A;
+  line-height: 1;
+}
+.harvest-week-v2-count span {
+  font-size: 9px;
+  color: #94A3B8;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.wk-tons-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748B;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+/* ── Adjustment chip ── */
+.harvest-week-v2-adj {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #B45309;
+  background: #FEF9C3;
+  border: 1px solid #FDE68A;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+/* ── Suspended day ── */
+.harvest-week-v2-susp {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94A3B8;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+/* ── Empty cell ── */
+.harvest-week-v2-empty {
+  color: #CBD5E1;
+  font-size: 20px;
+  font-weight: 200;
+  line-height: 1;
+  display: block;
+  text-align: center;
+}
+
+/* ── Total / SEM column ── */
+.harvest-week-v2-semcol {
+  background: #F1F5F9;
+  border-left: 2px solid #CBD5E1 !important;
+}
+.harvest-week-v2-semcol .harvest-week-v2-dayname { color: #475569; letter-spacing: 0.1em; }
+.harvest-week-v2-semcol .harvest-week-v2-daynum  { color: #1E293B; font-weight: 700; font-size: 20px; }
+.harvest-week-v2-total {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1E293B;
+  background: #F1F5F9;
+  border-left: 2px solid #CBD5E1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+/* ── Hover actions ── */
+.harvest-week-v2-actions {
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 1px solid #DCE3ED;
+  border-radius: 10px;
+  padding: 3px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.10);
+  z-index: 10;
+  white-space: nowrap;
+}
+.harvest-week-v2-cell:hover .harvest-week-v2-actions { opacity: 1; }
+.harvest-week-v2-cell:hover .harvest-week-v2-count { margin-bottom: 26px; }
+
+.wk-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  border: 1px solid #DCE3ED;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0F172A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s, border-color 0.1s, box-shadow 0.1s;
+  padding: 0;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.07);
+}
+.wk-btn:hover { background: #EFF6FF; border-color: #93C5FD; color: #2563EB; }
+.wk-btn-add:hover { background: #ECFDF5; border-color: #6EE7B7; color: #059669; }
+.wk-btn-susp { color: #F43F5E; }
+.wk-btn-susp:hover { background: #FFF1F2; border-color: #FCA5A5; color: #E11D48; }
+
+/* Custom tooltips */
+.wk-btn-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0F172A;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 20;
+}
+.wk-btn-tip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #0F172A;
+}
+.wk-btn:hover .wk-btn-tip { opacity: 1; }
+
+.wk-btn-react {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin-top: 4px;
+  width: auto;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1px solid #BBF7D0;
+  background: #F0FDF4;
+  color: #15803D;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+  box-shadow: 0 1px 2px rgba(21,128,61,0.08);
+}
+.wk-btn-react:hover { background: #DCFCE7; border-color: #86EFAC; box-shadow: 0 1px 4px rgba(21,128,61,0.15); }
+
+/* ── Suspend popover flotante ──────────────────────────────────── */
+.suspend-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+}
+.suspend-popover {
+  position: fixed;
+  z-index: 1000;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+  max-width: 240px;
+}
+.suspend-popover-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+.suspend-popover .mx-select,
+.suspend-popover .mx-input {
+  font-size: 13px;
+  padding: 6px 8px;
+  width: 100%;
+}
+.suspend-popover-footer {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+.suspend-popover-footer .mx-btn {
+  flex: 1;
+  justify-content: center;
+}
+.mx-btn-danger {
+  background: #f43f5e;
+  color: #fff;
+  border-color: #f43f5e;
+}
+.mx-btn-danger:hover { background: #e11d48; border-color: #e11d48; }
+
+/* ── Footer — Total del día ── */
+.harvest-week-v2-footer {
+  background: #F1F5F9;
+  border-top: 2px solid #CBD5E1;
+}
+.harvest-week-v2-footer .harvest-week-v2-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #334155;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 12px 16px;
+}
+.harvest-week-v2-footer .harvest-week-v2-cell {
+  background: #F1F5F9;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0F172A;
+  min-height: 48px;
+}
+
+/* ── Fila de notas del día ── */
+.harvest-week-v2-notas {
+  border-top: 1px dashed #E2E8F0;
+  background: #FAFBFC;
+  border-radius: 0 0 14px 14px;
+}
+.harvest-week-v2-notas .harvest-week-v2-cell {
+  padding: 6px 6px;
+  min-height: 32px;
+  background: transparent;
+}
+.wk-nota-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #94A3B8;
+  padding: 8px 16px !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.wk-nota-cell { display: flex; align-items: center; }
+.wk-nota-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  overflow: hidden;
+}
+.wk-nota-text {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.wk-nota-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  padding: 1px 2px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.wk-nota-cell:hover .wk-nota-btn { opacity: 1; }
+.wk-nota-btn:hover { background: #f1f5f9; color: var(--color-text); }
+.wk-nota-add {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-border);
+  padding: 0;
+  width: 100%;
+  text-align: center;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.wk-nota-cell:hover .wk-nota-add { opacity: 1; }
+.wk-nota-add:hover { color: var(--color-text-subtle); }
+
+/* ── Nota popover (amplía el suspend-popover) ────────────────────── */
+.nota-popover {
+  min-width: 270px;
+  max-width: 320px;
+}
+.nota-popover .mx-textarea {
+  font-size: 13px;
+  resize: vertical;
+  min-height: 70px;
+}
+.nota-popover .suspend-popover-footer {
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+/* ── Celda día: chips por proveedor ─────────────────────────────── */
+.cal-day-program.is-finalizado {
+  opacity: 0.5;
+  filter: grayscale(0.4);
+}
+.cal-day-program.is-canceled .cal-day-provider {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+/* ── Panel detalle día ───────────────────────────────────────────── */
+.cal-detail-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cal-detail-date {
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+  letter-spacing: 0.03em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+.cal-detail-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.cal-detail-card {
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--color-surface);
+}
+.cal-detail-card.product-entero { border-left-color: #2563eb; background: #eff6ff; }
+.cal-detail-card.product-carne  { border-left-color: #f43f5e; background: #fff1f2; }
+.cal-detail-card.product-mc     { border-left-color: #16a34a; background: #f0fdf4; }
+.cal-detail-card.is-finalizado  { opacity: 0.6; }
+
+.cal-detail-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.cal-detail-card-name {
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  line-height: 1.3;
+}
+.cal-detail-card-center {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+.cal-detail-card-count {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.cal-detail-card-count strong {
+  font-size: 22px;
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+  line-height: 1;
+}
+.cal-detail-card-count span {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.cal-detail-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.cal-detail-card-note {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+  font-style: italic;
 }
 
 .harvest-calendar-shell.board-mode .cal-month-grid {
@@ -791,7 +1491,8 @@ body.biomasa-calendar-board-open .mx-app-shell {
   font-size: 11px;
 }
 
-.harvest-calendar-shell.board-mode .harvest-day-detail {
+.harvest-calendar-shell.board-mode .harvest-day-detail,
+.harvest-calendar-shell.board-mode .hds-panel {
   margin-left: 18px;
   max-height: calc(100vh - 36px);
   overflow: auto;
@@ -878,56 +1579,67 @@ body.biomasa-calendar-board-open .mx-app-shell {
 }
 
 .harvest-month-section {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: 14px;
+  margin-top: 4px;
 }
 
 .harvest-month-section h5 {
-  margin: 4px 0 5px;
-  color: #475569;
+  margin: 0 0 8px;
+  color: var(--color-text-muted);
   font-size: 10px;
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.02em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .harvest-month-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #f1f5f9;
-  background: transparent;
-  padding: 5px 0;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.harvest-month-row:last-child {
-  border-bottom: 0;
+.harvest-month-row:last-child { border-bottom: 0; }
+
+.harvest-month-row > div {
+  min-width: 0;
+  flex: 1;
 }
 
 .harvest-month-row strong {
   display: block;
   overflow: hidden;
   color: var(--color-text);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.harvest-month-row span,
+.harvest-month-row span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
 .harvest-month-empty,
 .harvest-month-hint {
   color: var(--color-text-muted);
-  font-size: 10px;
-  font-weight: var(--weight-semibold);
+  font-size: 11px;
 }
 
 .harvest-month-row b {
   color: var(--color-primary-dark);
-  font-size: 11px;
-  font-weight: 900;
+  font-size: 13px;
+  font-weight: 700;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .harvest-month-products {
@@ -1287,13 +1999,10 @@ body.biomasa-calendar-board-open .mx-app-shell {
 .harvest-program-grid-wrap {
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .harvest-program-grid {
-  --program-grid-columns: 240px 150px 118px 82px minmax(270px, 1fr) 108px 150px 120px;
-  min-width: 1240px;
+  --program-grid-columns: minmax(160px, 2fr) 130px 130px 68px minmax(200px, 2fr) 100px 130px 165px;
 }
 
 .harvest-program-grid-head,
@@ -1335,6 +2044,15 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .harvest-program-grid-row:hover {
   background: #f7fbff;
+}
+
+.harvest-program-grid-row.is-finalizado {
+  opacity: 0.55;
+  background: #f8f8f8;
+}
+.harvest-program-grid-row.is-finalizado:hover {
+  opacity: 0.75;
+  background: #f3f3f3;
 }
 
 .harvest-program-grid-row > div {
@@ -1547,6 +2265,21 @@ body.biomasa-calendar-board-open .mx-app-shell {
   width: fit-content;
 }
 
+.harvest-program-status-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.harvest-program-status-date {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.2;
+}
+
 .harvest-program-grid .biomasa-action-bar {
   justify-content: flex-end;
   gap: 6px;
@@ -1679,7 +2412,8 @@ body.biomasa-calendar-board-open .mx-app-shell {
     grid-template-columns: 1fr;
   }
 
-  .harvest-calendar-shell.board-mode .harvest-day-detail {
+  .harvest-calendar-shell.board-mode .harvest-day-detail,
+  .harvest-calendar-shell.board-mode .hds-panel {
     margin-left: 0;
     margin-top: 18px;
     max-height: none;
@@ -2091,3 +2825,701 @@ body.biomasa-calendar-board-open .mx-app-shell {
 
 .biomasa-action-bar .mx-btn-icon.delete { background: var(--color-error-bg); color: var(--color-error); }
 .biomasa-action-bar .mx-btn-icon.delete:hover { background: var(--color-error-bg); color: var(--color-error); }
+
+/* Modal de pausa */
+.pause-modal { max-width: 420px; }
+.pause-modal-desc {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+.pause-modal-desc strong { color: var(--color-text); }
+.mx-btn-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-warning, #e6a817);
+  color: #fff;
+  border: 1px solid var(--color-warning, #e6a817);
+  padding: 8px 16px;
+  border-radius: var(--radius-btn, 8px);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mx-btn-warning:hover { filter: brightness(0.92); }
+
+/* Etiquetas de estado en celdas de semana */
+.wk-estado-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 5px;
+}
+.wk-estado-label.pausado {
+  background: #FEF9C3;
+  color: #B45309;
+  border: 1px solid #FDE68A;
+}
+.wk-estado-label.finalizado {
+  background: #F1F5F9;
+  color: #64748B;
+  border: 1px solid #E2E8F0;
+}
+
+/* Fila pausada */
+.harvest-week-v2-prov.is-pausado {
+  opacity: 0.80;
+  border-left-color: #F59E0B !important;
+}
+.wk-prov-pausa-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+}
+.wk-prov-pausa-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #FFFBEB;
+  color: #B45309;
+  border: 1px solid #FDE68A;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 5px;
+  width: fit-content;
+}
+.wk-prov-pausa-desde {
+  font-size: 10px;
+  color: #94A3B8;
+}
+
+/* Chip de producto en lista de programas */
+.prog-product-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px 4px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+.prog-product-chip em {
+  font-style: normal;
+  font-weight: 500;
+}
+.prog-product-chip .cal-chip {
+  width: 18px;
+  height: 18px;
+  font-size: 9px;
+  border-radius: 4px;
+}
+.prog-product-chip.product-entero {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.prog-product-chip.product-carne {
+  background: #fff5f5;
+  color: #c53030;
+}
+.prog-product-chip.product-mc {
+  background: #f0fdf4;
+  color: #065f46;
+}
+.prog-product-chip.product-sin_definir {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LEYENDA INFERIOR DEL CALENDARIO MENSUAL
+   ════════════════════════════════════════════════════════════════ */
+.cal-month-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 12px 4px 4px;
+  border-top: 1px solid var(--color-border);
+  margin-top: 2px;
+}
+.cal-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+.cal-legend-dash {
+  color: var(--color-text-subtle, #94a3b8);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HDS — SIDEBAR PREMIUM RESUMEN DEL MES
+   ════════════════════════════════════════════════════════════════ */
+.hds-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hds-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  padding: 20px;
+  flex: 1;
+}
+
+/* Header */
+.hds-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.hds-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #eff6ff;
+  border-radius: 8px;
+  color: #2563eb;
+  flex-shrink: 0;
+}
+.hds-header-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #0f172a;
+  text-transform: uppercase;
+}
+
+/* KPI Hero */
+.hds-kpi-hero {
+  margin-bottom: 16px;
+}
+.hds-kpi-hero-main {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.hds-kpi-big {
+  font-size: 42px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.hds-kpi-unit {
+  font-size: 20px;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1;
+}
+.hds-kpi-sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 400;
+}
+
+/* Sub KPI row */
+.hds-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.hds-kpi-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.hds-kpi-card strong {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+}
+.hds-kpi-card span {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+/* Section */
+.hds-section {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 16px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hds-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.hds-section-head > span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.hds-link-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+  padding: 0;
+}
+.hds-link-btn:hover { text-decoration: underline; }
+.hds-empty {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Provider rows */
+.hds-provider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.hds-provider-clickable {
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  margin: 0 -8px;
+  transition: background 0.15s;
+}
+.hds-provider-clickable:hover {
+  background: #f1f5f9;
+}
+.hds-provider-clickable.is-filter-active {
+  background: #eff6ff;
+  outline: 1.5px solid #bfdbfe;
+}
+.hds-provider-clickable.is-filter-active .hds-provider-name {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+.hds-filter-clear {
+  color: #ef4444 !important;
+  font-size: 11px !important;
+}
+.hds-provider-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.hds-provider-name {
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+.hds-provider-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.hds-provider-bar {
+  width: 100%;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.hds-provider-bar-fill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+
+/* Donut chart */
+.hds-donut-area {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.hds-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+.hds-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.hds-legend-row--filter {
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  margin: 1px -6px;
+  transition: background 0.12s, opacity 0.15s;
+  outline: none;
+}
+.hds-legend-row--filter:hover {
+  background: #f1f5f9;
+}
+.hds-legend-row--filter:focus-visible {
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+.hds-legend-row--filter.is-active {
+  background: #eff6ff;
+  box-shadow: inset 0 0 0 1px #bfdbfe;
+}
+.hds-legend-row--filter.is-active .hds-legend-label,
+.hds-legend-row--filter.is-active .hds-legend-pct {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+.hds-legend-row--filter.is-dimmed {
+  opacity: 0.35;
+}
+.hds-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.hds-legend-dot.product-entero      { background: #3b82f6; }
+.hds-legend-dot.product-carne       { background: #f87171; }
+.hds-legend-dot.product-mc          { background: #34d399; }
+.hds-legend-dot.product-sin_definir { background: #cbd5e1; }
+.hds-legend-label {
+  font-size: 12px;
+  color: #0f172a;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+}
+.hds-legend-pct {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.hds-legend-pct em {
+  font-style: normal;
+  font-weight: 400;
+  color: #64748b;
+}
+
+/* Alert chips */
+.hds-alert-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+}
+.hds-alert-chip.verde {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+.hds-alert-chip.amarillo {
+  background: #fefce8;
+  border-color: #fde68a;
+  color: #854d0e;
+}
+.hds-alert-chip.naranja {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+.hds-alert-chip.rojo {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+.hds-alert-chip.gris {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+.hds-alert-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+}
+.hds-alert-dot.gris { background: #cbd5e1; }
+.hds-alert-info {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: #64748b;
+  padding: 2px 0;
+}
+
+/* Detail view */
+.hds-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+.hds-detail-date {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  text-transform: capitalize;
+}
+.hds-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+.hds-back-btn:hover { background: #f1f5f9; }
+
+/* Hint */
+.hds-hint {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 12px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+/* Board mode adjustments */
+.harvest-calendar-shell.board-mode .hds-panel {
+  height: calc(100vh - 36px);
+  overflow-y: auto;
+  border-radius: 18px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LISTA DE PROGRAMAS — TABLA REDISEÑADA
+   ═══════════════════════════════════════════════════════════ */
+
+/* Tabla con layout fijo para controlar anchos */
+.harvest-prog-table { table-layout: fixed; width: 100%; }
+
+/* Anchos de columna */
+.harvest-prog-col-provider { width: 210px; }
+.harvest-prog-col-volume   { width: 155px; }
+.harvest-prog-col-period   { width: 115px; }
+.harvest-prog-col-product  { width: 160px; }
+.harvest-prog-col-status   { width: 155px; }
+.harvest-prog-col-actions  { width: 170px; text-align: right; }
+
+/* Fila finalizado */
+.harvest-prog-row.is-finalizado > td { opacity: 0.52; }
+.harvest-prog-row.is-finalizado:hover > td { opacity: 0.72; }
+
+/* Col 1 — Proveedor */
+.harvest-prog-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.harvest-prog-centro {
+  font-size: 0.775rem;
+  color: var(--color-text-subtle);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.harvest-prog-contact {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Col 2 — Volumen */
+.harvest-prog-vol-cell { min-width: 130px; }
+.harvest-prog-vol-main {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+.harvest-prog-vol-sub {
+  display: flex;
+  gap: 6px;
+  font-size: 0.77rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+.harvest-prog-vol-sub .is-over { color: var(--color-error); }
+.harvest-prog-vol-bar {
+  width: 100%;
+  max-width: 110px;
+  height: 3px;
+  border-radius: 2px;
+  background: #e5edf5;
+  overflow: hidden;
+  margin-top: 5px;
+}
+.harvest-prog-vol-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-primary-dark), var(--color-primary-light));
+}
+.harvest-prog-adj-chip {
+  display: inline-flex;
+  margin-top: 5px;
+  padding: 2px 8px;
+  border: 1px solid #fed7aa;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #c2410c;
+  background: #fff7ed;
+  white-space: nowrap;
+}
+
+/* Col 3 — Período */
+.harvest-prog-period-cell { white-space: nowrap; }
+.harvest-prog-date-main {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.harvest-prog-date-sub {
+  font-size: 0.82rem;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+.harvest-prog-date-label {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.harvest-prog-days-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 3px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #d97706;
+}
+
+/* Col 4 — Producto / Operación */
+.harvest-prog-ops {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.harvest-prog-cam {
+  font-size: 0.775rem;
+  color: var(--color-text-subtle);
+}
+.harvest-prog-cam-today {
+  font-size: 0.7rem;
+  color: var(--color-warning, #d97706);
+  font-weight: 600;
+}
+
+/* Col 5 — Estado + Sanitario integrado */
+.harvest-prog-status-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+.harvest-prog-status-note {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+.harvest-prog-san-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid;
+}
+.harvest-prog-san-chip.verde    { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+.harvest-prog-san-chip.amarillo { background: #fefce8; color: #854d0e; border-color: #fef08a; }
+.harvest-prog-san-chip.naranja  { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
+.harvest-prog-san-chip.rojo     { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+.harvest-prog-san-chip.gris     { background: #f8fafc; color: #94a3b8; border-color: #e2e8f0; }
+
+/* Col 6 — Acciones */
+.harvest-prog-actions-cell { text-align: right; }
+.harvest-prog-table .biomasa-action-bar { justify-content: flex-end; gap: 6px; }
+
+/* mx-action-btn variantes de color específicas de biomasa */
+.biomasa-action-bar .mx-action-btn.pause       { background: var(--color-bg); color: var(--color-text-muted); }
+.biomasa-action-bar .mx-action-btn.pause:hover { background: var(--color-border); color: var(--color-text-muted); }
+.biomasa-action-bar .mx-action-btn.play        { background: var(--color-success-bg); color: var(--color-success); }
+.biomasa-action-bar .mx-action-btn.play:hover  { background: var(--color-success-bg); color: var(--color-success); }

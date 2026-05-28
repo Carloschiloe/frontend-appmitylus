@@ -32,6 +32,7 @@ export function useBiomasaData(mes, viewContext = {}) {
   const [asig, setAsig] = useState([]);
   const [programas, setProgramas] = useState([]);
   const [calData, setCalData] = useState({});
+  const [notasDia, setNotasDia] = useState({});
   const [tratosAcordados, setTratosAcordados] = useState([]);
   const [tratosBiomasa, setTratosBiomasa] = useState([]);
   const [perdidasBiomasa, setPerdidasBiomasa] = useState([]);
@@ -71,10 +72,12 @@ export function useBiomasaData(mes, viewContext = {}) {
       }
 
       if (isProgramView && progSubTab === 'calendario') {
-        promises.push(apiClient.get('/programa-cosecha?estado=activo', { signal }).catch(() => ({ items: [] })));
+        promises.push(apiClient.get('/programa-cosecha', { signal }).catch(() => ({ items: [] })));
         keys.push('progRes');
         promises.push(apiClient.get(`/programa-cosecha/calendario?from=${mes}-01&to=${endOfMonthKey(mes)}`, { signal }).catch(() => ({ calendario: {} })));
         keys.push('calRes');
+        promises.push(apiClient.get(`/notas-dia?from=${mes}-01&to=${endOfMonthKey(mes)}`, { signal }).catch(() => ({ notas: {} })));
+        keys.push('notasRes');
       }
 
       const results = await Promise.all(promises);
@@ -85,6 +88,7 @@ export function useBiomasaData(mes, viewContext = {}) {
       if (resMap.asig) setAsig(resMap.asig || []);
       if (resMap.progRes) setProgramas(resMap.progRes.items || []);
       if (resMap.calRes) setCalData(resMap.calRes.calendario || {});
+      if (resMap.notasRes) setNotasDia(resMap.notasRes.notas || {});
       if (resMap.tratosRes) setTratosAcordados(resMap.tratosRes.items || []);
 
       if (resMap.tratosBiomasaRes) {
@@ -122,6 +126,7 @@ export function useBiomasaData(mes, viewContext = {}) {
     asig,
     programas,
     calData,
+    notasDia,
     tratosAcordados,
     tratosBiomasa,
     perdidasBiomasa,

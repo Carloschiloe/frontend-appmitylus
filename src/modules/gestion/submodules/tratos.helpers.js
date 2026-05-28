@@ -67,47 +67,12 @@ export function createEmptyForm(condiciones = []) {
     proveedorNombre: '',
     responsableNombre: '',
     tonsAcordadas: '',
-    precioBase: '',
     fechaInicioCosecha: '',
     estadoCierre: '',   // '' = activo/negociando, 'perdido', 'descartado', 'cerrado_ok'
     motivoCierre: '',
     notas: '',
     condiciones,
-    transportes: [],
-    diasHabilesConfig: { vie: false, sab: false },
   };
-}
-
-export function calcularTonsDiarias(transportes = []) {
-  return transportes.reduce((sum, t) => {
-    const cant  = Number(t.cantidadDiaria) || 0;
-    const maxis = Number(t.maxisPorUnidad) || 0;
-    const kg    = Number(t.kgPorMaxiRef)   || 0;
-    return sum + cant * maxis * kg / 1000;
-  }, 0);
-}
-
-export function calcularFechaTermino(fechaInicio, tonsAcordadas, transportes = [], diasConfig = {}) {
-  const tons = Number(tonsAcordadas) || 0;
-  const tonsDia = calcularTonsDiarias(transportes);
-  if (!fechaInicio || tons <= 0 || tonsDia <= 0) return null;
-
-  const diasNecesarios = Math.ceil(tons / tonsDia);
-  // 0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb
-  const validos = new Set([0, 1, 2, 3, 4]);
-  if (diasConfig?.vie) validos.add(5);
-  if (diasConfig?.sab) validos.add(6);
-
-  const parts = getDateOnlyParts(fechaInicio);
-  if (!parts) return null;
-
-  const cur = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
-  let contados = 0;
-  while (contados < diasNecesarios) {
-    if (validos.has(cur.getUTCDay())) contados++;
-    if (contados < diasNecesarios) cur.setUTCDate(cur.getUTCDate() + 1);
-  }
-  return cur;
 }
 
 export function getEstadoCierreFromApi(estadoApi) {
@@ -118,14 +83,20 @@ export function getEstadoCierreFromApi(estadoApi) {
   return '';
 }
 
-export function buildInitialConditions(maestros = []) {
-  return maestros.map((m) => ({
-    condicionId: m._id,
-    nombre: m.nombre,
-    tipoValor: m.tipoValor,
-    estado: 'pendiente',
-    valor: null,
-  }));
+export function buildInitialConditions(maestros = [], existingCondiciones = []) {
+  const byId   = new Map(existingCondiciones.map(c => [String(c.condicionId), c]));
+  const byName = new Map(existingCondiciones.map(c => [String(c.nombre || '').toLowerCase(), c]));
+  return maestros.map((m) => {
+    const saved = byId.get(String(m._id)) || byName.get(String(m.nombre || '').toLowerCase());
+    return {
+      condicionId:   m._id,
+      nombre:        m.nombre,
+      tipoValor:     m.tipoValor,
+      estado:        saved?.estado       ?? 'pendiente',
+      valor:         saved?.valor        ?? null,
+      modoCondicion: saved?.modoCondicion ?? null,
+    };
+  });
 }
 
 export function buildProviderDirectory(centros = [], contactos = []) {

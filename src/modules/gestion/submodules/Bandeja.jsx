@@ -429,7 +429,7 @@ export default function Bandeja() {
           <article className="mx-card">
             <header className="mx-card-header">
               <div>
-                <p className="mx-eyebrow">Pipeline</p>
+                <p className="mx-eyebrow">Estado comercial</p>
                 <h3 className="mx-card-title">Estado comercial</h3>
               </div>
               <Link className="mx-btn-icon sm" to="/biomasa/status?tab=negociacion">

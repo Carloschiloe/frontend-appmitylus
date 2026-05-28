@@ -49,7 +49,7 @@ export default function InteraccionesTable({
                         type="button"
                         className="mx-action-btn edit"
                         onClick={() => onEdit(item)}
-                        aria-label="Editar interaccion"
+                        aria-label="Editar gestión"
                       >
                         <Pencil size={14} />
                       </button>
@@ -57,7 +57,7 @@ export default function InteraccionesTable({
                         type="button"
                         className="mx-action-btn delete"
                         onClick={() => onDelete(item)}
-                        aria-label="Eliminar interaccion"
+                        aria-label="Eliminar gestión"
                       >
                         <Trash2 size={14} />
                       </button>

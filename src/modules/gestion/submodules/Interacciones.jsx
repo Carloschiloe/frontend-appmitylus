@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { Search, Plus, RotateCcw } from 'lucide-react';
@@ -150,7 +150,7 @@ export default function Interacciones() {
        } else {
          await apiClient.post('/interacciones', payload);
        }
-       addToast({ title: 'Exito', message: _id ? 'Interaccion actualizada' : 'Interaccion registrada', type: 'success' });
+       addToast({ title: 'Exito', message: _id ? 'Gestión actualizada' : 'Gestión registrada', type: 'success' });
        closeModal();
        handleRefresh();
      } catch {
@@ -161,7 +161,7 @@ export default function Interacciones() {
    const deleteMutation = useMutation({
      mutationFn: (id) => apiClient.delete(`/interacciones/${id}`),
      onSuccess: () => {
-       addToast({ title: 'Exito', message: 'Interaccion eliminada correctamente.', type: 'success' });
+       addToast({ title: 'Exito', message: 'Gestión eliminada correctamente.', type: 'success' });
        setConfirmDeleteInteraccion(null);
        handleRefresh();
      },
@@ -230,7 +230,7 @@ export default function Interacciones() {
         onClose={() => setConfirmDeleteInteraccion(null)}
         onConfirm={handleConfirmDelete}
         itemName={confirmDeleteInteraccion?.proveedorNombre}
-        title="Eliminar interaccion?"
+        title="Eliminar gestión?"
       />
      </div>
    );
