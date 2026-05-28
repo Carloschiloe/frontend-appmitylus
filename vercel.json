@@ -1,8 +1,12 @@
 {
   "rewrites": [
-    { "source": "/r/muestreo/:token", "destination": "https://backend-appmitylus-production-01df.up.railway.app/api/public/reportes/:token" },
-    { "source": "/r/trato/:token", "destination": "https://backend-appmitylus-production-01df.up.railway.app/api/public/reportes/:token" },
-    { "source": "/api/:path*", "destination": "https://backend-appmitylus-production-01df.up.railway.app/api/:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://backend-appmitylus-production-01df.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
