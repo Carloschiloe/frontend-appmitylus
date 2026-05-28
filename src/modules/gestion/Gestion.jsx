@@ -1,6 +1,5 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import QuickCaptureModal from './components/QuickCaptureModal';
 import './gestion.css';
 
 const Bandeja = lazy(() => import('./submodules/Bandeja'));
@@ -70,7 +69,6 @@ export default function Gestion() {
         </div>
       </div>
 
-      <QuickCaptureModal />
     </div>
   );
 }

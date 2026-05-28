@@ -11,18 +11,23 @@ import {
   CheckCircle2,
   Clock3,
   Beaker,
-  Handshake,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { quickCaptureSeguimiento } from '../../../api/api-oportunidades';
 import { useToast } from '../../../context/ToastContext';
+import {
+  todayChile,
+  toISOFromDateInput,
+  toDateInputValue,
+  formatDateChile,
+  daysAgoChile,
+} from '../../../utils/dateChile';
 
 const ACTION_OPTIONS = [
   { value: 'llame', label: 'Llamé', icon: Phone },
   { value: 'visite', label: 'Visité', icon: Calendar },
   { value: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
   { value: 'tome_muestra', label: 'Tomé muestra', icon: Beaker },
-  { value: 'negocie', label: 'Negocié', icon: Handshake },
 ];
 
 const RESULT_OPTIONS = [
@@ -56,19 +61,6 @@ const SEGUIMIENTO_META = {
   acordado: { label: 'Acordado', tone: '#0891b2', bg: 'rgba(8, 145, 178, 0.12)' },
 };
 
-function toIsoFromDateInput(value) {
-  if (!value) return '';
-  return new Date(`${value}T09:00:00`).toISOString();
-}
-
-function todayDateInputValue() {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function getCurrentUserName() {
   try {
     const raw = localStorage.getItem('ammpp_user');
@@ -81,47 +73,22 @@ function getCurrentUserName() {
 }
 
 function formatShortDate(value) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('es-CL', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(date);
+  return formatDateChile(value);
 }
 
 function formatDaysAgo(value) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-
-  const msPerDay = 1000 * 60 * 60 * 24;
-  const today = new Date();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const startOfTarget = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffDays = Math.round((startOfToday - startOfTarget) / msPerDay);
-
-  if (diffDays <= 0) return 'hoy';
-  if (diffDays === 1) return 'hace 1 dia';
-  return `hace ${diffDays} dias`;
-}
-
-function toDateInputValue(value) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const diff = daysAgoChile(value);
+  if (diff === null) return '';
+  if (diff <= 0) return 'hoy';
+  if (diff === 1) return 'hace 1 dia';
+  return `hace ${diff} dias`;
 }
 
 function initialState() {
   return {
     tipoGestion: 'llame',
     resultadoSeguimiento: 'seguir',
-    fechaGestion: todayDateInputValue(),
+    fechaGestion: todayChile(),
     resumen: '',
     detalle: '',
     proximaAccion: '',
@@ -332,12 +299,12 @@ export default function QuickCaptureModal() {
         responsablePG: getCurrentUserName(),
         tipoGestion: form.tipoGestion,
         resultadoSeguimiento: form.resultadoSeguimiento,
-        fecha: toIsoFromDateInput(form.fechaGestion) || new Date().toISOString(),
+        fecha: toISOFromDateInput(form.fechaGestion) || new Date().toISOString(),
         resumen: form.resumen || `${selectedAction.label} a ${selected.proveedorNombre || 'proveedor'}`,
         detalle: form.detalle || '',
         proximaAccion: form.proximaAccion || '',
-        fechaProximaAccion: toIsoFromDateInput(form.fechaProximaAccion),
-        fechaRevision: toIsoFromDateInput(form.fechaRevision),
+        fechaProximaAccion: toISOFromDateInput(form.fechaProximaAccion),
+        fechaRevision: toISOFromDateInput(form.fechaRevision),
         motivoPausa: form.resultadoSeguimiento === 'pausar' ? form.motivoPausa : undefined,
         motivoCierre: form.resultadoSeguimiento === 'cerrar' ? form.motivoCierre : undefined,
         observacion: form.detalle || form.resumen || '',

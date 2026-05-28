@@ -5,6 +5,7 @@ import { ToastProvider } from './context/ToastContext.jsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Menu } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar.jsx';
+import QuickCaptureModal from './modules/gestion/components/QuickCaptureModal.jsx';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,8 +40,9 @@ const MainLayout = ({ children }) => {
     setIsMobileOpen(false);
   }, [location.pathname]);
 
-  // Si no hay usuario, es una ruta pública (Login/Activar), no mostramos Sidebar
-  if (!user) return children;
+  // Rutas públicas: nunca mostrar sidebar, sin importar si hay sesión activa
+  const isPublicRoute = ['/login', '/activar-cuenta'].includes(location.pathname);
+  if (!user || isPublicRoute) return children;
 
   return (
     <div className={`mx-app-shell ${isMobileOpen ? 'mobile-sidebar-open' : ''}`}>
@@ -72,6 +74,7 @@ const MainLayout = ({ children }) => {
       <main className="mx-main-content">
         {children}
       </main>
+      <QuickCaptureModal />
     </div>
   );
 };

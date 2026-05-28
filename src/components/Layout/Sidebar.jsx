@@ -42,8 +42,8 @@ const MENU_STRUCTURE = [
     icon: Inbox,
     links: [
       { label: 'Agenda', to: '/gestion/agenda', icon: Calendar },
-      { label: 'Tratos', to: '/gestion/tratos', icon: Handshake },
-      { label: 'Cosechas', to: '/biomasa/programa', icon: Droplet },
+      { label: 'Negociación', to: '/gestion/tratos', icon: Handshake },
+      { label: 'Prog. Cosecha', to: '/biomasa/programa', icon: Droplet },
       { label: 'Muestreos', to: '/biomasa/muestreos', icon: TestTube2 },
     ],
   },
