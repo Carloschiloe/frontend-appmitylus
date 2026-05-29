@@ -58,7 +58,7 @@ const STATUS_OPTIONS = [
 
 const TYPE_LABELS = {
   muestreo: 'Muestreo',
-  visita: 'Visita',
+  visita: 'Visita a centro',
   llamada: 'Llamada',
   whatsapp: 'WhatsApp',
   seguimiento: 'Seguimiento',
@@ -201,7 +201,7 @@ function buildCalendarEvent(item) {
     telefono: item.telefono || item.contactoSnapshot?.telefono || '',
     email: item.email || item.contactoSnapshot?.email || '',
     centroCodigo: item.centroCodigo || '',
-    title: item.proximoPaso || item.proximaAccion || item.actividad || item.asunto || item.resumen || item.titulo || item.title || 'Actividad pendiente',
+    title: item.proximoPaso || item.proximaAccion || item.actividad || item.asunto || item.resumen || item.titulo || item.title || 'Compromiso pendiente',
     description: item.resumen || item.resultado || item.detalle || item.descripcion || item.observacion || item.notas || '',
     responsible: item.responsablePG || item.responsableNombre || item.responsable || item.usuarioNombre || item.createdByName || '-',
     status: rawStatus === 'pausado' ? 'paused' : 'active',
@@ -366,7 +366,7 @@ function AgendaTable({ items, emptyText, onViewCalendar, onEdit, onReprogram, on
             <th>Fecha</th>
             <th>Estado</th>
             <th>Proveedor</th>
-            <th>Acción</th>
+            <th>Compromiso</th>
             <th>Tipo</th>
             <th>Responsable</th>
             <th></th>
@@ -715,7 +715,7 @@ export default function Calendario() {
       } else if (item.source === 'visita') {
         await apiClient.delete(`/visitas/${item.sourceId}`);
       } else {
-        addToast({ title: 'No eliminado', message: 'Este origen no permite eliminacion desde Agenda.', type: 'warning' });
+        addToast({ title: 'No eliminado', message: 'Este origen no permite eliminación desde Agenda.', type: 'warning' });
         return;
       }
       addToast({ title: 'Eliminado', message: 'La actividad fue eliminada de la agenda.', type: 'success' });
@@ -727,7 +727,7 @@ export default function Calendario() {
 
   const subtitleText = statusFilter === 'realizado'
     ? `Gestiones realizadas en ${MONTHS[month]} ${year}.`
-    : 'Trabajo pendiente, vencido y programado.';
+    : 'Compromisos programados, vencidos y pendientes de gestión.';
 
   return (
     <div className="calendario-main-wrapper agenda-modern">
@@ -752,7 +752,7 @@ export default function Calendario() {
           <ClipboardCheck size={16} /><span>Realizados</span><strong>{kpis.realizado}</strong>
         </button>
         <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('todos'); setRange('7d'); }}>
-          <CalendarClock size={16} /><span>Prox. 7 dias</span><strong>{kpis.next7}</strong>
+          <CalendarClock size={16} /><span>Próx. 7 días</span><strong>{kpis.next7}</strong>
         </button>
         <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('pausado'); setRange('all'); }}>
           <PauseCircle size={16} /><span>Pausados</span><strong>{kpis.paused}</strong>
@@ -809,7 +809,7 @@ export default function Calendario() {
               </div>
               <div className="cal-search-box">
                 <Search size={17} />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar proveedor, accion o responsable..." />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar proveedor, acción o responsable..." />
               </div>
               <label className="cal-filter-select">
                 <Filter size={15} />
@@ -856,7 +856,7 @@ export default function Calendario() {
                 emptyText={
                   statusFilter === 'realizado'
                     ? `Sin gestiones registradas en ${MONTHS[month]} ${year}.`
-                    : 'No hay items para los filtros seleccionados.'
+                    : 'No hay compromisos para los filtros seleccionados.'
                 }
                 onViewCalendar={viewItemInCalendar}
                 onEdit={setEditingRealizadoItem}
@@ -904,7 +904,7 @@ export default function Calendario() {
                           </div>
                         ))}
                         {dayItems.length === 0 && (
-                          <div className="cal-week-empty">—</div>
+                          <div className="cal-week-empty">Libre</div>
                         )}
                       </div>
                     </div>
@@ -952,9 +952,9 @@ export default function Calendario() {
                 </main>
                 <aside className="cal-aside-panel">
                   <div className="cal-aside-header">
-                    <span>Agenda del dia</span>
+                    <span>Agenda del día</span>
                     <h3>{formatLongDate(selectedDate)}</h3>
-                    <p>{selectedDayItems.length ? `${selectedDayItems.length} pendientes` : 'Sin pendientes'}</p>
+                    <p>{selectedDayItems.length ? `${selectedDayItems.length} compromisos` : 'Sin compromisos'}</p>
                   </div>
                   <div className="agenda-aside-list">
                     {selectedDayItems.length ? selectedDayItems.map((item) => (
@@ -984,8 +984,8 @@ export default function Calendario() {
                     )) : (
                       <div className="cal-empty-state">
                         <CalendarDays size={34} />
-                        <strong>Dia despejado</strong>
-                        <span>No hay pendientes para esta fecha.</span>
+                        <strong>Día despejado</strong>
+                        <span>No hay compromisos para esta fecha.</span>
                       </div>
                     )}
                   </div>

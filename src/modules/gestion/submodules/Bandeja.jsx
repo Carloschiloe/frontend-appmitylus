@@ -363,7 +363,7 @@ export default function Bandeja() {
             <header className="mx-card-header">
               <div>
                 <p className="mx-eyebrow">Prioridades</p>
-                <h3 className="mx-card-title">Qué debemos mover ahora</h3>
+                <h3 className="mx-card-title">Qué revisar ahora</h3>
               </div>
               <Link className="mx-btn-icon sm" to="/gestion/agenda">
                 <ChevronRight size={18} />
@@ -380,7 +380,7 @@ export default function Bandeja() {
 
             <div className="gs-priority-list am-mt-16">
               {taskBoard.spotlight.length === 0 ? (
-                <div className="mx-state-placeholder gs-empty-priority">No hay compromisos urgentes por ahora.</div>
+                <div className="mx-state-placeholder gs-empty-priority">Sin tareas vencidas ni compromisos para esta semana.</div>
               ) : (
                 taskBoard.spotlight.map((item) => {
                   const meta = FOLLOWUP_META[item.source] || FOLLOWUP_META.activo;
@@ -417,24 +417,28 @@ export default function Bandeja() {
           <article className="mx-card">
             <header className="mx-card-header">
               <div>
-                <p className="mx-eyebrow">Estado comercial</p>
-                <h3 className="mx-card-title">Estado comercial</h3>
+                <p className="mx-eyebrow">Negociación</p>
+                <h3 className="mx-card-title">Estado de negociación</h3>
               </div>
-              <Link className="mx-btn-icon sm" to="/biomasa/status?tab=negociacion">
+              <Link className="mx-btn-icon sm" to="/gestion/tratos">
                 <ChevronRight size={18} />
               </Link>
             </header>
 
             <div className="gs-pipeline-list am-mt-12">
-              {pipeline.counts.map((item) => (
-                <div key={item.key} className={`gs-pipeline-row is-${item.key}`}>
-                  <div className="gs-pipeline-copy">
-                    <span>{item.label}</span>
-                    <strong>{item.count}</strong>
+              {pipeline.counts.every((item) => item.count === 0) ? (
+                <div className="mx-state-placeholder sm">No hay tratos activos.</div>
+              ) : (
+                pipeline.counts.map((item) => (
+                  <div key={item.key} className={`gs-pipeline-row is-${item.key}`}>
+                    <div className="gs-pipeline-copy">
+                      <span>{item.label}</span>
+                      <strong>{item.count}</strong>
+                    </div>
+                    <progress className="gs-pipeline-progress" value={item.count} max={pipeline.max}></progress>
                   </div>
-                  <progress className="gs-pipeline-progress" value={item.count} max={pipeline.max}></progress>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </article>
 
@@ -442,13 +446,16 @@ export default function Bandeja() {
             <header className="mx-card-header">
               <div>
                 <p className="mx-eyebrow">Biomasa</p>
-                <h3 className="mx-card-title">Próximos hitos</h3>
+                <h3 className="mx-card-title">Próximos compromisos</h3>
               </div>
+              <Link className="mx-btn-icon sm" to="/biomasa/programa">
+                <ChevronRight size={18} />
+              </Link>
             </header>
 
             <div className="gs-mini-list">
               {upcomingDeals.length === 0 ? (
-                <div className="mx-state-placeholder sm">Sin hitos próximos.</div>
+                <div className="mx-state-placeholder sm">No hay compromisos próximos.</div>
               ) : (
                 upcomingDeals.map((item) => (
                   <div key={item._id} className="gs-mini-item">
@@ -472,7 +479,7 @@ export default function Bandeja() {
           <header className="mx-card-header">
             <div>
               <p className="mx-eyebrow">Agenda</p>
-              <h3 className="mx-card-title">Seguimiento próximos 7 días</h3>
+              <h3 className="mx-card-title">Esta semana</h3>
             </div>
             <Link className="mx-btn-icon sm" to="/gestion/agenda">
               <ChevronRight size={18} />
@@ -488,7 +495,7 @@ export default function Bandeja() {
                 </div>
                 <div className="gs-agenda-items">
                   {day.items.length === 0 ? (
-                    <span className="gs-agenda-empty">Sin actividad</span>
+                    <span className="gs-agenda-empty">Libre</span>
                   ) : (
                     day.items.slice(0, 2).map((item, index) => (
                       <span
@@ -518,7 +525,7 @@ export default function Bandeja() {
 
           <div className="gs-activity-list">
             {activityFeed.length === 0 ? (
-              <div className="mx-state-placeholder sm">Sin actividad reciente.</div>
+              <div className="mx-state-placeholder sm">Sin gestiones recientes.</div>
             ) : (
               activityFeed.map((item) => (
                 <div key={item.id} className="gs-activity-item">
@@ -549,7 +556,7 @@ export default function Bandeja() {
 
           <div className="gs-sample-list">
             {recentSamples.length === 0 ? (
-              <div className="mx-state-placeholder sm">Sin muestreos.</div>
+              <div className="mx-state-placeholder sm">No hay muestreos recientes.</div>
             ) : (
               recentSamples.map((item) => (
                 <div key={item._id} className="gs-sample-item">
@@ -575,8 +582,7 @@ export default function Bandeja() {
       <footer className="mx-state-placeholder sm am-mt-32 gs-footer-summary">
         <Target size={20} className="gs-footer-icon" />
         <p>
-          Este resumen separa lo que requiere seguimiento, lo que está pausado y lo que ya avanzó comercialmente,
-          para ayudarte a decidir más rápido qué sigue con cada proveedor.
+          Usa <strong>Registrar</strong> para agregar llamadas, visitas o muestreos al vuelo. Este panel prioriza lo vencido, lo de hoy y los seguimientos activos.
         </p>
       </footer>
     </div>
