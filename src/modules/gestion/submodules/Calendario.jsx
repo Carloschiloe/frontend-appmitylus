@@ -563,7 +563,12 @@ export default function Calendario() {
         return matchesRange(item, range, today);
       });
       const realizadoPool = realizadoItems.filter(applyFilters);
-      return [...pendingPool, ...realizadoPool].sort((a, b) => compareAgendaItems(a, b, today));
+      const seen = new Set();
+      return [...pendingPool, ...realizadoPool].filter((item) => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      }).sort((a, b) => compareAgendaItems(a, b, today));
     }
 
     return agendaItems.filter((item) => {

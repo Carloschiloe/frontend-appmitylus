@@ -14,6 +14,7 @@ import {
   Phone,
   Search,
   User,
+  Users,
   XCircle,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
@@ -30,6 +31,7 @@ const EVENT_META = {
 const TEAM_ACTIVITY_META = {
   llamada: { label: 'Llamada', color: '#2563eb', icon: Phone },
   whatsapp: { label: 'WhatsApp', color: '#16a34a', icon: MessageSquare },
+  reunion: { label: 'Reunión', color: '#d97706', icon: Users },
   interaccion: { label: 'Gestión', color: '#0891b2', icon: MessageSquare },
   visita: { label: 'Visita', color: '#f59e0b', icon: MapPin },
   muestreo: { label: 'Muestreo', color: '#7c3aed', icon: FlaskConical },
@@ -100,6 +102,7 @@ function normalizeTeamActivityType(value) {
   const normalized = normalizeKey(value);
   if (normalized.includes('llamad')) return 'llamada';
   if (normalized.includes('whatsapp') || normalized.includes('wasap') || normalized.includes('wsp')) return 'whatsapp';
+  if (normalized.includes('reuni')) return 'reunion';
   if (normalized.includes('visit')) return 'visita';
   if (normalized.includes('muestre')) return 'muestreo';
   return normalized || 'interaccion';
