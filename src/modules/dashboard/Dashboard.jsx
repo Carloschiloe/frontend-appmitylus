@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import './Dashboard.css';
 import {
   Activity,
@@ -10,9 +11,21 @@ import {
   ChevronRight,
   ArrowUpRight,
   Handshake,
-  AlertTriangle
+  AlertTriangle,
+  ClipboardList,
+  Calendar,
+  Droplet,
+  TestTube2,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
+
+const QUICK_LINKS = [
+  { label: 'Resumen Operativo', to: '/gestion/bandeja', icon: ClipboardList },
+  { label: 'Agenda',            to: '/gestion/agenda',   icon: Calendar },
+  { label: 'Negociación',       to: '/gestion/tratos',   icon: Handshake },
+  { label: 'Prog. de Cosecha',  to: '/biomasa/programa', icon: Droplet },
+  { label: 'Muestreos',         to: '/biomasa/muestreos',icon: TestTube2 },
+];
 
 const DashboardBiomasaChart = lazy(() => import('./DashboardBiomasaChart.jsx'));
 
@@ -131,9 +144,9 @@ export default function Dashboard() {
     <div className="mx-page dsh-premium">
       <header className="mx-hero">
         <div className="mx-hero-content">
-          <p className="mx-eyebrow">Panel Central · Mitynex Prime</p>
-          <h1>Monitor de Operaciones</h1>
-          <p>Visión consolidada de abastecimiento, logística y biomasa.</p>
+          <p className="mx-eyebrow">Inicio · Panel Ejecutivo</p>
+          <h1>Panel Principal</h1>
+          <p>Vista general de operación, biomasa y actividad reciente.</p>
         </div>
         <div className="mx-hero-actions">
           <button className="mx-btn mx-btn-outline" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white' }} onClick={() => loadData()}>
@@ -144,6 +157,21 @@ export default function Dashboard() {
 
       <div className="mx-content-frame">
         <div className="mx-page-stack">
+
+          {/* Accesos rápidos a módulos operativos */}
+          <section style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+            {QUICK_LINKS.map(({ label, to, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                className="mx-btn mx-btn-outline"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 600 }}
+              >
+                <Icon size={15} />
+                {label}
+              </Link>
+            ))}
+          </section>
 
           {/* KPIs reales de la API */}
           <section className="dsh-kpi-grid">

@@ -106,7 +106,7 @@ export default function Centros() {
           <Suspense fallback={
             <div className="mx-loading-placeholder am-flex-center" style={{ height: '200px', flexDirection: 'column', gap: '12px' }}>
               <div className="mx-spinner"></div>
-              <p className="am-muted">Cargando seccion...</p>
+              <p className="am-muted">Cargando sección...</p>
             </div>
           }>
             <Routes>

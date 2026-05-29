@@ -37,4 +37,7 @@
   .quick-capture-provider-row {
     grid-template-columns: 1fr;
   }
+  .qc-fab-label {
+    display: none;
+  }
 }

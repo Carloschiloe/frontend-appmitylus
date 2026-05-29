@@ -13,19 +13,20 @@ const PAGE_META = {
     title: 'Directorio de Proveedores',
   },
   '/gestion/bandeja': {
-    eyebrow: 'Operacion · Resumen',
+    eyebrow: 'Operaciones · Resumen',
     title: 'Resumen Operativo',
+    description: 'Bandeja diaria: seguimiento comercial, visitas, interacciones y muestreos.',
   },
   '/gestion/agenda': {
-    eyebrow: 'Operacion · Agenda',
+    eyebrow: 'Operaciones · Agenda',
     title: 'Agenda Operacional',
   },
   '/gestion/calendario': {
-    eyebrow: 'Operacion · Agenda',
+    eyebrow: 'Operaciones · Agenda',
     title: 'Agenda Operacional',
   },
   '/gestion/tratos': {
-    eyebrow: 'Operacion · Tratos',
+    eyebrow: 'Operaciones · Tratos',
     title: 'Tratos Comerciales',
   },
 };
@@ -41,6 +42,7 @@ export default function Gestion() {
         <div className="mx-hero-content">
           <p className="mx-eyebrow">{pageMeta.eyebrow}</p>
           <h1>{pageMeta.title}</h1>
+          {pageMeta.description && <p>{pageMeta.description}</p>}
         </div>
       </header>
 
@@ -50,7 +52,7 @@ export default function Gestion() {
             fallback={
               <div className="mx-loading-placeholder">
                 <div className="mx-spinner"></div>
-                <p>Cargando modulo...</p>
+                <p>Cargando módulo...</p>
               </div>
             }
           >

@@ -13,7 +13,6 @@ import {
   User,
   Calendar,
   Users,
-  Map,
   ShieldCheck,
   TableProperties,
   Search,
@@ -21,6 +20,7 @@ import {
   Handshake,
   Database,
   BarChart3,
+  ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
@@ -38,12 +38,13 @@ const MENU_STRUCTURE = [
   },
   {
     id: 'operacion',
-    label: 'Operacion',
+    label: 'Operaciones',
     icon: Inbox,
     links: [
+      { label: 'Resumen', to: '/gestion/bandeja', icon: ClipboardList },
       { label: 'Agenda', to: '/gestion/agenda', icon: Calendar },
       { label: 'Negociación', to: '/gestion/tratos', icon: Handshake },
-      { label: 'Prog. Cosecha', to: '/biomasa/programa', icon: Droplet },
+      { label: 'Prog. de Cosecha', to: '/biomasa/programa', icon: Droplet },
       { label: 'Muestreos', to: '/biomasa/muestreos', icon: TestTube2 },
     ],
   },
@@ -53,8 +54,7 @@ const MENU_STRUCTURE = [
     icon: Building2,
     links: [
       { label: 'Proveedores', to: '/gestion/proveedores', icon: Building2 },
-      { label: 'Centros', to: '/centros/directorio', icon: TableProperties },
-      { label: 'Mapa', to: '/centros/mapa', icon: Map },
+      { label: 'Centros', to: '/centros/directorio', icon: TableProperties, activeFor: ['/centros/directorio', '/centros/mapa'] },
     ],
   },
   {
@@ -63,13 +63,12 @@ const MENU_STRUCTURE = [
     icon: BarChart3,
     links: [
       { label: 'Sanitario', to: '/centros/sanitario', icon: ShieldCheck, alertId: 'sanitario' },
-      { label: 'Historial', to: '/historial', icon: History },
-      { label: 'Actividad del equipo', to: '/historial?view=equipo', icon: Users },
+      { label: 'Historial / Equipo', to: '/historial', icon: History },
     ],
   },
   {
     id: 'administracion',
-    label: 'Administracion',
+    label: 'Administración',
     icon: Settings,
     requiereRol: 'admin',
     links: [
@@ -124,6 +123,9 @@ export default function Sidebar() {
   useEffect(() => {
     const activeGroup = MENU_STRUCTURE.find((group) => (
       group.links.some((link) => {
+        if (link.activeFor) {
+          return link.activeFor.some((p) => location.pathname.startsWith(p));
+        }
         const [path] = link.to.split('?');
         return location.pathname.startsWith(path);
       })
@@ -208,11 +210,8 @@ export default function Sidebar() {
                   key={link.label}
                   to={link.to}
                   className={({ isActive }) => {
-                    if (link.to.includes('?view=equipo')) {
-                      return location.pathname === '/historial' && location.search.includes('view=equipo') ? 'is-active' : '';
-                    }
-                    if (link.to === '/historial') {
-                      return location.pathname === '/historial' && !location.search.includes('view=equipo') ? 'is-active' : '';
+                    if (link.activeFor) {
+                      return link.activeFor.some((p) => location.pathname.startsWith(p)) ? 'is-active' : '';
                     }
                     return isActive ? 'is-active' : '';
                   }}

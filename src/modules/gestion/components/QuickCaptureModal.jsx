@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import '../gestion.css';
 import {
-  Calendar,
+  MapPin,
   MessageSquare,
   Phone,
   Plus,
@@ -11,6 +13,9 @@ import {
   CheckCircle2,
   Clock3,
   Beaker,
+  Users,
+  FileText,
+  Truck,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { quickCaptureSeguimiento } from '../../../api/api-oportunidades';
@@ -24,10 +29,17 @@ import {
 } from '../../../utils/dateChile';
 
 const ACTION_OPTIONS = [
-  { value: 'llame', label: 'Llamé', icon: Phone },
-  { value: 'visite', label: 'Visité', icon: Calendar },
+  { value: 'llame', label: 'Llamada', icon: Phone },
+  { value: 'visite', label: 'Visita a centro', icon: MapPin },
   { value: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
-  { value: 'tome_muestra', label: 'Tomé muestra', icon: Beaker },
+  { value: 'tome_muestra', label: 'Muestreo', icon: Beaker },
+  { value: 'negocie', label: 'Reunión', icon: Users },
+];
+
+const MODULE_SHORTCUTS = [
+  { label: 'Negociación', path: '/gestion/tratos', icon: FileText },
+  { label: 'Programa de Cosecha', path: '/biomasa/programa', icon: Truck },
+  { label: 'Muestreo técnico', path: '/biomasa/muestreos', icon: Beaker },
 ];
 
 const RESULT_OPTIONS = [
@@ -143,6 +155,7 @@ function buildProviderDirectory(centros = [], contactos = []) {
 
 export default function QuickCaptureModal() {
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loadingProviders, setLoadingProviders] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -207,6 +220,11 @@ export default function QuickCaptureModal() {
     setProviderContext(null);
     setSuggestionApplied(false);
     setForm(initialState());
+  }
+
+  function handleGoTo(path) {
+    closeModal();
+    navigate(path);
   }
 
   function handleSelectProvider(provider) {
@@ -327,6 +345,8 @@ export default function QuickCaptureModal() {
         type="button"
         onClick={() => setOpen(true)}
         className="mx-btn mx-btn-primary"
+        title="Registrar acción rápida"
+        aria-label="Registrar acción rápida"
         style={{
           position: 'fixed',
           right: '24px',
@@ -337,7 +357,7 @@ export default function QuickCaptureModal() {
           boxShadow: '0 18px 40px rgba(15, 23, 42, 0.24)',
         }}
       >
-        <Plus size={18} /> Registro rápido
+        <Plus size={18} /> <span className="qc-fab-label">Registrar</span>
       </button>
 
       {open && (
@@ -345,9 +365,9 @@ export default function QuickCaptureModal() {
           <div className="mx-modal" style={{ maxWidth: '620px', width: 'min(100%, 620px)' }}>
             <div className="mx-modal-header">
               <div>
-                <h3 className="mx-modal-title">Registro rápido en terreno</h3>
+                <h3 className="mx-modal-title">Registrar acción rápida</h3>
                 <p style={{ margin: '6px 0 0', color: 'var(--color-text-subtle)', fontSize: '0.92rem' }}>
-                  Selecciona proveedor, qué pasó y cómo quedó el seguimiento.
+                  Registra una llamada, WhatsApp, visita a centro, reunión o muestreo rápido.
                 </p>
               </div>
               <button type="button" className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
@@ -355,6 +375,19 @@ export default function QuickCaptureModal() {
 
             <form onSubmit={handleSubmit} className="mx-form">
               <div className="mx-modal-body" style={{ display: 'grid', gap: '18px' }}>
+
+                {/* ── Accesos directos a módulos ── */}
+                <section style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', padding: '2px 0 2px', borderBottom: '1px solid var(--color-border)', paddingBottom: '14px' }}>
+                  <span style={{ fontSize: '0.73rem', fontWeight: 700, color: 'var(--color-text-subtle)', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>
+                    Ir a:
+                  </span>
+                  {MODULE_SHORTCUTS.map(({ label, path, icon: Icon }) => (
+                    <button key={path} type="button" className="mx-btn mx-btn-outline sm" onClick={() => handleGoTo(path)}>
+                      <Icon size={13} /> {label}
+                    </button>
+                  ))}
+                </section>
+
                 <section className="mx-form-group">
                   <div className="quick-capture-provider-row">
                     <div>
@@ -522,7 +555,7 @@ export default function QuickCaptureModal() {
 
                 <section className="mx-form-group">
                   <label className="mx-label">2. Qué pasó</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginTop: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px', marginTop: 8 }}>
                     {ACTION_OPTIONS.map((option) => {
                       const Icon = option.icon;
                       const active = form.tipoGestion === option.value;

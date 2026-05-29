@@ -323,34 +323,22 @@ export default function Bandeja() {
   }
 
   return (
-    <div className="mx-page">
-      <header className="mx-hero">
-        <div className="mx-hero-content">
-          <p className="mx-eyebrow">Gestión · Resumen</p>
-          <h1>Resumen Operativo</h1>
-          <p>Priorización de proveedores, seguimiento de tratos y pipeline comercial consolidado.</p>
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
+        <div className="gs-highlight-pills">
+          <span className="mx-badge gs-hero-badge">
+            {formatTons(summary?.acordadoMes)} este mes
+          </span>
+          <span className="mx-badge gs-hero-badge">
+            {formatTons(summary?.acordadoProxMes)} próx. mes
+          </span>
         </div>
-        <div className="mx-hero-actions">
-          <div className="gs-highlight-pills gs-highlight-pills-hero">
-            <span className="mx-badge gs-hero-badge">
-              {formatTons(summary?.acordadoMes)} este mes
-            </span>
-            <span className="mx-badge gs-hero-badge">
-              {formatTons(summary?.acordadoProxMes)} próx. mes
-            </span>
-          </div>
-          <div className="gs-hero-buttons">
-            <button 
-              className="mx-btn-icon gs-hero-refresh" 
-              onClick={handleRefresh} 
-            >
-              <RotateCcw size={20} />
-            </button>
-          </div>
-        </div>
-      </header>
+        <button className="mx-btn-icon gs-hero-refresh" onClick={handleRefresh}>
+          <RotateCcw size={20} />
+        </button>
+      </div>
 
-      <div className="mx-content-frame">
+      <div>
         <div className="mx-kpi-grid gs-kpi-strip">
           <div className="mx-kpi-card">
             <div className="mx-kpi-label">Pendientes vencidos</div>
@@ -592,6 +580,6 @@ export default function Bandeja() {
         </p>
       </footer>
     </div>
-  </div>
+  </>
   );
 }
