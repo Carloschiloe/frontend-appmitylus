@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowLeft,
@@ -604,6 +604,7 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
 
 export default function Historial() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   // Filtros de UI
   const [searchTerm, setSearchTerm] = useState('');
@@ -728,6 +729,18 @@ export default function Historial() {
     setSearchParams(nextParams, { replace: true });
   };
 
+  const selectProvider = (key) => {
+    setSelectedProviderKey(key);
+    setTypeFilter('todos');
+    const nextParams = new URLSearchParams(searchParams);
+    if (key) {
+      nextParams.set('proveedor', key);
+    } else {
+      nextParams.delete('proveedor');
+    }
+    setSearchParams(nextParams);
+  };
+
   if (selectedProvider) {
     const status = STATUS_META[selectedProvider.status || 'none'] || STATUS_META.none;
     const StatusIcon = status.icon;
@@ -742,26 +755,52 @@ export default function Historial() {
               Aquí vive solo lo que ya pasó: interacciones, visitas, contactos y cambios de seguimiento.
             </p>
           </div>
-          <button
-            type="button"
-            className="mx-btn mx-btn-outline"
-            style={{
-              color: '#ffffff',
-              background: 'rgba(255,255,255,0.14)',
-              borderColor: 'rgba(255,255,255,0.28)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              fontWeight: 800,
-              boxShadow: 'none',
-            }}
-            onClick={() => {
-              setSelectedProviderKey('');
-              setTypeFilter('todos');
-            }}
-          >
-            <ArrowLeft size={18} /> Volver
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="mx-btn mx-btn-outline"
+              style={{
+                color: '#ffffff',
+                background: 'rgba(255,255,255,0.14)',
+                borderColor: 'rgba(255,255,255,0.28)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                fontWeight: 800,
+                boxShadow: 'none',
+              }}
+              onClick={() => {
+                setSelectedProviderKey('');
+                setTypeFilter('todos');
+                const nextParams = new URLSearchParams(searchParams);
+                nextParams.delete('proveedor');
+                setSearchParams(nextParams, { replace: true });
+              }}
+            >
+              <ArrowLeft size={18} /> Volver
+            </button>
+            <button
+              type="button"
+              className="mx-btn mx-btn-outline"
+              style={{
+                color: 'rgba(255,255,255,0.75)',
+                background: 'transparent',
+                borderColor: 'rgba(255,255,255,0.2)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                fontWeight: 600,
+                boxShadow: 'none',
+                fontSize: '0.88rem',
+              }}
+              onClick={() => {
+                const q = selectedProvider.name || selectedProvider.key;
+                navigate(q ? `/gestion/proveedores?q=${encodeURIComponent(q)}` : '/gestion/proveedores');
+              }}
+            >
+              <Building2 size={15} /> Ver en Directorio
+            </button>
+          </div>
         </header>
 
         <div className="mx-content-frame">
@@ -974,12 +1013,27 @@ export default function Historial() {
           </div>
         ) : null}
 
+        {isExpediente && selectedProviderKey && !loading && !selectedProvider ? (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', marginBottom: 8, borderRadius: 14, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.18)' }}>
+            <AlertCircle size={18} style={{ color: '#dc2626', flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <p style={{ margin: 0, color: '#dc2626', fontWeight: 600, fontSize: '0.95rem' }}>No encontramos el proveedor solicitado.</p>
+              <p style={{ margin: '3px 0 0', color: '#64748b', fontSize: '0.86rem' }}>
+                Puedes buscarlo manualmente o{' '}
+                <button type="button" onClick={() => navigate('/gestion/proveedores')} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: 'inherit' }}>
+                  volver al Directorio
+                </button>.
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         {historyView === 'expediente' ? (
           <ProviderCardsView
             loading={loading}
             providers={providers}
             searchTerm={searchTerm}
-            onSelectProvider={setSelectedProviderKey}
+            onSelectProvider={selectProvider}
           />
         ) : (
           <TeamActivityView
