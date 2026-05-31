@@ -6,6 +6,7 @@ import {
   Building2,
   CheckCircle2,
   Clock3,
+  FileText,
   Filter,
   FlaskConical,
   MapPin,
@@ -25,6 +26,9 @@ const EVENT_META = {
   contacto: { label: 'Contacto', color: '#6366f1', icon: User },
   visita: { label: 'Visita', color: '#f59e0b', icon: MapPin },
   interaccion: { label: 'Gestión', color: '#06b6d4', icon: MessageSquare },
+  llamada: { label: 'Llamada', color: '#2563eb', icon: Phone },
+  whatsapp: { label: 'WhatsApp', color: '#16a34a', icon: MessageSquare },
+  reunion: { label: 'Reunión', color: '#d97706', icon: Users },
   seguimiento: { label: 'Seguimiento', color: '#0A5CFF', icon: Clock3 },
 };
 
@@ -153,7 +157,7 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
       type: 'contacto',
       date: toDate(eventDate),
       title: firstNonEmpty(item.contactoNombre, item.nombre, 'Contacto agregado'),
-      summary: firstNonEmpty(item.cargo, 'Contacto incorporado al directorio'),
+      summary: firstNonEmpty(item.cargo, 'Contacto registrado en el directorio'),
       note: firstNonEmpty(item.notas),
       actor: '',
       extra: [
@@ -190,9 +194,11 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
     if (!key) return;
 
     const provider = ensureProvider(key, providerName);
+    const rawType = normalizeTeamActivityType(item.tipo || item.canal || item.tipoGestion || '');
+    const eventType = EVENT_META[rawType] ? rawType : 'interaccion';
     const event = {
       id: `interaccion-${item._id || `${key}-${provider.events.length}`}`,
-      type: 'interaccion',
+      type: eventType,
       date: toDate(item.fecha || item.createdAt || item.updatedAt),
       title: firstNonEmpty(item.resumen, item.tipo, 'Gestión registrada'),
       summary: firstNonEmpty(item.resultado, item.notas, 'Sin resumen adicional.'),
@@ -252,7 +258,7 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
         return dateB - dateA;
       });
       const lastActivity = sortedEvents[0]?.date || null;
-      const lastInteractionEvent = sortedEvents.find((event) => event.type === 'interaccion') || null;
+      const lastInteractionEvent = sortedEvents.find((event) => event.type === 'interaccion' || event.type === 'llamada' || event.type === 'whatsapp' || event.type === 'reunion') || null;
 
       return {
         ...provider,
@@ -401,6 +407,8 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
           {[
             { value: 'todos', label: 'Todos' },
             { value: 'llamada', label: 'Llamadas' },
+            { value: 'whatsapp', label: 'WhatsApp' },
+            { value: 'reunion', label: 'Reuniones' },
             { value: 'visita', label: 'Visitas' },
             { value: 'muestreo', label: 'Muestreos' },
             { value: 'seguimiento', label: 'Seguimiento' },
@@ -576,7 +584,7 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
                   </p>
 
                   <div style={{ marginTop: '10px', display: 'grid', gap: '6px', color: 'var(--color-text-muted)', fontSize: '0.86rem' }}>
-                    <span className="am-line-clamp-1">{provider.lastInteraction || 'Sin interacciones'}</span>
+                    <span className="am-line-clamp-1">{provider.lastInteraction || 'Sin gestiones registradas'}</span>
                     <span>{provider.lastActivity ? `${formatDate(provider.lastActivity)} · ${relativeText(provider.lastActivity)}` : 'Sin actividad'}</span>
                   </div>
 
@@ -702,9 +710,14 @@ export default function Historial() {
     [providers, selectedProviderKey]
   );
 
+  const INTERACTION_FAMILY = new Set(['interaccion', 'llamada', 'whatsapp', 'reunion']);
   const visibleEvents = useMemo(() => {
     if (!selectedProvider) return [];
-    return selectedProvider.events.filter((event) => typeFilter === 'todos' || event.type === typeFilter);
+    return selectedProvider.events.filter((event) => {
+      if (typeFilter === 'todos') return true;
+      if (typeFilter === 'interaccion') return INTERACTION_FAMILY.has(event.type);
+      return event.type === typeFilter;
+    });
   }, [selectedProvider, typeFilter]);
 
   const setHistoryViewWithUrl = (nextView) => {
@@ -887,7 +900,7 @@ export default function Historial() {
         <div className="mx-hero-content">
           <p className="mx-eyebrow">{historyView === 'equipo' ? 'Inteligencia - Actividad del equipo' : 'Inteligencia - Historial'}</p>
           <h1>{historyView === 'equipo' ? 'Actividad del equipo' : 'Historial operativo'}</h1>
-          <p>{historyView === 'equipo' ? 'Trazabilidad operativa de acciones, responsables y registros recientes.' : 'Aqui revisamos lo que ya paso. La operacion pendiente vive en Resumen, Agenda y Proveedores.'}</p>
+          <p>{historyView === 'equipo' ? 'Trazabilidad operativa de acciones, responsables y registros recientes.' : 'Aquí revisamos lo que ya pasó. La operación pendiente vive en Resumen, Agenda y Proveedores.'}</p>
         </div>
       </header>
 
@@ -930,14 +943,14 @@ export default function Historial() {
               className={`mx-toggle-btn ${historyView === 'expediente' ? 'active' : ''}`}
               onClick={() => setHistoryViewWithUrl('expediente')}
             >
-              <Building2 size={14} /> Expediente
+              <FileText size={14} /> Expediente
             </button>
             <button
               type="button"
               className={`mx-toggle-btn ${historyView === 'equipo' ? 'active' : ''}`}
               onClick={() => setHistoryViewWithUrl('equipo')}
             >
-              <User size={14} /> Actividad del equipo
+              <Users size={14} /> Actividad del equipo
             </button>
           </div>
         </div>
