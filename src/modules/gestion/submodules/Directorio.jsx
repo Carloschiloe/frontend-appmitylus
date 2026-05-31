@@ -776,16 +776,6 @@ export default function Directorio() {
                           </button>
                           <button
                             className="mx-action-btn"
-                            title="Ver historial del proveedor"
-                            onClick={() => {
-                              const key = provider.key || provider.providerKey;
-                              navigate(`/historial?proveedor=${encodeURIComponent(key)}`);
-                            }}
-                          >
-                            <History size={14} />
-                          </button>
-                          <button
-                            className="mx-action-btn"
                             title="Registrar gestión"
                             onClick={() => {
                               const key = provider.key || provider.providerKey;
@@ -1104,6 +1094,28 @@ export default function Directorio() {
             </div>
 
             <div className="mx-modal-footer dir-detail-footer">
+              <button
+                type="button"
+                className="mx-btn mx-btn-outline dir-detail-footer-btn"
+                onClick={() => {
+                  const p = detailModal.provider;
+                  setDetailModal({ open: false, provider: null });
+                  window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open', {
+                    detail: {
+                      proveedorKey: p.key || p.providerKey,
+                      proveedorNombre: p.nombre,
+                      contactoNombre: p.contactoPrincipal || '',
+                      contactoTelefono: p.contactoTelefono || '',
+                      contactoEmail: p.contactoEmail || '',
+                      comuna: p.comuna || '',
+                      centros: p.centros || 0,
+                      contactoId: '',
+                    },
+                  }));
+                }}
+              >
+                <MessageSquare size={16} /> Registrar gestión
+              </button>
               {(detailModal.provider.key || detailModal.provider.providerKey) && (
                 <button
                   type="button"
