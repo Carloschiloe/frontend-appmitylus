@@ -168,6 +168,29 @@ export default function QuickCaptureModal() {
   const [form, setForm] = useState(initialState);
 
   useEffect(() => {
+    function handleOpenWithContext(event) {
+      const detail = event.detail || {};
+      if (!detail.proveedorKey) return;
+      const preselected = {
+        id: `prov-${detail.proveedorKey}`,
+        contactoId: detail.contactoId || '',
+        proveedorKey: detail.proveedorKey,
+        proveedorNombre: detail.proveedorNombre || '',
+        contactoNombre: detail.contactoNombre || '',
+        contactoTelefono: detail.contactoTelefono || '',
+        contactoEmail: detail.contactoEmail || '',
+        comuna: detail.comuna || '',
+        centros: detail.centros || 0,
+      };
+      setSelected(preselected);
+      setSearch(preselected.proveedorNombre);
+      setOpen(true);
+    }
+    window.addEventListener('mitynex:quick-capture-open', handleOpenWithContext);
+    return () => window.removeEventListener('mitynex:quick-capture-open', handleOpenWithContext);
+  }, []);
+
+  useEffect(() => {
     if (!open || providers.length > 0) return;
 
     let cancelled = false;

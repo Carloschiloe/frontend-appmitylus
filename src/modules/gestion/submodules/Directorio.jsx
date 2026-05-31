@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Edit,
   History,
+  MessageSquare,
   Trash2,
   Clock3,
   CheckCircle2,
@@ -782,6 +783,27 @@ export default function Directorio() {
                             }}
                           >
                             <History size={14} />
+                          </button>
+                          <button
+                            className="mx-action-btn"
+                            title="Registrar gestión"
+                            onClick={() => {
+                              const key = provider.key || provider.providerKey;
+                              window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open', {
+                                detail: {
+                                  proveedorKey: key,
+                                  proveedorNombre: provider.nombre,
+                                  contactoNombre: provider.contactoPrincipal || '',
+                                  contactoTelefono: provider.contactoTelefono || '',
+                                  contactoEmail: provider.contactoEmail || '',
+                                  comuna: provider.comuna || '',
+                                  centros: provider.centros || 0,
+                                  contactoId: '',
+                                },
+                              }));
+                            }}
+                          >
+                            <MessageSquare size={14} />
                           </button>
                           <button className="mx-action-btn edit" title="Editar" onClick={() => openEditModal(provider)}>
                             <Edit size={14} />
