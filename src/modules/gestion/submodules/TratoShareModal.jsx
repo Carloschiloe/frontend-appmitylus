@@ -4,10 +4,13 @@ import { CheckCircle2, Copy, Send } from 'lucide-react';
 export default function TratoShareModal({
   isOpen,
   url,
+  message,
   onCopy,
   onClose,
 }) {
   if (!isOpen) return null;
+
+  const whatsappText = message || url;
 
   return (
     <div className="mx-modal-overlay tratos-share-overlay">
@@ -16,13 +19,13 @@ export default function TratoShareModal({
           <div className="tratos-share-icon">
             <CheckCircle2 size={32} />
           </div>
-          <h2>Trato Listo</h2>
-          <p>Envia el comprobante oficial al proveedor.</p>
+          <h2>Acuerdo listo</h2>
+          <p>Envía el comprobante oficial al proveedor.</p>
         </div>
 
         <div className="tratos-share-actions">
           <a
-            href={`https://wa.me/?text=${encodeURIComponent(url)}`}
+            href={`https://wa.me/?text=${encodeURIComponent(whatsappText)}`}
             target="_blank"
             rel="noreferrer"
             className="mx-btn mx-btn-primary tratos-share-whatsapp"

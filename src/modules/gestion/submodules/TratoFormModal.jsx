@@ -37,7 +37,7 @@ export default function TratoFormModal({
     <div className="mx-modal-overlay">
       <div className="mx-modal tratos-form-modal">
         <div className="mx-modal-header">
-          <h2>{editingId ? 'Editar Trato' : 'Nuevo Trato'}</h2>
+          <h2>{editingId ? 'Editar Negociación' : 'Nueva Negociación'}</h2>
           <button type="button" className="mx-btn-icon" onClick={onClose}><X size={20} /></button>
         </div>
 
@@ -142,7 +142,7 @@ export default function TratoFormModal({
 
                 <div style={{ marginTop: 10 }}>
                   <label className="mx-label am-mb-8 tratos-conditions-title">
-                    Condiciones de Negociacion
+                    Condiciones de Negociación
                   </label>
                   <div className="mx-conditions-checklist tratos-conditions-list">
                     {form.condiciones.length === 0 ? (
@@ -293,7 +293,7 @@ export default function TratoFormModal({
           </div>
           <div className="mx-modal-footer">
             <button type="button" className="mx-btn mx-btn-outline" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="mx-btn mx-btn-primary">Guardar Negociacion</button>
+            <button type="submit" className="mx-btn mx-btn-primary">Guardar Negociación</button>
           </div>
         </form>
       </div>

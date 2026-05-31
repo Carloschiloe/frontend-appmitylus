@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CalendarCheck, ClipboardList, Edit, Send, Trash2, X } from 'lucide-react';
 import {
   ESTADOS_TRATO,
@@ -72,7 +73,10 @@ export default function TratosTable({
               ) : items.length === 0 ? (
                 <tr>
                   <td colSpan="7">
-                    <div className="mx-state-placeholder">No hay negociaciones activas.</div>
+                    <div className="mx-state-placeholder">
+                      No hay negociaciones para los filtros seleccionados.
+                      <span style={{ display: 'block', fontSize: '0.82rem', color: 'var(--color-text-subtle)', marginTop: 4 }}>Cambia el mes o usa <strong>Todos</strong> para ver todas.</span>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -125,10 +129,26 @@ export default function TratosTable({
                           </div>
                         )}
                         {item.meta?.programaCosecha?.estado && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 5, fontSize: '0.78rem', color: item.meta.programaCosecha.estado === 'activo' ? 'var(--color-success)' : item.meta.programaCosecha.estado === 'pausado' ? '#d97706' : 'var(--color-text-subtle)' }}>
+                          <Link
+                            to="/biomasa/programa"
+                            title="Ver programa de cosecha"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              marginTop: 5,
+                              fontSize: '0.78rem',
+                              textDecoration: 'none',
+                              color: item.meta.programaCosecha.estado === 'activo'
+                                ? 'var(--color-success)'
+                                : item.meta.programaCosecha.estado === 'pausado'
+                                ? '#d97706'
+                                : 'var(--color-text-subtle)',
+                            }}
+                          >
                             <CalendarCheck size={11} />
-                            Prog. {item.meta.programaCosecha.estado}
-                          </div>
+                            Programa {item.meta.programaCosecha.estado}
+                          </Link>
                         )}
                       </td>
                       <td className="tratos-date-cell" style={{ fontSize: '0.85rem' }}>
@@ -145,6 +165,15 @@ export default function TratosTable({
                               <ClipboardList size={14} />
                             </button>
                           )}
+                          {uiEstado === 'acordado' && !item.meta?.programaCosecha?.estado && displayTons > 0 && !!item.proveedorNombre && (
+                            <Link
+                              to="/biomasa/programa"
+                              className="mx-action-btn"
+                              title="Programar cosecha"
+                            >
+                              <CalendarCheck size={14} />
+                            </Link>
+                          )}
                           <button
                             className="mx-action-btn tratos-action-primary"
                             title="Compartir Trato"
@@ -152,7 +181,7 @@ export default function TratosTable({
                           >
                             <Send size={14} />
                           </button>
-                          <button className="mx-action-btn edit" title="Editar Negociacion" onClick={() => onEdit(item)}>
+                          <button className="mx-action-btn edit" title="Editar Negociación" onClick={() => onEdit(item)}>
                             <Edit size={14} />
                           </button>
                           <button className="mx-action-btn delete" title="Eliminar" onClick={() => onDelete(item)}>

@@ -236,7 +236,7 @@ export function buildTratoShareMessage(item, url) {
   const estado = ESTADOS_TRATO.find(e => e.val === getUiEstadoFromApi(item?.estado))?.label || item?.estado || 'Trato';
 
   return [
-    '*Mitynex | Confirmacion publica de trato*',
+    '*Mitynex | Confirmación pública de acuerdo*',
     `Proveedor: ${proveedor}`,
     centro ? `Centro: ${centro}` : null,
     tons ? `Volumen acordado: ${formatInteger(tons)} t` : null,
@@ -245,7 +245,7 @@ export function buildTratoShareMessage(item, url) {
     inicio ? `Inicio probable cosecha: ${formatDateOnlySafe(inicio)}` : null,
     `Estado: ${estado}`,
     '',
-    'Ver confirmacion:',
+    'Ver confirmación:',
     url,
   ].filter((line) => line !== null).join('\n');
 }

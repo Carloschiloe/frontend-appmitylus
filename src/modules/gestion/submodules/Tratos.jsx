@@ -207,7 +207,7 @@ export default function Tratos() {
             });
           }
         }
-        addToast({ title: 'Actualizado', message: 'Trato actualizado con exito', type: 'success' });
+        addToast({ title: 'Actualizado', message: 'Trato actualizado con éxito', type: 'success' });
       } else {
         if (!selectedProvider?.proveedorKey || !selectedProvider?.proveedorNombre) {
           addToast({ title: 'Falta proveedor', message: 'Selecciona un proveedor del listado antes de guardar.', type: 'warning' });
@@ -397,7 +397,7 @@ export default function Tratos() {
         )}
         <button className="mx-btn-icon sm" onClick={handleRefresh} title="Actualizar"><RotateCcw size={18} /></button>
         <button className="mx-btn mx-btn-primary" onClick={openNew}>
-          <Plus size={18} /> Nueva Negociacion
+          <Plus size={18} /> Nueva Negociación
         </button>
       </div>
 
@@ -439,6 +439,7 @@ export default function Tratos() {
       <TratoShareModal
         isOpen={shareModal.open}
         url={shareModal.url}
+        message={shareModal.message}
         onCopy={copyToClipboard}
         onClose={() => setShareModal({ open: false, url: '', item: null, message: '' })}
       />
