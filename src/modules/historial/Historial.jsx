@@ -794,6 +794,68 @@ export default function Historial() {
                 fontSize: '0.88rem',
               }}
               onClick={() => {
+                window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open', {
+                  detail: {
+                    proveedorKey: selectedProvider.key,
+                    proveedorNombre: selectedProvider.name,
+                    contactoNombre: selectedProvider.contactoPrincipal || '',
+                    contactoTelefono: selectedProvider.contactoTelefono || '',
+                    contactoEmail: selectedProvider.contactoEmail || '',
+                    comuna: '',
+                    centros: 0,
+                    contactoId: '',
+                  },
+                }));
+              }}
+            >
+              <MessageSquare size={15} /> Registrar gestión
+            </button>
+            {selectedProvider.key ? (
+              <button
+                type="button"
+                className="mx-btn mx-btn-outline"
+                style={{
+                  color: 'rgba(255,255,255,0.75)',
+                  background: 'transparent',
+                  borderColor: 'rgba(255,255,255,0.2)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontWeight: 600,
+                  boxShadow: 'none',
+                  fontSize: '0.88rem',
+                }}
+                onClick={() => {
+                  sessionStorage.setItem('mitynex:new-trato-context', JSON.stringify({
+                    proveedorKey: selectedProvider.key,
+                    proveedorNombre: selectedProvider.name,
+                    contactoNombre: selectedProvider.contactoPrincipal || '',
+                    contactoTelefono: selectedProvider.contactoTelefono || '',
+                    contactoEmail: selectedProvider.contactoEmail || '',
+                    comuna: '',
+                    centros: 0,
+                  }));
+                  navigate(`/gestion/tratos?new=1&proveedor=${encodeURIComponent(selectedProvider.key)}`);
+                }}
+              >
+                <FileText size={15} /> Nueva negociación
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="mx-btn mx-btn-outline"
+              style={{
+                color: 'rgba(255,255,255,0.75)',
+                background: 'transparent',
+                borderColor: 'rgba(255,255,255,0.2)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                fontWeight: 600,
+                boxShadow: 'none',
+                fontSize: '0.88rem',
+              }}
+              onClick={() => {
                 const q = selectedProvider.name || selectedProvider.key;
                 navigate(q ? `/gestion/proveedores?q=${encodeURIComponent(q)}` : '/gestion/proveedores');
               }}
