@@ -12,6 +12,7 @@ import {
   Edit,
   History,
   MessageSquare,
+  FileText,
   Trash2,
   Clock3,
   CheckCircle2,
@@ -1115,6 +1116,27 @@ export default function Directorio() {
                 }}
               >
                 <MessageSquare size={16} /> Registrar gestión
+              </button>
+              <button
+                type="button"
+                className="mx-btn mx-btn-outline dir-detail-footer-btn"
+                onClick={() => {
+                  const p = detailModal.provider;
+                  const key = p.key || p.providerKey;
+                  setDetailModal({ open: false, provider: null });
+                  sessionStorage.setItem('mitynex:new-trato-context', JSON.stringify({
+                    proveedorKey: key,
+                    proveedorNombre: p.nombre,
+                    contactoNombre: p.contactoPrincipal || '',
+                    contactoTelefono: p.contactoTelefono || '',
+                    contactoEmail: p.contactoEmail || '',
+                    comuna: p.comuna || '',
+                    centros: p.centros || 0,
+                  }));
+                  navigate(`/gestion/tratos?new=1&proveedor=${encodeURIComponent(key)}`);
+                }}
+              >
+                <FileText size={16} /> Nueva negociación
               </button>
               {(detailModal.provider.key || detailModal.provider.providerKey) && (
                 <button

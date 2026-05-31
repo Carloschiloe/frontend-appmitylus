@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, Plus, RotateCcw, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { apiClient } from '../../../api/apiClient';
@@ -42,7 +43,8 @@ function mesActual() {
 export default function Tratos() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
-  
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [mes, setMes] = useState(mesActual);
   const [showAllMonths, setShowAllMonths] = useState(false);
@@ -86,6 +88,48 @@ export default function Tratos() {
     window.addEventListener('gestion:quick-capture-saved', handleRefresh);
     return () => window.removeEventListener('gestion:quick-capture-saved', handleRefresh);
   }, [handleRefresh]);
+
+  useEffect(() => {
+    const isNew = searchParams.get('new') === '1';
+    const proveedorParam = String(searchParams.get('proveedor') || '').trim();
+    if (!isNew && !proveedorParam) return;
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('new');
+    nextParams.delete('proveedor');
+    setSearchParams(nextParams, { replace: true });
+
+    if (isNew) {
+      try {
+        const raw = sessionStorage.getItem('mitynex:new-trato-context');
+        if (!raw) return;
+        const ctx = JSON.parse(raw);
+        sessionStorage.removeItem('mitynex:new-trato-context');
+        const preselected = {
+          id: `prov-${ctx.proveedorKey || ''}`,
+          contactoId: '',
+          proveedorKey: ctx.proveedorKey || '',
+          proveedorNombre: ctx.proveedorNombre || '',
+          contactoNombre: ctx.contactoNombre || '',
+          contactoTelefono: ctx.contactoTelefono || '',
+          contactoEmail: ctx.contactoEmail || '',
+          comuna: ctx.comuna || '',
+          centros: ctx.centros || 0,
+        };
+        setEditingId(null);
+        setEditingEstadoApi('');
+        setProviderSearch(preselected.proveedorNombre);
+        setSelectedProvider(preselected);
+        setForm(createEmptyForm(buildInitialConditions(maestrosCondiciones)));
+        setIsModalOpen(true);
+      } catch {
+        // contexto inválido o ausente, no hacer nada
+      }
+    } else if (proveedorParam) {
+      setSearchTerm(proveedorParam);
+      setShowAllMonths(true);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: maestrosCondiciones = [] } = useQuery({
     queryKey: ['maestros', 'condicion_negociacion', 'activos'],

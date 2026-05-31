@@ -510,20 +510,27 @@
 
 .dir-detail-footer {
   display: flex;
-  gap: 12px;
-  margin-top: 20px;
-  border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  /* padding y border-top vienen de .mx-modal-footer */
 }
 
 .dir-detail-footer-btn {
-  flex: 1;
+  flex: 0 0 auto;
 }
 
 @media (max-width: 760px) {
   .dir-form-row,
-  .dir-detail-summary-grid,
-  .dir-detail-footer {
+  .dir-detail-summary-grid {
     grid-template-columns: 1fr;
+  }
+  .dir-detail-footer {
     flex-direction: column;
+    justify-content: stretch;
+  }
+  .dir-detail-footer-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
