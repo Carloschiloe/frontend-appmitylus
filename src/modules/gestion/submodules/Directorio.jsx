@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
+  Activity,
   Building2,
   User,
   Search,
@@ -9,6 +10,7 @@ import {
   MapPin,
   ExternalLink,
   Edit,
+  History,
   Trash2,
   Clock3,
   CheckCircle2,
@@ -30,11 +32,22 @@ import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import './directorio.css';
 
 const STATUS_META = {
-  activo: { label: 'Activo', tone: '#0A5CFF', bg: 'rgba(10, 92, 255, 0.12)', icon: Clock3 },
+  activo: { label: 'Activo', tone: '#0A5CFF', bg: 'rgba(10, 92, 255, 0.12)', icon: Activity },
   pausado: { label: 'Pausado', tone: '#d97706', bg: 'rgba(217, 119, 6, 0.12)', icon: PauseCircle },
   cerrado: { label: 'Cerrado', tone: '#dc2626', bg: 'rgba(220, 38, 38, 0.10)', icon: CircleOff },
   acordado: { label: 'Acordado', tone: '#0891b2', bg: 'rgba(8, 145, 178, 0.12)', icon: CheckCircle2 },
   none: { label: 'Sin seguimiento', tone: '#64748b', bg: 'rgba(100, 116, 139, 0.12)', icon: Clock3 },
+};
+
+const ESTADO_COMERCIAL_LABELS = {
+  prospecto: 'Prospecto',
+  negociando: 'En negociación',
+  semi_acordado: 'Parcialmente acordado',
+  acordado: 'Acordado',
+  compra_efectuada: 'Compra efectuada',
+  perdido: 'Perdido',
+  descartado: 'Descartado',
+  caido: 'Caído',
 };
 
 function normalizeKey(value) {
@@ -64,8 +77,8 @@ function formatDaysAgo(value) {
   const diffDays = Math.round((startOfToday - startOfTarget) / msPerDay);
 
   if (diffDays <= 0) return 'Hoy';
-  if (diffDays === 1) return 'Hace 1 dia';
-  return `Hace ${diffDays} dias`;
+  if (diffDays === 1) return 'Hace 1 día';
+  return `Hace ${diffDays} días`;
 }
 
 function contactName(contact) {
@@ -193,7 +206,7 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     if (muestreoDate && (!interactionDate || muestreoDate > interactionDate)) {
       const rendText = latestMuestreo.rendimiento ? `Rend: ${latestMuestreo.rendimiento.toFixed(1)}%` : 'Realizado';
       const centroText = latestMuestreo.centroCodigo ? ` - Centro: ${latestMuestreo.centroCodigo}` : '';
-      provider.ultimaInteraccionResumen = `Muestreo tecnico: ${rendText}${centroText}`;
+      provider.ultimaInteraccionResumen = `Muestreo técnico: ${rendText}${centroText}`;
       provider.ultimaInteraccionFecha = latestMuestreo.fecha || '';
       provider.ultimoResponsable = latestMuestreo.responsable || '';
     } else if (latestInteraction) {
@@ -632,7 +645,7 @@ export default function Directorio() {
         </div>
 
         <button className="mx-btn mx-btn-primary" onClick={openCreateModal}>
-          <Plus size={18} /> {tab === 'proveedores' ? 'Empresa' : 'Contacto'}
+          <Plus size={18} /> {tab === 'proveedores' ? 'Nuevo proveedor' : 'Contacto'}
         </button>
       </div>
 
@@ -660,9 +673,9 @@ export default function Directorio() {
                 <tr>
                   <th className="dir-col-provider">Proveedor</th>
                   <th className="dir-col-main-contact">Contacto principal</th>
-                  <th className="dir-col-followup">Seguimiento</th>
-                  <th className="dir-col-last">Ultima interaccion</th>
-                  <th className="dir-col-next">Proxima accion</th>
+                  <th className="dir-col-followup">Estado comercial</th>
+                  <th className="dir-col-last">Última gestión</th>
+                  <th className="dir-col-next">Próxima acción</th>
                   <th className="dir-col-actions">Acciones</th>
                 </tr>
               ) : (
@@ -728,23 +741,23 @@ export default function Directorio() {
                         </span>
                         {provider.estadoComercial ? (
                           <div className="dir-muted-note">
-                            {provider.estadoComercial}
+                            {ESTADO_COMERCIAL_LABELS[provider.estadoComercial] || provider.estadoComercial}
                           </div>
                         ) : null}
                       </td>
 
                       <td>
                         <div className="dir-clamped-text" title={provider.ultimaInteraccionResumen}>
-                          {provider.ultimaInteraccionResumen || 'Sin interaccion registrada'}
+                          {provider.ultimaInteraccionResumen || 'Sin interacción registrada'}
                         </div>
                         <div className="dir-subtle-note">
-                          {provider.ultimaInteraccionFecha ? `${formatShortDate(provider.ultimaInteraccionFecha)} - ${formatDaysAgo(provider.ultimaInteraccionFecha)}` : 'Aun sin actividad'}
+                          {provider.ultimaInteraccionFecha ? `${formatShortDate(provider.ultimaInteraccionFecha)} - ${formatDaysAgo(provider.ultimaInteraccionFecha)}` : 'Aún sin actividad'}
                         </div>
                       </td>
 
                       <td>
                         <div className="dir-clamped-text" title={provider.proximaAccion}>
-                          {provider.proximaAccion || 'Sin accion definida'}
+                          {provider.proximaAccion || 'Sin acción definida'}
                         </div>
                         <div className="dir-subtle-note">
                           {provider.fechaProximaAccion ? formatShortDate(provider.fechaProximaAccion) : 'Sin fecha programada'}
@@ -754,8 +767,8 @@ export default function Directorio() {
                       <td className="dir-actions-cell">
                         <div className="mx-table-actions-cell dir-actions">
                           <button 
-                            className="mx-action-btn dir-action-primary" 
-                            title="Ver Detalles" 
+                            className="mx-action-btn dir-action-primary"
+                            title="Ver resumen"
                             onClick={() => setDetailModal({ open: true, provider })}
                           >
                             <ExternalLink size={14} />
@@ -829,7 +842,7 @@ export default function Directorio() {
                 {tab === 'proveedores' ? (
                   <>
                     <div className="mx-form-group">
-                      <label className="mx-label">Razon social / nombre empresa</label>
+                      <label className="mx-label">Razón social / nombre empresa</label>
                       <input
                         name="nombre"
                         className="mx-input"
@@ -839,7 +852,7 @@ export default function Directorio() {
                       />
                     </div>
                     <div className="mx-form-group">
-                      <label className="mx-label">Codigo interno (Key)</label>
+                      <label className="mx-label">Código interno (Key)</label>
                       <input
                         name="proveedorKey"
                         className="mx-input"
@@ -1023,7 +1036,7 @@ export default function Directorio() {
                 <div className="dir-detail-summary-card">
                   <div className="mx-eyebrow dir-detail-eyebrow">Estado Comercial</div>
                   <div className="dir-detail-strong">{detailModal.provider.seguimientoEstado?.toUpperCase() || 'SIN SEGUIMIENTO'}</div>
-                  {detailModal.provider.estadoComercial && <div className="dir-detail-muted">{detailModal.provider.estadoComercial}</div>}
+                  {detailModal.provider.estadoComercial && <div className="dir-detail-muted">{ESTADO_COMERCIAL_LABELS[detailModal.provider.estadoComercial] || detailModal.provider.estadoComercial}</div>}
                 </div>
                 <div className="dir-detail-summary-card">
                   <div className="mx-eyebrow dir-detail-eyebrow">Contacto Principal</div>
@@ -1034,7 +1047,7 @@ export default function Directorio() {
 
               <div className="dir-detail-activity">
                 <h3 className="dir-detail-section-title">
-                  <Clock3 size={16} /> Ultima Actividad Registrada
+                  <Clock3 size={16} /> Última Actividad Registrada
                 </h3>
                 
                 <div className="dir-detail-timeline">
@@ -1050,7 +1063,7 @@ export default function Directorio() {
                 {detailModal.provider.proximaAccion && (
                   <div className="dir-detail-timeline dir-detail-timeline-next">
                     <div className="dir-detail-timeline-dot is-muted"></div>
-                    <div className="mx-eyebrow dir-detail-next-label">Proxima Accion Programada</div>
+                    <div className="mx-eyebrow dir-detail-next-label">Próxima Acción Programada</div>
                     <div className="dir-detail-next-text">{detailModal.provider.proximaAccion}</div>
                     <div className="dir-detail-next-date">{formatShortDate(detailModal.provider.fechaProximaAccion)}</div>
                   </div>
@@ -1059,6 +1072,19 @@ export default function Directorio() {
             </div>
 
             <div className="mx-modal-footer dir-detail-footer">
+              {(detailModal.provider.key || detailModal.provider.providerKey) && (
+                <button
+                  type="button"
+                  className="mx-btn mx-btn-outline dir-detail-footer-btn"
+                  onClick={() => {
+                    const key = detailModal.provider.key || detailModal.provider.providerKey;
+                    setDetailModal({ open: false, provider: null });
+                    navigate(`/historial?proveedor=${encodeURIComponent(key)}`);
+                  }}
+                >
+                  <History size={16} /> Ver historial
+                </button>
+              )}
               <button type="button" className="mx-btn mx-btn-outline dir-detail-footer-btn" onClick={() => openProviderCenters(detailModal.provider)}>
                 <ExternalLink size={16} /> Ver Centros
               </button>

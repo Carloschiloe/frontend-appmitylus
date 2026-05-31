@@ -599,7 +599,9 @@ export default function Historial() {
 
   // Filtros de UI
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProviderKey, setSelectedProviderKey] = useState('');
+  const [selectedProviderKey, setSelectedProviderKey] = useState(() =>
+    String(searchParams.get('proveedor') || '').trim().toLowerCase()
+  );
   const [typeFilter, setTypeFilter] = useState('todos');
   const [historyView, setHistoryView] = useState(() => (
     String(searchParams.get('view') || '').toLowerCase() === 'equipo' ? 'equipo' : 'expediente'
