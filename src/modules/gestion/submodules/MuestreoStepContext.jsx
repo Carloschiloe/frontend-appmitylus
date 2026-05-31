@@ -1,4 +1,14 @@
-import { MapPin, Search, User, X } from 'lucide-react';
+import { AlertTriangle, MapPin, Search, User, X } from 'lucide-react';
+
+const COMPANY_KEYWORDS = ['spa', 's.a', 'ltda', 'limitada', 'empresa', 'sociedad', 'acuicola', 'pesquera', 'cultivos', 'acuicultura', 'cia', 'comercial', 'servicios', 'exportaciones', 'mariscos', 'alimentos', 'industria', 'cooperativa'];
+
+function looksLikePerson(text) {
+  if (!text || !text.trim()) return false;
+  const words = text.trim().split(/\s+/);
+  if (words.length < 2) return false;
+  const lower = text.toLowerCase();
+  return !COMPANY_KEYWORDS.some((kw) => lower.includes(kw));
+}
 
 export default function MuestreoStepContext({
   form,
@@ -33,23 +43,63 @@ export default function MuestreoStepContext({
                       <span>{provider.comuna} - {provider.contactoNombre}</span>
                     </button>
                   ))}
-                  {searchProviders.trim().length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => onSelectProvider({
-                        id: 'new-provider',
-                        proveedorNombre: searchProviders,
-                        proveedorKey: searchProviders.trim().toLowerCase().replace(/[^a-z0-9]/g, '-'),
-                        comuna: 'Nuevo Registro',
-                        contactoNombre: 'Creado al guardar',
-                        isNew: true,
-                      })}
-                      className="mu-opt mu-create-provider-option"
-                    >
-                      <strong>+ Crear proveedor: {searchProviders}</strong>
-                      <span>Registrar automaticamente en el directorio</span>
-                    </button>
-                  )}
+
+                  {searchProviders.trim().length > 0 && (() => {
+                    const isPerson = looksLikePerson(searchProviders);
+                    const slug = searchProviders.trim().toLowerCase().replace(/[^a-z0-9]/g, '-');
+
+                    const optContact = (
+                      <button
+                        key="opt-contact"
+                        type="button"
+                        onClick={() => onSelectProvider({
+                          id: 'pending-contact',
+                          proveedorNombre: searchProviders,
+                          proveedorKey: '',
+                          comuna: '',
+                          contactoNombre: searchProviders,
+                          isNew: false,
+                          pendingContact: true,
+                        })}
+                        className="mu-opt"
+                      >
+                        <strong>+ Registrar contacto sin empresa: {searchProviders}</strong>
+                        <span>Úsalo si aún no sabes la empresa o centro. Luego podrás asociarlo en Directorio → Contactos.</span>
+                      </button>
+                    );
+
+                    const optEmpresa = (
+                      <button
+                        key="opt-empresa"
+                        type="button"
+                        onClick={() => onSelectProvider({
+                          id: 'new-provider',
+                          proveedorNombre: searchProviders,
+                          proveedorKey: slug,
+                          comuna: 'Nuevo Registro',
+                          contactoNombre: 'Creado al guardar',
+                          isNew: true,
+                        })}
+                        className="mu-opt mu-create-provider-option"
+                      >
+                        <strong>+ Registrar empresa nueva: {searchProviders}</strong>
+                        <span>Se creará un proveedor nuevo en el directorio.</span>
+                      </button>
+                    );
+
+                    const warning = isPerson ? (
+                      <div key="warning" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, margin: '2px 8px 4px', padding: '8px 10px', borderRadius: 10, background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+                        <AlertTriangle size={14} style={{ color: '#d97706', flexShrink: 0, marginTop: 1 }} />
+                        <span style={{ color: '#92400e', fontSize: '0.8rem', lineHeight: 1.4 }}>
+                          "{searchProviders}" parece un nombre de persona. Si aún no sabes la empresa, usa "Registrar contacto sin empresa".
+                        </span>
+                      </div>
+                    ) : null;
+
+                    return isPerson
+                      ? [optContact, warning, optEmpresa]
+                      : [optEmpresa, optContact];
+                  })()}
                 </div>
               )}
             </div>
@@ -57,7 +107,13 @@ export default function MuestreoStepContext({
             <div className="mu-selected-pill">
               <div>
                 <strong>{selectedProvider.proveedorNombre}</strong>
-                <span>{selectedProvider.comuna}</span>
+                <span>
+                  {selectedProvider.pendingContact
+                    ? 'Contacto pendiente — asignar empresa en Directorio'
+                    : selectedProvider.isNew
+                      ? 'Empresa nueva — se creará al guardar'
+                      : selectedProvider.comuna}
+                </span>
               </div>
               <button type="button" className="mx-btn-icon" onClick={onClearProvider}><X size={14} /></button>
             </div>
