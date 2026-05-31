@@ -766,12 +766,22 @@ export default function Directorio() {
 
                       <td className="dir-actions-cell">
                         <div className="mx-table-actions-cell dir-actions">
-                          <button 
+                          <button
                             className="mx-action-btn dir-action-primary"
                             title="Ver resumen"
                             onClick={() => setDetailModal({ open: true, provider })}
                           >
                             <ExternalLink size={14} />
+                          </button>
+                          <button
+                            className="mx-action-btn"
+                            title="Ver historial del proveedor"
+                            onClick={() => {
+                              const key = provider.key || provider.providerKey;
+                              navigate(`/historial?proveedor=${encodeURIComponent(key)}`);
+                            }}
+                          >
+                            <History size={14} />
                           </button>
                           <button className="mx-action-btn edit" title="Editar" onClick={() => openEditModal(provider)}>
                             <Edit size={14} />
