@@ -251,6 +251,18 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
     });
   });
 
+  // 5th fallback: contact-name → company proveedorKey
+  // Handles historical muestreos registered under a person's name instead of the company.
+  const contactNameToProvKey = new Map();
+  contactos.forEach((c) => {
+    const companyKey = normalizeKey(c.proveedorKey);
+    if (!companyKey) return;
+    [c.nombre, c.contactoNombre].filter(Boolean).forEach((n) => {
+      const nk = normalizeKey(n);
+      if (nk) contactNameToProvKey.set(nk, companyKey);
+    });
+  });
+
   muestreos.forEach((item) => {
     const keyByProvKey = normalizeKey(item.proveedorKey);
     const keyByName = normalizeKey(item.proveedorNombre || item.proveedor);
@@ -260,8 +272,10 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
       (keyByName && (
         providers.get(keyByName) ||
         Array.from(providers.values()).find((p) => normalizeKey(p.name) === keyByName) ||
-        Array.from(providers.values()).find((p) => p.contactoPrincipal && normalizeKey(p.contactoPrincipal) === keyByName)
+        Array.from(providers.values()).find((p) => p.contactoPrincipal && normalizeKey(p.contactoPrincipal) === keyByName) ||
+        providers.get(contactNameToProvKey.get(keyByName))
       ));
+
     if (!provider) return;
 
     const summaryParts = [];
