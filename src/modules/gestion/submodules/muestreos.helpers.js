@@ -136,6 +136,22 @@ export function filterProviders(directory = [], searchTerm = '') {
   )).slice(0, 10);
 }
 
+export function filterContacts(contactos = [], searchTerm = '') {
+  if (!searchTerm.trim()) return [];
+  const query = searchTerm.toLowerCase();
+  return contactos
+    .filter((c) => (
+      (c.nombre || '').toLowerCase().includes(query) ||
+      (c.contactoNombre || '').toLowerCase().includes(query) ||
+      (c.contactoEmail || '').toLowerCase().includes(query) ||
+      (c.contactoTelefono || '').toLowerCase().includes(query) ||
+      (c.proveedorNombre || '').toLowerCase().includes(query) ||
+      (c.proveedorKey || '').toLowerCase().includes(query) ||
+      (c.centroCodigo || '').toLowerCase().includes(query)
+    ))
+    .slice(0, 8);
+}
+
 export function getAvailableCats(cats = [], activeTab, selectedCats = new Set()) {
   return cats.filter((cat) => (
     cat.tipoCat === activeTab &&

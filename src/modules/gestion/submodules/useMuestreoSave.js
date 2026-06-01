@@ -51,13 +51,16 @@ function resolveProvider({ form, selectedProvider, directory }) {
   ));
 }
 
-function buildDirectoryContactPayload({ form, allCentros }) {
+function buildDirectoryContactPayload({ form, allCentros, selectedProvider }) {
   const selectedCenter = allCentros.find((centro) => centro._id === form.centroId) || null;
+  const contactName = selectedProvider?.pendingContact
+    ? form.proveedorNombre
+    : form.responsable || 'Contacto de Muestreo';
 
   return {
-    nombre: form.responsable || 'Contacto de Muestreo',
+    nombre: contactName,
     entidad: form.proveedorNombre,
-    contactoNombre: form.responsable || 'Contacto de Muestreo',
+    contactoNombre: contactName,
     contactoEmail: '',
     contactoTelefono: '',
     proveedorKey: form.proveedorKey,
@@ -101,11 +104,17 @@ export default function useMuestreoSave({
     try {
       const resolvedProvider = resolveProvider({ form, selectedProvider, directory });
       const hasProviderName = String(form.proveedorNombre || '').trim().length > 0;
-      const needsContact = hasProviderName && (selectedProvider?.isNew || !resolvedProvider || !resolvedProvider.contactoId);
+      const isExistingContact = selectedProvider?.isContact && !!selectedProvider?.contactoId;
+      const needsContact = !isExistingContact && hasProviderName && (
+        selectedProvider?.isNew ||
+        selectedProvider?.pendingContact ||
+        !resolvedProvider ||
+        !resolvedProvider.contactoId
+      );
 
       if (needsContact) {
         try {
-          await createMuestreoDirectoryContact(buildDirectoryContactPayload({ form, allCentros }));
+          await createMuestreoDirectoryContact(buildDirectoryContactPayload({ form, allCentros, selectedProvider }));
           queryClient.invalidateQueries({ queryKey: ['contactos'] });
           addToast({ title: 'Directorio', message: 'Se ha creado automaticamente el nuevo proveedor en el directorio.', type: 'info' });
         } catch {

@@ -28,7 +28,7 @@ export const deleteMuestreoEvidence = (key) => (
 
 export const getMuestreoDirectorySources = ({ signal } = {}) => Promise.all([
   apiClient.get('/centros', { signal }),
-  apiClient.get('/contactos?conEmpresa=1', { signal }),
+  apiClient.get('/contactos', { signal }),
 ]);
 
 export const createMuestreoDirectoryContact = (payload) => apiClient.post('/contactos', payload);

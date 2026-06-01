@@ -128,6 +128,7 @@ export default function Muestreos() {
     providerCenters,
     setProviderCenters,
     filteredProviders,
+    filteredContacts,
     clearSelectedProvider,
     handleSelectProvider,
   } = useMuestreoDirectory({ isModalOpen, addToast, setForm });
@@ -366,6 +367,7 @@ export default function Muestreos() {
               searchProviders={searchProviders}
               onSearchProvidersChange={setSearchProviders}
               filteredProviders={filteredProviders}
+              filteredContacts={filteredContacts}
               onSelectProvider={handleSelectProvider}
               providerCenters={providerCenters}
             />
