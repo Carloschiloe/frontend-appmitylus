@@ -16,8 +16,20 @@ function buildMuestreoPayload({
     finalCats[id] = (Number(form.cats[id]) || 0) * multiplier;
   });
 
-  const payload = {
-    ...form,
+  let fecha = form.fecha || '';
+  if (fecha.length === 10) {
+    fecha = new Date(`${fecha}T12:00:00Z`).toISOString();
+  }
+
+  return {
+    proveedorNombre: form.proveedorNombre || '',
+    proveedorKey: form.proveedorKey || undefined,
+    centroId: form.centroId || undefined,
+    centroCodigo: form.centroCodigo || undefined,
+    linea: form.linea || '',
+    fecha,
+    origen: form.origen || 'abastecimiento',
+    responsable: form.responsable || '',
     uxkg: Number(form.uxkg) || 0,
     pesoVivo: Number(form.pesoVivo) || 0,
     pesoCocida: Number(form.pesoCocida) || 0,
@@ -27,18 +39,11 @@ function buildMuestreoPayload({
     rechazos: Number(totals.rechazos) || 0,
     defectos: Number(totals.defectos) || 0,
     cats: finalCats,
-    comentarios: form.comentarios,
+    comentarios: form.comentarios || '',
     catDetails,
     generalPhotos,
     deletedPhotoKeys,
   };
-
-  if (payload.fecha && payload.fecha.length === 10) {
-    payload.fecha = new Date(`${payload.fecha}T12:00:00Z`).toISOString();
-  }
-
-  delete payload.unidadPeso;
-  return payload;
 }
 
 function resolveProvider({ form, selectedProvider, directory }) {

@@ -278,11 +278,21 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
 
     if (!provider) return;
 
-    const summaryParts = [];
-    if (item.rendimiento != null) summaryParts.push(`Rend: ${item.rendimiento}%`);
-    if (item.uxkg != null) summaryParts.push(`U/Kg: ${item.uxkg}`);
-    if (item.procesable != null) summaryParts.push(`Proc: ${item.procesable}%`);
-    if (item.rechazos != null) summaryParts.push(`Rechazo: ${item.rechazos}%`);
+    const lineaLabel = item.linea ? item.linea.trim().replace(/^l[ií]nea\s+/i, '') : null;
+    const calificacion = item.clasificaciones?.[0]?.nombre || 'S/C';
+    const rendStr = item.rendimiento != null ? `Rend: ${Number(item.rendimiento).toFixed(1)}%` : null;
+    const uxkgStr = item.uxkg > 0 ? `U/Kg: ${item.uxkg}` : null;
+    const procStr = item.total > 0 ? `Procesable: ${(item.procesable / item.total * 100).toFixed(1)}%` : null;
+    const rechStr = item.total > 0 ? `Rechazo: ${(item.rechazos / item.total * 100).toFixed(1)}%` : null;
+
+    const summaryParts = [
+      !item.centroCodigo ? 'Sin centro' : null,
+      calificacion,
+      rendStr,
+      uxkgStr,
+      procStr,
+      rechStr,
+    ].filter(Boolean);
 
     const extraParts = [];
     const fotosCount = Array.isArray(item.fotos) ? item.fotos.length : (item.fotosCount || 0);
@@ -292,8 +302,8 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
       id: `muestreo-${item._id || `${provider.key}-${provider.events.length}`}`,
       type: 'muestreo',
       date: toDate(item.fecha || item.createdAt || item.updatedAt),
-      title: item.centroCodigo ? `Muestreo ${item.centroCodigo}` : 'Muestreo registrado',
-      summary: summaryParts.length ? summaryParts.join(' · ') : firstNonEmpty(item.observaciones, item.notas, 'Sin métricas registradas.'),
+      title: lineaLabel ? `Muestreo Línea ${lineaLabel}` : item.centroCodigo ? `Muestreo centro ${item.centroCodigo}` : 'Muestreo registrado',
+      summary: summaryParts.join(' · ') || firstNonEmpty(item.observaciones, item.notas, 'Sin métricas registradas.'),
       note: firstNonEmpty(item.comentarios, item.observaciones),
       actor: firstNonEmpty(item.responsable, item.usuarioNombre),
       extra: extraParts,
