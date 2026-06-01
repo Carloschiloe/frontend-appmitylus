@@ -201,6 +201,64 @@
   color: var(--color-text-subtle);
 }
 
+.dir-kpi-value.is-error {
+  color: var(--color-error, #dc2626);
+}
+
+.dir-contact-kpi-btn {
+  appearance: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  /* Restablecer estilos del navegador sin destruir mx-kpi-card */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 22px 24px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--mx-shadow-card);
+  transition: var(--transition-spring);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  /* Desactiva el ::before de hover de mx-kpi-card cuando está activo */
+}
+
+.dir-contact-kpi-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--mx-shadow-hover);
+  border-color: var(--color-primary-100);
+}
+
+.dir-contact-kpi-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.dir-contact-kpi-btn.active {
+  background: rgba(10, 92, 255, 0.04);
+  border-color: rgba(10, 92, 255, 0.3);
+  box-shadow: 0 0 0 3px rgba(10, 92, 255, 0.08), var(--mx-shadow-card);
+  transform: none;
+}
+
+.dir-contact-centro-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.dir-contact-small-badge {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 10px;
+  padding: 1px 6px;
+}
+
 .dir-col-provider,
 .dir-col-contact,
 .dir-col-company,

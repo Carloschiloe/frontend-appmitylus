@@ -136,7 +136,7 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     if (!contactsByProvider.has(key)) contactsByProvider.set(key, []);
     contactsByProvider.get(key).push(contacto);
 
-    if (!providers.has(key)) {
+    if (contacto.proveedorKey && !providers.has(key)) {
       providers.set(key, {
         nombre: contacto.proveedorNombre || 'Proveedor sin nombre',
         key: contacto.proveedorKey || '',
@@ -243,10 +243,11 @@ export default function Directorio() {
   // Optimistic UI updates
   const [deletedProviders, setDeletedProviders] = useState(new Set());
   const [deletedContacts, setDeletedContacts] = useState(new Set());
+  const [contactFilter, setContactFilter] = useState('todos');
 
   // 1. Carga de datos con React Query
   const { data: centrosRaw, isLoading: loadingCentros, refetch: refetchCentros } = useCentros();
-  const { data: contactosRaw, isLoading: loadingContactos, refetch: refetchContactos } = useContactos({ conEmpresa: 1 });
+  const { data: contactosRaw, isLoading: loadingContactos, refetch: refetchContactos } = useContactos();
   const { data: oportunidadesRaw, isLoading: loadingOpp, refetch: refetchOpp } = useOportunidades();
   const { data: interaccionesRaw, isLoading: loadingInt, refetch: refetchInt } = useInteracciones({ limit: 500 });
   const { data: muestreosRaw, isLoading: loadingMuestreos, refetch: refetchMuestreos } = useMuestreos();
@@ -301,34 +302,38 @@ export default function Directorio() {
     };
   }, [data.proveedores]);
 
-  const filteredItems = useMemo(() => {
-    const list = tab === 'proveedores' ? data.proveedores : data.contactos;
-    if (!searchTerm.trim()) return list;
-    const q = searchTerm.toLowerCase();
-    return list.filter((item) => {
-      if (tab === 'proveedores') {
-        return [
-          item.nombre,
-          item.key,
-          item.comuna,
-          item.contactoPrincipal,
-          item.proximaAccion,
-          item.ultimaInteraccionResumen,
-        ].some((value) => String(value || '').toLowerCase().includes(q));
-      }
+  const contactStats = useMemo(() => {
+    const list = data.contactos || [];
+    const sinEmpresa = list.filter((c) => !c.proveedorKey && !c.proveedorNombre).length;
+    const sinCentro = list.filter((c) => (c.proveedorKey || c.proveedorNombre) && !c.centroId && !c.centroCodigo).length;
+    const completos = list.filter((c) => (c.proveedorKey || c.proveedorNombre) && (c.centroId || c.centroCodigo)).length;
+    return { total: list.length, sinEmpresa, sinCentro, completos };
+  }, [data.contactos]);
 
-      return [
-        item.nombre,
-        item.contactoNombre,
-        item.proveedorNombre,
-        item.email,
-        item.contactoEmail,
-        item.telefono,
-        item.contactoTelefono,
-        item.proveedorKey,
-      ].some((value) => String(value || '').toLowerCase().includes(q));
+  const filteredItems = useMemo(() => {
+    if (tab === 'proveedores') {
+      const list = data.proveedores || [];
+      if (!searchTerm.trim()) return list;
+      const q = searchTerm.toLowerCase();
+      return list.filter((item) =>
+        [item.nombre, item.key, item.comuna, item.contactoPrincipal, item.proximaAccion, item.ultimaInteraccionResumen]
+          .some((value) => String(value || '').toLowerCase().includes(q))
+      );
+    }
+
+    const list = data.contactos || [];
+    return list.filter((item) => {
+      const hasEmpresa = !!(item.proveedorKey || item.proveedorNombre);
+      const hasCentro = !!(item.centroId || item.centroCodigo);
+      if (contactFilter === 'sin-empresa' && hasEmpresa) return false;
+      if (contactFilter === 'sin-centro' && (!hasEmpresa || hasCentro)) return false;
+      if (contactFilter === 'completos' && (!hasEmpresa || !hasCentro)) return false;
+      if (!searchTerm.trim()) return true;
+      const q = searchTerm.toLowerCase();
+      return [item.nombre, item.contactoNombre, item.proveedorNombre, item.email, item.contactoEmail, item.telefono, item.contactoTelefono, item.proveedorKey]
+        .some((value) => String(value || '').toLowerCase().includes(q));
     });
-  }, [tab, data, searchTerm]);
+  }, [tab, data, searchTerm, contactFilter]);
 
   const providerOptions = useMemo(() => {
     const providersMap = new Map();
@@ -667,6 +672,27 @@ export default function Directorio() {
         </div>
       )}
 
+      {tab === 'contactos' && (
+        <div className="mx-kpi-grid am-mt-16">
+          {[
+            { label: 'Total', value: contactStats.total, tone: 'muted', filter: 'todos' },
+            { label: 'Sin empresa', value: contactStats.sinEmpresa, tone: 'error', filter: 'sin-empresa' },
+            { label: 'Sin centro', value: contactStats.sinCentro, tone: 'warning', filter: 'sin-centro' },
+            { label: 'Completos', value: contactStats.completos, tone: 'success', filter: 'completos' },
+          ].map((stat) => (
+            <button
+              key={stat.label}
+              type="button"
+              className={`mx-kpi-card dir-contact-kpi-btn ${contactFilter === stat.filter ? 'active' : ''}`}
+              onClick={() => setContactFilter(stat.filter)}
+            >
+              <p className="mx-eyebrow">{stat.label}</p>
+              <h2 className={`mx-kpi-value dir-kpi-value is-${stat.tone}`}>{stat.value}</h2>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="mx-table-card am-mt-16">
         <div className="mx-table-wrap">
           <table className="mx-table">
@@ -818,7 +844,22 @@ export default function Directorio() {
                       <div className="dir-contact-name">{contact.nombre || contact.contactoNombre}</div>
                       <div className="dir-contact-id">ID: {contact._id?.slice(-6) || '-'}</div>
                     </td>
-                    <td>{contact.proveedorNombre || '-'}</td>
+                    <td>
+                      {contact.proveedorNombre ? (
+                        <div>
+                          <div>{contact.proveedorNombre}</div>
+                          {contact.centroCodigo ? (
+                            <div className="dir-contact-centro-meta">
+                              <MapPin size={10} /> {contact.centroCodigo}
+                            </div>
+                          ) : (
+                            <span className="mx-badge mx-badge-warning dir-contact-small-badge">Sin centro</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="mx-badge mx-badge-error dir-contact-small-badge">Sin empresa</span>
+                      )}
+                    </td>
                     <td>
                       <div className="dir-contact-channel">
                         <span><Mail size={10} /> {contact.email || contact.contactoEmail || '-'}</span>
