@@ -53,7 +53,7 @@ export default function useMuestreoEvidence({ editingId, addToast }) {
           });
         }
       } catch {
-        addToast('Error al subir imagen', 'error');
+        addToast({ title: 'Error al subir imagen', message: 'No se pudo subir la imagen. Intenta nuevamente.', type: 'error' });
       }
     }
   }, [editingId, addToast]);
@@ -98,7 +98,7 @@ export default function useMuestreoEvidence({ editingId, addToast }) {
           setGeneralPhotos((prev) => [...prev, res.metadata]);
         }
       } catch {
-        addToast('Error al subir imagen', 'error');
+        addToast({ title: 'Error al subir imagen', message: 'No se pudo subir la imagen. Intenta nuevamente.', type: 'error' });
       }
     }
   }, [editingId, addToast]);

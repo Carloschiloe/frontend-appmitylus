@@ -633,10 +633,10 @@ export default function Directorio() {
     <div className="mx-page am-p-0">
       <div className="mx-toolbar am-mt-16">
         <div className="mx-toggle-group">
-          <button className={`mx-toggle-btn ${tab === 'proveedores' ? 'active' : ''}`} onClick={() => setTab('proveedores')}>
+          <button className={`mx-toggle-btn ${tab === 'proveedores' ? 'active' : ''}`} onClick={() => { setTab('proveedores'); setContactFilter('todos'); }}>
             <Building2 size={14} /> Proveedores
           </button>
-          <button className={`mx-toggle-btn ${tab === 'contactos' ? 'active' : ''}`} onClick={() => setTab('contactos')}>
+          <button className={`mx-toggle-btn ${tab === 'contactos' ? 'active' : ''}`} onClick={() => { setTab('contactos'); setContactFilter('todos'); }}>
             <User size={14} /> Contactos
           </button>
         </div>

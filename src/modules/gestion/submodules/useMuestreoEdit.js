@@ -115,7 +115,7 @@ export default function useMuestreoEdit({
       setSelectedProvider(provider);
       setProviderCenters(buildProviderCenters({ muestreo, provider, allCentros }));
     } catch {
-      addToast('Error al cargar muestreo completo', 'error');
+      addToast({ title: 'Error al cargar muestreo', message: 'No se pudo cargar el muestreo completo para edición.', type: 'error' });
       setIsModalOpen(false);
     } finally {
       setIsLoadingDetails(false);
