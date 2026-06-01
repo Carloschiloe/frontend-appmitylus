@@ -29,6 +29,7 @@ const EVENT_META = {
   llamada: { label: 'Llamada', color: '#2563eb', icon: Phone },
   whatsapp: { label: 'WhatsApp', color: '#16a34a', icon: MessageSquare },
   reunion: { label: 'Reunión', color: '#d97706', icon: Users },
+  muestreo: { label: 'Muestreo', color: '#7c3aed', icon: FlaskConical },
   seguimiento: { label: 'Seguimiento', color: '#0A5CFF', icon: Clock3 },
 };
 
@@ -112,7 +113,7 @@ function normalizeTeamActivityType(value) {
   return normalized || 'interaccion';
 }
 
-function buildProviderHistory({ contactos = [], visitas = [], interacciones = [], oportunidades = [] }) {
+function buildProviderHistory({ contactos = [], visitas = [], interacciones = [], oportunidades = [], muestreos = [] }) {
   const providers = new Map();
 
   function ensureProvider(key, baseName) {
@@ -247,6 +248,41 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
         item.fechaRevision ? `Revisión: ${formatDate(item.fechaRevision)}` : '',
         item.estado ? `Estado comercial: ${item.estado}` : '',
       ].filter(Boolean),
+    });
+  });
+
+  muestreos.forEach((item) => {
+    const keyByProvKey = normalizeKey(item.proveedorKey);
+    const keyByName = normalizeKey(item.proveedorNombre || item.proveedor);
+
+    const provider =
+      (keyByProvKey && providers.get(keyByProvKey)) ||
+      (keyByName && (
+        providers.get(keyByName) ||
+        Array.from(providers.values()).find((p) => normalizeKey(p.name) === keyByName) ||
+        Array.from(providers.values()).find((p) => p.contactoPrincipal && normalizeKey(p.contactoPrincipal) === keyByName)
+      ));
+    if (!provider) return;
+
+    const summaryParts = [];
+    if (item.rendimiento != null) summaryParts.push(`Rend: ${item.rendimiento}%`);
+    if (item.uxkg != null) summaryParts.push(`U/Kg: ${item.uxkg}`);
+    if (item.procesable != null) summaryParts.push(`Proc: ${item.procesable}%`);
+    if (item.rechazos != null) summaryParts.push(`Rechazo: ${item.rechazos}%`);
+
+    const extraParts = [];
+    const fotosCount = Array.isArray(item.fotos) ? item.fotos.length : (item.fotosCount || 0);
+    if (fotosCount > 0) extraParts.push(`${fotosCount} foto${fotosCount === 1 ? '' : 's'}`);
+
+    provider.events.push({
+      id: `muestreo-${item._id || `${provider.key}-${provider.events.length}`}`,
+      type: 'muestreo',
+      date: toDate(item.fecha || item.createdAt || item.updatedAt),
+      title: item.centroCodigo ? `Muestreo ${item.centroCodigo}` : 'Muestreo registrado',
+      summary: summaryParts.length ? summaryParts.join(' · ') : firstNonEmpty(item.observaciones, item.notas, 'Sin métricas registradas.'),
+      note: firstNonEmpty(item.comentarios, item.observaciones),
+      actor: firstNonEmpty(item.responsable, item.usuarioNombre),
+      extra: extraParts,
     });
   });
 
@@ -672,11 +708,11 @@ export default function Historial() {
     staleTime: 3 * 60 * 1000,
   });
 
-  // 5. Muestreos (Solo para vista de equipo)
+  // 5. Muestreos (equipo siempre; expediente solo cuando hay proveedor seleccionado)
   const { data: muestreosRes, isLoading: loadingMuestreos } = useQuery({
-    queryKey: ['historial', 'muestreos'],
+    queryKey: ['historial', 'muestreos', isEquipo ? 'equipo' : selectedProviderKey],
     queryFn: () => apiClient.get('/muestreos?limit=200&page=1'),
-    enabled: isEquipo,
+    enabled: isEquipo || (isExpediente && !!selectedProviderKey),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -906,6 +942,7 @@ export default function Historial() {
                 { value: 'todos', label: 'Todos' },
                 { value: 'interaccion', label: 'Gestiones' },
                 { value: 'visita', label: 'Visitas' },
+                { value: 'muestreo', label: 'Muestreos' },
                 { value: 'seguimiento', label: 'Seguimiento' },
                 { value: 'contacto', label: 'Contactos' },
               ].map((option) => (
