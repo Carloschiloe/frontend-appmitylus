@@ -514,9 +514,9 @@ export default function Biomasa() {
       <header className="mx-hero">
         <div className="mx-hero-content">
           <p className="mx-eyebrow">
-            {isStatusView ? 'Operacion · Disponibilidad' : isProgramView ? 'Operacion · Programa de cosecha' : 'Operacion · Muestreos tecnicos'}
+            {isStatusView ? 'Operaciones · Disponibilidad' : isProgramView ? 'Operaciones · Programa de Cosecha' : 'Operaciones · Muestreos Técnicos'}
           </p>
-          <h1 className="biomasa-title">{isStatusView ? 'Disponibilidad de biomasa' : isProgramView ? 'Programa de Cosecha' : 'Muestreos Tecnicos'}</h1>
+          <h1>{isStatusView ? 'Disponibilidad de Biomasa' : isProgramView ? 'Programa de Cosecha' : 'Muestreos Técnicos'}</h1>
         </div>
       </header>
 

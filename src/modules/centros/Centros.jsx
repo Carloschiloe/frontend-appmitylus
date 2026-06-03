@@ -26,7 +26,7 @@ const CENTROS_TABS = [
 const getPageMeta = (pathname) => {
   if (pathname.startsWith('/centros/sanitario')) {
     return {
-      eyebrow: 'Inteligencia - Sanitario',
+      eyebrow: 'Inteligencia · Sanitario',
       title: 'Estado Sanitario',
       showActions: false
     };
@@ -34,14 +34,14 @@ const getPageMeta = (pathname) => {
 
   if (pathname.startsWith('/centros/mapa')) {
     return {
-      eyebrow: 'Directorio - Mapa',
+      eyebrow: 'Directorio · Mapa',
       title: 'Mapa de Centros',
       showActions: true
     };
   }
 
   return {
-    eyebrow: 'Directorio - Centros',
+    eyebrow: 'Directorio · Centros',
     title: 'Directorio de Centros',
     showActions: true
   };

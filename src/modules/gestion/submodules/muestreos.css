@@ -78,6 +78,7 @@
 
 .muestreos-screen {
   animation: fadeIn 0.3s ease-out;
+  padding-bottom: 20px;
 }
 
 .mu-empty-tenant {
@@ -987,7 +988,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 14px 16px 16px;
   border-top: 1px solid var(--color-border);
 }
 
@@ -1487,4 +1488,57 @@
   .mx-modal-footer button {
     width: 100%;
   }
+}
+
+/* ─ Proveedor seleccionado (pill) dentro del modal de muestreo ─ */
+.mu-selected-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--color-primary, #0a5cff);
+  border-radius: var(--radius-lg, 14px);
+  background: rgba(10, 92, 255, 0.05);
+  box-shadow: 0 0 0 3px rgba(10, 92, 255, 0.07);
+}
+
+.mu-selected-pill > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mu-selected-pill strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mu-selected-pill span {
+  font-size: 0.82rem;
+  color: var(--color-text-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Toolbar de acciones sobre la tabla de muestreos */
+.muestreos-period-card {
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+
+.muestreos-actions-toolbar {
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 0 0 var(--radius-card, 16px) var(--radius-card, 16px);
+  background: var(--color-surface, #fff);
+  padding: 10px 16px;
+  margin-bottom: 16px;
 }

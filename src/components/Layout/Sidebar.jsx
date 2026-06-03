@@ -43,7 +43,7 @@ const MENU_STRUCTURE = [
     links: [
       { label: 'Resumen', to: '/gestion/bandeja', icon: ClipboardList },
       { label: 'Agenda', to: '/gestion/agenda', icon: Calendar },
-      { label: 'Negociación', to: '/gestion/tratos', icon: Handshake },
+      { label: 'Tratos', to: '/gestion/tratos', icon: Handshake },
       { label: 'Prog. de Cosecha', to: '/biomasa/programa', icon: Droplet },
       { label: 'Muestreos', to: '/biomasa/muestreos', icon: TestTube2 },
     ],
@@ -63,7 +63,7 @@ const MENU_STRUCTURE = [
     icon: BarChart3,
     links: [
       { label: 'Sanitario', to: '/centros/sanitario', icon: ShieldCheck, alertId: 'sanitario' },
-      { label: 'Historial / Equipo', to: '/historial', icon: History },
+      { label: 'Historial', to: '/historial', icon: History },
     ],
   },
   {

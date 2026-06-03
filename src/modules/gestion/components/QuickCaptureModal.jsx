@@ -37,7 +37,7 @@ const ACTION_OPTIONS = [
 ];
 
 const MODULE_SHORTCUTS = [
-  { label: 'Negociación', path: '/gestion/tratos', icon: FileText },
+  { label: 'Tratos', path: '/gestion/tratos', icon: FileText },
   { label: 'Programa de Cosecha', path: '/biomasa/programa', icon: Truck },
   { label: 'Muestreo técnico', path: '/biomasa/muestreos', icon: Beaker },
 ];

@@ -185,6 +185,20 @@
   flex: 1;
 }
 
+.mx-page > .mx-toolbar .dir-toolbar-search {
+  min-width: min(360px, 100%);
+}
+
+.mx-page > .mx-toolbar:has(.dir-toolbar-search) {
+  align-items: center;
+  padding: 2px 0 4px;
+  margin-bottom: 18px;
+}
+
+.mx-page > .mx-kpi-grid.am-mt-16 {
+  margin-top: 18px !important;
+}
+
 .dir-kpi-value.is-success {
   color: var(--color-success);
 }
@@ -238,9 +252,27 @@
 
 .dir-contact-kpi-btn.active {
   background: rgba(10, 92, 255, 0.04);
-  border-color: rgba(10, 92, 255, 0.3);
+  border-color: rgba(10, 92, 255, 0.35);
   box-shadow: 0 0 0 3px rgba(10, 92, 255, 0.08), var(--mx-shadow-card);
   transform: none;
+}
+
+/* Línea de acento superior cuando el card está activo */
+.dir-contact-kpi-btn.active::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--color-primary);
+  opacity: 0.75;
+}
+
+/* No levantar el card cuando está activo al hacer hover */
+.dir-contact-kpi-btn.active:hover {
+  transform: none;
+  border-color: rgba(10, 92, 255, 0.5);
+  box-shadow: 0 0 0 4px rgba(10, 92, 255, 0.12), var(--mx-shadow-card);
 }
 
 .dir-contact-centro-meta {

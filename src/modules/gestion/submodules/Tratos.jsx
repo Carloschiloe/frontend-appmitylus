@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, Plus, RotateCcw, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
@@ -381,7 +381,7 @@ export default function Tratos() {
 
   return (
     <div className="mx-page am-p-0">
-      <div className="mx-toolbar am-mt-16">
+      <div className="mx-toolbar">
         <div className="mx-search-box tratos-toolbar-search">
           <Search size={18} />
           <input
@@ -441,7 +441,7 @@ export default function Tratos() {
         )}
         <button className="mx-btn-icon sm" onClick={handleRefresh} title="Actualizar"><RotateCcw size={18} /></button>
         <button className="mx-btn mx-btn-primary" onClick={openNew}>
-          <Plus size={18} /> Nueva Negociación
+          <Plus size={18} /> Nuevo Trato
         </button>
       </div>
 

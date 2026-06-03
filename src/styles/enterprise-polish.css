@@ -5,6 +5,7 @@
 */
 
 :root {
+  --fab-safe-bottom-space: 120px;
   --page-padding: 24px;
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -36,6 +37,7 @@ html {
 
 body {
   margin: 0;
+  padding-bottom: var(--fab-safe-bottom-space);
   background:
     linear-gradient(180deg, rgba(245, 250, 255, 0.72), rgba(245, 250, 255, 1) 260px),
     var(--color-bg);

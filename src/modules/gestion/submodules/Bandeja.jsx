@@ -325,7 +325,7 @@ export default function Bandeja() {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
-        <div className="gs-highlight-pills">
+        <div className="gs-highlight-pills gs-highlight-pills-hero">
           <span className="mx-badge gs-hero-badge">
             {formatTons(summary?.acordadoMes)} este mes
           </span>

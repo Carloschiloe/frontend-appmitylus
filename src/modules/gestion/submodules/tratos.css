@@ -42,6 +42,16 @@
   flex: 1;
 }
 
+.mx-page > .mx-toolbar .tratos-toolbar-search {
+  min-width: min(360px, 100%);
+}
+
+.mx-page > .mx-toolbar:has(.tratos-toolbar-search) {
+  align-items: center;
+  padding: 4px 0 2px;
+  margin-bottom: 20px;
+}
+
 .tratos-col-provider {
   width: 30%;
 }

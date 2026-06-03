@@ -181,7 +181,7 @@ export default function TratosTable({
                           >
                             <Send size={14} />
                           </button>
-                          <button className="mx-action-btn edit" title="Editar Negociación" onClick={() => onEdit(item)}>
+                          <button className="mx-action-btn edit" title="Editar Trato" onClick={() => onEdit(item)}>
                             <Edit size={14} />
                           </button>
                           <button className="mx-action-btn delete" title="Eliminar" onClick={() => onDelete(item)}>

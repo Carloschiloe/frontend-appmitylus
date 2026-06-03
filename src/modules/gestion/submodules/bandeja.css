@@ -178,7 +178,17 @@
 }
 
 .gs-kpi-strip {
-  margin-top: 16px;
+  margin-top: 18px;
+  margin-bottom: 22px;
+}
+
+.gs-highlight-pills {
+  margin-top: 2px;
+}
+
+.gs-main-grid,
+.gs-secondary-grid {
+  margin-top: 26px !important;
 }
 
 .gs-kpi-value-danger {
