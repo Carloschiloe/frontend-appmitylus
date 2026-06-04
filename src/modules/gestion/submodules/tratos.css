@@ -39,11 +39,12 @@
 }
 
 .tratos-toolbar-search {
-  flex: 1;
+  flex: 0 1 420px;
+  max-width: 420px;
 }
 
 .mx-page > .mx-toolbar .tratos-toolbar-search {
-  min-width: min(360px, 100%);
+  min-width: min(280px, 100%);
 }
 
 .mx-page > .mx-toolbar:has(.tratos-toolbar-search) {

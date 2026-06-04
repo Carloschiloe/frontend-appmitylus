@@ -56,7 +56,7 @@
 }
 
 .biomasa-content-frame > .mx-toolbar {
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
 .biomasa-content-frame--muestreos {
@@ -1984,10 +1984,10 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 .harvest-program-period > span {
-  min-width: 170px;
+  min-width: 150px;
   color: var(--color-text);
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   text-align: center;
 }
