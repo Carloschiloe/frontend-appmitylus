@@ -32,19 +32,21 @@ const DashboardBiomasaChart = lazy(() => import('./DashboardBiomasaChart.jsx'));
 const KpiCard = ({ title, value, sub, icon: Icon, color, trend }) => (
   <div className="mx-kpi-card-new">
     <div className="mx-kpi-card-header">
+      <p className="mx-kpi-card-title">{title}</p>
       <div className="mx-kpi-card-icon" style={{ backgroundColor: `${color}15`, color }}>
-        <Icon size={20} />
+        <Icon size={18} />
       </div>
-      {trend != null && (
-        <div className={`mx-kpi-trend ${trend >= 0 ? 'positive' : 'negative'}`}>
-          <ArrowUpRight size={14} /> {Math.abs(trend)}%
-        </div>
-      )}
     </div>
     <div className="mx-kpi-card-body">
       <h4 className="mx-kpi-card-value">{value ?? '—'}</h4>
-      <p className="mx-kpi-card-title">{title}</p>
-      {sub && <p className="mx-kpi-card-sub">{sub}</p>}
+      <div className="mx-kpi-card-footer">
+        {trend != null && (
+          <span className={`mx-kpi-trend ${trend >= 0 ? 'positive' : 'negative'}`}>
+            <ArrowUpRight size={12} /> {Math.abs(trend)}%
+          </span>
+        )}
+        {sub && <p className="mx-kpi-card-sub">{sub}</p>}
+      </div>
     </div>
   </div>
 );
