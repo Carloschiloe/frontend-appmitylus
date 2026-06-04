@@ -1,6 +1,32 @@
 import { useCallback, useEffect, useState } from 'react';
 import { deleteMuestreoEvidence, uploadMuestreoEvidence } from './muestreos.api';
 
+function normalizeEvidencePhoto(photo) {
+  if (!photo) return null;
+
+  if (typeof photo === 'string') {
+    return {
+      url: photo,
+      previewUrl: photo,
+      persisted: true,
+    };
+  }
+
+  const previewUrl = photo.url || photo.previewUrl || photo.signedUrl || photo.src || '';
+
+  return {
+    ...photo,
+    url: previewUrl,
+    previewUrl,
+    name: photo.name || photo.filename || '',
+    persisted: photo.persisted ?? true,
+  };
+}
+
+function normalizeEvidencePhotos(photos = []) {
+  return photos.map(normalizeEvidencePhoto).filter(Boolean);
+}
+
 export default function useMuestreoEvidence({ editingId, addToast }) {
   const [catDetails, setCatDetails] = useState({});
   const [generalPhotos, setGeneralPhotos] = useState([]);
@@ -26,7 +52,7 @@ export default function useMuestreoEvidence({ editingId, addToast }) {
 
   const loadEvidence = useCallback((muestreo) => {
     setCatDetails({ ...(muestreo?.catDetails || {}) });
-    setGeneralPhotos(Array.isArray(muestreo?.generalPhotos) ? muestreo.generalPhotos : []);
+    setGeneralPhotos(Array.isArray(muestreo?.generalPhotos) ? normalizeEvidencePhotos(muestreo.generalPhotos) : []);
     setDeletedPhotoKeys([]);
     setPreviewImage(null);
   }, []);
@@ -95,7 +121,7 @@ export default function useMuestreoEvidence({ editingId, addToast }) {
         const res = await uploadMuestreoEvidence({ file, category: 'general', samplingId: editingId || 'temp' });
 
         if (res.ok) {
-          setGeneralPhotos((prev) => [...prev, res.metadata]);
+          setGeneralPhotos((prev) => [...prev, normalizeEvidencePhoto(res.metadata)]);
         }
       } catch {
         addToast({ title: 'Error al subir imagen', message: 'No se pudo subir la imagen. Intenta nuevamente.', type: 'error' });

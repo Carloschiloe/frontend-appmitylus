@@ -110,7 +110,7 @@ export default function useMuestreoSave({
       const resolvedProvider = resolveProvider({ form, selectedProvider, directory });
       const hasProviderName = String(form.proveedorNombre || '').trim().length > 0;
       const isExistingContact = selectedProvider?.isContact && !!selectedProvider?.contactoId;
-      const needsContact = !isExistingContact && hasProviderName && (
+      const needsContact = !editingId && !isExistingContact && hasProviderName && (
         selectedProvider?.isNew ||
         selectedProvider?.pendingContact ||
         !resolvedProvider ||
