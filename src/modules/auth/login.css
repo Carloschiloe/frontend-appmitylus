@@ -277,6 +277,38 @@
   box-shadow: 0 0 0 4px var(--color-primary-ring);
 }
 
+/* Reserva espacio a la derecha para el botón mostrar/ocultar */
+.login-input-with-toggle {
+  padding-right: 44px !important;
+}
+
+.login-toggle-password {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.login-toggle-password:hover {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+.login-toggle-password:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .login-actions {
   display: flex;
   justify-content: space-between;
