@@ -116,7 +116,7 @@ export default function Bandeja() {
 
   // 1. Carga de datos con React Query
   // El uso de hooks permite que cada recurso se gestione de forma independiente
-  const { data: summary, isLoading: loadingSummary } = useGestionSummary();
+  const { isLoading: loadingSummary } = useGestionSummary();
   const { data: oportunidadesData, isLoading: loadingOpp } = useOportunidades({ limit: 200 });
   const { data: interaccionesData, isLoading: loadingInt } = useInteracciones({ limit: 200 });
   const { data: visitasData, isLoading: loadingVis } = useVisitas();
@@ -313,6 +313,10 @@ export default function Bandeja() {
       .slice(0, 5);
   }, [muestreos]);
 
+  const priorityItems = taskBoard.spotlight.slice(0, 4);
+  const compactActivityFeed = activityFeed.slice(0, 4);
+  const compactDeals = upcomingDeals.slice(0, 3);
+
   if (loading) {
     return (
       <div className="mx-state-placeholder">
@@ -323,22 +327,8 @@ export default function Bandeja() {
   }
 
   return (
-    <>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
-        <div className="gs-highlight-pills gs-highlight-pills-hero">
-          <span className="mx-badge gs-hero-badge">
-            {formatTons(summary?.acordadoMes)} este mes
-          </span>
-          <span className="mx-badge gs-hero-badge">
-            {formatTons(summary?.acordadoProxMes)} próx. mes
-          </span>
-        </div>
-        <button className="mx-btn-icon gs-hero-refresh" onClick={handleRefresh}>
-          <RotateCcw size={20} />
-        </button>
-      </div>
-
-      <div>
+    <div className="gs-summary-dashboard">
+        <div className="gs-kpi-row">
         <div className="mx-kpi-grid gs-kpi-strip">
           <div className="mx-kpi-card">
             <div className="mx-kpi-label">Pendientes vencidos</div>
@@ -357,8 +347,12 @@ export default function Bandeja() {
             <div className="mx-kpi-value gs-kpi-value-warning">{seguimiento.paused.length}</div>
           </div>
         </div>
+          <button className="mx-btn-icon gs-kpi-refresh" onClick={handleRefresh} aria-label="Actualizar panel" title="Actualizar panel">
+            <RotateCcw size={18} />
+          </button>
+        </div>
 
-        <section className="gs-main-grid am-mt-24">
+        <div className="gs-dashboard">
           <article className="mx-card gs-priority-panel">
             <header className="mx-card-header">
               <div>
@@ -370,7 +364,7 @@ export default function Bandeja() {
               </Link>
             </header>
 
-            <div className="mx-toolbar am-mt-12 gs-priority-toolbar">
+            <div className="mx-toolbar gs-priority-toolbar">
               <div className="mx-toggle-group">
                 <span className="mx-badge mx-badge-danger">Vencidos: {taskBoard.overdue.length}</span>
                 <span className="mx-badge mx-badge-warning">Hoy: {taskBoard.today.length}</span>
@@ -378,11 +372,11 @@ export default function Bandeja() {
               </div>
             </div>
 
-            <div className="gs-priority-list am-mt-16">
-              {taskBoard.spotlight.length === 0 ? (
+            <div className="gs-priority-list">
+              {priorityItems.length === 0 ? (
                 <div className="mx-state-placeholder gs-empty-priority">Sin tareas vencidas ni compromisos para esta semana.</div>
               ) : (
-                taskBoard.spotlight.map((item) => {
+                priorityItems.map((item) => {
                   const meta = FOLLOWUP_META[item.source] || FOLLOWUP_META.activo;
                   const Icon = meta.icon;
 
@@ -413,7 +407,43 @@ export default function Bandeja() {
             </div>
           </article>
 
-        <div className="gs-side-stack">
+          <article className="mx-card">
+            <header className="mx-card-header">
+              <div>
+                <p className="mx-eyebrow">Agenda</p>
+                <h3 className="mx-card-title">Esta semana</h3>
+              </div>
+              <Link className="mx-btn-icon sm" to="/gestion/agenda">
+                <ChevronRight size={18} />
+              </Link>
+            </header>
+
+            <div className="gs-agenda-list">
+              {agendaByDay.map((day) => (
+                <div key={day.key} className="gs-agenda-day">
+                  <div className="gs-agenda-date">
+                    <strong>{formatLongDate(day.date)}</strong>
+                    <span>{day.items.length} tareas</span>
+                  </div>
+                  <div className="gs-agenda-items">
+                    {day.items.length === 0 ? (
+                      <span className="gs-agenda-empty">Libre</span>
+                    ) : (
+                      day.items.slice(0, 2).map((item, index) => (
+                        <span
+                          key={`${day.key}-${index}`}
+                          className={`mx-badge mx-badge-${item.source === 'pausado' ? 'warning' : 'primary'}`}
+                        >
+                          {item.proveedorNombre}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+
           <article className="mx-card">
             <header className="mx-card-header">
               <div>
@@ -425,7 +455,7 @@ export default function Bandeja() {
               </Link>
             </header>
 
-            <div className="gs-pipeline-list am-mt-12">
+            <div className="gs-pipeline-list">
               {pipeline.counts.every((item) => item.count === 0) ? (
                 <div className="mx-state-placeholder sm">No hay tratos activos.</div>
               ) : (
@@ -454,10 +484,10 @@ export default function Bandeja() {
             </header>
 
             <div className="gs-mini-list">
-              {upcomingDeals.length === 0 ? (
+              {compactDeals.length === 0 ? (
                 <div className="mx-state-placeholder sm">No hay compromisos próximos.</div>
               ) : (
-                upcomingDeals.map((item) => (
+                compactDeals.map((item) => (
                   <div key={item._id} className="gs-mini-item">
                     <div>
                       <strong>{item.proveedorNombre}</strong>
@@ -471,51 +501,11 @@ export default function Bandeja() {
               )}
             </div>
           </article>
-        </div>
-      </section>
 
-      <section className="gs-secondary-grid am-mt-24">
-        <article className="mx-card">
-          <header className="mx-card-header">
-            <div>
-              <p className="mx-eyebrow">Agenda</p>
-              <h3 className="mx-card-title">Esta semana</h3>
-            </div>
-            <Link className="mx-btn-icon sm" to="/gestion/agenda">
-              <ChevronRight size={18} />
-            </Link>
-          </header>
-
-          <div className="gs-agenda-list">
-            {agendaByDay.map((day) => (
-              <div key={day.key} className="gs-agenda-day">
-                <div className="gs-agenda-date">
-                  <strong>{formatLongDate(day.date)}</strong>
-                  <span>{day.items.length} tareas</span>
-                </div>
-                <div className="gs-agenda-items">
-                  {day.items.length === 0 ? (
-                    <span className="gs-agenda-empty">Libre</span>
-                  ) : (
-                    day.items.slice(0, 2).map((item, index) => (
-                      <span
-                        key={`${day.key}-${index}`}
-                        className={`mx-badge mx-badge-${item.source === 'pausado' ? 'warning' : 'primary'}`}
-                      >
-                        {item.proveedorNombre}
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="mx-card">
-          <header className="mx-card-header">
-            <div>
-              <p className="mx-eyebrow">Actividad</p>
+          <article className="mx-card">
+            <header className="mx-card-header">
+              <div>
+                <p className="mx-eyebrow">Actividad</p>
               <h3 className="mx-card-title">Último movimiento</h3>
             </div>
             <Link className="mx-btn-icon sm" to="/historial">
@@ -524,10 +514,10 @@ export default function Bandeja() {
           </header>
 
           <div className="gs-activity-list">
-            {activityFeed.length === 0 ? (
+            {compactActivityFeed.length === 0 ? (
               <div className="mx-state-placeholder sm">Sin gestiones recientes.</div>
             ) : (
-              activityFeed.map((item) => (
+              compactActivityFeed.map((item) => (
                 <div key={item.id} className="gs-activity-item">
                   <div className={`mx-btn-icon sm is-${(EVENT_META[item.kind] || EVENT_META.interaccion).tone}`}>
                     <MessageSquare size={14} />
@@ -577,15 +567,14 @@ export default function Bandeja() {
             )}
           </div>
         </article>
-      </section>
+        </div>
 
-      <footer className="mx-state-placeholder sm am-mt-32 gs-footer-summary">
+      <footer className="mx-state-placeholder sm gs-footer-summary">
         <Target size={20} className="gs-footer-icon" />
         <p>
           Usa <strong>Registrar</strong> para agregar llamadas, visitas o muestreos al vuelo. Este panel prioriza lo vencido, lo de hoy y los seguimientos activos.
         </p>
       </footer>
     </div>
-  </>
   );
 }

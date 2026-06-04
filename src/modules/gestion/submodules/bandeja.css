@@ -170,11 +170,21 @@
   font-weight: 700;
 }
 
-.gs-main-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
-  gap: 20px;
-  align-items: start;
+/* Dashboard de Resumen Operativo: layout multi-columna nativo.
+   column-fill: balance reparte las cards entre 2 columnas equilibrando
+   alturas automáticamente, sin importar cuánto contenido tenga cada card.
+   Evita el hueco que dejaba una grilla de columnas de altura independiente. */
+.gs-dashboard {
+  columns: 2;
+  column-gap: 20px;
+  column-fill: balance;
+}
+
+.gs-dashboard > .mx-card {
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  margin: 0 0 20px;
+  width: 100%;
 }
 
 .gs-kpi-strip {
@@ -184,11 +194,6 @@
 
 .gs-highlight-pills {
   margin-top: 2px;
-}
-
-.gs-main-grid,
-.gs-secondary-grid {
-  margin-top: 26px !important;
 }
 
 .gs-kpi-value-danger {
@@ -578,10 +583,12 @@
   margin-left: auto;
 }
 
-.gs-secondary-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+/* Empty-states compactos dentro de las cards del resumen
+   (el .mx-state-placeholder global usa 48px de padding e infla las columnas) */
+.gs-dashboard .mx-state-placeholder {
+  padding: 24px 16px;
+  border-radius: 14px;
+  font-size: 0.85rem;
 }
 
 .gs-empty-inline {
@@ -625,12 +632,11 @@
 }
 
 @media (max-width: 1180px) {
-  .gs-kpi-grid,
-  .gs-secondary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .gestion-content-frame .gs-kpi-grid,
+  .gs-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  .gs-main-grid,
   .gs-overview-card {
     grid-template-columns: 1fr;
   }
@@ -640,9 +646,15 @@
   }
 }
 
+/* Bajo ~920px el dashboard pasa a una sola columna */
+@media (max-width: 920px) {
+  .gs-dashboard {
+    columns: 1;
+  }
+}
+
 @media (max-width: 760px) {
   .gs-kpi-grid,
-  .gs-secondary-grid,
   .gs-priority-strip {
     grid-template-columns: 1fr;
   }
@@ -667,5 +679,273 @@
   .gs-priority-item,
   .gs-activity-item {
     padding: 14px;
+  }
+}
+
+/* Resumen Operativo compacto */
+.gestion-content-frame:has(.gs-summary-dashboard) {
+  padding-top: 28px;
+}
+
+.gs-summary-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 24px;
+}
+
+.gs-kpi-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+}
+
+.gs-kpi-strip {
+  margin: 0;
+}
+
+.gestion-content-frame .gs-kpi-grid,
+.gestion-content-frame .mx-kpi-grid.gs-kpi-strip,
+.gs-kpi-grid {
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+.gs-kpi-grid .mx-kpi-card {
+  min-height: 76px;
+  padding: 12px 16px;
+  border-radius: 12px;
+}
+
+.gs-kpi-grid .mx-kpi-label {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.gs-kpi-grid .mx-kpi-value {
+  margin-top: 8px;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.gs-kpi-refresh {
+  width: 40px;
+  height: 40px;
+  align-self: center;
+}
+
+.gs-dashboard {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-areas:
+    "priority priority priority priority priority priority priority activity activity activity activity activity"
+    "agenda agenda agenda pipeline pipeline pipeline samples samples samples biomasa biomasa biomasa";
+  gap: 16px;
+  columns: auto;
+  column-gap: 0;
+  column-fill: auto;
+}
+
+.gs-dashboard > .mx-card {
+  break-inside: auto;
+  -webkit-column-break-inside: auto;
+  margin: 0;
+  width: auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.gs-dashboard > .mx-card:nth-child(1) {
+  grid-area: priority;
+}
+
+.gs-dashboard > .mx-card:nth-child(2) {
+  grid-area: agenda;
+}
+
+.gs-dashboard > .mx-card:nth-child(3) {
+  grid-area: pipeline;
+}
+
+.gs-dashboard > .mx-card:nth-child(4) {
+  grid-area: biomasa;
+}
+
+.gs-dashboard > .mx-card:nth-child(5) {
+  grid-area: activity;
+}
+
+.gs-dashboard > .mx-card:nth-child(6) {
+  grid-area: samples;
+}
+
+.gs-dashboard .mx-card-header {
+  min-height: 0;
+  padding: 12px 16px 8px;
+}
+
+.gs-dashboard .mx-card-title {
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.gs-priority-toolbar.mx-toolbar {
+  min-height: 0;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0 16px 8px;
+}
+
+.gs-priority-toolbar .mx-toggle-group {
+  gap: 6px;
+}
+
+.gs-priority-list,
+.gs-pipeline-list,
+.gs-mini-list,
+.gs-activity-list,
+.gs-sample-list,
+.gs-agenda-list {
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.gs-priority-list {
+  padding-top: 0;
+}
+
+.gs-priority-item,
+.gs-activity-item {
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+
+.gs-priority-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+}
+
+.gs-priority-content p,
+.gs-activity-copy p,
+.gs-sample-item p,
+.gs-mini-item p {
+  margin-top: 4px;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.gs-priority-meta,
+.gs-sample-metrics,
+.gs-activity-copy span,
+.gs-agenda-date span {
+  gap: 6px 10px;
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.gs-mini-item,
+.gs-sample-item,
+.gs-agenda-day {
+  padding: 9px 10px;
+  border-radius: 12px;
+}
+
+.gs-agenda-list {
+  gap: 6px;
+}
+
+.gs-agenda-day {
+  grid-template-columns: 106px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.gs-agenda-date {
+  gap: 2px;
+}
+
+.gs-agenda-date strong {
+  font-size: 0.82rem;
+}
+
+.gs-agenda-items {
+  gap: 5px;
+}
+
+.gs-pipeline-row {
+  gap: 5px;
+}
+
+.gs-pipeline-progress {
+  height: 5px;
+}
+
+.gs-mini-item {
+  gap: 8px;
+}
+
+.gs-mini-item .mx-badge,
+.gs-sample-topline .mx-badge,
+.gs-agenda-items .mx-badge {
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.gs-footer-summary {
+  flex-direction: row;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-top: 0;
+}
+
+.gs-footer-summary p {
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 1180px) {
+  .gestion-content-frame .mx-kpi-grid.gs-kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .gs-dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "priority activity"
+      "agenda pipeline"
+      "samples biomasa";
+  }
+}
+
+@media (max-width: 920px) {
+  .gestion-content-frame:has(.gs-summary-dashboard) {
+    padding-top: 24px;
+  }
+
+  .gs-dashboard {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "priority"
+      "activity"
+      "agenda"
+      "pipeline"
+      "samples"
+      "biomasa";
+  }
+}
+
+@media (max-width: 760px) {
+  .gs-kpi-row {
+    grid-template-columns: 1fr;
+  }
+
+  .gs-kpi-refresh {
+    justify-self: end;
+  }
+
+  .gs-agenda-day {
+    grid-template-columns: 1fr;
   }
 }
