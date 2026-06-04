@@ -142,7 +142,7 @@ export default function Dashboard() {
 
   return (
     <div className="mx-page dsh-premium">
-      <header className="mx-hero">
+      <header className="mx-hero mx-hero--with-desc">
         <div className="mx-hero-content">
           <p className="mx-eyebrow">Inicio · Panel Ejecutivo</p>
           <h1>Panel Principal</h1>

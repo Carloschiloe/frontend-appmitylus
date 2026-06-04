@@ -38,7 +38,7 @@ export default function Gestion() {
 
   return (
     <div className="mx-page">
-      <header className="mx-hero">
+      <header className={`mx-hero${pageMeta.description ? ' mx-hero--with-desc' : ''}`}>
         <div className="mx-hero-content">
           <p className="mx-eyebrow">{pageMeta.eyebrow}</p>
           <h1>{pageMeta.title}</h1>

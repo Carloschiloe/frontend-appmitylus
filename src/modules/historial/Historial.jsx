@@ -807,7 +807,7 @@ export default function Historial() {
 
     return (
       <div className="mx-page">
-        <header className="mx-hero">
+        <header className="mx-hero mx-hero--with-desc">
           <div className="mx-hero-content">
             <p className="mx-eyebrow">Inteligencia · Historial</p>
             <h1>{selectedProvider.name}</h1>
@@ -1058,7 +1058,7 @@ export default function Historial() {
 
   return (
     <div className="mx-page">
-      <header className="mx-hero historial-hero">
+      <header className="mx-hero mx-hero--with-desc historial-hero">
         <div className="mx-hero-content">
           <p className="mx-eyebrow">{historyView === 'equipo' ? 'Inteligencia · Actividad del equipo' : 'Inteligencia · Historial'}</p>
           <h1>{historyView === 'equipo' ? 'Actividad del equipo' : 'Historial operativo'}</h1>

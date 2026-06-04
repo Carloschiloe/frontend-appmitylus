@@ -83,12 +83,26 @@ button {
   gap: 16px;
 }
 
+/* Hero base: eyebrow + H1 únicamente (~84px). Default para todas las vistas. */
 .mx-hero {
   min-height: 76px;
   padding: 14px var(--page-padding) 22px;
   border-radius: 0;
   box-shadow: none;
   border-bottom: 1px solid rgba(217, 230, 245, 0.22);
+}
+
+/* Hero con descripción: eyebrow + H1 + párrafo contextual (~130px).
+   Usar solo en vistas hub/orientación: Dashboard, Bandeja, Historial. */
+.mx-hero--with-desc {
+  padding-bottom: 26px;
+}
+
+.mx-hero--with-desc .mx-hero-content > p:not(.mx-eyebrow) {
+  margin-top: 6px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  opacity: 0.82;
 }
 
 .mx-hero::after {
