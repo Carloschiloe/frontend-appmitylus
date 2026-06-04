@@ -1527,18 +1527,31 @@
   text-overflow: ellipsis;
 }
 
-/* Toolbar de acciones sobre la tabla de muestreos */
-.muestreos-period-card {
-  margin-bottom: 0;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  border-bottom: none;
+/* Panel unificado de controles de Muestreos — reemplaza el anterior doble toolbar */
+.muestreos-controls-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--mx-shadow-card);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.muestreos-actions-toolbar {
-  border-top: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 0 0 var(--radius-card, 16px) var(--radius-card, 16px);
-  background: var(--color-surface, #fff);
-  padding: 10px 16px;
-  margin-bottom: 16px;
+.mu-controls-period {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.mu-controls-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
 }

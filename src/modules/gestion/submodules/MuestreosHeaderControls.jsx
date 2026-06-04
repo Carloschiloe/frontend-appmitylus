@@ -47,31 +47,29 @@ export default function MuestreosHeaderControls({
   };
 
   return (
-    <>
-      <div className="mx-card muestreos-period-card">
-        <div className="mu-period-row">
-          <div className="mx-toggle-group">
-            <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => handleCalView('month')}>Vista Mes</button>
-            <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => handleCalView('week')}>Vista Semana</button>
-            <button className={`mx-toggle-btn ${calView === 'all' ? 'active' : ''}`} onClick={() => handleCalView('all')}>Todos</button>
-          </div>
-
-          {calView !== 'all' && (
-            <div className="mu-period-nav">
-              <button className="mx-btn-icon sm" onClick={handlePreviousPeriod}><ChevronLeft size={16} /></button>
-              <span className="mu-period-label">
-                {calView === 'month' ? getMonthLabel(mes) : weekLabel}
-              </span>
-              <button className="mx-btn-icon sm" onClick={handleNextPeriod}><ChevronRight size={16} /></button>
-              {calView === 'week' && weekOffset !== 0 && (
-                <button className="mx-btn mx-btn-outline sm" onClick={handleToday}>Hoy</button>
-              )}
-            </div>
-          )}
+    <div className="muestreos-controls-panel">
+      <div className="mu-controls-period">
+        <div className="mx-toggle-group">
+          <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => handleCalView('month')}>Vista Mes</button>
+          <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => handleCalView('week')}>Vista Semana</button>
+          <button className={`mx-toggle-btn ${calView === 'all' ? 'active' : ''}`} onClick={() => handleCalView('all')}>Todos</button>
         </div>
+
+        {calView !== 'all' && (
+          <div className="mu-period-nav">
+            <button className="mx-btn-icon sm" onClick={handlePreviousPeriod}><ChevronLeft size={16} /></button>
+            <span className="mu-period-label">
+              {calView === 'month' ? getMonthLabel(mes) : weekLabel}
+            </span>
+            <button className="mx-btn-icon sm" onClick={handleNextPeriod}><ChevronRight size={16} /></button>
+            {calView === 'week' && weekOffset !== 0 && (
+              <button className="mx-btn mx-btn-outline sm" onClick={handleToday}>Hoy</button>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="mx-toolbar muestreos-actions-toolbar">
+      <div className="mu-controls-actions">
         <div className="mx-toggle-group">
           <button className={`mx-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => onViewModeChange('list')}><List size={14} /> Historial</button>
           <button className={`mx-toggle-btn ${viewMode === 'grouped' ? 'active' : ''}`} onClick={() => onViewModeChange('grouped')}><LayoutGrid size={14} /> Agrupado</button>
@@ -91,6 +89,6 @@ export default function MuestreosHeaderControls({
           <Plus size={18} /> Muestreo
         </button>
       </div>
-    </>
+    </div>
   );
 }
