@@ -1,6 +1,7 @@
 import {
   ChevronLeft,
   ChevronRight,
+  Droplet,
   Pause,
   Play,
   RotateCcw,
@@ -167,7 +168,11 @@ export default function ProgramaTablaView({
             {!programasPeriodo.length && (
               <tr>
                 <td colSpan="6">
-                  <div className="mx-state-placeholder">Sin programas para el periodo seleccionado.</div>
+                  <div className="mx-empty-state">
+                    <Droplet size={36} />
+                    <p className="mx-empty-state__title">Sin programación disponible</p>
+                    <p className="mx-empty-state__text">No hay cosechas programadas para el periodo seleccionado.</p>
+                  </div>
                 </td>
               </tr>
             )}

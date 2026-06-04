@@ -9,6 +9,7 @@ import {
   MapPin,
   Printer,
   Share2,
+  TestTube2,
   Trash2,
 } from 'lucide-react';
 
@@ -108,6 +109,17 @@ export default function MuestreosTable({
           </thead>
           <tbody>
             {viewMode === 'list' ? (
+              filtered.length === 0 ? (
+                <tr>
+                  <td colSpan="9">
+                    <div className="mx-empty-state">
+                      <TestTube2 size={36} />
+                      <p className="mx-empty-state__title">Sin muestreos para mostrar</p>
+                      <p className="mx-empty-state__text">No hay registros que coincidan con los filtros actuales.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) :
               filtered.map((item) => (
                 <tr key={item._id || item.id}>
                   <td className="mu-date-cell">{formatDate(item.fecha)}</td>
@@ -134,6 +146,16 @@ export default function MuestreosTable({
                   </td>
                 </tr>
               ))
+            ) : groupedData.length === 0 ? (
+              <tr>
+                <td colSpan="9">
+                  <div className="mx-empty-state">
+                    <TestTube2 size={36} />
+                    <p className="mx-empty-state__title">Sin muestreos para mostrar</p>
+                    <p className="mx-empty-state__text">No hay registros que coincidan con los filtros actuales.</p>
+                  </div>
+                </td>
+              </tr>
             ) : (
               groupedData.map((group) => (
                 <React.Fragment key={group.key}>

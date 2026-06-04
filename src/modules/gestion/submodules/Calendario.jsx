@@ -407,7 +407,11 @@ function AgendaTable({ items, emptyText, onViewCalendar, onEdit, onReprogram, on
           )) : (
             <tr>
               <td colSpan="7">
-                <div className="agenda-empty-table">{emptyText}</div>
+                <div className="mx-empty-state">
+                  <CalendarDays size={36} />
+                  <p className="mx-empty-state__title">Sin actividades programadas</p>
+                  <p className="mx-empty-state__text">{emptyText}</p>
+                </div>
               </td>
             </tr>
           )}

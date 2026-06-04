@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarCheck, ClipboardList, Edit, Send, Trash2, X } from 'lucide-react';
+import { CalendarCheck, ClipboardList, Edit, Handshake, Send, Trash2, X } from 'lucide-react';
 import {
   ESTADOS_TRATO,
   derivePrecioDesdeCondiciones,
@@ -73,9 +73,10 @@ export default function TratosTable({
               ) : items.length === 0 ? (
                 <tr>
                   <td colSpan="7">
-                    <div className="mx-state-placeholder">
-                      No hay negociaciones para los filtros seleccionados.
-                      <span style={{ display: 'block', fontSize: '0.82rem', color: 'var(--color-text-subtle)', marginTop: 4 }}>Cambia el mes o usa <strong>Todos</strong> para ver todas.</span>
+                    <div className="mx-empty-state">
+                      <Handshake size={36} />
+                      <p className="mx-empty-state__title">Sin tratos para mostrar</p>
+                      <p className="mx-empty-state__text">No hay negociaciones que coincidan con los filtros seleccionados. Cambia el mes o usa <strong>Todos</strong> para ver todas.</p>
                     </div>
                   </td>
                 </tr>

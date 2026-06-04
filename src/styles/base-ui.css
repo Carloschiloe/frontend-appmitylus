@@ -203,6 +203,39 @@
   gap: 4px;
 }
 
+/* ── Empty State estándar ── */
+/* Uso: <div className="mx-empty-state"> <Icon/> <p className="mx-empty-state__title"> <p className="mx-empty-state__text"> </div> */
+/* En tablas: <tr><td colSpan="N"><div className="mx-empty-state">...</div></td></tr> */
+.mx-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 52px 24px;
+  text-align: center;
+}
+
+.mx-empty-state svg {
+  opacity: 0.28;
+  color: var(--color-primary);
+}
+
+.mx-empty-state__title {
+  font-size: 0.95rem;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.mx-empty-state__text {
+  font-size: 0.82rem;
+  color: var(--color-text-subtle);
+  margin: 0;
+  max-width: 300px;
+  line-height: 1.5;
+}
+
 /* ── Bandeja / Carriles (Lanes) ── */
 .mx-lanes {
   display: grid;
