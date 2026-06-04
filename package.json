@@ -8,6 +8,7 @@
     "preview": "vite preview",
     "test:frontend": "node --test \"src/**/*.test.js\"",
     "test:ui": "node validate-ui.cjs",
+    "test:modals": "node modal-diag.cjs",
     "security:secrets": "node scripts/check-sensitive-files.mjs",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
