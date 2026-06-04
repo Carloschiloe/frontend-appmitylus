@@ -15,7 +15,7 @@
 }
 
 .mu-main-modal {
-  max-width: 800px;
+  max-width: 980px;
   width: 100%;
   box-sizing: border-box;
   display: flex;
@@ -202,20 +202,37 @@
   font-size: 0.9rem;
 }
 
+/* Wrapper del body: paso 2 usa fila [análisis | métricas] dentro del modal */
+.mu-body-inner {
+  display: flex;
+  flex-direction: column;
+}
+
+.mu-body-inner--analysis {
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.mu-body-inner--analysis > .mu-step-container {
+  flex: 1;
+  min-width: 0;
+}
+
 .mu-side-car {
-  width: 190px;
-  flex-shrink: 0;
+  flex: 0 0 200px;
   display: flex !important;
   flex-direction: column !important;
   gap: 12px;
-  animation: slideInRight 0.4s ease-out;
-  z-index: 10;
+  padding: 16px;
+  background: #f8fafc;
+  border-left: 1px solid var(--color-border);
+  animation: slideInRight 0.3s ease-out;
 }
 
 .mu-side-car-header {
   font-size: 0.7rem;
   font-weight: 900;
-  color: white;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 4px;
@@ -1394,7 +1411,12 @@
     width: 100% !important;
   }
 
+  .mu-body-inner--analysis {
+    flex-direction: column;
+  }
+
   .mu-side-car {
+    flex: 0 0 auto !important;
     width: 100% !important;
     flex-direction: row !important;
     overflow-x: auto;
@@ -1405,9 +1427,6 @@
     border-left: none;
     border-right: none;
     border-top: 1px solid #e2e8f0;
-    position: sticky;
-    bottom: 0;
-    z-index: 20;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
   }
 

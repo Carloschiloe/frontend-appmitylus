@@ -55,7 +55,42 @@ export default function MuestreoModalShell({
               <Loader className="am-icon-spin mu-loading-icon" size={32} />
               <p>Cargando muestreo...</p>
             </div>
-          ) : children}
+          ) : (
+            <div className={`mu-body-inner ${step === 2 ? 'mu-body-inner--analysis' : ''}`}>
+              {children}
+
+              {step === 2 && (
+                <aside className="mu-side-car">
+                  <div className="mu-side-car-header">Metricas Resumen</div>
+
+                  <div className="mu-side-car-item primary">
+                    <div className="label">R% Carne</div>
+                    <div className="val">{fmtNum(totals.rend, 1)}%</div>
+                  </div>
+
+                  <div className="mu-side-car-item">
+                    <div className="label">Muestra Total</div>
+                    <div className="val">{fmtNum(totals.totalMuestra, 2)}<span className="unit">kg</span></div>
+                  </div>
+
+                  <div className="mu-side-car-item success">
+                    <div className="label">Procesable</div>
+                    <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.procesable / totals.totalMuestra * 100) : 0, 1)}%</div>
+                  </div>
+
+                  <div className="mu-side-car-item error">
+                    <div className="label">Rechazo</div>
+                    <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.rechazos / totals.totalMuestra * 100) : 0, 1)}%</div>
+                  </div>
+
+                  <div className="mu-side-car-item warning">
+                    <div className="label">Defectos</div>
+                    <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.defectos / totals.totalMuestra * 100) : 0, 1)}%</div>
+                  </div>
+                </aside>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="mx-modal-footer mu-modal-footer">
@@ -80,37 +115,6 @@ export default function MuestreoModalShell({
           </div>
         </div>
       </div>
-
-      {step === 2 && (
-        <div className="mu-side-car">
-          <div className="mu-side-car-header">Metricas Resumen</div>
-
-          <div className="mu-side-car-item primary">
-            <div className="label">R% Carne</div>
-            <div className="val">{fmtNum(totals.rend, 1)}%</div>
-          </div>
-
-          <div className="mu-side-car-item">
-            <div className="label">Muestra Total</div>
-            <div className="val">{fmtNum(totals.totalMuestra, 2)}<span className="unit">kg</span></div>
-          </div>
-
-          <div className="mu-side-car-item success">
-            <div className="label">Procesable</div>
-            <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.procesable / totals.totalMuestra * 100) : 0, 1)}%</div>
-          </div>
-
-          <div className="mu-side-car-item error">
-            <div className="label">Rechazo</div>
-            <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.rechazos / totals.totalMuestra * 100) : 0, 1)}%</div>
-          </div>
-
-          <div className="mu-side-car-item warning">
-            <div className="label">Defectos</div>
-            <div className="val">{fmtNum(totals.totalMuestra > 0 ? (totals.defectos / totals.totalMuestra * 100) : 0, 1)}%</div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
