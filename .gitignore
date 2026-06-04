@@ -9,3 +9,7 @@ vite-check.log
 # Archivos de backup
 *.bak
 check.js
+
+# QA visual — credenciales locales y capturas generadas
+.env.qa
+validate-screenshots/
