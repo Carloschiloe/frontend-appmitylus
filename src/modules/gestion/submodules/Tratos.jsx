@@ -291,6 +291,17 @@ export default function Tratos() {
               valor: condicion.valor === '' ? null : condicion.valor,
             })),
           });
+
+          // 3. Si todas las condiciones quedaron acordadas, el trato pasa a Acordado
+          const todasAcordadas =
+            form.condiciones.length > 0 &&
+            form.condiciones.every((c) => c.estado === 'acordado');
+          if (todasAcordadas) {
+            await apiClient.patch(`/oportunidades/${newId}/estado`, {
+              estado: 'acordado',
+              observacion: form.notas || '',
+            });
+          }
         }
         addToast({ title: 'Creado', message: 'Nuevo trato registrado', type: 'success' });
       }
