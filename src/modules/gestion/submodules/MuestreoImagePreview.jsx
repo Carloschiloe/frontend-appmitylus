@@ -9,8 +9,14 @@ export default function MuestreoImagePreview({ image, onClose }) {
       onClick={onClose}
     >
       <button
+        type="button"
         className="mu-image-preview-close"
-        onClick={onClose}
+        onClick={(event) => {
+          event.stopPropagation();
+          onClose();
+        }}
+        aria-label="Cerrar imagen ampliada"
+        title="Cerrar imagen ampliada"
       >
         <X size={24} />
       </button>
