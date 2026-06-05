@@ -94,7 +94,7 @@ const TenantContextRequired = ({ title = 'Selecciona una empresa', description }
 // Componente para proteger rutas (Integración con AuthContext)
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/') || window.location.pathname.startsWith('/r/trato/');
+  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/') || window.location.pathname.startsWith('/r/trato/') || window.location.pathname.startsWith('/m/');
 
   if (loading) {
     return (
@@ -112,7 +112,7 @@ const PrivateRoute = ({ children }) => {
 
 const TenantScopedRoute = ({ children, title, description }) => {
   const { user, loading } = useAuth();
-  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/') || window.location.pathname.startsWith('/r/trato/');
+  const isPublicReport = window.location.pathname.startsWith('/r/muestreo/') || window.location.pathname.startsWith('/r/trato/') || window.location.pathname.startsWith('/m/');
 
   const selectedTenantDb = typeof window !== 'undefined'
     ? window.localStorage.getItem('selected_tenant_db') || ''
@@ -176,7 +176,7 @@ const SuperAdminRoute = ({ children }) => {
 
 export default function App() {
   const path = window.location.pathname;
-  const isPublicReportRoute = path.toLowerCase().startsWith('/r/muestreo') || path.toLowerCase().startsWith('/r/trato');
+  const isPublicReportRoute = path.toLowerCase().startsWith('/r/muestreo') || path.toLowerCase().startsWith('/r/trato') || path.toLowerCase().startsWith('/m/');
   
 
   // VISTA PÚBLICA AISLADA (Sin Auth, Sin Sidebar, Sin contexto privado)
@@ -193,6 +193,7 @@ export default function App() {
             <Routes>
               <Route path="/r/muestreo/:token" element={<SharedMuestreo />} />
               <Route path="/r/trato/:token" element={<SharedMuestreo />} />
+              <Route path="/m/:shortCode" element={<SharedMuestreo />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>

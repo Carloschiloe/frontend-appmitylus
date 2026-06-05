@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Loader, AlertTriangle } from 'lucide-react';
 
 const SharedMuestreo = () => {
-  const { token } = useParams();
+  const { token, shortCode } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [html, setHtml] = useState('');
@@ -13,7 +13,10 @@ const SharedMuestreo = () => {
       try {
         setLoading(true);
         // LEY ÚNICA: El servidor nos entrega el HTML ya cocinado con el archivo de la impresora
-        const response = await fetch(`/api/public/reportes/${token}`);
+        const endpoint = shortCode
+          ? `/api/public/reportes/corto/${shortCode}`
+          : `/api/public/reportes/${token}`;
+        const response = await fetch(endpoint);
         if (!response.ok) throw new Error('Reporte no encontrado');
         const htmlContent = await response.text();
         setHtml(htmlContent);
@@ -24,7 +27,7 @@ const SharedMuestreo = () => {
       }
     };
     fetchHtml();
-  }, [token]);
+  }, [shortCode, token]);
 
   if (loading) {
     return (

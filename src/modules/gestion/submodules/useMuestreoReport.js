@@ -20,7 +20,7 @@ function bindReportShareButtons({ win, id }) {
         try {
           copyButton.innerText = 'Generando...';
           const res = await createPublicMuestreoShare(id);
-          copyTextInWindow(win, res.url);
+          copyTextInWindow(win, res.shortUrl || res.url);
           copyButton.innerText = 'Copiado';
           setTimeout(() => { copyButton.innerText = 'Copiar enlace'; }, 2500);
         } catch {
@@ -36,7 +36,7 @@ function bindReportShareButtons({ win, id }) {
         try {
           shareButton.innerText = 'Generando...';
           const res = await createPublicMuestreoShare(id);
-          copyTextInWindow(win, res.url);
+          copyTextInWindow(win, res.shortUrl || res.url);
           shareButton.innerText = 'Copiado';
           setTimeout(() => { shareButton.innerText = 'Compartir'; }, 2500);
         } catch {
@@ -109,10 +109,11 @@ export default function useMuestreoReport({
     try {
       setIsLoadingDetails(true);
       const res = await createPublicMuestreoShare(id);
-      const shareText = buildShareText({ muestreo, url: res.url });
+      const publicUrl = res.shortUrl || res.url;
+      const shareText = buildShareText({ muestreo, url: publicUrl });
 
       setShareData({
-        url: res.url,
+        url: publicUrl,
         message: shareText.message,
         proveedor: shareText.proveedor,
       });
