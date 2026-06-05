@@ -52,17 +52,15 @@ function buildShareText({ muestreo, url }) {
   const proveedor = muestreo.proveedorNombre || 'Proveedor';
   const centro = muestreo.centroCodigo || muestreo.centroNombre || 'Sin Centro';
   const fecha = muestreo.fecha ? new Date(muestreo.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-  const linea = muestreo.linea ? `\nLinea: ${muestreo.linea}` : '';
-  const responsable = muestreo.responsable ? `\nResponsable: ${muestreo.responsable}` : '';
 
   return {
     proveedor,
     message:
-      `*Mitynex | Informe publico de muestreo*\n` +
+      `Informe de muestreo Mitynex\n\n` +
       `Proveedor: ${proveedor}\n` +
-      `Centro: ${centro}${linea}\n` +
-      `Fecha muestreo: ${fecha}${responsable}\n\n` +
-      `Ver informe tecnico:\n${url}`,
+      `Centro: ${centro}\n` +
+      `Fecha: ${fecha}\n\n` +
+      `Ver informe:\n${url}`,
   };
 }
 
