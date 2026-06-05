@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/m/:shortCode",
+      "destination": "https://backend-appmitylus-production-01df.up.railway.app/api/public/reportes/corto/:shortCode"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://backend-appmitylus-production-01df.up.railway.app/api/:path*"
     },
