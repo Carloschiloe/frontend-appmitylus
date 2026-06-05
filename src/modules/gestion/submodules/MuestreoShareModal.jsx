@@ -3,16 +3,18 @@ import { Copy, MessageCircle, Target, X } from 'lucide-react';
 export default function MuestreoShareModal({ isOpen, shareData, onClose, addToast }) {
   if (!isOpen) return null;
 
+  const shareText = shareData?.message || shareData?.url || '';
+
   const copyLink = async () => {
     if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(shareData?.url);
-      addToast({ title: 'Copiado', message: 'Enlace listo para abrir en navegador.', type: 'success' });
+      await navigator.clipboard.writeText(shareText);
+      addToast({ title: 'Mensaje copiado', message: 'Mensaje listo para enviar por WhatsApp.', type: 'success' });
       onClose();
     }
   };
 
   const openWhatsApp = () => {
-    const encoded = encodeURIComponent(shareData?.url);
+    const encoded = encodeURIComponent(shareText);
     window.open(`https://wa.me/?text=${encoded}`, '_blank');
     onClose();
   };
@@ -34,7 +36,7 @@ export default function MuestreoShareModal({ isOpen, shareData, onClose, addToas
 
           <button className="mx-btn mx-btn-outline mu-share-btn" onClick={copyLink}>
             <div className="mu-share-btn-content">
-              <Copy size={16} /> Copiar enlace
+              <Copy size={16} /> Copiar mensaje
             </div>
           </button>
 
