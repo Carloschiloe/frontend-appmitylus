@@ -259,22 +259,15 @@ export default function Tratos() {
         }
 
         const volumenDesdeCondiciones = deriveVolumenDesdeCondiciones(form.condiciones);
-        await apiClient.post('/oportunidades', {
-          proveedorId: selectedProvider.contactoId,
+
+        // 1. Crear la oportunidad base (solo campos que acepta el POST estricto)
+        const created = await apiClient.post('/oportunidades', {
+          proveedorId: selectedProvider.contactoId || '',
           proveedorKey: selectedProvider.proveedorKey,
           proveedorNombre: selectedProvider.proveedorNombre,
           estado: 'negociando',
           origen: 'manual',
-          tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
-          precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
-          notasTrato: form.notas || '',
-          camionesXDia: deriveCamionesXDia(form.condiciones),
-          vigenciaDesde: form.fechaInicioCosecha || null,
           responsableNombre: form.responsableNombre || '',
-          condiciones: (form.condiciones || []).map((condicion) => ({
-            ...condicion,
-            valor: condicion.valor === '' ? null : condicion.valor,
-          })),
           meta: {
             contactoNombre: selectedProvider.contactoNombre || '',
             contactoTelefono: selectedProvider.contactoTelefono || '',
@@ -282,12 +275,37 @@ export default function Tratos() {
             comuna: selectedProvider.comuna || '',
           },
         });
+
+        // 2. Completar datos de trato/condiciones vía el endpoint de trato
+        const newId = created?.item?._id || created?._id;
+        if (newId) {
+          await apiClient.patch(`/oportunidades/${newId}/trato`, {
+            tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
+            precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
+            notasTrato: form.notas || '',
+            camionesXDia: deriveCamionesXDia(form.condiciones),
+            vigenciaDesde: form.fechaInicioCosecha || null,
+            responsableNombre: form.responsableNombre || '',
+            condiciones: (form.condiciones || []).map((condicion) => ({
+              ...condicion,
+              valor: condicion.valor === '' ? null : condicion.valor,
+            })),
+          });
+        }
         addToast({ title: 'Creado', message: 'Nuevo trato registrado', type: 'success' });
       }
       closeModal();
       handleRefresh();
-    } catch {
-      addToast({ title: 'Error', message: 'No se pudo guardar el trato', type: 'error' });
+    } catch (error) {
+      const detalle =
+        error?.data?.details?.[0]?.message ||
+        error?.data?.error ||
+        error?.message;
+      addToast({
+        title: 'Error',
+        message: detalle ? `No se pudo guardar el trato: ${detalle}` : 'No se pudo guardar el trato',
+        type: 'error',
+      });
     }
   };
 
