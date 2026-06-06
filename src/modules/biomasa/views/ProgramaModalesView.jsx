@@ -313,7 +313,26 @@ export default function ProgramaModalesView({
                                     const tipo = tiposTransporte.find(x => x._id === e.target.value);
                                     const tonsAuto = tipo?.maxisPorUnidad && tipo?.kgPorMaxiRef ? Math.round((tipo.maxisPorUnidad * tipo.kgPorMaxiRef) / 100) / 10 : null;
                                     const next = [...formData.transportesAvanzados];
-                                    next[idx] = { ...t, tipoTransporteId: e.target.value, tipoTransporteNombre: tipo?.nombre || '', toneladasPorCamion: tonsAuto ?? t.toneladasPorCamion };
+                                    
+                                    let newTonsPerCamion = tonsAuto ?? t.toneladasPorCamion;
+                                    let newCamionesTotales = t.camionesTotales;
+
+                                    if (newTonsPerCamion > 0 && tratoSaldo?.tonsDisponibles != null && !t.camionesTotales) {
+                                      const otherRowsTotal = formData.transportesAvanzados.reduce((sum, row, i) => {
+                                        if (i === idx) return sum;
+                                        return sum + (Number(row.camionesTotales) || 0) * (Number(row.toneladasPorCamion) || 0);
+                                      }, 0);
+                                      const available = Math.max(0, tratoSaldo.tonsDisponibles - otherRowsTotal);
+                                      newCamionesTotales = Math.ceil(available / newTonsPerCamion);
+                                    }
+
+                                    next[idx] = { 
+                                      ...t, 
+                                      tipoTransporteId: e.target.value, 
+                                      tipoTransporteNombre: tipo?.nombre || '', 
+                                      toneladasPorCamion: newTonsPerCamion,
+                                      camionesTotales: newCamionesTotales
+                                    };
                                     setFormData({ ...formData, transportesAvanzados: next });
                                   }}>
                                   <option value="">Sin tipo</option>
@@ -329,7 +348,26 @@ export default function ProgramaModalesView({
                                       placeholder={ph} value={t[field]}
                                       onChange={e => {
                                         const next = [...formData.transportesAvanzados];
-                                        next[idx] = { ...t, [field]: e.target.value };
+                                        let newValue = e.target.value;
+                                        let newCamionesTotales = t.camionesTotales;
+
+                                        if (field === 'toneladasPorCamion') {
+                                          const newTons = Number(newValue);
+                                          if (newTons > 0 && tratoSaldo?.tonsDisponibles != null && (!t.camionesTotales || t.camionesTotales === '')) {
+                                            const otherRowsTotal = formData.transportesAvanzados.reduce((sum, row, i) => {
+                                              if (i === idx) return sum;
+                                              return sum + (Number(row.camionesTotales) || 0) * (Number(row.toneladasPorCamion) || 0);
+                                            }, 0);
+                                            const available = Math.max(0, tratoSaldo.tonsDisponibles - otherRowsTotal);
+                                            newCamionesTotales = Math.ceil(available / newTons);
+                                          }
+                                        }
+
+                                        next[idx] = { ...t, [field]: newValue };
+                                        if (field === 'toneladasPorCamion' && newCamionesTotales !== t.camionesTotales) {
+                                          next[idx].camionesTotales = newCamionesTotales;
+                                        }
+
                                         setFormData({ ...formData, transportesAvanzados: next });
                                       }} />
                                   </td>
