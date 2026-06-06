@@ -220,6 +220,8 @@ export function useCalendarioPrograma({
           nombre: p.proveedorNombre,
           centro: p.centroNombre,
           tipoProducto: p.tipoProducto || p.tipoProductoSugerido || 'sin_definir',
+          uxkg: p.uxkg ?? null,
+          rendimiento: p.rendimiento ?? null,
           dias: weekDays.map((d) => {
             const item = calData[d]?.items?.find((x) => x.programaId === p._id);
             const enriched = item ? enrichCalendarItem(item) : null;

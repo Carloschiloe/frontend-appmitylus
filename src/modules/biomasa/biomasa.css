@@ -4,6 +4,26 @@
   animation: fadeIn 0.2s ease-out;
 }
 
+/* Línea de último muestreo (un/kg · rendimiento) en calendario de cosecha */
+.wk-prov-muestreo {
+  margin-top: 3px;
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--color-text-subtle, #94a3b8);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-detail-card-muestreo {
+  margin-top: 4px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--color-text-muted, #64748b);
+  font-weight: 600;
+}
+
 
 .biomasa-actions {
   display: flex;

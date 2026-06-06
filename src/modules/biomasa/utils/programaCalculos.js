@@ -18,6 +18,19 @@ export const fmtTons = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximum
 export const fmtTonsInt = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' t';
 export const fmtNumber = (n, digits = 1) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: digits });
 
+// Resumen del último muestreo (un/kg · rendimiento). Devuelve null si no hay dato válido.
+export const formatMuestreoResumen = (item) => {
+  const uxkgNum = Number(item?.uxkg);
+  const rendNum = Number(item?.rendimiento);
+  const hasUxkg = Number.isFinite(uxkgNum) && uxkgNum > 0;
+  const hasRend = Number.isFinite(rendNum) && rendNum > 0;
+  if (!hasUxkg && !hasRend) return null;
+  const parts = [];
+  if (hasUxkg) parts.push(`${Math.round(uxkgNum)} un/kg`);
+  if (hasRend) parts.push(`Rend. ${fmtNumber(rendNum, 1)}%`);
+  return parts.join(' · ');
+};
+
 export const calcTotalToneladasDia = (transportes = []) =>
   (transportes || []).reduce((s, t) => s + (Number(t.cantidadDia) || 0) * (Number(t.toneladasPorCamion) || 0), 0);
 

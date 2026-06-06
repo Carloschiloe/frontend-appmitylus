@@ -18,6 +18,7 @@ import {
   fmtTonsInt, fmtNumber,
   summarizeHarvestItems,
   getSanitarioEstado, getSanitarioLabel, isSanitarioRelevant,
+  formatMuestreoResumen,
 } from '../utils/programaCalculos';
 import DonutChart from '../components/DonutChart';
 
@@ -213,6 +214,9 @@ export default function ProgramaCalendarioView({
                     <div className="harvest-week-v2-prov-name">{data.nombre}</div>
                     <span className="wk-prov-tooltip">{data.nombre}</span>
                     <div className="harvest-week-v2-prov-centro">{data.centro || '—'}</div>
+                    {formatMuestreoResumen(data) && (
+                      <div className="wk-prov-muestreo">{formatMuestreoResumen(data)}</div>
+                    )}
                     {programa?.estado === 'pausado' ? (
                       <div className="wk-prov-pausa-info">
                         <span className="wk-prov-pausa-badge">PAUSADO</span>
@@ -368,6 +372,9 @@ export default function ProgramaCalendarioView({
                         <div className="cal-detail-card-info">
                           <div className="cal-detail-card-name">{it.proveedorNombre}</div>
                           <div className="cal-detail-card-center">{it.centroNombre || it.centroCodigo || 'Sin centro'}</div>
+                          {formatMuestreoResumen(it) && (
+                            <div className="cal-detail-card-muestreo">Últ. muestreo: {formatMuestreoResumen(it)}</div>
+                          )}
                         </div>
                         <div className="cal-detail-card-count">
                           <strong>{it.camiones}</strong>
