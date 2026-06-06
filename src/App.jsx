@@ -148,6 +148,7 @@ const TenantScopedRoute = ({ children, title, description }) => {
   const selectedTenantDb = typeof window !== 'undefined'
     ? window.localStorage.getItem('selected_tenant_db') || ''
     : '';
+  const isSupportErrorsRoute = window.location.pathname === '/gestion/soporte/errores';
 
   if (loading) {
     return (
@@ -160,7 +161,7 @@ const TenantScopedRoute = ({ children, title, description }) => {
 
   if (!user && !isPublicReport) return <Navigate to="/login" replace />;
 
-  if (user.rol === 'superadmin' && !selectedTenantDb) {
+  if (user.rol === 'superadmin' && !selectedTenantDb && !isSupportErrorsRoute) {
     return <TenantContextRequired title={title} description={description} />;
   }
 
