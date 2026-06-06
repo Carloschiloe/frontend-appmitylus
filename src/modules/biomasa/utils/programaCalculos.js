@@ -18,13 +18,31 @@ export const fmtTons = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximum
 export const fmtTonsInt = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' t';
 export const fmtNumber = (n, digits = 1) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: digits });
 
-// Toneladas por camión de un tipo de transporte (maestro): maxisPorUnidad * kgPorMaxiRef / 1000.
-// Devuelve null si los datos no permiten calcular.
+// Lee un número desde el primer alias presente; soporta strings con coma decimal.
+const pickNum = (obj, aliases) => {
+  for (const k of aliases) {
+    const raw = obj?.[k];
+    if (raw === undefined || raw === null || raw === '') continue;
+    const n = typeof raw === 'string' ? Number(raw.replace(',', '.')) : Number(raw);
+    if (Number.isFinite(n)) return n;
+  }
+  return NaN;
+};
+
+// Toneladas por camión de un tipo de transporte (maestro): maxis/unidad * kg/maxi ref / 1000.
+// Soporta variantes de nombre de campo. Devuelve null si los datos no permiten calcular
+// (nunca cae a un valor por defecto como 11).
 export const tonsPorCamionDeTipo = (tipo) => {
-  const maxis = Number(tipo?.maxisPorUnidad);
-  const kg = Number(tipo?.kgPorMaxiRef);
+  const maxis = pickNum(tipo, ['maxisPorUnidad', 'maxisUnidad', 'maxisUn', 'maxis']);
+  const kg = pickNum(tipo, ['kgPorMaxiRef', 'kgMaxiRef', 'kgPorMaxi', 'kgRef']);
   if (!Number.isFinite(maxis) || !Number.isFinite(kg) || maxis <= 0 || kg <= 0) return null;
   return (maxis * kg) / 1000;
+};
+
+// Total de referencia en kg de un tipo de transporte (maxis * kg/maxi). null si no calcula.
+export const kgRefDeTipo = (tipo) => {
+  const t = tonsPorCamionDeTipo(tipo);
+  return t == null ? null : t * 1000;
 };
 
 // Fecha del último muestreo. mode 'short' -> DD-MM, 'long' -> DD-MM-YYYY. null si no hay.

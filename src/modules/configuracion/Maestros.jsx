@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { maestrosApi } from '../../api/api-maestros';
+import { tonsPorCamionDeTipo, kgRefDeTipo } from '../biomasa/utils/programaCalculos';
 import { useToast } from '../../context/ToastContext';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
 import './maestros.css';
@@ -248,6 +249,7 @@ export default function Maestros() {
                   {tipo === 'tipo_transporte' && <th>Modo</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Maxis/Un.</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Kg/Maxi ref.</th>}
+                  {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Total ref.</th>}
                   {tipo !== 'responsable' && <th style={{ width: '80px', textAlign: 'center' }}>Orden</th>}
                   <th style={{ width: '120px' }}>Estado</th>
                   <th style={{ width: '100px', textAlign: 'right' }}>Acciones</th>
@@ -310,6 +312,15 @@ export default function Maestros() {
                       )}
                       {tipo === 'tipo_transporte' && <td style={{ textAlign: 'center' }}>{item.maxisPorUnidad ?? '—'}</td>}
                       {tipo === 'tipo_transporte' && <td style={{ textAlign: 'center' }}>{item.kgPorMaxiRef ? `${item.kgPorMaxiRef} kg` : '—'}</td>}
+                      {tipo === 'tipo_transporte' && (() => {
+                        const tons = tonsPorCamionDeTipo(item);
+                        const kg = kgRefDeTipo(item);
+                        return (
+                          <td style={{ textAlign: 'center' }} title={tons != null ? `${item.maxisPorUnidad} × ${item.kgPorMaxiRef} kg = ${kg.toLocaleString('es-CL')} kg` : 'Faltan datos para calcular'}>
+                            {tons != null ? <strong>{tons.toLocaleString('es-CL', { maximumFractionDigits: 1 })} t</strong> : '—'}
+                          </td>
+                        );
+                      })()}
                       {tipo !== 'responsable' && <td style={{ textAlign: 'center' }}>{item.orden ?? 0}</td>}
                       <td>
                         <span className={`mx-badge mx-badge-${item.activo ? 'success' : 'muted'}`}>
