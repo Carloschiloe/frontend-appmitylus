@@ -381,8 +381,22 @@ export default function ProgramaCalendarioView({
                           )}
                         </div>
                         <div className="cal-detail-card-count">
-                          <strong>{it.camiones}</strong>
-                          <span>cam</span>
+                          <div className="cal-detail-card-count-main">
+                            {calendarMetric === 'tons' ? (
+                              <>
+                                <strong>{Math.round(Number(it.tonsDia) || 0)}</strong>
+                                <span>t</span>
+                              </>
+                            ) : (
+                              <>
+                                <strong>{it.camiones}</strong>
+                                <span>cam</span>
+                              </>
+                            )}
+                          </div>
+                          {calendarMetric === 'both' && Number(it.tonsDia) > 0 && (
+                            <span className="cal-detail-card-count-sec">{fmtTonsInt(it.tonsDia)}</span>
+                          )}
                         </div>
                       </div>
                       <div className="cal-detail-card-badges">

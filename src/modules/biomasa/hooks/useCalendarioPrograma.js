@@ -5,6 +5,7 @@ import {
   getSanitarioEstado,
   isSanitarioRelevant,
 } from '../utils/programaCalculos';
+import { addDaysToKey, dayOfWeekFromKey, todayKey } from '../utils/fechasChile';
 
 export function useCalendarioPrograma({
   mes,
@@ -31,15 +32,13 @@ export function useCalendarioPrograma({
     };
   }, [mes]);
 
-  // ── Días de la semana activa ──────────────────────────────────────────────────
+  // ── Días de la semana activa (lunes → domingo, hora Chile) ────────────────────
   const weekDays = useMemo(() => {
-    const start = new Date();
-    start.setDate(start.getDate() - start.getDay() + 1 + currentWeekOffset * 7);
-    return Array.from({ length: 7 }).map((_, i) => {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      return d.toISOString().split('T')[0];
-    });
+    const today = todayKey();
+    const dow = dayOfWeekFromKey(today); // 0=domingo … 6=sábado
+    const diffToMonday = dow === 0 ? -6 : 1 - dow; // domingo vuelve al lunes anterior
+    const monday = addDaysToKey(today, diffToMonday + currentWeekOffset * 7);
+    return Array.from({ length: 7 }, (_, i) => addDaysToKey(monday, i));
   }, [currentWeekOffset]);
 
   // ── Índice de programas ───────────────────────────────────────────────────────

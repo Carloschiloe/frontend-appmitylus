@@ -1412,9 +1412,15 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 .cal-detail-card-count {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.cal-detail-card-count-main {
+  display: flex;
   align-items: baseline;
   gap: 3px;
-  flex-shrink: 0;
 }
 .cal-detail-card-count strong {
   font-size: 22px;
@@ -1425,6 +1431,12 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .cal-detail-card-count span {
   font-size: 11px;
   color: var(--color-text-muted);
+}
+.cal-detail-card-count-sec {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  line-height: 1;
 }
 .cal-detail-card-badges {
   display: flex;
