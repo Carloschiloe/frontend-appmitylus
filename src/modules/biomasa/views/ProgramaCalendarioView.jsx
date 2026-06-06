@@ -22,6 +22,7 @@ import {
   formatMuestreoResumen, formatMuestreoFecha, tonsPorCamionDeTipo,
 } from '../utils/programaCalculos';
 import DonutChart from '../components/DonutChart';
+import { useToast } from '../../../context/ToastContext';
 
 export default function ProgramaCalendarioView({
   calView, setCalView,
@@ -58,6 +59,7 @@ export default function ProgramaCalendarioView({
   allMonthProducts,
   handleOpenAdjustModal,
 }) {
+  const { addToast } = useToast();
   const [truckPopover, setTruckPopover] = useState(null);
 
   // Tipos de transporte activos con su capacidad (t/camión) ya calculada.
@@ -75,10 +77,14 @@ export default function ProgramaCalendarioView({
     setTruckPopover({ mode, programa, fecha, opciones, x: r.left, y: r.bottom + 6 });
   };
 
-  // "+" : 0 tipos → legacy; 1 tipo → directo; varios → popover selector.
+  // "+" : SIEMPRE exige tipo. 0 tipos → aviso; 1 tipo → directo; varios → popover selector.
   const handleAddTruck = (programa, fecha, currentCamiones, evt) => {
     if (!handleQuickAdjustTipo || tiposActivos.length === 0) {
-      handleQuickAdjust(programa, fecha, +1, currentCamiones);
+      addToast({
+        title: 'Sin tipos de transporte',
+        message: 'Configura al menos un tipo de transporte activo en Maestros para agregar camiones.',
+        type: 'warning',
+      });
       return;
     }
     if (tiposActivos.length === 1) {
@@ -321,9 +327,9 @@ export default function ProgramaCalendarioView({
                             {cell.camiones > 0 ? (
                               <div className="harvest-week-v2-count">
                                 {calendarMetric === 'tons' ? (
-                                  <strong>{fmtTonsInt(cell.tonsDia)}</strong>
+                                  <strong>{cell.desgloseDia ? fmtTonsInt(cell.tonsDia) : '—'}</strong>
                                 ) : calendarMetric === 'both' ? (
-                                  <><strong>{cell.camiones}</strong><span>CAM</span>{cell.tonsDia > 0 && <span className="wk-tons-sub">{fmtTonsInt(cell.tonsDia)}</span>}</>
+                                  <><strong>{cell.camiones}</strong><span>CAM</span>{cell.desgloseDia && cell.tonsDia > 0 && <span className="wk-tons-sub">{fmtTonsInt(cell.tonsDia)}</span>}</>
                                 ) : (
                                   <strong>{cell.camiones}</strong>
                                 )}
@@ -434,9 +440,9 @@ export default function ProgramaCalendarioView({
                         <div className="cal-detail-card-info">
                           <div className="cal-detail-card-name">{it.proveedorNombre}</div>
                           <div className="cal-detail-card-center">{it.centroNombre || it.centroCodigo || 'Sin centro'}</div>
-                          {Array.isArray(it.lineasTransporteDia) && it.lineasTransporteDia.length > 0 && (
+                          {Array.isArray(it.desgloseDia) && it.desgloseDia.length > 0 && (
                             <div className="cal-detail-card-transporte">
-                              {it.lineasTransporteDia.map((l, i) => (
+                              {it.desgloseDia.map((l, i) => (
                                 <div key={i} className="cal-detail-card-transporte-line">
                                   {Number(l.cantidad || 0)} {l.tipoTransporteNombre || 'Sin tipo'}
                                   {l.toneladasPorCamion != null
@@ -456,8 +462,8 @@ export default function ProgramaCalendarioView({
                           <div className="cal-detail-card-count-main">
                             {calendarMetric === 'tons' ? (
                               <>
-                                <strong>{Math.round(Number(it.tonsDia) || 0)}</strong>
-                                <span>t</span>
+                                <strong>{it.desgloseDia ? Math.round(Number(it.tonsDia) || 0) : '—'}</strong>
+                                {it.desgloseDia && <span>t</span>}
                               </>
                             ) : (
                               <>
@@ -466,7 +472,7 @@ export default function ProgramaCalendarioView({
                               </>
                             )}
                           </div>
-                          {calendarMetric === 'both' && Number(it.tonsDia) > 0 && (
+                          {calendarMetric === 'both' && it.desgloseDia && Number(it.tonsDia) > 0 && (
                             <span className="cal-detail-card-count-sec">{fmtTonsInt(it.tonsDia)}</span>
                           )}
                         </div>
