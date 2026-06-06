@@ -75,7 +75,7 @@ const MENU_STRUCTURE = [
     links: [
       { label: 'Maestros', to: '/configuracion/maestros', icon: Database },
       { label: 'Usuarios', to: '/configuracion/usuarios', icon: Users },
-      { label: 'Errores', to: '/gestion/soporte/errores', icon: Bug },
+      { label: 'Soporte tecnico', to: '/gestion/soporte/errores', icon: Bug },
     ],
   },
   {

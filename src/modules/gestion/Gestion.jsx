@@ -32,8 +32,8 @@ const PAGE_META = {
   },
   '/gestion/soporte/errores': {
     eyebrow: 'Soporte tecnico',
-    title: 'Errores reportados',
-    description: 'Trazabilidad y diagnostico inicial de errores de produccion.',
+    title: 'Soporte tecnico',
+    description: 'Revisa, clasifica y gestiona los problemas reportados por los usuarios de Mitynex. Los errores automaticos y reportes manuales se agrupan para facilitar su diagnostico.',
   },
 };
 

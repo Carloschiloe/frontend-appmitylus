@@ -8,6 +8,13 @@ import { useToast } from '../../../context/ToastContext.jsx';
 const STATUS_OPTIONS = ['new', 'reviewing', 'reproduced', 'fixed', 'released', 'closed', 'not_reproducible'];
 const SEVERITY_OPTIONS = ['low', 'medium', 'high', 'critical'];
 const SOURCE_OPTIONS = ['manual', 'frontend_auto', 'backend_auto'];
+const QUICK_TABS = [
+  { id: 'all', label: 'Todos', filters: { status: '', severity: '' } },
+  { id: 'new', label: 'Nuevos', filters: { status: 'new', severity: '' } },
+  { id: 'reviewing', label: 'En revision', filters: { status: 'reviewing', severity: '' } },
+  { id: 'critical', label: 'Criticos', filters: { status: '', severity: 'critical' } },
+  { id: 'closed', label: 'Cerrados', filters: { status: 'closed', severity: '' } },
+];
 
 const STATUS_LABELS = {
   new: 'Nuevo',
@@ -161,6 +168,7 @@ export default function ErrorReports() {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
 
   const canAccess = user?.rol === 'admin' || user?.rol === 'superadmin';
   const selected = detail || items.find((item) => item._id === selectedId);
@@ -217,7 +225,7 @@ export default function ErrorReports() {
         aiDiagnosis: selected.aiDiagnosis || '',
       });
       setDetail(data.report);
-      addToast({ type: 'success', title: 'Cambios guardados', message: selected.errorCode });
+      addToast({ type: 'success', title: 'Cambios guardados correctamente.', message: selected.errorCode });
       loadReports();
     } finally {
       setSaving(false);
@@ -226,18 +234,40 @@ export default function ErrorReports() {
 
   const copyPrompt = async () => {
     await navigator.clipboard.writeText(buildAgentPrompt(selected));
-    addToast({ type: 'success', title: 'Prompt copiado.', message: selected.errorCode });
+    addToast({ type: 'success', title: 'Prompt copiado para Codex/Claude.', message: selected.errorCode });
+  };
+
+  const selectQuickTab = (tab) => {
+    setActiveTab(tab.id);
+    setFilters((prev) => ({
+      ...prev,
+      status: tab.filters.status,
+      severity: tab.filters.severity,
+    }));
   };
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(380px, 100%), 1fr))', gap: 18 }}>
       <section className="mx-card" style={{ padding: 16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+          {QUICK_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`mx-btn ${activeTab === tab.id ? 'mx-btn-primary' : 'mx-btn-outline'}`}
+              onClick={() => selectQuickTab(tab)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, marginBottom: 14 }}>
-          <select className="mx-input" value={filters.status} onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}>
+          <select className="mx-input" value={filters.status} onChange={(e) => { setActiveTab('custom'); setFilters((p) => ({ ...p, status: e.target.value })); }}>
             <option value="">Estado</option>
             {STATUS_OPTIONS.map((item) => <option key={item} value={item}>{formatStatusLabel(item)}</option>)}
           </select>
-          <select className="mx-input" value={filters.severity} onChange={(e) => setFilters((p) => ({ ...p, severity: e.target.value }))}>
+          <select className="mx-input" value={filters.severity} onChange={(e) => { setActiveTab('custom'); setFilters((p) => ({ ...p, severity: e.target.value })); }}>
             <option value="">Urgencia</option>
             {SEVERITY_OPTIONS.map((item) => <option key={item} value={item}>{formatSeverityLabel(item)}</option>)}
           </select>
@@ -307,12 +337,21 @@ export default function ErrorReports() {
               <div style={{ display: 'grid', gap: 10 }}>
                 <DetailRow label="Que ocurrio" value={selected.description || selected.title} />
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+                  <DetailRow label="Codigo" value={selected.errorCode} />
+                  <div>
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: 12, fontWeight: 700 }}>Estado</span>
+                    <div style={{ marginTop: 4 }}><Badge type="status" value={selected.status} /></div>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: 12, fontWeight: 700 }}>Urgencia</span>
+                    <div style={{ marginTop: 4 }}><Badge type="severity" value={selected.severity} /></div>
+                  </div>
                   <DetailRow label="Modulo" value={selected.module} />
-                  <DetailRow label="Ruta/Pantalla" value={selected.route} />
                   <div>
                     <span style={{ color: 'var(--color-text-muted)', fontSize: 12, fontWeight: 700 }}>Origen</span>
                     <div style={{ marginTop: 4 }}><Badge type="source" value={selected.source} /></div>
                   </div>
+                  <DetailRow label="Ruta/Pantalla" value={selected.route} />
                   <DetailRow label="Primera vez" value={formatDate(selected.firstSeenAt || selected.createdAt)} />
                   <DetailRow label="Ultima vez" value={formatDate(selected.lastSeenAt)} />
                   <DetailRow label="Veces que ocurrio" value={selected.occurrences} />
@@ -345,8 +384,12 @@ export default function ErrorReports() {
                   </label>
                 </div>
                 <label><span className="mx-form-label">Notas internas</span><textarea className="mx-input" rows={4} value={selected.internalNotes || ''} onChange={(e) => updateDetail('internalNotes', e.target.value)} /></label>
-                <label><span className="mx-form-label">Diagnostico IA</span><textarea className="mx-input" rows={4} value={selected.aiDiagnosis || ''} onChange={(e) => updateDetail('aiDiagnosis', e.target.value)} /></label>
+                <label><span className="mx-form-label">Diagnostico</span><textarea className="mx-input" rows={4} value={selected.aiDiagnosis || ''} onChange={(e) => updateDetail('aiDiagnosis', e.target.value)} /></label>
                 <label><span className="mx-form-label">Resolucion</span><textarea className="mx-input" rows={4} value={selected.resolutionNote || ''} onChange={(e) => updateDetail('resolutionNote', e.target.value)} /></label>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                  <button type="button" className="mx-btn mx-btn-outline" onClick={copyPrompt}><Copy size={16} />Copiar prompt para Codex/Claude</button>
+                  <button type="button" className="mx-btn mx-btn-primary" onClick={saveDetail} disabled={saving}><Save size={16} />Guardar cambios</button>
+                </div>
               </div>
             </InfoBlock>
 
@@ -359,11 +402,6 @@ export default function ErrorReports() {
                 <details><summary>Historial de ocurrencias</summary><JsonBlock value={selected.occurrencesLog} /></details>
               </div>
             </InfoBlock>
-
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button type="button" className="mx-btn mx-btn-outline" onClick={copyPrompt}><Copy size={16} />Copiar prompt para Codex/Claude</button>
-              <button type="button" className="mx-btn mx-btn-primary" onClick={saveDetail} disabled={saving}><Save size={16} />Guardar cambios</button>
-            </div>
           </div>
         )}
       </aside>
