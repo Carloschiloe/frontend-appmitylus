@@ -33,7 +33,7 @@ const PAGE_META = {
   '/gestion/soporte/errores': {
     eyebrow: 'Soporte tecnico',
     title: 'Soporte tecnico',
-    description: 'Revisa, clasifica y gestiona los problemas reportados por los usuarios de Mitynex. Los errores automaticos y reportes manuales se agrupan para facilitar su diagnostico.',
+    description: 'Revisa, clasifica y gestiona los problemas reportados en Mitynex.',
   },
 };
 
