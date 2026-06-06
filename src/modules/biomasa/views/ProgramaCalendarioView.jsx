@@ -77,17 +77,9 @@ export default function ProgramaCalendarioView({
     setTruckPopover({ mode, programa, fecha, opciones, x: r.left, y: r.bottom + 6 });
   };
 
-  // "+": SIEMPRE exige tipo. 0 tipos → aviso; 1 tipo del programa → directo; varios → popover.
+  // "+": SIEMPRE exige tipo y despliega TODOS los tipos activos desde Maestros
   const handleAddTruck = (programa, fecha, currentCamiones, evt) => {
-    // Preferir tipos del propio programa
-    const tiposPrograma = (programa?.transportes || [])
-      .filter(t => t.tipoTransporteId)
-      .map(t => ({
-        tipoTransporteId: String(t.tipoTransporteId),
-        tipoTransporteNombre: t.tipoTransporteNombre || '',
-        toneladasPorCamion: t.toneladasPorCamion ?? null,
-      }));
-    const opciones = tiposPrograma.length > 0 ? tiposPrograma : tiposActivos;
+    const opciones = tiposActivos;
 
     if (opciones.length === 0) {
       // Sin tipos configurados → abrir modal completo para que el usuario elija
