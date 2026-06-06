@@ -118,8 +118,8 @@ function KpiCard({ label, value, tone }) {
 
 function InfoBlock({ title, children }) {
   return (
-    <section style={{ border: '1px solid var(--color-border)', borderRadius: 8, padding: 14, background: '#fff' }}>
-      <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>{title}</h3>
+    <section style={{ border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, background: '#fff' }}>
+      <h3 style={{ margin: '0 0 10px', fontSize: 14 }}>{title}</h3>
       {children}
     </section>
   );
@@ -219,88 +219,103 @@ function ErrorDetailModal({ report, onClose, onSaved }) {
       <div
         className="mx-card"
         style={{
-          width: 'min(1040px, calc(100vw - 32px))',
-          maxHeight: '90vh',
-          overflow: 'auto',
-          padding: 22,
+          width: 'min(1180px, 90vw)',
+          maxHeight: '88vh',
+          display: 'grid',
+          gridTemplateRows: 'auto minmax(0, 1fr) auto',
+          overflow: 'hidden',
+          padding: 0,
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', marginBottom: 18 }}>
-          <div style={{ display: 'grid', gap: 8 }}>
-            <p className="mx-eyebrow" style={{ margin: 0 }}>Detalle del reporte</p>
-            <h2 style={{ margin: 0 }}>{draft.errorCode}</h2>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Badge type="status" value={draft.status} />
-              <Badge type="severity" value={draft.severity} />
-            </div>
-          </div>
-          <button type="button" className="mx-btn-icon" onClick={onClose} aria-label="Cerrar detalle">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div style={{ display: 'grid', gap: 14 }}>
-          <InfoBlock title="Resumen del problema">
-            <div style={{ display: 'grid', gap: 10 }}>
-              <DetailRow label="Que ocurrio" value={draft.description || draft.title} />
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
-                <DetailRow label="Modulo" value={draft.module} />
-                <DetailRow label="Pantalla/Ruta" value={draft.route} />
-                <div>
-                  <span style={{ color: 'var(--color-text-muted)', fontSize: 12, fontWeight: 700 }}>Origen</span>
-                  <div style={{ marginTop: 4 }}><Badge type="source" value={draft.source} /></div>
-                </div>
-                <DetailRow label="Veces que ocurrio" value={draft.occurrences} />
-                <DetailRow label="Primera vez" value={formatDate(draft.firstSeenAt || draft.createdAt)} />
-                <DetailRow label="Ultima vez" value={formatDate(draft.lastSeenAt)} />
-              </div>
-            </div>
-          </InfoBlock>
-
-          <InfoBlock title="Usuario afectado">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
-              <DetailRow label="Nombre" value={draft.userName} />
-              <DetailRow label="Correo" value={draft.userEmail} />
-              <DetailRow label="Empresa/Tenant" value={draft.companyId} />
-            </div>
-          </InfoBlock>
-
-          <InfoBlock title="Gestion interna">
-            <div style={{ display: 'grid', gap: 12 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10 }}>
-                <label>
-                  <span className="mx-form-label">Estado</span>
-                  <select className="mx-input" value={draft.status || 'new'} onChange={(e) => updateField('status', e.target.value)}>
-                    {STATUS_OPTIONS.map((item) => <option key={item} value={item}>{formatStatusLabel(item)}</option>)}
-                  </select>
-                </label>
-                <label>
-                  <span className="mx-form-label">Urgencia</span>
-                  <select className="mx-input" value={draft.severity || 'medium'} onChange={(e) => updateField('severity', e.target.value)}>
-                    {SEVERITY_OPTIONS.map((item) => <option key={item} value={item}>{formatSeverityLabel(item)}</option>)}
-                  </select>
-                </label>
-              </div>
-              <label><span className="mx-form-label">Notas internas</span><textarea className="mx-input" rows={4} value={draft.internalNotes || ''} onChange={(e) => updateField('internalNotes', e.target.value)} /></label>
-              <label><span className="mx-form-label">Diagnostico</span><textarea className="mx-input" rows={4} value={draft.aiDiagnosis || ''} onChange={(e) => updateField('aiDiagnosis', e.target.value)} /></label>
-              <label><span className="mx-form-label">Resolucion</span><textarea className="mx-input" rows={4} value={draft.resolutionNote || ''} onChange={(e) => updateField('resolutionNote', e.target.value)} /></label>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                <button type="button" className="mx-btn mx-btn-outline" onClick={copyPrompt}><Copy size={16} />Copiar prompt para Codex/Claude</button>
-                <button type="button" className="mx-btn mx-btn-primary" onClick={saveDetail} disabled={saving}><Save size={16} />Guardar cambios</button>
-              </div>
-            </div>
-          </InfoBlock>
-
-          <InfoBlock title="Informacion tecnica avanzada">
+        <header style={{ padding: '18px 22px 14px', borderBottom: '1px solid var(--color-border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
             <div style={{ display: 'grid', gap: 8 }}>
-              <details><summary>Detalle tecnico</summary><JsonBlock value={draft.stack || '-'} /></details>
-              <details><summary>Datos enviados al sistema</summary><JsonBlock value={draft.payloadSnapshot} /></details>
-              <details><summary>Respuesta recibida</summary><JsonBlock value={draft.responseSnapshot} /></details>
-              <details><summary>Ultimas acciones del usuario</summary><JsonBlock value={draft.lastActions} /></details>
-              <details><summary>Historial de ocurrencias</summary><JsonBlock value={draft.occurrencesLog} /></details>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <h2 style={{ margin: 0 }}>{draft.errorCode}</h2>
+                <Badge type="status" value={draft.status} />
+                <Badge type="severity" value={draft.severity} />
+              </div>
+              <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 14 }}>
+                {draft.title || draft.endpoint || 'Reporte de soporte'} · Modulo {draft.module || '-'} · {formatSourceLabel(draft.source)}
+              </p>
             </div>
-          </InfoBlock>
+            <button type="button" className="mx-btn-icon" onClick={onClose} aria-label="Cerrar detalle">
+              <X size={18} />
+            </button>
+          </div>
+        </header>
+
+        <div style={{ overflow: 'auto', padding: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: 16, alignItems: 'start' }}>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <InfoBlock title="Resumen">
+                <div style={{ display: 'grid', gap: 10 }}>
+                  <DetailRow label="Que ocurrio" value={draft.description || draft.title} />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 9 }}>
+                    <DetailRow label="Modulo" value={draft.module} />
+                    <DetailRow label="Pantalla/Ruta" value={draft.route} />
+                    <div>
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: 12, fontWeight: 700 }}>Origen</span>
+                      <div style={{ marginTop: 4 }}><Badge type="source" value={draft.source} /></div>
+                    </div>
+                    <DetailRow label="Veces" value={draft.occurrences} />
+                    <DetailRow label="Primera vez" value={formatDate(draft.firstSeenAt || draft.createdAt)} />
+                    <DetailRow label="Ultima vez" value={formatDate(draft.lastSeenAt)} />
+                  </div>
+                </div>
+              </InfoBlock>
+
+              <InfoBlock title="Usuario">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 9 }}>
+                  <DetailRow label="Nombre" value={draft.userName} />
+                  <DetailRow label="Correo" value={draft.userEmail} />
+                  <DetailRow label="Empresa/Tenant" value={draft.companyId} />
+                </div>
+              </InfoBlock>
+
+              <InfoBlock title="Tecnica avanzada">
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <details><summary>Detalle tecnico</summary><JsonBlock value={draft.backendError || draft.frontendError || draft.title || '-'} /></details>
+                  <details><summary>Datos enviados</summary><JsonBlock value={draft.payloadSnapshot} /></details>
+                  <details><summary>Respuesta recibida</summary><JsonBlock value={draft.responseSnapshot} /></details>
+                  <details><summary>Ultimas acciones</summary><JsonBlock value={draft.lastActions} /></details>
+                  <details><summary>Historial de ocurrencias</summary><JsonBlock value={draft.occurrencesLog} /></details>
+                  <details><summary>Stack</summary><JsonBlock value={draft.stack || '-'} /></details>
+                </div>
+              </InfoBlock>
+            </div>
+
+            <InfoBlock title="Gestion interna">
+              <div style={{ display: 'grid', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+                  <label>
+                    <span className="mx-form-label">Estado</span>
+                    <select className="mx-input" value={draft.status || 'new'} onChange={(e) => updateField('status', e.target.value)}>
+                      {STATUS_OPTIONS.map((item) => <option key={item} value={item}>{formatStatusLabel(item)}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="mx-form-label">Urgencia</span>
+                    <select className="mx-input" value={draft.severity || 'medium'} onChange={(e) => updateField('severity', e.target.value)}>
+                      {SEVERITY_OPTIONS.map((item) => <option key={item} value={item}>{formatSeverityLabel(item)}</option>)}
+                    </select>
+                  </label>
+                </div>
+                <label><span className="mx-form-label">Notas internas</span><textarea className="mx-input" style={{ minHeight: 80 }} rows={3} value={draft.internalNotes || ''} onChange={(e) => updateField('internalNotes', e.target.value)} /></label>
+                <label><span className="mx-form-label">Diagnostico</span><textarea className="mx-input" style={{ minHeight: 80 }} rows={3} value={draft.aiDiagnosis || ''} onChange={(e) => updateField('aiDiagnosis', e.target.value)} /></label>
+                <label><span className="mx-form-label">Resolucion</span><textarea className="mx-input" style={{ minHeight: 80 }} rows={3} value={draft.resolutionNote || ''} onChange={(e) => updateField('resolutionNote', e.target.value)} /></label>
+              </div>
+            </InfoBlock>
+          </div>
         </div>
+
+        <footer style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '14px 22px', borderTop: '1px solid var(--color-border)', background: '#fff' }}>
+          <button type="button" className="mx-btn mx-btn-outline" onClick={copyPrompt}><Copy size={16} />Copiar prompt para Codex/Claude</button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" className="mx-btn mx-btn-outline" onClick={onClose}>Cancelar</button>
+            <button type="button" className="mx-btn mx-btn-primary" onClick={saveDetail} disabled={saving}><Save size={16} />Guardar cambios</button>
+          </div>
+        </footer>
       </div>
     </div>
   );
