@@ -6,6 +6,7 @@ const Bandeja = lazy(() => import('./submodules/Bandeja'));
 const Directorio = lazy(() => import('./submodules/Directorio'));
 const Calendario = lazy(() => import('./submodules/Calendario'));
 const Tratos = lazy(() => import('./submodules/Tratos'));
+const ErrorReports = lazy(() => import('./soporte/ErrorReports.jsx'));
 
 const PAGE_META = {
   '/gestion/proveedores': {
@@ -28,6 +29,11 @@ const PAGE_META = {
   '/gestion/tratos': {
     eyebrow: 'Operaciones · Tratos',
     title: 'Tratos Comerciales',
+  },
+  '/gestion/soporte/errores': {
+    eyebrow: 'Soporte tecnico',
+    title: 'Errores reportados',
+    description: 'Trazabilidad y diagnostico inicial de errores de produccion.',
   },
 };
 
@@ -65,6 +71,7 @@ export default function Gestion() {
               <Route path="calendario" element={<Navigate to="/gestion/agenda" replace />} />
               <Route path="interacciones" element={<Navigate to="/historial" replace />} />
               <Route path="tratos" element={<Tratos />} />
+              <Route path="soporte/errores" element={<ErrorReports />} />
               <Route path="muestreos" element={<Navigate to="/biomasa/muestreos" replace />} />
             </Routes>
           </Suspense>

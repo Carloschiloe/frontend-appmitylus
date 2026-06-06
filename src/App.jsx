@@ -6,6 +6,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Menu } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar.jsx';
 import QuickCaptureModal from './modules/gestion/components/QuickCaptureModal.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
+import SupportReportModal from './components/SupportReportModal.jsx';
+import { installGlobalErrorCapture } from './utils/errorReporter.js';
+import { installActionTrail, recordAction } from './utils/actionTrail.js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,12 +37,20 @@ const SharedMuestreo = lazy(() => import('./modules/public/SharedMuestreo.jsx'))
 const MainLayout = ({ children }) => {
   const { user } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
+  const [supportModal, setSupportModal] = React.useState({ open: false, initialData: {} });
   const location = useLocation();
 
   // Cerrar el menú lateral al cambiar de ruta
   React.useEffect(() => {
     setIsMobileOpen(false);
+    recordAction({ type: 'route', label: `Ruta ${location.pathname}`, route: location.pathname });
   }, [location.pathname]);
+
+  React.useEffect(() => {
+    const openSupport = (event) => setSupportModal({ open: true, initialData: event.detail || {} });
+    window.addEventListener('mitynex:open-support-report', openSupport);
+    return () => window.removeEventListener('mitynex:open-support-report', openSupport);
+  }, []);
 
   // Rutas públicas: nunca mostrar sidebar, sin importar si hay sesión activa
   const isPublicRoute = ['/login', '/activar-cuenta'].includes(location.pathname);
@@ -72,11 +84,30 @@ const MainLayout = ({ children }) => {
 
       <Sidebar />
       <main className="mx-main-content">
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </main>
       <QuickCaptureModal />
+      <SupportReportModal
+        open={supportModal.open}
+        initialData={supportModal.initialData}
+        onClose={() => setSupportModal({ open: false, initialData: {} })}
+      />
     </div>
   );
+};
+
+const ErrorInstrumentation = () => {
+  const location = useLocation();
+  React.useEffect(() => {
+    installGlobalErrorCapture();
+    installActionTrail();
+  }, []);
+  React.useEffect(() => {
+    recordAction({ type: 'route', label: `Ruta ${location.pathname}`, route: location.pathname });
+  }, [location.pathname]);
+  return null;
 };
 
 const TenantContextRequired = ({ title = 'Selecciona una empresa', description }) => (
@@ -184,6 +215,7 @@ export default function App() {
     return (
       <QueryClientProvider client={queryClient}>
         <Router>
+          <ErrorInstrumentation />
           <Suspense fallback={
             <div className="mx-loading-screen">
               <div className="mx-spinner"></div>
@@ -208,6 +240,7 @@ export default function App() {
       <AuthProvider>
         <ToastProvider>
           <Router>
+            <ErrorInstrumentation />
             <MainLayout>
               <Suspense fallback={
                 <div className="mx-loading-screen">

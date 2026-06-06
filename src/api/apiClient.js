@@ -1,4 +1,5 @@
 import { clearRuntimeLayoutState, clearSessionCache } from '../context/authSession.helpers';
+import { captureApiError } from '../utils/errorReporter.js';
 
 const API_BASE_URL = '/api';
 
@@ -59,7 +60,10 @@ async function request(endpoint, options = {}) {
     }
 
     if (!response.ok) {
-      throw new ApiError(data?.error || data?.message || 'Error en la peticion', response.status, data);
+      const apiError = new ApiError(data?.error || data?.message || 'Error en la peticion', response.status, data);
+      apiError.endpoint = endpoint;
+      apiError.method = options.method || 'GET';
+      throw apiError;
     }
 
     return data;
@@ -72,6 +76,15 @@ async function request(endpoint, options = {}) {
     if (error.name !== 'AbortError' && !isExpectedBootstrapAuthFailure) {
       // eslint-disable-next-line no-console
       console.error(`[API Client Error] ${options.method || 'GET'} ${url}`, error);
+      if (!endpoint.startsWith('/support/error-reports')) {
+        captureApiError(error, {
+          endpoint,
+          method: options.method || 'GET',
+          httpStatus: error.status,
+          payloadSnapshot: isFormData ? '[FormData]' : options.body,
+          responseSnapshot: error.data,
+        });
+      }
     }
     throw error;
   }

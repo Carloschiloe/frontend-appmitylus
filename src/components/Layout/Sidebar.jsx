@@ -21,6 +21,7 @@ import {
   Database,
   BarChart3,
   ClipboardList,
+  Bug,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
@@ -74,6 +75,7 @@ const MENU_STRUCTURE = [
     links: [
       { label: 'Maestros', to: '/configuracion/maestros', icon: Database },
       { label: 'Usuarios', to: '/configuracion/usuarios', icon: Users },
+      { label: 'Errores', to: '/gestion/soporte/errores', icon: Bug },
     ],
   },
   {
@@ -243,6 +245,14 @@ export default function Sidebar() {
         <button className="mx-btn-logout" onClick={logout}>
           <LogOut size={16} />
           Cerrar sesion
+        </button>
+        <button
+          className="mx-btn-logout"
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('mitynex:open-support-report'))}
+        >
+          <Bug size={16} />
+          Reportar problema
         </button>
       </div>
     </aside>
