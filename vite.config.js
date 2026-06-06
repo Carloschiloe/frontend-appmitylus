@@ -24,7 +24,13 @@ const copyStaticAssets = {
   },
 };
 
+// SHA del commit en build (Vercel lo provee automáticamente). Solo el SHA, sin secretos.
+const MITYNEX_COMMIT = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'dev';
+
 export default defineConfig({
+  define: {
+    __MITYNEX_COMMIT__: JSON.stringify(MITYNEX_COMMIT),
+  },
   plugins: [
     react({
       jsxRuntime: 'automatic',
