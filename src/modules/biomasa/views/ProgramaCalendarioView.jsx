@@ -91,25 +91,27 @@ export default function ProgramaCalendarioView({
     openTruckPopover('add', programa, fecha, opciones, evt);
   };
 
-  // "−": SIEMPRE exige tipo. Sin desglose → abre modal pre-cargado con 'suspender'.
+  // "−": SIEMPRE exige tipo. Muestra el popover chico para elegir qué tipo suspender.
   const handleRemoveTruck = (programa, fecha, cell, evt) => {
     const lineas = Array.isArray(cell?.lineasTransporteDia)
       ? cell.lineasTransporteDia.filter(l => Number(l.cantidad) > 0)
       : [];
 
+    let opciones;
     if (lineas.length === 0) {
-      // No hay desglose tipado — abrir modal completo pre-seleccionando 'suspender'
-      // para que el usuario indique obligatoriamente el tipo de camión a retirar
-      handleOpenAdjustModal(programa, fecha, cell.camiones, 'suspender');
-      return;
+      // No hay desglose tipado (ej. programa base antiguo). 
+      // Mostrar todos los tipos activos para que el usuario elija cuál restar.
+      opciones = tiposActivos;
+    } else {
+      opciones = lineas.map(l => ({
+        tipoTransporteId: String(l.tipoTransporteId || ''),
+        tipoTransporteNombre: l.tipoTransporteNombre || '',
+        toneladasPorCamion: l.toneladasPorCamion ?? null,
+        cantidad: Number(l.cantidad || 0),
+      }));
     }
-    const opciones = lineas.map(l => ({
-      tipoTransporteId: String(l.tipoTransporteId || ''),
-      tipoTransporteNombre: l.tipoTransporteNombre || '',
-      toneladasPorCamion: l.toneladasPorCamion ?? null,
-      cantidad: Number(l.cantidad || 0),
-    }));
-    // Siempre mostrar popover para obligar a elegir qué tipo se suspende
+
+    // Siempre mostrar popover chico para obligar a elegir qué tipo se suspende
     openTruckPopover('remove', programa, fecha, opciones, evt);
   };
 
