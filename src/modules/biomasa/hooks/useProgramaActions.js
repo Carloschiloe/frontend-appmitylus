@@ -198,13 +198,13 @@ export function useProgramaActions({
     }
   }, [addToast, load]);
 
-  const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), currentCamiones = null) => {
+  const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), currentCamiones = null, accion = 'set_total') => {
     if (!programa) return;
     const current = currentCamiones != null ? Number(currentCamiones || 0) : Number(programa.camionesDefault || 0);
     setAdjustProgram(programa);
     setAdjustForm({
       fecha,
-      accion: 'set_total',
+      accion: accion,
       camiones: current,
       motivo: 'Planta',
       nota: '',

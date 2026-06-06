@@ -91,13 +91,11 @@ export default function ProgramaCalendarioView({
 
     if (opciones.length === 0) {
       // Sin tipos configurados → abrir modal completo para que el usuario elija
-      handleOpenAdjustModal(programa, fecha, currentCamiones);
+      handleOpenAdjustModal(programa, fecha, currentCamiones, 'sumar');
       return;
     }
-    if (opciones.length === 1) {
-      handleQuickAdjustTipo(programa, fecha, 'sumar', opciones[0]);
-      return;
-    }
+    // Siempre mostrar el popover para obligar al usuario a confirmar el tipo,
+    // incluso si solo hay 1 opción disponible.
     openTruckPopover('add', programa, fecha, opciones, evt);
   };
 
@@ -110,7 +108,7 @@ export default function ProgramaCalendarioView({
     if (lineas.length === 0) {
       // No hay desglose tipado — abrir modal completo pre-seleccionando 'suspender'
       // para que el usuario indique obligatoriamente el tipo de camión a retirar
-      handleOpenAdjustModal(programa, fecha, cell.camiones);
+      handleOpenAdjustModal(programa, fecha, cell.camiones, 'suspender');
       return;
     }
     const opciones = lineas.map(l => ({
@@ -119,10 +117,7 @@ export default function ProgramaCalendarioView({
       toneladasPorCamion: l.toneladasPorCamion ?? null,
       cantidad: Number(l.cantidad || 0),
     }));
-    if (opciones.length === 1) {
-      handleQuickAdjustTipo(programa, fecha, 'suspender', opciones[0]);
-      return;
-    }
+    // Siempre mostrar popover para obligar a elegir qué tipo se suspende
     openTruckPopover('remove', programa, fecha, opciones, evt);
   };
 
