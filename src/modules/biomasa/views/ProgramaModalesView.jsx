@@ -323,7 +323,7 @@ export default function ProgramaModalesView({
                                         return sum + (Number(row.camionesTotales) || 0) * (Number(row.toneladasPorCamion) || 0);
                                       }, 0);
                                       const available = Math.max(0, tratoSaldo.tonsDisponibles - otherRowsTotal);
-                                      newCamionesTotales = Math.ceil(available / newTonsPerCamion);
+                                      newCamionesTotales = Math.floor(available / newTonsPerCamion);
                                     }
 
                                     next[idx] = { 
@@ -359,7 +359,7 @@ export default function ProgramaModalesView({
                                               return sum + (Number(row.camionesTotales) || 0) * (Number(row.toneladasPorCamion) || 0);
                                             }, 0);
                                             const available = Math.max(0, tratoSaldo.tonsDisponibles - otherRowsTotal);
-                                            newCamionesTotales = Math.ceil(available / newTons);
+                                            newCamionesTotales = Math.floor(available / newTons);
                                           }
                                         }
 
