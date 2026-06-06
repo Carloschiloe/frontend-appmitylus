@@ -18,6 +18,15 @@ export const fmtTons = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximum
 export const fmtTonsInt = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' t';
 export const fmtNumber = (n, digits = 1) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: digits });
 
+// Fecha del último muestreo. mode 'short' -> DD-MM, 'long' -> DD-MM-YYYY. null si no hay.
+export const formatMuestreoFecha = (fecha, mode = 'short') => {
+  if (!fecha) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(fecha));
+  if (!m) return null;
+  const [, yyyy, mm, dd] = m;
+  return mode === 'long' ? `${dd}-${mm}-${yyyy}` : `${dd}-${mm}`;
+};
+
 // Resumen del último muestreo (un/kg · rendimiento). Devuelve null si no hay dato válido.
 export const formatMuestreoResumen = (item) => {
   const uxkgNum = Number(item?.uxkg);

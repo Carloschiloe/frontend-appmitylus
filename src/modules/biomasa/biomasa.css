@@ -11,9 +11,11 @@
   line-height: 1.3;
   color: var(--color-text-subtle, #94a3b8);
   font-weight: 600;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .cal-detail-card-muestreo {

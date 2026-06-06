@@ -94,6 +94,7 @@ export function useCalendarioPrograma({
         tonsDia,
         uxkg: item?.uxkg ?? programa?.uxkg ?? null,
         rendimiento: item?.rendimiento ?? programa?.rendimiento ?? null,
+        muestreoFecha: item?.muestreoFecha ?? programa?.muestreoFecha ?? null,
         centroNombre: item?.centroNombre || programa?.centroNombre || '',
         centroCodigo: item?.centroCodigo || programa?.centroCodigo || '',
         sanitario: item?.sanitario || programa?.sanitario || null,
@@ -222,6 +223,7 @@ export function useCalendarioPrograma({
           tipoProducto: p.tipoProducto || p.tipoProductoSugerido || 'sin_definir',
           uxkg: p.uxkg ?? null,
           rendimiento: p.rendimiento ?? null,
+          muestreoFecha: p.muestreoFecha ?? null,
           dias: weekDays.map((d) => {
             const item = calData[d]?.items?.find((x) => x.programaId === p._id);
             const enriched = item ? enrichCalendarItem(item) : null;

@@ -18,7 +18,7 @@ import {
   fmtTonsInt, fmtNumber,
   summarizeHarvestItems,
   getSanitarioEstado, getSanitarioLabel, isSanitarioRelevant,
-  formatMuestreoResumen,
+  formatMuestreoResumen, formatMuestreoFecha,
 } from '../utils/programaCalculos';
 import DonutChart from '../components/DonutChart';
 
@@ -215,7 +215,9 @@ export default function ProgramaCalendarioView({
                     <span className="wk-prov-tooltip">{data.nombre}</span>
                     <div className="harvest-week-v2-prov-centro">{data.centro || '—'}</div>
                     {formatMuestreoResumen(data) && (
-                      <div className="wk-prov-muestreo">{formatMuestreoResumen(data)}</div>
+                      <div className="wk-prov-muestreo">
+                        Últ. muestreo{formatMuestreoFecha(data.muestreoFecha, 'short') ? ` ${formatMuestreoFecha(data.muestreoFecha, 'short')}` : ''}: {formatMuestreoResumen(data)}
+                      </div>
                     )}
                     {programa?.estado === 'pausado' ? (
                       <div className="wk-prov-pausa-info">
@@ -373,7 +375,9 @@ export default function ProgramaCalendarioView({
                           <div className="cal-detail-card-name">{it.proveedorNombre}</div>
                           <div className="cal-detail-card-center">{it.centroNombre || it.centroCodigo || 'Sin centro'}</div>
                           {formatMuestreoResumen(it) && (
-                            <div className="cal-detail-card-muestreo">Últ. muestreo: {formatMuestreoResumen(it)}</div>
+                            <div className="cal-detail-card-muestreo">
+                              Últ. muestreo{formatMuestreoFecha(it.muestreoFecha, 'long') ? ` ${formatMuestreoFecha(it.muestreoFecha, 'long')}` : ''}: {formatMuestreoResumen(it)}
+                            </div>
                           )}
                         </div>
                         <div className="cal-detail-card-count">
