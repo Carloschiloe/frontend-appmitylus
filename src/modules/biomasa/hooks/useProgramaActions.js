@@ -208,6 +208,9 @@ export function useProgramaActions({
       camiones: current,
       motivo: 'Planta',
       nota: '',
+      tipoTransporteId: '',
+      tipoTransporteNombre: '',
+      toneladasPorCamion: '',
     });
     setShowAdjustModal(true);
   }, []);

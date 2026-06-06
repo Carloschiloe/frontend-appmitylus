@@ -108,6 +108,9 @@ export default function Biomasa() {
     camiones: 0,
     motivo: 'Planta',
     nota: '',
+    tipoTransporteId: '',
+    tipoTransporteNombre: '',
+    toneladasPorCamion: '',
   });
   const [tratoLimites, setTratoLimites] = useState({ vigenciaDesde: '', vigenciaHasta: '', maxCamionesDia: null });
   const [tratoSaldo, setTratoSaldo] = useState(null);

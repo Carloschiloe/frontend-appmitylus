@@ -77,7 +77,6 @@ export function useCalendarioPrograma({
 
       // Desglose por tipo para MOSTRAR/CALCULAR. Prioridad:
       //  1) override tipado persistido, 2) tipos definidos al crear el programa (programa.transportes).
-      // Nunca se usa un valor por defecto (ej. 11 t): si no hay tipos, no hay tonelaje.
       let desgloseDia = lineasTransporteDia;
       if (!desgloseDia && !item?.esDiaEspecial && camiones > 0 && Array.isArray(programa?.transportes) && programa.transportes.length) {
         const derivado = programa.transportes
@@ -91,10 +90,22 @@ export function useCalendarioPrograma({
         desgloseDia = derivado.length ? derivado : null;
       }
 
-      // Toneladas del día SOLO desde Maestros (override o transportes del programa). Sin defaults.
-      const tonsDia = desgloseDia
-        ? desgloseDia.reduce((s, l) => s + Number(l.cantidad || 0) * Number(l.toneladasPorCamion || 0), 0)
-        : 0;
+      // Toneladas del día
+      let tonsDia = 0;
+      if (desgloseDia) {
+        tonsDia = desgloseDia.reduce((s, l) => s + Number(l.cantidad || 0) * Number(l.toneladasPorCamion || 0), 0);
+      } else if (camiones > 0 && !item?.esDiaEspecial) {
+        // Día base (no ajuste): usar transportes del programa para calcular
+        if (Array.isArray(programa?.transportes) && programa.transportes.length) {
+          const totalCam = programa.transportes.reduce((s, t) => s + (Number(t.cantidadDia) || 0), 0);
+          const totalTons = programa.transportes.reduce((s, t) => s + (Number(t.cantidadDia) || 0) * (Number(t.toneladasPorCamion) || 0), 0);
+          if (totalCam > 0) tonsDia = (camiones / totalCam) * totalTons;
+        } else if (programa?.toneladasPorCamion) {
+          tonsDia = camiones * Number(programa.toneladasPorCamion);
+        }
+      }
+      // Nota: Para días de ajuste (esDiaEspecial) sin desglose explícito de tipo,
+      // tonsDia queda en 0 hasta que el sistema lo pueda calcular desde lineasTransporteDia.
       return {
         ...item,
         camiones,
