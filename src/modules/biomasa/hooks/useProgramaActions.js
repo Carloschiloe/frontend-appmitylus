@@ -132,6 +132,26 @@ export function useProgramaActions({
     }
   }, [addToast, load]);
 
+  // Ajuste diario por tipo de transporte. accion: 'sumar' (+1 del tipo) | 'suspender' (-1 del tipo).
+  const handleQuickAdjustTipo = useCallback(async (programa, fecha, accion, tipo) => {
+    if (!programa?._id || !tipo?.tipoTransporteId) return;
+    try {
+      await apiClient.post(`/programa-cosecha/${programa._id}/ajuste-diario`, {
+        fecha,
+        accion,
+        camiones: 1,
+        motivo: '',
+        nota: '',
+        tipoTransporteId: tipo.tipoTransporteId,
+        tipoTransporteNombre: tipo.tipoTransporteNombre || '',
+        toneladasPorCamion: tipo.toneladasPorCamion ?? null,
+      });
+      load();
+    } catch (e) {
+      addToast({ title: 'Error', message: e.message, type: 'error' });
+    }
+  }, [addToast, load]);
+
   const handleSuspendDay = useCallback(async (programa, fecha, motivo, nota = '') => {
     if (!programa?._id) return;
     try {
@@ -222,6 +242,7 @@ export function useProgramaActions({
     handleOpenFinalizeModal,
     handleFinalizarConfirm,
     handleQuickAdjust,
+    handleQuickAdjustTipo,
     handleSuspendDay,
     handleReactivateDay,
     handleUpsertNotaDia,

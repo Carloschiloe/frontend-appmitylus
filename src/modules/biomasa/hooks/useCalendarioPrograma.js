@@ -84,11 +84,19 @@ export function useCalendarioPrograma({
         effectiveTpt = Number(tonsPerTruck || 0);
       }
 
-      const tonsDia = camiones * effectiveTpt;
+      // Desglose por tipo de transporte del día (si el ajuste fue tipado).
+      const lineasTransporteDia = Array.isArray(item?.lineasTransporteDia) && item.lineasTransporteDia.length
+        ? item.lineasTransporteDia
+        : null;
+      // Si hay desglose, las toneladas se calculan por tipo; si no, fallback legacy.
+      const tonsDia = lineasTransporteDia
+        ? lineasTransporteDia.reduce((s, l) => s + Number(l.cantidad || 0) * Number(l.toneladasPorCamion || 0), 0)
+        : camiones * effectiveTpt;
       return {
         ...item,
         camiones,
         tipoProducto,
+        lineasTransporteDia,
         tonsEstimadas: item?.tonsEstimadas ?? programa?.tonsEstimadas ?? null,
         tonsDia,
         uxkg: item?.uxkg ?? programa?.uxkg ?? null,
@@ -233,6 +241,7 @@ export function useCalendarioPrograma({
               rendimiento: enriched?.rendimiento ?? p.rendimiento ?? null,
               tonsEstimadas: enriched?.tonsEstimadas ?? p.tonsEstimadas ?? null,
               tonsDia: enriched?.tonsDia || 0,
+              lineasTransporteDia: enriched?.lineasTransporteDia ?? null,
               sanitario: enriched?.sanitario || p.sanitario || null,
               tipoCamion: enriched?.tipoCamion || p.tipoCamion || '',
               maxisPorCamion: enriched?.maxisPorCamion ?? p.maxisPorCamion ?? null,

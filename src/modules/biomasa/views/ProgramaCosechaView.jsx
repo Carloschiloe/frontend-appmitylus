@@ -40,6 +40,8 @@ export default function ProgramaCosechaView({
   handleOpenFinalizeModal,
   handleStatusChange,
   handleQuickAdjust,
+  handleQuickAdjustTipo,
+  tiposTransporte,
   handleReactivateDay,
   handleCalendarBoardToggle,
   setSuspendPopover,
@@ -106,6 +108,8 @@ export default function ProgramaCosechaView({
           handleStatusChange={handleStatusChange}
           handleReactivateDay={handleReactivateDay}
           handleQuickAdjust={handleQuickAdjust}
+          handleQuickAdjustTipo={handleQuickAdjustTipo}
+          tiposTransporte={tiposTransporte}
           setSuspendPopover={setSuspendPopover}
           notasDia={notasDia}
           setNotaPopover={setNotaPopover}

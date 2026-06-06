@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,7 +19,7 @@ import {
   fmtTonsInt, fmtNumber,
   summarizeHarvestItems,
   getSanitarioEstado, getSanitarioLabel, isSanitarioRelevant,
-  formatMuestreoResumen, formatMuestreoFecha,
+  formatMuestreoResumen, formatMuestreoFecha, tonsPorCamionDeTipo,
 } from '../utils/programaCalculos';
 import DonutChart from '../components/DonutChart';
 
@@ -41,6 +42,8 @@ export default function ProgramaCalendarioView({
   handleStatusChange,
   handleReactivateDay,
   handleQuickAdjust,
+  handleQuickAdjustTipo,
+  tiposTransporte = [],
   setSuspendPopover,
   notasDia,
   setNotaPopover,
@@ -55,6 +58,63 @@ export default function ProgramaCalendarioView({
   allMonthProducts,
   handleOpenAdjustModal,
 }) {
+  const [truckPopover, setTruckPopover] = useState(null);
+
+  // Tipos de transporte activos con su capacidad (t/camión) ya calculada.
+  const tiposActivos = (tiposTransporte || [])
+    .filter((t) => t && (t.activo === undefined || t.activo))
+    .map((t) => ({
+      tipoTransporteId: String(t._id || t.id || ''),
+      tipoTransporteNombre: t.nombre || '',
+      toneladasPorCamion: tonsPorCamionDeTipo(t),
+    }))
+    .filter((t) => t.tipoTransporteId);
+
+  const openTruckPopover = (mode, programa, fecha, opciones, evt) => {
+    const r = evt.currentTarget.getBoundingClientRect();
+    setTruckPopover({ mode, programa, fecha, opciones, x: r.left, y: r.bottom + 6 });
+  };
+
+  // "+" : 0 tipos → legacy; 1 tipo → directo; varios → popover selector.
+  const handleAddTruck = (programa, fecha, currentCamiones, evt) => {
+    if (!handleQuickAdjustTipo || tiposActivos.length === 0) {
+      handleQuickAdjust(programa, fecha, +1, currentCamiones);
+      return;
+    }
+    if (tiposActivos.length === 1) {
+      handleQuickAdjustTipo(programa, fecha, 'sumar', tiposActivos[0]);
+      return;
+    }
+    openTruckPopover('add', programa, fecha, tiposActivos, evt);
+  };
+
+  // "−" : sin desglose → legacy; 1 línea → resta ese tipo; varias → popover.
+  const handleRemoveTruck = (programa, fecha, cell, evt) => {
+    const lineas = Array.isArray(cell?.lineasTransporteDia) ? cell.lineasTransporteDia : null;
+    if (!handleQuickAdjustTipo || !lineas || lineas.length === 0) {
+      handleQuickAdjust(programa, fecha, -1, cell.camiones);
+      return;
+    }
+    const opciones = lineas.map((l) => ({
+      tipoTransporteId: String(l.tipoTransporteId || ''),
+      tipoTransporteNombre: l.tipoTransporteNombre || '',
+      toneladasPorCamion: l.toneladasPorCamion ?? null,
+      cantidad: Number(l.cantidad || 0),
+    }));
+    if (opciones.length === 1) {
+      handleQuickAdjustTipo(programa, fecha, 'suspender', opciones[0]);
+      return;
+    }
+    openTruckPopover('remove', programa, fecha, opciones, evt);
+  };
+
+  const onSelectTruck = (opt) => {
+    if (!truckPopover) return;
+    const accion = truckPopover.mode === 'remove' ? 'suspender' : 'sumar';
+    handleQuickAdjustTipo(truckPopover.programa, truckPopover.fecha, accion, opt);
+    setTruckPopover(null);
+  };
+
   return (
     <div ref={calendarBoardRef} className={`harvest-calendar-shell ${calView === 'week' ? 'week-mode' : 'month-mode'} ${isCalendarBoard ? 'board-mode' : ''}`}>
       <div className="mx-card harvest-calendar-main">
@@ -274,11 +334,11 @@ export default function ProgramaCalendarioView({
                             {cell.esDiaEspecial && cell.camiones > 0 && <div className="harvest-week-v2-adj">★ {cell.ajusteMotivo || 'Ajuste'}</div>}
                             {programa && !isReadOnly && (
                               <div className="harvest-week-v2-actions">
-                                <button className="wk-btn" onClick={() => handleQuickAdjust(programa, dia, -1, cell.camiones)}>
+                                <button className="wk-btn" onClick={(e) => handleRemoveTruck(programa, dia, cell, e)}>
                                   <span>−</span>
                                   <span className="wk-btn-tip">Quitar 1 camión</span>
                                 </button>
-                                <button className="wk-btn wk-btn-add" onClick={() => handleQuickAdjust(programa, dia, +1, cell.camiones)}>
+                                <button className="wk-btn wk-btn-add" onClick={(e) => handleAddTruck(programa, dia, cell.camiones, e)}>
                                   <span>+</span>
                                   <span className="wk-btn-tip">Sumar 1 camión</span>
                                 </button>
@@ -374,6 +434,18 @@ export default function ProgramaCalendarioView({
                         <div className="cal-detail-card-info">
                           <div className="cal-detail-card-name">{it.proveedorNombre}</div>
                           <div className="cal-detail-card-center">{it.centroNombre || it.centroCodigo || 'Sin centro'}</div>
+                          {Array.isArray(it.lineasTransporteDia) && it.lineasTransporteDia.length > 0 && (
+                            <div className="cal-detail-card-transporte">
+                              {it.lineasTransporteDia.map((l, i) => (
+                                <div key={i} className="cal-detail-card-transporte-line">
+                                  {Number(l.cantidad || 0)} {l.tipoTransporteNombre || 'Sin tipo'}
+                                  {l.toneladasPorCamion != null
+                                    ? ` · ${fmtTonsInt(Number(l.cantidad || 0) * Number(l.toneladasPorCamion || 0))}`
+                                    : ''}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           {formatMuestreoResumen(it) && (
                             <div className="cal-detail-card-muestreo">
                               Últ. muestreo{formatMuestreoFecha(it.muestreoFecha, 'long') ? ` ${formatMuestreoFecha(it.muestreoFecha, 'long')}` : ''}: {formatMuestreoResumen(it)}
@@ -713,6 +785,34 @@ export default function ProgramaCalendarioView({
             </div>
           )}
         </aside>
+      )}
+
+      {truckPopover && (
+        <>
+          <div className="suspend-popover-backdrop" onClick={() => setTruckPopover(null)} />
+          <div className="truck-popover" style={{ left: truckPopover.x, top: truckPopover.y }}>
+            <div className="truck-popover-title">
+              {truckPopover.mode === 'remove' ? 'Quitar camión' : 'Agregar camión'}
+            </div>
+            <div className="truck-popover-list">
+              {truckPopover.opciones.map((opt) => (
+                <button
+                  key={opt.tipoTransporteId}
+                  type="button"
+                  className="truck-popover-opt"
+                  onClick={() => onSelectTruck(opt)}
+                >
+                  <span className="truck-popover-opt-name">{opt.tipoTransporteNombre || 'Sin nombre'}</span>
+                  <span className="truck-popover-opt-cap">
+                    {truckPopover.mode === 'remove'
+                      ? `${opt.cantidad} cam`
+                      : (opt.toneladasPorCamion != null ? `${fmtNumber(opt.toneladasPorCamion, 0)} t` : '—')}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

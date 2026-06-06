@@ -302,6 +302,7 @@ export default function Biomasa() {
     handleOpenFinalizeModal,
     handleFinalizarConfirm,
     handleQuickAdjust,
+    handleQuickAdjustTipo,
     handleSuspendDay,
     handleReactivateDay,
     handleUpsertNotaDia,
@@ -709,6 +710,8 @@ export default function Biomasa() {
               getLatestProgramNovelty={getLatestProgramNovelty}
               enrichCalendarItem={enrichCalendarItem}
               tonsPerTruck={tonsPerTruck}
+              tiposTransporte={tiposTransporte}
+              handleQuickAdjustTipo={handleQuickAdjustTipo}
               getProgramCamionesStatus={getProgramCamionesStatus}
             />
           )}

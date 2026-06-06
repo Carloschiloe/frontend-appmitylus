@@ -18,6 +18,15 @@ export const fmtTons = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximum
 export const fmtTonsInt = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' t';
 export const fmtNumber = (n, digits = 1) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: digits });
 
+// Toneladas por camión de un tipo de transporte (maestro): maxisPorUnidad * kgPorMaxiRef / 1000.
+// Devuelve null si los datos no permiten calcular.
+export const tonsPorCamionDeTipo = (tipo) => {
+  const maxis = Number(tipo?.maxisPorUnidad);
+  const kg = Number(tipo?.kgPorMaxiRef);
+  if (!Number.isFinite(maxis) || !Number.isFinite(kg) || maxis <= 0 || kg <= 0) return null;
+  return (maxis * kg) / 1000;
+};
+
 // Fecha del último muestreo. mode 'short' -> DD-MM, 'long' -> DD-MM-YYYY. null si no hay.
 export const formatMuestreoFecha = (fecha, mode = 'short') => {
   if (!fecha) return null;
