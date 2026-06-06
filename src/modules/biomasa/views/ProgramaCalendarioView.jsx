@@ -77,31 +77,43 @@ export default function ProgramaCalendarioView({
     setTruckPopover({ mode, programa, fecha, opciones, x: r.left, y: r.bottom + 6 });
   };
 
-  // "+" : SIEMPRE exige tipo. 0 tipos → aviso; 1 tipo → directo; varios → popover selector.
+  // "+": SIEMPRE exige tipo. 0 tipos → aviso; 1 tipo del programa → directo; varios → popover.
   const handleAddTruck = (programa, fecha, currentCamiones, evt) => {
-    if (!handleQuickAdjustTipo || tiposActivos.length === 0) {
-      addToast({
-        title: 'Sin tipos de transporte',
-        message: 'Configura al menos un tipo de transporte activo en Maestros para agregar camiones.',
-        type: 'warning',
-      });
+    // Preferir tipos del propio programa
+    const tiposPrograma = (programa?.transportes || [])
+      .filter(t => t.tipoTransporteId)
+      .map(t => ({
+        tipoTransporteId: String(t.tipoTransporteId),
+        tipoTransporteNombre: t.tipoTransporteNombre || '',
+        toneladasPorCamion: t.toneladasPorCamion ?? null,
+      }));
+    const opciones = tiposPrograma.length > 0 ? tiposPrograma : tiposActivos;
+
+    if (opciones.length === 0) {
+      // Sin tipos configurados → abrir modal completo para que el usuario elija
+      handleOpenAdjustModal(programa, fecha, currentCamiones);
       return;
     }
-    if (tiposActivos.length === 1) {
-      handleQuickAdjustTipo(programa, fecha, 'sumar', tiposActivos[0]);
+    if (opciones.length === 1) {
+      handleQuickAdjustTipo(programa, fecha, 'sumar', opciones[0]);
       return;
     }
-    openTruckPopover('add', programa, fecha, tiposActivos, evt);
+    openTruckPopover('add', programa, fecha, opciones, evt);
   };
 
-  // "−" : sin desglose → legacy; 1 línea → resta ese tipo; varias → popover.
+  // "−": SIEMPRE exige tipo. Sin desglose → abre modal pre-cargado con 'suspender'.
   const handleRemoveTruck = (programa, fecha, cell, evt) => {
-    const lineas = Array.isArray(cell?.lineasTransporteDia) ? cell.lineasTransporteDia : null;
-    if (!handleQuickAdjustTipo || !lineas || lineas.length === 0) {
-      handleQuickAdjust(programa, fecha, -1, cell.camiones);
+    const lineas = Array.isArray(cell?.lineasTransporteDia)
+      ? cell.lineasTransporteDia.filter(l => Number(l.cantidad) > 0)
+      : [];
+
+    if (lineas.length === 0) {
+      // No hay desglose tipado — abrir modal completo pre-seleccionando 'suspender'
+      // para que el usuario indique obligatoriamente el tipo de camión a retirar
+      handleOpenAdjustModal(programa, fecha, cell.camiones);
       return;
     }
-    const opciones = lineas.map((l) => ({
+    const opciones = lineas.map(l => ({
       tipoTransporteId: String(l.tipoTransporteId || ''),
       tipoTransporteNombre: l.tipoTransporteNombre || '',
       toneladasPorCamion: l.toneladasPorCamion ?? null,
