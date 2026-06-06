@@ -65,7 +65,9 @@ async function request(endpoint, options = {}) {
     return data;
   } catch (error) {
     const isExpectedBootstrapAuthFailure =
-      endpoint === '/auth/me' && (error?.status === 401 || error?.status === 500);
+      (endpoint === '/auth/me' && (error?.status === 401 || error?.status === 500)) ||
+      // refresh devuelve 401 cuando no hay sesión válida (no logueado / token expirado): es esperado
+      (endpoint === '/auth/refresh' && error?.status === 401);
 
     if (error.name !== 'AbortError' && !isExpectedBootstrapAuthFailure) {
       // eslint-disable-next-line no-console
