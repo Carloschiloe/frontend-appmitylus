@@ -118,6 +118,9 @@ export default function ProgramaModalesView({
                 <div className="harvest-adjust-context" style={{ marginBottom: 16 }}>
                   <strong>{adjustProgram?.proveedorNombre}</strong>
                   <span>{adjustProgram?.centroNombre || 'Sin centro definido'}</span>
+                  <span style={{ display: 'block', marginTop: 4, color: 'var(--color-text-muted)', fontSize: 13 }}>
+                    Fecha de ajuste: <strong>{adjustForm.fecha}</strong>
+                  </span>
                 </div>
 
                 <div className="mx-form-grid" style={{ gridTemplateColumns: '1fr' }}>
@@ -142,7 +145,7 @@ export default function ProgramaModalesView({
                     </button>
                   </div>
 
-                  <div className="mx-form-group">
+                  <div className="mx-form-group" style={{ display: 'none' }}>
                     <label className="mx-label">Fecha del ajuste</label>
                     <input type="date" className="mx-input" value={adjustForm.fecha} required
                       onChange={e => setAdjustForm({ ...adjustForm, fecha: e.target.value })} />
@@ -159,11 +162,9 @@ export default function ProgramaModalesView({
                       value={adjustForm.tipoTransporteId}
                       onChange={e => {
                         const selectedId = e.target.value;
-                        const fromPrograma = (adjustProgram?.transportes || []).find(t => String(t.tipoTransporteId) === selectedId);
                         const fromCatalogo = (tiposTransporte || []).find(t => String(t._id) === selectedId);
-                        const tipo = fromPrograma || fromCatalogo;
-                        const nombre = fromPrograma?.tipoTransporteNombre || fromCatalogo?.nombre || '';
-                        const tpc = fromPrograma?.toneladasPorCamion ?? (fromCatalogo ? ((fromCatalogo.maxisPorUnidad || 0) * (fromCatalogo.kgPorMaxiRef || 0)) / 1000 : '');
+                        const nombre = fromCatalogo?.nombre || '';
+                        const tpc = fromCatalogo ? ((fromCatalogo.maxisPorUnidad || 0) * (fromCatalogo.kgPorMaxiRef || 0)) / 1000 : '';
                         setAdjustForm({
                           ...adjustForm,
                           tipoTransporteId: selectedId,
@@ -173,30 +174,16 @@ export default function ProgramaModalesView({
                       }}
                     >
                       <option value="">— Selecciona el tipo de camión —</option>
-                      {/* Primero los del programa (si estamos suspendiendo, idealmente mostrar solo estos, pero mostramos todos por flexibilidad) */}
-                      {Array.isArray(adjustProgram?.transportes) && adjustProgram.transportes.length > 0 && (
-                        <optgroup label="Tipos en el programa base">
-                          {adjustProgram.transportes
-                            .filter(t => t.tipoTransporteId)
-                            .map((t, idx) => (
-                              <option key={`prog-${idx}`} value={String(t.tipoTransporteId)}>
-                                {t.tipoTransporteNombre || 'Sin nombre'} — {t.toneladasPorCamion ? `${t.toneladasPorCamion} t/cam` : 'sin t/cam'}
-                              </option>
-                            ))}
-                        </optgroup>
-                      )}
                       {/* Catálogo completo */}
                       {Array.isArray(tiposTransporte) && tiposTransporte.length > 0 && (
-                        <optgroup label="Catálogo de Maestros">
-                          {tiposTransporte.map(t => {
-                            const tpc = t.maxisPorUnidad && t.kgPorMaxiRef ? ((t.maxisPorUnidad * t.kgPorMaxiRef) / 1000).toFixed(1) : null;
-                            return (
-                              <option key={String(t._id)} value={String(t._id)}>
-                                {t.nombre}{tpc ? ` — ${tpc} t/cam` : ''}
-                              </option>
-                            );
-                          })}
-                        </optgroup>
+                        tiposTransporte.map(t => {
+                          const tpc = t.maxisPorUnidad && t.kgPorMaxiRef ? ((t.maxisPorUnidad * t.kgPorMaxiRef) / 1000).toFixed(1) : null;
+                          return (
+                            <option key={String(t._id)} value={String(t._id)}>
+                              {t.nombre}{tpc ? ` — ${tpc} t/cam` : ''}
+                            </option>
+                          );
+                        })
                       )}
                     </select>
 
