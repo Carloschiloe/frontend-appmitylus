@@ -198,7 +198,7 @@ export function useProgramaActions({
     }
   }, [addToast, load]);
 
-  const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), currentCamiones = null, accion = 'sumar') => {
+  const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), currentCamiones = null, accion = 'sumar', currentTons = 0) => {
     if (!programa) return;
     const current = currentCamiones != null ? Number(currentCamiones || 0) : Number(programa.camionesDefault || 0);
     setAdjustProgram(programa);
@@ -206,6 +206,7 @@ export function useProgramaActions({
       fecha,
       accion: accion,
       camiones: current,
+      currentTons: currentTons,
       motivo: 'Planta',
       nota: '',
       tipoTransporteId: '',

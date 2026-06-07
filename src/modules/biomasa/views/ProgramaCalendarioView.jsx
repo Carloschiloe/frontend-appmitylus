@@ -73,13 +73,13 @@ export default function ProgramaCalendarioView({
     .filter((t) => t.tipoTransporteId);
 
   // "+": Abrir modal de ajuste pre-cargado para sumar
-  const handleAddTruck = (programa, fecha, currentCamiones, evt) => {
-    handleOpenAdjustModal(programa, fecha, currentCamiones, 'sumar');
+  const handleAddTruck = (programa, fecha, cell, evt) => {
+    handleOpenAdjustModal(programa, fecha, cell.camiones, 'sumar', cell.tonsDia || 0);
   };
 
   // "−": Abrir modal de ajuste pre-cargado para suspender
   const handleRemoveTruck = (programa, fecha, cell, evt) => {
-    handleOpenAdjustModal(programa, fecha, cell.camiones, 'suspender');
+    handleOpenAdjustModal(programa, fecha, cell.camiones, 'suspender', cell.tonsDia || 0);
   };
 
   return (
@@ -305,7 +305,7 @@ export default function ProgramaCalendarioView({
                                   <span>−</span>
                                   <span className="wk-btn-tip">Quitar 1 camión</span>
                                 </button>
-                                <button className="wk-btn wk-btn-add" onClick={(e) => handleAddTruck(programa, dia, cell.camiones, e)}>
+                                <button className="wk-btn wk-btn-add" onClick={(e) => handleAddTruck(programa, dia, cell, e)}>
                                   <span>+</span>
                                   <span className="wk-btn-tip">Sumar 1 camión</span>
                                 </button>

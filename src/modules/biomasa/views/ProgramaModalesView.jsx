@@ -151,60 +151,75 @@ export default function ProgramaModalesView({
                       onChange={e => setAdjustForm({ ...adjustForm, fecha: e.target.value })} />
                   </div>
 
-                  {/* Selector de TIPO DE CAMIÓN */}
-                  <div className="mx-form-group">
-                    <label className="mx-label" style={{ fontWeight: 700 }}>
-                      Tipo de camión <span style={{ color: 'var(--color-error)' }}>*</span>
-                    </label>
-                    <select
-                      className="mx-select"
-                      required
-                      value={adjustForm.tipoTransporteId}
-                      onChange={e => {
-                        const selectedId = e.target.value;
-                        const fromCatalogo = (tiposTransporte || []).find(t => String(t._id) === selectedId);
-                        const nombre = fromCatalogo?.nombre || '';
-                        const tpc = fromCatalogo ? ((fromCatalogo.maxisPorUnidad || 0) * (fromCatalogo.kgPorMaxiRef || 0)) / 1000 : '';
-                        setAdjustForm({
-                          ...adjustForm,
-                          tipoTransporteId: selectedId,
-                          tipoTransporteNombre: nombre,
-                          toneladasPorCamion: tpc || '',
-                        });
-                      }}
-                    >
-                      <option value="">— Selecciona el tipo de camión —</option>
-                      {/* Catálogo completo */}
-                      {Array.isArray(tiposTransporte) && tiposTransporte.length > 0 && (
-                        tiposTransporte.map(t => {
-                          const tpc = t.maxisPorUnidad && t.kgPorMaxiRef ? ((t.maxisPorUnidad * t.kgPorMaxiRef) / 1000).toFixed(1) : null;
-                          return (
-                            <option key={String(t._id)} value={String(t._id)}>
-                              {t.nombre}{tpc ? ` — ${tpc} t/cam` : ''}
-                            </option>
-                          );
-                        })
-                      )}
-                    </select>
+                  {/* Fila: Tipo de Camión y Motivo */}
+                  <div className="mx-form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <label className="mx-label" style={{ fontWeight: 700 }}>
+                        Tipo de camión <span style={{ color: 'var(--color-error)' }}>*</span>
+                      </label>
+                      <select
+                        className="mx-select"
+                        required
+                        value={adjustForm.tipoTransporteId}
+                        onChange={e => {
+                          const selectedId = e.target.value;
+                          const fromCatalogo = (tiposTransporte || []).find(t => String(t._id) === selectedId);
+                          const nombre = fromCatalogo?.nombre || '';
+                          const tpc = fromCatalogo ? ((fromCatalogo.maxisPorUnidad || 0) * (fromCatalogo.kgPorMaxiRef || 0)) / 1000 : '';
+                          setAdjustForm({
+                            ...adjustForm,
+                            tipoTransporteId: selectedId,
+                            tipoTransporteNombre: nombre,
+                            toneladasPorCamion: tpc || '',
+                          });
+                        }}
+                      >
+                        <option value="">— Selecciona —</option>
+                        {Array.isArray(tiposTransporte) && tiposTransporte.length > 0 && (
+                          tiposTransporte.map(t => {
+                            const tpc = t.maxisPorUnidad && t.kgPorMaxiRef ? ((t.maxisPorUnidad * t.kgPorMaxiRef) / 1000).toFixed(1) : null;
+                            return (
+                              <option key={String(t._id)} value={String(t._id)}>
+                                {t.nombre}{tpc ? ` — ${tpc} t` : ''}
+                              </option>
+                            );
+                          })
+                        )}
+                      </select>
+                    </div>
 
-                    {/* Preview de toneladas */}
-                    {adjustForm.tipoTransporteId && adjustForm.toneladasPorCamion && (
-                      <div style={{ marginTop: 8, padding: '8px 12px', background: adjustForm.accion === 'sumar' ? '#dcfce7' : '#fee2e2', borderRadius: 6, fontSize: 13, fontWeight: 600, color: adjustForm.accion === 'sumar' ? '#166534' : '#991b1b', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Impacto en el día:</span>
-                        <span>{adjustForm.accion === 'sumar' ? '+' : '−'}{adjustForm.toneladasPorCamion} t</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <label className="mx-label">Motivo <span style={{ color: 'var(--color-error)' }}>*</span></label>
+                      <select className="mx-select" value={adjustForm.motivo} required
+                        onChange={e => setAdjustForm({ ...adjustForm, motivo: e.target.value })}>
+                        {ADJUST_MOTIVOS.map((motivo) => (
+                          <option key={motivo} value={motivo}>{motivo}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Preview de toneladas y camiones */}
+                  {adjustForm.tipoTransporteId && adjustForm.toneladasPorCamion && (
+                    <div style={{ marginTop: 8, padding: '12px 16px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 6 }}>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6 }}>Proyección del día:</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <strong style={{ fontSize: 16 }}>{adjustForm.accion === 'sumar' ? adjustForm.camiones + 1 : Math.max(0, adjustForm.camiones - 1)} camiones</strong>
+                          <span style={{ margin: '0 8px', color: 'var(--color-border)' }}>|</span>
+                          <strong style={{ fontSize: 16 }}>
+                            {adjustForm.accion === 'sumar' 
+                              ? (adjustForm.currentTons + adjustForm.toneladasPorCamion).toFixed(1) 
+                              : Math.max(0, adjustForm.currentTons - adjustForm.toneladasPorCamion).toFixed(1)} t
+                          </strong>
+                        </div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: adjustForm.accion === 'sumar' ? '#166534' : '#991b1b', background: adjustForm.accion === 'sumar' ? '#dcfce7' : '#fee2e2', padding: '2px 8px', borderRadius: 4 }}>
+                          {adjustForm.accion === 'sumar' ? '+' : '−'}{adjustForm.toneladasPorCamion} t
+                        </div>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="mx-form-group">
-                    <label className="mx-label">Motivo <span style={{ color: 'var(--color-error)' }}>*</span></label>
-                    <select className="mx-select" value={adjustForm.motivo} required
-                      onChange={e => setAdjustForm({ ...adjustForm, motivo: e.target.value })}>
-                      {ADJUST_MOTIVOS.map((motivo) => (
-                        <option key={motivo} value={motivo}>{motivo}</option>
-                      ))}
-                    </select>
-                  </div>
+                    </div>
+                  )}
 
                   <div className="mx-form-group">
                     <label className="mx-label">Nota operacional (opcional)</label>
