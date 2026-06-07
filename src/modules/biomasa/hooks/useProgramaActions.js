@@ -198,7 +198,7 @@ export function useProgramaActions({
     }
   }, [addToast, load]);
 
-  const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), currentCamiones = null, accion = 'set_total') => {
+  const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), currentCamiones = null, accion = 'sumar') => {
     if (!programa) return;
     const current = currentCamiones != null ? Number(currentCamiones || 0) : Number(programa.camionesDefault || 0);
     setAdjustProgram(programa);

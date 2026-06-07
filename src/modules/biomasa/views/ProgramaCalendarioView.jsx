@@ -72,54 +72,14 @@ export default function ProgramaCalendarioView({
     }))
     .filter((t) => t.tipoTransporteId);
 
-  const openTruckPopover = (mode, programa, fecha, opciones, evt) => {
-    const r = evt.currentTarget.getBoundingClientRect();
-    setTruckPopover({ mode, programa, fecha, opciones, x: r.left, y: r.bottom + 6 });
-  };
-
-  // "+": SIEMPRE exige tipo y despliega TODOS los tipos activos desde Maestros
+  // "+": Abrir modal de ajuste pre-cargado para sumar
   const handleAddTruck = (programa, fecha, currentCamiones, evt) => {
-    const opciones = tiposActivos;
-
-    if (opciones.length === 0) {
-      // Sin tipos configurados → abrir modal completo para que el usuario elija
-      handleOpenAdjustModal(programa, fecha, currentCamiones, 'sumar');
-      return;
-    }
-    // Siempre mostrar el popover para obligar al usuario a confirmar el tipo,
-    // incluso si solo hay 1 opción disponible.
-    openTruckPopover('add', programa, fecha, opciones, evt);
+    handleOpenAdjustModal(programa, fecha, currentCamiones, 'sumar');
   };
 
-  // "−": SIEMPRE exige tipo. Muestra el popover chico para elegir qué tipo suspender.
+  // "−": Abrir modal de ajuste pre-cargado para suspender
   const handleRemoveTruck = (programa, fecha, cell, evt) => {
-    const lineas = Array.isArray(cell?.lineasTransporteDia)
-      ? cell.lineasTransporteDia.filter(l => Number(l.cantidad) > 0)
-      : [];
-
-    let opciones;
-    if (lineas.length === 0) {
-      // No hay desglose tipado (ej. programa base antiguo). 
-      // Mostrar todos los tipos activos para que el usuario elija cuál restar.
-      opciones = tiposActivos;
-    } else {
-      opciones = lineas.map(l => ({
-        tipoTransporteId: String(l.tipoTransporteId || ''),
-        tipoTransporteNombre: l.tipoTransporteNombre || '',
-        toneladasPorCamion: l.toneladasPorCamion ?? null,
-        cantidad: Number(l.cantidad || 0),
-      }));
-    }
-
-    // Siempre mostrar popover chico para obligar a elegir qué tipo se suspende
-    openTruckPopover('remove', programa, fecha, opciones, evt);
-  };
-
-  const onSelectTruck = (opt) => {
-    if (!truckPopover) return;
-    const accion = truckPopover.mode === 'remove' ? 'suspender' : 'sumar';
-    handleQuickAdjustTipo(truckPopover.programa, truckPopover.fecha, accion, opt);
-    setTruckPopover(null);
+    handleOpenAdjustModal(programa, fecha, cell.camiones, 'suspender');
   };
 
   return (
@@ -794,32 +754,6 @@ export default function ProgramaCalendarioView({
         </aside>
       )}
 
-      {truckPopover && (
-        <>
-          <div className="suspend-popover-backdrop" onClick={() => setTruckPopover(null)} />
-          <div className="truck-popover" style={{ left: truckPopover.x, top: truckPopover.y }}>
-            <div className="truck-popover-title">
-              {truckPopover.mode === 'remove' ? 'Quitar camión' : 'Agregar camión'}
-            </div>
-            <div className="truck-popover-list">
-              {truckPopover.opciones.map((opt) => (
-                <button
-                  key={opt.tipoTransporteId}
-                  type="button"
-                  className="truck-popover-opt"
-                  onClick={() => onSelectTruck(opt)}
-                >
-                  <span className="truck-popover-opt-name">{opt.tipoTransporteNombre || 'Sin nombre'}</span>
-                  <span className="truck-popover-opt-cap">
-                    {truckPopover.mode === 'remove'
-                      ? `${opt.cantidad} cam`
-                      : (opt.toneladasPorCamion != null ? `${fmtNumber(opt.toneladasPorCamion, 0)} t` : '—')}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
       )}
     </div>
   );

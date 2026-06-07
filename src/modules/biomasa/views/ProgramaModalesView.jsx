@@ -105,142 +105,124 @@ export default function ProgramaModalesView({
 
   return (
     <>
-      {/* ── MODAL AJUSTE DIARIO ── */}
+      {/* ── MODAL AJUSTE RÁPIDO (SUMAR/SUSPENDER) ── */}
       {showAdjustModal && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '580px' }}>
+          <div className="mx-modal" style={{ maxWidth: '480px' }}>
             <div className="mx-modal-header">
-              <h2>Ajuste diario de cosecha</h2>
-              <button className="mx-btn-icon" onClick={() => setShowAdjustModal(false)}><X size={20} /></button>
+              <h2>{adjustForm.accion === 'sumar' ? 'Sumar Camión' : 'Suspender Camión'}</h2>
+              <button type="button" className="mx-btn-icon" onClick={() => setShowAdjustModal(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleAdjustSave} className="mx-form">
               <div className="mx-modal-body">
-                <div className="harvest-adjust-context">
+                <div className="harvest-adjust-context" style={{ marginBottom: 16 }}>
                   <strong>{adjustProgram?.proveedorNombre}</strong>
-                  <span>
-                    {adjustProgram?.centroNombre || 'Sin centro definido'} — base {adjustProgram?.camionesDefault || 0} cam/día
-                    {adjustMaxCamiones != null && ` · acordado: ${adjustMaxCamiones} cam/día`}
-                  </span>
+                  <span>{adjustProgram?.centroNombre || 'Sin centro definido'}</span>
                 </div>
 
-                {/* Info de tipos de camión configurados en el programa */}
-                {Array.isArray(adjustProgram?.transportes) && adjustProgram.transportes.length > 0 && (
-                  <div style={{ background: 'var(--color-surface-2, #f8fafc)', border: '1px solid var(--color-border)', borderRadius: 8, padding: '10px 14px', marginBottom: 12, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                    {adjustProgram.transportes.map((t, idx) => (
-                      <div key={idx} style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                        <strong style={{ color: 'var(--color-text)' }}>{t.tipoTransporteNombre || 'Sin nombre'}</strong>
-                        {' · '}{t.cantidadDia} cam/día
-                        {t.toneladasPorCamion ? ` · ${t.toneladasPorCamion} t/cam` : ''}
-                      </div>
-                    ))}
+                <div className="mx-form-grid" style={{ gridTemplateColumns: '1fr' }}>
+                  
+                  {/* Selector de Acción (Toggle) */}
+                  <div className="mx-form-group" style={{ display: 'flex', gap: 8, background: 'var(--color-surface-2)', padding: 4, borderRadius: 8 }}>
+                    <button 
+                      type="button" 
+                      className={`mx-btn ${adjustForm.accion === 'sumar' ? 'mx-btn-primary' : 'mx-btn-ghost'}`} 
+                      style={{ flex: 1 }}
+                      onClick={() => setAdjustForm({ ...adjustForm, accion: 'sumar', tipoTransporteId: '', tipoTransporteNombre: '', toneladasPorCamion: '' })}
+                    >
+                      <Plus size={16} /> Sumar
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`mx-btn ${adjustForm.accion === 'suspender' ? 'mx-btn-danger' : 'mx-btn-ghost'}`} 
+                      style={{ flex: 1 }}
+                      onClick={() => setAdjustForm({ ...adjustForm, accion: 'suspender', tipoTransporteId: '', tipoTransporteNombre: '', toneladasPorCamion: '' })}
+                    >
+                      − Suspender
+                    </button>
                   </div>
-                )}
 
-                <div className="mx-form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
                   <div className="mx-form-group">
-                    <label className="mx-label">Fecha</label>
+                    <label className="mx-label">Fecha del ajuste</label>
                     <input type="date" className="mx-input" value={adjustForm.fecha} required
                       onChange={e => setAdjustForm({ ...adjustForm, fecha: e.target.value })} />
                   </div>
+
+                  {/* Selector de TIPO DE CAMIÓN */}
                   <div className="mx-form-group">
-                    <label className="mx-label">Acción</label>
-                    <select className="mx-select" value={adjustForm.accion}
-                      onChange={e => setAdjustForm({ ...adjustForm, accion: e.target.value, tipoTransporteId: '', tipoTransporteNombre: '', toneladasPorCamion: '' })}>
-                      <option value="set_total">Cambiar total del día</option>
-                      <option value="sumar">Sumar camión</option>
-                      <option value="suspender">Suspender camión</option>
-                      <option value="suspender_dia">Suspender día completo</option>
+                    <label className="mx-label" style={{ fontWeight: 700 }}>
+                      Tipo de camión <span style={{ color: 'var(--color-error)' }}>*</span>
+                    </label>
+                    <select
+                      className="mx-select"
+                      required
+                      value={adjustForm.tipoTransporteId}
+                      onChange={e => {
+                        const selectedId = e.target.value;
+                        const fromPrograma = (adjustProgram?.transportes || []).find(t => String(t.tipoTransporteId) === selectedId);
+                        const fromCatalogo = (tiposTransporte || []).find(t => String(t._id) === selectedId);
+                        const tipo = fromPrograma || fromCatalogo;
+                        const nombre = fromPrograma?.tipoTransporteNombre || fromCatalogo?.nombre || '';
+                        const tpc = fromPrograma?.toneladasPorCamion ?? (fromCatalogo ? ((fromCatalogo.maxisPorUnidad || 0) * (fromCatalogo.kgPorMaxiRef || 0)) / 1000 : '');
+                        setAdjustForm({
+                          ...adjustForm,
+                          tipoTransporteId: selectedId,
+                          tipoTransporteNombre: nombre,
+                          toneladasPorCamion: tpc || '',
+                        });
+                      }}
+                    >
+                      <option value="">— Selecciona el tipo de camión —</option>
+                      {/* Primero los del programa (si estamos suspendiendo, idealmente mostrar solo estos, pero mostramos todos por flexibilidad) */}
+                      {Array.isArray(adjustProgram?.transportes) && adjustProgram.transportes.length > 0 && (
+                        <optgroup label="Tipos en el programa base">
+                          {adjustProgram.transportes
+                            .filter(t => t.tipoTransporteId)
+                            .map((t, idx) => (
+                              <option key={`prog-${idx}`} value={String(t.tipoTransporteId)}>
+                                {t.tipoTransporteNombre || 'Sin nombre'} — {t.toneladasPorCamion ? `${t.toneladasPorCamion} t/cam` : 'sin t/cam'}
+                              </option>
+                            ))}
+                        </optgroup>
+                      )}
+                      {/* Catálogo completo */}
+                      {Array.isArray(tiposTransporte) && tiposTransporte.length > 0 && (
+                        <optgroup label="Catálogo de Maestros">
+                          {tiposTransporte.map(t => {
+                            const tpc = t.maxisPorUnidad && t.kgPorMaxiRef ? ((t.maxisPorUnidad * t.kgPorMaxiRef) / 1000).toFixed(1) : null;
+                            return (
+                              <option key={String(t._id)} value={String(t._id)}>
+                                {t.nombre}{tpc ? ` — ${tpc} t/cam` : ''}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      )}
                     </select>
+
+                    {/* Preview de toneladas */}
+                    {adjustForm.tipoTransporteId && adjustForm.toneladasPorCamion && (
+                      <div style={{ marginTop: 8, padding: '8px 12px', background: adjustForm.accion === 'sumar' ? '#dcfce7' : '#fee2e2', borderRadius: 6, fontSize: 13, fontWeight: 600, color: adjustForm.accion === 'sumar' ? '#166534' : '#991b1b', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Impacto en el día:</span>
+                        <span>{adjustForm.accion === 'sumar' ? '+' : '−'}{adjustForm.toneladasPorCamion} t</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Selector de TIPO DE CAMIÓN — requerido para sumar/suspender */}
-                  {(adjustForm.accion === 'sumar' || adjustForm.accion === 'suspender') && (
-                    <div className="mx-form-group" style={{ gridColumn: '1 / -1' }}>
-                      <label className="mx-label" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
-                        Tipo de camión <span style={{ color: 'var(--color-error)' }}>*</span>
-                        <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', marginLeft: 6 }}>
-                          (las toneladas se calculan según el tipo seleccionado)
-                        </span>
-                      </label>
-                      <select
-                        className="mx-select"
-                        required
-                        value={adjustForm.tipoTransporteId}
-                        onChange={e => {
-                          const selectedId = e.target.value;
-                          // Buscar primero en los transportes del programa, luego en el catálogo
-                          const fromPrograma = (adjustProgram?.transportes || []).find(t => String(t.tipoTransporteId) === selectedId);
-                          const fromCatalogo = (tiposTransporte || []).find(t => String(t._id) === selectedId);
-                          const tipo = fromPrograma || fromCatalogo;
-                          const nombre = fromPrograma?.tipoTransporteNombre || fromCatalogo?.nombre || '';
-                          const tpc = fromPrograma?.toneladasPorCamion ?? (fromCatalogo ? ((fromCatalogo.maxisPorUnidad || 0) * (fromCatalogo.kgPorMaxiRef || 0)) / 1000 : '');
-                          setAdjustForm({
-                            ...adjustForm,
-                            tipoTransporteId: selectedId,
-                            tipoTransporteNombre: nombre,
-                            toneladasPorCamion: tpc || '',
-                          });
-                        }}
-                      >
-                        <option value="">— Selecciona el tipo de camión —</option>
-                        {/* Primero los del programa */}
-                        {Array.isArray(adjustProgram?.transportes) && adjustProgram.transportes.length > 0 && (
-                          <optgroup label="Tipos del programa">
-                            {adjustProgram.transportes
-                              .filter(t => t.tipoTransporteId)
-                              .map((t, idx) => (
-                                <option key={`prog-${idx}`} value={String(t.tipoTransporteId)}>
-                                  {t.tipoTransporteNombre || 'Sin nombre'} — {t.toneladasPorCamion ? `${t.toneladasPorCamion} t/cam` : 'sin t/cam'} ({t.cantidadDia}/día)
-                                </option>
-                              ))}
-                          </optgroup>
-                        )}
-                        {/* Luego el catálogo completo */}
-                        {Array.isArray(tiposTransporte) && tiposTransporte.length > 0 && (
-                          <optgroup label="Catálogo completo">
-                            {tiposTransporte.map(t => {
-                              const tpc = t.maxisPorUnidad && t.kgPorMaxiRef ? ((t.maxisPorUnidad * t.kgPorMaxiRef) / 1000).toFixed(1) : null;
-                              return (
-                                <option key={String(t._id)} value={String(t._id)}>
-                                  {t.nombre}{tpc ? ` — ${tpc} t/cam` : ''}
-                                </option>
-                              );
-                            })}
-                          </optgroup>
-                        )}
-                      </select>
-
-                      {/* Preview de toneladas que impacta este ajuste */}
-                      {adjustForm.tipoTransporteId && adjustForm.toneladasPorCamion && (
-                        <div style={{ marginTop: 6, padding: '6px 10px', background: adjustForm.accion === 'sumar' ? '#dcfce7' : '#fee2e2', borderRadius: 6, fontSize: 12, fontWeight: 600, color: adjustForm.accion === 'sumar' ? '#166534' : '#991b1b' }}>
-                          {adjustForm.accion === 'sumar' ? '▲ +' : '▼ −'}{adjustForm.toneladasPorCamion} t este día · {adjustForm.tipoTransporteNombre}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Cantidad de camiones para set_total; sumar/suspender siempre es 1 */}
-                  {adjustForm.accion === 'set_total' && (
-                    <div className="mx-form-group">
-                      <label className="mx-label">Total camiones del día</label>
-                      <input type="number" className="mx-input" min="0" value={adjustForm.camiones} required
-                        onChange={e => setAdjustForm({ ...adjustForm, camiones: e.target.value })} />
-                    </div>
-                  )}
-
                   <div className="mx-form-group">
-                    <label className="mx-label">Motivo</label>
-                    <select className="mx-select" value={adjustForm.motivo}
+                    <label className="mx-label">Motivo <span style={{ color: 'var(--color-error)' }}>*</span></label>
+                    <select className="mx-select" value={adjustForm.motivo} required
                       onChange={e => setAdjustForm({ ...adjustForm, motivo: e.target.value })}>
                       {ADJUST_MOTIVOS.map((motivo) => (
                         <option key={motivo} value={motivo}>{motivo}</option>
                       ))}
                     </select>
                   </div>
-                  <div className="mx-form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="mx-label">Nota operacional</label>
-                    <textarea className="mx-textarea" value={adjustForm.nota} rows="3"
-                      placeholder="Ej: Se suspendio un camion por falta de ventana en planta."
+
+                  <div className="mx-form-group">
+                    <label className="mx-label">Nota operacional (opcional)</label>
+                    <textarea className="mx-textarea" value={adjustForm.nota} rows="2"
+                      placeholder="Ej: Se suspendió por falta de ventana en planta..."
                       onChange={e => setAdjustForm({ ...adjustForm, nota: e.target.value })} />
                   </div>
                 </div>
@@ -249,10 +231,10 @@ export default function ProgramaModalesView({
                 <button type="button" className="mx-btn mx-btn-outline" onClick={() => setShowAdjustModal(false)}>Cancelar</button>
                 <button
                   type="submit"
-                  className="mx-btn mx-btn-primary"
-                  disabled={(adjustForm.accion === 'sumar' || adjustForm.accion === 'suspender') && !adjustForm.tipoTransporteId}
+                  className={`mx-btn ${adjustForm.accion === 'sumar' ? 'mx-btn-primary' : 'mx-btn-danger'}`}
+                  disabled={!adjustForm.tipoTransporteId || !adjustForm.motivo}
                 >
-                  <CheckCircle2 size={18} /> Guardar ajuste
+                  <CheckCircle2 size={18} /> Confirmar {adjustForm.accion === 'sumar' ? 'suma' : 'suspensión'}
                 </button>
               </div>
             </form>
