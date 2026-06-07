@@ -220,9 +220,12 @@ export function useProgramaActions({
     e.preventDefault();
     if (!adjustProgram?._id || !adjustForm.fecha) return;
     try {
+      // Los botones +/- ajustan de a 1 camión: para 'sumar'/'suspender' el backend
+      // espera el DELTA (siempre 1), no el total actual del día (que solo sirve al preview).
+      const esIncremento = adjustForm.accion === 'sumar' || adjustForm.accion === 'suspender';
       await apiClient.post(`/programa-cosecha/${adjustProgram._id}/ajuste-diario`, {
         ...adjustForm,
-        camiones: Number(adjustForm.camiones || 0),
+        camiones: esIncremento ? 1 : Number(adjustForm.camiones || 0),
       });
       addToast({
         title: 'Ajuste diario registrado',
