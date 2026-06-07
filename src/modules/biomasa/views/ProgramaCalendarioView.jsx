@@ -753,8 +753,6 @@ export default function ProgramaCalendarioView({
           )}
         </aside>
       )}
-
-      )}
     </div>
   );
 }
