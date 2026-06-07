@@ -46,20 +46,23 @@ export default function ProgramaTablaView({
           <div className="mx-toggle-group">
             <button className={`mx-toggle-btn ${programPeriod === 'month' ? 'active' : ''}`} onClick={() => setProgramPeriod('month')}>Vista Mes</button>
             <button className={`mx-toggle-btn ${programPeriod === 'week' ? 'active' : ''}`} onClick={() => setProgramPeriod('week')}>Vista Semana</button>
+            <button className={`mx-toggle-btn ${programPeriod === 'all' ? 'active' : ''}`} onClick={() => setProgramPeriod('all')}>Ver Todos</button>
           </div>
-          <div className="harvest-program-period">
-            <button className="mx-btn-icon sm" onClick={() => moveProgramPeriod(-1)} aria-label="Periodo anterior">
-              <ChevronLeft size={16} />
-            </button>
-            <span>
-              {programPeriod === 'week'
-                ? `Semana ${new Date(weekDays[0] + 'T12:00:00Z').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}`
-                : mesLabel(mes, true)}
-            </span>
-            <button className="mx-btn-icon sm" onClick={() => moveProgramPeriod(1)} aria-label="Periodo siguiente">
-              <ChevronRight size={16} />
-            </button>
-          </div>
+          {programPeriod !== 'all' && (
+            <div className="harvest-program-period">
+              <button className="mx-btn-icon sm" onClick={() => moveProgramPeriod(-1)} aria-label="Periodo anterior">
+                <ChevronLeft size={16} />
+              </button>
+              <span>
+                {programPeriod === 'week'
+                  ? `Semana ${new Date(weekDays[0] + 'T12:00:00Z').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}`
+                  : mesLabel(mes, true)}
+              </span>
+              <button className="mx-btn-icon sm" onClick={() => moveProgramPeriod(1)} aria-label="Periodo siguiente">
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
       <div className="mx-table-wrap">
@@ -171,7 +174,7 @@ export default function ProgramaTablaView({
                   <div className="mx-empty-state">
                     <Droplet size={36} />
                     <p className="mx-empty-state__title">Sin programación disponible</p>
-                    <p className="mx-empty-state__text">No hay cosechas programadas para el periodo seleccionado.</p>
+                    <p className="mx-empty-state__text">{programPeriod === 'all' ? 'No hay programas de cosecha registrados.' : 'No hay cosechas programadas para el periodo seleccionado.'}</p>
                   </div>
                 </td>
               </tr>

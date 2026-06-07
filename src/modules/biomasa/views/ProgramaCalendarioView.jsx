@@ -288,9 +288,9 @@ export default function ProgramaCalendarioView({
                             {cell.camiones > 0 ? (
                               <div className="harvest-week-v2-count">
                                 {calendarMetric === 'tons' ? (
-                                  <strong>{cell.desgloseDia ? fmtTonsInt(cell.tonsDia) : '—'}</strong>
+                                  <strong>{cell.tonsDia > 0 ? fmtTonsInt(cell.tonsDia) : '—'}</strong>
                                 ) : calendarMetric === 'both' ? (
-                                  <><strong>{cell.camiones}</strong><span>CAM</span>{cell.desgloseDia && cell.tonsDia > 0 && <span className="wk-tons-sub">{fmtTonsInt(cell.tonsDia)}</span>}</>
+                                  <><strong>{cell.camiones}</strong><span>CAM</span>{cell.tonsDia > 0 && <span className="wk-tons-sub">{fmtTonsInt(cell.tonsDia)}</span>}</>
                                 ) : (
                                   <strong>{cell.camiones}</strong>
                                 )}
@@ -423,8 +423,8 @@ export default function ProgramaCalendarioView({
                           <div className="cal-detail-card-count-main">
                             {calendarMetric === 'tons' ? (
                               <>
-                                <strong>{it.desgloseDia ? Math.round(Number(it.tonsDia) || 0) : '—'}</strong>
-                                {it.desgloseDia && <span>t</span>}
+                                <strong>{Number(it.tonsDia) > 0 ? Math.round(Number(it.tonsDia) || 0) : '—'}</strong>
+                                {Number(it.tonsDia) > 0 && <span>t</span>}
                               </>
                             ) : (
                               <>
@@ -433,7 +433,7 @@ export default function ProgramaCalendarioView({
                               </>
                             )}
                           </div>
-                          {calendarMetric === 'both' && it.desgloseDia && Number(it.tonsDia) > 0 && (
+                          {calendarMetric === 'both' && Number(it.tonsDia) > 0 && (
                             <span className="cal-detail-card-count-sec">{fmtTonsInt(it.tonsDia)}</span>
                           )}
                         </div>

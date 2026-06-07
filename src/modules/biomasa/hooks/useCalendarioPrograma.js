@@ -90,22 +90,29 @@ export function useCalendarioPrograma({
         desgloseDia = derivado.length ? derivado : null;
       }
 
-      // Toneladas del día
-      let tonsDia = 0;
-      if (desgloseDia) {
-        tonsDia = desgloseDia.reduce((s, l) => s + Number(l.cantidad || 0) * Number(l.toneladasPorCamion || 0), 0);
-      } else if (camiones > 0 && !item?.esDiaEspecial) {
-        // Día base (no ajuste): usar transportes del programa para calcular
+      // Tons/camión efectivo del programa: promedio ponderado de su mezcla de transportes,
+      // con respaldo al valor por camión del programa y, por último, al tonsPerTruck global.
+      // Se usa para estimar toneladas en cualquier día sin desglose explícito por tipo.
+      const effectiveTonsPerTruck = (() => {
         if (Array.isArray(programa?.transportes) && programa.transportes.length) {
           const totalCam = programa.transportes.reduce((s, t) => s + (Number(t.cantidadDia) || 0), 0);
           const totalTons = programa.transportes.reduce((s, t) => s + (Number(t.cantidadDia) || 0) * (Number(t.toneladasPorCamion) || 0), 0);
-          if (totalCam > 0) tonsDia = (camiones / totalCam) * totalTons;
-        } else if (programa?.toneladasPorCamion) {
-          tonsDia = camiones * Number(programa.toneladasPorCamion);
+          if (totalCam > 0 && totalTons > 0) return totalTons / totalCam;
         }
+        if (Number(programa?.toneladasPorCamion) > 0) return Number(programa.toneladasPorCamion);
+        if (Number(tonsPerTruck) > 0) return Number(tonsPerTruck);
+        return null;
+      })();
+
+      // Toneladas del día.
+      //  1) Con desglose por tipo (override persistido o mezcla del programa) → suma exacta.
+      //  2) Sin desglose, incluidos los días de ajuste creados con +/− → camiones × tons/camión efectivo.
+      let tonsDia = 0;
+      if (desgloseDia) {
+        tonsDia = desgloseDia.reduce((s, l) => s + Number(l.cantidad || 0) * Number(l.toneladasPorCamion || 0), 0);
+      } else if (camiones > 0 && effectiveTonsPerTruck != null) {
+        tonsDia = camiones * effectiveTonsPerTruck;
       }
-      // Nota: Para días de ajuste (esDiaEspecial) sin desglose explícito de tipo,
-      // tonsDia queda en 0 hasta que el sistema lo pueda calcular desde lineasTransporteDia.
       return {
         ...item,
         camiones,

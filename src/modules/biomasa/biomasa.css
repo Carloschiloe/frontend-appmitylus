@@ -1116,6 +1116,8 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   position: absolute;
   top: 24px; /* moved down to avoid overlapping count */
   right: 4px;
+  bottom: 4px;
+  left: 4px;
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -1126,9 +1128,11 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   border: 1px solid #FDE68A;
   padding: 2px 5px;
   border-radius: 4px;
-  z-index: 1; /* lower z-index so it stays behind count */
+  z-index: 1;
 }
-  /* duplicate adjustment chip styles removed */
+
+
+
 
 /* ── Suspended day ── */
 .harvest-week-v2-susp {

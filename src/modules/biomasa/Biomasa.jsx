@@ -200,6 +200,9 @@ export default function Biomasa() {
   }, [isStatusView, statusPeriod, isProgramView, programPeriod, progSubTab, calView, currentWeekOffset, weekDays, mes]);
 
   const programasPeriodo = useMemo(() => {
+    // "Ver todos": sin filtro de período, devuelve todos los programas.
+    if (programPeriod === 'all') return programas;
+
     const rangeStart = programPeriod === 'week'
       ? new Date(`${weekDays[0]}T00:00:00`)
       : new Date(`${mes}-01T00:00:00`);
