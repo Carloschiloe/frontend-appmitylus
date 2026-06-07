@@ -1112,14 +1112,16 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 /* ── Adjustment chip ── */
+/* Badge compacta anclada al pie de la celda; no se estira para no tapar
+   el contador ni la sublínea de toneladas (.wk-tons-sub). */
 .harvest-week-v2-adj {
   position: absolute;
-  top: 24px; /* moved down to avoid overlapping count */
-  right: 4px;
   bottom: 4px;
   left: 4px;
+  right: 4px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 3px;
   font-size: 9px;
   font-weight: 600;
@@ -1129,10 +1131,16 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   padding: 2px 5px;
   border-radius: 4px;
   z-index: 1;
+  max-width: calc(100% - 8px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-
-
-
+/* Cuando hay chip de ajuste, deja espacio bajo el contador para que el
+   chip no se solape con las toneladas. */
+.harvest-week-v2-cell:has(.harvest-week-v2-adj) .harvest-week-v2-count {
+  margin-bottom: 20px;
+}
 
 /* ── Suspended day ── */
 .harvest-week-v2-susp {
