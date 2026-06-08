@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Search, Plus, RotateCcw, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Search, Plus, RotateCcw, ChevronLeft, ChevronRight, User, CheckCircle, X, CalendarCheck, FileText } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { apiClient } from '../../../api/apiClient';
@@ -68,6 +68,7 @@ export default function Tratos() {
   const [editingEstadoApi, setEditingEstadoApi] = useState('');
   const [confirmDeleteTrato, setConfirmDeleteTrato] = useState(null);
   const [shareModal, setShareModal] = useState({ open: false, url: '', item: null });
+  const [savedModal, setSavedModal] = useState(null); // { isNew, trato, wasAcordado }
   const [providerSearch, setProviderSearch] = useState('');
   const [selectedProvider, setSelectedProvider] = useState(null);
 
@@ -261,7 +262,25 @@ export default function Tratos() {
             });
           }
         }
-        addToast({ title: 'Actualizado', message: 'Trato actualizado con éxito', type: 'success' });
+        // Calcular término para el modal
+        const trTermino = calcularFechaTerminoEstimadaTrato({
+          fechaInicioCosecha: form.fechaInicioCosecha,
+          tonsAcordadas: form.tonsAcordadas,
+          condiciones: form.condiciones,
+        });
+        const wasAcordadoEdit = todasAcordadas;
+        setSavedModal({
+          isNew: false,
+          wasAcordado: wasAcordadoEdit,
+          trato: {
+            proveedorNombre: form.proveedorNombre,
+            tonsAcordadas: form.tonsAcordadas,
+            precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
+            fechaInicio: form.fechaInicioCosecha,
+            fechaTermino: trTermino,
+            responsableNombre: form.responsableNombre,
+          },
+        });
       } else {
         if (!selectedProvider?.proveedorKey || !selectedProvider?.proveedorNombre) {
           addToast({ title: 'Falta proveedor', message: 'Selecciona un proveedor del listado antes de guardar.', type: 'warning' });
@@ -287,6 +306,7 @@ export default function Tratos() {
 
         // 2. Completar datos de trato/condiciones vía el endpoint de trato
         const newId = created?.item?._id || created?._id;
+        let wasAcordadoNew = false;
         if (newId) {
           await apiClient.patch(`/oportunidades/${newId}/trato`, {
             tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
@@ -301,17 +321,35 @@ export default function Tratos() {
           });
 
           // 3. Si todas las condiciones quedaron acordadas, el trato pasa a Acordado
-          const todasAcordadas =
+          const todasAcordadasNew =
             form.condiciones.length > 0 &&
             form.condiciones.every((c) => c.estado === 'acordado');
-          if (todasAcordadas) {
+          if (todasAcordadasNew) {
+            wasAcordadoNew = true;
             await apiClient.patch(`/oportunidades/${newId}/estado`, {
               estado: 'acordado',
               observacion: form.notas || '',
             });
           }
         }
-        addToast({ title: 'Creado', message: 'Nuevo trato registrado', type: 'success' });
+        // Calcular término para el modal
+        const trTerminoNew = calcularFechaTerminoEstimadaTrato({
+          fechaInicioCosecha: form.fechaInicioCosecha,
+          tonsAcordadas: form.tonsAcordadas,
+          condiciones: form.condiciones,
+        });
+        setSavedModal({
+          isNew: true,
+          wasAcordado: wasAcordadoNew,
+          trato: {
+            proveedorNombre: selectedProvider.proveedorNombre,
+            tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
+            precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
+            fechaInicio: form.fechaInicioCosecha,
+            fechaTermino: trTerminoNew,
+            responsableNombre: form.responsableNombre || currentResponsable,
+          },
+        });
       }
       closeModal();
       handleRefresh();
@@ -395,6 +433,19 @@ export default function Tratos() {
       setShareModal({ open: true, url: res.url, item, message: buildTratoShareMessage(item, res.url) });
     } catch {
       addToast({ title: 'Error', message: 'No se pudo generar el link para compartir', type: 'error' });
+    }
+  };
+
+  const handleViewReport = async (item) => {
+    try {
+      const res = await apiClient.post(`/oportunidades/${item._id}/share`);
+      if (res.url) {
+        // Extraer el path relativo del informe (/r/trato/:shareId)
+        const urlObj = new URL(res.url);
+        window.open(urlObj.pathname + urlObj.search, '_blank', 'noopener');
+      }
+    } catch {
+      addToast({ title: 'Error', message: 'No se pudo abrir el informe', type: 'error' });
     }
   };
 
@@ -493,6 +544,7 @@ export default function Tratos() {
         onShare={compartirTrato}
         onEdit={openEdit}
         onDelete={setConfirmDeleteTrato}
+        onViewReport={handleViewReport}
       />
 
       <TratoFormModal
@@ -529,6 +581,89 @@ export default function Tratos() {
         onCopy={copyToClipboard}
         onClose={() => setShareModal({ open: false, url: '', item: null, message: '' })}
       />
+
+      {/* Modal post-guardar */}
+      {savedModal && (
+        <div className="tratos-saved-overlay" onClick={() => setSavedModal(null)}>
+          <div className="tratos-saved-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="tratos-saved-header">
+              <div className="tratos-saved-icon">
+                <CheckCircle size={22} />
+              </div>
+              <div className="tratos-saved-title">
+                {savedModal.isNew ? 'Trato comercial creado' : 'Trato comercial actualizado'}
+              </div>
+              <button className="tratos-saved-close" onClick={() => setSavedModal(null)}>
+                <X size={14} />
+              </button>
+            </div>
+            <div className="tratos-saved-body">
+              <div className="tratos-saved-summary">
+                <div className="tratos-saved-row" style={{ gridColumn: '1 / -1' }}>
+                  <span className="tratos-saved-row-label">Proveedor</span>
+                  <span className="tratos-saved-row-value">{savedModal.trato.proveedorNombre || '—'}</span>
+                </div>
+                <div className="tratos-saved-row">
+                  <span className="tratos-saved-row-label">Toneladas</span>
+                  <span className="tratos-saved-row-value">{savedModal.trato.tonsAcordadas || '—'} t</span>
+                </div>
+                <div className="tratos-saved-row">
+                  <span className="tratos-saved-row-label">Precio</span>
+                  <span className="tratos-saved-row-value">
+                    {savedModal.trato.precioAcordado ? `$${Number(savedModal.trato.precioAcordado).toLocaleString('es-CL')} /kg` : '—'}
+                  </span>
+                </div>
+                <div className="tratos-saved-row">
+                  <span className="tratos-saved-row-label">Inicio probable</span>
+                  <span className="tratos-saved-row-value">
+                    {savedModal.trato.fechaInicio
+                      ? new Date(savedModal.trato.fechaInicio + 'T12:00:00Z').toLocaleDateString('es-CL')
+                      : '—'}
+                  </span>
+                </div>
+                <div className="tratos-saved-row">
+                  <span className="tratos-saved-row-label">Término estimado</span>
+                  <span className="tratos-saved-row-value">
+                    {savedModal.trato.fechaTermino
+                      ? new Date(savedModal.trato.fechaTermino).toLocaleDateString('es-CL')
+                      : 'Pendiente'}
+                  </span>
+                </div>
+                <div className="tratos-saved-row" style={{ gridColumn: '1 / -1' }}>
+                  <span className="tratos-saved-row-label">Responsable</span>
+                  <span className="tratos-saved-row-value">{savedModal.trato.responsableNombre || '—'}</span>
+                </div>
+              </div>
+              {savedModal.wasAcordado && (
+                <div className="tratos-saved-hint">
+                  ✅ Ahora puedes crear el programa de cosecha para este proveedor y trato.
+                </div>
+              )}
+            </div>
+            <div className="tratos-saved-footer">
+              {savedModal.wasAcordado && (
+                <Link to="/biomasa/programa" className="mx-btn mx-btn-primary" onClick={() => setSavedModal(null)}>
+                  <CalendarCheck size={16} /> Crear programa de cosecha
+                </Link>
+              )}
+              <button
+                className="mx-btn mx-btn-outline"
+                onClick={() => {
+                  setSavedModal(null);
+                  // Re-buscar el trato en la lista para abrir el informe
+                  const match = items.find(i => i.proveedorNombre === savedModal.trato.proveedorNombre);
+                  if (match) handleViewReport(match);
+                }}
+              >
+                <FileText size={16} /> Ver informe
+              </button>
+              <button className="mx-btn mx-btn-ghost" onClick={() => setSavedModal(null)}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
      </div>
    );
  }

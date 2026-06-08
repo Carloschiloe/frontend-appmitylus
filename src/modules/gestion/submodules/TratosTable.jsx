@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarCheck, ClipboardList, Edit, Handshake, Send, Trash2, X } from 'lucide-react';
+import { CalendarCheck, ClipboardList, Edit, Handshake, Send, Trash2, X, FileText, MoreHorizontal } from 'lucide-react';
 import {
   ESTADOS_TRATO,
   calcularFechaTerminoEstimadaTrato,
@@ -38,12 +38,72 @@ const COND_BADGE = {
   pendiente: { label: 'Pendiente', cls: 'mx-badge-info'    },
 };
 
+/** Menú desplegable ⋯ para acciones secundarias */
+function ActionsMenu({ item, uiEstado, displayTons, onShare, onEdit, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const canCreatePrograma = uiEstado === 'acordado' && !item.meta?.programaCosecha?.estado && displayTons > 0 && !!item.proveedorNombre;
+
+  return (
+    <div className="tratos-menu-wrap" ref={ref}>
+      <button
+        className="mx-action-btn tratos-menu-trigger"
+        title="Más acciones"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <MoreHorizontal size={15} />
+      </button>
+      {open && (
+        <div className="tratos-menu-dropdown">
+          <button
+            className="tratos-menu-item"
+            onClick={() => { onEdit(item); setOpen(false); }}
+          >
+            <Edit size={13} /> Editar
+          </button>
+          <button
+            className="tratos-menu-item"
+            onClick={() => { onShare(item); setOpen(false); }}
+          >
+            <Send size={13} /> Compartir
+          </button>
+          {canCreatePrograma && (
+            <Link
+              to="/biomasa/programa"
+              className="tratos-menu-item"
+              onClick={() => setOpen(false)}
+            >
+              <CalendarCheck size={13} /> Crear programa de cosecha
+            </Link>
+          )}
+          <div className="tratos-menu-separator" />
+          <button
+            className="tratos-menu-item tratos-menu-item-danger"
+            onClick={() => { onDelete(item); setOpen(false); }}
+          >
+            <Trash2 size={13} /> Eliminar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TratosTable({
   items,
   loading,
   onShare,
   onEdit,
   onDelete,
+  onViewReport,
 }) {
   const [condModal, setCondModal] = useState(null);
 
@@ -177,28 +237,23 @@ export default function TratosTable({
                               <ClipboardList size={14} />
                             </button>
                           )}
-                          {uiEstado === 'acordado' && !item.meta?.programaCosecha?.estado && displayTons > 0 && !!item.proveedorNombre && (
-                            <Link
-                              to="/biomasa/programa"
-                              className="mx-action-btn"
-                              title="Programar cosecha"
-                            >
-                              <CalendarCheck size={14} />
-                            </Link>
-                          )}
+                          {/* Botón primario: Ver informe */}
                           <button
                             className="mx-action-btn tratos-action-primary"
-                            title="Compartir Trato"
-                            onClick={() => onShare(item)}
+                            title="Ver informe"
+                            onClick={() => onViewReport(item)}
                           >
-                            <Send size={14} />
+                            <FileText size={14} />
                           </button>
-                          <button className="mx-action-btn edit" title="Editar Trato" onClick={() => onEdit(item)}>
-                            <Edit size={14} />
-                          </button>
-                          <button className="mx-action-btn delete" title="Eliminar" onClick={() => onDelete(item)}>
-                            <Trash2 size={14} />
-                          </button>
+                          {/* Menú ⋯ acciones secundarias */}
+                          <ActionsMenu
+                            item={item}
+                            uiEstado={uiEstado}
+                            displayTons={displayTons}
+                            onShare={onShare}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                          />
                         </div>
                       </td>
                     </tr>

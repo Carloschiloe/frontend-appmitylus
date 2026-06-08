@@ -240,6 +240,21 @@ export function derivePlazoDesdeCondiciones(condiciones = []) {
   return match?.valor || '';
 }
 
+/**
+ * Devuelve la representación legible del descuento planta:
+ * "Normal", "Fijo X%", o null si no existe la condición.
+ */
+export function deriveDescuentoPlanta(condiciones = []) {
+  const match = (condiciones || []).find((item) =>
+    /descuento.*planta|planta/.test(normalizeText(item?.nombre))
+  );
+  if (!match) return null;
+  if (match.modoCondicion === 'fijo') {
+    return match.valor != null && match.valor !== '' ? `Fijo ${match.valor}%` : 'Fijo';
+  }
+  return 'Normal';
+}
+
 export function isEquivalentEstado(actualApi, nextUi) {
   const current = String(actualApi || '').toLowerCase();
   if (nextUi === 'cerrado_ok') return ['compra_efectuada', 'cerrado'].includes(current);
@@ -264,6 +279,7 @@ export function buildTratoShareMessage(item, url) {
   const responsable = item?.responsableNombre || 'Sin responsable registrado';
   const centro = item?.centroCodigo || item?.centroNombre || item?.meta?.centroNombre || '';
   const estado = ESTADOS_TRATO.find(e => e.val === getUiEstadoFromApi(item?.estado))?.label || item?.estado || 'Trato';
+  const descuentoPlanta = deriveDescuentoPlanta(item?.condiciones);
 
   return [
     '*Mitynex | Confirmación pública de acuerdo*',
@@ -272,6 +288,7 @@ export function buildTratoShareMessage(item, url) {
     tons ? `Volumen acordado: ${formatInteger(tons)} t` : null,
     precio ? `Precio: ${formatMoney(precio)} / kg` : null,
     camiones ? `Carga: ${formatInteger(camiones)} cam/dia` : null,
+    descuentoPlanta ? `Descuento planta: ${descuentoPlanta}` : null,
     inicio ? `Inicio probable cosecha: ${formatDateOnlySafe(inicio)}` : null,
     termino ? `Término estimado: ${formatDateOnlySafe(termino)}` : null,
     `Responsable: ${responsable}`,
