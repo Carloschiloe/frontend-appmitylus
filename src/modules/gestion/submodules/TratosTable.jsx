@@ -11,6 +11,7 @@ import {
   formatInteger,
   formatMoney,
   getUiEstadoFromApi,
+  normalizeText,
 } from './tratos.helpers';
 
 
@@ -24,6 +25,13 @@ function deduplicarCondiciones(condiciones = []) {
 }
 
 function formatCondVal(c) {
+  const isPlanta = /descuento.*planta|planta/.test(normalizeText(c.nombre));
+  if (isPlanta) {
+    if (c.modoCondicion === 'fijo' || (c.valor != null && c.valor !== '')) {
+      return (c.valor != null && c.valor !== '') ? `Fijo ${c.valor}%` : 'Fijo';
+    }
+    return 'Normal';
+  }
   if (c.modoCondicion === 'normal') return 'Normal';
   if (c.modoCondicion === 'fijo') {
     return c.valor != null && c.valor !== '' ? `Fijo ${c.valor}%` : 'Fijo';
@@ -109,8 +117,8 @@ export default function TratosTable({
 
   return (
     <>
-      <div className="mx-table-card am-mt-16">
-        <div className="mx-table-wrap">
+      <div className="mx-table-card am-mt-16 tratos-table-card-override">
+        <div className="mx-table-wrap tratos-table-wrap-override">
           <table className="mx-table">
             <thead>
               <tr>

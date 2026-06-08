@@ -707,3 +707,12 @@
   justify-content: center;
 }
 
+/* ── Overrides para evitar recorte del menu dropdown ── */
+@media (min-width: 769px) {
+  .tratos-table-card-override {
+    overflow: visible !important;
+  }
+  .tratos-table-wrap-override {
+    overflow: visible !important;
+  }
+}
