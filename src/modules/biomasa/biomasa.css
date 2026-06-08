@@ -1142,6 +1142,16 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   margin-bottom: 20px;
 }
 
+/* ── Día sin programa (fuera de vigencia) ── */
+.harvest-week-v2-cell.is-sinprog { background: #FCFCFD; }
+.harvest-week-v2-sinprog {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #B6C0CE;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
 /* ── Suspended day ── */
 .harvest-week-v2-susp {
   font-size: 11px;
@@ -1495,6 +1505,8 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   color: var(--color-text-muted);
   font-size: 13px;
 }
+.cal-detail-empty p { margin: 0; font-weight: 700; color: #475569; }
+.cal-detail-empty .cal-detail-empty-sub { font-weight: 500; font-size: 12px; color: var(--color-text-muted); }
 .cal-detail-card {
   border: 1px solid var(--color-border);
   border-left: 3px solid var(--color-primary);

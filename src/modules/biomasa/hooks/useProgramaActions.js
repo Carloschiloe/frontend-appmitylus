@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { apiClient } from '../../../api/apiClient';
 import { todayKey } from '../utils/fechasChile';
-import { buildImpactoAjuste } from '../utils/programaImpacto';
+import { buildImpactoAjuste, esFechaEnVigencia } from '../utils/programaImpacto';
 
 export function useProgramaActions({
   addToast,
@@ -203,6 +203,12 @@ export function useProgramaActions({
   // composicionDia = desglose real del día (por tipo) para mostrar estado y validar la resta.
   const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), _currentCamiones = null, accion = 'sumar', _currentTons = 0, composicionDia = []) => {
     if (!programa) return;
+    // Bloqueo defensivo: no abrir el modal en días sin programa activo (fuera de vigencia).
+    // El backend es la fuente final, pero evitamos abrir el flujo en una fecha inválida.
+    if (!esFechaEnVigencia(programa, fecha)) {
+      addToast({ title: 'Sin programa', message: 'No hay programa activo para esta fecha.', type: 'error' });
+      return;
+    }
     setAdjustProgram(programa);
     setAdjustForm({
       fecha,
@@ -210,7 +216,7 @@ export function useProgramaActions({
       composicionDia: Array.isArray(composicionDia) ? composicionDia : [],
     });
     setShowAdjustModal(true);
-  }, []);
+  }, [addToast]);
 
   // Aplica un ajuste diario (sumar / descontar / suspender día) desde el modal único.
   // El backend valida y recalcula vigencia; con su respuesta se arma el impacto a mostrar.

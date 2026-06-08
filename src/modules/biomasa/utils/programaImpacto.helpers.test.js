@@ -5,7 +5,25 @@ import {
   diffDaysKeys,
   buildImpactoAjuste,
   fraseCambioTermino,
+  esFechaEnVigencia,
 } from './programaImpacto.js';
+
+const programaVig = { vigenciaDesde: '2026-06-08T00:00:00Z', vigenciaHasta: '2026-06-11T23:59:59Z' };
+
+test('esFechaEnVigencia: día dentro del rango = activo; fuera = sin programa', () => {
+  assert.equal(esFechaEnVigencia(programaVig, '2026-06-10'), true);  // dentro
+  assert.equal(esFechaEnVigencia(programaVig, '2026-06-08'), true);  // límite inicio
+  assert.equal(esFechaEnVigencia(programaVig, '2026-06-11'), true);  // límite término
+  assert.equal(esFechaEnVigencia(programaVig, '2026-06-12'), false); // después → sin programa
+  assert.equal(esFechaEnVigencia(programaVig, '2026-06-14'), false); // después → sin programa
+  assert.equal(esFechaEnVigencia(programaVig, '2026-06-07'), false); // antes → sin programa
+  assert.equal(esFechaEnVigencia(null, '2026-06-10'), false);
+});
+
+test('esFechaEnVigencia: un día suspendido DENTRO de vigencia sigue en vigencia (no sin programa)', () => {
+  // La suspensión no cambia la pertenencia al programa; el día 10 sigue dentro de 08–11.
+  assert.equal(esFechaEnVigencia(programaVig, '2026-06-10'), true);
+});
 
 const SIMPLE = 'aa01';
 const CARRO = 'bb02';

@@ -22,6 +22,7 @@ import {
   getSanitarioEstado, getSanitarioLabel, isSanitarioRelevant,
   formatMuestreoResumen, formatMuestreoFecha, tonsPorCamionDeTipo,
 } from '../utils/programaCalculos';
+import { esFechaEnVigencia } from '../utils/programaImpacto';
 import DonutChart from '../components/DonutChart';
 import { useToast } from '../../../context/ToastContext';
 
@@ -266,13 +267,18 @@ export default function ProgramaCalendarioView({
                     const isFinishedFuture = vigHastaKey !== null && dia > vigHastaKey;
                     const isReadOnly = programa?.estado === 'finalizado' || programa?.estado === 'pausado';
                     const isSusp = cell.esDiaEspecial && cell.camiones === 0;
+                    // "Sin programa": la fecha está fuera de la vigencia del programa.
+                    // Un día suspendido dentro de vigencia NO entra aquí (sigue en vigencia).
+                    const isSinPrograma = !!programa && !esFechaEnVigencia(programa, dia);
                     const isToday = dia === todayKey();
                     return (
-                      <div key={i} className={`harvest-week-v2-cell ${isToday ? 'is-today' : ''} ${isSusp ? 'is-susp' : ''} ${isPausedFuture || isFinishedFuture ? 'is-prog-pausado' : ''}`}>
+                      <div key={i} className={`harvest-week-v2-cell ${isToday ? 'is-today' : ''} ${isSusp ? 'is-susp' : ''} ${isSinPrograma ? 'is-sinprog' : ''} ${isPausedFuture || isFinishedFuture ? 'is-prog-pausado' : ''}`}>
                         {isPausedFuture ? (
                           <span className="wk-estado-label pausado">Pausado</span>
                         ) : isFinishedFuture ? (
                           <span className="wk-estado-label finalizado">Finalizado</span>
+                        ) : isSinPrograma ? (
+                          <span className="harvest-week-v2-sinprog">Sin programa</span>
                         ) : isSusp ? (
                           <>
                             <div className="harvest-week-v2-susp">{cell.ajusteMotivo || 'Suspendido'}</div>
@@ -378,7 +384,8 @@ export default function ProgramaCalendarioView({
                 {selectedDay.items.length === 0 ? (
                   <div className="cal-detail-empty">
                     <Activity size={28} style={{ opacity: 0.25 }} />
-                    <p>Sin cosechas este día</p>
+                    <p>Sin programa</p>
+                    <p className="cal-detail-empty-sub">No hay cosecha programada para esta fecha.</p>
                   </div>
                 ) : (
                   selectedDay.items.map((it, idx) => (

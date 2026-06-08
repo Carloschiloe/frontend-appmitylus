@@ -7,6 +7,19 @@ export function tiposDescontables(composicionDia = []) {
   return (Array.isArray(composicionDia) ? composicionDia : []).filter((l) => Number(l?.cantidad) > 0);
 }
 
+// ¿La fecha (YYYY-MM-DD) está dentro de la vigencia activa del programa?
+// Día dentro de [vigenciaDesde, vigenciaHasta] = día con programa activo (incluye días
+// suspendidos dentro de la vigencia). Fuera del rango = "Sin programa". El backend hace
+// la validación dura; esto es solo para la UI (mostrar estado / ocultar acciones).
+export function esFechaEnVigencia(programa, fechaKey) {
+  if (!programa || !fechaKey) return false;
+  const desde = toDateKey(programa.vigenciaDesde);
+  const hasta = toDateKey(programa.vigenciaHasta);
+  if (!desde || !hasta) return false;
+  const f = String(fechaKey).slice(0, 10);
+  return f >= desde && f <= hasta;
+}
+
 // YYYY-MM-DD en UTC desde un Date/ISO. Devuelve '' si no es válido.
 export function toDateKey(value) {
   if (!value) return '';
