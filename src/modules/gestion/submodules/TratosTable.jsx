@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { CalendarCheck, ClipboardList, Edit, Handshake, Send, Trash2, X } from 'lucide-react';
 import {
   ESTADOS_TRATO,
+  calcularFechaTerminoEstimadaTrato,
+  deriveCamionesXDia,
   derivePrecioDesdeCondiciones,
   deriveVolumenDesdeCondiciones,
   formatDateOnlySafe,
@@ -55,7 +57,7 @@ export default function TratosTable({
                 <th className="tratos-col-provider">Proveedor</th>
                 <th className="tratos-col-tons">Tons</th>
                 <th className="tratos-col-price">Precio Est.</th>
-                <th>Inicio Estimado</th>
+                <th>Fechas estimadas</th>
                 <th className="tratos-col-status">Estado</th>
                 <th>Responsable</th>
                 <th className="tratos-col-actions">Acciones</th>
@@ -85,7 +87,14 @@ export default function TratosTable({
                   const uiEstado = getUiEstadoFromApi(item.estado);
                   const displayPrecio = item.precioAcordado ?? derivePrecioDesdeCondiciones(item.condiciones) ?? 0;
                   const displayTons = item.tonsAcordadas || deriveVolumenDesdeCondiciones(item.condiciones) || 0;
+                  const displayCamiones = item.camionesXDia || deriveCamionesXDia(item.condiciones);
                   const displayInicioCosecha = item.vigenciaDesde || item.fechaCierre;
+                  const displayTerminoCosecha = item.fechaTerminoCosecha || calcularFechaTerminoEstimadaTrato({
+                    vigenciaDesde: displayInicioCosecha,
+                    tonsAcordadas: displayTons,
+                    camionesXDia: displayCamiones,
+                    condiciones: item.condiciones,
+                  });
                   const condiciones = item.condiciones || [];
 
                   return (
@@ -119,6 +128,8 @@ export default function TratosTable({
                       <td className="tratos-date-cell">
                         <div className="tratos-date-main">{formatDateOnlySafe(displayInicioCosecha) || '—'}</div>
                         <div className="tratos-date-label">Inicio probable</div>
+                        <div className="tratos-date-main tratos-date-main-secondary">{formatDateOnlySafe(displayTerminoCosecha) || '-'}</div>
+                        <div className="tratos-date-label">Término estimado</div>
                       </td>
                       <td>
                         <span className={`mx-badge mx-badge-${uiEstado === 'acordado' || uiEstado === 'cerrado_ok' ? 'success' : uiEstado === 'rechazado' ? 'danger' : 'info'}`}>
@@ -153,7 +164,7 @@ export default function TratosTable({
                         )}
                       </td>
                       <td className="tratos-date-cell" style={{ fontSize: '0.85rem' }}>
-                        {item.responsableNombre || '-'}
+                        {item.responsableNombre || 'Sin responsable registrado'}
                       </td>
                       <td className="tratos-actions-cell">
                         <div className="mx-table-actions-cell tratos-actions">

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, Plus, RotateCcw, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../../context/AuthContext';
 import { apiClient } from '../../../api/apiClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContactos, useCentros, useTratos } from '../hooks/useGestionQueries';
@@ -15,6 +16,7 @@ import {
   buildInitialConditions,
   buildProviderDirectory,
   buildTratoShareMessage,
+  calcularFechaTerminoEstimadaTrato,
   createEmptyForm,
   deriveCamionesXDia,
   derivePrecioDesdeCondiciones,
@@ -39,10 +41,14 @@ function mesActual() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
+function getUserDisplayName(user) {
+  return user?.nombre || user?.name || user?.username || user?.email || '';
+}
 
 export default function Tratos() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -137,12 +143,6 @@ export default function Tratos() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const { data: maestrosResponsables = [] } = useQuery({
-    queryKey: ['maestros', 'responsable', 'activos'],
-    queryFn: () => maestrosApi.getMaestrosActivos('responsable'),
-    staleTime: 10 * 60 * 1000,
-  });
-
   const isCreatingTrato = isModalOpen && !editingId;
   const { data: centrosRaw, isLoading: loadingCentros } = useCentros({ enabled: isCreatingTrato });
   const { data: contactosRaw, isLoading: loadingContactos } = useContactos({ conEmpresa: 1 }, { enabled: isCreatingTrato });
@@ -169,22 +169,30 @@ export default function Tratos() {
   }, [providers, providerSearch]);
 
   const [form, setForm] = useState(() => createEmptyForm());
+  const currentResponsable = getUserDisplayName(user);
 
   useEffect(() => {
     if (isModalOpen && !editingId && maestrosCondiciones.length > 0) {
       const initialCond = buildInitialConditions(maestrosCondiciones);
-      setForm(prev => ({ ...prev, condiciones: initialCond }));
+      setForm(prev => ({
+        ...prev,
+        responsableNombre: prev.responsableNombre || currentResponsable,
+        condiciones: initialCond,
+      }));
     }
-  }, [isModalOpen, editingId, maestrosCondiciones]);
+  }, [isModalOpen, editingId, maestrosCondiciones, currentResponsable]);
 
   const openNew = useCallback(() => {
     setEditingId(null);
     setEditingEstadoApi('');
     setProviderSearch('');
     setSelectedProvider(null);
-    setForm(createEmptyForm(buildInitialConditions(maestrosCondiciones)));
+    setForm({
+      ...createEmptyForm(buildInitialConditions(maestrosCondiciones)),
+      responsableNombre: currentResponsable,
+    });
     setIsModalOpen(true);
-  }, [maestrosCondiciones]);
+  }, [maestrosCondiciones, currentResponsable]);
 
   const closeModal = useCallback(() => {
     setIsModalOpen(false);
@@ -192,8 +200,11 @@ export default function Tratos() {
     setEditingEstadoApi('');
     setProviderSearch('');
     setSelectedProvider(null);
-    setForm(createEmptyForm(buildInitialConditions(maestrosCondiciones)));
-  }, [maestrosCondiciones]);
+    setForm({
+      ...createEmptyForm(buildInitialConditions(maestrosCondiciones)),
+      responsableNombre: currentResponsable,
+    });
+  }, [maestrosCondiciones, currentResponsable]);
 
   const handleSelectProvider = useCallback((provider) => {
     setSelectedProvider(provider);
@@ -213,7 +224,6 @@ export default function Tratos() {
           notasTrato: form.notas || '',
           camionesXDia: deriveCamionesXDia(form.condiciones),
           vigenciaDesde: form.fechaInicioCosecha || null,
-          responsableNombre: form.responsableNombre || '',
           condiciones: (form.condiciones || []).map((c) => ({
             ...c,
             valor: c.valor === '' ? null : c.valor,
@@ -267,7 +277,6 @@ export default function Tratos() {
           proveedorNombre: selectedProvider.proveedorNombre,
           estado: 'negociando',
           origen: 'manual',
-          responsableNombre: form.responsableNombre || '',
           meta: {
             contactoNombre: selectedProvider.contactoNombre || '',
             contactoTelefono: selectedProvider.contactoTelefono || '',
@@ -285,7 +294,6 @@ export default function Tratos() {
             notasTrato: form.notas || '',
             camionesXDia: deriveCamionesXDia(form.condiciones),
             vigenciaDesde: form.fechaInicioCosecha || null,
-            responsableNombre: form.responsableNombre || '',
             condiciones: (form.condiciones || []).map((condicion) => ({
               ...condicion,
               valor: condicion.valor === '' ? null : condicion.valor,
@@ -349,7 +357,7 @@ export default function Tratos() {
     setProviderSearch(item.proveedorNombre || '');
     setForm({
       proveedorNombre: item.proveedorNombre || '',
-      responsableNombre: item.responsableNombre || '',
+      responsableNombre: item.responsableNombre || currentResponsable,
       tonsAcordadas: item.tonsAcordadas || '',
       fechaInicioCosecha: item.vigenciaDesde
         ? item.vigenciaDesde.slice(0, 10)
@@ -407,6 +415,11 @@ export default function Tratos() {
     if (responsableFilter !== 'all' && i.responsableNombre !== responsableFilter) return false;
     return true;
   }), [items, searchTerm, mes, showAllMonths, responsableFilter]);
+  const formFechaTerminoEstimada = useMemo(() => calcularFechaTerminoEstimadaTrato({
+    fechaInicioCosecha: form.fechaInicioCosecha,
+    tonsAcordadas: form.tonsAcordadas,
+    condiciones: form.condiciones,
+  }), [form.fechaInicioCosecha, form.tonsAcordadas, form.condiciones]);
 
   return (
     <div className="mx-page am-p-0">
@@ -486,11 +499,11 @@ export default function Tratos() {
         isOpen={isModalOpen}
         editingId={editingId}
         form={form}
+        fechaTerminoEstimada={formFechaTerminoEstimada}
         selectedProvider={selectedProvider}
         providerSearch={providerSearch}
         loadingProviders={loadingProviders}
         filteredProviders={filteredProviders}
-        responsables={maestrosResponsables}
         onClose={closeModal}
         onSubmit={handleSave}
         onFormChange={setForm}
@@ -519,6 +532,3 @@ export default function Tratos() {
      </div>
    );
  }
-
-
-

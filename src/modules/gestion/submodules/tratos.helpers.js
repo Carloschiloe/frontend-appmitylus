@@ -75,6 +75,29 @@ export function createEmptyForm(condiciones = []) {
   };
 }
 
+export const TONS_POR_CAMION_SIMPLE = 11;
+
+export function calcularFechaTerminoEstimadaTrato({
+  fechaInicioCosecha,
+  vigenciaDesde,
+  tonsAcordadas,
+  camionesXDia,
+  condiciones,
+} = {}) {
+  const inicio = fechaInicioCosecha || vigenciaDesde;
+  const parts = getDateOnlyParts(inicio);
+  const tons = parseNumberOrNull(tonsAcordadas) ?? deriveVolumenDesdeCondiciones(condiciones);
+  const camiones = parseNumberOrNull(camionesXDia) ?? deriveCamionesXDia(condiciones);
+  if (!parts || !tons || !camiones) return null;
+
+  const diasNecesarios = Math.ceil(Number(tons) / (Number(camiones) * TONS_POR_CAMION_SIMPLE));
+  if (!Number.isFinite(diasNecesarios) || diasNecesarios <= 0) return null;
+
+  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12, 0, 0, 0));
+  date.setUTCDate(date.getUTCDate() + diasNecesarios - 1);
+  return date.toISOString();
+}
+
 export function getEstadoCierreFromApi(estadoApi) {
   const e = String(estadoApi || '').toLowerCase();
   if (['perdido', 'caido'].includes(e)) return 'perdido';
@@ -232,6 +255,13 @@ export function buildTratoShareMessage(item, url) {
   const precio = item?.precioAcordado ?? derivePrecioDesdeCondiciones(item?.condiciones);
   const camiones = item?.camionesXDia || deriveCamionesXDia(item?.condiciones);
   const inicio = item?.vigenciaDesde || item?.fechaCierre;
+  const termino = item?.fechaTerminoCosecha || calcularFechaTerminoEstimadaTrato({
+    vigenciaDesde: inicio,
+    tonsAcordadas: tons,
+    camionesXDia: camiones,
+    condiciones: item?.condiciones,
+  });
+  const responsable = item?.responsableNombre || 'Sin responsable registrado';
   const centro = item?.centroCodigo || item?.centroNombre || item?.meta?.centroNombre || '';
   const estado = ESTADOS_TRATO.find(e => e.val === getUiEstadoFromApi(item?.estado))?.label || item?.estado || 'Trato';
 
@@ -243,6 +273,8 @@ export function buildTratoShareMessage(item, url) {
     precio ? `Precio: ${formatMoney(precio)} / kg` : null,
     camiones ? `Carga: ${formatInteger(camiones)} cam/dia` : null,
     inicio ? `Inicio probable cosecha: ${formatDateOnlySafe(inicio)}` : null,
+    termino ? `Término estimado: ${formatDateOnlySafe(termino)}` : null,
+    `Responsable: ${responsable}`,
     `Estado: ${estado}`,
     '',
     'Ver confirmación:',

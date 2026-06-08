@@ -4,6 +4,7 @@ import {
   buildInitialConditions,
   buildProviderDirectory,
   buildTratoShareMessage,
+  calcularFechaTerminoEstimadaTrato,
   deriveCamionesXDia,
   derivePlazoDesdeCondiciones,
   derivePrecioDesdeCondiciones,
@@ -49,6 +50,16 @@ test('normaliza fechas de solo dia sin desfase horario visible', () => {
   assert.equal(formatDateOnlySafe('2026-05-21T00:00:00.000Z'), '21-05-2026');
   assert.equal(normalizeDateOnlyForUiSafe('2026-05-21'), '2026-05-21T12:00:00.000Z');
   assert.equal(formatDateOnlySafe('valor-invalido'), '-');
+});
+
+test('calcula fecha de termino estimada desde volumen, camiones e inicio', () => {
+  const termino = calcularFechaTerminoEstimadaTrato({
+    fechaInicioCosecha: '2026-06-09',
+    tonsAcordadas: '30',
+    camionesXDia: '1',
+  });
+
+  assert.equal(formatDateOnlySafe(termino), '11-06-2026');
 });
 
 test('construye formularios iniciales desde maestros de condiciones', () => {
@@ -128,6 +139,8 @@ test('arma mensaje publico de trato con datos derivados', () => {
   assert.match(message, /Precio: \$510 \/ kg/);
   assert.match(message, /Carga: 6 cam\/dia/);
   assert.match(message, /Inicio probable cosecha: 21-05-2026/);
+  assert.match(message, /Término estimado:/);
+  assert.match(message, /Responsable: Sin responsable registrado/);
   assert.match(message, /Estado: Acordado/);
   assert.match(message, /https:\/\/mitynex\.test\/trato\/abc/);
 });
