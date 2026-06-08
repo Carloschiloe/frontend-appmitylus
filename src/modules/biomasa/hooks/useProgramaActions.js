@@ -198,7 +198,7 @@ export function useProgramaActions({
     }
   }, [addToast, load]);
 
-  const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), currentCamiones = null, accion = 'sumar', currentTons = 0) => {
+  const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), currentCamiones = null, accion = 'sumar', currentTons = 0, composicionDia = []) => {
     if (!programa) return;
     const current = currentCamiones != null ? Number(currentCamiones || 0) : Number(programa.camionesDefault || 0);
     setAdjustProgram(programa);
@@ -207,6 +207,8 @@ export function useProgramaActions({
       accion: accion,
       camiones: current,
       currentTons: currentTons,
+      // Composición real del día (por tipo) para validar la resta en el modal.
+      composicionDia: Array.isArray(composicionDia) ? composicionDia : [],
       motivo: 'Planta',
       nota: '',
       tipoTransporteId: '',
@@ -223,10 +225,10 @@ export function useProgramaActions({
       // Los botones +/- ajustan de a 1 camión: para 'sumar'/'suspender' el backend
       // espera el DELTA (siempre 1), no el total actual del día (que solo sirve al preview).
       const esIncremento = adjustForm.accion === 'sumar' || adjustForm.accion === 'suspender';
-      await apiClient.post(`/programa-cosecha/${adjustProgram._id}/ajuste-diario`, {
-        ...adjustForm,
-        camiones: esIncremento ? 1 : Number(adjustForm.camiones || 0),
-      });
+      const payload = { ...adjustForm, camiones: esIncremento ? 1 : Number(adjustForm.camiones || 0) };
+      // composicionDia es solo estado de UI para validar la resta; no se envía al backend.
+      delete payload.composicionDia;
+      await apiClient.post(`/programa-cosecha/${adjustProgram._id}/ajuste-diario`, payload);
       addToast({
         title: 'Ajuste diario registrado',
         message: 'El calendario y el seguimiento fueron actualizados.',

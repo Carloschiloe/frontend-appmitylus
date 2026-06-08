@@ -74,12 +74,14 @@ export default function ProgramaCalendarioView({
 
   // "+": Abrir modal de ajuste pre-cargado para sumar
   const handleAddTruck = (programa, fecha, cell, evt) => {
-    handleOpenAdjustModal(programa, fecha, cell.camiones, 'sumar', cell.tonsDia || 0);
+    handleOpenAdjustModal(programa, fecha, cell.camiones, 'sumar', cell.tonsDia || 0, cell.desgloseDia || []);
   };
 
-  // "−": Abrir modal de ajuste pre-cargado para suspender
+  // "−": Abrir modal de ajuste pre-cargado para suspender.
+  // Se pasa la composición real del día (desgloseDia) para que el modal solo permita
+  // descontar tipos que existan ese día (la validación final la hace el backend).
   const handleRemoveTruck = (programa, fecha, cell, evt) => {
-    handleOpenAdjustModal(programa, fecha, cell.camiones, 'suspender', cell.tonsDia || 0);
+    handleOpenAdjustModal(programa, fecha, cell.camiones, 'suspender', cell.tonsDia || 0, cell.desgloseDia || []);
   };
 
   return (
@@ -457,7 +459,7 @@ export default function ProgramaCalendarioView({
                           type="button"
                           className="mx-btn mx-btn-outline sm"
                           style={{ marginTop: 10, width: '100%' }}
-                          onClick={() => handleOpenAdjustModal(programasById.get(String(it.programaId)), selectedDay.key, it.camiones)}
+                          onClick={() => handleOpenAdjustModal(programasById.get(String(it.programaId)), selectedDay.key, it.camiones, 'sumar', it.tonsDia || 0, it.desgloseDia || [])}
                         >
                           Ajustar día
                         </button>

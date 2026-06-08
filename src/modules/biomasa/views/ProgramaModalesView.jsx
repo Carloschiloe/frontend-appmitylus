@@ -103,6 +103,14 @@ export default function ProgramaModalesView({
     <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800 }}>{n}</div>
   );
 
+  // ── Ajuste rápido: validación de RESTA por tipo (UX; la fuente final es el backend) ──
+  // Solo se puede descontar un tipo que exista realmente ese día (cantidad > 0).
+  const adjustIsSuspender = adjustForm?.accion === 'suspender';
+  const adjustRemovibles = (Array.isArray(adjustForm?.composicionDia) ? adjustForm.composicionDia : [])
+    .filter((l) => Number(l?.cantidad) > 0);
+  const adjustSelLine = adjustRemovibles.find((l) => String(l.tipoTransporteId) === String(adjustForm?.tipoTransporteId));
+  const adjustPuedeDescontar = !adjustIsSuspender || !!adjustSelLine;
+
   return (
     <>
       {/* ── MODAL AJUSTE RÁPIDO (SUMAR/SUSPENDER) ── */}
@@ -162,11 +170,15 @@ export default function ProgramaModalesView({
                         className="mx-select"
                         required
                         value={adjustForm.tipoTransporteId}
+                        disabled={adjustIsSuspender && adjustRemovibles.length === 0}
                         onChange={e => {
                           const selectedId = e.target.value;
                           const fromCatalogo = (tiposTransporte || []).find(t => String(t._id) === selectedId);
-                          const nombre = fromCatalogo?.nombre || '';
-                          const tpc = fromCatalogo ? ((fromCatalogo.maxisPorUnidad || 0) * (fromCatalogo.kgPorMaxiRef || 0)) / 1000 : '';
+                          const fromDia = adjustRemovibles.find(l => String(l.tipoTransporteId) === selectedId);
+                          const nombre = fromCatalogo?.nombre || fromDia?.tipoTransporteNombre || '';
+                          const tpc = fromCatalogo
+                            ? ((fromCatalogo.maxisPorUnidad || 0) * (fromCatalogo.kgPorMaxiRef || 0)) / 1000
+                            : (fromDia?.toneladasPorCamion ?? '');
                           setAdjustForm({
                             ...adjustForm,
                             tipoTransporteId: selectedId,
@@ -176,17 +188,26 @@ export default function ProgramaModalesView({
                         }}
                       >
                         <option value="">— Selecciona —</option>
-                        {Array.isArray(tiposTransporte) && tiposTransporte.length > 0 && (
-                          tiposTransporte.map(t => {
-                            const tpc = t.maxisPorUnidad && t.kgPorMaxiRef ? ((t.maxisPorUnidad * t.kgPorMaxiRef) / 1000).toFixed(1) : null;
-                            return (
-                              <option key={String(t._id)} value={String(t._id)}>
-                                {t.nombre}{tpc ? ` — ${tpc} t` : ''}
+                        {adjustIsSuspender
+                          ? adjustRemovibles.map(l => (
+                              <option key={String(l.tipoTransporteId)} value={String(l.tipoTransporteId)}>
+                                {l.tipoTransporteNombre || 'Sin tipo'} ({Number(l.cantidad)})
                               </option>
-                            );
-                          })
-                        )}
+                            ))
+                          : (Array.isArray(tiposTransporte) ? tiposTransporte : []).map(t => {
+                              const tpc = t.maxisPorUnidad && t.kgPorMaxiRef ? ((t.maxisPorUnidad * t.kgPorMaxiRef) / 1000).toFixed(1) : null;
+                              return (
+                                <option key={String(t._id)} value={String(t._id)}>
+                                  {t.nombre}{tpc ? ` — ${tpc} t` : ''}
+                                </option>
+                              );
+                            })}
                       </select>
+                      {adjustIsSuspender && adjustRemovibles.length === 0 && (
+                        <span style={{ fontSize: 11, color: 'var(--color-error)' }}>
+                          No hay camiones de este tipo para descontar.
+                        </span>
+                      )}
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -234,7 +255,8 @@ export default function ProgramaModalesView({
                 <button
                   type="submit"
                   className={`mx-btn ${adjustForm.accion === 'sumar' ? 'mx-btn-primary' : 'mx-btn-danger'}`}
-                  disabled={!adjustForm.tipoTransporteId || !adjustForm.motivo}
+                  disabled={!adjustForm.tipoTransporteId || !adjustForm.motivo || !adjustPuedeDescontar}
+                  title={adjustIsSuspender && !adjustPuedeDescontar ? 'No hay camiones de este tipo para descontar.' : undefined}
                 >
                   <CheckCircle2 size={18} /> Confirmar {adjustForm.accion === 'sumar' ? 'suma' : 'suspensión'}
                 </button>
