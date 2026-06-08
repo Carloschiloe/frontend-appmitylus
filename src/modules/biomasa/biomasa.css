@@ -1202,7 +1202,41 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   white-space: nowrap;
 }
 .harvest-week-v2-cell:hover .harvest-week-v2-actions { opacity: 1; }
-.harvest-week-v2-cell:hover .harvest-week-v2-count { margin-bottom: 26px; }
+
+/* Botón único "Ajustar" (reemplaza los 3 botones flotantes en vista semana).
+   Se ancla ARRIBA-DERECHA de la celda (zona libre) para no tapar nunca el dato
+   principal (camiones/toneladas, centrados) ni el chip de motivo ★ (abajo).
+   El propio botón es el pill; el contenedor pierde su chrome para no duplicar borde. */
+.harvest-week-v2-actions:has(.wk-btn-ajustar) {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+.wk-btn-ajustar {
+  height: 21px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid #BFD3F0;
+  background: #fff;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #2563EB;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 6px rgba(37,99,235,0.20);
+  transition: background 0.12s, border-color 0.12s, transform 0.05s;
+}
+.wk-btn-ajustar:hover { background: #EFF6FF; border-color: #93C5FD; }
+.wk-btn-ajustar:active { transform: translateY(1px); }
 
 .wk-btn {
   width: 28px;

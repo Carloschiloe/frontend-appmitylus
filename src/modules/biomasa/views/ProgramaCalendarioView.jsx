@@ -8,6 +8,7 @@ import {
   Minimize2,
   Info,
   AlertTriangle,
+  SlidersHorizontal,
 } from 'lucide-react';
 import {
   mesLabel, todayKey, calendarDayToneClass, getISOWeek,
@@ -71,15 +72,12 @@ export default function ProgramaCalendarioView({
     }))
     .filter((t) => t.tipoTransporteId);
 
-  // Todos los accesos rápidos abren el MISMO modal único "Ajustar día" con una acción
-  // inicial. Se pasa la composición real del día (desgloseDia) para mostrar el estado y
-  // que la resta solo ofrezca tipos existentes (la validación final la hace el backend).
-  const abrirAjustarDia = (programa, fecha, cell, accionInicial) => {
+  // Acceso único: abre el modal "Ajustar día" (acción inicial por defecto 'sumar'; dentro
+  // el usuario elige Sumar / Descontar / Suspender). Se pasa la composición real del día
+  // (desgloseDia) para mostrar el estado y que la resta solo ofrezca tipos existentes.
+  const abrirAjustarDia = (programa, fecha, cell, accionInicial = 'sumar') => {
     handleOpenAdjustModal(programa, fecha, cell.camiones, accionInicial, cell.tonsDia || 0, cell.desgloseDia || []);
   };
-  const handleAddTruck = (programa, fecha, cell) => abrirAjustarDia(programa, fecha, cell, 'sumar');
-  const handleRemoveTruck = (programa, fecha, cell) => abrirAjustarDia(programa, fecha, cell, 'restar');
-  const handleSuspendDayQuick = (programa, fecha, cell) => abrirAjustarDia(programa, fecha, cell, 'suspender');
 
   return (
     <div ref={calendarBoardRef} className={`harvest-calendar-shell ${calView === 'week' ? 'week-mode' : 'month-mode'} ${isCalendarBoard ? 'board-mode' : ''}`}>
@@ -88,7 +86,7 @@ export default function ProgramaCalendarioView({
           <div className="harvest-calendar-controls">
             <div className="mx-toggle-group">
               <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => setCalView('month')}>Vista Mes</button>
-              <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => setCalView('week')}>Vista Semana</button>
+              <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => { setCalView('week'); setSelectedDay(null); }}>Vista Semana</button>
             </div>
             <div className="harvest-calendar-period">
               <button className="mx-btn-icon sm" onClick={() => {
@@ -300,17 +298,8 @@ export default function ProgramaCalendarioView({
                             {cell.esDiaEspecial && cell.camiones > 0 && <div className="harvest-week-v2-adj">★ {cell.ajusteMotivo || 'Ajuste'}</div>}
                             {programa && !isReadOnly && (
                               <div className="harvest-week-v2-actions">
-                                <button className="wk-btn" onClick={() => handleRemoveTruck(programa, dia, cell)}>
-                                  <span>−</span>
-                                  <span className="wk-btn-tip">Descontar camión</span>
-                                </button>
-                                <button className="wk-btn wk-btn-add" onClick={() => handleAddTruck(programa, dia, cell)}>
-                                  <span>+</span>
-                                  <span className="wk-btn-tip">Sumar camión</span>
-                                </button>
-                                <button className="wk-btn wk-btn-susp" onClick={() => handleSuspendDayQuick(programa, dia, cell)}>
-                                  <span>⊘</span>
-                                  <span className="wk-btn-tip">Suspender día</span>
+                                <button className="wk-btn-ajustar" onClick={() => abrirAjustarDia(programa, dia, cell, 'sumar')}>
+                                  <SlidersHorizontal size={12} /> Ajustar
                                 </button>
                               </div>
                             )}
@@ -372,7 +361,8 @@ export default function ProgramaCalendarioView({
 
       {(calView === 'month' || calView === 'week') && (
         <aside className="hds-panel">
-          {selectedDay ? (
+          {/* El detalle de día solo aplica en Vista Mes; en Vista Semana siempre el resumen. */}
+          {selectedDay && calView !== 'week' ? (
             <>
               <div className="hds-detail-header">
                 <div>
