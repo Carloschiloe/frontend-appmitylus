@@ -45,7 +45,6 @@ export default function ProgramaCalendarioView({
   handleQuickAdjust,
   handleQuickAdjustTipo,
   tiposTransporte = [],
-  setSuspendPopover,
   notasDia,
   setNotaPopover,
   weekSummaries,
@@ -72,17 +71,15 @@ export default function ProgramaCalendarioView({
     }))
     .filter((t) => t.tipoTransporteId);
 
-  // "+": Abrir modal de ajuste pre-cargado para sumar
-  const handleAddTruck = (programa, fecha, cell, evt) => {
-    handleOpenAdjustModal(programa, fecha, cell.camiones, 'sumar', cell.tonsDia || 0, cell.desgloseDia || []);
+  // Todos los accesos rápidos abren el MISMO modal único "Ajustar día" con una acción
+  // inicial. Se pasa la composición real del día (desgloseDia) para mostrar el estado y
+  // que la resta solo ofrezca tipos existentes (la validación final la hace el backend).
+  const abrirAjustarDia = (programa, fecha, cell, accionInicial) => {
+    handleOpenAdjustModal(programa, fecha, cell.camiones, accionInicial, cell.tonsDia || 0, cell.desgloseDia || []);
   };
-
-  // "−": Abrir modal de ajuste pre-cargado para suspender.
-  // Se pasa la composición real del día (desgloseDia) para que el modal solo permita
-  // descontar tipos que existan ese día (la validación final la hace el backend).
-  const handleRemoveTruck = (programa, fecha, cell, evt) => {
-    handleOpenAdjustModal(programa, fecha, cell.camiones, 'suspender', cell.tonsDia || 0, cell.desgloseDia || []);
-  };
+  const handleAddTruck = (programa, fecha, cell) => abrirAjustarDia(programa, fecha, cell, 'sumar');
+  const handleRemoveTruck = (programa, fecha, cell) => abrirAjustarDia(programa, fecha, cell, 'restar');
+  const handleSuspendDayQuick = (programa, fecha, cell) => abrirAjustarDia(programa, fecha, cell, 'suspender');
 
   return (
     <div ref={calendarBoardRef} className={`harvest-calendar-shell ${calView === 'week' ? 'week-mode' : 'month-mode'} ${isCalendarBoard ? 'board-mode' : ''}`}>
@@ -303,20 +300,17 @@ export default function ProgramaCalendarioView({
                             {cell.esDiaEspecial && cell.camiones > 0 && <div className="harvest-week-v2-adj">★ {cell.ajusteMotivo || 'Ajuste'}</div>}
                             {programa && !isReadOnly && (
                               <div className="harvest-week-v2-actions">
-                                <button className="wk-btn" onClick={(e) => handleRemoveTruck(programa, dia, cell, e)}>
+                                <button className="wk-btn" onClick={() => handleRemoveTruck(programa, dia, cell)}>
                                   <span>−</span>
-                                  <span className="wk-btn-tip">Quitar 1 camión</span>
+                                  <span className="wk-btn-tip">Descontar camión</span>
                                 </button>
-                                <button className="wk-btn wk-btn-add" onClick={(e) => handleAddTruck(programa, dia, cell, e)}>
+                                <button className="wk-btn wk-btn-add" onClick={() => handleAddTruck(programa, dia, cell)}>
                                   <span>+</span>
-                                  <span className="wk-btn-tip">Sumar 1 camión</span>
+                                  <span className="wk-btn-tip">Sumar camión</span>
                                 </button>
-                                <button className="wk-btn wk-btn-susp" onClick={e => {
-                                  const r = e.currentTarget.getBoundingClientRect();
-                                  setSuspendPopover({ programa, fecha: dia, x: r.left, y: r.bottom + 6, motivo: 'Clima', nota: '' });
-                                }}>
+                                <button className="wk-btn wk-btn-susp" onClick={() => handleSuspendDayQuick(programa, dia, cell)}>
                                   <span>⊘</span>
-                                  <span className="wk-btn-tip">Suspender este día</span>
+                                  <span className="wk-btn-tip">Suspender día</span>
                                 </button>
                               </div>
                             )}

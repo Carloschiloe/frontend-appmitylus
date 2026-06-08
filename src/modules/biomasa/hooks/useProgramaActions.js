@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { apiClient } from '../../../api/apiClient';
 import { todayKey } from '../utils/fechasChile';
+import { buildImpactoAjuste } from '../utils/programaImpacto';
 
 export function useProgramaActions({
   addToast,
@@ -9,7 +10,6 @@ export function useProgramaActions({
   confirmDelete,
   pauseModal,
   pauseForm,
-  adjustForm,
   adjustProgram,
   segNota,
   segEstado,
@@ -33,6 +33,7 @@ export function useProgramaActions({
   setAdjustForm,
   setShowAdjustModal,
   setSelectedDay,
+  setImpactoAjuste,
 }) {
   const handleStatusChange = useCallback(async (id, nuevoEstado) => {
     try {
@@ -198,50 +199,37 @@ export function useProgramaActions({
     }
   }, [addToast, load]);
 
-  const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), currentCamiones = null, accion = 'sumar', currentTons = 0, composicionDia = []) => {
+  // Abre el modal único "Ajustar día". accion: 'sumar' | 'restar' | 'suspender'.
+  // composicionDia = desglose real del día (por tipo) para mostrar estado y validar la resta.
+  const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), _currentCamiones = null, accion = 'sumar', _currentTons = 0, composicionDia = []) => {
     if (!programa) return;
-    const current = currentCamiones != null ? Number(currentCamiones || 0) : Number(programa.camionesDefault || 0);
     setAdjustProgram(programa);
     setAdjustForm({
       fecha,
-      accion: accion,
-      camiones: current,
-      currentTons: currentTons,
-      // Composición real del día (por tipo) para validar la resta en el modal.
+      accion,
       composicionDia: Array.isArray(composicionDia) ? composicionDia : [],
-      motivo: 'Planta',
-      nota: '',
-      tipoTransporteId: '',
-      tipoTransporteNombre: '',
-      toneladasPorCamion: '',
     });
     setShowAdjustModal(true);
   }, []);
 
-  const handleAdjustSave = useCallback(async (e) => {
-    e.preventDefault();
-    if (!adjustProgram?._id || !adjustForm.fecha) return;
+  // Aplica un ajuste diario (sumar / descontar / suspender día) desde el modal único.
+  // El backend valida y recalcula vigencia; con su respuesta se arma el impacto a mostrar.
+  const handleAplicarAjusteDia = useCallback(async (payload) => {
+    const programa = adjustProgram;
+    if (!programa?._id || !payload?.fecha) return;
     try {
-      // Los botones +/- ajustan de a 1 camión: para 'sumar'/'suspender' el backend
-      // espera el DELTA (siempre 1), no el total actual del día (que solo sirve al preview).
-      const esIncremento = adjustForm.accion === 'sumar' || adjustForm.accion === 'suspender';
-      const payload = { ...adjustForm, camiones: esIncremento ? 1 : Number(adjustForm.camiones || 0) };
-      // composicionDia es solo estado de UI para validar la resta; no se envía al backend.
-      delete payload.composicionDia;
-      await apiClient.post(`/programa-cosecha/${adjustProgram._id}/ajuste-diario`, payload);
-      addToast({
-        title: 'Ajuste diario registrado',
-        message: 'El calendario y el seguimiento fueron actualizados.',
-        type: 'success',
-      });
+      const res = await apiClient.post(`/programa-cosecha/${programa._id}/ajuste-diario`, payload);
+      const after = res?.item || null;
       setShowAdjustModal(false);
       setAdjustProgram(null);
       setSelectedDay(null);
+      if (after) setImpactoAjuste(buildImpactoAjuste(programa, after, payload));
       load();
     } catch (e) {
       addToast({ title: 'Error', message: e.message, type: 'error' });
+      throw e; // el modal reactiva el botón Confirmar y se mantiene abierto
     }
-  }, [adjustForm, adjustProgram, addToast, load]);
+  }, [adjustProgram, addToast, load, setShowAdjustModal, setAdjustProgram, setSelectedDay, setImpactoAjuste]);
 
   return {
     handleStatusChange,
@@ -257,6 +245,6 @@ export function useProgramaActions({
     handleUpsertNotaDia,
     handleDeleteNotaDia,
     handleOpenAdjustModal,
-    handleAdjustSave,
+    handleAplicarAjusteDia,
   };
 }

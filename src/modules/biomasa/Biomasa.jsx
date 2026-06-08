@@ -102,6 +102,7 @@ export default function Biomasa() {
   const [followupPeriod, setFollowupPeriod] = useState('week');
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustProgram, setAdjustProgram] = useState(null);
+  const [impactoAjuste, setImpactoAjuste] = useState(null); // resumen post-ajuste (Fase 4)
   const [adjustForm, setAdjustForm] = useState({
     fecha: todayKey(),
     accion: 'set_total',
@@ -314,14 +315,13 @@ export default function Biomasa() {
     handleUpsertNotaDia,
     handleDeleteNotaDia,
     handleOpenAdjustModal,
-    handleAdjustSave,
+    handleAplicarAjusteDia,
   } = useProgramaActions({
     addToast,
     load,
     confirmDelete,
     pauseModal,
     pauseForm,
-    adjustForm,
     adjustProgram,
     segNota,
     segEstado,
@@ -344,6 +344,7 @@ export default function Biomasa() {
     setAdjustForm,
     setShowAdjustModal,
     setSelectedDay,
+    setImpactoAjuste,
   });
 
   const recentDailyAdjustments = useMemo(() => {
@@ -396,15 +397,6 @@ export default function Biomasa() {
       todayCamiones: todayItems.reduce((sum, item) => sum + Number(item.camiones || 0), 0),
     };
   }, [calData, enrichCalendarItem, followupPrograms.length, recentDailyAdjustments]);
-
-  const adjustMaxCamiones = useMemo(() => {
-    if (!adjustProgram?.tratoId) return null;
-    const t = tratosAcordados.find(x => String(x._id) === String(adjustProgram.tratoId));
-    if (!t) return null;
-    return Array.isArray(t.transportes) && t.transportes.length > 0
-      ? t.transportes.reduce((s, tr) => s + (Number(tr.cantidadDiaria) || 0), 0)
-      : (Number(t.camionesXDia) || null);
-  }, [adjustProgram, tratosAcordados]);
 
   const getLatestProgramNovelty = useCallback((programa) => {
     const weekSet = new Set(weekDays);
@@ -743,8 +735,9 @@ export default function Biomasa() {
         adjustProgram={adjustProgram}
         adjustForm={adjustForm}
         setAdjustForm={setAdjustForm}
-        adjustMaxCamiones={adjustMaxCamiones}
-        handleAdjustSave={handleAdjustSave}
+        handleAplicarAjusteDia={handleAplicarAjusteDia}
+        impactoAjuste={impactoAjuste}
+        setImpactoAjuste={setImpactoAjuste}
         showSegModal={showSegModal}
         setShowSegModal={setShowSegModal}
         segNota={segNota}

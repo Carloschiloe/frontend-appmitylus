@@ -4,13 +4,16 @@ import {
   Calendar as CalendarIcon, Truck, Building2, Plus, Trash,
 } from 'lucide-react';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
+import ProgramaAjustarDiaModal from '../components/ProgramaAjustarDiaModal';
+import ProgramaImpactoModal from '../components/ProgramaImpactoModal';
 import { calcTerminoPrograma, fmtNumber, ADJUST_MOTIVOS } from '../utils/programaCalculos';
 
 export default function ProgramaModalesView({
-  // AdjustModal
+  // AdjustModal (modal único Ajustar día) + impacto post-ajuste
   showAdjustModal, setShowAdjustModal,
-  adjustProgram, adjustForm, setAdjustForm,
-  adjustMaxCamiones, handleAdjustSave,
+  adjustProgram, adjustForm,
+  handleAplicarAjusteDia,
+  impactoAjuste, setImpactoAjuste,
   // SegModal
   showSegModal, setShowSegModal,
   segNota, setSegNota,
@@ -103,168 +106,20 @@ export default function ProgramaModalesView({
     <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800 }}>{n}</div>
   );
 
-  // ── Ajuste rápido: validación de RESTA por tipo (UX; la fuente final es el backend) ──
-  // Solo se puede descontar un tipo que exista realmente ese día (cantidad > 0).
-  const adjustIsSuspender = adjustForm?.accion === 'suspender';
-  const adjustRemovibles = (Array.isArray(adjustForm?.composicionDia) ? adjustForm.composicionDia : [])
-    .filter((l) => Number(l?.cantidad) > 0);
-  const adjustSelLine = adjustRemovibles.find((l) => String(l.tipoTransporteId) === String(adjustForm?.tipoTransporteId));
-  const adjustPuedeDescontar = !adjustIsSuspender || !!adjustSelLine;
-
   return (
     <>
-      {/* ── MODAL AJUSTE RÁPIDO (SUMAR/SUSPENDER) ── */}
-      {showAdjustModal && (
-        <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '480px' }}>
-            <div className="mx-modal-header">
-              <h2>{adjustForm.accion === 'sumar' ? 'Sumar Camión' : 'Suspender Camión'}</h2>
-              <button type="button" className="mx-btn-icon" onClick={() => setShowAdjustModal(false)}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleAdjustSave} className="mx-form">
-              <div className="mx-modal-body">
-                <div className="harvest-adjust-context" style={{ marginBottom: 16 }}>
-                  <strong>{adjustProgram?.proveedorNombre}</strong>
-                  <span>{adjustProgram?.centroNombre || 'Sin centro definido'}</span>
-                  <span style={{ display: 'block', marginTop: 4, color: 'var(--color-text-muted)', fontSize: 13 }}>
-                    Fecha de ajuste: <strong>{adjustForm.fecha}</strong>
-                  </span>
-                </div>
-
-                <div className="mx-form-grid" style={{ gridTemplateColumns: '1fr' }}>
-                  
-                  {/* Selector de Acción (Toggle) */}
-                  <div className="mx-form-group" style={{ display: 'flex', gap: 8, background: 'var(--color-surface-2)', padding: 4, borderRadius: 8 }}>
-                    <button 
-                      type="button" 
-                      className={`mx-btn ${adjustForm.accion === 'sumar' ? 'mx-btn-primary' : 'mx-btn-ghost'}`} 
-                      style={{ flex: 1 }}
-                      onClick={() => setAdjustForm({ ...adjustForm, accion: 'sumar', tipoTransporteId: '', tipoTransporteNombre: '', toneladasPorCamion: '' })}
-                    >
-                      <Plus size={16} /> Sumar
-                    </button>
-                    <button 
-                      type="button" 
-                      className={`mx-btn ${adjustForm.accion === 'suspender' ? 'mx-btn-danger' : 'mx-btn-ghost'}`} 
-                      style={{ flex: 1 }}
-                      onClick={() => setAdjustForm({ ...adjustForm, accion: 'suspender', tipoTransporteId: '', tipoTransporteNombre: '', toneladasPorCamion: '' })}
-                    >
-                      − Suspender
-                    </button>
-                  </div>
-
-                  <div className="mx-form-group" style={{ display: 'none' }}>
-                    <label className="mx-label">Fecha del ajuste</label>
-                    <input type="date" className="mx-input" value={adjustForm.fecha} required
-                      onChange={e => setAdjustForm({ ...adjustForm, fecha: e.target.value })} />
-                  </div>
-
-                  {/* Fila: Tipo de Camión y Motivo */}
-                  <div className="mx-form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <label className="mx-label" style={{ fontWeight: 700 }}>
-                        Tipo de camión <span style={{ color: 'var(--color-error)' }}>*</span>
-                      </label>
-                      <select
-                        className="mx-select"
-                        required
-                        value={adjustForm.tipoTransporteId}
-                        disabled={adjustIsSuspender && adjustRemovibles.length === 0}
-                        onChange={e => {
-                          const selectedId = e.target.value;
-                          const fromCatalogo = (tiposTransporte || []).find(t => String(t._id) === selectedId);
-                          const fromDia = adjustRemovibles.find(l => String(l.tipoTransporteId) === selectedId);
-                          const nombre = fromCatalogo?.nombre || fromDia?.tipoTransporteNombre || '';
-                          const tpc = fromCatalogo
-                            ? ((fromCatalogo.maxisPorUnidad || 0) * (fromCatalogo.kgPorMaxiRef || 0)) / 1000
-                            : (fromDia?.toneladasPorCamion ?? '');
-                          setAdjustForm({
-                            ...adjustForm,
-                            tipoTransporteId: selectedId,
-                            tipoTransporteNombre: nombre,
-                            toneladasPorCamion: tpc || '',
-                          });
-                        }}
-                      >
-                        <option value="">— Selecciona —</option>
-                        {adjustIsSuspender
-                          ? adjustRemovibles.map(l => (
-                              <option key={String(l.tipoTransporteId)} value={String(l.tipoTransporteId)}>
-                                {l.tipoTransporteNombre || 'Sin tipo'} ({Number(l.cantidad)})
-                              </option>
-                            ))
-                          : (Array.isArray(tiposTransporte) ? tiposTransporte : []).map(t => {
-                              const tpc = t.maxisPorUnidad && t.kgPorMaxiRef ? ((t.maxisPorUnidad * t.kgPorMaxiRef) / 1000).toFixed(1) : null;
-                              return (
-                                <option key={String(t._id)} value={String(t._id)}>
-                                  {t.nombre}{tpc ? ` — ${tpc} t` : ''}
-                                </option>
-                              );
-                            })}
-                      </select>
-                      {adjustIsSuspender && adjustRemovibles.length === 0 && (
-                        <span style={{ fontSize: 11, color: 'var(--color-error)' }}>
-                          No hay camiones de este tipo para descontar.
-                        </span>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <label className="mx-label">Motivo <span style={{ color: 'var(--color-error)' }}>*</span></label>
-                      <select className="mx-select" value={adjustForm.motivo} required
-                        onChange={e => setAdjustForm({ ...adjustForm, motivo: e.target.value })}>
-                        {ADJUST_MOTIVOS.map((motivo) => (
-                          <option key={motivo} value={motivo}>{motivo}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Preview de toneladas y camiones */}
-                  {adjustForm.tipoTransporteId && adjustForm.toneladasPorCamion && (
-                    <div style={{ marginTop: 8, padding: '12px 16px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 6 }}>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6 }}>Proyección del día:</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <strong style={{ fontSize: 16 }}>{adjustForm.accion === 'sumar' ? adjustForm.camiones + 1 : Math.max(0, adjustForm.camiones - 1)} camiones</strong>
-                          <span style={{ margin: '0 8px', color: 'var(--color-border)' }}>|</span>
-                          <strong style={{ fontSize: 16 }}>
-                            {adjustForm.accion === 'sumar' 
-                              ? (adjustForm.currentTons + adjustForm.toneladasPorCamion).toFixed(1) 
-                              : Math.max(0, adjustForm.currentTons - adjustForm.toneladasPorCamion).toFixed(1)} t
-                          </strong>
-                        </div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: adjustForm.accion === 'sumar' ? '#166534' : '#991b1b', background: adjustForm.accion === 'sumar' ? '#dcfce7' : '#fee2e2', padding: '2px 8px', borderRadius: 4 }}>
-                          {adjustForm.accion === 'sumar' ? '+' : '−'}{adjustForm.toneladasPorCamion} t
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mx-form-group">
-                    <label className="mx-label">Nota operacional (opcional)</label>
-                    <textarea className="mx-textarea" value={adjustForm.nota} rows="2"
-                      placeholder="Ej: Se suspendió por falta de ventana en planta..."
-                      onChange={e => setAdjustForm({ ...adjustForm, nota: e.target.value })} />
-                  </div>
-                </div>
-              </div>
-              <div className="mx-modal-footer">
-                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setShowAdjustModal(false)}>Cancelar</button>
-                <button
-                  type="submit"
-                  className={`mx-btn ${adjustForm.accion === 'sumar' ? 'mx-btn-primary' : 'mx-btn-danger'}`}
-                  disabled={!adjustForm.tipoTransporteId || !adjustForm.motivo || !adjustPuedeDescontar}
-                  title={adjustIsSuspender && !adjustPuedeDescontar ? 'No hay camiones de este tipo para descontar.' : undefined}
-                >
-                  <CheckCircle2 size={18} /> Confirmar {adjustForm.accion === 'sumar' ? 'suma' : 'suspensión'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* ── MODAL ÚNICO: AJUSTAR DÍA (sumar / descontar / suspender) ── */}
+      <ProgramaAjustarDiaModal
+        show={showAdjustModal}
+        onClose={() => setShowAdjustModal(false)}
+        programa={adjustProgram}
+        fecha={adjustForm?.fecha}
+        composicionDia={adjustForm?.composicionDia}
+        accionInicial={adjustForm?.accion}
+        tiposTransporte={tiposTransporte}
+        onAplicar={handleAplicarAjusteDia}
+      />
+      <ProgramaImpactoModal impacto={impactoAjuste} onClose={() => setImpactoAjuste(null)} />
 
       {/* ── MODAL SEGUIMIENTO / NOVEDAD ── */}
       {showSegModal && (
