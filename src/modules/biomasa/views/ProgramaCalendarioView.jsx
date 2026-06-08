@@ -161,13 +161,20 @@ export default function ProgramaCalendarioView({
               const totalCam = daySummary.camiones;
               const totalTons = daySummary.tons;
               const hasSuspended = dayItems.some(it => it.cancelado || (it.esDiaEspecial && it.camiones === 0));
+              const visiblePrograms = Array.from(programasById.values())
+                .filter(p => filteredProgramIds.has(String(p?._id)))
+                .filter(p => !filterProducto || (p?.tipoProducto || p?.tipoProductoSugerido || 'sin_definir') === filterProducto);
+              const isSinPrograma = visiblePrograms.length > 0
+                && dayItems.length === 0
+                && !hasSuspended
+                && visiblePrograms.every(p => !esFechaEnVigencia(p, dateKey));
               const primaryProduct = daySummary.products[0]?.key || 'sin_definir';
 
               return (
                 <div
                   key={dayNum}
                   onClick={() => setSelectedDay(prev => prev?.key === dateKey ? null : { key: dateKey, items: dayItems, total: totalCam, summary: daySummary })}
-                  className={`cal-day-cell ${calendarDayToneClass(dateKey)} ${isSelected ? 'selected' : ''} ${isToday ? 'is-today' : ''} ${totalCam > 0 ? `has-data ${getProductClass(primaryProduct)}` : ''}`}
+                  className={`cal-day-cell ${calendarDayToneClass(dateKey)} ${isSelected ? 'selected' : ''} ${isToday ? 'is-today' : ''} ${isSinPrograma ? 'is-sinprog' : ''} ${totalCam > 0 ? `has-data ${getProductClass(primaryProduct)}` : ''}`}
                 >
                   <div className="cal-month-cell-top">
                     <span className="cal-day-num">{dayNum}</span>
@@ -194,6 +201,8 @@ export default function ProgramaCalendarioView({
                         ))}
                       </div>
                     </div>
+                  ) : isSinPrograma ? (
+                    <div className="cal-month-sinprog">Sin programa</div>
                   ) : hasSuspended ? (
                     <div className="cal-month-susp">Susp.</div>
                   ) : (
@@ -208,6 +217,7 @@ export default function ProgramaCalendarioView({
             <span className="cal-legend-item"><span className="cal-chip product-carne">C</span> Carne</span>
             <span className="cal-legend-item"><span className="cal-chip product-mc">MC</span> Media Concha</span>
             <span className="cal-legend-item"><span className="cal-chip product-sin_definir">SD</span> Sin definir</span>
+            <span className="cal-legend-item cal-legend-sinprog">Sin programa</span>
             <span className="cal-legend-item cal-legend-dash">— Sin actividad</span>
           </div>
           </>

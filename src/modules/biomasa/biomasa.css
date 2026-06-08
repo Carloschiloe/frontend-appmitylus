@@ -917,6 +917,21 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   margin-top: 4px;
   font-style: italic;
 }
+.cal-day-cell.is-sinprog {
+  background: #f8fafc;
+}
+
+.cal-month-sinprog {
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.cal-legend-sinprog {
+  color: #94a3b8;
+  font-style: italic;
+}
 
 /* ── Vista semana v2 ─────────────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════

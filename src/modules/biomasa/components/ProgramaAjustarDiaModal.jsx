@@ -51,15 +51,24 @@ export default function ProgramaAjustarDiaModal({
     setSubmitting(false);
   }, [show, accionInicial, fecha, programa?._id]);
 
-  if (!show || !programa) return null;
-
   const removibles = tiposDescontables(composicionDia);
   const totalDia = (composicionDia || []).reduce((s, l) => s + Number(l.cantidad || 0), 0);
   const totalTonsDia = (composicionDia || []).reduce((s, l) => s + Number(l.cantidad || 0) * Number(l.toneladasPorCamion || 0), 0);
-  const productoLabel = getTipoProductoLabel(programa.tipoProducto || programa.tipoProductoSugerido || 'sin_definir');
 
   const selLine = removibles.find((l) => String(l.tipoTransporteId) === String(tipoTransporteId));
   const puedeDescontar = accion !== 'restar' || !!selLine;
+  const maxDescuento = accion === 'restar' ? Math.max(0, Number(selLine?.cantidad || 0)) : null;
+
+  useEffect(() => {
+    if (accion !== 'restar') return;
+    const max = Math.max(0, Number(selLine?.cantidad || 0));
+    if (max > 0 && Number(cantidad) > max) setCantidad(max);
+    if (max > 0 && Number(cantidad) < 1) setCantidad(1);
+  }, [accion, selLine?.cantidad, cantidad]);
+
+  if (!show || !programa) return null;
+
+  const productoLabel = getTipoProductoLabel(programa.tipoProducto || programa.tipoProductoSugerido || 'sin_definir');
 
   const cambiarAccion = (next) => {
     setAccion(next);
@@ -83,11 +92,13 @@ export default function ProgramaAjustarDiaModal({
     setTipoTransporteId(id);
     setTipoTransporteNombre(l?.tipoTransporteNombre || '');
     setToneladasPorCamion(l?.toneladasPorCamion ?? '');
+    const max = Math.max(0, Number(l?.cantidad || 0));
+    setCantidad(max > 0 ? Math.min(Math.max(1, Number(cantidad) || 1), max) : 1);
   };
 
   const confirmDisabled = submitting
     || (accion === 'sumar' && (!tipoTransporteId || Number(cantidad) < 1))
-    || (accion === 'restar' && (!tipoTransporteId || !puedeDescontar))
+    || (accion === 'restar' && (!tipoTransporteId || !puedeDescontar || Number(cantidad) < 1 || Number(cantidad) > maxDescuento))
     || (accion === 'suspender' && !motivo);
 
   const handleSubmit = async (e) => {
@@ -101,7 +112,7 @@ export default function ProgramaAjustarDiaModal({
       };
     } else if (accion === 'restar') {
       payload = {
-        fecha, accion: 'suspender', camiones: 1, motivo, nota,
+        fecha, accion: 'suspender', camiones: Math.min(maxDescuento || 1, Math.max(1, Number(cantidad) || 1)), motivo, nota,
         tipoTransporteId, tipoTransporteNombre, toneladasPorCamion: toneladasPorCamion === '' ? null : Number(toneladasPorCamion),
       };
     } else {
@@ -202,17 +213,37 @@ export default function ProgramaAjustarDiaModal({
             {/* B) DESCONTAR */}
             {accion === 'restar' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <label className="mx-label" style={{ fontWeight: 700 }}>Tipo de camión a descontar <span style={{ color: 'var(--color-error)' }}>*</span></label>
-                <select className="mx-select" required value={tipoTransporteId}
-                  disabled={removibles.length === 0}
-                  onChange={(e) => elegirTipoRestar(e.target.value)}>
-                  <option value="">— Selecciona —</option>
-                  {removibles.map((l) => (
-                    <option key={String(l.tipoTransporteId)} value={String(l.tipoTransporteId)}>
-                      {l.tipoTransporteNombre || 'Sin tipo'} ({Number(l.cantidad)})
-                    </option>
-                  ))}
-                </select>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label className="mx-label" style={{ fontWeight: 700 }}>Tipo de camión a descontar <span style={{ color: 'var(--color-error)' }}>*</span></label>
+                    <select className="mx-select" required value={tipoTransporteId}
+                      disabled={removibles.length === 0}
+                      onChange={(e) => elegirTipoRestar(e.target.value)}>
+                      <option value="">Selecciona</option>
+                      {removibles.map((l) => (
+                        <option key={String(l.tipoTransporteId)} value={String(l.tipoTransporteId)}>
+                          {l.tipoTransporteNombre || 'Sin tipo'} ({Number(l.cantidad)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label className="mx-label" style={{ fontWeight: 700 }}>Cantidad</label>
+                    <input
+                      className="mx-input"
+                      type="number"
+                      min="1"
+                      max={maxDescuento || 1}
+                      disabled={!selLine}
+                      value={cantidad}
+                      onChange={(e) => {
+                        const max = maxDescuento || 1;
+                        const next = Math.max(1, Number(e.target.value) || 1);
+                        setCantidad(Math.min(max, next));
+                      }}
+                    />
+                  </div>
+                </div>
                 {removibles.length === 0 ? (
                   <span style={{ fontSize: 11, color: 'var(--color-error)' }}>No hay camiones de este tipo para descontar.</span>
                 ) : (
