@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../api/apiClient';
 import { finMes } from '../utils/fechasChile';
 import { fmtNumber, calcTerminoProgramaISO } from '../utils/programaCalculos';
@@ -23,6 +24,8 @@ export function useProgramaForm({
   setShowConfirm,
   setShowContinuityModal,
 }) {
+  const queryClient = useQueryClient();
+
   const fetchTratoSaldo = useCallback(async (tratoId, excludeId = null) => {
     if (!tratoId) { setTratoSaldo(null); return; }
     try {
@@ -222,6 +225,11 @@ export function useProgramaForm({
       const endpoint = editingId ? `/programa-cosecha/${editingId}` : '/programa-cosecha';
       const method = editingId ? 'put' : 'post';
       await apiClient[method](endpoint, payload);
+      
+      // Invalidar cache de tratos y oportunidades para que la tabla en /gestion/tratos se actualice instantáneamente
+      queryClient.invalidateQueries({ queryKey: ['oportunidades'] });
+      queryClient.invalidateQueries({ queryKey: ['tratos'] });
+      
       addToast({ title: editingId ? 'Programa Actualizado' : 'Programa Creado', message: editingId ? 'Los cambios fueron guardados.' : 'El programa de cosecha fue creado.', type: 'success' });
       setShowModal(false);
       setShowConfirm(false);
@@ -237,7 +245,7 @@ export function useProgramaForm({
         addToast({ title: 'Error', message: err.message, type: 'error' });
       }
     }
-  }, [formData, tratoSaldo, tratosAcordados, programas, editingId, addToast, load]);
+  }, [formData, tratoSaldo, tratosAcordados, programas, editingId, addToast, load, queryClient]);
 
   const handleCrearContinuidad = useCallback(() => {
     if (!continuitySource) return;
