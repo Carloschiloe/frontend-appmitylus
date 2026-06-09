@@ -46,7 +46,7 @@ export function useProgramaForm({
     };
   }, []);
 
-  const handleOpenModal = useCallback((item = null) => {
+  const handleOpenModal = useCallback((item = null, prefillTratoId = null) => {
     if (item) {
       // Editing existing program
       const trato = tratosAcordados.find(x => String(x._id) === String(item.tratoId));
@@ -93,7 +93,13 @@ export function useProgramaForm({
       });
     } else {
       // New program
-      const t = tratosAcordados.length > 0 ? tratosAcordados[0] : null;
+      let t = null;
+      if (prefillTratoId) {
+        t = tratosAcordados.find(x => String(x._id) === String(prefillTratoId));
+      }
+      if (!t && tratosAcordados.length > 0) {
+        t = tratosAcordados[0];
+      }
       const limites = computeTratoLimites(t);
       setTratoLimites(limites);
       setEditingId(null);

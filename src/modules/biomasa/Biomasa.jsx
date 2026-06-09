@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useLocation, Navigate } from 'react-router-dom';
+import { useLocation, Navigate, useSearchParams } from 'react-router-dom';
 import './biomasa.css';
 import {
   Plus,
@@ -43,7 +43,7 @@ export default function Biomasa() {
   
   const [mes, setMes] = useState(mesActual);
   const [statusPeriod, setStatusPeriod] = useState('month'); // 'month' | 'week'
-  const { disp, asig, programas, calData, notasDia, tratosAcordados, tratosBiomasa, perdidasBiomasa, reload: load } = useBiomasaData(mes, {
+  const { loading, disp, asig, programas, calData, notasDia, tratosAcordados, tratosBiomasa, perdidasBiomasa, reload: load } = useBiomasaData(mes, {
     isStatusView,
     isProgramView,
     isMuestreosView,
@@ -55,6 +55,11 @@ export default function Biomasa() {
   const [showModal, setShowModal] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const prefillTratoId = searchParams.get('tratoId');
+  const prefillProgramaId = searchParams.get('programaId');
+  const [hasHandledPrefill, setHasHandledPrefill] = useState(false);
 
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
@@ -300,6 +305,39 @@ export default function Biomasa() {
     setShowContinuityModal,
   });
 
+  useEffect(() => {
+    if ((prefillTratoId || prefillProgramaId) && !loading && !hasHandledPrefill && tratosAcordados && programas) {
+      setHasHandledPrefill(true);
+      const search = new URLSearchParams(searchParams);
+      search.delete('tratoId');
+      search.delete('programaId');
+      setSearchParams(search, { replace: true });
+
+      const existingProgram = prefillProgramaId
+        ? programas.find(p => String(p._id) === String(prefillProgramaId))
+        : programas.find(p => String(p.tratoId) === String(prefillTratoId) && p.estado === 'activo');
+
+      if (existingProgram) {
+        if (!prefillProgramaId) {
+          addToast({ title: 'Programa existente', message: 'Este trato ya tiene un programa activo.', type: 'info' });
+        }
+        if (existingProgram.proveedorNombre) {
+          setFilterProveedor(existingProgram.proveedorNombre);
+          if (progSubTab !== 'calendario') {
+            setProgSubTab('calendario');
+          }
+        }
+      } else if (prefillTratoId) {
+        const t = tratosAcordados.find(x => String(x._id) === String(prefillTratoId));
+        if (t) {
+          if (progSubTab !== 'programa') setProgSubTab('programa');
+          handleOpenModal(null, prefillTratoId);
+        } else {
+          addToast({ title: 'Trato no disponible', message: 'El trato solicitado no se puede programar (falta saldo o no está acordado).', type: 'warning' });
+        }
+      }
+    }
+  }, [prefillTratoId, prefillProgramaId, loading, tratosAcordados, programas, hasHandledPrefill, handleOpenModal, setSearchParams, searchParams, setFilterProveedor, addToast, progSubTab, setProgSubTab]);
 
   const {
     handleStatusChange,

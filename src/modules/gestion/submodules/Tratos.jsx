@@ -272,6 +272,8 @@ export default function Tratos() {
         setSavedModal({
           isNew: false,
           wasAcordado: wasAcordadoEdit,
+          hasProgramaActivo: !!(form.meta?.programaCosecha?.estado && form.meta.programaCosecha.estado !== 'finalizado'),
+          tratoId: form._id,
           trato: {
             proveedorNombre: form.proveedorNombre,
             tonsAcordadas: form.tonsAcordadas,
@@ -341,6 +343,8 @@ export default function Tratos() {
         setSavedModal({
           isNew: true,
           wasAcordado: wasAcordadoNew,
+          hasProgramaActivo: false,
+          tratoId: newId,
           trato: {
             proveedorNombre: selectedProvider.proveedorNombre,
             tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
@@ -634,16 +638,16 @@ export default function Tratos() {
                   <span className="tratos-saved-row-value">{savedModal.trato.responsableNombre || '—'}</span>
                 </div>
               </div>
-              {savedModal.wasAcordado && (
+              {savedModal.wasAcordado && !savedModal.hasProgramaActivo && (
                 <div className="tratos-saved-hint">
                   ✅ Ahora puedes crear el programa de cosecha para este proveedor y trato.
                 </div>
               )}
             </div>
             <div className="tratos-saved-footer">
-              {savedModal.wasAcordado && (
-                <Link to="/biomasa/programa" className="mx-btn mx-btn-primary" onClick={() => setSavedModal(null)}>
-                  <CalendarCheck size={16} /> Crear programa de cosecha
+              {(savedModal.wasAcordado || savedModal.hasProgramaActivo) && (
+                <Link to={`/biomasa/programa?tratoId=${savedModal.tratoId}`} className="mx-btn mx-btn-primary" onClick={() => setSavedModal(null)}>
+                  <CalendarCheck size={16} /> {savedModal.hasProgramaActivo ? 'Ver programa de cosecha' : 'Crear programa de cosecha'}
                 </Link>
               )}
               <button

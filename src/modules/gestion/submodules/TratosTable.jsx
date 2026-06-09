@@ -58,7 +58,10 @@ function ActionsMenu({ item, uiEstado, displayTons, onShare, onEdit, onDelete })
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const canCreatePrograma = uiEstado === 'acordado' && !item.meta?.programaCosecha?.estado && displayTons > 0 && !!item.proveedorNombre;
+  const isAcordado = uiEstado === 'acordado' || uiEstado === 'cerrado_ok';
+  const hasProgramaActivo = item.meta?.programaCosecha?.estado === 'activo' || item.meta?.programaCosecha?.estado === 'pausado';
+  const canCreatePrograma = isAcordado && !hasProgramaActivo && displayTons > 0 && !!item.proveedorNombre;
+  const canViewPrograma = hasProgramaActivo;
 
   return (
     <div className="tratos-menu-wrap" ref={ref}>
@@ -85,11 +88,20 @@ function ActionsMenu({ item, uiEstado, displayTons, onShare, onEdit, onDelete })
           </button>
           {canCreatePrograma && (
             <Link
-              to="/biomasa/programa"
+              to={`/biomasa/programa?tratoId=${item._id}`}
               className="tratos-menu-item"
               onClick={() => setOpen(false)}
             >
               <CalendarCheck size={13} /> Crear programa de cosecha
+            </Link>
+          )}
+          {canViewPrograma && (
+            <Link
+              to={`/biomasa/programa?programaId=${item.meta?.programaCosecha?.id || ''}&tratoId=${item._id}`}
+              className="tratos-menu-item"
+              onClick={() => setOpen(false)}
+            >
+              <CalendarCheck size={13} /> Ver programa
             </Link>
           )}
           <div className="tratos-menu-separator" />
