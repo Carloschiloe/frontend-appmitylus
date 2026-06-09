@@ -11,12 +11,14 @@ export default function TratoFormModal({
   providerSearch,
   loadingProviders,
   filteredProviders,
+  tiposTransporte,
   onClose,
   onSubmit,
   onFormChange,
   onProviderSearchChange,
   onClearSelectedProvider,
   onSelectProvider,
+  onTransporteChange,
   onConditionModeChange,
   onConditionValueChange,
   onConditionStatusChange,
@@ -150,13 +152,52 @@ export default function TratoFormModal({
                       )}
 
                       {!(c.tipoValor === 'porcentaje' && (!c.modoCondicion || c.modoCondicion === 'normal')) && (
-                        <input
-                          type={['numero', 'moneda', 'porcentaje', 'dias'].includes(c.tipoValor) ? 'number' : 'text'}
-                          className="mx-input tratos-condition-control tratos-condition-value"
-                          placeholder={c.tipoValor === 'moneda' ? '$ Valor' : c.tipoValor === 'porcentaje' ? '% Valor' : 'Valor'}
-                          value={c.valor || ''}
-                          onChange={(e) => onConditionValueChange(idx, e.target.value)}
-                        />
+                        <div style={{ display: 'flex', gap: 6, flex: 1 }}>
+                          {c.nombre.toLowerCase().includes('camiones') && c.nombre.toLowerCase().includes('dia') && tiposTransporte && (
+                            <select
+                              className="mx-input tratos-condition-control"
+                              style={{ flex: 1, minWidth: 140 }}
+                              value={form.transporteTrato?.tipoTransporteId || ''}
+                              onChange={(e) => {
+                                const selected = tiposTransporte.find(t => t._id === e.target.value || t.id === e.target.value);
+                                if (selected) {
+                                  onTransporteChange({
+                                    tipoTransporteId: selected._id || selected.id,
+                                    nombre: selected.nombre || selected.label,
+                                    cantidadDiaria: c.valor ? Number(c.valor) : null,
+                                    maxisPorUnidad: selected.maxisPorUnidad,
+                                    kgPorMaxiRef: selected.kgPorMaxiRef,
+                                  });
+                                } else {
+                                  onTransporteChange(null);
+                                }
+                              }}
+                            >
+                              <option value="">Camion Simple (11 t)</option>
+                              {tiposTransporte.map(t => (
+                                <option key={t._id || t.id} value={t._id || t.id}>
+                                  {t.nombre || t.label}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          <input
+                            type={['numero', 'moneda', 'porcentaje', 'dias'].includes(c.tipoValor) ? 'number' : 'text'}
+                            className="mx-input tratos-condition-control tratos-condition-value"
+                            style={{ flex: c.nombre.toLowerCase().includes('camiones') && c.nombre.toLowerCase().includes('dia') ? '0 0 80px' : 1 }}
+                            placeholder={c.tipoValor === 'moneda' ? '$ Valor' : c.tipoValor === 'porcentaje' ? '% Valor' : 'Valor'}
+                            value={c.valor || ''}
+                            onChange={(e) => {
+                              onConditionValueChange(idx, e.target.value);
+                              if (c.nombre.toLowerCase().includes('camiones') && c.nombre.toLowerCase().includes('dia') && form.transporteTrato) {
+                                onTransporteChange({
+                                  ...form.transporteTrato,
+                                  cantidadDiaria: e.target.value ? Number(e.target.value) : null,
+                                });
+                              }
+                            }}
+                          />
+                        </div>
                       )}
 
                       <select

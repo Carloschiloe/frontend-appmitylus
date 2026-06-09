@@ -74,6 +74,11 @@ export default function Tratos() {
 
   // 1. Carga de datos con React Query
   const { data: tratosRes, isLoading: loadingTratos } = useTratos();
+  const { data: tiposTransporte = [], isLoading: loadingTransportes } = useQuery({
+    queryKey: ['maestros', 'tipo_transporte'],
+    queryFn: () => maestrosApi.getMaestrosActivos('tipo_transporte'),
+    staleTime: 10 * 60 * 1000,
+  });
   
   const items = useMemo(() => {
     const raw = toList(tratosRes);
@@ -85,7 +90,7 @@ export default function Tratos() {
     }));
   }, [tratosRes]);
 
-  const loading = loadingTratos;
+  const loading = loadingTratos || loadingTransportes;
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['tratos'] });
@@ -204,6 +209,7 @@ export default function Tratos() {
     setForm({
       ...createEmptyForm(buildInitialConditions(maestrosCondiciones)),
       responsableNombre: currentResponsable,
+      transporteTrato: null,
     });
   }, [maestrosCondiciones, currentResponsable]);
 
@@ -211,6 +217,10 @@ export default function Tratos() {
     setSelectedProvider(provider);
     setProviderSearch(provider.proveedorNombre || '');
     setForm((prev) => ({ ...prev, proveedorNombre: provider.proveedorNombre || '' }));
+  }, []);
+
+  const handleTransporteChange = useCallback((transporteUpdate) => {
+    setForm(prev => ({ ...prev, transporteTrato: transporteUpdate }));
   }, []);
 
   const handleSave = async (e) => {
@@ -229,6 +239,7 @@ export default function Tratos() {
             ...c,
             valor: c.valor === '' ? null : c.valor,
           })),
+          transportes: form.transporteTrato ? [form.transporteTrato] : [],
         };
 
         await apiClient.patch(`/oportunidades/${editingId}/trato`, tratoPayload);
@@ -267,6 +278,7 @@ export default function Tratos() {
           fechaInicioCosecha: form.fechaInicioCosecha,
           tonsAcordadas: form.tonsAcordadas,
           condiciones: form.condiciones,
+          transporte: form.transporteTrato,
         });
         const wasAcordadoEdit = todasAcordadas;
         setSavedModal({
@@ -320,6 +332,7 @@ export default function Tratos() {
               ...condicion,
               valor: condicion.valor === '' ? null : condicion.valor,
             })),
+            transportes: form.transporteTrato ? [form.transporteTrato] : [],
           });
 
           // 3. Si todas las condiciones quedaron acordadas, el trato pasa a Acordado
@@ -339,6 +352,7 @@ export default function Tratos() {
           fechaInicioCosecha: form.fechaInicioCosecha,
           tonsAcordadas: form.tonsAcordadas,
           condiciones: form.condiciones,
+          transporte: form.transporteTrato,
         });
         setSavedModal({
           isNew: true,
@@ -408,6 +422,7 @@ export default function Tratos() {
       motivoCierre: item.motivoPerdida || item.motivoCierre || '',
       notas: item.notasTrato || item.notas || '',
       condiciones: buildInitialConditions(maestrosCondiciones, item.condiciones || []),
+      transporteTrato: item.transportes?.[0] || null,
     });
     setIsModalOpen(true);
   };
@@ -470,11 +485,13 @@ export default function Tratos() {
     if (responsableFilter !== 'all' && i.responsableNombre !== responsableFilter) return false;
     return true;
   }), [items, searchTerm, mes, showAllMonths, responsableFilter]);
+
   const formFechaTerminoEstimada = useMemo(() => calcularFechaTerminoEstimadaTrato({
     fechaInicioCosecha: form.fechaInicioCosecha,
     tonsAcordadas: form.tonsAcordadas,
     condiciones: form.condiciones,
-  }), [form.fechaInicioCosecha, form.tonsAcordadas, form.condiciones]);
+    transporte: form.transporteTrato,
+  }), [form.fechaInicioCosecha, form.tonsAcordadas, form.condiciones, form.transporteTrato]);
 
   return (
     <div className="mx-page am-p-0">
@@ -560,12 +577,14 @@ export default function Tratos() {
         providerSearch={providerSearch}
         loadingProviders={loadingProviders}
         filteredProviders={filteredProviders}
+        tiposTransporte={tiposTransporte}
         onClose={closeModal}
         onSubmit={handleSave}
         onFormChange={setForm}
         onProviderSearchChange={setProviderSearch}
         onClearSelectedProvider={() => setSelectedProvider(null)}
         onSelectProvider={handleSelectProvider}
+        onTransporteChange={handleTransporteChange}
         onConditionModeChange={handleConditionModeChange}
         onConditionValueChange={handleConditionValueChange}
         onConditionStatusChange={toggleCondicionStatus}

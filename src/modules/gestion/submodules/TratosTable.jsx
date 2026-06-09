@@ -174,6 +174,7 @@ export default function TratosTable({
                     tonsAcordadas: displayTons,
                     camionesXDia: displayCamiones,
                     condiciones: item.condiciones,
+                    transporte: item.transportes?.[0],
                   });
                   const condiciones = item.condiciones || [];
 
@@ -297,13 +298,23 @@ export default function TratosTable({
             <div className="tratos-cond-modal-body">
               {deduplicarCondiciones(condModal.condiciones).map((c, i) => {
                 const meta = COND_BADGE[c.estado] || COND_BADGE.pendiente;
+                const isCamionesDia = c.nombre.toLowerCase().includes('camiones') && c.nombre.toLowerCase().includes('dia');
+                const transporteTrato = isCamionesDia && condModal.transportes?.[0] ? condModal.transportes[0] : null;
+
                 return (
                   <div key={i} className="tratos-cond-modal-row">
-                    <span className="tratos-cond-modal-name">{c.nombre}</span>
-                    <div className="tratos-cond-modal-right">
-                      {formatCondVal(c) && (
-                        <span className="tratos-cond-modal-val">{formatCondVal(c)}</span>
+                    <div className="tratos-cond-modal-left">
+                      <span className="tratos-cond-modal-name">{c.nombre}</span>
+                      <span className="tratos-cond-modal-val">
+                        {isCamionesDia && transporteTrato ? `${formatCondVal(c) || 0} ${transporteTrato.nombre || 'Camion Simple'}` : formatCondVal(c) || 'ACORDADO'}
+                      </span>
+                      {isCamionesDia && transporteTrato && transporteTrato.maxisPorUnidad > 0 && transporteTrato.kgPorMaxiRef > 0 && (
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-subtle)', marginTop: 2 }}>
+                          Capacidad: {formatInteger((transporteTrato.maxisPorUnidad * transporteTrato.kgPorMaxiRef) / 1000)} t/camión
+                        </div>
                       )}
+                    </div>
+                    <div className="tratos-cond-modal-right">
                       <span className={`mx-badge ${meta.cls}`}>{meta.label}</span>
                     </div>
                   </div>

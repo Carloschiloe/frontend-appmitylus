@@ -106,6 +106,12 @@ export function useProgramaForm({
       const limites = computeTratoLimites(t);
       setTratoLimites(limites);
       setEditingId(null);
+      const firstT = t?.transportes?.[0] || {};
+      const tCam = firstT.cantidadDia || t?.camionesXDia || '';
+      const toneladasPorCamion = (firstT.maxisPorUnidad > 0 && firstT.kgPorMaxiRef > 0)
+        ? (firstT.maxisPorUnidad * firstT.kgPorMaxiRef) / 1000
+        : '';
+
       setFormData({
         tratoId: t?._id || '',
         vigenciaDesde: limites.vigenciaDesde || `${mes}-01`,
@@ -120,7 +126,13 @@ export function useProgramaForm({
         toneladasPorCamion: '',
         camionesPorDia: '',
         modoAvanzado: true,
-        transportesAvanzados: [{ tipoTransporteId: '', tipoTransporteNombre: '', camionesTotales: '', cantidadDia: '', toneladasPorCamion: '' }],
+        transportesAvanzados: [{
+          tipoTransporteId: firstT.tipoTransporteId ? String(firstT.tipoTransporteId) : '',
+          tipoTransporteNombre: firstT.nombre || '',
+          camionesTotales: '',
+          cantidadDia: tCam,
+          toneladasPorCamion: toneladasPorCamion,
+        }],
         notas: '',
         diasEspeciales: [],
         condicionContinuidad: '',

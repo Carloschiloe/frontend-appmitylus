@@ -83,6 +83,8 @@ export function calcularFechaTerminoEstimadaTrato({
   tonsAcordadas,
   camionesXDia,
   condiciones,
+  transporte,
+  capacidadCamion,
 } = {}) {
   const inicio = fechaInicioCosecha || vigenciaDesde;
   const parts = getDateOnlyParts(inicio);
@@ -90,7 +92,12 @@ export function calcularFechaTerminoEstimadaTrato({
   const camiones = parseNumberOrNull(camionesXDia) ?? deriveCamionesXDia(condiciones);
   if (!parts || !tons || !camiones) return null;
 
-  const diasNecesarios = Math.ceil(Number(tons) / (Number(camiones) * TONS_POR_CAMION_SIMPLE));
+  let capReal = capacidadCamion || TONS_POR_CAMION_SIMPLE;
+  if (!capacidadCamion && transporte && transporte.maxisPorUnidad > 0 && transporte.kgPorMaxiRef > 0) {
+    capReal = (transporte.maxisPorUnidad * transporte.kgPorMaxiRef) / 1000;
+  }
+
+  const diasNecesarios = Math.ceil(Number(tons) / (Number(camiones) * capReal));
   if (!Number.isFinite(diasNecesarios) || diasNecesarios <= 0) return null;
 
   const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12, 0, 0, 0));
@@ -281,13 +288,16 @@ export function buildTratoShareMessage(item, url) {
   const estado = ESTADOS_TRATO.find(e => e.val === getUiEstadoFromApi(item?.estado))?.label || item?.estado || 'Trato';
   const descuentoPlanta = deriveDescuentoPlanta(item?.condiciones);
 
+  const transporteTrato = item?.transportes?.[0];
+  const nombreTransporte = transporteTrato?.nombre || 'Camion Simple';
+  
   return [
     '*Mitynex | Confirmación pública de acuerdo*',
     `Proveedor: ${proveedor}`,
     centro ? `Centro: ${centro}` : null,
     tons ? `Volumen acordado: ${formatInteger(tons)} t` : null,
     precio ? `Precio: ${formatMoney(precio)} / kg` : null,
-    camiones ? `Carga: ${formatInteger(camiones)} cam/dia` : null,
+    camiones ? `Carga: ${formatInteger(camiones)} ${nombreTransporte}` : null,
     descuentoPlanta ? `Descuento planta: ${descuentoPlanta}` : null,
     inicio ? `Inicio probable cosecha: ${formatDateOnlySafe(inicio)}` : null,
     termino ? `Término estimado: ${formatDateOnlySafe(termino)}` : null,
