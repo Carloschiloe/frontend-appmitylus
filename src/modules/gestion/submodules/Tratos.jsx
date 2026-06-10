@@ -92,8 +92,11 @@ export default function Tratos() {
 
   const loading = loadingTratos || loadingTransportes;
 
-  const handleRefresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['tratos'] });
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: ['tratos'] }),
+      queryClient.refetchQueries({ queryKey: ['oportunidades'] })
+    ]);
   }, [queryClient]);
 
   useEffect(() => {
@@ -226,6 +229,7 @@ export default function Tratos() {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
+      let newId = null;
       if (editingId) {
         const volumenDesdeCondiciones = deriveVolumenDesdeCondiciones(form.condiciones);
         const tonsGuardadas = parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones;
@@ -273,28 +277,6 @@ export default function Tratos() {
             });
           }
         }
-        // Calcular término para el modal
-        const trTermino = calcularFechaTerminoEstimadaTrato({
-          fechaInicioCosecha: form.fechaInicioCosecha,
-          tonsAcordadas: form.tonsAcordadas,
-          condiciones: form.condiciones,
-          transporte: form.transporteTrato,
-        });
-        const wasAcordadoEdit = todasAcordadas;
-        setSavedModal({
-          isNew: false,
-          wasAcordado: wasAcordadoEdit,
-          hasProgramaActivo: !!(form.meta?.programaCosecha?.estado && form.meta.programaCosecha.estado !== 'finalizado'),
-          tratoId: form._id,
-          trato: {
-            proveedorNombre: form.proveedorNombre,
-            tonsAcordadas: form.tonsAcordadas,
-            precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
-            fechaInicio: form.fechaInicioCosecha,
-            fechaTermino: trTermino,
-            responsableNombre: form.responsableNombre,
-          },
-        });
       } else {
         if (!selectedProvider?.proveedorKey || !selectedProvider?.proveedorNombre) {
           addToast({ title: 'Falta proveedor', message: 'Selecciona un proveedor del listado antes de guardar.', type: 'warning' });
@@ -319,8 +301,7 @@ export default function Tratos() {
         });
 
         // 2. Completar datos de trato/condiciones vía el endpoint de trato
-        const newId = created?.item?._id || created?._id;
-        let wasAcordadoNew = false;
+        newId = created?.item?._id || created?._id;
         if (newId) {
           await apiClient.patch(`/oportunidades/${newId}/trato`, {
             tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
@@ -340,37 +321,54 @@ export default function Tratos() {
             form.condiciones.length > 0 &&
             form.condiciones.every((c) => c.estado === 'acordado');
           if (todasAcordadasNew) {
-            wasAcordadoNew = true;
             await apiClient.patch(`/oportunidades/${newId}/estado`, {
               estado: 'acordado',
               observacion: form.notas || '',
             });
           }
         }
-        // Calcular término para el modal
-        const trTerminoNew = calcularFechaTerminoEstimadaTrato({
-          fechaInicioCosecha: form.fechaInicioCosecha,
-          tonsAcordadas: form.tonsAcordadas,
-          condiciones: form.condiciones,
-          transporte: form.transporteTrato,
-        });
-        setSavedModal({
-          isNew: true,
-          wasAcordado: wasAcordadoNew,
-          hasProgramaActivo: false,
-          tratoId: newId,
-          trato: {
-            proveedorNombre: selectedProvider.proveedorNombre,
-            tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
-            precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
-            fechaInicio: form.fechaInicioCosecha,
-            fechaTermino: trTerminoNew,
-            responsableNombre: form.responsableNombre || currentResponsable,
-          },
-        });
       }
+
+      // HACER REFETCH INMEDIATO Y ESPERAR QUE TERMINE
+      await handleRefresh();
+
+      // Tomar como fuente principal el trato retornado por backend / cache
+      const savedId = editingId || newId;
+      const cacheData = queryClient.getQueryData(['tratos']);
+      const cacheTratos = toList(cacheData);
+      const updatedTrato = cacheTratos.find(t => String(t._id) === String(savedId));
+
+      const isAcordado = updatedTrato 
+        ? (updatedTrato.estado === 'acordado' || updatedTrato.estado === 'compra_efectuada') 
+        : false;
+
+      const hasPrograma = updatedTrato 
+        ? !!(updatedTrato.programaEstado && updatedTrato.programaEstado !== 'finalizado') 
+        : false;
+
+      const trTermino = calcularFechaTerminoEstimadaTrato({
+        fechaInicioCosecha: updatedTrato ? updatedTrato.vigenciaDesde : form.fechaInicioCosecha,
+        tonsAcordadas: updatedTrato ? updatedTrato.tonsAcordadas : form.tonsAcordadas,
+        condiciones: updatedTrato ? updatedTrato.condiciones : form.condiciones,
+        transporte: updatedTrato && updatedTrato.transportes?.length ? updatedTrato.transportes[0] : form.transporteTrato,
+      });
+
+      setSavedModal({
+        isNew: !editingId,
+        wasAcordado: isAcordado,
+        hasProgramaActivo: hasPrograma,
+        tratoId: savedId,
+        trato: {
+          proveedorNombre: updatedTrato?.proveedorNombre || form.proveedorNombre || selectedProvider?.proveedorNombre,
+          tonsAcordadas: updatedTrato?.tonsAcordadas || form.tonsAcordadas,
+          precioAcordado: updatedTrato?.precioAcordado || derivePrecioDesdeCondiciones(form.condiciones),
+          fechaInicio: updatedTrato?.vigenciaDesde?.slice(0, 10) || form.fechaInicioCosecha,
+          fechaTermino: trTermino,
+          responsableNombre: updatedTrato?.responsableNombre || form.responsableNombre || currentResponsable,
+        },
+      });
+
       closeModal();
-      handleRefresh();
     } catch (error) {
       const detalle =
         error?.data?.details?.[0]?.message ||

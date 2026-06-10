@@ -306,7 +306,19 @@ export default function Biomasa() {
   });
 
   useEffect(() => {
+    // Esperar a que loading haya terminado Y a que los datos hayan cargado.
+    // tratosAcordados.length > 0 asegura que el fetch de /tratos-acordados completó;
+    // si es vacío pero loading=false, puede ser un race condition en React 18 donde
+    // setLoading(false) se procesó antes de setTratosAcordados([...]).
+    // Solo disparamos el error "Trato no disponible" si la lista ya tiene datos
+    // (indicando que el endpoint respondió) y el trato no está en ella.
     if ((prefillTratoId || prefillProgramaId) && !loading && !hasHandledPrefill && tratosAcordados && programas) {
+      // Si tenemos prefillTratoId pero tratosAcordados está vacío, puede ser un race.
+      // Dejamos que el efecto se vuelva a disparar cuando tratosAcordados tenga datos.
+      if (prefillTratoId && tratosAcordados.length === 0 && programas.length === 0) {
+        return; // datos aún no disponibles, esperar próximo render
+      }
+
       setHasHandledPrefill(true);
       const search = new URLSearchParams(searchParams);
       search.delete('tratoId');
