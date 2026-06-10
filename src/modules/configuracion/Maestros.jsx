@@ -250,7 +250,7 @@ export default function Maestros() {
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Maxis/Un.</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Kg/Maxi ref.</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Total ref.</th>}
-                  {tipo !== 'responsable' && <th style={{ width: '80px', textAlign: 'center' }}>Orden</th>}
+                  {tipo === 'categoria-muestreo' && <th style={{ width: '80px', textAlign: 'center' }}>Orden</th>}
                   <th style={{ width: '120px' }}>Estado</th>
                   <th style={{ width: '100px', textAlign: 'right' }}>Acciones</th>
                 </tr>
@@ -321,7 +321,7 @@ export default function Maestros() {
                           </td>
                         );
                       })()}
-                      {tipo !== 'responsable' && <td style={{ textAlign: 'center' }}>{item.orden ?? 0}</td>}
+                      {tipo === 'categoria-muestreo' && <td style={{ textAlign: 'center' }}>{item.orden ?? 0}</td>}
                       <td>
                         <span className={`mx-badge mx-badge-${item.activo ? 'success' : 'muted'}`}>
                           {item.activo ? 'ACTIVO' : 'INACTIVO'}
@@ -501,7 +501,7 @@ export default function Maestros() {
                   </>
                 )}
 
-                {tipo !== 'responsable' && (
+                {tipo === 'categoria-muestreo' && (
                   <div className="mx-form-group">
                     <label className="mx-label">Orden</label>
                     <input name="orden" type="number" className="mx-input" defaultValue={editingItem?.orden || 0} />
