@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Search, X } from 'lucide-react';
-import { formatDateOnlySafe, isCondicionCamionesDia } from './tratos.helpers';
+import { formatDateOnlySafe, isCondicionCamionesDia, normalizeText } from './tratos.helpers';
 
 export default function TratoFormModal({
   isOpen,
@@ -23,6 +23,25 @@ export default function TratoFormModal({
   onConditionValueChange,
   onConditionStatusChange,
 }) {
+  useEffect(() => {
+    if (!isOpen || !tiposTransporte || !tiposTransporte.length || form.transporteTrato) return;
+
+    const cCamiones = form.condiciones.find(c => isCondicionCamionesDia(c.nombre));
+    if (!cCamiones) return;
+
+    const tSimple = tiposTransporte.find(t => normalizeText(t.nombre || t.label).includes('simple')) || tiposTransporte[0];
+    if (tSimple) {
+      onTransporteChange({
+        tipoTransporteId: tSimple._id || tSimple.id,
+        nombre: tSimple.nombre || tSimple.label,
+        cantidadDiaria: cCamiones.valor ? Number(cCamiones.valor) : null,
+        maxisPorUnidad: tSimple.maxisPorUnidad,
+        kgPorMaxiRef: tSimple.kgPorMaxiRef,
+        capacidadToneladas: tSimple.totalRef || (tSimple.maxisPorUnidad && tSimple.kgPorMaxiRef ? (tSimple.maxisPorUnidad * tSimple.kgPorMaxiRef) / 1000 : 11),
+      });
+    }
+  }, [isOpen, tiposTransporte, form.condiciones, form.transporteTrato, onTransporteChange]);
+
   if (!isOpen) return null;
 
   return (
@@ -174,12 +193,19 @@ export default function TratoFormModal({
                                 }
                               }}
                             >
-                              <option value="">Camion Simple (11 t)</option>
-                              {tiposTransporte.map(t => (
-                                <option key={t._id || t.id} value={t._id || t.id}>
-                                  {t.nombre || t.label}
-                                </option>
-                              ))}
+                              {(!tiposTransporte || tiposTransporte.length === 0) ? (
+                                <option value="">Camion Simple (11 t)</option>
+                              ) : (
+                                tiposTransporte.map(t => {
+                                  const cap = t.totalRef || (t.maxisPorUnidad && t.kgPorMaxiRef ? (t.maxisPorUnidad * t.kgPorMaxiRef) / 1000 : null);
+                                  const labelCap = cap ? ` (${cap} t)` : '';
+                                  return (
+                                    <option key={t._id || t.id} value={t._id || t.id}>
+                                      {t.nombre || t.label}{labelCap}
+                                    </option>
+                                  );
+                                })
+                              )}
                             </select>
                           )}
                           <input
