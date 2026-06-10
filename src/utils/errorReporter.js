@@ -44,7 +44,7 @@ function sanitizeSnapshot(value, depth = 0) {
   if (Array.isArray(value)) return value.slice(0, 30).map((item) => sanitizeSnapshot(item, depth + 1));
   if (typeof value === 'object') {
     return Object.fromEntries(Object.entries(value).slice(0, 50).map(([key, item]) => {
-      if (/(password|token|secret|authorization|cookie)/i.test(key)) return [key, '[REDACTED]'];
+      if (/(password|token|secret|authorization|cookie|api-key|apikey|api_key)/i.test(key)) return [key, '[REDACTED]'];
       return [key, sanitizeSnapshot(item, depth + 1)];
     }));
   }

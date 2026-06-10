@@ -204,14 +204,21 @@ function ErrorDetailModal({ report, onClose, onSaved }) {
       setDraft(data.report);
       addToast({ type: 'success', title: 'Cambios guardados correctamente.', message: draft.errorCode });
       onSaved(data.report);
+    } catch {
+      // No cerrar el modal: el usuario conserva sus cambios para reintentar.
+      addToast({ type: 'error', title: 'No se pudieron guardar los cambios. Intenta nuevamente.', message: draft.errorCode });
     } finally {
       setSaving(false);
     }
   };
 
   const copyPrompt = async () => {
-    await navigator.clipboard.writeText(buildAgentPrompt(draft));
-    addToast({ type: 'success', title: 'Prompt copiado para Codex/Claude.', message: draft.errorCode });
+    try {
+      await navigator.clipboard.writeText(buildAgentPrompt(draft));
+      addToast({ type: 'success', title: 'Prompt copiado para Codex/Claude.', message: draft.errorCode });
+    } catch {
+      addToast({ type: 'error', title: 'No se pudo copiar el prompt.', message: draft.errorCode });
+    }
   };
 
   return (
