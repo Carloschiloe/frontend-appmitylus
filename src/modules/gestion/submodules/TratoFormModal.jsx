@@ -1,6 +1,6 @@
 import React from 'react';
 import { Search, X } from 'lucide-react';
-import { formatDateOnlySafe } from './tratos.helpers';
+import { formatDateOnlySafe, isCondicionCamionesDia } from './tratos.helpers';
 
 export default function TratoFormModal({
   isOpen,
@@ -153,7 +153,7 @@ export default function TratoFormModal({
 
                       {!(c.tipoValor === 'porcentaje' && (!c.modoCondicion || c.modoCondicion === 'normal')) && (
                         <div style={{ display: 'flex', gap: 6, flex: 1 }}>
-                          {c.nombre.toLowerCase().includes('camiones') && c.nombre.toLowerCase().includes('dia') && tiposTransporte && (
+                          {isCondicionCamionesDia(c.nombre) && tiposTransporte && (
                             <select
                               className="mx-input tratos-condition-control"
                               style={{ flex: 1, minWidth: 140 }}
@@ -167,6 +167,7 @@ export default function TratoFormModal({
                                     cantidadDiaria: c.valor ? Number(c.valor) : null,
                                     maxisPorUnidad: selected.maxisPorUnidad,
                                     kgPorMaxiRef: selected.kgPorMaxiRef,
+                                    capacidadToneladas: selected.totalRef || (selected.maxisPorUnidad && selected.kgPorMaxiRef ? (selected.maxisPorUnidad * selected.kgPorMaxiRef) / 1000 : 11),
                                   });
                                 } else {
                                   onTransporteChange(null);
@@ -184,12 +185,12 @@ export default function TratoFormModal({
                           <input
                             type={['numero', 'moneda', 'porcentaje', 'dias'].includes(c.tipoValor) ? 'number' : 'text'}
                             className="mx-input tratos-condition-control tratos-condition-value"
-                            style={{ flex: c.nombre.toLowerCase().includes('camiones') && c.nombre.toLowerCase().includes('dia') ? '0 0 80px' : 1 }}
+                            style={{ flex: isCondicionCamionesDia(c.nombre) ? '0 0 80px' : 1 }}
                             placeholder={c.tipoValor === 'moneda' ? '$ Valor' : c.tipoValor === 'porcentaje' ? '% Valor' : 'Valor'}
                             value={c.valor || ''}
                             onChange={(e) => {
                               onConditionValueChange(idx, e.target.value);
-                              if (c.nombre.toLowerCase().includes('camiones') && c.nombre.toLowerCase().includes('dia') && form.transporteTrato) {
+                              if (isCondicionCamionesDia(c.nombre) && form.transporteTrato) {
                                 onTransporteChange({
                                   ...form.transporteTrato,
                                   cantidadDiaria: e.target.value ? Number(e.target.value) : null,

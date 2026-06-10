@@ -227,8 +227,12 @@ export function normalizeDateOnlyForUiSafe(value) {
   return `${parts.year}-${month}-${day}T12:00:00.000Z`;
 }
 
+export function isCondicionCamionesDia(nombre) {
+  return /camiones?\s*dia/.test(normalizeText(nombre));
+}
+
 export function deriveCamionesXDia(condiciones = []) {
-  const match = (condiciones || []).find((item) => /camiones?\s*dia/.test(normalizeText(item?.nombre)));
+  const match = (condiciones || []).find((item) => isCondicionCamionesDia(item?.nombre));
   return parseNumberOrNull(match?.valor);
 }
 
