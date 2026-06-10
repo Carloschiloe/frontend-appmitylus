@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, AlertTriangle, CheckCircle2, Pause,
@@ -105,6 +106,21 @@ export default function ProgramaModalesView({
   const NC = ({ n }) => (
     <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800 }}>{n}</div>
   );
+
+  // Auto-calcular camionesTotales cuando se carga el modal (si no se han calculado aún)
+  useEffect(() => {
+    if (showModal && !editingId && formData.transportesAvanzados.length === 1 && tratoSaldo?.tonsDisponibles != null) {
+      const t = formData.transportesAvanzados[0];
+      if (!t.camionesTotales && t.toneladasPorCamion > 0) {
+        const camionesTotales = Math.floor(tratoSaldo.tonsDisponibles / t.toneladasPorCamion);
+        if (camionesTotales > 0) {
+          const next = [...formData.transportesAvanzados];
+          next[0] = { ...t, camionesTotales };
+          setFormData({ ...formData, transportesAvanzados: next });
+        }
+      }
+    }
+  }, [showModal, editingId, tratoSaldo, formData, setFormData]);
 
   return (
     <>
