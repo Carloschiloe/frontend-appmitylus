@@ -26,6 +26,14 @@
   font-weight: 600;
 }
 
+/* Estado vacío de muestreo: más tenue e itálico para distinguir de un dato real */
+.wk-prov-muestreo--vacio,
+.cal-detail-card-muestreo--vacio {
+  font-style: italic;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
 /* Desglose por tipo de transporte en panel del día */
 .cal-detail-card-transporte {
   margin-top: 4px;

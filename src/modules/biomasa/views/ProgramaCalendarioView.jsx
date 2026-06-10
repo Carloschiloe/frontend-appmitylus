@@ -249,10 +249,12 @@ export default function ProgramaCalendarioView({
                     <div className="harvest-week-v2-prov-name">{data.nombre}</div>
                     <span className="wk-prov-tooltip">{data.nombre}</span>
                     <div className="harvest-week-v2-prov-centro">{data.centro || '—'}</div>
-                    {formatMuestreoResumen(data) && (
+                    {formatMuestreoResumen(data) ? (
                       <div className="wk-prov-muestreo">
                         Últ. muestreo{formatMuestreoFecha(data.muestreoFecha, 'short') ? ` ${formatMuestreoFecha(data.muestreoFecha, 'short')}` : ''}: {formatMuestreoResumen(data)}
                       </div>
+                    ) : (
+                      <div className="wk-prov-muestreo wk-prov-muestreo--vacio">Sin muestreo registrado</div>
                     )}
                     {programa?.estado === 'pausado' ? (
                       <div className="wk-prov-pausa-info">
@@ -416,10 +418,12 @@ export default function ProgramaCalendarioView({
                               ))}
                             </div>
                           )}
-                          {formatMuestreoResumen(it) && (
+                          {formatMuestreoResumen(it) ? (
                             <div className="cal-detail-card-muestreo">
                               Últ. muestreo{formatMuestreoFecha(it.muestreoFecha, 'long') ? ` ${formatMuestreoFecha(it.muestreoFecha, 'long')}` : ''}: {formatMuestreoResumen(it)}
                             </div>
+                          ) : (
+                            <div className="cal-detail-card-muestreo cal-detail-card-muestreo--vacio">Sin muestreo registrado</div>
                           )}
                         </div>
                         <div className="cal-detail-card-count">
