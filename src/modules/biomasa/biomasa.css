@@ -394,6 +394,25 @@
 .disponibilidad-state-group--danger { border-left-color: #ef4444; }
 .disponibilidad-state-group--muted { border-left-color: #64748b; }
 
+.disponibilidad-state-group-toggle {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.disponibilidad-state-group-toggle:hover {
+  background: #f8fafc;
+}
+
+.disponibilidad-state-group-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
 .disponibilidad-state-group-header {
   display: flex;
   align-items: center;
@@ -402,12 +421,27 @@
   padding: 14px 16px 9px;
 }
 
-.disponibilidad-state-group-header strong {
+.disponibilidad-state-group-total {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.disponibilidad-state-group-total strong {
   color: var(--color-text);
   font-size: 17px;
 }
 
-.disponibilidad-state-group > .disponibilidad-bar-track {
+.disponibilidad-state-group-total svg {
+  color: var(--color-text-muted);
+  transition: transform 160ms ease;
+}
+
+.disponibilidad-state-group.is-open .disponibilidad-state-group-total svg {
+  transform: rotate(180deg);
+}
+
+.disponibilidad-state-group-toggle > .disponibilidad-bar-track {
   margin: 0 16px 13px;
 }
 
