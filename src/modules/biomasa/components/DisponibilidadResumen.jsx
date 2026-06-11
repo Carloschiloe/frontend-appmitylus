@@ -27,7 +27,7 @@ export default function DisponibilidadResumen({ items, mes, estadoFiltro, onEdit
   });
   const maxTons = Math.max(...groups.map((group) => group.tons), 1);
   const total = groups.reduce((sum, group) => sum + group.tons, 0);
-  const defaultOpenState = estadoFiltro || groups.find((group) => group.tons > 0)?.value || null;
+  const defaultOpenState = estadoFiltro || null;
   const [openStates, setOpenStates] = useState(() => new Set(defaultOpenState ? [defaultOpenState] : []));
 
   useEffect(() => {
