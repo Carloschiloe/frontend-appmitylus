@@ -679,6 +679,247 @@
   text-align: center;
 }
 
+.disponibilidad-analysis {
+  display: grid;
+  gap: 18px;
+}
+
+.disponibilidad-analysis-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.disponibilidad-analysis-header h3 {
+  margin: 5px 0 0;
+  color: var(--color-text);
+}
+
+.disponibilidad-analysis-header p {
+  margin: 7px 0 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.disponibilidad-analysis-compare {
+  display: grid;
+  gap: 6px;
+  min-width: 170px;
+}
+
+.disponibilidad-analysis-compare > span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+}
+
+.disponibilidad-kpi small {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+}
+
+.is-positive { color: #047857; }
+.is-negative { color: #dc2626; }
+
+.disponibilidad-product-cards {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.disponibilidad-product-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.disponibilidad-product-card:hover,
+.disponibilidad-product-card.is-active {
+  border-color: #60a5fa;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.12);
+  transform: translateY(-1px);
+}
+
+.disponibilidad-product-card.is-active {
+  background: #eff6ff;
+}
+
+.disponibilidad-product-card span {
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+}
+
+.disponibilidad-product-card strong {
+  color: var(--color-text);
+  font-size: 18px;
+}
+
+.disponibilidad-analysis-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.disponibilidad-analysis-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.disponibilidad-analysis-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+}
+
+.disponibilidad-analysis-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.disponibilidad-analysis-swatch--info,
+.disponibilidad-analysis-segment--info { background: #3b82f6; }
+.disponibilidad-analysis-swatch--warning,
+.disponibilidad-analysis-segment--warning { background: #f59e0b; }
+.disponibilidad-analysis-swatch--success,
+.disponibilidad-analysis-segment--success { background: #10b981; }
+.disponibilidad-analysis-swatch--danger,
+.disponibilidad-analysis-segment--danger { background: #ef4444; }
+.disponibilidad-analysis-swatch--muted,
+.disponibilidad-analysis-segment--muted { background: #64748b; }
+.disponibilidad-analysis-swatch--comparison { background: #c4b5fd; }
+
+.disponibilidad-analysis-tooltip {
+  display: grid;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-md);
+  background: #eff6ff;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.disponibilidad-analysis-tooltip strong {
+  color: var(--color-text);
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+.disponibilidad-analysis-tooltip div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+}
+
+.disponibilidad-analysis-tooltip p {
+  margin: 3px 0 0;
+  color: var(--color-text);
+  font-weight: var(--weight-bold);
+}
+
+.disponibilidad-analysis-chart-scroll {
+  overflow-x: auto;
+}
+
+.disponibilidad-analysis-chart {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(64px, 1fr));
+  gap: 8px;
+  min-width: 900px;
+  height: 330px;
+  padding: 20px 4px 4px;
+  border-bottom: 1px solid var(--color-border);
+  background: repeating-linear-gradient(to top, transparent 0, transparent 74px, #f1f5f9 75px);
+}
+
+.disponibilidad-analysis-month {
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  gap: 5px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline-offset: 3px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.disponibilidad-analysis-month:hover {
+  background: rgba(239, 246, 255, 0.65);
+}
+
+.disponibilidad-analysis-month strong {
+  color: var(--color-text);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.disponibilidad-analysis-bars {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 4px;
+  height: 265px;
+}
+
+.disponibilidad-analysis-stack {
+  display: flex;
+  flex: 0 0 24px;
+  flex-direction: column-reverse;
+  min-height: 2px;
+  overflow: hidden;
+  border-radius: 5px 5px 0 0;
+  background: #e2e8f0;
+}
+
+.disponibilidad-analysis-segment {
+  min-height: 2px;
+}
+
+.disponibilidad-analysis-comparison-bar {
+  flex: 0 0 8px;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: repeating-linear-gradient(45deg, #8b5cf6, #8b5cf6 3px, #c4b5fd 3px, #c4b5fd 6px);
+}
+
+.disponibilidad-comparison-table {
+  min-width: 620px;
+}
+
+.disponibilidad-comparison-table th:not(:first-child),
+.disponibilidad-comparison-table td:not(:first-child) {
+  text-align: right;
+}
+
 .disponibilidad-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -702,6 +943,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .disponibilidad-product-cards {
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
+  }
+
   .disponibilidad-state-record {
     grid-template-columns: minmax(200px, 1fr) minmax(120px, auto) auto;
   }
@@ -723,7 +968,8 @@
   }
 
   .disponibilidad-flow-note,
-  .disponibilidad-summary-header {
+  .disponibilidad-summary-header,
+  .disponibilidad-analysis-header {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -734,8 +980,13 @@
 
   .disponibilidad-kpi-grid,
   .disponibilidad-filter-card,
-  .disponibilidad-form-grid {
+  .disponibilidad-form-grid,
+  .disponibilidad-product-cards {
     grid-template-columns: 1fr;
+  }
+
+  .disponibilidad-analysis-compare {
+    width: 100%;
   }
 
   .disponibilidad-totals-summary {

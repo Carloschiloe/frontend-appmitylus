@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, BarChart3, CalendarRange, List, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
+import { ArrowRight, BarChart3, CalendarRange, ChartNoAxesCombined, List, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { crearDisponibilidad, editarDisponibilidad, getDisponibilidades } from '../../../api/api-mmpp';
 import { useAuth } from '../../../context/AuthContext';
@@ -16,6 +16,7 @@ import {
   optionLabel,
 } from '../disponibilidad.constants';
 import DisponibilidadModal from './DisponibilidadModal';
+import DisponibilidadAnalisisGrafico from './DisponibilidadAnalisisGrafico';
 import DisponibilidadProyeccionAnual from './DisponibilidadProyeccionAnual';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 import DisponibilidadResumen from './DisponibilidadResumen';
@@ -26,8 +27,8 @@ const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((option) => option.valu
 const filterDisponibilidades = (sourceItems, filters) => {
   const providerQuery = filters.proveedor.trim().toLowerCase();
   return sourceItems.filter((item) => {
-    const providerName = String(item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '').toLowerCase();
-    return (!providerQuery || providerName.includes(providerQuery))
+    const identity = `${item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || ''} ${item.contactoNombre || ''} ${item.contactoTelefono || ''}`.toLowerCase();
+    return (!providerQuery || identity.includes(providerQuery))
       && (!filters.producto || (item.producto || 'sin_definir') === filters.producto)
       && (!filters.estado || (item.estado || 'disponible') === filters.estado);
   });
@@ -45,6 +46,9 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [annualItems, setAnnualItems] = useState([]);
   const [annualLoading, setAnnualLoading] = useState(false);
   const [annualYear, setAnnualYear] = useState(() => String(mes).slice(0, 4));
+  const [comparisonYear, setComparisonYear] = useState('');
+  const [comparisonItems, setComparisonItems] = useState([]);
+  const [comparisonLoading, setComparisonLoading] = useState(false);
   const [annualReloadKey, setAnnualReloadKey] = useState(0);
   const [filters, setFilters] = useState({ proveedor: '', producto: '', estado: '' });
 
@@ -65,7 +69,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   }, [addToast]);
 
   useEffect(() => {
-    if (activeTab !== 'anual' || !/^\d{4}$/.test(annualYear)) return undefined;
+    if (!['anual', 'analisis'].includes(activeTab) || !/^\d{4}$/.test(annualYear)) return undefined;
     let active = true;
     setAnnualLoading(true);
     getDisponibilidades({ from: `${annualYear}-01`, to: `${annualYear}-12` })
@@ -83,8 +87,36 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     };
   }, [activeTab, addToast, annualReloadKey, annualYear]);
 
+  useEffect(() => {
+    if (activeTab !== 'analisis' || !/^\d{4}$/.test(comparisonYear) || comparisonYear === annualYear) {
+      setComparisonItems([]);
+      setComparisonLoading(false);
+      return undefined;
+    }
+    let active = true;
+    setComparisonLoading(true);
+    getDisponibilidades({ from: `${comparisonYear}-01`, to: `${comparisonYear}-12` })
+      .then((response) => {
+        if (active) setComparisonItems(response);
+      })
+      .catch((error) => {
+        if (active) addToast({ title: 'No se pudo cargar la comparación', message: error.message || 'Intenta nuevamente.', type: 'warning' });
+      })
+      .finally(() => {
+        if (active) setComparisonLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [activeTab, addToast, annualReloadKey, annualYear, comparisonYear]);
+
   const filteredItems = useMemo(() => filterDisponibilidades(items, filters), [filters, items]);
   const filteredAnnualItems = useMemo(() => filterDisponibilidades(annualItems, filters), [annualItems, filters]);
+  const filteredComparisonItems = useMemo(() => filterDisponibilidades(comparisonItems, filters), [comparisonItems, filters]);
+  const analysisBaseItems = useMemo(
+    () => filterDisponibilidades(annualItems, { ...filters, producto: '' }),
+    [annualItems, filters]
+  );
   const listedTotals = useMemo(() => buildDisponibilidadTotals(filteredItems), [filteredItems]);
 
   const providerDirectory = useMemo(
@@ -160,18 +192,19 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         <button type="button" className={`mx-toggle-btn ${activeTab === 'listado' ? 'active' : ''}`} onClick={() => setActiveTab('listado')}><List size={15} /> Listado</button>
         <button type="button" className={`mx-toggle-btn ${activeTab === 'resumen' ? 'active' : ''}`} onClick={() => setActiveTab('resumen')}><BarChart3 size={15} /> Resumen mensual</button>
         <button type="button" className={`mx-toggle-btn ${activeTab === 'anual' ? 'active' : ''}`} onClick={() => setActiveTab('anual')}><CalendarRange size={15} /> Proyección anual</button>
+        <button type="button" className={`mx-toggle-btn ${activeTab === 'analisis' ? 'active' : ''}`} onClick={() => setActiveTab('analisis')}><ChartNoAxesCombined size={15} /> Análisis gráfico</button>
       </div>
 
       <div className="disponibilidad-filter-card">
         <label className="disponibilidad-filter disponibilidad-filter--month">
-          <span>{activeTab === 'anual' ? 'Año' : 'Mes/Año'}</span>
-          {activeTab === 'anual'
+          <span>{['anual', 'analisis'].includes(activeTab) ? 'Año principal' : 'Mes/Año'}</span>
+          {['anual', 'analisis'].includes(activeTab)
             ? <input className="mx-input" type="number" min="2000" max="2100" value={annualYear} onChange={(event) => setAnnualYear(event.target.value)} />
             : <input className="mx-input" type="month" value={mes} onChange={(event) => setMes(event.target.value)} />}
         </label>
         <label className="disponibilidad-filter disponibilidad-filter--search">
-          <span>Proveedor</span>
-          <div className="disponibilidad-search-input"><Search size={16} /><input value={filters.proveedor} onChange={(event) => setFilters((current) => ({ ...current, proveedor: event.target.value }))} placeholder="Buscar proveedor" /></div>
+          <span>Proveedor / contacto</span>
+          <div className="disponibilidad-search-input"><Search size={16} /><input value={filters.proveedor} onChange={(event) => setFilters((current) => ({ ...current, proveedor: event.target.value }))} placeholder="Buscar proveedor o contacto" /></div>
         </label>
         <label className="disponibilidad-filter">
           <span>Producto</span>
@@ -187,7 +220,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             {DISPONIBILIDAD_ESTADOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
         </label>
-        <button type="button" className="mx-btn mx-btn-outline disponibilidad-refresh" onClick={() => activeTab === 'anual' ? setAnnualReloadKey((current) => current + 1) : reload()}><RotateCcw size={15} /> Actualizar</button>
+        <button type="button" className="mx-btn mx-btn-outline disponibilidad-refresh" onClick={() => ['anual', 'analisis'].includes(activeTab) ? setAnnualReloadKey((current) => current + 1) : reload()}><RotateCcw size={15} /> Actualizar</button>
       </div>
 
       {activeTab === 'listado' && (
@@ -245,6 +278,20 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
 
       {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} estadoFiltro={filters.estado} onEdit={openEdit} />}
       {activeTab === 'anual' && <DisponibilidadProyeccionAnual items={filteredAnnualItems} year={annualYear} loading={annualLoading} onEdit={openEdit} />}
+      {activeTab === 'analisis' && (
+        <DisponibilidadAnalisisGrafico
+          items={filteredAnnualItems}
+          baseItems={analysisBaseItems}
+          comparisonItems={filteredComparisonItems}
+          year={annualYear}
+          comparisonYear={comparisonYear}
+          onComparisonYearChange={setComparisonYear}
+          productFilter={filters.producto}
+          onProductFilterChange={(producto) => setFilters((current) => ({ ...current, producto }))}
+          loading={annualLoading}
+          comparisonLoading={comparisonLoading}
+        />
+      )}
 
       <DisponibilidadModal
         open={modalOpen}
