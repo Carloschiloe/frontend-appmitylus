@@ -159,6 +159,28 @@
   font-weight: var(--weight-bold);
 }
 
+.disponibilidad-provider-cell {
+  display: grid;
+  gap: 3px;
+  min-width: 190px;
+}
+
+.disponibilidad-provider-cell strong {
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.disponibilidad-provider-cell span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.disponibilidad-provider-cell--contact-only strong {
+  color: var(--color-text-muted);
+}
+
 .disponibilidad-observation {
   max-width: 210px;
   overflow: hidden;
@@ -226,6 +248,19 @@
   color: var(--color-text);
 }
 
+.disponibilidad-search-clear {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  cursor: pointer;
+}
+
 .disponibilidad-provider-results {
   display: grid;
   max-height: 225px;
@@ -261,6 +296,7 @@
 }
 
 .disponibilidad-provider-selected,
+.disponibilidad-contact-selected,
 .disponibilidad-readonly-field,
 .disponibilidad-initial-state {
   display: flex;
@@ -277,6 +313,23 @@
 
 .disponibilidad-provider-selected {
   margin-top: 8px;
+}
+
+.disponibilidad-contact-selected {
+  margin-top: 8px;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.disponibilidad-form-error {
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .disponibilidad-readonly-field {

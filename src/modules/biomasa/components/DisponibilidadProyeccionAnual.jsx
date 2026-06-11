@@ -10,6 +10,7 @@ import {
 } from '../disponibilidad.constants';
 import { fmtTons } from '../utils/programaCalculos';
 import { mesLabel } from '../utils/fechasChile';
+import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((state) => state.value === value) || DISPONIBILIDAD_ESTADOS[0];
 const itemTons = (item) => Number(item.tons || item.tonsDisponible || 0);
@@ -124,7 +125,7 @@ export default function DisponibilidadProyeccionAnual({ items, year, loading, on
                           const meta = stateMeta(item.estado || 'disponible');
                           return (
                             <tr key={item._id}>
-                              <td className="disponibilidad-provider">{item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || 'Sin proveedor'}</td>
+                              <td className="disponibilidad-provider"><DisponibilidadProviderCell item={item} /></td>
                               <td>{item.centroCodigo || 'Sin centro'}</td>
                               <td className="disponibilidad-tons">{fmtTons(itemTons(item))}</td>
                               <td>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>

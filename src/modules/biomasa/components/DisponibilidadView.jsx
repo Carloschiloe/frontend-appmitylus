@@ -10,11 +10,13 @@ import {
   DISPONIBILIDAD_ESTADOS,
   DISPONIBILIDAD_ORIGENES,
   DISPONIBILIDAD_PRODUCTOS,
+  buildDisponibilidadContacts,
   buildDisponibilidadProviders,
   optionLabel,
 } from '../disponibilidad.constants';
 import DisponibilidadModal from './DisponibilidadModal';
 import DisponibilidadProyeccionAnual from './DisponibilidadProyeccionAnual';
+import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 import DisponibilidadResumen from './DisponibilidadResumen';
 
 const normalizeItems = (response) => Array.isArray(response) ? response : (response?.items || []);
@@ -47,7 +49,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
-      apiClient.get('/contactos?conEmpresa=1', { signal: controller.signal }),
+      apiClient.get('/contactos', { signal: controller.signal }),
       apiClient.get('/centros', { signal: controller.signal }),
     ]).then(([providersResponse, centersResponse]) => {
       setProveedores(normalizeItems(providersResponse));
@@ -86,6 +88,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     () => buildDisponibilidadProviders(proveedores, centros),
     [centros, proveedores]
   );
+  const contactDirectory = useMemo(() => buildDisponibilidadContacts(proveedores), [proveedores]);
 
   const responsableNombre = user?.nombre || user?.name || user?.username || user?.email || '';
 
@@ -123,7 +126,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       else await reload();
       addToast({
         title: modalItem ? 'Disponibilidad actualizada' : 'Disponibilidad registrada',
-        message: `${payload.proveedorNombre}: ${fmtTons(payload.tonsDisponible)} para ${mesLabel(payload.mesKey)}.`,
+        message: `${payload.proveedorNombre || payload.contactoNombre}: ${fmtTons(payload.tonsDisponible)} para ${mesLabel(payload.mesKey)}.`,
         type: 'success',
       });
     } catch (error) {
@@ -208,7 +211,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                 const meta = stateMeta(item.estado || 'disponible');
                 return (
                   <tr key={item._id}>
-                    <td className="disponibilidad-provider">{item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || 'Sin proveedor'}</td>
+                    <td className="disponibilidad-provider"><DisponibilidadProviderCell item={item} /></td>
                     <td>{item.centroCodigo || 'Sin centro'}</td>
                     <td>{mesLabel(item.mesKey)}</td>
                     <td className="disponibilidad-tons">{fmtTons(item.tons || item.tonsDisponible || 0)}</td>
@@ -243,6 +246,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         open={modalOpen}
         item={modalItem}
         proveedores={providerDirectory}
+        contactos={contactDirectory}
         defaultMes={mes}
         responsableNombre={responsableNombre}
         saving={saving}

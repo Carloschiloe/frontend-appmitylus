@@ -4,12 +4,18 @@ import {
   DISPONIBILIDAD_ESTADOS,
   DISPONIBILIDAD_ORIGENES,
   DISPONIBILIDAD_PRODUCTOS,
+  filterDisponibilidadContacts,
   filterDisponibilidadProviders,
+  hasDisponibilidadIdentity,
 } from '../disponibilidad.constants';
 
 const EMPTY_FORM = {
   contactoId: '',
+  contactoNombre: '',
+  contactoTelefono: '',
+  contactoEmail: '',
   proveedorKey: '',
+  proveedorNombre: '',
   centroId: '',
   mesKey: '',
   tonsDisponible: '',
@@ -26,6 +32,7 @@ export default function DisponibilidadModal({
   open,
   item,
   proveedores,
+  contactos,
   defaultMes,
   responsableNombre,
   saving,
@@ -34,12 +41,18 @@ export default function DisponibilidadModal({
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [providerSearch, setProviderSearch] = useState('');
+  const [contactSearch, setContactSearch] = useState('');
+  const [validationError, setValidationError] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setForm(item ? {
       contactoId: String(item.contactoId || ''),
-      proveedorKey: item.proveedorKey || '',
+      contactoNombre: item.contactoNombre || '',
+      contactoTelefono: item.contactoTelefono || item.contactoSnapshot?.telefono || '',
+      contactoEmail: item.contactoEmail || item.contactoSnapshot?.email || '',
+      proveedorKey: item.proveedorKey || item.empresaKey || '',
+      proveedorNombre: item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '',
       centroId: String(item.centroId || ''),
       mesKey: item.mesKey || defaultMes,
       tonsDisponible: item.tons ?? item.tonsDisponible ?? '',
@@ -49,25 +62,28 @@ export default function DisponibilidadModal({
       observacion: item.observacion || '',
       motivo: item.motivo || '',
     } : { ...EMPTY_FORM, mesKey: defaultMes });
-    setProviderSearch(item?.proveedorNombreNorm || item?.proveedorNombre || '');
+    setProviderSearch(item?.proveedorNombreNorm || item?.proveedorNombre || item?.empresaNombre || '');
+    setContactSearch(item?.contactoNombre || '');
+    setValidationError('');
   }, [defaultMes, item, open]);
 
   const selectedProvider = useMemo(
-    () => proveedores.find((provider) =>
-      (form.proveedorKey && provider.proveedorKey === String(form.proveedorKey).toLowerCase())
-      || (form.contactoId && String(provider.contactoId) === form.contactoId)
-    ),
-    [form.contactoId, form.proveedorKey, proveedores]
+    () => proveedores.find((provider) => form.proveedorKey && provider.proveedorKey === String(form.proveedorKey).toLowerCase()),
+    [form.proveedorKey, proveedores]
   );
-
   const filteredProviders = useMemo(
     () => filterDisponibilidadProviders(proveedores, providerSearch),
     [providerSearch, proveedores]
   );
+  const filteredContacts = useMemo(
+    () => filterDisponibilidadContacts(contactos, contactSearch),
+    [contactSearch, contactos]
+  );
 
   const centerOptions = selectedProvider?.centros || [];
   const selectedCenter = centerOptions.find((center) => String(center._id) === form.centroId);
-  const showProviderResults = !selectedProvider || providerSearch.trim() !== selectedProvider.proveedorNombre;
+  const showProviderResults = providerSearch.trim() && providerSearch.trim() !== form.proveedorNombre;
+  const showContactResults = contactSearch.trim() && contactSearch.trim() !== form.contactoNombre;
 
   if (!open) return null;
 
@@ -77,30 +93,53 @@ export default function DisponibilidadModal({
     ...((field === 'estado' && !['perdido', 'descartado'].includes(value)) ? { motivo: '' } : {}),
   }));
 
+  const clearProvider = () => {
+    setProviderSearch('');
+    setForm((current) => ({ ...current, proveedorKey: '', proveedorNombre: '', centroId: '' }));
+  };
+
   const selectProvider = (provider) => {
     setProviderSearch(provider.proveedorNombre);
     setForm((current) => ({
       ...current,
-      contactoId: String(provider.contactoId || ''),
       proveedorKey: provider.proveedorKey,
+      proveedorNombre: provider.proveedorNombre,
       centroId: '',
     }));
+    setValidationError('');
+  };
+
+  const clearContact = () => {
+    setContactSearch('');
+    setForm((current) => ({ ...current, contactoId: '', contactoNombre: '', contactoTelefono: '', contactoEmail: '' }));
+  };
+
+  const selectContact = (contact) => {
+    setContactSearch(contact.contactoNombre);
+    setForm((current) => ({
+      ...current,
+      contactoId: contact.contactoId,
+      contactoNombre: contact.contactoNombre,
+      contactoTelefono: contact.contactoTelefono,
+      contactoEmail: contact.contactoEmail,
+    }));
+    setValidationError('');
   };
 
   const submit = (event) => {
     event.preventDefault();
-    if (!selectedProvider && !item) return;
+    if (!hasDisponibilidadIdentity(form)) {
+      setValidationError('Debes seleccionar un proveedor o contacto.');
+      return;
+    }
     onSave({
       ...form,
       estado: item ? form.estado : 'disponible',
-      proveedorKey: selectedProvider?.proveedorKey || item?.proveedorKey || '',
-      proveedorNombre: selectedProvider?.proveedorNombre || item?.proveedorNombre || '',
-      empresaKey: selectedProvider?.proveedorKey || item?.empresaKey || '',
-      empresaNombre: selectedProvider?.proveedorNombre || item?.empresaNombre || '',
-      contactoNombre: selectedProvider?.contactoNombre || item?.contactoNombre || '',
-      centroCodigo: selectedCenter ? getCenterCode(selectedCenter) : item?.centroCodigo || '',
-      comuna: selectedCenter?.comuna || item?.comuna || '',
-      areaCodigo: selectedCenter?.areaCodigo || selectedCenter?.area || item?.areaCodigo || '',
+      empresaKey: form.proveedorKey,
+      empresaNombre: form.proveedorNombre,
+      centroCodigo: selectedCenter ? getCenterCode(selectedCenter) : (form.centroId ? item?.centroCodigo || '' : ''),
+      comuna: selectedCenter?.comuna || (form.centroId ? item?.comuna || '' : ''),
+      areaCodigo: selectedCenter?.areaCodigo || selectedCenter?.area || (form.centroId ? item?.areaCodigo || '' : ''),
       tonsDisponible: Number(form.tonsDisponible),
     });
   };
@@ -111,7 +150,7 @@ export default function DisponibilidadModal({
         <div className="mx-modal-header">
           <div>
             <h3 className="mx-modal-title">{item ? 'Editar disponibilidad' : 'Registrar disponibilidad'}</h3>
-            <p className="disponibilidad-modal-subtitle">Registra biomasa futura informada por un proveedor.</p>
+            <p className="disponibilidad-modal-subtitle">Registra biomasa futura informada por un proveedor, contacto o ambos.</p>
           </div>
           <button type="button" className="mx-modal-close" onClick={onClose} aria-label="Cerrar"><X size={18} /></button>
         </div>
@@ -119,37 +158,75 @@ export default function DisponibilidadModal({
         <form className="mx-form" onSubmit={submit}>
           <div className="mx-modal-body disponibilidad-form-grid">
             <div className="mx-form-group disponibilidad-field-wide">
-              <span className="mx-form-label">Proveedor</span>
+              <span className="mx-form-label">Proveedor opcional</span>
               <div className="disponibilidad-provider-search">
                 <Search size={18} />
                 <input
                   value={providerSearch}
                   onChange={(event) => {
                     setProviderSearch(event.target.value);
-                    if (selectedProvider && event.target.value.trim() !== selectedProvider.proveedorNombre) {
-                      setForm((current) => ({ ...current, contactoId: '', proveedorKey: '', centroId: '' }));
+                    if (form.proveedorNombre && event.target.value.trim() !== form.proveedorNombre) {
+                      setForm((current) => ({ ...current, proveedorKey: '', proveedorNombre: '', centroId: '' }));
                     }
                   }}
-                  placeholder="Buscar empresa, contacto o comuna..."
-                  required
+                  placeholder="Buscar empresa o comuna..."
                 />
+                {form.proveedorNombre && <button type="button" className="disponibilidad-search-clear" onClick={clearProvider} aria-label="Quitar proveedor"><X size={15} /></button>}
               </div>
               {showProviderResults && (
                 <div className="disponibilidad-provider-results">
                   {filteredProviders.length === 0 ? (
-                    <div className="disponibilidad-inline-empty">No encontramos coincidencias.</div>
+                    <div className="disponibilidad-inline-empty">No encontramos proveedores.</div>
                   ) : filteredProviders.map((provider) => (
                     <button key={provider.id} type="button" className="disponibilidad-provider-option" onClick={() => selectProvider(provider)}>
                       <strong>{provider.proveedorNombre}</strong>
-                      <span>{provider.contactoNombre || 'Sin contacto'} · {provider.comuna || 'Sin comuna'} · {provider.centros.length} centro{provider.centros.length === 1 ? '' : 's'}</span>
+                      <span>{provider.comuna || 'Sin comuna'} · {provider.centros.length} centro{provider.centros.length === 1 ? '' : 's'}</span>
                     </button>
                   ))}
                 </div>
               )}
-              {selectedProvider && (
-                <div className="disponibilidad-provider-selected"><CheckCircle2 size={16} /><span><strong>{selectedProvider.proveedorNombre}</strong> seleccionado</span></div>
+              {form.proveedorNombre && (
+                <div className="disponibilidad-provider-selected"><CheckCircle2 size={16} /><span><strong>{form.proveedorNombre}</strong> seleccionado</span></div>
               )}
             </div>
+
+            <div className="mx-form-group disponibilidad-field-wide">
+              <span className="mx-form-label">Contacto opcional</span>
+              <div className="disponibilidad-provider-search">
+                <Search size={18} />
+                <input
+                  value={contactSearch}
+                  onChange={(event) => {
+                    setContactSearch(event.target.value);
+                    if (form.contactoNombre && event.target.value.trim() !== form.contactoNombre) {
+                      setForm((current) => ({ ...current, contactoId: '', contactoNombre: '', contactoTelefono: '', contactoEmail: '' }));
+                    }
+                  }}
+                  placeholder="Buscar nombre, teléfono, email o empresa..."
+                />
+                {form.contactoNombre && <button type="button" className="disponibilidad-search-clear" onClick={clearContact} aria-label="Quitar contacto"><X size={15} /></button>}
+              </div>
+              {showContactResults && (
+                <div className="disponibilidad-provider-results">
+                  {filteredContacts.length === 0 ? (
+                    <div className="disponibilidad-inline-empty">No encontramos contactos.</div>
+                  ) : filteredContacts.map((contact) => (
+                    <button key={contact.id} type="button" className="disponibilidad-provider-option" onClick={() => selectContact(contact)}>
+                      <strong>{contact.contactoNombre}</strong>
+                      <span>{contact.contactoTelefono || contact.contactoEmail || 'Sin teléfono ni email'}{contact.proveedorNombre ? ` · ${contact.proveedorNombre}` : ' · Sin proveedor'}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {form.contactoNombre && (
+                <div className="disponibilidad-contact-selected">
+                  <UserRound size={16} />
+                  <span><strong>{form.contactoNombre}</strong>{form.contactoTelefono || form.contactoEmail ? ` · ${form.contactoTelefono || form.contactoEmail}` : ''}</span>
+                </div>
+              )}
+            </div>
+
+            {validationError && <div className="disponibilidad-form-error disponibilidad-field-wide">{validationError}</div>}
 
             <label className="mx-form-group">
               <span className="mx-form-label">Centro opcional</span>
@@ -204,7 +281,7 @@ export default function DisponibilidadModal({
 
             <label className="mx-form-group disponibilidad-field-wide">
               <span className="mx-form-label">Observación</span>
-              <textarea className="mx-input" rows={3} value={form.observacion} onChange={(event) => update('observacion', event.target.value)} placeholder="Información relevante entregada por el proveedor" />
+              <textarea className="mx-input" rows={3} value={form.observacion} onChange={(event) => update('observacion', event.target.value)} placeholder="Información relevante entregada por el proveedor o contacto" />
             </label>
 
             {['perdido', 'descartado'].includes(form.estado) && (
@@ -216,7 +293,7 @@ export default function DisponibilidadModal({
           </div>
           <div className="mx-modal-footer">
             <button type="button" className="mx-btn mx-btn-outline" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="mx-btn mx-btn-primary" disabled={saving || (!selectedProvider && !item)}>{saving ? 'Guardando...' : item ? 'Guardar cambios' : 'Registrar disponibilidad'}</button>
+            <button type="submit" className="mx-btn mx-btn-primary" disabled={saving}>{saving ? 'Guardando...' : item ? 'Guardar cambios' : 'Registrar disponibilidad'}</button>
           </div>
         </form>
       </div>

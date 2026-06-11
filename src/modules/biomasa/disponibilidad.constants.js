@@ -25,6 +25,11 @@ export const optionLabel = (options, value) => (
   options.find((option) => option.value === value)?.label || value || 'Sin definir'
 );
 
+export const hasDisponibilidadIdentity = (item = {}) => Boolean(
+  String(item.proveedorKey || item.proveedorNombre || item.empresaKey || item.empresaNombre || '').trim()
+  || String(item.contactoId || item.contactoNombre || '').trim()
+);
+
 const emptyStateTotals = () => Object.fromEntries(DISPONIBILIDAD_ESTADOS.map((state) => [state.value, 0]));
 
 export function buildDisponibilidadAnnualProjection(items = [], year) {
@@ -80,7 +85,7 @@ export function buildDisponibilidadProviders(contactos = [], centros = []) {
 
   contactos.forEach((contacto, index) => {
     const proveedorKey = providerKeyOf(contacto);
-    if (!proveedorKey) return;
+    if (!proveedorKey || !String(contacto.proveedorNombre || contacto.empresaNombre || '').trim()) return;
     providers.set(proveedorKey, {
       id: `contact-${contacto._id || index}`,
       contactoId: contacto._id || '',
@@ -112,12 +117,36 @@ export function buildDisponibilidadProviders(contactos = [], centros = []) {
   return Array.from(providers.values()).sort((a, b) => a.proveedorNombre.localeCompare(b.proveedorNombre));
 }
 
+export function buildDisponibilidadContacts(contactos = []) {
+  return contactos
+    .filter((contacto) => String(contacto.contactoNombre || '').trim())
+    .map((contacto, index) => ({
+      id: String(contacto._id || index),
+      contactoId: String(contacto._id || ''),
+      contactoNombre: contacto.contactoNombre || '',
+      contactoTelefono: contacto.contactoTelefono || '',
+      contactoEmail: contacto.contactoEmail || '',
+      proveedorNombre: contacto.proveedorNombre || contacto.empresaNombre || '',
+    }))
+    .sort((a, b) => a.contactoNombre.localeCompare(b.contactoNombre));
+}
+
 export function filterDisponibilidadProviders(providers = [], search = '', limit = 8) {
   const query = String(search || '').trim().toLowerCase();
   return providers
     .filter((provider) => {
       if (!query) return true;
       return `${provider.proveedorNombre} ${provider.contactoNombre} ${provider.comuna}`.toLowerCase().includes(query);
+    })
+    .slice(0, limit);
+}
+
+export function filterDisponibilidadContacts(contacts = [], search = '', limit = 8) {
+  const query = String(search || '').trim().toLowerCase();
+  return contacts
+    .filter((contact) => {
+      if (!query) return true;
+      return `${contact.contactoNombre} ${contact.contactoTelefono} ${contact.contactoEmail} ${contact.proveedorNombre}`.toLowerCase().includes(query);
     })
     .slice(0, limit);
 }
