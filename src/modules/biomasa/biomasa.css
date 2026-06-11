@@ -408,6 +408,36 @@
 .disponibilidad-bar-fill--danger { background: #ef4444; }
 .disponibilidad-bar-fill--muted { background: #64748b; }
 
+.disponibilidad-summary-detail {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.disponibilidad-summary-detail-header h4 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 15px;
+}
+
+.disponibilidad-summary-detail-header p {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.disponibilidad-summary-table {
+  min-width: 1180px;
+}
+
+.disponibilidad-summary-table th,
+.disponibilidad-summary-table td {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
 .disponibilidad-annual {
   display: grid;
   gap: 18px;
