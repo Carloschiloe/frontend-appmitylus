@@ -146,6 +146,62 @@
   min-width: 0;
 }
 
+.disponibilidad-totals-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.disponibilidad-summary-card > .disponibilidad-totals-summary {
+  margin-top: 16px;
+}
+
+.disponibilidad-totals-main {
+  display: grid;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.disponibilidad-totals-main span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+}
+
+.disponibilidad-totals-main strong {
+  color: var(--color-primary);
+  font-size: 20px;
+}
+
+.disponibilidad-totals-states {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.disponibilidad-totals-chip {
+  padding: 5px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.disponibilidad-totals-chip--info { border-color: #bfdbfe; background: #eff6ff; }
+.disponibilidad-totals-chip--warning { border-color: #fde68a; background: #fffbeb; }
+.disponibilidad-totals-chip--success { border-color: #a7f3d0; background: #ecfdf5; }
+.disponibilidad-totals-chip--danger { border-color: #fecaca; background: #fef2f2; }
+.disponibilidad-totals-chip--muted { border-color: #cbd5e1; background: #f8fafc; }
+
 .disponibilidad-table-scroll {
   overflow-x: auto;
 }
@@ -680,6 +736,15 @@
   .disponibilidad-filter-card,
   .disponibilidad-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .disponibilidad-totals-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .disponibilidad-totals-states {
+    justify-content: flex-start;
   }
 
   .disponibilidad-kpi-grid--month-detail {

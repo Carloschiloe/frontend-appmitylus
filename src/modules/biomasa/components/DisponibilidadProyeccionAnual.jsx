@@ -11,6 +11,7 @@ import {
 import { fmtTons } from '../utils/programaCalculos';
 import { mesLabel } from '../utils/fechasChile';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
+import ResumenTotalesDisponibilidad from './ResumenTotalesDisponibilidad';
 
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((state) => state.value === value) || DISPONIBILIDAD_ESTADOS[0];
 const itemTons = (item) => Number(item.tons || item.tonsDisponible || 0);
@@ -82,6 +83,7 @@ export default function DisponibilidadProyeccionAnual({ items, year, loading, on
           </table>
         </div>
       </div>
+      <ResumenTotalesDisponibilidad label="Total anual" total={annualTotal} totalsByState={totalsByState} />
       {loading && <div className="disponibilidad-annual-loading">Cargando proyección anual...</div>}
       {!loading && items.length === 0 && <div className="disponibilidad-annual-empty">No hay disponibilidades para los filtros seleccionados durante {year}.</div>}
 
@@ -149,6 +151,7 @@ export default function DisponibilidadProyeccionAnual({ items, year, loading, on
               ) : (
                 <div className="disponibilidad-month-empty">No hay disponibilidad registrada para este mes.</div>
               )}
+              <ResumenTotalesDisponibilidad label="Total mes" total={selectedDetail.total} totalsByState={selectedDetail.totalsByState} />
             </div>
           </div>
         </div>

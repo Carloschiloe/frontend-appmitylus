@@ -12,12 +12,14 @@ import {
   DISPONIBILIDAD_PRODUCTOS,
   buildDisponibilidadContacts,
   buildDisponibilidadProviders,
+  buildDisponibilidadTotals,
   optionLabel,
 } from '../disponibilidad.constants';
 import DisponibilidadModal from './DisponibilidadModal';
 import DisponibilidadProyeccionAnual from './DisponibilidadProyeccionAnual';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 import DisponibilidadResumen from './DisponibilidadResumen';
+import ResumenTotalesDisponibilidad from './ResumenTotalesDisponibilidad';
 
 const normalizeItems = (response) => Array.isArray(response) ? response : (response?.items || []);
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((option) => option.value === value) || DISPONIBILIDAD_ESTADOS[0];
@@ -83,6 +85,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
 
   const filteredItems = useMemo(() => filterDisponibilidades(items, filters), [filters, items]);
   const filteredAnnualItems = useMemo(() => filterDisponibilidades(annualItems, filters), [annualItems, filters]);
+  const listedTotals = useMemo(() => buildDisponibilidadTotals(filteredItems), [filteredItems]);
 
   const providerDirectory = useMemo(
     () => buildDisponibilidadProviders(proveedores, centros),
@@ -236,6 +239,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
           </table>
         </div>
       </div>
+      <ResumenTotalesDisponibilidad label="Total listado" {...listedTotals} />
       </>
       )}
 

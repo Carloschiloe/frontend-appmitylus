@@ -32,6 +32,20 @@ export const hasDisponibilidadIdentity = (item = {}) => Boolean(
 
 const emptyStateTotals = () => Object.fromEntries(DISPONIBILIDAD_ESTADOS.map((state) => [state.value, 0]));
 
+export function buildDisponibilidadTotals(items = []) {
+  const totalsByState = emptyStateTotals();
+
+  items.forEach((item) => {
+    const state = item.estado || 'disponible';
+    if (state in totalsByState) totalsByState[state] += Number(item.tons || item.tonsDisponible || 0);
+  });
+
+  return {
+    totalsByState,
+    total: Object.values(totalsByState).reduce((sum, tons) => sum + tons, 0),
+  };
+}
+
 export function buildDisponibilidadAnnualProjection(items = [], year) {
   const totalsByState = emptyStateTotals();
   const rows = Array.from({ length: 12 }, (_, index) => {
@@ -64,18 +78,7 @@ export function buildDisponibilidadAnnualProjection(items = [], year) {
 
 export function buildDisponibilidadMonthDetail(items = [], monthKey) {
   const monthItems = items.filter((item) => item.mesKey === monthKey);
-  const totalsByState = emptyStateTotals();
-
-  monthItems.forEach((item) => {
-    const state = item.estado || 'disponible';
-    if (state in totalsByState) totalsByState[state] += Number(item.tons || item.tonsDisponible || 0);
-  });
-
-  return {
-    items: monthItems,
-    totalsByState,
-    total: Object.values(totalsByState).reduce((sum, tons) => sum + tons, 0),
-  };
+  return { items: monthItems, ...buildDisponibilidadTotals(monthItems) };
 }
 
 const providerKeyOf = (item) => String(item?.proveedorKey || item?.proveedorNombre || item?.proveedor || '').trim().toLowerCase();
