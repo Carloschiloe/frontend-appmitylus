@@ -31,13 +31,51 @@
 .ayuda-flow-list strong { color: var(--color-text); font-size: .78rem; }
 .ayuda-flow-list small { margin-top: 2px; color: var(--color-text-muted); font-size: .66rem; line-height: 1.3; }
 .ayuda-flow-list > button > svg { color: var(--color-primary); }
-.ayuda-flow-stage { min-height: 310px; padding: 22px; border: 1px solid rgba(10,92,255,.14); border-radius: 16px; background: linear-gradient(145deg, #fff, rgba(10,92,255,.035)); box-shadow: var(--mx-shadow-card); }
+.ayuda-flow-stage { min-height: 440px; padding: 22px; border: 1px solid rgba(10,92,255,.14); border-radius: 16px; background: linear-gradient(145deg, #fff, rgba(10,92,255,.035)); box-shadow: var(--mx-shadow-card); }
 .ayuda-flow-progress { display: flex; align-items: center; gap: 12px; color: var(--color-primary); font-size: .69rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
 .ayuda-flow-progress > div { flex: 1; height: 4px; overflow: hidden; border-radius: 99px; background: rgba(10,92,255,.1); }
 .ayuda-flow-progress i { display: block; height: 100%; border-radius: inherit; background: var(--color-primary); transition: width .2s ease; }
-.ayuda-flow-visual { display: flex; align-items: center; justify-content: center; gap: 10px; height: 115px; margin: 20px 0; border: 1px dashed rgba(10,92,255,.25); border-radius: 13px; background: rgba(10,92,255,.045); color: var(--color-primary); font-size: .75rem; font-weight: 800; }
-.ayuda-flow-stage h3 { margin: 0; color: var(--color-text); font-size: 1.08rem; }
-.ayuda-flow-stage > p { margin: 7px 0 20px; color: var(--color-text-muted); font-size: .83rem; line-height: 1.5; }
+.ayuda-flow-visual { height: 240px; margin: 20px 0; overflow: hidden; border: 1px solid rgba(10,92,255,.18); border-radius: 15px; background: linear-gradient(145deg, rgba(10,92,255,.025), rgba(10,92,255,.08)); }
+.ayuda-tutorial-image, .ayuda-tutorial-mock, .ayuda-tutorial-fallback { width: 100%; height: 100%; }
+.ayuda-tutorial-image { display: block; object-fit: cover; }
+.ayuda-tutorial-fallback { display: grid; place-items: center; color: var(--color-primary); }
+.ayuda-tutorial-mock { display: flex; flex-direction: column; color: var(--color-text); background: #f7faff; }
+.ayuda-tutorial-window-bar { display: flex; align-items: center; gap: 5px; min-height: 29px; padding: 0 10px; border-bottom: 1px solid rgba(10,92,255,.12); background: #fff; }
+.ayuda-tutorial-window-bar i { width: 6px; height: 6px; border-radius: 50%; background: rgba(10,92,255,.24); }
+.ayuda-tutorial-window-bar span { margin-left: 5px; color: var(--color-text-muted); font-size: .58rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.ayuda-mock-sidebar { display: grid; align-content: center; gap: 7px; width: 47%; height: 100%; padding: 15px; background: linear-gradient(160deg, #031b4e, #064caf); }
+.ayuda-mock-brand { width: 55%; height: 8px; margin-bottom: 6px; border-radius: 99px; background: rgba(255,255,255,.34); }
+.ayuda-mock-sidebar span { padding: 7px 9px; border-radius: 7px; color: rgba(255,255,255,.64); font-size: .63rem; font-weight: 700; }
+.ayuda-mock-sidebar span.is-active { color: #fff; background: linear-gradient(135deg, #0a5cff, #12bfe8); box-shadow: 0 7px 18px rgba(10,92,255,.3); }
+.ayuda-mock-module, .ayuda-mock-centered, .ayuda-mock-actions, .ayuda-mock-upload, .ayuda-mock-search, .ayuda-mock-chips { display: flex; align-items: center; justify-content: center; flex: 1; gap: 12px; padding: 20px; }
+.ayuda-mock-module svg { color: var(--color-primary); }
+.ayuda-mock-module div { display: grid; gap: 4px; }
+.ayuda-mock-module strong { font-size: 1rem; }
+.ayuda-mock-module span { color: var(--color-text-muted); font-size: .68rem; }
+.ayuda-mock-centered button, .ayuda-mock-actions button { border: 0; border-radius: 8px; padding: 9px 14px; background: var(--color-primary); color: #fff; font-size: .68rem; font-weight: 800; box-shadow: 0 9px 20px rgba(10,92,255,.22); }
+.ayuda-mock-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: center; gap: 10px; flex: 1; padding: 18px; }
+.ayuda-mock-form label { display: grid; gap: 4px; color: var(--color-text-muted); font-size: .56rem; font-weight: 800; }
+.ayuda-mock-form label i { height: 20px; border: 1px solid rgba(10,92,255,.18); border-radius: 5px; background: #fff; }
+.ayuda-mock-summary, .ayuda-mock-timeline { display: grid; align-content: center; gap: 8px; flex: 1; padding: 22px; }
+.ayuda-mock-summary span, .ayuda-mock-timeline span { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid rgba(10,92,255,.12); border-radius: 7px; background: #fff; color: var(--color-text-muted); font-size: .62rem; font-weight: 700; }
+.ayuda-mock-summary i, .ayuda-mock-timeline i { width: 7px; height: 7px; border-radius: 50%; background: var(--color-primary); }
+.ayuda-mock-calendar { display: grid; place-items: center; align-content: center; gap: 14px; flex: 1; padding: 18px; }
+.ayuda-mock-calendar div { display: grid; grid-template-columns: repeat(5, 30px); gap: 6px; }
+.ayuda-mock-calendar span { display: grid; place-items: center; height: 30px; border-radius: 7px; background: rgba(10,92,255,.1); color: var(--color-primary); font-size: .62rem; font-weight: 800; }
+.ayuda-mock-calendar span:nth-child(2), .ayuda-mock-calendar span:nth-child(4) { background: var(--color-primary); color: #fff; }
+.ayuda-mock-calendar strong { color: var(--color-text-muted); font-size: .64rem; }
+.ayuda-mock-upload { margin: 20px; border: 1px dashed rgba(10,92,255,.3); border-radius: 10px; color: var(--color-primary); flex-direction: column; }
+.ayuda-mock-upload span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: rgba(10,92,255,.1); font-size: 1rem; }
+.ayuda-mock-upload strong { font-size: .64rem; }
+.ayuda-mock-search { margin: auto 20px; height: 36px; flex: 0 0 auto; justify-content: flex-start; border: 1px solid rgba(10,92,255,.18); border-radius: 8px; background: #fff; color: var(--color-text-muted); font-size: .65rem; }
+.ayuda-mock-chips { align-content: center; flex-wrap: wrap; }
+.ayuda-mock-chips span { padding: 7px 10px; border: 1px solid rgba(10,92,255,.18); border-radius: 999px; background: #fff; color: var(--color-primary); font-size: .62rem; font-weight: 800; }
+.ayuda-mock-actions { flex-wrap: wrap; }
+.ayuda-mock-actions button:nth-child(even) { border: 1px solid rgba(10,92,255,.22); background: #fff; color: var(--color-primary); box-shadow: none; }
+.ayuda-flow-step-copy { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 20px; }
+.ayuda-flow-step-copy h3 { margin: 0; color: var(--color-text); font-size: 1.08rem; }
+.ayuda-flow-step-copy p { margin: 7px 0 0; color: var(--color-text-muted); font-size: .83rem; line-height: 1.5; }
+.ayuda-flow-step-copy > a { display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; padding: 7px 10px; border-radius: 8px; background: rgba(10,92,255,.08); color: var(--color-primary); font-size: .67rem; font-weight: 800; text-decoration: none; }
 .ayuda-flow-controls { display: flex; justify-content: space-between; gap: 10px; }
 .ayuda-flow-controls button, .ayuda-flow-controls a { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 7px 12px; border: 1px solid var(--color-border); border-radius: 8px; background: #fff; color: var(--color-text); font-size: .72rem; font-weight: 800; text-decoration: none; cursor: pointer; }
 .ayuda-flow-controls button:last-child, .ayuda-flow-controls a { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
@@ -83,6 +121,9 @@
   .ayuda-hero-search button { display: none; }
   .ayuda-action-grid, .ayuda-module-grid { grid-template-columns: 1fr; }
   .ayuda-assistant { grid-template-columns: 1fr; }
+  .ayuda-flow-visual { height: 210px; }
+  .ayuda-flow-step-copy { flex-direction: column; }
+  .ayuda-flow-step-copy > a { width: 100%; justify-content: center; }
   .ayuda-flow-controls { flex-direction: column; }
   .ayuda-flow-controls button, .ayuda-flow-controls a { width: 100%; }
 }

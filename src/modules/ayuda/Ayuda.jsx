@@ -22,6 +22,7 @@ import {
   helpPageContent,
   helpSections,
   quickActions,
+  visualHints,
 } from './helpContent.js';
 import './ayuda.css';
 
@@ -39,6 +40,60 @@ function normalize(value) {
 
 function includesSearch(values, search) {
   return !search || normalize(values.flat(Infinity).join(' ')).includes(search);
+}
+
+function VisualHint({ step, fallbackIcon }) {
+  if (step.image) {
+    return <img className="ayuda-tutorial-image" src={step.image} alt="" />;
+  }
+
+  const hint = visualHints[step.visualHint];
+  if (!hint) {
+    return <div className="ayuda-tutorial-fallback">{React.createElement(fallbackIcon, { size: 38 })}</div>;
+  }
+
+  return (
+    <div className={`ayuda-tutorial-mock ayuda-tutorial-mock--${hint.type}`}>
+      <div className="ayuda-tutorial-window-bar"><i /><i /><i /><span>{hint.eyebrow}</span></div>
+
+      {hint.type === 'sidebar' && (
+        <div className="ayuda-mock-sidebar">
+          <div className="ayuda-mock-brand" />
+          {hint.items.map((item) => <span key={item} className={item === hint.active ? 'is-active' : ''}>{item}</span>)}
+        </div>
+      )}
+      {hint.type === 'module' && (
+        <div className="ayuda-mock-module"><BookOpen size={25} /><div><strong>{hint.title}</strong><span>{hint.detail}</span></div></div>
+      )}
+      {hint.type === 'button' && (
+        <div className="ayuda-mock-centered"><button type="button" tabIndex="-1">{hint.label}</button></div>
+      )}
+      {hint.type === 'form' && (
+        <div className="ayuda-mock-form">{hint.fields.map((field) => <label key={field}><span>{field}</span><i /></label>)}</div>
+      )}
+      {hint.type === 'summary' && (
+        <div className="ayuda-mock-summary">{hint.metrics.map((metric) => <span key={metric}><i />{metric}</span>)}</div>
+      )}
+      {hint.type === 'calendar' && (
+        <div className="ayuda-mock-calendar"><div>{hint.days.map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}</div><strong>{hint.detail}</strong></div>
+      )}
+      {hint.type === 'upload' && (
+        <div className="ayuda-mock-upload"><span>+</span><strong>{hint.label}</strong></div>
+      )}
+      {hint.type === 'search' && (
+        <div className="ayuda-mock-search"><Search size={17} /><span>{hint.label}</span></div>
+      )}
+      {hint.type === 'timeline' && (
+        <div className="ayuda-mock-timeline">{hint.items.map((item) => <span key={item}><i />{item}</span>)}</div>
+      )}
+      {hint.type === 'chips' && (
+        <div className="ayuda-mock-chips">{hint.items.map((item) => <span key={item}>{item}</span>)}</div>
+      )}
+      {hint.type === 'actions' && (
+        <div className="ayuda-mock-actions">{hint.items.map((item) => <button key={item} type="button" tabIndex="-1">{item}</button>)}</div>
+      )}
+    </div>
+  );
 }
 
 export default function Ayuda() {
@@ -160,20 +215,22 @@ export default function Ayuda() {
                           <div><i style={{ width: `${((activeStep + 1) / activeFlow.steps.length) * 100}%` }} /></div>
                         </div>
                         <div className="ayuda-flow-visual">
-                          {React.createElement(ICONS[activeFlow.icon] || BookOpen, { size: 34 })}
-                          <span>{activeFlow.steps[activeStep].visual}</span>
+                          <VisualHint step={activeFlow.steps[activeStep]} fallbackIcon={ICONS[activeFlow.icon] || BookOpen} />
                         </div>
-                        <h3>{activeFlow.steps[activeStep].title}</h3>
-                        <p>{activeFlow.steps[activeStep].text}</p>
+                        <div className="ayuda-flow-step-copy">
+                          <div>
+                            <h3>{activeFlow.steps[activeStep].title}</h3>
+                            <p>{activeFlow.steps[activeStep].text}</p>
+                          </div>
+                          {activeFlow.route && <Link to={activeFlow.route}>{helpPageContent.goToModuleLabel}<ExternalLink size={14} /></Link>}
+                        </div>
                         <div className="ayuda-flow-controls">
                           <button type="button" disabled={activeStep === 0} onClick={() => setActiveStep((step) => step - 1)}><ArrowLeft size={15} />{helpPageContent.previousLabel}</button>
                           {activeStep < activeFlow.steps.length - 1 ? (
                             <button type="button" onClick={() => setActiveStep((step) => step + 1)}>{helpPageContent.nextLabel}<ArrowRight size={15} /></button>
-                          ) : activeFlow.route ? (
-                            <Link to={activeFlow.route}>{helpPageContent.goToModuleLabel}<ExternalLink size={14} /></Link>
-                          ) : (
-                            <button type="button" onClick={() => runAction(activeFlow.action)}>{helpPageContent.goToModuleLabel}<ArrowRight size={15} /></button>
-                          )}
+                          ) : !activeFlow.route ? (
+                            <button type="button" onClick={() => runAction(activeFlow.action)}>{activeFlow.actionLabel}<ArrowRight size={15} /></button>
+                          ) : <span />}
                         </div>
                       </>
                     ) : (
