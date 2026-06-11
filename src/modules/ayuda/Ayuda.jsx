@@ -1,196 +1,133 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ArrowLeft,
   ArrowRight,
   BookOpen,
-  CalendarClock,
+  Bot,
+  Bug,
+  CalendarDays,
   ChevronDown,
-  ChevronUp,
-  CircleHelp,
   ExternalLink,
-  Lightbulb,
-  ListChecks,
+  FlaskConical,
+  Handshake,
+  History,
   Search,
   Sparkles,
 } from 'lucide-react';
 import {
+  assistantPrompts,
+  guidedFlows,
   helpFaqs,
   helpPageContent,
-  helpQuickActions,
   helpSections,
+  quickActions,
 } from './helpContent.js';
 import './ayuda.css';
 
-function normalizeSearchText(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
+const ICONS = {
+  bug: Bug,
+  calendar: CalendarDays,
+  flask: FlaskConical,
+  handshake: Handshake,
+  history: History,
+};
+
+function normalize(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
-function sectionSearchText(section) {
-  return normalizeSearchText([
-    section.title,
-    section.summary,
-    ...section.whatYouCanDo,
-    ...section.steps,
-    ...section.tips,
-    ...section.relatedFeatures,
-  ].join(' '));
+function includesSearch(values, search) {
+  return !search || normalize(values.flat(Infinity).join(' ')).includes(search);
 }
 
 export default function Ayuda() {
   const [search, setSearch] = useState('');
-  const [selectedSection, setSelectedSection] = useState('all');
-  const [openSections, setOpenSections] = useState({});
-  const normalizedSearch = normalizeSearchText(search.trim());
+  const [activeFlowId, setActiveFlowId] = useState(null);
+  const [activeStep, setActiveStep] = useState(0);
+  const guideRef = useRef(null);
+  const faqRef = useRef(null);
+  const normalizedSearch = normalize(search.trim());
 
-  const filteredSections = useMemo(() => helpSections.filter((section) => {
-    const matchesModule = selectedSection === 'all' || section.id === selectedSection;
-    return matchesModule && (!normalizedSearch || sectionSearchText(section).includes(normalizedSearch));
-  }), [normalizedSearch, selectedSection]);
+  const filteredActions = useMemo(() => quickActions.filter((item) => (
+    includesSearch([item.title, item.description], normalizedSearch)
+  )), [normalizedSearch]);
+  const filteredFlows = useMemo(() => guidedFlows.filter((item) => (
+    includesSearch([item.title, item.description, item.keywords, item.steps.map((step) => [step.title, step.text])], normalizedSearch)
+  )), [normalizedSearch]);
+  const filteredSections = useMemo(() => helpSections.filter((item) => (
+    includesSearch([item.title, item.summary, item.whatYouCanDo, item.relatedFeatures], normalizedSearch)
+  )), [normalizedSearch]);
+  const filteredFaqs = useMemo(() => helpFaqs.filter((item) => (
+    includesSearch([item.question, item.answer], normalizedSearch)
+  )), [normalizedSearch]);
+  const activeFlow = guidedFlows.find((flow) => flow.id === activeFlowId);
+  const hasResults = filteredActions.length || filteredFlows.length || filteredSections.length || filteredFaqs.length;
 
-  const filteredFaqs = useMemo(() => helpFaqs.filter((faq) => {
-    const matchesModule = selectedSection === 'all' || faq.relatedSectionId === selectedSection;
-    const matchesSearch = !normalizedSearch || normalizeSearchText(`${faq.question} ${faq.answer}`).includes(normalizedSearch);
-    return matchesModule && matchesSearch;
-  }), [normalizedSearch, selectedSection]);
-
-  const toggleSection = (id) => {
-    setOpenSections((current) => ({ ...current, [id]: !current[id] }));
+  const openGuide = (flowId) => {
+    setActiveFlowId(flowId);
+    setActiveStep(0);
+    window.setTimeout(() => guideRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
   };
 
-  const clearFilters = () => {
-    setSearch('');
-    setSelectedSection('all');
-  };
-
-  const runQuickAction = (action) => {
-    if (action.action === 'support-report') {
+  const runAction = (action) => {
+    if (action === 'support-report') {
       window.dispatchEvent(new CustomEvent('mitynex:open-support-report'));
     }
   };
 
-  const hasResults = filteredSections.length > 0 || filteredFaqs.length > 0;
+  const selectPrompt = (prompt) => {
+    if (prompt.guidedFlowId) {
+      openGuide(prompt.guidedFlowId);
+      return;
+    }
+    const faq = helpFaqs.find((item) => item.id === prompt.faqId);
+    setSearch(faq?.question || prompt.label);
+    window.setTimeout(() => faqRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+  };
 
   return (
     <div className="mx-page ayuda-page">
-      <header className="mx-hero ayuda-hero">
-        <div className="mx-hero-content">
-          <p className="mx-eyebrow">{helpPageContent.eyebrow}</p>
+      <header className="ayuda-hero">
+        <div className="ayuda-hero-glow" />
+        <div className="ayuda-hero-copy">
+          <span className="ayuda-eyebrow"><Sparkles size={15} /> {helpPageContent.eyebrow}</span>
           <h1>{helpPageContent.title}</h1>
           <p>{helpPageContent.subtitle}</p>
         </div>
-        <BookOpen size={52} aria-hidden="true" />
+        <label className="ayuda-hero-search">
+          <Search size={21} />
+          <span className="sr-only">{helpPageContent.searchLabel}</span>
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={helpPageContent.searchPlaceholder}
+          />
+          {search && <button type="button" onClick={() => setSearch('')}>{helpPageContent.clearSearchLabel}</button>}
+        </label>
       </header>
 
       <div className="mx-content-frame ayuda-content">
-        <section className="ayuda-toolbar" aria-label={helpPageContent.moduleFilterLabel}>
-          <label className="ayuda-search">
-            <Search size={18} aria-hidden="true" />
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={helpPageContent.searchPlaceholder}
-            />
-          </label>
-          <label className="ayuda-filter">
-            <span>{helpPageContent.moduleFilterLabel}</span>
-            <select value={selectedSection} onChange={(event) => setSelectedSection(event.target.value)}>
-              <option value="all">{helpPageContent.allModulesLabel}</option>
-              {helpSections.map((section) => (
-                <option key={section.id} value={section.id}>{section.title}</option>
-              ))}
-            </select>
-          </label>
-        </section>
-
-        <section>
-          <div className="ayuda-section-heading">
-            <div>
-              <p className="ayuda-kicker"><Sparkles size={15} /> {helpPageContent.quickActionsTitle}</p>
-            </div>
-          </div>
-          <div className="ayuda-quick-grid">
-            {helpQuickActions.map((action) => {
-              const content = (
-                <>
-                  <div>
-                    <strong>{action.label}</strong>
-                    <span>{action.description}</span>
-                  </div>
-                  <ArrowRight size={18} aria-hidden="true" />
-                </>
-              );
-
-              return action.route ? (
-                <Link key={action.id} to={action.route} className="ayuda-quick-action">{content}</Link>
-              ) : (
-                <button key={action.id} type="button" className="ayuda-quick-action" onClick={() => runQuickAction(action)}>
-                  {content}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
         {hasResults ? (
           <>
-            {filteredSections.length > 0 && (
+            {filteredActions.length > 0 && (
               <section>
-                <div className="ayuda-section-heading">
-                  <div>
-                    <h2>{helpPageContent.modulesTitle}</h2>
-                    <p>{helpPageContent.modulesSubtitle}</p>
-                  </div>
+                <div className="ayuda-heading">
+                  <div><h2>{helpPageContent.quickActionsTitle}</h2><p>{helpPageContent.quickActionsSubtitle}</p></div>
                 </div>
-                <div className="ayuda-card-grid">
-                  {filteredSections.map((section) => {
-                    const isOpen = Boolean(openSections[section.id]);
+                <div className="ayuda-action-grid">
+                  {filteredActions.map((action) => {
+                    const Icon = ICONS[action.icon] || BookOpen;
                     return (
-                      <article key={section.id} id={`ayuda-${section.id}`} className="mx-card ayuda-card">
-                        <div className="ayuda-card-top">
-                          <div className="ayuda-card-icon"><BookOpen size={20} /></div>
-                          <span className="ayuda-updated">
-                            <CalendarClock size={14} />
-                            {helpPageContent.lastUpdatedLabel}: {section.lastUpdated}
-                          </span>
-                        </div>
-                        <h3>{section.title}</h3>
-                        <p className="ayuda-summary">{section.summary}</p>
-                        <div className="ayuda-tags">
-                          {section.relatedFeatures.map((feature) => <span key={feature}>{feature}</span>)}
-                        </div>
-
-                        {isOpen && (
-                          <div className="ayuda-details">
-                            <div>
-                              <h4><CircleHelp size={17} /> {helpPageContent.whatYouCanDoLabel}</h4>
-                              <ul>{section.whatYouCanDo.map((item) => <li key={item}>{item}</li>)}</ul>
-                            </div>
-                            <div>
-                              <h4><ListChecks size={17} /> {helpPageContent.stepsLabel}</h4>
-                              <ol>{section.steps.map((item) => <li key={item}>{item}</li>)}</ol>
-                            </div>
-                            <div className="ayuda-tips">
-                              <h4><Lightbulb size={17} /> {helpPageContent.tipsLabel}</h4>
-                              <ul>{section.tips.map((item) => <li key={item}>{item}</li>)}</ul>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="ayuda-card-actions">
-                          <button type="button" className="mx-btn mx-btn-outline" onClick={() => toggleSection(section.id)}>
-                            {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            {isOpen ? helpPageContent.hideDetailsLabel : helpPageContent.showDetailsLabel}
-                          </button>
-                          {section.route && (
-                            <Link to={section.route} className="mx-btn mx-btn-primary">
-                              {helpPageContent.goToModuleLabel}
-                              <ExternalLink size={15} />
-                            </Link>
-                          )}
+                      <article key={action.id} className="ayuda-action-card">
+                        <div className="ayuda-action-icon"><Icon size={20} /></div>
+                        <div className="ayuda-action-copy"><h3>{action.title}</h3><p>{action.description}</p></div>
+                        <div className="ayuda-action-buttons">
+                          <button type="button" onClick={() => openGuide(action.guidedFlowId)}>{helpPageContent.viewStepsLabel}</button>
+                          {action.route ? (
+                            <Link to={action.route}>{helpPageContent.goToModuleLabel}<ArrowRight size={14} /></Link>
+                          ) : null}
                         </div>
                       </article>
                     );
@@ -199,31 +136,92 @@ export default function Ayuda() {
               </section>
             )}
 
-            {filteredFaqs.length > 0 && (
-              <section className="ayuda-faq-section">
-                <div className="ayuda-section-heading">
-                  <h2>{helpPageContent.faqTitle}</h2>
+            {filteredFlows.length > 0 && (
+              <section ref={guideRef}>
+                <div className="ayuda-heading">
+                  <div><h2>{helpPageContent.guidedFlowsTitle}</h2><p>{helpPageContent.guidedFlowsSubtitle}</p></div>
                 </div>
-                <div className="ayuda-faq-list">
-                  {filteredFaqs.map((faq) => (
-                    <details key={faq.id} className="mx-card ayuda-faq">
-                      <summary>{faq.question}<ChevronDown size={18} /></summary>
-                      <p>{faq.answer}</p>
-                    </details>
+                <div className="ayuda-flow-layout">
+                  <div className="ayuda-flow-list">
+                    {filteredFlows.map((flow) => {
+                      const Icon = ICONS[flow.icon] || BookOpen;
+                      return (
+                        <button key={flow.id} type="button" className={activeFlowId === flow.id ? 'is-active' : ''} onClick={() => openGuide(flow.id)}>
+                          <span><Icon size={18} /></span><span><strong>{flow.title}</strong><small>{flow.description}</small></span><ArrowRight size={16} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="ayuda-flow-stage">
+                    {activeFlow ? (
+                      <>
+                        <div className="ayuda-flow-progress">
+                          <span>{helpPageContent.stepLabel} {activeStep + 1} {helpPageContent.ofLabel} {activeFlow.steps.length}</span>
+                          <div><i style={{ width: `${((activeStep + 1) / activeFlow.steps.length) * 100}%` }} /></div>
+                        </div>
+                        <div className="ayuda-flow-visual">
+                          {React.createElement(ICONS[activeFlow.icon] || BookOpen, { size: 34 })}
+                          <span>{activeFlow.steps[activeStep].visual}</span>
+                        </div>
+                        <h3>{activeFlow.steps[activeStep].title}</h3>
+                        <p>{activeFlow.steps[activeStep].text}</p>
+                        <div className="ayuda-flow-controls">
+                          <button type="button" disabled={activeStep === 0} onClick={() => setActiveStep((step) => step - 1)}><ArrowLeft size={15} />{helpPageContent.previousLabel}</button>
+                          {activeStep < activeFlow.steps.length - 1 ? (
+                            <button type="button" onClick={() => setActiveStep((step) => step + 1)}>{helpPageContent.nextLabel}<ArrowRight size={15} /></button>
+                          ) : activeFlow.route ? (
+                            <Link to={activeFlow.route}>{helpPageContent.goToModuleLabel}<ExternalLink size={14} /></Link>
+                          ) : (
+                            <button type="button" onClick={() => runAction(activeFlow.action)}>{helpPageContent.goToModuleLabel}<ArrowRight size={15} /></button>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="ayuda-flow-placeholder"><BookOpen size={36} /><h3>{helpPageContent.guidedFlowsTitle}</h3><p>{helpPageContent.guidedFlowsSubtitle}</p></div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            <section className="ayuda-assistant">
+              <div className="ayuda-assistant-icon"><Bot size={28} /></div>
+              <div className="ayuda-assistant-copy">
+                <span>{helpPageContent.assistantBadge}</span>
+                <h2>{helpPageContent.assistantTitle}</h2>
+                <p>{helpPageContent.assistantText}</p>
+                <div className="ayuda-prompt-list">
+                  {assistantPrompts.map((prompt) => <button key={prompt.id} type="button" onClick={() => selectPrompt(prompt)}>{prompt.label}</button>)}
+                </div>
+              </div>
+            </section>
+
+            {filteredSections.length > 0 && (
+              <section>
+                <div className="ayuda-heading"><div><h2>{helpPageContent.modulesTitle}</h2><p>{helpPageContent.modulesSubtitle}</p></div></div>
+                <div className="ayuda-module-grid">
+                  {filteredSections.map((section) => (
+                    <article key={section.id} className="ayuda-module-card">
+                      <div><BookOpen size={17} /><span>{helpPageContent.lastUpdatedLabel} {section.lastUpdated}</span></div>
+                      <h3>{section.title}</h3><p>{section.summary}</p>
+                      {section.route && <Link to={section.route}>{helpPageContent.exploreModuleLabel}<ArrowRight size={14} /></Link>}
+                    </article>
                   ))}
+                </div>
+              </section>
+            )}
+
+            {filteredFaqs.length > 0 && (
+              <section ref={faqRef}>
+                <div className="ayuda-heading"><h2>{helpPageContent.faqTitle}</h2></div>
+                <div className="ayuda-faq-list">
+                  {filteredFaqs.map((faq) => <details key={faq.id} className="ayuda-faq"><summary>{faq.question}<ChevronDown size={18} /></summary><p>{faq.answer}</p></details>)}
                 </div>
               </section>
             )}
           </>
         ) : (
-          <section className="mx-card ayuda-empty">
-            <Search size={28} />
-            <h2>{helpPageContent.noResultsTitle}</h2>
-            <p>{helpPageContent.noResultsText}</p>
-            <button type="button" className="mx-btn mx-btn-primary" onClick={clearFilters}>
-              {helpPageContent.clearSearchLabel}
-            </button>
-          </section>
+          <section className="ayuda-empty"><Search size={30} /><h2>{helpPageContent.noResultsTitle}</h2><p>{helpPageContent.noResultsText}</p><button type="button" onClick={() => setSearch('')}>{helpPageContent.clearSearchLabel}</button></section>
         )}
       </div>
     </div>
