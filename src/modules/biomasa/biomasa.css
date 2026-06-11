@@ -31,6 +31,29 @@
   font-size: 13px;
 }
 
+.disponibilidad-flow-note {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-md);
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+}
+
+.disponibilidad-flow-note small {
+  margin-left: auto;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.disponibilidad-tabs {
+  justify-self: start;
+}
+
 .disponibilidad-kpi-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(130px, 1fr));
@@ -170,6 +193,163 @@
   max-width: 720px;
 }
 
+.disponibilidad-provider-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.disponibilidad-provider-search:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(10, 92, 255, 0.1);
+}
+
+.disponibilidad-provider-search svg {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.disponibilidad-provider-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.disponibilidad-provider-results {
+  display: grid;
+  max-height: 225px;
+  gap: 7px;
+  margin-top: 8px;
+  overflow-y: auto;
+}
+
+.disponibilidad-provider-option {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.disponibilidad-provider-option:hover {
+  border-color: rgba(10, 92, 255, 0.45);
+  background: #f8fbff;
+}
+
+.disponibilidad-provider-option strong,
+.disponibilidad-provider-option span {
+  display: block;
+}
+
+.disponibilidad-provider-option span {
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.disponibilidad-provider-selected,
+.disponibilidad-readonly-field,
+.disponibilidad-initial-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 39px;
+  padding: 9px 11px;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  background: #f0fdf4;
+  color: #047857;
+  font-size: 12px;
+}
+
+.disponibilidad-provider-selected {
+  margin-top: 8px;
+}
+
+.disponibilidad-readonly-field {
+  border-color: var(--color-border);
+  background: #f8fafc;
+  color: var(--color-text);
+}
+
+.disponibilidad-inline-empty {
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.disponibilidad-summary-card {
+  padding: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.disponibilidad-summary-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.disponibilidad-summary-header h3 {
+  margin: 5px 0 0;
+  text-transform: capitalize;
+}
+
+.disponibilidad-summary-header > strong {
+  color: var(--color-primary);
+  font-size: 19px;
+}
+
+.disponibilidad-bars {
+  display: grid;
+  gap: 17px;
+  margin-top: 20px;
+}
+
+.disponibilidad-bar-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+
+.disponibilidad-bar-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.disponibilidad-bar-fill {
+  min-width: 2px;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
+.disponibilidad-bar-fill--info { background: #3b82f6; }
+.disponibilidad-bar-fill--warning { background: #f59e0b; }
+.disponibilidad-bar-fill--success { background: #10b981; }
+.disponibilidad-bar-fill--danger { background: #ef4444; }
+.disponibilidad-bar-fill--muted { background: #64748b; }
+
 .disponibilidad-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -198,6 +378,16 @@
   .disponibilidad-actions-row {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .disponibilidad-flow-note,
+  .disponibilidad-summary-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .disponibilidad-flow-note small {
+    margin-left: 0;
   }
 
   .disponibilidad-kpi-grid,

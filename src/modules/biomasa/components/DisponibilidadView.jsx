@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
+import { ArrowRight, BarChart3, List, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { crearDisponibilidad, editarDisponibilidad } from '../../../api/api-mmpp';
 import { useAuth } from '../../../context/AuthContext';
@@ -10,9 +10,11 @@ import {
   DISPONIBILIDAD_ESTADOS,
   DISPONIBILIDAD_ORIGENES,
   DISPONIBILIDAD_PRODUCTOS,
+  buildDisponibilidadProviders,
   optionLabel,
 } from '../disponibilidad.constants';
 import DisponibilidadModal from './DisponibilidadModal';
+import DisponibilidadResumen from './DisponibilidadResumen';
 
 const normalizeItems = (response) => Array.isArray(response) ? response : (response?.items || []);
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((option) => option.value === value) || DISPONIBILIDAD_ESTADOS[0];
@@ -25,6 +27,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [modalItem, setModalItem] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('listado');
   const [filters, setFilters] = useState({ proveedor: '', producto: '', estado: '' });
 
   useEffect(() => {
@@ -53,6 +56,13 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     });
   }, [filters, items]);
 
+  const providerDirectory = useMemo(
+    () => buildDisponibilidadProviders(proveedores, centros),
+    [centros, proveedores]
+  );
+
+  const responsableNombre = user?.nombre || user?.name || user?.username || user?.email || '';
+
   const kpis = useMemo(() => DISPONIBILIDAD_ESTADOS.map((state) => ({
     ...state,
     tons: items
@@ -78,8 +88,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const handleSave = async (payload) => {
     setSaving(true);
     try {
-      const responsable = user?.nombre || user?.name || user?.username || user?.email || '';
-      const normalizedPayload = { ...payload, responsable };
+      const normalizedPayload = modalItem ? payload : { ...payload, responsable: responsableNombre };
       if (modalItem?._id) await editarDisponibilidad(modalItem._id, normalizedPayload);
       else await crearDisponibilidad(normalizedPayload);
       closeModal();
@@ -102,20 +111,21 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       <div className="disponibilidad-actions-row">
         <div>
           <h2>Disponibilidad futura</h2>
-          <p>Biomasa informada por proveedores antes de convertirse en trato.</p>
+          <p>Registra biomasa futura informada por proveedores antes de convertirla en trato o programa de cosecha.</p>
         </div>
         <button type="button" className="mx-btn mx-btn-primary" onClick={openCreate}>
           <Plus size={17} /> Registrar disponibilidad
         </button>
       </div>
 
-      <div className="disponibilidad-kpi-grid">
-        {kpis.map((kpi) => (
-          <article key={kpi.value} className={`disponibilidad-kpi disponibilidad-kpi--${kpi.tone}`}>
-            <span>{kpi.label}</span>
-            <strong>{fmtTons(kpi.tons)}</strong>
-          </article>
-        ))}
+      <div className="disponibilidad-flow-note">
+        <span>Disponibilidad</span><ArrowRight size={15} /><span>Trato</span><ArrowRight size={15} /><span>Programa de Cosecha</span>
+        <small>Convertir en trato: disponible en próxima fase.</small>
+      </div>
+
+      <div className="mx-toggle-group disponibilidad-tabs" role="tablist" aria-label="Vistas de disponibilidad">
+        <button type="button" className={`mx-toggle-btn ${activeTab === 'listado' ? 'active' : ''}`} onClick={() => setActiveTab('listado')}><List size={15} /> Listado</button>
+        <button type="button" className={`mx-toggle-btn ${activeTab === 'resumen' ? 'active' : ''}`} onClick={() => setActiveTab('resumen')}><BarChart3 size={15} /> Resumen mensual</button>
       </div>
 
       <div className="disponibilidad-filter-card">
@@ -144,6 +154,16 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         <button type="button" className="mx-btn mx-btn-outline disponibilidad-refresh" onClick={() => reload()}><RotateCcw size={15} /> Actualizar</button>
       </div>
 
+      {activeTab === 'listado' && (
+      <>
+      <div className="disponibilidad-kpi-grid">
+        {kpis.map((kpi) => (
+          <article key={kpi.value} className={`disponibilidad-kpi disponibilidad-kpi--${kpi.tone}`}>
+            <span>{kpi.label}</span>
+            <strong>{fmtTons(kpi.tons)}</strong>
+          </article>
+        ))}
+      </div>
       <div className="mx-table-card disponibilidad-table-card">
         <div className="disponibilidad-table-scroll">
           <table className="mx-table disponibilidad-table">
@@ -183,13 +203,17 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
           </table>
         </div>
       </div>
+      </>
+      )}
+
+      {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} />}
 
       <DisponibilidadModal
         open={modalOpen}
         item={modalItem}
-        proveedores={proveedores}
-        centros={centros}
+        proveedores={providerDirectory}
         defaultMes={mes}
+        responsableNombre={responsableNombre}
         saving={saving}
         onClose={closeModal}
         onSave={handleSave}

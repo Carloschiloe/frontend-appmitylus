@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X } from 'lucide-react';
+import { CheckCircle2, Search, UserRound, X } from 'lucide-react';
 import {
   DISPONIBILIDAD_ESTADOS,
   DISPONIBILIDAD_ORIGENES,
   DISPONIBILIDAD_PRODUCTOS,
+  filterDisponibilidadProviders,
 } from '../disponibilidad.constants';
 
 const EMPTY_FORM = {
   contactoId: '',
+  proveedorKey: '',
   centroId: '',
   mesKey: '',
   tonsDisponible: '',
@@ -18,25 +20,26 @@ const EMPTY_FORM = {
   motivo: '',
 };
 
-const getProviderName = (item) => item.proveedorNombre || item.empresaNombre || item.contactoNombre || 'Proveedor sin nombre';
 const getCenterCode = (item) => item.codigo || item.centroCodigo || item.code || item.nombre || '';
 
 export default function DisponibilidadModal({
   open,
   item,
   proveedores,
-  centros,
   defaultMes,
+  responsableNombre,
   saving,
   onClose,
   onSave,
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
+  const [providerSearch, setProviderSearch] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setForm(item ? {
       contactoId: String(item.contactoId || ''),
+      proveedorKey: item.proveedorKey || '',
       centroId: String(item.centroId || ''),
       mesKey: item.mesKey || defaultMes,
       tonsDisponible: item.tons ?? item.tonsDisponible ?? '',
@@ -46,17 +49,25 @@ export default function DisponibilidadModal({
       observacion: item.observacion || '',
       motivo: item.motivo || '',
     } : { ...EMPTY_FORM, mesKey: defaultMes });
+    setProviderSearch(item?.proveedorNombreNorm || item?.proveedorNombre || '');
   }, [defaultMes, item, open]);
 
   const selectedProvider = useMemo(
-    () => proveedores.find((provider) => String(provider._id) === form.contactoId),
-    [form.contactoId, proveedores]
+    () => proveedores.find((provider) =>
+      (form.proveedorKey && provider.proveedorKey === String(form.proveedorKey).toLowerCase())
+      || (form.contactoId && String(provider.contactoId) === form.contactoId)
+    ),
+    [form.contactoId, form.proveedorKey, proveedores]
   );
 
-  const selectedCenter = useMemo(
-    () => centros.find((center) => String(center._id) === form.centroId),
-    [centros, form.centroId]
+  const filteredProviders = useMemo(
+    () => filterDisponibilidadProviders(proveedores, providerSearch),
+    [providerSearch, proveedores]
   );
+
+  const centerOptions = selectedProvider?.centros || [];
+  const selectedCenter = centerOptions.find((center) => String(center._id) === form.centroId);
+  const showProviderResults = !selectedProvider || providerSearch.trim() !== selectedProvider.proveedorNombre;
 
   if (!open) return null;
 
@@ -66,14 +77,26 @@ export default function DisponibilidadModal({
     ...((field === 'estado' && !['perdido', 'descartado'].includes(value)) ? { motivo: '' } : {}),
   }));
 
+  const selectProvider = (provider) => {
+    setProviderSearch(provider.proveedorNombre);
+    setForm((current) => ({
+      ...current,
+      contactoId: String(provider.contactoId || ''),
+      proveedorKey: provider.proveedorKey,
+      centroId: '',
+    }));
+  };
+
   const submit = (event) => {
     event.preventDefault();
+    if (!selectedProvider && !item) return;
     onSave({
       ...form,
+      estado: item ? form.estado : 'disponible',
       proveedorKey: selectedProvider?.proveedorKey || item?.proveedorKey || '',
-      proveedorNombre: selectedProvider ? getProviderName(selectedProvider) : item?.proveedorNombre || '',
+      proveedorNombre: selectedProvider?.proveedorNombre || item?.proveedorNombre || '',
       empresaKey: selectedProvider?.proveedorKey || item?.empresaKey || '',
-      empresaNombre: selectedProvider ? getProviderName(selectedProvider) : item?.empresaNombre || '',
+      empresaNombre: selectedProvider?.proveedorNombre || item?.empresaNombre || '',
       contactoNombre: selectedProvider?.contactoNombre || item?.contactoNombre || '',
       centroCodigo: selectedCenter ? getCenterCode(selectedCenter) : item?.centroCodigo || '',
       comuna: selectedCenter?.comuna || item?.comuna || '',
@@ -95,21 +118,51 @@ export default function DisponibilidadModal({
 
         <form className="mx-form" onSubmit={submit}>
           <div className="mx-modal-body disponibilidad-form-grid">
-            <label className="mx-form-group disponibilidad-field-wide">
+            <div className="mx-form-group disponibilidad-field-wide">
               <span className="mx-form-label">Proveedor</span>
-              <select className="mx-select" value={form.contactoId} onChange={(event) => update('contactoId', event.target.value)} required={!item}>
-                <option value="">{item?.proveedorNombre || 'Seleccionar proveedor'}</option>
-                {proveedores.map((provider) => <option key={provider._id} value={provider._id}>{getProviderName(provider)}</option>)}
-              </select>
-            </label>
+              <div className="disponibilidad-provider-search">
+                <Search size={18} />
+                <input
+                  value={providerSearch}
+                  onChange={(event) => {
+                    setProviderSearch(event.target.value);
+                    if (selectedProvider && event.target.value.trim() !== selectedProvider.proveedorNombre) {
+                      setForm((current) => ({ ...current, contactoId: '', proveedorKey: '', centroId: '' }));
+                    }
+                  }}
+                  placeholder="Buscar empresa, contacto o comuna..."
+                  required
+                />
+              </div>
+              {showProviderResults && (
+                <div className="disponibilidad-provider-results">
+                  {filteredProviders.length === 0 ? (
+                    <div className="disponibilidad-inline-empty">No encontramos coincidencias.</div>
+                  ) : filteredProviders.map((provider) => (
+                    <button key={provider.id} type="button" className="disponibilidad-provider-option" onClick={() => selectProvider(provider)}>
+                      <strong>{provider.proveedorNombre}</strong>
+                      <span>{provider.contactoNombre || 'Sin contacto'} · {provider.comuna || 'Sin comuna'} · {provider.centros.length} centro{provider.centros.length === 1 ? '' : 's'}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {selectedProvider && (
+                <div className="disponibilidad-provider-selected"><CheckCircle2 size={16} /><span><strong>{selectedProvider.proveedorNombre}</strong> seleccionado</span></div>
+              )}
+            </div>
 
             <label className="mx-form-group">
               <span className="mx-form-label">Centro opcional</span>
-              <select className="mx-select" value={form.centroId} onChange={(event) => update('centroId', event.target.value)}>
-                <option value="">Sin centro</option>
-                {centros.map((center) => <option key={center._id} value={center._id}>{getCenterCode(center)}</option>)}
+              <select className="mx-select" value={form.centroId} onChange={(event) => update('centroId', event.target.value)} disabled={!selectedProvider}>
+                <option value="">{selectedProvider ? 'Sin centro' : 'Selecciona proveedor primero'}</option>
+                {centerOptions.map((center) => <option key={center._id} value={center._id}>{getCenterCode(center)}</option>)}
               </select>
             </label>
+
+            <div className="mx-form-group">
+              <span className="mx-form-label">Responsable</span>
+              <div className="disponibilidad-readonly-field"><UserRound size={16} /><strong>{item?.responsable || responsableNombre || 'Sin asignar'}</strong></div>
+            </div>
 
             <label className="mx-form-group">
               <span className="mx-form-label">Mes/Año disponible</span>
@@ -128,12 +181,19 @@ export default function DisponibilidadModal({
               </select>
             </label>
 
-            <label className="mx-form-group">
-              <span className="mx-form-label">Estado</span>
-              <select className="mx-select" value={form.estado} onChange={(event) => update('estado', event.target.value)}>
-                {DISPONIBILIDAD_ESTADOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
+            {item ? (
+              <label className="mx-form-group">
+                <span className="mx-form-label">Estado</span>
+                <select className="mx-select" value={form.estado} onChange={(event) => update('estado', event.target.value)}>
+                  {DISPONIBILIDAD_ESTADOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+            ) : (
+              <div className="mx-form-group">
+                <span className="mx-form-label">Estado inicial</span>
+                <div className="disponibilidad-initial-state"><CheckCircle2 size={16} /> Disponible</div>
+              </div>
+            )}
 
             <label className="mx-form-group">
               <span className="mx-form-label">Origen</span>
@@ -156,7 +216,7 @@ export default function DisponibilidadModal({
           </div>
           <div className="mx-modal-footer">
             <button type="button" className="mx-btn mx-btn-outline" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="mx-btn mx-btn-primary" disabled={saving}>{saving ? 'Guardando...' : item ? 'Guardar cambios' : 'Registrar disponibilidad'}</button>
+            <button type="submit" className="mx-btn mx-btn-primary" disabled={saving || (!selectedProvider && !item)}>{saving ? 'Guardando...' : item ? 'Guardar cambios' : 'Registrar disponibilidad'}</button>
           </div>
         </form>
       </div>
