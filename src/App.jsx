@@ -29,6 +29,7 @@ const Gestion   = lazy(() => import('./modules/gestion/Gestion.jsx'));
 const Maestros  = lazy(() => import('./modules/configuracion/Maestros.jsx'));
 const Usuarios  = lazy(() => import('./modules/configuracion/Usuarios.jsx'));
 const Historial = lazy(() => import('./modules/historial/Historial.jsx'));
+const Ayuda     = lazy(() => import('./modules/ayuda/Ayuda.jsx'));
 const Login          = lazy(() => import('./modules/auth/Login.jsx'));
 const ActivarCuenta  = lazy(() => import('./modules/auth/ActivarCuenta.jsx'));
 const Empresas       = lazy(() => import('./modules/configuracion/Empresas.jsx'));
@@ -315,6 +316,12 @@ export default function App() {
                     >
                       <Historial />
                     </TenantScopedRoute>
+                  } />
+
+                  <Route path="/ayuda" element={
+                    <PrivateRoute>
+                      <Ayuda />
+                    </PrivateRoute>
                   } />
 
                   {/* Fallback global */}

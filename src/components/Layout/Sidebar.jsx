@@ -22,6 +22,7 @@ import {
   BarChart3,
   ClipboardList,
   Bug,
+  CircleHelp,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
@@ -65,6 +66,14 @@ const MENU_STRUCTURE = [
     links: [
       { label: 'Sanitario', to: '/centros/sanitario', icon: ShieldCheck, alertId: 'sanitario' },
       { label: 'Historial', to: '/historial', icon: History },
+    ],
+  },
+  {
+    id: 'ayuda',
+    label: 'Ayuda',
+    icon: CircleHelp,
+    links: [
+      { label: 'Ayuda', to: '/ayuda', icon: CircleHelp },
     ],
   },
   {
