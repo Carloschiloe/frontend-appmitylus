@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, BarChart3, List, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
+import { ArrowRight, BarChart3, CalendarRange, List, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
-import { crearDisponibilidad, editarDisponibilidad } from '../../../api/api-mmpp';
+import { crearDisponibilidad, editarDisponibilidad, getDisponibilidades } from '../../../api/api-mmpp';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { fmtTons } from '../utils/programaCalculos';
@@ -14,10 +14,20 @@ import {
   optionLabel,
 } from '../disponibilidad.constants';
 import DisponibilidadModal from './DisponibilidadModal';
+import DisponibilidadProyeccionAnual from './DisponibilidadProyeccionAnual';
 import DisponibilidadResumen from './DisponibilidadResumen';
 
 const normalizeItems = (response) => Array.isArray(response) ? response : (response?.items || []);
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((option) => option.value === value) || DISPONIBILIDAD_ESTADOS[0];
+const filterDisponibilidades = (sourceItems, filters) => {
+  const providerQuery = filters.proveedor.trim().toLowerCase();
+  return sourceItems.filter((item) => {
+    const providerName = String(item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '').toLowerCase();
+    return (!providerQuery || providerName.includes(providerQuery))
+      && (!filters.producto || (item.producto || 'sin_definir') === filters.producto)
+      && (!filters.estado || (item.estado || 'disponible') === filters.estado);
+  });
+};
 
 export default function DisponibilidadView({ items, loading, mes, setMes, reload }) {
   const { user } = useAuth();
@@ -28,6 +38,10 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('listado');
+  const [annualItems, setAnnualItems] = useState([]);
+  const [annualLoading, setAnnualLoading] = useState(false);
+  const [annualYear, setAnnualYear] = useState(() => String(mes).slice(0, 4));
+  const [annualReloadKey, setAnnualReloadKey] = useState(0);
   const [filters, setFilters] = useState({ proveedor: '', producto: '', estado: '' });
 
   useEffect(() => {
@@ -46,15 +60,27 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     return () => controller.abort();
   }, [addToast]);
 
-  const filteredItems = useMemo(() => {
-    const providerQuery = filters.proveedor.trim().toLowerCase();
-    return items.filter((item) => {
-      const providerName = String(item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '').toLowerCase();
-      return (!providerQuery || providerName.includes(providerQuery))
-        && (!filters.producto || (item.producto || 'sin_definir') === filters.producto)
-        && (!filters.estado || (item.estado || 'disponible') === filters.estado);
-    });
-  }, [filters, items]);
+  useEffect(() => {
+    if (activeTab !== 'anual' || !/^\d{4}$/.test(annualYear)) return undefined;
+    let active = true;
+    setAnnualLoading(true);
+    getDisponibilidades({ from: `${annualYear}-01`, to: `${annualYear}-12` })
+      .then((response) => {
+        if (active) setAnnualItems(response);
+      })
+      .catch((error) => {
+        if (active) addToast({ title: 'No se pudo cargar la proyección', message: error.message || 'Intenta nuevamente.', type: 'warning' });
+      })
+      .finally(() => {
+        if (active) setAnnualLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [activeTab, addToast, annualReloadKey, annualYear]);
+
+  const filteredItems = useMemo(() => filterDisponibilidades(items, filters), [filters, items]);
+  const filteredAnnualItems = useMemo(() => filterDisponibilidades(annualItems, filters), [annualItems, filters]);
 
   const providerDirectory = useMemo(
     () => buildDisponibilidadProviders(proveedores, centros),
@@ -92,6 +118,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       if (modalItem?._id) await editarDisponibilidad(modalItem._id, normalizedPayload);
       else await crearDisponibilidad(normalizedPayload);
       closeModal();
+      setAnnualReloadKey((current) => current + 1);
       if (payload.mesKey !== mes) setMes(payload.mesKey);
       else await reload();
       addToast({
@@ -111,7 +138,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       <div className="disponibilidad-actions-row">
         <div>
           <h2>Disponibilidad futura</h2>
-          <p>Registra biomasa futura informada por proveedores antes de convertirla en trato o programa de cosecha.</p>
+          <p>Registra biomasa futura informada por proveedores antes de crear un trato asociado o programa de cosecha.</p>
         </div>
         <button type="button" className="mx-btn mx-btn-primary" onClick={openCreate}>
           <Plus size={17} /> Registrar disponibilidad
@@ -120,18 +147,21 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
 
       <div className="disponibilidad-flow-note">
         <span>Disponibilidad</span><ArrowRight size={15} /><span>Trato</span><ArrowRight size={15} /><span>Programa de Cosecha</span>
-        <small>Convertir en trato: disponible en próxima fase.</small>
+        <small>Crear trato asociado: disponible en próxima fase.</small>
       </div>
 
       <div className="mx-toggle-group disponibilidad-tabs" role="tablist" aria-label="Vistas de disponibilidad">
         <button type="button" className={`mx-toggle-btn ${activeTab === 'listado' ? 'active' : ''}`} onClick={() => setActiveTab('listado')}><List size={15} /> Listado</button>
         <button type="button" className={`mx-toggle-btn ${activeTab === 'resumen' ? 'active' : ''}`} onClick={() => setActiveTab('resumen')}><BarChart3 size={15} /> Resumen mensual</button>
+        <button type="button" className={`mx-toggle-btn ${activeTab === 'anual' ? 'active' : ''}`} onClick={() => setActiveTab('anual')}><CalendarRange size={15} /> Proyección anual</button>
       </div>
 
       <div className="disponibilidad-filter-card">
         <label className="disponibilidad-filter disponibilidad-filter--month">
-          <span>Mes/Año</span>
-          <input className="mx-input" type="month" value={mes} onChange={(event) => setMes(event.target.value)} />
+          <span>{activeTab === 'anual' ? 'Año' : 'Mes/Año'}</span>
+          {activeTab === 'anual'
+            ? <input className="mx-input" type="number" min="2000" max="2100" value={annualYear} onChange={(event) => setAnnualYear(event.target.value)} />
+            : <input className="mx-input" type="month" value={mes} onChange={(event) => setMes(event.target.value)} />}
         </label>
         <label className="disponibilidad-filter disponibilidad-filter--search">
           <span>Proveedor</span>
@@ -151,7 +181,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             {DISPONIBILIDAD_ESTADOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
         </label>
-        <button type="button" className="mx-btn mx-btn-outline disponibilidad-refresh" onClick={() => reload()}><RotateCcw size={15} /> Actualizar</button>
+        <button type="button" className="mx-btn mx-btn-outline disponibilidad-refresh" onClick={() => activeTab === 'anual' ? setAnnualReloadKey((current) => current + 1) : reload()}><RotateCcw size={15} /> Actualizar</button>
       </div>
 
       {activeTab === 'listado' && (
@@ -190,7 +220,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                     <td>
                       <div className="disponibilidad-row-actions">
                         <button type="button" className="mx-btn-icon sm" onClick={() => openEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
-                        <button type="button" className="mx-btn-icon sm" disabled title="Disponible en próxima fase" aria-label="Convertir en trato, disponible en próxima fase"><ArrowRight size={15} /></button>
+                        <button type="button" className="mx-btn-icon sm" disabled title="Crear trato asociado: disponible en próxima fase" aria-label="Crear trato asociado, disponible en próxima fase"><ArrowRight size={15} /></button>
                       </div>
                     </td>
                   </tr>
@@ -207,6 +237,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       )}
 
       {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} />}
+      {activeTab === 'anual' && <DisponibilidadProyeccionAnual items={filteredAnnualItems} year={annualYear} loading={annualLoading} />}
 
       <DisponibilidadModal
         open={modalOpen}

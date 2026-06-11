@@ -25,6 +25,38 @@ export const optionLabel = (options, value) => (
   options.find((option) => option.value === value)?.label || value || 'Sin definir'
 );
 
+const emptyStateTotals = () => Object.fromEntries(DISPONIBILIDAD_ESTADOS.map((state) => [state.value, 0]));
+
+export function buildDisponibilidadAnnualProjection(items = [], year) {
+  const totalsByState = emptyStateTotals();
+  const rows = Array.from({ length: 12 }, (_, index) => {
+    const monthKey = `${year}-${String(index + 1).padStart(2, '0')}`;
+    const stateTons = emptyStateTotals();
+
+    items.forEach((item) => {
+      if (item.mesKey !== monthKey) return;
+      const state = item.estado || 'disponible';
+      if (state in stateTons) stateTons[state] += Number(item.tons || item.tonsDisponible || 0);
+    });
+
+    Object.entries(stateTons).forEach(([state, tons]) => {
+      totalsByState[state] += tons;
+    });
+
+    return {
+      monthKey,
+      stateTons,
+      total: Object.values(stateTons).reduce((sum, tons) => sum + tons, 0),
+    };
+  });
+
+  return {
+    rows,
+    totalsByState,
+    annualTotal: Object.values(totalsByState).reduce((sum, tons) => sum + tons, 0),
+  };
+}
+
 const providerKeyOf = (item) => String(item?.proveedorKey || item?.proveedorNombre || item?.proveedor || '').trim().toLowerCase();
 
 export function buildDisponibilidadProviders(contactos = [], centros = []) {
