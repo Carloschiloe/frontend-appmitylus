@@ -57,6 +57,22 @@ export function buildDisponibilidadAnnualProjection(items = [], year) {
   };
 }
 
+export function buildDisponibilidadMonthDetail(items = [], monthKey) {
+  const monthItems = items.filter((item) => item.mesKey === monthKey);
+  const totalsByState = emptyStateTotals();
+
+  monthItems.forEach((item) => {
+    const state = item.estado || 'disponible';
+    if (state in totalsByState) totalsByState[state] += Number(item.tons || item.tonsDisponible || 0);
+  });
+
+  return {
+    items: monthItems,
+    totalsByState,
+    total: Object.values(totalsByState).reduce((sum, tons) => sum + tons, 0),
+  };
+}
+
 const providerKeyOf = (item) => String(item?.proveedorKey || item?.proveedorNombre || item?.proveedor || '').trim().toLowerCase();
 
 export function buildDisponibilidadProviders(contactos = [], centros = []) {

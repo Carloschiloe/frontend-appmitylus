@@ -374,7 +374,7 @@
 }
 
 .disponibilidad-annual-table {
-  min-width: 920px;
+  min-width: 1080px;
 }
 
 .disponibilidad-annual-table th:not(:first-child),
@@ -419,6 +419,52 @@
   text-align: center;
 }
 
+.disponibilidad-detail-button {
+  white-space: nowrap;
+}
+
+.disponibilidad-month-modal {
+  width: min(96vw, 1380px);
+  max-width: 1380px;
+  max-height: 92vh;
+}
+
+.disponibilidad-month-body {
+  display: grid;
+  gap: 18px;
+  overflow-y: auto;
+}
+
+.disponibilidad-month-modal .mx-modal-title {
+  text-transform: capitalize;
+}
+
+.disponibilidad-kpi-grid--month-detail {
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+}
+
+.disponibilidad-kpi-grid--month-detail .disponibilidad-kpi {
+  padding: 13px;
+}
+
+.disponibilidad-kpi-grid--month-detail .disponibilidad-kpi strong {
+  font-size: 19px;
+}
+
+.disponibilidad-month-table {
+  min-width: 1260px;
+}
+
+.disponibilidad-month-empty {
+  padding: 42px 20px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
 .disponibilidad-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -432,6 +478,10 @@
 @media (max-width: 1050px) {
   .disponibilidad-kpi-grid {
     grid-template-columns: repeat(3, minmax(130px, 1fr));
+  }
+
+  .disponibilidad-kpi-grid--month-detail {
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
   }
 
   .disponibilidad-filter-card {
@@ -463,6 +513,10 @@
   .disponibilidad-filter-card,
   .disponibilidad-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .disponibilidad-kpi-grid--month-detail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .disponibilidad-tabs {
