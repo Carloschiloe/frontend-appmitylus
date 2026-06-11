@@ -60,7 +60,7 @@ const MENU_STRUCTURE = [
   },
   {
     id: 'inteligencia',
-    label: 'Inteligencia',
+    label: 'Trazabilidad',
     icon: BarChart3,
     links: [
       { label: 'Sanitario', to: '/centros/sanitario', icon: ShieldCheck, alertId: 'sanitario' },
