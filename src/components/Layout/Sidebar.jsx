@@ -45,6 +45,7 @@ const MENU_STRUCTURE = [
     links: [
       { label: 'Resumen', to: '/gestion/bandeja', icon: ClipboardList },
       { label: 'Agenda', to: '/gestion/agenda', icon: Calendar },
+      { label: 'Disponibilidad', to: '/biomasa/status', icon: Inbox },
       { label: 'Tratos', to: '/gestion/tratos', icon: Handshake },
       { label: 'Prog. de Cosecha', to: '/biomasa/programa', icon: Droplet },
       { label: 'Muestreos', to: '/biomasa/muestreos', icon: TestTube2 },

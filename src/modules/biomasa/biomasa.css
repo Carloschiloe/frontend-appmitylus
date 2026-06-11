@@ -4,6 +4,213 @@
   animation: fadeIn 0.2s ease-out;
 }
 
+/* Disponibilidad futura */
+.disponibilidad-view {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.disponibilidad-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.disponibilidad-actions-row h2 {
+  margin: 0 0 4px;
+  color: var(--color-text);
+  font-size: 20px;
+}
+
+.disponibilidad-actions-row p,
+.disponibilidad-modal-subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.disponibilidad-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.disponibilidad-kpi {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-top: 3px solid #94a3b8;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.05);
+}
+
+.disponibilidad-kpi span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.disponibilidad-kpi strong {
+  color: var(--color-text);
+  font-size: 23px;
+}
+
+.disponibilidad-kpi--info { border-top-color: #3b82f6; }
+.disponibilidad-kpi--warning { border-top-color: #f59e0b; }
+.disponibilidad-kpi--success { border-top-color: #10b981; }
+.disponibilidad-kpi--danger { border-top-color: #ef4444; }
+.disponibilidad-kpi--muted { border-top-color: #64748b; }
+
+.disponibilidad-filter-card {
+  display: grid;
+  grid-template-columns: minmax(155px, 0.8fr) minmax(210px, 1.4fr) minmax(155px, 0.8fr) minmax(155px, 0.8fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.disponibilidad-filter {
+  display: grid;
+  gap: 6px;
+}
+
+.disponibilidad-filter > span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+}
+
+.disponibilidad-search-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 39px;
+  padding: 0 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.disponibilidad-search-input:focus-within {
+  border-color: var(--color-primary);
+}
+
+.disponibilidad-search-input input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.disponibilidad-table-card {
+  min-width: 0;
+}
+
+.disponibilidad-table-scroll {
+  overflow-x: auto;
+}
+
+.disponibilidad-table {
+  min-width: 1280px;
+}
+
+.disponibilidad-provider,
+.disponibilidad-tons {
+  font-weight: var(--weight-bold);
+}
+
+.disponibilidad-observation {
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.disponibilidad-state {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+.disponibilidad-state--info { background: #dbeafe; color: #1d4ed8; }
+.disponibilidad-state--warning { background: #fef3c7; color: #92400e; }
+.disponibilidad-state--success { background: #d1fae5; color: #047857; }
+.disponibilidad-state--danger { background: #fee2e2; color: #b91c1c; }
+.disponibilidad-state--muted { background: #e2e8f0; color: #475569; }
+
+.disponibilidad-row-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.disponibilidad-empty {
+  padding: 36px !important;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.disponibilidad-modal {
+  width: min(100%, 720px);
+  max-width: 720px;
+}
+
+.disponibilidad-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.disponibilidad-field-wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1050px) {
+  .disponibilidad-kpi-grid {
+    grid-template-columns: repeat(3, minmax(130px, 1fr));
+  }
+
+  .disponibilidad-filter-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .disponibilidad-refresh {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 680px) {
+  .disponibilidad-actions-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .disponibilidad-kpi-grid,
+  .disponibilidad-filter-card,
+  .disponibilidad-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .disponibilidad-field-wide {
+    grid-column: auto;
+  }
+}
+
 /* Línea de último muestreo (un/kg · rendimiento) en calendario de cosecha */
 .wk-prov-muestreo {
   margin-top: 3px;

@@ -16,6 +16,7 @@ import { maestrosApi } from '../../api/api-maestros';
 import { useToast } from '../../context/ToastContext';
 import { useBiomasaData } from '../../hooks/useBiomasaData';
 import BiomasaKpiCards from './components/BiomasaKpiCards';
+import DisponibilidadView from './components/DisponibilidadView';
 import ProgramaCosechaView from './views/ProgramaCosechaView';
 import ProgramaModalesView from './views/ProgramaModalesView';
 import HelpTourButton from '../../components/HelpTourButton';
@@ -558,6 +559,22 @@ export default function Biomasa() {
   }, [visibleBiomasaPendiente, visiblePerdidasBiomasa, visibleTratosBiomasa]);
 
   if (!isStatusView && !isProgramView && !isMuestreosView) return <Navigate to="/biomasa/status" replace />;
+
+  if (isStatusView) {
+    return (
+      <div className="mx-page">
+        <header className="mx-hero">
+          <div className="mx-hero-content">
+            <p className="mx-eyebrow">Operaciones · Disponibilidad</p>
+            <h1>Disponibilidad</h1>
+          </div>
+        </header>
+        <div className="mx-content-frame biomasa-content-frame">
+          <DisponibilidadView items={disp} loading={loading} mes={mes} setMes={setMes} reload={load} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-page">

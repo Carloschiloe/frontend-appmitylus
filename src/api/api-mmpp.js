@@ -6,12 +6,15 @@ const BASE_DISP = '/disponibilidades';
 
 // ── Disponibilidades ──────────────────────────────────────────────────────────
 
-export async function getDisponibilidades({ mesKey, proveedorKey } = {}) {
+export async function getDisponibilidades({ mesKey, proveedorKey, anio, from, to } = {}) {
   const params = new URLSearchParams();
-  if (mesKey) { params.set('from', mesKey); params.set('to', mesKey); }
+  if (mesKey) params.set('mesKey', mesKey);
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  if (anio && !mesKey && !from && !to) params.set('anio', anio);
   if (proveedorKey) params.set('proveedorKey', proveedorKey);
 
-  const data = await apiClient.get(`${BASE}/disponibilidad${params.size ? `?${params}` : ''}`);
+  const data = await apiClient.get(`${BASE_DISP}${params.size ? `?${params}` : ''}`);
   const items = Array.isArray(data) ? data : (data.items || []);
   return items.map(d => ({ ...d, tons: d.tonsDisponible ?? d.tons ?? 0 }));
 }
