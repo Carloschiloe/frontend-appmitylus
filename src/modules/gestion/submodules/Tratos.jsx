@@ -11,6 +11,7 @@ import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import TratoFormModal from './TratoFormModal';
 import TratoShareModal from './TratoShareModal';
 import TratosTable from './TratosTable';
+import HelpTourButton from '../../../components/HelpTourButton';
 import './tratos.css';
 import {
   buildInitialConditions,
@@ -493,7 +494,7 @@ export default function Tratos() {
 
   return (
     <div className="mx-page am-p-0">
-      <div className="mx-toolbar">
+      <div className="mx-toolbar" data-tour="tratos-filtros">
         <div className="mx-search-box tratos-toolbar-search">
           <Search size={18} />
           <input
@@ -552,7 +553,8 @@ export default function Tratos() {
           </label>
         )}
         <button className="mx-btn-icon sm" onClick={handleRefresh} title="Actualizar"><RotateCcw size={18} /></button>
-        <button className="mx-btn mx-btn-primary" onClick={openNew}>
+        <HelpTourButton tourId="tratos" />
+        <button className="mx-btn mx-btn-primary" onClick={openNew} data-tour="tratos-registrar">
           <Plus size={18} /> Nuevo Trato
         </button>
       </div>

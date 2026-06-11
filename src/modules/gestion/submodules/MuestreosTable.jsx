@@ -91,7 +91,7 @@ export default function MuestreosTable({
   onDelete,
 }) {
   return (
-    <div className="mx-table-card muestreos-table-card">
+    <div className="mx-table-card muestreos-table-card" data-tour="muestreos-tabla">
       <div className="mx-table-wrap">
         <table className="mx-table">
           <thead>

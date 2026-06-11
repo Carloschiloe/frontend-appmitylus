@@ -1,0 +1,39 @@
+.mitynex-tour-popover.driver-popover {
+  max-width: 310px;
+  border: 1px solid rgba(10, 92, 255, 0.16);
+  border-radius: 13px;
+  box-shadow: 0 20px 50px rgba(3, 27, 78, 0.22);
+  font-family: inherit;
+}
+
+.mitynex-tour-popover .driver-popover-title {
+  color: #0f2748;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.mitynex-tour-popover .driver-popover-description {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.mitynex-tour-popover .driver-popover-next-btn,
+.mitynex-tour-popover .driver-popover-prev-btn {
+  border: 0;
+  border-radius: 7px;
+  padding: 7px 10px;
+  text-shadow: none;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mitynex-tour-popover .driver-popover-next-btn {
+  background: #0a5cff;
+  color: #fff;
+}
+
+.mitynex-tour-popover .driver-popover-prev-btn {
+  background: #eef4ff;
+  color: #0a5cff;
+}

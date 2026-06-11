@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, LayoutGrid, List, Plus, RotateCcw, Search } from 'lucide-react';
 import { getMonthLabel } from './muestreos.helpers';
+import HelpTourButton from '../../../components/HelpTourButton';
 
 const shiftMonth = (monthKey, delta) => {
   const [year, month] = monthKey.split('-');
@@ -48,7 +49,7 @@ export default function MuestreosHeaderControls({
 
   return (
     <div className="muestreos-controls-panel">
-      <div className="mu-controls-period">
+      <div className="mu-controls-period" data-tour="muestreos-filtros">
         <div className="mx-toggle-group">
           <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => handleCalView('month')}>Vista Mes</button>
           <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => handleCalView('week')}>Vista Semana</button>
@@ -74,7 +75,7 @@ export default function MuestreosHeaderControls({
           <button className={`mx-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => onViewModeChange('list')}><List size={14} /> Historial</button>
           <button className={`mx-toggle-btn ${viewMode === 'grouped' ? 'active' : ''}`} onClick={() => onViewModeChange('grouped')}><LayoutGrid size={14} /> Agrupado</button>
         </div>
-        <div className="mx-search-box mu-toolbar-search">
+        <div className="mx-search-box mu-toolbar-search" data-tour="muestreos-busqueda">
           <Search size={18} />
           <input
             type="text"
@@ -85,7 +86,8 @@ export default function MuestreosHeaderControls({
           />
         </div>
         <button className="mx-btn mx-btn-outline sm" onClick={onRefresh}><RotateCcw size={18} /></button>
-        <button className="mx-btn mx-btn-primary sm" onClick={onNewMuestreo}>
+        <HelpTourButton tourId="muestreos" />
+        <button className="mx-btn mx-btn-primary sm" onClick={onNewMuestreo} data-tour="muestreos-registrar">
           <Plus size={18} /> Muestreo
         </button>
       </div>

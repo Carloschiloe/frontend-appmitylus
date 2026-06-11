@@ -64,7 +64,7 @@ function ActionsMenu({ item, uiEstado, displayTons, onShare, onEdit, onDelete })
   const canViewPrograma = hasProgramaActivo;
 
   return (
-    <div className="tratos-menu-wrap" ref={ref}>
+    <div className="tratos-menu-wrap" ref={ref} data-tour="tratos-acciones">
       <button
         className="mx-action-btn tratos-menu-trigger"
         title="Más acciones"
@@ -129,7 +129,7 @@ export default function TratosTable({
 
   return (
     <>
-      <div className="mx-table-card am-mt-16 tratos-table-card-override">
+      <div className="mx-table-card am-mt-16 tratos-table-card-override" data-tour="tratos-tabla">
         <div className="mx-table-wrap tratos-table-wrap-override">
           <table className="mx-table">
             <thead>

@@ -18,6 +18,7 @@ import { useBiomasaData } from '../../hooks/useBiomasaData';
 import BiomasaKpiCards from './components/BiomasaKpiCards';
 import ProgramaCosechaView from './views/ProgramaCosechaView';
 import ProgramaModalesView from './views/ProgramaModalesView';
+import HelpTourButton from '../../components/HelpTourButton';
 import { useCalendarioPrograma } from './hooks/useCalendarioPrograma';
 import { useProgramaActions } from './hooks/useProgramaActions';
 import { useProgramaForm } from './hooks/useProgramaForm';
@@ -572,7 +573,7 @@ export default function Biomasa() {
       <div className={`mx-content-frame biomasa-content-frame ${isMuestreosView ? 'biomasa-content-frame--muestreos' : ''}`}>
         {!isMuestreosView && (
         <div className="mx-toolbar">
-          <div className="mx-toggle-group">
+          <div className="mx-toggle-group" data-tour={isProgramView ? 'programa-vistas' : undefined}>
             {isStatusView ? (
               <>
                 <button className={`mx-toggle-btn ${statusSubTab === 'disponibilidad' ? 'active' : ''}`} onClick={() => setStatusSubTab('disponibilidad')}><Inbox size={14} /> Disponibilidad</button>
@@ -587,10 +588,14 @@ export default function Biomasa() {
             ) : null}
           </div>
           {(isProgramView && progSubTab === 'programa') && (
-            <button className="mx-btn mx-btn-primary" onClick={() => handleOpenModal()}>
-              <Plus size={18} /> Crear Programa
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <HelpTourButton tourId="biomasa" />
+              <button className="mx-btn mx-btn-primary" onClick={() => handleOpenModal()} data-tour="programa-crear">
+                <Plus size={18} /> Crear Programa
+              </button>
+            </div>
           )}
+          {(isProgramView && progSubTab !== 'programa') && <HelpTourButton tourId="biomasa" />}
         </div>
         )}
 

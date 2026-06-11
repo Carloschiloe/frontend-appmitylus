@@ -1,0 +1,22 @@
+.mx-help-tour-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid rgba(10, 92, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(10, 92, 255, 0.06);
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.mx-help-tour-button:hover {
+  border-color: rgba(10, 92, 255, 0.38);
+  background: rgba(10, 92, 255, 0.11);
+}

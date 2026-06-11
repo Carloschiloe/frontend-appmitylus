@@ -81,11 +81,11 @@ export default function ProgramaCalendarioView({
   };
 
   return (
-    <div ref={calendarBoardRef} className={`harvest-calendar-shell ${calView === 'week' ? 'week-mode' : 'month-mode'} ${isCalendarBoard ? 'board-mode' : ''}`}>
+    <div ref={calendarBoardRef} className={`harvest-calendar-shell ${calView === 'week' ? 'week-mode' : 'month-mode'} ${isCalendarBoard ? 'board-mode' : ''}`} data-tour="programa-calendario">
       <div className="mx-card harvest-calendar-main">
         <div className="harvest-calendar-toolbar">
           <div className="harvest-calendar-controls">
-            <div className="mx-toggle-group">
+            <div className="mx-toggle-group" data-tour="programa-calendario-vistas">
               <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => setCalView('month')}>Vista Mes</button>
               <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => { setCalView('week'); setSelectedDay(null); }}>Vista Semana</button>
             </div>
@@ -316,7 +316,7 @@ export default function ProgramaCalendarioView({
                             {cell.esDiaEspecial && cell.camiones > 0 && <div className="harvest-week-v2-adj">★ {cell.ajusteMotivo || 'Ajuste'}</div>}
                             {programa && !isReadOnly && (
                               <div className="harvest-week-v2-actions">
-                                <button className="wk-btn-ajustar" onClick={() => abrirAjustarDia(programa, dia, cell, 'sumar')}>
+                                <button className="wk-btn-ajustar" onClick={() => abrirAjustarDia(programa, dia, cell, 'sumar')} data-tour="programa-ajustar">
                                   <SlidersHorizontal size={12} /> Ajustar
                                 </button>
                               </div>
@@ -475,7 +475,7 @@ export default function ProgramaCalendarioView({
               </div>
             </>
           ) : calView === 'week' ? (
-            <div className="hds-body">
+            <div className="hds-body" data-tour="programa-resumen">
               <div className="hds-header">
                 <div className="hds-header-icon"><Activity size={16} /></div>
                 <span className="hds-header-title">RESUMEN DE LA SEMANA</span>
