@@ -809,7 +809,7 @@ export default function Historial() {
       <div className="mx-page">
         <header className="mx-hero mx-hero--with-desc">
           <div className="mx-hero-content">
-            <p className="mx-eyebrow">Inteligencia · Historial</p>
+            <p className="mx-eyebrow">Trazabilidad · Historial</p>
             <h1>{selectedProvider.name}</h1>
             <p>
               Aquí vive solo lo que ya pasó: interacciones, visitas, contactos y cambios de seguimiento.
@@ -1060,7 +1060,7 @@ export default function Historial() {
     <div className="mx-page">
       <header className="mx-hero mx-hero--with-desc historial-hero">
         <div className="mx-hero-content">
-          <p className="mx-eyebrow">{historyView === 'equipo' ? 'Inteligencia · Actividad del equipo' : 'Inteligencia · Historial'}</p>
+          <p className="mx-eyebrow">{historyView === 'equipo' ? 'Trazabilidad · Actividad del equipo' : 'Trazabilidad · Historial'}</p>
           <h1>{historyView === 'equipo' ? 'Actividad del equipo' : 'Historial operativo'}</h1>
           <p>{historyView === 'equipo' ? 'Trazabilidad operativa de acciones, responsables y registros recientes.' : 'Aquí revisamos lo que ya pasó. La operación pendiente vive en Resumen, Agenda y Proveedores.'}</p>
         </div>

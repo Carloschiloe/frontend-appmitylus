@@ -26,7 +26,7 @@ const CENTROS_TABS = [
 const getPageMeta = (pathname) => {
   if (pathname.startsWith('/centros/sanitario')) {
     return {
-      eyebrow: 'Inteligencia · Sanitario',
+      eyebrow: 'Trazabilidad · Sanitario',
       title: 'Estado Sanitario',
       showActions: false
     };
