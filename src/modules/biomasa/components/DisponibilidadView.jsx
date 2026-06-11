@@ -239,7 +239,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       </>
       )}
 
-      {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} onEdit={openEdit} />}
+      {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} estadoFiltro={filters.estado} onEdit={openEdit} />}
       {activeTab === 'anual' && <DisponibilidadProyeccionAnual items={filteredAnnualItems} year={annualYear} loading={annualLoading} onEdit={openEdit} />}
 
       <DisponibilidadModal

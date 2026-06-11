@@ -9,17 +9,22 @@ import { fmtTons } from '../utils/programaCalculos';
 import { mesLabel } from '../utils/fechasChile';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 
-const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((state) => state.value === value) || DISPONIBILIDAD_ESTADOS[0];
+const itemTons = (item) => Number(item.tons || item.tonsDisponible || 0);
 
-export default function DisponibilidadResumen({ items, mes, onEdit }) {
-  const totals = DISPONIBILIDAD_ESTADOS.map((state) => ({
-    ...state,
-    tons: items
-      .filter((item) => (item.estado || 'disponible') === state.value)
-      .reduce((sum, item) => sum + Number(item.tons || item.tonsDisponible || 0), 0),
-  }));
-  const maxTons = Math.max(...totals.map((item) => item.tons), 1);
-  const total = totals.reduce((sum, item) => sum + item.tons, 0);
+export default function DisponibilidadResumen({ items, mes, estadoFiltro, onEdit }) {
+  const states = estadoFiltro
+    ? DISPONIBILIDAD_ESTADOS.filter((state) => state.value === estadoFiltro)
+    : DISPONIBILIDAD_ESTADOS;
+  const groups = states.map((state) => {
+    const stateItems = items.filter((item) => (item.estado || 'disponible') === state.value);
+    return {
+      ...state,
+      items: stateItems,
+      tons: stateItems.reduce((sum, item) => sum + itemTons(item), 0),
+    };
+  });
+  const maxTons = Math.max(...groups.map((group) => group.tons), 1);
+  const total = groups.reduce((sum, group) => sum + group.tons, 0);
 
   return (
     <section className="disponibilidad-summary-card">
@@ -30,64 +35,42 @@ export default function DisponibilidadResumen({ items, mes, onEdit }) {
         </div>
         <strong>{fmtTons(total)} totales</strong>
       </div>
-      <div className="disponibilidad-bars" aria-label={`Toneladas por estado para ${mesLabel(mes)}`}>
-        {totals.map((item) => (
-          <div key={item.value} className="disponibilidad-bar-row">
-            <div className="disponibilidad-bar-label">
-              <span className={`disponibilidad-state disponibilidad-state--${item.tone}`}>{item.label}</span>
-              <strong>{fmtTons(item.tons)}</strong>
+
+      <div className="disponibilidad-state-groups" aria-label={`Toneladas por estado para ${mesLabel(mes)}`}>
+        {groups.map((group) => (
+          <article key={group.value} className={`disponibilidad-state-group disponibilidad-state-group--${group.tone}`}>
+            <div className="disponibilidad-state-group-header">
+              <span className={`disponibilidad-state disponibilidad-state--${group.tone}`}>{group.label}</span>
+              <strong>{fmtTons(group.tons)}</strong>
             </div>
             <div className="disponibilidad-bar-track">
-              <div className={`disponibilidad-bar-fill disponibilidad-bar-fill--${item.tone}`} style={{ width: `${(item.tons / maxTons) * 100}%` }} />
+              <div className={`disponibilidad-bar-fill disponibilidad-bar-fill--${group.tone}`} style={{ width: `${(group.tons / maxTons) * 100}%` }} />
             </div>
-          </div>
-        ))}
-      </div>
 
-      <div className="disponibilidad-summary-detail">
-        <div className="disponibilidad-summary-detail-header">
-          <h4>Detalle del mes</h4>
-          <p>Proveedores y contactos con biomasa informada para este mes.</p>
-        </div>
-        {items.length > 0 ? (
-          <div className="mx-table-card disponibilidad-table-card">
-            <div className="disponibilidad-table-scroll">
-              <table className="mx-table disponibilidad-summary-table">
-                <thead>
-                  <tr>
-                    <th>Proveedor / Contacto</th><th>Centro</th><th>Toneladas</th><th>Producto</th>
-                    <th>Estado</th><th>Responsable</th><th>Origen</th><th>Observación</th><th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => {
-                    const meta = stateMeta(item.estado || 'disponible');
-                    return (
-                      <tr key={item._id}>
-                        <td className="disponibilidad-provider"><DisponibilidadProviderCell item={item} /></td>
-                        <td>{item.centroCodigo || 'Sin centro'}</td>
-                        <td className="disponibilidad-tons">{fmtTons(item.tons || item.tonsDisponible || 0)}</td>
-                        <td>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
-                        <td><span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span></td>
-                        <td>{item.responsable || 'Sin asignar'}</td>
-                        <td>{optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')}</td>
-                        <td className="disponibilidad-observation" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
-                        <td>
-                          <div className="disponibilidad-row-actions">
-                            <button type="button" className="mx-btn-icon sm" onClick={() => onEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
-                            <button type="button" className="mx-btn-icon sm" disabled title="Crear trato asociado: disponible en próxima fase" aria-label="Crear trato asociado, disponible en próxima fase"><ArrowRight size={15} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="disponibilidad-state-records">
+              {group.items.length > 0 ? group.items.map((item) => (
+                <div key={item._id} className="disponibilidad-state-record">
+                  <DisponibilidadProviderCell item={item} />
+                  <div className="disponibilidad-state-record-volume">
+                    <strong>{fmtTons(itemTons(item))}</strong>
+                    <span>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</span>
+                  </div>
+                  <div className="disponibilidad-state-record-meta">
+                    <span>Origen: {optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')}</span>
+                    <span>Responsable: {item.responsable || 'Sin asignar'}</span>
+                    <span title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</span>
+                  </div>
+                  <div className="disponibilidad-row-actions">
+                    <button type="button" className="mx-btn-icon sm" onClick={() => onEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
+                    <button type="button" className="mx-btn-icon sm" disabled title="Crear trato asociado: disponible en próxima fase" aria-label="Crear trato asociado, disponible en próxima fase"><ArrowRight size={15} /></button>
+                  </div>
+                </div>
+              )) : (
+                <div className="disponibilidad-state-empty">No hay disponibilidad en este estado.</div>
+              )}
             </div>
-          </div>
-        ) : (
-          <div className="disponibilidad-month-empty">No hay disponibilidad registrada para este mes.</div>
-        )}
+          </article>
+        ))}
       </div>
     </section>
   );
