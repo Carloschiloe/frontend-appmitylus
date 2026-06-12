@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, BarChart3, CalendarRange, ChartNoAxesCombined, List, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
-import { crearDisponibilidad, editarDisponibilidad, getDisponibilidades } from '../../../api/api-mmpp';
+import { crearDisponibilidad, crearTratoDesdeDisponibilidad, editarDisponibilidad, getDisponibilidades } from '../../../api/api-mmpp';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { fmtTons } from '../utils/programaCalculos';
@@ -17,6 +17,7 @@ import {
 } from '../disponibilidad.constants';
 import DisponibilidadModal from './DisponibilidadModal';
 import DisponibilidadAnalisisGrafico from './DisponibilidadAnalisisGrafico';
+import DisponibilidadCrearTratoModal from './DisponibilidadCrearTratoModal';
 import DisponibilidadProyeccionAnual from './DisponibilidadProyeccionAnual';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 import DisponibilidadResumen from './DisponibilidadResumen';
@@ -42,6 +43,8 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [modalItem, setModalItem] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [tratoItem, setTratoItem] = useState(null);
+  const [savingTrato, setSavingTrato] = useState(false);
   const [activeTab, setActiveTab] = useState('listado');
   const [annualItems, setAnnualItems] = useState([]);
   const [annualLoading, setAnnualLoading] = useState(false);
@@ -144,6 +147,11 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     setModalOpen(true);
   };
 
+  const openCreateTrato = (item) => {
+    if ((item.estado || 'disponible') !== 'disponible' || item.tratoId) return;
+    setTratoItem(item);
+  };
+
   const closeModal = () => {
     setModalOpen(false);
     setModalItem(null);
@@ -168,6 +176,26 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       addToast({ title: 'No se pudo guardar', message: error.message || 'Revisa los datos e intenta nuevamente.', type: 'error' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCreateTrato = async (payload) => {
+    if (!tratoItem?._id) return;
+    setSavingTrato(true);
+    try {
+      const trato = await crearTratoDesdeDisponibilidad(tratoItem._id, payload);
+      setTratoItem(null);
+      setAnnualReloadKey((current) => current + 1);
+      await reload();
+      addToast({
+        title: 'Trato creado',
+        message: `${trato.proveedorNombre || tratoItem.proveedorNombre || tratoItem.contactoNombre}: ${fmtTons(payload.tonsAcordadas)} asociados.`,
+        type: 'success',
+      });
+    } catch (error) {
+      addToast({ title: 'No se pudo crear el trato', message: error.message || 'Revisa los datos e intenta nuevamente.', type: 'error' });
+    } finally {
+      setSavingTrato(false);
     }
   };
 
@@ -254,7 +282,11 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                     <td>
                       <div className="disponibilidad-row-actions">
                         <button type="button" className="mx-btn-icon sm" onClick={() => openEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
-                        <button type="button" className="mx-btn-icon sm" disabled title="Crear trato asociado: disponible en próxima fase" aria-label="Crear trato asociado, disponible en próxima fase"><ArrowRight size={15} /></button>
+                        {(item.estado || 'disponible') === 'disponible' && !item.tratoId && (
+                          <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-create-trato-button" onClick={() => openCreateTrato(item)} title="Crear trato asociado">
+                            <ArrowRight size={15} /> Crear trato
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -271,7 +303,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       </>
       )}
 
-      {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} estadoFiltro={filters.estado} onEdit={openEdit} />}
+      {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} estadoFiltro={filters.estado} onEdit={openEdit} onCreateTrato={openCreateTrato} />}
       {activeTab === 'anual' && (
         <DisponibilidadProyeccionAnual
           items={filteredAnnualItems}
@@ -281,6 +313,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
           estadoFiltro={filters.estado}
           onEstadoFiltroChange={(estado) => setFilters((current) => ({ ...current, estado }))}
           onEdit={openEdit}
+          onCreateTrato={openCreateTrato}
         />
       )}
       {activeTab === 'analisis' && (
@@ -315,6 +348,14 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         saving={saving}
         onClose={closeModal}
         onSave={handleSave}
+      />
+      <DisponibilidadCrearTratoModal
+        open={Boolean(tratoItem)}
+        item={tratoItem}
+        responsableNombre={responsableNombre}
+        saving={savingTrato}
+        onClose={() => setTratoItem(null)}
+        onSave={handleCreateTrato}
       />
     </div>
   );

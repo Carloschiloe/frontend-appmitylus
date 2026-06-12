@@ -13,7 +13,7 @@ import ResumenTotalesDisponibilidad from './ResumenTotalesDisponibilidad';
 
 const itemTons = (item) => Number(item.tons || item.tonsDisponible || 0);
 
-export default function DisponibilidadResumen({ items, mes, estadoFiltro, onEdit }) {
+export default function DisponibilidadResumen({ items, mes, estadoFiltro, onEdit, onCreateTrato }) {
   const states = estadoFiltro
     ? DISPONIBILIDAD_ESTADOS.filter((state) => state.value === estadoFiltro)
     : DISPONIBILIDAD_ESTADOS;
@@ -94,7 +94,9 @@ export default function DisponibilidadResumen({ items, mes, estadoFiltro, onEdit
                       </div>
                       <div className="disponibilidad-row-actions">
                         <button type="button" className="mx-btn-icon sm" onClick={() => onEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
-                        <button type="button" className="mx-btn-icon sm" disabled title="Crear trato asociado: disponible en próxima fase" aria-label="Crear trato asociado, disponible en próxima fase"><ArrowRight size={15} /></button>
+                        {(item.estado || 'disponible') === 'disponible' && !item.tratoId && (
+                          <button type="button" className="mx-btn-icon sm" onClick={() => onCreateTrato(item)} title="Crear trato asociado" aria-label="Crear trato asociado"><ArrowRight size={15} /></button>
+                        )}
                       </div>
                     </div>
                   )) : (

@@ -29,6 +29,11 @@ export async function editarDisponibilidad(id, payload) {
   return data.item || data;
 }
 
+export async function crearTratoDesdeDisponibilidad(id, payload) {
+  const data = await apiClient.post(`${BASE_DISP}/${id}/crear-trato`, payload);
+  return data.item || data;
+}
+
 export async function borrarDisponibilidad(id) {
   return apiClient.delete(`${BASE_DISP}/${id}`);
 }

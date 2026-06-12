@@ -279,6 +279,49 @@
   gap: 5px;
 }
 
+.disponibilidad-create-trato-button {
+  white-space: nowrap;
+}
+
+.disponibilidad-create-trato-modal {
+  width: min(720px, calc(100vw - 28px));
+}
+
+.disponibilidad-create-trato-origin {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-md);
+  background: #eff6ff;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.disponibilidad-create-trato-origin strong {
+  color: #1d4ed8;
+  font-size: 14px;
+}
+
+.disponibilidad-create-trato-responsable {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: #f8fafc;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.disponibilidad-form-error {
+  margin-top: 10px;
+  color: var(--color-danger);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+}
+
 .disponibilidad-empty {
   padding: 36px !important;
   color: var(--color-text-muted);
@@ -1339,6 +1382,10 @@
   .disponibilidad-kpi-grid,
   .disponibilidad-filter-card,
   .disponibilidad-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .disponibilidad-create-trato-origin {
     grid-template-columns: 1fr;
   }
 

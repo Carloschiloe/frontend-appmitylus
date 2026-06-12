@@ -24,6 +24,7 @@ export default function DisponibilidadProyeccionAnual({
   estadoFiltro,
   onEstadoFiltroChange,
   onEdit,
+  onCreateTrato,
 }) {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const { rows, totalsByState, annualTotal } = buildDisponibilidadAnnualProjection(items, year);
@@ -161,7 +162,9 @@ export default function DisponibilidadProyeccionAnual({
                               <td>
                                 <div className="disponibilidad-row-actions">
                                   <button type="button" className="mx-btn-icon sm" onClick={() => onEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
-                                  <button type="button" className="mx-btn-icon sm" disabled title="Crear trato asociado: disponible en próxima fase" aria-label="Crear trato asociado, disponible en próxima fase"><ArrowRight size={15} /></button>
+                                  {(item.estado || 'disponible') === 'disponible' && !item.tratoId && (
+                                    <button type="button" className="mx-btn-icon sm" onClick={() => onCreateTrato(item)} title="Crear trato asociado" aria-label="Crear trato asociado"><ArrowRight size={15} /></button>
+                                  )}
                                 </div>
                               </td>
                             </tr>
