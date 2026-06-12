@@ -6,6 +6,34 @@ const DEFAULT_TIMEOUT_MS = 30000;
 // Subidas de archivos (fotos de muestreo) pueden tardar más en conexiones lentas
 const UPLOAD_TIMEOUT_MS = 120000;
 
+// Serializa múltiples 401 simultáneos: solo un refresh se ejecuta a la vez.
+// Las demás peticiones esperan la misma promesa y luego reintentan.
+let _refreshPromise = null;
+
+async function attemptRefresh() {
+  if (_refreshPromise) return _refreshPromise;
+  const doFetch = async () => {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 10000);
+    try {
+      const r = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({}),
+        signal: ctrl.signal,
+      });
+      return r.ok;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(tid);
+    }
+  };
+  _refreshPromise = doFetch().finally(() => { _refreshPromise = null; });
+  return _refreshPromise;
+}
+
 class ApiError extends Error {
   constructor(message, status, data) {
     super(message);
@@ -55,6 +83,12 @@ async function request(endpoint, options = {}) {
       const isPublicPath = endpoint.startsWith('/auth/') || endpoint.startsWith('/public/');
 
       if (!isPublicPath) {
+        if (!options._retry) {
+          const refreshed = await attemptRefresh();
+          if (refreshed) {
+            return request(endpoint, { ...options, _retry: true });
+          }
+        }
         clearSessionCache({ clearTenant: true });
         clearRuntimeLayoutState();
         window.location.href = '/login';
