@@ -2,7 +2,8 @@ import { apiClient } from '../../../api/apiClient';
 
 export const getMuestreoDetail = (id) => apiClient.get(`/muestreos/${id}`);
 
-export const getMuestreoReportDetail = (id) => apiClient.get(`/muestreos/${id}?audit=1`);
+// HTML del informe interno, generado por el backend (fuente unica de la plantilla)
+export const getMuestreoReportHtml = (id) => apiClient.get(`/muestreos/${id}/reporte-html`);
 
 export const deleteMuestreo = (id) => apiClient.delete(`/muestreos/${id}`);
 

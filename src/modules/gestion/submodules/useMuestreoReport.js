@@ -1,52 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { generarHTMLReporte } from '../../reportes/renderMuestreoReport';
-import { createPublicMuestreoShare, getMuestreoReportDetail } from './muestreos.api';
-
-function copyTextInWindow(win, value) {
-  const doc = win.document;
-  const textarea = doc.createElement('textarea');
-  textarea.value = value;
-  doc.body.appendChild(textarea);
-  textarea.select();
-  doc.execCommand('copy');
-  doc.body.removeChild(textarea);
-}
-
-function bindReportShareButtons({ win, id }) {
-  setTimeout(() => {
-    const copyButton = win.document.getElementById('btnCopiarEnlace');
-    if (copyButton) {
-      copyButton.addEventListener('click', async () => {
-        try {
-          copyButton.innerText = 'Generando...';
-          const res = await createPublicMuestreoShare(id);
-          copyTextInWindow(win, res.shortUrl || res.url);
-          copyButton.innerText = 'Copiado';
-          setTimeout(() => { copyButton.innerText = 'Copiar enlace'; }, 2500);
-        } catch {
-          copyButton.innerText = 'Error';
-          setTimeout(() => { copyButton.innerText = 'Copiar enlace'; }, 2500);
-        }
-      });
-    }
-
-    const shareButton = win.document.getElementById('btnCompartirPublico');
-    if (shareButton) {
-      shareButton.addEventListener('click', async () => {
-        try {
-          shareButton.innerText = 'Generando...';
-          const res = await createPublicMuestreoShare(id);
-          copyTextInWindow(win, res.shortUrl || res.url);
-          shareButton.innerText = 'Copiado';
-          setTimeout(() => { shareButton.innerText = 'Compartir'; }, 2500);
-        } catch {
-          shareButton.innerText = 'Error';
-          setTimeout(() => { shareButton.innerText = 'Compartir'; }, 2500);
-        }
-      });
-    }
-  }, 300);
-}
+import { createPublicMuestreoShare, getMuestreoReportHtml } from './muestreos.api';
 
 function buildShareText({ muestreo, url }) {
   const proveedor = muestreo.proveedorNombre || 'Proveedor';
@@ -66,8 +19,6 @@ function buildShareText({ muestreo, url }) {
 
 export default function useMuestreoReport({
   addToast,
-  maestros,
-  user,
   setIsLoadingDetails,
   setShareData,
   setIsShareModalOpen,
@@ -78,10 +29,8 @@ export default function useMuestreoReport({
 
     try {
       setIsLoadingDetails(true);
-      const detalle = await getMuestreoReportDetail(id);
-      const logoUrl = user?.empresaId?.config?.logo || localStorage.getItem('selected_tenant_logo') || '';
-      const empresaNom = user?.empresaId?.nombre || 'Mitynex';
-      const html = generarHTMLReporte(detalle, { logoUrl, empresaNom, maestros });
+      // El HTML lo genera el backend con la misma plantilla del reporte publico
+      const html = await getMuestreoReportHtml(id);
       if (!html) return;
 
       const win = window.open('', '_blank', 'width=900,height=1000');
@@ -92,13 +41,12 @@ export default function useMuestreoReport({
 
       win.document.write(html);
       win.document.close();
-      bindReportShareButtons({ win, id });
     } catch {
       addToast({ title: 'Error', message: 'No se pudo cargar el detalle del reporte.', type: 'error' });
     } finally {
       setIsLoadingDetails(false);
     }
-  }, [addToast, maestros, setIsLoadingDetails, user?.empresaId?.config?.logo, user?.empresaId?.nombre]);
+  }, [addToast, setIsLoadingDetails]);
 
   const compartirReporte = useCallback(async (muestreo) => {
     const id = muestreo._id || muestreo.id;
