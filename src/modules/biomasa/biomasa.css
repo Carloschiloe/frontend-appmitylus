@@ -770,6 +770,55 @@
   font-size: 18px;
 }
 
+.disponibilidad-state-filter-cards {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.disponibilidad-state-filter-card {
+  display: grid;
+  gap: 4px;
+  padding: 11px 13px;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid #94a3b8;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.disponibilidad-state-filter-card--info { border-left-color: #3b82f6; }
+.disponibilidad-state-filter-card--warning { border-left-color: #f59e0b; }
+.disponibilidad-state-filter-card--success { border-left-color: #10b981; }
+.disponibilidad-state-filter-card--danger { border-left-color: #ef4444; }
+.disponibilidad-state-filter-card--muted { border-left-color: #64748b; }
+.disponibilidad-state-filter-card--total { border-left-color: var(--color-primary); }
+
+.disponibilidad-state-filter-card:hover,
+.disponibilidad-state-filter-card.is-active {
+  border-color: #60a5fa;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.12);
+  transform: translateY(-1px);
+}
+
+.disponibilidad-state-filter-card.is-active {
+  background: #eff6ff;
+}
+
+.disponibilidad-state-filter-card span {
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+}
+
+.disponibilidad-state-filter-card strong {
+  color: var(--color-text);
+  font-size: 17px;
+}
+
 .disponibilidad-analysis-card {
   display: grid;
   gap: 14px;
@@ -814,32 +863,36 @@
 .disponibilidad-analysis-swatch--comparison { background: #c4b5fd; }
 
 .disponibilidad-analysis-tooltip {
+  position: absolute;
+  z-index: 4;
+  top: 6px;
+  left: 50%;
   display: grid;
-  gap: 5px;
-  padding: 12px 14px;
+  gap: 3px;
+  min-width: 160px;
+  padding: 9px 11px;
   border: 1px solid #bfdbfe;
   border-radius: var(--radius-md);
   background: #eff6ff;
   color: var(--color-text-muted);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
   font-size: 11px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 120ms ease, transform 120ms ease;
 }
 
 .disponibilidad-analysis-tooltip strong {
   color: var(--color-text);
-  font-size: 13px;
+  font-size: 12px;
   text-transform: capitalize;
 }
 
-.disponibilidad-analysis-tooltip div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px 12px;
-}
-
-.disponibilidad-analysis-tooltip p {
-  margin: 3px 0 0;
-  color: var(--color-text);
-  font-weight: var(--weight-bold);
+.disponibilidad-analysis-tooltip small {
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
 }
 
 .disponibilidad-analysis-chart-scroll {
@@ -858,6 +911,7 @@
 }
 
 .disponibilidad-analysis-month {
+  position: relative;
   display: grid;
   grid-template-rows: 1fr auto auto;
   gap: 5px;
@@ -874,6 +928,18 @@
 
 .disponibilidad-analysis-month:hover {
   background: rgba(239, 246, 255, 0.65);
+}
+
+.disponibilidad-analysis-month:hover .disponibilidad-analysis-tooltip,
+.disponibilidad-analysis-month:focus-visible .disponibilidad-analysis-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.disponibilidad-analysis-month.is-selected {
+  border-radius: var(--radius-sm);
+  background: #dbeafe;
+  box-shadow: inset 0 0 0 1px #93c5fd;
 }
 
 .disponibilidad-analysis-month strong {
@@ -920,6 +986,114 @@
   text-align: right;
 }
 
+.disponibilidad-analysis-drawer-overlay {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(15, 23, 42, 0.3);
+}
+
+.disponibilidad-analysis-drawer {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  width: min(94vw, 480px);
+  height: 100%;
+  padding: 20px;
+  background: var(--color-surface);
+  box-shadow: -12px 0 30px rgba(15, 23, 42, 0.18);
+}
+
+.disponibilidad-analysis-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.disponibilidad-analysis-drawer-header h3 {
+  margin: 0;
+  color: var(--color-text);
+  text-transform: capitalize;
+}
+
+.disponibilidad-analysis-drawer-header p {
+  margin: 5px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.disponibilidad-analysis-drawer-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0 10px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+}
+
+.disponibilidad-analysis-drawer-total strong {
+  color: var(--color-primary);
+  font-size: 20px;
+}
+
+.disponibilidad-analysis-drawer-states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 14px;
+}
+
+.disponibilidad-analysis-drawer-list {
+  min-height: 0;
+  overflow-y: auto;
+  border-top: 1px solid var(--color-border);
+}
+
+.disponibilidad-analysis-detail-record {
+  display: grid;
+  gap: 8px;
+  padding: 14px 2px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.disponibilidad-analysis-detail-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.disponibilidad-analysis-detail-title > strong {
+  flex: 0 0 auto;
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.disponibilidad-analysis-detail-tags,
+.disponibilidad-analysis-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+}
+
+.disponibilidad-analysis-detail-tags > span:first-child,
+.disponibilidad-analysis-detail-meta span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.disponibilidad-analysis-detail-meta span:last-child {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .disponibilidad-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -945,6 +1119,10 @@
 
   .disponibilidad-product-cards {
     grid-template-columns: repeat(3, minmax(120px, 1fr));
+  }
+
+  .disponibilidad-state-filter-cards {
+    grid-template-columns: repeat(3, minmax(110px, 1fr));
   }
 
   .disponibilidad-state-record {
@@ -981,7 +1159,8 @@
   .disponibilidad-kpi-grid,
   .disponibilidad-filter-card,
   .disponibilidad-form-grid,
-  .disponibilidad-product-cards {
+  .disponibilidad-product-cards,
+  .disponibilidad-state-filter-cards {
     grid-template-columns: 1fr;
   }
 

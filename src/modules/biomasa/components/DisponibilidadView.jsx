@@ -117,6 +117,10 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     () => filterDisponibilidades(annualItems, { ...filters, producto: '' }),
     [annualItems, filters]
   );
+  const analysisStateBaseItems = useMemo(
+    () => filterDisponibilidades(annualItems, { ...filters, estado: '' }),
+    [annualItems, filters]
+  );
   const listedTotals = useMemo(() => buildDisponibilidadTotals(filteredItems), [filteredItems]);
 
   const providerDirectory = useMemo(
@@ -282,12 +286,15 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         <DisponibilidadAnalisisGrafico
           items={filteredAnnualItems}
           baseItems={analysisBaseItems}
+          stateBaseItems={analysisStateBaseItems}
           comparisonItems={filteredComparisonItems}
           year={annualYear}
           comparisonYear={comparisonYear}
           onComparisonYearChange={setComparisonYear}
           productFilter={filters.producto}
           onProductFilterChange={(producto) => setFilters((current) => ({ ...current, producto }))}
+          stateFilter={filters.estado}
+          onStateFilterChange={(estado) => setFilters((current) => ({ ...current, estado }))}
           loading={annualLoading}
           comparisonLoading={comparisonLoading}
         />

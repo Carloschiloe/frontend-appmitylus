@@ -1,44 +1,37 @@
 import { useMemo, useState } from 'react';
+import { X } from 'lucide-react';
 import {
   buildDisponibilidadAnnualProjection,
+  buildDisponibilidadMonthDetail,
   buildDisponibilidadTotals,
   DISPONIBILIDAD_ESTADOS,
+  DISPONIBILIDAD_ORIGENES,
   DISPONIBILIDAD_PRODUCTOS,
+  optionLabel,
 } from '../disponibilidad.constants';
 import { fmtTons } from '../utils/programaCalculos';
 import { mesLabel } from '../utils/fechasChile';
+import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 
 const itemTons = (item) => Number(item.tons || item.tonsDisponible || 0);
-const identityLabel = (item) => (
-  item.proveedorNombreNorm
-  || item.proveedorNombre
-  || item.empresaNombre
-  || (item.contactoNombre ? `Contacto: ${item.contactoNombre}` : 'Sin proveedor')
-);
-
-function monthProviders(items, monthKey) {
-  const providers = new Map();
-  items.filter((item) => item.mesKey === monthKey).forEach((item) => {
-    const label = identityLabel(item);
-    providers.set(label, (providers.get(label) || 0) + itemTons(item));
-  });
-  return Array.from(providers, ([label, tons]) => ({ label, tons }))
-    .sort((a, b) => b.tons - a.tons);
-}
+const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((state) => state.value === value) || DISPONIBILIDAD_ESTADOS[0];
 
 export default function DisponibilidadAnalisisGrafico({
   items,
   baseItems,
+  stateBaseItems,
   comparisonItems,
   year,
   comparisonYear,
   onComparisonYearChange,
   productFilter,
   onProductFilterChange,
+  stateFilter,
+  onStateFilterChange,
   loading,
   comparisonLoading,
 }) {
-  const [hoveredMonth, setHoveredMonth] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(null);
   const primary = useMemo(() => buildDisponibilidadAnnualProjection(items, year), [items, year]);
   const comparison = useMemo(
     () => buildDisponibilidadAnnualProjection(comparisonItems, comparisonYear || year),
@@ -54,6 +47,16 @@ export default function DisponibilidadAnalisisGrafico({
       })),
     ];
   }, [baseItems]);
+  const stateCards = useMemo(() => {
+    const all = { value: '', label: 'Todos', tone: 'total', ...buildDisponibilidadTotals(stateBaseItems) };
+    return [
+      all,
+      ...DISPONIBILIDAD_ESTADOS.map((state) => ({
+        ...state,
+        ...buildDisponibilidadTotals(stateBaseItems.filter((item) => (item.estado || 'disponible') === state.value)),
+      })),
+    ];
+  }, [stateBaseItems]);
   const compareOptions = useMemo(() => {
     const current = Number(year);
     return [current - 2, current - 1, current + 1].filter((value) => value > 0);
@@ -64,10 +67,10 @@ export default function DisponibilidadAnalisisGrafico({
     1
   );
   const difference = comparisonYear ? primary.annualTotal - comparison.annualTotal : 0;
-  const activeTooltip = hoveredMonth == null ? null : {
-    row: primary.rows[hoveredMonth],
-    providers: monthProviders(items, primary.rows[hoveredMonth].monthKey),
-  };
+  const selectedDetail = useMemo(
+    () => buildDisponibilidadMonthDetail(items, selectedMonth),
+    [items, selectedMonth]
+  );
 
   return (
     <section className="disponibilidad-analysis">
@@ -118,6 +121,20 @@ export default function DisponibilidadAnalisisGrafico({
         ))}
       </div>
 
+      <div className="disponibilidad-state-filter-cards" aria-label="Filtro rápido por estado">
+        {stateCards.map((state) => (
+          <button
+            key={state.value || 'todos'}
+            type="button"
+            className={`disponibilidad-state-filter-card disponibilidad-state-filter-card--${state.tone}${stateFilter === state.value ? ' is-active' : ''}`}
+            onClick={() => onStateFilterChange(state.value)}
+          >
+            <span>{state.label}</span>
+            <strong>{fmtTons(state.total)}</strong>
+          </button>
+        ))}
+      </div>
+
       <div className="disponibilidad-analysis-card">
         <div className="disponibilidad-analysis-legend">
           {DISPONIBILIDAD_ESTADOS.map((state) => (
@@ -125,22 +142,6 @@ export default function DisponibilidadAnalisisGrafico({
           ))}
           {comparisonYear && <span><i className="disponibilidad-analysis-swatch disponibilidad-analysis-swatch--comparison" />Total {comparisonYear}</span>}
         </div>
-
-        {activeTooltip && (
-          <div className="disponibilidad-analysis-tooltip" role="status">
-            <strong>{mesLabel(activeTooltip.row.monthKey, true)} · {fmtTons(activeTooltip.row.total)}</strong>
-            <div>
-              {DISPONIBILIDAD_ESTADOS.map((state) => (
-                <span key={state.value}>{state.label}: {fmtTons(activeTooltip.row.stateTons[state.value])}</span>
-              ))}
-            </div>
-            <p>Proveedores/contactos</p>
-            {activeTooltip.providers.length > 0
-              ? activeTooltip.providers.slice(0, 5).map((provider) => <span key={provider.label}>{provider.label}: {fmtTons(provider.tons)}</span>)
-              : <span>Sin registros para este mes.</span>}
-            {activeTooltip.providers.length > 5 && <span>+ {activeTooltip.providers.length - 5} más</span>}
-          </div>
-        )}
 
         <div className="disponibilidad-analysis-chart-scroll">
           <div className="disponibilidad-analysis-chart" aria-label={`Disponibilidad por mes para ${year}`}>
@@ -150,13 +151,15 @@ export default function DisponibilidadAnalisisGrafico({
                 <button
                   key={row.monthKey}
                   type="button"
-                  className="disponibilidad-analysis-month"
-                  onMouseEnter={() => setHoveredMonth(index)}
-                  onMouseLeave={() => setHoveredMonth(null)}
-                  onFocus={() => setHoveredMonth(index)}
-                  onBlur={() => setHoveredMonth(null)}
+                  className={`disponibilidad-analysis-month${selectedMonth === row.monthKey ? ' is-selected' : ''}`}
+                  onClick={() => setSelectedMonth(row.monthKey)}
                   aria-label={`${mesLabel(row.monthKey)}: ${fmtTons(row.total)}`}
                 >
+                  <span className="disponibilidad-analysis-tooltip" role="tooltip">
+                    <strong>{mesLabel(row.monthKey, true)}</strong>
+                    <span>{fmtTons(row.total)}</span>
+                    <small>Click para ver proveedores</small>
+                  </span>
                   <span className="disponibilidad-analysis-bars">
                     <span className="disponibilidad-analysis-stack" style={{ height: `${(row.total / maxMonthTotal) * 100}%` }}>
                       {DISPONIBILIDAD_ESTADOS.map((state) => {
@@ -175,7 +178,7 @@ export default function DisponibilidadAnalisisGrafico({
         </div>
 
         {(loading || comparisonLoading) && <div className="disponibilidad-annual-loading">Actualizando análisis...</div>}
-        {!loading && items.length === 0 && <div className="disponibilidad-annual-empty">No hay disponibilidades para los filtros seleccionados durante {year}.</div>}
+        {!loading && items.length === 0 && <div className="disponibilidad-annual-empty">No hay datos para graficar con los filtros seleccionados.</div>}
       </div>
 
       {comparisonYear && (
@@ -199,6 +202,57 @@ export default function DisponibilidadAnalisisGrafico({
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {selectedMonth && (
+        <div className="disponibilidad-analysis-drawer-overlay" onClick={() => setSelectedMonth(null)}>
+          <aside className="disponibilidad-analysis-drawer" onClick={(event) => event.stopPropagation()}>
+            <div className="disponibilidad-analysis-drawer-header">
+              <div>
+                <h3>Detalle {mesLabel(selectedMonth, true)}</h3>
+                <p>Proveedores y contactos involucrados en este mes.</p>
+              </div>
+              <button type="button" className="mx-modal-close" onClick={() => setSelectedMonth(null)} aria-label="Cerrar detalle"><X size={18} /></button>
+            </div>
+
+            <div className="disponibilidad-analysis-drawer-total">
+              <span>Total mes</span>
+              <strong>{fmtTons(selectedDetail.total)}</strong>
+            </div>
+            <div className="disponibilidad-analysis-drawer-states">
+              {DISPONIBILIDAD_ESTADOS.map((state) => (
+                <span key={state.value} className={`disponibilidad-totals-chip disponibilidad-totals-chip--${state.tone}`}>
+                  {state.label}: <strong>{fmtTons(selectedDetail.totalsByState[state.value])}</strong>
+                </span>
+              ))}
+            </div>
+
+            <div className="disponibilidad-analysis-drawer-list">
+              {selectedDetail.items.length > 0 ? selectedDetail.items.map((item) => {
+                const meta = stateMeta(item.estado || 'disponible');
+                return (
+                  <article key={item._id} className="disponibilidad-analysis-detail-record">
+                    <div className="disponibilidad-analysis-detail-title">
+                      <DisponibilidadProviderCell item={item} />
+                      <strong>{fmtTons(itemTons(item))}</strong>
+                    </div>
+                    <div className="disponibilidad-analysis-detail-tags">
+                      <span>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</span>
+                      <span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span>
+                    </div>
+                    <div className="disponibilidad-analysis-detail-meta">
+                      <span>Origen: {optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')}</span>
+                      <span>Responsable: {item.responsable || 'Sin asignar'}</span>
+                      <span title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</span>
+                    </div>
+                  </article>
+                );
+              }) : (
+                <div className="disponibilidad-month-empty">No hay disponibilidad registrada para este mes con los filtros actuales.</div>
+              )}
+            </div>
+          </aside>
         </div>
       )}
     </section>
