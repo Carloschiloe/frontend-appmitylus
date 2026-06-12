@@ -282,6 +282,8 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
           onYearChange={setAnnualYear}
           comparisonYear={comparisonYear}
           onComparisonYearChange={setComparisonYear}
+          providers={providerDirectory}
+          contacts={contactDirectory}
           providerFilter={filters.proveedor}
           onProviderFilterChange={(proveedor) => setFilters((current) => ({ ...current, proveedor }))}
           productFilter={filters.producto}

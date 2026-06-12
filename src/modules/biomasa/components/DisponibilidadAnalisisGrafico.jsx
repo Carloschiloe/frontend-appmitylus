@@ -6,6 +6,8 @@ import {
   DISPONIBILIDAD_ESTADOS,
   DISPONIBILIDAD_ORIGENES,
   DISPONIBILIDAD_PRODUCTOS,
+  filterDisponibilidadContacts,
+  filterDisponibilidadProviders,
   optionLabel,
 } from '../disponibilidad.constants';
 import { fmtTons } from '../utils/programaCalculos';
@@ -22,6 +24,8 @@ export default function DisponibilidadAnalisisGrafico({
   onYearChange,
   comparisonYear,
   onComparisonYearChange,
+  providers,
+  contacts,
   providerFilter,
   onProviderFilterChange,
   productFilter,
@@ -35,6 +39,7 @@ export default function DisponibilidadAnalisisGrafico({
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [showComparisonTable, setShowComparisonTable] = useState(false);
+  const [showProviderResults, setShowProviderResults] = useState(false);
   const primary = useMemo(() => buildDisponibilidadAnnualProjection(items, year), [items, year]);
   const comparison = useMemo(
     () => buildDisponibilidadAnnualProjection(comparisonItems, comparisonYear || year),
@@ -56,6 +61,15 @@ export default function DisponibilidadAnalisisGrafico({
     () => buildDisponibilidadMonthDetail(items, selectedMonth),
     [items, selectedMonth]
   );
+  const providerMatches = useMemo(
+    () => filterDisponibilidadProviders(providers, providerFilter, 5),
+    [providerFilter, providers]
+  );
+  const contactMatches = useMemo(
+    () => filterDisponibilidadContacts(contacts, providerFilter, 5),
+    [contacts, providerFilter]
+  );
+  const hasProviderQuery = Boolean(providerFilter.trim());
   const activeFilters = [
     productFilter && `Producto: ${optionLabel(DISPONIBILIDAD_PRODUCTOS, productFilter)}`,
     stateFilter && `Estado: ${optionLabel(DISPONIBILIDAD_ESTADOS, stateFilter)}`,
@@ -65,16 +79,14 @@ export default function DisponibilidadAnalisisGrafico({
     onProductFilterChange('');
     onStateFilterChange('');
     onProviderFilterChange('');
+    setShowProviderResults(false);
   };
 
   return (
     <section className="disponibilidad-analysis">
       <div className="disponibilidad-analysis-header">
-        <div>
-          <span className="mx-eyebrow">Análisis gráfico</span>
-          <h3>Disponibilidad mensual {year}</h3>
-          <p>Compara el volumen informado por mes y estado comercial.</p>
-        </div>
+        <span className="mx-eyebrow">Análisis gráfico</span>
+        <h3>Disponibilidad mensual {year}</h3>
       </div>
 
       <div className="disponibilidad-analysis-toolbar">
@@ -89,13 +101,47 @@ export default function DisponibilidadAnalisisGrafico({
             {compareOptions.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
         </label>
-        <label className="disponibilidad-analysis-control disponibilidad-analysis-control--search">
+        <div className="disponibilidad-analysis-control disponibilidad-analysis-control--search">
           <span>Proveedor / contacto</span>
-          <div className="disponibilidad-search-input">
+          <div className="disponibilidad-search-input disponibilidad-analysis-search">
             <Search size={16} />
-            <input value={providerFilter} onChange={(event) => onProviderFilterChange(event.target.value)} placeholder="Buscar proveedor o contacto" />
+            <input
+              value={providerFilter}
+              onChange={(event) => {
+                onProviderFilterChange(event.target.value);
+                setShowProviderResults(true);
+              }}
+              onFocus={() => setShowProviderResults(true)}
+              onBlur={() => setTimeout(() => setShowProviderResults(false), 150)}
+              placeholder="Buscar proveedor o contacto"
+            />
+            {providerFilter && <button type="button" className="disponibilidad-search-clear" onClick={() => { onProviderFilterChange(''); setShowProviderResults(false); }} aria-label="Limpiar proveedor o contacto"><X size={14} /></button>}
           </div>
-        </label>
+          {showProviderResults && hasProviderQuery && (
+            <div className="disponibilidad-analysis-search-results">
+              {providerMatches.length === 0 && contactMatches.length === 0 ? (
+                <div className="disponibilidad-inline-empty">No encontramos proveedores o contactos.</div>
+              ) : (
+                <>
+                  {providerMatches.length > 0 && <span className="disponibilidad-analysis-search-group">Proveedores</span>}
+                  {providerMatches.map((provider) => (
+                    <button key={`provider-${provider.id}`} type="button" className="disponibilidad-provider-option" onClick={() => { onProviderFilterChange(provider.proveedorNombre); setShowProviderResults(false); }}>
+                      <strong>{provider.proveedorNombre}</strong>
+                      <span>{provider.comuna || 'Sin comuna'} · {provider.centros.length} centro{provider.centros.length === 1 ? '' : 's'}</span>
+                    </button>
+                  ))}
+                  {contactMatches.length > 0 && <span className="disponibilidad-analysis-search-group">Contactos</span>}
+                  {contactMatches.map((contact) => (
+                    <button key={`contact-${contact.id}`} type="button" className="disponibilidad-provider-option" onClick={() => { onProviderFilterChange(contact.contactoNombre); setShowProviderResults(false); }}>
+                      <strong>{contact.contactoNombre}</strong>
+                      <span>{contact.contactoTelefono || contact.contactoEmail || 'Sin teléfono ni email'}{contact.proveedorNombre ? ` · ${contact.proveedorNombre}` : ' · Sin proveedor'}</span>
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </div>
         <button type="button" className="mx-btn mx-btn-outline disponibilidad-analysis-refresh" onClick={onRefresh}><RotateCcw size={15} /> Actualizar</button>
       </div>
 
