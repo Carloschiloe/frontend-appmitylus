@@ -6,7 +6,7 @@
     "dev": "vite --port 5173",
     "build": "vite build",
     "preview": "vite preview",
-    "test:frontend": "node --test \"src/**/*.test.js\"",
+    "test:frontend": "vitest run",
     "test:ui": "node validate-ui.cjs",
     "test:modals": "node modal-diag.cjs",
     "security:secrets": "node scripts/check-sensitive-files.mjs",
@@ -32,14 +32,19 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^4.7.0",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "globals": "^15.0.0",
+    "jsdom": "^29.1.1",
     "playwright": "^1.60.0",
     "prettier": "^3.0.0",
-    "vite": "^5.4.21"
+    "vite": "^5.4.21",
+    "vitest": "^4.1.8"
   }
 }

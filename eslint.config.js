@@ -5,6 +5,23 @@ import react from 'eslint-plugin-react';
 
 export default [
   { ignores: ['dist', 'node_modules'] },
+  {
+    files: ['src/test/**/*.{js,jsx}', '**/*.test.{js,jsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        vi: 'readonly',
+      },
+    },
+  },
   js.configs.recommended,
   {
     files: ['**/*.{js,jsx}'],
