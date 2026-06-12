@@ -23,6 +23,13 @@
   white-space: nowrap;
 }
 
+.maestros-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .maestros-search-box {
   flex: 1;
   min-width: 200px;

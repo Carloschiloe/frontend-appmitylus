@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Inbox,
@@ -9,13 +9,10 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
-  LogOut,
-  User,
   Calendar,
   Users,
   ShieldCheck,
   TableProperties,
-  Search,
   TestTube2,
   Handshake,
   Database,
@@ -75,6 +72,11 @@ const MENU_STRUCTURE = [
     icon: CircleHelp,
     links: [
       { label: 'Ayuda', to: '/ayuda', icon: CircleHelp },
+      {
+        label: 'Reportar problema',
+        icon: Bug,
+        onClick: () => window.dispatchEvent(new CustomEvent('mitynex:open-support-report')),
+      },
     ],
   },
   {
@@ -100,9 +102,8 @@ const MENU_STRUCTURE = [
 ];
 
 export default function Sidebar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
   const [openGroups, setOpenGroups] = useState({ dashboard: true });
   const [alerts, setAlerts] = useState({});
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
@@ -135,6 +136,7 @@ export default function Sidebar() {
   useEffect(() => {
     const activeGroup = MENU_STRUCTURE.find((group) => (
       group.links.some((link) => {
+        if (link.onClick) return false;
         if (link.activeFor) {
           return link.activeFor.some((p) => location.pathname.startsWith(p));
         }
@@ -187,25 +189,6 @@ export default function Sidebar() {
         </div>
       )}
 
-      <div className="mx-global-search">
-        <Search size={16} className="search-icon" />
-        <input
-          type="text"
-          placeholder="Buscar proveedor, centro..."
-          className="mx-search-input"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              const val = e.target.value.trim();
-              if (val) {
-                navigate(`/gestion/proveedores?q=${encodeURIComponent(val)}`);
-                e.target.value = '';
-              }
-            }
-          }}
-        />
-        <div className="search-shortcut">Ctrl+K</div>
-      </div>
-
       <nav className="mx-sidebar-menu">
         {filteredMenu.map((group) => (
           <div key={group.id} className={`mx-menu-group ${openGroups[group.id] ? 'is-open' : ''}`}>
@@ -217,54 +200,39 @@ export default function Sidebar() {
               {openGroups[group.id] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             </button>
             <div className="mx-submenu">
-              {group.links.map((link) => (
-                <NavLink
-                  key={link.label}
-                  to={link.to}
-                  className={({ isActive }) => {
-                    if (link.activeFor) {
-                      return link.activeFor.some((p) => location.pathname.startsWith(p)) ? 'is-active' : '';
-                    }
-                    return isActive ? 'is-active' : '';
-                  }}
-                >
-                  <link.icon size={16} />
-                  <span>{link.label}</span>
-                  {link.alertId && alerts[link.alertId] > 0 && (
-                    <span className="mx-sidebar-alert">{alerts[link.alertId]}</span>
-                  )}
-                </NavLink>
-              ))}
+              {group.links.map((link) => {
+                if (link.onClick) {
+                  return (
+                    <button key={link.label} type="button" className="mx-submenu-action" onClick={link.onClick}>
+                      <link.icon size={16} />
+                      <span>{link.label}</span>
+                    </button>
+                  );
+                }
+                return (
+                  <NavLink
+                    key={link.label}
+                    to={link.to}
+                    className={({ isActive }) => {
+                      if (link.activeFor) {
+                        return link.activeFor.some((p) => location.pathname.startsWith(p)) ? 'is-active' : '';
+                      }
+                      return isActive ? 'is-active' : '';
+                    }}
+                  >
+                    <link.icon size={16} />
+                    <span>{link.label}</span>
+                    {link.alertId && alerts[link.alertId] > 0 && (
+                      <span className="mx-sidebar-alert">{alerts[link.alertId]}</span>
+                    )}
+                  </NavLink>
+                );
+              })}
             </div>
           </div>
         ))}
       </nav>
 
-      <div className="mx-sidebar-foot">
-        {user && (
-          <div className="mx-sidebar-user">
-            <div className="mx-user-avatar">
-              <User size={20} />
-            </div>
-            <div className="mx-user-info">
-              <p className="mx-user-name">{user.nombre || user.email.split('@')[0]}</p>
-              <p className="mx-user-role">{user.rol}</p>
-            </div>
-          </div>
-        )}
-        <button className="mx-btn-logout" onClick={logout}>
-          <LogOut size={16} />
-          Cerrar sesion
-        </button>
-        <button
-          className="mx-btn-logout"
-          type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent('mitynex:open-support-report'))}
-        >
-          <Bug size={16} />
-          Reportar problema
-        </button>
-      </div>
     </aside>
   );
 }

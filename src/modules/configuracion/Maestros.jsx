@@ -206,11 +206,6 @@ export default function Maestros() {
           <h1>Maestros del Sistema</h1>
           <p>Administración dinámica de categorías y parámetros operativos.</p>
         </div>
-        <div className="mx-hero-actions">
-          <button className="mx-btn mx-btn-primary" onClick={handleNuevo}>
-            <Plus size={18} /> Nuevo Registro
-          </button>
-        </div>
       </header>
 
       <div className="mx-content-frame maestros-content-frame">
@@ -226,14 +221,19 @@ export default function Maestros() {
               </button>
             ))}
           </div>
-          <div className="mx-search-box maestros-search-box">
-            <Search size={18} />
-            <input 
-              type="text" 
-              placeholder="Filtrar registros..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="maestros-toolbar-right">
+            <div className="mx-search-box maestros-search-box">
+              <Search size={18} />
+              <input
+                type="text"
+                placeholder="Filtrar registros..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <button className="mx-btn mx-btn-primary" onClick={handleNuevo}>
+              <Plus size={18} /> Nuevo Registro
+            </button>
           </div>
         </div>
 

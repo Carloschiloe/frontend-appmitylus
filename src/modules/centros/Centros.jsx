@@ -67,24 +67,11 @@ export default function Centros() {
           <p className="mx-eyebrow">{pageMeta.eyebrow}</p>
           <h1>{pageMeta.title}</h1>
         </div>
-        {pageMeta.showActions && (
-          <div className="mx-hero-actions">
-            <button
-              className="mx-btn mx-btn-outline centros-import-btn"
-              onClick={notifyImportCentros}
-            >
-              <FileUp size={18} /> Importar
-            </button>
-            <button className="mx-btn mx-btn-primary" onClick={notifyCreateCentro}>
-              <Plus size={20} /> Nuevo Centro
-            </button>
-          </div>
-        )}
       </header>
 
       <div className="mx-content-frame centros-content-frame">
         {!isSanitarioView && (
-          <div className="mx-tabs-container">
+          <div className="mx-tabs-container centros-tabs-row">
             <div className="mx-tabs">
               {CENTROS_TABS.map(tab => (
                 <NavLink
@@ -99,6 +86,19 @@ export default function Centros() {
                 </NavLink>
               ))}
             </div>
+            {pageMeta.showActions && (
+              <div className="centros-tab-actions">
+                <button
+                  className="mx-btn mx-btn-outline centros-import-btn"
+                  onClick={notifyImportCentros}
+                >
+                  <FileUp size={18} /> Importar
+                </button>
+                <button className="mx-btn mx-btn-primary" onClick={notifyCreateCentro}>
+                  <Plus size={20} /> Nuevo Centro
+                </button>
+              </div>
+            )}
           </div>
         )}
 

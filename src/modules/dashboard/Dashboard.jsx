@@ -150,29 +150,29 @@ export default function Dashboard() {
           <h1>Panel Principal</h1>
           <p>Vista general de operación, biomasa y actividad reciente.</p>
         </div>
-        <div className="mx-hero-actions">
-          <button className="mx-btn mx-btn-outline" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white' }} onClick={() => loadData()}>
-            <RotateCcw size={18} /> Actualizar
-          </button>
-        </div>
       </header>
 
       <div className="mx-content-frame">
         <div className="mx-page-stack">
 
-          {/* Accesos rápidos a módulos operativos */}
-          <section style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-            {QUICK_LINKS.map(({ label, to, icon: Icon }) => (
-              <Link
-                key={to}
-                to={to}
-                className="mx-btn mx-btn-outline"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 600 }}
-              >
-                <Icon size={15} />
-                {label}
-              </Link>
-            ))}
+          {/* Accesos rápidos + Actualizar */}
+          <section style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {QUICK_LINKS.map(({ label, to, icon: Icon }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className="mx-btn mx-btn-outline"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 600 }}
+                >
+                  <Icon size={15} />
+                  {label}
+                </Link>
+              ))}
+            </div>
+            <button className="mx-btn mx-btn-outline" onClick={() => loadData()}>
+              <RotateCcw size={16} /> Actualizar
+            </button>
           </section>
 
           {/* KPIs reales de la API */}

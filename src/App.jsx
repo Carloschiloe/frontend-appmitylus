@@ -5,6 +5,7 @@ import { ToastProvider } from './context/ToastContext.jsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Menu } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar.jsx';
+import AppHeader from './components/Layout/AppHeader.jsx';
 import QuickCaptureModal from './modules/gestion/components/QuickCaptureModal.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import SupportReportModal from './components/SupportReportModal.jsx';
@@ -85,6 +86,7 @@ const MainLayout = ({ children }) => {
 
       <Sidebar />
       <main className="mx-main-content">
+        <AppHeader />
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
