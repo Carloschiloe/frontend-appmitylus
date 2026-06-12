@@ -11,7 +11,7 @@ export default [
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: 'module',
-      globals: { ...globals.browser },
+      globals: { ...globals.browser, __MITYNEX_COMMIT__: 'readonly' },
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
     plugins: {

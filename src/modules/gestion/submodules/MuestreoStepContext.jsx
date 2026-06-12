@@ -172,7 +172,7 @@ export default function MuestreoStepContext({
                       <div key="warning" className="mu-search-option-warning">
                         <AlertTriangle size={14} />
                         <span>
-                          "{searchProviders}" parece un nombre de persona. Si es un contacto, usa "Registrar contacto nuevo".
+                          &quot;{searchProviders}&quot; parece un nombre de persona. Si es un contacto, usa &quot;Registrar contacto nuevo&quot;.
                         </span>
                       </div>
                     ) : null;

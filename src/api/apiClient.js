@@ -2,6 +2,9 @@ import { clearRuntimeLayoutState, clearSessionCache } from '../context/authSessi
 import { captureApiError } from '../utils/errorReporter.js';
 
 const API_BASE_URL = '/api';
+const DEFAULT_TIMEOUT_MS = 30000;
+// Subidas de archivos (fotos de muestreo) pueden tardar más en conexiones lentas
+const UPLOAD_TIMEOUT_MS = 120000;
 
 class ApiError extends Error {
   constructor(message, status, data) {
@@ -27,10 +30,18 @@ async function request(endpoint, options = {}) {
     headers['x-tenant-db'] = tenantDb;
   }
 
+  const controller = new AbortController();
+  const timeoutMs = options.timeoutMs ?? (isFormData ? UPLOAD_TIMEOUT_MS : DEFAULT_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  if (options.signal) {
+    options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+
   const config = {
     ...options,
     headers,
     credentials: 'include',
+    signal: controller.signal,
   };
 
   if (config.body && typeof config.body === 'object' && !isFormData) {
@@ -87,6 +98,8 @@ async function request(endpoint, options = {}) {
       }
     }
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
