@@ -16,9 +16,21 @@ import ResumenTotalesDisponibilidad from './ResumenTotalesDisponibilidad';
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((state) => state.value === value) || DISPONIBILIDAD_ESTADOS[0];
 const itemTons = (item) => Number(item.tons || item.tonsDisponible || 0);
 
-export default function DisponibilidadProyeccionAnual({ items, year, loading, onEdit }) {
+export default function DisponibilidadProyeccionAnual({
+  items,
+  stateBaseItems,
+  year,
+  loading,
+  estadoFiltro,
+  onEstadoFiltroChange,
+  onEdit,
+}) {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const { rows, totalsByState, annualTotal } = buildDisponibilidadAnnualProjection(items, year);
+  const {
+    totalsByState: kpiTotalsByState,
+    annualTotal: kpiAnnualTotal,
+  } = buildDisponibilidadAnnualProjection(stateBaseItems || items, year);
   const maxMonthTotal = Math.max(...rows.map((row) => row.total), 1);
   const selectedDetail = useMemo(
     () => buildDisponibilidadMonthDetail(items, selectedMonth),
@@ -36,15 +48,26 @@ export default function DisponibilidadProyeccionAnual({ items, year, loading, on
       </div>
 
       <div className="disponibilidad-kpi-grid disponibilidad-kpi-grid--annual">
-        <article className="disponibilidad-kpi disponibilidad-kpi--total">
+        <button
+          type="button"
+          className={`disponibilidad-kpi disponibilidad-kpi-button disponibilidad-kpi--total${!estadoFiltro ? ' is-active' : ''}`}
+          aria-pressed={!estadoFiltro}
+          onClick={() => onEstadoFiltroChange('')}
+        >
           <span>Total anual</span>
-          <strong>{fmtTons(annualTotal)}</strong>
-        </article>
+          <strong>{fmtTons(kpiAnnualTotal)}</strong>
+        </button>
         {DISPONIBILIDAD_ESTADOS.map((state) => (
-          <article key={state.value} className={`disponibilidad-kpi disponibilidad-kpi--${state.tone}`}>
+          <button
+            type="button"
+            key={state.value}
+            className={`disponibilidad-kpi disponibilidad-kpi-button disponibilidad-kpi--${state.tone}${estadoFiltro === state.value ? ' is-active' : ''}`}
+            aria-pressed={estadoFiltro === state.value}
+            onClick={() => onEstadoFiltroChange(state.value)}
+          >
             <span>{state.label}</span>
-            <strong>{fmtTons(totalsByState[state.value])}</strong>
-          </article>
+            <strong>{fmtTons(kpiTotalsByState[state.value])}</strong>
+          </button>
         ))}
       </div>
 

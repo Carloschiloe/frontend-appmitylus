@@ -112,6 +112,10 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
 
   const filteredItems = useMemo(() => filterDisponibilidades(items, filters), [filters, items]);
   const filteredAnnualItems = useMemo(() => filterDisponibilidades(annualItems, filters), [annualItems, filters]);
+  const annualStateBaseItems = useMemo(
+    () => filterDisponibilidades(annualItems, { ...filters, estado: '' }),
+    [annualItems, filters]
+  );
   const filteredComparisonItems = useMemo(() => filterDisponibilidades(comparisonItems, filters), [comparisonItems, filters]);
   const listedTotals = useMemo(() => buildDisponibilidadTotals(filteredItems), [filteredItems]);
 
@@ -177,11 +181,6 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         <button type="button" className="mx-btn mx-btn-primary" onClick={openCreate}>
           <Plus size={17} /> Registrar disponibilidad
         </button>
-      </div>
-
-      <div className="disponibilidad-flow-note">
-        <span>Disponibilidad</span><ArrowRight size={15} /><span>Trato</span><ArrowRight size={15} /><span>Programa de Cosecha</span>
-        <small>Crear trato asociado: disponible en próxima fase.</small>
       </div>
 
       <div className="mx-toggle-group disponibilidad-tabs" role="tablist" aria-label="Vistas de disponibilidad">
@@ -273,7 +272,17 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       )}
 
       {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} estadoFiltro={filters.estado} onEdit={openEdit} />}
-      {activeTab === 'anual' && <DisponibilidadProyeccionAnual items={filteredAnnualItems} year={annualYear} loading={annualLoading} onEdit={openEdit} />}
+      {activeTab === 'anual' && (
+        <DisponibilidadProyeccionAnual
+          items={filteredAnnualItems}
+          stateBaseItems={annualStateBaseItems}
+          year={annualYear}
+          loading={annualLoading}
+          estadoFiltro={filters.estado}
+          onEstadoFiltroChange={(estado) => setFilters((current) => ({ ...current, estado }))}
+          onEdit={openEdit}
+        />
+      )}
       {activeTab === 'analisis' && (
         <DisponibilidadAnalisisGrafico
           items={filteredAnnualItems}

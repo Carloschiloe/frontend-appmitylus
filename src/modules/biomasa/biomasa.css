@@ -7,7 +7,7 @@
 /* Disponibilidad futura */
 .disponibilidad-view {
   display: grid;
-  gap: 18px;
+  gap: 10px;
   min-width: 0;
 }
 
@@ -19,7 +19,7 @@
 }
 
 .disponibilidad-actions-row h2 {
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   color: var(--color-text);
   font-size: 20px;
 }
@@ -29,25 +29,6 @@
   margin: 0;
   color: var(--color-text-muted);
   font-size: 13px;
-}
-
-.disponibilidad-flow-note {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 11px 14px;
-  border: 1px solid #bfdbfe;
-  border-radius: var(--radius-md);
-  background: #eff6ff;
-  color: #1e40af;
-  font-size: 12px;
-  font-weight: var(--weight-bold);
-}
-
-.disponibilidad-flow-note small {
-  margin-left: auto;
-  color: #64748b;
-  font-weight: 600;
 }
 
 .disponibilidad-tabs {
@@ -95,12 +76,45 @@
   grid-template-columns: repeat(6, minmax(120px, 1fr));
 }
 
+.disponibilidad-kpi-grid--annual .disponibilidad-kpi {
+  padding: 10px 12px;
+}
+
+.disponibilidad-kpi-grid--annual .disponibilidad-kpi span {
+  margin-bottom: 4px;
+}
+
+.disponibilidad-kpi-grid--annual .disponibilidad-kpi strong {
+  font-size: 18px;
+}
+
+.disponibilidad-kpi-button {
+  width: 100%;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.disponibilidad-kpi-button:hover {
+  border-color: #93c5fd;
+  background: #f8fbff;
+  transform: translateY(-1px);
+}
+
+.disponibilidad-kpi-button.is-active {
+  border-color: #60a5fa;
+  background: #eff6ff;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.13);
+}
+
 .disponibilidad-filter-card {
   display: grid;
   grid-template-columns: minmax(155px, 0.8fr) minmax(210px, 1.4fr) minmax(155px, 0.8fr) minmax(155px, 0.8fr) auto;
   align-items: end;
-  gap: 12px;
-  padding: 14px;
+  gap: 10px;
+  padding: 10px 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
@@ -571,18 +585,18 @@
 
 .disponibilidad-annual {
   display: grid;
-  gap: 18px;
+  gap: 10px;
 }
 
 .disponibilidad-annual .disponibilidad-summary-header {
-  padding: 18px 20px;
+  padding: 10px 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 
 .disponibilidad-annual .disponibilidad-summary-header p {
-  margin: 7px 0 0;
+  margin: 3px 0 0;
   color: var(--color-text-muted);
   font-size: 13px;
 }
@@ -1024,14 +1038,16 @@
 }
 
 .disponibilidad-analysis-chart-scroll {
-  overflow-x: auto;
+  min-width: 0;
+  overflow-x: visible;
 }
 
 .disponibilidad-analysis-chart {
   display: grid;
-  grid-template-columns: repeat(12, minmax(64px, 1fr));
-  gap: 8px;
-  min-width: 900px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(2px, 0.45vw, 6px);
+  width: 100%;
+  min-width: 0;
   height: 305px;
   padding: 8px 4px 4px;
   border-bottom: 1px solid var(--color-border);
@@ -1072,7 +1088,7 @@
 
 .disponibilidad-analysis-month strong {
   color: var(--color-text);
-  font-size: 10px;
+  font-size: clamp(7px, 0.7vw, 10px);
   white-space: nowrap;
 }
 
@@ -1080,14 +1096,15 @@
   display: flex;
   align-items: end;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
   height: 245px;
 }
 
 .disponibilidad-analysis-stack {
   display: flex;
-  flex: 0 0 24px;
+  flex: 0 1 20px;
   flex-direction: column-reverse;
+  width: clamp(8px, 1.5vw, 20px);
   min-height: 2px;
   overflow: hidden;
   border-radius: 5px 5px 0 0;
@@ -1099,7 +1116,8 @@
 }
 
 .disponibilidad-analysis-comparison-bar {
-  flex: 0 0 8px;
+  flex: 0 1 7px;
+  width: clamp(3px, 0.55vw, 7px);
   min-height: 2px;
   border-radius: 4px 4px 0 0;
   background: repeating-linear-gradient(45deg, #8b5cf6, #8b5cf6 3px, #c4b5fd 3px, #c4b5fd 6px);
@@ -1312,15 +1330,10 @@
     flex-direction: column;
   }
 
-  .disponibilidad-flow-note,
   .disponibilidad-summary-header,
   .disponibilidad-analysis-header {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .disponibilidad-flow-note small {
-    margin-left: 0;
   }
 
   .disponibilidad-kpi-grid,
