@@ -113,14 +113,6 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const filteredItems = useMemo(() => filterDisponibilidades(items, filters), [filters, items]);
   const filteredAnnualItems = useMemo(() => filterDisponibilidades(annualItems, filters), [annualItems, filters]);
   const filteredComparisonItems = useMemo(() => filterDisponibilidades(comparisonItems, filters), [comparisonItems, filters]);
-  const analysisBaseItems = useMemo(
-    () => filterDisponibilidades(annualItems, { ...filters, producto: '' }),
-    [annualItems, filters]
-  );
-  const analysisStateBaseItems = useMemo(
-    () => filterDisponibilidades(annualItems, { ...filters, estado: '' }),
-    [annualItems, filters]
-  );
   const listedTotals = useMemo(() => buildDisponibilidadTotals(filteredItems), [filteredItems]);
 
   const providerDirectory = useMemo(
@@ -199,7 +191,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         <button type="button" className={`mx-toggle-btn ${activeTab === 'analisis' ? 'active' : ''}`} onClick={() => setActiveTab('analisis')}><ChartNoAxesCombined size={15} /> Análisis gráfico</button>
       </div>
 
-      <div className="disponibilidad-filter-card">
+      {activeTab !== 'analisis' && <div className="disponibilidad-filter-card">
         <label className="disponibilidad-filter disponibilidad-filter--month">
           <span>{['anual', 'analisis'].includes(activeTab) ? 'Año principal' : 'Mes/Año'}</span>
           {['anual', 'analisis'].includes(activeTab)
@@ -225,7 +217,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
           </select>
         </label>
         <button type="button" className="mx-btn mx-btn-outline disponibilidad-refresh" onClick={() => ['anual', 'analisis'].includes(activeTab) ? setAnnualReloadKey((current) => current + 1) : reload()}><RotateCcw size={15} /> Actualizar</button>
-      </div>
+      </div>}
 
       {activeTab === 'listado' && (
       <>
@@ -285,16 +277,18 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       {activeTab === 'analisis' && (
         <DisponibilidadAnalisisGrafico
           items={filteredAnnualItems}
-          baseItems={analysisBaseItems}
-          stateBaseItems={analysisStateBaseItems}
           comparisonItems={filteredComparisonItems}
           year={annualYear}
+          onYearChange={setAnnualYear}
           comparisonYear={comparisonYear}
           onComparisonYearChange={setComparisonYear}
+          providerFilter={filters.proveedor}
+          onProviderFilterChange={(proveedor) => setFilters((current) => ({ ...current, proveedor }))}
           productFilter={filters.producto}
           onProductFilterChange={(producto) => setFilters((current) => ({ ...current, producto }))}
           stateFilter={filters.estado}
           onStateFilterChange={(estado) => setFilters((current) => ({ ...current, estado }))}
+          onRefresh={() => setAnnualReloadKey((current) => current + 1)}
           loading={annualLoading}
           comparisonLoading={comparisonLoading}
         />

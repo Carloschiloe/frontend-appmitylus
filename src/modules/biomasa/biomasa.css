@@ -686,13 +686,10 @@
 
 .disponibilidad-analysis-header {
   display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 18px 20px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  gap: 12px;
+  padding: 4px 2px;
 }
 
 .disponibilidad-analysis-header h3 {
@@ -706,19 +703,6 @@
   font-size: 13px;
 }
 
-.disponibilidad-analysis-compare {
-  display: grid;
-  gap: 6px;
-  min-width: 170px;
-}
-
-.disponibilidad-analysis-compare > span {
-  color: var(--color-text-muted);
-  font-size: 11px;
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-}
-
 .disponibilidad-kpi small {
   display: block;
   margin-top: 6px;
@@ -729,94 +713,185 @@
 .is-positive { color: #047857; }
 .is-negative { color: #dc2626; }
 
-.disponibilidad-product-cards {
+.disponibilidad-analysis-toolbar {
   display: grid;
-  grid-template-columns: repeat(5, minmax(120px, 1fr));
-  gap: 10px;
-}
-
-.disponibilidad-product-card {
-  display: grid;
-  gap: 4px;
-  padding: 12px 14px;
+  grid-template-columns: minmax(135px, 0.6fr) minmax(150px, 0.7fr) minmax(240px, 1.5fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 13px 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
-.disponibilidad-product-card:hover,
-.disponibilidad-product-card.is-active {
-  border-color: #60a5fa;
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.12);
-  transform: translateY(-1px);
-}
-
-.disponibilidad-product-card.is-active {
-  background: #eff6ff;
-}
-
-.disponibilidad-product-card span {
-  font-size: 11px;
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-}
-
-.disponibilidad-product-card strong {
-  color: var(--color-text);
-  font-size: 18px;
-}
-
-.disponibilidad-state-filter-cards {
+.disponibilidad-analysis-control {
   display: grid;
-  grid-template-columns: repeat(6, minmax(110px, 1fr));
-  gap: 10px;
+  gap: 5px;
 }
 
-.disponibilidad-state-filter-card {
-  display: grid;
-  gap: 4px;
-  padding: 11px 13px;
-  border: 1px solid var(--color-border);
-  border-left: 4px solid #94a3b8;
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+.disponibilidad-analysis-control > span {
   color: var(--color-text-muted);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
-}
-
-.disponibilidad-state-filter-card--info { border-left-color: #3b82f6; }
-.disponibilidad-state-filter-card--warning { border-left-color: #f59e0b; }
-.disponibilidad-state-filter-card--success { border-left-color: #10b981; }
-.disponibilidad-state-filter-card--danger { border-left-color: #ef4444; }
-.disponibilidad-state-filter-card--muted { border-left-color: #64748b; }
-.disponibilidad-state-filter-card--total { border-left-color: var(--color-primary); }
-
-.disponibilidad-state-filter-card:hover,
-.disponibilidad-state-filter-card.is-active {
-  border-color: #60a5fa;
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.12);
-  transform: translateY(-1px);
-}
-
-.disponibilidad-state-filter-card.is-active {
-  background: #eff6ff;
-}
-
-.disponibilidad-state-filter-card span {
   font-size: 10px;
   font-weight: var(--weight-bold);
   text-transform: uppercase;
 }
 
-.disponibilidad-state-filter-card strong {
+.disponibilidad-analysis-refresh {
+  white-space: nowrap;
+}
+
+.disponibilidad-analysis-summary {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.05);
+}
+
+.disponibilidad-analysis-summary-total {
+  display: grid;
+  gap: 2px;
+  min-width: 150px;
+  padding-right: 22px;
+  border-right: 1px solid var(--color-border);
+}
+
+.disponibilidad-analysis-summary-total span,
+.disponibilidad-analysis-summary-state span {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+}
+
+.disponibilidad-analysis-summary-total strong {
+  color: var(--color-primary);
+  font-size: 24px;
+}
+
+.disponibilidad-analysis-summary-total small {
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+}
+
+.disponibilidad-analysis-summary-states {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(90px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.disponibilidad-analysis-summary-state {
+  display: grid;
+  gap: 3px;
+  padding-left: 9px;
+  border-left: 3px solid #94a3b8;
+}
+
+.disponibilidad-analysis-summary-state strong {
   color: var(--color-text);
-  font-size: 17px;
+  font-size: 15px;
+}
+
+.disponibilidad-analysis-summary-state--info { border-left-color: #3b82f6; }
+.disponibilidad-analysis-summary-state--warning { border-left-color: #f59e0b; }
+.disponibilidad-analysis-summary-state--success { border-left-color: #10b981; }
+.disponibilidad-analysis-summary-state--danger { border-left-color: #ef4444; }
+.disponibilidad-analysis-summary-state--muted { border-left-color: #64748b; }
+
+.disponibilidad-analysis-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.disponibilidad-more-filters svg:last-child,
+.disponibilidad-comparison-toggle svg {
+  transition: transform 150ms ease;
+}
+
+.disponibilidad-more-filters.is-open svg:last-child,
+.disponibilidad-comparison-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.disponibilidad-active-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.disponibilidad-active-filters strong {
+  overflow: hidden;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.disponibilidad-active-filters button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+}
+
+.disponibilidad-analysis-more-filters {
+  display: grid;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+}
+
+.disponibilidad-analysis-more-filters > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.disponibilidad-analysis-more-filters > div > span {
+  flex: 0 0 70px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+}
+
+.disponibilidad-filter-chips {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 2px;
+}
+
+.disponibilidad-filter-chips button {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+}
+
+.disponibilidad-filter-chips button:hover,
+.disponibilidad-filter-chips button.is-active {
+  border-color: #60a5fa;
+  background: #eff6ff;
+  color: #1d4ed8;
 }
 
 .disponibilidad-analysis-card {
@@ -986,6 +1061,37 @@
   text-align: right;
 }
 
+.disponibilidad-comparison-section {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.disponibilidad-comparison-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  text-align: left;
+}
+
+.disponibilidad-comparison-toggle:hover {
+  background: #f8fafc;
+}
+
+.disponibilidad-comparison-section .disponibilidad-table-card {
+  border-width: 1px 0 0;
+  border-radius: 0;
+}
+
 .disponibilidad-analysis-drawer-overlay {
   position: fixed;
   z-index: 1200;
@@ -1117,12 +1223,20 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .disponibilidad-product-cards {
-    grid-template-columns: repeat(3, minmax(120px, 1fr));
+  .disponibilidad-analysis-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .disponibilidad-state-filter-cards {
-    grid-template-columns: repeat(3, minmax(110px, 1fr));
+  .disponibilidad-analysis-control--search {
+    grid-column: 1 / -1;
+  }
+
+  .disponibilidad-analysis-summary {
+    align-items: flex-start;
+  }
+
+  .disponibilidad-analysis-summary-states {
+    grid-template-columns: repeat(3, minmax(90px, 1fr));
   }
 
   .disponibilidad-state-record {
@@ -1158,13 +1272,57 @@
 
   .disponibilidad-kpi-grid,
   .disponibilidad-filter-card,
-  .disponibilidad-form-grid,
-  .disponibilidad-product-cards,
-  .disponibilidad-state-filter-cards {
+  .disponibilidad-form-grid {
     grid-template-columns: 1fr;
   }
 
-  .disponibilidad-analysis-compare {
+  .disponibilidad-analysis-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .disponibilidad-analysis-control--search {
+    grid-column: auto;
+  }
+
+  .disponibilidad-analysis-summary {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .disponibilidad-analysis-summary-total {
+    width: 100%;
+    padding: 0 0 10px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .disponibilidad-analysis-summary-states {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 3px;
+  }
+
+  .disponibilidad-analysis-summary-state {
+    flex: 0 0 105px;
+  }
+
+  .disponibilidad-analysis-filter-row,
+  .disponibilidad-analysis-more-filters > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .disponibilidad-active-filters {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .disponibilidad-analysis-more-filters > div > span {
+    flex: auto;
+  }
+
+  .disponibilidad-filter-chips {
     width: 100%;
   }
 
