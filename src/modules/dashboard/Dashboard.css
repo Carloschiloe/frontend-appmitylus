@@ -6,7 +6,7 @@
 
 .dsh-premium .mx-content-frame {
   margin-top: 0;
-  padding-top: 36px;
+  padding-top: 20px;
 }
 
 /* KPIs New */
@@ -107,14 +107,14 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 24px;
-  margin-top: 24px;
+  margin-top: 0;
 }
 
 .dsh-secondary-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
-  margin-top: 24px;
+  margin-top: 0;
 }
 
 .dsh-card {

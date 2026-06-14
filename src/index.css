@@ -27,7 +27,7 @@ ul, ol {
 .mx-page-stack {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 /* Espaciado Atómico (am- prefix for consistency) */
@@ -146,11 +146,11 @@ ul, ol {
 
 .mx-content-frame {
   padding: var(--page-padding);
-  padding-top: 36px;
+  padding-top: 20px;
   margin-top: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 .mx-content-body {
@@ -161,7 +161,7 @@ ul, ol {
 .mx-hero {
   background: var(--mx-gradient-hero);
   color: white;
-  padding: 12px var(--page-padding) 24px var(--page-padding); /* Máxima compactación */
+  padding: 8px var(--page-padding) 14px var(--page-padding);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   box-shadow: 0 14px 38px rgba(3, 27, 78, 0.16);
   display: flex;
@@ -177,7 +177,7 @@ ul, ol {
 }
 
 .mx-hero h1 {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: var(--weight-bold);
   margin: 0;
   letter-spacing: -0.025em;
@@ -885,7 +885,7 @@ ul, ol {
     align-items: flex-start;
     gap: var(--spacing-md);
     border-radius: 0;
-    padding: var(--page-padding) var(--page-padding) 40px var(--page-padding);
+    padding: var(--page-padding) var(--page-padding) 28px var(--page-padding);
   }
 
   .mx-content-frame {
