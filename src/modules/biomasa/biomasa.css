@@ -1367,6 +1367,17 @@
   }
 }
 
+@media (max-width: 768px) {
+  .disponibilidad-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .disponibilidad-kpi-grid--annual,
+  .disponibilidad-kpi-grid--month-detail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 680px) {
   .disponibilidad-actions-row {
     align-items: stretch;
