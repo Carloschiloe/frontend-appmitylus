@@ -3,20 +3,6 @@
   animation: fadeIn 0.4s ease-out;
 }
 
-.centros-hero-shell {
-  background: linear-gradient(135deg, var(--color-bg-card) 0%, rgba(10, 92, 255, 0.05) 100%);
-  border-bottom: 1px solid var(--color-border);
-  padding: 40px var(--page-padding);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.centros-hero-actions {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 8px;
-}
 
 .centros-content-frame {
   margin-top: 0;
