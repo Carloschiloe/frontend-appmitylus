@@ -2,17 +2,43 @@ import React from 'react';
 import { RefreshCw, AlertTriangle, Home, Bug } from 'lucide-react';
 import { reportFrontendError } from '../utils/errorReporter.js';
 
+const CHUNK_RELOAD_KEY = 'mx_chunk_reload';
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorCode: null };
+    this.state = { hasError: false, error: null, errorCode: null, isChunkReload: false };
+  }
+
+  static isChunkLoadError(error) {
+    return (
+      error?.name === 'ChunkLoadError' ||
+      /dynamically imported module/i.test(error?.message) ||
+      /error loading dynamically imported module/i.test(error?.message) ||
+      /Importing a module script failed/i.test(error?.message)
+    );
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+    return {
+      hasError: true,
+      error,
+      isChunkReload: ErrorBoundary.isChunkLoadError(error),
+    };
   }
 
   componentDidCatch(error, errorInfo) {
+    if (this.state.isChunkReload) {
+      const last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0);
+      if (Date.now() - last > 30000) {
+        sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
+        window.location.reload();
+        return;
+      }
+      // Cooldown activo: el reload ya ocurrió y el chunk sigue fallando.
+      // Caemos al flujo normal de error para no recargar en bucle.
+    }
+
     // eslint-disable-next-line no-console
     console.error('ErrorBoundary atrapo un error critico:', error, errorInfo);
     reportFrontendError(error, {
@@ -42,6 +68,15 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      if (this.state.isChunkReload) {
+        return (
+          <div className="mx-loading-screen">
+            <div className="mx-spinner"></div>
+            <p>Actualizando aplicación...</p>
+          </div>
+        );
+      }
+
       return (
         <div className="mx-app-shell">
           <div className="mx-main-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 0 }}>
