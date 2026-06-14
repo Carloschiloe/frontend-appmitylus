@@ -161,7 +161,7 @@ ul, ol {
 .mx-hero {
   background: var(--mx-gradient-hero);
   color: white;
-  padding: 8px var(--page-padding) 14px var(--page-padding);
+  padding: 4px var(--page-padding) 14px var(--page-padding);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   box-shadow: 0 14px 38px rgba(3, 27, 78, 0.16);
   display: flex;
