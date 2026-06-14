@@ -97,7 +97,8 @@ function relativeText(value) {
   const startOfTarget = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const diffDays = Math.round((startOfToday - startOfTarget) / msPerDay);
 
-  if (diffDays <= 0) return 'Hoy';
+  if (diffDays < 0) return `En ${Math.abs(diffDays)} día${Math.abs(diffDays) === 1 ? '' : 's'}`;
+  if (diffDays === 0) return 'Hoy';
   if (diffDays === 1) return 'Ayer';
   if (diffDays < 30) return `Hace ${diffDays} días`;
   return `Hace ${Math.floor(diffDays / 30)} meses`;
@@ -415,7 +416,7 @@ function buildTeamActivity({ interacciones = [], visitas = [], muestreos = [], o
     .sort((a, b) => b.date - a.date);
 }
 
-function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, setTeamTypeFilter, teamUserFilter, setTeamUserFilter, teamUsers }) {
+function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, setTeamTypeFilter, teamUserFilter, setTeamUserFilter, teamUsers, muestreosTruncated }) {
   const filteredActivities = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     return activities.filter((item) => {
@@ -496,6 +497,12 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
           ))}
         </select>
       </div>
+
+      {muestreosTruncated && (
+        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-subtle)', margin: '8px 0 4px', padding: '6px 10px', background: 'rgba(100,116,139,0.08)', borderRadius: 6 }}>
+          Mostrando los últimos 200 muestreos. El historial completo puede tener más registros.
+        </div>
+      )}
 
       <div className="historial-card-section">
         {loading ? (
@@ -753,6 +760,7 @@ export default function Historial() {
   }, [contactosRes, visitasRes, interaccionesRes, oportunidadesRes, muestreosRes]);
 
   const loading = loadingContactos || loadingVisitas || loadingInteracciones || loadingOportunidades || loadingMuestreos;
+  const muestreosTruncated = data.muestreos.length >= 200;
 
   useEffect(() => {
     const requestedView = String(searchParams.get('view') || '').toLowerCase();
@@ -982,6 +990,12 @@ export default function Historial() {
             </div>
           </div>
 
+          {muestreosTruncated && (
+            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-subtle)', margin: '12px 0 0', padding: '6px 10px', background: 'rgba(100,116,139,0.08)', borderRadius: 6 }}>
+              Mostrando los últimos 200 muestreos. El historial completo puede tener más registros.
+            </div>
+          )}
+
           <div style={{ maxWidth: 980, margin: '24px auto 0' }}>
             {visibleEvents.length === 0 ? (
               <div className="mx-state-placeholder">
@@ -1168,6 +1182,7 @@ export default function Historial() {
             teamUserFilter={teamUserFilter}
             setTeamUserFilter={setTeamUserFilter}
             teamUsers={teamUsers}
+            muestreosTruncated={muestreosTruncated}
           />
         )}
       </div>

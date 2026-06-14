@@ -1,5 +1,12 @@
 ﻿import React, { useState, useMemo, useCallback } from 'react';
 import { MapPin } from 'lucide-react';
+
+// Fecha local del dispositivo en formato YYYY-MM-DD (no UTC), para evitar que en
+// Chile (UTC-3/4) a partir de las 21:00 se muestre el día siguiente del calendario.
+const localDateKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useMuestreosData } from '../../../hooks/useMuestreosData';
@@ -87,7 +94,7 @@ export default function Muestreos() {
     centroId: '',
     centroCodigo: '',
     linea: '',
-    fecha: new Date().toISOString().slice(0, 10),
+    fecha: localDateKey(),
     origen: 'abastecimiento',
     responsable: '',
     uxkg: '',
@@ -140,7 +147,7 @@ export default function Muestreos() {
       centroId: '',
       centroCodigo: '',
       linea: '',
-      fecha: new Date().toISOString().slice(0, 10),
+      fecha: localDateKey(),
       origen: 'abastecimiento',
       responsable: user?.nombre || '',
       uxkg: '',

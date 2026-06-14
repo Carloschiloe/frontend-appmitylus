@@ -56,7 +56,7 @@ export function useBiomasaData(mes, viewContext = {}) {
       }
 
       if (isStatusView && statusSubTab === 'negociacion') {
-        promises.push(apiClient.get(`/oportunidades/biomasa-situacion?from=${mes}-01&to=${mes}-31`, { signal }).catch(() => ({ items: [] })));
+        promises.push(apiClient.get(`/oportunidades/biomasa-situacion?from=${mes}-01&to=${endOfMonthKey(mes)}`, { signal }).catch(() => ({ items: [] })));
         keys.push('tratosBiomasaRes');
         promises.push(apiClient.get('/oportunidades?seguimientoEstado=cerrado', { signal }).catch(() => ({ items: [] })));
         keys.push('oportunidadesCerradasRes');

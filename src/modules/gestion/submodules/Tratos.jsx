@@ -673,8 +673,7 @@ export default function Tratos() {
                 className="mx-btn mx-btn-outline"
                 onClick={() => {
                   setSavedModal(null);
-                  // Re-buscar el trato en la lista para abrir el informe
-                  const match = items.find(i => i.proveedorNombre === savedModal.trato.proveedorNombre);
+                  const match = items.find(i => String(i._id) === String(savedModal.tratoId));
                   if (match) handleViewReport(match);
                 }}
               >
