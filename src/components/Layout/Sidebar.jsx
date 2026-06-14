@@ -105,7 +105,7 @@ const MENU_STRUCTURE = [
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const [openGroups, setOpenGroups] = useState({ dashboard: true });
+  const [openGroup, setOpenGroup] = useState('dashboard');
   const [alerts, setAlerts] = useState({});
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
 
@@ -124,7 +124,7 @@ export default function Sidebar() {
         const criticas = (data.rojo || 0) + (data.naranja || 0);
         if (criticas > 0) {
           setAlerts((prev) => ({ ...prev, sanitario: criticas }));
-          setOpenGroups({ inteligencia: true });
+          setOpenGroup('inteligencia');
         }
       })
       .catch((err) => {
@@ -146,15 +146,12 @@ export default function Sidebar() {
       })
     ));
     if (activeGroup) {
-      setOpenGroups((prev) => ({ ...prev, [activeGroup.id]: true }));
+      setOpenGroup(activeGroup.id);
     }
   }, [location.pathname]);
 
   const toggleGroup = useCallback((id) => {
-    setOpenGroups((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
+    setOpenGroup((prev) => (prev === id ? null : id));
   }, []);
 
   const filteredMenu = useMemo(() => (
@@ -204,13 +201,13 @@ export default function Sidebar() {
 
       <nav className="mx-sidebar-menu">
         {filteredMenu.map((group) => (
-          <div key={group.id} className={`mx-menu-group ${openGroups[group.id] ? 'is-open' : ''}`}>
+          <div key={group.id} className={`mx-menu-group ${openGroup === group.id ? 'is-open' : ''}`}>
             <button className="mx-menu-head" onClick={() => toggleGroup(group.id)}>
               <span className="mx-menu-head-label">
                 <group.icon size={18} />
                 {group.label}
               </span>
-              {openGroups[group.id] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              {openGroup === group.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             </button>
             <div className="mx-submenu">
               {group.links.map((link) => {
