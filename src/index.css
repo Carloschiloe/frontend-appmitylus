@@ -161,7 +161,7 @@ ul, ol {
 .mx-hero {
   background: var(--mx-gradient-hero);
   color: white;
-  padding: 4px var(--page-padding) 14px var(--page-padding);
+  padding: 4px var(--page-padding) 8px var(--page-padding);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   box-shadow: 0 14px 38px rgba(3, 27, 78, 0.16);
   display: flex;
@@ -177,19 +177,26 @@ ul, ol {
 }
 
 .mx-hero h1 {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: var(--weight-bold);
   margin: 0;
   letter-spacing: -0.025em;
+  line-height: 1.2;
 }
 
 .mx-hero .mx-eyebrow {
   text-transform: uppercase;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: var(--weight-bold);
   letter-spacing: 0.1em;
   color: var(--color-primary-light);
   opacity: 0.9;
+  margin: 0 0 2px;
+}
+
+/* Oculta la descripción del hero en todas las vistas → altura uniforme */
+.mx-hero-content > p:not(.mx-eyebrow) {
+  display: none;
 }
 
 .mx-hero-actions {
@@ -883,9 +890,9 @@ ul, ol {
   .mx-hero {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
     border-radius: 0;
-    padding: var(--page-padding) var(--page-padding) 28px var(--page-padding);
+    padding: var(--page-padding) var(--page-padding) 14px var(--page-padding);
   }
 
   .mx-content-frame {
