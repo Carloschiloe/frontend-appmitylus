@@ -50,7 +50,6 @@
 .mx-page > .mx-toolbar:has(.tratos-toolbar-search) {
   align-items: center;
   padding: 4px 0 2px;
-  margin-top: 20px;
   margin-bottom: 20px;
 }
 
