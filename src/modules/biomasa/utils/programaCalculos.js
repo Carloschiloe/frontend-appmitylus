@@ -223,7 +223,7 @@ export const getProgramVolumeProgress = (programa, tonsPerTruck = 0, until = new
     .forEach((ajuste) => {
       const key = ajuste?.fecha ? toChileDateKey(ajuste.fecha) : '';
       if (!key || especiales.has(key)) return;
-      especiales.set(key, Number(ajuste.camionesDespues ?? ajuste.camiones ?? 0));
+      especiales.set(key, Number(ajuste.camionesDespues ?? 0));
     });
 
   const specialKeysUntil = [...especiales.keys()].filter((key) => compareDateKeys(key, untilKey) <= 0);

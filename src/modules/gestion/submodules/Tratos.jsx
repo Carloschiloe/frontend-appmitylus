@@ -480,7 +480,7 @@ export default function Tratos() {
 
   const filteredItems = useMemo(() => items.filter((i) => {
     if (searchTerm && !(i.proveedorNombre || '').toLowerCase().includes(searchTerm.toLowerCase())) return false;
-    if (!showAllMonths && toMonthKey(i.vigenciaDesde || i.fechaCierre) !== mes) return false;
+    if (!showAllMonths && (i.vigenciaDesde || i.fechaCierre) && toMonthKey(i.vigenciaDesde || i.fechaCierre) !== mes) return false;
     if (responsableFilter !== 'all' && i.responsableNombre !== responsableFilter) return false;
     return true;
   }), [items, searchTerm, mes, showAllMonths, responsableFilter]);
