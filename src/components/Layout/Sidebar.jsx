@@ -9,6 +9,7 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
+  LogOut,
   Calendar,
   Users,
   ShieldCheck,
@@ -102,7 +103,7 @@ const MENU_STRUCTURE = [
 ];
 
 export default function Sidebar() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const [openGroups, setOpenGroups] = useState({ dashboard: true });
   const [alerts, setAlerts] = useState({});
@@ -156,13 +157,24 @@ export default function Sidebar() {
   }, []);
 
   const filteredMenu = useMemo(() => (
-    MENU_STRUCTURE.filter((group) => {
-      if (!group.requiereRol) return true;
-      if (user?.rol === 'superadmin') return true;
-      if (user?.rol === 'admin' && group.requiereRol === 'admin') return true;
-      return false;
-    })
-  ), [user?.rol]);
+    MENU_STRUCTURE
+      .filter((group) => {
+        if (!group.requiereRol) return true;
+        if (user?.rol === 'superadmin') return true;
+        if (user?.rol === 'admin' && group.requiereRol === 'admin') return true;
+        return false;
+      })
+      .map((group) => {
+        if (group.id !== 'ayuda') return group;
+        return {
+          ...group,
+          links: [
+            ...group.links,
+            { label: 'Cerrar sesión', icon: LogOut, onClick: logout },
+          ],
+        };
+      })
+  ), [user?.rol, logout]);
 
   return (
     <aside className="mx-sidebar">
