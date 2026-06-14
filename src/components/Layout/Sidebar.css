@@ -170,6 +170,13 @@
   color: #fff;
 }
 
+/* Logout solo visible en sidebar móvil — en desktop está en el dropdown del header */
+@media (min-width: 769px) {
+  .mx-submenu-action--mobile-only {
+    display: none;
+  }
+}
+
 .mx-sidebar-alert {
   background: var(--color-error);
   color: #fff;

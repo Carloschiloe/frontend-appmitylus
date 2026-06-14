@@ -146,12 +146,13 @@ export default function Sidebar() {
       })
     ));
     if (activeGroup) {
-      setOpenGroups({ [activeGroup.id]: true });
+      setOpenGroups((prev) => ({ ...prev, [activeGroup.id]: true }));
     }
   }, [location.pathname]);
 
   const toggleGroup = useCallback((id) => {
     setOpenGroups((prev) => ({
+      ...prev,
       [id]: !prev[id],
     }));
   }, []);
@@ -170,7 +171,7 @@ export default function Sidebar() {
           ...group,
           links: [
             ...group.links,
-            { label: 'Cerrar sesión', icon: LogOut, onClick: logout },
+            { label: 'Cerrar sesión', icon: LogOut, onClick: logout, mobileOnly: true },
           ],
         };
       })
@@ -215,7 +216,12 @@ export default function Sidebar() {
               {group.links.map((link) => {
                 if (link.onClick) {
                   return (
-                    <button key={link.label} type="button" className="mx-submenu-action" onClick={link.onClick}>
+                    <button
+                      key={link.label}
+                      type="button"
+                      className={link.mobileOnly ? 'mx-submenu-action mx-submenu-action--mobile-only' : 'mx-submenu-action'}
+                      onClick={link.onClick}
+                    >
                       <link.icon size={16} />
                       <span>{link.label}</span>
                     </button>
