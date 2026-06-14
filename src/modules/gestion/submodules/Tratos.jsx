@@ -494,6 +494,13 @@ export default function Tratos() {
 
   return (
     <div className="mx-page am-p-0">
+      <header className="mx-hero">
+        <div className="mx-hero-content">
+          <p className="mx-eyebrow">Gestión comercial</p>
+          <h1>Tratos</h1>
+        </div>
+      </header>
+
       <div className="mx-toolbar" data-tour="tratos-filtros">
         <div className="mx-search-box tratos-toolbar-search">
           <Search size={18} />
