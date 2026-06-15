@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useDeferredValue } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useDeferredValue, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -62,6 +62,8 @@ export default function CentrosTable() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmImport, setConfirmImport] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchWrapperRef = useRef(null);
   const [importing, setImporting] = useState(false);
   const [modalState, setModalState] = useState({ open: false, mode: 'create', item: null });
 
@@ -115,14 +117,32 @@ export default function CentrosTable() {
     setModalState({ open: false, mode: 'create', item: null });
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleClearFilters = useCallback(() => {
     setSearchTerm('');
     setAreaSearchTerm('');
     setComunaFilter('');
     setAreaFilter('');
     setProviderFilter('');
+    setShowSuggestions(false);
     setSearchParams(new URLSearchParams(), { replace: true });
   }, [setSearchParams]);
+
+  const handleSelectProvider = useCallback((option) => {
+    setSearchTerm('');
+    setShowSuggestions(false);
+    setProviderFilter(option.key);
+    syncUrl({ q: '', proveedor: option.key });
+  }, [syncUrl]);
 
   const handleOpenMap = useCallback((centro) => {
     const code = String(centro?.code || '').trim();
@@ -293,6 +313,25 @@ export default function CentrosTable() {
     return [...new Set(data.map((c) => c.comuna).filter(Boolean))].sort();
   }, [data]);
 
+  const providerOptions = useMemo(() => {
+    const map = new Map();
+    data.forEach((c) => {
+      const key = c.proveedorKey;
+      const nombre = c.proveedor;
+      if (key && nombre) {
+        if (!map.has(key)) map.set(key, { nombre, key, count: 0 });
+        map.get(key).count += 1;
+      }
+    });
+    return [...map.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }, [data]);
+
+  const suggestions = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    const q = searchTerm.trim().toLowerCase();
+    return providerOptions.filter((p) => p.nombre.toLowerCase().includes(q)).slice(0, 8);
+  }, [searchTerm, providerOptions]);
+
   const providerSummary = useMemo(() => {
     if (!providerFilter || filteredData.length === 0) return null;
     const first = filteredData[0];
@@ -339,7 +378,7 @@ export default function CentrosTable() {
 
       <div className="mx-toolbar">
         <div className="mx-toolbar-group">
-          <div className="mx-search-box">
+          <div className="mx-search-box" style={{ position: 'relative' }} ref={searchWrapperRef}>
             <Search size={18} />
             <input
               type="text"
@@ -348,9 +387,40 @@ export default function CentrosTable() {
               onChange={(e) => {
                 const value = e.target.value;
                 setSearchTerm(value);
+                setShowSuggestions(Boolean(value.trim()));
                 syncUrl({ q: value });
               }}
+              onFocus={() => { if (searchTerm.trim()) setShowSuggestions(true); }}
+              onKeyDown={(e) => { if (e.key === 'Escape') setShowSuggestions(false); }}
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => { setSearchTerm(''); setShowSuggestions(false); syncUrl({ q: '' }); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center' }}
+                aria-label="Limpiar búsqueda"
+              >
+                <X size={14} />
+              </button>
+            )}
+            {showSuggestions && suggestions.length > 0 && (
+              <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, margin: '4px 0 0', padding: 0, listStyle: 'none', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', maxHeight: 280, overflowY: 'auto' }}>
+                {suggestions.map((opt) => (
+                  <li key={opt.key} style={{ borderBottom: '1px solid var(--color-border-subtle, var(--color-border))' }}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleSelectProvider(opt)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--color-text)', fontSize: '0.88rem' }}
+                    >
+                      <Building2 size={13} style={{ flexShrink: 0, color: 'var(--color-text-muted)' }} />
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt.nombre}</span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', flexShrink: 0 }}>{opt.count} centro{opt.count !== 1 ? 's' : ''}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="mx-search-box">
