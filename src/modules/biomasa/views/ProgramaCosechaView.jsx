@@ -58,6 +58,8 @@ export default function ProgramaCosechaView({
   enrichCalendarItem,
   tonsPerTruck,
   getProgramCamionesStatus,
+  onExportarPrograma,
+  exportandoPrograma,
 }) {
   return (
     <div className="program-view">
@@ -78,6 +80,8 @@ export default function ProgramaCosechaView({
           setPauseModal={setPauseModal}
           setPauseForm={setPauseForm}
           setConfirmDelete={setConfirmDelete}
+          onExportarPrograma={onExportarPrograma}
+          exportandoPrograma={exportandoPrograma}
         />
       )}
       

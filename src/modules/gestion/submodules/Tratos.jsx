@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Search, Plus, RotateCcw, ChevronLeft, ChevronRight, User, CheckCircle, X, CalendarCheck, FileText } from 'lucide-react';
+import { Search, Plus, RotateCcw, ChevronLeft, ChevronRight, User, CheckCircle, X, CalendarCheck, FileText, FileDown } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { apiClient } from '../../../api/apiClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContactos, useCentros, useTratos } from '../hooks/useGestionQueries';
+import { downloadXlsx } from '../../../utils/downloadXlsx';
 import { maestrosApi } from '../../../api/api-maestros';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import TratoFormModal from './TratoFormModal';
@@ -478,6 +479,28 @@ export default function Tratos() {
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
   }, [items]);
 
+  const [exportando, setExportando] = useState(false);
+
+  const handleExportarExcel = useCallback(async () => {
+    setExportando(true);
+    try {
+      const params = {};
+      if (!showAllMonths && mes) {
+        const [y, m] = mes.split('-');
+        const lastDay = new Date(parseInt(y, 10), parseInt(m, 10), 0).getDate();
+        params.from = `${mes}-01`;
+        params.to   = `${mes}-${String(lastDay).padStart(2, '0')}`;
+      }
+      if (responsableFilter !== 'all') params.responsable = responsableFilter;
+      const suffix = params.from ? `_${params.from.slice(0, 7)}` : '';
+      await downloadXlsx('/exportar/tratos', `tratos${suffix}.xlsx`, params);
+    } catch {
+      addToast({ title: 'Error', message: 'No se pudo exportar', type: 'error' });
+    } finally {
+      setExportando(false);
+    }
+  }, [showAllMonths, mes, responsableFilter, addToast]);
+
   const filteredItems = useMemo(() => items.filter((i) => {
     if (searchTerm && !(i.proveedorNombre || '').toLowerCase().includes(searchTerm.toLowerCase())) return false;
     if (!showAllMonths && (i.vigenciaDesde || i.fechaCierre) && toMonthKey(i.vigenciaDesde || i.fechaCierre) !== mes) return false;
@@ -553,6 +576,7 @@ export default function Tratos() {
           </label>
         )}
         <button className="mx-btn-icon sm" onClick={handleRefresh} title="Actualizar"><RotateCcw size={18} /></button>
+        <button className="mx-btn-icon sm" onClick={handleExportarExcel} disabled={exportando} title="Exportar a Excel"><FileDown size={16} /></button>
         <HelpTourButton tourId="tratos" />
         <button className="mx-btn mx-btn-primary" onClick={openNew} data-tour="tratos-registrar">
           <Plus size={18} /> Nuevo Trato

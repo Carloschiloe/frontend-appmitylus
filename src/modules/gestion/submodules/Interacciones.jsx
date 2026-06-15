@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
-import { Search, Plus, RotateCcw } from 'lucide-react';
+import { Search, Plus, RotateCcw, FileDown } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { apiClient } from '../../../api/apiClient';
 import { useAuth } from '../../../context/AuthContext';
@@ -21,6 +21,7 @@ import {
   filterProviders,
   toItems,
 } from './interacciones.helpers';
+import { downloadXlsx } from '../../../utils/downloadXlsx';
 
 export default function Interacciones() {
   const queryClient = useQueryClient();
@@ -58,6 +59,19 @@ export default function Interacciones() {
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['interacciones'] });
   }, [queryClient]);
+
+  const [exportando, setExportando] = useState(false);
+
+  const handleExportarExcel = useCallback(async () => {
+    setExportando(true);
+    try {
+      await downloadXlsx('/exportar/interacciones', 'interacciones.xlsx');
+    } catch {
+      addToast({ title: 'Error', message: 'No se pudo exportar', type: 'error' });
+    } finally {
+      setExportando(false);
+    }
+  }, [addToast]);
 
   useEffect(() => {
     window.addEventListener('gestion:quick-capture-saved', handleRefresh);
@@ -195,6 +209,9 @@ export default function Interacciones() {
         </div>
         <button className="mx-btn mx-btn-outline sm" onClick={handleRefresh}>
           <RotateCcw size={18} />
+        </button>
+        <button className="mx-btn mx-btn-outline sm" onClick={handleExportarExcel} disabled={exportando} title="Exportar a Excel">
+          <FileDown size={16} />
         </button>
         <button className="mx-btn mx-btn-primary sm" onClick={openCreateModal}>
           <Plus size={18} />

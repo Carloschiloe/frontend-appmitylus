@@ -24,6 +24,7 @@ import { useProgramaForm } from './hooks/useProgramaForm';
 import { usePeriodNavigation } from './hooks/usePeriodNavigation';
 import { useBiomasaComputed } from './hooks/useBiomasaComputed';
 import { usePrefillHandler } from './hooks/usePrefillHandler';
+import { downloadXlsx } from '../../utils/downloadXlsx';
 import { mesActual, todayKey } from './utils/fechasChile';
 const Muestreos = lazy(() => import('../gestion/submodules/Muestreos'));
 const Tratos = lazy(() => import('../gestion/submodules/Tratos'));
@@ -247,6 +248,30 @@ export default function Biomasa() {
 
   usePrefillHandler({ loading, tratosAcordados, programas, handleOpenModal, addToast, progSubTab, setProgSubTab, setFilterProveedor });
 
+  const [exportandoPrograma, setExportandoPrograma] = useState(false);
+
+  const handleExportarPrograma = useCallback(async () => {
+    setExportandoPrograma(true);
+    try {
+      const params = {};
+      if (programPeriod === 'week' && weekDays?.length >= 2) {
+        params.from = weekDays[0];
+        params.to   = weekDays[weekDays.length - 1];
+      } else if (programPeriod === 'month' && mes) {
+        const [y, m] = mes.split('-');
+        const lastDay = new Date(parseInt(y, 10), parseInt(m, 10), 0).getDate();
+        params.from = `${mes}-01`;
+        params.to   = `${mes}-${String(lastDay).padStart(2, '0')}`;
+      }
+      const suffix = params.from ? `_${params.from.slice(0, 7)}` : '';
+      await downloadXlsx('/exportar/programa-cosecha', `programa-cosecha${suffix}.xlsx`, params);
+    } catch {
+      addToast({ title: 'Error', message: 'No se pudo exportar', type: 'error' });
+    } finally {
+      setExportandoPrograma(false);
+    }
+  }, [programPeriod, mes, weekDays, addToast]);
+
   const {
     handleStatusChange,
     handlePauseConfirm,
@@ -418,6 +443,8 @@ export default function Biomasa() {
               tiposTransporte={tiposTransporte}
               handleQuickAdjustTipo={handleQuickAdjustTipo}
               getProgramCamionesStatus={getProgramCamionesStatus}
+              onExportarPrograma={handleExportarPrograma}
+              exportandoPrograma={exportandoPrograma}
             />
           )}
           {isMuestreosView && (

@@ -2,6 +2,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Droplet,
+  FileDown,
   Pause,
   Play,
   RotateCcw,
@@ -38,6 +39,8 @@ export default function ProgramaTablaView({
   setPauseModal,
   setPauseForm,
   setConfirmDelete,
+  onExportarPrograma,
+  exportandoPrograma,
 }) {
   return (
     <div className="mx-table-card harvest-program-table-card">
@@ -64,6 +67,14 @@ export default function ProgramaTablaView({
             </div>
           )}
         </div>
+        <button
+          className="mx-btn-icon sm"
+          onClick={onExportarPrograma}
+          disabled={exportandoPrograma}
+          title="Exportar a Excel"
+        >
+          <FileDown size={16} />
+        </button>
       </div>
       <div className="mx-table-wrap">
         <table className="mx-table harvest-prog-table">
