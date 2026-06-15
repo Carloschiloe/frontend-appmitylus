@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import {
   Download, Upload, CheckCircle2, AlertCircle, RotateCcw,
-  Building2, Users, FlaskConical, ArrowRight,
+  Building2, Users, FlaskConical, ArrowRight, AlertTriangle,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 import { useToast } from '../../context/ToastContext';
@@ -22,7 +22,6 @@ const TIPOS = {
       { key: 'localidad',            label: 'Localidad' },
       { key: 'responsablePG',        label: 'Responsable' },
       { key: 'centroComuna',         label: 'Comuna' },
-      { key: 'centroHectareas',      label: 'Hás' },
       { key: 'tonsDisponiblesAprox', label: 'Tons' },
     ],
     instrucciones: [
@@ -59,6 +58,7 @@ const TIPOS = {
     plantillaFile: 'plantilla-muestreos.xlsx',
     previewEndpoint: '/importar/muestreos/preview',
     confirmarEndpoint: '/importar/muestreos/confirmar',
+    // columnas base; se agregan dinámicamente las categorías del tenant
     columnas: [
       { key: '_fechaDisplay',  label: 'Fecha' },
       { key: 'proveedorNombre', label: 'Proveedor' },
@@ -66,13 +66,11 @@ const TIPOS = {
       { key: 'uxkg',           label: 'Calibre' },
       { key: 'pesoVivo',       label: 'Peso Vivo' },
       { key: 'rendimiento',    label: 'Rend %' },
-      { key: 'procesable',     label: 'Proc %' },
-      { key: 'rechazos',       label: 'Rech %' },
     ],
     instrucciones: [
       <>Los campos <strong>Fecha</strong> y <strong>Proveedor</strong> son obligatorios.</>,
       <>La fecha debe estar en formato <code>YYYY-MM-DD</code> (ej: 2024-03-15) o <code>DD-MM-YYYY</code>.</>,
-      'Los porcentajes y pesos son opcionales pero deben ser números.',
+      'La plantilla incluye automáticamente las categorías configuradas en Maestros.',
     ],
   },
 };
@@ -99,18 +97,39 @@ function StepBar({ step }) {
   );
 }
 
+function RowStatus({ fila }) {
+  if (!fila._ok) {
+    return <span className="importar-row-status error">Error</span>;
+  }
+  if (fila._duplicado) {
+    return <span className="importar-row-status duplicado">Duplicado</span>;
+  }
+  return <span className="importar-row-status ok">OK</span>;
+}
+
 export default function ImportarDatos() {
-  const { addToast } = useToast();
-  const [step, setStep]             = useState(0);
-  const [tipo, setTipo]             = useState(null);   // 'proveedores' | 'contactos'
+  const { addToast }  = useToast();
+  const [step, setStep]                     = useState(0);
+  const [tipo, setTipo]                     = useState(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingConfirm, setLoadingConfirm] = useState(false);
-  const [preview, setPreview]       = useState(null);
-  const [resultado, setResultado]   = useState(null);
-  const [dragover, setDragover]     = useState(false);
+  const [preview, setPreview]               = useState(null);
+  const [previewCats, setPreviewCats]       = useState([]);  // categorías dinámicas para muestreos
+  const [resultado, setResultado]           = useState(null);
+  const [dragover, setDragover]             = useState(false);
   const fileInputRef = useRef(null);
 
   const config = tipo ? TIPOS[tipo] : null;
+
+  // Columnas de la tabla preview: base + dinámicas (muestreos)
+  const tableColumnas = config
+    ? [
+        ...config.columnas,
+        ...(tipo === 'muestreos'
+          ? previewCats.map((c) => ({ key: `__cat__${c._id}`, label: c.nombre, _catNombre: c.nombre }))
+          : []),
+      ]
+    : [];
 
   const handleDescargar = useCallback(async () => {
     if (!config) return;
@@ -144,6 +163,7 @@ export default function ImportarDatos() {
     try {
       const data = await apiClient.post(config.previewEndpoint, fd);
       setPreview(data);
+      setPreviewCats(data.categorias || []);
       setStep(1);
     } catch (err) {
       addToast({ title: 'Error al leer el archivo', message: err?.message || 'Revisa el formato del Excel', type: 'error' });
@@ -160,15 +180,15 @@ export default function ImportarDatos() {
 
   const handleConfirmar = useCallback(async () => {
     if (!preview || !config) return;
-    const filasOk = preview.filas.filter((f) => f._ok);
-    if (filasOk.length === 0) {
-      addToast({ title: 'Sin filas válidas', message: 'Corrige los errores antes de importar', type: 'warning' });
+    // Backend filtra _duplicado y _ok internamente, enviamos todas
+    if (preview.resumen.ok === 0) {
+      addToast({ title: 'Sin filas nuevas', message: 'No hay registros para importar', type: 'warning' });
       return;
     }
     setLoadingConfirm(true);
     try {
-      const data = await apiClient.post(config.confirmarEndpoint, { filas: filasOk });
-      setResultado({ ok: true, insertados: data.insertados });
+      const data = await apiClient.post(config.confirmarEndpoint, { filas: preview.filas });
+      setResultado({ ok: true, insertados: data.insertados, omitidos: preview.resumen.duplicados ?? 0 });
       setStep(2);
     } catch (err) {
       setResultado({ ok: false, insertados: err?.data?.insertados ?? 0, message: err?.message });
@@ -182,12 +202,18 @@ export default function ImportarDatos() {
     setStep(0);
     setTipo(null);
     setPreview(null);
+    setPreviewCats([]);
     setResultado(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, []);
 
-  const handleSelectTipo = (t) => {
-    setTipo(t);
+  const getCellValue = (fila, col) => {
+    if (col._catNombre !== undefined) {
+      const v = fila._cats_display?.[col._catNombre];
+      return v != null ? v : '—';
+    }
+    const v = fila[col.key];
+    return v != null && v !== '' ? v : '—';
   };
 
   return (
@@ -207,7 +233,7 @@ export default function ImportarDatos() {
                   key={key}
                   type="button"
                   className={`importar-tipo-btn ${tipo === key ? 'selected' : ''}`}
-                  onClick={() => handleSelectTipo(key)}
+                  onClick={() => setTipo(key)}
                 >
                   <Icon size={24} />
                   <span className="importar-tipo-label">{cfg.label}</span>
@@ -265,15 +291,19 @@ export default function ImportarDatos() {
 
           <div className="importar-resumen">
             <span className="importar-resumen-badge total">{preview.resumen.total} filas</span>
-            <span className="importar-resumen-badge ok">{preview.resumen.ok} listas</span>
+            <span className="importar-resumen-badge ok">{preview.resumen.ok} nuevas</span>
+            {preview.resumen.duplicados > 0 && (
+              <span className="importar-resumen-badge duplicado">{preview.resumen.duplicados} duplicadas</span>
+            )}
             {preview.resumen.errores > 0 && (
               <span className="importar-resumen-badge error">{preview.resumen.errores} con error</span>
             )}
           </div>
 
-          {preview.resumen.errores > 0 && (
-            <p className="importar-instructions" style={{ color: '#b91c1c' }}>
-              Las filas con error no se importarán. Solo se insertan las {preview.resumen.ok} filas válidas.
+          {preview.resumen.duplicados > 0 && (
+            <p className="importar-instructions" style={{ color: '#92400e', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <AlertTriangle size={14} />
+              {preview.resumen.duplicados} fila{preview.resumen.duplicados !== 1 ? 's' : ''} ya existen en la base de datos y serán omitidas.
             </p>
           )}
 
@@ -283,24 +313,20 @@ export default function ImportarDatos() {
                 <tr>
                   <th>#</th>
                   <th>Estado</th>
-                  {config.columnas.map((c) => <th key={c.key}>{c.label}</th>)}
-                  <th>Errores</th>
+                  {tableColumnas.map((c) => <th key={c.key}>{c.label}</th>)}
+                  <th>Detalle</th>
                 </tr>
               </thead>
               <tbody>
                 {preview.filas.map((f) => (
-                  <tr key={f._fila} className={f._ok ? 'row-ok' : 'row-error'}>
+                  <tr key={f._fila} className={!f._ok ? 'row-error' : f._duplicado ? 'row-duplicado' : 'row-ok'}>
                     <td>{f._fila}</td>
-                    <td>
-                      <span className={`importar-row-status ${f._ok ? 'ok' : 'error'}`}>
-                        {f._ok ? 'OK' : 'Error'}
-                      </span>
-                    </td>
-                    {config.columnas.map((c) => (
-                      <td key={c.key}>{f[c.key] ?? '—'}</td>
+                    <td><RowStatus fila={f} /></td>
+                    {tableColumnas.map((c) => (
+                      <td key={c.key}>{getCellValue(f, c)}</td>
                     ))}
-                    <td style={{ color: '#b91c1c', fontSize: 11 }}>
-                      {f._errores?.join(', ') || ''}
+                    <td style={{ fontSize: 11, color: !f._ok ? '#b91c1c' : f._duplicado ? '#92400e' : undefined }}>
+                      {!f._ok ? f._errores?.join(', ') : f._duplicado ? 'Ya existe' : ''}
                     </td>
                   </tr>
                 ))}
@@ -316,7 +342,9 @@ export default function ImportarDatos() {
               disabled={loadingConfirm || preview.resumen.ok === 0}
             >
               <ArrowRight size={14} />
-              {loadingConfirm ? 'Importando…' : `Importar ${preview.resumen.ok} registros`}
+              {loadingConfirm
+                ? 'Importando…'
+                : `Importar ${preview.resumen.ok} registro${preview.resumen.ok !== 1 ? 's' : ''}${preview.resumen.duplicados > 0 ? ` (${preview.resumen.duplicados} omitidos)` : ''}`}
             </button>
             <button type="button" className="importar-btn secondary" onClick={reset}>
               <RotateCcw size={13} />
@@ -338,7 +366,7 @@ export default function ImportarDatos() {
             </h3>
             <p className="importar-result-sub">
               {resultado.ok
-                ? `Se importaron ${resultado.insertados} ${config?.label?.toLowerCase() ?? 'registro'}${resultado.insertados !== 1 ? 's' : ''} exitosamente.`
+                ? `Se importaron ${resultado.insertados} ${config?.label?.toLowerCase() ?? 'registro'}${resultado.insertados !== 1 ? 's' : ''} exitosamente.${resultado.omitidos > 0 ? ` ${resultado.omitidos} duplicados omitidos.` : ''}`
                 : resultado.message || `Se insertaron ${resultado.insertados} registros con errores.`}
             </p>
             <div className="importar-actions" style={{ justifyContent: 'center' }}>

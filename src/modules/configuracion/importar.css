@@ -247,6 +247,11 @@
   color: #b91c1c;
 }
 
+.importar-resumen-badge.duplicado {
+  background: rgba(245, 158, 11, 0.15);
+  color: #92400e;
+}
+
 /* Tabla de preview */
 .importar-preview-wrap {
   overflow-x: auto;
@@ -309,6 +314,15 @@
 .importar-row-status.error {
   background: rgba(239, 68, 68, 0.15);
   color: #b91c1c;
+}
+
+.importar-row-status.duplicado {
+  background: rgba(245, 158, 11, 0.15);
+  color: #92400e;
+}
+
+.importar-preview-table tr.row-duplicado td {
+  background: rgba(254, 243, 199, 0.6);
 }
 
 /* Botones de acción */
