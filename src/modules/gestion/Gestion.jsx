@@ -5,7 +5,6 @@ import './gestion.css';
 const Bandeja = lazy(() => import('./submodules/Bandeja'));
 const Directorio = lazy(() => import('./submodules/Directorio'));
 const Calendario = lazy(() => import('./submodules/Calendario'));
-const Tratos = lazy(() => import('./submodules/Tratos'));
 const ErrorReports = lazy(() => import('./soporte/ErrorReports.jsx'));
 
 const PAGE_META = {
@@ -63,14 +62,14 @@ export default function Gestion() {
             }
           >
             <Routes>
-              <Route path="/" element={<Navigate to="tratos" replace />} />
+              <Route path="/" element={<Navigate to="bandeja" replace />} />
               <Route path="bandeja" element={<Bandeja />} />
               <Route path="proveedores" element={<Directorio />} />
               <Route path="directorio" element={<Navigate to="/gestion/proveedores" replace />} />
               <Route path="agenda" element={<Calendario />} />
               <Route path="calendario" element={<Navigate to="/gestion/agenda" replace />} />
               <Route path="interacciones" element={<Navigate to="/historial" replace />} />
-              <Route path="tratos" element={<Tratos />} />
+              <Route path="tratos" element={<Navigate to="/biomasa/tratos" replace />} />
               <Route path="soporte/errores" element={<ErrorReports />} />
               <Route path="muestreos" element={<Navigate to="/biomasa/muestreos" replace />} />
             </Routes>

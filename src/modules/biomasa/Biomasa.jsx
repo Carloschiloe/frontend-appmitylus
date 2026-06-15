@@ -1,21 +1,19 @@
 import React, { Suspense, lazy, useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useLocation, Navigate, useSearchParams } from 'react-router-dom';
+import { useLocation, Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import './biomasa.css';
 import {
   Plus,
-  RotateCcw,
   Inbox,
   ShoppingCart,
   Activity,
-  ChevronLeft,
-  ChevronRight,
   LayoutGrid,
   List as ListIcon,
+  Handshake,
+  TestTube2,
 } from 'lucide-react';
 import { maestrosApi } from '../../api/api-maestros';
 import { useToast } from '../../context/ToastContext';
 import { useBiomasaData } from '../../hooks/useBiomasaData';
-import BiomasaKpiCards from './components/BiomasaKpiCards';
 import DisponibilidadView from './components/DisponibilidadView';
 import ProgramaCosechaView from './views/ProgramaCosechaView';
 import ProgramaModalesView from './views/ProgramaModalesView';
@@ -24,19 +22,22 @@ import { useCalendarioPrograma } from './hooks/useCalendarioPrograma';
 import { useProgramaActions } from './hooks/useProgramaActions';
 import { useProgramaForm } from './hooks/useProgramaForm';
 import {
-  mesActual, finMes, mesLabel,
+  mesActual, finMes,
   todayKey, toChileDateKey,
 } from './utils/fechasChile';
 import {
-  fmtTons, asText,
+  asText,
   formatDailyAdjustmentText,
 } from './utils/programaCalculos';
 const Muestreos = lazy(() => import('../gestion/submodules/Muestreos'));
+const Tratos = lazy(() => import('../gestion/submodules/Tratos'));
 
 export default function Biomasa() {
   const { addToast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
   const isStatusView = location.pathname.includes('/status');
+  const isTratosView = location.pathname.includes('/tratos');
   const isProgramView = location.pathname.includes('/programa');
   const isMuestreosView = location.pathname.includes('/muestreos');
 
@@ -558,53 +559,34 @@ export default function Biomasa() {
     };
   }, [visibleBiomasaPendiente, visiblePerdidasBiomasa, visibleTratosBiomasa]);
 
-  if (!isStatusView && !isProgramView && !isMuestreosView) return <Navigate to="/biomasa/status" replace />;
-
-  if (isStatusView) {
-    return (
-      <div className="mx-page">
-        <header className="mx-hero">
-          <div className="mx-hero-content">
-            <p className="mx-eyebrow">Operaciones · Disponibilidad</p>
-            <h1>Disponibilidad</h1>
-          </div>
-        </header>
-        <div className="mx-content-frame biomasa-content-frame">
-          <DisponibilidadView items={disp} loading={loading} mes={mes} setMes={setMes} reload={load} />
-        </div>
-      </div>
-    );
-  }
+  if (!isStatusView && !isTratosView && !isProgramView && !isMuestreosView) return <Navigate to="/biomasa/status" replace />;
 
   return (
     <div className="mx-page">
       <header className="mx-hero">
         <div className="mx-hero-content">
-          <p className="mx-eyebrow">
-            {isStatusView ? 'Operaciones · Disponibilidad' : isProgramView ? 'Operaciones · Programa de Cosecha' : 'Operaciones · Muestreos Técnicos'}
-          </p>
-          <h1>{isStatusView ? 'Disponibilidad de Biomasa' : isProgramView ? 'Programa de Cosecha' : 'Muestreos Técnicos'}</h1>
+          <p className="mx-eyebrow">Operaciones · Biomasa</p>
+          <h1>Biomasa</h1>
         </div>
       </header>
 
       <div className={`mx-content-frame biomasa-content-frame ${isMuestreosView ? 'biomasa-content-frame--muestreos' : ''}`}>
-        {!isMuestreosView && (
         <div className="mx-toolbar">
-          <div className="mx-toggle-group" data-tour={isProgramView ? 'programa-vistas' : undefined}>
-            {isStatusView ? (
-              <>
-                <button className={`mx-toggle-btn ${statusSubTab === 'disponibilidad' ? 'active' : ''}`} onClick={() => setStatusSubTab('disponibilidad')}><Inbox size={14} /> Disponibilidad</button>
-                <button className={`mx-toggle-btn ${statusSubTab === 'negociacion' ? 'active' : ''}`} onClick={() => setStatusSubTab('negociacion')}><ShoppingCart size={14} /> Negociación</button>
-              </>
-            ) : isProgramView ? (
-              <>
-                <button className={`mx-toggle-btn ${progSubTab === 'programa' ? 'active' : ''}`} onClick={() => setProgSubTab('programa')}><ListIcon size={14} /> Programa</button>
-                <button className={`mx-toggle-btn ${progSubTab === 'calendario' ? 'active' : ''}`} onClick={() => setProgSubTab('calendario')}><LayoutGrid size={14} /> Calendario cosechas</button>
-                <button className={`mx-toggle-btn ${progSubTab === 'seguimiento' ? 'active' : ''}`} onClick={() => setProgSubTab('seguimiento')}><Activity size={14} /> Seguimiento</button>
-              </>
-            ) : null}
+          <div className="mx-toggle-group">
+            <button className={`mx-toggle-btn ${isStatusView ? 'active' : ''}`} onClick={() => navigate('/biomasa/status')}><Inbox size={14} /> Disponibilidad</button>
+            <button className={`mx-toggle-btn ${isTratosView ? 'active' : ''}`} onClick={() => navigate('/biomasa/tratos')}><Handshake size={14} /> Tratos</button>
+            <button className={`mx-toggle-btn ${isProgramView ? 'active' : ''}`} onClick={() => navigate('/biomasa/programa')}><ShoppingCart size={14} /> Prog. de Cosecha</button>
+            <button className={`mx-toggle-btn ${isMuestreosView ? 'active' : ''}`} onClick={() => navigate('/biomasa/muestreos')}><TestTube2 size={14} /> Muestreos</button>
           </div>
-          {(isProgramView && progSubTab === 'programa') && (
+        </div>
+        {isProgramView && (
+        <div className="mx-toolbar">
+          <div className="mx-toggle-group" data-tour="programa-vistas">
+            <button className={`mx-toggle-btn ${progSubTab === 'programa' ? 'active' : ''}`} onClick={() => setProgSubTab('programa')}><ListIcon size={14} /> Programa</button>
+            <button className={`mx-toggle-btn ${progSubTab === 'calendario' ? 'active' : ''}`} onClick={() => setProgSubTab('calendario')}><LayoutGrid size={14} /> Calendario cosechas</button>
+            <button className={`mx-toggle-btn ${progSubTab === 'seguimiento' ? 'active' : ''}`} onClick={() => setProgSubTab('seguimiento')}><Activity size={14} /> Seguimiento</button>
+          </div>
+          {progSubTab === 'programa' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <HelpTourButton tourId="biomasa" />
               <button className="mx-btn mx-btn-primary" onClick={() => handleOpenModal()} data-tour="programa-crear">
@@ -612,107 +594,16 @@ export default function Biomasa() {
               </button>
             </div>
           )}
-          {(isProgramView && progSubTab !== 'programa') && <HelpTourButton tourId="biomasa" />}
+          {progSubTab !== 'programa' && <HelpTourButton tourId="biomasa" />}
         </div>
         )}
 
         <div className="tab-content-area">
-          {isStatusView && (
-            <div className="status-view">
-              
-              {/* Selector de periodo y actualizar para Status */}
-              <div className="mx-toolbar status-period-toolbar am-mb-16" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--color-surface)', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', gap: '16px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                  <div className="mx-toggle-group">
-                    <button 
-                      type="button" 
-                      className={`mx-toggle-btn ${statusPeriod === 'month' ? 'active' : ''}`} 
-                      onClick={() => setStatusPeriod('month')}
-                    >
-                      Vista Mes
-                    </button>
-                    <button 
-                      type="button" 
-                      className={`mx-toggle-btn ${statusPeriod === 'week' ? 'active' : ''}`} 
-                      onClick={() => setStatusPeriod('week')}
-                    >
-                      Vista Semana
-                    </button>
-                  </div>
-                  
-                  <div className="harvest-calendar-period" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button 
-                      type="button" 
-                      className="mx-btn-icon sm" 
-                      onClick={() => moveStatusPeriod(-1)}
-                      aria-label="Periodo anterior"
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-                    <span style={{ fontWeight: 'var(--weight-bold)', fontSize: '13px', textTransform: 'uppercase', color: 'var(--color-text)' }}>
-                      {statusPeriod === 'week'
-                        ? `Semana ${new Date(weekDays[0] + 'T12:00:00Z').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}`
-                        : mesLabel(mes, true)}
-                    </span>
-                    <button 
-                      type="button" 
-                      className="mx-btn-icon sm" 
-                      onClick={() => moveStatusPeriod(1)}
-                      aria-label="Periodo siguiente"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                <button 
-                  type="button" 
-                  className="mx-btn mx-btn-outline sm" 
-                  onClick={load}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <RotateCcw size={14} /> Actualizar
-                </button>
-              </div>
-              <BiomasaKpiCards
-                statusSubTab={statusSubTab}
-                kpis={kpis}
-                negociacionKpis={visibleNegociacionKpis}
-                statusPeriod={statusPeriod}
-              />
-              <div className="mx-table-card">
-                <table className="mx-table">
-                  <thead>
-                    <tr>
-                      <th>Proveedor</th>
-                      <th>{statusSubTab === 'disponibilidad' ? 'Mes' : 'Situación biomasa'}</th>
-                      <th style={{ textAlign: 'center' }}>Tons</th>
-                      {statusSubTab === 'disponibilidad' ? <th>Centro</th> : <th>Programa</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(statusSubTab === 'disponibilidad' ? disp : [...visibleBiomasaPendiente, ...visibleBiomasaVinculada]).map(item => (
-                      <tr key={item._id}>
-                        <td style={{ fontWeight: 'var(--weight-bold)' }}>{item.proveedorNombre}</td>
-                        <td>{statusSubTab === 'disponibilidad' ? mesLabel(item.mesKey) : getSituacionBiomasaLabel(item)}</td>
-                        <td style={{ textAlign: 'center', fontWeight: 'var(--weight-bold)' }}>{fmtTons(statusSubTab === 'disponibilidad' ? item.tons : (item.tonsAcordadas || item.tons || item.biomasaEstimacion || 0))}</td>
-                        {statusSubTab === 'disponibilidad' ? <td>{item.centroCodigo || '—'}</td> : <td>{getProgramaLabel(item)}</td>}
-                      </tr>
-                    ))}
-                    {statusSubTab !== 'disponibilidad' && visiblePerdidasBiomasa.map((item) => (
-                      <tr key={`perdida-${item._id}`}>
-                        <td style={{ fontWeight: 'var(--weight-bold)' }}>{item.proveedorNombre}</td>
-                        <td>{item.motivoCierre || 'Pérdida'}</td>
-                        <td style={{ textAlign: 'center', fontWeight: 'var(--weight-bold)', color: 'var(--color-error)' }}>
-                          {fmtTons(item.tonsAcordadas || item.tons || item.biomasaEstimacion || 0)}
-                        </td>
-                        <td>Pérdida real</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          {isStatusView && <DisponibilidadView items={disp} loading={loading} mes={mes} setMes={setMes} reload={load} />}
+          {isTratosView && (
+            <Suspense fallback={<div className="mx-loading-placeholder"><div className="mx-spinner"></div><p>Cargando tratos...</p></div>}>
+              <Tratos />
+            </Suspense>
           )}
 
           {isProgramView && (
