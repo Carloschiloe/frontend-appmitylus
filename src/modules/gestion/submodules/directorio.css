@@ -302,7 +302,7 @@
 }
 
 .dir-col-provider {
-  width: 13%;
+  width: 19%;
 }
 
 .dir-col-contact,
@@ -311,18 +311,21 @@
   width: 20%;
 }
 
-.dir-col-main-contact,
-.dir-col-last {
+.dir-col-main-contact {
   width: 16%;
+}
+
+.dir-col-last {
+  width: 11%;
 }
 
 .dir-col-followup,
 .dir-col-role {
-  width: 13%;
+  width: 12%;
 }
 
 .dir-col-next {
-  width: 11%;
+  width: 10%;
 }
 
 .dir-col-reg,

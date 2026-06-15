@@ -26,6 +26,7 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../../context/AuthContext';
 import { 
   useCentros, 
   useContactos, 
@@ -239,6 +240,7 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
 
 export default function Directorio() {
   const { addToast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryFromUrl = searchParams.get('q') || '';
@@ -546,6 +548,7 @@ export default function Directorio() {
         proveedorNombre: addProviderSelected.nombre,
         entidad: addProviderSelected.nombre,
         centroCodigo: addProviderSelected.centros[0] || '',
+        creadoPor: user?.nombre || user?.email?.split('@')[0] || '',
       });
       const nombreRegistrado = addProviderSelected.nombre;
       setShowAddProviderModal(false);
@@ -894,12 +897,18 @@ export default function Directorio() {
                       </td>
 
                       <td>
-                        <div className="dir-clamped-text" title={provider.ultimaInteraccionResumen}>
-                          {provider.ultimaInteraccionResumen || 'Sin interacción registrada'}
-                        </div>
-                        <div className="dir-subtle-note">
-                          {provider.ultimaInteraccionFecha ? `${formatShortDate(provider.ultimaInteraccionFecha)} - ${formatDaysAgo(provider.ultimaInteraccionFecha)}` : 'Aún sin actividad'}
-                        </div>
+                        {provider.ultimaInteraccionResumen ? (
+                          <>
+                            <div className="dir-clamped-text" title={provider.ultimaInteraccionResumen}>
+                              {provider.ultimaInteraccionResumen}
+                            </div>
+                            <div className="dir-subtle-note">
+                              {formatShortDate(provider.ultimaInteraccionFecha)} · {formatDaysAgo(provider.ultimaInteraccionFecha)}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="dir-subtle-note">Sin interacción</span>
+                        )}
                       </td>
 
                       <td>
