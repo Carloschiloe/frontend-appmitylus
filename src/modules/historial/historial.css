@@ -79,3 +79,40 @@
 .historial-provider-card {
   padding: 14px;
 }
+
+/* Filter bar */
+.historial-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.historial-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.historial-view-active {
+  background: var(--color-primary-light) !important;
+  color: var(--color-primary) !important;
+}
+
+.historial-result-count {
+  font-size: 0.8rem;
+  color: var(--color-text-subtle);
+  margin: 2px 0 10px;
+}
+
+/* List view */
+.historial-list-row:hover {
+  background: var(--color-hover, rgba(0,0,0,0.03));
+}
+
+.am-mt-16 {
+  margin-top: 16px;
+}

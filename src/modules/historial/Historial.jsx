@@ -9,6 +9,8 @@ import {
   FileText,
   Filter,
   FlaskConical,
+  LayoutGrid,
+  LayoutList,
   MapPin,
   MessageSquare,
   PauseCircle,
@@ -569,20 +571,37 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
   );
 }
 
+const DATE_FILTERS = [
+  { value: 'todos', label: 'Todos' },
+  { value: '7d',   label: 'Últimos 7 días' },
+  { value: '30d',  label: 'Últimos 30 días' },
+  { value: '90d',  label: 'Últimos 90 días' },
+];
+
 function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider }) {
+  const [viewMode, setViewMode] = useState('cards');
+  const [dateFilter, setDateFilter] = useState('todos');
+  const [responsableFilter, setResponsableFilter] = useState('todos');
+
+  const responsableOptions = useMemo(() => {
+    const set = new Set(providers.map((p) => p.lastResponsable).filter(Boolean));
+    return [...set].sort((a, b) => a.localeCompare(b, 'es'));
+  }, [providers]);
+
   const filteredProviders = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
+    const now = Date.now();
+    const cutoffs = { '7d': 7, '30d': 30, '90d': 90 };
+    const cutoffMs = cutoffs[dateFilter] ? now - cutoffs[dateFilter] * 86400000 : null;
+
     return providers.filter((provider) => {
+      if (cutoffMs && (!provider.lastActivity || provider.lastActivity.getTime() < cutoffMs)) return false;
+      if (responsableFilter !== 'todos' && provider.lastResponsable !== responsableFilter) return false;
       if (!q) return true;
-      return [
-        provider.name,
-        provider.contactoPrincipal,
-        provider.proximaAccion,
-        provider.lastInteraction,
-        provider.lastResponsable,
-      ].some((value) => String(value || '').toLowerCase().includes(q));
+      return [provider.name, provider.contactoPrincipal, provider.proximaAccion, provider.lastInteraction, provider.lastResponsable]
+        .some((value) => String(value || '').toLowerCase().includes(q));
     });
-  }, [providers, searchTerm]);
+  }, [providers, searchTerm, dateFilter, responsableFilter]);
 
   const kpiStats = useMemo(() => {
     const MS_24H = 24 * 60 * 60 * 1000;
@@ -610,7 +629,63 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
         ))}
       </div>
 
-      <div className="am-mt-24">
+      <div className="historial-filter-bar">
+        <div className="mx-toggle-group">
+          {DATE_FILTERS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`mx-toggle-btn ${dateFilter === opt.value ? 'active' : ''}`}
+              onClick={() => setDateFilter(opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {responsableOptions.length > 0 && (
+          <select
+            className="mx-input"
+            style={{ width: 'auto' }}
+            value={responsableFilter}
+            onChange={(e) => setResponsableFilter(e.target.value)}
+          >
+            <option value="todos">Todos los responsables</option>
+            {responsableOptions.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+        )}
+
+        <div className="historial-view-toggle">
+          <button
+            type="button"
+            className={`mx-btn-icon ${viewMode === 'cards' ? 'historial-view-active' : ''}`}
+            title="Vista tarjetas"
+            onClick={() => setViewMode('cards')}
+          >
+            <LayoutGrid size={16} />
+          </button>
+          <button
+            type="button"
+            className={`mx-btn-icon ${viewMode === 'lista' ? 'historial-view-active' : ''}`}
+            title="Vista lista"
+            onClick={() => setViewMode('lista')}
+          >
+            <LayoutList size={16} />
+          </button>
+        </div>
+      </div>
+
+      {filteredProviders.length > 0 && (
+        <p className="historial-result-count">
+          {filteredProviders.length} proveedor{filteredProviders.length !== 1 ? 'es' : ''}
+          {dateFilter !== 'todos' ? ` · ${DATE_FILTERS.find(f => f.value === dateFilter)?.label}` : ''}
+          {responsableFilter !== 'todos' ? ` · ${responsableFilter}` : ''}
+        </p>
+      )}
+
+      <div className="am-mt-16">
         {loading ? (
           <div className="mx-state-placeholder">
             <div className="mx-spinner"></div>
@@ -620,7 +695,75 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
           <div className="mx-state-placeholder">
             <AlertCircle size={44} />
             <h3>No hay resultados</h3>
-            <p>Prueba con otro proveedor o ajusta la búsqueda.</p>
+            <p>Prueba con otro filtro o ajusta la búsqueda.</p>
+          </div>
+        ) : viewMode === 'lista' ? (
+          <div className="mx-table-card">
+            <div className="mx-table-wrap">
+              <table className="mx-table">
+                <thead>
+                  <tr>
+                    <th>Proveedor</th>
+                    <th>Estado</th>
+                    <th>Última actividad</th>
+                    <th>Última gestión</th>
+                    <th>Responsable</th>
+                    <th style={{ textAlign: 'center' }}>Eventos</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProviders.map((provider) => {
+                    const status = STATUS_META[provider.status || 'none'] || STATUS_META.none;
+                    const StatusIcon = status.icon;
+                    return (
+                      <tr key={provider.key} className="historial-list-row">
+                        <td>
+                          <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{provider.name}</div>
+                          <div style={{ fontSize: '0.76rem', color: 'var(--color-text-subtle)', marginTop: 2 }}>
+                            {provider.totalContactos} contacto{provider.totalContactos !== 1 ? 's' : ''}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="mx-badge" style={{ color: status.color, background: status.bg }}>
+                            <StatusIcon size={12} /> {status.label}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                            {provider.lastActivity ? formatDate(provider.lastActivity) : '—'}
+                          </div>
+                          <div style={{ fontSize: '0.76rem', color: 'var(--color-text-subtle)' }}>
+                            {relativeText(provider.lastActivity)}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="am-line-clamp-2" style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', maxWidth: 260 }}>
+                            {provider.lastInteraction || '—'}
+                          </div>
+                        </td>
+                        <td style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                          {provider.lastResponsable || '—'}
+                        </td>
+                        <td style={{ textAlign: 'center', fontSize: '0.85rem', fontWeight: 700 }}>
+                          {provider.totalEventos}
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="mx-btn mx-btn-outline"
+                            style={{ fontSize: '0.8rem', padding: '5px 12px', height: 'auto' }}
+                            onClick={() => onSelectProvider(provider.key)}
+                          >
+                            Expediente
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <div className="historial-provider-grid">
