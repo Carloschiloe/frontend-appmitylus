@@ -291,7 +291,10 @@
   padding: 1px 6px;
 }
 
-.dir-col-provider,
+.dir-col-provider {
+  width: 13%;
+}
+
 .dir-col-contact,
 .dir-col-company,
 .dir-col-channel {
@@ -305,11 +308,11 @@
 
 .dir-col-followup,
 .dir-col-role {
-  width: 12%;
+  width: 13%;
 }
 
 .dir-col-next {
-  width: 10%;
+  width: 11%;
 }
 
 .dir-col-reg,
@@ -318,12 +321,24 @@
 }
 
 .dir-col-actions {
-  width: 40px;
+  width: 36px;
 }
 
 .dir-col-actions,
 .dir-actions-cell {
   text-align: right;
+}
+
+.dir-provider-text {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dir-name-truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .dir-reg-date {
@@ -354,15 +369,13 @@
 }
 
 .dir-dropdown {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
-  z-index: 300;
-  min-width: 180px;
+  position: fixed;
+  z-index: 9999;
+  min-width: 190px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
   padding: 4px;
   display: flex;
   flex-direction: column;

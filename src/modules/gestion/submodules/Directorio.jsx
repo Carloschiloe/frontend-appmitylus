@@ -264,6 +264,7 @@ export default function Directorio() {
   const [filterUsuario, setFilterUsuario] = useState('');
   const [providerRegistered, setProviderRegistered] = useState(null);
   const [openMenuKey, setOpenMenuKey] = useState(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const menuRef = useRef(null);
 
   // 1. Carga de datos con React Query
@@ -860,8 +861,8 @@ export default function Directorio() {
                           <div className="mx-btn-icon sm dir-provider-icon">
                             <Building2 size={16} />
                           </div>
-                          <div>
-                            <div className="dir-primary-text">{provider.nombre}</div>
+                          <div className="dir-provider-text">
+                            <div className="dir-primary-text dir-name-truncate" title={provider.nombre}>{provider.nombre}</div>
                             <div className="dir-provider-meta">
                               <span className="mx-badge dir-key-badge">{provider.key || 'sin-key'}</span>
                               <span><MapPin size={10} /> {provider.comuna}</span>
@@ -920,45 +921,22 @@ export default function Directorio() {
                       </td>
 
                       <td className="dir-actions-cell">
-                        <div className="dir-menu-wrap" ref={openMenuKey === provider.providerKey ? menuRef : null}>
+                        <div className="dir-menu-wrap">
                           <button
                             className="mx-action-btn dir-menu-trigger"
-                            onClick={() => setOpenMenuKey(openMenuKey === provider.providerKey ? null : provider.providerKey)}
                             title="Opciones"
+                            onClick={(e) => {
+                              if (openMenuKey === provider.providerKey) {
+                                setOpenMenuKey(null);
+                              } else {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                                setOpenMenuKey(provider.providerKey);
+                              }
+                            }}
                           >
                             <MoreHorizontal size={16} />
                           </button>
-                          {openMenuKey === provider.providerKey && (
-                            <div className="dir-dropdown">
-                              <button className="dir-dropdown-item" onClick={() => { setOpenMenuKey(null); setDetailModal({ open: true, provider }); }}>
-                                <ExternalLink size={14} /> Ver resumen
-                              </button>
-                              <button className="dir-dropdown-item" onClick={() => {
-                                setOpenMenuKey(null);
-                                const key = provider.key || provider.providerKey;
-                                window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open', {
-                                  detail: {
-                                    proveedorKey: key,
-                                    proveedorNombre: provider.nombre,
-                                    contactoNombre: provider.contactoPrincipal || '',
-                                    contactoTelefono: provider.contactoTelefono || '',
-                                    contactoEmail: provider.contactoEmail || '',
-                                    comuna: provider.comuna || '',
-                                    centros: provider.centros || 0,
-                                    contactoId: '',
-                                  },
-                                }));
-                              }}>
-                                <MessageSquare size={14} /> Registrar gestión
-                              </button>
-                              <button className="dir-dropdown-item" onClick={() => { setOpenMenuKey(null); openEditModal(provider); }}>
-                                <Edit size={14} /> Editar
-                              </button>
-                              <button className="dir-dropdown-item dir-dropdown-item-danger" onClick={() => { setOpenMenuKey(null); setConfirmDeleteProvider(provider); }}>
-                                <Trash2 size={14} /> Eliminar
-                              </button>
-                            </div>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -1015,6 +993,50 @@ export default function Directorio() {
           </table>
         </div>
       </div>
+
+      {openMenuKey && (
+        <div
+          ref={menuRef}
+          className="dir-dropdown"
+          style={{ top: menuPos.top, right: menuPos.right }}
+        >
+          {(() => {
+            const provider = filteredItems.find((p) => p.providerKey === openMenuKey);
+            if (!provider) return null;
+            return (
+              <>
+                <button className="dir-dropdown-item" onClick={() => { setOpenMenuKey(null); setDetailModal({ open: true, provider }); }}>
+                  <ExternalLink size={14} /> Ver resumen
+                </button>
+                <button className="dir-dropdown-item" onClick={() => {
+                  setOpenMenuKey(null);
+                  const key = provider.key || provider.providerKey;
+                  window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open', {
+                    detail: {
+                      proveedorKey: key,
+                      proveedorNombre: provider.nombre,
+                      contactoNombre: provider.contactoPrincipal || '',
+                      contactoTelefono: provider.contactoTelefono || '',
+                      contactoEmail: provider.contactoEmail || '',
+                      comuna: provider.comuna || '',
+                      centros: provider.centros || 0,
+                      contactoId: '',
+                    },
+                  }));
+                }}>
+                  <MessageSquare size={14} /> Registrar gestión
+                </button>
+                <button className="dir-dropdown-item" onClick={() => { setOpenMenuKey(null); openEditModal(provider); }}>
+                  <Edit size={14} /> Editar
+                </button>
+                <button className="dir-dropdown-item dir-dropdown-item-danger" onClick={() => { setOpenMenuKey(null); setConfirmDeleteProvider(provider); }}>
+                  <Trash2 size={14} /> Eliminar
+                </button>
+              </>
+            );
+          })()}
+        </div>
+      )}
 
       {modalState.open && (
         <div className="mx-modal-overlay">
