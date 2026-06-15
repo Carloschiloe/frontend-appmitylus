@@ -295,27 +295,105 @@
 .dir-col-contact,
 .dir-col-company,
 .dir-col-channel {
-  width: 25%;
+  width: 20%;
 }
 
 .dir-col-main-contact,
 .dir-col-last {
-  width: 20%;
+  width: 16%;
 }
 
 .dir-col-followup,
 .dir-col-role {
-  width: 15%;
+  width: 12%;
 }
 
-.dir-col-next,
-.dir-col-actions {
+.dir-col-next {
   width: 10%;
+}
+
+.dir-col-reg,
+.dir-col-resp {
+  width: 9%;
+}
+
+.dir-col-actions {
+  width: 40px;
 }
 
 .dir-col-actions,
 .dir-actions-cell {
   text-align: right;
+}
+
+.dir-reg-date {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.dir-resp-name {
+  font-size: 0.82rem;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+/* ── Menú 3 puntos ── */
+.dir-menu-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.dir-menu-trigger {
+  color: var(--color-text-muted);
+}
+
+.dir-menu-trigger:hover {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.dir-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 300;
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dir-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  border-radius: calc(var(--radius-md) - 2px);
+  transition: background 0.12s ease;
+}
+
+.dir-dropdown-item:hover {
+  background: var(--color-bg);
+}
+
+.dir-dropdown-item-danger {
+  color: var(--color-error, #dc2626);
+}
+
+.dir-dropdown-item-danger:hover {
+  background: rgba(220, 38, 38, 0.06);
 }
 
 .dir-table-state {

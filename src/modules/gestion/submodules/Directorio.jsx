@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Activity,
   Building2,
@@ -21,6 +21,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  MoreHorizontal,
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../../api/apiClient';
@@ -262,6 +263,8 @@ export default function Directorio() {
   const [sortBy, setSortBy] = useState('az');
   const [filterUsuario, setFilterUsuario] = useState('');
   const [providerRegistered, setProviderRegistered] = useState(null);
+  const [openMenuKey, setOpenMenuKey] = useState(null);
+  const menuRef = useRef(null);
 
   // 1. Carga de datos con React Query
   const { data: centrosRaw, isLoading: loadingCentros, refetch: refetchCentros } = useCentros();
@@ -309,6 +312,17 @@ export default function Directorio() {
     nextParams.delete('q');
     setSearchParams(nextParams, { replace: true });
   }, [queryFromUrl, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!openMenuKey) return;
+    const handler = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenMenuKey(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openMenuKey]);
 
   const providerStats = useMemo(() => {
     const list = data.proveedores || [];
@@ -806,7 +820,9 @@ export default function Directorio() {
                   <th className="dir-col-followup">Estado comercial</th>
                   <th className="dir-col-last">Última gestión</th>
                   <th className="dir-col-next">Próxima acción</th>
-                  <th className="dir-col-actions">Acciones</th>
+                  <th className="dir-col-reg">Registro</th>
+                  <th className="dir-col-resp">Responsable</th>
+                  <th className="dir-col-actions"></th>
                 </tr>
               ) : (
                 <tr>
@@ -822,13 +838,13 @@ export default function Directorio() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={tab === 'proveedores' ? 6 : 5} className="dir-table-state">
+                  <td colSpan={tab === 'proveedores' ? 8 : 5} className="dir-table-state">
                     <div className="mx-spinner dir-spinner"></div>
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={tab === 'proveedores' ? 6 : 5} className="dir-table-state">
+                  <td colSpan={tab === 'proveedores' ? 8 : 5} className="dir-table-state">
                     No se encontraron resultados.
                   </td>
                 </tr>
@@ -894,46 +910,55 @@ export default function Directorio() {
                         </div>
                       </td>
 
+                      <td>
+                        <div className="dir-reg-date">{provider.fechaIngreso ? formatShortDate(provider.fechaIngreso) : '-'}</div>
+                        <div className="dir-subtle-note">{provider.fechaIngreso ? formatDaysAgo(provider.fechaIngreso) : ''}</div>
+                      </td>
+
+                      <td>
+                        <div className="dir-resp-name">{provider.ingresadoPor || '-'}</div>
+                      </td>
+
                       <td className="dir-actions-cell">
-                        <div className="mx-table-actions-cell dir-actions">
+                        <div className="dir-menu-wrap" ref={openMenuKey === provider.providerKey ? menuRef : null}>
                           <button
-                            className="mx-action-btn dir-action-primary"
-                            title="Ver resumen"
-                            onClick={() => setDetailModal({ open: true, provider })}
+                            className="mx-action-btn dir-menu-trigger"
+                            onClick={() => setOpenMenuKey(openMenuKey === provider.providerKey ? null : provider.providerKey)}
+                            title="Opciones"
                           >
-                            <ExternalLink size={14} />
+                            <MoreHorizontal size={16} />
                           </button>
-                          <button
-                            className="mx-action-btn"
-                            title="Registrar gestión"
-                            onClick={() => {
-                              const key = provider.key || provider.providerKey;
-                              window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open', {
-                                detail: {
-                                  proveedorKey: key,
-                                  proveedorNombre: provider.nombre,
-                                  contactoNombre: provider.contactoPrincipal || '',
-                                  contactoTelefono: provider.contactoTelefono || '',
-                                  contactoEmail: provider.contactoEmail || '',
-                                  comuna: provider.comuna || '',
-                                  centros: provider.centros || 0,
-                                  contactoId: '',
-                                },
-                              }));
-                            }}
-                          >
-                            <MessageSquare size={14} />
-                          </button>
-                          <button className="mx-action-btn edit" title="Editar" onClick={() => openEditModal(provider)}>
-                            <Edit size={14} />
-                          </button>
-                          <button
-                            className="mx-action-btn delete"
-                            title="Eliminar Empresa"
-                            onClick={() => setConfirmDeleteProvider(provider)}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          {openMenuKey === provider.providerKey && (
+                            <div className="dir-dropdown">
+                              <button className="dir-dropdown-item" onClick={() => { setOpenMenuKey(null); setDetailModal({ open: true, provider }); }}>
+                                <ExternalLink size={14} /> Ver resumen
+                              </button>
+                              <button className="dir-dropdown-item" onClick={() => {
+                                setOpenMenuKey(null);
+                                const key = provider.key || provider.providerKey;
+                                window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open', {
+                                  detail: {
+                                    proveedorKey: key,
+                                    proveedorNombre: provider.nombre,
+                                    contactoNombre: provider.contactoPrincipal || '',
+                                    contactoTelefono: provider.contactoTelefono || '',
+                                    contactoEmail: provider.contactoEmail || '',
+                                    comuna: provider.comuna || '',
+                                    centros: provider.centros || 0,
+                                    contactoId: '',
+                                  },
+                                }));
+                              }}>
+                                <MessageSquare size={14} /> Registrar gestión
+                              </button>
+                              <button className="dir-dropdown-item" onClick={() => { setOpenMenuKey(null); openEditModal(provider); }}>
+                                <Edit size={14} /> Editar
+                              </button>
+                              <button className="dir-dropdown-item dir-dropdown-item-danger" onClick={() => { setOpenMenuKey(null); setConfirmDeleteProvider(provider); }}>
+                                <Trash2 size={14} /> Eliminar
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>
