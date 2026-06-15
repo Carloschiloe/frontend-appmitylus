@@ -8,7 +8,7 @@ const MODULE_BY_PATH = [
   ['/biomasa', 'biomasa'],
   ['/gestion/bandeja', 'resumen_operativo'],
   ['/gestion/agenda', 'agenda'],
-  ['/gestion/tratos', 'tratos'],
+  ['/biomasa/tratos', 'tratos'],
   ['/gestion/proveedores', 'directorio'],
   ['/gestion/soporte/errores', 'soporte'],
   ['/centros', 'centros'],

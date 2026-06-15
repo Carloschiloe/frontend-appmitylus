@@ -903,7 +903,7 @@ export default function Historial() {
                     comuna: '',
                     centros: 0,
                   }));
-                  navigate(`/gestion/tratos?new=1&proveedor=${encodeURIComponent(selectedProvider.key)}`);
+                  navigate(`/biomasa/tratos?new=1&proveedor=${encodeURIComponent(selectedProvider.key)}`);
                 }}
               >
                 <FileText size={15} /> Nueva negociación

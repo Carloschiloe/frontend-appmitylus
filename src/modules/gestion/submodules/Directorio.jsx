@@ -1174,7 +1174,7 @@ export default function Directorio() {
                     comuna: p.comuna || '',
                     centros: p.centros || 0,
                   }));
-                  navigate(`/gestion/tratos?new=1&proveedor=${encodeURIComponent(key)}`);
+                  navigate(`/biomasa/tratos?new=1&proveedor=${encodeURIComponent(key)}`);
                 }}
               >
                 <FileText size={16} /> Nueva negociación

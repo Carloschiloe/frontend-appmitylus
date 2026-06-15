@@ -450,7 +450,7 @@ export default function Bandeja() {
                 <p className="mx-eyebrow">Negociación</p>
                 <h3 className="mx-card-title">Estado de negociación</h3>
               </div>
-              <Link className="mx-btn-icon sm" to="/gestion/tratos">
+              <Link className="mx-btn-icon sm" to="/biomasa/tratos">
                 <ChevronRight size={18} />
               </Link>
             </header>

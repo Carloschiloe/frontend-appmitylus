@@ -2,7 +2,7 @@ export const mitynexTours = {
   tratos: {
     id: 'tratos',
     title: 'Guía de Tratos',
-    route: '/gestion/tratos',
+    route: '/biomasa/tratos',
     summary: 'Conoce cómo buscar, registrar y revisar acuerdos comerciales.',
     steps: [
       { element: '[data-tour="tratos-filtros"]', title: 'Busca y filtra', description: 'Encuentra tratos por proveedor, mes o responsable.', placement: 'bottom' },

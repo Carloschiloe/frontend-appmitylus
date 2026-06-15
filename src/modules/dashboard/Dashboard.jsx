@@ -22,7 +22,7 @@ import { apiClient } from '../../api/apiClient';
 const QUICK_LINKS = [
   { label: 'Resumen Operativo', to: '/gestion/bandeja', icon: ClipboardList },
   { label: 'Agenda',            to: '/gestion/agenda',   icon: Calendar },
-  { label: 'Tratos',            to: '/gestion/tratos',   icon: Handshake },
+  { label: 'Tratos',            to: '/biomasa/tratos',   icon: Handshake },
   { label: 'Prog. de Cosecha',  to: '/biomasa/programa', icon: Droplet },
   { label: 'Muestreos',         to: '/biomasa/muestreos',icon: TestTube2 },
 ];
