@@ -21,6 +21,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
+import { usuariosApi } from '../../api/api-usuarios';
 import { useQuery } from '@tanstack/react-query';
 import './historial.css';
 
@@ -578,15 +579,17 @@ const DATE_FILTERS = [
   { value: '90d',  label: 'Últimos 90 días' },
 ];
 
-function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider }) {
+function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider, usuarios = [] }) {
   const [viewMode, setViewMode] = useState('cards');
   const [dateFilter, setDateFilter] = useState('todos');
   const [responsableFilter, setResponsableFilter] = useState('todos');
 
   const responsableOptions = useMemo(() => {
-    const set = new Set(providers.map((p) => p.lastResponsable).filter(Boolean));
-    return [...set].sort((a, b) => a.localeCompare(b, 'es'));
-  }, [providers]);
+    return [...usuarios]
+      .map((u) => u.nombre)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'es'));
+  }, [usuarios]);
 
   const filteredProviders = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -831,6 +834,13 @@ export default function Historial() {
   // React Query: Carga Granular e Independiente
   const isExpediente = historyView === 'expediente';
   const isEquipo = historyView === 'equipo';
+
+  // 0. Usuarios del sistema
+  const { data: usuariosData = [] } = useQuery({
+    queryKey: ['usuarios'],
+    queryFn: usuariosApi.getUsuarios,
+    staleTime: 10 * 60 * 1000,
+  });
 
   // 1. Contactos (Base para Expediente)
   const { data: contactosRes, isLoading: loadingContactos } = useQuery({
@@ -1314,6 +1324,7 @@ export default function Historial() {
             providers={providers}
             searchTerm={searchTerm}
             onSelectProvider={selectProvider}
+            usuarios={usuariosData}
           />
         ) : (
           <TeamActivityView
