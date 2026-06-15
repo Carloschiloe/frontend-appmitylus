@@ -19,7 +19,7 @@ const trackedFiles = getTrackedFiles();
 const failures = [];
 
 const forbiddenEnvFile = /(^|\/)\.env($|\.)/;
-const allowedEnvFile = /(^|\/)\.env\.example$/;
+const allowedEnvFile = /(^|\/)\.env[^/]*\.example$/;
 const secretPatterns = [
   { name: 'AWS access key', pattern: /\bAKIA[0-9A-Z]{16}\b/ },
   { name: 'private key block', pattern: /-----BEGIN (RSA |EC |OPENSSH |)?PRIVATE KEY-----/ },
