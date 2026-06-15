@@ -13,6 +13,7 @@ import {
   History,
   MessageSquare,
   FileText,
+  FileDown,
   Trash2,
   Clock3,
   CheckCircle2,
@@ -35,6 +36,7 @@ import {
   useMuestreos
 } from '../hooks/useGestionQueries';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
+import { downloadXlsx } from '../../../utils/downloadXlsx';
 import './directorio.css';
 
 const STATUS_META = {
@@ -730,6 +732,21 @@ export default function Directorio() {
     }
   };
 
+  const [exportandoDir, setExportandoDir] = useState(false);
+
+  const handleExportarExcel = useCallback(async () => {
+    setExportandoDir(true);
+    try {
+      const endpoint = tab === 'proveedores' ? '/exportar/proveedores' : '/exportar/contactos';
+      const filename = tab === 'proveedores' ? 'proveedores.xlsx' : 'contactos.xlsx';
+      await downloadXlsx(endpoint, filename);
+    } catch {
+      addToast({ title: 'Error', message: 'No se pudo exportar', type: 'error' });
+    } finally {
+      setExportandoDir(false);
+    }
+  }, [tab, addToast]);
+
   return (
     <div className="mx-page am-p-0">
       <div className="mx-toolbar am-mt-16">
@@ -752,6 +769,9 @@ export default function Directorio() {
           />
         </div>
 
+        <button className="mx-btn-icon sm" onClick={handleExportarExcel} disabled={exportandoDir} title="Exportar a Excel">
+          <FileDown size={16} />
+        </button>
         <button className="mx-btn mx-btn-primary" onClick={openCreateModal}>
           <Plus size={18} /> {tab === 'proveedores' ? 'Registrar proveedor' : 'Contacto'}
         </button>

@@ -6,14 +6,15 @@ import {
   Eye,
   Edit,
   Trash2,
-  Download,
+  FileDown,
   MapPin,
   Building2,
   Ruler,
   X,
   Plus,
 } from 'lucide-react';
-import { deleteCentro, exportCentros, getCentros, syncSubpesca, upsertCentro } from '../../../api/api-centros';
+import { deleteCentro, getCentros, syncSubpesca, upsertCentro } from '../../../api/api-centros';
+import { downloadXlsx } from '../../../utils/downloadXlsx';
 import { useToast } from '../../../context/ToastContext';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 
@@ -173,29 +174,24 @@ export default function CentrosTable() {
     }
   }, [confirmDelete, addToast, queryClient]);
 
+  const [exportandoCentros, setExportandoCentros] = useState(false);
+
   const handleExportCentros = useCallback(async () => {
+    setExportandoCentros(true);
     try {
-      const csv = await exportCentros({
-        q: searchTerm,
-        comuna: comunaFilter,
-        proveedor: providerFilter,
+      await downloadXlsx('/exportar/centros', `centros-${new Date().toISOString().slice(0, 10)}.xlsx`, {
+        q: searchTerm || undefined,
+        comuna: comunaFilter || undefined,
+        proveedor: providerFilter || undefined,
       });
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `centros-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      addToast({ title: 'Exportacion lista', message: 'El archivo CSV de centros fue generado.', type: 'success' });
     } catch (err) {
       addToast({
         title: 'No se pudo exportar',
-        message: err?.data?.error || err?.message || 'No se pudo generar el archivo de centros.',
+        message: err?.message || 'No se pudo generar el archivo de centros.',
         type: 'error',
       });
+    } finally {
+      setExportandoCentros(false);
     }
   }, [addToast, comunaFilter, providerFilter, searchTerm]);
 
@@ -478,8 +474,8 @@ export default function CentrosTable() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <button className="mx-btn mx-btn-outline" onClick={handleExportCentros}>
-              <Download size={18} /> Exportar
+            <button className="mx-btn mx-btn-outline" onClick={handleExportCentros} disabled={exportandoCentros}>
+              <FileDown size={18} /> Exportar
             </button>
             <button className="mx-btn mx-btn-primary" onClick={openCreateModal}>
               <Plus size={18} /> Nuevo Centro
