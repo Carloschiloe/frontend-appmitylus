@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import {
   Download, Upload, CheckCircle2, AlertCircle, RotateCcw,
-  Building2, Users, ArrowRight,
+  Building2, Users, FlaskConical, ArrowRight,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 import { useToast } from '../../context/ToastContext';
@@ -49,6 +49,30 @@ const TIPOS = {
       <>El campo <strong>Nombre contacto</strong> es obligatorio.</>,
       <>Debe tener al menos <strong>Teléfono</strong> o <strong>Email</strong>.</>,
       <><strong>Empresa asociada</strong> es opcional — vincula el contacto a un proveedor existente.</>,
+    ],
+  },
+  muestreos: {
+    label: 'Muestreos',
+    sublabel: 'Resultados históricos de muestreos por proveedor',
+    icon: FlaskConical,
+    plantillaUrl: '/api/importar/plantilla/muestreos',
+    plantillaFile: 'plantilla-muestreos.xlsx',
+    previewEndpoint: '/importar/muestreos/preview',
+    confirmarEndpoint: '/importar/muestreos/confirmar',
+    columnas: [
+      { key: '_fechaDisplay',  label: 'Fecha' },
+      { key: 'proveedorNombre', label: 'Proveedor' },
+      { key: 'centroCodigo',   label: 'Centro' },
+      { key: 'uxkg',           label: 'Calibre' },
+      { key: 'pesoVivo',       label: 'Peso Vivo' },
+      { key: 'rendimiento',    label: 'Rend %' },
+      { key: 'procesable',     label: 'Proc %' },
+      { key: 'rechazos',       label: 'Rech %' },
+    ],
+    instrucciones: [
+      <>Los campos <strong>Fecha</strong> y <strong>Proveedor</strong> son obligatorios.</>,
+      <>La fecha debe estar en formato <code>YYYY-MM-DD</code> (ej: 2024-03-15) o <code>DD-MM-YYYY</code>.</>,
+      'Los porcentajes y pesos son opcionales pero deben ser números.',
     ],
   },
 };
