@@ -21,7 +21,6 @@ import {
   XCircle,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
-import { usuariosApi } from '../../api/api-usuarios';
 import { useQuery } from '@tanstack/react-query';
 import './historial.css';
 
@@ -579,17 +578,21 @@ const DATE_FILTERS = [
   { value: '90d',  label: 'Últimos 90 días' },
 ];
 
-function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider, usuarios = [] }) {
+function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider }) {
   const [viewMode, setViewMode] = useState('cards');
   const [dateFilter, setDateFilter] = useState('todos');
   const [responsableFilter, setResponsableFilter] = useState('todos');
 
   const responsableOptions = useMemo(() => {
-    return [...usuarios]
-      .map((u) => u.nombre)
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, 'es'));
-  }, [usuarios]);
+    const seen = new Map();
+    providers.forEach((p) => {
+      const nombre = String(p.lastResponsable || '').trim();
+      if (!nombre) return;
+      const key = nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      if (!seen.has(key)) seen.set(key, nombre);
+    });
+    return [...seen.values()].sort((a, b) => a.localeCompare(b, 'es'));
+  }, [providers]);
 
   const filteredProviders = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -834,13 +837,6 @@ export default function Historial() {
   // React Query: Carga Granular e Independiente
   const isExpediente = historyView === 'expediente';
   const isEquipo = historyView === 'equipo';
-
-  // 0. Usuarios del sistema
-  const { data: usuariosData = [] } = useQuery({
-    queryKey: ['usuarios'],
-    queryFn: usuariosApi.getUsuarios,
-    staleTime: 10 * 60 * 1000,
-  });
 
   // 1. Contactos (Base para Expediente)
   const { data: contactosRes, isLoading: loadingContactos } = useQuery({
@@ -1324,7 +1320,6 @@ export default function Historial() {
             providers={providers}
             searchTerm={searchTerm}
             onSelectProvider={selectProvider}
-            usuarios={usuariosData}
           />
         ) : (
           <TeamActivityView
