@@ -272,12 +272,29 @@ function DobleFactorCard({ user, addToast }) {
 }
 
 // ── Página ───────────────────────────────────────────────────────────────────
+function resolveEmpresa(user) {
+  // 1. Empresa populada directamente en el objeto usuario
+  if (typeof user?.empresaId === 'object' && user?.empresaId?.nombre) {
+    return user.empresaId.nombre;
+  }
+  // 2. Fallback: clave en localStorage seteada durante el login/refresh
+  const cached = typeof window !== 'undefined'
+    ? window.localStorage?.getItem('selected_tenant_nombre')
+    : null;
+  if (cached) return cached;
+  // 3. Para superadmin que no tiene empresa asignada por diseño
+  if (user?.rol === 'superadmin') return 'Mitynex Prime (administrador)';
+  return null;
+}
+
 export default function MiPerfil() {
   const { user } = useAuth();
   const { addToast } = useToast();
 
   const initials = (user?.nombre || '?')
     .split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase()).join('');
+
+  const empresaNombre = resolveEmpresa(user);
 
   return (
     <div className="mx-page">
@@ -300,7 +317,7 @@ export default function MiPerfil() {
             <p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: '#fff' }}>{user?.nombre}</p>
             <p style={{ margin: 0, fontSize: 12, color: 'rgba(234,244,255,.65)' }}>
               {ROL_LABEL[user?.rol] || user?.rol}
-              {user?.empresaId?.nombre ? ` · ${user.empresaId.nombre}` : ''}
+              {empresaNombre ? ` · ${empresaNombre}` : ''}
             </p>
           </div>
         </div>
@@ -322,7 +339,7 @@ export default function MiPerfil() {
             <Building2 size={15} color="#0ea5e9" />
             <div>
               <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Empresa</p>
-              <p style={{ margin: '2px 0 0', fontSize: 14 }}>{user?.empresaId?.nombre || '—'}</p>
+              <p style={{ margin: '2px 0 0', fontSize: 14 }}>{empresaNombre || '—'}</p>
             </div>
           </div>
         </div>
