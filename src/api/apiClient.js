@@ -3,6 +3,15 @@ import { captureApiError } from '../utils/errorReporter.js';
 
 const API_BASE_URL = '/api';
 const DEFAULT_TIMEOUT_MS = 30000;
+
+const CSRF_MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+// Rutas que establecen la sesión — no tienen cookie CSRF todavía
+const CSRF_SKIP_PATHS = new Set(['/auth/login', '/auth/refresh', '/auth/activar-cuenta']);
+
+function getCsrfToken() {
+  const match = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
 // Subidas de archivos (fotos de muestreo) pueden tardar más en conexiones lentas
 const UPLOAD_TIMEOUT_MS = 120000;
 
@@ -48,10 +57,17 @@ async function request(endpoint, options = {}) {
   const isAuthEndpoint = endpoint.startsWith('/auth/');
   const isFormData = options.body instanceof FormData;
 
+  const method = (options.method || 'GET').toUpperCase();
+
   const headers = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...options.headers,
   };
+
+  if (CSRF_MUTATION_METHODS.has(method) && !CSRF_SKIP_PATHS.has(endpoint)) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+  }
 
   const tenantDb = localStorage.getItem('selected_tenant_db');
   if (tenantDb && !isAuthEndpoint) {
