@@ -812,7 +812,7 @@ export default function Directorio() {
 
       <div className="mx-table-card am-mt-16">
         <div className="mx-table-wrap">
-          <table className="mx-table">
+          <table className={`mx-table${tab === 'proveedores' ? ' dir-providers-table' : ''}`}>
             <thead>
               {tab === 'proveedores' ? (
                 <tr>

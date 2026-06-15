@@ -291,6 +291,16 @@
   padding: 1px 6px;
 }
 
+.dir-providers-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.dir-providers-table td,
+.dir-providers-table th {
+  overflow: hidden;
+}
+
 .dir-col-provider {
   width: 13%;
 }
@@ -422,6 +432,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .dir-provider-icon {
