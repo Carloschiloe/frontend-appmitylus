@@ -1442,7 +1442,7 @@ export default function Directorio() {
                 {addProviderQuery.trim() ? (
                   addProviderResults.length === 0 ? (
                     <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', padding: '8px 0' }}>
-                      Sin resultados para "{addProviderQuery}"
+                      Sin resultados para &quot;{addProviderQuery}&quot;
                     </p>
                   ) : (
                     <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0' }}>
