@@ -35,6 +35,7 @@ const Login          = lazy(() => import('./modules/auth/Login.jsx'));
 const ActivarCuenta  = lazy(() => import('./modules/auth/ActivarCuenta.jsx'));
 const Empresas       = lazy(() => import('./modules/configuracion/Empresas.jsx'));
 const ImportarDatos  = lazy(() => import('./modules/configuracion/ImportarDatos.jsx'));
+const MiPerfil       = lazy(() => import('./modules/perfil/MiPerfil.jsx'));
 const SharedMuestreo = lazy(() => import('./modules/public/SharedMuestreo.jsx'));
 
 const MainLayout = ({ children }) => {
@@ -330,6 +331,12 @@ export default function App() {
                   <Route path="/ayuda" element={
                     <PrivateRoute>
                       <Ayuda />
+                    </PrivateRoute>
+                  } />
+
+                  <Route path="/perfil" element={
+                    <PrivateRoute>
+                      <MiPerfil />
                     </PrivateRoute>
                   } />
 

@@ -6,7 +6,7 @@ const DEFAULT_TIMEOUT_MS = 30000;
 
 const CSRF_MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 // Rutas que establecen la sesión — no tienen cookie CSRF todavía
-const CSRF_SKIP_PATHS = new Set(['/auth/login', '/auth/refresh', '/auth/activar-cuenta']);
+const CSRF_SKIP_PATHS = new Set(['/auth/login', '/auth/refresh', '/auth/activar-cuenta', '/auth/2fa/verify']);
 
 function getCsrfToken() {
   const match = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]+)/);

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, User, LogOut, ChevronDown } from 'lucide-react';
+import { Search, User, LogOut, ChevronDown, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import './AppHeader.css';
@@ -77,6 +77,10 @@ export default function AppHeader() {
               )}
             </div>
             <div className="mx-ahu-divider" />
+            <button type="button" className="mx-ahu-ditem" onClick={() => { setDropdownOpen(false); navigate('/perfil'); }}>
+              <Settings size={14} />
+              Mi perfil y seguridad
+            </button>
             <button type="button" className="mx-ahu-ditem" onClick={logout}>
               <LogOut size={14} />
               Cerrar sesión

@@ -71,22 +71,31 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const data = await apiClient.post('/auth/login', { email, password });
-      const usuario = data.usuario || data.user || data.item;
 
-      if (!usuario) {
-        return { success: false, error: 'Respuesta de autenticacion invalida' };
+      // El servidor pide el código 2FA antes de entregar sesión
+      if (data.requires2FA) {
+        return { success: false, requires2FA: true, pendingToken: data.pendingToken };
       }
+
+      const usuario = data.usuario || data.user || data.item;
+      if (!usuario) return { success: false, error: 'Respuesta de autenticación inválida' };
 
       clearSessionCache({ clearTenant: true });
       clearRuntimeLayoutState();
       persistUserSession(usuario);
-
       setUser(usuario);
-
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
     }
+  };
+
+  // Llamado por Login.jsx tras verificar el código 2FA exitosamente
+  const completeLogin = (usuario) => {
+    clearSessionCache({ clearTenant: true });
+    clearRuntimeLayoutState();
+    persistUserSession(usuario);
+    setUser(usuario);
   };
 
   const logout = async () => {
@@ -102,7 +111,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, completeLogin }}>
       {children}
     </AuthContext.Provider>
   );
