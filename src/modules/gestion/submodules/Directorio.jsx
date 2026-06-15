@@ -19,6 +19,8 @@ import {
   PauseCircle,
   CircleOff,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../../api/apiClient';
@@ -239,6 +241,10 @@ export default function Directorio() {
   const [contactCompanyQuery, setContactCompanyQuery] = useState('');
   const [contactCenterValue, setContactCenterValue] = useState('');
   const [contactSelectedProviderKey, setContactSelectedProviderKey] = useState('');
+  const [showAddProviderModal, setShowAddProviderModal] = useState(false);
+  const [addProviderStep, setAddProviderStep] = useState(1);
+  const [addProviderQuery, setAddProviderQuery] = useState('');
+  const [addProviderSelected, setAddProviderSelected] = useState(null);
   
   // Optimistic UI updates
   const [deletedProviders, setDeletedProviders] = useState(new Set());
@@ -468,12 +474,67 @@ export default function Directorio() {
       }));
   }, [data.centros, selectedProvider]);
 
+  const addProviderResults = useMemo(() => {
+    if (!addProviderQuery.trim()) return [];
+    const q = addProviderQuery.trim().toLowerCase();
+    const centros = Array.isArray(centrosRaw) ? centrosRaw : (centrosRaw?.items || []);
+    const map = new Map();
+    centros.forEach((c) => {
+      const key = c.proveedorKey || normalizeKey(c.proveedor || '');
+      if (!key) return;
+      if (!c.proveedor?.toLowerCase().includes(q) && !c.code?.toLowerCase().includes(q)) return;
+      if (!map.has(key)) map.set(key, { key, nombre: c.proveedor || key, centros: [], comunas: new Set() });
+      const entry = map.get(key);
+      if (c.code) entry.centros.push(c.code);
+      if (c.comuna) entry.comunas.add(c.comuna);
+    });
+    return [...map.values()]
+      .map((p) => ({ ...p, comunas: [...p.comunas].sort() }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      .slice(0, 10);
+  }, [addProviderQuery, centrosRaw]);
+
+  const handleAddProvider = useCallback(async (event) => {
+    event.preventDefault();
+    const fd = new FormData(event.currentTarget);
+    const contactNombre = String(fd.get('contactNombre') || '').trim();
+    const email = String(fd.get('email') || '').trim();
+    const telefono = String(fd.get('telefono') || '').trim();
+    try {
+      await apiClient.post('/contactos', {
+        nombre: contactNombre || addProviderSelected.nombre,
+        contactoNombre: contactNombre || addProviderSelected.nombre,
+        contactoEmail: email,
+        contactoTelefono: telefono,
+        proveedorKey: addProviderSelected.key,
+        proveedorNombre: addProviderSelected.nombre,
+        entidad: addProviderSelected.nombre,
+        centroCodigo: addProviderSelected.centros[0] || '',
+      });
+      setShowAddProviderModal(false);
+      setAddProviderStep(1);
+      setAddProviderQuery('');
+      setAddProviderSelected(null);
+      await loadData();
+      addToast({ title: 'Proveedor registrado', message: `${addProviderSelected.nombre} fue agregado al directorio.`, type: 'success' });
+    } catch (err) {
+      addToast({ title: 'Error', message: err?.data?.error || err?.message || 'No se pudo agregar el proveedor.', type: 'error' });
+    }
+  }, [addProviderSelected, addToast, loadData]);
+
   const openCreateModal = useCallback(() => {
-    setModalState({ open: true, mode: 'create', item: null });
-    setContactCompanyQuery('');
-    setContactCenterValue('');
-    setContactSelectedProviderKey('');
-  }, []);
+    if (tab === 'proveedores') {
+      setAddProviderQuery('');
+      setAddProviderSelected(null);
+      setAddProviderStep(1);
+      setShowAddProviderModal(true);
+    } else {
+      setModalState({ open: true, mode: 'create', item: null });
+      setContactCompanyQuery('');
+      setContactCenterValue('');
+      setContactSelectedProviderKey('');
+    }
+  }, [tab]);
 
   const openEditModal = useCallback((item) => {
     setModalState({ open: true, mode: 'edit', item });
@@ -652,7 +713,7 @@ export default function Directorio() {
         </div>
 
         <button className="mx-btn mx-btn-primary" onClick={openCreateModal}>
-          <Plus size={18} /> {tab === 'proveedores' ? 'Nuevo proveedor' : 'Contacto'}
+          <Plus size={18} /> {tab === 'proveedores' ? 'Registrar proveedor' : 'Contacto'}
         </button>
       </div>
 
@@ -1221,6 +1282,116 @@ export default function Directorio() {
         onConfirm={handleDeleteProvider}
         itemName={`la empresa ${confirmDeleteProvider?.nombre || 'seleccionada'}`}
       />
+
+      {showAddProviderModal && (
+        <div className="mx-modal-overlay">
+          <div className="mx-modal dir-form-modal">
+            <div className="mx-modal-header">
+              {addProviderStep === 2 && (
+                <button type="button" className="mx-btn-icon" onClick={() => setAddProviderStep(1)}>
+                  <ChevronLeft size={20} />
+                </button>
+              )}
+              <h2>{addProviderStep === 1 ? 'Registrar proveedor' : 'Datos de contacto'}</h2>
+              <button type="button" className="mx-btn-icon" onClick={() => setShowAddProviderModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {addProviderStep === 1 ? (
+              <div className="mx-modal-body">
+                <div className="mx-form-group">
+                  <label className="mx-label">Buscar empresa o código de centro</label>
+                  <div className="mx-search-box">
+                    <Search size={18} />
+                    <input
+                      type="text"
+                      className="mx-input"
+                      placeholder="Ej: Pesquera Los Lagos o código 104348..."
+                      value={addProviderQuery}
+                      onChange={(e) => setAddProviderQuery(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+                {addProviderQuery.trim() ? (
+                  addProviderResults.length === 0 ? (
+                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', padding: '8px 0' }}>
+                      Sin resultados para "{addProviderQuery}"
+                    </p>
+                  ) : (
+                    <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0' }}>
+                      {addProviderResults.map((opt) => (
+                        <li key={opt.key} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                          <button
+                            type="button"
+                            onClick={() => { setAddProviderSelected(opt); setAddProviderStep(2); }}
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 4px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                          >
+                            <Building2 size={16} style={{ flexShrink: 0, color: 'var(--color-primary)' }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt.nombre}</div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                {opt.centros.length} centro{opt.centros.length !== 1 ? 's' : ''}
+                                {opt.comunas.length > 0 && ` · ${opt.comunas.slice(0, 2).join(', ')}`}
+                              </div>
+                            </div>
+                            <ChevronRight size={16} style={{ flexShrink: 0, color: 'var(--color-text-muted)' }} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )
+                ) : (
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', marginTop: 8 }}>
+                    Escribe el nombre de la empresa o un código de centro para buscar.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <form onSubmit={handleAddProvider} className="mx-form">
+                <div className="mx-modal-body">
+                  <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '12px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Building2 size={18} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{addProviderSelected?.nombre}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                        {addProviderSelected?.centros.length} centro{addProviderSelected?.centros.length !== 1 ? 's' : ''}
+                        {addProviderSelected?.comunas?.length > 0 && ` · ${addProviderSelected.comunas.slice(0, 2).join(', ')}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: 16 }}>
+                    Contacto — opcional, puedes completarlo después
+                  </p>
+
+                  <div className="mx-form-group">
+                    <label className="mx-label">Nombre contacto</label>
+                    <input name="contactNombre" className="mx-input" placeholder="Ej: Juan Pérez" />
+                  </div>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Email</label>
+                    <input name="email" type="email" className="mx-input" placeholder="correo@empresa.cl" />
+                  </div>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Teléfono</label>
+                    <input name="telefono" className="mx-input" placeholder="+56 9 1234 5678" />
+                  </div>
+                </div>
+                <div className="mx-modal-footer">
+                  <button type="button" className="mx-btn mx-btn-outline" onClick={() => setShowAddProviderModal(false)}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="mx-btn mx-btn-primary">
+                    Agregar al directorio
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
      </div>
    );
