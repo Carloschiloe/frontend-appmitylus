@@ -40,6 +40,7 @@ import {
 import {
   deleteMuestreo,
 } from './muestreos.api';
+import { downloadXlsx } from '../../../utils/downloadXlsx';
 
 export default function Muestreos() {
   const { addToast } = useToast();
@@ -222,23 +223,10 @@ export default function Muestreos() {
   const handleExportarExcel = useCallback(async () => {
     setExportando(true);
     try {
-      const params = new URLSearchParams();
-      if (exportDateFilter.from) params.set('from', exportDateFilter.from);
-      if (exportDateFilter.to)   params.set('to',   exportDateFilter.to);
-      const response = await fetch(`/api/exportar/muestreos?${params}`, {
-        credentials: 'include',
-        headers: { 'x-tenant-db': localStorage.getItem('selected_tenant_db') || '' },
-      });
-      if (!response.ok) throw new Error();
-      const blob = await response.blob();
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = exportDateFilter.from
+      const filename = exportDateFilter.from
         ? `muestreos_${exportDateFilter.from.slice(0, 7)}.xlsx`
         : 'muestreos.xlsx';
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadXlsx('/exportar/muestreos', filename, exportDateFilter);
     } catch {
       addToast({ title: 'Error', message: 'No se pudo exportar', type: 'error' });
     } finally {
