@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Download, Upload, CheckCircle2, AlertCircle, RotateCcw,
   Building2, Users, FlaskConical, ArrowRight, AlertTriangle,
@@ -109,8 +110,12 @@ function RowStatus({ fila }) {
 
 export default function ImportarDatos() {
   const { addToast }  = useToast();
+  const [searchParams] = useSearchParams();
   const [step, setStep]                     = useState(0);
-  const [tipo, setTipo]                     = useState(null);
+  const [tipo, setTipo]                     = useState(() => {
+    const t = searchParams.get('tipo');
+    return t && TIPOS[t] ? t : null;
+  });
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingConfirm, setLoadingConfirm] = useState(false);
   const [preview, setPreview]               = useState(null);

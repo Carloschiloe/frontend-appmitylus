@@ -14,6 +14,7 @@ import {
   MessageSquare,
   FileText,
   FileDown,
+  FileUp,
   Trash2,
   Clock3,
   CheckCircle2,
@@ -771,6 +772,13 @@ export default function Directorio() {
 
         <button className="mx-btn-icon sm" onClick={handleExportarExcel} disabled={exportandoDir} title="Exportar a Excel">
           <FileDown size={16} />
+        </button>
+        <button
+          className="mx-btn mx-btn-outline sm"
+          onClick={() => navigate(`/configuracion/importar?tipo=${tab === 'proveedores' ? 'proveedores' : 'contactos'}`)}
+          title="Importar desde Excel"
+        >
+          <FileUp size={16} /> Importar
         </button>
         <button className="mx-btn mx-btn-primary" onClick={openCreateModal}>
           <Plus size={18} /> {tab === 'proveedores' ? 'Registrar proveedor' : 'Contacto'}
