@@ -204,6 +204,48 @@ export default function Muestreos() {
   const filtered = useMemo(() => filterMuestreos(muestreos, searchTerm), [muestreos, searchTerm]);
   const groupedData = useMemo(() => groupMuestreosByProvider(filtered), [filtered]);
 
+  // Rango de fechas según vista activa, para exportar solo lo visible
+  const exportDateFilter = useMemo(() => {
+    if (calView === 'week' && weekDays.length >= 2) {
+      return { from: weekDays[0], to: weekDays[weekDays.length - 1] };
+    }
+    if (calView === 'month' && mes) {
+      const [y, m] = mes.split('-');
+      const lastDay = new Date(parseInt(y, 10), parseInt(m, 10), 0).getDate();
+      return { from: `${mes}-01`, to: `${mes}-${String(lastDay).padStart(2, '0')}` };
+    }
+    return {};
+  }, [calView, mes, weekDays]);
+
+  const [exportando, setExportando] = useState(false);
+
+  const handleExportarExcel = useCallback(async () => {
+    setExportando(true);
+    try {
+      const params = new URLSearchParams();
+      if (exportDateFilter.from) params.set('from', exportDateFilter.from);
+      if (exportDateFilter.to)   params.set('to',   exportDateFilter.to);
+      const response = await fetch(`/api/exportar/muestreos?${params}`, {
+        credentials: 'include',
+        headers: { 'x-tenant-db': localStorage.getItem('selected_tenant_db') || '' },
+      });
+      if (!response.ok) throw new Error();
+      const blob = await response.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = exportDateFilter.from
+        ? `muestreos_${exportDateFilter.from.slice(0, 7)}.xlsx`
+        : 'muestreos.xlsx';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      addToast({ title: 'Error', message: 'No se pudo exportar', type: 'error' });
+    } finally {
+      setExportando(false);
+    }
+  }, [exportDateFilter, addToast]);
+
   // Handlers
   const handleAdvanceOnEnter = useCallback((e) => {
     if (e.key === 'Enter') {
@@ -323,6 +365,8 @@ export default function Muestreos() {
         onSearchTermChange={setSearchTerm}
         onRefresh={() => { setPage(1); loadData(1); }}
         onNewMuestreo={resetForm}
+        onExportar={handleExportarExcel}
+        exportando={exportando}
       />
 
       {loading ? (

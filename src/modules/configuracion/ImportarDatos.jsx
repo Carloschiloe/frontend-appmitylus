@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import {
   Download, Upload, CheckCircle2, AlertCircle, RotateCcw,
-  Building2, Users, FlaskConical, ArrowRight, AlertTriangle, FileDown,
+  Building2, Users, FlaskConical, ArrowRight, AlertTriangle,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 import { useToast } from '../../context/ToastContext';
@@ -207,30 +207,6 @@ export default function ImportarDatos() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, []);
 
-  const [exportando, setExportando] = useState({});
-
-  const handleExportar = useCallback(async (tipo) => {
-    setExportando((prev) => ({ ...prev, [tipo]: true }));
-    try {
-      const response = await fetch(`/api/exportar/${tipo}`, {
-        credentials: 'include',
-        headers: { 'x-tenant-db': localStorage.getItem('selected_tenant_db') || '' },
-      });
-      if (!response.ok) throw new Error();
-      const blob = await response.blob();
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = `${tipo}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      addToast({ title: 'Error', message: `No se pudo exportar ${tipo}`, type: 'error' });
-    } finally {
-      setExportando((prev) => ({ ...prev, [tipo]: false }));
-    }
-  }, [addToast]);
-
   const getCellValue = (fila, col) => {
     if (col._catNombre !== undefined) {
       const v = fila._cats_display?.[col._catNombre];
@@ -403,35 +379,6 @@ export default function ImportarDatos() {
         </div>
       )}
 
-      {/* Sección Exportar — siempre visible */}
-      <div className="importar-card">
-        <h3 className="importar-card-title">
-          <FileDown size={17} />
-          Exportar datos a Excel
-        </h3>
-        <p className="importar-instructions" style={{ margin: 0 }}>
-          Descarga todos los registros del tenant actual en formato Excel.
-          Los muestreos incluyen automáticamente las columnas de categorías configuradas en Maestros.
-        </p>
-        <div className="importar-export-btns">
-          {[
-            { key: 'proveedores', label: 'Proveedores', icon: Building2 },
-            { key: 'contactos',   label: 'Contactos',   icon: Users },
-            { key: 'muestreos',   label: 'Muestreos',   icon: FlaskConical },
-          ].map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              type="button"
-              className="importar-btn primary"
-              onClick={() => handleExportar(key)}
-              disabled={exportando[key]}
-            >
-              <Icon size={14} />
-              {exportando[key] ? 'Generando…' : `Exportar ${label}`}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

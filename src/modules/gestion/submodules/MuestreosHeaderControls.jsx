@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, LayoutGrid, List, Plus, RotateCcw, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileDown, LayoutGrid, List, Plus, RotateCcw, Search } from 'lucide-react';
 import { getMonthLabel } from './muestreos.helpers';
 import HelpTourButton from '../../../components/HelpTourButton';
 
@@ -22,6 +22,8 @@ export default function MuestreosHeaderControls({
   onSearchTermChange,
   onRefresh,
   onNewMuestreo,
+  onExportar,
+  exportando,
 }) {
   const handleCalView = (nextView) => {
     onCalViewChange(nextView);
@@ -86,6 +88,14 @@ export default function MuestreosHeaderControls({
           />
         </div>
         <button className="mx-btn mx-btn-outline sm" onClick={onRefresh}><RotateCcw size={18} /></button>
+        <button
+          className="mx-btn mx-btn-outline sm"
+          onClick={onExportar}
+          disabled={exportando}
+          title="Exportar a Excel"
+        >
+          <FileDown size={16} />
+        </button>
         <HelpTourButton tourId="muestreos" />
         <button className="mx-btn mx-btn-primary sm" onClick={onNewMuestreo} data-tour="muestreos-registrar">
           <Plus size={18} /> Muestreo
