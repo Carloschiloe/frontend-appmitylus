@@ -364,6 +364,13 @@
   color: #fff;
 }
 
+/* Botones de exportar */
+.importar-export-btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 /* Resultado final */
 .importar-result {
   display: flex;

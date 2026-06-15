@@ -84,7 +84,7 @@ const MENU_STRUCTURE = [
     links: [
       { label: 'Maestros', to: '/configuracion/maestros', icon: Database },
       { label: 'Usuarios', to: '/configuracion/usuarios', icon: Users },
-      { label: 'Importar datos', to: '/configuracion/importar', icon: FileUp },
+      { label: 'Importar / Exportar', to: '/configuracion/importar', icon: FileUp },
       { label: 'Soporte tecnico', to: '/gestion/soporte/errores', icon: Bug },
     ],
   },
