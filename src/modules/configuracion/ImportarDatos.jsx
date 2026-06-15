@@ -1,12 +1,59 @@
 import { useState, useRef, useCallback } from 'react';
 import {
-  Download, Upload, CheckCircle2, AlertCircle, RotateCcw, FileSpreadsheet, ArrowRight,
+  Download, Upload, CheckCircle2, AlertCircle, RotateCcw,
+  Building2, Users, ArrowRight,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 import { useToast } from '../../context/ToastContext';
 import './importar.css';
 
-const STEP_LABELS = ['Descargar plantilla', 'Validar archivo', 'Confirmar importación'];
+const TIPOS = {
+  proveedores: {
+    label: 'Proveedores',
+    sublabel: 'Empresas con sus datos de biomasa, centro y responsable',
+    icon: Building2,
+    plantillaUrl: '/api/importar/plantilla/proveedores',
+    plantillaFile: 'plantilla-proveedores.xlsx',
+    previewEndpoint: '/importar/proveedores/preview',
+    confirmarEndpoint: '/importar/proveedores/confirmar',
+    columnas: [
+      { key: 'proveedorNombre',      label: 'Empresa' },
+      { key: 'biomasa',              label: 'Biomasa' },
+      { key: 'localidad',            label: 'Localidad' },
+      { key: 'responsablePG',        label: 'Responsable' },
+      { key: 'centroComuna',         label: 'Comuna' },
+      { key: 'centroHectareas',      label: 'Hás' },
+      { key: 'tonsDisponiblesAprox', label: 'Tons' },
+    ],
+    instrucciones: [
+      <>El campo <strong>Nombre empresa</strong> es obligatorio.</>,
+      <>En <strong>Biomasa</strong> ingresa: <code>Con Biomasa</code>, <code>Sin Biomasa</code> o deja vacío.</>,
+      'Los demás campos son opcionales.',
+    ],
+  },
+  contactos: {
+    label: 'Contactos',
+    sublabel: 'Personas de contacto dentro de una empresa',
+    icon: Users,
+    plantillaUrl: '/api/importar/plantilla/contactos',
+    plantillaFile: 'plantilla-contactos.xlsx',
+    previewEndpoint: '/importar/contactos/preview',
+    confirmarEndpoint: '/importar/contactos/confirmar',
+    columnas: [
+      { key: 'contactoNombre',   label: 'Contacto' },
+      { key: 'contactoTelefono', label: 'Teléfono' },
+      { key: 'contactoEmail',    label: 'Email' },
+      { key: 'proveedorNombre',  label: 'Empresa asociada' },
+    ],
+    instrucciones: [
+      <>El campo <strong>Nombre contacto</strong> es obligatorio.</>,
+      <>Debe tener al menos <strong>Teléfono</strong> o <strong>Email</strong>.</>,
+      <><strong>Empresa asociada</strong> es opcional — vincula el contacto a un proveedor existente.</>,
+    ],
+  },
+};
+
+const STEP_LABELS = ['Seleccionar tipo', 'Validar archivo', 'Confirmar'];
 
 function StepBar({ step }) {
   return (
@@ -15,7 +62,7 @@ function StepBar({ step }) {
         <div key={i} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
           <div className={`importar-step ${i < step ? 'done' : i === step ? 'active' : ''}`}>
             <span className="importar-step-num">
-              {i < step ? <CheckCircle2 size={14} /> : i + 1}
+              {i < step ? <CheckCircle2 size={13} /> : i + 1}
             </span>
             <span className="importar-step-label">{label}</span>
           </div>
@@ -30,46 +77,48 @@ function StepBar({ step }) {
 
 export default function ImportarDatos() {
   const { addToast } = useToast();
-  const [step, setStep] = useState(0);
+  const [step, setStep]             = useState(0);
+  const [tipo, setTipo]             = useState(null);   // 'proveedores' | 'contactos'
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingConfirm, setLoadingConfirm] = useState(false);
-  const [preview, setPreview] = useState(null);
-  const [resultado, setResultado] = useState(null);
-  const [dragover, setDragover] = useState(false);
+  const [preview, setPreview]       = useState(null);
+  const [resultado, setResultado]   = useState(null);
+  const [dragover, setDragover]     = useState(false);
   const fileInputRef = useRef(null);
 
+  const config = tipo ? TIPOS[tipo] : null;
+
   const handleDescargar = useCallback(async () => {
+    if (!config) return;
     try {
-      const response = await fetch('/api/importar/plantilla/contactos', {
+      const response = await fetch(config.plantillaUrl, {
         credentials: 'include',
-        headers: {
-          'x-tenant-db': localStorage.getItem('selected_tenant_db') || '',
-        },
+        headers: { 'x-tenant-db': localStorage.getItem('selected_tenant_db') || '' },
       });
-      if (!response.ok) throw new Error('Error al descargar la plantilla');
+      if (!response.ok) throw new Error();
       const blob = await response.blob();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
       a.href     = url;
-      a.download = 'plantilla-contactos.xlsx';
+      a.download = config.plantillaFile;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
       addToast({ title: 'Error', message: 'No se pudo descargar la plantilla', type: 'error' });
     }
-  }, [addToast]);
+  }, [config, addToast]);
 
   const handleFile = useCallback(async (file) => {
-    if (!file) return;
+    if (!file || !config) return;
     if (!file.name.match(/\.(xlsx|xls)$/i)) {
-      addToast({ title: 'Archivo inválido', message: 'Solo se aceptan archivos .xlsx o .xls', type: 'error' });
+      addToast({ title: 'Archivo inválido', message: 'Solo se aceptan .xlsx o .xls', type: 'error' });
       return;
     }
     const fd = new FormData();
     fd.append('archivo', file);
     setLoadingPreview(true);
     try {
-      const data = await apiClient.post('/importar/contactos/preview', fd);
+      const data = await apiClient.post(config.previewEndpoint, fd);
       setPreview(data);
       setStep(1);
     } catch (err) {
@@ -77,17 +126,16 @@ export default function ImportarDatos() {
     } finally {
       setLoadingPreview(false);
     }
-  }, [addToast]);
+  }, [config, addToast]);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
     setDragover(false);
-    const file = e.dataTransfer.files[0];
-    handleFile(file);
+    handleFile(e.dataTransfer.files[0]);
   }, [handleFile]);
 
   const handleConfirmar = useCallback(async () => {
-    if (!preview) return;
+    if (!preview || !config) return;
     const filasOk = preview.filas.filter((f) => f._ok);
     if (filasOk.length === 0) {
       addToast({ title: 'Sin filas válidas', message: 'Corrige los errores antes de importar', type: 'warning' });
@@ -95,78 +143,100 @@ export default function ImportarDatos() {
     }
     setLoadingConfirm(true);
     try {
-      const data = await apiClient.post('/importar/contactos/confirmar', { filas: filasOk });
+      const data = await apiClient.post(config.confirmarEndpoint, { filas: filasOk });
       setResultado({ ok: true, insertados: data.insertados });
       setStep(2);
     } catch (err) {
-      const insertados = err?.data?.insertados ?? 0;
-      setResultado({ ok: false, insertados, message: err?.message || 'Error al importar' });
+      setResultado({ ok: false, insertados: err?.data?.insertados ?? 0, message: err?.message });
       setStep(2);
     } finally {
       setLoadingConfirm(false);
     }
-  }, [preview, addToast]);
+  }, [preview, config, addToast]);
 
   const reset = useCallback(() => {
     setStep(0);
+    setTipo(null);
     setPreview(null);
     setResultado(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, []);
 
+  const handleSelectTipo = (t) => {
+    setTipo(t);
+  };
+
   return (
     <div className="importar-page">
       <StepBar step={step} />
 
-      {/* PASO 0: Descargar plantilla */}
+      {/* PASO 0: Seleccionar tipo */}
       {step === 0 && (
         <div className="importar-card">
-          <h3 className="importar-card-title">
-            <FileSpreadsheet size={18} />
-            Importar Contactos / Proveedores
-          </h3>
-          <ul className="importar-instructions">
-            <li>Descarga la plantilla Excel con el formato requerido.</li>
-            <li>Completa las filas con los datos históricos. El campo <strong>Proveedor</strong> es obligatorio (o bien un Contacto con Teléfono/Email).</li>
-            <li>En <strong>Biomasa</strong> puedes ingresar: <code>Con Biomasa</code>, <code>Sin Biomasa</code> o dejar vacío.</li>
-            <li>Guarda el archivo y cárgalo en el paso siguiente.</li>
-          </ul>
-          <button type="button" className="importar-btn-download" onClick={handleDescargar}>
-            <Download size={15} />
-            Descargar plantilla Excel
-          </button>
+          <h3 className="importar-card-title">¿Qué quieres importar?</h3>
 
-          <div
-            className={`importar-dropzone ${dragover ? 'dragover' : ''}`}
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={(e) => { e.preventDefault(); setDragover(true); }}
-            onDragLeave={() => setDragover(false)}
-            onDrop={handleDrop}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-          >
-            <Upload size={32} className="importar-dropzone-icon" />
-            <p className="importar-dropzone-text">
-              {loadingPreview ? 'Procesando archivo…' : 'Haz clic o arrastra tu archivo Excel aquí'}
-            </p>
-            <p className="importar-dropzone-hint">Formatos aceptados: .xlsx, .xls · Máx 10 MB</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={(e) => handleFile(e.target.files[0])}
-            />
+          <div className="importar-tipo-selector">
+            {Object.entries(TIPOS).map(([key, cfg]) => {
+              const Icon = cfg.icon;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={`importar-tipo-btn ${tipo === key ? 'selected' : ''}`}
+                  onClick={() => handleSelectTipo(key)}
+                >
+                  <Icon size={24} />
+                  <span className="importar-tipo-label">{cfg.label}</span>
+                  <span className="importar-tipo-sub">{cfg.sublabel}</span>
+                </button>
+              );
+            })}
           </div>
+
+          {config && (
+            <>
+              <div className="importar-divider" />
+              <ul className="importar-instructions">
+                {config.instrucciones.map((item, i) => <li key={i}>{item}</li>)}
+              </ul>
+              <button type="button" className="importar-btn-download" onClick={handleDescargar}>
+                <Download size={14} />
+                Descargar plantilla — {config.label}
+              </button>
+
+              <div
+                className={`importar-dropzone ${dragover ? 'dragover' : ''}`}
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setDragover(true); }}
+                onDragLeave={() => setDragover(false)}
+                onDrop={handleDrop}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+              >
+                <Upload size={30} className="importar-dropzone-icon" />
+                <p className="importar-dropzone-text">
+                  {loadingPreview ? 'Procesando…' : 'Haz clic o arrastra tu archivo Excel aquí'}
+                </p>
+                <p className="importar-dropzone-hint">.xlsx / .xls · máx 10 MB</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => handleFile(e.target.files[0])}
+                />
+              </div>
+            </>
+          )}
         </div>
       )}
 
-      {/* PASO 1: Preview / validación */}
-      {step === 1 && preview && (
+      {/* PASO 1: Preview */}
+      {step === 1 && preview && config && (
         <div className="importar-card">
           <h3 className="importar-card-title">
-            <CheckCircle2 size={18} />
-            Vista previa de importación
+            <CheckCircle2 size={17} />
+            Vista previa — {config.label}
           </h3>
 
           <div className="importar-resumen">
@@ -179,8 +249,7 @@ export default function ImportarDatos() {
 
           {preview.resumen.errores > 0 && (
             <p className="importar-instructions" style={{ color: '#b91c1c' }}>
-              Las filas con error NO se importarán. Solo se importarán las {preview.resumen.ok} filas válidas.
-              Puedes continuar o volver a corregir el archivo.
+              Las filas con error no se importarán. Solo se insertan las {preview.resumen.ok} filas válidas.
             </p>
           )}
 
@@ -190,11 +259,7 @@ export default function ImportarDatos() {
                 <tr>
                   <th>#</th>
                   <th>Estado</th>
-                  <th>Proveedor</th>
-                  <th>Contacto</th>
-                  <th>Teléfono</th>
-                  <th>Email</th>
-                  <th>Biomasa</th>
+                  {config.columnas.map((c) => <th key={c.key}>{c.label}</th>)}
                   <th>Errores</th>
                 </tr>
               </thead>
@@ -207,11 +272,9 @@ export default function ImportarDatos() {
                         {f._ok ? 'OK' : 'Error'}
                       </span>
                     </td>
-                    <td>{f.proveedorNombre || '—'}</td>
-                    <td>{f.contactoNombre || '—'}</td>
-                    <td>{f.contactoTelefono || '—'}</td>
-                    <td>{f.contactoEmail || '—'}</td>
-                    <td>{f.biomasa || '—'}</td>
+                    {config.columnas.map((c) => (
+                      <td key={c.key}>{f[c.key] ?? '—'}</td>
+                    ))}
                     <td style={{ color: '#b91c1c', fontSize: 11 }}>
                       {f._errores?.join(', ') || ''}
                     </td>
@@ -228,11 +291,11 @@ export default function ImportarDatos() {
               onClick={handleConfirmar}
               disabled={loadingConfirm || preview.resumen.ok === 0}
             >
-              <ArrowRight size={15} />
+              <ArrowRight size={14} />
               {loadingConfirm ? 'Importando…' : `Importar ${preview.resumen.ok} registros`}
             </button>
             <button type="button" className="importar-btn secondary" onClick={reset}>
-              <RotateCcw size={14} />
+              <RotateCcw size={13} />
               Cancelar
             </button>
           </div>
@@ -244,21 +307,19 @@ export default function ImportarDatos() {
         <div className="importar-card">
           <div className="importar-result">
             <div className={`importar-result-icon ${resultado.ok ? 'success' : 'error'}`}>
-              {resultado.ok
-                ? <CheckCircle2 size={28} />
-                : <AlertCircle size={28} />}
+              {resultado.ok ? <CheckCircle2 size={28} /> : <AlertCircle size={28} />}
             </div>
             <h3 className="importar-result-title">
               {resultado.ok ? '¡Importación completada!' : 'Importación con errores'}
             </h3>
             <p className="importar-result-sub">
               {resultado.ok
-                ? `Se importaron ${resultado.insertados} contacto${resultado.insertados !== 1 ? 's' : ''} exitosamente.`
-                : resultado.message || `Se importaron ${resultado.insertados} registros con errores.`}
+                ? `Se importaron ${resultado.insertados} ${config?.label?.toLowerCase() ?? 'registro'}${resultado.insertados !== 1 ? 's' : ''} exitosamente.`
+                : resultado.message || `Se insertaron ${resultado.insertados} registros con errores.`}
             </p>
             <div className="importar-actions" style={{ justifyContent: 'center' }}>
               <button type="button" className="importar-btn secondary" onClick={reset}>
-                <RotateCcw size={14} />
+                <RotateCcw size={13} />
                 Nueva importación
               </button>
             </div>
