@@ -194,7 +194,16 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     const latestInteraction = latestInteractionByProvider.get(key) || null;
     const latestMuestreo = latestMuestreoByProvider.get(key) || null;
 
+    const sortedContacts = [...providerContacts].sort((a, b) => {
+      const da = a.createdAt ? new Date(a.createdAt) : new Date(0);
+      const db = b.createdAt ? new Date(b.createdAt) : new Date(0);
+      return da - db;
+    });
+    const earliestContact = sortedContacts[0] || null;
+
     provider.totalContactos = providerContacts.length;
+    provider.fechaIngreso = earliestContact?.createdAt || '';
+    provider.ingresadoPor = earliestContact?.creadoPor || earliestContact?.createdBy || earliestContact?.responsable || '';
     provider.contactoPrincipal = contactName(firstContact) || 'Primer contacto pendiente';
     provider.contactoTelefono = contactPhone(firstContact);
     provider.contactoEmail = contactEmail(firstContact);
@@ -250,6 +259,9 @@ export default function Directorio() {
   const [deletedProviders, setDeletedProviders] = useState(new Set());
   const [deletedContacts, setDeletedContacts] = useState(new Set());
   const [contactFilter, setContactFilter] = useState('todos');
+  const [sortBy, setSortBy] = useState('az');
+  const [filterUsuario, setFilterUsuario] = useState('');
+  const [providerRegistered, setProviderRegistered] = useState(null);
 
   // 1. Carga de datos con React Query
   const { data: centrosRaw, isLoading: loadingCentros, refetch: refetchCentros } = useCentros();
@@ -318,13 +330,22 @@ export default function Directorio() {
 
   const filteredItems = useMemo(() => {
     if (tab === 'proveedores') {
-      const list = data.proveedores || [];
-      if (!searchTerm.trim()) return list;
-      const q = searchTerm.toLowerCase();
-      return list.filter((item) =>
-        [item.nombre, item.key, item.comuna, item.contactoPrincipal, item.proximaAccion, item.ultimaInteraccionResumen]
-          .some((value) => String(value || '').toLowerCase().includes(q))
-      );
+      let list = data.proveedores || [];
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase();
+        list = list.filter((item) =>
+          [item.nombre, item.key, item.comuna, item.contactoPrincipal, item.proximaAccion, item.ultimaInteraccionResumen]
+            .some((value) => String(value || '').toLowerCase().includes(q))
+        );
+      }
+      if (sortBy === 'recientes') {
+        return [...list].sort((a, b) => {
+          const da = a.fechaIngreso ? new Date(a.fechaIngreso) : new Date(0);
+          const db = b.fechaIngreso ? new Date(b.fechaIngreso) : new Date(0);
+          return db - da;
+        });
+      }
+      return list;
     }
 
     const list = data.contactos || [];
@@ -339,7 +360,7 @@ export default function Directorio() {
       return [item.nombre, item.contactoNombre, item.proveedorNombre, item.email, item.contactoEmail, item.telefono, item.contactoTelefono, item.proveedorKey]
         .some((value) => String(value || '').toLowerCase().includes(q));
     });
-  }, [tab, data, searchTerm, contactFilter]);
+  }, [tab, data, searchTerm, contactFilter, sortBy]);
 
   const providerOptions = useMemo(() => {
     const providersMap = new Map();
@@ -511,12 +532,13 @@ export default function Directorio() {
         entidad: addProviderSelected.nombre,
         centroCodigo: addProviderSelected.centros[0] || '',
       });
+      const nombreRegistrado = addProviderSelected.nombre;
       setShowAddProviderModal(false);
       setAddProviderStep(1);
       setAddProviderQuery('');
       setAddProviderSelected(null);
       await loadData();
-      addToast({ title: 'Proveedor registrado', message: `${addProviderSelected.nombre} fue agregado al directorio.`, type: 'success' });
+      setProviderRegistered(nombreRegistrado);
     } catch (err) {
       addToast({ title: 'Error', message: err?.data?.error || err?.message || 'No se pudo agregar el proveedor.', type: 'error' });
     }
@@ -718,19 +740,38 @@ export default function Directorio() {
       </div>
 
       {tab === 'proveedores' && (
-        <div className="mx-kpi-grid am-mt-16">
-          {[
-            { label: 'Activos', value: providerStats.activos, tone: 'success' },
-            { label: 'Pausados', value: providerStats.pausados, tone: 'warning' },
-            { label: 'Acordados', value: providerStats.acordados, tone: 'primary' },
-            { label: 'Sin seguimiento', value: providerStats.sinSeguimiento, tone: 'muted' },
-          ].map((stat) => (
-            <div key={stat.label} className="mx-kpi-card">
-              <p className="mx-eyebrow">{stat.label}</p>
-              <h2 className={`mx-kpi-value dir-kpi-value is-${stat.tone}`}>{stat.value}</h2>
+        <>
+          <div className="mx-kpi-grid am-mt-16">
+            {[
+              { label: 'Activos', value: providerStats.activos, tone: 'success' },
+              { label: 'Pausados', value: providerStats.pausados, tone: 'warning' },
+              { label: 'Acordados', value: providerStats.acordados, tone: 'primary' },
+              { label: 'Sin seguimiento', value: providerStats.sinSeguimiento, tone: 'muted' },
+            ].map((stat) => (
+              <div key={stat.label} className="mx-kpi-card">
+                <p className="mx-eyebrow">{stat.label}</p>
+                <h2 className={`mx-kpi-value dir-kpi-value is-${stat.tone}`}>{stat.value}</h2>
+              </div>
+            ))}
+          </div>
+          <div className="dir-sort-bar">
+            <span className="dir-sort-label">Ordenar:</span>
+            <div className="mx-toggle-group">
+              <button
+                className={`mx-toggle-btn ${sortBy === 'az' ? 'active' : ''}`}
+                onClick={() => setSortBy('az')}
+              >
+                A–Z
+              </button>
+              <button
+                className={`mx-toggle-btn ${sortBy === 'recientes' ? 'active' : ''}`}
+                onClick={() => setSortBy('recientes')}
+              >
+                Más recientes
+              </button>
             </div>
-          ))}
-        </div>
+          </div>
+        </>
       )}
 
       {tab === 'contactos' && (
@@ -1389,6 +1430,43 @@ export default function Directorio() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {providerRegistered && (
+        <div className="mx-modal-overlay dir-success-overlay">
+          <div className="dir-success-modal">
+            <div className="dir-success-icon-wrap">
+              <CheckCircle2 size={56} className="dir-success-icon" />
+            </div>
+            <p className="dir-success-eyebrow">Proveedor registrado</p>
+            <h2 className="dir-success-title">{providerRegistered}</h2>
+            <p className="dir-success-sub">
+              Ahora aparece en tu directorio de proveedores y puedes registrar gestiones, iniciar negociaciones o ver sus centros.
+            </p>
+            <div className="dir-success-actions">
+              <button
+                type="button"
+                className="mx-btn mx-btn-outline"
+                onClick={() => setProviderRegistered(null)}
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                className="mx-btn mx-btn-primary"
+                onClick={() => {
+                  const found = (data.proveedores || []).find(
+                    (p) => p.nombre === providerRegistered
+                  );
+                  setProviderRegistered(null);
+                  if (found) setDetailModal({ open: true, provider: found });
+                }}
+              >
+                <ExternalLink size={16} /> Ver proveedor
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -376,112 +376,115 @@ export default function CentrosTable() {
         <b>{hasActiveFilters ? 'Vista filtrada' : 'Vista general'}</b>
       </div>
 
-      <div className="mx-toolbar">
-        <div className="mx-toolbar-group">
-          <div className="mx-search-box" style={{ position: 'relative' }} ref={searchWrapperRef}>
-            <Search size={18} />
-            <input
-              type="text"
-              placeholder="Buscar proveedor o codigo centro..."
-              value={searchTerm}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 'var(--spacing-lg)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1 }}>
+            <div className="mx-search-box" style={{ position: 'relative', minWidth: 220, flex: '1 1 220px', maxWidth: 340 }} ref={searchWrapperRef}>
+              <Search size={18} />
+              <input
+                type="text"
+                placeholder="Buscar proveedor o codigo centro..."
+                value={searchTerm}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearchTerm(value);
+                  setShowSuggestions(Boolean(value.trim()));
+                  syncUrl({ q: value });
+                }}
+                onFocus={() => { if (searchTerm.trim()) setShowSuggestions(true); }}
+                onKeyDown={(e) => { if (e.key === 'Escape') setShowSuggestions(false); }}
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => { setSearchTerm(''); setShowSuggestions(false); syncUrl({ q: '' }); }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center' }}
+                  aria-label="Limpiar búsqueda"
+                >
+                  <X size={14} />
+                </button>
+              )}
+              {showSuggestions && suggestions.length > 0 && (
+                <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, margin: '4px 0 0', padding: 0, listStyle: 'none', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', maxHeight: 280, overflowY: 'auto' }}>
+                  {suggestions.map((opt) => (
+                    <li key={opt.key} style={{ borderBottom: '1px solid var(--color-border-subtle, var(--color-border))' }}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleSelectProvider(opt)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--color-text)', fontSize: '0.88rem' }}
+                      >
+                        <Building2 size={13} style={{ flexShrink: 0, color: 'var(--color-text-muted)' }} />
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt.nombre}</span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', flexShrink: 0 }}>{opt.count} centro{opt.count !== 1 ? 's' : ''}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="mx-search-box" style={{ minWidth: 200, flex: '1 1 200px', maxWidth: 300 }}>
+              <Search size={18} />
+              <input
+                type="text"
+                placeholder="Buscar area PSMB o codigo area..."
+                value={areaSearchTerm}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setAreaSearchTerm(value);
+                  syncUrl({ areaQ: value });
+                }}
+              />
+            </div>
+
+            <select
+              className="mx-input"
+              style={{ width: 'auto', flexShrink: 0 }}
+              value={comunaFilter}
               onChange={(e) => {
                 const value = e.target.value;
-                setSearchTerm(value);
-                setShowSuggestions(Boolean(value.trim()));
-                syncUrl({ q: value });
+                setComunaFilter(value);
+                syncUrl({ comuna: value });
               }}
-              onFocus={() => { if (searchTerm.trim()) setShowSuggestions(true); }}
-              onKeyDown={(e) => { if (e.key === 'Escape') setShowSuggestions(false); }}
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => { setSearchTerm(''); setShowSuggestions(false); syncUrl({ q: '' }); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center' }}
-                aria-label="Limpiar búsqueda"
-              >
-                <X size={14} />
-              </button>
-            )}
-            {showSuggestions && suggestions.length > 0 && (
-              <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, margin: '4px 0 0', padding: 0, listStyle: 'none', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', maxHeight: 280, overflowY: 'auto' }}>
-                {suggestions.map((opt) => (
-                  <li key={opt.key} style={{ borderBottom: '1px solid var(--color-border-subtle, var(--color-border))' }}>
-                    <button
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleSelectProvider(opt)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--color-text)', fontSize: '0.88rem' }}
-                    >
-                      <Building2 size={13} style={{ flexShrink: 0, color: 'var(--color-text-muted)' }} />
-                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt.nombre}</span>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', flexShrink: 0 }}>{opt.count} centro{opt.count !== 1 ? 's' : ''}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+            >
+              <option value="">Todas las comunas</option>
+              {comunas.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
 
-          <div className="mx-search-box">
-            <Search size={18} />
-            <input
-              type="text"
-              placeholder="Buscar area PSMB o codigo area..."
-              value={areaSearchTerm}
+            <select
+              className="mx-input"
+              style={{ width: 'auto', flexShrink: 0 }}
+              value={areaFilter}
               onChange={(e) => {
                 const value = e.target.value;
-                setAreaSearchTerm(value);
-                syncUrl({ areaQ: value });
+                setAreaFilter(value);
+                syncUrl({ area: value });
               }}
-            />
+            >
+              <option value="">Todas las areas</option>
+              <option value="con_area">Solo con area cultivo</option>
+              <option value="abierta">Area abierta</option>
+              <option value="sin_area">Sin area asociada</option>
+            </select>
+
+            <button
+              className="mx-btn mx-btn-outline"
+              style={{ flexShrink: 0 }}
+              onClick={handleClearFilters}
+            >
+              Limpiar
+            </button>
           </div>
 
-          <select
-            className="mx-input"
-            style={{ width: 'auto' }}
-            value={comunaFilter}
-            onChange={(e) => {
-              const value = e.target.value;
-              setComunaFilter(value);
-              syncUrl({ comuna: value });
-            }}
-          >
-            <option value="">Todas las comunas</option>
-            {comunas.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-
-          <select
-            className="mx-input"
-            style={{ width: 'auto' }}
-            value={areaFilter}
-            onChange={(e) => {
-              const value = e.target.value;
-              setAreaFilter(value);
-              syncUrl({ area: value });
-            }}
-          >
-            <option value="">Todas las areas</option>
-            <option value="con_area">Solo con area cultivo</option>
-            <option value="abierta">Area abierta</option>
-            <option value="sin_area">Sin area asociada</option>
-          </select>
-
-          <button
-            className="mx-btn mx-btn-outline"
-            onClick={handleClearFilters}
-          >
-            Limpiar
-          </button>
-        </div>
-
-        <div className="mx-toolbar-group">
-          <button className="mx-btn mx-btn-outline" style={{ height: 42 }} onClick={handleExportCentros}>
-            <Download size={18} /> Exportar
-          </button>
-          <button className="mx-btn mx-btn-primary" onClick={openCreateModal}>
-            <Plus size={18} /> Nuevo Centro
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <button className="mx-btn mx-btn-outline" onClick={handleExportCentros}>
+              <Download size={18} /> Exportar
+            </button>
+            <button className="mx-btn mx-btn-primary" onClick={openCreateModal}>
+              <Plus size={18} /> Nuevo Centro
+            </button>
+          </div>
         </div>
       </div>
 
