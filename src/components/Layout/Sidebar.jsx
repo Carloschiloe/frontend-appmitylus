@@ -19,6 +19,7 @@ import {
   ClipboardList,
   Bug,
   CircleHelp,
+  FileUp,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
@@ -83,6 +84,7 @@ const MENU_STRUCTURE = [
     links: [
       { label: 'Maestros', to: '/configuracion/maestros', icon: Database },
       { label: 'Usuarios', to: '/configuracion/usuarios', icon: Users },
+      { label: 'Importar datos', to: '/configuracion/importar', icon: FileUp },
       { label: 'Soporte tecnico', to: '/gestion/soporte/errores', icon: Bug },
     ],
   },
