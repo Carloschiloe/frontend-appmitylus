@@ -169,7 +169,6 @@ export default function Usuarios() {
   };
 
   const filteredUsuarios = usuarios.filter((u) => {
-    if (currentUser?.rol !== 'superadmin' && u.empresaId !== currentUser?.empresaId) return false;
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
     return u.nombre.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
