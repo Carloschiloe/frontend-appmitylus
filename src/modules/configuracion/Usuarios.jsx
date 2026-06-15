@@ -168,11 +168,12 @@ export default function Usuarios() {
     }
   };
 
-  const filteredUsuarios = usuarios.filter(
-    (u) =>
-      u.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsuarios = usuarios.filter((u) => {
+    if (currentUser?.rol !== 'superadmin' && u.empresaId !== currentUser?.empresaId) return false;
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return u.nombre.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+  });
 
   const initials = (nombre) =>
     nombre?.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2) || '??';
