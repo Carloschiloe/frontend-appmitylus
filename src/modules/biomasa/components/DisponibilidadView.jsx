@@ -261,7 +261,6 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
           </div>
         )}
       </div>
-      )}
 
       {activeTab === 'listado' && (
       <>
