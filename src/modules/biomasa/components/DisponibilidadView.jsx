@@ -21,7 +21,6 @@ import DisponibilidadCrearTratoModal from './DisponibilidadCrearTratoModal';
 import DisponibilidadProyeccionAnual from './DisponibilidadProyeccionAnual';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 import DisponibilidadResumen from './DisponibilidadResumen';
-import ResumenTotalesDisponibilidad from './ResumenTotalesDisponibilidad';
 
 const normalizeItems = (response) => Array.isArray(response) ? response : (response?.items || []);
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((option) => option.value === value) || DISPONIBILIDAD_ESTADOS[0];
@@ -55,6 +54,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [annualReloadKey, setAnnualReloadKey] = useState(0);
   const [filters, setFilters] = useState({ proveedor: '', producto: '', estado: '' });
   const [showFilters, setShowFilters] = useState(false);
+  const [showTotales, setShowTotales] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -137,6 +137,8 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       .filter((item) => (item.estado || 'disponible') === state.value)
       .reduce((sum, item) => sum + Number(item.tons || item.tonsDisponible || 0), 0),
   })), [items]);
+
+  const totalTons = useMemo(() => kpis.reduce((sum, k) => sum + k.tons, 0), [kpis]);
 
   const openCreate = () => {
     setModalItem(null);
@@ -263,13 +265,22 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
 
       {activeTab === 'listado' && (
       <>
-      <div className="disp-status-chips">
-        {kpis.map((kpi) => (
-          <span key={kpi.value} className={`disp-status-chip disp-status-chip--${kpi.tone}`}>
-            <span className="disp-status-chip__label">{kpi.label}</span>
-            <strong className="disp-status-chip__value">{fmtTons(kpi.tons)}</strong>
-          </span>
-        ))}
+      <div className="disp-totales-bar">
+        <button type="button" className="disp-totales-toggle" onClick={() => setShowTotales((v) => !v)}>
+          <span className="disp-totales-toggle__label">Total</span>
+          <strong className="disp-totales-toggle__value">{fmtTons(totalTons)}</strong>
+          <span className="disp-totales-toggle__arrow">{showTotales ? '▲' : '▼'}</span>
+        </button>
+        {showTotales && (
+          <div className="disp-totales-chips">
+            {kpis.map((kpi) => (
+              <span key={kpi.value} className={`disp-status-chip disp-status-chip--${kpi.tone}`}>
+                <span className="disp-status-chip__label">{kpi.label}</span>
+                <strong className="disp-status-chip__value">{fmtTons(kpi.tons)}</strong>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="mx-table-card disponibilidad-table-card">
         <div className="disponibilidad-table-scroll">
@@ -314,7 +325,6 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
           </table>
         </div>
       </div>
-      <ResumenTotalesDisponibilidad label="Total listado" {...listedTotals} />
       </>
       )}
 

@@ -332,7 +332,7 @@ export default function Biomasa() {
 
   return (
     <div className="mx-page">
-      <header className="mx-hero">
+      <header className="mx-hero biomasa-hero">
         <div className="mx-hero-content">
           <p className="mx-eyebrow">Operaciones · Biomasa</p>
           <h1>Biomasa</h1>

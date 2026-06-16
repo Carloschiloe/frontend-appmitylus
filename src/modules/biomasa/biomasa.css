@@ -4,9 +4,20 @@
   animation: fadeIn 0.2s ease-out;
 }
 
+/* ── Hero moderno Biomasa ── */
+.mx-hero.biomasa-hero {
+  margin: 6px 8px 0;
+  border-radius: 14px;
+  padding: 10px 24px 12px;
+  min-height: 0;
+  border-bottom: none;
+  box-shadow: 0 4px 16px rgba(0, 18, 51, 0.18);
+}
+
 /* Especificidad doble-clase para ganar contra mx-content-frame en index.css y enterprise-polish.css */
 .mx-content-frame.biomasa-content-frame {
-  padding-top: 0;
+  margin: 2px 8px 0;
+  padding-top: 8px;
   gap: 8px;
 }
 
@@ -5376,3 +5387,29 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
 /* ── Espaciado general entre secciones de Disponibilidad ── */
 .disponibilidad-view { gap: 8px; }
+
+/* ── Totales colapsables ── */
+.disp-totales-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.disp-totales-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-text);
+  width: fit-content;
+  transition: border-color 150ms ease;
+}
+.disp-totales-toggle:hover { border-color: #94a3b8; }
+.disp-totales-toggle__label { color: var(--color-text-muted); font-size: 11px; font-weight: var(--weight-bold); }
+.disp-totales-toggle__value { color: var(--color-primary); font-weight: var(--weight-bold); }
+.disp-totales-toggle__arrow { color: var(--color-text-muted); font-size: 10px; }
+.disp-totales-chips { display: flex; flex-wrap: wrap; gap: 6px; }
