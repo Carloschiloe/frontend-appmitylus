@@ -16,6 +16,7 @@ import {
   Users,
   FileText,
   Truck,
+  Zap,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { quickCaptureSeguimiento } from '../../../api/api-oportunidades';
@@ -368,19 +369,20 @@ export default function QuickCaptureModal() {
         type="button"
         onClick={() => setOpen(true)}
         className="mx-btn mx-btn-primary"
-        title="Registrar acción rápida"
-        aria-label="Registrar acción rápida"
+        title="Acción rápida — registrar gestión con proveedor"
+        aria-label="Acción rápida"
         style={{
           position: 'fixed',
           right: '24px',
           bottom: '24px',
           zIndex: 60,
           borderRadius: '999px',
-          padding: '14px 18px',
+          padding: '12px 20px',
           boxShadow: '0 18px 40px rgba(15, 23, 42, 0.24)',
+          gap: '8px',
         }}
       >
-        <Plus size={18} /> <span className="qc-fab-label">Registrar</span>
+        <Zap size={17} /> <span className="qc-fab-label">Acción rápida</span>
       </button>
 
       {open && (
