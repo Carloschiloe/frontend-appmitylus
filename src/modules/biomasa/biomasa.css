@@ -5190,45 +5190,53 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .biomasa-action-bar .mx-action-btn.play        { background: var(--color-success-bg); color: var(--color-success); }
 .biomasa-action-bar .mx-action-btn.play:hover  { background: var(--color-success-bg); color: var(--color-success); }
 
-/* ── UX/UI Jun 2026: nav de módulo con estilo underline ── */
+/* ── UX/UI Jun 2026: nav de módulo con estilo pestaña real ── */
 .mx-module-nav.mx-toolbar {
-  padding: 0 2px;
+  padding: 0 4px;
   border: none;
   border-bottom: 1px solid var(--color-border);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  overflow: visible;
 }
 
 .mx-module-nav .mx-toggle-group {
-  gap: 0;
+  gap: 2px;
   border: none;
   border-radius: 0;
   background: transparent;
   padding: 0;
+  align-items: flex-end;
 }
 
 .mx-module-nav .mx-toggle-btn {
-  border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
   background: transparent;
   color: var(--color-text-muted);
-  padding: 10px 16px 9px;
+  padding: 9px 16px 10px;
   font-weight: var(--weight-semibold);
-  transition: color 150ms ease, border-color 150ms ease;
+  margin-bottom: -1px;
+  transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
 }
 
 .mx-module-nav .mx-toggle-btn:hover {
   background: rgba(10, 92, 255, 0.04);
+  border-color: var(--color-border);
   color: var(--color-text);
 }
 
 .mx-module-nav .mx-toggle-btn.active {
-  border-bottom-color: #0A5CFF;
-  background: transparent;
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  border-bottom-color: var(--color-surface);
   color: #0A5CFF;
+  font-weight: var(--weight-bold);
   box-shadow: none;
+  position: relative;
+  z-index: 1;
 }
 
 /* ── Selector de vista compacto (reemplaza sub-tabs de Disponibilidad) ── */
