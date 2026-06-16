@@ -204,7 +204,6 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     <div className="disponibilidad-view">
       <div className="disponibilidad-actions-row">
         <div>
-          <h2>Disponibilidad futura</h2>
           <p>Registra biomasa futura informada por proveedores antes de crear un trato asociado o programa de cosecha.</p>
         </div>
         <button type="button" className="mx-btn mx-btn-primary" onClick={openCreate}>

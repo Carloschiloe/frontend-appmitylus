@@ -4,6 +4,10 @@
   animation: fadeIn 0.2s ease-out;
 }
 
+.biomasa-content-frame {
+  padding-top: 0;
+}
+
 /* Disponibilidad futura */
 .disponibilidad-view {
   display: grid;
