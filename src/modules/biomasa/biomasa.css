@@ -4,8 +4,10 @@
   animation: fadeIn 0.2s ease-out;
 }
 
-.biomasa-content-frame {
+/* Especificidad doble-clase para ganar contra mx-content-frame en index.css y enterprise-polish.css */
+.mx-content-frame.biomasa-content-frame {
   padding-top: 0;
+  gap: 8px;
 }
 
 /* Disponibilidad futura */
@@ -5373,4 +5375,4 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .disp-status-chip--total   .disp-status-chip__value { color: var(--color-primary); }
 
 /* ── Espaciado general entre secciones de Disponibilidad ── */
-.disponibilidad-view { gap: 14px; }
+.disponibilidad-view { gap: 8px; }
