@@ -5239,12 +5239,13 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   z-index: 1;
 }
 
-/* ── Selector de vista compacto (reemplaza sub-tabs de Disponibilidad) ── */
+/* ── Selector de vista compacto — dentro de disp-filter-bar ── */
 .disp-view-selector {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 8px;
-  align-self: start;
+  min-height: 39px;
   padding: 6px 10px 6px 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -5313,6 +5314,14 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .disp-filter-bar__panel .mx-btn {
   flex: 0 0 auto;
   align-self: flex-end;
+}
+
+/* Mobile: búsqueda ocupa fila completa, orden: Vista → Búsqueda → Filtros */
+@media (max-width: 640px) {
+  .disp-view-selector       { order: 1; }
+  .disp-filter-bar__search  { order: 2; flex: 1 1 100%; }
+  .disp-filter-bar__toggle  { order: 3; }
+  .disp-filter-bar__panel   { order: 4; }
 }
 
 /* ── Status chips: reemplazan el grid de 5 tarjetas KPI ── */
