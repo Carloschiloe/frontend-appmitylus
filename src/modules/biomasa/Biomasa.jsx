@@ -340,7 +340,7 @@ export default function Biomasa() {
       </header>
 
       <div className={`mx-content-frame biomasa-content-frame ${isMuestreosView ? 'biomasa-content-frame--muestreos' : ''}`}>
-        <div className="mx-toolbar">
+        <div className="mx-toolbar mx-module-nav">
           <div className="mx-toggle-group">
             <button className={`mx-toggle-btn ${isStatusView ? 'active' : ''}`} onClick={() => navigate('/biomasa/status')}><Inbox size={14} /> Disponibilidad</button>
             <button className={`mx-toggle-btn ${isTratosView ? 'active' : ''}`} onClick={() => navigate('/biomasa/tratos')}><Handshake size={14} /> Tratos</button>

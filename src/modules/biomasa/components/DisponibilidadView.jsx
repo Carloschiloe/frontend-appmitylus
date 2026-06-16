@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, BarChart3, CalendarRange, ChartNoAxesCombined, List, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
+import { ArrowRight, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { crearDisponibilidad, crearTratoDesdeDisponibilidad, editarDisponibilidad, getDisponibilidades } from '../../../api/api-mmpp';
 import { useAuth } from '../../../context/AuthContext';
@@ -54,6 +54,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [annualReloadKey, setAnnualReloadKey] = useState(0);
   const [filters, setFilters] = useState({ proveedor: '', producto: '', estado: '' });
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -211,49 +212,63 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         </button>
       </div>
 
-      <div className="mx-toggle-group disponibilidad-tabs" role="tablist" aria-label="Vistas de disponibilidad">
-        <button type="button" className={`mx-toggle-btn ${activeTab === 'listado' ? 'active' : ''}`} onClick={() => setActiveTab('listado')}><List size={15} /> Listado</button>
-        <button type="button" className={`mx-toggle-btn ${activeTab === 'resumen' ? 'active' : ''}`} onClick={() => setActiveTab('resumen')}><BarChart3 size={15} /> Resumen mensual</button>
-        <button type="button" className={`mx-toggle-btn ${activeTab === 'anual' ? 'active' : ''}`} onClick={() => setActiveTab('anual')}><CalendarRange size={15} /> Proyección anual</button>
-        <button type="button" className={`mx-toggle-btn ${activeTab === 'analisis' ? 'active' : ''}`} onClick={() => setActiveTab('analisis')}><ChartNoAxesCombined size={15} /> Análisis gráfico</button>
+      <div className="disp-view-selector">
+        <span className="disp-view-selector__label">Vista</span>
+        <select className="disp-view-selector__select" value={activeTab} onChange={(e) => setActiveTab(e.target.value)}>
+          <option value="listado">Listado</option>
+          <option value="resumen">Resumen mensual</option>
+          <option value="anual">Proyección anual</option>
+          <option value="analisis">Análisis gráfico</option>
+        </select>
       </div>
 
-      {activeTab !== 'analisis' && <div className="disponibilidad-filter-card">
-        <label className="disponibilidad-filter disponibilidad-filter--month">
-          <span>{['anual', 'analisis'].includes(activeTab) ? 'Año principal' : 'Mes/Año'}</span>
-          {['anual', 'analisis'].includes(activeTab)
-            ? <input className="mx-input" type="number" min="2000" max="2100" value={annualYear} onChange={(event) => setAnnualYear(event.target.value)} />
-            : <input className="mx-input" type="month" value={mes} onChange={(event) => setMes(event.target.value)} />}
-        </label>
-        <label className="disponibilidad-filter disponibilidad-filter--search">
-          <span>Proveedor / contacto</span>
-          <div className="disponibilidad-search-input"><Search size={16} /><input value={filters.proveedor} onChange={(event) => setFilters((current) => ({ ...current, proveedor: event.target.value }))} placeholder="Buscar proveedor o contacto" /></div>
-        </label>
-        <label className="disponibilidad-filter">
-          <span>Producto</span>
-          <select className="mx-select" value={filters.producto} onChange={(event) => setFilters((current) => ({ ...current, producto: event.target.value }))}>
-            <option value="">Todos</option>
-            {DISPONIBILIDAD_PRODUCTOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-        </label>
-        <label className="disponibilidad-filter">
-          <span>Estado</span>
-          <select className="mx-select" value={filters.estado} onChange={(event) => setFilters((current) => ({ ...current, estado: event.target.value }))}>
-            <option value="">Todos</option>
-            {DISPONIBILIDAD_ESTADOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-        </label>
-        <button type="button" className="mx-btn mx-btn-outline disponibilidad-refresh" onClick={() => ['anual', 'analisis'].includes(activeTab) ? setAnnualReloadKey((current) => current + 1) : reload()}><RotateCcw size={15} /> Actualizar</button>
-      </div>}
+      {activeTab !== 'analisis' && (
+        <div className="disp-filter-bar">
+          <div className="disponibilidad-search-input disp-filter-bar__search">
+            <Search size={16} />
+            <input value={filters.proveedor} onChange={(event) => setFilters((current) => ({ ...current, proveedor: event.target.value }))} placeholder="Buscar proveedor o contacto" />
+          </div>
+          <button type="button" className={`mx-btn mx-btn-outline disp-filter-bar__toggle${showFilters ? ' is-open' : ''}${(filters.producto || filters.estado) ? ' has-active' : ''}`} onClick={() => setShowFilters((v) => !v)}>
+            Filtros {showFilters ? '▲' : '▼'}
+          </button>
+          {showFilters && (
+            <div className="disp-filter-bar__panel">
+              <label className="disponibilidad-filter">
+                <span>{activeTab === 'anual' ? 'Año principal' : 'Mes/Año'}</span>
+                {activeTab === 'anual'
+                  ? <input className="mx-input" type="number" min="2000" max="2100" value={annualYear} onChange={(event) => setAnnualYear(event.target.value)} />
+                  : <input className="mx-input" type="month" value={mes} onChange={(event) => setMes(event.target.value)} />}
+              </label>
+              <label className="disponibilidad-filter">
+                <span>Producto</span>
+                <select className="mx-select" value={filters.producto} onChange={(event) => setFilters((current) => ({ ...current, producto: event.target.value }))}>
+                  <option value="">Todos</option>
+                  {DISPONIBILIDAD_PRODUCTOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+              <label className="disponibilidad-filter">
+                <span>Estado</span>
+                <select className="mx-select" value={filters.estado} onChange={(event) => setFilters((current) => ({ ...current, estado: event.target.value }))}>
+                  <option value="">Todos</option>
+                  {DISPONIBILIDAD_ESTADOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+              <button type="button" className="mx-btn mx-btn-outline" onClick={() => activeTab === 'anual' ? setAnnualReloadKey((current) => current + 1) : reload()}>
+                <RotateCcw size={15} /> Actualizar
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {activeTab === 'listado' && (
       <>
-      <div className="disponibilidad-kpi-grid">
+      <div className="disp-status-chips">
         {kpis.map((kpi) => (
-          <article key={kpi.value} className={`disponibilidad-kpi disponibilidad-kpi--${kpi.tone}`}>
-            <span>{kpi.label}</span>
-            <strong>{fmtTons(kpi.tons)}</strong>
-          </article>
+          <span key={kpi.value} className={`disp-status-chip disp-status-chip--${kpi.tone}`}>
+            <span className="disp-status-chip__label">{kpi.label}</span>
+            <strong className="disp-status-chip__value">{fmtTons(kpi.tons)}</strong>
+          </span>
         ))}
       </div>
       <div className="mx-table-card disponibilidad-table-card">
