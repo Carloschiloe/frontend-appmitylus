@@ -204,15 +204,6 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
 
   return (
     <div className="disponibilidad-view">
-      <div className="disponibilidad-actions-row">
-        <div>
-          <p>Registra biomasa futura informada por proveedores antes de crear un trato asociado o programa de cosecha.</p>
-        </div>
-        <button type="button" className="mx-btn mx-btn-primary" onClick={openCreate}>
-          <Plus size={17} /> Registrar disponibilidad
-        </button>
-      </div>
-
       <div className="disp-filter-bar">
         <div className="disp-view-selector">
           <span className="disp-view-selector__label">Vista</span>
@@ -234,6 +225,9 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             </button>
           </>
         )}
+        <button type="button" className="mx-btn mx-btn-primary disp-filter-bar__cta" onClick={openCreate}>
+          <Plus size={17} /> Registrar disponibilidad
+        </button>
         {activeTab !== 'analisis' && showFilters && (
           <div className="disp-filter-bar__panel">
             <label className="disponibilidad-filter">
