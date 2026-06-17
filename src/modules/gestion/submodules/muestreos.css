@@ -915,7 +915,7 @@
 }
 
 .mu-provider-name {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-primary);
 }
 
@@ -928,20 +928,20 @@
 }
 
 .mu-strong {
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .mu-strong-badge {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .mu-primary-strong {
-  font-weight: 800;
+  font-weight: 600;
   color: var(--color-primary);
 }
 
 .mu-success-strong {
-  font-weight: 700;
+  font-weight: 500;
   color: var(--color-success);
 }
 
@@ -959,7 +959,7 @@
 }
 
 .mu-group-name {
-  font-weight: 800;
+  font-weight: 600;
   color: var(--color-text);
 }
 
