@@ -1,13 +1,11 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, RotateCcw, Search, SlidersHorizontal, X } from 'lucide-react';
+import { ChevronDown, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
 import {
   buildDisponibilidadAnnualProjection,
   buildDisponibilidadMonthDetail,
   DISPONIBILIDAD_ESTADOS,
   DISPONIBILIDAD_ORIGENES,
   DISPONIBILIDAD_PRODUCTOS,
-  filterDisponibilidadContacts,
-  filterDisponibilidadProviders,
   optionLabel,
 } from '../disponibilidad.constants';
 import { fmtTons } from '../utils/programaCalculos';
@@ -39,7 +37,6 @@ export default function DisponibilidadAnalisisGrafico({
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [showComparisonTable, setShowComparisonTable] = useState(false);
-  const [showProviderResults, setShowProviderResults] = useState(false);
 
   const primary = useMemo(() => buildDisponibilidadAnnualProjection(items, year), [items, year]);
   const comparison = useMemo(
@@ -65,76 +62,9 @@ export default function DisponibilidadAnalisisGrafico({
     () => buildDisponibilidadMonthDetail(items, selectedMonth),
     [items, selectedMonth]
   );
-  const providerMatches = useMemo(
-    () => filterDisponibilidadProviders(providers, providerFilter, 5),
-    [providerFilter, providers]
-  );
-  const contactMatches = useMemo(
-    () => filterDisponibilidadContacts(contacts, providerFilter, 5),
-    [contacts, providerFilter]
-  );
-  const hasProviderQuery = Boolean(providerFilter.trim());
 
   return (
     <section className="disponibilidad-analysis">
-      <div className="disponibilidad-analysis-toolbar">
-        <label className="disponibilidad-analysis-control">
-          <span>Año principal</span>
-          <input className="mx-input" type="number" min="2000" max="2100" value={year} onChange={(event) => onYearChange(event.target.value)} />
-        </label>
-        <label className="disponibilidad-analysis-control">
-          <span>Comparar con</span>
-          <select className="mx-select" value={comparisonYear} onChange={(event) => onComparisonYearChange(event.target.value)}>
-            <option value="">Ninguno</option>
-            {compareOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-          </select>
-        </label>
-        <div className="disponibilidad-analysis-control disponibilidad-analysis-control--search">
-          <span>Proveedor / contacto</span>
-          <div className="disponibilidad-search-input disponibilidad-analysis-search">
-            <Search size={16} />
-            <input
-              value={providerFilter}
-              onChange={(event) => { onProviderFilterChange(event.target.value); setShowProviderResults(true); }}
-              onFocus={() => setShowProviderResults(true)}
-              onBlur={() => setTimeout(() => setShowProviderResults(false), 150)}
-              placeholder="Buscar proveedor o contacto"
-            />
-            {providerFilter && (
-              <button type="button" className="disponibilidad-search-clear" onClick={() => { onProviderFilterChange(''); setShowProviderResults(false); }} aria-label="Limpiar proveedor o contacto">
-                <X size={14} />
-              </button>
-            )}
-          </div>
-          {showProviderResults && hasProviderQuery && (
-            <div className="disponibilidad-analysis-search-results">
-              {providerMatches.length === 0 && contactMatches.length === 0 ? (
-                <div className="disponibilidad-inline-empty">No encontramos proveedores o contactos.</div>
-              ) : (
-                <>
-                  {providerMatches.length > 0 && <span className="disponibilidad-analysis-search-group">Proveedores</span>}
-                  {providerMatches.map((provider) => (
-                    <button key={`provider-${provider.id}`} type="button" className="disponibilidad-provider-option" onClick={() => { onProviderFilterChange(provider.proveedorNombre); setShowProviderResults(false); }}>
-                      <strong>{provider.proveedorNombre}</strong>
-                      <span>{provider.comuna || 'Sin comuna'} · {provider.centros.length} centro{provider.centros.length === 1 ? '' : 's'}</span>
-                    </button>
-                  ))}
-                  {contactMatches.length > 0 && <span className="disponibilidad-analysis-search-group">Contactos</span>}
-                  {contactMatches.map((contact) => (
-                    <button key={`contact-${contact.id}`} type="button" className="disponibilidad-provider-option" onClick={() => { onProviderFilterChange(contact.contactoNombre); setShowProviderResults(false); }}>
-                      <strong>{contact.contactoNombre}</strong>
-                      <span>{contact.contactoTelefono || contact.contactoEmail || 'Sin teléfono ni email'}{contact.proveedorNombre ? ` · ${contact.proveedorNombre}` : ' · Sin proveedor'}</span>
-                    </button>
-                  ))}
-                </>
-              )}
-            </div>
-          )}
-        </div>
-        <button type="button" className="mx-btn mx-btn-outline disponibilidad-analysis-refresh" onClick={onRefresh}>
-          <RotateCcw size={15} /> Actualizar
-        </button>
-      </div>
 
       <div className="disponibilidad-analysis-summary">
         <div className="disponibilidad-analysis-summary-total">
@@ -170,23 +100,41 @@ export default function DisponibilidadAnalisisGrafico({
       </div>
 
       {showMoreFilters && (
-        <div className="disponibilidad-analysis-chips-row">
-          <div className="disp-annual-product-chips">
-            <span className="disp-annual-chips-label">Producto</span>
-            {productOptions.map((p) => (
-              <button key={p.value || 'todos'} type="button" className={`disp-annual-chip${productFilter === p.value ? ' is-active' : ''}`} onClick={() => onProductFilterChange(p.value)}>
-                {p.label}
-              </button>
-            ))}
+        <div className="disponibilidad-analysis-filter-panel">
+          <div className="disponibilidad-analysis-filter-controls">
+            <label className="disponibilidad-analysis-control">
+              <span>Año principal</span>
+              <input className="mx-input" type="number" min="2000" max="2100" value={year} onChange={(event) => onYearChange(event.target.value)} />
+            </label>
+            <label className="disponibilidad-analysis-control">
+              <span>Comparar con</span>
+              <select className="mx-select" value={comparisonYear} onChange={(event) => onComparisonYearChange(event.target.value)}>
+                <option value="">Ninguno</option>
+                {compareOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </label>
+            <button type="button" className="mx-btn mx-btn-outline sm" onClick={onRefresh}>
+              <RotateCcw size={14} /> Actualizar
+            </button>
           </div>
-          <span className="disp-analysis-chips-divider" />
-          <div className="disp-annual-product-chips">
-            <span className="disp-annual-chips-label">Estado</span>
-            {stateOptions.map((s) => (
-              <button key={s.value || 'todos'} type="button" className={`disp-annual-chip${stateFilter === s.value ? ' is-active' : ''}`} onClick={() => onStateFilterChange(s.value)}>
-                {s.label}
-              </button>
-            ))}
+          <div className="disponibilidad-analysis-chips-row">
+            <div className="disp-annual-product-chips">
+              <span className="disp-annual-chips-label">Producto</span>
+              {productOptions.map((p) => (
+                <button key={p.value || 'todos'} type="button" className={`disp-annual-chip${productFilter === p.value ? ' is-active' : ''}`} onClick={() => onProductFilterChange(p.value)}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <span className="disp-analysis-chips-divider" />
+            <div className="disp-annual-product-chips">
+              <span className="disp-annual-chips-label">Estado</span>
+              {stateOptions.map((s) => (
+                <button key={s.value || 'todos'} type="button" className={`disp-annual-chip${stateFilter === s.value ? ' is-active' : ''}`} onClick={() => onStateFilterChange(s.value)}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

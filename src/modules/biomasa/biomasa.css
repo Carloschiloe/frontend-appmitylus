@@ -5826,3 +5826,20 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ── Panel de filtros del análisis gráfico ── */
+.disponibilidad-analysis-filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.disponibilidad-analysis-filter-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
