@@ -136,7 +136,7 @@ export default function TratosTable({
               <tr>
                 <th className="tratos-col-provider">Proveedor</th>
                 <th className="tratos-col-tons">Tons</th>
-                <th className="tratos-col-price">Precio Est.</th>
+                <th className="tratos-col-price">Precio Pactado</th>
                 <th>Fechas estimadas</th>
                 <th className="tratos-col-status">Estado</th>
                 <th>Responsable</th>
@@ -200,7 +200,6 @@ export default function TratosTable({
                       </td>
                       <td className="tratos-metric-cell">
                         <div className="tratos-metric-primary">{formatInteger(displayTons)} t</div>
-                        <div className="tratos-metric-label">Volumen</div>
                       </td>
                       <td className="tratos-metric-cell">
                         <div className="tratos-metric-strong">{formatMoney(displayPrecio)}</div>
