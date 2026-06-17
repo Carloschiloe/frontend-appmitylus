@@ -219,45 +219,76 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             <option value="analisis">Análisis gráfico</option>
           </select>
         </div>
-        {activeTab !== 'analisis' && (
-          <>
-            <div className="disponibilidad-search-input disp-filter-bar__search">
-              <Search size={16} />
-              <input value={filters.proveedor} onChange={(event) => setFilters((current) => ({ ...current, proveedor: event.target.value }))} placeholder="Buscar proveedor o contacto" />
-            </div>
-            <button type="button" className={`mx-btn mx-btn-outline disp-filter-bar__toggle${showFilters ? ' is-open' : ''}${(filters.producto || filters.estado) ? ' has-active' : ''}`} onClick={() => setShowFilters((v) => !v)}>
-              Filtros {showFilters ? '▲' : '▼'}
-            </button>
-          </>
-        )}
+        <div className="disponibilidad-search-input disp-filter-bar__search">
+          <Search size={16} />
+          <input value={filters.proveedor} onChange={(event) => setFilters((current) => ({ ...current, proveedor: event.target.value }))} placeholder="Buscar proveedor o contacto" />
+        </div>
+        <button type="button" className={`mx-btn mx-btn-outline disp-filter-bar__toggle${showFilters ? ' is-open' : ''}${(filters.producto || filters.estado) ? ' has-active' : ''}`} onClick={() => setShowFilters((v) => !v)}>
+          Filtros {showFilters ? '▲' : '▼'}
+        </button>
         <button type="button" className="mx-btn mx-btn-primary disp-filter-bar__cta" onClick={openCreate}>
           <Plus size={17} /> Registrar disponibilidad
         </button>
-        {activeTab !== 'analisis' && showFilters && (
+        {showFilters && (
           <div className="disp-filter-bar__panel">
-            <label className="disponibilidad-filter">
-              <span>{activeTab === 'anual' ? 'Año principal' : 'Mes/Año'}</span>
-              {activeTab === 'anual'
-                ? <input className="mx-input" type="number" min="2000" max="2100" value={annualYear} onChange={(event) => setAnnualYear(event.target.value)} />
-                : <input className="mx-input" type="month" value={mes} onChange={(event) => setMes(event.target.value)} />}
-            </label>
-            <label className="disponibilidad-filter">
-              <span>Producto</span>
-              <select className="mx-select" value={filters.producto} onChange={(event) => setFilters((current) => ({ ...current, producto: event.target.value }))}>
-                <option value="">Todos</option>
-                {DISPONIBILIDAD_PRODUCTOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-            <label className="disponibilidad-filter">
-              <span>Estado</span>
-              <select className="mx-select" value={filters.estado} onChange={(event) => setFilters((current) => ({ ...current, estado: event.target.value }))}>
-                <option value="">Todos</option>
-                {DISPONIBILIDAD_ESTADOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-            <button type="button" className="mx-btn mx-btn-outline" onClick={() => activeTab === 'anual' ? setAnnualReloadKey((current) => current + 1) : reload()}>
-              <RotateCcw size={15} /> Actualizar
-            </button>
+            {activeTab === 'analisis' ? (
+              <>
+                <label className="disponibilidad-filter">
+                  <span>Año principal</span>
+                  <input className="mx-input" type="number" min="2000" max="2100" value={annualYear} onChange={(event) => setAnnualYear(event.target.value)} />
+                </label>
+                <label className="disponibilidad-filter">
+                  <span>Comparar con</span>
+                  <select className="mx-select" value={comparisonYear} onChange={(event) => setComparisonYear(event.target.value)}>
+                    <option value="">Ninguno</option>
+                    {[Number(annualYear) - 2, Number(annualYear) - 1, Number(annualYear) + 1].filter((y) => y > 0).map((y) => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </label>
+                <label className="disponibilidad-filter">
+                  <span>Producto</span>
+                  <select className="mx-select" value={filters.producto} onChange={(event) => setFilters((current) => ({ ...current, producto: event.target.value }))}>
+                    <option value="">Todos</option>
+                    {DISPONIBILIDAD_PRODUCTOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
+                <label className="disponibilidad-filter">
+                  <span>Estado</span>
+                  <select className="mx-select" value={filters.estado} onChange={(event) => setFilters((current) => ({ ...current, estado: event.target.value }))}>
+                    <option value="">Todos</option>
+                    {DISPONIBILIDAD_ESTADOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
+                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setAnnualReloadKey((current) => current + 1)}>
+                  <RotateCcw size={15} /> Actualizar
+                </button>
+              </>
+            ) : (
+              <>
+                <label className="disponibilidad-filter">
+                  <span>{activeTab === 'anual' ? 'Año principal' : 'Mes/Año'}</span>
+                  {activeTab === 'anual'
+                    ? <input className="mx-input" type="number" min="2000" max="2100" value={annualYear} onChange={(event) => setAnnualYear(event.target.value)} />
+                    : <input className="mx-input" type="month" value={mes} onChange={(event) => setMes(event.target.value)} />}
+                </label>
+                <label className="disponibilidad-filter">
+                  <span>Producto</span>
+                  <select className="mx-select" value={filters.producto} onChange={(event) => setFilters((current) => ({ ...current, producto: event.target.value }))}>
+                    <option value="">Todos</option>
+                    {DISPONIBILIDAD_PRODUCTOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
+                <label className="disponibilidad-filter">
+                  <span>Estado</span>
+                  <select className="mx-select" value={filters.estado} onChange={(event) => setFilters((current) => ({ ...current, estado: event.target.value }))}>
+                    <option value="">Todos</option>
+                    {DISPONIBILIDAD_ESTADOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
+                <button type="button" className="mx-btn mx-btn-outline" onClick={() => activeTab === 'anual' ? setAnnualReloadKey((current) => current + 1) : reload()}>
+                  <RotateCcw size={15} /> Actualizar
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
