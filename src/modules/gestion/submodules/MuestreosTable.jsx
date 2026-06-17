@@ -98,10 +98,10 @@ export default function MuestreosTable({
             <tr>
               <th className={viewMode === 'grouped' ? 'mu-col-toggle' : 'mu-col-date'}>{viewMode === 'grouped' ? '' : 'Fecha'}</th>
               <th>Proveedor / Centro</th>
-              <th className="mu-text-center">Muestras</th>
-              <th className="mu-text-center">R% Prom.</th>
-              <th className="mu-text-center">U x Kg</th>
-              <th className="mu-text-center">Procesable %</th>
+              {viewMode === 'grouped' && <th className="mu-text-center">Muestras</th>}
+              <th className="mu-text-center">% Rdto.</th>
+              <th className="mu-text-center">U×Kg</th>
+              <th className="mu-text-center">% Proc.</th>
               <th className="mu-text-center">% Rechazo</th>
               <th className="mu-text-center">{viewMode === 'list' ? 'Calificación' : ''}</th>
               <th className="mu-text-right">{viewMode === 'list' ? 'Acciones' : ''}</th>
@@ -111,7 +111,7 @@ export default function MuestreosTable({
             {viewMode === 'list' ? (
               filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="9">
+                  <td colSpan="8">
                     <div className="mx-empty-state">
                       <TestTube2 size={36} />
                       <p className="mx-empty-state__title">Sin muestreos para mostrar</p>
@@ -129,7 +129,6 @@ export default function MuestreosTable({
                       <MapPin size={10} /> {item.centroCodigo || 'Sin Centro'} {item.linea && `- L: ${item.linea}`}
                     </div>
                   </td>
-                  <td className="mu-text-center">1</td>
                   <td className="mu-text-center"><span className="mx-badge mx-badge-info mu-strong-badge">{Number(item.rendimiento || 0).toFixed(1)}%</span></td>
                   <td className="mu-text-center mu-strong">{item.uxkg || 0}</td>
                   <td className="mu-text-center mu-success-strong">
