@@ -202,7 +202,23 @@ export default function Muestreos() {
     [form, selectedCats, maestros.cats]
   );
 
-  const filtered = useMemo(() => filterMuestreos(muestreos, searchTerm), [muestreos, searchTerm]);
+  const [productFilter, setProductFilter] = useState('all');
+
+  const availableProducts = useMemo(() => {
+    const names = new Set();
+    muestreos.forEach(i => {
+      const name = i.clasificaciones?.[0]?.nombre;
+      if (name) names.add(name);
+    });
+    return [...names].sort();
+  }, [muestreos]);
+
+  const filtered = useMemo(() => {
+    const bySearch = filterMuestreos(muestreos, searchTerm);
+    if (productFilter === 'all') return bySearch;
+    return bySearch.filter(i => (i.clasificaciones?.[0]?.nombre || '') === productFilter);
+  }, [muestreos, searchTerm, productFilter]);
+
   const groupedData = useMemo(() => groupMuestreosByProvider(filtered), [filtered]);
 
   // Rango de fechas según vista activa, para exportar solo lo visible
@@ -342,7 +358,7 @@ export default function Muestreos() {
       <MuestreosHeaderControls
         calView={calView}
         mes={mes}
-        onCalViewChange={(nextView) => { setCalView(nextView); setPage(1); }}
+        onCalViewChange={(nextView) => { setCalView(nextView); setPage(1); setProductFilter('all'); }}
         onMesChange={(updater) => { setMes(updater); setPage(1); }}
         weekOffset={weekOffset}
         onWeekOffsetChange={(updater) => { setWeekOffset(updater); setPage(1); }}
@@ -355,6 +371,9 @@ export default function Muestreos() {
         onNewMuestreo={resetForm}
         onExportar={handleExportarExcel}
         exportando={exportando}
+        productFilter={productFilter}
+        onProductFilterChange={(val) => { setProductFilter(val); setPage(1); }}
+        availableProducts={availableProducts}
       />
 
       {loading ? (

@@ -1562,11 +1562,51 @@
   padding: 10px 16px;
   margin-bottom: 16px;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mu-toolbar-row {
+  display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
+
+.mu-product-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-border);
+}
+
+.mu-product-chips-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 2px;
+}
+
+.mu-product-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+.mu-product-chip:hover { background: var(--color-surface-hover, #f0f4ff); color: var(--color-text); border-color: var(--color-primary); }
+.mu-product-chip.active { background: var(--color-primary-subtle, #eff4ff); color: var(--color-primary); border-color: var(--color-primary); font-weight: 600; }
 
 .mu-controls-sep {
   width: 1px;

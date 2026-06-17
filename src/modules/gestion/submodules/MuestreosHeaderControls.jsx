@@ -27,6 +27,9 @@ export default function MuestreosHeaderControls({
   onNewMuestreo,
   onExportar,
   exportando,
+  productFilter = 'all',
+  onProductFilterChange,
+  availableProducts = [],
 }) {
   const [viewDropdownOpen, setViewDropdownOpen] = useState(false);
   const viewDropdownRef = useRef(null);
@@ -53,6 +56,7 @@ export default function MuestreosHeaderControls({
 
   return (
     <div className="muestreos-controls-panel" data-tour="muestreos-filtros">
+      <div className="mu-toolbar-row">
 
       {/* Vista dropdown */}
       <div className="harvest-prog-view-dropdown" ref={viewDropdownRef}>
@@ -122,6 +126,28 @@ export default function MuestreosHeaderControls({
           <Plus size={16} /> Muestreo
         </button>
       </div>
+      </div>
+
+      {availableProducts.length > 0 && (
+        <div className="mu-product-chips-row">
+          <span className="mu-product-chips-label">Producto:</span>
+          <button
+            className={`mu-product-chip${productFilter === 'all' ? ' active' : ''}`}
+            onClick={() => onProductFilterChange('all')}
+          >
+            Todos
+          </button>
+          {availableProducts.map(name => (
+            <button
+              key={name}
+              className={`mu-product-chip${productFilter === name ? ' active' : ''}`}
+              onClick={() => onProductFilterChange(name)}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
 
     </div>
   );
