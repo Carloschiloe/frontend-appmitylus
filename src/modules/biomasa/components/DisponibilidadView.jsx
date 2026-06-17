@@ -244,20 +244,6 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                     {[Number(annualYear) - 2, Number(annualYear) - 1, Number(annualYear) + 1].filter((y) => y > 0).map((y) => <option key={y} value={y}>{y}</option>)}
                   </select>
                 </label>
-                <label className="disponibilidad-filter">
-                  <span>Producto</span>
-                  <select className="mx-select" value={filters.producto} onChange={(event) => setFilters((current) => ({ ...current, producto: event.target.value }))}>
-                    <option value="">Todos</option>
-                    {DISPONIBILIDAD_PRODUCTOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                </label>
-                <label className="disponibilidad-filter">
-                  <span>Estado</span>
-                  <select className="mx-select" value={filters.estado} onChange={(event) => setFilters((current) => ({ ...current, estado: event.target.value }))}>
-                    <option value="">Todos</option>
-                    {DISPONIBILIDAD_ESTADOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                </label>
                 <button type="button" className="mx-btn mx-btn-outline" onClick={() => setAnnualReloadKey((current) => current + 1)}>
                   <RotateCcw size={15} /> Actualizar
                 </button>

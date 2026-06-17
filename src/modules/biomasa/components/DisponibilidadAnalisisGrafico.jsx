@@ -43,6 +43,11 @@ export default function DisponibilidadAnalisisGrafico({
     [comparisonItems, comparisonYear, year]
   );
 
+  const availableProducts = useMemo(
+    () => DISPONIBILIDAD_PRODUCTOS.filter((p) => items.some((i) => (i.producto || 'sin_definir') === p.value)),
+    [items]
+  );
+
   const maxMonthTotal = Math.max(
     ...primary.rows.map((row) => row.total),
     ...(comparisonYear ? comparison.rows.map((row) => row.total) : [0]),
@@ -59,7 +64,7 @@ export default function DisponibilidadAnalisisGrafico({
     <section className="disponibilidad-analysis">
 
       <div className="disponibilidad-analysis-summary">
-        <div className="disponibilidad-analysis-summary-total">
+        <button type="button" className={`disponibilidad-analysis-summary-total disp-analysis-kpi-btn${!stateFilter ? ' is-active' : ''}`} onClick={() => onStateFilterChange('')}>
           <span>Total {year}</span>
           <strong>{fmtTons(primary.annualTotal)}</strong>
           {comparisonYear && (
@@ -67,28 +72,44 @@ export default function DisponibilidadAnalisisGrafico({
               {difference >= 0 ? '+' : ''}{fmtTons(difference)} vs {comparisonYear}
             </small>
           )}
-        </div>
+        </button>
         <div className="disponibilidad-analysis-summary-states">
           {DISPONIBILIDAD_ESTADOS.map((state) => (
-            <div key={state.value} className={`disponibilidad-analysis-summary-state disponibilidad-analysis-summary-state--${state.tone}`}>
+            <button
+              key={state.value}
+              type="button"
+              className={`disponibilidad-analysis-summary-state disponibilidad-analysis-summary-state--${state.tone} disp-analysis-kpi-btn${stateFilter === state.value ? ' is-active' : ''}`}
+              onClick={() => onStateFilterChange(stateFilter === state.value ? '' : state.value)}
+            >
               <span>{state.label}</span>
               <strong>{fmtTons(primary.totalsByState[state.value])}</strong>
-            </div>
+            </button>
           ))}
         </div>
       </div>
 
 
       <div className="disponibilidad-analysis-card">
-        {(!stateFilter || comparisonYear) && (
-          <div className="disponibilidad-analysis-legend">
-            {!stateFilter && DISPONIBILIDAD_ESTADOS.map((state) => (
-              <span key={state.value}><i className={`disponibilidad-analysis-swatch disponibilidad-analysis-swatch--${state.tone}`} />{state.label}</span>
-            ))}
-            {comparisonYear && <span><i className="disponibilidad-analysis-swatch disponibilidad-analysis-swatch--comparison" />Total {comparisonYear}</span>}
-          </div>
-        )}
+        <div className="disponibilidad-analysis-card-header">
+          {(!stateFilter || comparisonYear) && (
+            <div className="disponibilidad-analysis-legend">
+              {!stateFilter && DISPONIBILIDAD_ESTADOS.map((state) => (
+                <span key={state.value}><i className={`disponibilidad-analysis-swatch disponibilidad-analysis-swatch--${state.tone}`} />{state.label}</span>
+              ))}
+              {comparisonYear && <span><i className="disponibilidad-analysis-swatch disponibilidad-analysis-swatch--comparison" />Total {comparisonYear}</span>}
+            </div>
+          )}
+          {availableProducts.length > 0 && (
+            <div className="disp-analysis-product-pills">
+              <button type="button" className={`disp-annual-chip${!productFilter ? ' is-active' : ''}`} onClick={() => onProductFilterChange('')}>Todos</button>
+              {availableProducts.map((p) => (
+                <button key={p.value} type="button" className={`disp-annual-chip${productFilter === p.value ? ' is-active' : ''}`} onClick={() => onProductFilterChange(p.value)}>{p.label}</button>
+              ))}
+            </div>
+          )}
+        </div>
 
+        </div>
         <div className="disponibilidad-analysis-chart-scroll">
           <div className="disponibilidad-analysis-chart" aria-label={`Disponibilidad por mes para ${year}`}>
             {primary.rows.map((row, index) => {

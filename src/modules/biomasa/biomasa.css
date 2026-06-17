@@ -5843,3 +5843,32 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   gap: 12px;
   flex-wrap: wrap;
 }
+
+/* ── Tarjetas resumen análisis como filtros clickeables ── */
+.disp-analysis-kpi-btn {
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  text-align: left;
+  font: inherit;
+  border: inherit;
+  background: inherit;
+  width: 100%;
+}
+.disp-analysis-kpi-btn:hover { background: #f0f6ff; }
+.disp-analysis-kpi-btn.is-active { background: #e8f1ff; box-shadow: inset 0 0 0 2px #3b82f6; }
+
+/* ── Header del chart: leyenda izq, pills der ── */
+.disponibilidad-analysis-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+.disp-analysis-product-pills {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
