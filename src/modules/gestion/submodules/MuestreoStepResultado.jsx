@@ -10,8 +10,8 @@ export default function MuestreoStepResultado({ form, totals }) {
     <div className="mu-step-container mu-result-step am-text-center am-py-32">
       <div className="mu-result-hero">
         <Target size={48} color="var(--color-primary)" />
-        <h3 className="am-mt-16">Resumen del Analisis</h3>
-        <p className="am-mb-32">Verifica los datos antes de guardar la calificacion oficial.</p>
+        <h3 className="am-mt-16">Resumen del Análisis</h3>
+        <p className="am-mb-32">Verifica los datos antes de guardar la calificación oficial.</p>
       </div>
 
       <div className="mu-result-grid">
@@ -43,7 +43,7 @@ export default function MuestreoStepResultado({ form, totals }) {
 
       <div className="mu-confirm-msg am-mt-32">
         <AlertTriangle size={16} />
-        <span>Este muestreo sera registrado por <strong>{form.responsable || 'Usuario Sistema'}</strong> para el proveedor <strong>{form.proveedorNombre}</strong>.</span>
+        <span>Este muestreo será registrado por <strong>{form.responsable || 'Usuario Sistema'}</strong> para el proveedor <strong>{form.proveedorNombre}</strong>.</span>
       </div>
     </div>
   );

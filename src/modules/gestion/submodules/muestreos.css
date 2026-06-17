@@ -166,7 +166,7 @@
 
 .mu-compact-step-label {
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #64748b;
 }
 
@@ -231,7 +231,7 @@
 
 .mu-side-car-header {
   font-size: 0.7rem;
-  font-weight: 900;
+  font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -257,14 +257,14 @@
 .mu-side-car-item .label {
   font-size: 10px;
   color: #64748b;
-  font-weight: 800;
+  font-weight: 500;
   text-transform: uppercase;
   margin-bottom: 4px;
 }
 
 .mu-side-car-item .val {
   font-size: 1.4rem;
-  font-weight: 900;
+  font-weight: 700;
   color: #1e293b;
   line-height: 1;
 }
@@ -512,7 +512,7 @@
 .mu-analysis-section-title h4 {
   margin: 0;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .mu-analysis-label {
@@ -728,7 +728,7 @@
 
 .mu-analysis-item-name {
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #1e293b;
   white-space: nowrap;
   overflow: hidden;

@@ -33,11 +33,11 @@ export default function MuestreoStepAnalisis({
       <div className="mu-analysis-params">
         <div className="mu-analysis-section-title primary">
           <Target size={14} />
-          <h4>Parametros</h4>
+          <h4>Parámetros</h4>
         </div>
 
         <div className="mx-form-group">
-          <label className="mx-label mu-analysis-label">U x Kg</label>
+          <label className="mx-label mu-analysis-label">U×Kg</label>
           <input type="number" className="mx-input mu-analysis-input" value={form.uxkg} onChange={(event) => setForm({ ...form, uxkg: event.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0" />
         </div>
 
@@ -66,7 +66,7 @@ export default function MuestreoStepAnalisis({
         <div className="mu-analysis-toolbar">
           <div className="mu-analysis-section-title success">
             <Layers size={14} />
-            <h4>Analisis Tecnico</h4>
+            <h4>Análisis Técnico</h4>
           </div>
           <select
             className="mx-select mu-analysis-unit"
@@ -94,7 +94,7 @@ export default function MuestreoStepAnalisis({
         {activeTab !== 'procesable' && (
           <div className="mu-analysis-dropdown-wrap">
             <button type="button" className="mx-btn mx-btn-outline mu-analysis-dropdown-trigger" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-              <span>+ Anadir {activeTab}s...</span>
+              <span>+ Añadir {activeTab}s...</span>
               <ChevronDown size={14} className={isDropdownOpen ? 'mu-rotate-180' : ''} />
             </button>
 

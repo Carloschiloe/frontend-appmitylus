@@ -249,7 +249,7 @@ export default function MuestreoStepContext({
           </select>
         </div>
         <div className="mx-form-group mu-flex-1">
-          <label className="mx-label">Linea</label>
+          <label className="mx-label">Línea</label>
           <input
             className="mx-input"
             placeholder="N"

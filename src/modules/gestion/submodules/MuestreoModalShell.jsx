@@ -4,7 +4,7 @@ import { fmtNum } from './muestreos.helpers';
 
 const STEP_LABELS = {
   1: 'Contexto',
-  2: 'Analisis',
+  2: 'Análisis',
   3: 'Resultado',
 };
 
@@ -24,7 +24,7 @@ export default function MuestreoModalShell({
         <div className="mx-modal-header mu-modal-header">
           <div className="mu-modal-title-row">
             <h3 className="mx-modal-title mu-modal-title">
-              {editingId ? 'Editar' : 'Nuevo'} Muestreo Tecnico
+              {editingId ? 'Editar' : 'Nuevo'} Muestreo Técnico
             </h3>
 
             <div className="mu-compact-stepper">
@@ -61,7 +61,7 @@ export default function MuestreoModalShell({
 
               {step === 2 && (
                 <aside className="mu-side-car">
-                  <div className="mu-side-car-header">Metricas Resumen</div>
+                  <div className="mu-side-car-header">Métricas</div>
 
                   <div className="mu-side-car-item primary">
                     <div className="label">R% Carne</div>
@@ -99,7 +99,7 @@ export default function MuestreoModalShell({
             onClick={() => onStepChange((current) => Math.max(1, current - 1))}
             disabled={step === 1 || isLoadingDetails}
           >
-            <ArrowLeft size={16} /> Atras
+            <ArrowLeft size={16} /> Atrás
           </button>
 
           <div className="mu-modal-footer-actions">
@@ -109,7 +109,7 @@ export default function MuestreoModalShell({
               </button>
             ) : (
               <button className="mx-btn mx-btn-primary" onClick={onSave} disabled={isLoadingDetails}>
-                <CheckCircle2 size={16} /> Guardar Calificacion
+                <CheckCircle2 size={16} /> Guardar Calificación
               </button>
             )}
           </div>
