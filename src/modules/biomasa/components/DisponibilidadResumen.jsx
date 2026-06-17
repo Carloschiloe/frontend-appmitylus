@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, ChevronDown, Pencil } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import {
   DISPONIBILIDAD_ESTADOS,
   DISPONIBILIDAD_ORIGENES,
@@ -13,7 +13,13 @@ import ResumenTotalesDisponibilidad from './ResumenTotalesDisponibilidad';
 
 const itemTons = (item) => Number(item.tons || item.tonsDisponible || 0);
 
-export default function DisponibilidadResumen({ items, mes, estadoFiltro, onEdit, onCreateTrato }) {
+const shiftMes = (mesKey, delta) => {
+  const [y, m] = mesKey.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+export default function DisponibilidadResumen({ items, mes, setMes, estadoFiltro, onEdit, onCreateTrato }) {
   const states = estadoFiltro
     ? DISPONIBILIDAD_ESTADOS.filter((state) => state.value === estadoFiltro)
     : DISPONIBILIDAD_ESTADOS;
@@ -48,7 +54,19 @@ export default function DisponibilidadResumen({ items, mes, estadoFiltro, onEdit
       <div className="disponibilidad-summary-header">
         <div>
           <span className="mx-eyebrow">Resumen mensual</span>
-          <h3>{mesLabel(mes, true)}</h3>
+          <div className="disp-res-mes-nav">
+            {setMes && (
+              <button type="button" className="disp-res-mes-btn" onClick={() => setMes(shiftMes(mes, -1))} aria-label="Mes anterior">
+                <ChevronLeft size={16} />
+              </button>
+            )}
+            <h3>{mesLabel(mes, true)}</h3>
+            {setMes && (
+              <button type="button" className="disp-res-mes-btn" onClick={() => setMes(shiftMes(mes, 1))} aria-label="Mes siguiente">
+                <ChevronRight size={16} />
+              </button>
+            )}
+          </div>
         </div>
         <strong>{fmtTons(total)} totales</strong>
       </div>

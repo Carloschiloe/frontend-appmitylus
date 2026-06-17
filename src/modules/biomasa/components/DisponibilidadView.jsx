@@ -334,7 +334,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             </div>
           </>
         )}
-        {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} estadoFiltro={filters.estado} onEdit={openEdit} onCreateTrato={openCreateTrato} />}
+        {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} setMes={setMes} estadoFiltro={filters.estado} onEdit={openEdit} onCreateTrato={openCreateTrato} />}
         {activeTab === 'anual' && (
           <DisponibilidadProyeccionAnual
             items={filteredAnnualItems}
