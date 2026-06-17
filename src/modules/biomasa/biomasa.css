@@ -5555,7 +5555,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
 .disp-res-row {
   display: grid;
-  grid-template-columns: 160px 88px 44px 1fr 90px 28px;
+  grid-template-columns: 160px 88px 44px minmax(0, 0.7fr) 1fr 28px;
   align-items: center;
   gap: 12px;
   width: 100%;
