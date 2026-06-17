@@ -5664,7 +5664,25 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   background: #fafbfd;
 }
 .disp-res-table .disponibilidad-state-record {
-  grid-template-columns: minmax(180px, 1.2fr) 130px minmax(0, 1fr) auto;
-  padding: 12px 14px 12px 15px;
-  gap: 20px;
+  grid-template-columns: minmax(180px, 1.2fr) 100px minmax(0, 1fr) auto;
+  padding: 10px 14px 10px 15px;
+  gap: 16px;
+}
+.disp-res-table .disponibilidad-state-record-meta {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+.disp-res-table .disponibilidad-state-record-meta span + span::before {
+  content: '·';
+  padding: 0 5px;
+  opacity: 0.4;
+}
+.disp-res-table .disponibilidad-state-record-meta span:last-child {
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
