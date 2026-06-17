@@ -103,7 +103,7 @@ export default function MuestreosTable({
               <th className="mu-text-center">U x Kg</th>
               <th className="mu-text-center">Procesable %</th>
               <th className="mu-text-center">% Rechazo</th>
-              <th className="mu-text-center">{viewMode === 'list' ? 'Calificacion' : ''}</th>
+              <th className="mu-text-center">{viewMode === 'list' ? 'Calificación' : ''}</th>
               <th className="mu-text-right">{viewMode === 'list' ? 'Acciones' : ''}</th>
             </tr>
           </thead>

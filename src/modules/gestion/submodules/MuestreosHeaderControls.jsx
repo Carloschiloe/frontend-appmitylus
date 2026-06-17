@@ -1,6 +1,9 @@
-import { ChevronLeft, ChevronRight, FileDown, LayoutGrid, List, Plus, RotateCcw, Search } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, ChevronDown, FileDown, LayoutGrid, List, Plus, RotateCcw, Search } from 'lucide-react';
 import { getMonthLabel } from './muestreos.helpers';
 import HelpTourButton from '../../../components/HelpTourButton';
+
+const MU_VIEW_LABELS = { month: 'Mes', week: 'Semana', all: 'Ver Todos' };
 
 const shiftMonth = (monthKey, delta) => {
   const [year, month] = monthKey.split('-');
@@ -25,82 +28,101 @@ export default function MuestreosHeaderControls({
   onExportar,
   exportando,
 }) {
-  const handleCalView = (nextView) => {
-    onCalViewChange(nextView);
-  };
+  const [viewDropdownOpen, setViewDropdownOpen] = useState(false);
+  const viewDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (viewDropdownRef.current && !viewDropdownRef.current.contains(e.target)) {
+        setViewDropdownOpen(false);
+      }
+    };
+    if (viewDropdownOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [viewDropdownOpen]);
 
   const handlePreviousPeriod = () => {
-    if (calView === 'month') {
-      onMesChange((prev) => shiftMonth(prev, -1));
-    } else {
-      onWeekOffsetChange((prev) => prev - 1);
-    }
+    if (calView === 'month') onMesChange((prev) => shiftMonth(prev, -1));
+    else onWeekOffsetChange((prev) => prev - 1);
   };
 
   const handleNextPeriod = () => {
-    if (calView === 'month') {
-      onMesChange((prev) => shiftMonth(prev, 1));
-    } else {
-      onWeekOffsetChange((prev) => prev + 1);
-    }
-  };
-
-  const handleToday = () => {
-    onWeekOffsetChange(0);
+    if (calView === 'month') onMesChange((prev) => shiftMonth(prev, 1));
+    else onWeekOffsetChange((prev) => prev + 1);
   };
 
   return (
-    <div className="muestreos-controls-panel">
-      <div className="mu-controls-period" data-tour="muestreos-filtros">
-        <div className="mx-toggle-group">
-          <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => handleCalView('month')}>Vista Mes</button>
-          <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => handleCalView('week')}>Vista Semana</button>
-          <button className={`mx-toggle-btn ${calView === 'all' ? 'active' : ''}`} onClick={() => handleCalView('all')}>Todos</button>
-        </div>
+    <div className="muestreos-controls-panel" data-tour="muestreos-filtros">
 
-        {calView !== 'all' && (
-          <div className="mu-period-nav">
-            <button className="mx-btn-icon sm" onClick={handlePreviousPeriod}><ChevronLeft size={16} /></button>
-            <span className="mu-period-label">
-              {calView === 'month' ? getMonthLabel(mes) : weekLabel}
-            </span>
-            <button className="mx-btn-icon sm" onClick={handleNextPeriod}><ChevronRight size={16} /></button>
-            {calView === 'week' && weekOffset !== 0 && (
-              <button className="mx-btn mx-btn-outline sm" onClick={handleToday}>Hoy</button>
-            )}
+      {/* Vista dropdown */}
+      <div className="harvest-prog-view-dropdown" ref={viewDropdownRef}>
+        <button className="harvest-prog-view-btn" onClick={() => setViewDropdownOpen(o => !o)}>
+          <span>Vista: <strong>{MU_VIEW_LABELS[calView]}</strong></span>
+          <ChevronDown size={13} className={viewDropdownOpen ? 'rotated' : ''} />
+        </button>
+        {viewDropdownOpen && (
+          <div className="harvest-prog-view-menu">
+            {Object.entries(MU_VIEW_LABELS).map(([val, label]) => (
+              <button
+                key={val}
+                className={`harvest-prog-view-option${calView === val ? ' active' : ''}`}
+                onClick={() => { onCalViewChange(val); setViewDropdownOpen(false); }}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         )}
       </div>
 
-      <div className="mu-controls-actions">
-        <div className="mx-toggle-group">
-          <button className={`mx-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => onViewModeChange('list')}><List size={14} /> Historial</button>
-          <button className={`mx-toggle-btn ${viewMode === 'grouped' ? 'active' : ''}`} onClick={() => onViewModeChange('grouped')}><LayoutGrid size={14} /> Agrupado</button>
+      {/* Period nav */}
+      {calView !== 'all' && (
+        <div className="mu-period-nav">
+          <button className="mx-btn-icon sm" onClick={handlePreviousPeriod}><ChevronLeft size={16} /></button>
+          <span className="mu-period-label">
+            {calView === 'month' ? getMonthLabel(mes) : weekLabel}
+          </span>
+          <button className="mx-btn-icon sm" onClick={handleNextPeriod}><ChevronRight size={16} /></button>
+          {calView === 'week' && weekOffset !== 0 && (
+            <button className="mx-btn mx-btn-outline sm" onClick={() => onWeekOffsetChange(0)}>Hoy</button>
+          )}
         </div>
-        <div className="mx-search-box mu-toolbar-search" data-tour="muestreos-busqueda">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Buscar por proveedor o centro..."
-            className="mx-input"
-            value={searchTerm}
-            onChange={(event) => onSearchTermChange(event.target.value)}
-          />
-        </div>
-        <button className="mx-btn mx-btn-outline sm" onClick={onRefresh}><RotateCcw size={18} /></button>
-        <button
-          className="mx-btn mx-btn-outline sm"
-          onClick={onExportar}
-          disabled={exportando}
-          title="Exportar a Excel"
-        >
-          <FileDown size={16} />
+      )}
+
+      <div className="mu-controls-sep" />
+
+      {/* Historial / Agrupado pills */}
+      <div className="mu-viewmode-pills">
+        <button className={`mu-viewmode-pill${viewMode === 'list' ? ' active' : ''}`} onClick={() => onViewModeChange('list')}>
+          <List size={13} /> Historial
         </button>
-        <HelpTourButton tourId="muestreos" />
-        <button className="mx-btn mx-btn-primary sm" onClick={onNewMuestreo} data-tour="muestreos-registrar">
-          <Plus size={18} /> Muestreo
+        <button className={`mu-viewmode-pill${viewMode === 'grouped' ? ' active' : ''}`} onClick={() => onViewModeChange('grouped')}>
+          <LayoutGrid size={13} /> Agrupado
         </button>
       </div>
+
+      {/* Search */}
+      <div className="mx-search-box mu-toolbar-search" data-tour="muestreos-busqueda">
+        <Search size={15} />
+        <input
+          type="text"
+          placeholder="Buscar proveedor o centro..."
+          className="mx-input"
+          value={searchTerm}
+          onChange={(e) => onSearchTermChange(e.target.value)}
+        />
+      </div>
+
+      {/* Action buttons */}
+      <div className="mu-controls-actions">
+        <button className="mx-btn-icon sm" onClick={onRefresh} title="Recargar"><RotateCcw size={16} /></button>
+        <button className="mx-btn-icon sm" onClick={onExportar} disabled={exportando} title="Exportar a Excel"><FileDown size={16} /></button>
+        <HelpTourButton tourId="muestreos" />
+        <button className="mx-btn mx-btn-primary sm" onClick={onNewMuestreo} data-tour="muestreos-registrar">
+          <Plus size={16} /> Muestreo
+        </button>
+      </div>
+
     </div>
   );
 }
