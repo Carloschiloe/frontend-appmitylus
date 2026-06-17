@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
+import { ArrowRight, HelpCircle, MapPin, MessageCircle, Pencil, Phone, Plus, RotateCcw, Search, Users } from 'lucide-react';
+
+const ORIGEN_ICON = {
+  llamada:  Phone,
+  visita:   MapPin,
+  whatsapp: MessageCircle,
+  reunion:  Users,
+  otro:     HelpCircle,
+};
+const OrigenIcon = ({ origen, label }) => {
+  const Icon = ORIGEN_ICON[origen] || HelpCircle;
+  return <span title={label} className="disp-origen-icon"><Icon size={14} /></span>;
+};
 import { apiClient } from '../../../api/apiClient';
 import { crearDisponibilidad, crearTratoDesdeDisponibilidad, editarDisponibilidad, getDisponibilidades } from '../../../api/api-mmpp';
 import { useAuth } from '../../../context/AuthContext';
@@ -298,7 +310,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                           <td>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
                           <td><span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span></td>
                           <td>{item.responsable || 'Sin asignar'}</td>
-                          <td>{optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')}</td>
+                          <td><OrigenIcon origen={item.origen || 'otro'} label={optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')} /></td>
                           <td className="disponibilidad-observation" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
                           <td>
                             <div className="disponibilidad-row-actions">

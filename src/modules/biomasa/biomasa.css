@@ -5409,6 +5409,14 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   margin-left: auto;
 }
 
+/* ── Ícono de origen ── */
+.disp-origen-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
 /* ── Animaciones de vistas ── */
 @keyframes disp-appear {
   from { opacity: 0; transform: translateY(6px); }
