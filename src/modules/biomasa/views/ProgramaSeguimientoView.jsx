@@ -1,7 +1,10 @@
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { mesLabel } from '../utils/fechasChile';
 import { getProductClass, getTipoProductoLabel } from '../utils/productoLabels';
 import { ADJUST_ACTION_LABELS } from '../utils/programaCalculos';
+
+const FOLLOWUP_VIEW_LABELS = { month: 'Mes', week: 'Semana' };
 
 export default function ProgramaSeguimientoView({
   followupPeriod,
@@ -18,13 +21,44 @@ export default function ProgramaSeguimientoView({
   setShowSegModal,
   recentDailyAdjustments,
 }) {
+  const [followupViewDropdownOpen, setFollowupViewDropdownOpen] = useState(false);
+  const followupViewDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (followupViewDropdownRef.current && !followupViewDropdownRef.current.contains(e.target)) {
+        setFollowupViewDropdownOpen(false);
+      }
+    };
+    if (followupViewDropdownOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [followupViewDropdownOpen]);
+
   return (
     <div className="harvest-followup-layout">
       <div className="harvest-followup-toolbar">
         <div className="harvest-followup-controls">
-          <div className="mx-toggle-group">
-            <button className={`mx-toggle-btn ${followupPeriod === 'month' ? 'active' : ''}`} onClick={() => setFollowupPeriod('month')}>Vista Mes</button>
-            <button className={`mx-toggle-btn ${followupPeriod === 'week' ? 'active' : ''}`} onClick={() => setFollowupPeriod('week')}>Vista Semana</button>
+          <div className="harvest-prog-view-dropdown" ref={followupViewDropdownRef}>
+            <button
+              className="harvest-prog-view-btn"
+              onClick={() => setFollowupViewDropdownOpen(o => !o)}
+            >
+              <span>Vista: <strong>{FOLLOWUP_VIEW_LABELS[followupPeriod]}</strong></span>
+              <ChevronDown size={13} className={followupViewDropdownOpen ? 'rotated' : ''} />
+            </button>
+            {followupViewDropdownOpen && (
+              <div className="harvest-prog-view-menu">
+                {Object.entries(FOLLOWUP_VIEW_LABELS).map(([val, label]) => (
+                  <button
+                    key={val}
+                    className={`harvest-prog-view-option${followupPeriod === val ? ' active' : ''}`}
+                    onClick={() => { setFollowupPeriod(val); setFollowupViewDropdownOpen(false); }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="harvest-followup-period">
             <button className="mx-btn-icon sm" onClick={() => moveFollowupPeriod(-1)} aria-label="Periodo anterior">
@@ -67,7 +101,7 @@ export default function ProgramaSeguimientoView({
         <header className="mx-card-header">
           <div>
             <h4 className="mx-card-title">Mesa de ajustes diarios</h4>
-            <p className="mx-card-description">Cambia solo el dia operativo sin modificar todo el programa.</p>
+            <p className="mx-card-description">Cambia solo el día operativo sin modificar todo el programa.</p>
           </div>
         </header>
         <div className="mx-table-wrap harvest-followup-table-wrap">
@@ -78,8 +112,8 @@ export default function ProgramaSeguimientoView({
                 <th>Producto</th>
                 <th style={{ textAlign: 'center' }}>Base</th>
                 <th style={{ textAlign: 'center' }}>Hoy</th>
-                <th>Ultima novedad</th>
-                <th style={{ textAlign: 'right' }}>Accion</th>
+                <th>Última novedad</th>
+                <th style={{ textAlign: 'right' }}>Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -139,8 +173,8 @@ export default function ProgramaSeguimientoView({
       <section className="mx-card harvest-followup-panel">
         <header className="mx-card-header">
           <div>
-            <h4 className="mx-card-title">Bitacora reciente</h4>
-            <p className="mx-card-description">Ultimos cambios diarios registrados.</p>
+            <h4 className="mx-card-title">Bitácora reciente</h4>
+            <p className="mx-card-description">Últimos cambios diarios registrados.</p>
           </div>
         </header>
         <div className="harvest-adjustment-history">
