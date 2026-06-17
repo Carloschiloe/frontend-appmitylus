@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Activity,
   Calendar as CalendarIcon,
   Maximize2,
@@ -10,6 +11,8 @@ import {
   AlertTriangle,
   SlidersHorizontal,
 } from 'lucide-react';
+
+const CAL_VIEW_LABELS = { month: 'Mes', week: 'Semana' };
 import {
   mesLabel, todayKey, calendarDayToneClass, getISOWeek,
 } from '../utils/fechasChile';
@@ -62,6 +65,18 @@ export default function ProgramaCalendarioView({
 }) {
   const { addToast } = useToast();
   const [truckPopover, setTruckPopover] = useState(null);
+  const [calViewDropdownOpen, setCalViewDropdownOpen] = useState(false);
+  const calViewDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (calViewDropdownRef.current && !calViewDropdownRef.current.contains(e.target)) {
+        setCalViewDropdownOpen(false);
+      }
+    };
+    if (calViewDropdownOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [calViewDropdownOpen]);
 
   // Tipos de transporte activos con su capacidad (t/camión) ya calculada.
   const tiposActivos = (tiposTransporte || [])
@@ -85,9 +100,31 @@ export default function ProgramaCalendarioView({
       <div className="mx-card harvest-calendar-main">
         <div className="harvest-calendar-toolbar">
           <div className="harvest-calendar-controls">
-            <div className="mx-toggle-group" data-tour="programa-calendario-vistas">
-              <button className={`mx-toggle-btn ${calView === 'month' ? 'active' : ''}`} onClick={() => setCalView('month')}>Vista Mes</button>
-              <button className={`mx-toggle-btn ${calView === 'week' ? 'active' : ''}`} onClick={() => { setCalView('week'); setSelectedDay(null); }}>Vista Semana</button>
+            <div className="harvest-prog-view-dropdown" ref={calViewDropdownRef} data-tour="programa-calendario-vistas">
+              <button
+                className="harvest-prog-view-btn"
+                onClick={() => setCalViewDropdownOpen(o => !o)}
+              >
+                <span>Vista: <strong>{CAL_VIEW_LABELS[calView]}</strong></span>
+                <ChevronDown size={13} className={calViewDropdownOpen ? 'rotated' : ''} />
+              </button>
+              {calViewDropdownOpen && (
+                <div className="harvest-prog-view-menu">
+                  {Object.entries(CAL_VIEW_LABELS).map(([val, label]) => (
+                    <button
+                      key={val}
+                      className={`harvest-prog-view-option${calView === val ? ' active' : ''}`}
+                      onClick={() => {
+                        setCalView(val);
+                        if (val === 'week') setSelectedDay(null);
+                        setCalViewDropdownOpen(false);
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="harvest-calendar-period">
               <button className="mx-btn-icon sm" onClick={() => {
