@@ -113,6 +113,7 @@ export default function DisponibilidadResumen({ items, mes, setMes, estadoFiltro
                       <span key={p.label}>
                         {idx > 0 && <span className="disp-res-prod-sep">·</span>}
                         {p.label} <strong>{fmtTons(p.tons)}</strong>
+                        <span className="disp-res-prod-pct">({Math.round((p.tons / group.tons) * 100)}%)</span>
                       </span>
                     ))
                   }
