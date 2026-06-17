@@ -83,15 +83,16 @@
 }
 
 .disponibilidad-kpi-grid--annual .disponibilidad-kpi {
-  padding: 10px 12px;
+  padding: 7px 12px;
 }
 
 .disponibilidad-kpi-grid--annual .disponibilidad-kpi span {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  font-size: 10px;
 }
 
 .disponibilidad-kpi-grid--annual .disponibilidad-kpi strong {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .disponibilidad-kpi-button {
@@ -652,6 +653,11 @@
 
 .disponibilidad-annual-table {
   min-width: 1180px;
+}
+
+.disponibilidad-annual-table th,
+.disponibilidad-annual-table td {
+  padding: 7px 14px;
 }
 
 /* Chips de producto */
