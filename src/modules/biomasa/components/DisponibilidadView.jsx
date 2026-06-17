@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, HelpCircle, MapPin, MessageCircle, Pencil, Phone, Plus, RotateCcw, Search, Users } from 'lucide-react';
+import { ArrowRight, HelpCircle, MapPin, MessageCircle, Pencil, Phone, Plus, RotateCcw, Search, Trash2, Users } from 'lucide-react';
 
 const ORIGEN_ICON = {
   llamada:  Phone,
@@ -13,7 +13,8 @@ const OrigenIcon = ({ origen, label }) => {
   return <span title={label} className="disp-origen-icon"><Icon size={14} /></span>;
 };
 import { apiClient } from '../../../api/apiClient';
-import { crearDisponibilidad, editarDisponibilidad, getDisponibilidades } from '../../../api/api-mmpp';
+import { borrarDisponibilidad, crearDisponibilidad, editarDisponibilidad, getDisponibilidades } from '../../../api/api-mmpp';
+import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { fmtTons } from '../utils/programaCalculos';
@@ -55,6 +56,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tratoItem, setTratoItem] = useState(null);
+  const [deleteItem, setDeleteItem] = useState(null);
   const [activeTab, setActiveTab] = useState('listado');
   const [annualItems, setAnnualItems] = useState([]);
   const [annualLoading, setAnnualLoading] = useState(false);
@@ -193,6 +195,18 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteItem?._id) return;
+    try {
+      await borrarDisponibilidad(deleteItem._id);
+      setDeleteItem(null);
+      await reload();
+      addToast({ title: 'Eliminado', message: 'Disponibilidad eliminada correctamente.', type: 'success' });
+    } catch (error) {
+      addToast({ title: 'Error', message: error.message || 'No se pudo eliminar.', type: 'error' });
+    }
+  };
+
   return (
     <div className="disponibilidad-view">
       <div className="disp-filter-bar">
@@ -294,6 +308,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                           <td>
                             <div className="disponibilidad-row-actions">
                               <button type="button" className="mx-btn-icon sm" onClick={() => openEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
+                              <button type="button" className="mx-btn-icon sm" onClick={() => setDeleteItem(item)} aria-label="Eliminar disponibilidad"><Trash2 size={15} /></button>
                               {(item.estado || 'disponible') === 'disponible' && !item.tratoId && (
                                 <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-create-trato-button" onClick={() => openCreateTrato(item)} title="Crear trato asociado">
                                   <ArrowRight size={15} /> Crear trato
@@ -365,6 +380,14 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         item={tratoItem}
         onClose={() => setTratoItem(null)}
         onSuccess={reload}
+      />
+      <ConfirmDeleteModal
+        isOpen={Boolean(deleteItem)}
+        onClose={() => setDeleteItem(null)}
+        onConfirm={handleDelete}
+        title="¿Eliminar disponibilidad?"
+        itemName={deleteItem?.proveedorNombre || deleteItem?.proveedorNombreNorm || deleteItem?.empresaNombre}
+        confirmLabel="Eliminar"
       />
     </div>
   );
