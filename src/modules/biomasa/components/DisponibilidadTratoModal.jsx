@@ -6,6 +6,7 @@ import { apiClient } from '../../../api/apiClient';
 import { maestrosApi } from '../../../api/api-maestros';
 import { useContactos, useCentros } from '../../gestion/hooks/useGestionQueries';
 import TratoFormModal from '../../gestion/submodules/TratoFormModal';
+import '../../gestion/submodules/tratos.css';
 import {
   buildInitialConditions,
   buildProviderDirectory,
