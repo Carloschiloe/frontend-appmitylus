@@ -24,6 +24,7 @@ import {
   derivePrecioDesdeCondiciones,
   deriveVolumenDesdeCondiciones,
   ESTADOS_TRATO,
+  formatInteger,
   getEstadoCierreFromApi,
   getUiEstadoFromApi,
   normalizeDateOnlyForUiSafe,
