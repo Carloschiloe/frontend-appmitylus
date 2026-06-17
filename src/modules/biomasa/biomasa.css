@@ -5886,6 +5886,22 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   min-width: 90px;
 }
 
+/* ── KPI grid Seguimiento (4 cols, compacto) ── */
+.followup-kpi-grid.disponibilidad-kpi-grid {
+  grid-template-columns: repeat(4, minmax(110px, 1fr));
+  margin-bottom: 4px;
+}
+.followup-kpi-grid .disponibilidad-kpi {
+  padding: 9px 12px;
+}
+.followup-kpi-grid .disponibilidad-kpi span {
+  margin-bottom: 3px;
+  font-size: 10px;
+}
+.followup-kpi-grid .disponibilidad-kpi strong {
+  font-size: 18px;
+}
+
 /* ── Sub-nav pills (Prog. de Cosecha) ── */
 .prog-sub-nav-bar {
   display: flex;

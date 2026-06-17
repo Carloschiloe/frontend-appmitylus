@@ -76,22 +76,20 @@ export default function ProgramaSeguimientoView({
         </div>
       </div>
 
-      <section className="harvest-followup-kpis">
-        <div>
+      <section className="disponibilidad-kpi-grid followup-kpi-grid">
+        <div className="disponibilidad-kpi disponibilidad-kpi--info">
           <span>Programas activos</span>
           <strong>{followupSummary.activePrograms}</strong>
         </div>
-        <div>
-          <span>Ajustes periodo</span>
+        <div className="disponibilidad-kpi disponibilidad-kpi--muted">
+          <span>Ajustes período</span>
           <strong>{followupSummary.adjustments}</strong>
         </div>
-        <div>
+        <div className={`disponibilidad-kpi disponibilidad-kpi--${followupSummary.netDelta < 0 ? 'danger' : followupSummary.netDelta > 0 ? 'success' : 'muted'}`}>
           <span>Delta camiones</span>
-          <strong className={followupSummary.netDelta < 0 ? 'negative' : followupSummary.netDelta > 0 ? 'positive' : ''}>
-            {followupSummary.netDelta > 0 ? '+' : ''}{followupSummary.netDelta}
-          </strong>
+          <strong>{followupSummary.netDelta > 0 ? '+' : ''}{followupSummary.netDelta}</strong>
         </div>
-        <div>
+        <div className="disponibilidad-kpi disponibilidad-kpi--muted">
           <span>Camiones hoy</span>
           <strong>{followupSummary.todayCamiones}</strong>
         </div>
