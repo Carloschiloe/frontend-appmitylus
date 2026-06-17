@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, RotateCcw, Search, X } from 'lucide-react';
+import { ChevronDown, RotateCcw, Search, SlidersHorizontal, X } from 'lucide-react';
 import {
   buildDisponibilidadAnnualProjection,
   buildDisponibilidadMonthDetail,
@@ -37,6 +37,7 @@ export default function DisponibilidadAnalisisGrafico({
   comparisonLoading,
 }) {
   const [selectedMonth, setSelectedMonth] = useState(null);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [showComparisonTable, setShowComparisonTable] = useState(false);
   const [showProviderResults, setShowProviderResults] = useState(false);
 
@@ -155,23 +156,10 @@ export default function DisponibilidadAnalisisGrafico({
         </div>
       </div>
 
-      <div className="disponibilidad-analysis-chips-row">
-        <div className="disp-annual-product-chips">
-          <span className="disp-annual-chips-label">Producto</span>
-          {productOptions.map((p) => (
-            <button key={p.value || 'todos'} type="button" className={`disp-annual-chip${productFilter === p.value ? ' is-active' : ''}`} onClick={() => onProductFilterChange(p.value)}>
-              {p.label}
-            </button>
-          ))}
-        </div>
-        <div className="disp-annual-product-chips">
-          <span className="disp-annual-chips-label">Estado</span>
-          {stateOptions.map((s) => (
-            <button key={s.value || 'todos'} type="button" className={`disp-annual-chip${stateFilter === s.value ? ' is-active' : ''}`} onClick={() => onStateFilterChange(s.value)}>
-              {s.label}
-            </button>
-          ))}
-        </div>
+      <div className="disponibilidad-analysis-filter-row">
+        <button type="button" className={`mx-btn mx-btn-outline sm disponibilidad-more-filters${showMoreFilters ? ' is-open' : ''}`} onClick={() => setShowMoreFilters((c) => !c)} aria-expanded={showMoreFilters}>
+          <SlidersHorizontal size={15} /> Filtros <ChevronDown size={15} />
+        </button>
         {providerFilter && (
           <div className="disponibilidad-active-filters">
             <span>Proveedor:</span>
@@ -180,6 +168,28 @@ export default function DisponibilidadAnalisisGrafico({
           </div>
         )}
       </div>
+
+      {showMoreFilters && (
+        <div className="disponibilidad-analysis-chips-row">
+          <div className="disp-annual-product-chips">
+            <span className="disp-annual-chips-label">Producto</span>
+            {productOptions.map((p) => (
+              <button key={p.value || 'todos'} type="button" className={`disp-annual-chip${productFilter === p.value ? ' is-active' : ''}`} onClick={() => onProductFilterChange(p.value)}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <span className="disp-analysis-chips-divider" />
+          <div className="disp-annual-product-chips">
+            <span className="disp-annual-chips-label">Estado</span>
+            {stateOptions.map((s) => (
+              <button key={s.value || 'todos'} type="button" className={`disp-annual-chip${stateFilter === s.value ? ' is-active' : ''}`} onClick={() => onStateFilterChange(s.value)}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="disponibilidad-analysis-card">
         {(!stateFilter || comparisonYear) && (
