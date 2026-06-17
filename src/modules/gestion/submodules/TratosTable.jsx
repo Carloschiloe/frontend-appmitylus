@@ -207,10 +207,12 @@ export default function TratosTable({
                         <div className="tratos-metric-label">x kg</div>
                       </td>
                       <td className="tratos-date-cell">
-                        <div className="tratos-date-main">{formatDateOnlySafe(displayInicioCosecha) || '—'}</div>
-                        <div className="tratos-date-label">Inicio probable</div>
-                        <div className="tratos-date-main tratos-date-main-secondary">{formatDateOnlySafe(displayTerminoCosecha) || '-'}</div>
-                        <div className="tratos-date-label">Término estimado</div>
+                        <div className="tratos-date-range">
+                          {formatDateOnlySafe(displayInicioCosecha) || '—'}
+                          <span className="tratos-date-arrow">→</span>
+                          {formatDateOnlySafe(displayTerminoCosecha) || '—'}
+                        </div>
+                        <div className="tratos-date-label">Inicio → Término est.</div>
                       </td>
                       <td>
                         <span className={`mx-badge mx-badge-${uiEstado === 'acordado' || uiEstado === 'cerrado_ok' ? 'success' : uiEstado === 'rechazado' ? 'danger' : 'info'}`}>

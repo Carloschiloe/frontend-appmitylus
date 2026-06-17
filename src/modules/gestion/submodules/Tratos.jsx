@@ -23,11 +23,20 @@ import {
   deriveCamionesXDia,
   derivePrecioDesdeCondiciones,
   deriveVolumenDesdeCondiciones,
+  ESTADOS_TRATO,
   getEstadoCierreFromApi,
+  getUiEstadoFromApi,
   normalizeDateOnlyForUiSafe,
   parseNumberOrNull,
   toList,
 } from './tratos.helpers';
+
+const ESTADO_TONE = {
+  pendiente: 'info',
+  acordado: 'success',
+  rechazado: 'danger',
+  cerrado_ok: 'muted',
+};
 
 const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 function mesLabel(ym) {
@@ -57,6 +66,7 @@ export default function Tratos() {
   const [mes, setMes] = useState(mesActual);
   const [showAllMonths, setShowAllMonths] = useState(false);
   const [responsableFilter, setResponsableFilter] = useState('all');
+  const [estadoFilter, setEstadoFilter] = useState('');
 
   const moveMes = useCallback((dir) => {
     setMes((prev) => {
@@ -501,12 +511,25 @@ export default function Tratos() {
     }
   }, [showAllMonths, mes, responsableFilter, addToast]);
 
-  const filteredItems = useMemo(() => items.filter((i) => {
+  const baseFilteredItems = useMemo(() => items.filter((i) => {
     if (searchTerm && !(i.proveedorNombre || '').toLowerCase().includes(searchTerm.toLowerCase())) return false;
     if (!showAllMonths && (i.vigenciaDesde || i.fechaCierre) && toMonthKey(i.vigenciaDesde || i.fechaCierre) !== mes) return false;
     if (responsableFilter !== 'all' && i.responsableNombre !== responsableFilter) return false;
     return true;
   }), [items, searchTerm, mes, showAllMonths, responsableFilter]);
+
+  const filteredItems = useMemo(() => {
+    if (!estadoFilter) return baseFilteredItems;
+    return baseFilteredItems.filter((i) => getUiEstadoFromApi(i.estado) === estadoFilter);
+  }, [baseFilteredItems, estadoFilter]);
+
+  const kpiCounts = useMemo(() => {
+    const counts = { total: baseFilteredItems.length };
+    for (const e of ESTADOS_TRATO) {
+      counts[e.val] = baseFilteredItems.filter((i) => getUiEstadoFromApi(i.estado) === e.val).length;
+    }
+    return counts;
+  }, [baseFilteredItems]);
 
   const formFechaTerminoEstimada = useMemo(() => calcularFechaTerminoEstimadaTrato({
     fechaInicioCosecha: form.fechaInicioCosecha,
@@ -527,40 +550,17 @@ export default function Tratos() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <button
-            className="mx-btn-icon sm"
-            onClick={() => { moveMes(-1); setShowAllMonths(false); }}
-            title="Mes anterior"
-            disabled={showAllMonths}
-          >
+        <div className="tratos-month-nav">
+          <button className="mx-btn-icon sm" onClick={() => { moveMes(-1); setShowAllMonths(false); }} title="Mes anterior" disabled={showAllMonths}>
             <ChevronLeft size={16} />
           </button>
-          <span style={{ fontWeight: 'var(--weight-bold)', fontSize: '13px', minWidth: 110, textAlign: 'center', color: showAllMonths ? 'var(--color-text-subtle)' : 'var(--color-text)' }}>
+          <span className={`tratos-month-label${showAllMonths ? ' is-all' : ''}`}>
             {showAllMonths ? '—' : mesLabel(mes)}
           </span>
-          <button
-            className="mx-btn-icon sm"
-            onClick={() => { moveMes(1); setShowAllMonths(false); }}
-            title="Mes siguiente"
-            disabled={showAllMonths}
-          >
+          <button className="mx-btn-icon sm" onClick={() => { moveMes(1); setShowAllMonths(false); }} title="Mes siguiente" disabled={showAllMonths}>
             <ChevronRight size={16} />
           </button>
-          <button
-            type="button"
-            onClick={() => setShowAllMonths((v) => !v)}
-            style={{
-              padding: '3px 10px',
-              borderRadius: 999,
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              border: showAllMonths ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-              background: showAllMonths ? 'rgba(10,92,255,0.08)' : 'transparent',
-              color: showAllMonths ? 'var(--color-primary)' : 'var(--color-text-subtle)',
-              cursor: 'pointer',
-            }}
-          >
+          <button type="button" className={`tratos-todos-btn${showAllMonths ? ' is-active' : ''}`} onClick={() => setShowAllMonths((v) => !v)}>
             Todos
           </button>
         </div>
@@ -581,6 +581,19 @@ export default function Tratos() {
         <button className="mx-btn mx-btn-primary" onClick={openNew} data-tour="tratos-registrar">
           <Plus size={18} /> Nuevo Trato
         </button>
+      </div>
+
+      <div className="disponibilidad-kpi-grid tratos-kpi-grid">
+        <button type="button" className={`disponibilidad-kpi disponibilidad-kpi-button disponibilidad-kpi--total${!estadoFilter ? ' is-active' : ''}`} aria-pressed={!estadoFilter} onClick={() => setEstadoFilter('')}>
+          <span>Total tratos</span>
+          <strong>{kpiCounts.total}</strong>
+        </button>
+        {ESTADOS_TRATO.map((e) => (
+          <button key={e.val} type="button" className={`disponibilidad-kpi disponibilidad-kpi-button disponibilidad-kpi--${ESTADO_TONE[e.val]}${estadoFilter === e.val ? ' is-active' : ''}`} aria-pressed={estadoFilter === e.val} onClick={() => setEstadoFilter(estadoFilter === e.val ? '' : e.val)}>
+            <span>{e.label}</span>
+            <strong>{kpiCounts[e.val] ?? 0}</strong>
+          </button>
+        ))}
       </div>
 
       <TratosTable

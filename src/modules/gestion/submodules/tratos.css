@@ -38,6 +38,70 @@
   vertical-align: middle;
 }
 
+/* ── KPI cards (compacto, reutiliza disponibilidad-kpi de biomasa.css) ── */
+.tratos-kpi-grid.disponibilidad-kpi-grid {
+  grid-template-columns: repeat(5, minmax(110px, 1fr));
+  margin-bottom: 4px;
+}
+.tratos-kpi-grid .disponibilidad-kpi {
+  padding: 9px 12px;
+}
+.tratos-kpi-grid .disponibilidad-kpi span {
+  margin-bottom: 3px;
+  font-size: 10px;
+}
+.tratos-kpi-grid .disponibilidad-kpi strong {
+  font-size: 18px;
+}
+
+/* ── Toolbar mes nav ── */
+.tratos-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tratos-month-label {
+  min-width: 110px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.tratos-month-label.is-all {
+  color: var(--color-text-subtle);
+}
+.tratos-todos-btn {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.tratos-todos-btn.is-active {
+  border: 2px solid var(--color-primary);
+  background: rgba(10, 92, 255, 0.08);
+  color: var(--color-primary);
+}
+
+/* ── Fechas compactas ── */
+.tratos-date-range {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  flex-wrap: wrap;
+}
+.tratos-date-arrow {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
 .tratos-toolbar-search {
   flex: 0 1 420px;
   max-width: 420px;
