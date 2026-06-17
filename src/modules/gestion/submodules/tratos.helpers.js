@@ -2,7 +2,7 @@ export const ESTADOS_TRATO = [
   { val: 'pendiente', label: 'Pendiente' },
   { val: 'acordado', label: 'Acordado' },
   { val: 'rechazado', label: 'Rechazado' },
-  { val: 'cerrado_ok', label: 'Cerrado OK' },
+  { val: 'cerrado_ok', label: 'Cumplido' },
 ];
 
 const UI_TO_API_ESTADO = {
