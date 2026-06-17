@@ -349,21 +349,20 @@ export default function Biomasa() {
           </div>
         </div>
         {isProgramView && (
-        <div className="mx-toolbar">
-          <div className="mx-toggle-group" data-tour="programa-vistas">
-            <button className={`mx-toggle-btn ${progSubTab === 'programa' ? 'active' : ''}`} onClick={() => setProgSubTab('programa')}><ListIcon size={14} /> Programa</button>
-            <button className={`mx-toggle-btn ${progSubTab === 'calendario' ? 'active' : ''}`} onClick={() => setProgSubTab('calendario')}><LayoutGrid size={14} /> Calendario cosechas</button>
-            <button className={`mx-toggle-btn ${progSubTab === 'seguimiento' ? 'active' : ''}`} onClick={() => setProgSubTab('seguimiento')}><Activity size={14} /> Seguimiento</button>
+        <div className="prog-sub-nav-bar">
+          <div className="prog-sub-nav" data-tour="programa-vistas">
+            <button className={`prog-sub-nav-btn${progSubTab === 'programa' ? ' active' : ''}`} onClick={() => setProgSubTab('programa')}><ListIcon size={13} /> Programa</button>
+            <button className={`prog-sub-nav-btn${progSubTab === 'calendario' ? ' active' : ''}`} onClick={() => setProgSubTab('calendario')}><LayoutGrid size={13} /> Calendario</button>
+            <button className={`prog-sub-nav-btn${progSubTab === 'seguimiento' ? ' active' : ''}`} onClick={() => setProgSubTab('seguimiento')}><Activity size={13} /> Seguimiento</button>
           </div>
-          {progSubTab === 'programa' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <HelpTourButton tourId="biomasa" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <HelpTourButton tourId="biomasa" />
+            {progSubTab === 'programa' && (
               <button className="mx-btn mx-btn-primary" onClick={() => handleOpenModal()} data-tour="programa-crear">
                 <Plus size={18} /> Crear Programa
               </button>
-            </div>
-          )}
-          {progSubTab !== 'programa' && <HelpTourButton tourId="biomasa" />}
+            )}
+          </div>
         </div>
         )}
 

@@ -5886,6 +5886,46 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   min-width: 90px;
 }
 
+/* ── Sub-nav pills (Prog. de Cosecha) ── */
+.prog-sub-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px 6px 12px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  gap: 8px;
+}
+.prog-sub-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.prog-sub-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.prog-sub-nav-btn:hover {
+  background: var(--color-surface-hover, #f0f4ff);
+  color: var(--color-text);
+}
+.prog-sub-nav-btn.active {
+  background: var(--color-primary-subtle, #eff4ff);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
 /* ── Dropdown Vista (Prog. de Cosecha) ── */
 .harvest-prog-view-dropdown {
   position: relative;
