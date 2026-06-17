@@ -30,36 +30,35 @@ export default function MuestreoStepAnalisis({
 }) {
   return (
     <div className="mu-step-container mu-analysis-step">
-      <div className="mu-analysis-params">
-        <div className="mu-analysis-section-title primary">
-          <Target size={14} />
-          <h4>Parámetros</h4>
-        </div>
 
-        <div className="mx-form-group">
-          <label className="mx-label mu-analysis-label">U×Kg</label>
-          <input type="number" className="mx-input mu-analysis-input" value={form.uxkg} onChange={(event) => setForm({ ...form, uxkg: event.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0" />
+      {/* Franja de parámetros — horizontal */}
+      <div className="mu-analysis-params-bar">
+        <div className="mu-params-bar-title">
+          <Target size={13} />
+          <span>Parámetros</span>
         </div>
-
-        <div className="mx-form-group am-mt-10">
-          <label className="mx-label mu-analysis-label">Peso Vivo</label>
-          <input type="number" className="mx-input mu-analysis-input" value={form.pesoVivo} onChange={(event) => setForm({ ...form, pesoVivo: event.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0.00" />
+        <div className="mu-params-bar-fields">
+          <div className="mu-params-bar-field">
+            <label>U×Kg</label>
+            <input type="number" className="mx-input mu-params-bar-input" value={form.uxkg} onChange={(e) => setForm({ ...form, uxkg: e.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0" />
+          </div>
+          <div className="mu-params-bar-field">
+            <label>Peso Vivo</label>
+            <input type="number" className="mx-input mu-params-bar-input" value={form.pesoVivo} onChange={(e) => setForm({ ...form, pesoVivo: e.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0.00" />
+          </div>
+          <div className="mu-params-bar-field">
+            <label>Peso Carne</label>
+            <input type="number" className="mx-input mu-params-bar-input" value={form.pesoCocida} onChange={(e) => setForm({ ...form, pesoCocida: e.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0.00" />
+          </div>
         </div>
-
-        <div className="mx-form-group am-mt-10">
-          <label className="mx-label mu-analysis-label">Peso Carne</label>
-          <input type="number" className="mx-input mu-analysis-input" value={form.pesoCocida} onChange={(event) => setForm({ ...form, pesoCocida: event.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0.00" />
-        </div>
-
-        <div className="mu-analysis-notes">
-          <label className="mx-label mu-analysis-notes-label">Obs. Muestreo</label>
-          <textarea
-            className="mx-input mu-analysis-notes-input"
-            placeholder="Notas..."
-            value={form.comentarios}
-            onChange={(event) => setForm({ ...form, comentarios: event.target.value })}
-          />
-        </div>
+        <select
+          className="mx-select mu-analysis-unit"
+          value={form.unidadPeso || 'kg'}
+          onChange={(e) => setForm({ ...form, unidadPeso: e.target.value })}
+        >
+          <option value="kg">kg</option>
+          <option value="g">g</option>
+        </select>
       </div>
 
       <div className="mu-analysis-main">
@@ -68,14 +67,6 @@ export default function MuestreoStepAnalisis({
             <Layers size={14} />
             <h4>Análisis Técnico</h4>
           </div>
-          <select
-            className="mx-select mu-analysis-unit"
-            value={form.unidadPeso || 'kg'}
-            onChange={(event) => setForm({ ...form, unidadPeso: event.target.value })}
-          >
-            <option value="kg">kg</option>
-            <option value="g">g</option>
-          </select>
         </div>
 
         <div className="mu-analysis-tabs">
@@ -166,6 +157,16 @@ export default function MuestreoStepAnalisis({
               );
             })}
           </div>
+        </div>
+
+        <div className="mu-analysis-notes">
+          <label className="mx-label mu-analysis-notes-label">Obs. Muestreo</label>
+          <textarea
+            className="mx-input mu-analysis-notes-input"
+            placeholder="Notas..."
+            value={form.comentarios}
+            onChange={(e) => setForm({ ...form, comentarios: e.target.value })}
+          />
         </div>
 
         <div className="mu-general-evidence">
