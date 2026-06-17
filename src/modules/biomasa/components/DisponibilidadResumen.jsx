@@ -53,7 +53,7 @@ export default function DisponibilidadResumen({ items, mes, estadoFiltro, onEdit
         <strong>{fmtTons(total)} totales</strong>
       </div>
 
-        {total > 0 && (
+      {total > 0 && (
         <div className="disp-res-stacked-bar" aria-hidden="true">
           {groups.filter((g) => g.tons > 0).map((g) => (
             <div
@@ -66,32 +66,40 @@ export default function DisponibilidadResumen({ items, mes, estadoFiltro, onEdit
         </div>
       )}
 
-      <div className="disponibilidad-state-groups" aria-label={`Toneladas por estado para ${mesLabel(mes)}`}>
+      <div className="disp-res-table" aria-label={`Toneladas por estado para ${mesLabel(mes)}`}>
         {groups.map((group) => {
           const isOpen = openStates.has(group.value);
           const contentId = `disponibilidad-resumen-${group.value}`;
           return (
-            <article key={group.value} className={`disponibilidad-state-group disponibilidad-state-group--${group.tone}${isOpen ? ' is-open' : ''}${group.tons === 0 ? ' is-empty' : ''}`}>
+            <div key={group.value} className={`disp-res-group${isOpen ? ' is-open' : ''}${group.tons === 0 ? ' is-empty' : ''}`}>
               <button
                 type="button"
-                className="disponibilidad-state-group-toggle"
+                className={`disp-res-row disp-res-row--${group.tone}`}
                 onClick={() => toggleState(group.value)}
                 aria-expanded={isOpen}
                 aria-controls={contentId}
               >
-                <div className="disponibilidad-state-group-header">
+                <span className="disp-res-col-estado">
                   <span className={`disponibilidad-state disponibilidad-state--${group.tone}`}>{group.label}</span>
-                  <span className="disponibilidad-state-group-total">
-                    <strong>{fmtTons(group.tons)}</strong>
-                    <span className="disp-res-pct">{total > 0 ? Math.round((group.tons / total) * 100) : 0}%</span>
-                    <ChevronDown size={18} aria-hidden="true" />
+                </span>
+                <span className="disp-res-col-tons">
+                  <strong>{fmtTons(group.tons)}</strong>
+                </span>
+                <span className="disp-res-col-pct">
+                  {total > 0 ? Math.round((group.tons / total) * 100) : 0}%
+                </span>
+                <span className="disp-res-col-bar">
+                  <span className="disp-res-bar-track">
+                    <span
+                      className={`disp-res-bar-fill disp-res-bar-fill--${group.tone}`}
+                      style={{ width: `${(group.tons / maxTons) * 100}%` }}
+                    />
                   </span>
-                </div>
-                <div className="disponibilidad-bar-track">
-                  <div className={`disponibilidad-bar-fill disponibilidad-bar-fill--${group.tone}`} style={{ width: `${(group.tons / maxTons) * 100}%` }} />
-                </div>
+                </span>
+                <span className="disp-res-col-chevron">
+                  <ChevronDown size={14} aria-hidden="true" />
+                </span>
               </button>
-
               {isOpen && (
                 <div id={contentId} className="disponibilidad-state-records">
                   {group.items.length > 0 ? group.items.map((item) => (
@@ -118,7 +126,7 @@ export default function DisponibilidadResumen({ items, mes, estadoFiltro, onEdit
                   )}
                 </div>
               )}
-            </article>
+            </div>
           );
         })}
       </div>

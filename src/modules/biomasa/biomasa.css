@@ -5539,3 +5539,88 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .disponibilidad-state-records {
   animation: disp-slide-down 0.18s ease;
 }
+
+/* ── Resumen mensual: tabla compacta (Opción B) ── */
+.disp-res-table {
+  margin-top: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.disp-res-group {
+  border-bottom: 1px solid var(--color-border);
+}
+.disp-res-group:last-child { border-bottom: 0; }
+
+.disp-res-row {
+  display: grid;
+  grid-template-columns: 160px 88px 44px 1fr 28px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px 10px 0;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 100ms ease;
+}
+.disp-res-row--info    { border-left-color: #3b82f6; }
+.disp-res-row--warning { border-left-color: #f59e0b; }
+.disp-res-row--success { border-left-color: #10b981; }
+.disp-res-row--danger  { border-left-color: #ef4444; }
+.disp-res-row--muted   { border-left-color: #94a3b8; }
+
+.disp-res-row:hover               { background: #f7fbff; }
+.disp-res-group.is-open .disp-res-row { background: #f0f6ff; }
+
+.disp-res-col-estado { padding-left: 12px; }
+
+.disp-res-col-tons strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.disp-res-group.is-empty .disp-res-col-tons strong {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.disp-res-col-pct {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+}
+.disp-res-group.is-empty .disp-res-col-pct { color: #cbd5e1; }
+
+.disp-res-bar-track {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+.disp-res-bar-fill {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  border-radius: inherit;
+  transition: width 0.3s ease;
+}
+.disp-res-bar-fill--info    { background: #3b82f6; }
+.disp-res-bar-fill--warning { background: #f59e0b; }
+.disp-res-bar-fill--success { background: #10b981; }
+.disp-res-bar-fill--danger  { background: #ef4444; }
+.disp-res-bar-fill--muted   { background: #94a3b8; }
+.disp-res-group.is-empty .disp-res-bar-fill { opacity: 0.35; }
+
+.disp-res-col-chevron {
+  display: flex;
+  justify-content: center;
+  color: var(--color-text-muted);
+  transition: transform 160ms ease;
+}
+.disp-res-group.is-open .disp-res-col-chevron { transform: rotate(180deg); }
