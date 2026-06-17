@@ -101,9 +101,7 @@ export default function DisponibilidadResumen({ items, mes, setMes, estadoFiltro
                 </span>
                 <span className="disp-res-col-tons">
                   <strong>{fmtTons(group.tons)}</strong>
-                </span>
-                <span className="disp-res-col-pct">
-                  {total > 0 ? Math.round((group.tons / total) * 100) : 0}%
+                  <span className="disp-res-col-tons-pct">{total > 0 ? Math.round((group.tons / total) * 100) : 0}%</span>
                 </span>
                 <span className="disp-res-col-productos">
                   {DISPONIBILIDAD_PRODUCTOS
