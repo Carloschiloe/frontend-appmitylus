@@ -5791,3 +5791,28 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+
+/* ── Análisis gráfico: chips siempre visibles ── */
+.disponibilidad-analysis-chips-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Meta del drawer en una sola línea */
+.disponibilidad-analysis-detail-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0;
+  overflow: hidden;
+}
+.disponibilidad-analysis-detail-meta span:last-child {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
