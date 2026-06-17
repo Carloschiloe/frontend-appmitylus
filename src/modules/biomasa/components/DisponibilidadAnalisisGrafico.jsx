@@ -109,7 +109,6 @@ export default function DisponibilidadAnalisisGrafico({
           )}
         </div>
 
-        </div>
         <div className="disponibilidad-analysis-chart-scroll">
           <div className="disponibilidad-analysis-chart" aria-label={`Disponibilidad por mes para ${year}`}>
             {primary.rows.map((row, index) => {
