@@ -257,105 +257,106 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         )}
       </div>
 
-      {activeTab === 'listado' && (
-      <>
-      <div className="disp-totales-bar">
-        <button type="button" className="disp-totales-toggle" onClick={() => setShowTotales((v) => !v)}>
-          <span className="disp-totales-toggle__label">Total</span>
-          <strong className="disp-totales-toggle__value">{fmtTons(totalTons)}</strong>
-          <span className="disp-totales-toggle__arrow">{showTotales ? '▲' : '▼'}</span>
-        </button>
-        {showTotales && (
-          <div className="disp-totales-chips">
-            {kpis.map((kpi) => (
-              <span key={kpi.value} className={`disp-status-chip disp-status-chip--${kpi.tone}`}>
-                <span className="disp-status-chip__label">{kpi.label}</span>
-                <strong className="disp-status-chip__value">{fmtTons(kpi.tons)}</strong>
-              </span>
-            ))}
-          </div>
+      <div key={activeTab} className="disp-tab-content">
+        {activeTab === 'listado' && (
+          <>
+            <div className="disp-totales-bar">
+              <button type="button" className="disp-totales-toggle" onClick={() => setShowTotales((v) => !v)}>
+                <span className="disp-totales-toggle__label">Total</span>
+                <strong className="disp-totales-toggle__value">{fmtTons(totalTons)}</strong>
+                <span className="disp-totales-toggle__arrow">{showTotales ? '▲' : '▼'}</span>
+              </button>
+              {showTotales && (
+                <div className="disp-totales-chips">
+                  {kpis.map((kpi) => (
+                    <span key={kpi.value} className={`disp-status-chip disp-status-chip--${kpi.tone}`}>
+                      <span className="disp-status-chip__label">{kpi.label}</span>
+                      <strong className="disp-status-chip__value">{fmtTons(kpi.tons)}</strong>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="mx-table-card disponibilidad-table-card">
+              <div className="disponibilidad-table-scroll">
+                <table className="mx-table disponibilidad-table">
+                  <thead>
+                    <tr>
+                      <th>Proveedor</th><th>Centro</th><th>Mes</th><th>Toneladas</th><th>Producto</th>
+                      <th>Estado</th><th>Responsable</th><th>Origen</th><th>Observación</th><th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredItems.map((item) => {
+                      const meta = stateMeta(item.estado || 'disponible');
+                      return (
+                        <tr key={item._id}>
+                          <td className="disponibilidad-provider"><DisponibilidadProviderCell item={item} /></td>
+                          <td>{item.centroCodigo || 'Sin centro'}</td>
+                          <td>{mesLabel(item.mesKey)}</td>
+                          <td className="disponibilidad-tons">{fmtTons(item.tons || item.tonsDisponible || 0)}</td>
+                          <td>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
+                          <td><span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span></td>
+                          <td>{item.responsable || 'Sin asignar'}</td>
+                          <td>{optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')}</td>
+                          <td className="disponibilidad-observation" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
+                          <td>
+                            <div className="disponibilidad-row-actions">
+                              <button type="button" className="mx-btn-icon sm" onClick={() => openEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
+                              {(item.estado || 'disponible') === 'disponible' && !item.tratoId && (
+                                <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-create-trato-button" onClick={() => openCreateTrato(item)} title="Crear trato asociado">
+                                  <ArrowRight size={15} /> Crear trato
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {!loading && filteredItems.length === 0 && (
+                      <tr><td colSpan={10} className="disponibilidad-empty">No hay disponibilidades para los filtros seleccionados.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+        {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} estadoFiltro={filters.estado} onEdit={openEdit} onCreateTrato={openCreateTrato} />}
+        {activeTab === 'anual' && (
+          <DisponibilidadProyeccionAnual
+            items={filteredAnnualItems}
+            stateBaseItems={annualStateBaseItems}
+            year={annualYear}
+            loading={annualLoading}
+            estadoFiltro={filters.estado}
+            onEstadoFiltroChange={(estado) => setFilters((current) => ({ ...current, estado }))}
+            onEdit={openEdit}
+            onCreateTrato={openCreateTrato}
+          />
+        )}
+        {activeTab === 'analisis' && (
+          <DisponibilidadAnalisisGrafico
+            items={filteredAnnualItems}
+            comparisonItems={filteredComparisonItems}
+            year={annualYear}
+            onYearChange={setAnnualYear}
+            comparisonYear={comparisonYear}
+            onComparisonYearChange={setComparisonYear}
+            providers={providerDirectory}
+            contacts={contactDirectory}
+            providerFilter={filters.proveedor}
+            onProviderFilterChange={(proveedor) => setFilters((current) => ({ ...current, proveedor }))}
+            productFilter={filters.producto}
+            onProductFilterChange={(producto) => setFilters((current) => ({ ...current, producto }))}
+            stateFilter={filters.estado}
+            onStateFilterChange={(estado) => setFilters((current) => ({ ...current, estado }))}
+            onRefresh={() => setAnnualReloadKey((current) => current + 1)}
+            loading={annualLoading}
+            comparisonLoading={comparisonLoading}
+          />
         )}
       </div>
-      <div className="mx-table-card disponibilidad-table-card">
-        <div className="disponibilidad-table-scroll">
-          <table className="mx-table disponibilidad-table">
-            <thead>
-              <tr>
-                <th>Proveedor</th><th>Centro</th><th>Mes</th><th>Toneladas</th><th>Producto</th>
-                <th>Estado</th><th>Responsable</th><th>Origen</th><th>Observación</th><th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.map((item) => {
-                const meta = stateMeta(item.estado || 'disponible');
-                return (
-                  <tr key={item._id}>
-                    <td className="disponibilidad-provider"><DisponibilidadProviderCell item={item} /></td>
-                    <td>{item.centroCodigo || 'Sin centro'}</td>
-                    <td>{mesLabel(item.mesKey)}</td>
-                    <td className="disponibilidad-tons">{fmtTons(item.tons || item.tonsDisponible || 0)}</td>
-                    <td>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
-                    <td><span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span></td>
-                    <td>{item.responsable || 'Sin asignar'}</td>
-                    <td>{optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')}</td>
-                    <td className="disponibilidad-observation" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
-                    <td>
-                      <div className="disponibilidad-row-actions">
-                        <button type="button" className="mx-btn-icon sm" onClick={() => openEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
-                        {(item.estado || 'disponible') === 'disponible' && !item.tratoId && (
-                          <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-create-trato-button" onClick={() => openCreateTrato(item)} title="Crear trato asociado">
-                            <ArrowRight size={15} /> Crear trato
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {!loading && filteredItems.length === 0 && (
-                <tr><td colSpan={10} className="disponibilidad-empty">No hay disponibilidades para los filtros seleccionados.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      </>
-      )}
-
-      {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} estadoFiltro={filters.estado} onEdit={openEdit} onCreateTrato={openCreateTrato} />}
-      {activeTab === 'anual' && (
-        <DisponibilidadProyeccionAnual
-          items={filteredAnnualItems}
-          stateBaseItems={annualStateBaseItems}
-          year={annualYear}
-          loading={annualLoading}
-          estadoFiltro={filters.estado}
-          onEstadoFiltroChange={(estado) => setFilters((current) => ({ ...current, estado }))}
-          onEdit={openEdit}
-          onCreateTrato={openCreateTrato}
-        />
-      )}
-      {activeTab === 'analisis' && (
-        <DisponibilidadAnalisisGrafico
-          items={filteredAnnualItems}
-          comparisonItems={filteredComparisonItems}
-          year={annualYear}
-          onYearChange={setAnnualYear}
-          comparisonYear={comparisonYear}
-          onComparisonYearChange={setComparisonYear}
-          providers={providerDirectory}
-          contacts={contactDirectory}
-          providerFilter={filters.proveedor}
-          onProviderFilterChange={(proveedor) => setFilters((current) => ({ ...current, proveedor }))}
-          productFilter={filters.producto}
-          onProductFilterChange={(producto) => setFilters((current) => ({ ...current, producto }))}
-          stateFilter={filters.estado}
-          onStateFilterChange={(estado) => setFilters((current) => ({ ...current, estado }))}
-          onRefresh={() => setAnnualReloadKey((current) => current + 1)}
-          loading={annualLoading}
-          comparisonLoading={comparisonLoading}
-        />
-      )}
 
       <DisponibilidadModal
         open={modalOpen}

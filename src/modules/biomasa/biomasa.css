@@ -5409,6 +5409,38 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   margin-left: auto;
 }
 
+/* ── Animaciones de vistas ── */
+@keyframes disp-appear {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes disp-slide-down {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Fade-in al montar la vista completa (cambio de tab de módulo) */
+.disponibilidad-view {
+  animation: disp-appear 0.2s ease;
+}
+
+/* Fade-in al cambiar sub-tab (Listado/Resumen/Anual/Análisis) */
+.disp-tab-content {
+  display: grid;
+  gap: 8px;
+  animation: disp-appear 0.18s ease;
+}
+
+/* Expand animado del panel de filtros */
+.disp-filter-bar__panel {
+  animation: disp-slide-down 0.18s ease;
+}
+
+/* Expand animado del desglose de totales */
+.disp-totales-chips {
+  animation: disp-slide-down 0.15s ease;
+}
+
 /* ── Hover en filas de tabla ── */
 .disponibilidad-table tbody tr {
   transition: background 100ms ease;
