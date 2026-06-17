@@ -63,6 +63,7 @@ button {
 }
 
 .mx-main-content {
+  position: relative;
   width: calc(100vw - var(--nav-width));
   max-width: calc(100vw - var(--nav-width));
   min-width: 0;
@@ -81,15 +82,18 @@ button {
 .mx-content-frame,
 .mx-content-body {
   gap: 16px;
+  margin: 2px 8px 0;
 }
 
-/* Hero base: eyebrow + H1 únicamente (~84px). Default para todas las vistas. */
+/* Hero base moderno — card redondeado con sombra, sin barra azul separada */
 .mx-hero {
-  min-height: 76px;
-  padding: 14px var(--page-padding) 22px;
-  border-radius: 0;
-  box-shadow: none;
-  border-bottom: 1px solid rgba(217, 230, 245, 0.22);
+  position: relative;
+  min-height: 0;
+  margin: 6px 8px 0;
+  padding: 10px 24px 14px;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0, 18, 51, 0.20);
+  border-bottom: none;
 }
 
 /* Hero con descripción: eyebrow + H1 + párrafo contextual (~130px).
@@ -106,13 +110,7 @@ button {
 }
 
 .mx-hero::after {
-  content: '';
-  position: absolute;
-  right: var(--page-padding);
-  bottom: 0;
-  left: var(--page-padding);
-  height: 1px;
-  background: rgba(18, 214, 255, 0.24);
+  content: none;
 }
 
 .mx-hero h1 {

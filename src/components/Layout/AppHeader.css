@@ -1,15 +1,22 @@
 .mx-app-header {
-  position: sticky;
-  top: 0;
+  position: absolute;
+  top: 6px;
+  right: 8px;
   z-index: 100;
-  height: 40px;
-  background: var(--mx-gradient-hero);
+  height: 54px;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  padding: 0 24px;
-  flex-shrink: 0;
+  padding: 0 16px 0 0;
+  pointer-events: none;
+}
+
+/* Restaurar pointer-events en hijos */
+.mx-app-header-search,
+.mx-app-header-user {
+  pointer-events: auto;
 }
 
 /* Search */

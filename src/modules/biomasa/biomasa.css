@@ -4,19 +4,8 @@
   animation: fadeIn 0.2s ease-out;
 }
 
-/* ── Hero moderno Biomasa ── */
-.mx-hero.biomasa-hero {
-  margin: 6px 8px 0;
-  border-radius: 14px;
-  padding: 10px 24px 12px;
-  min-height: 0;
-  border-bottom: none;
-  box-shadow: 0 4px 16px rgba(0, 18, 51, 0.18);
-}
-
-/* Especificidad doble-clase para ganar contra mx-content-frame en index.css y enterprise-polish.css */
+/* Hero y content-frame con estilos globales desde enterprise-polish.css */
 .mx-content-frame.biomasa-content-frame {
-  margin: 2px 8px 0;
   padding-top: 8px;
   gap: 8px;
 }
