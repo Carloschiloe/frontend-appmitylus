@@ -5198,18 +5198,29 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   background: #fff7ed;
   white-space: nowrap;
 }
+.harvest-prog-adj-chip--inline {
+  margin-top: 0;
+  margin-left: 6px;
+  vertical-align: middle;
+}
 
 /* Col 3 — Período */
 .harvest-prog-period-cell { white-space: nowrap; }
+.harvest-prog-date-range {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
 .harvest-prog-date-main {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-text);
 }
-.harvest-prog-date-sub {
+.harvest-prog-date-arrow {
   font-size: 0.82rem;
-  color: var(--color-text-subtle);
-  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-weight: 400;
 }
 .harvest-prog-date-label {
   font-size: 0.68rem;
@@ -5222,7 +5233,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  margin-top: 3px;
   font-size: 0.72rem;
   font-weight: 600;
   color: #d97706;

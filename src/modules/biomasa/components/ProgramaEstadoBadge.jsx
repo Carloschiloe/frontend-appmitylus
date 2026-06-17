@@ -21,13 +21,15 @@ export default function ProgramaEstadoBadge({ programa: p }) {
         if (!seg) return null;
         return <span className={`mx-badge mx-badge-${seg.cls}`} style={{ fontSize: '0.7rem' }}>{seg.label}</span>;
       })()}
-      <span
-        className={`harvest-prog-san-chip ${getSanitarioEstado(p.sanitario)}`}
-        title={[p.sanitario?.areaPSMB, p.sanitario?.codigoArea ? `Area ${p.sanitario.codigoArea}` : ''].filter(Boolean).join(' - ')}
-      >
-        {isSanitarioRelevant(p.sanitario) && <AlertTriangle size={10} />}
-        {getSanitarioLabel(p.sanitario)}
-      </span>
+      {getSanitarioEstado(p.sanitario) !== 'gris' && (
+        <span
+          className={`harvest-prog-san-chip ${getSanitarioEstado(p.sanitario)}`}
+          title={[p.sanitario?.areaPSMB, p.sanitario?.codigoArea ? `Area ${p.sanitario.codigoArea}` : ''].filter(Boolean).join(' - ')}
+        >
+          {isSanitarioRelevant(p.sanitario) && <AlertTriangle size={10} />}
+          {getSanitarioLabel(p.sanitario)}
+        </span>
+      )}
     </div>
   );
 }

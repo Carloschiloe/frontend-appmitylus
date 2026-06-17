@@ -114,7 +114,10 @@ export default function ProgramaTablaView({
                   </td>
 
                   <td className="harvest-prog-vol-cell">
-                    <div className="harvest-prog-vol-main">{volume.estimated ? fmtTonsInt(volume.estimated) : '—'}</div>
+                    <div className="harvest-prog-vol-main">
+                      {volume.estimated ? fmtTonsInt(volume.estimated) : '—'}
+                      {hasDailyAdjustments && <span className="harvest-prog-adj-chip harvest-prog-adj-chip--inline">Ajustes</span>}
+                    </div>
                     <div className="harvest-prog-vol-sub">
                       <span>{fmtTonsInt(volume.consumed)} plan.</span>
                       <span className={isOverEstimated ? 'is-over' : ''}>{volume.estimated ? fmtTonsInt(Math.abs(volume.balance)) : '—'} {isOverEstimated ? 'sobre' : 'saldo'}</span>
@@ -122,21 +125,20 @@ export default function ProgramaTablaView({
                     {volume.estimated > 0 && (
                       <div className="harvest-prog-vol-bar"><span style={{ width: `${volume.progress}%` }} /></div>
                     )}
-                    {hasDailyAdjustments && <span className="harvest-prog-adj-chip">Ajustes</span>}
                   </td>
 
                   <td className="harvest-prog-period-cell">
-                    <div className="harvest-prog-date-main">{fmtDateShort(p.vigenciaDesde)}</div>
-                    {p.vigenciaHasta && (
-                      <div className="harvest-prog-date-sub">→ {fmtDateShort(p.vigenciaHasta)}</div>
-                    )}
+                    <div className="harvest-prog-date-range">
+                      <span className="harvest-prog-date-main">{fmtDateShort(p.vigenciaDesde)}</span>
+                      {p.vigenciaHasta && <><span className="harvest-prog-date-arrow">→</span><span className="harvest-prog-date-main">{fmtDateShort(p.vigenciaHasta)}</span></>}
+                      {showDaysAlert && (
+                        <span className="harvest-prog-days-alert">
+                          <AlertTriangle size={10} />
+                          {daysLeft === 0 ? 'Hoy' : `${daysLeft}d`}
+                        </span>
+                      )}
+                    </div>
                     <div className="harvest-prog-date-label">Inicio · Término</div>
-                    {showDaysAlert && (
-                      <div className="harvest-prog-days-alert">
-                        <AlertTriangle size={10} />
-                        {daysLeft === 0 ? 'Hoy' : `${daysLeft}d`}
-                      </div>
-                    )}
                   </td>
 
                   <td className="harvest-prog-product-cell">
