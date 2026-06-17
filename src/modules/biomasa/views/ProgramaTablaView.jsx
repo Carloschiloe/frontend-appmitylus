@@ -1,6 +1,8 @@
+import { useState, useRef, useEffect } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Droplet,
   FileDown,
   Pause,
@@ -11,6 +13,7 @@ import {
   Trash,
   AlertTriangle,
 } from 'lucide-react';
+
 import {
   mesLabel, fmtDateShort, todayKey,
   daysUntilKey, toChileDateKey,
@@ -23,6 +26,8 @@ import {
   getProgramVolumeProgress, getEffectiveTonsPerTruck,
 } from '../utils/programaCalculos';
 import ProgramaEstadoBadge from '../components/ProgramaEstadoBadge';
+
+const PERIOD_LABELS = { month: 'Mes', week: 'Semana', all: 'Ver Todos' };
 
 export default function ProgramaTablaView({
   programPeriod, setProgramPeriod,
@@ -42,14 +47,44 @@ export default function ProgramaTablaView({
   onExportarPrograma,
   exportandoPrograma,
 }) {
+  const [viewDropdownOpen, setViewDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setViewDropdownOpen(false);
+      }
+    };
+    if (viewDropdownOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [viewDropdownOpen]);
+
   return (
     <div className="mx-table-card harvest-program-table-card">
       <div className="harvest-program-toolbar">
         <div className="harvest-program-controls">
-          <div className="mx-toggle-group">
-            <button className={`mx-toggle-btn ${programPeriod === 'month' ? 'active' : ''}`} onClick={() => setProgramPeriod('month')}>Vista Mes</button>
-            <button className={`mx-toggle-btn ${programPeriod === 'week' ? 'active' : ''}`} onClick={() => setProgramPeriod('week')}>Vista Semana</button>
-            <button className={`mx-toggle-btn ${programPeriod === 'all' ? 'active' : ''}`} onClick={() => setProgramPeriod('all')}>Ver Todos</button>
+          <div className="harvest-prog-view-dropdown" ref={dropdownRef}>
+            <button
+              className="harvest-prog-view-btn"
+              onClick={() => setViewDropdownOpen(o => !o)}
+            >
+              <span>Vista: <strong>{PERIOD_LABELS[programPeriod]}</strong></span>
+              <ChevronDown size={13} className={viewDropdownOpen ? 'rotated' : ''} />
+            </button>
+            {viewDropdownOpen && (
+              <div className="harvest-prog-view-menu">
+                {Object.entries(PERIOD_LABELS).map(([val, label]) => (
+                  <button
+                    key={val}
+                    className={`harvest-prog-view-option${programPeriod === val ? ' active' : ''}`}
+                    onClick={() => { setProgramPeriod(val); setViewDropdownOpen(false); }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           {programPeriod !== 'all' && (
             <div className="harvest-program-period">
