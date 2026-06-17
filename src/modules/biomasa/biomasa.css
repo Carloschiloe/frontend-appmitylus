@@ -5488,3 +5488,54 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   background: #0A5CFF !important;
   color: #fff !important;
 }
+
+/* ── Resumen mensual: barra proporcional apilada ── */
+.disp-res-stacked-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #e2e8f0;
+  margin: 14px 0 2px;
+}
+.disp-res-stacked-segment {
+  min-width: 3px;
+  transition: flex 0.35s ease;
+}
+.disp-res-stacked-segment--info    { background: #3b82f6; }
+.disp-res-stacked-segment--warning { background: #f59e0b; }
+.disp-res-stacked-segment--success { background: #10b981; }
+.disp-res-stacked-segment--danger  { background: #ef4444; }
+.disp-res-stacked-segment--muted   { background: #94a3b8; }
+
+/* ── Porcentaje junto al total por estado ── */
+.disp-res-pct {
+  min-width: 34px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ── Estado vacío (0 t): fila compacta y sutil ── */
+.disponibilidad-state-group.is-empty {
+  opacity: 0.62;
+}
+.disponibilidad-state-group.is-empty .disponibilidad-state-group-header {
+  padding-top: 9px;
+  padding-bottom: 6px;
+}
+.disponibilidad-state-group.is-empty .disponibilidad-state-group-toggle > .disponibilidad-bar-track {
+  height: 4px;
+  margin-bottom: 8px;
+}
+.disponibilidad-state-group.is-empty .disponibilidad-state-group-total strong {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ── Animación al expandir registros de un estado ── */
+.disponibilidad-state-records {
+  animation: disp-slide-down 0.18s ease;
+}
